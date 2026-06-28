@@ -47,6 +47,11 @@ import {
   type BlobUploadItem,
 } from "@/sync/blobs";
 import {
+  cloudSyncLog,
+  summarizeDirtyScope,
+  summarizeSyncOps,
+} from "@/sync/logging";
+import {
   clearDeletionMarkerForKey,
   getDeletionMarkerForKey,
   isBlobCodec,
@@ -126,6 +131,11 @@ export class CloudSyncEngine {
   async start(): Promise<void> {
     if (this.started) return;
     this.started = true;
+    cloudSyncLog.debug("Engine start requested", {
+      hasCursor: this.state.cursor !== null,
+      cursor: this.state.cursor,
+      namespaceCount: SYNC_NAMESPACES.length,
+    });
 
     for (const namespace of SYNC_NAMESPACES) {
       const codec = SYNC_CODECS[namespace];
@@ -157,10 +167,18 @@ export class CloudSyncEngine {
       this.state.markDirty(namespace);
       this.fullDirtyNamespaces.add(namespace);
     }
+    cloudSyncLog.debug("Initial sync succeeded; queued local scan", {
+      namespaceCount: SYNC_NAMESPACES.length,
+    });
     this.scheduleFlush();
   }
 
   stop(): void {
+    cloudSyncLog.debug("Engine stop requested", {
+      dirtyNamespaceCount: this.state.dirtyNamespaces.length,
+      flushInFlight: this.flushInFlight,
+      pullInFlight: Boolean(this.pullInFlight),
+    });
     this.stopped = true;
     this.abortController.abort();
     for (const unsubscribe of this.unsubscribers) {
@@ -195,6 +213,11 @@ export class CloudSyncEngine {
     if (this.stopped) return;
     this.state.markDirty(namespace);
     const keyList = keys ? [...keys].filter(Boolean) : [];
+    cloudSyncLog.debug("Namespace marked dirty", {
+      namespace,
+      scope: keyList.length === 0 ? "full" : "keys",
+      keyCount: keyList.length,
+    });
     if (keyList.length === 0) {
       this.fullDirtyNamespaces.add(namespace);
       this.dirtyKeysByNamespace.delete(namespace);
@@ -331,6 +354,7 @@ export class CloudSyncEngine {
   ): Promise<void> {
     if (this.stopped) return;
     if (this.flushInFlight) {
+      cloudSyncLog.debug("Flush already in flight; queued follow-up");
       this.flushQueued = true;
       return;
     }
@@ -343,10 +367,21 @@ export class CloudSyncEngine {
       const namespaces = (
         options.force ? [...SYNC_NAMESPACES] : this.state.dirtyNamespaces
       ).filter((namespace) => this.isNamespaceEnabled(namespace));
-      if (namespaces.length === 0) return;
+      if (namespaces.length === 0) {
+        cloudSyncLog.debug("Flush skipped; no enabled dirty namespaces", {
+          force: Boolean(options.force),
+          dirtyNamespaceCount: this.state.dirtyNamespaces.length,
+        });
+        return;
+      }
 
       const syncStore = useCloudSyncStore.getState();
       const needsDb = namespaces.some((ns) => SYNC_CODECS[ns].usesIndexedDb);
+      cloudSyncLog.debug("Flush started", {
+        force: Boolean(options.force),
+        namespaces,
+        needsIndexedDB: needsDb,
+      });
       const db = needsDb ? await ensureIndexedDBInitialized() : undefined;
       const ctx: CodecContext = { db };
 
@@ -362,16 +397,22 @@ export class CloudSyncEngine {
         for (const namespace of namespaces) {
           const codec = SYNC_CODECS[namespace];
           if (codec.isReady && !codec.isReady()) {
+            cloudSyncLog.debug("Namespace not ready; leaving dirty", {
+              namespace,
+            });
             continue; // stays dirty; retried on next flush
           }
 
           const dirtyScope = this.takeDirtyScope(namespace);
           let collected: Map<string, unknown>;
+          let upsertCount = 0;
+          let deletionCount = 0;
+          let suppressedDeletionCount = 0;
           try {
             collected = await codec.collect(ctx, dirtyScope ?? undefined);
           } catch (error) {
             this.restoreDirtyScope(namespace, dirtyScope);
-            console.error(`[sync2] collect failed for ${namespace}:`, error);
+            cloudSyncLog.error("Collect failed", { namespace, error });
             continue;
           }
           flushedNamespaces.push(namespace);
@@ -394,6 +435,7 @@ export class CloudSyncEngine {
               pendingUploads.push({ key, sha256, item });
               pendingTimestamps.set(key, this.state.nextTimestamp());
             }
+            upsertCount += pendingUploads.length;
             if (pendingUploads.length > 0) {
               const category = getSyncNamespaceCategory(namespace);
               syncStore.markCategorySyncing(category, "upload", true);
@@ -429,6 +471,7 @@ export class CloudSyncEngine {
               const t = this.state.nextTimestamp();
               ops.push({ k: key, v: doc, t });
               shadowUpdates.set(key, { t, h });
+              upsertCount += 1;
             }
           }
 
@@ -450,10 +493,15 @@ export class CloudSyncEngine {
               missing.length >= shadowKeys.length * SUSPICIOUS_DELETE_RATIO &&
               corroborated.length < missing.length;
             const deletions = suspicious ? corroborated : missing;
+            deletionCount = deletions.length;
+            suppressedDeletionCount = missing.length - deletions.length;
             if (suspicious && corroborated.length < missing.length) {
-              console.warn(
-                `[sync2] Suppressing ${missing.length - deletions.length} uncorroborated deletions in ${namespace} (possible local data loss)`
-              );
+              cloudSyncLog.warn("Suppressed uncorroborated deletions", {
+                namespace,
+                suppressedDeletionCount,
+                missingCount: missing.length,
+                shadowKeyCount: shadowKeys.length,
+              });
             }
             for (const key of deletions) {
               const t = this.state.nextTimestamp();
@@ -461,6 +509,15 @@ export class CloudSyncEngine {
               shadowUpdates.set(key, { t, h: "__del__" });
             }
           }
+          cloudSyncLog.debug("Namespace collected", {
+            namespace,
+            category: getSyncNamespaceCategory(namespace),
+            dirtyScope: summarizeDirtyScope(dirtyScope),
+            collectedCount: collected.size,
+            upsertCount,
+            deletionCount,
+            suppressedDeletionCount,
+          });
         }
 
         // Clear dirty before the network call; failures re-mark below.
@@ -472,6 +529,9 @@ export class CloudSyncEngine {
         }
 
         if (ops.length === 0) {
+          cloudSyncLog.debug("Flush produced no upload ops", {
+            namespaces: flushedNamespaces,
+          });
           this.resetFlushBackoff();
           return;
         }
@@ -482,6 +542,10 @@ export class CloudSyncEngine {
         for (const category of categories) {
           syncStore.markCategorySyncing(category, "upload", true);
         }
+        cloudSyncLog.debug("Uploading ops", {
+          categories: Array.from(categories),
+          ops: summarizeSyncOps(ops),
+        });
 
         try {
           await this.sendOps(ops, shadowUpdates);
@@ -489,6 +553,10 @@ export class CloudSyncEngine {
           for (const category of categories) {
             syncStore.markCategoryUploaded(category, uploadedAt);
           }
+          cloudSyncLog.debug("Upload complete", {
+            categories: Array.from(categories),
+            ops: summarizeSyncOps(ops),
+          });
           this.resetFlushBackoff();
           this.reportError(null);
         } catch (error) {
@@ -547,6 +615,12 @@ export class CloudSyncEngine {
     for (let offset = 0; offset < ops.length; offset += OPS_BATCH_SIZE) {
       const batch = ops.slice(offset, offset + OPS_BATCH_SIZE);
       const cursorBefore = this.state.cursor ?? 0;
+      cloudSyncLog.debug("Posting ops batch", {
+        batchIndex: Math.floor(offset / OPS_BATCH_SIZE) + 1,
+        batchCount: Math.ceil(ops.length / OPS_BATCH_SIZE),
+        cursorBefore,
+        ops: summarizeSyncOps(batch),
+      });
       const response = await postSyncOps(
         clientId,
         batch,
@@ -586,6 +660,13 @@ export class CloudSyncEngine {
       if (superseded.length > 0) {
         await this.applyRemoteOps(superseded);
       }
+      cloudSyncLog.debug("Ops batch response received", {
+        seq: response.seq,
+        acceptedCount,
+        supersededCount: superseded.length,
+        cursorBefore,
+        cursorGap: response.seq - cursorBefore !== acceptedCount,
+      });
 
       // Advance the cursor only when our accepted ops are provably the only
       // writes since our last known seq; otherwise pull the gap.
@@ -603,26 +684,41 @@ export class CloudSyncEngine {
 
   async pull(options: { throwOnError?: boolean } = {}): Promise<void> {
     if (this.stopped) return;
-    if (this.pullInFlight) return this.pullInFlight;
+    if (this.pullInFlight) {
+      cloudSyncLog.debug("Pull already in flight; reusing request");
+      return this.pullInFlight;
+    }
 
     const run = (async () => {
       const syncStore = useCloudSyncStore.getState();
       syncStore.setCheckingRemote(true);
       try {
         const since = this.state.cursor ?? 0;
+        cloudSyncLog.debug("Pull started", { since });
         const response = await getSyncChanges(
           since,
           this.abortController.signal
         );
         if (this.stopped) return;
         if (response.snapshotRequired) {
+          cloudSyncLog.debug("Pull requires snapshot", {
+            since,
+            seq: response.seq,
+          });
           await this.applySnapshot(false);
           return;
         }
         if (response.ops && response.ops.length > 0) {
+          cloudSyncLog.debug("Pull received ops", {
+            seq: response.seq,
+            ops: summarizeSyncOps(response.ops),
+          });
           await this.applyRemoteOps(response.ops);
+        } else {
+          cloudSyncLog.debug("Pull found no remote ops", { seq: response.seq });
         }
         this.state.setCursor(response.seq);
+        cloudSyncLog.debug("Pull complete", { seq: response.seq });
         this.reportError(null);
       } catch (error) {
         if (this.stopped || isAbortError(error)) return;
@@ -660,7 +756,19 @@ export class CloudSyncEngine {
     }
 
     if (ops.length > 0) {
+      cloudSyncLog.debug("Applying snapshot", {
+        force,
+        seq: snapshot.seq,
+        entryCount: Object.keys(snapshot.entries).length,
+        ops: summarizeSyncOps(ops),
+      });
       await this.applyRemoteOps(ops);
+    } else {
+      cloudSyncLog.debug("Snapshot already current", {
+        force,
+        seq: snapshot.seq,
+        entryCount: Object.keys(snapshot.entries).length,
+      });
     }
     this.state.setCursor(snapshot.seq);
   }
@@ -677,20 +785,40 @@ export class CloudSyncEngine {
   handleRealtimeEvent(event: SyncOpsRealtimeEvent): void {
     if (this.stopped) return;
     const cursor = this.state.cursor ?? 0;
-    if (event.seq <= cursor) return;
+    if (event.seq <= cursor) {
+      cloudSyncLog.debug("Realtime event ignored; already current", {
+        eventSeq: event.seq,
+        cursor,
+      });
+      return;
+    }
 
     if (event.c === getSyncClientId()) {
       // Our own write echoed back. The shadow already reflects it, but only
       // fast-forward when nothing happened in between.
       if (event.ops && cursor + event.ops.length === event.seq) {
+        cloudSyncLog.debug("Realtime echo fast-forwarded cursor", {
+          eventSeq: event.seq,
+          cursor,
+          opCount: event.ops.length,
+        });
         this.state.setCursor(event.seq);
       } else {
+        cloudSyncLog.debug("Realtime echo has cursor gap; pulling", {
+          eventSeq: event.seq,
+          cursor,
+        });
         void this.pull();
       }
       return;
     }
 
     if (event.ops && cursor + event.ops.length === event.seq) {
+      cloudSyncLog.debug("Realtime event applying inline", {
+        eventSeq: event.seq,
+        cursor,
+        ops: summarizeSyncOps(event.ops),
+      });
       void (async () => {
         try {
           await this.applyRemoteOps(event.ops!);
@@ -701,6 +829,11 @@ export class CloudSyncEngine {
         }
       })();
     } else {
+      cloudSyncLog.debug("Realtime event has cursor gap; pulling", {
+        eventSeq: event.seq,
+        cursor,
+        hasInlineOps: Boolean(event.ops),
+      });
       void this.pull();
     }
   }
@@ -712,6 +845,8 @@ export class CloudSyncEngine {
   async applyRemoteOps(ops: SyncOp[]): Promise<void> {
     const clientId = getSyncClientId();
     const byNamespace = new Map<SyncNamespace, AppliedSyncOp[]>();
+    let skippedOwnCount = 0;
+    let skippedAlreadyAppliedCount = 0;
 
     for (const op of ops) {
       this.state.observeTimestamp(op.t);
@@ -719,11 +854,13 @@ export class CloudSyncEngine {
       if (!namespace) continue;
 
       if (op.c === clientId) {
+        skippedOwnCount += 1;
         continue; // own op; shadow already updated on POST
       }
 
       const shadow = this.state.getShadow(op.k);
       if (shadow && shadow.t === op.t) {
+        skippedAlreadyAppliedCount += 1;
         continue; // already applied
       }
 
@@ -738,7 +875,20 @@ export class CloudSyncEngine {
       });
     }
 
-    if (byNamespace.size === 0) return;
+    if (byNamespace.size === 0) {
+      cloudSyncLog.debug("Remote ops skipped", {
+        ops: summarizeSyncOps(ops),
+        skippedOwnCount,
+        skippedAlreadyAppliedCount,
+      });
+      return;
+    }
+    cloudSyncLog.debug("Applying remote ops", {
+      ops: summarizeSyncOps(ops),
+      namespaceCount: byNamespace.size,
+      skippedOwnCount,
+      skippedAlreadyAppliedCount,
+    });
 
     const orderedNamespaces = NAMESPACE_APPLY_ORDER.filter((ns) =>
       byNamespace.has(ns)
@@ -752,9 +902,20 @@ export class CloudSyncEngine {
 
     try {
       for (const namespace of orderedNamespaces) {
-        if (!this.isNamespaceEnabled(namespace)) continue;
+        if (!this.isNamespaceEnabled(namespace)) {
+          cloudSyncLog.debug("Remote namespace skipped; category disabled", {
+            namespace,
+            category: getSyncNamespaceCategory(namespace),
+          });
+          continue;
+        }
         const namespaceOps = byNamespace.get(namespace)!;
         const category = getSyncNamespaceCategory(namespace);
+        cloudSyncLog.debug("Applying remote namespace", {
+          namespace,
+          category,
+          ops: summarizeSyncOps(namespaceOps),
+        });
         syncStore.markCategorySyncing(category, "download", true);
         this.applyingNamespaces.add(namespace);
         try {
@@ -778,13 +939,20 @@ export class CloudSyncEngine {
             // differs from local — re-mark the namespace dirty so the next
             // flush re-uploads the local winner and re-converges peers.
             if (result?.rejectedKeys && result.rejectedKeys.length > 0) {
+              cloudSyncLog.debug("Remote namespace had locally rejected keys", {
+                namespace,
+                rejectedCount: result.rejectedKeys.length,
+              });
               this.markDirty(namespace);
             }
           }
           syncStore.markCategoryApplied(category, new Date().toISOString());
         } catch (error) {
           if (this.stopped || isAbortError(error)) throw error;
-          console.error(`[sync2] Failed to apply ops for ${namespace}:`, error);
+          cloudSyncLog.error("Failed to apply remote namespace", {
+            namespace,
+            error,
+          });
         } finally {
           this.applyingNamespaces.delete(namespace);
           syncStore.markCategorySyncing(category, "download", false);
@@ -833,10 +1001,22 @@ export class CloudSyncEngine {
     }
 
     if (deletes.length > 0) {
+      cloudSyncLog.debug("Applying blob deletions", {
+        namespace,
+        deleteCount: deletes.length,
+      });
       await codec.deleteItems(deletes, ctx);
     }
 
     if (downloads.length > 0) {
+      cloudSyncLog.debug("Downloading blob items", {
+        namespace,
+        downloadCount: downloads.length,
+        totalBytes: downloads.reduce(
+          (sum, download) => sum + Math.max(0, download.size || 0),
+          0
+        ),
+      });
       const urls = await resolveBlobDownloadUrls(
         downloads.map((d) => ({ url: d.url, size: d.size })),
         this.abortController.signal
@@ -860,7 +1040,7 @@ export class CloudSyncEngine {
         const { op, contentHash, size } = downloads[index];
         const downloadUrl = urls[index];
         if (!downloadUrl) {
-          console.warn(`[sync2] No download URL for ${op.k}`);
+          cloudSyncLog.warn("Blob download URL missing", { namespace });
           completedDownloadBytes += Math.max(0, size || 0);
           emitProgress(completedDownloadBytes);
           continue;
@@ -886,13 +1066,17 @@ export class CloudSyncEngine {
           }
         } catch (error) {
           if (this.stopped || isAbortError(error)) throw error;
-          console.error(`[sync2] Failed to download blob for ${op.k}:`, error);
+          cloudSyncLog.error("Blob download failed", { namespace, error });
         } finally {
           completedDownloadBytes += Math.max(0, size || 0);
           emitProgress(completedDownloadBytes);
         }
       }
       if (items.length > 0) {
+        cloudSyncLog.debug("Writing downloaded blob items", {
+          namespace,
+          itemCount: items.length,
+        });
         await codec.putItems(items, ctx);
       }
     }
@@ -907,11 +1091,13 @@ export class CloudSyncEngine {
   // -------------------------------------------------------------------------
 
   async forceUpload(): Promise<void> {
+    cloudSyncLog.debug("Force upload requested");
     await this.flush({ force: true, throwOnError: true });
   }
 
   async forceDownload(): Promise<void> {
     const syncStore = useCloudSyncStore.getState();
+    cloudSyncLog.debug("Force download requested");
     syncStore.setCheckingRemote(true);
     try {
       await this.applySnapshot(true);
@@ -930,7 +1116,10 @@ export class CloudSyncEngine {
     }
     const message =
       error instanceof Error ? error.message : `Sync ${context || "operation"} failed`;
-    console.error(`[sync2] ${context || "sync"} error:`, error);
+    cloudSyncLog.error("Sync operation failed", {
+      context: context || "sync",
+      error,
+    });
     this.callbacks.onError?.(message);
   }
 }

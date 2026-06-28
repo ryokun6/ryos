@@ -1,13 +1,97 @@
-import { describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  mock,
+  test,
+} from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import React from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { getAccentCssVars } from "../src/themes/accents";
 import { darkAquaThemeCss } from "./theme-css-fixtures";
+import type { OsThemeId } from "../src/themes/types";
+
+beforeAll(() => {
+  if (typeof document === "undefined") {
+    GlobalRegistrator.register();
+  }
+});
+
+afterAll(async () => {
+  await flushReact();
+  if (GlobalRegistrator.isRegistered) {
+    GlobalRegistrator.unregister();
+  }
+});
+
+mock.module("@/hooks/useSound", () => ({
+  Sounds: {
+    BOOT: "/sounds/boot.mp3",
+    WINDOW_CLOSE: "/sounds/window-close.mp3",
+    WINDOW_OPEN: "/sounds/window-open.mp3",
+  },
+  useSound: () => ({ play: () => {} }),
+}));
+
+mock.module("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      key === "common.system.systemRestoring" ? "System Restoring..." : key,
+  }),
+}));
+
+const { BootScreen } = await import("../src/components/dialogs/BootScreen");
+const { useThemeStore } = await import("../src/stores/useThemeStore");
 
 const bootScreenSource = readFileSync(
   join(import.meta.dir, "../src/components/dialogs/BootScreen.tsx"),
   "utf8"
 );
+
+async function flushReact(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function renderBootScreen(theme: OsThemeId): Promise<string[]> {
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  let root: Root | null = null;
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  useThemeStore.setState({ current: theme });
+
+  console.warn = (...args: unknown[]) => {
+    warnings.push(args.join(" "));
+  };
+  console.error = (...args: unknown[]) => {
+    warnings.push(args.join(" "));
+  };
+
+  try {
+    root = createRoot(host);
+    root.render(
+      React.createElement(BootScreen, {
+        isOpen: true,
+        onOpenChange: () => {},
+        debugMode: true,
+      })
+    );
+    await flushReact();
+    return warnings;
+  } finally {
+    console.warn = originalWarn;
+    console.error = originalError;
+    root?.unmount();
+    await flushReact();
+    host.remove();
+    document.body.innerHTML = "";
+  }
+}
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
@@ -78,6 +162,28 @@ describe("macOS boot screen accent tokens", () => {
     expect(bootScreenSource).toContain("var(--os-accent-boot-bg, #4566a0)");
     expect(bootScreenSource).toContain("boot-screen-apple-logo");
     expect(bootScreenSource).not.toContain('filter: "grayscale(50%) brightness(1.25)"');
+  });
+
+  test("BootScreen supplies descriptions for each Radix dialog content", () => {
+    expect(bootScreenSource).toContain("DialogDescription");
+    expect(
+      bootScreenSource.match(
+        /<DialogDescription>\{dialogDescription\}<\/DialogDescription>/g
+      )
+    ).toHaveLength(3);
+  });
+
+  test("BootScreen renders without Radix missing-description warnings", async () => {
+    for (const theme of ["macosx", "system7", "xp", "win98"] as const) {
+      const warnings = await renderBootScreen(theme);
+      expect(
+        warnings.some(
+          (warning) =>
+            warning.includes("Missing `Description`") ||
+            warning.includes("aria-describedby={undefined}")
+        )
+      ).toBe(false);
+    }
   });
 
   test("dark-aqua.css wires boot apple logo filter with stock fallback", () => {

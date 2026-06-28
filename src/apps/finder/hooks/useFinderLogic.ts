@@ -38,6 +38,9 @@ import {
 } from "@/utils/appEventBus";
 import { useAirDropStore } from "@/stores/useAirDropStore";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("Finder");
 
 type FinderUndoAction =
   | { type: "moveToTrash"; fileName: string; originalPath: string }
@@ -1557,7 +1560,10 @@ export function useFinderLogic({
         if (sourceItem && currentPath !== "/") {
           // Get parent path
           const parentPath = getParentPath(currentPath);
-          console.log(`Moving file from ${path} to ${parentPath}/${name}`);
+          log.debug("Moving file via parent folder drop", {
+            sourcePath: path,
+            targetPath: `${parentPath}/${name}`,
+          });
           moveFile(sourceItem, parentPath);
         }
       }

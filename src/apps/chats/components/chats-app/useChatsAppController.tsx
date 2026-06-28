@@ -29,6 +29,9 @@ import { useTelegramLink } from "@/hooks/useTelegramLink";
 import { useGlobalPresence } from "@/hooks/useGlobalPresence";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("ChatsApp");
 
 export type UseChatsAppControllerArgs = AppProps;
 
@@ -244,9 +247,7 @@ export function useChatsAppController({
     (roomId: string | null) => {
       handleRoomSelect(roomId).then((result) => {
         if (result?.hadUnreads) {
-          console.log(
-            `[ChatsApp] Triggering scroll for room with unreads: ${roomId}`
-          );
+          log.debug("Triggering scroll for room with unreads", { roomId });
           setScrollToBottomTrigger((prev) => prev + 1);
         }
       });

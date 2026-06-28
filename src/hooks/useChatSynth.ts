@@ -8,6 +8,9 @@ import { useVibration } from "./useVibration";
 import { resumeAudioContext } from "@/lib/audioContext";
 import { useEventListener } from "@/hooks/useEventListener";
 import { SYNTH_PRESETS } from "./chatSynthPresets";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("ChatSynth");
 
 // Global synth instance and state
 let globalSynthRef: {
@@ -113,14 +116,14 @@ export function useChatSynth() {
         globalSynthRef = null;
         synthRef.current = null;
         setIsAudioReady(false);
-        console.debug("AudioContext was closed – recreated new Tone context");
+        log.debug("AudioContext was closed; recreated new Tone context");
       } catch (err) {
         console.error("Failed to reset Tone context:", err);
       }
     }
 
     if (globalSynthRef && !synthRef.current) {
-      console.log("Reusing existing synth instance...");
+      log.debug("Reusing existing synth instance");
       synthRef.current = globalSynthRef;
       synthRef.current.filter.toDestination();
 
@@ -148,7 +151,7 @@ export function useChatSynth() {
       ) {
         // Don't create if "off"
         // Context running but synth lost (e.g., HMR without full reload), recreate synth
-        console.log("Audio context running, recreating synth...");
+        log.debug("Audio context running; recreating synth");
         synthRef.current = createSynthInstance(currentPresetKey);
         setIsAudioReady(true);
       }
@@ -157,9 +160,9 @@ export function useChatSynth() {
     isInitializingRef.current = true;
 
     try {
-      console.log("Attempting to start Tone.js...");
+      log.debug("Attempting to start Tone.js");
       await Tone.start();
-      console.log("Tone.js started successfully. State:", Tone.context.state);
+      log.debug("Tone.js started successfully", { state: Tone.context.state });
 
       // Ensure context is running before creating synth
       if (Tone.context.state === "running") {
@@ -168,7 +171,7 @@ export function useChatSynth() {
           synthRef.current = createSynthInstance(currentPresetKey);
         }
         setIsAudioReady(true);
-        console.log("Audio ready, synth created.");
+        log.debug("Audio ready; synth created");
       } else {
         console.warn("Tone.js context did not start or is suspended.");
         // Attempt to resume the context and recreate synth if successful
@@ -185,7 +188,7 @@ export function useChatSynth() {
               synthRef.current = createSynthInstance(currentPresetKey);
             }
             setIsAudioReady(true);
-            console.log("Audio resumed and ready.");
+            log.debug("Audio resumed and ready");
           } else {
             console.error("Failed to resume Tone.js context.");
           }
@@ -217,9 +220,10 @@ export function useChatSynth() {
   // Effect to handle preset changes when reusing synth
   useEffect(() => {
     if (synthRef.current && lastUsedPreset !== currentPresetKey) {
-      console.log(
-        `Applying preset change from ${lastUsedPreset} to ${currentPresetKey}`
-      );
+      log.debug("Applying preset change", {
+        from: lastUsedPreset,
+        to: currentPresetKey,
+      });
       lastUsedPreset = currentPresetKey;
     }
   }, [currentPresetKey]);
@@ -235,7 +239,7 @@ export function useChatSynth() {
   useEffect(() => {
     return () => {
       if (synthRef.current) {
-        console.log("Storing synth for reuse on unmount...");
+        log.debug("Storing synth for reuse on unmount");
         globalSynthRef = synthRef.current;
         // lastUsedPreset = currentPresetKey; // lastUsedPreset updated in changePreset
         // Do NOT disconnect the filter here; we want the synth to remain
@@ -261,7 +265,7 @@ export function useChatSynth() {
         ) {
           try {
             synthRef.current.synth.volume.value = -Infinity;
-            console.log("Forcing 'Off' preset volume to -Infinity");
+            log.debug("Forcing off preset volume to -Infinity");
           } catch (error) {
             console.error("Error setting volume to -Infinity:", error);
           }
@@ -269,7 +273,7 @@ export function useChatSynth() {
         return;
       }
 
-      console.log("Changing preset to", newPresetKey);
+      log.debug("Changing preset", { preset: newPresetKey });
 
       // Safely dispose of existing synth with delay for release tails
       if (synthRef.current) {
@@ -364,7 +368,6 @@ export function useChatSynth() {
 
     // Additional check for "off" preset or muted volume
     if (currentPresetKey === "off" || synth.volume.value === -Infinity) {
-      // console.debug("Skipping note: Synth is off or muted.");
       return;
     }
 
@@ -372,7 +375,9 @@ export function useChatSynth() {
     // @ts-expect-error - Accessing internal _voices property which is not in type definitions
     const activeVoices = synth._voices?.length || 0; // Access internal _voices array if available
     if (activeVoices >= VOICE_COUNT) {
-      console.debug(`Skipping note: Voice limit (${VOICE_COUNT}) reached.`);
+      log.debug("Skipping note; voice limit reached", {
+        voiceCount: VOICE_COUNT,
+      });
       return;
     }
 
@@ -386,10 +391,9 @@ export function useChatSynth() {
         lastNoteTimeRef.current = now;
       } catch (error) {
         // This catch might be less necessary with the active voice check, but kept for safety
-        console.debug("Skipping note due to timing or error:", error);
+        log.debug("Skipping note due to timing or error", error);
       }
     } else {
-      //console.debug("Skipping note: Minimum time between notes not met.");
     }
   }, [isAudioReady, vibrate, initializeAudio, currentPresetKey]); // Add initializeAudio dependency
 

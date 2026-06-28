@@ -36,6 +36,9 @@ import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("TextEdit");
 
 // Debounce window for mirroring the editor content into the persisted store on
 // each keystroke, plus a max wait so continuous typing still snapshots for
@@ -205,12 +208,10 @@ function TextEditContent({
       scheduleContentJsonPersist();
       if (!hasUnsavedChanges) {
         setHasUnsavedChanges(true);
-        console.log(
-          "[TextEdit] Content changed, marked as unsaved. Instance ID:",
+        log.debug("Content changed; marked as unsaved", {
           instanceId,
-          "Has path:",
-          !!currentFilePath
-        );
+          hasPath: Boolean(currentFilePath),
+        });
       }
     };
 
@@ -236,10 +237,10 @@ function TextEditContent({
       // Prioritize initialData passed from launch event
       const typedInitialData = initialData as TextEditInitialData;
       if (typedInitialData?.path && typedInitialData?.content !== undefined) {
-        console.log(
-          "[TextEdit] Loading content from initialData:",
-          typedInitialData.path
-        );
+        log.debug("Loading content from initialData", {
+          path: typedInitialData.path,
+          hasInlineContent: true,
+        });
         await handleLoadFromPath(
           typedInitialData.path,
           typedInitialData.content
@@ -253,10 +254,9 @@ function TextEditContent({
         typedInitialData?.content === undefined
       ) {
         // If a path was provided but no inline content, try loading from DB
-        console.log(
-          "[TextEdit] Loading content from database via initialData path:",
-          typedInitialData.path
-        );
+        log.debug("Loading content from database via initialData path", {
+          path: typedInitialData.path,
+        });
         await handleLoadFromDatabase(typedInitialData.path);
         clearInstanceInitialData(instanceId);
         return;
@@ -277,10 +277,9 @@ function TextEditContent({
   useEffect(() => {
     if (!editor || !instanceId) return;
     if (!contentJson && currentFilePath) {
-      console.log(
-        "[TextEdit] Restoring instance content from DB for path:",
-        currentFilePath
-      );
+      log.debug("Restoring instance content from DB", {
+        path: currentFilePath,
+      });
       handleLoadFromDatabase(currentFilePath);
     }
   }, [
@@ -314,7 +313,7 @@ function TextEditContent({
         try {
           const jsonContent = JSON.parse(e.detail.content);
           applyExternalUpdate(jsonContent);
-          console.log("Editor content merged from external source");
+          log.debug("Editor content merged from external source");
         } catch (error) {
           console.error("Failed to update editor content:", error);
         }
@@ -326,7 +325,7 @@ function TextEditContent({
         try {
           const jsonContent = JSON.parse(e.detail.content);
           applyExternalUpdate(jsonContent);
-          console.log("Editor content merged after document updated event");
+          log.debug("Editor content merged after document updated event");
         } catch (error) {
           console.error(
             t("apps.textedit.failedToUpdateEditorWithDocumentUpdatedEvent"),
@@ -353,10 +352,9 @@ function TextEditContent({
           );
           const changed = applyExternalUpdate(editorContent);
           if (changed) {
-            console.log(
-              "[TextEdit] Editor content merged from cloud/file sync:",
-              currentFilePath
-            );
+            log.debug("Editor content merged from cloud/file sync", {
+              path: currentFilePath,
+            });
           }
         } catch (error) {
           console.error(
@@ -400,7 +398,7 @@ function TextEditContent({
     try {
       mergeEditorContent(editor, contentJson);
       setHasUnsavedChanges(false);
-      console.log("[TextEdit] Editor content merged from store change");
+      log.debug("Editor content merged from store change");
     } catch (err) {
       console.error("[TextEdit] Failed to sync editor content:", err);
     }
@@ -430,7 +428,7 @@ function TextEditContent({
   const handleNewFile = () => {
     const newInstanceId = launchAppInstance("textedit", null, t("apps.textedit.untitled"), true);
     track(TEXTEDIT_ANALYTICS.NEW_DOCUMENT, { appId: "textedit" });
-    console.log(`Created new TextEdit file in instance: ${newInstanceId}`);
+    log.debug("Created new TextEdit file", { instanceId: newInstanceId });
   };
 
   const createNewFile = () => {

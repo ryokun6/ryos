@@ -17,6 +17,9 @@ import {
   normalizeUrlForAnalytics,
   track,
 } from "@/utils/analytics";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("InternetExplorer");
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -195,7 +198,7 @@ export function useAiGeneration({
         addToHistory: true,
       });
 
-      console.log(`[IE] AI generation complete (onFinish)`);
+      log.debug("AI generation complete");
     } else {
       console.error(
         "[IE] Could not retrieve URL/Year from refs in onFinish handler."
@@ -262,7 +265,7 @@ export function useAiGeneration({
       return text.slice(0, 4000);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
-        console.log("Fetch operation was aborted");
+        log.debug("Existing website content fetch aborted");
         return null;
       }
       console.warn("Failed to fetch existing website content:", err);
@@ -484,7 +487,7 @@ IMPORTANT NAVIGATION CONTEXT:
       });
     } catch (error: unknown) {
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("AI generation was aborted");
+        log.debug("AI generation aborted");
         return;
       }
       console.error("Failed to generate futuristic website:", error);

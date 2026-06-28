@@ -28,6 +28,9 @@ import type {
   BooksLibraryEntry,
   BookOriginRect,
 } from "../hooks/useBooksLogic";
+import { createClientLogger } from "@/utils/logger";
+
+const booksLog = createClientLogger("BooksReader");
 
 interface BooksReaderPaneProps {
   entry: BooksLibraryEntry;
@@ -308,13 +311,13 @@ export const BooksReaderPane = forwardRef<
     (step: string, data?: unknown, level: BooksDebugLevel = "info") => {
       if (!displayDebugModeRef.current) return;
       const debugData = serializeDebugValue(data);
-      const log =
-        level === "error"
-          ? console.error
-          : level === "warn"
-            ? console.warn
-            : console.log;
-      log("[BooksReader]", step, debugData);
+      if (level === "error") {
+        booksLog.error(step, debugData);
+      } else if (level === "warn") {
+        booksLog.warn(step, debugData);
+      } else {
+        booksLog.debug(step, debugData);
+      }
     },
     []
   );

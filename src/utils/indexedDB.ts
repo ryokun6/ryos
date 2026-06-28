@@ -1,8 +1,11 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
+import { createClientLogger } from "@/utils/logger";
+
 const DB_NAME = "ryOS";
 const DB_VERSION = 12;
 let hasLoggedOpenSuccess = false;
+const log = createClientLogger("IndexedDB");
 
 const summarizeIndexedDBLogValue = (value: unknown): string => {
   if (value === undefined) return "undefined";
@@ -78,10 +81,9 @@ export const ensureIndexedDBInitialized = async (): Promise<IDBDatabase> => {
       const db = request.result;
       if (!hasLoggedOpenSuccess) {
         hasLoggedOpenSuccess = true;
-        console.log(
-          `[IndexedDB] Database opened successfully. Object stores:`,
-          Array.from(db.objectStoreNames)
-        );
+        log.debug("Database opened successfully", {
+          objectStores: Array.from(db.objectStoreNames),
+        });
       }
       resolve(db);
     };
@@ -90,36 +92,34 @@ export const ensureIndexedDBInitialized = async (): Promise<IDBDatabase> => {
       const db = (evt.target as IDBOpenDBRequest).result;
       const oldVersion = evt.oldVersion;
 
-      console.log(
-        `[IndexedDB] Upgrading from version ${oldVersion} to ${DB_VERSION}`
-      );
+      log.debug("Upgrading database", {
+        fromVersion: oldVersion,
+        toVersion: DB_VERSION,
+      });
 
       // Create or recreate stores without keyPath for UUID-based keys
       Object.values(STORES).forEach((storeName) => {
         if (db.objectStoreNames.contains(storeName)) {
           // For version 5 upgrade: recreate stores without keyPath
           if (oldVersion < 5) {
-            console.log(
-              `[IndexedDB] Recreating store ${storeName} without keyPath for UUID keys`
-            );
+            log.debug("Recreating store without keyPath", { storeName });
             db.deleteObjectStore(storeName);
           }
         }
 
         // Create store without keyPath (we'll use UUID as key)
         if (!db.objectStoreNames.contains(storeName)) {
-          console.log(`[IndexedDB] Creating store ${storeName}`);
+          log.debug("Creating store", { storeName });
           db.createObjectStore(storeName);
-          console.log(`[IndexedDB] Store ${storeName} created successfully`);
+          log.debug("Store created successfully", { storeName });
         } else {
-          console.log(`[IndexedDB] Store ${storeName} already exists`);
+          log.debug("Store already exists", { storeName });
         }
       });
 
-      console.log(
-        `[IndexedDB] Upgrade complete. Final stores:`,
-        Array.from(db.objectStoreNames)
-      );
+      log.debug("Upgrade complete", {
+        objectStores: Array.from(db.objectStoreNames),
+      });
     };
   });
 };
@@ -153,9 +153,7 @@ export const dbOperations = {
   },
 
   async get<T>(storeName: string, key: string): Promise<T | undefined> {
-    console.log(
-      `[dbOperations] Getting key "${key}" from store "${storeName}"`
-    );
+    log.debug("Getting item", { storeName, key });
     const db = await ensureIndexedDBInitialized();
     return new Promise((resolve, reject) => {
       try {
@@ -164,9 +162,11 @@ export const dbOperations = {
         const request = store.get(key);
 
         request.onsuccess = () => {
-          console.log(
-            `[dbOperations] Get success for key "${key}". Result: ${summarizeIndexedDBLogValue(request.result)}`
-          );
+          log.debug("Get succeeded", {
+            storeName,
+            key,
+            resultSummary: summarizeIndexedDBLogValue(request.result),
+          });
           db.close();
           resolve(request.result);
         };

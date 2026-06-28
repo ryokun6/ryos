@@ -10,6 +10,9 @@ import { ClockCounterClockwise, MagnifyingGlass } from "@phosphor-icons/react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import type { InternetExplorerSuggestionItem } from "./types";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("InternetExplorer");
 
 export interface InternetExplorerUrlBarProps {
   urlInputRef: RefObject<HTMLInputElement | null>;
@@ -149,7 +152,7 @@ export function InternetExplorerUrlBar({
               try {
                 urlInputRef.current?.select();
               } catch (e) {
-                console.debug("[IE] Could not select input text:", e);
+                log.debug("Could not select input text", e);
               }
             }, 0);
           }

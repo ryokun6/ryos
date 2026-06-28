@@ -25,6 +25,11 @@ import {
   fetchAutoSyncPreferenceFromServer,
   persistAutoSyncPreferenceToServer,
 } from "../src/utils/autoSyncPreference";
+import {
+  summarizeDirtyScope,
+  summarizeSyncOps,
+} from "../src/sync/logging";
+import type { SyncOp } from "../src/shared/sync2/types";
 
 /**
  * Cloud Sync v2 codec round-trips: collect must decompose store state into
@@ -581,6 +586,46 @@ describe("cloud sync store", () => {
         t
       )
     ).toBe("Never uploaded · Fetching 58%");
+  });
+});
+
+describe("cloud sync logging summaries", () => {
+  test("summarizes ops without exposing keys or payloads", () => {
+    const ops: SyncOp[] = [
+      {
+        k: "stickies/note:secret-note-id",
+        v: { id: "secret-note-id", content: "private text" },
+        t,
+      },
+      {
+        k: "calendar/event:secret-event-id",
+        del: true,
+        t,
+      },
+    ];
+    const summary = summarizeSyncOps(ops);
+
+    expect(summary).toEqual({
+      total: 2,
+      upserts: 1,
+      deletions: 1,
+      namespaces: [
+        { namespace: "calendar", total: 1, upserts: 0, deletions: 1 },
+        { namespace: "stickies", total: 1, upserts: 1, deletions: 0 },
+      ],
+    });
+    expect(JSON.stringify(summary)).not.toContain("secret-note-id");
+    expect(JSON.stringify(summary)).not.toContain("private text");
+    expect(JSON.stringify(summary)).not.toContain("secret-event-id");
+  });
+
+  test("summarizes dirty scopes by size only", () => {
+    expect(summarizeDirtyScope(null)).toEqual({ scope: "full" });
+    const summary = summarizeDirtyScope(
+      new Set(["files/doc:/Private.md", "files/doc:/AlsoPrivate.md"])
+    );
+    expect(summary).toEqual({ scope: "keys", keyCount: 2 });
+    expect(JSON.stringify(summary)).not.toContain("Private.md");
   });
 });
 

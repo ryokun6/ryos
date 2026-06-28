@@ -2,6 +2,9 @@ import type { MouseEvent, TouchEvent } from "react";
 import { toast } from "sonner";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { extractYouTubeVideoId, isTouchDevice, isYouTubeUrl } from "../utils";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("LinkPreview");
 
 export function useLinkPreviewClick(url: string) {
   const launchApp = useLaunchApp();
@@ -18,9 +21,7 @@ export function useLinkPreviewClick(url: string) {
         try {
           const videoId = extractYouTubeVideoId(url);
           if (videoId) {
-            console.log(
-              `[LinkPreview] Adding iPod link to iPod with videoId: ${videoId}`
-            );
+            log.debug("Opening iPod link", { videoId });
             launchApp("ipod", { initialData: { videoId } });
           } else {
             toast.error("Could not extract video ID from this iPod URL");
@@ -34,9 +35,7 @@ export function useLinkPreviewClick(url: string) {
         try {
           const videoId = extractYouTubeVideoId(url);
           if (videoId) {
-            console.log(
-              `[LinkPreview] Adding Karaoke link to Karaoke with videoId: ${videoId}`
-            );
+            log.debug("Opening Karaoke link", { videoId });
             launchApp("karaoke", { initialData: { videoId } });
           } else {
             toast.error("Could not extract video ID from this Karaoke URL");
@@ -50,9 +49,7 @@ export function useLinkPreviewClick(url: string) {
         try {
           const videoId = extractYouTubeVideoId(url);
           if (videoId) {
-            console.log(
-              `[LinkPreview] Launching Videos app with videoId: ${videoId}`
-            );
+            log.debug("Opening Videos link", { videoId });
             launchApp("videos", { initialData: { videoId } });
           } else {
             console.warn(

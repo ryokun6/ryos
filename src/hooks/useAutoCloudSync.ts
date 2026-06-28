@@ -21,6 +21,7 @@ import {
   type SyncOpsRealtimeEvent,
 } from "@/shared/sync2/types";
 import { createCloudSyncEngine, destroyCloudSyncEngine } from "@/sync/engine";
+import { cloudSyncLog, summarizeSyncOps } from "@/sync/logging";
 
 // Realtime delivers changes; polling is only a safety net for missed events.
 const POLL_INTERVAL_CONNECTED_MS = 30 * 60 * 1000;
@@ -48,6 +49,10 @@ export function useAutoCloudSync() {
   // Adopt the cross-device Auto Sync preference on login.
   useEffect(() => {
     if (!username || !isAuthenticated) {
+      cloudSyncLog.debug("Auto Sync availability check skipped", {
+        hasUsername: Boolean(username),
+        isAuthenticated,
+      });
       setSyncApiAvailable(false);
       return;
     }
@@ -58,10 +63,14 @@ export function useAutoCloudSync() {
     const checkAvailability = async () => {
       if (checking || cancelled) return;
       checking = true;
+      cloudSyncLog.debug("Checking Auto Sync API availability");
       const result = await fetchAutoSyncPreferenceFromServer();
       checking = false;
       if (cancelled) return;
       if (!result.ok) {
+        cloudSyncLog.warn("Auto Sync API unavailable; retry scheduled", {
+          retryMs: API_AVAILABILITY_RETRY_MS,
+        });
         setSyncApiAvailable(false);
         retryTimer = setTimeout(
           () => void checkAvailability(),
@@ -70,6 +79,10 @@ export function useAutoCloudSync() {
         return;
       }
       setSyncApiAvailable(true);
+      cloudSyncLog.debug("Auto Sync API available", {
+        shouldApplyServerPreference: result.apply,
+        serverEnabled: result.apply ? result.enabled : undefined,
+      });
       if (result.apply) {
         useCloudSyncStore
           .getState()
@@ -106,10 +119,15 @@ export function useAutoCloudSync() {
 
   useEffect(() => {
     if (!isSyncActive || !username) {
+      cloudSyncLog.debug("Auto Sync inactive; destroying engine", {
+        hasUsername: Boolean(username),
+        isSyncActive,
+      });
       destroyCloudSyncEngine();
       return;
     }
 
+    cloudSyncLog.debug("Starting Cloud Sync engine", { username });
     const engine = createCloudSyncEngine(username, {
       onError: (error) => useCloudSyncStore.getState().setLastError(error),
     });
@@ -118,6 +136,10 @@ export function useAutoCloudSync() {
     const unsubscribeChanges = subscribeToCloudSyncDomainChanges(
       (namespace, keys) => {
         if (engine.isApplyingNamespace(namespace)) return;
+        cloudSyncLog.debug("Domain change marked dirty", {
+          namespace,
+          keyCount: keys?.size ?? 0,
+        });
         engine.markDirty(namespace, keys);
       }
     );
@@ -125,9 +147,13 @@ export function useAutoCloudSync() {
     const unsubscribeChecks = subscribeToCloudSyncCheckRequests(() => {
       const now = Date.now();
       if (now - lastExplicitCheckRef.current < EXPLICIT_CHECK_COOLDOWN_MS) {
+        cloudSyncLog.debug("Explicit sync check skipped by cooldown", {
+          cooldownMs: EXPLICIT_CHECK_COOLDOWN_MS,
+        });
         return;
       }
       lastExplicitCheckRef.current = now;
+      cloudSyncLog.debug("Explicit sync check requested");
       void engine.pull();
       engine.schedulePendingFlush();
     });
@@ -136,6 +162,11 @@ export function useAutoCloudSync() {
     const channelName = getSyncChannelName(username);
     const channel = subscribePusherChannel(channelName);
     const realtimeHandler = (payload: SyncOpsRealtimeEvent) => {
+      cloudSyncLog.debug("Realtime sync event received", {
+        seq: payload.seq,
+        clientId: payload.c,
+        ops: payload.ops ? summarizeSyncOps(payload.ops) : undefined,
+      });
       engine.handleRealtimeEvent(payload);
     };
     channel.bind(SYNC_OPS_REALTIME_EVENT, realtimeHandler);
@@ -144,17 +175,23 @@ export function useAutoCloudSync() {
     const checkOnWake = () => {
       const now = Date.now();
       if (now - lastVisibilityCheckRef.current < VISIBILITY_CHECK_COOLDOWN_MS) {
+        cloudSyncLog.debug("Wake sync check skipped by cooldown", {
+          cooldownMs: VISIBILITY_CHECK_COOLDOWN_MS,
+        });
         return;
       }
       lastVisibilityCheckRef.current = now;
+      cloudSyncLog.debug("Wake sync check requested");
       void engine.pull();
       engine.schedulePendingFlush();
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
+        cloudSyncLog.debug("Document visible; checking sync");
         checkOnWake();
       } else {
         // Flush pending changes before the tab may be discarded.
+        cloudSyncLog.debug("Document hidden; flushing pending sync changes");
         void engine.flush();
       }
     };
@@ -172,17 +209,21 @@ export function useAutoCloudSync() {
           ? POLL_INTERVAL_CONNECTED_MS
           : POLL_INTERVAL_DISCONNECTED_MS;
       pollTimer = setInterval(() => {
+        cloudSyncLog.debug("Periodic sync poll triggered", { pollMs });
         void engine.pull();
         engine.schedulePendingFlush();
       }, pollMs);
+      cloudSyncLog.debug("Periodic sync poll scheduled", { pollMs });
     };
     startPolling();
 
     const unsubscribeConnection = subscribeRealtimeConnection((state) => {
+      cloudSyncLog.debug("Realtime connection state changed", { state });
       if (state === "connected") {
         if (reconnectTimer) clearTimeout(reconnectTimer);
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null;
+          cloudSyncLog.debug("Realtime reconnect catch-up triggered");
           void engine.pull();
           engine.schedulePendingFlush();
         }, RECONNECT_CATCHUP_DEBOUNCE_MS);
@@ -193,6 +234,7 @@ export function useAutoCloudSync() {
     });
 
     return () => {
+      cloudSyncLog.debug("Stopping Cloud Sync engine", { username });
       unsubscribeChanges();
       unsubscribeChecks();
       unsubscribeConnection();

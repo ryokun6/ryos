@@ -405,16 +405,6 @@ export function useControlPanelsLogic({
 
   // Password status is now automatically checked by the store when username/token changes
 
-  // Debug hasPassword value
-  useEffect(() => {
-    console.log(
-      "[ControlPanel] hasPassword value:",
-      hasPassword,
-      "type:",
-      typeof hasPassword
-    );
-  }, [hasPassword]);
-
   const handleSetPassword = async (
     password: string,
     currentPassword?: string

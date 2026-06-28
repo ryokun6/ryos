@@ -41,6 +41,7 @@ import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createClientLogger } from "@/utils/logger";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import { shouldShowNativeToastNotification } from "@/utils/nativeToastNotifications";
@@ -80,6 +81,8 @@ import {
   type TvControlInput,
 } from "../tools";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
+
+const log = createClientLogger("AIChat");
 
 async function storedContentToText(
   content: DocumentContent["content"]
@@ -294,10 +297,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Short delay to allow the UI to render the "call" state
       await new Promise<void>((resolve) => setTimeout(resolve, 120));
 
-      console.log(
-        `[onToolCall] Executing client-side tool: ${toolCall.toolName}`,
-        toolCall,
-      );
+      log.debug("Executing client-side tool", {
+        toolName: toolCall.toolName,
+        toolCallId: toolCall.toolCallId,
+      });
 
       // Create tool context for extracted handlers
       const toolContext: ToolContext = {
@@ -310,7 +313,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         let result: string = "Tool executed successfully";
 
         if (SERVER_EXECUTED_TOOL_NAME_SET.has(toolCall.toolName)) {
-          console.log(`[ToolCall] ${toolCall.toolName} (server-side):`, toolCall.input);
+          log.debug("Server-side tool call observed", {
+            toolName: toolCall.toolName,
+            input: toolCall.input,
+          });
           return;
         }
 
@@ -373,7 +379,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            console.log("[ToolCall] list:", { path, query, limit });
+            log.debug("Tool list", { path, query, limit });
 
             try {
               // Route based on path
@@ -628,7 +634,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            console.log("[ToolCall] open:", { path });
+            log.debug("Tool open", { path });
 
             try {
               // Route based on path prefix
@@ -848,7 +854,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            console.log("[ToolCall] read:", { path });
+            log.debug("Tool read", { path });
 
             try {
               if (path.startsWith("/Applets Store/")) {
@@ -992,7 +998,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
+            log.debug("Tool write", { path, mode, contentLength: content?.length });
 
             try {
               const appStore = useAppStore.getState();
@@ -1106,7 +1112,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            console.log("[ToolCall] edit:", { path, old_string: old_string.substring(0, 50) + "...", new_string: new_string.substring(0, 50) + "..." });
+            log.debug("Tool edit", {
+              path,
+              oldStringLength: old_string.length,
+              newStringLength: new_string.length,
+            });
 
             // Normalize line endings
             const normalizedOldString = old_string.replace(/\r\n?/g, "\n");
@@ -1349,10 +1359,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
 
         if (result) {
-          console.log(
-            `[onToolCall] Adding result for ${toolCall.toolName}:`,
-            result,
-          );
+          log.debug("Adding client-side tool result", {
+            toolName: toolCall.toolName,
+            toolCallId: toolCall.toolCallId,
+            resultLength: result.length,
+          });
           addToolOutput({
             tool: toolCall.toolName,
             toolCallId: toolCall.toolCallId,
@@ -1386,9 +1397,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             },
           }) as AIChatMessage,
       );
-      console.log(
-        `AI finished, syncing ${finalMessages.length} final messages to store.`,
-      );
+      log.debug("AI finished, syncing messages", {
+        messageCount: finalMessages.length,
+      });
       setAiMessages(finalMessages);
 
       const lastMsg = finalMessages.at(-1);
@@ -1411,9 +1422,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             SERVER_EXECUTED_TOOL_NAME_SET.has((part.type as string).replace(/^tool-/, "")),
         );
         if (toolParts.length > 0) {
-          console.log(
-            `[onFinish] isError recovery: re-affirming ${toolParts.length} server-side tool output(s) to trigger sendAutomaticallyWhen`,
-          );
+          log.debug("Re-affirming server-side tool outputs after stream error", {
+            toolPartCount: toolParts.length,
+          });
           for (const part of toolParts) {
             const tp = part as {
               type: string;
@@ -1711,7 +1722,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Proceed with the actual submission using useChat v5
       const freshSystemState = getSystemState();
-      console.log("Submitting AI chat with system state:", freshSystemState);
+      log.debug("Submitting AI chat", {
+        model: aiModel,
+        hasImage: Boolean(imageContent),
+        systemStateSummary: {
+          username: Boolean(freshSystemState.username),
+          foregroundApp: freshSystemState.runningApps.foreground?.appId ?? null,
+          backgroundAppCount: freshSystemState.runningApps.background.length,
+          textEditInstanceCount: freshSystemState.textEdit.instances.length,
+          hasInternetExplorerMarkdown: Boolean(
+            freshSystemState.internetExplorer.aiGeneratedMarkdown
+          ),
+          hasIpodLyrics: Boolean(freshSystemState.ipod.currentLyrics),
+        },
+      });
 
       // Host iframe: delegate planning to parent when available (no image path)
       if (!imageContent) {
@@ -1817,7 +1841,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       // Proceed with the actual submission using useChat v5
-      console.log("Sending direct message to AI chat");
+      log.debug("Sending direct message to AI chat", { model: aiModel });
       sendMessage(
         {
           text: message,
@@ -1842,7 +1866,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [handleDirectMessageSubmit, t]);
 
   const clearChats = useCallback(() => {
-    console.log("Clearing AI chats");
+    log.debug("Clearing AI chats", { messageCount: aiMessages.length });
 
     // --- Extract memories before clearing (async, fire and forget) ---
     // Capture current messages before we clear them
@@ -1852,7 +1876,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
     // Only extract if user is logged in and there are messages worth analyzing
     if (currentUsername && isAuthenticated && messagesToAnalyze.length > 2) {
-      console.log("[clearChats] Triggering async memory extraction...");
+      log.debug("Triggering async memory extraction", {
+        messageCount: messagesToAnalyze.length,
+      });
 
       abortableFetch(getApiUrl("/api/ai/extract-memories"), {
         method: "POST",
@@ -1881,9 +1907,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         .then(res => res.json())
         .then(data => {
           if (data.extracted > 0) {
-            console.log(`[clearChats] Extracted ${data.extracted} memories from conversation`);
+            log.debug("Extracted memories from conversation", {
+              extracted: data.extracted,
+            });
           } else {
-            console.log("[clearChats] No memories extracted:", data.message);
+            log.debug("No memories extracted", {
+              hasMessage: Boolean(data.message),
+            });
           }
         })
         .catch(err => {

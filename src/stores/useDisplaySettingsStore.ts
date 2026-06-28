@@ -17,6 +17,7 @@ import {
   isDynamicWallpaper,
   resolveWallpaperSourceForSelection,
 } from "@/utils/dynamicWallpaper";
+import { setRuntimeDebugEnabled } from "@/utils/debug";
 
 /** Default desktop wallpaper selection. */
 export const DEFAULT_WALLPAPER_PATH = buildShuffleDescriptor("nature");
@@ -342,7 +343,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
 
       // Debug mode
       debugMode: false,
-      setDebugMode: (enabled) => set({ debugMode: enabled }),
+      setDebugMode: (enabled) => {
+        setRuntimeDebugEnabled(enabled);
+        set({ debugMode: enabled });
+      },
 
       // Show resizers (debug sub-setting)
       showResizers: false,
@@ -372,6 +376,9 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         showResizers: state.showResizers,
         htmlPreviewSplit: state.htmlPreviewSplit,
       }),
+      onRehydrateStorage: () => (state) => {
+        setRuntimeDebugEnabled(Boolean(state?.debugMode));
+      },
       merge: (persistedState, currentState) => {
         const merged = {
           ...currentState,

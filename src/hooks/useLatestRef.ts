@@ -22,7 +22,7 @@ import { useRef, type MutableRefObject } from "react";
  *
  * // Use in callbacks without stale closure issues
  * const handleClick = useCallback(() => {
- *   console.log('Current count:', countRef.current);
+ *   handleCount(countRef.current);
  * }, []); // No need to include count in deps
  */
 export function useLatestRef<T>(value: T): MutableRefObject<T> {

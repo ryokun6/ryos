@@ -16,6 +16,9 @@ import {
   listSongs,
   updateSongById,
 } from "@/api/songs";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("SongMetadataCache");
 
 const BULK_IMPORT_BATCH_SIZE = 100;
 const BULK_IMPORT_MAX_PAYLOAD_BYTES = 3_500_000;
@@ -242,7 +245,7 @@ export async function getCachedSongMetadata(
       const data = await getSongById<UnifiedSongDocument>(youtubeId, {
         include: "metadata",
       });
-      console.log(`[SongMetadataCache] Cache HIT for ${youtubeId}`);
+      log.debug("Cache hit", { youtubeId });
       const metadata = unifiedToMetadata(data);
       // Only memoize hits — a miss (song not imported yet) should be
       // re-checked next time, e.g. right after an import completes.
@@ -250,7 +253,7 @@ export async function getCachedSongMetadata(
       return metadata;
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 404) {
-        console.log(`[SongMetadataCache] Cache MISS for ${youtubeId}`);
+        log.debug("Cache miss", { youtubeId });
         return null;
       }
       console.error(`[SongMetadataCache] Error fetching metadata for ${youtubeId}:`, error);
@@ -277,7 +280,7 @@ export async function listAllCachedSongMetadata(createdBy?: string): Promise<Cac
       createdBy,
     });
     const songs = data.songs?.map(unifiedToMetadata) || [];
-    console.log(`[SongMetadataCache] Listed ${songs.length} songs${createdBy ? ` (by ${createdBy})` : ""}`);
+    log.debug("Listed songs", { count: songs.length, createdBy });
     return songs;
   } catch (error) {
     console.error(`[SongMetadataCache] Error listing metadata:`, error);
@@ -303,7 +306,7 @@ export async function deleteSongMetadata(
       username: auth.username,
       isAuthenticated: auth.isAuthenticated,
     });
-    console.log(`[SongMetadataCache] Deleted metadata for ${youtubeId}`);
+    log.debug("Deleted metadata", { youtubeId });
     return true;
   } catch (error) {
     if (error instanceof ApiRequestError) {
@@ -337,12 +340,12 @@ export async function deleteAllSongMetadata(
   auth: SongMetadataAuthCredentials
 ): Promise<{ success: number; total: number }> {
   try {
-    console.log(`[SongMetadataCache] Deleting all songs...`);
+    log.debug("Deleting all songs");
     const data = await deleteAllSongs({
       username: auth.username,
       isAuthenticated: auth.isAuthenticated,
     });
-    console.log(`[SongMetadataCache] Deleted ${data.deleted} songs`);
+    log.debug("Deleted all songs", { deleted: data.deleted });
     return { success: data.deleted, total: data.deleted };
   } catch (error) {
     if (error instanceof ApiRequestError) {
@@ -403,9 +406,11 @@ export async function saveSongMetadata(
         isAuthenticated: auth.isAuthenticated,
       }
     );
-    console.log(
-      `[SongMetadataCache] ${data.isUpdate ? "Updated" : "Saved"} metadata for ${metadata.youtubeId} (by ${data.createdBy || auth.username})`
-    );
+    log.debug("Saved metadata", {
+      youtubeId: metadata.youtubeId,
+      isUpdate: data.isUpdate,
+      createdBy: data.createdBy || auth.username,
+    });
     return true;
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 401) {
@@ -698,9 +703,7 @@ export async function bulkImportSongMetadata(
       }
     }
 
-    console.log(
-      `[SongMetadataCache] Imported ${imported} new, updated ${updated}, total ${total}`
-    );
+    log.debug("Imported metadata batch", { imported, updated, total });
     reportProgress({
       stage: "complete",
       batchIndex: batches.length,
@@ -759,7 +762,7 @@ export async function saveSongMetadataFromTrack(
 ): Promise<boolean> {
   // Skip if not authenticated
   if (!auth || !auth.isAuthenticated) {
-    console.log(`[SongMetadataCache] Skipping save for ${track.id} - user not logged in`);
+    log.debug("Skipping save; user not logged in", { trackId: track.id });
     return false;
   }
 

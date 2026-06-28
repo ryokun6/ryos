@@ -14,6 +14,9 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "../TimeNavigationControls";
 import type { ShaderOption } from "./types";
 import type { useTimeMachineView } from "./useTimeMachineView";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("TimeMachine");
 
 export type TimeMachineViewVm = ReturnType<typeof useTimeMachineView>;
 
@@ -206,9 +209,9 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                                               sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
                                               title={`Preview for ${vm.previewYear}`}
                                               onLoad={() => {
-                                                console.log(
-                                                  `[TimeMachine] iframe for ${vm.previewYear} loaded.`
-                                                );
+                                                log.debug("Preview iframe loaded", {
+                                                  year: vm.previewYear,
+                                                });
                                                 vm.setIsIframeLoaded(true);
                                               }}
                                               onError={() => {

@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 import type { UIMessage } from "@ai-sdk/react";
 import type { AIChatMessage } from "@/types/chat";
 import { resolveAiMessageSync } from "../utils/proactiveGreetingApply";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("AIChat");
 
 interface UseSyncedAiMessagesOptions {
   aiMessages: AIChatMessage[];
@@ -26,7 +29,9 @@ export function useSyncedAiMessages({
         setMessages(decision.messages);
         return;
       case "sync":
-        console.log("Syncing Zustand store messages to SDK.");
+        log.debug("Syncing Zustand store messages to SDK", {
+          messageCount: aiMessages.length,
+        });
         setMessages(aiMessages);
         return;
       case "skip":

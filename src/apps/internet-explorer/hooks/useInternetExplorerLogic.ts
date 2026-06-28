@@ -31,6 +31,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStore";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createClientLogger } from "@/utils/logger";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import {
@@ -49,9 +50,11 @@ import {
   urlBarUiInitialState,
 } from "../utils/urlBarUiReducer";
 
+const log = createClientLogger("InternetExplorer");
+
 // Debug helper to identify direct passthrough URLs
 const logDirectPassthrough = (url: string) => {
-  console.log(`[IE] Direct passthrough mode for: ${url}`);
+  log.debug("Direct passthrough mode", { url });
 };
 
 interface UseInternetExplorerLogicProps {
@@ -476,11 +479,10 @@ export function useInternetExplorerLogic({
           const fallbackHostname = getHostnameFromUrl(url);
           newTitle = formatTitle(fallbackHostname);
         } catch {
-          console.debug(
-            "[IE] Failed to parse both finalUrl and url for title:",
-            finalUrl,
-            url
-          );
+          log.debug("Failed to parse URL for title", {
+            hasFinalUrl: Boolean(finalUrl),
+            hasUrl: Boolean(url),
+          });
           newTitle = "Internet Explorer";
         }
       }
@@ -495,9 +497,7 @@ export function useInternetExplorerLogic({
     const formattedUrl = targetUrl.startsWith("http")
       ? targetUrl
       : `https://${targetUrl}`;
-    console.log(
-      `[IE] Using Wayback Machine URL for ${formattedUrl} in ${year}`
-    );
+    log.debug("Using Wayback Machine URL", { url: formattedUrl, year });
     const themeParam =
       typeof currentTheme === "string"
         ? `&theme=${encodeURIComponent(currentTheme)}`
@@ -537,10 +537,10 @@ export function useInternetExplorerLogic({
                   potentialErrorData.error === true &&
                   potentialErrorData.type
                 ) {
-                  console.log(
-                    "[IE] Detected JSON error response in iframe body:",
-                    potentialErrorData
-                  );
+                  log.debug("Detected JSON error response in iframe body", {
+                    type: potentialErrorData.type,
+                    status: potentialErrorData.status,
+                  });
                   track(IE_ANALYTICS.NAVIGATION_ERROR, {
                     ...normalizeUrlForAnalytics(iframeSrc),
                     type: potentialErrorData.type,
@@ -562,10 +562,10 @@ export function useInternetExplorerLogic({
             if (text) {
               const errorData = JSON.parse(text) as ErrorResponse;
               if (errorData.error) {
-                console.log(
-                  "[IE] Detected error response (via content-type check):",
-                  errorData
-                );
+                log.debug("Detected JSON error response via content-type", {
+                  type: errorData.type,
+                  status: errorData.status,
+                });
                 track(IE_ANALYTICS.NAVIGATION_ERROR, {
                   ...normalizeUrlForAnalytics(iframeSrc),
                   type: errorData.type,
@@ -772,9 +772,10 @@ export function useInternetExplorerLogic({
           let remoteCacheHit = false;
           if (!forceRegenerate) {
             try {
-              console.log(
-                `[IE] Checking REMOTE cache for ${normalizedTargetUrl} in ${targetYearParam}...`
-              );
+              log.debug("Checking remote cache", {
+                url: normalizedTargetUrl,
+                year: targetYearParam,
+              });
               const res = await abortableFetch(
                 `/api/iframe-check?mode=ai&url=${encodeURIComponent(
                   normalizedTargetUrl
@@ -787,11 +788,11 @@ export function useInternetExplorerLogic({
                 }
               );
               if (abortController.signal.aborted) return;
-              console.log(
-                `[IE] Remote cache response status: ${res.status}, ok: ${
-                  res.ok
-                }, content-type: ${res.headers.get("content-type")}`
-              );
+              log.debug("Remote cache response", {
+                status: res.status,
+                ok: res.ok,
+                contentType: res.headers.get("content-type"),
+              });
 
               if (
                 res.ok &&
@@ -799,9 +800,7 @@ export function useInternetExplorerLogic({
               ) {
                 remoteCacheHit = true;
                 const html = await res.text();
-                console.log(
-                  `[IE] REMOTE cache HIT. Processing content (length: ${html.length})`
-                );
+                log.debug("Remote cache hit", { htmlLength: html.length });
                 const titleMatch = html.match(/^<!--\s*TITLE:\s*(.*?)\s*-->/);
                 const parsedTitle = titleMatch ? titleMatch[1].trim() : null;
                 const cleanHtml = html.replace(
@@ -824,10 +823,10 @@ export function useInternetExplorerLogic({
                   favicon,
                   addToHistory: true,
                 });
-                console.log("[IE] Returning early after remote cache hit.");
+                log.debug("Returning early after remote cache hit");
                 return;
               } else {
-                console.log(`[IE] REMOTE cache MISS or invalid response.`);
+                log.debug("Remote cache miss or invalid response");
               }
             } catch (e) {
               if (e instanceof Error && e.name === "AbortError") return;
@@ -842,9 +841,10 @@ export function useInternetExplorerLogic({
             return;
           }
 
-          console.log(
-            `[IE] No cache hit (Remote: ${remoteCacheHit}, Force: ${forceRegenerate}). Proceeding to generate...`
-          );
+          log.debug("No cache hit; proceeding to generate", {
+            remoteCacheHit,
+            forceRegenerate,
+          });
           if (playElevatorMusic && terminalSoundsEnabled) {
             playElevatorMusic(newMode);
           }
@@ -1341,10 +1341,11 @@ export function useInternetExplorerLogic({
     if (!initialNavigationRef.current && isWindowOpen) {
       initialNavigationRef.current = true;
       let shouldRunDefaultNavigation = true;
-      console.log(
-        "[IE] Running initial navigation check. Received initialData:",
-        initialData
-      );
+      log.debug("Running initial navigation check", {
+        hasInitialData: Boolean(initialData),
+        hasShareCode: Boolean(initialData?.shareCode),
+        hasUrl: Boolean(initialData?.url),
+      });
 
       // Check if initialData contains a shareCode (passed via props on first open)
       if (initialData?.shareCode) {
@@ -1352,9 +1353,10 @@ export function useInternetExplorerLogic({
         const decodedData = decodeData(code);
 
         if (decodedData) {
-          console.log(
-            `[IE] Decoded share link from initialData prop: ${decodedData.url} (${decodedData.year})`
-          );
+          log.debug("Decoded share link from initialData prop", {
+            url: decodedData.url,
+            year: decodedData.year,
+          });
           toast.info(`Opening shared page`, {
             description: `${decodedData.url}${
               decodedData.year && decodedData.year !== "current"
@@ -1395,9 +1397,10 @@ export function useInternetExplorerLogic({
           typeof initialData.year === "string"
             ? initialData.year
             : "current"; // Default to 'current' if year is missing or invalid
-        console.log(
-          `[IE] Navigating based on initialData url/year: ${initialUrl} (${initialYear})`
-        );
+        log.debug("Navigating from initialData url/year", {
+          url: initialUrl,
+          year: initialYear,
+        });
 
         // --- FIX: Update store state BEFORE navigating and pass values directly ---
         setUrl(initialUrl);
@@ -1418,7 +1421,7 @@ export function useInternetExplorerLogic({
 
       // Proceed with default navigation if no initialData navigation was queued
       if (shouldRunDefaultNavigation) {
-        console.log("[IE] Proceeding with default navigation.");
+        log.debug("Proceeding with default navigation");
         handleNavigate(url, year, false);
       }
     }
@@ -1446,10 +1449,10 @@ export function useInternetExplorerLogic({
 
     // Only process if this is NOT the initial mount (initial navigation has already happened)
     if (initialNavigationRef.current === true) {
-      console.log(
-        "[IE] Detected initialData change for open window:",
-        initialData
-      );
+      log.debug("Detected initialData change for open window", {
+        hasShareCode: Boolean((initialData as InternetExplorerInitialData).shareCode),
+        hasUrl: Boolean((initialData as InternetExplorerInitialData).url),
+      });
 
       const typedInitialData = initialData as InternetExplorerInitialData;
 
@@ -1458,9 +1461,10 @@ export function useInternetExplorerLogic({
         const decodedData = decodeData(code);
 
         if (decodedData) {
-          console.log(
-            `[IE] Navigating to shared link: ${decodedData.url} (${decodedData.year})`
-          );
+          log.debug("Navigating to shared link", {
+            url: decodedData.url,
+            year: decodedData.year,
+          });
           toast.info(`Opening shared page`, {
             description: `${decodedData.url}${
               decodedData.year && decodedData.year !== "current"
@@ -1493,9 +1497,10 @@ export function useInternetExplorerLogic({
             ? typedInitialData.year
             : "current";
 
-        console.log(
-          `[IE] Navigating to direct url/year: ${navUrl} (${navYear})`
-        );
+        log.debug("Navigating to direct url/year", {
+          url: navUrl,
+          year: navYear,
+        });
 
         timeoutId = setTimeout(() => {
           handleNavigate(navUrl, navYear, false);
@@ -1560,13 +1565,16 @@ export function useInternetExplorerLogic({
 
         if (initialData?.shareCode) {
           const code = initialData.shareCode;
-          console.log("[IE] Received updateApp event with shareCode:", code);
+          log.debug("Received updateApp event with share code", {
+            hasShareCode: Boolean(code),
+          });
           const decodedData = decodeData(code);
 
           if (decodedData) {
-            console.log(
-              `[IE] Decoded share link from updateApp event: ${decodedData.url} (${decodedData.year})`
-            );
+            log.debug("Decoded share link from updateApp event", {
+              url: decodedData.url,
+              year: decodedData.year,
+            });
 
             // Show toast and navigate
             toast.info(`Opening shared page`, {
@@ -1601,9 +1609,10 @@ export function useInternetExplorerLogic({
           const directUrl = initialData.url;
           const directYear =
             typeof initialData.year === "string" ? initialData.year : "current";
-          console.log(
-            `[IE] Received updateApp event with direct url/year: ${directUrl} (${directYear})`
-          );
+          log.debug("Received updateApp event with direct url/year", {
+            url: directUrl,
+            year: directYear,
+          });
 
           // Use timeout to allow potential state updates (like foreground) to settle
           scheduleTimeout(() => {
@@ -1662,9 +1671,9 @@ export function useInternetExplorerLogic({
         messageData.type === "iframeNavigation" &&
         typeof messageData.url === "string"
       ) {
-        console.log(
-          `[IE] Received navigation request from iframe: ${messageData.url}`
-        );
+        log.debug("Received navigation request from iframe", {
+          url: messageData.url,
+        });
         // A link click inside the page is a brand-new navigation, not a
         // back/forward traversal. Clear the history-navigation flag so the
         // destination is recorded in history (and any forward stack is
@@ -1672,15 +1681,15 @@ export function useInternetExplorerLogic({
         useInternetExplorerStore.getState().setNavigatingHistory(false);
         latestNavigateRef.current(messageData.url, latestYearRef.current);
       } else if (messageData.type === "goBack") {
-        console.log(`[IE] Received back button request from iframe`);
+        log.debug("Received back button request from iframe");
         latestGoBackRef.current();
       } else if (
         messageData.type === "aiHtmlNavigation" &&
         typeof messageData.url === "string"
       ) {
-        console.log(
-          `[IE] Received navigation request from AI HTML preview: ${messageData.url}`
-        );
+        log.debug("Received navigation request from AI HTML preview", {
+          url: messageData.url,
+        });
         // Same as above: clicking a link in AI-generated content is a new
         // navigation and must be tracked in history.
         useInternetExplorerStore.getState().setNavigatingHistory(false);
