@@ -6,6 +6,7 @@
  */
 
 import i18n from "@/lib/i18n";
+import { detectUserOS } from "../utils/systemState";
 export {
   createShortIdMap,
   resolveId,
@@ -71,47 +72,6 @@ export const LANGUAGE_NAMES: Record<string, string> = {
  */
 export const getLanguageName = (langCode: string): string => {
   return LANGUAGE_NAMES[langCode] || langCode;
-};
-
-/**
- * Detect if user is on iOS
- * Used to determine if auto-play is blocked by browser restrictions
- */
-export const detectUserOS = (): string => {
-  if (typeof navigator === "undefined") return "Unknown";
-
-  const userAgent = navigator.userAgent;
-  const platform = navigator.platform || "";
-
-  // Check for iOS (iPhone, iPad, iPod)
-  if (
-    /iPad|iPhone|iPod/.test(userAgent) ||
-    (platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  ) {
-    return "iOS";
-  }
-
-  // Check for Android
-  if (/Android/.test(userAgent)) {
-    return "Android";
-  }
-
-  // Check for Windows
-  if (/Win/.test(platform)) {
-    return "Windows";
-  }
-
-  // Check for macOS (not iOS)
-  if (/Mac/.test(platform)) {
-    return "macOS";
-  }
-
-  // Check for Linux
-  if (/Linux/.test(platform)) {
-    return "Linux";
-  }
-
-  return "Unknown";
 };
 
 /**

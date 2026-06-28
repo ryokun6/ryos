@@ -1,7 +1,6 @@
 export interface ToolContext {
   launchApp: (appId: string, options?: { initialData?: unknown; multiWindow?: boolean }) => string;
   addToolOutput: (result: ToolOutputPayload) => void;
-  detectUserOS: () => string;
 }
 
 export type ToolOutputPayload =
@@ -25,8 +24,3 @@ export type ToolHandler<T = unknown> = (
   toolCallId: string,
   context: ToolContext
 ) => Promise<void> | void;
-
-export interface ToolHandlerEntry<T = unknown> {
-  handler: ToolHandler<T>;
-  toolName: string;
-}
