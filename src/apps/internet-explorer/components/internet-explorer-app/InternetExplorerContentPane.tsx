@@ -118,7 +118,12 @@ export function InternetExplorerContentPane({
 
   return (
     <>
-      <div className="flex-1 relative bg-white">
+      <div className="flex-1 relative bg-white" style={{ backgroundColor: "white" }}>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-white"
+          style={{ backgroundColor: "white" }}
+        />
         {errorDetails ? (
           renderErrorPage()
         ) : isFutureYear ||
@@ -147,10 +152,11 @@ export function InternetExplorerContentPane({
           <iframe
             ref={iframeRef}
             src={finalUrl ?? undefined}
-            className="border-0 block"
+            className="border-0 block relative z-10"
             style={{
               width: "calc(100% + 1px)",
               height: "calc(100% + 1px)",
+              backgroundColor: "white",
             }}
             sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
             onLoad={handleIframeLoad}

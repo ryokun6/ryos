@@ -21,6 +21,9 @@ const contentPaneSource = readFileSync(
 describe("internet explorer iframe navigation", () => {
   test("React owns the iframe URL to avoid duplicate top-level proxy loads", () => {
     expect(contentPaneSource).toContain("src={finalUrl ?? undefined}");
+    expect(contentPaneSource).toContain('style={{ backgroundColor: "white" }}');
+    expect(contentPaneSource).toContain('className="absolute inset-0 bg-white"');
+    expect(contentPaneSource).toContain('className="border-0 block relative z-10"');
     expect(contentPaneSource).not.toContain("src={finalUrl || \"\"}");
     expect(hookSource).not.toMatch(/iframeRef\.current\.src\s*=\s*urlToLoad/);
     expect(hookSource).toContain("pendingNavigationRequestRef");

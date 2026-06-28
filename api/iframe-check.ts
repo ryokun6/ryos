@@ -972,6 +972,7 @@ export default apiHandler(
 <link rel="stylesheet" href="${appPublicOrigin}/fonts/fonts.css">
 <style>img{image-rendering:pixelated!important}body,div,span,p,h1,h2,h3,h4,h5,h6,button,input,select,textarea,[style*="font-family"],[style*="sans-serif"],[style*="SF Pro Text"],[style*="-apple-system"],[style*="BlinkMacSystemFont"],[style*="Segoe UI"],[style*="Roboto"],[style*="Oxygen"],[style*="Ubuntu"],[style*="Cantarell"],[style*="Fira Sans"],[style*="Droid Sans"],[style*="Helvetica Neue"],[style*="Helvetica"],[style*="Arial"],[style*="Verdana"],[style*="Geneva"],[style*="Inter"],[style*="Hiragino Sans"],[style*="Hiragino Kaku Gothic"],[style*="Yu Gothic"],[style*="Meiryo"],[style*="MS PGothic"],[style*="MS Gothic"],[style*="Microsoft YaHei"],[style*="PingFang"],[style*="Noto Sans"],[style*="Source Han Sans"],[style*="WenQuanYi"]{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif!important}[style*="serif"],[style*="Georgia"],[style*="Times New Roman"],[style*="Times"],[style*="Palatino"],[style*="Bookman"],[style*="Garamond"],[style*="Cambria"],[style*="Constantia"],[style*="Hiragino Mincho"],[style*="Yu Mincho"],[style*="MS Mincho"],[style*="SimSun"],[style*="NSimSun"],[style*="Source Han Serif"],[style*="Noto Serif CJK"]{font-family:"Mondwest","Yu Mincho","Hiragino Mincho Pro","Songii TC","Georgia","Palatino","SerenityOS-Emoji",serif!important}code,pre,[style*="monospace"],[style*="Courier New"],[style*="Courier"],[style*="Lucida Console"],[style*="Monaco"],[style*="Consolas"],[style*="Inconsolata"],[style*="Source Code Pro"],[style*="Menlo"],[style*="Andale Mono"],[style*="Ubuntu Mono"]{font-family:"Monaco","ArkPixel","SerenityOS-Emoji",monospace!important}*{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif}</style>`
           : "";
+        const proxyBaseStyles = `<style data-ryos-proxy-base="true">html,body{background:#fff!important;}</style>`;
 
         // Comprehensive navigation interceptor script - injected in head for early execution
         const navigationInterceptorScript = `
@@ -981,6 +982,17 @@ export default apiHandler(
 
   // Save real parent reference BEFORE any overrides
   var realParent = window.parent;
+
+  function applyProxyBaseStyles() {
+    try {
+      if (document.documentElement) {
+        document.documentElement.style.setProperty('background', '#fff', 'important');
+      }
+      if (document.body) {
+        document.body.style.setProperty('background', '#fff', 'important');
+      }
+    } catch (e) {}
+  }
 
   // Helper to resolve and post navigation URL to real parent
   function postNavigation(url, source) {
@@ -1013,15 +1025,18 @@ export default apiHandler(
     } catch (e) {}
   }
 
+  applyProxyBaseStyles();
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { postReady('dom-content-loaded'); }, { once: true });
+    document.addEventListener('DOMContentLoaded', function() { applyProxyBaseStyles(); postReady('dom-content-loaded'); }, { once: true });
   } else {
-    setTimeout(function() { postReady('already-ready'); }, 0);
+    setTimeout(function() { applyProxyBaseStyles(); postReady('already-ready'); }, 0);
   }
 
   // Some pages keep subresources pending for a long time; unblock ryOS once
   // the static document has had a chance to paint.
-  setTimeout(function() { postReady('timeout'); }, 1500);
+  setTimeout(applyProxyBaseStyles, 250);
+  setTimeout(applyProxyBaseStyles, 1500);
+  setTimeout(function() { applyProxyBaseStyles(); postReady('timeout'); }, 1500);
 
   // --- Frame-busting neutralization ---
   // Make the page think it is the top-level window so that
@@ -1301,6 +1316,7 @@ export default apiHandler(
             baseTag +
             titleMetaTag +
             navigationInterceptorScript +
+            proxyBaseStyles +
             fontOverrideStyles +
             html.slice(insertPos);
         } else {
@@ -1310,10 +1326,16 @@ export default apiHandler(
             baseTag +
             titleMetaTag +
             navigationInterceptorScript +
+            proxyBaseStyles +
             fontOverrideStyles +
             '</head>' +
             html;
         }
+
+        // Keep proxied documents opaque even when a site's own chrome uses
+        // transparent page margins. Append this after upstream head content so
+        // ResourceLoader-style CSS cannot override it back to transparent.
+        html = html.replace(/<\/head>/i, `${proxyBaseStyles}</head>`);
 
         // Add the extracted title to a custom header (URL-encoded)
         if (pageTitle) {

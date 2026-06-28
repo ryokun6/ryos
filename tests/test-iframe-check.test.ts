@@ -125,6 +125,10 @@ describe("iframe-check", () => {
       expect(html).not.toContain('type="text/plain" data-ryos-blocked-script="true"');
       expect(html).toContain("type: 'iframeReady'");
       expect(html).toContain("postReady('timeout')");
+      expect(html).toContain("function applyProxyBaseStyles()");
+      expect(html).toContain("style.setProperty('background', '#fff', 'important')");
+      expect(html).toContain('data-ryos-proxy-base="true"');
+      expect(html).toContain("html,body{background:#fff!important;}");
       expect(html).toContain("resource=image");
       expect(html).toContain("resource=iframe");
       expect(html).toContain("form=1");
