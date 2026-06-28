@@ -2,7 +2,11 @@ import "./local-storage-stub";
 import { beforeEach, describe, expect, test } from "bun:test";
 import { SYNC_CODECS } from "../src/sync/codecs";
 import { CloudSyncEngine } from "../src/sync/engine";
-import { hashDoc, SyncClientState } from "../src/sync/state";
+import {
+  hashDoc,
+  markSyncLocalReconcileRequired,
+  SyncClientState,
+} from "../src/sync/state";
 import { useStickiesStore } from "../src/stores/useStickiesStore";
 import { useCalendarStore } from "../src/stores/useCalendarStore";
 import { useVideoStore } from "../src/stores/useVideoStore";
@@ -630,6 +634,97 @@ describe("cloud sync logging summaries", () => {
 });
 
 describe("cloud sync engine resilience", () => {
+  test("warm start with a cursor skips the full local reconciliation scan", async () => {
+    const username = `sync-warm-${Date.now().toString(36)}`;
+    localStorage.setItem(
+      `ryos:sync2:state:${username}`,
+      JSON.stringify({
+        cursor: 7,
+        lastHlc: null,
+        shadow: {},
+        dirty: [],
+        localReconcileRequired: false,
+      })
+    );
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncStickies: true,
+    });
+
+    const requests: string[] = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input) => {
+      requests.push(String(input instanceof Request ? input.url : input));
+      return new Response(JSON.stringify({ ok: true, seq: 7, ops: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    const engine = new CloudSyncEngine(username);
+    try {
+      await engine.start();
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      expect(state.dirtyNamespaces).toEqual([]);
+      expect(state.localReconcileRequired).toBe(false);
+      expect(requests.some((url) => url.includes("/api/sync/v2/changes?since=7"))).toBe(true);
+    } finally {
+      engine.stop();
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("local reconcile marker queues one startup scan and clears after flush", async () => {
+    const username = `sync-reconcile-${Date.now().toString(36)}`;
+    localStorage.setItem(
+      `ryos:sync2:state:${username}`,
+      JSON.stringify({
+        cursor: 8,
+        lastHlc: null,
+        shadow: {},
+        dirty: [],
+        localReconcileRequired: false,
+      })
+    );
+    markSyncLocalReconcileRequired(username);
+    useStickiesStore.setState({ notes: [] });
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncFiles: false,
+      syncSettings: false,
+      syncSongs: false,
+      syncVideos: false,
+      syncTv: false,
+      syncStickies: true,
+      syncCalendar: false,
+      syncContacts: false,
+      syncMaps: false,
+      syncBooks: false,
+    });
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ ok: true, seq: 8, ops: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch;
+
+    const engine = new CloudSyncEngine(username);
+    try {
+      await engine.start();
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      expect(state.localReconcileRequired).toBe(true);
+      expect(state.dirtyNamespaces).toEqual(["stickies"]);
+
+      await engine.flush();
+      expect(state.dirtyNamespaces).toEqual([]);
+      expect(state.localReconcileRequired).toBe(false);
+    } finally {
+      engine.stop();
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("does not schedule a full upload scan after the initial pull fails", async () => {
     const username = `sync-failure-${Date.now().toString(36)}`;
     localStorage.setItem(

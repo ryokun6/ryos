@@ -142,10 +142,15 @@ export class CloudSyncEngine {
   async start(): Promise<void> {
     if (this.started) return;
     this.started = true;
+    const hadCursor = this.state.cursor !== null;
+    const hadPersistedDirty = this.state.dirtyNamespaces.length > 0;
+    const needsLocalReconcile = this.state.localReconcileRequired;
     cloudSyncLog.debug("Engine start requested", {
-      hasCursor: this.state.cursor !== null,
+      hasCursor: hadCursor,
       cursor: this.state.cursor,
       namespaceCount: SYNC_NAMESPACES.length,
+      dirtyNamespaceCount: this.state.dirtyNamespaces.length,
+      needsLocalReconcile,
     });
 
     for (const namespace of SYNC_NAMESPACES) {
@@ -173,15 +178,53 @@ export class CloudSyncEngine {
 
     if (!initialSyncSucceeded || this.stopped) return;
 
-    // Upload anything that changed while sync was off / offline.
+    // Fresh bootstraps and recorded inactive periods need a one-time local
+    // reconciliation. Warm starts rely on persisted dirty namespaces instead.
+    if (!hadCursor || needsLocalReconcile) {
+      const namespaceCount = this.markAllEnabledNamespacesDirty();
+      cloudSyncLog.debug("Initial sync succeeded; queued local reconcile", {
+        reason: !hadCursor ? "bootstrap" : "marked",
+        namespaceCount,
+      });
+      this.scheduleFlush();
+      return;
+    }
+
+    if (hadPersistedDirty || this.state.dirtyNamespaces.length > 0) {
+      cloudSyncLog.debug("Initial sync succeeded; queued persisted local work", {
+        namespaceCount: this.state.dirtyNamespaces.length,
+      });
+      this.schedulePendingFlush();
+      return;
+    }
+
+    cloudSyncLog.debug("Initial sync succeeded; local scan skipped", {
+      cursor: this.state.cursor,
+    });
+  }
+
+  private clearLocalReconcileIfSettled(): void {
+    if (!this.state.localReconcileRequired) return;
+    if (
+      this.state.dirtyNamespaces.length > 0 ||
+      this.fullDirtyNamespaces.size > 0 ||
+      this.dirtyKeysByNamespace.size > 0
+    ) {
+      return;
+    }
+    this.state.setLocalReconcileRequired(false);
+    cloudSyncLog.debug("Local reconcile marker cleared");
+  }
+
+  private markAllEnabledNamespacesDirty(): number {
+    let namespaceCount = 0;
     for (const namespace of SYNC_NAMESPACES) {
+      if (!this.isNamespaceEnabled(namespace)) continue;
       this.state.markDirty(namespace);
       this.fullDirtyNamespaces.add(namespace);
+      namespaceCount += 1;
     }
-    cloudSyncLog.debug("Initial sync succeeded; queued local scan", {
-      namespaceCount: SYNC_NAMESPACES.length,
-    });
-    this.scheduleFlush();
+    return namespaceCount;
   }
 
   stop(): void {
@@ -544,6 +587,7 @@ export class CloudSyncEngine {
             namespaces: flushedNamespaces,
           });
           this.resetFlushBackoff();
+          this.clearLocalReconcileIfSettled();
           return;
         }
 
@@ -569,6 +613,7 @@ export class CloudSyncEngine {
             ops: summarizeSyncOps(ops),
           });
           this.resetFlushBackoff();
+          this.clearLocalReconcileIfSettled();
           this.reportError(null);
         } catch (error) {
           for (const namespace of flushedNamespaces) {

@@ -26,6 +26,7 @@ import {
   clearManualRestoreIntent,
   getManualRestoreIntent,
 } from "@/sync/manualRestoreIntent";
+import { markSyncLocalReconcileRequired } from "@/sync/state";
 
 // Realtime delivers changes; polling is only a safety net for missed events.
 const POLL_INTERVAL_CONNECTED_MS = 30 * 60 * 1000;
@@ -50,6 +51,7 @@ export function useAutoCloudSync() {
 
   const lastVisibilityCheckRef = useRef(0);
   const lastExplicitCheckRef = useRef(0);
+  const activeSyncUsernameRef = useRef<string | null>(null);
   const pendingRestoreIntent = username
     ? getManualRestoreIntent(username)
     : null;
@@ -131,6 +133,14 @@ export function useAutoCloudSync() {
 
   useEffect(() => {
     if (!isSyncActive || !username) {
+      const activeUsername = activeSyncUsernameRef.current;
+      if (activeUsername) {
+        markSyncLocalReconcileRequired(activeUsername);
+        activeSyncUsernameRef.current = null;
+        cloudSyncLog.debug("Auto Sync inactive; marked local reconcile", {
+          username: activeUsername,
+        });
+      }
       cloudSyncLog.debug("Auto Sync inactive; destroying engine", {
         hasUsername: Boolean(username),
         isSyncActive,
@@ -140,6 +150,7 @@ export function useAutoCloudSync() {
     }
 
     cloudSyncLog.debug("Starting Cloud Sync engine", { username });
+    activeSyncUsernameRef.current = username;
     const engine = createCloudSyncEngine(username, {
       onError: (error) => useCloudSyncStore.getState().setLastError(error),
     });
