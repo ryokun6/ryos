@@ -1,0 +1,53 @@
+.textedit-prosemirror-root.ProseMirror {
+  overflow-x: auto;
+}
+
+.textedit-prosemirror-root.ProseMirror .tableWrapper {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.textedit-prosemirror-root.ProseMirror table {
+  width: 100%;
+  min-width: max-content;
+  margin: 0.75rem 0;
+  border: 1px solid var(--os-color-separator);
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.textedit-prosemirror-root.ProseMirror :where(th, td) {
+  min-width: 7rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--os-color-separator);
+  color: var(--os-color-text-primary);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.textedit-prosemirror-root.ProseMirror th {
+  background: var(--os-color-panel-bg);
+  font-weight: 700;
+}
+
+.textedit-prosemirror-root.ProseMirror td {
+  background: var(--os-color-input-bg);
+}
+
+.textedit-prosemirror-root.ProseMirror :where(th, td) > p {
+  margin: 0;
+}
+
+.textedit-prosemirror-root.ProseMirror .selectedCell {
+  position: relative;
+}
+
+.textedit-prosemirror-root.ProseMirror .selectedCell::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: var(--os-color-selection-bg);
+  opacity: 0.2;
+}

@@ -130,40 +130,46 @@ export const ListRowItem = memo(function ListRowItem({
       data-file-item="true"
       data-file-path={file.path}
     >
-      <TableCell className="flex items-center gap-2">
-        {file.icon &&
-        !(file.icon.startsWith("/") || file.icon.startsWith("http")) ? (
-          <span
-            className="inline-flex items-center justify-center leading-none"
-            style={{ fontSize: 14, lineHeight: 1, width: 16, height: 16 }}
-            aria-hidden
-          >
-            {file.icon}
+      <TableCell className="min-w-0 whitespace-nowrap">
+        <div className="flex min-w-0 w-full items-center gap-2">
+          {file.icon &&
+          !(file.icon.startsWith("/") || file.icon.startsWith("http")) ? (
+            <span
+              className="inline-flex shrink-0 items-center justify-center leading-none"
+              style={{ fontSize: 14, lineHeight: 1, width: 16, height: 16 }}
+              aria-hidden
+            >
+              {file.icon}
+            </span>
+          ) : file.contentUrl && shouldShowThumbnail(file) ? (
+            <img
+              src={file.contentUrl}
+              alt={file.name}
+              className="size-4 shrink-0 rounded-sm object-cover"
+              style={{ imageRendering: isImageFile(file) ? "pixelated" : "auto" }}
+              onError={(e) => {
+                console.error(`Error loading thumbnail for ${file.name}`);
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <ThemedIcon
+              name={getIconPath(file)}
+              alt={getListIconAlt(file)}
+              className="size-4 shrink-0"
+              style={{ imageRendering: "pixelated" }}
+              data-legacy-aware="true"
+            />
+          )}
+          <span className="min-w-0 flex-1 truncate">
+            {getDisplayName(file)}
           </span>
-        ) : file.contentUrl && shouldShowThumbnail(file) ? (
-          <img
-            src={file.contentUrl}
-            alt={file.name}
-            className="size-4 object-cover rounded-sm"
-            style={{ imageRendering: isImageFile(file) ? "pixelated" : "auto" }}
-            onError={(e) => {
-              console.error(`Error loading thumbnail for ${file.name}`);
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-        ) : (
-          <ThemedIcon
-            name={getIconPath(file)}
-            alt={getListIconAlt(file)}
-            className="size-4"
-            style={{ imageRendering: "pixelated" }}
-            data-legacy-aware="true"
-          />
-        )}
-        {getDisplayName(file)}
+        </div>
       </TableCell>
-      <TableCell>{getFileType(file)}</TableCell>
-      <TableCell className="whitespace-nowrap">
+      <TableCell className="w-[136px] min-w-[136px] overflow-hidden text-ellipsis whitespace-nowrap">
+        {getFileType(file)}
+      </TableCell>
+      <TableCell className="w-[72px] min-w-[72px] whitespace-nowrap">
         {file.size
           ? file.size < 1024
             ? `${file.size} B`
@@ -172,7 +178,7 @@ export const ListRowItem = memo(function ListRowItem({
             : `${(file.size / (1024 * 1024)).toFixed(1)} MB`
           : "--"}
       </TableCell>
-      <TableCell className="whitespace-nowrap">
+      <TableCell className="w-[104px] min-w-[104px] whitespace-nowrap">
         {file.modifiedAt
           ? new Date(file.modifiedAt).toLocaleDateString(dateLocale)
           : "--"}

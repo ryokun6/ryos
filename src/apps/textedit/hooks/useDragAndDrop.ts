@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { markdownToHtml } from "@/utils/markdown";
 
 interface UseDragAndDropProps {
   hasUnsavedChanges: boolean;
@@ -54,16 +53,10 @@ export function useDragAndDrop({
 
     const filePath = `/Documents/${file.name}`;
     const text = await file.text();
-
-    // Convert content based on file type
-    let content;
-    if (file.name.endsWith(".html")) {
-      content = text;
-    } else if (file.name.endsWith(".md")) {
-      content = markdownToHtml(text);
-    } else {
-      content = `<p>${text}</p>`;
-    }
+    const pendingContent =
+      file.name.endsWith(".md") || file.name.endsWith(".html")
+        ? text
+        : `<p>${text}</p>`;
 
     // If there are unsaved changes, prompt the user
     if (hasUnsavedChanges) {
@@ -72,7 +65,7 @@ export function useDragAndDrop({
         "ryos:pending-file-open",
         JSON.stringify({
           path: filePath,
-          content: content,
+          content: pendingContent,
         })
       );
       onConfirmOverwrite();

@@ -1,5 +1,5 @@
 import type { JSONContent } from "@tiptap/core";
-import { markdownToHtml } from "@/utils/markdown";
+import { markdownToSafeHtml } from "./markdownPaste";
 import { parseRichMarkdown } from "./richMarkdown";
 
 /**
@@ -19,7 +19,7 @@ export function persistedContentToEditorContent(
     if (parsed.editorJson) {
       return parsed.editorJson as JSONContent;
     }
-    return markdownToHtml(parsed.markdown);
+    return markdownToSafeHtml(parsed.markdown);
   }
 
   try {
