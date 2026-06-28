@@ -24,14 +24,14 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
   const {
     isFullScreen, toggleFullScreen, handlePlayPause, handleNext, handlePrevious,
     isListenSessionRemoteOnly, getCurrentKaraokeTrack, showStatus, showOfflineStatus,
-    registerActivity, isPlaying, statusMessage, lyricsTranslationLanguage,
+    registerActivity, isPlaying, playbackRequested, statusMessage, lyricsTranslationLanguage,
     setLyricsTranslationLanguage, lyricsAlignment, cycleAlignment, lyricsFont,
     cycleLyricsFont, romanization, setRomanization, setIsSyncModeOpen, isSyncModeOpen,
     displayMode, handleDisplayModeSelect, displayModeOptions, karaokeKtvRoomFx,
     currentTrack, currentIndex, duration, setLyricOffset,
     adjustLyricOffset, fullScreenPlayerRef, playerRef, closeSyncMode, handleRefreshLyrics,
     t, seekTime, loopCurrent, handleTrackEnd, handleProgress, handlePlay, handlePause,
-    handleReady, effectiveDisplayMode, visualBackgroundActive, coverUrl,
+    handleReady, handlePlaybackAttemptFailed, effectiveDisplayMode, visualBackgroundActive, coverUrl,
     showEmptyLibrary, handleAddSong, listenSession,     showLyrics, isOffline, seekToTime,
     handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
@@ -138,7 +138,11 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
                     <YouTubePlayer
                       ref={fullScreenPlayerRef}
                       url={currentTrack.url}
-                      playing={isPlaying && isFullScreen && !isListenSessionRemoteOnly}
+                      playing={
+                        playbackRequested &&
+                        isFullScreen &&
+                        !isListenSessionRemoteOnly
+                      }
                       controls
                       width="100%"
                       height="100%"
@@ -150,6 +154,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
                       onPlay={handlePlay}
                       onPause={handlePause}
                       onReady={isFullScreen ? handleReady : undefined}
+                      onPlaybackAttemptFailed={handlePlaybackAttemptFailed}
                       config={{
                         youtube: {
                           playerVars: {

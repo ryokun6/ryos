@@ -171,6 +171,8 @@ export function useIpodLogic({
     toggleShuffle,
     togglePlay,
     setIsPlaying,
+    playbackRequested,
+    confirmPlayback,
     setDisplayMode,
     toggleVideo,
     toggleBacklight,
@@ -209,6 +211,8 @@ export function useIpodLogic({
     toggleShuffle: s.toggleShuffle,
     togglePlay: s.togglePlay,
     setIsPlaying: s.setIsPlaying,
+    playbackRequested: s.playbackRequested,
+    confirmPlayback: s.confirmPlayback,
     toggleVideo: s.toggleVideo,
     toggleBacklight: s.toggleBacklight,
     setBacklightTimeout: s.setBacklightTimeout,
@@ -3893,11 +3897,11 @@ export function useIpodLogic({
   }, []);
 
   const handlePlay = useCallback(() => {
+    confirmPlayback();
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
       return;
     }
-    setIsPlaying(true);
     if (!skipOperationRef.current) showStatus("▶");
     skipOperationRef.current = false;
 
@@ -3917,7 +3921,7 @@ export function useIpodLogic({
         lastTrackedSongRef.current = { trackId: currentTrack.id, elapsedTime };
       }
     }
-  }, [setIsPlaying, showStatus, tracks, currentIndex]);
+  }, [confirmPlayback, showStatus, tracks, currentIndex]);
 
   const handlePause = useCallback(() => {
     // Don't update state if we're in the middle of a track switch
@@ -3930,25 +3934,29 @@ export function useIpodLogic({
 
   const handleReady = useCallback(() => {}, []);
 
+  const handlePlaybackAttemptFailed = useCallback(() => {
+    setIsPlaying(false);
+  }, [setIsPlaying]);
+
   // Watchdog for blocked autoplay: if the clock hasn't advanced 1.2s after
   // entering the playing state, autoplay was likely blocked — flip back to
   // paused. Reads the clock via getState() so this effect doesn't subscribe
   // the whole hook to per-tick updates.
   useEffect(() => {
-    if (!isPlaying || !isIOSSafari || userHasInteractedRef.current) return;
+    if (!playbackRequested || !isIOSSafari || userHasInteractedRef.current) return;
 
     const startElapsed = useIpodStore.getState().elapsedTime;
     const timer = setTimeout(() => {
-      const { isPlaying: stillPlaying, elapsedTime: nowElapsed } =
+      const { playbackRequested: stillRequested, elapsedTime: nowElapsed } =
         useIpodStore.getState();
-      if (stillPlaying && nowElapsed === startElapsed) {
+      if (stillRequested && nowElapsed === startElapsed) {
         setIsPlaying(false);
         showStatus("⏸");
       }
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, setIsPlaying, showStatus, isIOSSafari]);
+  }, [playbackRequested, setIsPlaying, showStatus, isIOSSafari]);
 
   // Menu button handler
   const handleMenuButton = useCallback(() => {
@@ -4264,7 +4272,9 @@ export function useIpodLogic({
             showOfflineStatus();
           } else {
             togglePlay();
-            showStatus(useIpodStore.getState().isPlaying ? "▶" : "⏸");
+            showStatus(
+              useIpodStore.getState().playbackRequested ? "▶" : "⏸"
+            );
           }
           break;
         case "left":
@@ -5121,6 +5131,7 @@ export function useIpodLogic({
     loopAll,
     isShuffled,
     isPlaying,
+    playbackRequested,
     showVideo,
     backlightOn,
     theme,
@@ -5224,6 +5235,7 @@ export function useIpodLogic({
     handlePlay,
     handlePause,
     handleReady,
+    handlePlaybackAttemptFailed,
     handleMenuButton,
     handleWheelClick,
     handleWheelRotation,

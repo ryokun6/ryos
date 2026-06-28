@@ -1,5 +1,5 @@
 import { type RefObject } from "react";
-import ReactPlayer from "react-player";
+import type ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import type { AppProps, VideosInitialData } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
@@ -36,6 +36,7 @@ export function VideosAppComponent({
     isFullScreen,
     getCurrentVideo,
     isPlaying,
+    playbackRequested,
     handlePlay,
     handlePause,
     togglePlay,
@@ -43,6 +44,7 @@ export function VideosAppComponent({
     handleProgress,
     handleDuration,
     handleReady,
+    handlePlaybackAttemptFailed,
     loopCurrent,
     masterVolume,
     fullScreenPlayerRef,
@@ -81,6 +83,7 @@ export function VideosAppComponent({
             isOpen={isFullScreen}
             onClose={handleCloseFullScreen}
             url={getCurrentVideo()?.url || ""}
+            playbackRequested={playbackRequested}
             isPlaying={isPlaying}
             onPlay={handlePlay}
             onPause={handlePause}
@@ -89,6 +92,7 @@ export function VideosAppComponent({
             onProgress={handleProgress}
             onDuration={handleDuration}
             onReady={handleReady}
+            onPlaybackAttemptFailed={handlePlaybackAttemptFailed}
             loop={loopCurrent}
             volume={masterVolume}
             playerRef={fullScreenPlayerRef as RefObject<ReactPlayer>}

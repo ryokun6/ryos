@@ -1,5 +1,5 @@
 import React, { useReducer, useRef, useEffect, useCallback } from "react";
-import ReactPlayer from "react-player";
+import type ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -59,8 +59,10 @@ export function useVideosLogic({
   const isShuffled = useVideoStore((s) => s.isShuffled);
   const setIsShuffled = useVideoStore((s) => s.setIsShuffled);
   const isPlaying = useVideoStore((s) => s.isPlaying);
+  const playbackRequested = useVideoStore((s) => s.playbackRequested);
   const togglePlayStore = useVideoStore((s) => s.togglePlay);
   const setIsPlaying = useVideoStore((s) => s.setIsPlaying);
+  const confirmPlayback = useVideoStore((s) => s.confirmPlayback);
 
   // App store hooks
   const bringInstanceToForeground = useAppStore(
@@ -625,11 +627,11 @@ export function useVideosLogic({
 
   // Handlers for YouTube player state sync
   const handlePlay = useCallback(() => {
+    confirmPlayback();
     // Don't update state if we're in the middle of a track/fullscreen switch
     if (isTrackSwitchingRef.current) {
       return;
     }
-    setIsPlaying(true);
     const video = getCurrentVideo();
     if (video) {
       track(MEDIA_ANALYTICS.VIDEO_PLAY, {
@@ -638,7 +640,7 @@ export function useVideosLogic({
         hasArtist: Boolean(video.artist),
       });
     }
-  }, [setIsPlaying]);
+  }, [confirmPlayback]);
 
   const handlePause = useCallback(() => {
     // Don't update state if we're in the middle of a track/fullscreen switch
@@ -661,6 +663,10 @@ export function useVideosLogic({
     // Always start from beginning but don't auto-play
     playerRef.current?.seekTo(0);
   }, []);
+
+  const handlePlaybackAttemptFailed = useCallback(() => {
+    setIsPlaying(false);
+  }, [setIsPlaying]);
 
   const handleFullScreen = useCallback(() => {
     // Mark as track switching to prevent spurious play/pause events during sync
@@ -798,6 +804,13 @@ export function useVideosLogic({
     hasAutoplayCheckedRef.current = true;
     // dependency array intentionally empty to run once
   }, [isPlaying, setIsPlaying]);
+
+  useEffect(() => {
+    if (!isWindowOpen) {
+      setIsPlaying(false);
+    }
+    return () => setIsPlaying(false);
+  }, [isWindowOpen, setIsPlaying]);
 
   // Ensure currentVideoId is valid when videos change
   useEffect(() => {
@@ -1044,6 +1057,7 @@ export function useVideosLogic({
     isShuffled,
     setIsShuffled,
     isPlaying,
+    playbackRequested,
     setIsPlaying,
 
     // Component state
@@ -1098,6 +1112,7 @@ export function useVideosLogic({
     handlePause,
     handleMainPlayerPause,
     handleReady,
+    handlePlaybackAttemptFailed,
     handleFullScreen,
     handleCloseFullScreen,
     toggleFullScreen,

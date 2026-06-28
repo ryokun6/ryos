@@ -46,6 +46,7 @@ import { IpodScreenSplitArtPanel } from "./IpodScreenSplitArtPanel";
 export function IpodScreen({
   currentTrack,
   isPlaying,
+  playbackRequested,
   totalTime,
   menuMode,
   menuHistory,
@@ -65,6 +66,7 @@ export function IpodScreen({
   handlePlay,
   handlePause,
   handleReady,
+  handlePlaybackAttemptFailed,
   loopCurrent,
   loopAll,
   isShuffled,
@@ -593,6 +595,7 @@ export function IpodScreen({
           isCoverFlowOpen={isCoverFlowOpen}
           showVideo={showVideo}
           isPlaying={isPlaying}
+          playbackRequested={playbackRequested}
           isFullScreen={isFullScreen}
           isAppleMusicTrack={Boolean(isAppleMusicTrack)}
           effectiveDisplayMode={effectiveDisplayMode}
@@ -613,6 +616,7 @@ export function IpodScreen({
           handlePlay={handlePlay}
           handlePause={handlePause}
           handleReady={handleReady}
+          handlePlaybackAttemptFailed={handlePlaybackAttemptFailed}
           loopCurrent={loopCurrent}
           onToggleVideo={onToggleVideo}
           registerActivity={registerActivity}

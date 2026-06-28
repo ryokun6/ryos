@@ -43,6 +43,13 @@ import {
   saveAppleMusicTrackCollection,
 } from "@/utils/appleMusicLibraryCache";
 import type { IpodMenuKind } from "@/apps/ipod/types";
+import {
+  confirmPlayback,
+  requestPlayback,
+  resetPlaybackConfirmation,
+  stopPlayback,
+  togglePlayback,
+} from "@/shared/media/confirmedPlayback";
 
 const debug = createClientLogger("IpodStore").debug;
 
@@ -193,6 +200,9 @@ interface IpodData {
   loopCurrent: boolean;
   loopAll: boolean;
   isShuffled: boolean;
+  /** Desired player state, including an in-flight play attempt. */
+  playbackRequested: boolean;
+  /** True only after the active media provider emits a play event. */
   isPlaying: boolean;
   showVideo: boolean;
   /** Display mode for visual background (video, cover art, or landscapes) */
@@ -367,7 +377,7 @@ const initialIpodData: IpodData = {
   loopCurrent: false,
   loopAll: true,
   isShuffled: true,
-  isPlaying: false,
+  ...stopPlayback(),
   showVideo: false,
   displayMode: DisplayMode.Video,
   backlightOn: true,
@@ -480,7 +490,9 @@ export interface IpodState extends IpodData {
   toggleLoopAll: () => void;
   toggleShuffle: () => void;
   togglePlay: () => void;
+  /** Request play or stop; `true` remains pending until `confirmPlayback`. */
   setIsPlaying: (playing: boolean) => void;
+  confirmPlayback: () => void;
   toggleVideo: () => void;
   /** Set the display mode for visual background */
   setDisplayMode: (mode: DisplayMode) => void;
@@ -1189,6 +1201,7 @@ export const useIpodStore = create<IpodState>()(
               // into the new song.
               elapsedTime: 0,
               totalTime: 0,
+              ...resetPlaybackConfirmation(state),
             };
           }
           return {};
@@ -1223,15 +1236,16 @@ export const useIpodStore = create<IpodState>()(
         if (typeof navigator !== "undefined" && !navigator.onLine) {
           return;
         }
-        set((state) => ({ isPlaying: !state.isPlaying }));
+        set((state) => togglePlayback(state));
       },
       setIsPlaying: (playing) => {
         // Prevent starting playback when offline
         if (playing && typeof navigator !== "undefined" && !navigator.onLine) {
           return;
         }
-        set({ isPlaying: playing });
+        set(playing ? requestPlayback() : stopPlayback());
       },
+      confirmPlayback: () => set((state) => confirmPlayback(state)),
       toggleVideo: () => {
         // Prevent turning on video when offline
         if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -1263,7 +1277,7 @@ export const useIpodStore = create<IpodState>()(
           currentSongId: track.id,
           currentLyrics: null,
           currentFuriganaMap: null,
-          isPlaying: true,
+          ...requestPlayback(),
           libraryState: "loaded",
           playbackHistory: [], // Clear playback history when adding new tracks
           historyPosition: -1,
@@ -1411,7 +1425,11 @@ export const useIpodStore = create<IpodState>()(
             currentSongId: nextSongId,
             currentLyrics: null,
             currentFuriganaMap: null,
-            isPlaying: filtered.length === 0 ? false : state.isPlaying,
+            ...(filtered.length === 0
+              ? stopPlayback()
+              : nextSongId !== state.currentSongId
+                ? resetPlaybackConfirmation(state)
+                : {}),
             playbackHistory:
               filtered.length === 0
                 ? []
@@ -1424,7 +1442,7 @@ export const useIpodStore = create<IpodState>()(
           currentSongId: null,
           currentLyrics: null,
           currentFuriganaMap: null,
-          isPlaying: false,
+          ...stopPlayback(),
           libraryState: "cleared",
           playbackHistory: [],
           historyPosition: -1,
@@ -1438,7 +1456,7 @@ export const useIpodStore = create<IpodState>()(
           currentSongId: tracks[0]?.id ?? null,
           currentLyrics: null,
           currentFuriganaMap: null,
-          isPlaying: false,
+          ...stopPlayback(),
           libraryState: "loaded",
           lastKnownVersion: version,
           playbackHistory: [],
@@ -1491,7 +1509,7 @@ export const useIpodStore = create<IpodState>()(
                 currentSongId: lastSongId,
                 currentLyrics: isSameTrack ? state.currentLyrics : null,
                 currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
-                isPlaying: false,
+                ...stopPlayback(),
                 ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
               };
             }
@@ -1503,7 +1521,7 @@ export const useIpodStore = create<IpodState>()(
             currentSongId: nextSongId,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
-            isPlaying: true,
+            ...requestPlayback(),
             playbackHistory: newPlaybackHistory,
             historyPosition: -1, // Always reset to end when moving forward
             // Reset playback position so the new track starts at 0 instead
@@ -1555,7 +1573,7 @@ export const useIpodStore = create<IpodState>()(
             currentSongId: prevSongId,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
-            isPlaying: true,
+            ...requestPlayback(),
             playbackHistory: newPlaybackHistory,
             historyPosition: -1,
             // Reset playback position so the new track starts at 0 instead
@@ -1709,7 +1727,7 @@ export const useIpodStore = create<IpodState>()(
             currentSongId: importedTracks[0]?.id ?? null,
             currentLyrics: null,
             currentFuriganaMap: null,
-            isPlaying: false,
+            ...stopPlayback(),
             libraryState: "loaded",
             playbackHistory: [], // Clear playback history when importing library
             historyPosition: -1,
@@ -1791,7 +1809,7 @@ export const useIpodStore = create<IpodState>()(
             try {
               get().addTrack(newTrack);
               if (!autoPlay) {
-                set({ isPlaying: false });
+                set(stopPlayback());
               }
               return newTrack;
             } catch (error) {
@@ -1891,7 +1909,7 @@ export const useIpodStore = create<IpodState>()(
           get().addTrack(newTrack); // Add track to the store
           // If autoPlay is false (e.g., for iOS), pause after adding
           if (!autoPlay) {
-            set({ isPlaying: false });
+            set(stopPlayback());
           }
           return newTrack;
         } catch (error) {
@@ -2175,7 +2193,7 @@ export const useIpodStore = create<IpodState>()(
         // we hot-swap libraries.
         set({
           librarySource: source,
-          isPlaying: false,
+          ...stopPlayback(),
           elapsedTime: 0,
           totalTime: 0,
           currentLyrics: null,
@@ -2345,6 +2363,7 @@ export const useIpodStore = create<IpodState>()(
             currentFuriganaMap: null,
             elapsedTime: 0,
             totalTime: 0,
+            ...resetPlaybackConfirmation(state),
           };
         }),
       playAppleMusicTrack: (track) =>
@@ -2366,7 +2385,7 @@ export const useIpodStore = create<IpodState>()(
             currentFuriganaMap: null,
             elapsedTime: 0,
             totalTime: 0,
-            isPlaying: true,
+            ...requestPlayback(),
           };
         }),
       setAppleMusicPlaybackQueue: (queue) =>
@@ -2424,7 +2443,7 @@ export const useIpodStore = create<IpodState>()(
               const isSameTrack = lastSongId === state.appleMusicCurrentSongId;
               return {
                 appleMusicCurrentSongId: lastSongId,
-                isPlaying: false,
+                ...stopPlayback(),
                 ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
               };
             }
@@ -2437,7 +2456,7 @@ export const useIpodStore = create<IpodState>()(
             appleMusicPlaybackHistory: newPlaybackHistory,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
-            isPlaying: true,
+            ...requestPlayback(),
             // Reset playback position so the new track starts at 0 instead
             // of inheriting the previous track's elapsedTime — otherwise the
             // AppleMusicPlayerBridge resumes the new song from the previous
@@ -2504,7 +2523,7 @@ export const useIpodStore = create<IpodState>()(
             appleMusicPlaybackHistory: newPlaybackHistory,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
-            isPlaying: true,
+            ...requestPlayback(),
             // Reset playback position so the new track starts at 0 instead
             // of inheriting the previous track's elapsedTime.
             ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),

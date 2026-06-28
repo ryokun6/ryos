@@ -56,7 +56,7 @@ export function useIpodPlayback(options: {
       store.setElapsedTime(Math.max(0, currentTime));
     }
 
-    if (store.isPlaying) {
+    if (store.playbackRequested) {
       store.setIsPlaying(false);
     }
 

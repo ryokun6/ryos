@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
-import ReactPlayer from "react-player";
+import type ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useTvStore } from "@/stores/useTvStore";
@@ -48,7 +48,9 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const lastVideoIndexByChannel = useTvStore((s) => s.lastVideoIndexByChannel);
   const setVideoIndex = useTvStore((s) => s.setVideoIndex);
   const isPlaying = useTvStore((s) => s.isPlaying);
+  const playbackRequested = useTvStore((s) => s.playbackRequested);
   const setIsPlaying = useTvStore((s) => s.setIsPlaying);
+  const confirmPlayback = useTvStore((s) => s.confirmPlayback);
   const togglePlayStore = useTvStore((s) => s.togglePlay);
   const customChannels = useTvStore((s) => s.customChannels);
   const hiddenDefaultChannelIds = useTvStore((s) => s.hiddenDefaultChannelIds);
@@ -451,10 +453,17 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   // the next entry on the channel rather than stalling on a black frame.
   const handleError = useCallback(() => {
     const list = currentChannel?.videos ?? [];
-    if (list.length <= 1) return;
+    if (list.length <= 1) {
+      setIsPlaying(false);
+      return;
+    }
     setVideoIndex(currentChannelId, nextIndex(videoIndex, list.length));
     setIsPlaying(true);
   }, [currentChannel, videoIndex, currentChannelId, setVideoIndex, setIsPlaying]);
+
+  const handlePlaybackAttemptFailed = useCallback(() => {
+    setIsPlaying(false);
+  }, [setIsPlaying]);
 
   // Force-play once per window-open, not on every render where it stays open,
   // so a user's manual pause survives until the window is closed. Skip on
@@ -465,6 +474,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   useEffect(() => {
     if (!isWindowOpen) {
       hasForcedPlayOnOpenRef.current = false;
+      setIsPlaying(false);
       return;
     }
     if (hasForcedPlayOnOpenRef.current) return;
@@ -475,6 +485,10 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     }
     setIsPlaying(true);
   }, [isWindowOpen, setIsPlaying, isMobileSafariDevice]);
+
+  useEffect(() => {
+    return () => setIsPlaying(false);
+  }, [setIsPlaying]);
 
   // Clear any pending status / digit-buffer timers when the hook unmounts so
   // they don't try to set state on an unmounted tree.
@@ -558,7 +572,9 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     setIsFullScreen,
     toggleFullScreen,
     isPlaying,
+    playbackRequested,
     setIsPlaying,
+    confirmPlayback,
     togglePlay,
     currentChannel,
     currentVideo,
@@ -570,6 +586,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     prevVideo,
     handleVideoEnd,
     handleError,
+    handlePlaybackAttemptFailed,
     selectVideoFromPlaylist,
     playlistRemoveVideo: canRemoveVideosFromDrawer
       ? removeVideoFromDrawer

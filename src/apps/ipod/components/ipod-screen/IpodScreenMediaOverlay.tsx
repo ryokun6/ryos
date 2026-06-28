@@ -1,4 +1,3 @@
-import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
@@ -22,6 +21,7 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import type { IpodScreenProps } from "../../types";
 import type { ActivityInfo } from "@/hooks/useActivityLabel";
 import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 
 type SetAppleMusicKitNowPlaying = ReturnType<
   typeof useIpodStore.getState
@@ -33,6 +33,7 @@ export interface IpodScreenMediaOverlayProps {
   isCoverFlowOpen: boolean;
   showVideo: boolean;
   isPlaying: boolean;
+  playbackRequested: boolean;
   isFullScreen: boolean;
   isAppleMusicTrack: boolean;
   effectiveDisplayMode: DisplayMode;
@@ -53,6 +54,7 @@ export interface IpodScreenMediaOverlayProps {
   handlePlay: IpodScreenProps["handlePlay"];
   handlePause: IpodScreenProps["handlePause"];
   handleReady: IpodScreenProps["handleReady"];
+  handlePlaybackAttemptFailed: IpodScreenProps["handlePlaybackAttemptFailed"];
   loopCurrent: boolean;
   onToggleVideo: () => void;
   registerActivity: () => void;
@@ -74,6 +76,7 @@ export function IpodScreenMediaOverlay({
   isCoverFlowOpen,
   showVideo,
   isPlaying,
+  playbackRequested,
   isFullScreen,
   isAppleMusicTrack,
   effectiveDisplayMode,
@@ -94,6 +97,7 @@ export function IpodScreenMediaOverlay({
   handlePlay,
   handlePause,
   handleReady,
+  handlePlaybackAttemptFailed,
   loopCurrent,
   onToggleVideo,
   registerActivity,
@@ -148,7 +152,7 @@ export function IpodScreenMediaOverlay({
           <AppleMusicPlayerBridge
             ref={playerRef as unknown as React.RefObject<never>}
             currentTrack={currentTrack}
-            playing={isPlaying && !isFullScreen}
+            playing={playbackRequested && !isFullScreen}
             resumeAtSeconds={elapsedTime}
             volume={finalIpodVolume}
             onProgress={!isFullScreen ? handleProgress : undefined}
@@ -168,10 +172,10 @@ export function IpodScreenMediaOverlay({
                 : undefined
             }
           >
-            <ReactPlayer
+            <YouTubePlayer
               ref={playerRef}
               url={currentTrack.url}
-              playing={isPlaying}
+              playing={playbackRequested}
               controls={
                 showVideo && effectiveDisplayMode === DisplayMode.Video
               }
@@ -183,6 +187,7 @@ export function IpodScreenMediaOverlay({
               onPlay={!isFullScreen ? handlePlay : undefined}
               onPause={!isFullScreen ? handlePause : undefined}
               onReady={!isFullScreen ? handleReady : undefined}
+              onPlaybackAttemptFailed={handlePlaybackAttemptFailed}
               loop={loopCurrent}
               volume={finalIpodVolume}
               playsinline={true}

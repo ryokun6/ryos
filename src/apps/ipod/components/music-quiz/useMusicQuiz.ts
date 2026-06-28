@@ -6,7 +6,7 @@ import {
   useImperativeHandle,
   useReducer,
 } from "react";
-import ReactPlayer from "react-player";
+import type ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
 import {
   selectEffectiveIpodVolume,

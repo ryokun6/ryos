@@ -24,7 +24,7 @@ import {
   List,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import ReactPlayer from "react-player";
+import type ReactPlayer from "react-player";
 import { AnimatedNumber } from "@/components/shared/lcd/AnimatedNumber";
 import { LcdAnimatedTitle } from "@/components/shared/lcd/LcdAnimatedTitle";
 import { LcdStatusDisplay } from "@/components/shared/lcd/LcdStatusDisplay";
@@ -165,14 +165,17 @@ export function TvAppComponent(props: AppProps) {
               isOpen={c.isFullScreen}
               onClose={() => c.toggleFullScreen()}
               url={url}
+              playbackRequested={c.playbackRequested}
               isPlaying={c.isPlaying}
-              onPlay={() => c.setIsPlaying(true)}
+              onPlay={c.confirmPlayback}
               onPause={() => c.setIsPlaying(false)}
               onTogglePlay={c.handleTogglePlay}
               onEnded={c.handleVideoEnd}
               onProgress={c.handleProgress}
               onDuration={c.handleDuration}
               onReady={() => {}}
+              onPlaybackAttemptFailed={c.handlePlaybackAttemptFailed}
+              onPlayerError={c.handleError}
               loop={false}
               volume={c.masterVolume}
               playerRef={c.fullScreenPlayerRef as RefObject<ReactPlayer>}
@@ -236,7 +239,10 @@ export function TvAppComponent(props: AppProps) {
                     // "screen off" overlay so audio doesn't keep
                     // playing through a black screen.
                     playing={
-                      c.isPlaying && !c.isFullScreen && !c.poweringOff && !c.screenOff
+                      c.playbackRequested &&
+                      !c.isFullScreen &&
+                      !c.poweringOff &&
+                      !c.screenOff
                     }
                     controls={false}
                     width="calc(100% + 1px)"
@@ -247,14 +253,15 @@ export function TvAppComponent(props: AppProps) {
                     onProgress={c.handleProgress}
                     onDuration={c.handleDuration}
                     onPlay={() => {
-                      c.setIsPlaying(true);
+                      c.confirmPlayback();
                       c.setIsBuffering(false);
                     }}
                     onPause={() => c.setIsPlaying(false)}
+                    onPlaybackAttemptFailed={c.handlePlaybackAttemptFailed}
                     onBuffer={() => c.setIsBuffering(true)}
                     onBufferEnd={() => c.setIsBuffering(false)}
                     config={{
-                      youtube: { playerVars: { fs: 0, autoplay: 1 } },
+                      youtube: { playerVars: { fs: 0, autoplay: 0 } },
                     }}
                   />
                 )}

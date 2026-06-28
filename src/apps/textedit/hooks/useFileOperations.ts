@@ -4,9 +4,9 @@ import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import { readDocumentTextContent } from "@/services/vfs/FileContentRepository";
 import {
   htmlToMarkdown,
-  markdownToHtml,
   htmlToPlainText,
 } from "@/utils/markdown";
+import { markdownToSafeHtml } from "../utils/markdownPaste";
 import {
   removeFileExtension,
   generateSuggestedFilename,
@@ -119,7 +119,7 @@ export function useFileOperations({
           editor.commands.setContent(parsed.editorJson, false);
           editorContent = "";
         } else {
-          editorContent = markdownToHtml(parsed.markdown);
+          editorContent = markdownToSafeHtml(parsed.markdown);
         }
       } else {
         editorContent = `<p>${text}</p>`;
@@ -213,7 +213,7 @@ export function useFileOperations({
         if (parsed.editorJson) {
           editorContent = parsed.editorJson as object;
         } else {
-          editorContent = markdownToHtml(parsed.markdown);
+          editorContent = markdownToSafeHtml(parsed.markdown);
         }
       } else {
         try {
@@ -243,7 +243,7 @@ export function useFileOperations({
             if (parsed.editorJson) {
               editorContent = parsed.editorJson;
             } else {
-              editorContent = markdownToHtml(parsed.markdown);
+              editorContent = markdownToSafeHtml(parsed.markdown);
             }
           } else {
             try {
