@@ -4,6 +4,48 @@ const DB_NAME = "ryOS";
 const DB_VERSION = 12;
 let hasLoggedOpenSuccess = false;
 
+const summarizeIndexedDBLogValue = (value: unknown): string => {
+  if (value === undefined) return "undefined";
+  if (value === null) return "null";
+
+  const valueType = typeof value;
+  if (valueType !== "object") {
+    if (valueType === "string") {
+      return `string(length=${value.length})`;
+    }
+    return valueType;
+  }
+
+  if (Array.isArray(value)) {
+    return `array(length=${value.length})`;
+  }
+
+  if (typeof Blob !== "undefined" && value instanceof Blob) {
+    return `Blob(size=${value.size}, type=${value.type || "unknown"})`;
+  }
+
+  if (value instanceof ArrayBuffer) {
+    return `ArrayBuffer(byteLength=${value.byteLength})`;
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return `${value.constructor.name}(byteLength=${value.byteLength})`;
+  }
+
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  const arrayFields = keys
+    .filter((key) => Array.isArray(record[key]))
+    .map((key) => `${key}:${(record[key] as unknown[]).length}`);
+  const parts = [`keys=${keys.length ? keys.join(",") : "none"}`];
+
+  if (arrayFields.length > 0) {
+    parts.push(`arrayFields=${arrayFields.join(",")}`);
+  }
+
+  return `object(${parts.join("; ")})`;
+};
+
 export const STORES = {
   DOCUMENTS: "documents",
   IMAGES: "images",
@@ -122,8 +164,7 @@ export const dbOperations = {
 
         request.onsuccess = () => {
           console.log(
-            `[dbOperations] Get success for key "${key}". Result:`,
-            request.result
+            `[dbOperations] Get success for key "${key}". Result: ${summarizeIndexedDBLogValue(request.result)}`
           );
           db.close();
           resolve(request.result);
