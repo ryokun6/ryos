@@ -146,20 +146,21 @@ export function DebugLogOverlay() {
           {/* Header */}
           <div
             className={cn(
-              "flex items-center gap-1.5 px-2 py-1.5 border-b shrink-0",
+              "flex items-center gap-1.5 pl-3 pr-2 py-1.5 border-b shrink-0",
               "border-[color:var(--os-color-separator)]"
             )}
           >
-            <Bug weight="fill" className="size-3.5 shrink-0 opacity-70" />
-            <span className="text-[11px] font-semibold">Console</span>
-            <span className="text-[10px] opacity-60">{entries.length}</span>
+            <span className="font-os-ui text-[12px] font-semibold">Console</span>
+            <span className="font-os-ui text-[12px] opacity-60">
+              {entries.length}
+            </span>
             {errorCount > 0 && (
-              <span className="text-[10px] text-red-500">
+              <span className="font-os-ui text-[12px] text-red-500">
                 {errorCount} err
               </span>
             )}
             {warnCount > 0 && (
-              <span className="text-[10px] text-amber-500">
+              <span className="font-os-ui text-[12px] text-amber-500">
                 {warnCount} warn
               </span>
             )}
@@ -169,12 +170,12 @@ export function DebugLogOverlay() {
                 onClick={handleCopy}
                 title="Copy logs"
                 aria-label="Copy logs"
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
                 {copied ? (
-                  <Check weight="bold" className="size-3 text-green-500" />
+                  <Check weight="bold" className="size-3.5 text-green-500" />
                 ) : (
-                  <Copy weight="bold" className="size-3" />
+                  <Copy weight="bold" className="size-3.5" />
                 )}
                 <span>{copied ? "Copied" : "Copy"}</span>
               </button>
