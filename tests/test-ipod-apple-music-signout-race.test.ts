@@ -147,7 +147,7 @@ describe("Apple Music sign-out race guards", () => {
     mockMusicKitInstance = createMusicKitInstance(music);
 
     const refresh = fetchAppleMusicLibrary({ force: true });
-    expect(useIpodStore.getState().appleMusicLibraryLoading).toBe(true);
+    expect(music).toHaveBeenCalledTimes(1);
 
     mockMusicKitInstance.isAuthorized = false;
     bumpAppleMusicSyncGeneration();
