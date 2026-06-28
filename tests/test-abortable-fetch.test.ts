@@ -63,6 +63,46 @@ describe("abortableFetch", () => {
     ).rejects.toThrow("Aborted");
     expect(attempts).toBe(1);
   });
+
+  test("does not retry thrown HTTP status errors", async () => {
+    let attempts = 0;
+
+    globalThis.fetch = (async () => {
+      attempts += 1;
+      return new Response("server error", {
+        status: 500,
+        statusText: "Internal Server Error",
+      });
+    }) as typeof fetch;
+
+    await expect(
+      abortableFetch("/server-error", {
+        timeout: 1000,
+      })
+    ).rejects.toThrow("HTTP 500: Internal Server Error");
+    expect(attempts).toBe(1);
+  });
+
+  test("does not retry mutating requests without explicit retry config", async () => {
+    let attempts = 0;
+
+    globalThis.fetch = (async (_input, init) => {
+      attempts += 1;
+      return await new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    }) as typeof fetch;
+
+    await expect(
+      abortableFetch("/mutating-timeout", {
+        method: "POST",
+        timeout: 5,
+      })
+    ).rejects.toThrow("Request timed out after 5ms");
+    expect(attempts).toBe(1);
+  });
 });
 
 describe("apiRequest retry defaults", () => {
