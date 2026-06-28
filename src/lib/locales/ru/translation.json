@@ -181,7 +181,7 @@
         "aboutAdmin": "Об администрировании",
         "adminHelp": "Справка по администрированию",
         "refreshData": "Обновить данные",
-        "showSidebar": "Показать боковую панель"
+        "showSidebar": "Показать боковое меню"
       },
       "messages": {
         "addingToLibrary": "Добавление в библиотеку...",
@@ -317,7 +317,7 @@
         },
         "realtime": "В реальном времени / WebSocket",
         "redis": "Redis",
-        "services": "Сервисы",
+        "services": "Службы",
         "title": "Сервер",
         "unhealthy": "Неисправно",
         "version": "Версия",
@@ -360,7 +360,7 @@
         "soramimi": "Сорамими (空耳)",
         "source": "Источник",
         "translations": "Переводы",
-        "unknownArtist": "Неизвестный исполнитель",
+        "unknownArtist": "Неизвестный артист",
         "unshare": "Отменить общий доступ",
         "updatedAt": "Обновлено",
         "withWordTiming": "с таймингом по словам",
@@ -400,7 +400,7 @@
       "tableHeaders": {
         "added": "Добавлено",
         "addedBy": "Автор",
-        "artist": "Исполнитель",
+        "artist": "Артист",
         "lastActive": "Последняя активность",
         "message": "Сообщение",
         "role": "Роль",
@@ -421,7 +421,7 @@
         "active": "Активен",
         "admin": "админ",
         "banned": "Заблокирован",
-        "user": "пользователь"
+        "user": "Пользователь"
       }
     },
     "applet-viewer": {
@@ -527,7 +527,7 @@
         "exportAs": "Экспортировать как...",
         "html": "HTML",
         "importFromDevice": "Импортировать с устройства...",
-        "logOut": "Выйти",
+        "logOut": "Завершить сеанс",
         "login": "Войти...",
         "noAppletsOpen": "Нет открытых апплетов",
         "open": "Открыть…",
@@ -768,7 +768,7 @@
         "sound": "Звук",
         "speakButtonPresses": "Проговаривание нажатий",
         "speakResults": "Проговаривание результатов",
-        "speechEnabled": "Речь"
+        "speechEnabled": "Проговаривание текста"
       },
       "name": "Калькулятор",
       "speech": {
@@ -787,9 +787,9 @@
           "ln": "натуральный логарифм",
           "log": "логарифм",
           "memoryClear": "очистка памяти",
-          "memoryMinus": "память: минус",
-          "memoryPlus": "память: плюс",
-          "memoryRecall": "вызов из памяти",
+          "memoryMinus": "минус в памяти",
+          "memoryPlus": "плюс в памяти",
+          "memoryRecall": "вызвать из памяти",
           "memoryStore": "запись в память",
           "minus": "минус",
           "negate": "плюс-минус",
@@ -957,9 +957,9 @@
         "saveTranscriptDescription": "Введите имя для файла стенограммы чата",
         "saveTranscriptTitle": "Сохранить стенограмму",
         "searchUsernamePlaceholder": "Поиск пользователя...",
-        "setPasswordButton": "Установить пароль",
+        "setPasswordButton": "Задать пароль",
         "setPasswordDescription": "Установите пароль, чтобы включить восстановление учетной записи. Вы сможете использовать этот пароль для получения нового токена, если потеряете доступ.",
-        "setPasswordTitle": "Установить пароль"
+        "setPasswordTitle": "Задать пароль"
       },
       "help": {
         "chatWithRyo": {
@@ -998,7 +998,7 @@
         "increaseFontSize": "Увеличить размер шрифта",
         "keepTalking": "Продолжать разговор",
         "linkToTelegram": "Ссылка на Telegram",
-        "logOut": "Выйти",
+        "logOut": "Завершить сеанс",
         "login": "Войти...",
         "newChat": "Новый чат...",
         "resetFontSize": "Сбросить размер шрифта",
@@ -1535,7 +1535,7 @@
       "accentColors": {
         "blue": "Синий",
         "default": "Системный",
-        "graphite": "Графитовый",
+        "graphite": "Графит",
         "green": "Зеленый",
         "orange": "Оранжевый",
         "pink": "Розовый",
@@ -1588,8 +1588,8 @@
         "neverUploaded": "Ни разу не загружено",
         "openSettings": "Настройки синхронизации…",
         "settings": "Настройки",
-        "songs": "Музыка",
-        "stickies": "Стикеры",
+        "songs": "Песни",
+        "stickies": "Записки",
         "title": "Облачная синхронизация",
         "tvChannels": "ТВ-каналы",
         "uploading": "Загрузка",
@@ -1698,7 +1698,7 @@
       "dream": "Мечта",
       "dynamicWallpapers": {
         "dayNight": "День и ночь",
-        "lyrics": "Текст",
+        "lyrics": "Текст песни",
         "nowPlaying": "Сейчас играет",
         "shuffle": "Перемешать",
         "weather": "Погода"
@@ -1765,7 +1765,7 @@
       "ipod": "iPod",
       "ipodVolume": "Громкость iPod",
       "logIn": "Войти",
-      "logOut": "Выйти",
+      "logOut": "Завершить сеанс",
       "logOutAll": "Выйти везде",
       "logOutOfAllDevices": "Выйти со всех устройств",
       "logOutOfAllDevicesRowDescription": "Выйти из учетной записи ryOS на всех устройствах",
@@ -1830,7 +1830,7 @@
         "codeSentTitle": "Код подтверждения отправлен",
         "currentLabel": "Текущий адрес для восстановления",
         "description": "Добавьте адрес электронной почты, чтобы иметь возможность сбросить пароль, если вы его забудете.",
-        "emailLabel": "Адрес электронной почты",
+        "emailLabel": "Адрес e-mail",
         "genericError": "Что-то пошло не так. Пожалуйста, попробуйте еще раз.",
         "invalidEmail": "Введите корректный адрес электронной почты",
         "notConfigured": "Восстановление через почту недоступно на этом сервере. Вы все еще можете восстановить доступ через привязанный аккаунт Telegram.",
@@ -1894,11 +1894,11 @@
       "selectAPreset": "Выберите предустановку",
       "selectScreenSaver": "Выбрать заставку",
       "sepia": "Сепия",
-      "setPassword": "Установить пароль",
+      "setPassword": "Задать пароль",
       "setPasswordDialog": {
         "description": "Установите пароль, чтобы включить восстановление учетной записи. Вы можете использовать этот пароль для получения нового токена, если потеряете доступ.",
-        "submitLabel": "Установить пароль",
-        "title": "Установить пароль"
+        "submitLabel": "Задать пароль",
+        "title": "Задать пароль"
       },
       "setup": "Настроить",
       "shaderEffect": "Эффект шейдера",
@@ -1915,7 +1915,7 @@
         "effects": "Эффекты",
         "output": "Выход"
       },
-      "speech": "Речь",
+      "speech": "Проговаривание текста",
       "speechDescription": "Озвучивание сообщений ассистента и выделения",
       "speechVolume": "Громкость речи",
       "startAfter": "Запускать через",
@@ -2255,7 +2255,7 @@
         "addToDesktop": "Добавить на Рабочий стол",
         "date": "Дата",
         "duplicate": "Дублировать",
-        "emptyTrash": "Очистить Корзину...",
+        "emptyTrash": "Очистить Корзину…",
         "kind": "Вид",
         "moveToTrash": "Переместить в Корзину",
         "name": "Имя",
@@ -2290,7 +2290,7 @@
         }
       },
       "fileTypes": {
-        "application": "Приложение",
+        "application": "Программа",
         "bmpImage": "Изображение BMP",
         "book": "Книга",
         "directory": "Каталог",
@@ -2309,7 +2309,7 @@
       },
       "folders": {
         "applets": "Апплеты",
-        "applications": "Приложения",
+        "applications": "Программы",
         "books": "Книги",
         "desktop": "Рабочий стол",
         "documents": "Документы",
@@ -2357,7 +2357,7 @@
         "bySize": "по размеру",
         "bySmallIcon": "По мелким значкам",
         "duplicate": "Дублировать",
-        "emptyTrash": "Очистить Корзину...",
+        "emptyTrash": "Очистить Корзину…",
         "finderHelp": "Справка Finder",
         "forward": "Вперед",
         "goUp": "На уровень выше",
@@ -2365,11 +2365,11 @@
         "importFromDevice": "Импортировать с устройства...",
         "moveToTrash": "Переместить в Корзину",
         "newFinderWindow": "Новое окно Finder",
-        "newFolder": "Новая папка...",
+        "newFolder": "Новая папка…",
         "newWindow": "Новое окно",
         "putBack": "Вернуть на место",
         "rename": "Переименовать...",
-        "sidebar": "Боковая панель"
+        "sidebar": "Боковое меню"
       },
       "messages": {
         "appletImported": "Апплет импортирован!",
@@ -2643,9 +2643,9 @@
         "cycleLyricFont": "Переключить шрифт текста песни",
         "cycleLyricLayout": "Переключить макет текста песни",
         "enterFullscreen": "Открыть полноэкранный режим",
-        "nextTrack": "Следующий трек",
+        "nextTrack": "Следующая дорожка",
         "playPause": "Воспроизвести/Пауза",
-        "previousTrack": "Предыдущий трек",
+        "previousTrack": "Предыдущая дорожка",
         "select": "Выбрать",
         "shuffleOn": "Перемешивание включено",
         "toggleFurigana": "Переключить фуригану",
@@ -2838,7 +2838,7 @@
         "fontSansSerif": "Без засечек",
         "fontSerif": "С засечками",
         "fontSerifRed": "Serif (Контур)",
-        "fullScreen": "На весь экран",
+        "fullScreen": "Во весь экран",
         "furigana": "Фуригана",
         "goToAlbum": "Перейти к альбому",
         "goToArtist": "Перейти к исполнителю",
@@ -2887,7 +2887,7 @@
         "translate": "Перевести",
         "u2": "U2",
         "uiTheme": "Тема интерфейса",
-        "unknownArtist": "Неизвестный исполнитель",
+        "unknownArtist": "Неизвестный артист",
         "video": "Видео",
         "view": "Вид"
       },
@@ -3427,7 +3427,7 @@
         "backToPresets": "Назад к системам",
         "captureScreenshot": "Сделать скриншот",
         "controls": "Управление",
-        "fullScreen": "На весь экран",
+        "fullScreen": "Во весь экран",
         "loadGame": "Загрузить игру",
         "loadState": "Загрузить состояние",
         "mouseSensitivity": "Чувствительность мыши",
@@ -3677,7 +3677,7 @@
         "exportPhotos": "Экспортировать фотографии",
         "photoBoothHelp": "Справка Фотокабина"
       },
-      "name": "Фотокабина"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Воспроизвести звуковые эффекты",
@@ -3864,7 +3864,7 @@
     },
     "terminal": {
       "commands": {
-        "about": "О терминале",
+        "about": "О приложении «Терминал»",
         "ai": "Войти в режим чата с ИИ ryo",
         "cat": "Просмотреть содержимое файла",
         "cd": "Сменить каталог",
@@ -3918,7 +3918,7 @@
         }
       },
       "menu": {
-        "aboutTerminal": "О Терминале",
+        "aboutTerminal": "О приложении «Терминал»",
         "clearTerminal": "Очистить терминал",
         "decreaseFontSize": "Уменьшить размер шрифта",
         "increaseFontSize": "Увеличить размер шрифта",
@@ -4036,7 +4036,7 @@
         "newFile": "Новый файл",
         "numberedList": "Нумерованный список",
         "open": "Открыть…",
-        "plainText": "Обычный текст",
+        "plainText": "Простой текст",
         "save": "Сохранить",
         "saveEllipsis": "Сохранить…",
         "taskList": "Список задач",
@@ -4044,7 +4044,7 @@
         "texteditHelp": "Справка TextEdit",
         "underline": "Подчеркнуть"
       },
-      "name": "Текстовый редактор",
+      "name": "TextEdit",
       "numberedList": "Нумерованный список",
       "slashCommands": {
         "bulletList": {
@@ -4148,7 +4148,7 @@
         "controls": "Управление",
         "deleteChannel": "Удалить канал",
         "exportChannels": "Экспортировать каналы...",
-        "fullScreen": "На весь экран",
+        "fullScreen": "Во весь экран",
         "importChannels": "Импортировать каналы...",
         "lcdFilter": "ЖК-фильтр",
         "newChannel": "Новый канал...",
@@ -4246,7 +4246,7 @@
         "allVideos": "Все видео",
         "clearLibrary": "Очистить медиатеку...",
         "controls": "Элементы управления",
-        "fullScreen": "На весь экран",
+        "fullScreen": "Во весь экран",
         "library": "Медиатека",
         "next": "Следующий",
         "openVideo": "Открыть видео...",
@@ -4258,7 +4258,7 @@
         "resetLibrary": "Сбросить медиатеку...",
         "shareVideo": "Поделиться видео...",
         "shuffle": "Перемешать",
-        "unknownArtist": "Неизвестный исполнитель",
+        "unknownArtist": "Неизвестный артист",
         "videosHelp": "Справка по видео"
       },
       "name": "Видео",
@@ -4302,7 +4302,7 @@
         },
         "playMusic": {
           "description": "Перетащите аудиофайлы в любое место Winamp или добавьте их через редактор плейлистов",
-          "title": "Воспроизведение музыки"
+          "title": "Воспроизвести музыку"
         },
         "playlist": {
           "description": "Управляйте очередью, меняйте порядок треков и сохраняйте плейлисты .m3u",
@@ -4335,7 +4335,7 @@
         "default": "По умолчанию"
       },
       "status": {
-        "unknownArtist": "Неизвестный исполнитель"
+        "unknownArtist": "Неизвестный артист"
       },
       "title": "Winamp"
     }
@@ -4364,7 +4364,7 @@
     "appMenu": {
       "aboutApp": "О программе {{appName}}",
       "appHelp": "Справка {{appName}}",
-      "fullScreen": "На весь экран",
+      "fullScreen": "Во весь экран",
       "hideApp": "Скрыть {{appName}}",
       "hideOthers": "Скрыть другие",
       "quitApp": "Завершить {{appName}}",
@@ -4411,7 +4411,7 @@
       "dialogTitle": "Вход в ryOS",
       "forgotPassword": "Забыли пароль?",
       "logIn": "Войти",
-      "logOut": "Выйти",
+      "logOut": "Завершить сеанс",
       "logOutDescription": "Вы уверены, что хотите выйти? Вы будете отключены от своего аккаунта.",
       "loggingIn": "Вход...",
       "loginDescription": "Войдите в свой аккаунт",
@@ -4520,13 +4520,13 @@
     "dock": {
       "addToDock": "Добавить в Dock",
       "appletStore": "Магазин апплетов",
-      "applications": "Приложения",
+      "applications": "Программы",
       "folderContents": "Содержимое папки",
       "hide": "Скрыть",
       "minimized": "(свернуто)",
       "newWindow": "Новое окно",
       "open": "Открыть",
-      "quit": "Выход",
+      "quit": "Завершить",
       "removeFromDock": "Удалить из Dock",
       "showAllWindows": "Показать все окна",
       "trash": "Корзина",
@@ -4588,7 +4588,7 @@
       "applications": "Программы",
       "clear": "Очистить",
       "close": "Закрыть",
-      "copy": "Копировать",
+      "copy": "Скопировать",
       "cut": "Вырезать",
       "documents": "Документы",
       "edit": "Правка",
@@ -4660,10 +4660,10 @@
     },
     "window": {
       "close": "Закрыть",
-      "fullscreen": "На весь экран",
+      "fullscreen": "Во весь экран",
       "maximize": "Развернуть",
       "maximizeDisabled": "Развернуть (отключено)",
-      "minimize": "Свернуть",
+      "minimize": "Убрать в Dock",
       "minimizeDisabled": "Свернуть (отключено)"
     }
   },
@@ -4678,9 +4678,9 @@
   "debug": {
     "clearLogs": "Очистить логи",
     "closeConsole": "Закрыть консоль",
-    "console": "Логи",
+    "console": "Журналы",
     "copied": "Скопировано",
-    "copy": "Копировать",
+    "copy": "Скопировать",
     "copyLogs": "Копировать логи",
     "errorCount": "{{count}} ош.",
     "filterAll": "Все логи",
@@ -4750,7 +4750,7 @@
     "tabs": {
       "label": "Виды панели отладки",
       "live": "В реальном времени",
-      "logs": "Логи"
+      "logs": "Журналы"
     },
     "toggleLabel": "Отладка",
     "warnCount": "{{count}} предупр."
@@ -4784,7 +4784,7 @@
     "placeholder": "Поиск в ryOS",
     "sections": {
       "applets": "Апплеты",
-      "apps": "Приложения",
+      "apps": "Программы",
       "calendar": "Календарь",
       "commands": "Команды",
       "contacts": "Контакты",

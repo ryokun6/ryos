@@ -70,7 +70,7 @@
         },
         "loading": "正在載入分析數據...",
         "range": {
-          "today": "今日"
+          "today": "今天"
         },
         "retry": "重試",
         "sections": {
@@ -349,7 +349,7 @@
         "lyricsContent": "歌詞內容",
         "lyricsOffset": "歌詞偏移",
         "lyricsSource": "歌詞",
-        "metadata": "中繼資料",
+        "metadata": "後設資料",
         "notAvailable": "未提供",
         "notFound": "找不到歌曲",
         "notGenerated": "未產生",
@@ -360,7 +360,7 @@
         "soramimi": "空耳",
         "source": "來源",
         "translations": "翻譯",
-        "unknownArtist": "未知藝人",
+        "unknownArtist": "未知的藝人",
         "unshare": "取消分享",
         "updatedAt": "更新",
         "withWordTiming": "附帶逐字時間",
@@ -394,7 +394,7 @@
         "usersCount_plural": "{{count}} 個使用者"
       },
       "tableHeaders": {
-        "added": "新增",
+        "added": "已加入",
         "addedBy": "由",
         "artist": "藝人",
         "lastActive": "上次活動",
@@ -647,7 +647,7 @@
     },
     "calculator": {
       "angle": {
-        "deg": "度",
+        "deg": "度數",
         "degShort": "度",
         "rad": "弧度",
         "radShort": "弧度"
@@ -680,7 +680,7 @@
           "bar": "巴",
           "c": "攝氏",
           "cal": "卡路里",
-          "cm": "厘米",
+          "cm": "公分",
           "cup": "杯",
           "day": "天",
           "f": "華氏",
@@ -690,7 +690,7 @@
           "gal": "加侖（美制）",
           "ha": "公頃",
           "hr": "小時",
-          "in": "英寸",
+          "in": "英吋",
           "j": "焦耳",
           "k": "開爾文",
           "kcal": "千卡路里",
@@ -766,7 +766,7 @@
         "speakResults": "朗讀結果",
         "speechEnabled": "語音"
       },
-      "name": "計算器",
+      "name": "計算機",
       "speech": {
         "error": "錯誤",
         "keys": {
@@ -783,9 +783,9 @@
           "ln": "自然對數",
           "log": "對數",
           "memoryClear": "清除記憶",
-          "memoryMinus": "記憶減",
-          "memoryPlus": "記憶加",
-          "memoryRecall": "記憶呼叫",
+          "memoryMinus": "記憶累減",
+          "memoryPlus": "記憶累加",
+          "memoryRecall": "顯示記憶數值",
           "memoryStore": "記憶儲存",
           "minus": "減",
           "negate": "正負",
@@ -809,13 +809,13 @@
       "status": {
         "memory": "M={{value}}"
       },
-      "title": "計算器"
+      "title": "計算機"
     },
     "calendar": {
       "description": "含有事件的日曆",
       "event": {
         "allDay": "全天",
-        "calendar": "日曆",
+        "calendar": "行事曆",
         "cancel": "取消",
         "color": "顏色",
         "date": "日期",
@@ -882,7 +882,7 @@
       },
       "name": "行事曆",
       "sidebar": {
-        "calendars": "日曆",
+        "calendars": "行事曆",
         "newTodoPlaceholder": "新增待辦事項...",
         "noTodoItems": "沒有待辦事項",
         "toDoItems": "待辦事項"
@@ -1584,8 +1584,8 @@
         "neverUploaded": "從未上傳",
         "openSettings": "同步設定…",
         "settings": "設定",
-        "songs": "音樂",
-        "stickies": "便利貼",
+        "songs": "歌曲",
+        "stickies": "便條紙",
         "title": "雲端同步",
         "tvChannels": "電視頻道",
         "uploading": "正在上傳",
@@ -1702,7 +1702,7 @@
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",
       "email": {
-        "add": "新增",
+        "add": "加入",
         "checking": "正在檢查電子郵件…",
         "description": "新增用於重設密碼的電子郵件",
         "link": "連結",
@@ -1847,7 +1847,7 @@
       "recoveryEmailTitle": "復原電子郵件",
       "resetAllSettings": "重設所有設定",
       "resetAllSettingsDescription": "這將清除所有已儲存的設定並還原為預設值",
-      "restore": "還原",
+      "restore": "回復",
       "ryOSAccount": "ryOS 帳號",
       "screenSaver": "螢幕保護程式",
       "screenSaverDescription": "在閒置一段時間後啟用",
@@ -1972,7 +1972,7 @@
         "xp": "XP"
       },
       "themePreview": "主題預覽",
-      "themePreviewButton": "確定",
+      "themePreviewButton": "好",
       "themePreviewFirstItem": "第一個項目",
       "themePreviewMenus": {
         "edit": "編輯",
@@ -2197,7 +2197,7 @@
           "drizzle": "毛毛雨",
           "fog": "霧",
           "partlyCloudy": "局部多雲",
-          "rain": "雨",
+          "rain": "下雨",
           "snow": "雪",
           "thunderstorm": "雷雨"
         },
@@ -2219,14 +2219,14 @@
       "widgets": {
         "addWidget": "加入小工具...",
         "aquarium": "水族箱",
-        "calendar": "日曆",
+        "calendar": "行事曆",
         "clock": "時鐘",
         "currencyConverter": "匯率換算",
         "dictionary": "字典",
         "ipod": "iPod",
         "removeWidget": "移除小工具",
         "stickyNote": "便利貼",
-        "stocks": "股票",
+        "stocks": "股市",
         "terrarium": "生態缸",
         "translation": "翻譯",
         "weather": "天氣"
@@ -2290,15 +2290,15 @@
         "bmpImage": "BMP 影像",
         "book": "書籍",
         "directory": "目錄",
-        "document": "檔案",
+        "document": "文件",
         "file": "檔案",
         "folder": "檔案夾",
-        "gifImage": "GIF 影像",
+        "gifImage": "GIF影像",
         "htmlApplet": "HTML 小程式",
         "internetShortcut": "網際網路捷徑",
-        "jpegImage": "JPEG 影像",
+        "jpegImage": "JPEG影像",
         "mp3Audio": "MP3 音訊",
-        "pngImage": "PNG 影像",
+        "pngImage": "PNG影像",
         "quicktimeMovie": "QuickTime 影片",
         "unknown": "未知",
         "webpImage": "WebP 影像"
@@ -2309,8 +2309,8 @@
         "books": "書籍",
         "desktop": "桌面",
         "documents": "文件",
-        "downloads": "下載",
-        "images": "圖片",
+        "downloads": "下載項目",
+        "images": "影像",
         "music": "音樂",
         "sites": "網站",
         "trash": "垃圾桶",
@@ -2353,15 +2353,15 @@
         "bySize": "依大小",
         "bySmallIcon": "依小圖像",
         "duplicate": "複製",
-        "emptyTrash": "清空垃圾桶...",
+        "emptyTrash": "清空垃圾桶…",
         "finderHelp": "Finder 輔助說明",
         "forward": "往前",
         "goUp": "前往上層",
         "import": "輸入檔案…",
         "importFromDevice": "從裝置匯入...",
-        "moveToTrash": "移至垃圾桶",
-        "newFinderWindow": "新增 Finder 視窗",
-        "newFolder": "新增檔案夾...",
+        "moveToTrash": "丟到垃圾桶",
+        "newFinderWindow": "新增Finder視窗",
+        "newFolder": "新增檔案夾…",
         "newWindow": "新增視窗",
         "putBack": "放回",
         "rename": "重新命名...",
@@ -2639,9 +2639,9 @@
         "cycleLyricFont": "循環歌詞字體",
         "cycleLyricLayout": "切換歌詞佈局",
         "enterFullscreen": "開啟全螢幕",
-        "nextTrack": "下一首",
+        "nextTrack": "下一個音軌",
         "playPause": "播放/暫停",
-        "previousTrack": "上一首",
+        "previousTrack": "上一個音軌",
         "select": "選取",
         "shuffleOn": "隨機播放已開啟",
         "toggleFurigana": "切換振假名",
@@ -2737,7 +2737,7 @@
         "openedSharedTrack": "已開啟共享曲目。按下 ⏯ 開始播放。",
         "pleaseTryAgain": "請再試一次。",
         "sharedTrackVideoId": "影片 ID：{{videoId}}",
-        "songSearchAdd": "新增",
+        "songSearchAdd": "加入",
         "songSearchAddSelected": "新增歌曲",
         "songSearchAdding": "正在新增歌曲...",
         "songSearchDescription": "搜尋歌曲、藝人，或貼上 YouTube 網址",
@@ -2883,7 +2883,7 @@
         "translate": "翻譯",
         "u2": "U2",
         "uiTheme": "介面主題",
-        "unknownArtist": "未知藝人",
+        "unknownArtist": "未知的藝人",
         "video": "影片",
         "view": "檢視"
       },
@@ -2894,12 +2894,12 @@
         "alwaysOn": "保持開啟",
         "appleMusicSignIn": "Apple Music",
         "appleMusicSignOut": "Apple Music",
-        "artists": "演出者",
+        "artists": "藝人",
         "backlight": "背光燈",
         "brickGame": "打磚塊",
         "extras": "附加功能",
         "favoriteSongs": "最愛歌曲",
-        "genius": "Genius",
+        "genius": "智選推薦",
         "ipod": "iPod",
         "libraryAppleMusic": "Apple Music",
         "librarySource": "資料庫",
@@ -2915,7 +2915,7 @@
         "one": "單一",
         "playlistTrackCount_one": "{{count}} 首歌曲",
         "playlistTrackCount_other": "{{count}} 首歌曲",
-        "playlists": "播放清單",
+        "playlists": "播放列表",
         "radio": "廣播",
         "recentlyAdded": "最近加入",
         "repeat": "重複",
@@ -3671,7 +3671,7 @@
         "exportPhotos": "輸出照片",
         "photoBoothHelp": "照片亭輔助說明"
       },
-      "name": "照片亭"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "播放音效",
@@ -3770,9 +3770,9 @@
         "note": "便利貼",
         "syncStickies": "同步便條"
       },
-      "name": "便利貼",
+      "name": "便條紙",
       "placeholder": "撰寫便利貼...",
-      "title": "便利貼"
+      "title": "便條紙"
     },
     "synth": {
       "addPreset": "新增預設",
@@ -3976,7 +3976,7 @@
         "enterANameForYourFile": "輸入檔案名稱",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "輸入要儲存的檔案名稱，或在關閉前將其刪除。",
         "keepNewDocument": "保留新檔案",
-        "saveChanges": "儲存變更",
+        "saveChanges": "儲存所作更動",
         "saveFile": "儲存檔案",
         "saveYourChangesBeforeClosing": "在關閉前儲存您的變更。"
       },
@@ -4070,7 +4070,7 @@
           "title": "文字"
         }
       },
-      "speak": "說話",
+      "speak": "朗讀",
       "stopSpeech": "停止語音",
       "text": "文字",
       "underline": "底線",
@@ -4250,7 +4250,7 @@
         "resetLibrary": "重設資料庫...",
         "shareVideo": "分享影片...",
         "shuffle": "隨機播放",
-        "unknownArtist": "未知演出者",
+        "unknownArtist": "未知的藝人",
         "videosHelp": "影片輔助說明"
       },
       "name": "影片",
@@ -4327,7 +4327,7 @@
         "default": "預設"
       },
       "status": {
-        "unknownArtist": "未知藝人"
+        "unknownArtist": "未知的藝人"
       },
       "title": "Winamp"
     }
@@ -4478,7 +4478,7 @@
       "openInGitHub": "在 GitHub 開啟",
       "save": "儲存",
       "saveBeforeClosing": "在關閉前儲存您的變更。",
-      "saveChanges": "儲存變更",
+      "saveChanges": "儲存所作更動",
       "saveFile": "儲存檔案",
       "share": {
         "by": "由",
@@ -4489,7 +4489,7 @@
         "from": "來自",
         "generating": "正在產生...",
         "itemTypes": {
-          "app": "應用程式",
+          "app": "App",
           "applet": "小程式",
           "item": "項目",
           "page": "頁面",
@@ -4510,7 +4510,7 @@
       "welcomeTo": "歡迎使用{{appName}}"
     },
     "dock": {
-      "addToDock": "加入 Dock",
+      "addToDock": "加入Dock中",
       "appletStore": "小程式商店",
       "applications": "應用程式",
       "folderContents": "檔案夾內容",
@@ -4580,14 +4580,14 @@
       "applications": "應用程式",
       "clear": "清除",
       "close": "關閉",
-      "copy": "複製",
+      "copy": "拷貝",
       "cut": "剪下",
-      "documents": "檔案",
+      "documents": "文件",
       "edit": "編輯",
       "file": "檔案",
       "go": "前往",
       "help": "輔助說明",
-      "images": "圖片",
+      "images": "影像",
       "music": "音樂",
       "paste": "貼上",
       "redo": "重做",
@@ -4655,7 +4655,7 @@
       "fullscreen": "全螢幕",
       "maximize": "最大化",
       "maximizeDisabled": "最大化 (已停用)",
-      "minimize": "最小化",
+      "minimize": "縮到最小",
       "minimizeDisabled": "最小化 (已停用)"
     }
   },
@@ -4672,7 +4672,7 @@
     "closeConsole": "關閉主控台",
     "console": "記錄",
     "copied": "已複製",
-    "copy": "複製",
+    "copy": "拷貝",
     "copyLogs": "複製記錄",
     "errorCount": "{{count}} 個錯誤",
     "filterAll": "全部記錄",
@@ -4682,7 +4682,7 @@
     "fixLogs": "將記錄傳送給 Cursor 代理",
     "hideConsole": "隱藏主控台",
     "live": {
-      "appVersion": "應用程式",
+      "appVersion": "App",
       "average": "平均值",
       "bufferedLogs": "{{count}} 已緩衝",
       "copySnapshot": "拷貝環境快照",
@@ -4779,7 +4779,7 @@
       "apps": "應用程式",
       "calendar": "行事曆",
       "commands": "指令",
-      "contacts": "聯絡資訊",
+      "contacts": "聯絡人",
       "documents": "文件",
       "music": "音樂",
       "settings": "設定",

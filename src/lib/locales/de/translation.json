@@ -181,7 +181,7 @@
         "aboutAdmin": "Über Admin",
         "adminHelp": "Admin-Hilfe",
         "refreshData": "Daten aktualisieren",
-        "showSidebar": "Seitenleiste anzeigen"
+        "showSidebar": "Seitenleiste einblenden"
       },
       "messages": {
         "addingToLibrary": "Wird zur Bibliothek hinzugefügt...",
@@ -333,14 +333,14 @@
         "redis": "Redis",
         "rooms": "Räume",
         "server": "Server",
-        "songs": "Lieder",
+        "songs": "Titel",
         "users": "Benutzer"
       },
       "song": {
         "album": "Album",
         "appleMusicId": "Apple Music-ID",
         "createdAt": "Erstellt",
-        "delete": "Song löschen",
+        "delete": "Titel löschen",
         "forceRefresh": "Aktualisierung erzwingen",
         "forceRefreshTooltip": "Liedtext von Kugou erneut abrufen und zwischengespeicherte Anmerkungen löschen",
         "furigana": "Furigana",
@@ -605,7 +605,7 @@
         "booksHelp": "Books-Hilfe",
         "chapters": "Kapitel",
         "columns": "Spalten",
-        "font": "Schriftart",
+        "font": "Schrift",
         "import": "EPUB importieren …",
         "nextPage": "Nächste Seite",
         "previousPage": "Vorherige Seite",
@@ -766,7 +766,7 @@
         "speakResults": "Ergebnisse sprechen",
         "speechEnabled": "Sprachausgabe"
       },
-      "name": "Taschenrechner",
+      "name": "Rechner",
       "speech": {
         "error": "Fehler",
         "keys": {
@@ -783,9 +783,9 @@
           "ln": "natürlicher Logarithmus",
           "log": "Logarithmus",
           "memoryClear": "Speicher löschen",
-          "memoryMinus": "Speicher minus",
-          "memoryPlus": "Speicher plus",
-          "memoryRecall": "Speicherabruf",
+          "memoryMinus": "Speicher subtrahieren",
+          "memoryPlus": "Speicher addieren",
+          "memoryRecall": "Speicher zurückholen",
           "memoryStore": "Speichern",
           "minus": "Minus",
           "negate": "Plus/Minus",
@@ -809,7 +809,7 @@
       "status": {
         "memory": "M={{value}}"
       },
-      "title": "Taschenrechner"
+      "title": "Rechner"
     },
     "calendar": {
       "description": "Kalender mit Ereignissen",
@@ -1534,7 +1534,7 @@
         "graphite": "Graphit",
         "green": "Grün",
         "orange": "Orange",
-        "pink": "Pink",
+        "pink": "Rosa",
         "purple": "Lila",
         "red": "Rot",
         "teal": "Blaugrün",
@@ -1584,8 +1584,8 @@
         "neverUploaded": "Nie hochgeladen",
         "openSettings": "Synchronisierungseinstellungen…",
         "settings": "Einstellungen",
-        "songs": "Musik",
-        "stickies": "Haftnotizen",
+        "songs": "Titel",
+        "stickies": "Notizzettel",
         "title": "Cloud-Synchronisierung",
         "tvChannels": "TV-Sender",
         "uploading": "Wird hochgeladen",
@@ -1694,7 +1694,7 @@
       "dream": "Traum",
       "dynamicWallpapers": {
         "dayNight": "Tag & Nacht",
-        "lyrics": "Songtext",
+        "lyrics": "Liedtext",
         "nowPlaying": "Läuft gerade",
         "shuffle": "Zufällig",
         "weather": "Wetter"
@@ -1911,7 +1911,7 @@
         "effects": "Effekte",
         "output": "Ausgabe"
       },
-      "speech": "Sprache",
+      "speech": "Sprachausgabe",
       "speechDescription": "Assistentennachrichten und Auswahl vorlesen",
       "speechVolume": "Sprachlautstärke",
       "startAfter": "Starten nach",
@@ -2058,7 +2058,7 @@
           "purple": "Lila",
           "red": "Rot"
         },
-        "showColors": "Farben anzeigen"
+        "showColors": "Farben einblenden"
       },
       "cities": {
         "berlin": "Berlin",
@@ -2251,7 +2251,7 @@
         "addToDesktop": "Zum Schreibtisch hinzufügen",
         "date": "Datum",
         "duplicate": "Duplizieren",
-        "emptyTrash": "Papierkorb leeren...",
+        "emptyTrash": "Papierkorb entleeren…",
         "kind": "Art",
         "moveToTrash": "In den Papierkorb legen",
         "name": "Name",
@@ -2274,7 +2274,7 @@
       "dialogs": {
         "emptyTrash": {
           "description": "Möchten Sie den Papierkorb wirklich leeren? Dieser Vorgang kann nicht rückgängig gemacht werden.",
-          "title": "Papierkorb leeren"
+          "title": "Papierkorb entleeren"
         },
         "newFolder": {
           "description": "Geben Sie einen Namen für den neuen Ordner ein:",
@@ -2286,7 +2286,7 @@
         }
       },
       "fileTypes": {
-        "application": "Anwendung",
+        "application": "Programm",
         "bmpImage": "BMP-Bild",
         "book": "Buch",
         "directory": "Verzeichnis",
@@ -2305,7 +2305,7 @@
       },
       "folders": {
         "applets": "Applets",
-        "applications": "Anwendungen",
+        "applications": "Programme",
         "books": "Bücher",
         "desktop": "Schreibtisch",
         "documents": "Dokumente",
@@ -2353,15 +2353,15 @@
         "bySize": "nach Größe",
         "bySmallIcon": "als kleine Symbole",
         "duplicate": "Duplizieren",
-        "emptyTrash": "Papierkorb leeren...",
+        "emptyTrash": "Papierkorb entleeren…",
         "finderHelp": "Finder-Hilfe",
         "forward": "Vorwärts",
         "goUp": "Übergeordneter Ordner",
         "import": "Datei importieren…",
         "importFromDevice": "Von Gerät importieren...",
         "moveToTrash": "In den Papierkorb legen",
-        "newFinderWindow": "Neues Finder-Fenster",
-        "newFolder": "Neuer Ordner...",
+        "newFinderWindow": "Neues Fenster",
+        "newFolder": "Neuer Ordner…",
         "newWindow": "Neues Fenster",
         "putBack": "Zurücklegen",
         "rename": "Umbenennen...",
@@ -2894,7 +2894,7 @@
         "alwaysOn": "Eingeschaltet lassen",
         "appleMusicSignIn": "Apple Music",
         "appleMusicSignOut": "Apple Music",
-        "artists": "Interpreten",
+        "artists": "Künstler",
         "backlight": "Hintergrundbeleuchtung",
         "brickGame": "Brick",
         "extras": "Extras",
@@ -2907,7 +2907,7 @@
         "loading": "Laden …",
         "music": "Musik",
         "musicQuiz": "Musik-Quiz",
-        "noSongs": "Keine Titel",
+        "noSongs": "Keine Musiktitel",
         "noStations": "Keine Sender",
         "nowPlaying": "Aktuelle Wiedergabe",
         "off": "Aus",
@@ -2921,7 +2921,7 @@
         "repeat": "Wiederholen",
         "settings": "Einstellungen",
         "shuffle": "Mischen",
-        "shuffleSongs": "Titel mischen",
+        "shuffleSongs": "Titel zufällig wiedergeben",
         "signedIn": "Angemeldet",
         "signedOut": "Abgemeldet",
         "songs": "Titel",
@@ -3671,7 +3671,7 @@
         "exportPhotos": "Fotos exportieren",
         "photoBoothHelp": "Fotokabine-Hilfe"
       },
-      "name": "Fotokabine"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Soundeffekte abspielen",
@@ -3724,7 +3724,7 @@
         "blue": "Blau",
         "green": "Grün",
         "orange": "Orange",
-        "pink": "Pink",
+        "pink": "Rosa",
         "purple": "Lila",
         "yellow": "Gelb"
       },
@@ -3770,9 +3770,9 @@
         "note": "Notiz",
         "syncStickies": "Stickies synchronisieren"
       },
-      "name": "Stickies",
+      "name": "Notizzettel",
       "placeholder": "Notiz schreiben...",
-      "title": "Stickies"
+      "title": "Notizzettel"
     },
     "synth": {
       "addPreset": "VOREINSTELLUNG HINZUFÜGEN",
@@ -3976,7 +3976,7 @@
         "enterANameForYourFile": "Geben Sie einen Namen für Ihre Datei ein",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "Geben Sie einen Dateinamen zum Speichern ein, oder löschen Sie sie vor dem Schließen.",
         "keepNewDocument": "Neues Dokument behalten",
-        "saveChanges": "Änderungen speichern",
+        "saveChanges": "Änderungen sichern",
         "saveFile": "Datei speichern",
         "saveYourChangesBeforeClosing": "Speichern Sie Ihre Änderungen, bevor Sie schließen."
       },
@@ -4038,7 +4038,7 @@
         "texteditHelp": "Texteditor-Hilfe",
         "underline": "Unterstreichen"
       },
-      "name": "Texteditor",
+      "name": "TextEdit",
       "numberedList": "Nummerierte Liste",
       "slashCommands": {
         "bulletList": {
@@ -4253,7 +4253,7 @@
         "unknownArtist": "Unbekannter Künstler",
         "videosHelp": "Videos-Hilfe"
       },
-      "name": "Filme",
+      "name": "Videos",
       "status": {
         "add": "HINZUFÜGEN",
         "addVideos": "Videos hinzufügen",
@@ -4368,7 +4368,7 @@
       "controlPanels": "Systemsteuerung…",
       "createAccount": "Account erstellen…",
       "enterFullScreen": "Vollbild aktivieren",
-      "exitFullScreen": "Vollbild beenden",
+      "exitFullScreen": "Vollbildmodus aus",
       "logOut": "{{username}} abmelden…",
       "login": "Anmelden…",
       "moreApps": "Mehr Apps…",
@@ -4493,7 +4493,7 @@
           "applet": "Applet",
           "item": "Element",
           "page": "Seite",
-          "song": "Lied"
+          "song": "Titel"
         },
         "linkCopied": "Link kopiert",
         "linkCopiedToClipboard": "{{itemType}}-Link in die Zwischenablage kopiert",
@@ -4512,7 +4512,7 @@
     "dock": {
       "addToDock": "Zum Dock hinzufügen",
       "appletStore": "Applet Store",
-      "applications": "Anwendungen",
+      "applications": "Programme",
       "folderContents": "Ordnerinhalt",
       "hide": "Ausblenden",
       "minimized": "(minimiert)",
@@ -4596,8 +4596,8 @@
       "shareApp": "App teilen...",
       "sites": "Websites",
       "trash": "Papierkorb",
-      "undo": "Rückgängig",
-      "videos": "Filme",
+      "undo": "Widerrufen",
+      "videos": "Videos",
       "view": "Darstellung"
     },
     "menuBar": {
@@ -4655,7 +4655,7 @@
       "fullscreen": "Vollbild",
       "maximize": "Maximieren",
       "maximizeDisabled": "Maximieren (deaktiviert)",
-      "minimize": "Minimieren",
+      "minimize": "Im Dock ablegen",
       "minimizeDisabled": "Minimieren (deaktiviert)"
     }
   },
@@ -4670,7 +4670,7 @@
   "debug": {
     "clearLogs": "Logs löschen",
     "closeConsole": "Konsole schließen",
-    "console": "Logs",
+    "console": "Protokolle",
     "copied": "Kopiert",
     "copy": "Kopieren",
     "copyLogs": "Logs kopieren",
@@ -4742,7 +4742,7 @@
     "tabs": {
       "label": "Debug-Panel-Ansichten",
       "live": "Live",
-      "logs": "Logs"
+      "logs": "Protokolle"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} Warn."

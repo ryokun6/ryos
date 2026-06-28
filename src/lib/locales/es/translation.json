@@ -348,7 +348,7 @@
         "lines": "líneas",
         "lyricsContent": "Contenido de las letras",
         "lyricsOffset": "Desplazamiento de letras",
-        "lyricsSource": "Letras",
+        "lyricsSource": "Letra",
         "metadata": "Metadatos",
         "notAvailable": "No disponible",
         "notFound": "Canción no encontrada",
@@ -419,7 +419,7 @@
         "active": "Activo",
         "admin": "administrador",
         "banned": "Bloqueado",
-        "user": "usuario"
+        "user": "Usuario"
       }
     },
     "applet-viewer": {
@@ -955,9 +955,9 @@
         "saveTranscriptDescription": "Introduce un nombre para tu archivo de transcripción de chat",
         "saveTranscriptTitle": "Guardar Transcripción",
         "searchUsernamePlaceholder": "Buscar nombre de usuario...",
-        "setPasswordButton": "Establecer Contraseña",
+        "setPasswordButton": "Definir contraseña",
         "setPasswordDescription": "Establece una contraseña para habilitar la recuperación de la cuenta. Puedes usar esta contraseña para obtener un nuevo token si pierdes el acceso.",
-        "setPasswordTitle": "Establecer Contraseña"
+        "setPasswordTitle": "Definir contraseña"
       },
       "help": {
         "chatWithRyo": {
@@ -1586,8 +1586,8 @@
         "neverUploaded": "Nunca subido",
         "openSettings": "Ajustes de sincronización…",
         "settings": "Ajustes",
-        "songs": "Música",
-        "stickies": "Notas adhesivas",
+        "songs": "Canciones",
+        "stickies": "Notas Adhesivas",
         "title": "Sincronización en la nube",
         "tvChannels": "Canales de TV",
         "uploading": "Subiendo",
@@ -1696,7 +1696,7 @@
       "dream": "Sueño",
       "dynamicWallpapers": {
         "dayNight": "Día y noche",
-        "lyrics": "Letras",
+        "lyrics": "Letra",
         "nowPlaying": "Reproduciendo ahora",
         "shuffle": "Aleatorio",
         "weather": "Clima"
@@ -1788,7 +1788,7 @@
       "menu": {
         "aboutControlPanels": "Acerca de Paneles de control",
         "aboutControlPanelsForMacosX": "Acerca de Preferencias del Sistema",
-        "app": "Aplicación",
+        "app": "App",
         "controlPanelsHelp": "Ayuda de Paneles de control",
         "controlPanelsHelpForMacosX": "Ayuda de Preferencias del Sistema"
       },
@@ -1851,7 +1851,7 @@
       "resetAllSettingsDescription": "Esto borrará todos los ajustes guardados y restaurará los valores predeterminados",
       "restore": "Restaurar",
       "ryOSAccount": "Cuenta de ryOS",
-      "screenSaver": "Protector de pantalla",
+      "screenSaver": "Salvapantallas",
       "screenSaverDescription": "Se activa después de un período de inactividad",
       "screenSaverExitHint": "Haz clic o pulsa cualquier tecla para salir",
       "screenSaverOptions": {
@@ -1892,11 +1892,11 @@
       "selectAPreset": "Seleccionar un preajuste",
       "selectScreenSaver": "Seleccionar protector de pantalla",
       "sepia": "Sepia",
-      "setPassword": "Establecer contraseña",
+      "setPassword": "Definir contraseña",
       "setPasswordDialog": {
         "description": "Establece una contraseña para habilitar la recuperación de la cuenta. Puedes usar esta contraseña para obtener un nuevo token si pierdes el acceso.",
-        "submitLabel": "Establecer contraseña",
-        "title": "Establecer contraseña"
+        "submitLabel": "Definir contraseña",
+        "title": "Definir contraseña"
       },
       "setup": "Configurar",
       "shaderEffect": "Efecto de sombreador",
@@ -1913,7 +1913,7 @@
         "effects": "Efectos",
         "output": "Salida"
       },
-      "speech": "Voz",
+      "speech": "Habla",
       "speechDescription": "Lee mensajes del asistente y texto seleccionado",
       "speechVolume": "Volumen de voz",
       "startAfter": "Iniciar después de",
@@ -2253,11 +2253,11 @@
         "addToDesktop": "Añadir al Escritorio",
         "date": "Fecha",
         "duplicate": "Duplicar",
-        "emptyTrash": "Vaciar Papelera...",
+        "emptyTrash": "Vaciar papelera…",
         "kind": "Tipo",
-        "moveToTrash": "Mover a la Papelera",
+        "moveToTrash": "Trasladar a la papelera",
         "name": "Nombre",
-        "newFolder": "Nueva Carpeta…",
+        "newFolder": "Nueva carpeta…",
         "noAirDropUsersAvailable": "No hay usuarios cercanos",
         "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
@@ -2276,11 +2276,11 @@
       "dialogs": {
         "emptyTrash": {
           "description": "¿Está seguro de que desea vaciar la Papelera? Esta acción no se puede deshacer.",
-          "title": "Vaciar Papelera"
+          "title": "Vaciar papelera"
         },
         "newFolder": {
           "description": "Introduzca un nombre para la nueva carpeta:",
-          "title": "Nueva Carpeta"
+          "title": "Nueva carpeta"
         },
         "renameItem": {
           "description": "Introduzca un nuevo nombre para \"{{name}}\"",
@@ -2355,15 +2355,15 @@
         "bySize": "por Tamaño",
         "bySmallIcon": "por icono pequeño",
         "duplicate": "Duplicar",
-        "emptyTrash": "Vaciar papelera...",
+        "emptyTrash": "Vaciar papelera…",
         "finderHelp": "Ayuda de Finder",
         "forward": "Adelante",
         "goUp": "Subir",
         "import": "Importar archivo…",
         "importFromDevice": "Importar desde dispositivo...",
-        "moveToTrash": "Mover a la papelera",
+        "moveToTrash": "Trasladar a la papelera",
         "newFinderWindow": "Nueva ventana del Finder",
-        "newFolder": "Nueva carpeta...",
+        "newFolder": "Nueva carpeta…",
         "newWindow": "Nueva ventana",
         "putBack": "Volver a colocar",
         "rename": "Renombrar...",
@@ -2641,7 +2641,7 @@
         "cycleLyricFont": "Alternar fuente de la letra",
         "cycleLyricLayout": "Alternar diseño de letra",
         "enterFullscreen": "Entrar en pantalla completa",
-        "nextTrack": "Siguiente pista",
+        "nextTrack": "Pista siguiente",
         "playPause": "Reproducir/Pausar",
         "previousTrack": "Pista anterior",
         "select": "Seleccionar",
@@ -2852,7 +2852,7 @@
         "libraryAppleMusic": "Apple Music",
         "librarySource": "Biblioteca",
         "libraryYoutube": "Biblioteca de YouTube",
-        "lyrics": "Letras",
+        "lyrics": "Letra",
         "menubarArtistLimit": "Mostrando {{limit}} de {{total}} artistas",
         "menubarTrackLimit": "Mostrando {{limit}} de {{total}} — abre el iPod para ver todo",
         "multi": "Múltiple",
@@ -2923,7 +2923,7 @@
         "repeat": "Repetir",
         "settings": "Ajustes",
         "shuffle": "Aleatorio",
-        "shuffleSongs": "Reproducción aleatoria",
+        "shuffleSongs": "Canciones aleatorias",
         "signedIn": "Sesión iniciada",
         "signedOut": "Sesión cerrada",
         "songs": "Canciones",
@@ -3126,7 +3126,7 @@
       "help": {
         "directions": {
           "description": "Desde la tarjeta del lugar, abre las indicaciones de conducción en Apple Maps: se abre en una pestaña nueva para mantener ryOS abierto (no hay rutas dentro del mapa todavía).",
-          "title": "Indicaciones"
+          "title": "Ruta"
         },
         "dropPins": {
           "description": "Elige un resultado de la lista para soltar un marcador y volver a centrar el mapa en él",
@@ -3165,7 +3165,7 @@
       "placeCard": {
         "addFavorite": "Añadir a Favoritos",
         "close": "Cerrar tarjeta de lugar",
-        "directions": "Indicaciones",
+        "directions": "Ruta",
         "favorite": "Favorito",
         "favorited": "En favoritos",
         "home": "Casa",
@@ -3223,7 +3223,7 @@
         "theater": "Teatro",
         "university": "Universidad",
         "winery": "Bodega",
-        "zoo": "Zoológico"
+        "zoo": "Zoo"
       },
       "searchButton": "Buscar",
       "searchFailed": "Error en la búsqueda",
@@ -3674,7 +3674,7 @@
         "exportPhotos": "Exportar fotos",
         "photoBoothHelp": "Ayuda de Cabina de fotos"
       },
-      "name": "Cabina de fotos"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Reproducir efectos de sonido",
@@ -3773,9 +3773,9 @@
         "note": "Nota",
         "syncStickies": "Sincronizar Notas Adhesivas"
       },
-      "name": "Notas rápidas",
+      "name": "Notas Adhesivas",
       "placeholder": "Escribir una nota...",
-      "title": "Notas rápidas"
+      "title": "Notas Adhesivas"
     },
     "synth": {
       "addPreset": "AÑADIR PREAJUSTE",
@@ -3861,7 +3861,7 @@
     },
     "terminal": {
       "commands": {
-        "about": "Acerca del terminal",
+        "about": "Acerca de Terminal",
         "ai": "Entrar en modo de chat de IA con ryo",
         "cat": "Ver contenido del archivo",
         "cd": "Cambiar directorio",
@@ -4041,7 +4041,7 @@
         "texteditHelp": "Ayuda de TextEdit",
         "underline": "Subrayado"
       },
-      "name": "Editor de texto",
+      "name": "TextEdit",
       "numberedList": "Lista numerada",
       "slashCommands": {
         "bulletList": {
@@ -4686,7 +4686,7 @@
     "fixLogs": "Enviar registros al agente Cursor",
     "hideConsole": "Ocultar consola",
     "live": {
-      "appVersion": "Aplicación",
+      "appVersion": "App",
       "average": "Promedio",
       "bufferedLogs": "{{count}} en búfer",
       "copySnapshot": "Copiar instantánea del entorno",
@@ -4792,7 +4792,7 @@
     },
     "settings": {
       "language": "Idioma",
-      "screenSaver": "Protector de pantalla",
+      "screenSaver": "Salvapantallas",
       "sounds": "Sonidos y volumen",
       "theme": "Tema",
       "wallpaper": "Fondo de pantalla"

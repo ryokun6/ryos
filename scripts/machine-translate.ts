@@ -22,6 +22,7 @@ import { join } from "path";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import {
+  formatAppleContextualTerminologyForPrompt,
   formatAppleTerminologyForPrompt,
   TRANSLATION_LOCALES,
   type TranslationLocale,
@@ -123,11 +124,17 @@ function updateNestedValue(
  * Translate a batch of strings using Gemini 2.5 Flash
  */
 async function translateBatch(
-  texts: string[],
+  items: TodoKey[],
   targetLanguage: TranslationLocale
 ): Promise<string[]> {
   const languageName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
   const terminology = formatAppleTerminologyForPrompt(targetLanguage);
+  const contextualTerminology =
+    formatAppleContextualTerminologyForPrompt(targetLanguage);
+  const sourceEntries = items.map((item) => ({
+    key: item.path.join("."),
+    english: item.englishValue,
+  }));
   
   const prompt = `You are a professional translator. Translate the following English strings to ${languageName}.
 
@@ -135,6 +142,7 @@ Rules:
 - Maintain the exact same meaning and tone
 - Keep technical terms consistent (e.g., "Finder", "iPod", "Applet")
 - Apply the Apple terminology below exactly to standalone labels and naturally to compounds
+- Apply key-specific terminology when an input key matches
 - Preserve formatting and special characters
 - For UI strings, use natural, concise language appropriate for that language
 - Return ONLY a JSON array of translated strings in the same order
@@ -143,8 +151,11 @@ Rules:
 Apple UI terminology:
 ${terminology}
 
-English strings to translate:
-${JSON.stringify(texts, null, 2)}
+Key-specific terminology:
+${contextualTerminology}
+
+English strings and their translation keys:
+${JSON.stringify(sourceEntries, null, 2)}
 
 Return ONLY a valid JSON array of strings, nothing else.`;
 
@@ -168,8 +179,8 @@ Return ONLY a valid JSON array of strings, nothing else.`;
     
     const translated = JSON.parse(jsonStr);
     
-    if (!Array.isArray(translated) || translated.length !== texts.length) {
-      throw new Error(`Invalid response format: expected array of ${texts.length} strings`);
+    if (!Array.isArray(translated) || translated.length !== items.length) {
+      throw new Error(`Invalid response format: expected array of ${items.length} strings`);
     }
 
     return translated;
@@ -242,12 +253,11 @@ async function translateLanguage(
 
   for (let i = 0; i < todoKeys.length; i += batchSize) {
     const batch = todoKeys.slice(i, i + batchSize);
-    const batchTexts = batch.map((k) => k.englishValue);
 
     console.log(`   Translating batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(todoKeys.length / batchSize)} (${batch.length} strings)...`);
 
     try {
-      const translatedTexts = await translateBatch(batchTexts, lang);
+      const translatedTexts = await translateBatch(batch, lang);
 
       // Update translations
       batch.forEach((key, index) => {

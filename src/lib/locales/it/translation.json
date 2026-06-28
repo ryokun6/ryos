@@ -419,7 +419,7 @@
         "active": "Attivo",
         "admin": "amministratore",
         "banned": "Bannato",
-        "user": "utente"
+        "user": "Utente"
       }
     },
     "applet-viewer": {
@@ -525,7 +525,7 @@
         "exportAs": "Esporta come...",
         "html": "HTML",
         "importFromDevice": "Importa da Dispositivo...",
-        "logOut": "Esci",
+        "logOut": "Logout",
         "login": "Accedi...",
         "noAppletsOpen": "Nessuna applet aperta",
         "open": "Apri…",
@@ -786,8 +786,8 @@
           "log": "logaritmo",
           "memoryClear": "cancella memoria",
           "memoryMinus": "sottrai dalla memoria",
-          "memoryPlus": "aggiungi alla memoria",
-          "memoryRecall": "richiamo memoria",
+          "memoryPlus": "somma alla memoria",
+          "memoryRecall": "richiama dalla memoria",
           "memoryStore": "memoria",
           "minus": "meno",
           "negate": "più meno",
@@ -955,9 +955,9 @@
         "saveTranscriptDescription": "Inserisci un nome per il file della trascrizione della chat",
         "saveTranscriptTitle": "Salva Trascrizione",
         "searchUsernamePlaceholder": "Cerca nome utente...",
-        "setPasswordButton": "Imposta Password",
+        "setPasswordButton": "Imposta password",
         "setPasswordDescription": "Imposta una password per abilitare il recupero dell'account. Puoi usare questa password per ottenere un nuovo token se perdi l'accesso.",
-        "setPasswordTitle": "Imposta Password"
+        "setPasswordTitle": "Imposta password"
       },
       "help": {
         "chatWithRyo": {
@@ -996,7 +996,7 @@
         "increaseFontSize": "Aumenta Dimensione Carattere",
         "keepTalking": "Continua a parlare",
         "linkToTelegram": "Collega a Telegram",
-        "logOut": "Esci",
+        "logOut": "Logout",
         "login": "Accedi...",
         "newChat": "Nuova Chat...",
         "resetFontSize": "Reimposta Dimensione Carattere",
@@ -1586,8 +1586,8 @@
         "neverUploaded": "Mai caricato",
         "openSettings": "Impostazioni di sincronizzazione…",
         "settings": "Impostazioni",
-        "songs": "Musica",
-        "stickies": "Note adesive",
+        "songs": "Brani",
+        "stickies": "Memo",
         "title": "Sincronizzazione cloud",
         "tvChannels": "Canali TV",
         "uploading": "Caricamento...",
@@ -1689,7 +1689,7 @@
       "deleteAccountRowDescription": "Rimuovi permanentemente il tuo account e i dati sincronizzati",
       "description": "Impostazioni di sistema",
       "desktopAndScreenSaver": "Desktop e Salvaschermo",
-      "desktopTab": "Desktop",
+      "desktopTab": "Scrivania",
       "displayMode": "Modalità di visualizzazione",
       "displayModeDescription": "Applica un filtro colore allo sfondo del desktop",
       "downloadMacApp": "Scarica App Mac",
@@ -1763,7 +1763,7 @@
       "ipod": "iPod",
       "ipodVolume": "Volume iPod",
       "logIn": "Accedi",
-      "logOut": "Esci",
+      "logOut": "Logout",
       "logOutAll": "Esci da tutti",
       "logOutOfAllDevices": "Esci da tutti i dispositivi",
       "logOutOfAllDevicesRowDescription": "Esci dal tuo account ryOS su tutti i dispositivi",
@@ -1828,7 +1828,7 @@
         "codeSentTitle": "Verifica inviata",
         "currentLabel": "Email di recupero attuale",
         "description": "Aggiungi un'email per poter reimpostare la password se la dimentichi.",
-        "emailLabel": "Indirizzo email",
+        "emailLabel": "Indirizzo e-mail",
         "genericError": "Qualcosa è andato storto. Riprova.",
         "invalidEmail": "Inserisci un indirizzo email valido",
         "notConfigured": "Il recupero tramite email non è disponibile su questo server. Puoi ancora effettuare il recupero tramite un account Telegram collegato.",
@@ -2253,11 +2253,11 @@
         "addToDesktop": "Aggiungi alla Scrivania",
         "date": "Data",
         "duplicate": "Duplica",
-        "emptyTrash": "Svuota Cestino...",
+        "emptyTrash": "Svuota il Cestino…",
         "kind": "Tipo",
         "moveToTrash": "Sposta nel Cestino",
         "name": "Nome",
-        "newFolder": "Nuova Cartella…",
+        "newFolder": "Nuova cartella…",
         "noAirDropUsersAvailable": "Nessun utente nelle vicinanze",
         "open": "Apri",
         "openAirDrop": "Apri AirDrop",
@@ -2276,11 +2276,11 @@
       "dialogs": {
         "emptyTrash": {
           "description": "Sei sicuro di voler svuotare il Cestino? Questa azione non può essere annullata.",
-          "title": "Svuota Cestino"
+          "title": "Svuota il Cestino"
         },
         "newFolder": {
           "description": "Inserisci un nome per la nuova cartella:",
-          "title": "Nuova Cartella"
+          "title": "Nuova cartella"
         },
         "renameItem": {
           "description": "Inserisci un nuovo nome per \"{{name}}\"",
@@ -2291,7 +2291,7 @@
         "application": "Applicazione",
         "bmpImage": "Immagine BMP",
         "book": "Libro",
-        "directory": "Cartella",
+        "directory": "Directory",
         "document": "Documento",
         "file": "File",
         "folder": "Cartella",
@@ -2309,7 +2309,7 @@
         "applets": "Applet",
         "applications": "Applicazioni",
         "books": "Libri",
-        "desktop": "Desktop",
+        "desktop": "Scrivania",
         "documents": "Documenti",
         "downloads": "Download",
         "images": "Immagini",
@@ -2355,15 +2355,15 @@
         "bySize": "per Dimensione",
         "bySmallIcon": "Per icona piccola",
         "duplicate": "Duplica",
-        "emptyTrash": "Svuota Cestino...",
+        "emptyTrash": "Svuota il Cestino…",
         "finderHelp": "Aiuto Finder",
         "forward": "Avanti",
         "goUp": "Vai su",
         "import": "Importa file…",
         "importFromDevice": "Importa da dispositivo...",
         "moveToTrash": "Sposta nel Cestino",
-        "newFinderWindow": "Nuova finestra Finder",
-        "newFolder": "Nuova cartella...",
+        "newFinderWindow": "Nuova finestra del Finder",
+        "newFolder": "Nuova cartella…",
         "newWindow": "Nuova finestra",
         "putBack": "Ripristina",
         "rename": "Rinomina...",
@@ -3674,7 +3674,7 @@
         "exportPhotos": "Esporta foto",
         "photoBoothHelp": "Aiuto Cabina fotografica"
       },
-      "name": "Cabina fotografica"
+      "name": "Photo Booth"
     },
     "soundboard": {
       "description": "Riproduci effetti sonori",
@@ -3773,9 +3773,9 @@
         "note": "Nota",
         "syncStickies": "Sincronizza Note Adesive"
       },
-      "name": "Stickies",
+      "name": "Memo",
       "placeholder": "Scrivi una nota...",
-      "title": "Stickies"
+      "title": "Memo"
     },
     "synth": {
       "addPreset": "AGGIUNGI PRESET",
@@ -3861,7 +3861,7 @@
     },
     "terminal": {
       "commands": {
-        "about": "Informazioni sul terminale",
+        "about": "Informazioni su Terminale",
         "ai": "Entra in modalità chat AI con ryo",
         "cat": "Visualizza contenuto file",
         "cd": "Cambia directory",
@@ -4033,7 +4033,7 @@
         "newFile": "Nuovo file",
         "numberedList": "Elenco numerato",
         "open": "Apri…",
-        "plainText": "Testo semplice",
+        "plainText": "Solo testo",
         "save": "Salva",
         "saveEllipsis": "Salva…",
         "taskList": "Elenco attività",
@@ -4041,7 +4041,7 @@
         "texteditHelp": "Aiuto TextEdit",
         "underline": "Sottolineato"
       },
-      "name": "Editor di testo",
+      "name": "TextEdit",
       "numberedList": "Elenco numerato",
       "slashCommands": {
         "bulletList": {
@@ -4073,7 +4073,7 @@
           "title": "Testo"
         }
       },
-      "speak": "Parla",
+      "speak": "Leggi",
       "stopSpeech": "Interrompi voce",
       "text": "Testo",
       "underline": "Sottolineato",
@@ -4372,7 +4372,7 @@
       "controlPanels": "Pannello di Controllo…",
       "createAccount": "Crea Account…",
       "enterFullScreen": "Attiva schermo intero",
-      "exitFullScreen": "Esci da schermo intero",
+      "exitFullScreen": "Disattiva modalità a tutto schermo",
       "logOut": "Esci da {{username}}…",
       "login": "Accedi…",
       "moreApps": "Altre App…",
@@ -4407,7 +4407,7 @@
       "dialogTitle": "Accesso a ryOS",
       "forgotPassword": "Password dimenticata?",
       "logIn": "Accedi",
-      "logOut": "Esci",
+      "logOut": "Logout",
       "logOutDescription": "Sei sicuro di voler uscire? Verrai disconnesso dal tuo account.",
       "loggingIn": "Accesso in corso...",
       "loginDescription": "Accedi al tuo account",
@@ -4659,7 +4659,7 @@
       "fullscreen": "A tutto schermo",
       "maximize": "Ingrandisci",
       "maximizeDisabled": "Ingrandisci (disabilitato)",
-      "minimize": "Riduci a icona",
+      "minimize": "Contrai",
       "minimizeDisabled": "Riduci a icona (disabilitato)"
     }
   },

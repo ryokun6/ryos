@@ -2601,7 +2601,7 @@
         "aboutTerminal": "About Terminal"
       },
       "commands": {
-        "about": "About terminal",
+        "about": "About Terminal",
         "ai": "Enter AI chat mode with ryo",
         "cat": "View file contents",
         "cd": "Change directory",

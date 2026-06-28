@@ -1,19 +1,16 @@
 /**
- * Canonical standalone UI labels derived from Apple's localization glossaries.
+ * Canonical standalone UI labels extracted from Apple's macOS localization
+ * glossaries for every ryOS locale.
  *
- * Sources reviewed on 2026-06-28:
- * - Glossaries - iOS 26.2
- * - Glossaries - macOS 26.1
- * - https://developer.apple.com/localization/resources/
- * - https://help.apple.com/pdf/applestyleguide/en_US/apple-style-guide.pdf
+ * The English object keys are Apple's original base strings. Localized values
+ * are the dominant exact-match translations in the downloaded Brazilian,
+ * French, German, Italian, Japanese, Korean, Russian, Spanish, and Traditional
+ * Chinese glossaries. Context-sensitive phrases stay outside this global map.
  *
- * Apple requires an authenticated developer session for the official DMG files.
- * The values below were checked through the searchable, Apple-glossary-derived
- * index at https://applelocalization.com/ and spot-checked against localized
- * Apple Support guides. Only this small terminology table is kept in the repo.
- *
- * The `pt` locale intentionally follows Apple's Brazilian Portuguese terms.
+ * The `pt` locale intentionally follows Apple's Brazilian Portuguese glossary.
  */
+
+import { RAW_APPLE_UI_TERMINOLOGY } from "./apple-ui-terminology-data";
 
 export const TRANSLATION_LOCALES = [
   "zh-TW",
@@ -31,156 +28,156 @@ export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number];
 
 type LocalizedTerm = Record<TranslationLocale, string>;
 
-export const APPLE_UI_TERMINOLOGY = {
-  Settings: {
-    "zh-TW": "設定",
-    ja: "設定",
-    ko: "설정",
-    fr: "Réglages",
-    de: "Einstellungen",
-    es: "Ajustes",
-    pt: "Ajustes",
-    it: "Impostazioni",
-    ru: "Настройки",
+export const APPLE_UI_TERMINOLOGY =
+  RAW_APPLE_UI_TERMINOLOGY satisfies Record<string, LocalizedTerm>;
+
+/**
+ * The same English label can represent a different concept in a specific
+ * surface. These overrides keep Apple's global term as the default while
+ * preserving the contextually correct wording for the listed translation key.
+ */
+export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
+  "apps.admin.server.ok": {
+    "zh-TW": "確定",
+    ja: "OK",
+    ko: "확인",
+    fr: "OK",
+    de: "OK",
+    es: "OK",
+    pt: "OK",
+    it: "OK",
+    ru: "ОК",
   },
-  Trash: {
-    "zh-TW": "垃圾桶",
-    ja: "ゴミ箱",
-    ko: "휴지통",
-    fr: "Corbeille",
-    de: "Papierkorb",
-    es: "Papelera",
-    pt: "Lixo",
-    it: "Cestino",
-    ru: "Корзина",
+  "apps.dashboard.calendar.showColors": {
+    ja: "色を表示",
   },
-  Account: {
-    "zh-TW": "帳號",
-    ja: "アカウント",
-    ko: "계정",
-    fr: "Compte",
-    de: "Account",
-    es: "Cuenta",
-    pt: "Conta",
-    it: "Account",
-    ru: "Учетная запись",
+  "apps.maps.poiCategory.museum": {
+    ja: "博物館",
   },
-  "Log Out": {
-    "zh-TW": "登出",
-    ja: "ログアウト",
-    ko: "로그아웃",
-    fr: "Se déconnecter",
-    de: "Abmelden",
-    es: "Cerrar sesión",
-    pt: "Finalizar Sessão",
-    it: "Esci",
-    ru: "Выйти",
+  "apps.control-panels.accentColors.graphite": {
+    ko: "그라파이트",
   },
-  Cancel: {
-    "zh-TW": "取消",
-    ja: "キャンセル",
-    ko: "취소",
-    fr: "Annuler",
-    de: "Abbrechen",
-    es: "Cancelar",
-    pt: "Cancelar",
-    it: "Annulla",
+  "apps.calculator.angle.deg": {
+    ko: "도",
+  },
+  "apps.dashboard.weather.humidity": {
+    de: "Luftfeuchtigkeit",
+  },
+  "apps.admin.auditLog.action": {
+    "zh-TW": "操作",
+    ko: "작업",
+  },
+  "debug.console": {
+    fr: "Journaux",
+  },
+  "debug.tabs.logs": {
+    fr: "Journaux",
+  },
+  "apps.admin.song.lyricsSource": {
+    ru: "Текст песни",
+  },
+  "apps.ipod.menu.lyrics": {
+    ru: "Текст песни",
+  },
+  "apps.control-panels.dynamicWallpapers.lyrics": {
+    ru: "Текст песни",
+  },
+  "common.dialog.saveChanges": {
+    ru: "Сохранить изменения",
+  },
+  "apps.textedit.dialogs.saveChanges": {
+    ru: "Сохранить изменения",
+  },
+  "apps.maps.placeCard.directions": {
+    ru: "Маршрут",
+  },
+  "apps.maps.help.directions.title": {
+    ru: "Маршрут",
+  },
+  "common.dialog.cancel": {
     ru: "Отмена",
   },
-  Save: {
-    "zh-TW": "儲存",
-    ja: "保存",
-    ko: "저장",
-    fr: "Enregistrer",
-    de: "Sichern",
-    es: "Guardar",
-    pt: "Salvar",
-    it: "Salva",
-    ru: "Сохранить",
+  "apps.chats.dialogs.cancel": {
+    ru: "Отмена",
   },
-  Delete: {
-    "zh-TW": "刪除",
-    ja: "削除",
-    ko: "삭제",
-    fr: "Supprimer",
-    de: "Löschen",
-    es: "Eliminar",
-    pt: "Apagar",
-    it: "Elimina",
-    ru: "Удалить",
+  "apps.karaoke.liveListen.cancel": {
+    ru: "Отмена",
   },
-  Open: {
-    "zh-TW": "打開",
-    ja: "開く",
-    ko: "열기",
-    fr: "Ouvrir",
-    de: "Öffnen",
-    es: "Abrir",
-    pt: "Abrir",
-    it: "Apri",
-    ru: "Открыть",
+  "apps.control-panels.deleteAccount.cancel": {
+    ru: "Отмена",
   },
-  Close: {
-    "zh-TW": "關閉",
-    ja: "閉じる",
-    ko: "닫기",
-    fr: "Fermer",
-    de: "Schließen",
-    es: "Cerrar",
-    pt: "Fechar",
-    it: "Chiudi",
-    ru: "Закрыть",
+  "apps.calendar.event.cancel": {
+    ru: "Отмена",
   },
-  "New Window": {
-    "zh-TW": "新增視窗",
-    ja: "新規ウインドウ",
-    ko: "새로운 윈도우",
-    fr: "Nouvelle fenêtre",
-    de: "Neues Fenster",
-    es: "Nueva ventana",
-    pt: "Nova Janela",
-    it: "Nuova finestra",
-    ru: "Новое окно",
+  "apps.contacts.picturePicker.cancel": {
+    ru: "Отмена",
   },
-  "Full Screen": {
-    "zh-TW": "全螢幕",
-    ja: "フルスクリーン",
-    ko: "전체 화면",
-    fr: "Plein écran",
-    de: "Vollbild",
-    es: "Pantalla completa",
-    pt: "Tela Cheia",
-    it: "A tutto schermo",
-    ru: "На весь экран",
+  "apps.calculator.speech.keys.memoryRecall": {
+    pt: "recuperar memória",
   },
-  Help: {
-    "zh-TW": "輔助說明",
-    ja: "ヘルプ",
-    ko: "도움말",
-    fr: "Aide",
-    de: "Hilfe",
-    es: "Ayuda",
-    pt: "Ajuda",
-    it: "Aiuto",
-    ru: "Справка",
-  },
-} as const satisfies Record<string, LocalizedTerm>;
+} as const satisfies Record<string, Partial<LocalizedTerm>>;
+
+const APPLE_UI_CONTEXTUAL_ENGLISH = {
+  "apps.admin.server.ok": "OK",
+  "apps.dashboard.calendar.showColors": "Show Colors",
+  "apps.maps.poiCategory.museum": "Museum",
+  "apps.control-panels.accentColors.graphite": "Graphite",
+  "apps.calculator.angle.deg": "Degrees",
+  "apps.dashboard.weather.humidity": "Humidity",
+  "apps.admin.auditLog.action": "Action",
+  "debug.console": "Logs",
+  "debug.tabs.logs": "Logs",
+  "apps.admin.song.lyricsSource": "Lyrics",
+  "apps.ipod.menu.lyrics": "Lyrics",
+  "apps.control-panels.dynamicWallpapers.lyrics": "Lyrics",
+  "common.dialog.saveChanges": "Save Changes",
+  "apps.textedit.dialogs.saveChanges": "Save Changes",
+  "apps.maps.placeCard.directions": "Directions",
+  "apps.maps.help.directions.title": "Directions",
+  "common.dialog.cancel": "Cancel",
+  "apps.chats.dialogs.cancel": "Cancel",
+  "apps.karaoke.liveListen.cancel": "Cancel",
+  "apps.control-panels.deleteAccount.cancel": "Cancel",
+  "apps.calendar.event.cancel": "Cancel",
+  "apps.contacts.picturePicker.cancel": "Cancel",
+  "apps.calculator.speech.keys.memoryRecall": "memory recall",
+} as const satisfies Record<
+  keyof typeof APPLE_UI_CONTEXTUAL_TERMINOLOGY,
+  string
+>;
+
+const contextualTerminology: Record<string, Partial<LocalizedTerm>> =
+  APPLE_UI_CONTEXTUAL_TERMINOLOGY;
+const contextualEnglish: Record<string, string> = APPLE_UI_CONTEXTUAL_ENGLISH;
 
 export type AppleUiTerm = keyof typeof APPLE_UI_TERMINOLOGY;
 
 const ELLIPSIS_SUFFIX = /(?:\.\.\.|…)$/u;
 
+function isAppleUiTerm(value: string): value is AppleUiTerm {
+  return Object.hasOwn(APPLE_UI_TERMINOLOGY, value);
+}
+
 export function getExpectedAppleUiTerm(
   englishValue: string,
-  locale: TranslationLocale
+  locale: TranslationLocale,
+  key: string
 ): string | null {
-  const source = englishValue.replace(ELLIPSIS_SUFFIX, "") as AppleUiTerm;
-  const translations = APPLE_UI_TERMINOLOGY[source];
+  const contextual = contextualTerminology[key]?.[locale];
+  if (contextual !== undefined && contextualEnglish[key] === englishValue) {
+    return contextual;
+  }
 
-  if (!translations || (englishValue !== source && !ELLIPSIS_SUFFIX.test(englishValue))) {
+  const source = englishValue.replace(ELLIPSIS_SUFFIX, "");
+
+  if (
+    !isAppleUiTerm(source) ||
+    (englishValue !== source && !ELLIPSIS_SUFFIX.test(englishValue))
+  ) {
     return null;
   }
 
+  const translations = APPLE_UI_TERMINOLOGY[source];
   const suffix = ELLIPSIS_SUFFIX.test(englishValue) ? "…" : "";
   return `${translations[locale]}${suffix}`;
 }
@@ -190,5 +187,19 @@ export function formatAppleTerminologyForPrompt(
 ): string {
   return Object.entries(APPLE_UI_TERMINOLOGY)
     .map(([english, translations]) => `${english} → ${translations[locale]}`)
+    .join("\n");
+}
+
+export function formatAppleContextualTerminologyForPrompt(
+  locale: TranslationLocale
+): string {
+  return Object.entries(contextualTerminology)
+    .flatMap(([key, translations]) => {
+      const translation = translations[locale];
+      const english = contextualEnglish[key];
+      return translation === undefined || english === undefined
+        ? []
+        : [`${key}: ${english} → ${translation}`];
+    })
     .join("\n");
 }

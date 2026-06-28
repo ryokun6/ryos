@@ -3,6 +3,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
+  APPLE_UI_TERMINOLOGY,
   getExpectedAppleUiTerm,
   TRANSLATION_LOCALES,
   type TranslationLocale,
@@ -328,7 +329,7 @@ function auditLocale(
       });
     }
 
-    const expectedTerm = getExpectedAppleUiTerm(englishValue, locale);
+    const expectedTerm = getExpectedAppleUiTerm(englishValue, locale, key);
     if (
       expectedTerm &&
       targetValue.normalize("NFC") !== expectedTerm.normalize("NFC")
@@ -470,7 +471,7 @@ async function fixTranslations(): Promise<void> {
     removeExtraKeys(englishObject, targetObject, locale, englishKeys);
 
     for (const [key, englishValue] of Object.entries(english)) {
-      const expectedTerm = getExpectedAppleUiTerm(englishValue, locale);
+      const expectedTerm = getExpectedAppleUiTerm(englishValue, locale, key);
       if (expectedTerm) {
         setNestedValue(targetObject, key, expectedTerm);
       }
@@ -518,7 +519,8 @@ if (import.meta.main) {
     process.exitCode = 1;
   } else {
     console.log(
-      `Translation audit passed for ${TRANSLATION_LOCALES.length} locales.`
+      `Translation audit passed for ${TRANSLATION_LOCALES.length} locales ` +
+        `against ${Object.keys(APPLE_UI_TERMINOLOGY).length} Apple terms.`
     );
   }
 }
