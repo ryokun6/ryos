@@ -103,14 +103,14 @@ export async function issueRecoveryCode(
 }
 
 /**
- * Verify a submitted code against the stored hash. On success the code is
- * deleted (single-use). On mismatch the attempt counter is incremented and the
- * code is burned once the attempt limit is reached.
+ * Verify a submitted code against the stored hash without deleting a correct
+ * code. On mismatch the attempt counter is incremented and the code is burned
+ * once the attempt limit is reached.
  *
  * An absent/expired code returns `{ ok: false, reason: "missing" }` — callers
  * should treat this the same as a mismatch to avoid leaking timing/existence.
  */
-export async function consumeRecoveryCode(
+export async function verifyRecoveryCode(
   redis: Redis,
   key: string,
   username: string,
@@ -148,7 +148,27 @@ export async function consumeRecoveryCode(
     return { ok: false, reason: "mismatch" };
   }
 
-  // Correct code — single use.
-  await redis.del(key);
   return { ok: true };
+}
+
+export async function deleteRecoveryCode(redis: Redis, key: string): Promise<void> {
+  await redis.del(key);
+}
+
+/**
+ * Verify a submitted code against the stored hash and delete it on success.
+ * Use this only when no later operation can reject the request after the code
+ * has been accepted.
+ */
+export async function consumeRecoveryCode(
+  redis: Redis,
+  key: string,
+  username: string,
+  code: string
+): Promise<RecoveryVerifyResult> {
+  const result = await verifyRecoveryCode(redis, key, username, code);
+  if (result.ok) {
+    await deleteRecoveryCode(redis, key);
+  }
+  return result;
 }

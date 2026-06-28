@@ -15,7 +15,10 @@ import {
   setUserEmailIndex,
 } from "../../_utils/auth/_user-record.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
-import { consumeRecoveryCode } from "../../_utils/auth/_recovery.js";
+import {
+  deleteRecoveryCode,
+  verifyRecoveryCode,
+} from "../../_utils/auth/_recovery.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
 export const runtime = "nodejs";
@@ -83,9 +86,10 @@ export default apiHandler<VerifyEmailRequest>(
       return;
     }
 
-    const result = await consumeRecoveryCode(
+    const verificationKey = redisKeys.auth.emailVerify(username);
+    const result = await verifyRecoveryCode(
       redis,
-      redisKeys.auth.emailVerify(username),
+      verificationKey,
       username,
       code
     );
@@ -113,6 +117,7 @@ export default apiHandler<VerifyEmailRequest>(
       emailVerified: true,
     });
     await setUserEmailIndex(redis, record.email, username);
+    await deleteRecoveryCode(redis, verificationKey);
 
     logger.response(200, Date.now() - startTime);
     res.status(200).json({ success: true, email: record.email, emailVerified: true });

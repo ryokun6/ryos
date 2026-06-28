@@ -30,6 +30,8 @@ import {
   getStoredUserRecord,
   setStoredUserRecord,
   getUsernameByEmail,
+  setUserEmailIndex,
+  deleteUserEmailIndex,
 } from "../api/_utils/auth/_user-record";
 
 const redis = createRedis();
@@ -245,6 +247,51 @@ describe("Account Recovery API", () => {
       });
       expect(res.status).toBe(400);
     });
+
+    test("banned account rejection does not consume a valid reset code", async () => {
+      const username = uniqueTestUsername("recban");
+      await registerUser(username, "oldpassword123");
+      const code = await issueRecoveryCode(
+        redis,
+        redisKeys.auth.passwordReset(username),
+        username
+      );
+
+      const record = await getStoredUserRecord(redis, username);
+      await setStoredUserRecord(redis, username, {
+        ...(record || { username }),
+        banned: true,
+      });
+
+      const blocked = await fetchWithOrigin(`${BASE_URL}/api/auth/recovery/reset`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          identifier: username,
+          code,
+          newPassword: "stillvalidpass123",
+        }),
+      });
+      expect(blocked.status).toBe(403);
+      expect(await redis.get(redisKeys.auth.passwordReset(username))).toBeTruthy();
+
+      await setStoredUserRecord(redis, username, {
+        ...(record || { username }),
+        banned: false,
+      });
+
+      const retried = await fetchWithOrigin(`${BASE_URL}/api/auth/recovery/reset`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          identifier: username,
+          code,
+          newPassword: "stillvalidpass123",
+        }),
+      });
+      expect(retried.status).toBe(200);
+      expect(await redis.get(redisKeys.auth.passwordReset(username))).toBeNull();
+    });
   });
 
   // ==========================================================================
@@ -398,6 +445,53 @@ describe("Account Recovery API", () => {
         }
       );
       expect(res.status).toBe(400);
+    });
+
+    test("email ownership conflict does not consume a valid verification code", async () => {
+      const owner = uniqueTestUsername("emailowner");
+      const username = uniqueTestUsername("emailrace");
+      await registerUser(owner, "testpassword123");
+      const { token } = await registerUser(username, "testpassword123");
+      const email = `${username}@example.com`;
+      const record = await getStoredUserRecord(redis, username);
+      await setStoredUserRecord(redis, username, {
+        ...(record || { username }),
+        email,
+        emailVerified: false,
+      });
+      await setUserEmailIndex(redis, email, owner);
+      const code = await issueRecoveryCode(
+        redis,
+        redisKeys.auth.emailVerify(username),
+        username
+      );
+
+      const conflicted = await fetchWithAuth(
+        `${BASE_URL}/api/auth/email/verify`,
+        username,
+        token as string,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        }
+      );
+      expect(conflicted.status).toBe(409);
+      expect(await redis.get(redisKeys.auth.emailVerify(username))).toBeTruthy();
+
+      await deleteUserEmailIndex(redis, email);
+      const retried = await fetchWithAuth(
+        `${BASE_URL}/api/auth/email/verify`,
+        username,
+        token as string,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        }
+      );
+      expect(retried.status).toBe(200);
+      expect(await redis.get(redisKeys.auth.emailVerify(username))).toBeNull();
     });
 
     test("email/status requires auth", async () => {
