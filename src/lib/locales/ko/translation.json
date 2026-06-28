@@ -1179,6 +1179,8 @@
           "stream": {
             "args": "인자",
             "emptyAssistant": "(메시지 내용 없음)",
+            "workedFor": "{{duration}} 동안 작업",
+            "showLess": "접기",
             "result": "결과",
             "runEnded": "실행 완료 · {{status}}",
             "runEndedError": "오류로 인해 실행 종료됨",

@@ -178,37 +178,42 @@ function humanizeToolName(name: string): string {
     .join(" ");
 }
 
-function toolPrimaryText(
-  name: string,
-  done: boolean,
-  rows: Record<string, unknown>[]
-): string {
+function toolVerbText(name: string, done: boolean): string {
   if (isTerminalToolName(name)) {
     return done ? "Ran" : "Running";
   }
-
-  const count = rows.length;
-  const latest = rows[rows.length - 1];
-  const latestEv = isRecord(latest?.ev) ? latest.ev : {};
-  const detail = toolSecondaryInfo(latestEv);
-
-  if (name === "read_file" || name === "edit_file") {
-    const noun = count > 1 ? `${count} files` : fileNameFromPath(detail) || "file";
-    if (name === "read_file") return `${done ? "Read" : "Reading"} ${noun}`;
-    return `${done ? "Edited" : "Editing"} ${noun}`;
-  }
-
-  if (name === "grep_search" || name === "file_search" || name === "web_search") {
-    return humanizeToolName(name);
-  }
-
-  if (count > 1) return `${humanizeToolName(name)} (${count})`;
+  if (name === "read_file") return done ? "Read" : "Reading";
+  if (name === "edit_file") return done ? "Edited" : "Editing";
   return humanizeToolName(name);
 }
 
+function toolDetailText(
+  name: string,
+  rows: Record<string, unknown>[],
+  secondary: string
+): string {
+  const count = rows.length;
+
+  if (isTerminalToolName(name)) {
+    return secondary;
+  }
+
+  if (name === "read_file" || name === "edit_file") {
+    if (count > 1) return `${count} files`;
+    const latest = rows[rows.length - 1];
+    const latestEv = isRecord(latest?.ev) ? latest.ev : {};
+    const path = toolSecondaryInfo(latestEv);
+    return fileNameFromPath(path) || path || "file";
+  }
+
+  if (secondary) return secondary;
+  if (count > 1) return `(${count})`;
+  return "";
+}
+
 export function buildToolInvocationLabel(rows: Record<string, unknown>[]): {
-  primary: string;
-  secondary: string;
+  verb: string;
+  detail: string;
   done: boolean;
 } {
   const events = rows.reduce<Record<string, unknown>[]>((acc, row) => {
@@ -220,13 +225,8 @@ export function buildToolInvocationLabel(rows: Record<string, unknown>[]): {
   const done = events.length > 0 && events.every(isToolCallDone);
   const secondary = toolGroupSecondaryInfo(rows, name);
   return {
-    primary: toolPrimaryText(name, done, rows),
-    secondary:
-      !isTerminalToolName(name) &&
-      rows.length === 1 &&
-      secondary === fileNameFromPath(secondary)
-        ? ""
-        : secondary,
+    verb: toolVerbText(name, done),
+    detail: toolDetailText(name, rows, secondary),
     done,
   };
 }

@@ -1179,6 +1179,8 @@
           "stream": {
             "args": "Argomenti",
             "emptyAssistant": "(Nessun contenuto del messaggio)",
+            "workedFor": "Ha lavorato per {{duration}}",
+            "showLess": "Mostra meno",
             "result": "Risultato",
             "runEnded": "Esecuzione completata · {{status}}",
             "runEndedError": "Esecuzione terminata con un errore",

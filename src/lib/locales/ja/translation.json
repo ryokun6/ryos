@@ -1179,6 +1179,8 @@
           "stream": {
             "args": "引数",
             "emptyAssistant": "(メッセージ内容なし)",
+            "workedFor": "{{duration}} 作業",
+            "showLess": "折りたたむ",
             "result": "結果",
             "runEnded": "実行完了 · {{status}}",
             "runEndedError": "エラーで終了",

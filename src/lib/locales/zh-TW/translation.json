@@ -1179,6 +1179,8 @@
           "stream": {
             "args": "引數",
             "emptyAssistant": "(無訊息內容)",
+            "workedFor": "工作了 {{duration}}",
+            "showLess": "顯示較少",
             "result": "結果",
             "runEnded": "執行已完成 · {{status}}",
             "runEndedError": "執行時發生錯誤並結束",

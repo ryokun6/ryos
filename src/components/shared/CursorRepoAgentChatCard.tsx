@@ -1,4 +1,4 @@
-import { ArrowSquareOut, ArrowUp, Check } from "@phosphor-icons/react";
+import { ArrowSquareOut, ArrowUp, CaretRight, Check } from "@phosphor-icons/react";
 import {
   KeyboardEvent,
   useCallback,
@@ -8,16 +8,14 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  CursorRunEventView,
-  MergedAssistantStreamBlock,
-  MergedEvTextStreamBlock,
-  MergedThinkingStreamBlock,
-  MergedToolCallStreamBlock,
-  MergedUserStreamBlock,
-} from "@/components/shared/CursorRunEventView";
+import { CursorRunCoalescedItems } from "@/components/shared/CursorRunCoalescedItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { coalesceCursorRunRows } from "@/lib/cursorSdkRunCoalesce";
+import {
+  computeCursorRunDurationMs,
+  formatCursorRunDuration,
+  splitCursorRunStreamItems,
+} from "@/lib/cursorRunStreamCollapse";
 import { cn } from "@/lib/utils";
 import {
   cursorAgentCardHeaderClassName,
@@ -58,6 +56,7 @@ export function CursorRepoAgentChatCard({
     error,
     meta,
     metaAgentTitle,
+    activeRunId,
     sendFollowup,
     isSendingFollowup,
     followupError,
@@ -65,6 +64,7 @@ export function CursorRepoAgentChatCard({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [followupDraft, setFollowupDraft] = useState("");
+  const [preambleExpanded, setPreambleExpanded] = useState(false);
 
   const displayTitle =
     metaAgentTitle && metaAgentTitle.trim().length > 0
@@ -85,6 +85,20 @@ export function CursorRepoAgentChatCard({
       ),
     [events]
   );
+
+  const streamSplit = useMemo(
+    () => splitCursorRunStreamItems(items, done),
+    [items, done]
+  );
+
+  const workedForDuration = useMemo(() => {
+    const durationMs = computeCursorRunDurationMs(events);
+    return durationMs !== null ? formatCursorRunDuration(durationMs) : null;
+  }, [events]);
+
+  useEffect(() => {
+    setPreambleExpanded(false);
+  }, [activeRunId, done]);
 
   const submitFollowup = useCallback(async () => {
     const text = followupDraft.trim();
@@ -236,66 +250,45 @@ export function CursorRepoAgentChatCard({
               <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
                 {t("apps.chats.toolCalls.cursorCloudAgent.noEventsYet")}
               </span>
+            ) : streamSplit.canCollapse ? (
+              <>
+                {!preambleExpanded ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreambleExpanded(true)}
+                    aria-expanded={false}
+                    className="mb-0.5 flex w-full min-w-0 items-center gap-0.5 px-1 py-0.5 text-left text-[11px] text-neutral-500 transition-colors hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                  >
+                    <span className="min-w-0 truncate">
+                      {t("apps.chats.toolCalls.cursorCloudAgent.stream.workedFor", {
+                        duration: workedForDuration ?? "—",
+                      })}
+                    </span>
+                    <CaretRight className="size-3 shrink-0" weight="bold" aria-hidden />
+                  </button>
+                ) : (
+                  <>
+                    <CursorRunCoalescedItems
+                      items={streamSplit.preamble}
+                      keyPrefix="preamble"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreambleExpanded(false)}
+                      aria-expanded
+                      className="mb-0.5 block px-1 py-0.5 text-left text-[11px] text-neutral-500 transition-colors hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    >
+                      {t("apps.chats.toolCalls.cursorCloudAgent.stream.showLess")}
+                    </button>
+                  </>
+                )}
+                <CursorRunCoalescedItems
+                  items={streamSplit.summary}
+                  keyPrefix="summary"
+                />
+              </>
             ) : (
-              items.map((item, i) => {
-                const key = `run-${i}`;
-                switch (item.kind) {
-                  case "merged_assistant":
-                    return (
-                      <MergedAssistantStreamBlock
-                        key={key}
-                        plainStream
-                        tsStart={item.tsStart}
-                        tsEnd={item.tsEnd}
-                        segments={item.segments}
-                      />
-                    );
-                  case "merged_thinking":
-                    return (
-                      <MergedThinkingStreamBlock
-                        key={key}
-                        plainStream
-                        tsStart={item.tsStart}
-                        tsEnd={item.tsEnd}
-                        text={item.text}
-                      />
-                    );
-                  case "merged_user":
-                    return (
-                      <MergedUserStreamBlock
-                        key={key}
-                        plainStream
-                        tsStart={item.tsStart}
-                        tsEnd={item.tsEnd}
-                        text={item.text}
-                      />
-                    );
-                  case "merged_ev_text":
-                    return (
-                      <MergedEvTextStreamBlock
-                        key={key}
-                        plainStream
-                        tsStart={item.tsStart}
-                        tsEnd={item.tsEnd}
-                        evType={item.evType}
-                        text={item.text}
-                      />
-                    );
-                  case "merged_tool_call":
-                    return (
-                      <MergedToolCallStreamBlock
-                        key={key}
-                        plainStream
-                        tsStart={item.tsStart}
-                        tsEnd={item.tsEnd}
-                        row={item.row}
-                        rows={item.rows}
-                      />
-                    );
-                  case "single":
-                    return <CursorRunEventView key={key} plainStream row={item.row} />;
-                }
-              })
+              <CursorRunCoalescedItems items={items} />
             )}
           </div>
 

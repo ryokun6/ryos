@@ -1072,7 +1072,9 @@
             "system": "Session started",
             "runEnded": "Run finished · {{status}}",
             "runEndedError": "Run ended with an error",
-            "emptyAssistant": "(No message content)"
+            "emptyAssistant": "(No message content)",
+            "workedFor": "Worked for {{duration}}",
+            "showLess": "Show less"
           }
         },
         "listCursorCloudAgentRuns": {
