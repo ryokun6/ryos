@@ -4,7 +4,7 @@
       "accessDenied": {
         "description": "Questa applicazione è riservata solo agli amministratori.",
         "loginPrompt": "Effettua l'accesso con un account amministratore.",
-        "title": "Accesso Negato"
+        "title": "Accesso negato"
       },
       "auditLog": {
         "action": "Azione",
@@ -23,7 +23,7 @@
         "colModel": "Modello",
         "colRun": "Esecuzione / agente",
         "colStatus": "Stato",
-        "colTask": "Task",
+        "colTask": "Attività",
         "colUpdated": "Aggiornato",
         "emptyHint": "Le esecuzioni compaiono qui quando lo strumento repo agent avvia un job Cursor Cloud (modalità asincrona con Redis). Le chiavi scadono dopo circa 24 ore.",
         "emptyTitle": "Nessun agente Cursor",
@@ -65,7 +65,7 @@
           "errorRate": "Tasso di errore",
           "pageViews": "Visualizzazioni di pagina",
           "productEvents": "Eventi prodotto",
-          "sessions": "Sessioni",
+          "sessions": "SESSIONI",
           "visitors": "Visitatori"
         },
         "loading": "Caricamento analisi...",
@@ -173,8 +173,8 @@
         "en": "Inglese",
         "ja": "Giapponese",
         "ko": "Coreano",
-        "zh-CN": "Cinese (Semplificato)",
-        "zh-TW": "Cinese (Tradizionale)"
+        "zh-CN": "Cinese (semplificato)",
+        "zh-TW": "Cinese (tradizionale)"
       },
       "loadMore": "Carica altri ({{remaining}} rimanenti)",
       "menu": {
@@ -205,10 +205,10 @@
         "userDeleted": "Utente {{username}} eliminato",
         "userUnbanned": "Utente {{username}} sbannato"
       },
-      "name": "Admin",
+      "name": "Amministratore",
       "offline": {
         "description": "L'amministratore richiede una connessione internet per gestire i dati.",
-        "title": "Offline"
+        "title": "Non in linea"
       },
       "profile": {
         "actions": "Azioni",
@@ -219,7 +219,7 @@
         "banReasonPlaceholder": "Motivo del ban (facoltativo)",
         "banned": "Bannato",
         "bannedOn": "Bannato il",
-        "clearAll": "Cancella tutto",
+        "clearAll": "Elimina tutti",
         "clearing": "Cancellazione…",
         "confirmBan": "Ban",
         "dailyNotes": "Note giornaliere",
@@ -241,7 +241,7 @@
         "noMessages": "Nessun messaggio trovato",
         "noReason": "Nessun motivo fornito",
         "notFound": "Utente non trovato",
-        "pending": "in attesa",
+        "pending": "in sospeso",
         "pendingTooltip": "Non ancora elaborate in memoria a lungo termine",
         "processed": "elaborate",
         "processedTooltip": "Elaborate in memoria a lungo termine",
@@ -272,7 +272,7 @@
         "keys": "Chiavi",
         "length": "Lunghezza",
         "loadMore": "Carica altri",
-        "loading": "Caricamento...",
+        "loading": "Carico…",
         "messages": {
           "alreadyDeleted": "La chiave Redis era già stata rimossa",
           "backupReady": "Backup di {{count}} chiavi Redis completato",
@@ -309,7 +309,7 @@
         },
         "deploymentLabel": "Deployment",
         "loading": "Caricamento informazioni server...",
-        "notConfigured": "Non configurato",
+        "notConfigured": "Non configurata",
         "ok": "OK",
         "provider": {
           "local": "Locale",
@@ -358,7 +358,7 @@
         "playInKaraoke": "Riproduci in Karaoke",
         "searchLyrics": "Cerca testi",
         "soramimi": "Soramimi (空耳)",
-        "source": "Fonte",
+        "source": "Sorgente",
         "translations": "Traduzioni",
         "unknownArtist": "Artista sconosciuto",
         "unshare": "Annulla condivisione",
@@ -417,7 +417,7 @@
       "title": "Amministratore",
       "user": {
         "active": "Attivo",
-        "admin": "amministratore",
+        "admin": "Amministratore",
         "banned": "Bannato",
         "user": "Utente"
       }
@@ -458,8 +458,8 @@
         "failedToUpdateApplets": "Impossibile aggiornare le applet",
         "failedToUpdateFeaturedStatus": "Impossibile aggiornare lo stato di evidenziazione",
         "importFailed": "Importazione fallita",
-        "loading": "Caricamento...",
-        "loginRequired": "Accesso richiesto",
+        "loading": "Carico…",
+        "loginRequired": "È richiesto l'accesso",
         "mustBeLoggedInToShare": "È necessario aver effettuato l'accesso per condividere le applet.",
         "newAppletUpdates": "{{count}} nuovo aggiornamento applet",
         "newAppletUpdatesPlural": "{{count}} nuovi aggiornamenti applet",
@@ -521,8 +521,8 @@
         "appletStore": "Applet Store",
         "appletsHelp": "Guida Applet",
         "checkForUpdates": "Verifica aggiornamenti",
-        "createAccount": "Crea Account...",
-        "exportAs": "Esporta come...",
+        "createAccount": "Crea account…",
+        "exportAs": "Esporta come…",
         "html": "HTML",
         "importFromDevice": "Importa da Dispositivo...",
         "logOut": "Esci",
@@ -540,7 +540,7 @@
       },
       "name": "Applet Store",
       "sections": {
-        "featured": "In evidenza",
+        "featured": "In primo piano",
         "installed": "Installate",
         "newApplets": "Nuove Applet",
         "updatesAvailable": "Aggiornamenti disponibili"
@@ -626,7 +626,7 @@
         "emptyHint": "Fai clic su Aggiungi libro per importare un EPUB.",
         "emptyTitle": "La tua libreria è vuota",
         "finished": "Finito",
-        "gridView": "Vista a griglia",
+        "gridView": "Vista griglia",
         "import": "Aggiungi libro",
         "listView": "Vista a elenco",
         "percentRead": "{{percent}}%"
@@ -650,7 +650,7 @@
     "calculator": {
       "angle": {
         "deg": "Gradi",
-        "degShort": "Gradi",
+        "degShort": "Deg",
         "rad": "Radianti",
         "radShort": "Rad"
       },
@@ -673,7 +673,7 @@
         "from": "Da",
         "result": "Risultato",
         "selectUnit": "Unità",
-        "swap": "Scambia",
+        "swap": "Scambio",
         "title": "Converti",
         "to": "A",
         "units": {
@@ -694,7 +694,7 @@
           "hr": "Ore",
           "in": "Pollici",
           "j": "Joule",
-          "k": "Kelvin",
+          "k": "Gradi Kelvin",
           "kcal": "Chilocalorie",
           "kg": "Chilogrammi",
           "kj": "Kilojoule",
@@ -713,20 +713,20 @@
           "mm": "Millimetri",
           "mph": "Miglia/Ora",
           "mps": "Metri/Secondo",
-          "oz": "Ounce",
+          "oz": "Once",
           "pa": "Pascal",
           "psi": "PSI",
           "pt": "Pinte",
           "qt": "Quart",
           "s": "Secondi",
-          "sqft": "Piedi Quadrati",
-          "sqkm": "Chilometri Quadrati",
-          "sqm": "Metri Quadrati",
-          "sqmi": "Miglia Quadrate",
+          "sqft": "Piedi quadrati",
+          "sqkm": "Chilometri quadrati",
+          "sqm": "Metri quadrati",
+          "sqmi": "Miglia quadrate",
           "t": "Tonelada Metica",
           "wh": "Watt-ora",
           "wk": "Settimane",
-          "yd": "Yarde"
+          "yd": "Iarde"
         }
       },
       "description": "Calcolatrice di base, scientifica e di conversione unità",
@@ -757,10 +757,10 @@
         }
       },
       "menu": {
-        "about": "Informazioni sulla Calcolatrice",
+        "about": "Informazioni su Calcolatrice",
         "basic": "Base",
         "clear": "Cancella",
-        "conversion": "Conversione",
+        "conversion": "Converti",
         "help": "Aiuto Calcolatrice",
         "scientific": "Scientifica",
         "sound": "Suono",
@@ -774,7 +774,7 @@
         "keys": {
           "backspace": "backspace",
           "clear": "cancella",
-          "clearEntry": "cancella immissione",
+          "clearEntry": "cancella voce",
           "closeParenthesis": "parentesi chiusa",
           "cos": "coseno",
           "degrees": "gradi",
@@ -784,7 +784,7 @@
           "factorial": "fattoriale",
           "ln": "logaritmo naturale",
           "log": "logaritmo",
-          "memoryClear": "cancella memoria",
+          "memoryClear": "cancella la memoria",
           "memoryMinus": "sottrai dalla memoria",
           "memoryPlus": "somma alla memoria",
           "memoryRecall": "richiama dalla memoria",
@@ -829,7 +829,7 @@
         "noEvents": "Nessun evento",
         "notes": "Note",
         "save": "Salva",
-        "startTime": "Ora inizio",
+        "startTime": "Inizio",
         "title": "Titolo"
       },
       "export": {
@@ -876,11 +876,11 @@
         "goToToday": "Vai a oggi",
         "help": "Aiuto Calendario",
         "importFromDevice": "Importa dal dispositivo…",
-        "monthView": "Mese",
-        "newEvent": "Nuovo Evento",
+        "monthView": "Vista mese",
+        "newEvent": "Nuovo evento",
         "showToDoItems": "Mostra elementi da fare",
         "syncCalendar": "Sincronizza Calendario",
-        "weekView": "Settimana"
+        "weekView": "Vista settimana"
       },
       "name": "Calendario",
       "sidebar": {
@@ -892,10 +892,10 @@
       "title": "Calendario",
       "today": "Oggi",
       "tray": {
-        "done": "completato",
+        "done": "fine",
         "due": "scadenza",
         "empty": "Seleziona un evento o un'attività",
-        "eventDetails": "Dettagli evento",
+        "eventDetails": "Dettagli attività",
         "from": "da",
         "locationPlaceholder": "posizione",
         "markComplete": "Segna come completato",
@@ -918,7 +918,7 @@
         "copyMessage": "Copia messaggio",
         "deleteMessage": "Elimina messaggio",
         "deleteRoom": "Elimina stanza",
-        "leaveConversation": "Abbandona conversazione",
+        "leaveConversation": "Abbandona la conversazione",
         "mentionRyo": "Menziona Ryo",
         "messageUser": "Messaggio {{username}}",
         "newChat": "Nuova Chat",
@@ -991,9 +991,9 @@
         "chats": "Chat",
         "chatsHelp": "Aiuto Chat",
         "clearChat": "Svuota Chat",
-        "createAccount": "Crea Account...",
-        "decreaseFontSize": "Riduci Dimensione Carattere",
-        "increaseFontSize": "Aumenta Dimensione Carattere",
+        "createAccount": "Crea account…",
+        "decreaseFontSize": "Riduci le dimensioni del font",
+        "increaseFontSize": "Aumenta le dimensioni del font",
         "keepTalking": "Continua a parlare",
         "linkToTelegram": "Collega a Telegram",
         "logOut": "Esci",
@@ -1001,7 +1001,7 @@
         "newChat": "Nuova Chat...",
         "resetFontSize": "Reimposta Dimensione Carattere",
         "saveTranscript": "Salva Trascrizione...",
-        "showRooms": "Mostra Stanze",
+        "showRooms": "Mostra stanze",
         "sound": "Suono",
         "systemNotifications": "Notifiche di Sistema",
         "typingSynth": "Sintesi Digitazione"
@@ -1029,11 +1029,11 @@
         "createAccountToContinue": "Crea un account per continuare...",
         "dailyLimitReached": "Limite giornaliero di messaggi IA raggiunto.",
         "describeThisImage": "Descrivi questa immagine",
-        "editing": "modifica in corso...",
+        "editing": "modifica…",
         "leave": "Esci",
-        "listening": "In ascolto",
+        "listening": "Ascolto",
         "loginButton": "Accedi",
-        "loginRequired": "Accesso richiesto",
+        "loginRequired": "È richiesto l'accesso",
         "loginToChat": "Accedi alla Chat",
         "loginToContinue": "Accedi per continuare a chattare con Ryo.",
         "loginToRyOS": "Accedi a ryOS",
@@ -1042,14 +1042,14 @@
         "nudgeSent": "👋 *sollecito inviato*",
         "pleaseLoginToDeleteRooms": "Accedi per eliminare le stanze.",
         "pleaseLoginToSendMessages": "Accedi per inviare messaggi.",
-        "recording": "Registrando...",
+        "recording": "Registrazione…",
         "retry": "Riprova",
         "ryo": "@ryo",
         "ryoWillRespond": "Ryo risponderà a questo messaggio",
         "scrollToBottom": "Scorri in basso",
         "sessionExpired": "Sessione scaduta. Accedi di nuovo.",
         "startNewConversation": "Iniziare una nuova conversazione?",
-        "thinking": "Elaborando",
+        "thinking": "Un momento…",
         "transcribing": "Trascrivendo...",
         "typeMessage": "Digita un messaggio...",
         "typeOrPushSpace": "Digita o premi 'spazio' per parlare...",
@@ -1060,7 +1060,7 @@
         "failedToGetResponse": "Impossibile ottenere una risposta.",
         "failedToSaveTranscript": "Impossibile salvare la trascrizione",
         "loginButton": "Accedi",
-        "loginRequired": "Accesso richiesto",
+        "loginRequired": "È richiesto l'accesso",
         "open": "Apri",
         "pleaseLoginToContinueChatting": "Accedi per continuare a chattare.",
         "rateLimitExceeded": "Limite di richieste superato",
@@ -1077,12 +1077,12 @@
         "daysAgo": "{{days}} giorni fa",
         "daysOld": "vecchio di {{days}} giorni",
         "hoursAgo": "{{hours}} ore fa",
-        "justNow": "appena",
+        "justNow": "proprio ora",
         "last": "Ultimo",
         "minutesAgo": "{{minutes}} minuti fa",
         "refresh": "Aggiorna",
         "refreshed": "Aggiornato",
-        "refreshing": "Aggiornamento...",
+        "refreshing": "Aggiorno…",
         "tokenRefreshed": "Token aggiornato"
       },
       "toolCalls": {
@@ -1183,7 +1183,7 @@
             "showLess": "Mostra meno",
             "status": "Stato",
             "system": "Sessione avviata",
-            "thinking": "Pensando",
+            "thinking": "Un momento…",
             "toolCall": "Strumento · {{name}}",
             "toolUse": "Richiesta strumento · {{name}}",
             "truncated": "troncato",
@@ -1228,7 +1228,7 @@
           "capturedScreen": "Schermata catturata",
           "capturingScreen": "Cattura schermata in corso…",
           "clicked": "Cliccato in ({{x}}, {{y}})",
-          "clicking": "Clic in corso…",
+          "clicking": "Fare clic…",
           "doubleClicked": "Doppio clic in ({{x}}, {{y}})",
           "doubleClicking": "Doppio clic in corso…",
           "gettingStatus": "Recupero stato in corso…",
@@ -1239,7 +1239,7 @@
           "pressedKey": "Tasto {{key}} premuto",
           "pressingKey": "Pressione tasto in corso…",
           "resumed": "Ripreso",
-          "resuming": "Ripresa in corso…",
+          "resuming": "Riprendo…",
           "rightClicked": "Clic destro in ({{x}}, {{y}})",
           "startedSystem": "Avviato {{system}}",
           "startingSystem": "Avvio {{system}}…",
@@ -1425,12 +1425,12 @@
       "cardLabels": {
         "address": "indirizzo",
         "birthday": "compleanno",
-        "email": "email",
+        "email": "e-mail",
         "home": "casa",
         "nickname": "soprannome",
         "note": "nota",
         "phone": "telefono",
-        "url": "URL"
+        "url": "url"
       },
       "changePicture": "Cambia immagine",
       "description": "Rubrica con importazione vCard",
@@ -1440,7 +1440,7 @@
         "addresses": "Indirizzi",
         "birthday": "Compleanno",
         "displayName": "Nome visualizzato",
-        "emails": "Indirizzi email",
+        "emails": "Indirizzi e-mail",
         "firstName": "Nome",
         "jobTitle": "Qualifica",
         "lastName": "Cognome",
@@ -1448,7 +1448,7 @@
         "notes": "Note",
         "organization": "Organizzazione",
         "phones": "Numeri di telefono",
-        "source": "Origine",
+        "source": "Sorgente",
         "telegramUserId": "ID utente Telegram",
         "telegramUsername": "Nome utente Telegram",
         "urls": "Siti web / Link"
@@ -1460,7 +1460,7 @@
       "groups": {
         "all": "Tutti",
         "birthdays": "Compleanni",
-        "imported": "Importati",
+        "imported": "Importato",
         "telegram": "Telegram",
         "work": "Lavoro"
       },
@@ -1491,12 +1491,12 @@
         }
       },
       "menu": {
-        "about": "Informazioni sui Contatti",
-        "deleteContact": "Elimina Contatto",
+        "about": "Informazioni su Contatti",
+        "deleteContact": "Elimina contatto",
         "help": "Aiuto Contatti",
         "importVCard": "Importa vCard…",
         "markAsMine": "Segna come mio",
-        "newContact": "Nuovo Contatto",
+        "newContact": "Nuovo contatto",
         "syncContacts": "Sincronizza Contatti"
       },
       "messages": {
@@ -1509,7 +1509,7 @@
       "noSummary": "Ancora nessun numero di telefono, email o nota.",
       "picturePicker": {
         "cancel": "Annulla",
-        "chooseCustom": "Scegli Immagine…",
+        "chooseCustom": "Scegli immagine…",
         "description": "Seleziona un'immagine per questo contatto",
         "remove": "Rimuovi",
         "title": "Scegli immagine"
@@ -1571,10 +1571,10 @@
         "daysAgo": "{{count}}g fa",
         "description": "Sincronizza automaticamente i dati e le impostazioni selezionati con il cloud dopo modifiche importanti",
         "error": "Problema di sincronizzazione: {{error}}",
-        "fetching": "Recupero...",
+        "fetching": "Ottengo",
         "files": "File",
         "hoursAgo": "{{count}}h fa",
-        "justNow": "adesso",
+        "justNow": "proprio ora",
         "lastChecked": "Ultimo controllo {{date}}",
         "lastFetched": "Recuperato il {{date}}",
         "lastSynced": "Ultima sincronizzazione {{date}}",
@@ -1590,7 +1590,7 @@
         "stickies": "Memo",
         "title": "Sincronizzazione cloud",
         "tvChannels": "Canali TV",
-        "uploading": "Caricamento...",
+        "uploading": "Carico",
         "videos": "Video",
         "waiting": "In attesa della prossima modifica idonea"
       },
@@ -1628,13 +1628,13 @@
         "forceUpload": "Carica",
         "forceUploadFailed": "Caricamento sul cloud non riuscito",
         "forceUploadSuccess": "Caricamento sul cloud completato",
-        "forceUploading": "Caricamento…",
+        "forceUploading": "Carico…",
         "lastBackup": "Ultimo backup cloud: {{date}} ({{size}} MB)",
         "loginRequired": "Accedi per usare la sincronizzazione cloud",
         "progress": {
           "collecting": "Raccolta dati…",
-          "compressing": "Compressione…",
-          "decompressing": "Decompressione…",
+          "compressing": "Comprimo…",
+          "decompressing": "Decomprimo…",
           "downloading": "Download dal cloud…",
           "finishing": "Completamento…",
           "restoring": "Ripristino dati…",
@@ -1643,7 +1643,7 @@
         },
         "restoreFailed": "Ripristino dal cloud non riuscito",
         "restoreFromCloud": "Ripristina dal cloud",
-        "restoring": "Ripristino in corso…",
+        "restoring": "Ripristino…",
         "tooLarge": "Backup troppo grande ({{size}} MB). La dimensione massima compressa è {{limit}} MB."
       },
       "cloudSyncTabs": {
@@ -1675,7 +1675,7 @@
         "confirmLabel": "Digita il tuo nome utente per confermare",
         "confirmMismatch": "Il nome utente non corrisponde",
         "confirmPlaceholder": "{{username}}",
-        "deleting": "Eliminazione in corso...",
+        "deleting": "Elimino…",
         "description": "Questa operazione eliminerà definitivamente il tuo account, la password, l'email di recupero, il profilo Telegram collegato e i dati sincronizzati. L'azione è irreversibile.",
         "genericError": "Impossibile eliminare l'account. Riprova.",
         "passwordLabel": "Password attuale",
@@ -1688,7 +1688,7 @@
       "deleteAccountMenu": "Elimina account…",
       "deleteAccountRowDescription": "Rimuovi permanentemente il tuo account e i dati sincronizzati",
       "description": "Impostazioni di sistema",
-      "desktopAndScreenSaver": "Desktop e Salvaschermo",
+      "desktopAndScreenSaver": "Scrivania e Salvaschermo",
       "desktopTab": "Scrivania",
       "displayMode": "Modalità di visualizzazione",
       "displayModeDescription": "Applica un filtro colore allo sfondo del desktop",
@@ -1712,7 +1712,7 @@
         "loggedOutDescription": "Accedi per gestire l'email",
         "manage": "Gestisci",
         "notAvailable": "Il recupero tramite email non è disponibile su questo server",
-        "title": "Email",
+        "title": "E-mail",
         "unverifiedAs": "{{email}} · Non verificata",
         "verifiedAs": "{{email}} · Verificata",
         "verify": "Verifica"
@@ -1769,7 +1769,7 @@
       "logOutOfAllDevicesRowDescription": "Esci dal tuo account ryOS su tutti i dispositivi",
       "logOutRowDescription": "Esci dal tuo account ryOS su questo dispositivo",
       "loggedInToRyOS": "Accesso effettuato a ryOS",
-      "loggingOut": "Disconnessione in corso...",
+      "loggingOut": "Esco…",
       "login": "Accedi",
       "loginToSendMessages": "Accedi per inviare messaggi e altro",
       "logoutAll": {
@@ -1836,7 +1836,7 @@
         "removedToast": "Email di recupero rimossa",
         "removing": "Rimozione in corso...",
         "save": "Invia verifica",
-        "saving": "Invio in corso...",
+        "saving": "Invio…",
         "title": "Email di recupero",
         "unverified": "Non verificata",
         "verified": "Verificata",
@@ -1865,7 +1865,7 @@
         },
         "matrix": {
           "description": "Effetto pioggia digitale",
-          "name": "Matrix"
+          "name": "Matrice"
         },
         "maze": {
           "description": "Esploratore di labirinti in prima persona",
@@ -1898,7 +1898,7 @@
         "submitLabel": "Imposta password",
         "title": "Imposta password"
       },
-      "setup": "Configura",
+      "setup": "Configurazione",
       "shaderEffect": "Effetto Shader",
       "shaderEffectDescription": "Effetto di sfondo ad alta intensità di prestazioni",
       "sharingDescription": "Esegui il backup e condividi i tuoi dati ryOS con l'archiviazione cloud",
@@ -1937,7 +1937,7 @@
         "disconnect": "Disconnetti",
         "disconnectFailed": "Disconnessione di Telegram non riuscita",
         "disconnected": "Telegram disconnesso",
-        "disconnecting": "Disconnessione in corso...",
+        "disconnecting": "Disconnetto…",
         "expiresInMinutes": "Scade tra circa {{minutes}} min",
         "heartbeatInstructionsDescription": "Personalizza a cosa Ryo deve dare la priorità quando invia check-in proattivi su Telegram.",
         "heartbeatInstructionsFailed": "Impossibile salvare le istruzioni heartbeat di Telegram",
@@ -1955,15 +1955,15 @@
         "loginRequired": "Effettua l'accesso per collegare Telegram",
         "manage": "Gestisci",
         "openTelegram": "Apri Telegram",
-        "preparing": "Preparazione in corso...",
+        "preparing": "Preparo…",
         "resetInstructions": "Ripristina",
         "saveInstructions": "Salva",
-        "savingInstructions": "Salvataggio in corso...",
+        "savingInstructions": "Salvo…",
         "title": "Telegram"
       },
-      "terminalIeAmbientSynth": "Synth",
+      "terminalIeAmbientSynth": "Sintetizzatore",
       "terminalIeAmbientSynthDescription": "Effetti e sinte per Terminal e IE",
-      "termsOfService": "Termini di servizio",
+      "termsOfService": "Termini del servizio",
       "theme": "Tema",
       "themeDescription": "Modifica l'aspetto di finestre, menu e controlli",
       "themeNames": {
@@ -2150,7 +2150,7 @@
       },
       "menu": {
         "about": "Informazioni su Dashboard",
-        "addWidget": "Aggiungi Widget",
+        "addWidget": "Aggiungi widget",
         "help": "Aiuto Dashboard",
         "resetWidgets": "Ripristina impostazioni predefinite"
       },
@@ -2183,7 +2183,7 @@
         "defaultLanguages": "Lingue predefinite",
         "error": "Traduzione non riuscita",
         "from": "Da",
-        "inputPlaceholder": "Inserisci testo...",
+        "inputPlaceholder": "Inserisci testo…",
         "outputPlaceholder": "Traduzione",
         "poweredBy": "Fornito da MyMemory",
         "save": "Salva",
@@ -2219,7 +2219,7 @@
         "wind": "Vento"
       },
       "widgets": {
-        "addWidget": "Aggiungi widget...",
+        "addWidget": "Aggiungi widget…",
         "aquarium": "Acquario",
         "calendar": "Calendario",
         "clock": "Orologio",
@@ -2227,7 +2227,7 @@
         "dictionary": "Dizionario",
         "ipod": "iPod",
         "removeWidget": "Rimuovi widget",
-        "stickyNote": "Nota adesiva",
+        "stickyNote": "Memo",
         "stocks": "Borsa",
         "terrarium": "Terrario",
         "translation": "Traduzione",
@@ -2366,7 +2366,7 @@
         "newFolder": "Nuova cartella…",
         "newWindow": "Nuova finestra",
         "putBack": "Ripristina",
-        "rename": "Rinomina...",
+        "rename": "Rinomina…",
         "sidebar": "Barra laterale"
       },
       "messages": {
@@ -2378,7 +2378,7 @@
         "importFailedDesc": "Impossibile importare il file.",
         "invalidFileType": "Tipo di file non valido",
         "invalidFileTypeDesc": "Solo i file .app, .gz e .html possono essere importati in Applet",
-        "loading": "Caricamento..."
+        "loading": "Carico…"
       },
       "name": "Finder",
       "placeholders": {
@@ -2406,7 +2406,7 @@
       "help": {
         "captureScreenshot": {
           "description": "Vista ▸ Cattura screenshot salva la visualizzazione corrente direttamente in un file",
-          "title": "Cattura screenshot"
+          "title": "Scatta istantanea"
         },
         "chatsCanDriveIt": {
           "description": "Chiedi a Ryo in Chat di mettere in pausa, riprendere, ridimensionare o catturare uno screenshot dell'emulatore",
@@ -2434,7 +2434,7 @@
       "menu": {
         "aboutInfiniteMac": "Informazioni su Infinite Mac",
         "backToPresets": "Torna ai sistemi",
-        "captureScreenshot": "Cattura Schermata",
+        "captureScreenshot": "Scatta istantanea",
         "infiniteMacHelp": "Aiuto Infinite Mac",
         "pause": "Pausa",
         "resume": "Riprendi",
@@ -2465,7 +2465,7 @@
       "cannotFindServerOrDnsError": "Impossibile trovare il server o errore DNS",
       "checkWebAddressAndTryAgain": "Controlla l'indirizzo web digitato e riprova.",
       "china": "Cina",
-      "chineseTraditional": "Cinese (Tradizionale)",
+      "chineseTraditional": "Cinese (tradizionale)",
       "clearFavorites": "Cancella preferiti",
       "clearHistory": "Cancella cronologia",
       "closeTimeMachine": "Chiudi Time Machine",
@@ -2478,7 +2478,7 @@
       "errorLoadingPreview": "Errore durante il caricamento dell'anteprima.",
       "failedToGenerateFuturisticWebsite": "Impossibile generare il sito web futuristico. Il modello AI potrebbe non essere selezionato.",
       "favorite": "Preferito",
-      "fetch": "Recupera",
+      "fetch": "Scarica",
       "fetchingContentForReconstruction": "Recupero del contenuto di {{hostname}} per la ricostruzione...",
       "fetchingFromYear": "Recupero di {{hostname}} dall'anno {{year}}...",
       "folder": "Cartella",
@@ -2532,7 +2532,7 @@
       "korean": "Coreano",
       "latin": "Latino",
       "loading": "Caricamento di {{hostname}}...",
-      "loadingEllipsis": "Caricamento...",
+      "loadingEllipsis": "Carico…",
       "loadingTitle": "Internet Explorer - Caricamento",
       "loadingTitleWithSite": "{{site}} - Caricamento",
       "menu": {
@@ -2548,7 +2548,7 @@
         "china": "Cina",
         "chinese": "Cinese",
         "clearFavorites": "Cancella preferiti...",
-        "clearHistory": "Cancella cronologia...",
+        "clearHistory": "Cancella cronologia…",
         "digitalBeing": "Essere Digitale",
         "editFuture": "Modifica futuro...",
         "english": "Inglese",
@@ -2572,7 +2572,7 @@
         "language": "Lingua",
         "latin": "Latino",
         "location": "Posizione",
-        "now": "Ora",
+        "now": "Adesso",
         "openTimeMachine": "Apri Time Machine",
         "portugal": "Portogallo",
         "portuguese": "Portoghese",
@@ -2595,10 +2595,10 @@
       "newer": "Successivo",
       "newerVersion": "Versione più recente",
       "newest": "Più recente",
-      "now": "Ora",
+      "now": "Adesso",
       "off": "Disattivato",
       "older": "Precedente",
-      "olderVersion": "Versione precedente",
+      "olderVersion": "Versione più vecchia",
       "oldest": "Meno recente",
       "openingRequestedPage": "Apertura della pagina richiesta",
       "openingSharedPage": "Apertura pagina condivisa",
@@ -2652,8 +2652,8 @@
         "translateLyrics": "Traduci testi"
       },
       "brickGame": {
-        "gameOver": "Game Over",
-        "gameOverTitle": "Game Over",
+        "gameOver": "Game over",
+        "gameOverTitle": "Game over",
         "menuToExit": "Menu per uscire",
         "paused": "In pausa",
         "pressCenterToContinue": "Premi al centro per continuare",
@@ -2695,7 +2695,7 @@
         "appleMusicRecentlyAddedFailed": "Impossibile caricare i brani aggiunti di recente",
         "appleMusicSearchAppleMusic": "Apple Music",
         "appleMusicSearchLibrary": "Libreria",
-        "appleMusicSearchPlaceholder": "Cerca su Apple Music...",
+        "appleMusicSearchPlaceholder": "Cerca su Apple Music…",
         "appleMusicSearchSelectResult": "Seleziona un brano da aggiungere:",
         "appleMusicSearchSignInRequired": "Accedi ad Apple Music per cercare",
         "appleMusicSearchUnavailable": "La ricerca su Apple Music non è disponibile",
@@ -2735,7 +2735,7 @@
         "lyricsSearchSelectResult": "Seleziona un risultato:",
         "lyricsSearchTitle": "Cerca testo",
         "lyricsSearchUseSelected": "Usa selezionato",
-        "noUpdates": "Nessun aggiornamento",
+        "noUpdates": "0 aggiornamenti",
         "openedSharedTrack": "Traccia condivisa aperta. Premi ⏯ per avviare la riproduzione.",
         "pleaseTryAgain": "Riprova.",
         "sharedTrackVideoId": "ID video: {{videoId}}",
@@ -2801,7 +2801,7 @@
         "aboutIpod": "Informazioni su iPod",
         "addSong": "Aggiungi brano...",
         "addToFavorites": "Aggiungi ai preferiti",
-        "addToLibrary": "Aggiungi alla libreria...",
+        "addToLibrary": "Aggiungi alla libreria…",
         "adjustTiming": "Regola sincronizzazione...",
         "allSongs": "Tutti i brani",
         "alternating": "Alternato",
@@ -2820,7 +2820,7 @@
         "deviceTheme": "Tema del dispositivo",
         "display": "Visualizzazione",
         "displayCover": "Copertina",
-        "displayGradient": "Sfumatura",
+        "displayGradient": "Gradiente",
         "displayLandscapes": "Paesaggi",
         "displayLiquid": "Liquido",
         "displayMesh": "Mesh",
@@ -2831,7 +2831,7 @@
         "exportLibrary": "Esporta libreria...",
         "file": "File",
         "fontGoldGlow": "Bagliore",
-        "fontGradient": "Sfumatura",
+        "fontGradient": "Gradiente",
         "fontRounded": "Arrotondato",
         "fontSansSerif": "Sans Serif",
         "fontSerif": "Serif",
@@ -2855,7 +2855,7 @@
         "lyrics": "Testo",
         "menubarArtistLimit": "Visualizzazione di {{limit}} artisti su {{total}}",
         "menubarTrackLimit": "Visualizzazione di {{limit}} su {{total}} — apri iPod per sfogliare tutto",
-        "multi": "Multiplo",
+        "multi": "Multi",
         "next": "Successivo",
         "pause": "Pausa",
         "play": "Riproduci",
@@ -2873,7 +2873,7 @@
         "screenModern": "Moderno",
         "searchSongs": "Cerca brani",
         "shareApp": "Condividi app...",
-        "shareSong": "Condividi brano...",
+        "shareSong": "Condividi brano…",
         "showLyrics": "Mostra testo",
         "shuffle": "Casuale",
         "single": "Singolo",
@@ -2906,7 +2906,7 @@
         "libraryAppleMusic": "Apple Music",
         "librarySource": "Libreria",
         "libraryYoutube": "YouTube",
-        "loading": "Caricamento…",
+        "loading": "Carico…",
         "music": "Musica",
         "musicQuiz": "Quiz musicale",
         "noSongs": "Nessun brano",
@@ -3036,7 +3036,7 @@
         },
         "keyboardShortcuts": {
           "description": "Spazio play/pausa, ←/→ sposta di 5s, ↑/↓ cambia brano, F per schermo intero",
-          "title": "Scorciatoie da tastiera"
+          "title": "Abbreviazioni da tastiera"
         },
         "listenParty": {
           "description": "Ospita o partecipa a una sessione karaoke sincronizzata — i follower vedono lo stesso tempo trascorso",
@@ -3180,7 +3180,7 @@
         "allEmpty": "Cerca un luogo e usa le azioni della scheda per salvarlo come Casa, Lavoro o Preferito.",
         "favorites": "Preferiti",
         "home": "Casa",
-        "recents": "Luoghi recenti",
+        "recents": "Posizioni recenti",
         "title": "Luoghi",
         "work": "Lavoro"
       },
@@ -3188,7 +3188,7 @@
         "airport": "Aeroporto",
         "amusementPark": "Parco divertimenti",
         "aquarium": "Acquario",
-        "atm": "Bancomat",
+        "atm": "ATM",
         "bakery": "Panetteria",
         "bank": "Banca",
         "beach": "Spiaggia",
@@ -3197,8 +3197,8 @@
         "campground": "Campeggio",
         "carRental": "Noleggio auto",
         "evCharger": "Ricarica EV",
-        "fireStation": "Vigili del fuoco",
-        "fitnessCenter": "Palestra",
+        "fireStation": "Caserma dei Vigili del Fuoco",
+        "fitnessCenter": "Centro fitness",
         "foodMarket": "Mercato alimentare",
         "gasStation": "Distributore di benzina",
         "hospital": "Ospedale",
@@ -3227,7 +3227,7 @@
       },
       "searchButton": "Cerca",
       "searchFailed": "Ricerca non riuscita",
-      "searchPlaceholder": "Cerca in Mappe",
+      "searchPlaceholder": "Cerca su Mappe",
       "searching": "Ricerca in corso…",
       "status": {
         "error": "Impossibile caricare Apple Maps: {{error}}",
@@ -3328,21 +3328,21 @@
         "filterBlur": "Sfocatura",
         "filterBrightnessMinus": "Luminosità -",
         "filterBrightnessPlus": "Luminosità +",
-        "filterCategoryArtistic": "Artistici",
+        "filterCategoryArtistic": "Artistico",
         "filterCategoryBlur": "Sfocatura",
         "filterCategoryColor": "Colore",
         "filterCategoryRetro": "Retro",
         "filterCrt": "CRT",
         "filterDither": "Dithering",
         "filterEdgeDetect": "Rilevamento bordi",
-        "filterGaussianBlur": "Sfocatura Gaussiana",
+        "filterGaussianBlur": "Sfumatura gaussiana",
         "filterGlitch": "Glitch",
         "filterGrayscale": "Scala di grigi",
         "filterInvert": "Inverti",
         "filterMotionBlur": "Sfocatura movimento",
         "filterNoise": "Rumore",
         "filterOldPhoto": "Vecchia foto",
-        "filterPixelate": "Pixelizza",
+        "filterPixelate": "Suddividi in pixel",
         "filterRadialBlur": "Sfocatura radiale",
         "filterSepia": "Seppia",
         "filterSharpen": "Nitidezza",
@@ -3422,7 +3422,7 @@
         "aspectRatio": "Proporzioni",
         "backToBrowse": "Indietro",
         "backToPresets": "Torna ai sistemi",
-        "captureScreenshot": "Cattura screenshot",
+        "captureScreenshot": "Scatta istantanea",
         "controls": "Controlli",
         "fullScreen": "A tutto schermo",
         "loadGame": "Carica Gioco",
@@ -3594,7 +3594,7 @@
         "bytesZero": "0 MB",
         "connecting": "Connessione in corso…",
         "emulatorStartFailed": "Impossibile avviare l'emulatore",
-        "loading": "Caricamento…"
+        "loading": "Carico…"
       },
       "systemsAvailable": "{{count}} SISTEMI DISPONIBILI",
       "tabs": {
@@ -3616,7 +3616,7 @@
         "blackAndWhite": "Bianco e nero",
         "bulge": "Rigonfiamento",
         "coldBlue": "Blu freddo",
-        "fishEye": "Fisheye",
+        "fishEye": "Fish Eye",
         "glitch": "Glitch",
         "highContrast": "Contrasto elevato",
         "kaleidoscope": "Caleidoscopio",
@@ -3625,9 +3625,9 @@
         "pinch": "Pizzico",
         "rainbow": "Arcobaleno",
         "ripple": "Increspatura",
-        "squeeze": "Schiacciamento",
+        "squeeze": "Schiacciatura",
         "stretch": "Allungamento",
-        "twirl": "Vortice",
+        "twirl": "Piroetta",
         "vibrant": "Vibrante",
         "vintage": "Vintage",
         "xRay": "Raggi X"
@@ -3667,17 +3667,17 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "Informazioni su Cabina fotografica",
+        "aboutPhotoBooth": "Informazioni su Photo Booth",
         "camera": "Fotocamera",
         "clearAllPhotos": "Cancella tutte le foto",
         "effects": "Effetti",
         "exportPhotos": "Esporta foto",
-        "photoBoothHelp": "Aiuto Cabina fotografica"
+        "photoBoothHelp": "Aiuto Photo Booth"
       },
       "name": "Photo Booth"
     },
     "soundboard": {
-      "description": "Riproduci effetti sonori",
+      "description": "Riproduci effetti audio",
       "help": {
         "customizeSlot": {
           "description": "Contrassegna ogni slot con un'emoji e un nome per trovarlo al volo",
@@ -3744,7 +3744,7 @@
         },
         "clearAll": {
           "description": "File ▸ Cancella tutte le note pulisce la bacheca in un colpo solo",
-          "title": "Cancella tutto"
+          "title": "Elimina tutti"
         },
         "colors": {
           "description": "Scegli tra giallo, rosa, blu, verde, viola e altri dal menu Nota",
@@ -3764,11 +3764,11 @@
         }
       },
       "menu": {
-        "about": "Informazioni su Stickies",
+        "about": "Informazioni su Memo",
         "clearAll": "Cancella tutte le note",
         "color": "Colore",
         "deleteNote": "Elimina nota",
-        "help": "Guida di Stickies",
+        "help": "Aiuto Memo",
         "newNote": "Nuova nota",
         "note": "Nota",
         "syncStickies": "Sincronizza Note Adesive"
@@ -3791,7 +3791,7 @@
       "effectsParams": {
         "bitcrusher": "Bitcrusher",
         "chorus": "Coro",
-        "delay": "Delay",
+        "delay": "Ritardo",
         "distortion": "Distorsione",
         "gain": "Guadagno",
         "phaser": "Phaser",
@@ -3917,8 +3917,8 @@
       "menu": {
         "aboutTerminal": "Informazioni su Terminale",
         "clearTerminal": "Pulisci Terminale",
-        "decreaseFontSize": "Riduci dimensione carattere",
-        "increaseFontSize": "Aumenta dimensione carattere",
+        "decreaseFontSize": "Riduci le dimensioni del font",
+        "increaseFontSize": "Aumenta le dimensioni del font",
         "muteSounds": "Disattiva audio",
         "resetFontSize": "Reimposta dimensione carattere",
         "terminalHelp": "Aiuto Terminale"
@@ -3985,8 +3985,8 @@
       },
       "failedToUpdateEditorWithDocumentUpdatedEvent": "Impossibile aggiornare l'editor con l'evento di aggiornamento del documento:",
       "heading1": "Intestazione 1",
-      "heading2": "Intestazione 2",
-      "heading3": "Intestazione 3",
+      "heading2": "Intestaz. 2",
+      "heading3": "Intestaz. 3",
       "help": {
         "aiCoEditor": {
           "description": "Chiedi a Ryo nelle chat di leggere, riassumere o riscrivere il documento aperto",
@@ -4021,11 +4021,11 @@
         "alignRight": "Allinea a destra",
         "bold": "Grassetto",
         "bulletList": "Elenco puntato",
-        "exportAs": "Esporta come...",
+        "exportAs": "Esporta come…",
         "format": "Formato",
-        "heading1": "Titolo 1",
-        "heading2": "Titolo 2",
-        "heading3": "Titolo 3",
+        "heading1": "Intestazione 1",
+        "heading2": "Intestaz. 2",
+        "heading3": "Intestaz. 3",
         "html": "HTML",
         "importFromDevice": "Importa da dispositivo...",
         "italic": "Corsivo",
@@ -4054,11 +4054,11 @@
         },
         "heading2": {
           "description": "Intestazione di sezione media",
-          "title": "Intestazione 2"
+          "title": "Intestaz. 2"
         },
         "heading3": {
           "description": "Intestazione di sezione piccola",
-          "title": "Intestazione 3"
+          "title": "Intestaz. 3"
         },
         "numberedList": {
           "description": "Crea un elenco numerato",
@@ -4141,7 +4141,7 @@
         "channelDown": "Canale giù",
         "channelUp": "Canale su",
         "channels": "Canali",
-        "closedCaptions": "Sottotitoli per non udenti",
+        "closedCaptions": "Sottotitoli non udenti",
         "controls": "Controlli",
         "deleteChannel": "Elimina canale",
         "exportChannels": "Esporta canali...",
@@ -4169,10 +4169,10 @@
         "channelDown": "CH−",
         "channelUp": "CH+",
         "network": "RETE",
-        "next": "SUCCESSIVO",
+        "next": "AVANTI",
         "noSignal": "NESSUN SEGNALE",
-        "now": "ORA",
-        "time": "ORARIO",
+        "now": "ADESSO",
+        "time": "DURATA",
         "title": "TITOLO",
         "video": "VID"
       },
@@ -4238,7 +4238,7 @@
       },
       "menu": {
         "aboutVideos": "Informazioni su Video",
-        "addToLibrary": "Aggiungi alla libreria...",
+        "addToLibrary": "Aggiungi alla libreria…",
         "allVideos": "Tutti i video",
         "clearLibrary": "Svuota libreria...",
         "controls": "Controlli",
@@ -4251,11 +4251,11 @@
         "previous": "Precedente",
         "repeatAll": "Ripeti tutto",
         "repeatOne": "Ripeti uno",
-        "resetLibrary": "Reimposta libreria...",
-        "shareVideo": "Condividi video...",
+        "resetLibrary": "Inizializza libreria…",
+        "shareVideo": "Condividi video…",
         "shuffle": "Casuale",
         "unknownArtist": "Artista sconosciuto",
-        "videosHelp": "Aiuto video"
+        "videosHelp": "Aiuto Video"
       },
       "name": "Video",
       "status": {
@@ -4346,14 +4346,14 @@
       "mb": "MB",
       "privacyPolicy": "Informativa sulla privacy",
       "system": "Sistema",
-      "termsOfService": "Termini di servizio",
+      "termsOfService": "Termini del servizio",
       "title": "Informazioni su questo computer",
       "viewChangelog": "Registro modifiche",
       "virtualMemory": "Memoria virtuale",
       "virtualMemoryOff": "Disattivato"
     },
     "activity": {
-      "adding": "Aggiunta",
+      "adding": "Aggiungo",
       "furigana": "Furigana",
       "soramimi": "Mondegreen"
     },
@@ -4370,15 +4370,15 @@
       "aboutThisComputer": "Informazioni su questo computer",
       "appletStore": "Applet Store…",
       "controlPanels": "Pannello di Controllo…",
-      "createAccount": "Crea Account…",
-      "enterFullScreen": "Attiva schermo intero",
+      "createAccount": "Crea account…",
+      "enterFullScreen": "Attiva modalità a tutto schermo",
       "exitFullScreen": "Disattiva modalità a tutto schermo",
       "logOut": "Esci da {{username}}…",
       "login": "Accedi…",
       "moreApps": "Altre App…",
       "moreDocuments": "Altri Documenti…",
       "noRecentApps": "Nessuna app recente",
-      "noRecentDocuments": "Nessun documento recente",
+      "noRecentDocuments": "Non ci sono documenti recenti",
       "recentItems": "Elementi recenti",
       "softwareUpdate": "Aggiornamento Software…",
       "systemPreferences": "Preferenze di Sistema…"
@@ -4393,7 +4393,7 @@
         "mismatch": "Le nuove password non corrispondono",
         "newPassword": "Nuova password",
         "sameAsCurrent": "La nuova password deve essere diversa da quella attuale",
-        "saving": "Salvataggio in corso...",
+        "saving": "Salvo…",
         "submit": "Modifica password",
         "title": "Modifica password",
         "toastChangedDescription": "La tua password è stata aggiornata",
@@ -4409,13 +4409,13 @@
       "logIn": "Accedi",
       "logOut": "Esci",
       "logOutDescription": "Sei sicuro di voler uscire? Verrai disconnesso dal tuo account.",
-      "loggingIn": "Accesso in corso...",
+      "loggingIn": "Eseguo l'accesso…",
       "loginDescription": "Accedi al tuo account",
       "password": "Password",
       "recovery": {
         "back": "Indietro",
         "channel": "Invia codice tramite",
-        "channelEmail": "Email",
+        "channelEmail": "E-mail",
         "channelTelegram": "Telegram",
         "code": "Codice di ripristino",
         "codeRequired": "Inserisci il codice di ripristino",
@@ -4429,7 +4429,7 @@
         "newPassword": "Nuova password",
         "resetting": "Reimpostazione in corso...",
         "sendCode": "Invia codice",
-        "sending": "Invio in corso...",
+        "sending": "Invio…",
         "submit": "Reimposta password",
         "successDescription": "Hai effettuato l'accesso con la tua nuova password.",
         "successTitle": "Reimpostazione password",
@@ -4460,7 +4460,7 @@
     "dialog": {
       "about": "Informazioni",
       "aboutApp": "Informazioni su {{appName}}",
-      "adding": "Aggiunta...",
+      "adding": "Aggiungo…",
       "cancel": "Annulla",
       "close": "Chiudi",
       "confirm": "Conferma",
@@ -4485,7 +4485,7 @@
       "saveChanges": "Salva modifiche",
       "saveFile": "Salva file",
       "share": {
-        "by": "da",
+        "by": "per",
         "copyLink": "Copia Link",
         "couldNotCopyToClipboard": "Impossibile copiare negli appunti. Prova a selezionare e copiare manualmente.",
         "failedToCopyLink": "Impossibile copiare il link",
@@ -4526,17 +4526,17 @@
       "removeFromDock": "Rimuovi dal Dock",
       "showAllWindows": "Mostra tutte le finestre",
       "trash": "Cestino",
-      "turnHidingOff": "Disattiva nascondimento automatico",
-      "turnHidingOn": "Attiva nascondimento automatico",
-      "turnMagnificationOff": "Disattiva ingrandimento",
-      "turnMagnificationOn": "Attiva ingrandimento"
+      "turnHidingOff": "Disattiva Nascondi",
+      "turnHidingOn": "Attiva Nascondi",
+      "turnMagnificationOff": "Disattiva Ingrandimento",
+      "turnMagnificationOn": "Attiva Ingrandimento"
     },
     "errorBoundaries": {
       "appDescription": "Riavvia per aprire una nuova finestra, o chiudi questa finestra bloccata. Le altre app aperte continueranno a funzionare.",
       "appHeading": "{{appName}} si è chiusa inaspettatamente",
       "desktopDescription": "Ricarica ryOS per ripristinare il Dock, il Desktop e la barra dei menu.",
       "desktopHeading": "Desktop si è chiuso inaspettatamente",
-      "relaunch": "Riavvia",
+      "relaunch": "Riapri",
       "reloadDesktop": "Ricarica Desktop"
     },
     "errors": {
@@ -4554,12 +4554,12 @@
       "copyHtml": "Copia codice HTML",
       "downloadHtml": "Scarica HTML",
       "exitFullscreen": "Esci da schermo intero",
-      "full": "Intera",
+      "full": "Completo",
       "maximizePreview": "Massimizza anteprima",
       "minimizePreview": "Riduci anteprima",
       "saveApplet": "Salva come Applet",
       "saveAppletDescription": "Inserisci il nome dell'applet, l'applet esistente verrà sovrascritta:",
-      "split": "Divisa",
+      "split": "Suddividi",
       "toastOpenAction": "Apri",
       "toastSaveFailed": "Impossibile salvare l'applet",
       "toastSaveFailedDescription": "Si è verificato un errore durante il salvataggio dell'applet.",
@@ -4572,7 +4572,7 @@
       "escape": "Esci"
     },
     "loading": {
-      "default": "Caricamento...",
+      "default": "Carico…",
       "openingAppletStore": "Apertura Applet Store...",
       "openingSharedApplet": "Apertura applet condivisa...",
       "openingSharedIELink": "Apertura link di Internet Explorer condiviso...",
@@ -4657,7 +4657,7 @@
     "window": {
       "close": "Chiudi",
       "fullscreen": "A tutto schermo",
-      "maximize": "Ingrandisci",
+      "maximize": "Massimizza",
       "maximizeDisabled": "Ingrandisci (disabilitato)",
       "minimize": "Contrai",
       "minimizeDisabled": "Riduci a icona (disabilitato)"
@@ -4690,7 +4690,7 @@
       "average": "Media",
       "bufferedLogs": "{{count}} in buffer",
       "copySnapshot": "Copia istantanea dell'ambiente",
-      "current": "Corrente",
+      "current": "Attuale",
       "darkMode": "Scuro",
       "dashboardLabel": "Istantanea dell'ambiente live",
       "domNodes": "Nodi DOM",
@@ -4705,19 +4705,19 @@
       "historyWindow": "Ultimi {{count}} secondi",
       "jsHeap": "Heap JS",
       "lightMode": "Chiaro",
-      "loading": "Caricamento…",
+      "loading": "Carico…",
       "locale": "Locale",
       "logHealth": "Stato dei log",
       "logHealthValue": "{{errors}} errori · {{warnings}} avvisi",
       "logRate": "Attività dei log",
       "logRateChartAria": "Cronologia attività dei log, attualmente {{count}} log al secondo",
-      "logging": "Logging",
+      "logging": "Log",
       "logsPerSecond": "{{count}}/s",
       "maximum": "Massimo",
-      "metric": "Metrica",
+      "metric": "Metrico",
       "minimum": "Minimo",
       "network": "Rete",
-      "offline": "Offline",
+      "offline": "Non in linea",
       "online": "Online",
       "performance": "Prestazioni",
       "reportTitle": "Istantanea dell'ambiente live",
@@ -4798,7 +4798,7 @@
       "wallpaper": "Sfondo"
     },
     "title": "Spotlight",
-    "topHits": "Più rilevanti"
+    "topHits": "Risultati migliori"
   },
   "updates": {
     "desktopAppOffer": "ryOS è disponibile come app {{platform}}",
