@@ -363,7 +363,12 @@ const MenubarCheckboxItem = (
         isMacOSTheme && "rounded-none focus:bg-[var(--os-color-selection-bg)] focus:text-[var(--os-color-selection-text)] hover:bg-[var(--os-color-selection-bg)] hover:text-[var(--os-color-selection-text)]",
         !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
         className,
-        "data-[state=checked]:text-foreground"
+        "data-[state=checked]:text-foreground",
+        (isSystem7Theme || isMacOSTheme) &&
+          "data-[state=checked]:focus:text-[var(--os-color-selection-text)] data-[state=checked]:hover:text-[var(--os-color-selection-text)]",
+        !isSystem7Theme &&
+          !isMacOSTheme &&
+          "data-[state=checked]:focus:text-accent-foreground data-[state=checked]:hover:text-accent-foreground"
       )}
       style={{
         fontFamily:
