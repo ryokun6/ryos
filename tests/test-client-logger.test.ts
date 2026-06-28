@@ -158,7 +158,7 @@ describe("client logging guardrails", () => {
       "Received room-message:"
     );
     expect(readSource("src/apps/finder/hooks/useFileSystem.ts")).not.toContain(
-      "contentAsString,"
+      "Preparing initialData for"
     );
     expect(readSource("src/apps/photo-booth/hooks/usePhotoBoothLogic.ts")).not.toContain(
       "Video track:"
