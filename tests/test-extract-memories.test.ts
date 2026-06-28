@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   getChatMessageTimestamp,
+  getDailyNoteDatesToMarkProcessed,
   resolveDailyNoteSourceTimestamp,
   type NormalizedConversationMessage,
 } from "../api/ai/extract-memories";
@@ -75,5 +76,33 @@ describe("extract memories timestamp helpers", () => {
     ];
 
     expect(resolveDailyNoteSourceTimestamp(messages, 2)).toBe(100);
+  });
+
+  test("only marks today processed when clear extraction stores source-dated notes", () => {
+    expect(
+      getDailyNoteDatesToMarkProcessed({
+        today: "2026-01-16",
+        touchedDates: ["2026-01-15"],
+        hasExistingDailyEntries: false,
+      })
+    ).toEqual([]);
+
+    expect(
+      getDailyNoteDatesToMarkProcessed({
+        today: "2026-01-16",
+        touchedDates: ["2026-01-15", "2026-01-16"],
+        hasExistingDailyEntries: false,
+      })
+    ).toEqual(["2026-01-16"]);
+  });
+
+  test("marks today processed when existing daily entries were part of clear extraction", () => {
+    expect(
+      getDailyNoteDatesToMarkProcessed({
+        today: "2026-01-16",
+        touchedDates: [],
+        hasExistingDailyEntries: true,
+      })
+    ).toEqual(["2026-01-16"]);
   });
 });

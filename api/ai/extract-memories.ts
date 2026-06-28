@@ -174,6 +174,22 @@ export function resolveDailyNoteSourceTimestamp(
   return null;
 }
 
+export function getDailyNoteDatesToMarkProcessed({
+  today,
+  touchedDates,
+  hasExistingDailyEntries,
+}: {
+  today: string;
+  touchedDates: Iterable<string>;
+  hasExistingDailyEntries: boolean;
+}): string[] {
+  const dates = new Set<string>();
+  if (hasExistingDailyEntries || [...touchedDates].includes(today)) {
+    dates.add(today);
+  }
+  return [...dates];
+}
+
 const EXTRACTION_PROMPT = `You are analyzing a conversation between a USER and an AI assistant named "Ryo" to extract memories.
 
 CRITICAL - WHO IS WHO:
@@ -442,11 +458,13 @@ export async function extractMemoriesFromConversation({
   }
 
   if (markTodayProcessed && (dailyNotesStored > 0 || hasExistingDailyEntries)) {
-    if (hasExistingDailyEntries) {
-      touchedDates.add(today);
-    }
+    const datesToMarkProcessed = getDailyNoteDatesToMarkProcessed({
+      today,
+      touchedDates,
+      hasExistingDailyEntries,
+    });
     await Promise.all(
-      [...touchedDates].map((date) => markDailyNoteProcessed(redis, username, date))
+      datesToMarkProcessed.map((date) => markDailyNoteProcessed(redis, username, date))
     );
   }
 

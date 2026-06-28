@@ -1901,7 +1901,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               : undefined,
           })),
         }),
-        timeout: 15000,
+        timeout: 65000,
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       })
         .then(res => res.json())
