@@ -248,6 +248,8 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(dotMacSource.includes("cloudSyncTabs.sync")).toBe(false);
     expect(dotMacSource.includes("cloudSyncTabs.backup")).toBe(false);
     expect(dotMacSource.includes("control-panels-pref-tab-panel")).toBe(false);
+    expect(dotMacSource.includes("control-panels-pref-well")).toBe(false);
+    expect(dotMacSource.includes("control-panels-pref-form-section")).toBe(true);
     expect(dotMacSource.includes("handleCloudBackup")).toBe(false);
     expect(dotMacSource.includes("setIsConfirmForceUploadOpen")).toBe(true);
     expect(dotMacSource.includes("setIsConfirmForceDownloadOpen")).toBe(true);
