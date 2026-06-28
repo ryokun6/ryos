@@ -272,7 +272,7 @@
         "keys": "키",
         "length": "길이",
         "loadMore": "더 보기",
-        "loading": "로딩 중…",
+        "loading": "로드 중…",
         "messages": {
           "alreadyDeleted": "Redis 키가 이미 삭제되었습니다",
           "backupReady": "Redis 키 {{count}}개를 백업했습니다",
@@ -761,7 +761,7 @@
         "conversion": "변환",
         "help": "계산기 도움말",
         "scientific": "과학",
-        "sound": "소리",
+        "sound": "사운드",
         "speakButtonPresses": "버튼 누를 때 말하기",
         "speakResults": "결과 말하기",
         "speechEnabled": "말하기"
@@ -857,7 +857,7 @@
           "title": "할 일 사이드바"
         },
         "undoAutoSave": {
-          "description": "모든 변경 사항은 자동으로 저장됩니다. ⌘Z를 사용하여 삭제, 편집, 일괄 가져오기까지 되돌릴 수 있습니다",
+          "description": "모든 변경사항은 자동으로 저장됩니다. ⌘Z를 사용하여 삭제, 편집, 일괄 가져오기까지 되돌릴 수 있습니다",
           "title": "실행 취소 및 자동 저장"
         }
       },
@@ -883,7 +883,7 @@
       "name": "캘린더",
       "sidebar": {
         "calendars": "캘린더",
-        "newTodoPlaceholder": "새 할 일…",
+        "newTodoPlaceholder": "새로운 할 일…",
         "noTodoItems": "할 일이 없습니다",
         "toDoItems": "할 일 항목"
       },
@@ -919,7 +919,7 @@
         "leaveConversation": "대화 나가기",
         "mentionRyo": "Ryo 멘션",
         "messageUser": "{{username}}에게 메시지",
-        "newChat": "새 채팅",
+        "newChat": "새로운 채팅",
         "pushToTalk": "눌러서 말하기",
         "selectedImage": "선택된 이미지",
         "sendNudge": "넛지 보내기",
@@ -942,7 +942,7 @@
         "leaveConversationTitle": "대화 나가기",
         "newChatDescription": "공개 채팅방을 만들거나 비공개 대화를 시작하세요",
         "newChatDescriptionPrivate": "비공개 대화 시작",
-        "newChatTitle": "새 채팅",
+        "newChatTitle": "새로운 채팅",
         "passwordMinLengthError": "암호는 8자 이상이어야 합니다",
         "passwordSetFailed": "암호 설정 실패",
         "passwordSetSuccess": "암호 설정됨",
@@ -996,7 +996,7 @@
         "linkToTelegram": "텔레그램 연결",
         "logOut": "로그아웃",
         "login": "로그인…",
-        "newChat": "새 채팅…",
+        "newChat": "새로운 채팅…",
         "resetFontSize": "글자 크기 재설정",
         "saveTranscript": "대화 기록 저장…",
         "showRooms": "방 보기",
@@ -1035,7 +1035,7 @@
         "loginToChat": "채팅에 로그인",
         "loginToContinue": "Ryo와 계속 채팅하려면 로그인하세요.",
         "loginToRyOS": "ryOS에 로그인",
-        "newChat": "새 채팅",
+        "newChat": "새로운 채팅",
         "noTranscriptionText": "전사된 텍스트를 받지 못했습니다",
         "nudgeSent": "👋 *콕 찌르기 보냄*",
         "pleaseLoginToDeleteRooms": "방을 삭제하려면 로그인하세요.",
@@ -1305,7 +1305,7 @@
         "listedItems": "항목 목록 표시됨",
         "listingApplications": "애플리케이션 목록 표시 중…",
         "listingSharedApplets": "공유 앱렛 목록 표시 중…",
-        "loadingMusicLibrary": "음악 라이브러리 로딩 중…",
+        "loadingMusicLibrary": "음악 라이브러리 로드 중…",
         "missingEditParameters": "필수 매개변수 누락: path, old_string, new_string",
         "multipleMatchesFound": "여러 일치 항목 찾음",
         "musicLibraryEmpty": "음악 보관함이 비어 있습니다.",
@@ -1345,7 +1345,7 @@
         "settingsCheckingForUpdates": "업데이트 확인 중…",
         "settingsLanguageChanged": "언어가 {{language}}로 변경되었습니다",
         "settingsMasterVolumeSet": "볼륨이 {{volume}}%로 설정되었습니다",
-        "settingsNoChanges": "변경 사항 없음",
+        "settingsNoChanges": "변경사항 없음",
         "settingsSpeechDisabled": "음성 합성 비활성화됨",
         "settingsSpeechEnabled": "음성 합성 활성화됨",
         "settingsThemeChanged": "테마가 {{theme}}로 변경되었습니다",
@@ -2055,7 +2055,7 @@
           "blue": "파란색",
           "green": "초록색",
           "orange": "주황",
-          "purple": "보라",
+          "purple": "보라색",
           "red": "빨간색"
         },
         "showColors": "색상 보기"
@@ -2130,7 +2130,7 @@
       "ipod": {
         "controlLabel": "컨트롤",
         "iTunesNotOpen": "iTunes가 열려 있지 않습니다.",
-        "karaokeNotOpen": "Karaoke가 열려 있지 않습니다",
+        "karaokeNotOpen": "가라오케가 열려 있지 않습니다",
         "menu": "메뉴",
         "modeIpod": "iPod",
         "modeKaraoke": "가라오케",
@@ -2138,7 +2138,7 @@
         "noTrack": "트랙 없음",
         "nowPlaying": "지금 재생 중",
         "openIpod": "iPod 앱 열기",
-        "openKaraoke": "Karaoke 앱 열기",
+        "openKaraoke": "가라오케 앱 열기",
         "pause": "일시 정지",
         "play": "재생",
         "previous": "이전",
@@ -2158,7 +2158,7 @@
           "blue": "파란색",
           "green": "초록색",
           "pink": "분홍색",
-          "purple": "보라",
+          "purple": "보라색",
           "yellow": "노란색"
         },
         "noteColor": "메모 색상",
@@ -2818,7 +2818,7 @@
         "deviceTheme": "기기 테마",
         "display": "표시",
         "displayCover": "표지",
-        "displayGradient": "그라데이션",
+        "displayGradient": "그라디언트",
         "displayLandscapes": "풍경",
         "displayLiquid": "액체",
         "displayMesh": "메시",
@@ -2904,7 +2904,7 @@
         "libraryAppleMusic": "Apple Music",
         "librarySource": "보관함",
         "libraryYoutube": "YouTube",
-        "loading": "불러오는 중…",
+        "loading": "로드 중…",
         "music": "음악",
         "musicQuiz": "음악 퀴즈",
         "noSongs": "노래 없음",
@@ -2963,7 +2963,7 @@
         "appleMusicSignedIn": "Apple Music ✓",
         "appleMusicSignedOut": "로그아웃됨",
         "fontGoldGlow": "글꼴: 글로우",
-        "fontGradient": "글꼴: 그라데이션",
+        "fontGradient": "글꼴: 그라디언트",
         "fontRounded": "글꼴: 둥근",
         "fontSansSerif": "글꼴: 산세리프",
         "fontSerif": "글꼴: 세리프",
@@ -2978,7 +2978,7 @@
         "libraryYoutube": "보관함: YouTube",
         "lightOff": "조명 끔",
         "lightOn": "조명 켬",
-        "loadingFurigana": "후리가나 로딩 중…",
+        "loadingFurigana": "후리가나 로드 중…",
         "loadingLyrics": "가사 로드 중…",
         "noTrack": "트랙 없음",
         "offset": "오프셋",
@@ -3239,7 +3239,7 @@
       "description": "클래식 퍼즐 게임",
       "dialogs": {
         "newGameDescription": "새 게임을 시작하시겠습니까?",
-        "newGameTitle": "새 게임"
+        "newGameTitle": "새로운 게임"
       },
       "help": {
         "chordReveal": {
@@ -3282,7 +3282,7 @@
       "description": "이미지 그리기 및 편집",
       "dialogs": {
         "discardChanges": "변경사항 취소",
-        "discardChangesDescription": "저장되지 않은 변경 사항이 있습니다. 그래도 새 파일을 만드시겠습니까?",
+        "discardChangesDescription": "저장되지 않은 변경사항이 있습니다. 그래도 새 파일을 만드시겠습니까?",
         "enterImageName": "이미지 이름을 입력하세요.",
         "error": "오류",
         "failedToLoadImageContent": "이미지 콘텐츠를 로드하지 못했습니다.",
@@ -3346,7 +3346,7 @@
         "filterVhs": "VHS",
         "filters": "필터",
         "importFromDevice": "기기에서 가져오기…",
-        "newFile": "새 파일",
+        "newFile": "새로운 파일",
         "open": "열기…",
         "paintHelp": "페인트 도움말",
         "save": "저장",
@@ -3411,7 +3411,7 @@
           "title": "스크린샷 및 전체 화면"
         }
       },
-      "loadingEmulator": "에뮬레이터 로드 중",
+      "loadingEmulator": "에뮬레이터 로드 중…",
       "loadingGame": "{{gameName}} 로드 중…",
       "loadingSystem": "{{name}} 로드 중…",
       "menu": {
@@ -3725,12 +3725,12 @@
         "green": "초록색",
         "orange": "주황",
         "pink": "분홍색",
-        "purple": "보라",
+        "purple": "보라색",
         "yellow": "노란색"
       },
       "description": "빠른 알림을 위한 스티커 메모",
       "empty": {
-        "createNote": "새 메모",
+        "createNote": "새로운 메모",
         "description": "시작하려면 메모를 만드세요.",
         "title": "아직 스티커 메모가 없습니다."
       },
@@ -3914,8 +3914,8 @@
       "menu": {
         "aboutTerminal": "터미널에 관하여",
         "clearTerminal": "터미널 지우기",
-        "decreaseFontSize": "글꼴 크기 줄이기",
-        "increaseFontSize": "글꼴 크기 늘리기",
+        "decreaseFontSize": "서체 크기 감소",
+        "increaseFontSize": "서체 크기 증가",
         "muteSounds": "소리 음소거",
         "resetFontSize": "폰트 크기 재설정",
         "terminalHelp": "터미널 도움말"
@@ -3972,13 +3972,13 @@
       "description": "간단한 리치 텍스트 편집기",
       "dialogs": {
         "discardChanges": "변경사항 취소",
-        "doYouWantToDiscardYourChangesAndCreateANewFile": "변경 사항을 취소하고 새 파일을 만드시겠습니까?",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "변경사항을 취소하고 새 파일을 만드시겠습니까?",
         "enterANameForYourFile": "파일 이름을 입력하세요.",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "저장할 파일 이름을 입력하거나 닫기 전에 삭제하세요.",
         "keepNewDocument": "새 문서 유지",
         "saveChanges": "변경사항 저장",
         "saveFile": "파일 저장",
-        "saveYourChangesBeforeClosing": "닫기 전에 변경 사항을 저장하세요."
+        "saveYourChangesBeforeClosing": "닫기 전에 변경사항을 저장하세요."
       },
       "failedToUpdateEditorWithDocumentUpdatedEvent": "문서 업데이트 이벤트로 편집기를 업데이트하지 못했습니다:",
       "heading1": "머리말 1",
@@ -4027,7 +4027,7 @@
         "importFromDevice": "기기에서 가져오기…",
         "italic": "이탤릭체",
         "markdown": "Markdown",
-        "newFile": "새 파일",
+        "newFile": "새로운 파일",
         "numberedList": "번호 목록",
         "open": "열기…",
         "plainText": "일반 텍스트",
@@ -4093,7 +4093,7 @@
         "statusSearching": "YouTube 검색 중",
         "statusTuning": "채널 맞추는 중",
         "submit": "채널 생성",
-        "title": "새 채널",
+        "title": "새로운 채널",
         "toastSuccess": "{{name}} 청취 중"
       },
       "delete": {
@@ -4145,7 +4145,7 @@
         "fullScreen": "전체 화면",
         "importChannels": "채널 가져오기…",
         "lcdFilter": "LCD 필터",
-        "newChannel": "새 채널…",
+        "newChannel": "새로운 채널…",
         "next": "다음",
         "pause": "일시 정지",
         "play": "재생",
@@ -4216,7 +4216,7 @@
           "title": "반복 모드"
         },
         "playback": {
-          "description": "두툼한 트랜스포트 바에서 재생, 일시 중지, 건너뛰기, 탐색 및 볼륨을 조절하세요.",
+          "description": "두툼한 트랜스포트 바에서 재생, 일시 정지, 건너뛰기, 탐색 및 볼륨을 조절하세요.",
           "title": "클래식 재생"
         },
         "powersTv": {
@@ -4462,7 +4462,7 @@
       "confirm": "확인",
       "delete": "삭제",
       "discardChanges": "변경사항 폐기",
-      "discardChangesDesc": "변경 사항을 폐기하고 새 파일을 만들겠습니까?",
+      "discardChangesDesc": "변경사항을 폐기하고 새 파일을 만들겠습니까?",
       "done": "완료",
       "emoji": {
         "chooseEmoji": "이모티콘 선택",
@@ -4477,7 +4477,7 @@
       "madeBy": "제작:",
       "openInGitHub": "GitHub에서 열기",
       "save": "저장",
-      "saveBeforeClosing": "닫기 전에 변경 사항을 저장하세요.",
+      "saveBeforeClosing": "닫기 전에 변경사항을 저장하세요.",
       "saveChanges": "변경사항 저장",
       "saveFile": "파일 저장",
       "share": {
@@ -4701,7 +4701,7 @@
       "historyWindow": "최근 {{count}}초",
       "jsHeap": "JS 힙",
       "lightMode": "라이트",
-      "loading": "로딩 중…",
+      "loading": "로드 중…",
       "locale": "로캘",
       "logHealth": "로그 상태",
       "logHealthValue": "오류 {{errors}}개 · 경고 {{warnings}}개",
@@ -4724,7 +4724,7 @@
       },
       "runtimeLabel": "런타임",
       "sampling": "매초 샘플링 중",
-      "samplingPaused": "샘플링 일시 중지됨",
+      "samplingPaused": "샘플링 일시 정지됨",
       "storage": "저장소",
       "theme": "테마",
       "themeValue": "{{theme}} · {{mode}}",
