@@ -5,9 +5,74 @@ import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
-import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
+import { redisKey, redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
+import type { VercelRequest } from "@vercel/node";
 
 export const runtime = "nodejs";
+
+// Request headers that are safe to forward from the embedded page to the
+// upstream origin when re-proxying a sub-resource (fetch/XHR). We deliberately
+// DO NOT forward Cookie or our own origin's headers, so the proxy never leaks
+// ryOS session cookies to third-party sites.
+const FORWARDABLE_SUBRESOURCE_HEADERS = [
+  "content-type",
+  "accept",
+  "authorization",
+  "x-requested-with",
+];
+
+/** Methods whose body must be forwarded to the upstream origin. */
+const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * Read the raw request body so it can be forwarded verbatim to the upstream
+ * origin. Works across both runtimes: on Vercel the body stream is intact
+ * (this route does not pre-parse it), while the standalone Bun server may have
+ * already parsed JSON / urlencoded bodies into `req.body` (leaving the stream
+ * empty), so we reconstruct from the parsed value as a fallback.
+ */
+async function readForwardBody(
+  req: VercelRequest
+): Promise<Buffer | string | undefined> {
+  const method = (req.method || "GET").toUpperCase();
+  if (!BODY_METHODS.has(method)) return undefined;
+
+  const chunks: Buffer[] = [];
+  try {
+    for await (const chunk of req as unknown as AsyncIterable<Buffer | string>) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+  } catch {
+    // Stream already consumed or unavailable; fall through to parsed body.
+  }
+  if (chunks.length > 0) return Buffer.concat(chunks);
+
+  const parsed = (req as unknown as { body?: unknown }).body;
+  if (parsed == null) return undefined;
+  if (typeof parsed === "string") return parsed;
+  if (Buffer.isBuffer(parsed)) return parsed;
+  try {
+    const contentType = (
+      (req.headers["content-type"] as string | undefined) || ""
+    ).toLowerCase();
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(
+        parsed as Record<string, unknown>
+      )) {
+        if (Array.isArray(value)) {
+          for (const v of value) params.append(key, String(v));
+        } else {
+          params.append(key, String(value));
+        }
+      }
+      return params.toString();
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return undefined;
+  }
+}
 
 // --- Utility Functions ----------------------------------------------------
 
@@ -180,6 +245,47 @@ async function resolveClosestWaybackSnapshot(
   }
 }
 
+/**
+ * Stream an undici/web `ReadableStream` response body to the Node/Vercel
+ * response without buffering the whole payload in memory. Works on both the
+ * standalone Bun server (custom response shim with `write`/`end`) and Vercel's
+ * Node `ServerResponse`. Returns true if streaming succeeded.
+ */
+async function streamBodyToResponse(
+  body: ReadableStream<Uint8Array> | null,
+  res: { write: (chunk: Buffer) => unknown; end: () => unknown }
+): Promise<boolean> {
+  if (!body) {
+    res.end();
+    return true;
+  }
+  const reader = body.getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value && value.length > 0) {
+        res.write(Buffer.from(value));
+      }
+    }
+    res.end();
+    return true;
+  } catch {
+    try {
+      res.end();
+    } catch {
+      /* ignore */
+    }
+    return false;
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 async function getIeCacheKey(normalizedUrlForKey: string, year: string): Promise<string> {
   return redisKeys.cache.ieVersions(
     await sha256RedisIdentifier(normalizedUrlForKey),
@@ -217,7 +323,7 @@ async function getWaybackCacheKey(
 
 export default apiHandler(
   {
-    methods: ["GET"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     contentType: null,
   },
   async ({ req, res, redis, logger, startTime, origin }) => {
@@ -226,6 +332,18 @@ export default apiHandler(
   const year = req.query.year as string | undefined;
   const month = req.query.month as string | undefined;
   const effectiveOrigin = origin;
+  const httpMethod = (req.method || "GET").toUpperCase();
+
+  // `raw=1` marks a re-proxied sub-resource request (fetch/XHR/asset) emitted
+  // by the injected interceptor. Raw responses are streamed back untouched
+  // (no HTML rewriting / script injection) so JSON, API payloads, scripts and
+  // HTML fragments are not corrupted. Any non-GET request is implicitly a
+  // sub-resource forward and never a top-level navigation.
+  const isRawProxy =
+    req.query.raw === "1" || req.query.raw === "true" || httpMethod !== "GET";
+  if (isRawProxy) {
+    mode = "proxy";
+  }
 
   // Generate a fresh, randomized browser header set for this request
   const BROWSER_HEADERS = generateRandomBrowserHeaders();
@@ -705,8 +823,52 @@ export default apiHandler(
     // 1. Pure header‑check mode
     if (mode === "check") {
       logger.info("Executing in 'check' mode");
+
+      // Per-host embeddability cache: the allowed/blocked verdict for a host is
+      // stable over short windows, so cache it to avoid re-fetching upstream on
+      // every navigation. Title is included opportunistically as a prefetch
+      // hint (it may go stale, which is harmless).
+      let embedCacheKey: string | null = null;
+      try {
+        const host = new URL(normalizedUrl).hostname.toLowerCase();
+        embedCacheKey = redisKey(
+          "cache",
+          "ie",
+          "embed",
+          await sha256RedisIdentifier(host)
+        );
+        // The Redis client may auto-deserialize JSON (Upstash REST) or return
+        // the raw string (standard Redis), so handle both shapes.
+        const cached = await redis.get(embedCacheKey);
+        if (cached) {
+          const parsed =
+            typeof cached === "string" ? JSON.parse(cached) : cached;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("X-Embed-Cache", "HIT");
+          logger.response(200, Date.now() - startTime);
+          return res.status(200).json(parsed);
+        }
+      } catch (cacheErr) {
+        logger.warn("Embed cache read failed", cacheErr);
+      }
+
       const result = await checkSiteEmbeddingAllowed();
+      if (embedCacheKey) {
+        try {
+          // Cache for 6h. Successful verdicts last longer than failures, which
+          // are often transient (timeouts / rate limits). Store the object
+          // directly; the client serializes it.
+          await redis.set(embedCacheKey, result, {
+            ex: result.reason?.startsWith("Proxy check failed")
+              ? 60 * 5
+              : 60 * 60 * 6,
+          });
+        } catch (cacheErr) {
+          logger.warn("Embed cache write failed", cacheErr);
+        }
+      }
       res.setHeader("Content-Type", "application/json");
+      res.setHeader("X-Embed-Cache", "MISS");
       logger.response(200, Date.now() - startTime);
       return res.status(200).json(result);
     }
@@ -722,13 +884,35 @@ export default apiHandler(
       BROWSER_HEADERS['Referer'] = new URL(targetUrl).origin + '/';
     } catch { /* ignore URL parse errors */ }
 
+    // For re-proxied sub-resources, forward a safe subset of the original
+    // request headers (content-type / accept / authorization) so APIs that
+    // depend on them keep working — but never the embedded page's cookies.
+    if (isRawProxy) {
+      for (const headerName of FORWARDABLE_SUBRESOURCE_HEADERS) {
+        const value = req.headers[headerName];
+        if (typeof value === "string" && value) {
+          BROWSER_HEADERS[
+            headerName.replace(/(^|-)([a-z])/g, (_m, p1, p2) =>
+              p1 + p2.toUpperCase()
+            )
+          ] = value;
+        }
+      }
+    }
+
+    // Forward the original method + body for non-GET sub-resource requests
+    // (form POSTs, JSON API calls, etc.). Read as a Buffer so it survives any
+    // 307/308 redirects that preserve the method.
+    const forwardBody = await readForwardBody(req);
+
     try {
       const { response: upstreamRes, finalUrl } = await safeFetchWithRedirects(
         targetUrl,
         {
-          method: "GET",
+          method: httpMethod,
           signal: controller.signal,
           headers: BROWSER_HEADERS,
+          ...(forwardBody !== undefined ? { body: forwardBody } : {}),
         },
         { maxRedirects: 10 }
       );
@@ -772,6 +956,25 @@ export default apiHandler(
       // Set response headers
       res.setHeader("content-security-policy", "frame-ancestors *");
       res.setHeader("access-control-allow-origin", "*");
+
+      // Raw sub-resource forward: return the upstream payload untouched (no
+      // HTML rewriting / interceptor injection) so JSON, scripts, assets and
+      // HTML fragments fetched via the re-proxied fetch/XHR are not corrupted.
+      if (isRawProxy) {
+        if (contentType) res.setHeader("Content-Type", contentType);
+        const cacheControl = upstreamRes.headers.get("cache-control");
+        if (cacheControl) res.setHeader("Cache-Control", cacheControl);
+        res.status(upstreamRes.status);
+        const streamed = await streamBodyToResponse(
+          upstreamRes.body as ReadableStream<Uint8Array> | null,
+          res
+        );
+        if (!streamed) {
+          logger.warn(`Raw proxy stream interrupted for ${targetUrl}`);
+        }
+        logger.response(upstreamRes.status, Date.now() - startTime);
+        return;
+      }
 
       // If it's HTML, inject the <base> tag and click interceptor script
       if (contentType.includes("text/html")) {
@@ -1054,44 +1257,55 @@ export default apiHandler(
     return originalOpen ? originalOpen.call(window, url, target, features) : null;
   };
 
-  // --- Sub-resource proxy: route fetch/XHR through the proxy for CORS-blocked requests ---
+  // --- Sub-resource proxy: route ALL cross-origin fetch/XHR (any method)
+  // through the proxy so CORS, mixed-content, and same-site-different-origin
+  // API calls all succeed. Requests already pointing at the proxy origin are
+  // left untouched to avoid loops. The 'raw=1' flag tells the proxy to stream
+  // the payload back verbatim (no HTML rewriting).
   var proxyOrigin = window.location.origin;
-  var baseOrigin = null;
-  try { baseOrigin = new URL(document.baseURI).origin; } catch(e) {}
+  function buildRawProxyUrl(href) {
+    return proxyOrigin + '/api/iframe-check?raw=1&url=' + encodeURIComponent(href);
+  }
+  function shouldProxyUrl(resolved) {
+    // Only proxy http(s) cross-origin requests; leave blob:/data:/ws: and
+    // same-(proxy)-origin requests alone.
+    if (resolved.protocol !== 'http:' && resolved.protocol !== 'https:') return false;
+    return resolved.origin !== proxyOrigin;
+  }
 
-  if (baseOrigin && baseOrigin !== proxyOrigin) {
-    var origFetch = window.fetch;
-    window.fetch = function(input, init) {
-      try {
-        var url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
-        var resolved = new URL(url, document.baseURI);
-        var method = 'GET';
-        if (init && init.method) method = init.method.toUpperCase();
-        else if (input instanceof Request) method = input.method.toUpperCase();
-
-        if (method === 'GET' && resolved.origin === baseOrigin) {
-          var proxyUrl = proxyOrigin + '/api/iframe-check?url=' + encodeURIComponent(resolved.href);
+  var origFetch = window.fetch;
+  window.fetch = function(input, init) {
+    try {
+      var url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
+      var resolved = new URL(url, document.baseURI);
+      if (shouldProxyUrl(resolved)) {
+        var proxyUrl = buildRawProxyUrl(resolved.href);
+        if (typeof input === 'string' || input instanceof URL) {
           return origFetch.call(window, proxyUrl, init);
         }
-      } catch(e) {}
-      return origFetch.call(window, input, init);
-    };
-
-    var origXHROpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function() {
-      try {
-        var method = arguments[0];
-        var url = arguments[1];
-        if (typeof url === 'string' && method && method.toUpperCase() === 'GET') {
-          var resolved = new URL(url, document.baseURI);
-          if (resolved.origin === baseOrigin) {
-            arguments[1] = proxyOrigin + '/api/iframe-check?url=' + encodeURIComponent(resolved.href);
-          }
+        if (input instanceof Request) {
+          // Preserve method/headers/body by cloning the Request onto the proxy URL.
+          return origFetch.call(window, new Request(proxyUrl, input), init);
         }
-      } catch(e) {}
-      return origXHROpen.apply(this, arguments);
-    };
-  }
+        return origFetch.call(window, proxyUrl, init);
+      }
+    } catch(e) {}
+    return origFetch.call(window, input, init);
+  };
+
+  var origXHROpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function() {
+    try {
+      var url = arguments[1];
+      if (typeof url === 'string') {
+        var resolved = new URL(url, document.baseURI);
+        if (shouldProxyUrl(resolved)) {
+          arguments[1] = buildRawProxyUrl(resolved.href);
+        }
+      }
+    } catch(e) {}
+    return origXHROpen.apply(this, arguments);
+  };
 })();
 </script>
 `;
@@ -1154,12 +1368,22 @@ export default apiHandler(
         logger.response(upstreamRes.status, Date.now() - startTime);
         return res.status(upstreamRes.status).send(html);
       } else {
-        logger.info("Proxying non-HTML content directly");
-        // For non‑HTML content, stream the body directly
-        const arrayBuffer = await upstreamRes.arrayBuffer();
-        res.setHeader("Content-Type", contentType);
+        logger.info("Proxying non-HTML content directly (streamed)");
+        // For non‑HTML content, stream the body straight through without
+        // buffering the whole payload in memory.
+        if (contentType) res.setHeader("Content-Type", contentType);
+        const cacheControl = upstreamRes.headers.get("cache-control");
+        if (cacheControl) res.setHeader("Cache-Control", cacheControl);
+        res.status(upstreamRes.status);
+        const streamed = await streamBodyToResponse(
+          upstreamRes.body as ReadableStream<Uint8Array> | null,
+          res
+        );
+        if (!streamed) {
+          logger.warn(`Non-HTML proxy stream interrupted for ${targetUrl}`);
+        }
         logger.response(upstreamRes.status, Date.now() - startTime);
-        return res.status(upstreamRes.status).send(Buffer.from(arrayBuffer));
+        return;
       }
     } catch (fetchError) {
       clearTimeout(timeout);

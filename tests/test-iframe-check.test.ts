@@ -147,4 +147,59 @@ describe("iframe-check", () => {
       expect(Array.isArray(data.years)).toBe(true);
     });
   });
+
+  describe("Raw Sub-resource Proxy", () => {
+    test("raw=1 returns upstream untouched (no interceptor/base injection)", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?raw=1&url=https://example.com`
+      );
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      // Raw mode must NOT inject our <base> tag or navigation interceptor.
+      expect(html).toContain("Example Domain");
+      expect(html).not.toContain("<base href=");
+      expect(html).not.toContain("Save real parent reference");
+    });
+
+    test("raw proxy forwards POST body to upstream", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?raw=1&url=${encodeURIComponent(
+          "https://httpbin.org/post"
+        )}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ryos: "test" }),
+        }
+      );
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      // httpbin echoes the raw body back under `data`.
+      expect(data.data).toContain("ryos");
+    });
+  });
+
+  describe("Embed Cache", () => {
+    test("check mode exposes embed cache header and warms on repeat", async () => {
+      // The verdict is cached per host, so prime it then assert the repeat
+      // is served from cache (first call may already be warm from prior tests).
+      const url = "https://example.com";
+      const first = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          url
+        )}&mode=check`
+      );
+      expect(first.status).toBe(200);
+      expect(["HIT", "MISS"]).toContain(first.headers.get("x-embed-cache"));
+
+      const second = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          url
+        )}&mode=check`
+      );
+      expect(second.status).toBe(200);
+      // Same host → embeddability verdict is served from cache.
+      expect(second.headers.get("x-embed-cache")).toBe("HIT");
+    });
+  });
 });
