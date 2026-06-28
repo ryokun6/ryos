@@ -44,8 +44,6 @@ export interface SessionResponse {
   createdAt?: number;
 }
 
-export type RecoveryChannel = "telegram" | "email";
-
 export interface RecoveryRequestResponse {
   success: boolean;
   message?: string;

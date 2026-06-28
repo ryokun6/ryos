@@ -5,7 +5,6 @@ import type {
   EmailMutationResponse,
   EmailStatusResponse,
   LoginResponse,
-  RecoveryChannel,
   RecoveryRequestResponse,
   RegisterResponse,
   ResetPasswordResponse,
@@ -19,7 +18,6 @@ export type {
   EmailMutationResponse,
   EmailStatusResponse,
   LoginResponse,
-  RecoveryChannel,
   RecoveryRequestResponse,
   RegisterResponse,
   ResetPasswordResponse,
@@ -135,7 +133,6 @@ export async function setUserPassword(
 
 export async function requestRecovery(params: {
   identifier: string;
-  channel: RecoveryChannel;
 }): Promise<RecoveryRequestResponse> {
   return apiRequest<RecoveryRequestResponse, typeof params>({
     path: "/api/auth/recovery/request",

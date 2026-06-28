@@ -4413,9 +4413,6 @@
       "password": "密碼",
       "recovery": {
         "back": "返回",
-        "channel": "透過以下方式傳送驗證碼",
-        "channelEmail": "電子郵件",
-        "channelTelegram": "Telegram",
         "code": "重設代碼",
         "codeRequired": "輸入重設代碼",
         "codeSent": "若帳號相符，重設代碼已發送。",

@@ -1,12 +1,14 @@
 /**
  * POST /api/auth/recovery/request
  *
- * Start a password-reset by sending a single-use code to one of the account's
- * recovery channels (linked Telegram chat or verified recovery email).
+ * Start a password-reset by sending a single-use code to EVERY recovery channel
+ * the account has available (linked Telegram chat and/or verified recovery
+ * email). The caller does not choose a channel — one code is issued and
+ * delivered everywhere it can be.
  *
  * Anti-enumeration: this endpoint ALWAYS returns a generic success response
- * regardless of whether the identifier maps to a real account or whether the
- * requested channel is configured. It never reveals which channels exist.
+ * regardless of whether the identifier maps to a real account or whether any
+ * channel is configured. It never reveals which channels exist.
  */
 
 import { apiHandler } from "../../_utils/api-handler.js";
@@ -23,11 +25,8 @@ import { getClientIp, makeKey } from "../../_utils/_rate-limit.js";
 export const runtime = "nodejs";
 export const maxDuration = 15;
 
-type RecoveryChannel = "telegram" | "email";
-
 interface RecoveryRequestBody {
   identifier: string;
-  channel: RecoveryChannel;
 }
 
 const PER_IP_LIMIT = 10;
@@ -47,7 +46,6 @@ export default apiHandler<RecoveryRequestBody>(
   { methods: ["POST"], auth: "none", parseJsonBody: true },
   async ({ req, res, redis, logger, startTime, body }) => {
     const identifier = typeof body?.identifier === "string" ? body.identifier.trim() : "";
-    const channel: RecoveryChannel = body?.channel === "email" ? "email" : "telegram";
 
     if (!identifier) {
       logger.response(400, Date.now() - startTime);
@@ -89,44 +87,44 @@ export default apiHandler<RecoveryRequestBody>(
     try {
       const username = await resolveRecoveryUsername(redis, identifier);
       if (username) {
-        if (channel === "telegram") {
-          const code = await issueRecoveryCode(
-            redis,
-            redisKeys.auth.passwordReset(username),
-            username
-          );
-          const delivered = await sendTelegramToUser(
-            redis,
-            username,
-            `Your ryOS password reset code is ${code}.\n\n` +
-              `It expires in 15 minutes. If you didn't request this, ignore this message.`
-          );
-          if (!delivered) {
-            // No usable channel — drop the unusable code so it can't linger.
-            await redis.del(redisKeys.auth.passwordReset(username));
-          }
-        } else {
-          const record = await getStoredUserRecord(redis, username);
-          if (record?.email && record.emailVerified) {
-            const code = await issueRecoveryCode(
-              redis,
-              redisKeys.auth.passwordReset(username),
-              username
-            );
-            const sendResult = await sendEmail({
-              to: record.email,
-              subject: "Your ryOS password reset code",
-              text:
-                `Your ryOS password reset code is ${code}.\n\n` +
-                `It expires in 15 minutes. If you didn't request this, ignore this email.`,
+        // Issue a single code and fan it out to every available channel. The
+        // same code works regardless of where the user reads it.
+        const code = await issueRecoveryCode(
+          redis,
+          redisKeys.auth.passwordReset(username),
+          username
+        );
+        let delivered = false;
+
+        const telegramDelivered = await sendTelegramToUser(
+          redis,
+          username,
+          `Your ryOS password reset code is ${code}.\n\n` +
+            `It expires in 15 minutes. If you didn't request this, ignore this message.`
+        );
+        if (telegramDelivered) delivered = true;
+
+        const record = await getStoredUserRecord(redis, username);
+        if (record?.email && record.emailVerified) {
+          const sendResult = await sendEmail({
+            to: record.email,
+            subject: "Your ryOS password reset code",
+            text:
+              `Your ryOS password reset code is ${code}.\n\n` +
+              `It expires in 15 minutes. If you didn't request this, ignore this email.`,
+          });
+          if (sendResult.sent) {
+            delivered = true;
+          } else {
+            logger.warn("Failed to send recovery email", {
+              reason: sendResult.reason,
             });
-            if (!sendResult.sent) {
-              await redis.del(redisKeys.auth.passwordReset(username));
-              logger.warn("Failed to send recovery email", {
-                reason: sendResult.reason,
-              });
-            }
           }
+        }
+
+        if (!delivered) {
+          // No usable channel — drop the unusable code so it can't linger.
+          await redis.del(redisKeys.auth.passwordReset(username));
         }
       }
     } catch (error) {

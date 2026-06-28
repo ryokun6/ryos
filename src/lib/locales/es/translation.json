@@ -4417,9 +4417,6 @@
       "password": "Contraseña",
       "recovery": {
         "back": "Atrás",
-        "channel": "Enviar código por",
-        "channelEmail": "Correo electrónico",
-        "channelTelegram": "Telegram",
         "code": "Código de restablecimiento",
         "codeRequired": "Introduce el código de restablecimiento",
         "codeSent": "Si existe una cuenta coincidente, se ha enviado un código de restablecimiento.",

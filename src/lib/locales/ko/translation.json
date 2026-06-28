@@ -4413,9 +4413,6 @@
       "password": "암호",
       "recovery": {
         "back": "뒤로",
-        "channel": "다음을 통해 코드 보내기",
-        "channelEmail": "이메일",
-        "channelTelegram": "텔레그램",
         "code": "재설정 코드",
         "codeRequired": "재설정 코드를 입력하세요",
         "codeSent": "일치하는 계정이 있으면 재설정 코드가 전송되었습니다.",

@@ -4413,9 +4413,6 @@
       "password": "パスワード",
       "recovery": {
         "back": "戻る",
-        "channel": "次の方法でコードを送信",
-        "channelEmail": "メールアドレス",
-        "channelTelegram": "Telegram",
         "code": "リセットコード",
         "codeRequired": "リセットコードを入力してください",
         "codeSent": "アカウントが一致した場合、リセットコードを送信しました。",
