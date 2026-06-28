@@ -4680,6 +4680,7 @@
     "hideConsole": "Ocultar consola",
     "noLogsYet": "No hay registros capturados aún.",
     "showConsole": "Mostrar consola",
+    "scrollToBottom": "Desplazarse al final",
     "toggleLabel": "Depuración",
     "warnCount": "{{count}} warn"
   },

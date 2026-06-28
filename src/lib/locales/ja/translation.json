@@ -4695,6 +4695,7 @@
     "hideConsole": "コンソールを非表示",
     "noLogsYet": "ログはまだ記録されていません。",
     "showConsole": "コンソールを表示",
+    "scrollToBottom": "一番下へスクロール",
     "toggleLabel": "デバッグ",
     "warnCount": "{{count}} 警告"
   },
