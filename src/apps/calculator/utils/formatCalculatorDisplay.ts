@@ -2,6 +2,33 @@ const DECIMAL_PATTERN = /^-?\d+(?:\.\d*)?$/;
 const SCIENTIFIC_PATTERN = /^(-?\d+)(?:\.(\d+))?([eE][+-]?\d+)$/;
 const MAX_CONVERSION_SIGNIFICANT_DIGITS = 12;
 
+interface FittedFontSizeInput {
+  baseFontSize: number;
+  availableWidth: number;
+  contentWidth: number;
+  minFontSize?: number;
+}
+
+export function calculateFittedCalculatorFontSize({
+  baseFontSize,
+  availableWidth,
+  contentWidth,
+  minFontSize = 12,
+}: FittedFontSizeInput): number {
+  if (
+    baseFontSize <= 0 ||
+    availableWidth <= 0 ||
+    contentWidth <= availableWidth
+  ) {
+    return baseFontSize;
+  }
+
+  return Math.max(
+    minFontSize,
+    Math.floor(baseFontSize * (availableWidth / contentWidth) * 100) / 100
+  );
+}
+
 function getDecimalSeparator(locale: string): string {
   return (
     new Intl.NumberFormat(locale)

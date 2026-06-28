@@ -1,8 +1,11 @@
 import { cn } from "@/lib/utils";
 import { ToolbarButton, ToolbarButtonGroup } from "@/components/ui/toolbar-button";
 import { useLanguageStore } from "@/stores/useLanguageStore";
-import type { CSSProperties } from "react";
-import { formatCalculatorDisplay } from "../utils/formatCalculatorDisplay";
+import { useLayoutEffect, useRef, type CSSProperties } from "react";
+import {
+  calculateFittedCalculatorFontSize,
+  formatCalculatorDisplay,
+} from "../utils/formatCalculatorDisplay";
 import type { CalculatorTheme } from "./types";
 
 export interface CalculatorKeyProps {
@@ -80,6 +83,44 @@ export interface CalculatorDisplayProps {
   theme: CalculatorTheme;
 }
 
+export function CalculatorDisplayValue({ value }: { value: string }) {
+  const valueRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const valueElement = valueRef.current;
+    const container = valueElement?.parentElement;
+    if (!valueElement || !container) return;
+
+    const fitValue = () => {
+      valueElement.style.fontSize = "";
+      const baseFontSize = Number.parseFloat(
+        window.getComputedStyle(valueElement).fontSize
+      );
+      const fittedFontSize = calculateFittedCalculatorFontSize({
+        baseFontSize,
+        availableWidth: valueElement.clientWidth,
+        contentWidth: valueElement.scrollWidth,
+      });
+      if (fittedFontSize < baseFontSize) {
+        valueElement.style.fontSize = `${fittedFontSize}px`;
+      }
+    };
+
+    fitValue();
+    if (typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(fitValue);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [value]);
+
+  return (
+    <div ref={valueRef} className="calc-display-value truncate">
+      {value}
+    </div>
+  );
+}
+
 export function CalculatorDisplay({
   value,
   secondary,
@@ -103,7 +144,7 @@ export function CalculatorDisplay({
         </div>
       ) : null}
       <div className="calc-display" title={value}>
-        <div className="calc-display-value truncate">{formattedValue}</div>
+        <CalculatorDisplayValue value={formattedValue} />
         {theme === "aqua" ? (
           <div className="calc-display-status" aria-live="polite">
             <span>{memoryActive ? "M" : "\u00a0"}</span>

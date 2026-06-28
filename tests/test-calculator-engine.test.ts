@@ -21,6 +21,7 @@ import {
   formatSwappedConversionValue,
 } from "../src/apps/calculator/utils/conversionData";
 import {
+  calculateFittedCalculatorFontSize,
   formatCalculatorConversionResult,
   formatCalculatorDisplay,
 } from "../src/apps/calculator/utils/formatCalculatorDisplay";
@@ -112,6 +113,30 @@ describe("formatCalculatorDisplay", () => {
 
   test("keeps currency results at two decimal places", () => {
     expect(formatCalculatorConversionResult(12.3, "en", true)).toBe("12.30");
+  });
+
+  test("scales display text to its measured width", () => {
+    expect(
+      calculateFittedCalculatorFontSize({
+        baseFontSize: 22,
+        availableWidth: 200,
+        contentWidth: 220,
+      })
+    ).toBe(20);
+    expect(
+      calculateFittedCalculatorFontSize({
+        baseFontSize: 22,
+        availableWidth: 220,
+        contentWidth: 200,
+      })
+    ).toBe(22);
+    expect(
+      calculateFittedCalculatorFontSize({
+        baseFontSize: 22,
+        availableWidth: 60,
+        contentWidth: 220,
+      })
+    ).toBe(12);
   });
 });
 
