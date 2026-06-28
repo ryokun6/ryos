@@ -194,9 +194,6 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
   const systemNotificationsChecked = hasDesktopNotificationStatus
     ? desktopNotificationSupported
     : notificationPermission === "granted";
-  const systemNotificationsDisabled = hasDesktopNotificationStatus
-    ? !desktopNotificationSupported
-    : notificationPermission === "denied";
   const shouldRenderSystemNotificationsItem =
     hasDesktopNotificationStatus || isNotificationApiAvailable();
 
@@ -464,9 +461,16 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
                 <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
                 <MenubarCheckboxItem
                   checked={systemNotificationsChecked}
-                  disabled={systemNotificationsDisabled}
+                  aria-disabled={
+                    hasDesktopNotificationStatus
+                      ? !desktopNotificationSupported
+                      : notificationPermission === "denied"
+                  }
                   onCheckedChange={(checked) => {
                     if (hasDesktopNotificationStatus) {
+                      return;
+                    }
+                    if (notificationPermission === "denied") {
                       return;
                     }
                     if (checked && notificationPermission === "default") {
