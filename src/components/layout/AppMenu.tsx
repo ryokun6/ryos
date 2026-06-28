@@ -15,6 +15,7 @@ import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
 import { appRegistry, type AppId } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 
 // Apps that support multiple windows
 const MULTI_INSTANCE_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
@@ -60,7 +61,7 @@ export function AppMenu({
 
   // Get app metadata for help and about dialogs
   const app = appRegistry[appId];
-  const helpItems = app?.helpItems || [];
+  const helpItems = useTranslatedHelpItems(appId, app.helpItems ?? []);
   const metadata = app?.metadata;
 
   // Get translated app name

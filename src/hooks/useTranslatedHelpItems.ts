@@ -1,9 +1,16 @@
 import { useMemo, type ReactNode } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { CALCULATOR_HELP_I18N_KEYS } from "@/apps/calculator/helpKeys";
 import { INTERNET_EXPLORER_HELP_I18N_KEYS } from "@/apps/internet-explorer/helpKeys";
 import { MAPS_HELP_I18N_KEYS } from "@/apps/maps/helpKeys";
 import type { AppId } from "@/utils/i18n";
+
+interface HelpItem<TIcon extends ReactNode = string> {
+  icon: TIcon;
+  title: string;
+  description: string;
+}
 
 export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
   finder: [
@@ -204,30 +211,38 @@ export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
 };
 
 /**
- * Hook to get translated help items for an app
- * Merges translated text with original icons
+ * Get translated help items for an app while preserving the original icons.
  */
+export function getTranslatedHelpItems<TIcon extends ReactNode = string>(
+  t: TFunction,
+  appId: AppId,
+  originalHelpItems: Array<HelpItem<TIcon>>
+): Array<HelpItem<TIcon>> {
+  const keys = APP_HELP_I18N_KEYS[appId] || [];
+  return originalHelpItems.map((item, index) => {
+    const key = keys[index];
+    if (!key) return item;
+
+    const titleKey = `apps.${appId}.help.${key}.title`;
+    const descKey = `apps.${appId}.help.${key}.description`;
+
+    return {
+      icon: item.icon,
+      title: t(titleKey, { defaultValue: item.title }),
+      description: t(descKey, { defaultValue: item.description }),
+    };
+  });
+}
+
 export function useTranslatedHelpItems<TIcon extends ReactNode = string>(
   appId: AppId,
-  originalHelpItems: Array<{ icon: TIcon; title: string; description: string }>
+  originalHelpItems: Array<HelpItem<TIcon>>
 ) {
   const { t } = useTranslation();
 
-  return useMemo(() => {
-    const keys = APP_HELP_I18N_KEYS[appId] || [];
-    return originalHelpItems.map((item, index) => {
-      const key = keys[index];
-      if (!key) return item; // Fallback to original if no key
-
-      const titleKey = `apps.${appId}.help.${key}.title`;
-      const descKey = `apps.${appId}.help.${key}.description`;
-
-      return {
-        icon: item.icon, // Keep original icon
-        title: t(titleKey, { defaultValue: item.title }),
-        description: t(descKey, { defaultValue: item.description }),
-      };
-    });
-  }, [appId, originalHelpItems, t]);
+  return useMemo(
+    () => getTranslatedHelpItems(t, appId, originalHelpItems),
+    [appId, originalHelpItems, t]
+  );
 }
 
