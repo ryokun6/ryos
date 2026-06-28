@@ -218,4 +218,59 @@ describe("sync v2 engine end-to-end", () => {
     expect(ids).toContain("e2e-rt");
     expect(ids).not.toContain("e2e-1"); // tombstoned
   });
+
+  test("manual restore promotes restored local state before bootstrap", async () => {
+    engine.stop();
+    localStorage.removeItem(`ryos:sync2:state:${USERNAME.toLowerCase()}`);
+
+    const remoteT = formatHlc(Date.now() + 2000, 0, "foreign-restore");
+    await fetchWithAuth(`${BASE_URL}/api/sync/v2/ops`, USERNAME, token, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientId: "foreign-restore",
+        ops: [
+          {
+            k: "stickies/note:restore-keep",
+            v: { id: "restore-keep", content: "newer cloud value" },
+            t: remoteT,
+          },
+          {
+            k: "stickies/note:restore-delete",
+            v: { id: "restore-delete", content: "cloud-only value" },
+            t: remoteT,
+          },
+        ],
+      }),
+    });
+
+    // Simulate stores after a restored backup reload: local should win, and
+    // cloud-only keys missing from the backup should become tombstones.
+    useStickiesStore.setState({
+      notes: [{ id: "restore-keep", content: "restored backup value" }] as never,
+    });
+
+    engine = new CloudSyncEngine(USERNAME);
+    const result = await engine.restoreLocalStateToCloud({
+      namespaces: ["stickies"],
+    });
+    expect(result.uploaded).toBe(1);
+    expect(result.deleted).toBeGreaterThanOrEqual(1);
+
+    const snapshot = await readServerSnapshot();
+    expect(snapshot.entries["stickies/note:restore-keep"]?.v).toMatchObject({
+      id: "restore-keep",
+      content: "restored backup value",
+    });
+    expect(snapshot.entries["stickies/note:restore-delete"]?.del).toBe(true);
+
+    engine.stop();
+    engine = new CloudSyncEngine(USERNAME);
+    await engine.start();
+    expect(
+      useStickiesStore
+        .getState()
+        .notes.find((note) => note.id === "restore-keep")?.content
+    ).toBe("restored backup value");
+  });
 });

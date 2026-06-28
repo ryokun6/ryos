@@ -22,6 +22,10 @@ import {
 } from "@/shared/sync2/types";
 import { createCloudSyncEngine, destroyCloudSyncEngine } from "@/sync/engine";
 import { cloudSyncLog, summarizeSyncOps } from "@/sync/logging";
+import {
+  clearManualRestoreIntent,
+  getManualRestoreIntent,
+} from "@/sync/manualRestoreIntent";
 
 // Realtime delivers changes; polling is only a safety net for missed events.
 const POLL_INTERVAL_CONNECTED_MS = 30 * 60 * 1000;
@@ -42,9 +46,14 @@ export function useAutoCloudSync() {
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
   const autoSyncEnabled = useCloudSyncStore((state) => state.autoSyncEnabled);
   const [syncApiAvailable, setSyncApiAvailable] = useState(false);
+  const [restoreIntentVersion, setRestoreIntentVersion] = useState(0);
 
   const lastVisibilityCheckRef = useRef(0);
   const lastExplicitCheckRef = useRef(0);
+  const pendingRestoreIntent = username
+    ? getManualRestoreIntent(username)
+    : null;
+  const pendingRestoreIntentKey = pendingRestoreIntent?.createdAt ?? null;
 
   // Adopt the cross-device Auto Sync preference on login.
   useEffect(() => {
@@ -113,7 +122,10 @@ export function useAutoCloudSync() {
   }, [username, isAuthenticated]);
 
   const syncRequested = Boolean(
-    username && isAuthenticated && autoSyncEnabled && syncApiAvailable
+    username &&
+      isAuthenticated &&
+      syncApiAvailable &&
+      (autoSyncEnabled || pendingRestoreIntent)
   );
   const isSyncActive = syncRequested;
 
@@ -131,10 +143,43 @@ export function useAutoCloudSync() {
     const engine = createCloudSyncEngine(username, {
       onError: (error) => useCloudSyncStore.getState().setLastError(error),
     });
-    void engine.start();
+    let engineReady = false;
+    let cancelled = false;
+    const restoreIntent = getManualRestoreIntent(username);
+
+    const startEngine = async () => {
+      try {
+        if (restoreIntent) {
+          cloudSyncLog.debug("Promoting restored manual backup to Sync v2", {
+            username,
+            backupTimestamp: restoreIntent.backupTimestamp,
+          });
+          await engine.restoreLocalStateToCloud();
+          clearManualRestoreIntent(username);
+          if (!useCloudSyncStore.getState().autoSyncEnabled) {
+            if (!cancelled) {
+              setRestoreIntentVersion((version) => version + 1);
+            }
+            return;
+          }
+        }
+        if (cancelled) return;
+        await engine.start();
+        engineReady = true;
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Manual restore sync promotion failed";
+        cloudSyncLog.error("Cloud Sync startup failed", { error });
+        useCloudSyncStore.getState().setLastError(message);
+      }
+    };
+    void startEngine();
 
     const unsubscribeChanges = subscribeToCloudSyncDomainChanges(
       (namespace, keys) => {
+        if (!engineReady) return;
         if (engine.isApplyingNamespace(namespace)) return;
         cloudSyncLog.debug("Domain change marked dirty", {
           namespace,
@@ -145,6 +190,7 @@ export function useAutoCloudSync() {
     );
 
     const unsubscribeChecks = subscribeToCloudSyncCheckRequests(() => {
+      if (!engineReady) return;
       const now = Date.now();
       if (now - lastExplicitCheckRef.current < EXPLICIT_CHECK_COOLDOWN_MS) {
         cloudSyncLog.debug("Explicit sync check skipped by cooldown", {
@@ -162,6 +208,7 @@ export function useAutoCloudSync() {
     const channelName = getSyncChannelName(username);
     const channel = subscribePusherChannel(channelName);
     const realtimeHandler = (payload: SyncOpsRealtimeEvent) => {
+      if (!engineReady) return;
       cloudSyncLog.debug("Realtime sync event received", {
         seq: payload.seq,
         clientId: payload.c,
@@ -173,6 +220,7 @@ export function useAutoCloudSync() {
 
     // Visibility / focus / online: one cheap cursor check (with cooldown).
     const checkOnWake = () => {
+      if (!engineReady) return;
       const now = Date.now();
       if (now - lastVisibilityCheckRef.current < VISIBILITY_CHECK_COOLDOWN_MS) {
         cloudSyncLog.debug("Wake sync check skipped by cooldown", {
@@ -186,6 +234,7 @@ export function useAutoCloudSync() {
       engine.schedulePendingFlush();
     };
     const onVisibilityChange = () => {
+      if (!engineReady) return;
       if (document.visibilityState === "visible") {
         cloudSyncLog.debug("Document visible; checking sync");
         checkOnWake();
@@ -209,6 +258,7 @@ export function useAutoCloudSync() {
           ? POLL_INTERVAL_CONNECTED_MS
           : POLL_INTERVAL_DISCONNECTED_MS;
       pollTimer = setInterval(() => {
+        if (!engineReady) return;
         cloudSyncLog.debug("Periodic sync poll triggered", { pollMs });
         void engine.pull();
         engine.schedulePendingFlush();
@@ -223,6 +273,7 @@ export function useAutoCloudSync() {
         if (reconnectTimer) clearTimeout(reconnectTimer);
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null;
+          if (!engineReady) return;
           cloudSyncLog.debug("Realtime reconnect catch-up triggered");
           void engine.pull();
           engine.schedulePendingFlush();
@@ -235,6 +286,7 @@ export function useAutoCloudSync() {
 
     return () => {
       cloudSyncLog.debug("Stopping Cloud Sync engine", { username });
+      cancelled = true;
       unsubscribeChanges();
       unsubscribeChecks();
       unsubscribeConnection();
@@ -247,5 +299,5 @@ export function useAutoCloudSync() {
       if (pollTimer) clearInterval(pollTimer);
       destroyCloudSyncEngine();
     };
-  }, [isSyncActive, username]);
+  }, [isSyncActive, pendingRestoreIntentKey, restoreIntentVersion, username]);
 }
