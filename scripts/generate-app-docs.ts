@@ -48,6 +48,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "books": { sectionNum: "2.24", docName: "books" },
   "tv": { sectionNum: "2.25", docName: "tv" },
   "maps": { sectionNum: "2.26", docName: "maps" },
+  "calculator": { sectionNum: "2.27", docName: "calculator" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -309,6 +310,11 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     tv: {
       defaultSize: { width: 480, height: 520 },
       minSize: { width: 320, height: 360 },
+    },
+    calculator: {
+      defaultSize: { width: 240, height: 360 },
+      minSize: { width: 240, height: 360 },
+      maxSize: { width: 320, height: 520 },
     },
   };
 
@@ -580,6 +586,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     books: "EPUB reader with a wooden bookshelf, page-turn reader, reading-progress sync, and Finder import",
     tv: "Channel-surfing YouTube TV with CRT effects, MTV synced lyrics, and AI-generated channels",
     maps: "Apple MapKit search and pins; directions open in Apple Maps in a new tab",
+    calculator: "Basic, scientific, and unit conversion calculator with theme-specific chrome and live currency rates",
   };
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;
@@ -686,7 +693,7 @@ Environment:
     }
   }
 
-  console.log("🤖 Generating App Documentation using Gemini 2.5 Flash");
+  console.log("🤖 Generating App Documentation using Gemini 3 Flash");
   console.log("═".repeat(60));
 
   const appsToProcess = appArg ? [appArg] : APP_IDS;
