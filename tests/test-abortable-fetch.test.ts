@@ -103,6 +103,30 @@ describe("abortableFetch", () => {
     ).rejects.toThrow("Request timed out after 5ms");
     expect(attempts).toBe(1);
   });
+
+  test("retries idempotent requests without explicit retry config", async () => {
+    let attempts = 0;
+
+    globalThis.fetch = (async (_input, init) => {
+      attempts += 1;
+      if (attempts === 1) {
+        return await new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }
+
+      return new Response("ok", { status: 200 });
+    }) as typeof fetch;
+
+    const response = await abortableFetch("/idempotent-timeout", {
+      timeout: 5,
+    });
+
+    expect(response.status).toBe(200);
+    expect(attempts).toBe(2);
+  });
 });
 
 describe("apiRequest retry defaults", () => {
