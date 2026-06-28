@@ -157,6 +157,9 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
   "apps.calculator.speech.keys.memoryRecall": {
     pt: "recuperar memória",
   },
+  "common.colors.pink": {
+    "zh-TW": "粉色",
+  },
 } as const satisfies Record<string, Partial<LocalizedTerm>>;
 
 const APPLE_UI_CONTEXTUAL_ENGLISH = {
@@ -183,6 +186,7 @@ const APPLE_UI_CONTEXTUAL_ENGLISH = {
   "apps.calendar.event.cancel": "Cancel",
   "apps.contacts.picturePicker.cancel": "Cancel",
   "apps.calculator.speech.keys.memoryRecall": "memory recall",
+  "common.colors.pink": "Pink",
 } as const satisfies Record<
   keyof typeof APPLE_UI_CONTEXTUAL_TERMINOLOGY,
   string
@@ -194,7 +198,12 @@ const contextualEnglish: Record<string, string> = APPLE_UI_CONTEXTUAL_ENGLISH;
 
 export type AppleUiTerm = keyof typeof APPLE_UI_TERMINOLOGY;
 
-const ELLIPSIS_SUFFIX = /(?:\.\.\.|…)$/u;
+const ELLIPSIS_SUFFIX = /(?:\.\.\.|…|⋯)$/u;
+
+/** Apple Taiwan uses midline ellipsis (U+22EF); other locales use U+2026. */
+function getAppleEllipsisSuffix(locale: TranslationLocale): string {
+  return locale === "zh-TW" ? "⋯" : "…";
+}
 
 function isAppleUiTerm(value: string): value is AppleUiTerm {
   return Object.hasOwn(APPLE_UI_TERMINOLOGY, value);
@@ -220,7 +229,9 @@ export function getExpectedAppleUiTerm(
   }
 
   const translations = APPLE_UI_TERMINOLOGY[source];
-  const suffix = ELLIPSIS_SUFFIX.test(englishValue) ? "…" : "";
+  const suffix = ELLIPSIS_SUFFIX.test(englishValue)
+    ? getAppleEllipsisSuffix(locale)
+    : "";
   return `${translations[locale]}${suffix}`;
 }
 

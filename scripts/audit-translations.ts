@@ -67,7 +67,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "Показано недавних запусков: {{count}}.",
   },
   "apps.chats.toolCalls.listCursorCloudAgentRuns.loading": {
-    "zh-TW": "正在列出 Cursor Cloud 代理執行…",
+    "zh-TW": "正在列出 Cursor Cloud 代理執行⋯",
     ja: "Cursor Cloud エージェントの実行を一覧表示中…",
     ko: "Cursor Cloud 에이전트 실행 목록을 불러오는 중…",
     fr: "Liste des exécutions de l’agent Cursor Cloud…",
@@ -211,6 +211,17 @@ function pluralCategories(locale: TranslationLocale): Set<string> {
   );
 }
 
+function hasEnglishPluralPair(
+  base: string,
+  englishKeys: Set<string>
+): boolean {
+  if (!englishKeys.has(`${base}_one`)) {
+    return false;
+  }
+
+  return englishKeys.has(`${base}_other`) || englishKeys.has(base);
+}
+
 function isLocalePluralKey(
   key: string,
   locale: TranslationLocale,
@@ -224,8 +235,7 @@ function isLocalePluralKey(
   const base = key.slice(0, -match[0].length);
   return (
     pluralCategories(locale).has(match[1]) &&
-    englishKeys.has(`${base}_one`) &&
-    englishKeys.has(`${base}_other`)
+    hasEnglishPluralPair(base, englishKeys)
   );
 }
 
