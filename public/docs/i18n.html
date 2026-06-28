@@ -504,8 +504,10 @@ bun run i18n:translate:dry-run
 
 # Validate locale shape and remaining candidate strings
 bun run i18n:sync:dry-run
+bun run i18n:audit
 bun run i18n:find-untranslated</code></pre>
 <code>i18n:translate</code> does not auto-load <code>.env.local</code>; export <code>GOOGLE_GENERATIVE_AI_API_KEY</code> first. Review machine translations before committing because UI length, tone, and product terminology still need maintainer judgment.
+<code>i18n:audit</code> is the terminology gate. It checks placeholder parity, <code>[TODO]</code> leftovers, CLDR plural forms, and Apple UI terminology pulled from <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/apple-ui-terminology.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">scripts/apple-ui-terminology.ts</a></code>. Use <code>bun run i18n:audit:fix</code> only for terminology drift that the script can repair safely, then rerun the audit.
 <h2>Key Hooks</h2>
 <strong>Window & App Management:</strong>
 <table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
@@ -527,12 +529,13 @@ t("common.dialog.aboutApp", { appName: "Finder" })  // "About Finder"
 t("apps.ipod.dialogs.addedSongsToTop", { count: 5, plural: "s" })
 
 // Pluralization
-t("apps.admin.statusBar.usersCount", { count: 1 })  // "1 user"
-t("apps.admin.statusBar.usersCount_plural", { count: 5 })  // "5 users"</code></pre>
+t("apps.ipod.menuItems.playlistTrackCount", { count: 1 })  // "1 song"
+t("apps.ipod.menuItems.playlistTrackCount", { count: 5 })  // "5 songs"</code></pre>
+<p>Plural keys should use CLDR suffixes such as <code>_one</code> and <code>_other</code>; locales with more forms, such as Russian, may also need <code>_few</code>.</p>
 <h2>Helper Functions and Hooks</h2>
 <table><thead><tr><th>Function</th><th>Purpose</th></tr></thead><tbody><tr><td><code>getTranslatedAppName(appId)</code></td><td>Get localized app name (theme-aware)</td></tr><tr><td><code>getTranslatedAppDescription(appId)</code></td><td>Get localized app description</td></tr><tr><td><code>getTranslatedFolderName(path)</code></td><td>Get localized folder name from path</td></tr></tbody></table>
 <p>App help dialogs use <code>useTranslatedHelpItems(appId, helpItems)</code> from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useTranslatedHelpItems.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/hooks/useTranslatedHelpItems.ts</a></code>. The hook keeps the app-provided icons and replaces titles/descriptions from <code>apps.{appId}.help.{key}.title</code> and <code>.description</code>.</p>
-<p>When adding help rows, keep the source <code>helpItems</code> array and the app's help key list in the same order. Maps uses <code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/maps/helpKeys.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/maps/helpKeys.ts</a></code> plus <code><a href="https://github.com/ryokun6/ryos/blob/main/src/tests/test-maps-help-i18n.test.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">tests/test-maps-help-i18n.test.ts</a></code>; Calculator and Internet Explorer use the same alignment pattern in <code>src/apps/{calculator,internet-explorer}/helpKeys.ts</code> and their matching <code>tests/test-*-help-i18n.test.ts</code> files.</p>
+<p>When adding help rows, keep the source <code>helpItems</code> array and the app's help key list in <code>APP_HELP_I18N_KEYS</code> in the same order. Long app-specific lists can live in <code>src/apps/{app}/helpKeys.ts</code> and be spread into <code>APP_HELP_I18N_KEYS</code>. <code><a href="https://github.com/ryokun6/ryos/blob/main/src/tests/test-help-i18n-alignment.test.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">tests/test-help-i18n-alignment.test.ts</a></code> checks every registered app so row counts and English help keys cannot drift silently.</p>
       </article>
       
       <nav class="nav">
