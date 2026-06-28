@@ -1143,7 +1143,7 @@
           "deleting": "連絡先を削除中…",
           "found": "連絡先が {{count}}件見つかりました",
           "foundMany": "連絡先が {{count}}件見つかりました",
-          "foundOne": "連絡先が 1 件見つかりました",
+          "foundOne": "連絡先が1件見つかりました",
           "listing": "連絡先を一覧表示中…",
           "loaded": "{{name}}を読み込みました",
           "loadedContact": "{{name}}を読み込みました",
@@ -2403,7 +2403,7 @@
       "description": "クラシックMac OSエミュレータ",
       "help": {
         "captureScreenshot": {
-          "description": "「表示 ▸ スクリーンショットを撮る」で、現在の画面を直接ファイルとして保存します",
+          "description": "「表示 ▸ スクリーンショットを取り込む」で、現在の画面を直接ファイルとして保存します",
           "title": "スクリーンショットを取り込む"
         },
         "chatsCanDriveIt": {
@@ -3291,7 +3291,7 @@
         "saveImage": "画像を保存"
       },
       "filtersMenu": {
-        "openFiltersMenu": "フィルターメニューを開く"
+        "openFiltersMenu": "フィルタメニューを開く"
       },
       "help": {
         "autoSaveExport": {
@@ -3411,7 +3411,7 @@
           "title": "スクリーンショットと全画面表示"
         }
       },
-      "loadingEmulator": "エミュレーターを読み込み中",
+      "loadingEmulator": "エミュレータを読み込み中…",
       "loadingGame": "{{gameName}}を読み込み中…",
       "loadingSystem": "{{name}}を読み込み中…",
       "menu": {
@@ -3433,7 +3433,7 @@
       "name": "バーチャルPC",
       "presets": {
         "archlinux": {
-          "description": "i3ウィンドウマネージャを搭載したローリングリリースLinux",
+          "description": "i3ウインドウマネージャを搭載したローリングリリースLinux",
           "name": "Arch Linux",
           "year": "2019"
         },
@@ -4515,7 +4515,7 @@
       "applications": "アプリケーション",
       "folderContents": "フォルダの内容",
       "hide": "非表示",
-      "minimized": "(最小化)",
+      "minimized": "(しまう)",
       "newWindow": "新規ウインドウ",
       "open": "開く",
       "quit": "終了",
@@ -4552,7 +4552,7 @@
       "exitFullscreen": "全画面表示を終了",
       "full": "フル",
       "maximizePreview": "プレビューを最大化",
-      "minimizePreview": "プレビューを最小化",
+      "minimizePreview": "プレビューをしまう",
       "saveApplet": "アプレットとして保存",
       "saveAppletDescription": "アプレット名を入力してください。既存のアプレットは上書きされます。",
       "split": "分割",
@@ -4656,7 +4656,7 @@
       "maximize": "最大化",
       "maximizeDisabled": "最大化 (無効)",
       "minimize": "しまう",
-      "minimizeDisabled": "最小化 (無効)"
+      "minimizeDisabled": "しまう (無効)"
     }
   },
   "components": {
