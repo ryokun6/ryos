@@ -12,6 +12,7 @@ import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyl
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { FileItem } from "./FileList";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { getTranslatedFolderName } from "@/utils/i18n";
 import { useTranslation } from "react-i18next";
 import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
 
@@ -372,7 +373,7 @@ export function FinderMenuBar({
                 alt=""
                 className="size-4 [image-rendering:pixelated]"
               />
-              {folder.name}
+              {getTranslatedFolderName(folder.path)}
             </MenubarItem>
           ))}
 

@@ -8,6 +8,7 @@ import {
   getFinderDisplayName,
   type FinderDisplayItem,
 } from "../src/utils/finderDisplay";
+import { getTranslatedFolderName } from "../src/utils/i18n";
 
 const applications: FinderDisplayItem[] = [
   {
@@ -76,5 +77,12 @@ describe("finder localized display sorting", () => {
 
     expect(englishOrder).toEqual(["Photo Booth", "Virtual PC"]);
     expect(japaneseOrder).toEqual(["Photo Booth", "バーチャルPC"]);
+  });
+
+  test("localizes default Finder folder paths", async () => {
+    await applyLanguage("ja");
+
+    expect(getTranslatedFolderName("/Applications")).toBe("アプリケーション");
+    expect(getTranslatedFolderName("/System")).toBe("システム");
   });
 });
