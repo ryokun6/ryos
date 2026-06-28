@@ -7,6 +7,7 @@ import {
   Notification,
   session,
   shell,
+  type IpcMainInvokeEvent,
   type WebContents,
 } from "electron";
 import { promises as fs } from "node:fs";
@@ -17,7 +18,13 @@ import { registerChatNotificationIpcHandlers } from "./chat-notifications";
 import { replaceControlCharacters } from "../src/shared/sanitizeControlCharacters";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
-const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
+const CONFIGURED_DEVELOPMENT_URL = process.env.RYOS_ELECTRON_URL?.trim();
+const APP_URL =
+  !app.isPackaged &&
+  CONFIGURED_DEVELOPMENT_URL &&
+  isLocalDevelopmentUrl(CONFIGURED_DEVELOPMENT_URL)
+    ? CONFIGURED_DEVELOPMENT_URL
+    : DEFAULT_APP_URL;
 const APP_DISPLAY_NAME = "ryOS";
 const APP_ID = "lu.ryo.os";
 const APP_COPYRIGHT = "Copyright (c) 2026 Ryo Lu";
@@ -74,6 +81,21 @@ function getAppOrigin(): string {
   }
 }
 
+function isLocalDevelopmentUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      (parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1" ||
+        parsed.hostname === "[::1]" ||
+        parsed.hostname.endsWith(".localhost"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isInAppNavigation(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -82,9 +104,8 @@ function isInAppNavigation(url: string): boolean {
       return true;
     }
     return (
-      parsed.hostname === "localhost" ||
-      parsed.hostname === "127.0.0.1" ||
-      parsed.hostname.endsWith(".localhost")
+      !app.isPackaged &&
+      isLocalDevelopmentUrl(url)
     );
   } catch {
     return false;
@@ -95,7 +116,17 @@ function isTrustedWebContents(contents: WebContents | null | undefined): boolean
   if (!contents || contents.isDestroyed()) {
     return false;
   }
-  return isInAppNavigation(contents.getURL()) || isBlankUrl(contents.getURL());
+  return isInAppNavigation(contents.getURL());
+}
+
+function isTrustedIpcSender(event: IpcMainInvokeEvent): boolean {
+  const senderFrame = event.senderFrame;
+  return (
+    senderFrame !== null &&
+    senderFrame === event.sender.mainFrame &&
+    isTrustedWebContents(event.sender) &&
+    isInAppNavigation(senderFrame.url)
+  );
 }
 
 function sanitizeNotificationText(
@@ -285,6 +316,17 @@ function isBlankUrl(url: string): boolean {
   return url === "" || url === "about:blank" || url.startsWith("about:blank#");
 }
 
+function openExternalHttpUrl(url: string): void {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      void shell.openExternal(parsed.toString());
+    }
+  } catch {
+    // Ignore malformed URLs.
+  }
+}
+
 /**
  * Centralized navigation policy applied to the main window and any child
  * windows it spawns (e.g. the Apple Music auth popup, which may itself open
@@ -306,14 +348,14 @@ function applyNavigationPolicy(contents: WebContents): void {
         },
       };
     }
-    void shell.openExternal(url);
+    openExternalHttpUrl(url);
     return { action: "deny" };
   });
 
   contents.on("will-navigate", (event, url) => {
     if (!isInAppNavigation(url) && !isAppleAuthUrl(url) && !isBlankUrl(url)) {
       event.preventDefault();
-      void shell.openExternal(url);
+      openExternalHttpUrl(url);
     }
   });
 
@@ -374,17 +416,17 @@ function createMainWindow(): BrowserWindow {
 }
 
 function registerIpcHandlers(): void {
-  ipcMain.handle("ryos-desktop:get-app-version", () => {
-    return app.getVersion();
+  ipcMain.handle("ryos-desktop:get-app-version", (event) => {
+    return isTrustedIpcSender(event) ? app.getVersion() : null;
   });
 
   ipcMain.handle("ryos-desktop:can-show-notifications", (event) => {
-    return isTrustedWebContents(event.sender) && canShowNativeNotifications();
+    return isTrustedIpcSender(event) && canShowNativeNotifications();
   });
 
   ipcMain.handle("ryos-desktop:should-show-native-notification", (event) => {
     return (
-      isTrustedWebContents(event.sender) &&
+      isTrustedIpcSender(event) &&
       canShowNativeNotifications() &&
       !isMainWindowForeground()
     );
@@ -393,7 +435,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle(
     "ryos-desktop:show-notification",
     (event, options: NativeNotificationOptions = {}) => {
-      if (!isTrustedWebContents(event.sender)) {
+      if (!isTrustedIpcSender(event)) {
         return { shown: false, reason: "untrusted" };
       }
       if (
@@ -431,11 +473,14 @@ function registerIpcHandlers(): void {
     }
   );
 
-  ipcMain.handle("ryos-desktop:is-fullscreen", () => {
-    return mainWindow?.isFullScreen() ?? false;
+  ipcMain.handle("ryos-desktop:is-fullscreen", (event) => {
+    return isTrustedIpcSender(event) && (mainWindow?.isFullScreen() ?? false);
   });
 
-  ipcMain.handle("ryos-desktop:toggle-maximize", () => {
+  ipcMain.handle("ryos-desktop:toggle-maximize", (event) => {
+    if (!isTrustedIpcSender(event)) {
+      return;
+    }
     const win = mainWindow;
     if (!win) {
       return;
@@ -450,7 +495,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle(
     "ryos-desktop:open-file",
     async (event, options: NativeOpenFileOptions = {}) => {
-      if (!isTrustedWebContents(event.sender)) {
+      if (!isTrustedIpcSender(event)) {
         return { canceled: true };
       }
 
@@ -499,7 +544,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle(
     "ryos-desktop:save-file",
     async (event, options: NativeSaveFileOptions) => {
-      if (!isTrustedWebContents(event.sender)) {
+      if (!isTrustedIpcSender(event)) {
         return { canceled: true };
       }
 
@@ -527,7 +572,7 @@ function registerIpcHandlers(): void {
     ipcMain,
     session: session.defaultSession,
     getMainWindow: () => mainWindow,
-    isTrustedWebContents,
+    isTrustedIpcSender,
     isAllowedAppUrl: isInAppNavigation,
     isMainWindowForeground,
     focusMainWindow,
@@ -588,7 +633,7 @@ app.whenReady().then(async () => {
 
   createMainWindow();
 
-  setupAutoUpdater(() => mainWindow);
+  setupAutoUpdater(() => mainWindow, isTrustedIpcSender);
   buildApplicationMenu();
 
   app.on("activate", () => {

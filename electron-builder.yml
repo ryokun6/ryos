@@ -46,6 +46,10 @@ win:
     - nsis
   icon: build/icon.ico
   artifactName: ryOS_${version}_${arch}.${ext}
+  signingHashAlgorithms:
+    - sha256
+  signAndEditExecutable: true
+  verifyUpdateCodeSignature: true
 linux:
   target:
     - AppImage

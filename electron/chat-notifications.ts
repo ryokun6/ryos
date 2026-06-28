@@ -1,8 +1,8 @@
 import type {
   BrowserWindow,
   IpcMain,
+  IpcMainInvokeEvent,
   Session,
-  WebContents,
 } from "electron";
 import {
   getChatRoomChannelName,
@@ -109,7 +109,7 @@ interface RegisterChatNotificationOptions {
   ipcMain: IpcMain;
   session: Session;
   getMainWindow: () => BrowserWindow | null;
-  isTrustedWebContents: (contents: WebContents | null | undefined) => boolean;
+  isTrustedIpcSender: (event: IpcMainInvokeEvent) => boolean;
   isAllowedAppUrl: (url: string) => boolean;
   isMainWindowForeground: () => boolean;
   focusMainWindow: () => void;
@@ -1125,7 +1125,7 @@ export function registerChatNotificationIpcHandlers(
   options.ipcMain.handle(
     "ryos-desktop:chat-notifications-configure",
     (event, config: unknown, state: unknown) => {
-      if (!options.isTrustedWebContents(event.sender)) {
+      if (!options.isTrustedIpcSender(event)) {
         return { managed: false, reason: "invalid-config" };
       }
       return service.configure(config, state);
@@ -1135,7 +1135,7 @@ export function registerChatNotificationIpcHandlers(
   options.ipcMain.handle(
     "ryos-desktop:chat-notifications-update-state",
     (event, state: unknown) => {
-      if (!options.isTrustedWebContents(event.sender)) {
+      if (!options.isTrustedIpcSender(event)) {
         return { managed: false, reason: "invalid-config" };
       }
       return service.updateState(state);
@@ -1143,7 +1143,7 @@ export function registerChatNotificationIpcHandlers(
   );
 
   options.ipcMain.handle("ryos-desktop:chat-notifications-stop", (event) => {
-    if (options.isTrustedWebContents(event.sender)) {
+    if (options.isTrustedIpcSender(event)) {
       service.stop();
     }
   });

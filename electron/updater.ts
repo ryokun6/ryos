@@ -1,4 +1,10 @@
-import { app, dialog, ipcMain, type BrowserWindow } from "electron";
+import {
+  app,
+  dialog,
+  ipcMain,
+  type BrowserWindow,
+  type IpcMainInvokeEvent,
+} from "electron";
 import electronUpdater, { type UpdateInfo } from "electron-updater";
 
 const { autoUpdater } = electronUpdater;
@@ -104,18 +110,22 @@ export async function checkForUpdates(interactive = false): Promise<void> {
  * no signed bundle or `app-update.yml` to update from.
  */
 export function setupAutoUpdater(
-  getMainWindow: () => BrowserWindow | null
+  getMainWindow: () => BrowserWindow | null,
+  isTrustedIpcSender: (event: IpcMainInvokeEvent) => boolean
 ): void {
   getWindow = getMainWindow;
 
   // Renderer-initiated check (in-app menu / About box). Always interactive.
-  ipcMain.handle("ryos-desktop:check-for-updates", async () => {
+  ipcMain.handle("ryos-desktop:check-for-updates", async (event) => {
+    if (!isTrustedIpcSender(event)) {
+      return null;
+    }
     await checkForUpdates(true);
     return pendingVersion;
   });
 
-  ipcMain.handle("ryos-desktop:quit-and-install", () => {
-    if (updateDownloaded) {
+  ipcMain.handle("ryos-desktop:quit-and-install", (event) => {
+    if (isTrustedIpcSender(event) && updateDownloaded) {
       autoUpdater.quitAndInstall();
     }
   });
