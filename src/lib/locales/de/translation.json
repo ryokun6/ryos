@@ -762,7 +762,7 @@
         "help": "Hilfe zum Taschenrechner",
         "scientific": "Wissenschaftlich",
         "sound": "Ton",
-        "speakButtonPresses": "Tastendrücke sprechen",
+        "speakButtonPresses": "Tastendrucke sprechen",
         "speakResults": "Ergebnisse sprechen",
         "speechEnabled": "Sprachausgabe"
       },
@@ -786,7 +786,7 @@
           "memoryMinus": "Speicher minus",
           "memoryPlus": "Speicher plus",
           "memoryRecall": "Speicherabruf",
-          "memoryStore": "Speicher speichern",
+          "memoryStore": "Speichern",
           "minus": "Minus",
           "negate": "Plus/Minus",
           "openParenthesis": "Klammer auf",
@@ -803,7 +803,7 @@
           "tan": "Tangens",
           "times": "Mal"
         },
-        "negative": "Minus {{value}}",
+        "negative": "minus {{value}}",
         "scientific": "{{mantissa}} mal 10 hoch {{exponent}}"
       },
       "status": {
@@ -1942,7 +1942,7 @@
         "heartbeatInstructionsDescription": "Passe an, was Ryo bei proaktiven Telegram-Check-ins priorisieren soll.",
         "heartbeatInstructionsFailed": "Telegram-Heartbeat-Anweisungen konnten nicht gespeichert werden",
         "heartbeatInstructionsLabel": "Heartbeat-Anweisungen",
-        "heartbeatInstructionsPlaceholder": "Beispiel: Konzentriere dich auf unerledigte ryOS-Arbeiten, vermeide allgemeine Erinnerungen und gestalte morgendliche Briefings handlungsorientiert.",
+        "heartbeatInstructionsPlaceholder": "Beispiel: Fokus auf unerledigte ryOS-Arbeit, allgemeine Erinnerungen vermeiden und morgendliche Briefings handlungsorientiert halten.",
         "heartbeatInstructionsSaved": "Telegram-Heartbeat-Anweisungen gespeichert",
         "instructionsCodeOnly": "Kopieren Sie den untenstehenden Code und verwenden Sie ihn in Telegram, um die Verknüpfung abzuschließen.",
         "instructionsDeepLink": "Öffnen Sie Telegram mit der Schaltfläche unten und drücken Sie dann Start, um die Verknüpfung abzuschließen.",
