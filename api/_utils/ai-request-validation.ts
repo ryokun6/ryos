@@ -116,18 +116,40 @@ const userMessageSchema = z
     id: z.string().min(1).max(200).optional(),
     role: z.literal("user"),
     metadata: boundedJsonValueSchema.optional(),
-    parts: z.array(textPartSchema).min(1).max(32),
+    content: z.string().max(CHAT_MAX_TEXT_CHARS).optional(),
+    parts: z.array(textPartSchema).min(1).max(32).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((message, context) => {
+    if ((message.content === undefined) === (message.parts === undefined)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A user message must contain exactly one of content or parts.",
+      });
+    }
+  });
 
 const assistantMessageSchema = z
   .object({
     id: z.string().min(1).max(200).optional(),
     role: z.literal("assistant"),
     metadata: boundedJsonValueSchema.optional(),
-    parts: z.array(z.union([textPartSchema, toolPartSchema])).min(1).max(64),
+    content: z.string().max(CHAT_MAX_TEXT_CHARS).optional(),
+    parts: z
+      .array(z.union([textPartSchema, toolPartSchema]))
+      .min(1)
+      .max(64)
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((message, context) => {
+    if ((message.content === undefined) === (message.parts === undefined)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "An assistant message must contain exactly one of content or parts.",
+      });
+    }
+  });
 
 const systemStateSchema = z
   .record(z.string(), z.unknown())
@@ -157,7 +179,7 @@ const systemStateSchema = z
 export const ChatRequestSchema = z
   .object({
     messages: z
-      .array(z.discriminatedUnion("role", [userMessageSchema, assistantMessageSchema]))
+      .array(z.union([userMessageSchema, assistantMessageSchema]))
       .max(CHAT_MAX_MESSAGES),
     systemState: systemStateSchema.optional(),
     model: z.string().max(100).optional(),
@@ -175,7 +197,10 @@ export const ChatRequestSchema = z
 
     let totalContentChars = 0;
     for (const message of request.messages) {
-      for (const part of message.parts) {
+      if (message.content !== undefined) {
+        totalContentChars += message.content.length;
+      }
+      for (const part of message.parts ?? []) {
         if ("text" in part) totalContentChars += part.text.length;
       }
     }

@@ -105,6 +105,25 @@ export interface BlobSyncCodec extends SyncCodec {
   afterApply?(ctx: CodecContext): Promise<void>;
 }
 
+type PersistHydrationStore = {
+  persist?: {
+    hasHydrated(): boolean;
+  };
+};
+
+function hasPersistedStoreHydrated(
+  store: PersistHydrationStore,
+  storeName: string
+): boolean {
+  if (store.persist) return store.persist.hasHydrated();
+
+  // Persist middleware intentionally has no storage API in non-browser test
+  // isolation. Production sync runs in a browser, where a missing API means
+  // the store is misconfigured and must fail instead of collecting early.
+  if (typeof window === "undefined") return true;
+  throw new Error(`${storeName} persist middleware is unavailable`);
+}
+
 /** Maps v1 deletion-marker buckets to v2 key prefixes (for corroboration). */
 export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> = {
   calendarTodoIds: "calendar/todo:",
@@ -1115,13 +1134,13 @@ const tvCodec: SyncCodec = {
         state.lcdFilterOn !== prev.lcdFilterOn ||
         state.closedCaptionsOn !== prev.closedCaptionsOn
       ) {
-        if (!useTvStore.persist.hasHydrated()) return;
+        if (!hasPersistedStoreHydrated(useTvStore, "TV store")) return;
         onChange();
       }
     });
   },
   isReady() {
-    return useTvStore.persist.hasHydrated();
+    return hasPersistedStoreHydrated(useTvStore, "TV store");
   },
 };
 
@@ -1167,13 +1186,13 @@ const stickiesCodec: SyncCodec = {
   subscribe(onChange) {
     return useStickiesStore.subscribe((state, prev) => {
       if (state.notes !== prev.notes) {
-        if (!useStickiesStore.persist.hasHydrated()) return;
+        if (!hasPersistedStoreHydrated(useStickiesStore, "Stickies store")) return;
         onChange();
       }
     });
   },
   isReady() {
-    return useStickiesStore.persist.hasHydrated();
+    return hasPersistedStoreHydrated(useStickiesStore, "Stickies store");
   },
 };
 

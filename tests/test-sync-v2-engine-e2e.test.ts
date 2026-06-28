@@ -2,6 +2,7 @@ import "./local-storage-stub";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { BASE_URL, ensureUserAuth, fetchWithAuth } from "./test-utils";
 import { formatHlc } from "../src/shared/sync2/hlc";
+import { SYNC_CATEGORIES } from "../src/shared/sync2/namespaces";
 import { CloudSyncEngine } from "../src/sync/engine";
 import { useStickiesStore } from "../src/stores/useStickiesStore";
 import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
@@ -15,7 +16,7 @@ import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
  * tombstone upload. Uses the stickies namespace (no IndexedDB required).
  */
 
-const USERNAME = `sync2eng${Date.now().toString(36)}`;
+const USERNAME = `sync2eng${crypto.randomUUID().replaceAll("-", "").slice(0, 10)}`;
 const PASSWORD = "test-password-123";
 
 /** Resolve as soon as `predicate` is true, instead of sleeping a fixed amount. */
@@ -60,11 +61,13 @@ beforeAll(async () => {
     return originalFetch(url, { ...init, headers });
   }) as typeof fetch;
 
-  // Only sync IndexedDB-free categories in this environment.
+  // Exercise only the namespace under test. This also prevents unrelated
+  // browser-only settings from entering this bare Bun process.
   const syncStore = useCloudSyncStore.getState();
   syncStore.applyServerAutoSyncPreference(true);
-  syncStore.setCategoryEnabled("files", false);
-  syncStore.setCategoryEnabled("songs", true);
+  for (const category of SYNC_CATEGORIES) {
+    syncStore.setCategoryEnabled(category, false);
+  }
   syncStore.setCategoryEnabled("stickies", true);
 
   useStickiesStore.setState({ notes: [] });
