@@ -82,6 +82,8 @@ describe("iframe proxy helpers", () => {
       .toContain("host_only=1");
     expect(getCookieHeaderForUrl(cookies, "https://cdn.example.com/", 2_000))
       .toContain("domain_cookie=1");
+    expect(getCookieHeaderForUrl(cookies, "https://example.com/other/page", 2_000))
+      .toContain("domain_cookie=1");
     expect(getCookieHeaderForUrl(cookies, "https://cdn.example.com/", 2_000))
       .not.toContain("host_only=1");
     expect(getCookieHeaderForUrl(cookies, "http://example.com/", 2_000))

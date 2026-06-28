@@ -197,6 +197,13 @@ export function createProxyUrl(
     if (absoluteUrl.protocol !== "http:" && absoluteUrl.protocol !== "https:") {
       return null;
     }
+    const proxyOrigin = new URL(options.proxyOrigin);
+    if (
+      absoluteUrl.origin === proxyOrigin.origin &&
+      absoluteUrl.pathname === "/api/iframe-check"
+    ) {
+      return null;
+    }
 
     const proxyUrl = new URL("/api/iframe-check", options.proxyOrigin);
     proxyUrl.searchParams.set("url", absoluteUrl.toString());
@@ -331,19 +338,6 @@ export function rewriteCssForProxy(
   };
 
   let rewritten = css.replace(
-    /url\(\s*(["']?)(.*?)\1\s*\)/gi,
-    (match, quote, rawUrl) => {
-      const proxied = createProxyUrl(rawUrl, {
-        ...proxyOptions,
-        resourceType: "image",
-      });
-      if (!proxied) return match;
-      count += 1;
-      return `url(${quote || '"'}${proxied}${quote || '"'})`;
-    }
-  );
-
-  rewritten = rewritten.replace(
     /@import\s+(?:url\(\s*)?(["'])(.*?)\1\s*\)?/gi,
     (match, quote, rawUrl) => {
       const proxied = createProxyUrl(rawUrl, {
@@ -353,6 +347,19 @@ export function rewriteCssForProxy(
       if (!proxied) return match;
       count += 1;
       return `@import ${quote}${proxied}${quote}`;
+    }
+  );
+
+  rewritten = rewritten.replace(
+    /url\(\s*(["']?)(.*?)\1\s*\)/gi,
+    (match, quote, rawUrl) => {
+      const proxied = createProxyUrl(rawUrl, {
+        ...proxyOptions,
+        resourceType: "image",
+      });
+      if (!proxied) return match;
+      count += 1;
+      return `url(${quote || '"'}${proxied}${quote || '"'})`;
     }
   );
 
@@ -465,6 +472,7 @@ function domainMatches(hostname: string, domain: string, hostOnly: boolean): boo
 }
 
 function pathMatches(requestPath: string, cookiePath: string): boolean {
+  if (cookiePath === "/") return true;
   return requestPath === cookiePath || requestPath.startsWith(`${cookiePath}/`);
 }
 
