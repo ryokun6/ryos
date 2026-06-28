@@ -34,7 +34,8 @@ import {
 } from "@/api/rooms";
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 
-const debug = createClientLogger("ChatsStore").debug;
+const chatsStoreLog = createClientLogger("ChatsStore");
+const debug = chatsStoreLog.debug;
 
 // Username recovery - plain text, username is public info
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -196,7 +197,7 @@ const clearApiUnavailable = (key: string): void => {
 function forceLogoutOnUnauthorized() {
   const store = useChatsStore.getState();
   if (!store.username) return;
-  debug("[ChatsStore] Unauthorized — clearing auth state for", store.username);
+  debug("Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
   useChatsStore.setState({
     username: null,
@@ -210,7 +211,7 @@ function forceLogoutOnUnauthorized() {
 const ensureUsernameRecovery = (username: string | null) => {
   if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
     debug(
-      "[ChatsStore] Setting recovery key for existing username:",
+      "Setting recovery key for existing username:",
       username
     );
     saveUsernameToRecovery(username);
@@ -436,8 +437,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             set({ hasPassword: data.hasPassword });
             return { ok: true };
           } catch (error) {
-            console.error(
-              "[ChatsStore] Error checking password status:",
+            chatsStoreLog.error(
+              "Error checking password status:",
               error
             );
             set({ hasPassword: null });
@@ -468,7 +469,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             set({ hasPassword: true });
             return { ok: true };
           } catch (error) {
-            console.error("[ChatsStore] Error setting password:", error);
+            chatsStoreLog.error("Error setting password:", error);
             return {
               ok: false,
               error:
@@ -481,8 +482,8 @@ export const useChatsStore = create<ChatsStoreState>()(
         setRooms: (newRooms) => {
           // Ensure incoming data is an array
           if (!Array.isArray(newRooms)) {
-            console.warn(
-              "[ChatsStore] Attempted to set rooms with a non-array value:",
+            chatsStoreLog.warn(
+              "Attempted to set rooms with a non-array value:",
               newRooms
             );
             return; // Ignore non-array updates
@@ -514,12 +515,12 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           if (JSON.stringify(currentRooms) === JSON.stringify(sortedNewRooms)) {
             debug(
-              "[ChatsStore] setRooms skipped: newRooms are identical to current rooms."
+              "setRooms skipped: newRooms are identical to current rooms."
             );
             return; // Skip update if rooms haven't actually changed
           }
 
-          debug("[ChatsStore] setRooms called. Updating rooms.");
+          debug("setRooms called. Updating rooms.");
           set({ rooms: sortedNewRooms });
         },
         setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
@@ -717,7 +718,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           set(getInitialState());
         },
         logout: async () => {
-          debug("[ChatsStore] Logging out user...");
+          debug("Logging out user...");
 
           const currentUsername = get().username;
 
@@ -725,8 +726,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             try {
               await logoutUserSafe();
             } catch (err) {
-              console.warn(
-                "[ChatsStore] Failed to notify server during logout:",
+              chatsStoreLog.warn(
+                "Failed to notify server during logout:",
                 err
               );
             }
@@ -754,13 +755,13 @@ export const useChatsStore = create<ChatsStoreState>()(
           try {
             await get().fetchRooms({ force: true });
           } catch (error) {
-            console.error(
-              "[ChatsStore] Error refreshing rooms after logout:",
+            chatsStoreLog.error(
+              "Error refreshing rooms after logout:",
               error
             );
           }
 
-          debug("[ChatsStore] User logged out successfully");
+          debug("User logged out successfully");
         },
         deleteAccount: async ({ confirmUsername, currentPassword }) => {
           const currentUsername = get().username;
@@ -775,7 +776,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               ...(currentPassword ? { currentPassword } : {}),
             });
           } catch (error) {
-            console.error("[ChatsStore] Error deleting account:", error);
+            chatsStoreLog.error("Error deleting account:", error);
             return {
               ok: false,
               error:
@@ -806,8 +807,8 @@ export const useChatsStore = create<ChatsStoreState>()(
           try {
             await get().fetchRooms({ force: true });
           } catch (error) {
-            console.error(
-              "[ChatsStore] Error refreshing rooms after deletion:",
+            chatsStoreLog.error(
+              "Error refreshing rooms after deletion:",
               error
             );
           }
@@ -816,16 +817,16 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         fetchRooms: async (options = {}) => {
           if (roomsFetchPromise) {
-            debug("[ChatsStore] Reusing in-flight rooms fetch...");
+            debug("Reusing in-flight rooms fetch...");
             return roomsFetchPromise;
           }
 
           if (!options.force && Date.now() < roomsFetchFreshUntil) {
-            debug("[ChatsStore] Skipping rooms fetch; cache is fresh.");
+            debug("Skipping rooms fetch; cache is fresh.");
             return { ok: true };
           }
 
-          debug("[ChatsStore] Fetching rooms...");
+          debug("Fetching rooms...");
           if (isApiTemporarilyUnavailable("rooms")) {
             return { ok: false, error: "Rooms API temporarily unavailable" };
           }
@@ -843,7 +844,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
               return { ok: false, error: "Invalid response format" };
             } catch (error) {
-              console.error("[ChatsStore] Error fetching rooms:", error);
+              chatsStoreLog.error("Error fetching rooms:", error);
               markApiTemporarilyUnavailable("rooms");
               return {
                 ok: false,
@@ -862,7 +863,7 @@ export const useChatsStore = create<ChatsStoreState>()(
         fetchMessagesForRoom: async (roomId: string) => {
           if (!roomId) return { ok: false, error: "Room ID required" };
 
-          debug(`[ChatsStore] Fetching messages for room ${roomId}...`);
+          debug(`Fetching messages for room ${roomId}...`);
           if (isApiTemporarilyUnavailable("room-messages")) {
             return { ok: false, error: "Messages API temporarily unavailable" };
           }
@@ -887,8 +888,8 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
-            console.error(
-              `[ChatsStore] Error fetching messages for room ${roomId}:`,
+            chatsStoreLog.error(
+              `Error fetching messages for room ${roomId}:`,
               error
             );
             markApiTemporarilyUnavailable("room-messages");
@@ -906,7 +907,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Room IDs required" };
 
           debug(
-            `[ChatsStore] Fetching messages for rooms: ${roomIds.join(", ")}...`
+            `Fetching messages for rooms: ${roomIds.join(", ")}...`
           );
           if (isApiTemporarilyUnavailable("bulk-messages")) {
             return { ok: false, error: "Bulk messages API temporarily unavailable" };
@@ -936,8 +937,8 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
-            console.error(
-              `[ChatsStore] Error fetching messages for rooms ${roomIds.join(
+            chatsStoreLog.error(
+              `Error fetching messages for rooms ${roomIds.join(
                 ", "
               )}:`,
               error
@@ -957,7 +958,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           const username = get().username;
 
           debug(
-            `[ChatsStore] Switching from ${currentRoomId} to ${newRoomId}`
+            `Switching from ${currentRoomId} to ${newRoomId}`
           );
 
           set({ currentRoomId: newRoomId });
@@ -977,8 +978,8 @@ export const useChatsStore = create<ChatsStoreState>()(
                 get().fetchRooms();
               }, 50);
             } catch (error) {
-              console.error(
-                "[ChatsStore] Error switching rooms:",
+              chatsStoreLog.error(
+                "Error switching rooms:",
                 error
               );
             }
@@ -990,7 +991,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               hasPreviousRoom: !!currentRoomId,
             });
             debug(
-              `[ChatsStore] Fetching latest messages for room ${newRoomId}`
+              `Fetching latest messages for room ${newRoomId}`
             );
             await get().fetchMessagesForRoom(newRoomId);
           }
@@ -1051,12 +1052,12 @@ export const useChatsStore = create<ChatsStoreState>()(
           } catch (error) {
             if (error instanceof ApiRequestError) {
               if (error.status === 401) {
-                debug("[ChatsStore] Received 401 — forcing logout");
+                debug("Received 401 — forcing logout");
                 forceLogoutOnUnauthorized();
               }
               return { ok: false, error: error.message || "Failed to create room" };
             }
-            console.error("[ChatsStore] Error creating room:", error);
+            chatsStoreLog.error("Error creating room:", error);
             return { ok: false, error: "Network error. Please try again." };
           }
         },
@@ -1081,12 +1082,12 @@ export const useChatsStore = create<ChatsStoreState>()(
           } catch (error) {
             if (error instanceof ApiRequestError) {
               if (error.status === 401) {
-                debug("[ChatsStore] Received 401 — forcing logout");
+                debug("Received 401 — forcing logout");
                 forceLogoutOnUnauthorized();
               }
               return { ok: false, error: error.message || "Failed to delete room" };
             }
-            console.error("[ChatsStore] Error deleting room:", error);
+            chatsStoreLog.error("Error deleting room:", error);
             return { ok: false, error: "Network error. Please try again." };
           }
         },
@@ -1124,12 +1125,12 @@ export const useChatsStore = create<ChatsStoreState>()(
             get().removeMessageFromRoom(roomId, tempId);
             if (error instanceof ApiRequestError) {
               if (error.status === 401) {
-                debug("[ChatsStore] Received 401 — forcing logout");
+                debug("Received 401 — forcing logout");
                 forceLogoutOnUnauthorized();
               }
               return { ok: false, error: error.message || "Failed to send message" };
             }
-            console.error("[ChatsStore] Error sending message:", error);
+            chatsStoreLog.error("Error sending message:", error);
             return { ok: false, error: "Network error. Please try again." };
           }
         },
@@ -1179,7 +1180,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
-            console.error("[ChatsStore] Error creating user:", error);
+            chatsStoreLog.error("Error creating user:", error);
             return {
               ok: false,
               error:
@@ -1235,13 +1236,13 @@ export const useChatsStore = create<ChatsStoreState>()(
         hasEverUsedChats: state.hasEverUsedChats,
       }),
       onRehydrateStorage: () => {
-        debug("[ChatsStore] Rehydrating storage...");
+        debug("Rehydrating storage...");
         return (state, error) => {
           if (error) {
-            console.error("[ChatsStore] Error during rehydration:", error);
+            chatsStoreLog.error("Error during rehydration:", error);
           } else if (state) {
             debug(
-              "[ChatsStore] Rehydration complete. Current state username:",
+              "Rehydration complete. Current state username:",
               state.username
             );
 
@@ -1250,7 +1251,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               const recoveredUsername = getUsernameFromRecovery();
               if (recoveredUsername) {
                 debug(
-                  `[ChatsStore] Recovered username '${recoveredUsername}' from recovery storage.`
+                  `Recovered username '${recoveredUsername}' from recovery storage.`
                 );
                 state.username = recoveredUsername;
               }
@@ -1279,7 +1280,7 @@ async function restoreSessionFromCookie(expectedUsername: string) {
     const session = await getAuthSession();
 
     if (!session.ok) {
-      debug("[ChatsStore] Session restore failed:", session.status);
+      debug("Session restore failed:", session.status);
       if (session.status === 401 || session.status === 403) {
         forceLogoutOnUnauthorized();
       }
@@ -1288,7 +1289,7 @@ async function restoreSessionFromCookie(expectedUsername: string) {
 
     const data = session.data;
     if (data.authenticated && data.username) {
-      debug("[ChatsStore] Session restored", {
+      debug("Session restored", {
         username: data.username,
         source: "cookie",
       });
@@ -1299,13 +1300,13 @@ async function restoreSessionFromCookie(expectedUsername: string) {
         store.checkHasPassword();
       }
     } else {
-      debug("[ChatsStore] No valid session — logging out.");
+      debug("No valid session — logging out.");
       forceLogoutOnUnauthorized();
     }
   } catch (err) {
     // Network error — keep state, don't force-logout.
     // The user may come back online and the cookie will still be valid.
-    console.warn("[ChatsStore] Session restore request failed:", err);
+    chatsStoreLog.warn("Session restore request failed:", err);
   }
 }
 
