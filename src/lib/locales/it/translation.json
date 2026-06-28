@@ -11,7 +11,7 @@
         "details": "Dettagli",
         "empty": "Nessuna azione amministratore ancora registrata",
         "loadFailed": "Impossibile caricare il registro di controllo",
-        "loading": "Caricamento registro di controllo…",
+        "loading": "Carico registro di controllo…",
         "refresh": "Aggiorna",
         "retry": "Riprova",
         "target": "Destinazione",
@@ -19,7 +19,7 @@
         "title": "Registro di controllo"
       },
       "cursorAgents": {
-        "colLink": "Link",
+        "colLink": "Collegamento",
         "colModel": "Modello",
         "colRun": "Esecuzione / agente",
         "colStatus": "Stato",
@@ -29,7 +29,7 @@
         "emptyTitle": "Nessun agente Cursor",
         "followupFrom": "Follow-up da {{id}}",
         "loadFailed": "Impossibile caricare le esecuzioni",
-        "loading": "Caricamento esecuzioni agente Cursor…",
+        "loading": "Carico esecuzioni agente Cursor…",
         "newAgentAria": "Nuovo prompt agente Cursor",
         "newAgentPlaceholder": "Invia a Cursor",
         "openAgent": "Agente",
@@ -68,7 +68,7 @@
           "sessions": "SESSIONI",
           "visitors": "Visitatori"
         },
-        "loading": "Caricamento analisi...",
+        "loading": "Carico analisi…",
         "range": {
           "today": "Oggi"
         },
@@ -88,7 +88,7 @@
         },
         "title": "Dashboard",
         "totals": {
-          "ai": "AI",
+          "ai": "IA",
           "calls": "chiamate",
           "msAvg": "media ms",
           "totals": "totali",
@@ -184,7 +184,7 @@
         "showSidebar": "Mostra barra laterale"
       },
       "messages": {
-        "addingToLibrary": "Aggiunta alla libreria...",
+        "addingToLibrary": "Aggiungo alla libreria…",
         "dataRefreshed": "Dati aggiornati",
         "deleteAllSuccess": "Eliminati {{success}} di {{total}} brani",
         "exportSuccess": "Esportati {{count}} brani",
@@ -221,7 +221,7 @@
         "bannedOn": "Bannato il",
         "clearAll": "Elimina tutti",
         "clearing": "Cancellazione…",
-        "confirmBan": "Ban",
+        "confirmBan": "Banna",
         "dailyNotes": "Note giornaliere",
         "dailyNotesProcessed": "Note giornaliere elaborate",
         "delete": "Elimina utente",
@@ -230,7 +230,7 @@
         "heartbeatSkipped": "saltato",
         "heartbeats": "Record heartbeat",
         "lastActive": "Ultima attività",
-        "loading": "Caricamento profilo...",
+        "loading": "Carico profilo…",
         "longTermMemories": "Memorie a lungo termine",
         "memories": "Ricordi",
         "memoriesCleared": "Memorie cancellate",
@@ -295,8 +295,8 @@
       },
       "search": {
         "noResults": "Nessun utente trovato",
-        "placeholder": "Cerca utenti...",
-        "songsPlaceholder": "Cerca brani..."
+        "placeholder": "Cerca utenti…",
+        "songsPlaceholder": "Cerca brani…"
       },
       "server": {
         "buildInfo": "Compilazione",
@@ -307,8 +307,8 @@
           "dev": "Sviluppo",
           "vercel": "Vercel"
         },
-        "deploymentLabel": "Deployment",
-        "loading": "Caricamento informazioni server...",
+        "deploymentLabel": "Distribuzione",
+        "loading": "Carico informazioni server…",
         "notConfigured": "Non configurata",
         "ok": "OK",
         "provider": {
@@ -328,7 +328,7 @@
         "cursorAgents": "Agenti cursore",
         "dashboard": "Dashboard",
         "messagesCount": "{{count}} messaggi",
-        "online": "online",
+        "online": "in linea",
         "private": "Privato",
         "redis": "Redis",
         "rooms": "Stanze",
@@ -477,10 +477,10 @@
         "showingExistingShareLink": "Visualizzazione del link di condivisione esistente.",
         "untitled": "Senza titolo",
         "untitledApplet": "Applet senza titolo",
-        "updatingApplet": "Aggiornamento applet...",
-        "updatingAppletSingle": "Aggiornamento di 1 applet...",
-        "updatingApplets": "Aggiornamento di {{count}} applet...",
-        "updatingAppletsPlural": "Aggiornamento di {{count}} applet..."
+        "updatingApplet": "Aggiorno applet…",
+        "updatingAppletSingle": "Aggiorno 1 applet…",
+        "updatingApplets": "Aggiorno {{count}} applet…",
+        "updatingAppletsPlural": "Aggiorno {{count}} applet…"
       },
       "help": {
         "appletStore": {
@@ -524,14 +524,14 @@
         "createAccount": "Crea account…",
         "exportAs": "Esporta come…",
         "html": "HTML",
-        "importFromDevice": "Importa da Dispositivo...",
+        "importFromDevice": "Importa da dispositivo…",
         "logOut": "Esci",
         "login": "Accedi…",
         "noAppletsOpen": "Nessuna applet aperta",
         "open": "Apri…",
         "openAppletStore": "Apri Applet Store",
         "ryosApp": "App ryOS",
-        "shareApplet": "Condividi Applet...",
+        "shareApplet": "Condividi applet…",
         "store": "Store",
         "untitled": "Senza titolo",
         "updateApplets": "Aggiorna {{count}} applet",
@@ -562,7 +562,7 @@
     },
     "books": {
       "columns": {
-        "auto": "Auto",
+        "auto": "Automatico",
         "double": "Doppia",
         "single": "Singola"
       },
@@ -632,7 +632,7 @@
         "percentRead": "{{percent}}%"
       },
       "theme": {
-        "auto": "Auto",
+        "auto": "Automatico",
         "dark": "Scuro",
         "light": "Chiaro",
         "sepia": "Seppia"
@@ -657,7 +657,7 @@
       "conversion": {
         "amount": "Importo",
         "categories": {
-          "area": "Area",
+          "area": "Superficie",
           "currency": "Valuta",
           "energy": "Energia",
           "length": "Lunghezza",
@@ -885,7 +885,7 @@
       "name": "Calendario",
       "sidebar": {
         "calendars": "Calendari",
-        "newTodoPlaceholder": "Nuovo elemento da fare...",
+        "newTodoPlaceholder": "Nuovo elemento da fare…",
         "noTodoItems": "Nessun elemento da fare",
         "toDoItems": "Elementi da fare"
       },
@@ -936,7 +936,7 @@
         "clearChatsDescription": "Sei sicuro di voler cancellare questa chat? Questa azione non può essere annullata.",
         "clearChatsTitle": "Cancella Chat",
         "create": "Crea",
-        "creating": "Creazione in corso...",
+        "creating": "Creo…",
         "deleteChatRoomDescription": "Sei sicuro di voler eliminare la stanza \"{{name}}\"? Questa azione non può essere annullata.",
         "deleteChatRoomTitle": "Elimina Chat Room",
         "failedToCreateRoom": "Impossibile creare la stanza",
@@ -954,7 +954,7 @@
         "roomNamePlaceholder": "generale",
         "saveTranscriptDescription": "Inserisci un nome per il file della trascrizione della chat",
         "saveTranscriptTitle": "Salva Trascrizione",
-        "searchUsernamePlaceholder": "Cerca nome utente...",
+        "searchUsernamePlaceholder": "Cerca nome utente…",
         "setPasswordButton": "Imposta password",
         "setPasswordDescription": "Imposta una password per abilitare il recupero dell'account. Puoi usare questa password per ottenere un nuovo token se perdi l'accesso.",
         "setPasswordTitle": "Imposta password"
@@ -998,9 +998,9 @@
         "linkToTelegram": "Collega a Telegram",
         "logOut": "Esci",
         "login": "Accedi…",
-        "newChat": "Nuova Chat...",
+        "newChat": "Nuova chat…",
         "resetFontSize": "Reimposta Dimensione Carattere",
-        "saveTranscript": "Salva Trascrizione...",
+        "saveTranscript": "Salva trascrizione…",
         "showRooms": "Mostra stanze",
         "sound": "Suono",
         "systemNotifications": "Notifiche di Sistema",
@@ -1019,14 +1019,14 @@
       "sidebar": {
         "chats": "Chat",
         "new": "nuovo",
-        "online": "online",
+        "online": "in linea",
         "private": "Privato",
         "rooms": "Stanze"
       },
       "status": {
         "chatRequiresInternet": "La chat richiede una connessione a internet",
         "clear": "Cancella",
-        "createAccountToContinue": "Crea un account per continuare...",
+        "createAccountToContinue": "Crea un account per continuare…",
         "dailyLimitReached": "Limite giornaliero di messaggi IA raggiunto.",
         "describeThisImage": "Descrivi questa immagine",
         "editing": "modifica…",
@@ -1050,9 +1050,9 @@
         "sessionExpired": "Sessione scaduta. Accedi di nuovo.",
         "startNewConversation": "Iniziare una nuova conversazione?",
         "thinking": "Un momento…",
-        "transcribing": "Trascrivendo...",
-        "typeMessage": "Digita un messaggio...",
-        "typeOrPushSpace": "Digita o premi 'spazio' per parlare...",
+        "transcribing": "Trascrivo…",
+        "typeMessage": "Digita un messaggio…",
+        "typeOrPushSpace": "Digita o premi 'spazio' per parlare…",
         "usingModel": "Utilizzo di {{model}}"
       },
       "toasts": {
@@ -1149,7 +1149,7 @@
           "listing": "Elenco contatti…",
           "loaded": "Caricato {{name}}",
           "loadedContact": "Caricato {{name}}",
-          "loading": "Caricamento contatto…",
+          "loading": "Carico contatto…",
           "missingData": "Aggiungi almeno un campo nome, email, telefono o Telegram",
           "missingId": "ID contatto mancante",
           "noContacts": "Nessun contatto trovato",
@@ -1226,18 +1226,18 @@
         "generating": "Generazione…",
         "infiniteMac": {
           "capturedScreen": "Schermata catturata",
-          "capturingScreen": "Cattura schermata in corso…",
+          "capturingScreen": "Scatto istantanea…",
           "clicked": "Cliccato in ({{x}}, {{y}})",
           "clicking": "Fare clic…",
           "doubleClicked": "Doppio clic in ({{x}}, {{y}})",
-          "doubleClicking": "Doppio clic in corso…",
-          "gettingStatus": "Recupero stato in corso…",
+          "doubleClicking": "Faccio doppio clic…",
+          "gettingStatus": "Ottengo lo stato…",
           "movedMouse": "Spostato a ({{x}}, {{y}})",
-          "movingMouse": "Spostamento mouse in corso…",
+          "movingMouse": "Sposto il mouse…",
           "paused": "In pausa",
           "pausing": "Messa in pausa…",
           "pressedKey": "Tasto {{key}} premuto",
-          "pressingKey": "Pressione tasto in corso…",
+          "pressingKey": "Premo un tasto…",
           "resumed": "Ripreso",
           "resuming": "Riprendo…",
           "rightClicked": "Clic destro in ({{x}}, {{y}})",
@@ -1307,7 +1307,7 @@
         "listedItems": "Elementi elencati",
         "listingApplications": "Elenco applicazioni…",
         "listingSharedApplets": "Elenco applet condivise…",
-        "loadingMusicLibrary": "Caricamento libreria musicale…",
+        "loadingMusicLibrary": "Carico libreria musicale…",
         "missingEditParameters": "Parametri richiesti mancanti: path, old_string e new_string",
         "multipleMatchesFound": "Più corrispondenze trovate",
         "musicLibraryEmpty": "La libreria musicale è vuota",
@@ -1336,7 +1336,7 @@
         "playingSongWithId": "Riproduzione brano ({{id}})",
         "playingTrack": "In riproduzione {{title}}",
         "playingTrackByArtist": "In riproduzione {{title}} di {{artist}}",
-        "preparingHtmlPreview": "Preparazione anteprima HTML...",
+        "preparingHtmlPreview": "Preparo anteprima HTML…",
         "read": "Letto {{fileName}}",
         "readingFile": "Lettura file…",
         "running": "Esecuzione {{toolName}}…",
@@ -1387,7 +1387,7 @@
           "createRateLimited": "La creazione di canali è attualmente limitata. Riprova tra poco.",
           "createdChannel": "Canale {{label}} creato",
           "createdChannelWithVideos": "Creato {{label}} ({{count}} video)",
-          "creating": "Pianificazione del canale e ricerca video in corso…",
+          "creating": "Creo canale e cerco video…",
           "deletedChannel": "Canale {{label}} eliminato",
           "deleting": "Eliminazione del canale…",
           "foundChannels": "Trovati {{count}} canali",
@@ -1606,7 +1606,7 @@
       "checkForUpdates": "Verifica aggiornamenti",
       "cloudSync": {
         "accountDescription": "Impostazioni di sincronizzazione sui tuoi dispositivi",
-        "backingUp": "Backup in corso…",
+        "backingUp": "Eseguo il backup…",
         "backupFailed": "Backup nel cloud non riuscito",
         "backupSuccess": "Backup salvato nel cloud",
         "backupToCloud": "Backup nel cloud",
@@ -1639,7 +1639,7 @@
           "finishing": "Completamento…",
           "restoring": "Ripristino dati…",
           "serializing": "Serializzazione file…",
-          "uploading": "Caricamento nel cloud…"
+          "uploading": "Carico nel cloud…"
         },
         "restoreFailed": "Ripristino dal cloud non riuscito",
         "restoreFromCloud": "Ripristina dal cloud",
@@ -1653,7 +1653,7 @@
       "color": "Colore",
       "connectionStatus": {
         "connected": "Connesso",
-        "connecting": "Connessione in corso…",
+        "connecting": "Connetto…",
         "disconnected": "Disconnesso"
       },
       "crashApp": "Arresta app",
@@ -1834,7 +1834,7 @@
         "notConfigured": "Il recupero tramite email non è disponibile su questo server. Puoi ancora effettuare il recupero tramite un account Telegram collegato.",
         "remove": "Rimuovi",
         "removedToast": "Email di recupero rimossa",
-        "removing": "Rimozione in corso...",
+        "removing": "Rimuovo…",
         "save": "Invia verifica",
         "saving": "Invio…",
         "title": "Email di recupero",
@@ -1842,7 +1842,7 @@
         "verified": "Verificata",
         "verifiedToast": "Email di recupero verificata",
         "verify": "Verifica",
-        "verifying": "Verifica in corso..."
+        "verifying": "Verifico…"
       },
       "recoveryEmailDescription": "Aggiungi un'email per il recupero della password",
       "recoveryEmailMenu": "Email di recupero…",
@@ -1926,7 +1926,7 @@
       "systemFontDescription": "Sostituisce lo stack di font dell'interfaccia OS",
       "systemFontThemeDefault": "Tema",
       "telegram": {
-        "checking": "Verifica link Telegram...",
+        "checking": "Verifico link Telegram…",
         "codeCopied": "Codice link Telegram copiato",
         "codeValue": "Codice: {{code}}",
         "connect": "Collega Telegram",
@@ -1978,7 +1978,7 @@
       "themePreviewFirstItem": "Primo elemento",
       "themePreviewMenus": {
         "edit": "Modifica",
-        "file": "File",
+        "file": "Archivio",
         "finder": "Finder"
       },
       "themePreviewOtherItem": "Altro elemento",
@@ -1990,7 +1990,7 @@
       "themePreviewWindowTitle": "Documento",
       "timeZone": "Fuso orario",
       "timeZoneDescription": "Usata per orologi, pianificazione, formattazione e contesto AI",
-      "timezoneAutomatic": "Auto",
+      "timezoneAutomatic": "Automatico",
       "timezoneAutomaticCity": "Auto ({{city}})",
       "timezoneNoResults": "Nessun fuso orario corrispondente",
       "timezoneRegions": {
@@ -2084,7 +2084,7 @@
         "defaultPair": "Coppia di valute predefinita",
         "error": "Impossibile caricare il tasso di cambio",
         "from": "Da",
-        "loading": "Caricamento tasso…",
+        "loading": "Carico tasso…",
         "staleRates": "Tassi in cache · {{time}}",
         "swap": "Scambia valute",
         "to": "A",
@@ -2094,7 +2094,7 @@
       "dictionary": {
         "dataSources": "Dati provenienti da Wiktionary e altri dizionari aperti. I risultati potrebbero variare per parole non comuni.",
         "error": "Ricerca fallita.",
-        "loading": "Ricerca in corso…",
+        "loading": "Cerco…",
         "noDefinition": "Nessuna definizione trovata.",
         "noResults": "Nessun risultato.",
         "placeholder": "Digita una parola per cercarla.",
@@ -2164,18 +2164,18 @@
           "yellow": "Giallo"
         },
         "noteColor": "Colore nota",
-        "placeholder": "Digita una nota..."
+        "placeholder": "Digita una nota…"
       },
       "stocks": {
         "allAdded": "Tutti i simboli aggiunti",
         "currentSymbols": "Simboli attuali",
         "delayed": "Ritardo fino a 20 minuti",
-        "loading": "Caricamento titoli...",
+        "loading": "Carico titoli…",
         "noResults": "Nessun simbolo trovato",
         "resetDefaults": "Ripristina valori predefiniti",
         "retry": "Riprova",
-        "searchSymbol": "Cerca simboli...",
-        "searching": "Ricerca in corso...",
+        "searchSymbol": "Cerca simboli…",
+        "searching": "Cerco…",
         "unavailable": "Dati azionari non disponibili"
       },
       "title": "Dashboard",
@@ -2190,7 +2190,7 @@
         "swap": "Inverti lingue",
         "to": "A",
         "translateFrom": "Traduci da",
-        "translating": "Traduzione in corso..."
+        "translating": "Traduco…"
       },
       "weather": {
         "changeCity": "Cambia città",
@@ -2207,12 +2207,12 @@
         "feelsLike": "Percepita",
         "high": "Max:",
         "humidity": "Umidità",
-        "loading": "Caricamento meteo...",
+        "loading": "Carico meteo…",
         "locationDenied": "Accesso alla posizione negato",
         "low": "Min:",
         "noResults": "Nessuna città trovata",
-        "searchCity": "Cerca città...",
-        "searching": "Ricerca in corso...",
+        "searchCity": "Cerca città…",
+        "searching": "Cerco…",
         "selectCity": "Scegli una città",
         "unavailable": "Meteo non disponibile",
         "useMyLocation": "Usa la mia posizione",
@@ -2360,7 +2360,7 @@
         "forward": "Avanti",
         "goUp": "Vai su",
         "import": "Importa file…",
-        "importFromDevice": "Importa da dispositivo...",
+        "importFromDevice": "Importa da dispositivo…",
         "moveToTrash": "Sposta nel Cestino",
         "newFinderWindow": "Nuova finestra del Finder",
         "newFolder": "Nuova cartella…",
@@ -2429,8 +2429,8 @@
           "title": "Scegli un sistema"
         }
       },
-      "loadingEmulator": "Caricamento emulatore...",
-      "loadingSystem": "Caricamento {{name}}...",
+      "loadingEmulator": "Carico emulatore…",
+      "loadingSystem": "Carico {{name}}…",
       "menu": {
         "aboutInfiniteMac": "Informazioni su Infinite Mac",
         "backToPresets": "Torna ai sistemi",
@@ -2479,8 +2479,8 @@
       "failedToGenerateFuturisticWebsite": "Impossibile generare il sito web futuristico. Il modello AI potrebbe non essere selezionato.",
       "favorite": "Preferito",
       "fetch": "Scarica",
-      "fetchingContentForReconstruction": "Recupero del contenuto di {{hostname}} per la ricostruzione...",
-      "fetchingFromYear": "Recupero di {{hostname}} dall'anno {{year}}...",
+      "fetchingContentForReconstruction": "Scarico il contenuto di {{hostname}} per la ricostruzione…",
+      "fetchingFromYear": "Scarico {{hostname}} dall'anno {{year}}…",
       "folder": "Cartella",
       "france": "Francia",
       "french": "Francese",
@@ -2531,13 +2531,13 @@
       "japanese": "Giapponese",
       "korean": "Coreano",
       "latin": "Latino",
-      "loading": "Caricamento di {{hostname}}...",
+      "loading": "Carico {{hostname}}…",
       "loadingEllipsis": "Carico…",
       "loadingTitle": "Internet Explorer - Caricamento",
       "loadingTitleWithSite": "{{site}} - Caricamento",
       "menu": {
         "aboutInternetExplorer": "Informazioni su Internet Explorer",
-        "addToFavorites": "Aggiungi ai preferiti...",
+        "addToFavorites": "Aggiungi ai preferiti…",
         "aiLanguage": "Linguaggio AI",
         "alien": "Alieno",
         "australia": "Australia",
@@ -2547,10 +2547,10 @@
         "canada": "Canada",
         "china": "Cina",
         "chinese": "Cinese",
-        "clearFavorites": "Cancella preferiti...",
+        "clearFavorites": "Cancella preferiti…",
         "clearHistory": "Cancella cronologia…",
         "digitalBeing": "Essere Digitale",
-        "editFuture": "Modifica futuro...",
+        "editFuture": "Modifica futuro…",
         "english": "Inglese",
         "favorites": "Preferiti",
         "folder": "Cartella",
@@ -2577,11 +2577,11 @@
         "portugal": "Portogallo",
         "portuguese": "Portoghese",
         "refresh": "Aggiorna",
-        "resetFavorites": "Reimposta preferiti...",
+        "resetFavorites": "Reimposta preferiti…",
         "russia": "Russia",
         "russian": "Russo",
         "sanskrit": "Sanscrito",
-        "sharePage": "Condividi pagina...",
+        "sharePage": "Condividi pagina…",
         "spain": "Spagna",
         "spanish": "Spagnolo",
         "stop": "Interrompi",
@@ -2607,9 +2607,9 @@
       "pleaseTryTheFollowing": "Prova quanto segue:",
       "portugal": "Portogallo",
       "portuguese": "Portoghese",
-      "reconstructingHistoryForYear": "Ricostruzione della cronologia di {{hostname}} per l'anno {{year}}...",
+      "reconstructingHistoryForYear": "Ricostruisco la cronologia di {{hostname}} per l'anno {{year}}…",
       "refresh": "Aggiorna",
-      "reimaginingForYear": "Ricreando {{hostname}} per l'anno {{year}}...",
+      "reimaginingForYear": "Ricreo {{hostname}} per l'anno {{year}}…",
       "requiresInternetConnection": "Internet Explorer richiede una connessione a Internet per navigare",
       "resetFavorites": "Ripristina preferiti",
       "russia": "Russia",
@@ -2675,7 +2675,7 @@
         "addSongTitle": "Aggiungi Canzone",
         "addedNewSongsToTop": "Aggiunti {{newCount}} nuovi brano{{newPlural}} in cima{{updatedText}}. Totale: {{total}} brani",
         "addedSongsToTop": "Aggiunte {{count}} canzone{{plural}} in cima. La prima canzone è pronta per la riproduzione!",
-        "addingNewTrack": "Aggiunta nuova traccia da URL...",
+        "addingNewTrack": "Aggiungo nuova traccia da URL…",
         "andUpdated": " e aggiornati {{count}} brano{{plural}}",
         "appleMusicAddToFavoritesFailed": "Impossibile aggiungere ai preferiti",
         "appleMusicAddedToFavorites": "Aggiunto ai preferiti",
@@ -2683,7 +2683,7 @@
         "appleMusicGeniusFailed": "Impossibile riprodurre i consigli di Apple Music",
         "appleMusicLibraryFailed": "Impossibile caricare la libreria di Apple Music",
         "appleMusicLibraryLoaded": "Libreria di Apple Music caricata — {{count}} brani",
-        "appleMusicLibraryLoading": "Caricamento libreria di Apple Music…",
+        "appleMusicLibraryLoading": "Carico libreria di Apple Music…",
         "appleMusicLibraryProgress": "Caricamento libreria di Apple Music… {{loaded}} brani",
         "appleMusicLibraryProgressOf": "Caricamento libreria di Apple Music… {{loaded}} di {{total}}",
         "appleMusicNoRecommendations": "Non sono ancora disponibili consigli di Apple Music",
@@ -2731,7 +2731,7 @@
         "lyricsSearchPlaceholder": "Inserisci query di ricerca (es. titolo canzone, artista)",
         "lyricsSearchReset": "Reimposta su auto",
         "lyricsSearchSearch": "Cerca",
-        "lyricsSearchSearching": "Ricerca...",
+        "lyricsSearchSearching": "Cerco…",
         "lyricsSearchSelectResult": "Seleziona un risultato:",
         "lyricsSearchTitle": "Cerca testo",
         "lyricsSearchUseSelected": "Usa selezionato",
@@ -2741,7 +2741,7 @@
         "sharedTrackVideoId": "ID video: {{videoId}}",
         "songSearchAdd": "Aggiungi",
         "songSearchAddSelected": "Aggiungi brano",
-        "songSearchAdding": "Aggiunta brano in corso...",
+        "songSearchAdding": "Aggiungo brano…",
         "songSearchDescription": "Cerca brano, artista o incolla URL di YouTube",
         "songSearchEmptyQuery": "Inserisci un termine di ricerca",
         "songSearchError": "Errore nella ricerca di brani",
@@ -2749,9 +2749,9 @@
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "Risposta non valida dal server",
         "songSearchNoResults": "Nessun risultato trovato",
-        "songSearchPlaceholder": "Cerca o incolla URL...",
+        "songSearchPlaceholder": "Cerca o incolla URL…",
         "songSearchSearch": "Cerca",
-        "songSearchSearching": "Ricerca in corso...",
+        "songSearchSearching": "Cerco…",
         "songSearchSelectResult": "Seleziona un brano da aggiungere:",
         "songSearchTitle": "Cerca brani",
         "syncFailed": "Sincronizzazione non riuscita",
@@ -2799,10 +2799,10 @@
       },
       "menu": {
         "aboutIpod": "Informazioni su iPod",
-        "addSong": "Aggiungi brano...",
+        "addSong": "Aggiungi brano…",
         "addToFavorites": "Aggiungi ai preferiti",
         "addToLibrary": "Aggiungi alla libreria…",
-        "adjustTiming": "Regola sincronizzazione...",
+        "adjustTiming": "Regola sincronizzazione…",
         "allSongs": "Tutti i brani",
         "alternating": "Alternato",
         "appleMusicSignIn": "Accedi ad Apple Music…",
@@ -2814,7 +2814,7 @@
         "chineseSoramimi": "Mondegreen (Cinese)",
         "classic": "Classico",
         "clearCache": "Svuota cache",
-        "clearLibrary": "Svuota libreria...",
+        "clearLibrary": "Svuota libreria…",
         "controls": "Controlli",
         "coverFlow": "Cover Flow",
         "deviceTheme": "Tema del dispositivo",
@@ -2828,7 +2828,7 @@
         "displayVideo": "Video",
         "displayWater": "Acqua",
         "enableRomanization": "Attiva romanizzazione",
-        "exportLibrary": "Esporta libreria...",
+        "exportLibrary": "Esporta libreria…",
         "file": "File",
         "fontGoldGlow": "Bagliore",
         "fontGradient": "Gradiente",
@@ -2841,7 +2841,7 @@
         "goToAlbum": "Vai all'album",
         "goToArtist": "Vai all'artista",
         "goToPlaylist": "Vai alla playlist",
-        "importLibrary": "Importa libreria...",
+        "importLibrary": "Importa libreria…",
         "ipodHelp": "Aiuto iPod",
         "japaneseFurigana": "Giapponese (Furigana)",
         "japaneseRomaji": "Giapponese (Romaji)",
@@ -2863,7 +2863,7 @@
         "pronunciation": "Pronuncia",
         "pronunciationOnly": "Solo pronuncia",
         "refreshAppleMusic": "Aggiorna libreria",
-        "refreshLyrics": "Cerca testo...",
+        "refreshLyrics": "Cerca testo…",
         "repeatAll": "Ripeti tutto",
         "repeatOne": "Ripeti uno",
         "romanization": "Romanizzazione",
@@ -2872,7 +2872,7 @@
         "screenClassic": "Classico",
         "screenModern": "Moderno",
         "searchSongs": "Cerca brani",
-        "shareApp": "Condividi app...",
+        "shareApp": "Condividi app…",
         "shareSong": "Condividi brano…",
         "showLyrics": "Mostra testo",
         "shuffle": "Casuale",
@@ -2880,7 +2880,7 @@
         "soramimi": "Mondegreen (Inglese)",
         "switchToAppleMusic": "Passa ad Apple Music",
         "switchToYoutubeLibrary": "Passa alla libreria di YouTube",
-        "syncLibrary": "Sincronizza libreria...",
+        "syncLibrary": "Sincronizza libreria…",
         "traditionalChinese": "繁體",
         "translate": "Traduci",
         "u2": "U2",
@@ -2939,7 +2939,7 @@
         "greatJob": "Ottimo lavoro!",
         "guessTheSong": "Indovina la canzone",
         "keepPracticing": "Continua ad ascoltare!",
-        "loading": "Caricamento frammento…",
+        "loading": "Carico frammento…",
         "menuToExit": "Menu per uscire",
         "notBad": "Niente male!",
         "notEnoughTracks": "Aggiungi altri brani per giocare al quiz",
@@ -2954,7 +2954,7 @@
       },
       "name": "iPod",
       "nowPlaying": {
-        "live": "LIVE",
+        "live": "IN DIRETTA",
         "mix": "MIX",
         "trackPosition": "{{current}} di {{total}}"
       },
@@ -2981,8 +2981,8 @@
         "libraryYoutube": "Libreria: YouTube",
         "lightOff": "Luce SPENTA",
         "lightOn": "Luce ACCESA",
-        "loadingFurigana": "Caricamento furigana…",
-        "loadingLyrics": "Caricamento testi…",
+        "loadingFurigana": "Carico furigana…",
+        "loadingLyrics": "Carico testi…",
         "noTrack": "Nessun brano",
         "offset": "Offset",
         "repeatAll": "Ripeti TUTTI",
@@ -3067,12 +3067,12 @@
         "djLabel": "DJ",
         "end": "Chiudi sala KTV",
         "endSession": "Chiudi sala",
-        "hostLabel": "Host",
+        "hostLabel": "Ospite",
         "idle": "Nessuna canzone",
         "invite": "Invita nella sala KTV",
         "inviteTitle": "Invita",
         "inviteToListen": "Invita nella sala KTV",
-        "join": "Entra nella sala KTV...",
+        "join": "Entra nella sala KTV…",
         "joinButton": "Partecipa",
         "joinSession": "Entra nella sala KTV",
         "leave": "Esci dalla sala KTV",
@@ -3082,7 +3082,7 @@
         "listener": "persona",
         "listenerPlural": "persone",
         "listening": "{{count}} nella sala",
-        "loadingSessions": "Caricamento sale...",
+        "loadingSessions": "Carico sale…",
         "makeHost": "Rendi host",
         "noActiveSessions": "Nessuna sala KTV attiva",
         "nowPlaying": "Sta cantando",
@@ -3113,7 +3113,7 @@
         "previous": "Precedente",
         "repeatAll": "Ripeti tutto",
         "repeatOne": "Ripeti uno",
-        "shareApp": "Condividi App...",
+        "shareApp": "Condividi app…",
         "showLyrics": "Mostra Testo",
         "shuffle": "Casuale",
         "view": "Visualizza"
@@ -3228,11 +3228,11 @@
       "searchButton": "Cerca",
       "searchFailed": "Ricerca non riuscita",
       "searchPlaceholder": "Cerca su Mappe",
-      "searching": "Ricerca in corso…",
+      "searching": "Cerco…",
       "status": {
         "error": "Impossibile caricare Apple Maps: {{error}}",
-        "idle": "Inizializzazione di Apple Maps in corso…",
-        "loading": "Caricamento di Apple Maps…",
+        "idle": "Inizializzo Apple Maps…",
+        "loading": "Carico Apple Maps…",
         "missingToken": "Apple Maps non è ancora configurato. Chiedi allo sviluppatore di aggiungere le credenziali MapKit.",
         "tokenHint": "Il server firma automaticamente i token MapKit a breve durata una volta configurate le credenziali."
       },
@@ -3348,7 +3348,7 @@
         "filterSharpen": "Nitidezza",
         "filterVhs": "VHS",
         "filters": "Filtri",
-        "importFromDevice": "Importa da Dispositivo...",
+        "importFromDevice": "Importa da dispositivo…",
         "newFile": "Nuovo file",
         "open": "Apri…",
         "paintHelp": "Aiuto Pittura",
@@ -3386,7 +3386,7 @@
       "description": "Simulazione PC 3D",
       "dialogs": {
         "resetVirtualPcDescription": "Sei sicuro di voler resettare il PC? Questo cancellerà tutto lo stato attuale.",
-        "resetVirtualPcTitle": "Reset Virtual PC"
+        "resetVirtualPcTitle": "Reimposta PC virtuale"
       },
       "help": {
         "backToSystems": {
@@ -3415,8 +3415,8 @@
         }
       },
       "loadingEmulator": "CARICAMENTO EMULATORE",
-      "loadingGame": "Caricamento di {{gameName}}...",
-      "loadingSystem": "Caricamento di {{name}}...",
+      "loadingGame": "Carico {{gameName}}…",
+      "loadingSystem": "Carico {{name}}…",
       "menu": {
         "aboutVirtualPc": "Informazioni su Virtual PC",
         "aspectRatio": "Proporzioni",
@@ -3428,12 +3428,12 @@
         "loadGame": "Carica Gioco",
         "loadState": "Carica Stato",
         "mouseSensitivity": "Sensibilità Mouse",
-        "reset": "Reset",
+        "reset": "Reimposta",
         "saveState": "Salva Stato",
         "toggleMouseCapture": "Attiva/Disattiva Cattura Mouse",
         "virtualPcHelp": "Aiuto Virtual PC"
       },
-      "name": "Virtual PC",
+      "name": "PC virtuale",
       "presets": {
         "archlinux": {
           "description": "Linux rolling-release con window manager i3",
@@ -3590,9 +3590,9 @@
       "screenshotUnavailable": "Screenshot non disponibile. Usa lo strumento di screenshot del tuo browser (Cmd+Maiusc+4 su Mac, Win+Maiusc+S su Windows).",
       "selectSystem": "Seleziona un sistema operativo x86",
       "status": {
-        "booting": "Avvio in corso…",
+        "booting": "Avvio…",
         "bytesZero": "0 MB",
-        "connecting": "Connessione in corso…",
+        "connecting": "Connetto…",
         "emulatorStartFailed": "Impossibile avviare l'emulatore",
         "loading": "Carico…"
       },
@@ -3601,8 +3601,8 @@
         "games": "Giochi",
         "os": "OS"
       },
-      "title": "Virtual PC",
-      "virtualPc": "Virtual PC"
+      "title": "PC virtuale",
+      "virtualPc": "PC virtuale"
     },
     "photo-booth": {
       "ariaLabels": {
@@ -3709,8 +3709,8 @@
         "aboutSoundboard": "Informazioni su Pannello Suoni",
         "deleteSoundboard": "Elimina Pannello Suoni",
         "emojis": "Emoji",
-        "exportSoundboards": "Esporta Pannelli Suoni...",
-        "importSoundboards": "Importa Pannelli Suoni...",
+        "exportSoundboards": "Esporta pannelli suoni…",
+        "importSoundboards": "Importa pannelli suoni…",
         "loadSpecialSoundboards": "Carica Pannelli Suoni Speciali",
         "newSoundboard": "Nuovo Pannello Suoni",
         "renameSoundboard": "Rinomina Pannello Suoni",
@@ -3774,7 +3774,7 @@
         "syncStickies": "Sincronizza Note Adesive"
       },
       "name": "Memo",
-      "placeholder": "Scrivi una nota...",
+      "placeholder": "Scrivi una nota…",
       "title": "Memo"
     },
     "synth": {
@@ -4027,7 +4027,7 @@
         "heading2": "Intestaz. 2",
         "heading3": "Intestaz. 3",
         "html": "HTML",
-        "importFromDevice": "Importa da dispositivo...",
+        "importFromDevice": "Importa da dispositivo…",
         "italic": "Corsivo",
         "markdown": "Markdown",
         "newFile": "Nuovo file",
@@ -4082,13 +4082,13 @@
     "tv": {
       "channelBadge": "CH {{number}} — {{name}}",
       "create": {
-        "creating": "Creazione in corso...",
+        "creating": "Creo…",
         "description": "Descrivi un canale e l'IA lo programmerà con video di YouTube.",
         "errorEmpty": "Descrivi un canale per iniziare.",
         "errorGeneric": "Impossibile creare il canale. Riprova.",
         "errorNoVideos": "Nessun video trovato per questa idea. Prova una descrizione diversa.",
         "errorRateLimit": "Troppi canali creati. Attendi un momento e riprova.",
-        "inlinePlaceholder": "Crea un nuovo canale...",
+        "inlinePlaceholder": "Crea un nuovo canale…",
         "placeholder": "es. Trick e parchi da skateboard",
         "signInRequired": "Accedi per creare canali",
         "signInRequiredDescription": "Accedi o crea un account per programmare i tuoi canali TV.",
@@ -4144,16 +4144,16 @@
         "closedCaptions": "Sottotitoli non udenti",
         "controls": "Controlli",
         "deleteChannel": "Elimina canale",
-        "exportChannels": "Esporta canali...",
+        "exportChannels": "Esporta canali…",
         "fullScreen": "A tutto schermo",
-        "importChannels": "Importa canali...",
+        "importChannels": "Importa canali…",
         "lcdFilter": "Filtro LCD",
-        "newChannel": "Nuovo canale...",
+        "newChannel": "Nuovo canale…",
         "next": "Successivo",
         "pause": "Pausa",
         "play": "Riproduci",
         "previous": "Precedente",
-        "resetChannels": "Ripristina canali...",
+        "resetChannels": "Ripristina canali…",
         "showVideos": "Mostra video",
         "tvHelp": "Aiuto TV"
       },
@@ -4240,12 +4240,12 @@
         "aboutVideos": "Informazioni su Video",
         "addToLibrary": "Aggiungi alla libreria…",
         "allVideos": "Tutti i video",
-        "clearLibrary": "Svuota libreria...",
+        "clearLibrary": "Svuota libreria…",
         "controls": "Controlli",
         "fullScreen": "A tutto schermo",
         "library": "Libreria",
         "next": "Successivo",
-        "openVideo": "Apri video...",
+        "openVideo": "Apri video…",
         "pause": "Pausa",
         "play": "Riproduci",
         "previous": "Precedente",
@@ -4324,7 +4324,7 @@
         "repeat": "Ripeti",
         "shuffle": "Casuale",
         "skins": "Skin",
-        "stop": "Stop"
+        "stop": "Interrompi"
       },
       "name": "Winamp",
       "skins": {
@@ -4403,7 +4403,7 @@
         "tooShort": "La password deve contenere almeno 8 caratteri"
       },
       "createAccount": "Crea account",
-      "creatingAccount": "Creazione in corso...",
+      "creatingAccount": "Creo…",
       "dialogTitle": "Accesso a ryOS",
       "forgotPassword": "Password dimenticata?",
       "logIn": "Accedi",
@@ -4427,7 +4427,7 @@
         "identifierRequired": "Inserisci il tuo nome utente o l'email",
         "mismatch": "Le password non corrispondono",
         "newPassword": "Nuova password",
-        "resetting": "Reimpostazione in corso...",
+        "resetting": "Reimposto…",
         "sendCode": "Invia codice",
         "sending": "Invio…",
         "submit": "Reimposta password",
@@ -4444,7 +4444,7 @@
       "verifyEmailDescription": "Inserisci il codice di verifica che ti abbiamo inviato via email per completare la protezione del tuo account.",
       "verifyEmailTitle": "Verifica la tua email"
     },
-    "auto": "Auto",
+    "auto": "Automatico",
     "colors": {
       "blue": "blu",
       "green": "verde",
@@ -4491,7 +4491,7 @@
         "failedToCopyLink": "Impossibile copiare il link",
         "failedToGenerateShareLink": "Impossibile generare il link di condivisione per {{itemType}}",
         "from": "da",
-        "generating": "Generazione...",
+        "generating": "Genero…",
         "itemTypes": {
           "app": "App",
           "applet": "Applet",
@@ -4573,12 +4573,12 @@
     },
     "loading": {
       "default": "Carico…",
-      "openingAppletStore": "Apertura Applet Store...",
-      "openingSharedApplet": "Apertura applet condivisa...",
-      "openingSharedIELink": "Apertura link di Internet Explorer condiviso...",
-      "openingSharedIpodTrack": "Apertura traccia iPod condivisa...",
-      "openingSharedKaraokeTrack": "Apertura traccia Karaoke condivisa...",
-      "openingSharedVideo": "Apertura video condiviso..."
+      "openingAppletStore": "Apro Applet Store…",
+      "openingSharedApplet": "Apro applet condivisa…",
+      "openingSharedIELink": "Apro link di Internet Explorer condiviso…",
+      "openingSharedIpodTrack": "Apro traccia iPod condivisa…",
+      "openingSharedKaraokeTrack": "Apro traccia Karaoke condivisa…",
+      "openingSharedVideo": "Apro video condiviso…"
     },
     "menu": {
       "applications": "Applicazioni",
@@ -4588,7 +4588,7 @@
       "cut": "Taglia",
       "documents": "Documenti",
       "edit": "Modifica",
-      "file": "File",
+      "file": "Archivio",
       "go": "Vai",
       "help": "Aiuto",
       "images": "Immagini",
@@ -4597,7 +4597,7 @@
       "redo": "Ripeti",
       "selectAll": "Seleziona tutto",
       "settings": "Impostazioni",
-      "shareApp": "Condividi App...",
+      "shareApp": "Condividi app…",
       "sites": "Siti",
       "trash": "Cestino",
       "undo": "Annulla",
@@ -4613,7 +4613,7 @@
     "noResults": "Nessun risultato",
     "startMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
-      "run": "Esegui...",
+      "run": "Esegui…",
       "ryos98": "98",
       "ryosProfessional": "Professionale",
       "start": "Avvio"
@@ -4625,18 +4625,18 @@
       "title": "Scorri per cambiare finestra"
     },
     "system": {
-      "debugBootScreenTest": "Test schermata di avvio debug...",
+      "debugBootScreenTest": "Test schermata di avvio debug…",
       "formatFileSystem": "Formatta file system",
       "formatFileSystemDesc": "Sei sicuro di voler formattare il file system? Questo eliminerà definitivamente tutti i documenti (eccetto i documenti di esempio), le immagini e gli sfondi personalizzati. ryOS si riavvierà dopo la formattazione.",
-      "formattingFileSystem": "Formattazione del file system...",
-      "rebooting": "Riavvio in corso...",
+      "formattingFileSystem": "Formatto il file system…",
+      "rebooting": "Riavvio…",
       "resetAllSettings": "Reimposta tutte le impostazioni",
       "resetAllSettingsDesc": "Sei sicuro di voler reimpostare tutte le impostazioni? Questo cancellerà tutte le impostazioni salvate e ripristinerà gli stati predefiniti. ryOS si riavvierà dopo la reimpostazione.",
-      "resettingSystem": "Reimpostazione del sistema...",
-      "restoringSystem": "Ripristino del sistema...",
-      "systemRestoring": "Ripristino del sistema...",
-      "updatingToRyOS": "Aggiornamento a ryOS {{version}}...",
-      "updatingToRyOSWithBuild": "Aggiornamento a ryOS {{version}} ({{buildNumber}})..."
+      "resettingSystem": "Reimposto il sistema…",
+      "restoringSystem": "Ripristino il sistema…",
+      "systemRestoring": "Ripristino del sistema…",
+      "updatingToRyOS": "Aggiorno a ryOS {{version}}…",
+      "updatingToRyOSWithBuild": "Aggiorno a ryOS {{version}} ({{buildNumber}})…"
     },
     "toast": {
       "alreadyLatestVersion": "Stai già eseguendo l'ultima versione",
@@ -4718,7 +4718,7 @@
       "minimum": "Minimo",
       "network": "Rete",
       "offline": "Non in linea",
-      "online": "Online",
+      "online": "In linea",
       "performance": "Prestazioni",
       "reportTitle": "Istantanea dell'ambiente live",
       "runtime": {
@@ -4745,7 +4745,7 @@
     "showConsole": "Mostra console",
     "tabs": {
       "label": "Viste del pannello di debug",
-      "live": "Live",
+      "live": "In diretta",
       "logs": "Log"
     },
     "toggleLabel": "Debug",
