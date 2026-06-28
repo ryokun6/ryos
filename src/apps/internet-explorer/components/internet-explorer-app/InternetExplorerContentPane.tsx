@@ -146,7 +146,7 @@ export function InternetExplorerContentPane({
         ) : (
           <iframe
             ref={iframeRef}
-            src={finalUrl || ""}
+            src={finalUrl ?? undefined}
             className="border-0 block"
             style={{
               width: "calc(100% + 1px)",

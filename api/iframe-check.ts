@@ -66,6 +66,22 @@ const emptyRewriteStats = (): RewriteStats => ({
   forms: 0,
 });
 
+// Live modern sites can overwhelm the sandboxed iframe; keep their HTML static
+// while preserving ryOS's own injected navigation helper.
+const disableExecutableScripts = (
+  html: string
+): string =>
+  html.replace(
+    /<script\b([^>]*)>/gi,
+    (_match, attrs: string) => {
+      const strippedAttrs = attrs.replace(
+        /\s+type\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/i,
+        ""
+      );
+      return `<script type="text/plain" data-ryos-blocked-script="true"${strippedAttrs}>`;
+    }
+  );
+
 const getQueryValue = (value: string | string[] | undefined): string | undefined =>
   Array.isArray(value) ? value[0] : value;
 
@@ -892,6 +908,10 @@ export default apiHandler(
         html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, '');
         // Strip Content-Security-Policy headers embedded via <meta> with reversed attribute order
         html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
+
+        if (!isWaybackRequest) {
+          html = disableExecutableScripts(html);
+        }
 
         const appPublicOrigin = getAppPublicOrigin(origin);
         const rewriteResult = rewriteHtmlForProxy(html, {

@@ -542,6 +542,7 @@ export function useInternetExplorerLogic({
 
   // Ref to keep the most recent navigation token in sync without waiting for a render
   const navTokenRef = useRef<number>(0);
+  const pendingNavigationRequestRef = useRef<string | null>(null);
 
   const handleIframeLoad = async () => {
     if (
@@ -752,6 +753,36 @@ export function useInternetExplorerLogic({
 
       clearErrorDetails();
 
+      const newMode =
+        targetYearParam === "current"
+          ? "now"
+          : parseInt(targetYearParam) > new Date().getFullYear()
+          ? "future"
+          : "past";
+
+      // --- Trim the URL from input before navigating ---
+      // Use targetUrlParam directly as it's passed in, or trim the current store url if not passed
+      const urlToNavigate = (
+        targetUrlParam === url ? url.trim() : targetUrlParam
+      ).trim();
+      // --- End Trim ---
+
+      const navigationRequestKey = JSON.stringify([
+        urlToNavigate,
+        targetYearParam,
+        newMode,
+        forceRegenerate,
+      ]);
+      if (pendingNavigationRequestRef.current === navigationRequestKey) {
+        log.debug("Ignoring duplicate in-flight navigation", {
+          url: urlToNavigate,
+          year: targetYearParam,
+          mode: newMode,
+        });
+        return;
+      }
+      pendingNavigationRequestRef.current = navigationRequestKey;
+
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -765,19 +796,7 @@ export function useInternetExplorerLogic({
         iframeRef.current.src = "about:blank";
       }
 
-      const newMode =
-        targetYearParam === "current"
-          ? "now"
-          : parseInt(targetYearParam) > new Date().getFullYear()
-          ? "future"
-          : "past";
       const newToken = Date.now();
-
-      // --- Trim the URL from input before navigating ---
-      // Use targetUrlParam directly as it's passed in, or trim the current store url if not passed
-      const urlToNavigate = (
-        targetUrlParam === url ? url.trim() : targetUrlParam
-      ).trim();
       // Update store immediately so the input reflects the trimmed URL during loading
       setUrl(urlToNavigate);
       // --- End Trim ---
@@ -996,12 +1015,11 @@ export function useInternetExplorerLogic({
             }_t=${Date.now()}`;
           }
 
-          setFinalUrl(urlToLoad);
-
           if (iframeRef.current) {
             iframeRef.current.dataset.navToken = newToken.toString();
-            iframeRef.current.src = urlToLoad;
           }
+
+          setFinalUrl(urlToLoad);
         }
       } catch (error) {
         if (!abortController.signal.aborted) {
@@ -1017,6 +1035,10 @@ export function useInternetExplorerLogic({
             },
             normalizedTargetUrl
           );
+        }
+      } finally {
+        if (pendingNavigationRequestRef.current === navigationRequestKey) {
+          pendingNavigationRequestRef.current = null;
         }
       }
     },
