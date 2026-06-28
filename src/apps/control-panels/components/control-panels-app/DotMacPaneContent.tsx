@@ -85,7 +85,7 @@ export function DotMacPaneContent({
 }: DotMacPaneContentProps) {
   return (
     <div className="control-panels-pref-form space-y-0 h-full overflow-y-auto">
-      <div className="control-panels-pref-form-section space-y-3">
+      <div className="control-panels-pref-form-section">
         {username ? (
           <div className="flex items-center justify-between gap-4">
             <SyncSectionTitle
@@ -122,7 +122,7 @@ export function DotMacPaneContent({
 
         {username && autoSyncEnabled && (
           <>
-            <hr className="mt-2 mb-4 border-t" style={tabStyles.separatorStyle} />
+            <hr className="my-2 border-t" style={tabStyles.separatorStyle} />
             <div className="space-y-3">
               <SyncDomainRow
                 appId={AUTO_SYNC_ITEM_ICONS.files}
@@ -197,7 +197,7 @@ export function DotMacPaneContent({
             </div>
 
             {autoSyncLastError && (
-              <div className="flex items-start justify-between gap-3">
+              <div className="mt-3 flex items-start justify-between gap-3">
                 <p className="min-w-0 flex-1 text-[11px] text-red-700 font-geneva-12">
                   {t("apps.control-panels.autoSync.error", {
                     error: autoSyncLastError,
@@ -219,7 +219,7 @@ export function DotMacPaneContent({
           </>
         )}
 
-        <hr className="mt-2 mb-4 border-t" style={tabStyles.separatorStyle} />
+        <hr className="my-2 border-t" style={tabStyles.separatorStyle} />
         <div
           className={cn(
             "space-y-2",
