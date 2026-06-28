@@ -17,7 +17,10 @@ import {
   isDynamicWallpaper,
   resolveWallpaperSourceForSelection,
 } from "@/utils/dynamicWallpaper";
-import { setRuntimeDebugEnabled } from "@/utils/debug";
+import {
+  normalizeDebugMode,
+  setRuntimeDebugEnabled,
+} from "@/utils/debug";
 
 /** Default desktop wallpaper selection. */
 export const DEFAULT_WALLPAPER_PATH = buildShuffleDescriptor("nature");
@@ -377,12 +380,17 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         htmlPreviewSplit: state.htmlPreviewSplit,
       }),
       onRehydrateStorage: () => (state) => {
-        setRuntimeDebugEnabled(Boolean(state?.debugMode));
+        setRuntimeDebugEnabled(normalizeDebugMode(state?.debugMode));
       },
       merge: (persistedState, currentState) => {
+        const persisted =
+          persistedState as Partial<DisplaySettingsState> | undefined;
         const merged = {
           ...currentState,
-          ...(persistedState as Partial<DisplaySettingsState> | undefined),
+          ...persisted,
+          // Only the canonical boolean true enables debugging. Legacy strings
+          // such as "false"/"0" and malformed values hydrate as disabled.
+          debugMode: normalizeDebugMode(persisted?.debugMode),
         };
         const cw = merged.currentWallpaper;
         const ws = merged.wallpaperSource;

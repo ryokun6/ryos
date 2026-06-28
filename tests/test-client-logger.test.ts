@@ -8,7 +8,10 @@ import {
 } from "../src/utils/logger";
 import {
   DEBUG_FLAG_KEY,
+  isDebugEnabled,
+  normalizeDebugMode,
   refreshRuntimeDebugFlag,
+  resolveDebugEnabled,
   setRuntimeDebugEnabled,
 } from "../src/utils/debug";
 
@@ -102,7 +105,7 @@ describe("client logger", () => {
     refreshRuntimeDebugFlag();
   });
 
-  test("gates debug and info while keeping warnings visible", () => {
+  test("gates debug and info immediately while keeping warnings and errors visible", () => {
     const logger = createClientLogger("TestScope");
 
     logger.debug("hidden debug");
@@ -121,6 +124,54 @@ describe("client logger", () => {
     expect(logCalls).toHaveLength(1);
     expect(infoCalls).toHaveLength(1);
     expect(globalThis.localStorage.getItem(DEBUG_FLAG_KEY)).toBe("1");
+
+    setRuntimeDebugEnabled(false);
+    logger.debug("hidden again");
+    logger.info("hidden again");
+    logger.warn("still visible");
+    logger.error("still visible");
+
+    expect(logCalls).toHaveLength(1);
+    expect(infoCalls).toHaveLength(1);
+    expect(warnCalls).toHaveLength(2);
+    expect(errorCalls).toHaveLength(1);
+    expect(globalThis.localStorage.getItem(DEBUG_FLAG_KEY)).toBeNull();
+  });
+
+  test("an explicit disable overrides development and stored defaults", () => {
+    expect(
+      resolveDebugEnabled({
+        runtimeOverride: false,
+        storedOverride: true,
+        developmentDefault: true,
+      })
+    ).toBe(false);
+    expect(
+      resolveDebugEnabled({
+        runtimeOverride: null,
+        storedOverride: false,
+        developmentDefault: true,
+      })
+    ).toBe(false);
+  });
+
+  test("cleans up legacy non-affirmative debug flags at startup", () => {
+    for (const storedValue of ["false", "0", "true", "malformed", ""]) {
+      globalThis.localStorage.setItem(DEBUG_FLAG_KEY, storedValue);
+      refreshRuntimeDebugFlag();
+
+      expect(isDebugEnabled()).toBe(false);
+      expect(globalThis.localStorage.getItem(DEBUG_FLAG_KEY)).toBeNull();
+    }
+  });
+
+  test("normalizes malformed persisted Control Panels values as disabled", () => {
+    expect(normalizeDebugMode(true)).toBe(true);
+    expect(normalizeDebugMode(false)).toBe(false);
+    expect(normalizeDebugMode("false")).toBe(false);
+    expect(normalizeDebugMode("0")).toBe(false);
+    expect(normalizeDebugMode(1)).toBe(false);
+    expect(normalizeDebugMode(null)).toBe(false);
   });
 
   test("redacts sensitive fields and summarizes large values", () => {
@@ -196,7 +247,12 @@ describe("client logging guardrails", () => {
     const source = readSource("src/stores/useDisplaySettingsStore.ts");
 
     expect(source).toContain("setRuntimeDebugEnabled(enabled)");
-    expect(source).toContain("setRuntimeDebugEnabled(Boolean(state?.debugMode))");
+    expect(source).toContain(
+      "setRuntimeDebugEnabled(normalizeDebugMode(state?.debugMode))"
+    );
+    expect(source).toContain(
+      "debugMode: normalizeDebugMode(persisted?.debugMode)"
+    );
   });
 
   test("client code does not use raw console.log or console.debug outside logger sinks", () => {
