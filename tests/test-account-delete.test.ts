@@ -25,6 +25,7 @@ import {
   setUserEmailIndex,
   getUsernameByEmail,
 } from "../api/_utils/auth/_user-record";
+import { purgeUserAccount } from "../api/_utils/auth/_purge";
 
 const redis = createRedis();
 
@@ -172,6 +173,145 @@ describe("Account Deletion API", () => {
       body: JSON.stringify({ username, password: "testpassword123" }),
     });
     expect(login.status).toBe(401);
+  });
+
+  test("shared purge removes private lifecycle data and storage blobs", async () => {
+    const username = uniqueTestUsername("purgeprivate").toLowerCase();
+    const telegramUserId = `tg-${username}`;
+    const telegramChatId = `chat-${username}`;
+    const linkCode = `code-${username}`;
+    const blobUrl = `s3://test-bucket/sync/${username}/blob.gz`;
+    const sharedRoomId = `room-${username}`;
+    const sharedMessage = JSON.stringify({
+      id: "message-1",
+      username,
+      content: "shared content remains",
+    });
+
+    await setStoredUserRecord(redis, username, {
+      username,
+      lastActive: Date.now(),
+    });
+    const telegramAccount = JSON.stringify({
+      username,
+      telegramUserId,
+      chatId: telegramChatId,
+      telegramUsername: null,
+      firstName: null,
+      lastName: null,
+      linkedAt: Date.now(),
+    });
+    await redis.set(
+      redisKeys.integration.telegramAccountByUsername(username),
+      telegramAccount
+    );
+    await redis.set(
+      redisKeys.integration.telegramAccountByTelegramUser(telegramUserId),
+      telegramAccount
+    );
+    await redis.set(
+      redisKeys.integration.telegramPendingLink(username),
+      JSON.stringify({ username, code: linkCode, createdAt: Date.now() }),
+      { ex: 600 }
+    );
+    await redis.set(
+      redisKeys.integration.telegramLinkCode(linkCode),
+      JSON.stringify({ username, createdAt: Date.now() }),
+      { ex: 600 }
+    );
+    await redis.lpush(
+      redisKeys.integration.telegramHistory(telegramChatId),
+      JSON.stringify({ role: "user", content: "private", createdAt: Date.now() })
+    );
+    await redis.set(
+      redisKeys.integration.telegramHeartbeatSettings(username),
+      JSON.stringify({ instructions: "private", updatedAt: Date.now() })
+    );
+    await redis.set(
+      redisKeys.integration.telegramHeartbeat(username, "123"),
+      "1"
+    );
+    await redis.set(redisKeys.memory.index(username), JSON.stringify(["bio"]));
+    await redis.set(
+      redisKeys.memory.detail(username, "bio"),
+      JSON.stringify({ content: "private" })
+    );
+    await redis.set(
+      redisKeys.memory.daily(username, "2026-06-28"),
+      JSON.stringify({ entries: [{ content: "private" }] })
+    );
+    await redis.set(redisKeys.memory.processingLock(username), "1");
+    await redis.set(
+      redisKeys.system.userHeartbeats(username, "2026-06-28"),
+      JSON.stringify({ entries: [{ stateSummary: "private" }] })
+    );
+    await redis.zadd(redisKeys.presence.globalOnline(), {
+      score: Date.now(),
+      member: username,
+    });
+    await redis.hset(redisKeys.sync.v2Blobs(username), {
+      digest: JSON.stringify({ url: blobUrl, size: 7 }),
+    });
+    await redis.lpush(redisKeys.chat.roomMessages(sharedRoomId), sharedMessage);
+
+    const deletedObjects: string[] = [];
+    const result = await purgeUserAccount(redis, username, {
+      deleteObject: async (url) => {
+        expect(
+          await redis.hgetall(redisKeys.sync.v2Blobs(username))
+        ).not.toBeNull();
+        deletedObjects.push(url);
+      },
+    });
+
+    expect(result.objectStorageFailures).toBe(0);
+    expect(deletedObjects).toEqual([blobUrl]);
+    expect(
+      await redis.exists(
+        redisKeys.integration.telegramAccountByUsername(username),
+        redisKeys.integration.telegramAccountByTelegramUser(telegramUserId),
+        redisKeys.integration.telegramPendingLink(username),
+        redisKeys.integration.telegramLinkCode(linkCode),
+        redisKeys.integration.telegramHistory(telegramChatId),
+        redisKeys.integration.telegramHeartbeatSettings(username),
+        redisKeys.integration.telegramHeartbeat(username, "123"),
+        redisKeys.memory.index(username),
+        redisKeys.memory.detail(username, "bio"),
+        redisKeys.memory.daily(username, "2026-06-28"),
+        redisKeys.memory.processingLock(username),
+        redisKeys.system.userHeartbeats(username, "2026-06-28"),
+        redisKeys.sync.v2Blobs(username)
+      )
+    ).toBe(0);
+    expect(
+      await redis.zrange(redisKeys.presence.globalOnline(), 0, -1)
+    ).not.toContain(username);
+    expect(
+      await redis.lrange(redisKeys.chat.roomMessages(sharedRoomId), 0, -1)
+    ).toContainEqual(JSON.parse(sharedMessage));
+
+    await redis.del(redisKeys.chat.roomMessages(sharedRoomId));
+  });
+
+  test("shared purge retains the blob registry when object deletion fails", async () => {
+    const username = uniqueTestUsername("purgeblobfail").toLowerCase();
+    const registryKey = redisKeys.sync.v2Blobs(username);
+    await redis.hset(registryKey, {
+      digest: JSON.stringify({
+        url: `s3://test-bucket/sync/${username}/blob.gz`,
+        size: 7,
+      }),
+    });
+
+    const result = await purgeUserAccount(redis, username, {
+      deleteObject: async () => {
+        throw new Error("simulated storage failure");
+      },
+    });
+
+    expect(result.objectStorageFailures).toBe(1);
+    expect(await redis.hgetall(registryKey)).not.toBeNull();
+    await redis.del(registryKey);
   });
 
   test("admin account cannot self-delete (when present)", async () => {

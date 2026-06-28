@@ -57,7 +57,12 @@ async function deleteUser(redis: Redis, targetUsername: string): Promise<{ succe
   if (normalizedUsername === "ryo") return { success: false, error: "Cannot delete admin user" };
 
   try {
-    await purgeUserAccount(redis, normalizedUsername);
+    const purgeResult = await purgeUserAccount(redis, normalizedUsername);
+    if (purgeResult.objectStorageFailures > 0) {
+      console.warn(
+        `Deleted user ${normalizedUsername} with ${purgeResult.objectStorageFailures} object-storage cleanup failure(s)`
+      );
+    }
     return { success: true };
   } catch (error) {
     console.error(`Error deleting user ${normalizedUsername}:`, error);

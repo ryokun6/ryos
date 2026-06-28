@@ -373,7 +373,7 @@ describe("Auth Extra API Tests", () => {
     test("User search - with query (authed) → 200", async () => {
       if (!testToken || !testUsername) return;
       const res = await fetchWithAuth(
-        `${BASE_URL}/api/users?search=test`,
+        `${BASE_URL}/api/users?search=${encodeURIComponent(testUsername)}`,
         testUsername,
         testToken,
         { headers: makeRateLimitBypassHeaders() }
@@ -381,6 +381,15 @@ describe("Auth Extra API Tests", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(Array.isArray(data.users)).toBe(true);
+      expect(
+        data.users.some(
+          (user: { username?: string }) =>
+            user.username?.toLowerCase() === testUsername?.toLowerCase()
+        )
+      ).toBe(true);
+      for (const user of data.users) {
+        expect(Object.keys(user).sort()).toEqual(["lastActive", "username"]);
+      }
     });
 
     test("User search - empty query (authed) → 400", async () => {

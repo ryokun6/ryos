@@ -114,7 +114,18 @@ export default apiHandler<DeleteAccountRequest>(
     }
 
     try {
-      await purgeUserAccount(redis, username);
+      const purgeResult = await purgeUserAccount(redis, username);
+      if (purgeResult.objectStorageFailures > 0) {
+        logger.warn("Account deleted with object-storage cleanup failures", {
+          username,
+          objectStorageFailures: purgeResult.objectStorageFailures,
+        });
+      } else {
+        logger.info("Account data purged", {
+          username,
+          deletedCount: purgeResult.deletedCount,
+        });
+      }
       res.setHeader("Set-Cookie", buildClearAuthCookie());
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ success: true });

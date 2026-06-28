@@ -397,16 +397,12 @@ export default apiHandler<Record<string, unknown>>(
         // Permission check: changing lyrics source or force refresh requires auth
         // First-time fetch (no existing lyrics source) is allowed for anyone
         if ((force || lyricsSourceChanged) && song?.lyricsSource) {
-          const isPublicSong = !song.createdBy;
-          const allowAnonymousRefresh = isPublicSong && !username;
-          if (!allowAnonymousRefresh) {
-            if (!username) {
-              return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
-            }
-            const permission = canModifySong(song, username);
-            if (!permission.canModify) {
-              return errorResponse(permission.reason || "Only the song owner can change lyrics source", 403);
-            }
+          if (!username) {
+            return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
+          }
+          const permission = canModifySong(song, username);
+          if (!permission.canModify) {
+            return errorResponse(permission.reason || "Only the song owner can change lyrics source", 403);
           }
         }
 
@@ -1510,6 +1506,14 @@ export default apiHandler<Record<string, unknown>>(
 
         if (!song) {
           return errorResponse("Song not found", 404);
+        }
+
+        if (!username) {
+          return errorResponse("Unauthorized - authentication required", 401);
+        }
+        const permission = canModifySong(song, username);
+        if (!permission.canModify) {
+          return errorResponse(permission.reason || "Permission denied", 403);
         }
 
         const cleared: string[] = [];

@@ -13,12 +13,65 @@ import {
   getStoredUserRecord,
   deleteUserEmailIndex,
 } from "./_user-record.js";
-import { unlinkTelegramAccountByUsername } from "../telegram-link.js";
+import {
+  getLinkedTelegramAccountByUsername,
+  getTelegramPendingLinkSession,
+  unlinkTelegramAccountByUsername,
+} from "../telegram-link.js";
+import { deleteStoredObject } from "../storage.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 export interface PurgeAccountResult {
   /** Approximate number of Redis keys removed. */
   deletedCount: number;
+  /** Object-storage entries that could not be removed and remain registered. */
+  objectStorageFailures: number;
+}
+
+interface PurgeAccountOptions {
+  deleteObject?: (storageUrl: string) => Promise<void>;
+}
+
+function parseBlobStorageUrl(raw: unknown): string | null {
+  try {
+    const parsed =
+      typeof raw === "string"
+        ? (JSON.parse(raw) as unknown)
+        : raw;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "url" in parsed &&
+      typeof parsed.url === "string"
+    ) {
+      return parsed.url;
+    }
+  } catch {
+    // Ignore malformed registry entries. Deleting the registry still removes
+    // the only server-side reference to them.
+  }
+  return null;
+}
+
+async function deleteKeysMatching(
+  redis: Redis,
+  patterns: string[]
+): Promise<number> {
+  let deletedCount = 0;
+  for (const pattern of patterns) {
+    let cursor: string | number = 0;
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: pattern,
+        count: 100,
+      });
+      cursor = nextCursor;
+      if (keys.length > 0) {
+        deletedCount += await redis.del(...keys);
+      }
+    } while (String(cursor) !== "0");
+  }
+  return deletedCount;
 }
 
 /**
@@ -28,13 +81,44 @@ export interface PurgeAccountResult {
  */
 export async function purgeUserAccount(
   redis: Redis,
-  username: string
+  username: string,
+  options: PurgeAccountOptions = {}
 ): Promise<PurgeAccountResult> {
   const normalized = username.toLowerCase();
   let deletedCount = 0;
+  let objectStorageFailures = 0;
+  const deleteObject = options.deleteObject ?? deleteStoredObject;
 
-  // Read the profile first so we can clean up the email reverse-index.
+  // Read related records before deleting their reverse indexes.
   const record = await getStoredUserRecord(redis, normalized).catch(() => null);
+  const telegramAccount = await getLinkedTelegramAccountByUsername(
+    redis,
+    normalized
+  ).catch(() => null);
+  const pendingTelegramLink = await getTelegramPendingLinkSession(
+    redis,
+    normalized
+  ).catch(() => null);
+
+  // Delete known object-storage blobs before removing their Redis registry.
+  // Keep the registry if any deletion fails so operators retain the URLs
+  // needed to retry cleanup.
+  const blobRegistryKey = redisKeys.sync.v2Blobs(normalized);
+  const blobRegistry = await redis
+    .hgetall<Record<string, unknown>>(blobRegistryKey)
+    .catch(() => null);
+  const storageUrls = new Set(
+    Object.values(blobRegistry ?? {})
+      .map(parseBlobStorageUrl)
+      .filter((url): url is string => url !== null)
+  );
+  for (const storageUrl of storageUrls) {
+    try {
+      await deleteObject(storageUrl);
+    } catch {
+      objectStorageFailures += 1;
+    }
+  }
 
   // Recovery email reverse index.
   if (record?.email) {
@@ -54,21 +138,58 @@ export async function purgeUserAccount(
   // Sessions (canonical session set + grace token).
   deletedCount += await deleteAllUserTokens(redis, normalized).catch(() => 0);
 
-  // Telegram link (both directions).
+  // Telegram link, pending link, settings, history, and scheduled heartbeat
+  // records. Processed update IDs are global webhook idempotency records and
+  // contain no account content.
   await unlinkTelegramAccountByUsername(redis, normalized).catch(() => {});
-
-  // Sync data.
   deletedCount += await redis
     .del(
-      redisKeys.sync.v2Seq(normalized),
-      redisKeys.sync.v2Kv(normalized),
-      redisKeys.sync.v2Journal(normalized),
-      redisKeys.sync.v2Blobs(normalized),
-      redisKeys.sync.v2Lock(normalized),
-      redisKeys.sync.v2TtlTouched(normalized),
-      redisKeys.sync.autoSyncPreference(normalized)
+      redisKeys.integration.telegramPendingLink(normalized),
+      redisKeys.integration.telegramHeartbeatSettings(normalized),
+      ...(pendingTelegramLink
+        ? [redisKeys.integration.telegramLinkCode(pendingTelegramLink.code)]
+        : []),
+      ...(telegramAccount
+        ? [redisKeys.integration.telegramHistory(telegramAccount.chatId)]
+        : [])
     )
     .catch(() => 0);
+  deletedCount += await deleteKeysMatching(redis, [
+    `${redisKeys.integration.telegramHeartbeat(normalized, "")}:*`,
+  ]).catch(() => 0);
 
-  return { deletedCount };
+  // AI memories, daily notes, processing state, and heartbeat history.
+  const memoryBase = redisKeys.memory.index(normalized).replace(/:index$/, "");
+  deletedCount += await redis
+    .del(
+      redisKeys.memory.index(normalized),
+      redisKeys.memory.processingLock(normalized)
+    )
+    .catch(() => 0);
+  deletedCount += await deleteKeysMatching(redis, [
+    `${memoryBase}:detail:*`,
+    `${memoryBase}:daily:*`,
+    `${redisKeys.system.userHeartbeats(normalized, "")}:*`,
+  ]).catch(() => 0);
+
+  // Remove the deleted account from global online presence.
+  deletedCount += await redis
+    .zrem(redisKeys.presence.globalOnline(), normalized)
+    .catch(() => 0);
+
+  // Sync data.
+  const syncKeys = [
+    redisKeys.sync.v2Seq(normalized),
+    redisKeys.sync.v2Kv(normalized),
+    redisKeys.sync.v2Journal(normalized),
+    redisKeys.sync.v2Lock(normalized),
+    redisKeys.sync.v2TtlTouched(normalized),
+    redisKeys.sync.autoSyncPreference(normalized),
+  ];
+  if (objectStorageFailures === 0) {
+    syncKeys.push(blobRegistryKey);
+  }
+  deletedCount += await redis.del(...syncKeys).catch(() => 0);
+
+  return { deletedCount, objectStorageFailures };
 }

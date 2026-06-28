@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import * as authApi from "../src/api/auth";
 
 const storeSource = readFileSync("src/stores/useChatsStore.ts", "utf8");
+const chatApiSource = readFileSync("api/chat.ts", "utf8");
 
 describe("chat auth API wiring", () => {
   test("routes auth HTTP calls through src/api/auth", () => {
@@ -39,5 +40,10 @@ describe("chat auth API wiring", () => {
     ] as const) {
       expect(typeof authApi[symbol]).toBe("function");
     }
+  });
+
+  test("does not log AI prompt or response content snippets", () => {
+    expect(chatApiSource).not.toContain("contentStr.substring");
+    expect(chatApiSource).not.toContain('finishReason=${finishReason}): "${greeting}"');
   });
 });

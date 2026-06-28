@@ -171,7 +171,9 @@ export async function handleGetUsers(
       } while (cursor !== 0 && users.size < maxResults);
     }
 
-    const limitedUsers = [...users.values()].slice(0, maxResults);
+    const limitedUsers = [...users.values()]
+      .slice(0, maxResults)
+      .map(({ username, lastActive }) => ({ username, lastActive }));
 
     logInfo(
       requestId,

@@ -4,7 +4,20 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "./test-utils";
+import {
+  BASE_URL,
+  fetchWithAuth,
+  fetchWithOrigin,
+  getTokenFromAuthCookie,
+  makeRateLimitBypassHeaders,
+  uniqueTestUsername,
+} from "./test-utils";
+import { createRedis } from "../api/_utils/redis";
+import {
+  canModifySong,
+  getSong,
+  saveSong,
+} from "../api/_utils/_song-service";
 
 // Test song ID (a known YouTube video)
 const TEST_SONG_ID = "dQw4w9WgXcQ"; // Rick Astley - Never Gonna Give You Up
@@ -19,6 +32,18 @@ let cachedLyricsSource: {
   artist: string;
   album?: string;
 } | null = null;
+
+async function registerSongTestUser(username: string): Promise<string> {
+  const response = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: makeRateLimitBypassHeaders(),
+    body: JSON.stringify({ username, password: "testpassword123" }),
+  });
+  expect(response.status).toBe(201);
+  const token = getTokenFromAuthCookie(response);
+  expect(token).toBeTruthy();
+  return token as string;
+}
 
 describe("GET /api/songs/{id}", () => {
   test("GET non-existent song returns 404", async () => {
@@ -217,11 +242,120 @@ describe("POST /api/songs/{id} action: fetch-lyrics", () => {
         force: true,
       }),
     });
-    expect(res.status === 200 || res.status === 404).toBe(true);
-    if (res.status === 200) {
-      const cacheHeader = res.headers.get("X-Lyrics-Cache");
-      expect(cacheHeader).not.toBe("HIT");
-    }
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("POST /api/songs/{id} destructive operation permissions", () => {
+  test("keeps public, first-sharer, and ryo collaboration permissions", () => {
+    const now = Date.now();
+    const publicSong = {
+      id: "purgeSong03",
+      title: "Public",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const claimedSong = {
+      id: "purgeSong04",
+      title: "Claimed",
+      createdBy: "firstsharer",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    expect(canModifySong(publicSong, "collaborator").canModify).toBe(true);
+    expect(canModifySong(claimedSong, "firstsharer").canModify).toBe(true);
+    expect(canModifySong(claimedSong, "ryo").canModify).toBe(true);
+    expect(canModifySong(claimedSong, "someoneelse").canModify).toBe(false);
+  });
+
+  test("requires auth and preserves public collaboration and claimed ownership", async () => {
+    const redis = createRedis();
+    const publicSongId = "purgeSong01";
+    const claimedSongId = "purgeSong02";
+    const owner = uniqueTestUsername("songowner").toLowerCase();
+    const collaborator = uniqueTestUsername("songcollab").toLowerCase();
+    const ownerToken = await registerSongTestUser(owner);
+    const collaboratorToken = await registerSongTestUser(collaborator);
+    const cachedContent = {
+      translations: { es: ["hola"] },
+      furigana: [[{ text: "歌", reading: "うた" }]],
+      soramimi: [[{ text: "uta" }]],
+    };
+
+    await saveSong(redis, {
+      id: publicSongId,
+      title: "Public song",
+      ...cachedContent,
+    });
+    await saveSong(redis, {
+      id: claimedSongId,
+      title: "Claimed song",
+      createdBy: owner,
+      ...cachedContent,
+    });
+
+    const anonymousClear = await fetchWithOrigin(
+      `${BASE_URL}/api/songs/${publicSongId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear-cached-data",
+          clearTranslations: true,
+        }),
+      }
+    );
+    expect(anonymousClear.status).toBe(401);
+
+    const publicClear = await fetchWithAuth(
+      `${BASE_URL}/api/songs/${publicSongId}`,
+      collaborator,
+      collaboratorToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear-cached-data",
+          clearTranslations: true,
+        }),
+      }
+    );
+    expect(publicClear.status).toBe(200);
+    expect(
+      (await getSong(redis, publicSongId, { includeTranslations: true }))
+        ?.translations
+    ).toEqual({});
+
+    const nonOwnerClear = await fetchWithAuth(
+      `${BASE_URL}/api/songs/${claimedSongId}`,
+      collaborator,
+      collaboratorToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear-cached-data",
+          clearFurigana: true,
+        }),
+      }
+    );
+    expect(nonOwnerClear.status).toBe(403);
+
+    const ownerClear = await fetchWithAuth(
+      `${BASE_URL}/api/songs/${claimedSongId}`,
+      owner,
+      ownerToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear-cached-data",
+          clearFurigana: true,
+        }),
+      }
+    );
+    expect(ownerClear.status).toBe(200);
   });
 });
 
