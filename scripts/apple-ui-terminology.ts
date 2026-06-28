@@ -12,6 +12,12 @@
 
 import { RAW_APPLE_UI_TERMINOLOGY } from "./apple-ui-terminology-data";
 
+export const APPLE_STYLE_GUIDE_SOURCE = {
+  edition: "June 2026",
+  sha256:
+    "76118d81e4ff9eb74b1217ff8b82bbd01f62d1ff0057a1802bec288d20a5bbfe",
+} as const;
+
 export const TRANSLATION_LOCALES = [
   "zh-TW",
   "ja",

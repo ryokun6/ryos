@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import i18next from "i18next";
 import {
+  APPLE_STYLE_GUIDE_SOURCE,
   APPLE_UI_TERMINOLOGY,
   getExpectedAppleUiTerm,
 } from "../scripts/apple-ui-terminology";
@@ -9,6 +10,27 @@ import en from "../src/lib/locales/en/translation.json";
 import ru from "../src/lib/locales/ru/translation.json";
 
 describe("translation audit", () => {
+  test("uses Apple English account and punctuation style", () => {
+    expect(APPLE_STYLE_GUIDE_SOURCE.edition).toBe("June 2026");
+    expect(en.common.auth.logIn).toBe("Sign In");
+    expect(en.common.auth.logOut).toBe("Sign Out");
+    expect(en.common.auth.loginDescription).toBe("Sign in to your account");
+
+    const pending: unknown[] = [en];
+    const asciiEllipsisValues: string[] = [];
+    while (pending.length) {
+      const value = pending.pop();
+      if (typeof value === "string") {
+        if (value.includes("...")) {
+          asciiEllipsisValues.push(value);
+        }
+      } else if (value && typeof value === "object") {
+        pending.push(...Object.values(value));
+      }
+    }
+    expect(asciiEllipsisValues).toEqual([]);
+  });
+
   test("uses the expanded terminology extracted from Apple glossaries", () => {
     expect(Object.keys(APPLE_UI_TERMINOLOGY).length).toBeGreaterThanOrEqual(100);
     expect(APPLE_UI_TERMINOLOGY.Settings.pt).toBe("Ajustes");

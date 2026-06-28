@@ -64,6 +64,28 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "it": "Logout",
     "ru": "Завершить сеанс"
   },
+  "Sign In": {
+    "zh-TW": "登入",
+    "ja": "サインイン",
+    "ko": "로그인",
+    "fr": "Se connecter",
+    "de": "Anmelden",
+    "es": "Iniciar sesión",
+    "pt": "Iniciar Sessão",
+    "it": "Accedi",
+    "ru": "Войти"
+  },
+  "Sign Out": {
+    "zh-TW": "登出",
+    "ja": "サインアウト",
+    "ko": "로그아웃",
+    "fr": "Fermer la session",
+    "de": "Abmelden",
+    "es": "Cerrar sesión",
+    "pt": "Finalizar Sessão",
+    "it": "Esci",
+    "ru": "Выйти"
+  },
   "Cancel": {
     "zh-TW": "取消",
     "ja": "キャンセル",
