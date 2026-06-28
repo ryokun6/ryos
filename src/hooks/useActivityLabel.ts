@@ -3,20 +3,14 @@
  * Centralizes the logic for determining what label to show.
  */
 
-// Map language codes to display names
-const languageNames: Record<string, string> = {
-  en: "English",
-  ja: "日本語",
-  ko: "한국어",
-  "zh-CN": "中文",
-  "zh-TW": "中文",
-  es: "Español",
-  fr: "Français",
-  de: "Deutsch",
-  it: "Italiano",
-  pt: "Português",
-  ru: "Русский",
-};
+import i18n from "@/lib/i18n";
+import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
+
+const translationLanguageLabelKeys = new Map(
+  TRANSLATION_LANGUAGES.flatMap(({ code, labelKey }) =>
+    code && labelKey ? [[code, labelKey] as const] : []
+  )
+);
 
 export interface ActivityInfo {
   isLoadingLyrics?: boolean;
@@ -39,6 +33,18 @@ export interface ActivityLabelResult {
 
 /** Translation function type */
 type TranslationFn = (key: string, options?: Record<string, unknown>) => string;
+
+function getTranslationLanguageName(code: string, t?: TranslationFn): string {
+  const labelKey = translationLanguageLabelKeys.get(code);
+
+  if (!labelKey) {
+    return code;
+  }
+
+  return t
+    ? t(labelKey, { defaultValue: code })
+    : i18n.t(labelKey, { defaultValue: code });
+}
 
 /**
  * Computes the activity label based on current loading states.
@@ -74,7 +80,7 @@ export function getActivityLabel(info: ActivityInfo, t?: TranslationFn): Activit
   if (isAddingSong) {
     label = translate("common.activity.adding", "Adding");
   } else if (isTranslating) {
-    const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : null;
+    const langName = translationLanguage ? getTranslationLanguageName(translationLanguage, t) : null;
     if (translationProgress !== undefined && translationProgress < 100) {
       label = langName ? `${Math.round(translationProgress)}% ${langName}` : `${Math.round(translationProgress)}%`;
     } else {
