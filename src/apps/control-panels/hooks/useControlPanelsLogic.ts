@@ -932,7 +932,9 @@ export function useControlPanelsLogic({
           try {
             const db = await ensureIndexedDBInitialized();
             const restorePromises = BACKUP_INDEXEDDB_STORES.flatMap((storeName) => {
-              const items = backup.indexedDB?.[storeName];
+              const items =
+                backup.indexedDB?.[storeName] ??
+                (storeName === "persisted_state" ? [] : null);
               if (!items) {
                 return [];
               }

@@ -86,6 +86,12 @@ export function useTimeMachineView({
   // Get main app state for comparison
   const storeUrl = useInternetExplorerStore((state) => state.url);
   const storeYear = useInternetExplorerStore((state) => state.year);
+  const debugProxySessions = useInternetExplorerStore(
+    (state) => state.debugProxySessions
+  );
+  const debugForceHeadless = useInternetExplorerStore(
+    (state) => state.debugForceHeadless
+  );
   // Get shader support status from display settings store
   const shaderEffectEnabled = useDisplaySettingsStore((state) => state.shaderEffectEnabled);
   const setShaderEffectEnabled = useDisplaySettingsStore(
@@ -108,6 +114,18 @@ export function useTimeMachineView({
   // Determine if the Go button should be disabled
   const isGoButtonDisabled =
     !activeYear || (storeUrl === currentUrl && storeYear === activeYear);
+
+  const appendIeDebugParams = useCallback(
+    (proxyUrl: string): string => {
+      const extra: string[] = [];
+      if (debugForceHeadless) extra.push("render=headless", "dbg=1");
+      if (debugProxySessions) extra.push("ieSessions=1", "dbg=1");
+      if (extra.length === 0) return proxyUrl;
+      const sep = proxyUrl.includes("?") ? "&" : "?";
+      return `${proxyUrl}${sep}${Array.from(new Set(extra)).join("&")}`;
+    },
+    [debugForceHeadless, debugProxySessions]
+  );
 
   // Shader selection state from display settings store
   const selectedShaderType = useDisplaySettingsStore((state) => state.selectedShaderType);
@@ -392,9 +410,11 @@ export function useTimeMachineView({
         if (previewYear === "current") {
           // 2a. 'current' uses direct proxy URL
           log.debug("Using current URL source", { year: previewYear });
-          const proxyUrl = `/api/iframe-check?url=${encodeURIComponent(
-            currentUrl
-          )}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`;
+          const proxyUrl = appendIeDebugParams(
+            `/api/iframe-check?url=${encodeURIComponent(
+              currentUrl
+            )}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`
+          );
           if (
             abortController.signal.aborted ||
             previewRequestIdRef.current !== myRequestId
@@ -416,9 +436,11 @@ export function useTimeMachineView({
             const currentMonth = (new Date().getMonth() + 1)
               .toString()
               .padStart(2, "0");
-            const proxyUrl = `/api/iframe-check?mode=proxy&url=${encodeURIComponent(
-              currentUrl
-            )}&year=${yearString}&month=${currentMonth}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`;
+            const proxyUrl = appendIeDebugParams(
+              `/api/iframe-check?mode=proxy&url=${encodeURIComponent(
+                currentUrl
+              )}&year=${yearString}&month=${currentMonth}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`
+            );
             if (
               abortController.signal.aborted ||
               previewRequestIdRef.current !== myRequestId
@@ -516,7 +538,7 @@ export function useTimeMachineView({
     return () => {
       abortController.abort();
     };
-  }, [previewYear, isOpen, currentUrl]); // Dependencies
+  }, [appendIeDebugParams, previewYear, isOpen, currentUrl]); // Dependencies
 
 
   const maskStyle = getMaskStyle(scrollState.canScroll);

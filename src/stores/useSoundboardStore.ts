@@ -130,6 +130,14 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
             "Error loading initial soundboards, creating default:",
             error
           );
+          if (get().hasInitialized || get().boards.length > 0) {
+            const existing = get().boards;
+            set({
+              hasInitialized: true,
+              activeBoardId: get().activeBoardId ?? existing[0]?.id ?? null,
+            });
+            return;
+          }
           const defaultBoard = createDefaultBoard();
           set({
             boards: [defaultBoard],

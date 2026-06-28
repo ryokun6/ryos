@@ -67,6 +67,9 @@ describe("manual backup Sync v2 metadata filtering", () => {
     expect(resetBlock.indexOf("await settlePersistWrites()")).toBeLessThan(
       resetBlock.indexOf("haltDebouncedPersistWrites()")
     );
+    expect(restoreBlock).toContain(
+      'storeName === "persisted_state" ? [] : null'
+    );
     expect(restoreBlock.indexOf("await settlePersistWrites()")).toBeLessThan(
       restoreBlock.indexOf("haltDebouncedPersistWrites()")
     );

@@ -42,13 +42,10 @@ const FORWARDABLE_SUBRESOURCE_HEADERS = [
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
- * Whether the caller is permitted to opt into the IE Debug proxy features
- * (cookie/session passthrough, forced headless). This is the "gate under admin
- * ryo user, optional in debug mode" check:
- *   - `dbg=1` — the IE Debug menu (shown only to the admin user or in global
- *     debug mode) sends this to opt in, OR
- *   - the authenticated caller is the `ryo` admin (resolved from the
- *     first-party auth cookie that same-origin iframe navigations carry).
+ * Whether the caller is permitted to opt into IE proxy features that can expose
+ * cookies, provider-backed browser sessions, or extra compute. The client may
+ * send `dbg=1` as an intent signal from the IE Debug menu, but the server only
+ * trusts first-party auth for the `ryo` admin user.
  *
  * Env flags (`IE_PROXY_SESSIONS`, headless provider) are checked separately by
  * each caller and make a feature always-on regardless of this gate.
@@ -61,7 +58,6 @@ async function isIeDebugCallerPermitted(
   req: VercelRequest,
   redis: Redis
 ): Promise<boolean> {
-  if (req.query.dbg === "1" || req.query.dbg === "true") return true;
   try {
     const auth = await resolveRequestAuth(req, redis);
     return auth.user?.username === "ryo";
@@ -902,6 +898,14 @@ export default apiHandler(
     if (mode === "live") {
       logger.info("Executing in 'live' mode");
       res.setHeader("Content-Type", "application/json");
+      if (!(await isIeDebugCallerPermitted(req, redis))) {
+        logger.response(403, Date.now() - startTime);
+        return res.status(403).json({
+          error: true,
+          type: "forbidden",
+          message: "Live browser mode requires an authorized debug caller.",
+        });
+      }
       if (!isIeLiveBrowserConfigured()) {
         logger.response(501, Date.now() - startTime);
         return res.status(501).json({
@@ -1398,9 +1402,12 @@ export default apiHandler(
 
     var hrefDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(loc), 'href');
     if (hrefDescriptor && hrefDescriptor.set) {
+      var originalHrefGetter = hrefDescriptor.get;
       var originalHrefSetter = hrefDescriptor.set;
       Object.defineProperty(loc, 'href', {
-        get: function() { return loc.href; },
+        get: function() {
+          return originalHrefGetter ? originalHrefGetter.call(loc) : document.URL;
+        },
         set: function(url) {
           if (!postNavigation(url, 'location-href')) {
             originalHrefSetter.call(loc, url);

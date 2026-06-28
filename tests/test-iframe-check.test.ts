@@ -89,6 +89,16 @@ describe("iframe-check", () => {
       expect(html).not.toContain("Geneva-12");
     });
 
+    test("Proxy mode - location.href getter uses original descriptor", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=https://example.com&mode=proxy`
+      );
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain("originalHrefGetter.call(loc)");
+      expect(html).not.toContain("get: function() { return loc.href; }");
+    });
+
     test("Proxy mode - invalid URL", async () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/iframe-check?url=https://this-domain-does-not-exist-xyz123.com&mode=proxy`
@@ -241,7 +251,7 @@ describe("iframe-check", () => {
       expect(setCookie).not.toContain("ie_psid=");
     });
 
-    test("arms proxy sessions on a top-level GET when ieSessions=1&dbg=1 opts in", async () => {
+    test("does not trust dbg=1 as server-side permission for proxy sessions", async () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/iframe-check?ieSessions=1&dbg=1&url=${encodeURIComponent(
           "https://example.com"
@@ -249,9 +259,7 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const setCookie = res.headers.get("set-cookie") || "";
-      expect(setCookie).toContain("ie_psid=");
-      expect(setCookie).toContain("HttpOnly");
-      expect(setCookie).toContain("Path=/api");
+      expect(setCookie).not.toContain("ie_psid=");
     });
 
     test("does not arm sessions for raw sub-resource requests even when opted in", async () => {
@@ -263,6 +271,17 @@ describe("iframe-check", () => {
       expect(res.status).toBe(200);
       const setCookie = res.headers.get("set-cookie") || "";
       expect(setCookie).not.toContain("ie_psid=");
+    });
+
+    test("does not trust dbg=1 as server-side permission for live mode", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?mode=live&dbg=1&url=${encodeURIComponent(
+          "https://example.com"
+        )}`
+      );
+      expect(res.status).toBe(403);
+      const data = await res.json();
+      expect(data.type).toBe("forbidden");
     });
   });
 });
