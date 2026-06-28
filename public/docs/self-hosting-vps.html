@@ -495,6 +495,16 @@ REDIS_KV_REST_API_TOKEN="..."</code></pre>
 <p>Email-based account recovery uses Resend. Set both variables together; if either one is missing, ryOS falls back to Telegram-linked account recovery when available.</p>
 <pre><code>RESEND_API_KEY="..."
 RECOVERY_EMAIL_FROM="ryOS &lt;noreply@example.com&gt;"</code></pre>
+<h3>Optional Internet Explorer proxy enhancements</h3>
+<p>The default IE proxy works without extra services. These variables enable heavier browser features for self-hosted deployments that want them:</p>
+<pre><code>IE_PROXY_SESSIONS=1
+HEADLESS_RENDER_URL_TEMPLATE="https://renderer.example.com/render?url={url}"
+HEADLESS_RENDER_AUTH_HEADER="Authorization"
+HEADLESS_RENDER_AUTH_TOKEN="..."
+HEADLESS_BROWSER_WS_ENDPOINT="wss://chrome.example.com?token=..."
+IE_LIVE_BROWSER=1
+IE_LIVE_VIEW_URL_TEMPLATE="https://browser.example.com/live?url={url}"</code></pre>
+<p>Use <code>IE_PROXY_SESSIONS=1</code> only when you want the proxy to keep a per-host cookie jar in Redis for embedded sites. Headless and live-browser providers are optional escape hatches for bot-blocked, JavaScript-heavy, or fully interactive sites.</p>
 <hr>
 <h2>5) Realtime backend options</h2>
 <p>ryOS supports <strong>two realtime modes</strong>.</p>
@@ -514,14 +524,34 @@ REALTIME_WS_PATH="/ws"</code></pre>
 <p>ryOS supports <strong>two object storage backends</strong> for cloud sync (backups, wallpapers, images).</p>
 <h3>Option A — S3-compatible (recommended for self-hosted)</h3>
 <p>Works with MinIO, Cloudflare R2, Backblaze B2, AWS S3, or any S3-compatible provider:</p>
-<pre><code>STORAGE_PROVIDER=s3
+<pre><code># STORAGE_PROVIDER may be omitted; S3 is auto-detected from the S3_* variables.
 S3_BUCKET=ryos-sync
 S3_REGION=us-east-1
 S3_ENDPOINT=https://s3.your-provider.com
 S3_PUBLIC_ENDPOINT=https://s3.your-provider.com  # public-facing URL (for presigned URLs)
 S3_ACCESS_KEY_ID=your-access-key
 S3_SECRET_ACCESS_KEY=your-secret-key
-S3_FORCE_PATH_STYLE=true   # required for MinIO and some providers</code></pre>
+S3_FORCE_PATH_STYLE=true   # required for MinIO and some providers
+# Optional: set STORAGE_CLIENT_UPLOAD to server-mediated uploads when bucket CORS is unavailable.</code></pre>
+<h4>Bucket CORS (required for Cloud Sync)</h4>
+<p>Cloud Sync uploads and downloads use <strong>presigned URLs</strong> opened directly in the browser. The object storage bucket must allow cross-origin <code>PUT</code>, <code>GET</code>, and <code>HEAD</code> from your app origins. Without this, sync fails with errors like “Upload failed before an HTTP response was received”.</p>
+<p>Apply the repo helper (reads <code>.env.local</code> / env vars):</p>
+<pre><code>bun run scripts/configure-s3-cors.ts</code></pre>
+<p>It allows local dev origins (<code>http://localhost:5173</code>, etc.), <code>APP_PUBLIC_ORIGIN</code>, and any explicit entries in <code>API_ALLOWED_ORIGINS</code> (wildcard patterns such as <code>*.example.com</code> are skipped — list concrete origins in <code>S3_CORS_EXTRA_ORIGINS</code> instead).</p>
+<p>If presigned browser uploads still fail because the bucket service does not return CORS headers on presigned <code>PUT</code> responses, set <code>STORAGE_CLIENT_UPLOAD</code> to server-mediated uploads so uploads go through <code>/api/sync/v2/blob-upload</code> instead of directly to object storage.</p>
+<p>Example manual CORS rule (Hetzner, MinIO, AWS S3, R2, etc.):</p>
+<pre><code>&lt;CORSConfiguration&gt;
+  &lt;CORSRule&gt;
+    &lt;AllowedOrigin&gt;https://your-domain.com&lt;/AllowedOrigin&gt;
+    &lt;AllowedOrigin&gt;http://localhost:5173&lt;/AllowedOrigin&gt;
+    &lt;AllowedMethod&gt;PUT&lt;/AllowedMethod&gt;
+    &lt;AllowedMethod&gt;GET&lt;/AllowedMethod&gt;
+    &lt;AllowedMethod&gt;HEAD&lt;/AllowedMethod&gt;
+    &lt;AllowedHeader&gt;*&lt;/AllowedHeader&gt;
+    &lt;ExposeHeader&gt;ETag&lt;/ExposeHeader&gt;
+    &lt;MaxAgeSeconds&gt;3600&lt;/MaxAgeSeconds&gt;
+  &lt;/CORSRule&gt;
+&lt;/CORSConfiguration&gt;</code></pre>
 <h3>Option B — Vercel Blob</h3>
 <p>Keeps compatibility with the existing Vercel-oriented setup:</p>
 <pre><code>STORAGE_PROVIDER=vercel-blob    # optional, auto-detected from token
@@ -541,7 +571,7 @@ API_ALLOWED_ORIGINS=https://your-domain.com
 REDIS_URL=redis://default:password@redis:6379/0
 REALTIME_PROVIDER=local
 REALTIME_WS_PATH=/ws
-STORAGE_PROVIDER=s3
+# STORAGE_PROVIDER may be omitted; S3 is auto-detected from the S3_* variables.
 S3_BUCKET=ryos-sync
 S3_REGION=us-east-1
 S3_ENDPOINT=https://s3.your-provider.com

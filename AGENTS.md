@@ -80,6 +80,10 @@ The following environment variables are required for full functionality:
 - `MUSICKIT_TEAM_ID` / `MUSICKIT_KEY_ID` / `MUSICKIT_PRIVATE_KEY` / `MUSICKIT_ORIGIN` - MusicKit JS v3 (Apple Music) used by the iPod's "Apple Music" library mode. Reuse the same `.p8` key as MapKit if both services are enabled on the key — the signer falls back to `MAPKIT_TEAM_ID` / `MAPKIT_KEY_ID` / `MAPKIT_PRIVATE_KEY` when the `MUSICKIT_*` variants are unset.
 - `IP_GEOLOCATION_URL_TEMPLATE` - Optional override for the IP-geolocation provider used as a fallback when Vercel's `geolocation()` returns nothing (defaults to `https://ipwho.is/{ip}`). Use this on Coolify / Docker / plain Bun deploys, or to switch to a paid provider. Use `{ip}` as the placeholder.
 - `IP_GEOLOCATION_DISABLED` - Set to `1`/`true` to disable the IP-geolocation fallback entirely (no outbound calls).
+- `IE_PROXY_SESSIONS` - Set to `1`/`true` to keep a Redis-backed per-host cookie jar for Internet Explorer proxy sessions. Leave unset for the default stateless proxy.
+- `HEADLESS_RENDER_URL_TEMPLATE` / `HEADLESS_RENDER_AUTH_HEADER` / `HEADLESS_RENDER_AUTH_TOKEN` - Optional HTTP render-service fallback for Internet Explorer proxy pages that block plain fetches or require client-side rendering. The template supports `{url}` and `{rawUrl}` placeholders.
+- `HEADLESS_BROWSER_WS_ENDPOINT` - Optional Chrome DevTools Protocol WebSocket endpoint for Internet Explorer headless-render fallback.
+- `IE_LIVE_BROWSER` / `IE_LIVE_VIEW_URL_TEMPLATE` - Optional live-browser handoff for Internet Explorer. Enable the flag and provide an embeddable live-view URL template with `{url}` or `{rawUrl}`.
 
 ### Non-Vercel Deployment Hardening
 
