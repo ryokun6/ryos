@@ -8,6 +8,7 @@ export interface ErrorPageProps {
   details?: string;
   footerText: string;
   showGoBackButtonInSuggestions?: boolean;
+  t: (key: string, options?: Record<string, unknown>) => string;
   onGoBack: () => void;
   onRetry?: () => void;
 }
@@ -20,6 +21,7 @@ export function ErrorPage({
   details,
   footerText,
   showGoBackButtonInSuggestions = true,
+  t,
   onGoBack,
   onRetry,
 }: ErrorPageProps) {
@@ -32,7 +34,9 @@ export function ErrorPage({
 
       <div className="h-px bg-neutral-300 my-5"></div>
 
-      <p className="mb-3">Please try the following:</p>
+      <p className="mb-3">
+        {t("apps.internet-explorer.pleaseTryTheFollowing")}
+      </p>
 
       <ul className="list-disc pl-6 mb-5 space-y-2">
         {(() => {
@@ -83,7 +87,7 @@ export function ErrorPage({
                               }}
                               className="text-red-600 underline"
                             >
-                              Back
+                              {t("apps.internet-explorer.back")}
                             </a>
                             {part}
                           </>
@@ -106,7 +110,7 @@ export function ErrorPage({
                                 }}
                                 className="text-red-600 underline"
                               >
-                                Refresh
+                                {t("apps.internet-explorer.refresh")}
                               </a>
                               {part}
                             </>

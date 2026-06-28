@@ -13,7 +13,7 @@
  */
 
 import { readdir, readFile } from "fs/promises";
-import { join, relative } from "path";
+import { basename, join, relative } from "path";
 
 interface ExtractedString {
   file: string;
@@ -107,6 +107,79 @@ const IGNORE_FILES = [
   ".spec.tsx",
   ".stories.tsx",
 ];
+
+function normalizePathForPattern(value: string): string {
+  return value.replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[|\\{}()[\]^$+?.]/g, "\\$&");
+}
+
+function globPatternToRegExp(pattern: string): RegExp {
+  let source = "";
+
+  for (let i = 0; i < pattern.length; i += 1) {
+    if (pattern.startsWith("**/", i)) {
+      source += "(?:.*/)?";
+      i += 2;
+      continue;
+    }
+
+    if (pattern.startsWith("**", i)) {
+      source += ".*";
+      i += 1;
+      continue;
+    }
+
+    const char = pattern[i];
+
+    if (char === "*") {
+      source += "[^/]*";
+      continue;
+    }
+
+    if (char === "{") {
+      const closingBraceIndex = pattern.indexOf("}", i + 1);
+      if (closingBraceIndex !== -1) {
+        const choices = pattern
+          .slice(i + 1, closingBraceIndex)
+          .split(",")
+          .map((choice) => escapeRegex(choice));
+        source += `(?:${choices.join("|")})`;
+        i = closingBraceIndex;
+        continue;
+      }
+    }
+
+    source += escapeRegex(char);
+  }
+
+  return new RegExp(`^${source}$`);
+}
+
+function pathMatchesPattern(filePath: string, pattern: string): boolean {
+  const relativePath = normalizePathForPattern(relative(process.cwd(), filePath));
+  const fileName = basename(filePath);
+  const normalizedPattern = normalizePathForPattern(pattern);
+
+  if (normalizedPattern.includes("*") || normalizedPattern.includes("{")) {
+    return globPatternToRegExp(normalizedPattern).test(relativePath);
+  }
+
+  return fileName.includes(pattern) || relativePath.includes(normalizedPattern);
+}
+
+function readOption(args: string[], name: string): string | undefined {
+  const prefixedValue = args
+    .find((arg) => arg.startsWith(`--${name}=`))
+    ?.split("=")[1];
+  if (prefixedValue) return prefixedValue;
+
+  const flagIndex = args.indexOf(`--${name}`);
+  const nextArg = flagIndex === -1 ? undefined : args[flagIndex + 1];
+  return nextArg && !nextArg.startsWith("--") ? nextArg : undefined;
+}
 
 /**
  * Check if a string should be ignored
@@ -235,8 +308,9 @@ async function analyzeFile(filePath: string): Promise<FileAnalysis> {
   const lines = content.split("\n");
   const context = getFileContext(filePath);
   
-  // Check if file already uses translations
-  const hasTranslation = content.includes("useTranslation") && content.includes('t("');
+  // Files can receive `t` from a parent component instead of calling the hook.
+  const hasTranslation =
+    content.includes("useTranslation") || /\bt\(\s*["'`]/.test(content);
   
   const strings: ExtractedString[] = [];
   const foundStrings = new Set<string>();
@@ -250,6 +324,8 @@ async function analyzeFile(filePath: string): Promise<FileAnalysis> {
       line.trim().startsWith("*") ||
       line.trim().startsWith("/*") ||
       line.includes("console.") ||
+      line.includes("log.") ||
+      line.includes(".key") ||
       line.includes("TODO:") ||
       line.includes("FIXME:")
     ) {
@@ -366,8 +442,8 @@ async function findTsxFiles(
           continue;
         }
         
-        // Check pattern filter
-        if (pattern && !entry.name.includes(pattern)) {
+        // Check pattern filter against both filenames and repo-relative paths.
+        if (pattern && !pathMatchesPattern(fullPath, pattern)) {
           continue;
         }
         
@@ -385,9 +461,9 @@ async function main() {
   // Parse arguments
   const args = process.argv.slice(2);
   const argSet = new Set(args);
-  const dirArg = args.find((arg) => arg.startsWith("--dir="))?.split("=")[1];
-  const patternArg = args.find((arg) => arg.startsWith("--pattern="))?.split("=")[1];
-  const excludeArg = args.find((arg) => arg.startsWith("--exclude="))?.split("=")[1];
+  const dirArg = readOption(args, "dir");
+  const patternArg = readOption(args, "pattern");
+  const excludeArg = readOption(args, "exclude");
   const excludeDirs = excludeArg ? excludeArg.split(",") : [];
   
   const startDir = dirArg ? join(process.cwd(), dirArg) : join(process.cwd(), "src");
@@ -414,11 +490,17 @@ async function main() {
     }
   }
   
-  // Filter out files with no strings or already translated
+  // A file can use translations and still contain hardcoded candidates.
   const untranslated = analyses.filter(
     (a) => !a.hasTranslation && a.strings.length > 0
   );
-  const translated = analyses.filter((a) => a.hasTranslation);
+  const partiallyTranslated = analyses.filter(
+    (a) => a.hasTranslation && a.strings.length > 0
+  );
+  const translated = analyses.filter(
+    (a) => a.hasTranslation && a.strings.length === 0
+  );
+  const needsTranslation = [...untranslated, ...partiallyTranslated];
   
   // Summary
   console.log("═══════════════════════════════════════════════════════════════");
@@ -430,17 +512,22 @@ async function main() {
   if (translated.length > 10) {
     console.log(`   ... and ${translated.length - 10} more`);
   }
+
+  console.log(`\n🟡 Partially Translated (${partiallyTranslated.length}):`);
+  partiallyTranslated.forEach((a) =>
+    console.log(`   - ${a.file} (${a.strings.length} strings)`)
+  );
   
   console.log(`\n❌ Needs Translation (${untranslated.length}):`);
   untranslated.forEach((a) => console.log(`   - ${a.file} (${a.strings.length} strings)`));
   
   // Detailed output
-  if (untranslated.length > 0) {
+  if (needsTranslation.length > 0) {
     console.log("\n═══════════════════════════════════════════════════════════════");
     console.log("                    STRINGS TO TRANSLATE                      ");
     console.log("═══════════════════════════════════════════════════════════════\n");
     
-    for (const analysis of untranslated) {
+    for (const analysis of needsTranslation) {
       console.log(`📄 ${analysis.file} (${analysis.componentType}${analysis.appId ? `, ${analysis.appId}` : ""})`);
       console.log("─".repeat(60));
       
@@ -466,12 +553,13 @@ async function main() {
   }
   
   // Summary stats
-  const totalStrings = untranslated.reduce((sum, a) => sum + a.strings.length, 0);
+  const totalStrings = needsTranslation.reduce((sum, a) => sum + a.strings.length, 0);
   console.log("═══════════════════════════════════════════════════════════════");
   console.log("                         SUMMARY                              ");
   console.log("═══════════════════════════════════════════════════════════════");
   console.log(`Total files analyzed: ${analyses.length}`);
   console.log(`Already translated: ${translated.length}`);
+  console.log(`Partially translated: ${partiallyTranslated.length}`);
   console.log(`Needs translation: ${untranslated.length}`);
   console.log(`Total strings found: ${totalStrings}`);
   
@@ -481,7 +569,7 @@ Usage: bun run scripts/extract-strings.ts [options]
 
 Options:
   --dir=<path>        Scan specific directory (default: src)
-  --pattern=<text>    Only scan files matching pattern (e.g., MenuBar)
+  --pattern=<text>    Only scan files matching a filename, path, or glob pattern
   --exclude=<dirs>    Comma-separated list of directories to exclude
   --help, -h          Show this help message
 
@@ -489,6 +577,7 @@ Examples:
   bun run scripts/extract-strings.ts
   bun run scripts/extract-strings.ts --dir=src/apps
   bun run scripts/extract-strings.ts --pattern=MenuBar
+  bun run scripts/extract-strings.ts --pattern="src/apps/calculator/**/*.{ts,tsx}"
   bun run scripts/extract-strings.ts --exclude=test,spec
 `);
   }

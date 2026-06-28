@@ -28,6 +28,7 @@ export interface InternetExplorerUrlBarProps {
   cachedYears: string[];
   isFetchingCachedYears: boolean;
   isSelectingText: boolean;
+  t: (key: string, options?: Record<string, unknown>) => string;
   setLocalUrl: (value: string) => void;
   setUrl: (value: string) => void;
   setIsUrlDropdownOpen: (open: boolean) => void;
@@ -56,6 +57,7 @@ export function InternetExplorerUrlBar({
   cachedYears,
   isFetchingCachedYears,
   isSelectingText,
+  t,
   setLocalUrl,
   setUrl,
   setIsUrlDropdownOpen,
@@ -96,7 +98,7 @@ export function InternetExplorerUrlBar({
         onKeyDown={(e) => {
           if (isOffline && e.key === "Enter") {
             checkOfflineAndShowError(
-              "Internet Explorer requires an internet connection to navigate"
+              t("apps.internet-explorer.requiresInternetConnection")
             );
             return;
           }
@@ -175,7 +177,7 @@ export function InternetExplorerUrlBar({
               }
             : undefined
         }
-        placeholder="Enter URL"
+        placeholder={t("apps.internet-explorer.enterUrl")}
         spellCheck="false"
         autoComplete="off"
         autoCapitalize="off"
@@ -278,9 +280,12 @@ export function InternetExplorerUrlBar({
                       </div>
                     </div>
                     <div className="font-geneva-12 text-[10px] ml-2 text-neutral-500 whitespace-nowrap hidden sm:block">
-                      {suggestion.type === "favorite" && "Favorite"}
-                      {suggestion.type === "history" && "History"}
-                      {suggestion.type === "search" && "Search"}
+                      {suggestion.type === "favorite" &&
+                        t("apps.internet-explorer.favorite")}
+                      {suggestion.type === "history" &&
+                        t("apps.internet-explorer.history")}
+                      {suggestion.type === "search" &&
+                        t("apps.internet-explorer.search")}
                     </div>
                   </div>
                 );
@@ -298,7 +303,7 @@ export function InternetExplorerUrlBar({
             className={`size-7 absolute right-1 top-1/2 -translate-y-1/2 focus-visible:ring-0 focus-visible:ring-offset-0 ${
               cachedYears.length > 1 ? "" : "opacity-50 cursor-not-allowed"
             }`}
-            aria-label="Show cached versions (Time Machine)"
+            aria-label={t("apps.internet-explorer.showCachedVersionsTimeMachine")}
             style={{
               pointerEvents: cachedYears.length <= 1 ? "none" : "auto",
             }}
@@ -316,8 +321,12 @@ export function InternetExplorerUrlBar({
         {cachedYears.length > 1 && (
           <TooltipContent side="bottom">
             <p>
-              {cachedYears.length} Time Node
-              {cachedYears.length !== 1 ? "s" : ""}
+              {t(
+                cachedYears.length === 1
+                  ? "apps.internet-explorer.timeNodes"
+                  : "apps.internet-explorer.timeNodes_plural",
+                { count: cachedYears.length }
+              )}
             </p>
           </TooltipContent>
         )}
