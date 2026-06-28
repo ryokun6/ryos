@@ -53,6 +53,9 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
 const APP_ID_SET = new Set<string>(APP_IDS);
+const APP_SOURCE_DIRS: Partial<Record<string, string>> = {
+  pc: "infinite-pc",
+};
 
 interface AppMetadata {
   name: string;
@@ -89,6 +92,10 @@ interface AppInfo {
   utilityFiles: string[];
 }
 
+function getAppSourceId(appId: string): string {
+  return APP_SOURCE_DIRS[appId] ?? appId;
+}
+
 /**
  * Check if API key is available
  */
@@ -123,9 +130,10 @@ async function readAppIndex(appId: string): Promise<{
   metadata: AppMetadata | null;
   helpItems: HelpItem[];
 }> {
-  const indexPath = join(APPS_DIR, appId, "index.tsx");
-  const indexPathAlt = join(APPS_DIR, appId, "index.ts");
-  const metadataPath = join(APPS_DIR, appId, "metadata.ts");
+  const sourceId = getAppSourceId(appId);
+  const indexPath = join(APPS_DIR, sourceId, "index.tsx");
+  const indexPathAlt = join(APPS_DIR, sourceId, "index.ts");
+  const metadataPath = join(APPS_DIR, sourceId, "metadata.ts");
   
   let content = "";
   try {
@@ -333,8 +341,9 @@ async function scanAppFiles(appId: string): Promise<{
   hookFiles: string[];
   utilityFiles: string[];
 }> {
-  const appDir = join(APPS_DIR, appId);
-  const appPrefix = `src/apps/${appId}/`;
+  const sourceId = getAppSourceId(appId);
+  const appDir = join(APPS_DIR, sourceId);
+  const appPrefix = `src/apps/${sourceId}/`;
   
   try {
     await stat(appDir);
@@ -383,10 +392,12 @@ async function scanAppFiles(appId: string): Promise<{
  * Read key component file to understand app functionality
  */
 async function readComponentFile(appId: string): Promise<string> {
-  const appComponentPath = join(APPS_DIR, appId, "components", `${appId.split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join("")}AppComponent.tsx`);
+  const sourceId = getAppSourceId(appId);
+  const sourceComponentName = sourceId.split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join("");
+  const appComponentPath = join(APPS_DIR, sourceId, "components", `${sourceComponentName}AppComponent.tsx`);
   const altPaths = [
-    join(APPS_DIR, appId, "components", "PhotoBoothComponent.tsx"), // photo-booth special case
-    join(APPS_DIR, appId, "components", "AppletViewerAppComponent.tsx"), // applet-viewer special case
+    join(APPS_DIR, sourceId, "components", "PhotoBoothComponent.tsx"), // photo-booth special case
+    join(APPS_DIR, sourceId, "components", "AppletViewerAppComponent.tsx"), // applet-viewer special case
   ];
 
   let content = "";
@@ -407,7 +418,7 @@ async function readComponentFile(appId: string): Promise<string> {
     // Try to find any component file
     const { componentFiles } = await scanAppFiles(appId);
     if (componentFiles.length > 0) {
-      const firstComponent = join(APPS_DIR, appId, "components", componentFiles[0].split("/").pop() || "");
+      const firstComponent = join(APPS_DIR, sourceId, "components", componentFiles[0].split("/").pop() || "");
       try {
         content = await readFile(firstComponent, "utf-8");
       } catch {

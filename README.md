@@ -45,6 +45,8 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **Contacts** — Address book with vCard import and sync
 - **Dashboard** — Tiger-style widgets for weather, stocks, translation, dictionary, aquarium, and more
 - **Maps** — Apple MapKit place search with chat integration
+- **Books** — EPUB reader with synced reading progress and Finder import
+- **Calculator** — Theme-aware calculator with basic, scientific, and conversion modes
 - **Admin** — Restricted analytics and system administration
 - **Applet Store** — Browse, install, and share community-created HTML applets
 - **Stickies** — Sticky notes for quick reminders

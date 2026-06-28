@@ -5,7 +5,7 @@ description: Write and run ryOS tests with Bun's native test runner (bun:test). 
 
 # Writing & Running ryOS Tests
 
-ryOS uses **Bun's native test runner** (`bun:test`). Test files live in `tests/`, are named `test-*.test.ts`, and use `describe` / `test` / `expect`.
+ryOS uses **Bun's native test runner** (`bun:test`). Test files live in `tests/`, are named `test-*.test.ts` or `test-*.test.tsx`, and use `describe` / `test` / `expect`.
 
 ## Two Kinds of Tests
 
@@ -132,7 +132,7 @@ Server-backed and opt-in suites are explicit in `scripts/test-groups.ts`:
 bun run test:unit                       # all no-server suites
 bun run test:api                        # all API suites (server required)
 bun test tests/test-foo.test.ts         # one file
-bun test --filter 'pusher'              # by name pattern (see test:pusher-regression etc.)
+bun test tests/test-pusher-*.test.ts    # shell glob/path subset
 ```
 
 See `package.json` for targeted suites (`test:ai`, `test:song`, `test:new-api`, `test:sync-v2`, `test:chat-regression`, …).

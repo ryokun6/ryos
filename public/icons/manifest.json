@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-27T18:05:07.595Z",
+  "generatedAt": "2026-06-28T04:44:29.902Z",
   "themes": {
     "default": [
       "admin.png",
@@ -68,7 +68,6 @@
       "image.png",
       "images.png",
       "infinite-mac.png",
-      "infinite-pc.png",
       "info.png",
       "internet.png",
       "ipod.png",
@@ -209,7 +208,6 @@
       "image.png",
       "images.png",
       "infinite-mac.png",
-      "infinite-pc.png",
       "ipod-1g.png",
       "ipod.png",
       "isync.png",
@@ -243,7 +241,6 @@
       "warn.png",
       "winamp.png"
     ],
-    "system7": [],
     "win98": [
       "account-login.png",
       "admin.png",
@@ -309,7 +306,6 @@
       "image.png",
       "images.png",
       "infinite-mac.png",
-      "infinite-pc.png",
       "info.png",
       "internet.png",
       "ipod.png",
@@ -462,7 +458,6 @@
       "image.png",
       "images.png",
       "infinite-mac.png",
-      "infinite-pc.png",
       "info.png",
       "internet.png",
       "ipod.png",

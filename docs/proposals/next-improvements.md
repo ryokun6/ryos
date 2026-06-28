@@ -44,7 +44,7 @@ final-cleanup phase:
 
 The architecture is healthy overall: `*AppComponent.tsx` files are mostly thin
 shells delegating to `use*Logic` hooks + `AppWindowShell`, the API layer has a
-shared `apiHandler` wrapper, and there are 210 `bun:test` suites. The debt is
+shared `apiHandler` wrapper, and there are 220 `bun:test` suites. The debt is
 concentrated in a handful of **god-files** (logic hooks and a few API handlers)
 and in **incomplete migrations** that left dual-code paths behind.
 
@@ -53,7 +53,7 @@ Quantitative hotspots (lines):
 | File | Lines | Kind |
 |------|------:|------|
 | `src/apps/ipod/hooks/useIpodLogic.ts` | 5,143 | logic hook |
-| `src/stores/useIpodStore.ts` | 2,535 | store (persist v40) |
+| `src/stores/useIpodStore.ts` | 2,535 | store (persist v41) |
 | `src/apps/chats/hooks/useAiChat.ts` | 1,920 | logic hook |
 | `src/apps/internet-explorer/hooks/useInternetExplorerLogic.ts` | 1,833 | logic hook |
 | `api/songs/[id].ts` | 1,694 | API handler |
@@ -77,7 +77,7 @@ Proposal:
 - Split `useIpodLogic` into cohesive sub-hooks: menu/wheel navigation, Cover
   Flow, playback transport, Apple Music bridge, lyrics, and the mini-games.
 - Slice `useIpodStore` persisted state by concern (playback vs library/catalog
-  vs lyrics/display preferences) so the v40 migration chain stops touching
+  vs lyrics/display preferences) so the v41 migration chain stops touching
   unrelated state, and replace the `as any` casts in `migrate`.
 - Treat the existing satellite modules (`ipodPreload`, `ipodTrackMetadataSync`,
   `ipodTrackOrder`, `ipodCatalogTrackMapping`, `playbackTime`) as the template
@@ -167,11 +167,11 @@ one-off patches:
 - **Apple Music playback races** (see 2.1) — add deterministic state-machine
   tests around `setQueue`/pause transitions.
 
-### 3.3 Rate-limit the unprotected proxies
+### 3.3 Rate-limit the unprotected proxies — **shipped**
 
-`/api/stocks`, `/api/currency-rate`, `/api/users` (search), and `GET /api/rooms`
-have no rate limits and proxy/scan on every call. Add `checkCounterLimit`
-buckets (these are cheap, high-abuse-potential relays).
+`/api/stocks`, `/api/currency-rate`, `GET /api/rooms`, and `/api/users` now use
+counter-based rate buckets. `/api/users` also requires auth and rejects
+too-short queries before scanning.
 
 ### 3.4 Generalize debounced persistence & worker offload
 
@@ -183,20 +183,17 @@ helper to reduce main-thread serialization jank on big libraries.
 
 ## 4. Security & hardening
 
-### 4.1 Keep the single `ryo` admin — add an audit trail
+### 4.1 Keep the single `ryo` admin — audit trail **shipped**
 
 `api/_utils/api-handler.ts` treats username `ryo` as admin. This single-admin
-model is intentional and stays as-is. The one gap worth closing without
-changing the gate: there is no record of admin actions. Add an append-only
-audit log of `auth: "admin"` calls (action, target, timestamp) so the growing
-moderation surface (rooms, bans, Redis browser) is reviewable. No role system
-is introduced.
+model is intentional and stays as-is. Admin actions now record append-only audit
+entries via `api/_utils/_admin-audit.ts`, and `/api/admin?action=getAuditLog`
+exposes recent entries for review. No role system was introduced.
 
-### 4.2 Authenticate (or at least rate-limit) `/api/users`
+### 4.2 Authenticate (or at least rate-limit) `/api/users` — **shipped**
 
-`api/users/index.ts` is `auth: none` and runs a Redis SCAN-backed username
-search with no limits. At minimum require `optional`→`required` auth for the
-full search and add a rate bucket.
+`api/users/index.ts` now uses `auth: "required"`, rejects too-short queries, and
+applies a per-user search rate limit.
 
 ### 4.3 Add a Zod validation layer at the `apiHandler` boundary — **started**
 
@@ -206,7 +203,7 @@ Zod is used in only ~12 API files. High-value untyped bodies: `POST /api/chat`
 `apiHandler` that parses + 400s on invalid input, returning structured error
 codes.
 
-Current status: `apiHandler` supports request-body schemas and a first set of
+Current status: `apiHandler` supports `bodySchema` request-body schemas and a first set of
 endpoints adopted it (`analytics/events`, `tv/create-channel`,
 `youtube-search`). Additional high-value endpoints can adopt boundary schemas
 incrementally.
@@ -230,11 +227,11 @@ Upstash-only deploys silently lose live chat/presence/sync. Ship a bundled
 lightweight pub/sub fallback (or document a managed Redis path in the
 self-host guide) so a single deploy gets full realtime.
 
-### 5.2 Admin audit-log view + moderation tooling
+### 5.2 Admin audit-log review + moderation tooling
 
-Building on 4.1's audit trail (the `ryo` single-admin gate stays), surface the
-admin action log inside the existing Admin app and round out moderation tooling
-(rooms, bans, Redis browser) on top of it.
+Building on the shipped audit trail (the `ryo` single-admin gate stays), keep
+rounding out moderation tooling (rooms, bans, Redis browser) around the audit
+review flow.
 
 ### 5.3 Applet Store enhancements
 
@@ -263,12 +260,12 @@ code.
 - 3.1 `deleteToken` SCAN fix — **shipped**
 - 3.3 rate-limit unprotected proxies — **shipped** (`stocks`, `currency-rate`, rooms list)
 - 4.2 `/api/users` auth/limit — **shipped** (required auth + min query length + per-user limit)
+- 4.1 admin audit trail — **shipped** (`_admin-audit.ts` + `getAuditLog`)
 - 2.2 shared persisted-store helper (+ strip prod migrate logs) — *deferred to its own PR;
   it touches ~25 stores in the most fix-prone area, so it is not actually low-risk and
   warrants separate review + targeted testing*
 
 **Foundational (enables later work):**
-- 4.1 admin audit trail (keep `ryo` gate) → unlocks 5.2
 - 4.3 Zod-at-`apiHandler` → unlocks 5.5 — **started**
 - 2.4 finish dual-path migrations — **legacy Redis reads shipped; sync v1
   retirement remains blocked by live backup UI**

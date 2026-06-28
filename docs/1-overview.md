@@ -60,7 +60,7 @@ graph TB
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
 - **[Audio System](/docs/audio-system):** Synthesizer, soundboard, TTS, and UI sounds
 - **[Component Library](/docs/component-library):** shadcn/ui + custom components with i18n
-- **[Cloud Sync](/docs/api-architecture):** Multi-domain auto-sync with individual file sync, realtime notifications, and switchable storage (Vercel Blob / S3-compatible) <!-- pragma: allowlist secret -->
+- **[Cloud Sync](/docs/api-architecture):** Journal-based Cloud Sync v2 with per-key documents, realtime sync ops, lazy legacy import, and switchable blob storage (Vercel Blob / S3-compatible) <!-- pragma: allowlist secret -->
 - **[Unified API Layer](/docs/api-architecture):** Shared `apiHandler` + middleware utilities for consistent CORS, method routing, auth, and error handling
 - **Usage Analytics:** Lightweight per-day API analytics with admin dashboard
 - **Runtime Reliability & Performance:** App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing
@@ -95,7 +95,7 @@ graph TB
 ├── tests/            # bun:test suites
 ├── src/
 │   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc)
-│   ├── apps/         # 26 app modules
+│   ├── apps/         # 27 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
 │   ├── hooks/        # ~75 custom hooks
