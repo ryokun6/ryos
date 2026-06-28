@@ -4421,7 +4421,7 @@
         "codeRequired": "Insira o código de redefinição",
         "codeSent": "Se uma conta corresponder, um código de redefinição foi enviado.",
         "confirmPassword": "Confirmar nova senha",
-        "description": "Envie um código de redefinição para um canal de recuperação e escolha uma nova senha.",
+        "description": "Envie um código de redefinição para seus métodos de recuperação disponíveis e escolha uma nova senha.",
         "genericError": "Não foi possível redefinir a senha. Verifique seu código e tente novamente.",
         "identifier": "Nome de usuário ou e-mail",
         "identifierRequired": "Insira seu nome de usuário ou e-mail",

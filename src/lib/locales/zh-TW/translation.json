@@ -4417,7 +4417,7 @@
         "codeRequired": "輸入重設代碼",
         "codeSent": "若帳號相符，重設代碼已發送。",
         "confirmPassword": "確認新密碼",
-        "description": "將重設代碼發送至救援管道，然後選擇新密碼。",
+        "description": "將重設代碼發送至可用的救援方式，然後選擇新密碼。",
         "genericError": "無法重設密碼。請檢查代碼並重試。",
         "identifier": "使用者名稱或電子郵件",
         "identifierRequired": "輸入您的使用者名稱或電子郵件",

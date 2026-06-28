@@ -276,7 +276,7 @@
       "forgotPassword": "Forgot password?",
       "recovery": {
         "title": "Reset Password",
-        "description": "Send a reset code to a recovery channel, then choose a new password.",
+        "description": "Send a reset code to your recovery methods, then choose a new password.",
         "identifier": "user name or email",
         "sendCode": "Send Code",
         "sending": "Sending…",

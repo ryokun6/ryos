@@ -4417,7 +4417,7 @@
         "codeRequired": "재설정 코드를 입력하세요",
         "codeSent": "일치하는 계정이 있으면 재설정 코드가 전송되었습니다.",
         "confirmPassword": "새 암호 확인",
-        "description": "복구 채널로 재설정 코드를 전송한 후 새 암호를 설정하세요.",
+        "description": "사용 가능한 복구 방법으로 재설정 코드를 전송한 후 새 암호를 설정하세요.",
         "genericError": "암호를 재설정할 수 없습니다. 코드를 확인하고 다시 시도해 주세요.",
         "identifier": "사용자 이름 또는 이메일",
         "identifierRequired": "사용자 이름 또는 이메일을 입력하세요",

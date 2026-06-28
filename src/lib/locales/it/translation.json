@@ -4421,7 +4421,7 @@
         "codeRequired": "Inserisci il codice di ripristino",
         "codeSent": "Se esiste un account corrispondente, è stato inviato un codice di ripristino.",
         "confirmPassword": "Conferma nuova password",
-        "description": "Invia un codice di ripristino a un canale di recupero, quindi scegli una nuova password.",
+        "description": "Invia un codice di ripristino ai metodi di recupero disponibili, quindi scegli una nuova password.",
         "genericError": "Impossibile reimpostare la password. Controlla il codice e riprova.",
         "identifier": "Nome utente o email",
         "identifierRequired": "Inserisci il tuo nome utente o l'email",
