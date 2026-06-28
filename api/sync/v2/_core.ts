@@ -42,6 +42,7 @@ import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 export const MAX_OPS_PER_REQUEST = 1000;
 export const MAX_OP_VALUE_BYTES = 512 * 1024;
+export const MAX_CHANGES_OPS_PER_RESPONSE = 512;
 const JOURNAL_MAX_LENGTH = 4096;
 const LOCK_TTL_SECONDS = 10;
 const LOCK_RETRY_DELAYS_MS = [150, 300, 600, 1200, 2400];
@@ -431,6 +432,11 @@ export async function readSyncChanges(
   const count = await redis.zcard(journalKey);
   const missing = seq - since;
   if (missing > count) {
+    return { seq, snapshotRequired: true };
+  }
+  // Keep the latency-sensitive changes endpoint bounded; large catch-ups use
+  // the already-supported snapshot path instead of replaying the full journal.
+  if (missing > MAX_CHANGES_OPS_PER_RESPONSE) {
     return { seq, snapshotRequired: true };
   }
 

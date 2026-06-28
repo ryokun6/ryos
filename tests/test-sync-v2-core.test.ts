@@ -3,6 +3,7 @@ import type { Redis } from "../api/_utils/redis";
 import {
   applySyncOps,
   ensureSync2Initialized,
+  MAX_CHANGES_OPS_PER_RESPONSE,
   readSyncChanges,
   readSyncDocsByPrefix,
   readSyncSnapshot,
@@ -35,6 +36,7 @@ function redis(): Redis {
 class TrackingRedis extends FakeRedis {
   directZaddCount = 0;
   pipelineZaddCount = 0;
+  zrangeCalls: Array<{ key: string; start: number; stop: number }> = [];
 
   async zadd(
     key: string,
@@ -52,6 +54,11 @@ class TrackingRedis extends FakeRedis {
       return originalZadd(key, entry);
     }) as typeof pipeline.zadd;
     return pipeline;
+  }
+
+  async zrange(key: string, start: number, stop: number): Promise<string[]> {
+    this.zrangeCalls.push({ key, start, stop });
+    return super.zrange(key, start, stop);
   }
 }
 
@@ -271,6 +278,26 @@ describe("sync v2 changes feed", () => {
     (r as unknown as FakeRedis).zsets.clear();
     const result = await readSyncChanges(r, "user1", 0);
     expect(result.snapshotRequired).toBe(true);
+  });
+
+  test("requires a snapshot instead of reading an oversized journal catch-up", async () => {
+    const r = new TrackingRedis();
+    const username = "farbehind";
+    const ops = Array.from(
+      { length: MAX_CHANGES_OPS_PER_RESPONSE + 1 },
+      (_, index) => ({
+        k: `settings/far-behind-${index}`,
+        v: { value: index },
+        t: t(index),
+      })
+    );
+
+    await applySyncOps(r as unknown as Redis, username, ops, "client-a");
+    const result = await readSyncChanges(r as unknown as Redis, username, 0);
+
+    expect(result.snapshotRequired).toBe(true);
+    expect(result.ops).toBeUndefined();
+    expect(r.zrangeCalls).toEqual([]);
   });
 
   test("coalesces repeated writes to the same key to the latest op", async () => {
