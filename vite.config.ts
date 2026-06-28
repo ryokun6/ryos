@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { generateBuildVersion } from "./scripts/build-version";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -331,6 +332,38 @@ export default defineConfig({
                 );
                 res.setHeader("Cache-Control", "no-store, max-age=0");
                 res.end(devServiceWorkerResetScript);
+              });
+            },
+          },
+          {
+            name: "serve-dev-version-json",
+            configureServer(server: ViteDevServer) {
+              server.middlewares.use((
+                req: IncomingMessage,
+                res: ServerResponse,
+                next: () => void
+              ) => {
+                const pathPart = (req.url || "").split("?")[0];
+                if (pathPart !== "/version.json") {
+                  next();
+                  return;
+                }
+
+                try {
+                  const versionJson = generateBuildVersion();
+                  res.statusCode = 200;
+                  res.setHeader(
+                    "Content-Type",
+                    "application/json; charset=utf-8"
+                  );
+                  res.setHeader(
+                    "Cache-Control",
+                    "no-cache, no-store, must-revalidate"
+                  );
+                  res.end(JSON.stringify(versionJson));
+                } catch (error) {
+                  next(error as Error);
+                }
               });
             },
           },

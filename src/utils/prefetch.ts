@@ -181,6 +181,14 @@ async function fetchServerVersion(forceRemote: boolean = false): Promise<ServerV
       console.warn('[Prefetch] Could not fetch version.json');
       return null;
     }
+
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      console.warn('[Prefetch] version.json returned non-JSON content', {
+        contentType,
+      });
+      return null;
+    }
     
     const data = await response.json();
     if (data.version && data.buildNumber) {

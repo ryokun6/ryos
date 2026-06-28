@@ -7,6 +7,15 @@
  * Exits both processes on Ctrl+C.
  */
 
+import { writeBuildVersionFile } from "./build-version";
+
+// Vite only indexes public/ files at startup; generate version.json first so
+// /version.json is served as JSON instead of falling through to index.html.
+const versionJson = writeBuildVersionFile();
+console.log(
+  `[dev] Generated version.json (${versionJson.version}, ${versionJson.buildNumber})`
+);
+
 const API_PORT = process.env.API_PORT ?? "3000";
 // Bun auto-loads .env.local which may set PORT=3000 (used by the API).
 // The Vite dev server needs a separate port to avoid conflicts.
