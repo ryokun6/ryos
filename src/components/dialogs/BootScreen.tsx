@@ -1,5 +1,10 @@
 import { useEffect, useReducer } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -52,6 +57,7 @@ export function BootScreen({
     isWin98,
   } = useThemeFlags();
   const localizedTitle = title ?? t("common.system.systemRestoring");
+  const dialogDescription = localizedTitle;
 
   const handleDone = () => {
     onBootComplete?.();
@@ -153,6 +159,7 @@ export function BootScreen({
           >
             <VisuallyHidden>
               <DialogTitle>{localizedTitle}</DialogTitle>
+              <DialogDescription>{dialogDescription}</DialogDescription>
             </VisuallyHidden>
             <div 
               className="flex flex-col items-center justify-center size-full bg-black"
@@ -205,6 +212,7 @@ export function BootScreen({
           >
             <VisuallyHidden>
               <DialogTitle>{localizedTitle}</DialogTitle>
+              <DialogDescription>{dialogDescription}</DialogDescription>
             </VisuallyHidden>
             <div 
               className="flex flex-col items-center justify-center pt-2 pb-12 px-16 min-h-[280px] w-full"
@@ -270,6 +278,7 @@ export function BootScreen({
         >
           <VisuallyHidden>
             <DialogTitle>{localizedTitle}</DialogTitle>
+            <DialogDescription>{dialogDescription}</DialogDescription>
           </VisuallyHidden>
           <div 
             className="flex flex-col items-center justify-center p-8 min-h-[300px] w-full"
