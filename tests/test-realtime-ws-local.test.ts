@@ -125,6 +125,32 @@ function subscribeOnce(
   });
 }
 
+function receivesEventAfter(
+  ticket: string,
+  channel: string,
+  trigger: () => Promise<void>,
+  waitMs = 1200
+): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const ws = new WebSocket(
+      `${wsOrigin}/ws?ticket=${encodeURIComponent(ticket)}`
+    );
+    let received = false;
+    ws.addEventListener("open", () => {
+      ws.send(JSON.stringify({ type: "subscribe", channel }));
+      setTimeout(() => void trigger(), 250);
+      setTimeout(() => {
+        ws.close();
+        resolve(received);
+      }, waitMs);
+    });
+    ws.addEventListener("message", (event) => {
+      const payload = JSON.parse(String(event.data)) as { type?: string };
+      if (payload.type === "event") received = true;
+    });
+  });
+}
+
 const maybeDescribe = LOCAL_URL ? describe : describe.skip;
 
 maybeDescribe("local WebSocket realtime authorization", () => {
@@ -188,13 +214,33 @@ maybeDescribe("local WebSocket realtime authorization", () => {
     expect(result.authorized).toBe(false);
   });
 
-  test("private room: member authorized + receives messages, outsider denied", async () => {
+  test("AirDrop channel requires its owner's ticket", async () => {
+    const ownTicket = memberCookie ? await getTicket(memberCookie) : null;
+    const own = await subscribeOnce(
+      ownTicket,
+      `private-airdrop-${memberUser}`
+    );
+    expect(own.authorized).toBe(true);
+
+    const otherTicket = outsiderCookie ? await getTicket(outsiderCookie) : null;
+    const other = await subscribeOnce(
+      otherTicket,
+      `private-airdrop-${memberUser}`
+    );
+    expect(other.authorized).toBe(false);
+  });
+
+  test("private room membership is authorized and messages use current-member fanout", async () => {
     if (!privateRoomId || !memberCookie) return;
 
     const freshMemberTicket = memberCookie ? await getTicket(memberCookie) : null;
     const channel = `private-room-${privateRoomId}`;
 
-    const result = await subscribeOnce(freshMemberTicket, channel, {
+    const roomSubscription = await subscribeOnce(freshMemberTicket, channel);
+    expect(roomSubscription.authorized).toBe(true);
+
+    const fanoutTicket = memberCookie ? await getTicket(memberCookie) : null;
+    const result = await subscribeOnce(fanoutTicket, `private-chats-${memberUser}`, {
       waitMs: 2500,
       triggerAfterSubscribe: async () => {
         await fetch(`${origin}/api/rooms/${privateRoomId}/messages`, {
@@ -218,5 +264,56 @@ maybeDescribe("local WebSocket realtime authorization", () => {
     expect(denied.authorized).toBe(false);
 
     void outsiderTicket;
-  });
+  }, 10_000);
+
+  test("revoked private-room subscribers receive no future messages", async () => {
+    const suffix = Date.now();
+    const revokedUser = `wsr_${suffix}`;
+    const remainingA = `wsa_${suffix}`;
+    const remainingB = `wsb_${suffix}`;
+    const revokedCookie = (await register(revokedUser)).cookie;
+    const remainingCookie = (await register(remainingA)).cookie;
+    await register(remainingB);
+    if (!revokedCookie || !remainingCookie) throw new Error("registration failed");
+
+    const create = await fetch(`${origin}/api/rooms`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: origin,
+        Cookie: revokedCookie,
+      },
+      body: JSON.stringify({
+        type: "private",
+        members: [revokedUser, remainingA, remainingB],
+      }),
+    });
+    const created = (await create.json()) as { room?: { id?: string } };
+    const roomId = created.room?.id;
+    if (!roomId) throw new Error("private room creation failed");
+
+    const ticket = await getTicket(revokedCookie);
+    if (!ticket) throw new Error("ticket creation failed");
+    const received = await receivesEventAfter(
+      ticket,
+      `private-room-${roomId}`,
+      async () => {
+        await fetch(`${origin}/api/rooms/${roomId}`, {
+          method: "DELETE",
+          headers: { Origin: origin, Cookie: revokedCookie },
+        });
+        await fetch(`${origin}/api/rooms/${roomId}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: origin,
+            Cookie: remainingCookie,
+          },
+          body: JSON.stringify({ content: "after revocation" }),
+        });
+      }
+    );
+
+    expect(received).toBe(false);
+  }, 10_000);
 });

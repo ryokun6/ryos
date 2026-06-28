@@ -103,8 +103,7 @@ export async function consumeRealtimeTicket(
 ): Promise<string | null> {
   if (!ticket) return null;
   const key = redisKeys.realtime.ticket(await sha256RedisIdentifier(ticket));
-  const username = await redis.get<string>(key);
+  const username = await redis.getdel<string>(key);
   if (!username) return null;
-  await redis.del(key);
   return typeof username === "string" ? username : String(username);
 }

@@ -51,6 +51,22 @@ export class ChatRealtimeService {
   private globalHandlers: GlobalHandlers | null = null;
   private readonly roomChannels: Record<string, PusherChannel> = {};
   private readonly roomHandlers: Record<string, RoomHandlers> = {};
+  private readonly dispatchPrivateRoomMessage = (data: RoomMessagePayload & { roomId: string }) => {
+    this.roomHandlers[data?.roomId]?.onRoomMessage(data);
+  };
+  private readonly dispatchPrivateMessageDeleted = (data: MessageDeletedPayload) => {
+    this.roomHandlers[data?.roomId]?.onMessageDeleted(data);
+  };
+  private readonly dispatchPrivatePresence = (
+    data: { roomId: string; username: string; action: "joined" | "left"; userCount: number }
+  ) => {
+    this.roomHandlers[data?.roomId]?.onPresenceUpdate?.(data);
+  };
+  private readonly dispatchPrivateTyping = (
+    data: { roomId: string; username: string; isTyping: boolean }
+  ) => {
+    this.roomHandlers[data?.roomId]?.onUserTyping?.(data);
+  };
 
   ensureClient(): void {
     if (!this.pusher) {
@@ -73,6 +89,10 @@ export class ChatRealtimeService {
     channel.bind("room-deleted", handlers.onRoomDeleted);
     channel.bind("room-updated", handlers.onRoomUpdated);
     channel.bind("rooms-updated", handlers.onRoomsUpdated);
+    channel.bind("room-message", this.dispatchPrivateRoomMessage);
+    channel.bind("message-deleted", this.dispatchPrivateMessageDeleted);
+    channel.bind("presence-update", this.dispatchPrivatePresence);
+    channel.bind("user-typing", this.dispatchPrivateTyping);
     this.globalChannel = channel;
     this.globalHandlers = handlers;
     return channel.name;
@@ -86,6 +106,10 @@ export class ChatRealtimeService {
       channel.unbind("room-deleted", handlers.onRoomDeleted);
       channel.unbind("room-updated", handlers.onRoomUpdated);
       channel.unbind("rooms-updated", handlers.onRoomsUpdated);
+      channel.unbind("room-message", this.dispatchPrivateRoomMessage);
+      channel.unbind("message-deleted", this.dispatchPrivateMessageDeleted);
+      channel.unbind("presence-update", this.dispatchPrivatePresence);
+      channel.unbind("user-typing", this.dispatchPrivateTyping);
     }
     if (channel) {
       unsubscribePusherChannel(channel.name);

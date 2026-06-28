@@ -9,6 +9,8 @@ export const PRIVATE_CHAT_ROOM_CHANNEL_PREFIX = "private-room-";
 // Per-user cross-device sync channel. Carries the user's documents/state, so it
 // MUST be an authorized channel.
 export const SYNC_CHANNEL_PREFIX = "private-sync-";
+export const AIRDROP_USER_CHANNEL_PREFIX = "private-airdrop-";
+export const AIRDROP_LOBBY_CHANNEL = "airdrop-lobby";
 export const LISTEN_SESSION_CHANNEL_PREFIX = "listen-";
 export const GLOBAL_PRESENCE_CHANNEL = "presence-global";
 
@@ -57,6 +59,10 @@ export function getSyncChannelName(username: string): string {
   return `${SYNC_CHANNEL_PREFIX}${sanitizeUsernameForRealtimeChannel(username)}`;
 }
 
+export function getAirDropUserChannelName(username: string): string {
+  return `${AIRDROP_USER_CHANNEL_PREFIX}${sanitizeUsernameForRealtimeChannel(username)}`;
+}
+
 export function getListenSessionChannelName(sessionId: string): string {
   return `${LISTEN_SESSION_CHANNEL_PREFIX}${sessionId}`;
 }
@@ -100,6 +106,13 @@ export function classifyRealtimeChannel(
 
   if (name.startsWith(SYNC_CHANNEL_PREFIX)) {
     return { kind: "user", target: name.slice(SYNC_CHANNEL_PREFIX.length) };
+  }
+
+  if (name.startsWith(AIRDROP_USER_CHANNEL_PREFIX)) {
+    return {
+      kind: "user",
+      target: name.slice(AIRDROP_USER_CHANNEL_PREFIX.length),
+    };
   }
 
   if (name.startsWith(PRIVATE_CHAT_ROOM_CHANNEL_PREFIX)) {

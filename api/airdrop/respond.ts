@@ -1,6 +1,7 @@
 import { apiHandler } from "../_utils/api-handler.js";
 import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
+import { getAirDropUserChannelName } from "../../src/shared/constants/realtime.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
@@ -57,7 +58,7 @@ export default apiHandler<RespondBody>(
       await redis.del(transferKey);
 
       await triggerRealtimeEvent(
-        `airdrop-${transfer.sender}`,
+        getAirDropUserChannelName(transfer.sender),
         "airdrop-accepted",
         {
           transferId,
@@ -77,7 +78,7 @@ export default apiHandler<RespondBody>(
       await redis.del(transferKey);
 
       await triggerRealtimeEvent(
-        `airdrop-${transfer.sender}`,
+        getAirDropUserChannelName(transfer.sender),
         "airdrop-declined",
         {
           transferId,

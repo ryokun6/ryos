@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   CHATS_PUBLIC_CHANNEL,
+  AIRDROP_LOBBY_CHANNEL,
   GLOBAL_PRESENCE_CHANNEL,
   classifyRealtimeChannel,
   getChatRoomChannelName,
+  getAirDropUserChannelName,
   getChatsGlobalChannelName,
   getChatsUserChannelName,
   getListenSessionChannelName,
@@ -39,6 +41,8 @@ describe("realtime channel constants", () => {
     expect(getChatRoomChannelName("123", "irc")).toBe("room-123");
     expect(getChatRoomChannelName("123", "private")).toBe("private-room-123");
     expect(getSyncChannelName("Ryo.User")).toBe("private-sync-ryo.user");
+    expect(getAirDropUserChannelName("Ryo/User")).toBe("private-airdrop-ryo_user");
+    expect(AIRDROP_LOBBY_CHANNEL).toBe("airdrop-lobby");
     expect(getListenSessionChannelName("session-123")).toBe("listen-session-123");
     expect(GLOBAL_PRESENCE_CHANNEL).toBe("presence-global");
   });
@@ -49,7 +53,11 @@ describe("realtime channel constants", () => {
     });
     expect(classifyRealtimeChannel("room-123")).toEqual({ kind: "public" });
     expect(classifyRealtimeChannel("listen-abc")).toEqual({ kind: "public" });
-    expect(classifyRealtimeChannel("airdrop-ryo")).toEqual({ kind: "public" });
+    expect(classifyRealtimeChannel("airdrop-lobby")).toEqual({ kind: "public" });
+    expect(classifyRealtimeChannel("private-airdrop-ryo")).toEqual({
+      kind: "user",
+      target: "ryo",
+    });
     expect(classifyRealtimeChannel("private-chats-ryo")).toEqual({
       kind: "user",
       target: "ryo",
@@ -75,6 +83,7 @@ describe("realtime channel constants", () => {
     expect(realtimeChannelRequiresAuth(CHATS_PUBLIC_CHANNEL)).toBe(false);
     expect(realtimeChannelRequiresAuth("private-chats-ryo")).toBe(true);
     expect(realtimeChannelRequiresAuth("private-room-abc")).toBe(true);
+    expect(realtimeChannelRequiresAuth("private-airdrop-ryo")).toBe(true);
     expect(realtimeChannelRequiresAuth("presence-global")).toBe(true);
   });
 });

@@ -13,6 +13,7 @@ import {
   getCurrentTimestamp,
   getSession,
   setSession,
+  withSessionMutationLock,
 } from "../../_helpers/_redis.js";
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { SyncSessionRequest } from "../../_helpers/_types.js";
@@ -78,6 +79,7 @@ export default apiHandler(
     }
 
     try {
+      await withSessionMutationLock(sessionId, redis, async () => {
       const session = await getSession(sessionId, redis);
 
       if (!session) {
@@ -197,6 +199,7 @@ export default apiHandler(
       });
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ success: true });
+      });
     } catch (error) {
       logger.error("Failed to sync listen session", error);
       logger.response(500, Date.now() - startTime);

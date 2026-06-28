@@ -86,6 +86,12 @@ describe("Chat Hook Channel Lifecycle Wiring", () => {
       expect(source).toContain("shouldSubscribeToBackgroundRoomUpdates");
       expect(source).toContain("backgroundRoomsById.has(roomId)");
     });
+
+    test("background service dispatches private per-user fanout to room handlers", () => {
+      const source = readSource("src/services/chat/ChatRealtimeService.ts");
+      expect(source).toContain('channel.bind("room-message", this.dispatchPrivateRoomMessage)');
+      expect(source).toContain("this.roomHandlers[data?.roomId]?.onRoomMessage(data)");
+    });
   });
 
   describe("Foreground chat room hook", () => {
@@ -105,6 +111,14 @@ describe("Chat Hook Channel Lifecycle Wiring", () => {
       expect(source).toContain("unsubscribeFromRoomChannel(currentRoomId)");
       expect(source).toContain("currentRoomId,");
       expect(source).toContain("subscribeToRoomChannel,");
+    });
+
+    test("foreground hook dispatches private per-user fanout to room handlers", () => {
+      const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
+      expect(source).toContain('channel.bind("room-message", handlers.onPrivateRoomMessage)');
+      expect(source).toContain(
+        "roomHandlersRef.current[data?.roomId]?.onRoomMessage(data)"
+      );
     });
   });
 });

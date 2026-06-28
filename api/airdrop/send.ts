@@ -1,5 +1,6 @@
 import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
+import { getAirDropUserChannelName } from "../../src/shared/constants/realtime.js";
 import { AIRDROP_PRESENCE_TTL_SECONDS } from "./heartbeat.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
@@ -59,7 +60,7 @@ export default apiHandler<SendBody>(
       ex: TRANSFER_TTL_SECONDS,
     });
 
-    await triggerRealtimeEvent(`airdrop-${recipient}`, "airdrop-request", {
+    await triggerRealtimeEvent(getAirDropUserChannelName(recipient), "airdrop-request", {
       transferId,
       sender: senderUsername,
       fileName,

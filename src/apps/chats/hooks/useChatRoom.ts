@@ -35,6 +35,10 @@ interface GlobalHandlers {
   onRoomDeleted: (data: { roomId: string }) => void;
   onRoomUpdated: (data: { room: ChatRoom }) => void;
   onRoomsUpdated: (data: { rooms: ChatRoom[] }) => void;
+  onPrivateRoomMessage: (data: { roomId: string; message: ChatMessage }) => void;
+  onPrivateMessageDeleted: (data: { roomId: string; messageId: string }) => void;
+  onPrivatePresenceUpdate: (data: PresenceUpdatePayload & { roomId: string }) => void;
+  onPrivateUserTyping: (data: TypingPayload & { roomId: string }) => void;
 }
 
 interface PresenceUpdatePayload {
@@ -171,6 +175,10 @@ export function useChatRoom(
       channel.unbind("room-deleted", handlers.onRoomDeleted);
       channel.unbind("room-updated", handlers.onRoomUpdated);
       channel.unbind("rooms-updated", handlers.onRoomsUpdated);
+      channel.unbind("room-message", handlers.onPrivateRoomMessage);
+      channel.unbind("message-deleted", handlers.onPrivateMessageDeleted);
+      channel.unbind("presence-update", handlers.onPrivatePresenceUpdate);
+      channel.unbind("user-typing", handlers.onPrivateUserTyping);
     }
 
     if (channel) {
@@ -249,6 +257,18 @@ export function useChatRoom(
           // Update rooms directly instead of fetching from API
           setRooms(data.rooms);
         },
+        onPrivateRoomMessage: (data) => {
+          roomHandlersRef.current[data?.roomId]?.onRoomMessage(data);
+        },
+        onPrivateMessageDeleted: (data) => {
+          roomHandlersRef.current[data?.roomId]?.onMessageDeleted(data);
+        },
+        onPrivatePresenceUpdate: (data) => {
+          roomHandlersRef.current[data?.roomId]?.onPresenceUpdate(data);
+        },
+        onPrivateUserTyping: (data) => {
+          roomHandlersRef.current[data?.roomId]?.onUserTyping(data);
+        },
       };
 
       // Bind the handlers
@@ -256,6 +276,10 @@ export function useChatRoom(
       channel.bind("room-deleted", handlers.onRoomDeleted);
       channel.bind("room-updated", handlers.onRoomUpdated);
       channel.bind("rooms-updated", handlers.onRoomsUpdated);
+      channel.bind("room-message", handlers.onPrivateRoomMessage);
+      channel.bind("message-deleted", handlers.onPrivateMessageDeleted);
+      channel.bind("presence-update", handlers.onPrivatePresenceUpdate);
+      channel.bind("user-typing", handlers.onPrivateUserTyping);
 
       globalChannelRef.current = channel;
       globalHandlersRef.current = handlers;

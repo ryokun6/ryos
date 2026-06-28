@@ -29,6 +29,19 @@ const countCalls = (source: string, fnName: string): number => {
 
 describe("Chat Broadcast Wiring Tests", () => {
   describe("Core room/message routes", () => {
+    test("private events fan out only to current member channels", () => {
+      const source = readRoute("api/rooms/_helpers/_pusher.ts");
+      expect(source).toMatch(
+        /room\?\.type === "private"[\s\S]*fanOutToPrivateMembersBatched\(room\.members, "room-message"/
+      );
+      expect(source).toMatch(
+        /room\?\.type === "private"[\s\S]*fanOutToPrivateMembersBatched\(room\.members, "message-deleted"/
+      );
+      expect(source).toContain(
+        'channel: getPrivateChatsChannelName(member)'
+      );
+    });
+
     test("room create route emits room-created", async () => {
       const source = readRoute("api/rooms/index.ts");
       assertHasCall(source, "broadcastRoomCreated");

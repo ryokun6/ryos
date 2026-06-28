@@ -13,6 +13,14 @@ import {
 import { LISTEN_SESSION_TTL_SECONDS } from "./_constants.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
+const SESSION_LOCK_TTL_SECONDS = 10;
+const SESSION_LOCK_RETRY_MS = 20;
+const SESSION_LOCK_ATTEMPTS = 250;
+const RELEASE_LOCK_SCRIPT =
+  'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
+const RENEW_LOCK_SCRIPT =
+  'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("expire", KEYS[1], ARGV[2]) else return 0 end';
+
 // ============================================================================
 // Redis Client Factory
 // ============================================================================
@@ -78,4 +86,46 @@ export async function getActiveSessionIds(
   client: Redis = createRedisClient()
 ): Promise<string[]> {
   return (await client.smembers<string[]>(redisKeys.session.listenIds())) || [];
+}
+
+/**
+ * Serialize a session read-modify-write cycle across server instances.
+ * The random ownership token prevents a delayed holder from deleting a lock
+ * that expired and was acquired by another request.
+ */
+export async function withSessionMutationLock<T>(
+  sessionId: string,
+  client: Redis,
+  mutation: () => Promise<T>
+): Promise<T> {
+  const lockKey = redisKeys.session.listenLock(sessionId);
+  const owner = crypto.randomUUID();
+
+  for (let attempt = 0; attempt < SESSION_LOCK_ATTEMPTS; attempt += 1) {
+    const acquired = await client.set(lockKey, owner, {
+      nx: true,
+      ex: SESSION_LOCK_TTL_SECONDS,
+    });
+    if (acquired) {
+      const renewal = setInterval(() => {
+        void client
+          .eval(RENEW_LOCK_SCRIPT, [lockKey], [owner, SESSION_LOCK_TTL_SECONDS])
+          .catch(() => {
+            // The mutation will finish or fail; ownership-safe release still
+            // prevents deleting a successor's lock.
+          });
+      }, (SESSION_LOCK_TTL_SECONDS * 1000) / 3);
+      try {
+        return await mutation();
+      } finally {
+        clearInterval(renewal);
+        await client.eval(RELEASE_LOCK_SCRIPT, [lockKey], [owner]);
+      }
+    }
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, SESSION_LOCK_RETRY_MS);
+    });
+  }
+
+  throw new Error(`Timed out acquiring listen session lock: ${sessionId}`);
 }

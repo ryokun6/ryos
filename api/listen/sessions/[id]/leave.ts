@@ -18,6 +18,7 @@ import {
   getSession,
   setSession,
   deleteSession,
+  withSessionMutationLock,
 } from "../../_helpers/_redis.js";
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { LeaveSessionRequest } from "../../_helpers/_types.js";
@@ -96,7 +97,8 @@ export default apiHandler(
     }
 
     try {
-      const session = await getSession(sessionId, redis);
+      await withSessionMutationLock(sessionId, redis, async () => {
+        const session = await getSession(sessionId, redis);
 
       if (!session) {
         logger.response(404, Date.now() - startTime);
@@ -216,6 +218,7 @@ export default apiHandler(
         logger.response(200, Date.now() - startTime);
         res.status(200).json({ success: true });
       }
+      });
     } catch (error) {
       logger.error("Failed to leave listen session", error);
       logger.response(500, Date.now() - startTime);

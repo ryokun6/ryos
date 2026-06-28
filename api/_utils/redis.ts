@@ -54,6 +54,7 @@ export interface RedisPipelineLike {
 
 export interface RedisLike {
   get<T = unknown>(key: string): Promise<T | null>;
+  getdel<T = unknown>(key: string): Promise<T | null>;
   set(key: string, value: unknown, options?: RedisSetOptions): Promise<unknown>;
   setnx(key: string, value: unknown): Promise<number>;
   del(...keys: string[]): Promise<number>;
@@ -102,6 +103,11 @@ export interface RedisLike {
     stop: number
   ): Promise<RedisSortedSetEntry[]>;
   zcard(key: string): Promise<number>;
+  eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<T>;
 }
 
 const redisClientCache = globalThis as typeof globalThis & {
@@ -300,6 +306,10 @@ class StandardRedisAdapter implements RedisLike {
 
   async get<T = unknown>(key: string): Promise<T | null> {
     return (await this.client.get(key)) as T | null;
+  }
+
+  async getdel<T = unknown>(key: string): Promise<T | null> {
+    return (await this.client.getdel(key)) as T | null;
   }
 
   async set(
@@ -513,6 +523,19 @@ class StandardRedisAdapter implements RedisLike {
 
   async zcard(key: string): Promise<number> {
     return await this.client.zcard(key);
+  }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<T> {
+    return (await this.client.eval(
+      script,
+      keys.length,
+      ...keys,
+      ...args.map(String)
+    )) as T;
   }
 }
 

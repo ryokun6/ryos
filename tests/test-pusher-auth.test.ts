@@ -119,6 +119,33 @@ describe("POST /api/pusher/auth", () => {
     expect(res.status).toBe(403);
   });
 
+  test("AirDrop channel is private to its owning user", async () => {
+    if (!memberToken || !outsiderToken) throw new Error("missing auth tokens");
+    const own = await fetchWithAuth(
+      `${BASE_URL}/api/pusher/auth`,
+      memberUser,
+      memberToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: pusherAuthBody(`private-airdrop-${memberUser}`),
+      }
+    );
+    expect(own.status).toBe(200);
+
+    const other = await fetchWithAuth(
+      `${BASE_URL}/api/pusher/auth`,
+      outsiderUser,
+      outsiderToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: pusherAuthBody(`private-airdrop-${memberUser}`),
+      }
+    );
+    expect(other.status).toBe(403);
+  });
+
   test("authorizes a private room channel for a member", async () => {
     if (!privateRoomId || !memberToken) return;
     const res = await fetchWithAuth(

@@ -18,6 +18,7 @@ import {
   getCurrentTimestamp,
   getSession,
   setSession,
+  withSessionMutationLock,
 } from "../../_helpers/_redis.js";
 import {
   LISTEN_SESSION_MAX_USERS,
@@ -101,7 +102,8 @@ export default apiHandler(
     }
 
     try {
-      if (username) {
+      await withSessionMutationLock(sessionId, redis, async () => {
+        if (username) {
         const [session, userData] = await Promise.all([
           getSession(sessionId, redis),
           getStoredUserRecord(redis, username),
@@ -167,7 +169,7 @@ export default apiHandler(
         logger.info("User joined listen session", { sessionId, username });
         logger.response(200, Date.now() - startTime);
         res.status(200).json({ session });
-      } else {
+        } else {
         const session = await getSession(sessionId, redis);
 
         if (!session) {
@@ -205,7 +207,8 @@ export default apiHandler(
         logger.info("Anonymous listener joined", { sessionId, anonymousId });
         logger.response(200, Date.now() - startTime);
         res.status(200).json({ session });
-      }
+        }
+      });
     } catch (error) {
       logger.error("Failed to join listen session", error);
       logger.response(500, Date.now() - startTime);

@@ -8,9 +8,12 @@ import {
 import type { PusherChannel } from "@/lib/pusherClient";
 import { AIRDROP_ANALYTICS, track } from "@/utils/analytics";
 import { toast } from "sonner";
+import {
+  AIRDROP_LOBBY_CHANNEL,
+  getAirDropUserChannelName,
+} from "@/shared/constants/realtime";
 
 const AIRDROP_PRESENCE_TTL_MS = 60_000;
-const AIRDROP_LOBBY_CHANNEL = "airdrop-lobby";
 
 export interface AirDropTransfer {
   transferId: string;
@@ -243,10 +246,10 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
     if (state.subscribedUsername === username && state.pusherChannel) return;
 
     if (state.pusherChannel && state.subscribedUsername) {
-      unsubscribePusherChannel(`airdrop-${state.subscribedUsername}`);
+      unsubscribePusherChannel(getAirDropUserChannelName(state.subscribedUsername));
     }
 
-    const channelName = `airdrop-${username}`;
+    const channelName = getAirDropUserChannelName(username);
     const channel = subscribePusherChannel(channelName);
 
     channel.bind("airdrop-request", (data: unknown) => {
@@ -284,7 +287,7 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
         channel.unbind("airdrop-accepted");
         channel.unbind("airdrop-declined");
       }
-      unsubscribePusherChannel(`airdrop-${state.subscribedUsername}`);
+      unsubscribePusherChannel(getAirDropUserChannelName(state.subscribedUsername));
     }
     set({ pusherChannel: null, subscribedUsername: null });
   },

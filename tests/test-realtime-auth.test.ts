@@ -17,6 +17,11 @@ function createFakeRedis(): Redis {
     async get<T = unknown>(key: string): Promise<T | null> {
       return (store.has(key) ? (store.get(key) as T) : null) ?? null;
     },
+    async getdel<T = unknown>(key: string): Promise<T | null> {
+      const value = (store.has(key) ? (store.get(key) as T) : null) ?? null;
+      store.delete(key);
+      return value;
+    },
     async set(key: string, value: unknown): Promise<unknown> {
       store.set(key, value);
       return "OK";
@@ -36,7 +41,7 @@ describe("authorizeRealtimeChannel", () => {
     expect(await authorizeRealtimeChannel("chats-public", null)).toBe(true);
     expect(await authorizeRealtimeChannel("room-123", null)).toBe(true);
     expect(await authorizeRealtimeChannel("listen-abc", "ryo")).toBe(true);
-    expect(await authorizeRealtimeChannel("airdrop-ryo", null)).toBe(true);
+    expect(await authorizeRealtimeChannel("airdrop-lobby", null)).toBe(true);
   });
 
   test("denies unknown authorization-requiring channels", async () => {
@@ -58,12 +63,18 @@ describe("authorizeRealtimeChannel", () => {
     expect(
       await authorizeRealtimeChannel("private-sync-ryo", "ryo")
     ).toBe(true);
+    expect(
+      await authorizeRealtimeChannel("private-airdrop-ryo", "ryo")
+    ).toBe(true);
 
     expect(
       await authorizeRealtimeChannel("private-chats-ryo", "mallory")
     ).toBe(false);
     expect(
       await authorizeRealtimeChannel("private-sync-ryo", "mallory")
+    ).toBe(false);
+    expect(
+      await authorizeRealtimeChannel("private-airdrop-ryo", "mallory")
     ).toBe(false);
     expect(await authorizeRealtimeChannel("private-chats-ryo", null)).toBe(
       false
@@ -100,5 +111,15 @@ describe("realtime tickets", () => {
     const redis = createFakeRedis();
     expect(await consumeRealtimeTicket(redis, null)).toBeNull();
     expect(await consumeRealtimeTicket(redis, "nope")).toBeNull();
+  });
+
+  test("allows exactly one concurrent ticket consumer", async () => {
+    const redis = createFakeRedis();
+    const ticket = await issueRealtimeTicket(redis, "Ryo");
+    const results = await Promise.all(
+      Array.from({ length: 20 }, () => consumeRealtimeTicket(redis, ticket))
+    );
+    expect(results.filter((result) => result === "ryo")).toHaveLength(1);
+    expect(results.filter((result) => result === null)).toHaveLength(19);
   });
 });

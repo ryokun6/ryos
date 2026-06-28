@@ -9,7 +9,12 @@ import {
   assertValidUsername,
   isProfaneUsername,
 } from "../../../_utils/_validation.js";
-import { getCurrentTimestamp, getSession, setSession } from "../../_helpers/_redis.js";
+import {
+  getCurrentTimestamp,
+  getSession,
+  setSession,
+  withSessionMutationLock,
+} from "../../_helpers/_redis.js";
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { AssignDjRequest } from "../../_helpers/_types.js";
 import {
@@ -71,6 +76,7 @@ export default apiHandler(
     }
 
     try {
+      await withSessionMutationLock(sessionId, redis, async () => {
       const session = await getSession(sessionId, redis);
 
       if (!session) {
@@ -138,6 +144,7 @@ export default apiHandler(
       });
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ success: true, session });
+      });
     } catch (error) {
       logger.error("Failed to assign listen session DJ", error);
       logger.response(500, Date.now() - startTime);
