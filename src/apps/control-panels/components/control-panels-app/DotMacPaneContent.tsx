@@ -230,7 +230,7 @@ export function DotMacPaneContent({
                 <Button
                   variant="retro"
                   onClick={() => setIsConfirmForceUploadOpen(true)}
-                    disabled={isCloudForceSyncing}
+                  disabled={isCloudForceSyncing}
                   tabIndex={!username ? -1 : undefined}
                   className="flex-1"
                 >
@@ -241,7 +241,7 @@ export function DotMacPaneContent({
                 <Button
                   variant="retro"
                   onClick={() => setIsConfirmForceDownloadOpen(true)}
-                    disabled={isCloudForceSyncing}
+                  disabled={isCloudForceSyncing}
                   tabIndex={!username ? -1 : undefined}
                   className="flex-1"
                 >
