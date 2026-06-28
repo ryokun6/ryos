@@ -546,6 +546,7 @@ export default apiHandler(
     }
   } catch (e) {
     logger.error("Rate limit check failed (iframe-check)", e);
+    return errorResponseWithCors("rate_limit_unavailable", 503);
   }
 
   // --- AI cache retrieval mode (PRIORITIZE THIS) ---

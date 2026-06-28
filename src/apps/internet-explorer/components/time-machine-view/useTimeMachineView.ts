@@ -28,6 +28,8 @@ export function useTimeMachineView({
   currentUrl,
   onSelectYear,
   currentSelectedYear,
+  registerAiPreviewWindow,
+  registerProxyPreviewWindow,
 }: TimeMachineViewProps) {
   const { t } = useTranslation();
   const { isMacOSTheme: isMacTheme } = useThemeFlags();
@@ -558,6 +560,7 @@ export function useTimeMachineView({
     startIndex, exitVariants, loadingBarVariants, pulsingAnimationVariants, maskStyle,
     isGoButtonDisabled, handleSharePage, isShareDialogOpen, setIsShareDialogOpen,
     timeMachineGenerateShareUrl, currentUrl, currentSelectedYear, onSelectYear, shaderNames,
+    registerAiPreviewWindow, registerProxyPreviewWindow,
     setNavigationDirection, setActiveYearIndex, getHostname, PREVIEW_Z_SPACING,
     PREVIEW_SCALE_FACTOR, PREVIEW_Y_SPACING, ShaderType,
   };

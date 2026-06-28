@@ -53,6 +53,7 @@ import {
   getPastYears,
   getFutureYears,
 } from "../components/ie-menu-bar/yearLists";
+import { getTrustedIeNavigationMessage } from "../utils/navigationBridge";
 
 const log = createClientLogger("InternetExplorer");
 
@@ -417,6 +418,30 @@ export function useInternetExplorerLogic({
 
   const urlInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const aiPreviewWindowsRef = useRef<Set<Window>>(new Set());
+  const proxyPreviewWindowsRef = useRef<Set<Window>>(new Set());
+  const registerAiPreviewWindow = useCallback(
+    (frameWindow: Window | null, active: boolean) => {
+      if (!frameWindow) return;
+      if (active) {
+        aiPreviewWindowsRef.current.add(frameWindow);
+      } else {
+        aiPreviewWindowsRef.current.delete(frameWindow);
+      }
+    },
+    []
+  );
+  const registerProxyPreviewWindow = useCallback(
+    (frameWindow: Window | null, active: boolean) => {
+      if (!frameWindow) return;
+      if (active) {
+        proxyPreviewWindowsRef.current.add(frameWindow);
+      } else {
+        proxyPreviewWindowsRef.current.delete(frameWindow);
+      }
+    },
+    []
+  );
   const favoritesContainerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -1696,35 +1721,15 @@ export function useInternetExplorerLogic({
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      const messageData = event.data as
-        | { type?: string; url?: string }
-        | undefined;
-      if (!messageData?.type) {
-        return;
-      }
-
-      // Only accept messages from the current window origin.
-      // This blocks untrusted cross-origin frames from driving navigation.
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
-      // For iframe-driven controls, ensure the sender is our active iframe.
-      // aiHtmlNavigation is emitted by HtmlPreview's internal iframe(s), so it
-      // is validated by same-origin only.
-      const sourceWindow = event.source as Window | null;
-      const currentIframeWindow = iframeRef.current?.contentWindow ?? null;
-      const isFromActiveIframe =
-        !!sourceWindow &&
-        !!currentIframeWindow &&
-        sourceWindow === currentIframeWindow;
-
-      if (
-        messageData.type !== "aiHtmlNavigation" &&
-        !isFromActiveIframe
-      ) {
-        return;
-      }
+      // Sandboxed documents have event.origin === "null". Bind control
+      // messages to iframe Window objects registered by this IE instance.
+      const messageData = getTrustedIeNavigationMessage({
+        event,
+        activeProxyWindow: iframeRef.current?.contentWindow ?? null,
+        proxyPreviewWindows: proxyPreviewWindowsRef.current,
+        aiPreviewWindows: aiPreviewWindowsRef.current,
+      });
+      if (!messageData) return;
 
       if (
         messageData.type === "iframeNavigation" &&
@@ -1996,6 +2001,8 @@ export function useInternetExplorerLogic({
     // Refs
     urlInputRef,
     iframeRef,
+    registerAiPreviewWindow,
+    registerProxyPreviewWindow,
     favoritesContainerRef,
     abortControllerRef,
     navTokenRef,

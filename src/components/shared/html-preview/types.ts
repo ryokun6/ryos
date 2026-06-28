@@ -23,4 +23,5 @@ export interface HtmlPreviewProps {
    * sandbox level and whether the auth bridge is injected.
    */
   appletCreatedBy?: string | null;
+  onIframeWindowChange?: (frameWindow: Window, active: boolean) => void;
 }

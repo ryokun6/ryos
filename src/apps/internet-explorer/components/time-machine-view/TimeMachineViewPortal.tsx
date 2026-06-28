@@ -15,12 +15,30 @@ import TimeNavigationControls from "../TimeNavigationControls";
 import type { ShaderOption } from "./types";
 import type { useTimeMachineView } from "./useTimeMachineView";
 import { createClientLogger } from "@/utils/logger";
+import { useEffect, useRef } from "react";
 
 const log = createClientLogger("TimeMachine");
 
 export type TimeMachineViewVm = ReturnType<typeof useTimeMachineView>;
 
 export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; isOpen: boolean }) {
+  const proxyIframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (!isOpen || vm.previewSourceType !== "url") return;
+    const frameWindow = proxyIframeRef.current?.contentWindow;
+    if (!frameWindow) return;
+    vm.registerProxyPreviewWindow(frameWindow, true);
+    return () => {
+      vm.registerProxyPreviewWindow(frameWindow, false);
+    };
+  }, [
+    isOpen,
+    vm.previewContent,
+    vm.previewSourceType,
+    vm.registerProxyPreviewWindow,
+  ]);
+
   return (
     <AnimatePresence>
               {isOpen && (
@@ -204,9 +222,10 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                                               )}
                                             </AnimatePresence>
                                             <iframe
+                                              ref={proxyIframeRef}
                                               src={vm.previewContent}
                                               className="size-full border-none bg-white"
-                                              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
+                                              sandbox="allow-scripts allow-forms allow-popups allow-pointer-lock"
                                               title={`Preview for ${vm.previewYear}`}
                                               onLoad={() => {
                                                 log.debug("Preview iframe loaded", {
@@ -243,6 +262,9 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                                               // AI-generated archive preview;
                                               // trusted "ryo" authorship.
                                               appletCreatedBy="ryo"
+                                              onIframeWindowChange={
+                                                vm.registerAiPreviewWindow
+                                              }
                                             />
                                           </motion.div>
                                         )}

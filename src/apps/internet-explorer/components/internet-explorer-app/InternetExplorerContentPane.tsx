@@ -33,6 +33,7 @@ export interface InternetExplorerContentPaneProps {
   handleNavigate: (navUrl: string, navYear?: string) => void;
   handleIframeLoad: () => void;
   handleIframeError: () => void;
+  registerAiPreviewWindow: (frameWindow: Window, active: boolean) => void;
   bringInstanceToForeground: (instanceId: string) => void;
   instanceId: string;
 }
@@ -62,6 +63,7 @@ export function InternetExplorerContentPane({
   handleNavigate,
   handleIframeLoad,
   handleIframeError,
+  registerAiPreviewWindow,
   bringInstanceToForeground,
   instanceId,
 }: InternetExplorerContentPaneProps) {
@@ -167,6 +169,7 @@ export function InternetExplorerContentPane({
               baseUrlForAiContent={url}
               mode={mode}
               appletCreatedBy="ryo"
+              onIframeWindowChange={registerAiPreviewWindow}
             />
           </div>
         ) : (
@@ -178,7 +181,7 @@ export function InternetExplorerContentPane({
               width: "calc(100% + 1px)",
               height: "calc(100% + 1px)",
             }}
-            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
+            sandbox="allow-scripts allow-forms allow-popups allow-pointer-lock"
             onLoad={handleIframeLoad}
             onError={handleIframeError}
           />

@@ -7,6 +7,8 @@ export interface TimeMachineViewProps {
   currentUrl: string;
   onSelectYear: (year: string) => void;
   currentSelectedYear: string;
+  registerAiPreviewWindow: (frameWindow: Window, active: boolean) => void;
+  registerProxyPreviewWindow: (frameWindow: Window, active: boolean) => void;
 }
 
 export interface TimeMachineUiState {

@@ -35,6 +35,8 @@ export interface InternetExplorerAppDialogsProps {
   handleResetFavorites: () => void;
   clearHistory: () => void;
   handleNavigate: (navUrl: string, navYear?: string) => void;
+  registerAiPreviewWindow: (frameWindow: Window, active: boolean) => void;
+  registerProxyPreviewWindow: (frameWindow: Window, active: boolean) => void;
 }
 
 export function InternetExplorerAppDialogs({
@@ -65,6 +67,8 @@ export function InternetExplorerAppDialogs({
   handleResetFavorites,
   clearHistory,
   handleNavigate,
+  registerAiPreviewWindow,
+  registerProxyPreviewWindow,
 }: InternetExplorerAppDialogsProps) {
   const { t } = useTranslation();
 
@@ -122,6 +126,8 @@ export function InternetExplorerAppDialogs({
         cachedYears={chronologicallySortedYears}
         currentUrl={url}
         currentSelectedYear={year}
+        registerAiPreviewWindow={registerAiPreviewWindow}
+        registerProxyPreviewWindow={registerProxyPreviewWindow}
         onSelectYear={(selectedYear) => {
           handleNavigate(url, selectedYear);
         }}

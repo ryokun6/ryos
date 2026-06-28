@@ -1,21 +1,21 @@
 export const APPLET_AUTH_MESSAGE_TYPE = "ryos-applet-auth";
+export const APPLET_AI_PATH = "/api/applet-ai";
 
 /**
  * Username of the trusted applet author. Only applets explicitly authored by
- * this account receive same-origin sandbox privileges and the auth bridge
- * (which forwards the user's auth cookie on `/api/applet-ai` requests).
+ * this account may receive the narrow applet AI bridge when its content was
+ * delivered by a trusted server response.
  *
  * Anyone else's applet — including the currently-logged-in user's own
- * applets — runs inside a strict sandbox without same-origin and without
- * the bridge. This protects the user's session from malicious third-party
- * applets shared via the Applet Store or imported from disk.
+ * applets — runs inside a strict sandbox without same-origin. Local metadata
+ * is never sufficient to enable the bridge.
  */
 export const TRUSTED_APPLET_AUTHOR = "ryo";
 
 /**
  * Returns true when an applet's `createdBy` value matches the trusted
- * author and the applet is therefore eligible for same-origin privileges
- * and auth bridge injection.
+ * author. Callers must separately establish that the content and author came
+ * from a server response rather than local/imported metadata.
  *
  * Treats null/undefined/empty values as untrusted.
  */
@@ -28,178 +28,247 @@ export function isTrustedAppletAuthor(
   return normalized === TRUSTED_APPLET_AUTHOR;
 }
 
-/**
- * Sandbox attributes used for trusted applets (and other AI/system content
- * authored by `ryo`). These iframes can use same-origin features such as
- * the auth bridge and `parent.postMessage` with the parent origin.
- */
-const TRUSTED_APPLET_SANDBOX = [
-  "allow-scripts",
-  "allow-same-origin",
-  "allow-forms",
-  "allow-popups",
-  "allow-popups-to-escape-sandbox",
-  "allow-modals",
-  "allow-pointer-lock",
-  "allow-downloads",
-  "allow-storage-access-by-user-activation",
-].join(" ");
+interface AppletContentAttestation {
+  content: string;
+  createdBy: string | null | undefined;
+}
 
-/**
- * Sandbox attributes for untrusted applets. CRITICALLY does NOT include
- * `allow-same-origin` — without it, the iframe runs in a unique opaque
- * origin and cannot:
- *   - read parent localStorage / cookies / IndexedDB
- *   - call `window.parent.<anything>` directly
- *   - send credentialed `fetch` requests to the host origin
- * This is the appropriate isolation level for applets authored by anyone
- * other than the trusted admin.
- */
-const UNTRUSTED_APPLET_SANDBOX = [
-  "allow-scripts",
-  "allow-forms",
-  "allow-popups",
-  "allow-popups-to-escape-sandbox",
-  "allow-modals",
-  "allow-pointer-lock",
-  "allow-downloads",
-].join(" ");
-
-/**
- * Returns the appropriate iframe `sandbox` attribute string for an applet
- * based on whether its author is trusted.
- *
- * Untrusted applets are denied `allow-same-origin` so they cannot escape
- * the sandbox to read parent state or impersonate the user.
- */
-export function getAppletSandboxAttribute(trusted: boolean): string {
-  return trusted ? TRUSTED_APPLET_SANDBOX : UNTRUSTED_APPLET_SANDBOX;
+export function getServerAttestedAppletAuthor(
+  renderedContent: string,
+  ...attestations: readonly (AppletContentAttestation | null | undefined)[]
+): string | null {
+  for (const attestation of attestations) {
+    if (
+      attestation &&
+      attestation.content === renderedContent &&
+      typeof attestation.createdBy === "string"
+    ) {
+      return attestation.createdBy;
+    }
+  }
+  return null;
 }
 
 /**
- * Auth bridge script injected into TRUSTED applet iframes only.
- *
- * - Requests the parent's username for display/attribution
- * - Patches `fetch` so credentials are sent on same-origin
- *   `/api/applet-ai` requests (so the httpOnly auth cookie is forwarded).
- *
- * Untrusted (non-ryo) applets never receive this script. Their fetches to
- * `/api/applet-ai` are made from a unique opaque origin and do not include
- * the user's auth cookie — they are subject to the standard anonymous
- * rate limit.
+ * Applet sandbox attributes. All applets use an opaque origin, including
+ * server-attested applets authored by `ryo`.
+ */
+const APPLET_SANDBOX = [
+  "allow-scripts",
+  "allow-forms",
+  "allow-popups",
+  "allow-popups-to-escape-sandbox",
+  "allow-modals",
+  "allow-pointer-lock",
+  "allow-downloads",
+].join(" ");
+
+export function getAppletSandboxAttribute(_trusted?: boolean): string {
+  return APPLET_SANDBOX;
+}
+
+/**
+ * Script injected only into server-attested applets. It preserves existing
+ * `fetch("/api/applet-ai", ...)` calls while the iframe has an opaque origin.
+ * No other URL is proxied.
  */
 export const APPLET_AUTH_BRIDGE_SCRIPT = `
 <script>
   (function () {
     var CHANNEL = "${APPLET_AUTH_MESSAGE_TYPE}";
-    var MAX_ATTEMPTS = 10;
-    var REQUEST_INTERVAL_MS = 200;
-    var TIMEOUT_MS = 2000;
+    var AI_PATH = "${APPLET_AI_PATH}";
+    var pending = new Map();
+    var sequence = 0;
+    var originalFetch = window.fetch.bind(window);
 
-    if (typeof window === "undefined") {
-      return;
+    if (window.__RYOS_APPLET_FETCH_PATCHED) return;
+    window.__RYOS_APPLET_FETCH_PATCHED = true;
+
+    function isAppletAiUrl(url) {
+      try {
+        return new URL(url, document.baseURI).pathname === AI_PATH;
+      } catch (_) {
+        return false;
+      }
     }
 
-    var PARENT_ORIGIN = window.location.origin;
-    var currentAuthPayload = null;
-    var authResolved = false;
-    var resolveAuth = function (payload) {};
-
-    var authReady = new Promise(function (resolve) {
-      resolveAuth = function (payload) {
-        if (authResolved) {
-          return;
-        }
-        authResolved = true;
-        currentAuthPayload = payload || null;
-        resolve(null);
-      };
+    window.addEventListener("message", function (event) {
+      if (event.source !== window.parent) return;
+      var data = event.data;
+      if (!data || data.type !== CHANNEL || data.action !== "ai-response") return;
+      if (typeof data.requestId !== "string") return;
+      var callbacks = pending.get(data.requestId);
+      if (!callbacks) return;
+      pending.delete(data.requestId);
+      if (!data.ok) {
+        callbacks.reject(new TypeError("Applet AI request failed"));
+        return;
+      }
+      callbacks.resolve(new Response(data.body, {
+        status: data.status,
+        statusText: data.statusText,
+        headers: data.headers
+      }));
     });
 
-    var attempts = 0;
-    var requestOnce = function () {
-      try {
-        if (window.parent) {
-          window.parent.postMessage(
-            { type: CHANNEL, action: "request" },
-            PARENT_ORIGIN
-          );
-        }
-      } catch (err) {
-        console.warn("[ryOS] Applet auth request failed:", err);
-      }
-    };
+    window.fetch = async function (input, init) {
+      var inputUrl = input instanceof Request ? input.url : input.toString();
+      if (!isAppletAiUrl(inputUrl)) return originalFetch(input, init);
+      var absoluteUrl = new URL(inputUrl, document.baseURI).href;
+      var request = input instanceof Request
+        ? input
+        : new Request(absoluteUrl, init);
 
-    requestOnce();
-    var requestTimer = setInterval(function () {
-      attempts += 1;
-      if (authResolved || attempts >= MAX_ATTEMPTS) {
-        clearInterval(requestTimer);
-        return;
-      }
-      requestOnce();
-    }, REQUEST_INTERVAL_MS);
-
-      setTimeout(function () {
-        if (!authResolved) {
-          clearInterval(requestTimer);
-          resolveAuth(null);
-        }
-      }, TIMEOUT_MS);
-
-      window.addEventListener("message", function (event) {
-        if (event.source !== window.parent) {
-          return;
-        }
-        if (event.origin !== PARENT_ORIGIN) {
-          return;
-        }
-        var data = event && event.data;
-        if (!data || data.type !== CHANNEL || data.action !== "response") {
-          return;
-        }
-        clearInterval(requestTimer);
-        if (authResolved) {
-          currentAuthPayload = data.payload || null;
-          return;
-        }
-        resolveAuth(data.payload || null);
+      var requestId = Date.now().toString(36) + "-" + (++sequence).toString(36);
+      var headers = {};
+      request.headers.forEach(function (value, key) {
+        if (key === "accept" || key === "content-type") headers[key] = value;
       });
+      var body = request.method === "GET" || request.method === "HEAD"
+        ? null
+        : await request.clone().text();
 
-      if (window.__RYOS_APPLET_FETCH_PATCHED) {
-        return;
-      }
-
-      var originalFetch = window.fetch.bind(window);
-      window.__RYOS_APPLET_FETCH_PATCHED = true;
-
-      window.fetch = function (input, init) {
-        return authReady.then(function () {
-          var shouldAugment = function (url) {
-            try {
-              var resolved = new URL(url, document.baseURI || window.location.origin);
-              return resolved.pathname === "/api/applet-ai";
-            } catch (err) {
-              return false;
-            }
-          };
-
-          var url;
-          if (typeof input === "string" || input instanceof URL) {
-            url = input.toString();
-          } else if (input instanceof Request) {
-            url = input.url;
+      return new Promise(function (resolve, reject) {
+        pending.set(requestId, { resolve: resolve, reject: reject });
+        window.parent.postMessage({
+          type: CHANNEL,
+          action: "ai-request",
+          requestId: requestId,
+          request: {
+            url: AI_PATH,
+            method: request.method,
+            headers: headers,
+            body: body
           }
-
-          if (!url || !shouldAugment(url)) {
-            return originalFetch(input, init);
-          }
-
-          var augmentedInit = init ? Object.assign({}, init) : {};
-          augmentedInit.credentials = "include";
-          return originalFetch(input, augmentedInit);
-        });
-      };
+        }, "*");
+      });
+    };
   })();
 </script>
 `;
+
+export interface AppletAiBridgeRequest {
+  type: typeof APPLET_AUTH_MESSAGE_TYPE;
+  action: "ai-request";
+  requestId: string;
+  request: {
+    url: typeof APPLET_AI_PATH;
+    method: "POST";
+    headers: Record<string, string>;
+    body: string | null;
+  };
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function parseAppletAiBridgeRequest(
+  value: unknown
+): AppletAiBridgeRequest | null {
+  if (!isPlainRecord(value)) return null;
+  if (
+    value.type !== APPLET_AUTH_MESSAGE_TYPE ||
+    value.action !== "ai-request" ||
+    typeof value.requestId !== "string" ||
+    value.requestId.length === 0 ||
+    value.requestId.length > 128 ||
+    !isPlainRecord(value.request)
+  ) {
+    return null;
+  }
+
+  const request = value.request;
+  if (
+    request.url !== APPLET_AI_PATH ||
+    request.method !== "POST" ||
+    (request.body !== null && typeof request.body !== "string") ||
+    !isPlainRecord(request.headers)
+  ) {
+    return null;
+  }
+
+  const headers: Record<string, string> = {};
+  for (const [name, headerValue] of Object.entries(request.headers)) {
+    const normalizedName = name.toLowerCase();
+    if (
+      (normalizedName !== "accept" && normalizedName !== "content-type") ||
+      typeof headerValue !== "string"
+    ) {
+      return null;
+    }
+    headers[normalizedName] = headerValue;
+  }
+
+  return {
+    type: APPLET_AUTH_MESSAGE_TYPE,
+    action: "ai-request",
+    requestId: value.requestId,
+    request: {
+      url: APPLET_AI_PATH,
+      method: "POST",
+      headers,
+      body: request.body,
+    },
+  };
+}
+
+export function isTrustedAppletMessageSource(
+  source: MessageEventSource | null,
+  trustedWindows: readonly Window[]
+): source is Window {
+  return source !== null && trustedWindows.includes(source as Window);
+}
+
+interface HandleAppletBridgeMessageOptions {
+  event: MessageEvent;
+  trustedWindows: readonly Window[];
+  fetchImpl?: typeof fetch;
+}
+
+export async function handleAppletBridgeMessage({
+  event,
+  trustedWindows,
+  fetchImpl = fetch,
+}: HandleAppletBridgeMessageOptions): Promise<boolean> {
+  if (!isTrustedAppletMessageSource(event.source, trustedWindows)) return false;
+  const message = parseAppletAiBridgeRequest(event.data);
+  if (!message) return false;
+
+  try {
+    const response = await fetchImpl(APPLET_AI_PATH, {
+      method: "POST",
+      credentials: "include",
+      headers: message.request.headers,
+      body: message.request.body,
+    });
+    const body = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type");
+    const headers = contentType ? { "content-type": contentType } : {};
+    event.source.postMessage(
+      {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "ai-response",
+        requestId: message.requestId,
+        ok: true,
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+        body,
+      },
+      "*",
+      [body]
+    );
+  } catch {
+    event.source.postMessage(
+      {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "ai-response",
+        requestId: message.requestId,
+        ok: false,
+      },
+      "*"
+    );
+  }
+  return true;
+}

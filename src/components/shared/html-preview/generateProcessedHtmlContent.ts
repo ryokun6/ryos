@@ -21,9 +21,8 @@ const shouldUseMacFonts = !options.useFallbackFonts && options.isMacOsXTheme;
 // Define the script tags and styles that should be added ONLY after streaming
 // Font link MUST be first for potentially faster loading/application
 // Only trusted (ryo-authored) HTML receives the auth bridge.
-// For untrusted previews, the iframe also runs without
-// `allow-same-origin`, so even if a malicious script tried to
-// postMessage the parent, it cannot read the response.
+// Every preview runs without `allow-same-origin`. The parent bridge also
+// accepts requests only from registered, server-attested iframe windows.
 const authBridge = options.isTrustedApplet ? APPLET_AUTH_BRIDGE_SCRIPT : "";
 
 const postStreamHeadContent = `
@@ -127,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Resolve relative URLs against the document's base URI (if set) or window location
         const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
         // Use a specific message type for AI HTML navigation
-        window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
+        window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, '*');
       } catch (e) { console.error("Error resolving/posting URL:", e); }
     }
   }, true); // Use capture phase to intercept early
@@ -146,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Resolve relative URLs against the document's base URI (if set) or window location
         const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
         // Use a specific message type for AI HTML navigation
-        window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
+        window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, '*');
       } catch (e) { console.error("Error resolving/posting URL:", e); }
     }
   }, true); // Use capture phase to intercept early

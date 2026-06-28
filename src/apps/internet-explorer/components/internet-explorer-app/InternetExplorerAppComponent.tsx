@@ -66,6 +66,8 @@ export function InternetExplorerAppComponent({
     setIsShareDialogOpen,
     urlInputRef,
     iframeRef,
+    registerAiPreviewWindow,
+    registerProxyPreviewWindow,
     favoritesContainerRef,
     generatedHtml,
     isAiLoading,
@@ -275,6 +277,7 @@ export function InternetExplorerAppComponent({
               handleNavigate={handleNavigate}
               handleIframeLoad={handleIframeLoad}
               handleIframeError={handleIframeError}
+              registerAiPreviewWindow={registerAiPreviewWindow}
               bringInstanceToForeground={bringInstanceToForeground}
               instanceId={instanceId}
             />
@@ -308,6 +311,8 @@ export function InternetExplorerAppComponent({
             handleResetFavorites={handleResetFavorites}
             clearHistory={clearHistory}
             handleNavigate={handleNavigate}
+            registerAiPreviewWindow={registerAiPreviewWindow}
+            registerProxyPreviewWindow={registerProxyPreviewWindow}
           />
       </TooltipProvider>
     </AppWindowShell>

@@ -44,6 +44,7 @@ function HtmlPreview({
   baseUrlForAiContent,
   mode = "now",
   appletCreatedBy = null,
+  onIframeWindowChange,
 }: HtmlPreviewProps) {
   const [isFullScreen, setIsFullScreen] = useState(initialFullScreen);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -63,6 +64,7 @@ function HtmlPreview({
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
   const fullscreenWrapperRef = useRef<HTMLDivElement>(null);
+  const registeredNavigationWindowsRef = useRef<Set<Window>>(new Set());
   const iframeId = useRef(
     `iframe-${Math.random().toString(36).substring(2, 9)}`
   ).current;
@@ -87,6 +89,41 @@ function HtmlPreview({
     fullscreenIframeRef
   );
   const sandboxAttribute = getAppletSandboxAttribute(isTrustedApplet);
+
+  const registerNavigationWindow = useCallback(
+    (frameWindow: Window | null | undefined) => {
+      if (
+        !frameWindow ||
+        registeredNavigationWindowsRef.current.has(frameWindow)
+      ) {
+        return;
+      }
+      registeredNavigationWindowsRef.current.add(frameWindow);
+      onIframeWindowChange?.(frameWindow, true);
+    },
+    [onIframeWindowChange]
+  );
+
+  useEffect(() => {
+    const registeredWindows = registeredNavigationWindowsRef.current;
+    return () => {
+      registeredWindows.forEach((frameWindow) => {
+        onIframeWindowChange?.(frameWindow, false);
+      });
+      registeredWindows.clear();
+    };
+  }, [onIframeWindowChange]);
+
+  useEffect(() => {
+    if (isFullScreen) return;
+    const inlineWindow = iframeRef.current?.contentWindow;
+    registeredNavigationWindowsRef.current.forEach((frameWindow) => {
+      if (frameWindow !== inlineWindow) {
+        registeredNavigationWindowsRef.current.delete(frameWindow);
+        onIframeWindowChange?.(frameWindow, false);
+      }
+    });
+  }, [isFullScreen, onIframeWindowChange]);
 
   const { maximizeSound, minimizeSound } = useHtmlPreviewSounds(
     propMaximizeSound,
@@ -449,9 +486,11 @@ function HtmlPreview({
               zIndex: 1,
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              onLoad={() =>
-                sendAuthPayload(iframeRef.current?.contentWindow || null)
-              }
+              onLoad={() => {
+                const frameWindow = iframeRef.current?.contentWindow || null;
+                registerNavigationWindow(frameWindow);
+                sendAuthPayload(frameWindow);
+              }}
           />
         )}
       </motion.div>
@@ -585,11 +624,12 @@ function HtmlPreview({
                         sandbox={sandboxAttribute}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
-                        onLoad={() =>
-                          sendAuthPayload(
-                            fullscreenIframeRef.current?.contentWindow || null
-                          )
-                        }
+                        onLoad={() => {
+                          const frameWindow =
+                            fullscreenIframeRef.current?.contentWindow || null;
+                          registerNavigationWindow(frameWindow);
+                          sendAuthPayload(frameWindow);
+                        }}
                         style={{
                           display: "block",
                           margin: 0,

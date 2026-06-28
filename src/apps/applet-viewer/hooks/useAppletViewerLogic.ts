@@ -17,6 +17,8 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
+  getServerAttestedAppletAuthor,
+  handleAppletBridgeMessage,
   isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
@@ -330,33 +332,13 @@ export function useAppletViewerLogic({
     }
   }, [updatesAvailable, actions, checkForUpdates, t]);
 
-  // Track the latest trust state in a ref so the stable `sendAuthPayload`
-  // callback can read it without changing identity. The actual value is
-  // refreshed below once `appletPath` and `sharedCreatedBy` are resolved.
+  // This ref gates the parent-side bridge. Trust is set only after the
+  // rendered content and author arrive from the applet API.
   const isTrustedAppletRef = useRef(false);
 
   const sendAuthPayload = useCallback(
-    (target: Window | null | undefined) => {
-      if (!target) return;
-      // Untrusted applet iframes don't get the username. They run in a
-      // sandboxed-without-`allow-same-origin` iframe, so even attempting
-      // to read this message would fail (origin mismatch); this guard is
-      // belt-and-braces to keep the bridge inert for non-ryo authors.
-      if (!isTrustedAppletRef.current) return;
-      try {
-        target.postMessage(
-          {
-            type: APPLET_AUTH_MESSAGE_TYPE,
-            action: "response",
-            payload: { username: username ?? null },
-          },
-          window.location.origin
-        );
-      } catch (error) {
-        console.warn("[applet-viewer] Failed to post auth payload:", error);
-      }
-    },
-    [username]
+    (_target: Window | null | undefined) => {},
+    []
   );
 
   const focusWindow = useCallback(() => {
@@ -374,42 +356,35 @@ export function useAppletViewerLogic({
   const appletPath = typedInitialData?.path || "";
   const shareCode = typedInitialData?.shareCode;
   const [loadedContent, setLoadedContent] = useState<string>("");
+  const [serverAttestation, setServerAttestation] = useState<{
+    path: string;
+    content: string;
+    createdBy: string | null;
+  } | null>(null);
 
   const getFileItem = getFileMetadata;
   const updateFileItemMetadata = updateFileMetadata;
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      const data = event?.data;
-      if (
-        !data ||
-        data.type !== APPLET_AUTH_MESSAGE_TYPE ||
-        data.action !== "request"
-      ) {
-        return;
-      }
-
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
       const sourceWindow = event.source as Window | null;
-      if (!sourceWindow) {
-        return;
-      }
-
-      if (sourceWindow !== iframeRef.current?.contentWindow) {
-        return;
-      }
-
-      sendAuthPayload(sourceWindow);
+      const trustedWindow =
+        isTrustedAppletRef.current &&
+        sourceWindow === iframeRef.current?.contentWindow
+          ? sourceWindow
+          : null;
+      if (!trustedWindow) return;
+      void handleAppletBridgeMessage({
+        event,
+        trustedWindows: [trustedWindow],
+      });
     };
 
     window.addEventListener("message", handleMessage);
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [sendAuthPayload]);
+  }, []);
 
   const fetchAndCacheAppletContent = useCallback(
     async (
@@ -418,6 +393,7 @@ export function useAppletViewerLogic({
     ): Promise<
       | {
           content: string;
+          createdBy: string | null;
           windowWidth?: number;
           windowHeight?: number;
         }
@@ -490,6 +466,8 @@ export function useAppletViewerLogic({
 
         return {
           content,
+          createdBy:
+            typeof data.createdBy === "string" ? data.createdBy : null,
           windowWidth:
             typeof data.windowWidth === "number"
               ? data.windowWidth
@@ -549,15 +527,16 @@ export function useAppletViewerLogic({
 
   useEffect(() => {
     const loadContentFromIndexedDB = async () => {
+      setServerAttestation(null);
       if (!appletPath || appletPath.startsWith("/Applets/") === false) {
         setLoadedContent("");
         return;
       }
 
-      if (
-        typedInitialData?.content &&
-        typedInitialData.content.trim().length > 0
-      ) {
+      const hasInitialContent =
+        typeof typedInitialData?.content === "string" &&
+        typedInitialData.content.trim().length > 0;
+      if (hasInitialContent) {
         setLoadedContent(typedInitialData.content);
         if (instanceId) {
           const appStore = useAppStore.getState();
@@ -566,16 +545,21 @@ export function useAppletViewerLogic({
             content: "",
           });
         }
-        return;
       }
 
       try {
         const fileMetadata = getFileItem(appletPath);
         if (fileMetadata?.uuid) {
-          const contentStr = await readAppletTextContent(appletPath);
-          if (contentStr) {
-            setLoadedContent(contentStr);
-          } else if (fileMetadata.shareId) {
+          let hasLocalContent = hasInitialContent;
+          if (!hasInitialContent) {
+            const contentStr = await readAppletTextContent(appletPath);
+            if (contentStr) {
+              setLoadedContent(contentStr);
+              hasLocalContent = true;
+            }
+          }
+
+          if (fileMetadata.shareId) {
             const fetched = await fetchAndCacheAppletContent(
               appletPath,
               fileMetadata
@@ -583,6 +567,11 @@ export function useAppletViewerLogic({
 
             if (fetched) {
               setLoadedContent(fetched.content);
+              setServerAttestation({
+                path: appletPath,
+                content: fetched.content,
+                createdBy: fetched.createdBy,
+              });
 
               if (instanceId && fetched.windowWidth && fetched.windowHeight) {
                 const appStore = useAppStore.getState();
@@ -595,10 +584,10 @@ export function useAppletViewerLogic({
                   });
                 }
               }
-            } else {
+            } else if (!hasLocalContent) {
               setLoadedContent("");
             }
-          } else {
+          } else if (!hasLocalContent) {
             setLoadedContent("");
           }
         } else {
@@ -856,17 +845,17 @@ export function useAppletViewerLogic({
     return `<!DOCTYPE html><html><head>${preload}${fontStyle}</head><body>${content}</body></html>`;
   };
 
-  // Resolve the applet's author. For installed applets this comes from the
-  // file metadata; for the shared-applet preview path it comes from the
-  // server-trusted `createdBy` field returned by /api/share-applet.
-  // (`fileItem` is declared further up the hook from `useFilesStore`.)
-  const isTrustedApplet = isTrustedAppletAuthor(
-    (appletPath ? getFileItem(appletPath)?.createdBy : null) ||
-      sharedCreatedBy ||
-      null
+  // Both values below accompany content returned by /api/share-applet.
+  // Persisted file metadata is intentionally excluded because imports can
+  // forge both createdBy and shareId.
+  const attestedCreatedBy = getServerAttestedAppletAuthor(
+    htmlContent,
+    serverAttestation?.path === appletPath ? serverAttestation : null,
+    { content: sharedContent, createdBy: sharedCreatedBy }
   );
+  const isTrustedApplet = isTrustedAppletAuthor(attestedCreatedBy);
 
-  // Mirror the latest trust state into the ref consumed by `sendAuthPayload`.
+  // Mirror trust into the stable parent-side bridge listener.
   useEffect(() => {
     isTrustedAppletRef.current = isTrustedApplet;
   }, [isTrustedApplet]);
@@ -874,10 +863,7 @@ export function useAppletViewerLogic({
   const injectAppletAuthScript = useCallback(
     (content: string): string => {
       if (!content) return content;
-      // Only ryo-authored applets receive the auth bridge. Untrusted applets
-      // run inside a strict sandbox without `allow-same-origin` (set on the
-      // iframe element), so even if they tried to postMessage the parent
-      // they wouldn't receive an auth payload.
+      // Only server-attested ryo content receives the narrow AI bridge.
       if (!isTrustedApplet) return content;
       if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
         return content;

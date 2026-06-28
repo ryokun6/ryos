@@ -93,7 +93,6 @@ export async function importAppletFile(
   let importFileName: string;
   let icon: string | undefined;
   let shareId: string | undefined;
-  let createdBy: string | undefined;
   let windowWidth: number | undefined;
   let windowHeight: number | undefined;
   let createdAt: number | undefined;
@@ -108,7 +107,6 @@ export async function importAppletFile(
       importFileName = jsonData.name || file.name;
       icon = jsonData.icon;
       shareId = jsonData.shareId;
-      createdBy = jsonData.createdBy;
       windowWidth = jsonData.windowWidth;
       windowHeight = jsonData.windowHeight;
       createdAt = jsonData.createdAt;
@@ -129,7 +127,6 @@ export async function importAppletFile(
     if (metadata.shareId) shareId = metadata.shareId;
     if (metadata.name) importFileName = metadata.name;
     if (metadata.icon) icon = metadata.icon;
-    if (metadata.createdBy) createdBy = metadata.createdBy;
     if (metadata.windowWidth !== undefined) windowWidth = metadata.windowWidth;
     if (metadata.windowHeight !== undefined) windowHeight = metadata.windowHeight;
     if (metadata.createdAt !== undefined) createdAt = metadata.createdAt;
@@ -157,7 +154,9 @@ export async function importAppletFile(
     name: importFileName,
     icon,
     shareId,
-    createdBy: createdBy || username,
+    // createdBy inside an imported file is untrusted attacker-controlled
+    // metadata. Keep only local attribution supplied by the caller.
+    createdBy: username,
     windowWidth,
     windowHeight,
     createdAt,
