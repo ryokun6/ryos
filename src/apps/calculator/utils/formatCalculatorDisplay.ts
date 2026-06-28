@@ -1,6 +1,8 @@
 const DECIMAL_PATTERN = /^-?\d+(?:\.\d*)?$/;
 const SCIENTIFIC_PATTERN = /^(-?\d+)(?:\.(\d+))?([eE][+-]?\d+)$/;
 const MAX_CONVERSION_SIGNIFICANT_DIGITS = 12;
+const MAX_STANDARD_DISPLAY_DIGITS = 12;
+const SCIENTIFIC_FRACTION_DIGITS = 8;
 
 interface FittedFontSizeInput {
   baseFontSize: number;
@@ -37,6 +39,18 @@ function getDecimalSeparator(locale: string): string {
   );
 }
 
+function formatScientificNumber(value: number, locale: string): string {
+  const scientific = value
+    .toExponential(SCIENTIFIC_FRACTION_DIGITS)
+    .replace(/(\.\d*?[1-9])0+e/u, "$1e")
+    .replace(/\.0+e/u, "e");
+  return scientific.replace(".", getDecimalSeparator(locale));
+}
+
+function countDisplayDigits(value: string): number {
+  return (value.match(/\d/g) ?? []).length;
+}
+
 /**
  * Localize the calculator's presentation without changing its canonical
  * machine-readable display value.
@@ -55,6 +69,12 @@ export function formatCalculatorDisplay(
   }
 
   if (!DECIMAL_PATTERN.test(value)) return value;
+  if (countDisplayDigits(value) > MAX_STANDARD_DISPLAY_DIGITS) {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      return formatScientificNumber(numericValue, locale);
+    }
+  }
   const decimalIndex = value.indexOf(".");
   const integerPart =
     decimalIndex === -1 ? value : value.slice(0, decimalIndex);
@@ -79,6 +99,10 @@ export function formatCalculatorConversionResult(
   isCurrency: boolean
 ): string {
   if (!Number.isFinite(value)) return "—";
+
+  if (Math.abs(value) >= 10 ** MAX_STANDARD_DISPLAY_DIGITS) {
+    return formatScientificNumber(value, locale);
+  }
 
   if (isCurrency) {
     return new Intl.NumberFormat(locale, {

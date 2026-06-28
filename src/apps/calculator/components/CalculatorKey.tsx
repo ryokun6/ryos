@@ -115,7 +115,7 @@ export function CalculatorDisplayValue({ value }: { value: string }) {
   }, [value]);
 
   return (
-    <div ref={valueRef} className="calc-display-value truncate">
+    <div ref={valueRef} className="calc-display-value whitespace-nowrap">
       {value}
     </div>
   );

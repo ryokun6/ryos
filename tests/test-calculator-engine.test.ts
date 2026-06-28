@@ -94,9 +94,12 @@ describe("formatCalculatorDisplay", () => {
     expect(formatCalculatorDisplay("1234.", "de")).toBe("1.234,");
   });
 
-  test("groups integers beyond Number safe precision", () => {
+  test("uses scientific notation when a grouped value would overflow", () => {
     expect(formatCalculatorDisplay("1234567890123456", "en")).toBe(
-      "1,234,567,890,123,456"
+      "1.23456789e+15"
+    );
+    expect(formatCalculatorDisplay("8888888888888", "en")).toBe(
+      "8.88888889e+12"
     );
   });
 
@@ -113,6 +116,9 @@ describe("formatCalculatorDisplay", () => {
 
   test("keeps currency results at two decimal places", () => {
     expect(formatCalculatorConversionResult(12.3, "en", true)).toBe("12.30");
+    expect(
+      formatCalculatorConversionResult(6709799999999999, "en", true)
+    ).toBe("6.7098e+15");
   });
 
   test("scales display text to its measured width", () => {
