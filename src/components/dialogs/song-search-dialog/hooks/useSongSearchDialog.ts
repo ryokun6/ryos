@@ -9,6 +9,9 @@ import {
 } from "../songSearchReducer";
 import type { SongSearchDialogProps } from "../types";
 import { isYouTubeUrl } from "../utils";
+import { createClientLogger } from "@/utils/logger";
+
+const songSearchLog = createClientLogger("SongSearch");
 
 export function useSongSearchDialog({
   isOpen,
@@ -60,7 +63,7 @@ export function useSongSearchDialog({
       await onAddUrl(query.trim());
       onOpenChange(false);
     } catch (err) {
-      console.error("Add URL error:", err);
+      songSearchLog.error("addUrl:failed", { error: err, query: query.trim() });
       dispatch({
         type: "setError",
         error:
@@ -168,7 +171,12 @@ export function useSongSearchDialog({
         throw new Error(t("apps.ipod.dialogs.songSearchInvalidResponse"));
       }
     } catch (err) {
-      console.error("Song search error:", err);
+      songSearchLog.error("search:failed", {
+        error: err,
+        mode,
+        appleMusicScope: isAppleMusicMode ? activeAppleMusicTab : undefined,
+        query: query.trim(),
+      });
       dispatch({
         type: "searchError",
         error:
@@ -191,6 +199,11 @@ export function useSongSearchDialog({
           await onAppleMusicSelect(appleMusicResults[selectedIndex]);
           onOpenChange(false);
         } catch (err) {
+          songSearchLog.error("appleMusicSelect:failed", {
+            error: err,
+            trackId: appleMusicResults[selectedIndex]?.id,
+            title: appleMusicResults[selectedIndex]?.title,
+          });
           dispatch({
             type: "setError",
             error:
@@ -234,6 +247,11 @@ export function useSongSearchDialog({
             await onAppleMusicSelect(appleMusicResults[index]);
             onOpenChange(false);
           } catch (err) {
+            songSearchLog.error("appleMusicSelect:failed", {
+              error: err,
+              trackId: appleMusicResults[index]?.id,
+              title: appleMusicResults[index]?.title,
+            });
             dispatch({
               type: "setError",
               error:
