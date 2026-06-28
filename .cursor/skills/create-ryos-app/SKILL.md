@@ -17,8 +17,9 @@ description: Create new applications for ryOS following established patterns and
 - [ ] 7. Add icon: public/icons/default/[app-name].png
 - [ ] 8. Register the app id: add to appIds + appNames in src/config/appRegistryData.ts
 - [ ] 9. Register the app: lazy component + registry entry in src/config/appRegistry.tsx
-- [ ] 10. Add translation keys to src/lib/locales/en/translation.json
-- [ ] 11. Localize (last): add en strings, sync locales; use the localize skill to finish
+- [ ] 10. Register help key order in src/hooks/useTranslatedHelpItems.ts
+- [ ] 11. Add translation keys to src/lib/locales/en/translation.json
+- [ ] 12. Localize (last): add en strings, sync locales; use the localize skill to finish
 ```
 
 ## Directory Structure
@@ -296,6 +297,14 @@ const Lazy[AppName]App = createLazyComponent<unknown>(
 },
 ```
 
+## 7. Register help keys
+
+`useTranslatedHelpItems("[app-name]", helpItems)` needs a matching key list in `APP_HELP_I18N_KEYS` in `src/hooks/useTranslatedHelpItems.ts`. Keep the list in the same order as `metadata.ts` `helpItems`; the hook preserves the icons and swaps in `apps.[app-name].help.[key].title` and `.description`.
+
+For longer help lists, create `src/apps/[app-name]/helpKeys.ts` and spread that exported list into `APP_HELP_I18N_KEYS`. Calculator, Maps, and Internet Explorer are good examples.
+
+Run `bun test tests/test-help-i18n-alignment.test.ts` after adding the app. It catches missing help keys and row-count drift across every registered app.
+
 ## AppProps Interface
 
 | Prop | Type | Description |
@@ -356,12 +365,13 @@ export const use[AppName]Store = create<State>()(
 );
 ```
 
-## 7. Localize (Do Last)
+## 8. Localize (Do Last)
 
 After the app is built and wired up, finish by localizing:
 
 1. **Add translation keys** for all user-facing strings (menu labels, dialogs, status, help).
 2. **Add English entries** under `apps.[app-name].*` in `src/lib/locales/en/translation.json`.
-3. **Sync other locales** (e.g. `bun run scripts/sync-translations.ts --mark-untranslated`).
+3. **Sync other locales** with `bun run i18n:sync:mark-todo`.
+4. **Validate** with `bun run i18n:sync:dry-run`, `bun run i18n:audit`, and the help alignment test.
 
 Use the **localize** skill for the full workflow: extract strings → `t()` calls → en keys → sync. Do this step last so all UI copy is stable before extracting and syncing.

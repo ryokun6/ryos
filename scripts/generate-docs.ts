@@ -16,6 +16,81 @@ const OUTPUT_DIR = "public/docs";
 const GITHUB_REPO = "https://github.com/ryokun6/ryos";
 const GITHUB_BLOB = `${GITHUB_REPO}/blob/main`;
 
+interface CodePathReference {
+  fullPath: string;
+  matchedText: string;
+}
+
+const REPO_ROOT_CODE_PATH_RE =
+  /((?:src|api|scripts|docs|public|tests|\.cursor)\/[a-zA-Z0-9_\-/.]+\.(?:tsx?|jsx?|json|css|html|md|sh|mdc))/;
+const ROOT_EMBED_PATH_RE = /^(\/embed\/[a-zA-Z0-9_\-/.]+\.html)$/;
+const RELATIVE_CODE_PATH_RE =
+  /([a-zA-Z0-9_\-/]+)\/([a-zA-Z0-9_\-/.]+\.(?:tsx?|jsx?|json|css|html|md|sh|mdc))/;
+
+const APP_RELATIVE_FOLDERS = new Set([
+  "components",
+  "hooks",
+  "utils",
+  "tools",
+  "commands",
+  "extensions",
+]);
+const SRC_RELATIVE_FOLDERS = new Set([
+  "stores",
+  "lib",
+  "contexts",
+  "types",
+]);
+
+export function resolveInlineCodePath(
+  content: string,
+  appContext?: string,
+): CodePathReference | null {
+  const repoRootMatch = content.match(REPO_ROOT_CODE_PATH_RE);
+  if (repoRootMatch) {
+    return {
+      fullPath: repoRootMatch[1],
+      matchedText: repoRootMatch[1],
+    };
+  }
+
+  const embedMatch = content.match(ROOT_EMBED_PATH_RE);
+  if (embedMatch) {
+    return {
+      fullPath: `public${embedMatch[1]}`,
+      matchedText: embedMatch[1],
+    };
+  }
+
+  const relativeMatch = content.match(RELATIVE_CODE_PATH_RE);
+  if (!relativeMatch) {
+    return null;
+  }
+
+  const folder = relativeMatch[1];
+  const filename = relativeMatch[2];
+  const firstSegment = folder.split("/")[0];
+
+  if (appContext && APP_RELATIVE_FOLDERS.has(firstSegment)) {
+    return {
+      fullPath: `src/apps/${appContext}/${folder}/${filename}`,
+      matchedText: relativeMatch[0],
+    };
+  }
+
+  if (SRC_RELATIVE_FOLDERS.has(firstSegment)) {
+    return {
+      fullPath: `src/${folder}/${filename}`,
+      matchedText: relativeMatch[0],
+    };
+  }
+
+  return {
+    fullPath: `src/${folder}/${filename}`,
+    matchedText: relativeMatch[0],
+  };
+}
+
 // Simple markdown to HTML converter
 function markdownToHtml(md: string, appContext?: string): string {
   let html = md;
@@ -141,43 +216,13 @@ function markdownToHtml(md: string, appContext?: string): string {
   // Convert file path references to GitHub links
   html = html.replace(/<code>([^<]*)<\/code>/g, (match, content) => {
     if (match.includes('http') || match.includes('github.com') || match.includes('href=')) return match;
+    const codePath = resolveInlineCodePath(content, appContext);
+    if (!codePath) return match;
     
-    let filePathMatch = content.match(/(src\/|api\/|scripts\/|docs\/|public\/)([a-zA-Z0-9_\-/.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
-    
-    let fullPath: string | null = null;
-    
-    if (filePathMatch) {
-      fullPath = filePathMatch[1] + filePathMatch[2];
-    } else {
-      filePathMatch = content.match(/^(\/embed\/[a-zA-Z0-9_\-/.]+\.(html))$/);
-      if (filePathMatch) {
-        fullPath = `public${filePathMatch[1]}`;
-      }
-    }
-
-    if (!fullPath) {
-      filePathMatch = content.match(/([a-zA-Z0-9_\-/]+)\/([a-zA-Z0-9_\-/.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
-      if (filePathMatch && filePathMatch[1] && filePathMatch[2]) {
-        const folder = filePathMatch[1];
-        const filename = filePathMatch[2];
-        const firstSegment = folder.split('/')[0];
-        
-        if (appContext && (firstSegment === 'components' || firstSegment === 'hooks' || firstSegment === 'utils' || firstSegment === 'tools' || firstSegment === 'commands' || firstSegment === 'extensions')) {
-          fullPath = `src/apps/${appContext}/${folder}/${filename}`;
-        } else if (firstSegment === 'stores' || firstSegment === 'lib' || firstSegment.startsWith('contexts') || firstSegment.startsWith('types')) {
-          fullPath = `src/${folder}/${filename}`;
-        } else {
-          fullPath = `src/${folder}/${filename}`;
-        }
-      }
-    }
-    
-    if (!fullPath || !filePathMatch) return match;
-    
-    const githubUrl = `${GITHUB_BLOB}/${fullPath}`;
+    const githubUrl = `${GITHUB_BLOB}/${codePath.fullPath}`;
     const linkedContent = content.replace(
-      filePathMatch[0],
-      `<a href="${githubUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">${filePathMatch[0]}</a>`
+      codePath.matchedText,
+      `<a href="${githubUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">${codePath.matchedText}</a>`
     );
     return `<code>${linkedContent}</code>`;
   });
@@ -824,7 +869,9 @@ async function generate() {
   console.log(`[docs] Generated ${docs.length} pages in ${OUTPUT_DIR}/`);
 }
 
-generate().catch((err) => {
-  console.error("[docs] Failed:", err);
-  process.exit(1);
-});
+if (import.meta.main) {
+  generate().catch((err) => {
+    console.error("[docs] Failed:", err);
+    process.exit(1);
+  });
+}
