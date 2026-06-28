@@ -262,6 +262,7 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                                               // AI-generated archive preview;
                                               // trusted "ryo" authorship.
                                               appletCreatedBy="ryo"
+                                              appletProvenance="server-generated"
                                               onIframeWindowChange={
                                                 vm.registerAiPreviewWindow
                                               }

@@ -82,6 +82,7 @@
     "test:pusher-constructor-wiring": "bun test tests/test-pusher-client-constructor-wiring.test.ts",
     "test:pusher-regression": "bun test tests/test-pusher-*.test.ts",
     "test:chat-regression": "bun test tests/test-*chat*.test.ts tests/test-pusher-*.test.ts",
+    "test:applet-browser": "bun test tests/debug-applet-script-execution.test.ts",
     "test:realtime-auth": "bun test tests/test-realtime-auth.test.ts tests/test-realtime-channels.test.ts",
     "test:realtime-ws-local": "bun test tests/test-realtime-ws-local.test.ts"
   },

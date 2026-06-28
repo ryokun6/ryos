@@ -1,4 +1,8 @@
-import { createAppletAuthBridgeScript } from "@/utils/appletAuthBridge";
+import {
+  createAppletAuthBridgeScript,
+  injectAppletRuntime,
+  type AppletStorageSnapshot,
+} from "@/utils/appletAuthBridge";
 
 export interface GenerateProcessedHtmlOptions {
   htmlContent: string;
@@ -7,6 +11,7 @@ export interface GenerateProcessedHtmlOptions {
   isMacOsXTheme: boolean;
   isTrustedApplet: boolean;
   appletBridgeNonce: string | null;
+  appletStorageSnapshot?: AppletStorageSnapshot;
   useFallbackFonts: boolean;
 }
 
@@ -21,19 +26,21 @@ const shouldUseMacFonts = !options.useFallbackFonts && options.isMacOsXTheme;
 
 // Define the script tags and styles that should be added ONLY after streaming
 // Font link MUST be first for potentially faster loading/application
-// Only trusted (ryo-authored) HTML receives the auth bridge.
-// Every preview runs without `allow-same-origin`. The parent bridge also
-// accepts requests only from registered, server-attested iframe windows.
+// Every preview gets an isolated storage runtime. The parent capability
+// enables credentialed AI requests only for server-attested ryo applets.
 const authBridge =
-  options.isTrustedApplet && options.appletBridgeNonce
-    ? createAppletAuthBridgeScript(options.appletBridgeNonce)
+  options.appletBridgeNonce
+    ? createAppletAuthBridgeScript(
+        options.appletBridgeNonce,
+        options.appletStorageSnapshot,
+        options.isTrustedApplet
+      )
     : "";
 
 const postStreamHeadContent = `
 <link rel="stylesheet" href="/fonts/fonts.css">
 ${timestamp} 
 ${baseTag}
-${authBridge}
 <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.min.js"></script>
 <script src="https://cdn.tailwindcss.com/3.4.16"></script>
 <script>
@@ -259,7 +266,7 @@ if (isFullHtmlDoc) {
 
   // We no longer need to inject the click interceptor script since it's already in the head
   // Just return the modified content
-  return modifiedContent;
+  return injectAppletRuntime(modifiedContent, authBridge);
 } else {
   // Construct the document for partial HTML fragments
   return `<!DOCTYPE html>
@@ -267,6 +274,7 @@ if (isFullHtmlDoc) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+${authBridge}
 ${postStreamHeadContent} 
 </head>
 <body>

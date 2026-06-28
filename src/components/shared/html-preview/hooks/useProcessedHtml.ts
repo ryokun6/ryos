@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { generateProcessedHtmlContent } from "../generateProcessedHtmlContent";
 import type { GenerateProcessedHtmlOptions } from "../generateProcessedHtmlContent";
+import type { AppletStorageSnapshot } from "@/utils/appletAuthBridge";
 
 type BaseOptions = Omit<GenerateProcessedHtmlOptions, "useFallbackFonts">;
 
@@ -10,6 +11,7 @@ export function useProcessedHtml(
   normalizedBaseUrl: string | null,
   isTrustedApplet: boolean,
   appletBridgeNonce: string | null,
+  appletStorageSnapshot: AppletStorageSnapshot,
   isStreaming: boolean = false
 ) {
   const contentTimestamp = useRef(Date.now());
@@ -23,6 +25,7 @@ export function useProcessedHtml(
       isMacOsXTheme,
       isTrustedApplet,
       appletBridgeNonce,
+      appletStorageSnapshot,
     }),
     [
       htmlContent,
@@ -30,6 +33,7 @@ export function useProcessedHtml(
       isMacOsXTheme,
       isTrustedApplet,
       appletBridgeNonce,
+      appletStorageSnapshot,
     ]
   );
 

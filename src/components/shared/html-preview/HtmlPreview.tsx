@@ -44,6 +44,8 @@ function HtmlPreview({
   baseUrlForAiContent,
   mode = "now",
   appletCreatedBy = null,
+  appletProvenance,
+  appletStorageIdentity,
   onIframeWindowChange,
 }: HtmlPreviewProps) {
   const [isFullScreen, setIsFullScreen] = useState(initialFullScreen);
@@ -83,10 +85,18 @@ function HtmlPreview({
       : `https://${baseUrlForAiContent}`
     : null;
 
-  const { isTrustedApplet, appletBridgeNonce, handleIframeLoad } =
+  const {
+    isTrustedApplet,
+    appletBridgeNonce,
+    appletStorageSnapshot,
+    armIframeDocument,
+    handleIframeLoad,
+  } =
     useAppletAuthMessaging(
       appletCreatedBy,
-      htmlContent
+      htmlContent,
+      appletProvenance === "server-generated",
+      appletStorageIdentity
     );
   const sandboxAttribute = getAppletSandboxAttribute(isTrustedApplet);
 
@@ -136,6 +146,7 @@ function HtmlPreview({
       normalizedBaseUrl,
       isTrustedApplet,
       appletBridgeNonce,
+      appletStorageSnapshot,
       isStreaming
     );
 
@@ -190,16 +201,18 @@ function HtmlPreview({
       requestAnimationFrame(() => {
         // Update inline iframe
         if (iframeRef.current) {
+          armIframeDocument(iframeRef.current.contentWindow);
           iframeRef.current.srcdoc = finalContent;
         }
 
         // Update fullscreen iframe if it exists
         if (fullscreenIframeRef.current) {
+          armIframeDocument(fullscreenIframeRef.current.contentWindow);
           fullscreenIframeRef.current.srcdoc = finalContent;
         }
       });
     },
-    []
+    [armIframeDocument]
   );
 
   // NEW: Effect to update iframe *after* streaming finishes or when content changes while not streaming

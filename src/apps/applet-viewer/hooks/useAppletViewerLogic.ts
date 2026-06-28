@@ -24,11 +24,14 @@ import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
   AppletBridgeHost,
-  APPLET_AUTH_MESSAGE_TYPE,
   createAppletAuthBridgeScript,
   createAppletBridgeNonce,
+  createAppletStorageKey,
   getServerAttestedAppletAuthor,
+  injectAppletRuntime,
   isTrustedAppletAuthor,
+  readAppletStorageSnapshot,
+  resolveAppletStorageIdentity,
 } from "@/utils/appletAuthBridge";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import type { FileSystemItem } from "@/stores/useFilesStore";
@@ -829,18 +832,52 @@ export function useAppletViewerLogic({
     { content: sharedContent, createdBy: sharedCreatedBy }
   );
   const isTrustedApplet = isTrustedAppletAuthor(attestedCreatedBy);
+  const appletStorageIdentity = resolveAppletStorageIdentity({
+    vfsUuid: fileItem?.uuid,
+    serverShareId: shareCode || fileItem?.shareId,
+  });
+  const appletStorageKey = useMemo(
+    () =>
+      appletStorageIdentity
+        ? createAppletStorageKey(appletStorageIdentity)
+        : null,
+    [appletStorageIdentity]
+  );
   const appletBridgeNonce = useMemo(
-    () => (isTrustedApplet ? createAppletBridgeNonce() : null),
-    [htmlContent, isTrustedApplet]
+    () => {
+      void htmlContent;
+      return createAppletBridgeNonce();
+    },
+    [htmlContent]
   );
   const bridgeHostRef = useRef<AppletBridgeHost | null>(null);
   if (!bridgeHostRef.current) bridgeHostRef.current = new AppletBridgeHost();
+  const appletStorageSnapshot = useMemo(
+    () => {
+      void appletBridgeNonce;
+      return bridgeHostRef.current?.getStorageSnapshot(appletStorageKey) ??
+        (appletStorageKey
+          ? readAppletStorageSnapshot(appletStorageKey)
+          : {});
+    },
+    [appletBridgeNonce, appletStorageKey]
+  );
 
   useLayoutEffect(() => {
     const host = bridgeHostRef.current;
-    host?.prepareDocument(appletBridgeNonce);
+    host?.prepareDocument(
+      appletBridgeNonce,
+      appletStorageKey,
+      isTrustedApplet,
+      appletStorageSnapshot
+    );
     return () => host?.invalidateAll();
-  }, [appletBridgeNonce]);
+  }, [
+    appletBridgeNonce,
+    appletStorageKey,
+    appletStorageSnapshot,
+    isTrustedApplet,
+  ]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -860,47 +897,15 @@ export function useAppletViewerLogic({
   const injectAppletAuthScript = useCallback(
     (content: string): string => {
       if (!content) return content;
-      // Only server-attested ryo content receives the narrow AI bridge.
-      if (!isTrustedApplet) return content;
-      if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
-        return content;
-      }
       if (!appletBridgeNonce) return content;
-      const bridgeScript = createAppletAuthBridgeScript(appletBridgeNonce);
-
-      const lower = content.toLowerCase();
-      const headCloseIdx = lower.lastIndexOf("</head>");
-      if (headCloseIdx !== -1) {
-        return (
-          content.slice(0, headCloseIdx) +
-          bridgeScript +
-          content.slice(headCloseIdx)
-        );
-      }
-
-      const headOpenMatch = /<head[^>]*>/i.exec(content);
-      if (headOpenMatch) {
-        const insertIdx = headOpenMatch.index + headOpenMatch[0].length;
-        return (
-          content.slice(0, insertIdx) +
-          bridgeScript +
-          content.slice(insertIdx)
-        );
-      }
-
-      const htmlOpenMatch = /<html[^>]*>/i.exec(content);
-      if (htmlOpenMatch) {
-        const insertIdx = htmlOpenMatch.index + htmlOpenMatch[0].length;
-        return (
-          content.slice(0, insertIdx) +
-          `<head>${bridgeScript}</head>` +
-          content.slice(insertIdx)
-        );
-      }
-
-      return `<!DOCTYPE html><html><head>${bridgeScript}</head><body>${content}</body></html>`;
+      const bridgeScript = createAppletAuthBridgeScript(
+        appletBridgeNonce,
+        appletStorageSnapshot,
+        isTrustedApplet
+      );
+      return injectAppletRuntime(content, bridgeScript);
     },
-    [appletBridgeNonce, isTrustedApplet]
+    [appletBridgeNonce, appletStorageSnapshot, isTrustedApplet]
   );
 
   const launchApp = useLaunchApp();

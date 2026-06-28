@@ -1,10 +1,9 @@
 /**
  * Tests for applet author trust resolution and sandbox derivation.
  *
- * Goal: only applets explicitly authored by the trusted admin (`ryo`) get
- * `allow-same-origin` and the auth bridge. Every other applet — including
- * the currently-logged-in user's own — is sandboxed without same-origin
- * so it cannot read parent localStorage / cookies / IndexedDB.
+ * Goal: every applet keeps an opaque origin. Only server-attested applets
+ * authored by the trusted admin (`ryo`) get the narrow AI capability; applet
+ * storage remains isolated from parent localStorage, cookies, and IndexedDB.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -13,11 +12,17 @@ import {
   APPLET_AUTH_MESSAGE_TYPE,
   AppletBridgeHost,
   createAppletAuthBridgeScript,
+  createAppletStorageKey,
   getAppletSandboxAttribute,
   getServerAttestedAppletAuthor,
+  injectAppletRuntime,
+  isAppletAiCapabilityAllowed,
   isTrustedAppletAuthor,
   parseAppletAiBridgeRequest,
+  readAppletStorageSnapshot,
+  resolveAppletStorageIdentity,
   TRUSTED_APPLET_AUTHOR,
+  type AppletStorageBackend,
 } from "../src/utils/appletAuthBridge";
 import { importAppletFile } from "../src/utils/appletImportExport";
 
@@ -42,6 +47,44 @@ describe("isTrustedAppletAuthor", () => {
     expect(isTrustedAppletAuthor(undefined)).toBe(false);
     expect(isTrustedAppletAuthor("")).toBe(false);
     expect(isTrustedAppletAuthor("   ")).toBe(false);
+  });
+});
+
+describe("applet capability provenance", () => {
+  test("an author string alone cannot grant the AI capability", () => {
+    expect(isAppletAiCapabilityAllowed("ryo", false)).toBe(false);
+    expect(isAppletAiCapabilityAllowed("ryo", true)).toBe(true);
+    expect(isAppletAiCapabilityAllowed("alice", true)).toBe(false);
+  });
+});
+
+describe("applet storage namespace", () => {
+  test("prefers immutable VFS UUIDs and otherwise uses server share IDs", () => {
+    expect(
+      resolveAppletStorageIdentity({
+        vfsUuid: "uuid-v1",
+        serverShareId: "share-1",
+      })
+    ).toBe("uuid-v1");
+    expect(
+      resolveAppletStorageIdentity({ serverShareId: "share-1" })
+    ).toBe("share-1");
+  });
+
+  test("replacement UUIDs do not inherit prior applet data", () => {
+    expect(createAppletStorageKey("uuid-old")).not.toBe(
+      createAppletStorageKey("uuid-replacement")
+    );
+  });
+});
+
+describe("applet runtime injection", () => {
+  test("places the runtime before every applet-authored script", () => {
+    const authored = "<html><head><script>window.authored = true</script></head></html>";
+    const result = injectAppletRuntime(authored, "<script>window.runtime = true</script>");
+    expect(result.indexOf("window.runtime")).toBeLessThan(
+      result.indexOf("window.authored")
+    );
   });
 });
 
@@ -170,6 +213,27 @@ describe("applet AI parent bridge", () => {
     channel.port2.close();
   });
 
+  test("rejects a registered window presenting the wrong document nonce", () => {
+    const targetWindow = {} as Window;
+    const host = new AppletBridgeHost();
+    host.prepareDocument("expected-nonce");
+    host.handleIframeLoad(targetWindow);
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "attacker-nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(event, "source", { value: targetWindow });
+    expect(host.handleConnect(event)).toBe(false);
+    host.invalidateAll();
+    channel.port1.close();
+    channel.port2.close();
+  });
+
   test("performs a credentialed fetch over the document port", async () => {
     const trustedWindow = {} as Window;
     let receivedUrl = "";
@@ -254,7 +318,7 @@ describe("applet AI parent bridge", () => {
     expect(host.handleConnect(attackerConnect)).toBe(false);
 
     attackerChannel.port1.postMessage(request);
-    await Bun.sleep(10);
+    await Bun.sleep(150);
     expect(fetchCount).toBe(0);
     trustedChannel.port1.close();
     attackerChannel.port1.close();
@@ -299,6 +363,307 @@ describe("applet AI parent bridge", () => {
     releaseFetch?.();
     await Bun.sleep(10);
     expect(responseCount).toBe(0);
+    channel.port1.close();
+  });
+
+  test("loads one snapshot, batches writes, flushes on invalidation, and reloads persisted state", async () => {
+    const values = new Map<string, string>();
+    let getCount = 0;
+    let setCount = 0;
+    const storage: AppletStorageBackend = {
+      getItem: (key) => {
+        getCount += 1;
+        return values.get(key) ?? null;
+      },
+      setItem: (key, value) => {
+        setCount += 1;
+        values.set(key, value);
+      },
+      removeItem: (key) => {
+        values.delete(key);
+      },
+    };
+    const storageKey = createAppletStorageKey("persistent-uuid");
+    const targetWindow = {} as Window;
+    const host = new AppletBridgeHost(fetch, storage);
+    host.prepareDocument("nonce", storageKey, false);
+    expect(getCount).toBe(1);
+    host.handleIframeLoad(targetWindow);
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(event, "source", { value: targetWindow });
+    expect(host.handleConnect(event)).toBe(true);
+    channel.port1.postMessage({
+      type: APPLET_AUTH_MESSAGE_TYPE,
+      action: "storage-set",
+      key: "one",
+      value: "1",
+    });
+    channel.port1.postMessage({
+      type: APPLET_AUTH_MESSAGE_TYPE,
+      action: "storage-set",
+      key: "two",
+      value: "2",
+    });
+    await Bun.sleep(10);
+    expect(getCount).toBe(1);
+    expect(setCount).toBe(0);
+    host.invalidateAll();
+    expect(setCount).toBe(1);
+
+    const reloaded = new AppletBridgeHost(fetch, storage);
+    reloaded.prepareDocument("next", storageKey, false);
+    expect(reloaded.getStorageSnapshot()).toEqual({ one: "1", two: "2" });
+    expect(getCount).toBe(2);
+    reloaded.invalidateAll();
+    channel.port1.close();
+  });
+
+  test("does not silently lose the 129th synchronous storage mutation", async () => {
+    const values = new Map<string, string>();
+    const storage: AppletStorageBackend = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    };
+    const storageKey = createAppletStorageKey("129-write-reproduction");
+    const targetWindow = {} as Window;
+    const host = new AppletBridgeHost(fetch, storage);
+    host.prepareDocument("nonce", storageKey, false);
+    host.handleIframeLoad(targetWindow);
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(event, "source", { value: targetWindow });
+    expect(host.handleConnect(event)).toBe(true);
+
+    channel.port1.postMessage({
+      type: APPLET_AUTH_MESSAGE_TYPE,
+      action: "storage-snapshot",
+      snapshot: Object.fromEntries(
+        Array.from({ length: 129 }, (_, index) => [`key-${index}`, "x"])
+      ),
+    });
+    await Bun.sleep(150);
+
+    expect(Object.keys(readAppletStorageSnapshot(storageKey, storage))).toHaveLength(
+      129
+    );
+    host.invalidateAll();
+    channel.port1.close();
+  });
+
+  test("acknowledges a persisted snapshot revision after applying it", async () => {
+    const values = new Map<string, string>();
+    const storage: AppletStorageBackend = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    };
+    const storageKey = createAppletStorageKey("acknowledgement-test");
+    const targetWindow = {} as Window;
+    const host = new AppletBridgeHost(fetch, storage);
+    host.prepareDocument("nonce", storageKey, false);
+    host.handleIframeLoad(targetWindow);
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(event, "source", { value: targetWindow });
+    expect(host.handleConnect(event)).toBe(true);
+
+    const acknowledgement = new Promise<unknown>((resolve) => {
+      channel.port1.onmessage = (portEvent) => resolve(portEvent.data);
+      channel.port1.start();
+    });
+    channel.port1.postMessage({
+      type: APPLET_AUTH_MESSAGE_TYPE,
+      action: "storage-snapshot",
+      revision: 42,
+      snapshot: { latest: "authoritative" },
+    });
+
+    expect(await acknowledgement).toEqual({
+      type: APPLET_AUTH_MESSAGE_TYPE,
+      action: "storage-ack",
+      revision: 42,
+    });
+    expect(host.getStorageSnapshot()).toEqual({ latest: "authoritative" });
+    host.invalidateAll();
+    channel.port1.close();
+  });
+
+  test("replacement document derives its snapshot from pending authoritative state", async () => {
+    const values = new Map<string, string>();
+    const storage: AppletStorageBackend = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    };
+    const storageKey = createAppletStorageKey("replacement-reproduction");
+    const targetWindow = {} as Window;
+    const host = new AppletBridgeHost(fetch, storage);
+    host.prepareDocument("first", storageKey, false);
+    host.handleIframeLoad(targetWindow);
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "first",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(event, "source", { value: targetWindow });
+    expect(host.handleConnect(event)).toBe(true);
+
+    channel.port1.postMessage({
+      type: APPLET_AUTH_MESSAGE_TYPE,
+      action: "storage-set",
+      key: "latest",
+      value: "authoritative",
+    });
+    await Bun.sleep(0);
+    const staleRenderSnapshot = readAppletStorageSnapshot(storageKey, storage);
+    expect(staleRenderSnapshot).toEqual({});
+    host.prepareDocument("second", storageKey, false, staleRenderSnapshot);
+
+    expect(host.getStorageSnapshot()).toEqual({ latest: "authoritative" });
+    host.invalidateAll();
+    channel.port1.close();
+  });
+
+  test("rate-limits message floods before repeated persistence work", async () => {
+    const values = new Map<string, string>();
+    let setCount = 0;
+    const storage: AppletStorageBackend = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => {
+        setCount += 1;
+        values.set(key, value);
+      },
+      removeItem: (key) => values.delete(key),
+    };
+    const storageKey = createAppletStorageKey("flood-test");
+    const targetWindow = {} as Window;
+    const host = new AppletBridgeHost(fetch, storage);
+    host.prepareDocument("nonce", storageKey, false);
+    host.handleIframeLoad(targetWindow);
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(event, "source", { value: targetWindow });
+    expect(host.handleConnect(event)).toBe(true);
+    for (let index = 0; index < 400; index += 1) {
+      channel.port1.postMessage({
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "storage-set",
+        key: `key-${index}`,
+        value: "x",
+      });
+    }
+    await Bun.sleep(150);
+    const persisted = readAppletStorageSnapshot(storageKey, storage);
+    expect(Object.keys(persisted)).toHaveLength(128);
+    expect(setCount).toBe(1);
+    host.invalidateAll();
+    channel.port1.close();
+  });
+
+  test("persists bounded applet storage over the document port without enabling AI", async () => {
+    const values = new Map<string, string>();
+    const storage: AppletStorageBackend = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => {
+        values.set(key, value);
+      },
+      removeItem: (key) => {
+        values.delete(key);
+      },
+    };
+    const storageKey = createAppletStorageKey("/Applets/Weather.app");
+    const trustedWindow = {} as Window;
+    let fetchCount = 0;
+    const host = new AppletBridgeHost(async () => {
+      fetchCount += 1;
+      return new Response();
+    }, storage);
+    host.prepareDocument("nonce", storageKey, false);
+    host.handleIframeLoad(trustedWindow);
+
+    const channel = new MessageChannel();
+    const connectEvent = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(connectEvent, "source", { value: trustedWindow });
+    expect(host.handleConnect(connectEvent)).toBe(true);
+
+    channel.port1.postMessage({
+      type: APPLET_AUTH_MESSAGE_TYPE,
+      action: "storage-set",
+      key: "weatherUnit",
+      value: "C",
+    });
+    channel.port1.postMessage(request);
+    await Bun.sleep(150);
+
+    expect(readAppletStorageSnapshot(storageKey, storage)).toEqual({
+      weatherUnit: "C",
+    });
+    expect(fetchCount).toBe(0);
+    host.invalidateAll();
+    channel.port1.close();
+  });
+
+  test("explicitly re-arms a WindowProxy for its assigned srcdoc load", () => {
+    const targetWindow = {} as Window;
+    const host = new AppletBridgeHost();
+    host.prepareDocument("nonce");
+    host.handleIframeLoad(targetWindow);
+    host.armWindowForDocument(targetWindow);
+    host.handleIframeLoad(targetWindow);
+
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(event, "source", { value: targetWindow });
+    expect(host.handleConnect(event)).toBe(true);
+    host.invalidateAll();
     channel.port1.close();
   });
 });

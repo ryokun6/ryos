@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "@phosphor-icons/react";
 import {
+  createAppletAuthBridgeScript,
   getAppletSandboxAttribute,
-  isTrustedAppletAuthor,
+  injectAppletRuntime,
 } from "@/utils/appletAuthBridge";
+import { useMemo, useRef } from "react";
 import type { AppStoreViewModel } from "./useAppStore";
 import { appletIconStyles } from "./constants";
 import { ensureMacFonts } from "./utils";
+import { useAppletAuthMessaging } from "@/components/shared/html-preview/hooks/useAppletAuthMessaging";
 
 interface AppStoreDetailViewProps {
   vm: AppStoreViewModel;
@@ -29,6 +32,38 @@ export function AppStoreDetailView({ vm }: AppStoreDetailViewProps) {
     handlePreviewClick,
   } = vm;
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const {
+    isTrustedApplet,
+    appletBridgeNonce,
+    appletStorageSnapshot,
+    handleIframeLoad,
+  } = useAppletAuthMessaging(
+    selectedApplet?.createdBy,
+    selectedAppletContent || "",
+    true,
+    selectedApplet?.id
+  );
+  const previewContent = useMemo(
+    () =>
+      selectedAppletContent
+        ? injectAppletRuntime(
+            ensureMacFonts(selectedAppletContent, isMacTheme),
+            createAppletAuthBridgeScript(
+              appletBridgeNonce,
+              appletStorageSnapshot,
+              isTrustedApplet
+            )
+          )
+        : "",
+    [
+      appletBridgeNonce,
+      appletStorageSnapshot,
+      isMacTheme,
+      isTrustedApplet,
+      selectedAppletContent,
+    ]
+  );
   if (!selectedApplet) return null;
 
   const displayName =
@@ -95,12 +130,14 @@ export function AppStoreDetailView({ vm }: AppStoreDetailViewProps) {
         >
           {selectedAppletContent ? (
             <iframe
-              srcDoc={ensureMacFonts(selectedAppletContent, isMacTheme)}
+              ref={iframeRef}
+              srcDoc={previewContent}
               title={displayName}
               className="size-full border-0"
-              sandbox={getAppletSandboxAttribute(
-                isTrustedAppletAuthor(selectedApplet?.createdBy)
-              )}
+              sandbox={getAppletSandboxAttribute(isTrustedApplet)}
+              onLoad={() =>
+                handleIframeLoad(iframeRef.current?.contentWindow)
+              }
               style={{
                 display: "block",
               }}

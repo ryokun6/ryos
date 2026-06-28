@@ -169,6 +169,7 @@ export function InternetExplorerContentPane({
               baseUrlForAiContent={url}
               mode={mode}
               appletCreatedBy="ryo"
+              appletProvenance="server-generated"
               onIframeWindowChange={registerAiPreviewWindow}
             />
           </div>

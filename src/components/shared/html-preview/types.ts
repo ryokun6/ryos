@@ -19,9 +19,16 @@ export interface HtmlPreviewProps {
   baseUrlForAiContent?: string;
   mode?: "past" | "future" | "now";
   /**
-   * Author of the applet/HTML being previewed. Determines the iframe
-   * sandbox level and whether the auth bridge is injected.
+   * Informational author label. This alone never grants the AI capability.
    */
   appletCreatedBy?: string | null;
+  /**
+   * Explicit attestation that this HTML came from the server-side AI flow.
+   */
+  appletProvenance?: "server-generated";
+  /**
+   * Immutable VFS UUID or server share ID used for persistent applet storage.
+   */
+  appletStorageIdentity?: string | null;
   onIframeWindowChange?: (frameWindow: Window, active: boolean) => void;
 }

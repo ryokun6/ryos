@@ -26,6 +26,7 @@ export const API_TEST_FILES = [
 ];
 
 export const OPT_IN_TEST_FILES = [
+  "tests/debug-applet-script-execution.test.ts",
   "tests/test-realtime-ws-local.test.ts",
 ];
 
