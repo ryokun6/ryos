@@ -4687,7 +4687,7 @@
   "debug": {
     "clearLogs": "清除記錄",
     "closeConsole": "關閉主控台",
-    "console": "主控台",
+    "console": "記錄",
     "copied": "已複製",
     "copy": "複製",
     "copyLogs": "複製記錄",

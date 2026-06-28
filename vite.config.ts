@@ -228,7 +228,8 @@ export default defineConfig({
         "**/.git/**",
         "**/scripts/**", // Build scripts don't need HMR
         "**/*.md", // Documentation files
-        "**/*.json", // JSON data files (except vite.config imports)
+        // App/static JSON data — but keep locale translation files watchable for HMR
+        "**/src/apps/**/*.json",
         "**/tests/**", // Test files don't need HMR
       ],
       // Use polling only when necessary (e.g., Docker/VM)

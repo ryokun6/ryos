@@ -19,6 +19,18 @@ const resources = {
   },
 };
 
+const localeJsonPaths: Partial<Record<SupportedLanguage, string>> = {
+  "zh-TW": "./locales/zh-TW/translation.json",
+  ja: "./locales/ja/translation.json",
+  ko: "./locales/ko/translation.json",
+  fr: "./locales/fr/translation.json",
+  de: "./locales/de/translation.json",
+  es: "./locales/es/translation.json",
+  pt: "./locales/pt/translation.json",
+  it: "./locales/it/translation.json",
+  ru: "./locales/ru/translation.json",
+};
+
 const localeLoaders: Partial<Record<SupportedLanguage, LocaleLoader>> = {
   "zh-TW": () => import("./locales/zh-TW/translation.json"),
   ja: () => import("./locales/ja/translation.json"),
@@ -188,6 +200,45 @@ export async function applyLanguage(
   }
 
   await setLanguageOnI18n(language);
+}
+
+const reloadTranslationBundle = (
+  language: SupportedLanguage,
+  messages: TranslationMessages
+): void => {
+  if (!i18n.isInitialized) {
+    return;
+  }
+
+  if (i18n.hasResourceBundle(language, "translation")) {
+    i18n.removeResourceBundle(language, "translation");
+  }
+
+  i18n.addResourceBundle(language, "translation", messages, true, true);
+  loadingLanguages.delete(language);
+  void i18n.changeLanguage(i18n.language);
+};
+
+if (import.meta.hot) {
+  const hot = import.meta.hot;
+
+  hot.accept("./locales/en/translation.json", (mod) => {
+    const messages = mod?.default as TranslationMessages | undefined;
+    if (messages) {
+      reloadTranslationBundle(DEFAULT_LANGUAGE, messages);
+    }
+  });
+
+  for (const [language, jsonPath] of Object.entries(localeJsonPaths) as Array<
+    [SupportedLanguage, string]
+  >) {
+    hot.accept(jsonPath, (mod) => {
+      const messages = mod?.default as TranslationMessages | undefined;
+      if (messages) {
+        reloadTranslationBundle(language, messages);
+      }
+    });
+  }
 }
 
 export default i18n;

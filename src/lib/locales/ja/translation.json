@@ -4687,7 +4687,7 @@
   "debug": {
     "clearLogs": "ログを消去",
     "closeConsole": "コンソールを閉じる",
-    "console": "コンソール",
+    "console": "ログ",
     "copied": "コピーしました",
     "copy": "コピー",
     "copyLogs": "ログをコピー",

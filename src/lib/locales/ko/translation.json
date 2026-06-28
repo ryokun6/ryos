@@ -4687,7 +4687,7 @@
   "debug": {
     "clearLogs": "로그 지우기",
     "closeConsole": "콘솔 닫기",
-    "console": "콘솔",
+    "console": "로그",
     "copied": "복사됨",
     "copy": "복사",
     "copyLogs": "로그 복사",

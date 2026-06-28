@@ -299,7 +299,7 @@ export function DebugLogOverlay() {
               "border-[color:var(--os-color-separator)]"
             )}
           >
-            <span className="font-os-ui text-[12px] font-semibold">
+            <span className="font-os-ui text-[13px]">
               {t("debug.console")}
             </span>
             <span className="font-os-ui text-[12px] opacity-60">

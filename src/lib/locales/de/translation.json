@@ -4687,7 +4687,7 @@
   "debug": {
     "clearLogs": "Logs löschen",
     "closeConsole": "Konsole schließen",
-    "console": "Konsole",
+    "console": "Logs",
     "copied": "Kopiert",
     "copy": "Kopieren",
     "copyLogs": "Logs kopieren",

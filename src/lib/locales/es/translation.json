@@ -4672,7 +4672,7 @@
   "debug": {
     "clearLogs": "Limpiar registros",
     "closeConsole": "Cerrar consola",
-    "console": "Consola",
+    "console": "Registros",
     "copied": "Copiado",
     "copy": "Copiar",
     "copyLogs": "Copiar registros",

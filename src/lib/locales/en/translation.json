@@ -4701,7 +4701,7 @@
     }
   },
   "debug": {
-    "console": "Console",
+    "console": "Logs",
     "errorCount": "{{count}} err",
     "warnCount": "{{count}} warn",
     "copyLogs": "Copy logs",
