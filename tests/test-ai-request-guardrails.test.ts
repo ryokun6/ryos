@@ -63,6 +63,72 @@ describe("chat request validation", () => {
     expect(result.success).toBe(true);
   });
 
+  test("accepts the exact AI SDK transport envelope", () => {
+    const result = ChatRequestSchema.safeParse({
+      id: "shared-ryo-chat",
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          parts: [{ type: "text", text: "What is next?" }],
+        },
+      ],
+      trigger: "submit-message",
+      messageId: "user-1",
+      systemState: { locale: "en" },
+      model: "sonnet-4.6",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("accepts restored AI SDK assistant history with safe step parts", () => {
+    const result = ChatRequestSchema.safeParse({
+      id: "shared-ryo-chat",
+      messages: [
+        {
+          id: "assistant-1",
+          role: "assistant",
+          parts: [
+            { type: "step-start" },
+            { type: "reasoning", text: "Checking the prior result.", state: "done" },
+            {
+              type: "tool-ipodControl",
+              toolCallId: "call-1",
+              state: "output-available",
+              input: { action: "next" },
+              output: { success: true },
+            },
+            { type: "step-start" },
+            { type: "text", text: "The next song is playing.", state: "done" },
+            {
+              type: "source-url",
+              sourceId: "source-1",
+              url: "https://example.com/music",
+              title: "Music source",
+            },
+            {
+              type: "source-document",
+              sourceId: "source-2",
+              mediaType: "text/plain",
+              title: "Prior notes",
+              filename: "notes.txt",
+            },
+          ],
+        },
+        {
+          id: "user-2",
+          role: "user",
+          parts: [{ type: "text", text: "Thanks." }],
+        },
+      ],
+      trigger: "submit-message",
+      messageId: "user-2",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   test("rejects client system and developer roles", () => {
     for (const role of ["system", "developer"]) {
       for (const message of [
@@ -100,6 +166,15 @@ describe("chat request validation", () => {
           role: "user",
           content: "x".repeat(CHAT_MAX_TEXT_CHARS),
         })),
+      }).success
+    ).toBe(false);
+
+    expect(
+      ChatRequestSchema.safeParse({
+        id: "shared-ryo-chat",
+        messages: [{ role: "user", content: "hello" }],
+        trigger: "resume-stream",
+        messageId: "user-1",
       }).success
     ).toBe(false);
 

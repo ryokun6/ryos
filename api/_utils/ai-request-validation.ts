@@ -72,6 +72,39 @@ const textPartSchema = z
   })
   .strict();
 
+const reasoningPartSchema = z
+  .object({
+    type: z.literal("reasoning"),
+    text: z.string().max(CHAT_MAX_TEXT_CHARS),
+    state: z.enum(["streaming", "done"]).optional(),
+  })
+  .strict();
+
+const stepStartPartSchema = z
+  .object({
+    type: z.literal("step-start"),
+  })
+  .strict();
+
+const sourceUrlPartSchema = z
+  .object({
+    type: z.literal("source-url"),
+    sourceId: z.string().min(1).max(200),
+    url: z.string().url().max(2_048),
+    title: z.string().max(1_000).optional(),
+  })
+  .strict();
+
+const sourceDocumentPartSchema = z
+  .object({
+    type: z.literal("source-document"),
+    sourceId: z.string().min(1).max(200),
+    mediaType: z.string().min(1).max(200),
+    title: z.string().max(1_000),
+    filename: z.string().max(1_000).optional(),
+  })
+  .strict();
+
 const toolPartBaseSchema = z.object({
   type: z
     .string()
@@ -136,7 +169,16 @@ const assistantMessageSchema = z
     metadata: boundedJsonValueSchema.optional(),
     content: z.string().max(CHAT_MAX_TEXT_CHARS).optional(),
     parts: z
-      .array(z.union([textPartSchema, toolPartSchema]))
+      .array(
+        z.union([
+          textPartSchema,
+          reasoningPartSchema,
+          stepStartPartSchema,
+          sourceUrlPartSchema,
+          sourceDocumentPartSchema,
+          toolPartSchema,
+        ])
+      )
       .min(1)
       .max(64)
       .optional(),
@@ -178,9 +220,14 @@ const systemStateSchema = z
 
 export const ChatRequestSchema = z
   .object({
+    id: z.string().min(1).max(200).optional(),
     messages: z
       .array(z.union([userMessageSchema, assistantMessageSchema]))
       .max(CHAT_MAX_MESSAGES),
+    trigger: z
+      .enum(["submit-message", "regenerate-message"])
+      .optional(),
+    messageId: z.string().min(1).max(200).optional(),
     systemState: systemStateSchema.optional(),
     model: z.string().max(100).optional(),
     proactiveGreeting: z.boolean().optional(),
