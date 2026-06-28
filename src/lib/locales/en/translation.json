@@ -240,7 +240,7 @@
     },
     "auth": {
       "dialogTitle": "Sign In to ryOS",
-      "username": "user name",
+      "username": "User name",
       "password": "Password",
       "logIn": "Sign In",
       "createAccount": "Create Account",

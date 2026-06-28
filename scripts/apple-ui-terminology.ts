@@ -42,7 +42,7 @@ export const ENGLISH_STYLE_EXPECTATIONS = {
   "common.colors.pink": "Pink",
   "common.colors.purple": "Purple",
   "common.colors.orange": "Orange",
-  "common.auth.username": "user name",
+  "common.auth.username": "User name",
   "common.auth.recovery.identifier": "user name or email",
 } as const satisfies Record<string, string>;
 
