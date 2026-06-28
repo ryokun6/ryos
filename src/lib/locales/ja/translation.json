@@ -618,10 +618,6 @@
       "name": "ブック",
       "reader": {
         "backToShelf": "本棚",
-        "debugCopied": "コピーしました",
-        "debugCopy": "ログをコピー",
-        "debugCopyFailed": "コピーに失敗しました",
-        "debugTitle": "EPUBデバッグログ",
         "error": "この本を開けませんでした。"
       },
       "shelf": {

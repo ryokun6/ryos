@@ -618,10 +618,6 @@
       "name": "Livres",
       "reader": {
         "backToShelf": "Bibliothèque",
-        "debugCopied": "Copié",
-        "debugCopy": "Copier les journaux",
-        "debugCopyFailed": "Échec de la copie",
-        "debugTitle": "Journal de débogage EPUB",
         "error": "Impossible d’ouvrir ce livre."
       },
       "shelf": {

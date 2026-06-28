@@ -618,10 +618,6 @@
       "name": "도서",
       "reader": {
         "backToShelf": "책장",
-        "debugCopied": "복사됨",
-        "debugCopy": "로그 복사",
-        "debugCopyFailed": "복사 실패",
-        "debugTitle": "EPUB 디버그 로그",
         "error": "이 책을 열 수 없습니다."
       },
       "shelf": {
