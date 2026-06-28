@@ -59,7 +59,7 @@ Requires the standalone server running in a separate terminal:
 
 ```bash
 # Terminal 1
-bun run dev:api      # port 3000; exports TRUSTED_PROXY_COUNT=1 so spoofed-IP rate-limit tests work
+bun run dev:api      # port 3000; exports TRUSTED_PROXY_COUNT=1 and a Telegram mock API base URL
 # Terminal 2
 bun run test:api     # or a single file: bun test tests/test-<feature>.test.ts
 ```
