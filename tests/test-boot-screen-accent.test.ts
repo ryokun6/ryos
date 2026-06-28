@@ -80,6 +80,15 @@ describe("macOS boot screen accent tokens", () => {
     expect(bootScreenSource).not.toContain('filter: "grayscale(50%) brightness(1.25)"');
   });
 
+  test("BootScreen supplies descriptions for each Radix dialog content", () => {
+    expect(bootScreenSource).toContain("DialogDescription");
+    expect(
+      bootScreenSource.match(
+        /<DialogDescription>\{dialogDescription\}<\/DialogDescription>/g
+      )
+    ).toHaveLength(3);
+  });
+
   test("dark-aqua.css wires boot apple logo filter with stock fallback", () => {
     expect(darkAquaThemeCss).toContain("img.boot-screen-apple-logo");
     expect(darkAquaThemeCss).toContain("--os-accent-boot-apple-filter");
