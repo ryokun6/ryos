@@ -24,6 +24,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -41,6 +42,8 @@ import {
 } from "@/utils/consoleCapture";
 import { osCardClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
+import { DebugLiveDashboard } from "./DebugLiveDashboard";
+import { getRestoredScrollTop } from "./debugLogVirtualization";
 
 const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
   log: "text-os-text-primary",
@@ -56,6 +59,7 @@ const STICK_TO_BOTTOM_THRESHOLD = 24;
 const LOGGER_TAG_RE = /^\[([^\]]+)\]/;
 const ALL_LOGGERS_FILTER = "__all__";
 const OTHER_LOGGER_FILTER = "__other__";
+type DebugPanelTab = "logs" | "live";
 
 function extractLoggerTag(text: string): string | null {
   const match = text.match(LOGGER_TAG_RE);
@@ -144,9 +148,11 @@ export function DebugLogOverlay() {
     ? `calc(env(safe-area-inset-bottom, 0px) + ${metadata.taskbarHeight + debugFabGapPx}px)`
     : `calc(env(safe-area-inset-bottom, 0px) + ${debugFabGapPx}px)`;
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<DebugPanelTab>("logs");
   const [loggerFilter, setLoggerFilter] = useState(ALL_LOGGERS_FILTER);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveReportRef = useRef("");
 
   // Ensure capture is running whenever the overlay is mounted (debug on).
   useEffect(() => {
@@ -201,6 +207,7 @@ export function DebugLogOverlay() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const pendingStickToBottomRef = useRef(false);
+  const scrollTopRef = useRef(0);
   const rowHeightsRef = useRef<Map<number, number>>(new Map());
   const [heightRevision, setHeightRevision] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
@@ -214,6 +221,7 @@ export function DebugLogOverlay() {
       el.scrollHeight - el.scrollTop - el.clientHeight;
     const atBottom = distanceFromBottom < STICK_TO_BOTTOM_THRESHOLD;
     stickToBottomRef.current = atBottom;
+    scrollTopRef.current = el.scrollTop;
     setIsAtBottom((previous) => (previous === atBottom ? previous : atBottom));
     setScrollTop(el.scrollTop);
   }, []);
@@ -288,6 +296,7 @@ export function DebugLogOverlay() {
     stickToBottomRef.current = true;
     pendingStickToBottomRef.current = false;
     setIsAtBottom(true);
+    scrollTopRef.current = el.scrollTop;
     setScrollTop(el.scrollTop);
   }, []);
 
@@ -297,6 +306,7 @@ export function DebugLogOverlay() {
     stickToBottomRef.current = true;
     pendingStickToBottomRef.current = false;
     setIsAtBottom(true);
+    scrollTopRef.current = 0;
     setScrollTop(0);
   }, []);
 
@@ -309,49 +319,73 @@ export function DebugLogOverlay() {
       stickToBottomRef.current = true;
       pendingStickToBottomRef.current = false;
       setIsAtBottom(true);
+      scrollTopRef.current = 0;
       setScrollTop(0);
     }
   }, [entries]);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || activeTab !== "logs") return;
     const el = scrollRef.current;
     if (!el) return;
 
     const updateViewportHeight = () => {
       setViewportHeight(el.clientHeight);
     };
+    const restoreVisibleScroller = () => {
+      if (scrollRef.current !== el) return;
+      const restoredScrollTop = getRestoredScrollTop({
+        previousScrollTop: scrollTopRef.current,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        stickToBottom: stickToBottomRef.current,
+      });
+      el.scrollTop = restoredScrollTop;
+      scrollTopRef.current = el.scrollTop;
+      setScrollTop(el.scrollTop);
+      updateViewportHeight();
+      setHeightRevision((revision) => revision + 1);
+    };
 
-    updateViewportHeight();
+    restoreVisibleScroller();
+    const animationFrameId = window.requestAnimationFrame(
+      restoreVisibleScroller
+    );
     if (typeof ResizeObserver === "undefined") {
       window.addEventListener("resize", updateViewportHeight);
-      return () => window.removeEventListener("resize", updateViewportHeight);
+      return () => {
+        window.cancelAnimationFrame(animationFrameId);
+        window.removeEventListener("resize", updateViewportHeight);
+      };
     }
 
     const observer = new ResizeObserver(updateViewportHeight);
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [open]);
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
+    };
+  }, [activeTab, open]);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || activeTab !== "logs") return;
     if (stickToBottomRef.current || pendingStickToBottomRef.current) {
       scrollToBottom();
     }
-  }, [open, scrollToBottom, totalHeight]);
+  }, [activeTab, open, scrollToBottom, totalHeight]);
 
   const copyText = useMemo(
     () => formatConsoleEntriesForCopy(filteredEntries),
     [filteredEntries]
   );
 
-  const handleCopy = useCallback(async () => {
+  const copyToClipboard = useCallback(async (text: string) => {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(copyText);
+        await navigator.clipboard.writeText(text);
       } else {
         const ta = document.createElement("textarea");
-        ta.value = copyText;
+        ta.value = text;
         ta.style.position = "fixed";
         ta.style.opacity = "0";
         document.body.appendChild(ta);
@@ -365,7 +399,19 @@ export function DebugLogOverlay() {
     } catch {
       // Clipboard can reject (permissions, insecure context) — ignore silently.
     }
-  }, [copyText]);
+  }, []);
+
+  const handleCopy = useCallback(() => {
+    void copyToClipboard(copyText);
+  }, [copyText, copyToClipboard]);
+
+  const handleCopyLive = useCallback(() => {
+    void copyToClipboard(liveReportRef.current);
+  }, [copyToClipboard]);
+
+  const handleLiveReportChange = useCallback((report: string) => {
+    liveReportRef.current = report;
+  }, []);
 
   const handleFix = useCallback(() => {
     const prompt = buildDebugFixPrompt(copyText);
@@ -423,112 +469,134 @@ export function DebugLogOverlay() {
       }}
     >
       {open && (
-        <div
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) =>
+            setActiveTab(value === "live" ? "live" : "logs")
+          }
           className={cn(
             osCardClassName(flags, {
               embed: "panel",
-              className:
-                "mb-2 w-[min(92vw,440px)] h-[min(60vh,420px)] shadow-os-window",
+              className: cn(
+                "mb-2 h-[min(60vh,420px)] w-[min(92vw,440px)] shadow-os-window",
+                flags.isAquaGlass &&
+                  "window window-material-glass is-foreground"
+              ),
             })
           )}
         >
           {/* Header */}
           <div
             className={cn(
-              "flex items-center gap-1.5 px-2 py-1.5 border-b shrink-0",
-              "border-[color:var(--os-color-separator)]"
+              "flex h-8 shrink-0 items-center gap-1.5 border-b px-2 py-1",
+              "border-[color:var(--os-color-separator)]",
+              flags.isAquaGlass ? "bg-transparent" : "bg-os-panel-bg"
             )}
           >
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("debug.filterByLogger")}
-                  title={t("debug.filterByLogger")}
-                  className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
-                >
-                  <span>{filterTriggerLabel}</span>
-                  <span className="tabular-nums opacity-60">
-                    {filteredEntries.length}
-                  </span>
-                  <CaretDown
-                    size={10}
-                    weight="bold"
-                    className="shrink-0 opacity-50"
-                    aria-hidden
-                  />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                sideOffset={4}
-                container={overlayRootRef.current}
-                className="min-w-[12rem]"
-              >
-                <DropdownMenuRadioGroup
-                  value={loggerFilter}
-                  onValueChange={setLoggerFilter}
-                >
-                  <DropdownMenuRadioItem
-                    value={ALL_LOGGERS_FILTER}
-                    className="font-os-ui text-[12px]"
-                  >
-                    <LoggerFilterMenuLabel
-                      label={t("debug.filterAll")}
-                      count={entries.length}
-                    />
-                  </DropdownMenuRadioItem>
-                  {loggerStats.sorted.map(([tag, count]) => (
-                    <DropdownMenuRadioItem
-                      key={tag}
-                      value={tag}
-                      className="font-os-ui text-[12px]"
+            {activeTab === "logs" ? (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={t("debug.filterByLogger")}
+                      title={t("debug.filterByLogger")}
+                      className="flex min-w-0 items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
                     >
-                      <LoggerFilterMenuLabel label={tag} count={count} />
-                    </DropdownMenuRadioItem>
-                  ))}
-                  {loggerStats.otherCount > 0 ? (
-                    <DropdownMenuRadioItem
-                      value={OTHER_LOGGER_FILTER}
-                      className="font-os-ui text-[12px]"
-                    >
-                      <LoggerFilterMenuLabel
-                        label={t("debug.filterOther")}
-                        count={loggerStats.otherCount}
+                      <span className="truncate">{filterTriggerLabel}</span>
+                      <span className="shrink-0 tabular-nums opacity-60">
+                        {filteredEntries.length}
+                      </span>
+                      <CaretDown
+                        size={10}
+                        weight="bold"
+                        className="shrink-0 opacity-50"
+                        aria-hidden
                       />
-                    </DropdownMenuRadioItem>
-                  ) : null}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {errorCount > 0 && (
-              <span className="font-os-ui text-[12px] text-red-500">
-                {t("debug.errorCount", { count: errorCount })}
-              </span>
-            )}
-            {warnCount > 0 && (
-              <span className="font-os-ui text-[12px] text-amber-500">
-                {t("debug.warnCount", { count: warnCount })}
-              </span>
-            )}
-            <div className="ml-auto flex items-center gap-0.5">
-              {isRyoAdmin ? (
-                <button
-                  type="button"
-                  onClick={handleFix}
-                  title={t("debug.fixLogs")}
-                  aria-label={t("debug.fixLogs")}
-                  className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
-                >
-                  <Wrench weight="bold" className="size-3.5" />
-                  <span>{t("debug.fix")}</span>
-                </button>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={4}
+                    container={overlayRootRef.current}
+                    className="min-w-[12rem]"
+                  >
+                    <DropdownMenuRadioGroup
+                      value={loggerFilter}
+                      onValueChange={setLoggerFilter}
+                    >
+                      <DropdownMenuRadioItem
+                        value={ALL_LOGGERS_FILTER}
+                        className="font-os-ui text-[12px]"
+                      >
+                        <LoggerFilterMenuLabel
+                          label={t("debug.filterAll")}
+                          count={entries.length}
+                        />
+                      </DropdownMenuRadioItem>
+                      {loggerStats.sorted.map(([tag, count]) => (
+                        <DropdownMenuRadioItem
+                          key={tag}
+                          value={tag}
+                          className="font-os-ui text-[12px]"
+                        >
+                          <LoggerFilterMenuLabel label={tag} count={count} />
+                        </DropdownMenuRadioItem>
+                      ))}
+                      {loggerStats.otherCount > 0 ? (
+                        <DropdownMenuRadioItem
+                          value={OTHER_LOGGER_FILTER}
+                          className="font-os-ui text-[12px]"
+                        >
+                          <LoggerFilterMenuLabel
+                            label={t("debug.filterOther")}
+                            count={loggerStats.otherCount}
+                          />
+                        </DropdownMenuRadioItem>
+                      ) : null}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {errorCount > 0 && (
+                  <span className="shrink-0 font-os-ui text-[12px] text-red-500">
+                    {t("debug.errorCount", { count: errorCount })}
+                  </span>
+                )}
+                {warnCount > 0 && (
+                  <span className="shrink-0 font-os-ui text-[12px] text-amber-500">
+                    {t("debug.warnCount", { count: warnCount })}
+                  </span>
+                )}
+              </>
+            ) : null}
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              {activeTab === "logs" ? (
+                isRyoAdmin ? (
+                  <button
+                    type="button"
+                    onClick={handleFix}
+                    title={t("debug.fixLogs")}
+                    aria-label={t("debug.fixLogs")}
+                    className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                  >
+                    <Wrench weight="bold" className="size-3.5" />
+                    <span>{t("debug.fix")}</span>
+                  </button>
+                ) : null
               ) : null}
               <button
                 type="button"
-                onClick={handleCopy}
-                title={t("debug.copyLogs")}
-                aria-label={t("debug.copyLogs")}
+                onClick={activeTab === "logs" ? handleCopy : handleCopyLive}
+                title={
+                  activeTab === "logs"
+                    ? t("debug.copyLogs")
+                    : t("debug.live.copySnapshot")
+                }
+                aria-label={
+                  activeTab === "logs"
+                    ? t("debug.copyLogs")
+                    : t("debug.live.copySnapshot")
+                }
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
                 {copied ? (
@@ -538,15 +606,17 @@ export function DebugLogOverlay() {
                 )}
                 <span>{copied ? t("debug.copied") : t("debug.copy")}</span>
               </button>
-              <button
-                type="button"
-                onClick={handleClear}
-                title={t("debug.clearLogs")}
-                aria-label={t("debug.clearLogs")}
-                className="flex items-center rounded p-1 hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
-              >
-                <Trash weight="bold" className="size-3" />
-              </button>
+              {activeTab === "logs" ? (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  title={t("debug.clearLogs")}
+                  aria-label={t("debug.clearLogs")}
+                  className="flex items-center rounded p-1 hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                >
+                  <Trash weight="bold" className="size-3" />
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -560,7 +630,13 @@ export function DebugLogOverlay() {
           </div>
 
           {/* Log list */}
-          <div className="relative flex-1 min-h-0">
+          <TabsContent
+            value="logs"
+            className={cn(
+              "relative mt-0 min-h-0 flex-1 overflow-hidden",
+              flags.isAquaGlass ? "bg-transparent" : "bg-os-window-bg"
+            )}
+          >
             <div
               ref={scrollRef}
               onScroll={handleScroll}
@@ -597,7 +673,16 @@ export function DebugLogOverlay() {
                           LEVEL_TEXT_CLASS[entry.level]
                         )}
                       >
-                        {entry.text}
+                        {entry.styledSegments
+                          ? entry.styledSegments.map((segment, segmentIndex) => (
+                              <span
+                                key={`${entry.id}-${segmentIndex}`}
+                                style={segment.style}
+                              >
+                                {segment.text}
+                              </span>
+                            ))
+                          : entry.text}
                       </span>
                     </div>
                   ))}
@@ -622,8 +707,58 @@ export function DebugLogOverlay() {
                 <span>{t("debug.scrollToBottom")}</span>
               </button>
             )}
+          </TabsContent>
+          <TabsContent
+            value="live"
+            className={cn(
+              "relative mt-0 min-h-0 flex-1 overflow-hidden",
+              flags.isAquaGlass ? "bg-transparent" : "bg-os-window-bg"
+            )}
+          >
+            <DebugLiveDashboard
+              active={open && activeTab === "live"}
+              entries={entries}
+              onReportChange={handleLiveReportChange}
+            />
+          </TabsContent>
+          <div
+            className={cn(
+              "flex h-8 shrink-0 items-center justify-center border-t px-2 py-1",
+              "border-[color:var(--os-color-separator)]",
+              flags.isAquaGlass ? "bg-transparent" : "bg-os-panel-bg"
+            )}
+          >
+            <TabsList
+              aria-label={t("debug.tabs.label")}
+              className="h-6 shrink-0 gap-0.5 rounded-none bg-transparent p-0 text-os-text-secondary"
+            >
+              <TabsTrigger
+                value="logs"
+                className={cn(
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
+                  "border border-transparent data-[state=active]:border-os-window",
+                  "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
+                  "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
+                  "os-theme-system7:rounded-none os-windows:rounded-none"
+                )}
+              >
+                {t("debug.tabs.logs")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="live"
+                className={cn(
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
+                  "border border-transparent data-[state=active]:border-os-window",
+                  "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
+                  "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
+                  "os-theme-system7:rounded-none os-windows:rounded-none"
+                )}
+              >
+                {t("debug.tabs.live")}
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
+        </Tabs>
       )}
 
       {/* Toggle button */}
