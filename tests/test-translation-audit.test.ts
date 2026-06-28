@@ -87,9 +87,14 @@ describe("translation audit", () => {
       resources: { ru: { translation: ru } },
     });
 
-    const key = "apps.ipod.menuItems.playlistTrackCount";
-    expect(i18n.t(key, { count: 1 })).toBe("1 песня");
-    expect(i18n.t(key, { count: 2 })).toBe("2 песни");
-    expect(i18n.t(key, { count: 5 })).toBe("5 песен");
+    const playlistKey = "apps.ipod.menuItems.playlistTrackCount";
+    expect(i18n.t(playlistKey, { count: 1 })).toBe("1 песня");
+    expect(i18n.t(playlistKey, { count: 2 })).toBe("2 песни");
+    expect(i18n.t(playlistKey, { count: 5 })).toBe("5 песен");
+
+    const cardsKey = "apps.contacts.status.cardsCount";
+    expect(i18n.t(cardsKey, { count: 1 })).toBe("1 карточка");
+    expect(i18n.t(cardsKey, { count: 2 })).toBe("2 карточки");
+    expect(i18n.t(cardsKey, { count: 5 })).toBe("5 карточек");
   });
 });
