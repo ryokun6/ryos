@@ -40,6 +40,32 @@ import {
   type ApiRouteManifestEntry,
 } from "./api-route-manifest";
 
+const BROWSER_SECURITY_HEADERS = {
+  "Content-Security-Policy-Report-Only":
+    "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: wss:; media-src 'self' blob: https:; frame-src 'self' https:; worker-src 'self' blob:; form-action 'self' https:; frame-ancestors 'self'",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+} as const;
+
+function applyBrowserSecurityHeaders(headers: Headers): Headers {
+  for (const [name, value] of Object.entries(BROWSER_SECURITY_HEADERS)) {
+    if (!headers.has(name)) {
+      headers.set(name, value);
+    }
+  }
+  return headers;
+}
+
+function withBrowserSecurityHeaders(response: Response): Response {
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: applyBrowserSecurityHeaders(new Headers(response.headers)),
+  });
+}
+
 type QueryValue = string | string[];
 type QueryMap = Record<string, QueryValue>;
 type HeaderValue = string | number | string[];
@@ -287,7 +313,7 @@ class BunResponseShim extends EventEmitter {
       this.statusCode === 204 || this.statusCode === 304 ? null : this.stream;
     return new Response(body, {
       status: this.statusCode,
-      headers,
+      headers: applyBrowserSecurityHeaders(headers),
     });
   }
 
@@ -554,6 +580,7 @@ function jsonResponse(data: unknown, status = 200): Response {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
+      ...BROWSER_SECURITY_HEADERS,
     },
   });
 }
@@ -564,6 +591,7 @@ function jsResponse(source: string, status = 200): Response {
     headers: {
       "content-type": "application/javascript; charset=utf-8",
       "cache-control": "no-store",
+      ...BROWSER_SECURITY_HEADERS,
     },
   });
 }
@@ -591,7 +619,9 @@ async function getStaticFileResponse(
     headers.set("content-type", file.type);
   }
 
-  return new Response(file, { headers });
+  return new Response(file, {
+    headers: applyBrowserSecurityHeaders(headers),
+  });
 }
 
 async function serveDistPath(
@@ -639,28 +669,36 @@ function buildAppConfigScript(origin: string): string {
 
 async function handleStaticRequest(pathname: string): Promise<Response | null> {
   if (pathname === "/infinite-pc" || pathname === "/embed/infinite-pc") {
-    return new Response("Not Found", { status: 404 });
+    return withBrowserSecurityHeaders(
+      new Response("Not Found", { status: 404 })
+    );
   }
 
   if (pathname === "/docs" || pathname === "/docs/") {
-    return new Response(null, {
-      status: 302,
-      headers: { location: "/docs/overview" },
-    });
+    return withBrowserSecurityHeaders(
+      new Response(null, {
+        status: 302,
+        headers: { location: "/docs/overview" },
+      })
+    );
   }
 
   if (pathname === "/privacy" || pathname === "/privacy/") {
-    return new Response(null, {
-      status: 302,
-      headers: { location: "/docs/privacy" },
-    });
+    return withBrowserSecurityHeaders(
+      new Response(null, {
+        status: 302,
+        headers: { location: "/docs/privacy" },
+      })
+    );
   }
 
   if (pathname === "/terms" || pathname === "/terms/") {
-    return new Response(null, {
-      status: 302,
-      headers: { location: "/docs/terms" },
-    });
+    return withBrowserSecurityHeaders(
+      new Response(null, {
+        status: 302,
+        headers: { location: "/docs/terms" },
+      })
+    );
   }
 
   if (pathname === "/embed/infinite-mac") {
@@ -858,7 +896,7 @@ async function bootstrap(): Promise<void> {
       if (!pathname.startsWith("/api")) {
         const ogShareResponse = await createOgShareResponse(request);
         if (ogShareResponse) {
-          return ogShareResponse;
+          return withBrowserSecurityHeaders(ogShareResponse);
         }
 
         return (

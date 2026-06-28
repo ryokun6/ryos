@@ -20,12 +20,12 @@ concurrency:
   group: build-and-deploy-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Unit tests (Bun ${{ matrix.bun-version }})
-    # Only run on pull requests. Pushes to main go straight to image build +
-    # Coolify deploy; PR CI is responsible for running tests before merge.
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -35,17 +35,19 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: ${{ matrix.bun-version }}
 
       - name: Cache Bun install
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.bun/install/cache
@@ -65,9 +67,6 @@ jobs:
 
   build:
     name: Build (Bun ${{ matrix.bun-version }})
-    # Only run on pull requests. Pushes to main skip this job since the
-    # Dockerfile already runs the production build inside the image step.
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -78,17 +77,19 @@ jobs:
       GIT_COMMIT_SHA: ${{ github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: ${{ matrix.bun-version }}
 
       - name: Cache Bun install
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.bun/install/cache
@@ -105,9 +106,10 @@ jobs:
 
   image:
     name: Build & push Docker image to GHCR
+    needs: [test, build]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'workflow_dispatch'
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -116,12 +118,14 @@ jobs:
       IMAGE_NAME: ghcr.io/ryokun6/ryos
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       # Prefer a long-lived PAT (secrets.GHCR_PAT) when configured, falling
       # back to the auto-injected GITHUB_TOKEN otherwise. The PAT path is
@@ -141,7 +145,7 @@ jobs:
           fi
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ secrets.GHCR_PAT != '' && github.repository_owner || github.actor }}
@@ -152,13 +156,12 @@ jobs:
         run: |
           {
             echo "tags<<EOF"
-            echo "${IMAGE_NAME}:latest"
             echo "${IMAGE_NAME}:sha-${GITHUB_SHA}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ./Dockerfile
@@ -176,17 +179,15 @@ jobs:
             org.opencontainers.image.created=${{ github.event.repository.updated_at }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          provenance: false
+          provenance: mode=max
+          sbom: true
 
       - name: Image summary
         run: |
           {
             echo "## Pushed Docker image"
             echo
-            echo "- \`${IMAGE_NAME}:latest\`"
             echo "- \`${IMAGE_NAME}:sha-${GITHUB_SHA}\`"
-            echo
-            echo "Coolify can now pull \`${IMAGE_NAME}:latest\` for the next deploy."
           } >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
@@ -194,98 +195,99 @@ jobs:
     needs: [image]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'workflow_dispatch'
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     environment:
       name: production
       url: ${{ vars.COOLIFY_APP_URL }}
     timeout-minutes: 15
     steps:
-      - name: Verify Coolify secrets are configured
+      - name: Verify deployment configuration
         env:
-          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_API_URL: ${{ secrets.COOLIFY_API_URL }}
+          COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_APP_URL: ${{ vars.COOLIFY_APP_URL }}
         run: |
-          if [ -z "${COOLIFY_WEBHOOK_URL}" ]; then
-            echo "::error::Missing required secret COOLIFY_WEBHOOK_URL."
-            echo "Set it under Settings -> Secrets and variables -> Actions."
-            echo "Example: https://coolify.example.com/api/v1/deploy?uuid=<resource-uuid>&force=false"
-            exit 1
-          fi
-          if [ -z "${COOLIFY_TOKEN}" ]; then
-            echo "::error::Missing required secret COOLIFY_TOKEN (Coolify API token)."
-            exit 1
-          fi
-          echo "Coolify secrets are configured."
+          set -euo pipefail
+          for name in COOLIFY_API_URL COOLIFY_APP_UUID COOLIFY_TOKEN COOLIFY_APP_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required Coolify setting: ${name}."
+              exit 1
+            fi
+          done
 
-      - name: Trigger Coolify deploy webhook
+      - name: Select immutable image and deploy
         env:
-          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_API_URL: ${{ secrets.COOLIFY_API_URL }}
+          COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          api="${COOLIFY_API_URL%/}/api/v1"
+          image_tag="sha-${COMMIT_SHA}"
+          echo "::add-mask::${COOLIFY_APP_UUID}"
 
-          url="${COOLIFY_WEBHOOK_URL}"
-          if [ "${FORCE_DEPLOY}" = "true" ]; then
-            if printf '%s' "${url}" | grep -q '?'; then
-              url="${url}&force=true"
-            else
-              url="${url}?force=true"
-            fi
-            echo "Force deploy requested."
+          update_code=$(curl --silent --show-error --output /tmp/coolify-update.json \
+            --write-out "%{http_code}" --request PATCH --max-time 60 \
+            --header "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --data "$(jq -cn --arg tag "${image_tag}" '{docker_registry_image_tag: $tag}')" \
+            "${api}/applications/${COOLIFY_APP_UUID}")
+          if [ "${update_code}" -lt 200 ] || [ "${update_code}" -ge 300 ]; then
+            echo "::error::Coolify rejected immutable image tag ${image_tag} (HTTP ${update_code})."
+            exit 1
           fi
 
-          # Mask URL in logs to avoid leaking the resource UUID.
-          echo "::add-mask::${url}"
+          deploy_code=$(curl --silent --show-error --output /tmp/coolify-deploy.json \
+            --write-out "%{http_code}" --request GET --max-time 60 \
+            --header "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            --header "Accept: application/json" \
+            "${api}/deploy?uuid=${COOLIFY_APP_UUID}&force=${FORCE_DEPLOY}")
+          if [ "${deploy_code}" -lt 200 ] || [ "${deploy_code}" -ge 300 ]; then
+            echo "::error::Coolify deploy failed to start (HTTP ${deploy_code})."
+            exit 1
+          fi
 
-          echo "Triggering Coolify deploy for commit ${COMMIT_SHA}..."
-
-          # Retry up to 3 times on transient network/5xx errors.
-          attempt=1
-          max_attempts=3
-          while : ; do
-            http_code=$(curl --silent --show-error --output /tmp/coolify_response.json \
-              --write-out "%{http_code}" \
-              --request GET \
-              --max-time 60 \
-              --header "Authorization: Bearer ${COOLIFY_TOKEN}" \
-              --header "Accept: application/json" \
-              "${url}") || http_code="000"
-
-            echo "Coolify responded with HTTP ${http_code} (attempt ${attempt}/${max_attempts})"
-            if [ -s /tmp/coolify_response.json ]; then
-              echo "Response body:"
-              cat /tmp/coolify_response.json
-              echo
+      - name: Verify production health and version
+        env:
+          COOLIFY_APP_URL: ${{ vars.COOLIFY_APP_URL }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          base_url="${COOLIFY_APP_URL%/}"
+          for attempt in $(seq 1 48); do
+            health_ok=false
+            version_ok=false
+            if curl --fail --silent --show-error --max-time 10 \
+              "${base_url}/health" | jq -e '.ok == true' >/dev/null; then
+              health_ok=true
             fi
-
-            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
-              echo "Coolify deploy successfully triggered."
-              break
+            if curl --fail --silent --show-error --max-time 10 \
+              "${base_url}/version.json" | jq -e --arg sha "${COMMIT_SHA}" \
+              '.commitSha == $sha' >/dev/null; then
+              version_ok=true
             fi
-
-            if [ "${attempt}" -ge "${max_attempts}" ]; then
-              echo "::error::Coolify webhook failed after ${max_attempts} attempts (last HTTP ${http_code})."
-              exit 1
+            if [ "${health_ok}" = "true" ] && [ "${version_ok}" = "true" ]; then
+              echo "Production is healthy and serves commit ${COMMIT_SHA}."
+              exit 0
             fi
-
-            sleep_seconds=$((attempt * 5))
-            echo "Retrying in ${sleep_seconds}s..."
-            sleep "${sleep_seconds}"
-            attempt=$((attempt + 1))
+            echo "Waiting for production commit ${COMMIT_SHA} (${attempt}/48)..."
+            sleep 10
           done
+          echo "::error::Production did not become healthy on commit ${COMMIT_SHA} within 8 minutes."
+          exit 1
 
       - name: Summary
         if: success()
         run: |
           {
-            echo "## Coolify deploy triggered"
+            echo "## Coolify deployment verified"
             echo
             echo "- Commit: \`${{ github.sha }}\`"
             echo "- Ref: \`${{ github.ref }}\`"
             echo "- Actor: @${{ github.actor }}"
-            echo
-            echo "Coolify will pull \`ghcr.io/ryokun6/ryos:latest\` (sha-${{ github.sha }}) and roll out the new image."
+            echo "- Image: \`ghcr.io/ryokun6/ryos:sha-${{ github.sha }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
