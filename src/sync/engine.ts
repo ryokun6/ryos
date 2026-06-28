@@ -1009,6 +1009,7 @@ export class CloudSyncEngine {
             namespace,
             error,
           });
+          throw error;
         } finally {
           this.applyingNamespaces.delete(namespace);
           syncStore.markCategorySyncing(category, "download", false);
@@ -1041,7 +1042,6 @@ export class CloudSyncEngine {
       if (!op.k.startsWith(prefix)) continue;
       if (op.del) {
         deletes.push(op.k.slice(prefix.length));
-        this.state.deleteShadow(op.k);
         continue;
       }
       const ref = getSyncBlobRef(op.v);
@@ -1062,6 +1062,11 @@ export class CloudSyncEngine {
         deleteCount: deletes.length,
       });
       await codec.deleteItems(deletes, ctx);
+      for (const op of ops) {
+        if (op.del && op.k.startsWith(prefix)) {
+          this.state.deleteShadow(op.k);
+        }
+      }
     }
 
     if (downloads.length > 0) {
@@ -1096,10 +1101,7 @@ export class CloudSyncEngine {
         const { op, contentHash, size } = downloads[index];
         const downloadUrl = urls[index];
         if (!downloadUrl) {
-          cloudSyncLog.warn("Blob download URL missing", { namespace });
-          completedDownloadBytes += Math.max(0, size || 0);
-          emitProgress(completedDownloadBytes);
-          continue;
+          throw new Error(`Blob download URL missing for ${op.k}`);
         }
         try {
           const item = (await downloadBlobItem(downloadUrl, {
@@ -1115,14 +1117,13 @@ export class CloudSyncEngine {
             typeof item.key === "string"
           ) {
             items.push(item);
-            this.state.setShadow(op.k, {
-              t: op.t,
-              h: contentHash || (await sha256Json(item)),
-            });
+          } else {
+            throw new Error(`Invalid blob payload for ${op.k}`);
           }
         } catch (error) {
           if (this.stopped || isAbortError(error)) throw error;
           cloudSyncLog.error("Blob download failed", { namespace, error });
+          throw error;
         } finally {
           completedDownloadBytes += Math.max(0, size || 0);
           emitProgress(completedDownloadBytes);
@@ -1134,6 +1135,14 @@ export class CloudSyncEngine {
           itemCount: items.length,
         });
         await codec.putItems(items, ctx);
+        for (let index = 0; index < items.length; index += 1) {
+          const { op, contentHash } = downloads[index];
+          const item = items[index];
+          this.state.setShadow(op.k, {
+            t: op.t,
+            h: contentHash || (await sha256Json(item)),
+          });
+        }
       }
     }
 

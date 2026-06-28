@@ -447,6 +447,135 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
   });
 });
 
+describe("sync engine remote apply reliability", () => {
+  beforeEach(() => {
+    useStickiesStore.setState({ notes: [] });
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncStickies: true,
+    });
+  });
+
+  test("pull keeps its cursor and retries after a namespace apply failure", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalApply = SYNC_CODECS.stickies.apply;
+    const engine = new CloudSyncEngine(`pull-failure-${crypto.randomUUID()}`);
+    const state = (engine as unknown as { state: SyncClientState }).state;
+    state.setCursor(4);
+    let requestCount = 0;
+
+    globalThis.fetch = (async () => {
+      requestCount += 1;
+      return Response.json({
+        seq: 5,
+        ops: [
+          {
+            k: "stickies/note:retry",
+            v: { id: "retry", content: "eventually applied" },
+            t,
+            seq: 5,
+            c: "remote",
+          },
+        ],
+      });
+    }) as typeof fetch;
+    SYNC_CODECS.stickies.apply = async () => {
+      throw new Error("deterministic apply failure");
+    };
+
+    try {
+      await expect(engine.pull({ throwOnError: true })).rejects.toThrow(
+        "deterministic apply failure"
+      );
+      expect(engine.cursor).toBe(4);
+
+      SYNC_CODECS.stickies.apply = originalApply;
+      await engine.pull({ throwOnError: true });
+      expect(engine.cursor).toBe(5);
+      expect(requestCount).toBe(2);
+      expect(
+        useStickiesStore.getState().notes.some((note) => note.id === "retry")
+      ).toBe(true);
+    } finally {
+      SYNC_CODECS.stickies.apply = originalApply;
+      globalThis.fetch = originalFetch;
+      engine.stop();
+    }
+  });
+
+  test("snapshot keeps its cursor when a namespace cannot be applied", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalApply = SYNC_CODECS.stickies.apply;
+    const engine = new CloudSyncEngine(`snapshot-failure-${crypto.randomUUID()}`);
+    const state = (engine as unknown as { state: SyncClientState }).state;
+    state.setCursor(7);
+
+    globalThis.fetch = (async () =>
+      Response.json({
+        seq: 8,
+        entries: {
+          "stickies/note:snapshot-retry": {
+            v: { id: "snapshot-retry", content: "retry me" },
+            t,
+            seq: 8,
+          },
+        },
+      })) as typeof fetch;
+    SYNC_CODECS.stickies.apply = async () => {
+      throw new Error("deterministic snapshot failure");
+    };
+
+    try {
+      await expect(engine.applySnapshot(false)).rejects.toThrow(
+        "deterministic snapshot failure"
+      );
+      expect(engine.cursor).toBe(7);
+    } finally {
+      SYNC_CODECS.stickies.apply = originalApply;
+      globalThis.fetch = originalFetch;
+      engine.stop();
+    }
+  });
+
+  test("a disabled namespace may be skipped while the cursor advances", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalApply = SYNC_CODECS.stickies.apply;
+    const engine = new CloudSyncEngine(`disabled-namespace-${crypto.randomUUID()}`);
+    const state = (engine as unknown as { state: SyncClientState }).state;
+    state.setCursor(10);
+    let applyCalled = false;
+    useCloudSyncStore.setState({ syncStickies: false });
+
+    globalThis.fetch = (async () =>
+      Response.json({
+        seq: 11,
+        ops: [
+          {
+            k: "stickies/note:disabled",
+            v: { id: "disabled", content: "not applied" },
+            t,
+            seq: 11,
+            c: "remote",
+          },
+        ],
+      })) as typeof fetch;
+    SYNC_CODECS.stickies.apply = async () => {
+      applyCalled = true;
+    };
+
+    try {
+      await engine.pull({ throwOnError: true });
+      expect(engine.cursor).toBe(11);
+      expect(applyCalled).toBe(false);
+    } finally {
+      SYNC_CODECS.stickies.apply = originalApply;
+      globalThis.fetch = originalFetch;
+      useCloudSyncStore.setState({ syncStickies: true });
+      engine.stop();
+    }
+  });
+});
+
 describe("settings codec", () => {
   test("collect emits one key per settings field (no bundled sections)", () => {
     const docs = SYNC_CODECS.settings.collect(ctx) as Map<string, unknown>;

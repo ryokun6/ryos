@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
 import {
+  acquireUserLock,
   applySyncOps,
   ensureSync2Initialized,
   readSyncChanges,
@@ -8,6 +9,8 @@ import {
   readSyncSnapshot,
   resolveSyncOp,
   lookupSyncBlobs,
+  releaseUserLock,
+  renewUserLock,
   validateSyncOps,
   sync2KvKey,
   sync2JournalKey,
@@ -342,6 +345,20 @@ describe("sync v2 changes feed", () => {
 });
 
 describe("sync v2 initialization", () => {
+  test("a stale lock holder cannot renew or release a replacement owner's lock", async () => {
+    const fake = new FakeRedis();
+    const r = fake as unknown as Redis;
+    const staleHandle = await acquireUserLock(r, "lock-user");
+    expect(staleHandle).not.toBeNull();
+
+    const replacementToken = crypto.randomUUID();
+    await fake.set(staleHandle!.key, replacementToken, { ex: 30 });
+
+    expect(await renewUserLock(r, staleHandle!)).toBe(false);
+    await releaseUserLock(r, staleHandle!);
+    expect(await fake.get(staleHandle!.key)).toBe(replacementToken);
+  });
+
   test("reads refresh sync data TTLs (throttled once per day)", async () => {
     const r = redis();
     const fake = r as unknown as FakeRedis;

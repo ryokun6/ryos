@@ -43,10 +43,27 @@ import { redisKeys } from "../../../src/shared/redisKeys.js";
 export const MAX_OPS_PER_REQUEST = 1000;
 export const MAX_OP_VALUE_BYTES = 512 * 1024;
 const JOURNAL_MAX_LENGTH = 4096;
-const LOCK_TTL_SECONDS = 10;
+const LOCK_TTL_SECONDS = 30;
 const LOCK_RETRY_DELAYS_MS = [150, 300, 600, 1200, 2400];
 /** Inline ops in the realtime event only below this JSON size. */
 const REALTIME_INLINE_LIMIT_BYTES = 8 * 1024;
+const COMPARE_AND_DELETE_SCRIPT = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+end
+return 0
+`;
+const COMPARE_AND_EXPIRE_SCRIPT = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("expire", KEYS[1], ARGV[2])
+end
+return 0
+`;
+
+export interface UserLockHandle {
+  readonly key: string;
+  readonly token: string;
+}
 
 export function sync2SeqKey(username: string): string {
   return redisKeys.sync.v2Seq(username);
@@ -107,27 +124,78 @@ async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function acquireUserLock(redis: Redis, username: string): Promise<boolean> {
+async function evalLockScript(
+  redis: Redis,
+  script: string,
+  keys: string[],
+  args: string[]
+): Promise<unknown> {
+  if (typeof redis.eval === "function") {
+    return redis.eval(script, keys, args);
+  }
+
+  // StandardRedisAdapter wraps ioredis, whose EVAL signature differs from
+  // Upstash's. Access its client only as a compatibility fallback.
+  const adapter = redis as unknown as {
+    client?: {
+      eval?: (
+        script: string,
+        keyCount: number,
+        ...keysAndArgs: string[]
+      ) => Promise<unknown>;
+    };
+  };
+  if (typeof adapter.client?.eval === "function") {
+    return adapter.client.eval(script, keys.length, ...keys, ...args);
+  }
+  throw new Error("Redis backend does not support atomic lock scripts");
+}
+
+export async function acquireUserLock(
+  redis: Redis,
+  username: string
+): Promise<UserLockHandle | null> {
   const key = sync2LockKey(username);
-  const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const token = crypto.randomUUID();
   for (let attempt = 0; attempt <= LOCK_RETRY_DELAYS_MS.length; attempt += 1) {
     const result = await redis.set(key, token, {
       nx: true,
       ex: LOCK_TTL_SECONDS,
     });
     if (result === "OK" || result === 1) {
-      return true;
+      return { key, token };
     }
     if (attempt < LOCK_RETRY_DELAYS_MS.length) {
       await sleep(LOCK_RETRY_DELAYS_MS[attempt]);
     }
   }
-  return false;
+  return null;
 }
 
-async function releaseUserLock(redis: Redis, username: string): Promise<void> {
+export async function renewUserLock(
+  redis: Redis,
+  handle: UserLockHandle
+): Promise<boolean> {
+  const result = await evalLockScript(
+    redis,
+    COMPARE_AND_EXPIRE_SCRIPT,
+    [handle.key],
+    [handle.token, String(LOCK_TTL_SECONDS)]
+  );
+  return result === 1 || result === "1";
+}
+
+export async function releaseUserLock(
+  redis: Redis,
+  handle: UserLockHandle
+): Promise<void> {
   try {
-    await redis.del(sync2LockKey(username));
+    await evalLockScript(
+      redis,
+      COMPARE_AND_DELETE_SCRIPT,
+      [handle.key],
+      [handle.token]
+    );
   } catch (error) {
     console.warn("[sync2] Failed to release user lock:", error);
   }
@@ -183,21 +251,24 @@ export async function ensureSync2Initialized(
     return;
   }
 
-  const locked = await acquireUserLock(redis, username);
+  const lock = await acquireUserLock(redis, username);
   try {
     if ((await readSeq(redis, username)) !== null) {
       return;
     }
-    if (!locked) {
+    if (!lock) {
       throw new Error("Could not acquire sync lock for initialization");
+    }
+    if (!(await renewUserLock(redis, lock))) {
+      throw new Error("Lost sync lock during initialization");
     }
 
     await redis.set(sync2SeqKey(username), "0", { ex: USER_TTL_SECONDS });
     await touchTtls(redis, username);
     console.log(`[sync2] Initialized ${username}`);
   } finally {
-    if (locked) {
-      await releaseUserLock(redis, username);
+    if (lock) {
+      await releaseUserLock(redis, lock);
     }
   }
 }
@@ -262,8 +333,8 @@ export async function applySyncOps(
 ): Promise<ApplySyncOpsResult> {
   await ensureSync2Initialized(redis, username);
 
-  const locked = await acquireUserLock(redis, username);
-  if (!locked) {
+  const lock = await acquireUserLock(redis, username);
+  if (!lock) {
     throw new Error("Sync is busy, please retry");
   }
 
@@ -338,6 +409,9 @@ export async function applySyncOps(
     }
 
     if (accepted.length > 0) {
+      if (!(await renewUserLock(redis, lock))) {
+        throw new Error("Sync lock ownership was lost, please retry");
+      }
       const journalKey = sync2JournalKey(username);
       const pipeline = redis.pipeline();
       pipeline.hset(sync2KvKey(username), kvWrites);
@@ -365,7 +439,7 @@ export async function applySyncOps(
 
     return { seq: nextSeq, results, accepted };
   } finally {
-    await releaseUserLock(redis, username);
+    await releaseUserLock(redis, lock);
   }
 }
 

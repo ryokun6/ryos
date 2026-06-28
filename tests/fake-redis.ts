@@ -226,6 +226,26 @@ export class FakeRedis {
     return this.delSync(...keys);
   }
 
+  async eval(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<number> {
+    const key = keys[0];
+    const expected = args[0];
+    if (!key || expected === undefined || this.kv.get(key) !== String(expected)) {
+      return 0;
+    }
+    if (script.includes('redis.call("del"')) {
+      return this.delSync(key);
+    }
+    if (script.includes('redis.call("expire"')) {
+      const seconds = Number.parseInt(String(args[1] ?? ""), 10);
+      return Number.isFinite(seconds) ? this.expireSync(key, seconds) : 0;
+    }
+    throw new Error("FakeRedis received an unsupported Lua script");
+  }
+
   async exists(...keys: string[]): Promise<number> {
     return keys.some(
       (key) =>
