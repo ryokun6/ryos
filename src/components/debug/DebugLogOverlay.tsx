@@ -349,6 +349,7 @@ export function DebugLogOverlay() {
             <div
               ref={scrollRef}
               onScroll={handleScroll}
+              data-debug-console-scroll
               className="h-full overflow-auto px-2 py-1 font-os-mono text-[10px] leading-[1.45]"
             >
               {entries.length === 0 ? (
@@ -388,6 +389,7 @@ export function DebugLogOverlay() {
               <button
                 type="button"
                 onClick={scrollToBottom}
+                data-debug-console-scroll-bottom
                 title={t("debug.scrollToBottom")}
                 aria-label={t("debug.scrollToBottom")}
                 className={cn(
