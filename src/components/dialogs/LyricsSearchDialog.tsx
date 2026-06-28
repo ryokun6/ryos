@@ -15,6 +15,9 @@ import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { formatKugouImageUrl } from "@/utils/coverArt";
+import { createClientLogger } from "@/utils/logger";
+
+const lyricsSearchLog = createClientLogger("LyricsSearch");
 
 const lyricsSearchListStyle: CSSProperties = {
   border: "1px solid var(--os-color-input-border)",
@@ -201,7 +204,12 @@ export function LyricsSearchDialog({
         throw new Error(t("apps.ipod.dialogs.lyricsSearchInvalidResponse"));
       }
     } catch (err) {
-      console.error("Lyrics search error:", err);
+      lyricsSearchLog.error("search:failed", {
+        error: err,
+        query: query.trim(),
+        trackTitle,
+        trackArtist,
+      });
       dispatch({
         type: "searchError",
         error:

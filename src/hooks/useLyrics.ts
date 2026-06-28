@@ -3,8 +3,12 @@ import type { LyricLine } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCacheBustTrigger, useRefetchTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
-import { ApiRequestError } from "@/api/core";
 import { fetchSongLyrics } from "@/api/songs";
+import { createClientLogger } from "@/utils/logger";
+import {
+  getLyricsErrorMessage,
+  normalizeLyricsFetchError,
+} from "@/utils/lyricsError";
 import {
   processTranslationSSE,
   parseLrcToTranslations,
@@ -14,6 +18,8 @@ import {
   type TranslationResult,
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
+
+const lyricsLog = createClientLogger("Lyrics");
 
 // Stable empty-lines sentinel used while no lyrics are loaded for the current
 // song. Reusing the same reference across renders is critical: it keeps the
@@ -88,6 +94,23 @@ interface UnifiedLyricsResponse {
   translation?: TranslationStreamInfo;
   furigana?: FuriganaStreamInfo;
   soramimi?: SoramimiStreamInfo;
+}
+
+interface LyricsLogContext {
+  songId: string;
+  title?: string;
+  artist?: string;
+  translateTo?: string | null;
+  includeFurigana?: boolean;
+  includeSoramimi?: boolean;
+  soramimiTargetLanguage?: "zh-TW" | "en";
+  selectedMatch?: {
+    hasHash: boolean;
+    albumId?: string | number;
+    title?: string;
+    artist?: string;
+    album?: string;
+  };
 }
 
 // =============================================================================
@@ -265,6 +288,36 @@ export function useLyrics({
         : undefined,
     [auth?.username, auth?.isAuthenticated]
   );
+  const logContext = useMemo<LyricsLogContext>(
+    () => ({
+      songId,
+      title: title || undefined,
+      artist: artist || undefined,
+      translateTo,
+      includeFurigana: Boolean(includeFurigana),
+      includeSoramimi: Boolean(includeSoramimi),
+      soramimiTargetLanguage,
+      selectedMatch: selectedMatch
+        ? {
+            hasHash: Boolean(selectedMatch.hash),
+            albumId: selectedMatch.albumId,
+            title: selectedMatch.title,
+            artist: selectedMatch.artist,
+            album: selectedMatch.album,
+          }
+        : undefined,
+    }),
+    [
+      songId,
+      title,
+      artist,
+      translateTo,
+      includeFurigana,
+      includeSoramimi,
+      soramimiTargetLanguage,
+      selectedMatch,
+    ]
+  );
 
   // Clear cached translation/furigana/soramimi info when cache bust trigger changes (force refresh)
   useEffect(() => {
@@ -441,12 +494,13 @@ export function useLyrics({
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
-        if (err instanceof ApiRequestError && err.status === 404) {
-          err = new Error("No lyrics found");
-        } else if (err instanceof ApiRequestError) {
-          err = new Error(`Failed to fetch lyrics (status ${err.status})`);
-        }
-        handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
+        handleLyricsError(
+          normalizeLyricsFetchError(err),
+          logContext,
+          setError,
+          setOriginalLines,
+          setCurrentLine
+        );
         dispatch({
           type: "patch",
           payload: {
@@ -469,7 +523,7 @@ export function useLyrics({
       // Reset loading state on cleanup to prevent stuck indicators
       setIsFetchingOriginal(false);
     };
-  }, [songId, title, artist, isRefetchRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage, authCredentials]);
+  }, [songId, title, artist, isRefetchRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage, authCredentials, logContext]);
 
   // ==========================================================================
   // Effect: Translate lyrics
@@ -574,7 +628,7 @@ export function useLyrics({
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
-        handleTranslationError(err, setError, setTranslatedLines);
+        handleTranslationError(err, logContext, setError, setTranslatedLines);
       })
       .finally(() => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
@@ -600,7 +654,7 @@ export function useLyrics({
         },
       });
     };
-  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials]);
+  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials, logContext]);
 
   // ==========================================================================
   // Current line tracking
@@ -666,22 +720,14 @@ export function useLyrics({
 
 function handleLyricsError(
   err: unknown,
+  context: LyricsLogContext,
   setError: (e: string | undefined) => void,
   setOriginalLines: (lines: LyricLine[]) => void,
   setCurrentLine: (line: number) => void
 ) {
-  console.error("[useLyrics] Error:", err);
-  if (err instanceof DOMException && err.name === "AbortError") {
-    setError("Lyrics search timed out.");
-  } else {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    const isNoLyricsError =
-      msg.includes("500") ||
-      msg.includes("404") ||
-      msg.includes("No lyrics") ||
-      msg.includes("not found");
-    setError(isNoLyricsError ? "No lyrics available" : msg);
-  }
+  const displayError = getLyricsErrorMessage(err);
+  lyricsLog.error("fetch:failed", { error: err, displayError, context });
+  setError(displayError);
   setOriginalLines([]);
   setCurrentLine(-1);
   useIpodStore.setState({ currentLyrics: null });
@@ -689,10 +735,11 @@ function handleLyricsError(
 
 function handleTranslationError(
   err: unknown,
+  context: LyricsLogContext,
   setError: (e: string | undefined) => void,
   setTranslatedLines: (lines: LyricLine[] | null) => void
 ) {
-  console.error("[useLyrics] Translation error:", err);
+  lyricsLog.error("translation:failed", { error: err, context });
   if (err instanceof DOMException && err.name === "AbortError") {
     setError("Translation timed out.");
   } else {

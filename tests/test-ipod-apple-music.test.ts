@@ -50,6 +50,7 @@ const {
   refreshAppleMusicFavorites,
   APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS,
   APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
+  describeAppleMusicError,
 } = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
 const {
   useIpodStore,
@@ -70,6 +71,7 @@ const {
   getMusicKitEventItemId,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
   isStaleQueueLoad,
+  isLikelyMusicKitUnhandledRejection,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -102,6 +104,34 @@ describe("MusicKit configuration", () => {
       bitrate: 256,
     });
     expect(APPLE_MUSIC_STREAMING_BITRATE_KBPS).toBe(256);
+  });
+});
+
+describe("Apple Music error logging helpers", () => {
+  test("summarizes MusicKit API errors with status details", () => {
+    expect(
+      describeAppleMusicError({
+        message: "Forbidden",
+        response: { status: 403 },
+      })
+    ).toBe("Forbidden (status 403)");
+    expect(describeAppleMusicError({ statusCode: 429 })).toBe("status 429");
+  });
+
+  test("detects MusicKit-owned unhandled rejections without catching app errors", () => {
+    const musicKitError = new Error("");
+    musicKitError.stack =
+      "@https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:48338";
+
+    expect(isLikelyMusicKitUnhandledRejection(musicKitError)).toBe(true);
+    expect(
+      isLikelyMusicKitUnhandledRejection({
+        message: "MusicKit authorization failed",
+      })
+    ).toBe(true);
+    expect(isLikelyMusicKitUnhandledRejection(new Error("No lyrics found"))).toBe(
+      false
+    );
   });
 });
 

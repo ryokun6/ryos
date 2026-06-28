@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
+import { createClientLogger } from "@/utils/logger";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
@@ -20,6 +21,7 @@ const MUSICKIT_SCRIPT_ID = "ryos-musickit-js-v3";
 const MUSICKIT_TOKEN_ENDPOINT = "/api/musickit-token";
 const TOKEN_REFRESH_BUFFER_MS = 60 * 60 * 1000; // refresh if <1h left
 export const APPLE_MUSIC_STREAMING_BITRATE_KBPS = 256;
+const musicKitLog = createClientLogger("MusicKit");
 
 export function buildMusicKitConfigureOptions(
   developerToken: string,
@@ -60,7 +62,7 @@ function notifyReady(instance: MusicKit.MusicKitInstance) {
     try {
       listener(instance);
     } catch (err) {
-      console.error("[musickit] ready listener threw", err);
+      musicKitLog.error("readyListener:threw", { error: err });
     }
   }
 }
@@ -118,10 +120,7 @@ async function resolveDeveloperToken(): Promise<string> {
   } catch (err) {
     const fallback = getEnvFallbackToken();
     if (fallback) {
-      console.warn(
-        "[musickit] server token fetch failed, using VITE_MUSICKIT_DEVELOPER_TOKEN",
-        err
-      );
+      musicKitLog.warn("tokenFetch:failedUsingEnvFallback", { error: err });
       return fallback;
     }
     throw err;
@@ -452,7 +451,7 @@ export function useMusicKit(
       });
       return token ?? null;
     } catch (err) {
-      console.error("[musickit] authorize failed", err);
+      musicKitLog.error("authorize:failed", { error: err });
       dispatch({
         type: "patch",
         payload: { error: err instanceof Error ? err.message : String(err) },
@@ -468,7 +467,7 @@ export function useMusicKit(
       await inst.unauthorize();
       dispatch({ type: "patch", payload: { isAuthorized: false } });
     } catch (err) {
-      console.error("[musickit] unauthorize failed", err);
+      musicKitLog.error("unauthorize:failed", { error: err });
     }
   }, [instance]);
 
