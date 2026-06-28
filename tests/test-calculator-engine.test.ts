@@ -114,8 +114,10 @@ describe("formatCalculatorDisplay", () => {
     expect(result.replace(/\D/g, "")).toHaveLength(12);
   });
 
-  test("keeps currency results at two decimal places", () => {
-    expect(formatCalculatorConversionResult(12.3, "en", true)).toBe("12.30");
+  test("shows at most two decimal places for currency results", () => {
+    expect(formatCalculatorConversionResult(12, "en", true)).toBe("12");
+    expect(formatCalculatorConversionResult(12.3, "en", true)).toBe("12.3");
+    expect(formatCalculatorConversionResult(12.345, "en", true)).toBe("12.35");
     expect(
       formatCalculatorConversionResult(6709799999999999, "en", true)
     ).toBe("6.7098e+15");

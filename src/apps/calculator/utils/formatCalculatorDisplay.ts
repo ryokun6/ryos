@@ -106,7 +106,7 @@ export function formatCalculatorConversionResult(
 
   if (isCurrency) {
     return new Intl.NumberFormat(locale, {
-      minimumFractionDigits: 2,
+      minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(value);
   }
