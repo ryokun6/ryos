@@ -111,5 +111,5 @@ bun run i18n:find-untranslated
 
 - Emoji/symbols (♪, ✓) can stay hardcoded
 - Help items use pattern: `apps.[appName].help.[key].title/description`
-- Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps can export their key list (for example `src/apps/maps/helpKeys.ts` or `src/apps/calculator/helpKeys.ts`) and add a small alignment test
+- Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps with localized help rows should export their key list (for example `src/apps/maps/helpKeys.ts`, `src/apps/calculator/helpKeys.ts`, or `src/apps/internet-explorer/helpKeys.ts`) and add a small alignment test
 - Include `t` in dependency arrays when used in `useMemo`/`useCallback`

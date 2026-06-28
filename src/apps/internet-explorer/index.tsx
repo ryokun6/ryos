@@ -9,7 +9,7 @@ import { appMetadata, helpItems } from "./metadata";
 
 export const InternetExplorerApp: BaseApp<InternetExplorerInitialData> = {
   id: "internet-explorer",
-  name: "Internet Explorer",
+  name: appMetadata.name,
   icon: { type: "image", src: appMetadata.icon },
   description: "Browse the web like it's 1999",
   component: InternetExplorerAppComponent,

@@ -543,7 +543,8 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                   <ShareItemDialog
                     isOpen={vm.isShareDialogOpen}
                     onClose={() => vm.setIsShareDialogOpen(false)}
-                    itemType="Page"
+                    itemType={vm.t("apps.internet-explorer.page")}
+                    itemTypeKey="page"
                     itemIdentifier={vm.currentUrl}
                     secondaryIdentifier={vm.activeYear || vm.currentSelectedYear}
                     title={vm.getHostname(vm.currentUrl)} // Using hostname as title
