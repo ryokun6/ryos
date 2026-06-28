@@ -5,7 +5,11 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "./test-utils";
+import {
+  BASE_URL,
+  fetchWithOrigin,
+  makeRateLimitBypassHeaders,
+} from "./test-utils";
 
 describe("iframe-check", () => {
   describe("Input Validation", () => {
@@ -104,6 +108,125 @@ describe("iframe-check", () => {
       const contentType = res.headers.get("content-type") || "";
       // Default mode is proxy, which streams the rewritten HTML document.
       expect(contentType).toContain("text/html");
+    });
+
+    test("Proxy mode - rewrites HTML assets, forms, and diagnostics", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/fixture/page"
+        )}&mode=proxy&fixture=html-assets&debug=1&session=test_html_assets`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain("/api/iframe-check");
+      expect(html).toContain("resource=style");
+      expect(html).toContain("resource=script");
+      expect(html).toContain("resource=image");
+      expect(html).toContain("resource=iframe");
+      expect(html).toContain("form=1");
+      expect(html).not.toContain("integrity=");
+      expect(html).not.toContain("nonce=");
+      const diagnostics = JSON.parse(
+        decodeURIComponent(res.headers.get("X-Proxy-Diagnostics") || "{}")
+      );
+      expect(diagnostics.rewrites.htmlAttributes).toBeGreaterThan(0);
+      expect(diagnostics.rewrites.cssUrls).toBeGreaterThan(0);
+      expect(diagnostics.cookieSession).toBe(true);
+    });
+
+    test("Proxy mode - rewrites stylesheet urls", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/assets/site.css"
+        )}&mode=proxy&fixture=stylesheet&resource=style&debug=1`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(200);
+      const css = await res.text();
+      expect(css).toContain("/api/iframe-check");
+      expect(css).toContain("resource=image");
+      expect(css).toContain("resource=style");
+      const diagnostics = JSON.parse(
+        decodeURIComponent(res.headers.get("X-Proxy-Diagnostics") || "{}")
+      );
+      expect(diagnostics.resourceType).toBe("style");
+      expect(diagnostics.rewrites.cssUrls).toBe(2);
+    });
+
+    test("Proxy mode - uses resource-aware request headers", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/assets/logo.png"
+        )}&mode=proxy&fixture=headers&resource=image&debug=1`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.accept).toContain("image/");
+      expect(data.secFetchDest).toBe("image");
+      const diagnostics = JSON.parse(
+        decodeURIComponent(res.headers.get("X-Proxy-Diagnostics") || "{}")
+      );
+      expect(diagnostics.resourceType).toBe("image");
+    });
+
+    test("Proxy mode - stores cookies per proxy session", async () => {
+      const session = `test_cookie_${Date.now()}`;
+      const first = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/cookie"
+        )}&mode=proxy&fixture=set-cookie&session=${session}`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(first.status).toBe(200);
+
+      const second = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/headers"
+        )}&mode=proxy&fixture=headers&resource=xhr&session=${session}`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(second.status).toBe(200);
+      const data = await second.json();
+      expect(data.cookie).toContain("proxy_fixture=stored");
+    });
+
+    test("Proxy mode - supports constrained form POST proxying", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/submit"
+        )}&mode=proxy&fixture=post-echo&form=1`,
+        {
+          method: "POST",
+          headers: {
+            ...makeRateLimitBypassHeaders(),
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ q: "ryos" }).toString(),
+        }
+      );
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.method).toBe("POST");
+      expect(data.contentType).toContain("application/x-www-form-urlencoded");
+    });
+
+    test("Proxy mode - rejects arbitrary POST tunneling", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/submit"
+        )}&mode=proxy&fixture=post-echo`,
+        {
+          method: "POST",
+          headers: {
+            ...makeRateLimitBypassHeaders(),
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ q: "ryos" }).toString(),
+        }
+      );
+      expect(res.status).toBe(400);
     });
   });
 

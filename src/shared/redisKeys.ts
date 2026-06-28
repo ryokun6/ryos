@@ -192,6 +192,8 @@ export const redisKeys = {
     geoip: (ipHash: string) => redisKey("cache", "geoip", ipHash),
     ieVersions: (urlHash: string, year: string | number) =>
       redisKey("cache", "ie", urlHash, year, "versions"),
+    ieProxyCookies: (sessionHash: string) =>
+      redisKey("cache", "ie", "proxy-cookies", sessionHash),
     wayback: (urlHash: string, year: string | number) =>
       redisKey("cache", "wayback", urlHash, year),
   },

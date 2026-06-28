@@ -6,131 +6,27 @@ import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
+import {
+  buildBrowserHeaders,
+  createProxyUrl,
+  getCookieHeaderForUrl,
+  getSetCookieHeaders,
+  mergeProxyCookies,
+  normalizeProxyResourceType,
+  rewriteCssForProxy,
+  rewriteHtmlForProxy,
+  type ProxyResourceType,
+  type RewriteStats,
+  type StoredProxyCookie,
+} from "./_utils/iframe-proxy-helpers.js";
+import {
+  getIeDomainCompatibility,
+  shouldAutoProxyUrl,
+} from "../src/shared/ieCompatibility.js";
 
 export const runtime = "nodejs";
 
 // --- Utility Functions ----------------------------------------------------
-
-/**
- * List of domains that should be automatically proxied.
- * Domains should be lowercase and without protocol.
- */
-const AUTO_PROXY_DOMAINS = [
-  "wikipedia.org",
-  "wikimedia.org",
-  "wikipedia.com",
-  "cursor.com",
-  "github.com",
-  "stackoverflow.com",
-  "stackexchange.com",
-  "reddit.com",
-  "twitter.com",
-  "x.com",
-  "medium.com",
-  "nytimes.com",
-  "bbc.com",
-  "bbc.co.uk",
-  "theguardian.com",
-  "cnn.com",
-  "washingtonpost.com",
-  "linkedin.com",
-  "instagram.com",
-  "facebook.com",
-  "amazon.com",
-  "youtube.com",
-  "twitch.tv",
-  "netflix.com",
-  "docs.google.com",
-  "drive.google.com",
-  "mail.google.com",
-];
-
-/**
- * Check if a URL's domain matches or is a subdomain of any auto-proxy domain
- */
-const shouldAutoProxy = (url: string): boolean => {
-  try {
-    const hostname = new URL(url).hostname.toLowerCase();
-    return AUTO_PROXY_DOMAINS.some(
-      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
-    );
-  } catch {
-    // Return false if URL parsing fails
-    return false;
-  }
-};
-
-// ------------------------------------------------------------------------
-// Dynamic browser header generation
-// ------------------------------------------------------------------------
-/** A curated list of realistic desktop browser fingerprints to rotate through. */
-const USER_AGENT_SAMPLES = [
-  {
-    ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    secChUa: '"Not_A Brand";v="8", "Chromium";v="122", "Google Chrome";v="122"',
-    platform: '"Windows"',
-  },
-  {
-    ua: "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-    // Safari does not currently send Sec-CH-UA headers
-    secChUa: "",
-    platform: '"macOS"',
-  },
-  {
-    ua: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    secChUa: '"Not_A Brand";v="8", "Chromium";v="121", "Google Chrome";v="121"',
-    platform: '"Linux"',
-  },
-  {
-    ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    // Firefox also omits Sec-CH-UA headers
-    secChUa: "",
-    platform: '"Windows"',
-  },
-];
-
-const ACCEPT_LANGUAGE_SAMPLES = [
-  "en-US,en;q=0.9",
-  "en-GB,en;q=0.8",
-  "en-US,en;q=0.8,fr;q=0.6",
-  "en-US,en;q=0.8,de;q=0.6",
-];
-
-const SEC_FETCH_SITE_SAMPLES = ["none", "same-origin", "cross-site"];
-
-// Generic helper to pick a random member of an array
-const pickRandom = <T>(arr: T[]): T =>
-  arr[Math.floor(Math.random() * arr.length)];
-
-/**
- * Builds a pseudo-random, yet realistic, browser header set.
- * We purposefully limit the pool to a handful of common fingerprints so that
- * the generated headers stay coherent and pass basic heuristics.
- */
-const generateRandomBrowserHeaders = (): Record<string, string> => {
-  const fp = pickRandom(USER_AGENT_SAMPLES);
-
-  const headers: Record<string, string> = {
-    "User-Agent": fp.ua,
-    Accept:
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-    "Accept-Language": pickRandom(ACCEPT_LANGUAGE_SAMPLES),
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": pickRandom(SEC_FETCH_SITE_SAMPLES),
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
-  };
-
-  // Only attach Client-Hint headers if present in the selected fingerprint
-  if (fp.secChUa) {
-    headers["Sec-Ch-Ua"] = fp.secChUa;
-    headers["Sec-Ch-Ua-Mobile"] = "?0";
-    headers["Sec-Ch-Ua-Platform"] = fp.platform;
-  }
-
-  return headers;
-};
 
 async function getIeCacheKey(normalizedUrlForKey: string, year: string): Promise<string> {
   return redisKeys.cache.ieVersions(
@@ -147,6 +43,220 @@ async function getWaybackCacheKey(
     await sha256RedisIdentifier(normalizedUrlForKey),
     yearMonth
   );
+}
+
+type ProxyDiagnostics = {
+  mode: string;
+  resourceType: ProxyResourceType;
+  targetHost?: string;
+  upstreamStatus?: number;
+  finalUrl?: string;
+  contentType?: string;
+  redirectCount?: number;
+  rewrites?: RewriteStats;
+  cookieSession?: boolean;
+  compatibilityMode?: string;
+  errorType?: string;
+};
+
+const emptyRewriteStats = (): RewriteStats => ({
+  htmlAttributes: 0,
+  srcset: 0,
+  cssUrls: 0,
+  forms: 0,
+});
+
+const getQueryValue = (value: string | string[] | undefined): string | undefined =>
+  Array.isArray(value) ? value[0] : value;
+
+const getSafeReferrerUrl = (rawRef: string | string[] | undefined): string | null => {
+  const ref = getQueryValue(rawRef);
+  if (!ref) return null;
+  try {
+    const parsed = new URL(ref);
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? parsed.toString()
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+const getProxySessionId = (rawSession: string | string[] | undefined): string | null => {
+  const session = getQueryValue(rawSession);
+  if (!session) return null;
+  return /^[a-zA-Z0-9_-]{8,96}$/.test(session) ? session : null;
+};
+
+const shouldUseLocalProxyFixture = (
+  rawFixture: string | string[] | undefined
+): string | null => {
+  if (process.env.NODE_ENV === "production") return null;
+  const fixture = getQueryValue(rawFixture);
+  return fixture && /^[a-z0-9_-]{1,64}$/i.test(fixture) ? fixture : null;
+};
+
+const setDiagnosticsHeader = (
+  res: { setHeader: (name: string, value: string) => void },
+  enabled: boolean,
+  diagnostics: ProxyDiagnostics
+) => {
+  if (!enabled) return;
+  res.setHeader(
+    "X-Proxy-Diagnostics",
+    encodeURIComponent(JSON.stringify(diagnostics))
+  );
+};
+
+function createLocalProxyFixtureResponse(
+  fixture: string,
+  targetUrl: string,
+  headers: Record<string, string>
+): { response: Response; finalUrl: string; redirectChain: string[] } | null {
+  const fixtureOrigin = new URL(targetUrl).origin;
+  if (fixture === "html-assets") {
+    return {
+      finalUrl: targetUrl,
+      redirectChain: [],
+      response: new Response(
+        `<!doctype html><html><head><title>Proxy Fixture</title><link rel="stylesheet" href="/assets/site.css"><script src="/assets/app.js" integrity="sha256-test" nonce="abc"></script><style>.hero{background:url('/assets/hero.png')}@import "/assets/extra.css";</style></head><body><img src="/assets/logo.png" srcset="/assets/logo-1x.png 1x, /assets/logo-2x.png 2x"><video poster="/assets/poster.jpg"><source src="/assets/movie.mp4"></video><iframe src="/nested"></iframe><form method="post" action="/submit"><input name="q" value="ryos"></form></body></html>`,
+        {
+          status: 200,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "x-fixture-accept": headers.Accept || "",
+          },
+        }
+      ),
+    };
+  }
+
+  if (fixture === "stylesheet") {
+    return {
+      finalUrl: targetUrl,
+      redirectChain: [],
+      response: new Response(
+        `.logo{background:url("./logo.png")}@import url("/nested.css");`,
+        {
+          status: 200,
+          headers: { "content-type": "text/css; charset=utf-8" },
+        }
+      ),
+    };
+  }
+
+  if (fixture === "headers") {
+    return {
+      finalUrl: targetUrl,
+      redirectChain: [],
+      response: new Response(JSON.stringify({
+        accept: headers.Accept,
+        secFetchDest: headers["Sec-Fetch-Dest"],
+        userAgent: headers["User-Agent"],
+        cookie: headers.Cookie || "",
+        referer: headers.Referer || "",
+        origin: fixtureOrigin,
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    };
+  }
+
+  if (fixture === "set-cookie") {
+    return {
+      finalUrl: targetUrl,
+      redirectChain: [],
+      response: new Response("<!doctype html><title>Cookie Fixture</title>", {
+        status: 200,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "set-cookie": "proxy_fixture=stored; Path=/; Max-Age=600; SameSite=Lax",
+        },
+      }),
+    };
+  }
+
+  if (fixture === "post-echo") {
+    return {
+      finalUrl: targetUrl,
+      redirectChain: [],
+      response: new Response(JSON.stringify({
+        method: "POST",
+        contentType: headers["Content-Type"] || "",
+        cookie: headers.Cookie || "",
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    };
+  }
+
+  return null;
+}
+
+async function readProxyRequestBody(req: {
+  body?: unknown;
+  headers: Record<string, string | string[] | undefined>;
+  [Symbol.asyncIterator]?: () => AsyncIterator<Buffer | Uint8Array | string>;
+}): Promise<BodyInit | undefined> {
+  const contentType = getQueryValue(req.headers["content-type"]) || "";
+  const bodyValue = req.body;
+
+  if (
+    bodyValue &&
+    typeof bodyValue === "object" &&
+    contentType.includes("application/x-www-form-urlencoded")
+  ) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(bodyValue as Record<string, unknown>)) {
+      if (Array.isArray(value)) {
+        for (const item of value) params.append(key, String(item));
+      } else if (value !== undefined && value !== null) {
+        params.append(key, String(value));
+      }
+    }
+    return params.toString();
+  }
+
+  if (typeof bodyValue === "string") return bodyValue;
+  if (bodyValue instanceof Uint8Array) return bodyValue;
+
+  if (typeof req[Symbol.asyncIterator] === "function") {
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for await (const chunk of req as AsyncIterable<Buffer | Uint8Array | string>) {
+      const buffer = typeof chunk === "string" ? Buffer.from(chunk) : Buffer.from(chunk);
+      total += buffer.length;
+      if (total > 1024 * 1024) {
+        throw new Error("POST body is too large for proxying");
+      }
+      chunks.push(buffer);
+    }
+    return Buffer.concat(chunks);
+  }
+
+  return undefined;
+}
+
+async function loadProxyCookies(
+  redis: { get: (key: string) => Promise<unknown> },
+  sessionId: string | null
+): Promise<{ key: string; cookies: StoredProxyCookie[] } | null> {
+  if (!sessionId) return null;
+  const sessionHash = await sha256RedisIdentifier(sessionId);
+  const key = redisKeys.cache.ieProxyCookies(sessionHash);
+  const raw = await redis.get(key);
+  if (!raw) return { key, cookies: [] };
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return {
+      key,
+      cookies: Array.isArray(parsed) ? (parsed as StoredProxyCookie[]) : [],
+    };
+  } catch {
+    return { key, cookies: [] };
+  }
 }
 
 /**
@@ -169,7 +279,7 @@ async function getWaybackCacheKey(
 
 export default apiHandler(
   {
-    methods: ["GET"],
+    methods: ["GET", "POST"],
     contentType: null,
   },
   async ({ req, res, redis, logger, startTime, origin }) => {
@@ -178,12 +288,26 @@ export default apiHandler(
   const year = req.query.year as string | undefined;
   const month = req.query.month as string | undefined;
   const effectiveOrigin = origin;
-
-  // Generate a fresh, randomized browser header set for this request
-  const BROWSER_HEADERS = generateRandomBrowserHeaders();
+  const method = (req.method || "GET").toUpperCase();
+  const resourceType = normalizeProxyResourceType(req.query.resource);
+  const referrerUrl = getSafeReferrerUrl(req.query.ref);
+  const proxySessionId = getProxySessionId(req.query.session);
+  const debugProxy = getQueryValue(req.query.debug as string | string[] | undefined) === "1";
+  const fixtureName = shouldUseLocalProxyFixture(req.query.fixture);
+  const diagnostics: ProxyDiagnostics = {
+    mode,
+    resourceType,
+    cookieSession: !!proxySessionId,
+  };
 
   // Helper for consistent error responses with CORS
-  const errorResponseWithCors = (message: string, status: number = 400) => {
+  const errorResponseWithCors = (
+    message: string,
+    status: number = 400,
+    errorType = "request_error"
+  ) => {
+    diagnostics.errorType = errorType;
+    setDiagnosticsHeader(res, debugProxy, diagnostics);
     if (effectiveOrigin) {
       res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
     }
@@ -197,10 +321,35 @@ export default apiHandler(
     return errorResponseWithCors("Missing 'url' query parameter");
   }
 
+  if (method !== "GET" && mode !== "proxy") {
+    return errorResponseWithCors("POST proxying is only supported in proxy mode", 405);
+  }
+  if (
+    method === "POST" &&
+    getQueryValue(req.query.form as string | string[] | undefined) !== "1"
+  ) {
+    return errorResponseWithCors("POST proxying requires a proxied form action", 400);
+  }
+  if (method === "POST") {
+    const contentType = getQueryValue(req.headers["content-type"]) || "";
+    const allowedPostContentType =
+      contentType.includes("application/x-www-form-urlencoded") ||
+      contentType.includes("multipart/form-data") ||
+      contentType.includes("text/plain");
+    if (!allowedPostContentType) {
+      return errorResponseWithCors("Unsupported proxied form content type", 415);
+    }
+  }
+
   // Ensure the URL starts with a protocol for fetch()
   const normalizedUrl = urlParam.startsWith("http")
     ? urlParam
     : `https://${urlParam}`;
+  try {
+    diagnostics.targetHost = new URL(normalizedUrl).hostname;
+  } catch {
+    // validatePublicUrl will produce the user-facing error below.
+  }
 
   // Log normalized URL
   logger.info(`Normalized URL: ${normalizedUrl}`);
@@ -211,7 +360,7 @@ export default apiHandler(
     const message =
       error instanceof SsrfBlockedError ? error.message : "Invalid URL format";
     logger.warn("Blocked URL for iframe check", { normalizedUrl, message, mode });
-    return errorResponseWithCors(message, 400);
+    return errorResponseWithCors(message, 400, "ssrf_blocked");
   }
 
   // ---------------------------
@@ -449,7 +598,9 @@ export default apiHandler(
   // --- Regular Check/Proxy Logic ---
 
   // Check if this is an auto-proxy domain
-  const isAutoProxyDomain = shouldAutoProxy(normalizedUrl);
+  const compatibilityRule = getIeDomainCompatibility(normalizedUrl);
+  const isAutoProxyDomain = shouldAutoProxyUrl(normalizedUrl);
+  diagnostics.compatibilityMode = compatibilityRule?.mode;
   if (isAutoProxyDomain) {
     logger.info(`Domain ${new URL(normalizedUrl).hostname} is auto-proxied`);
   }
@@ -538,7 +689,12 @@ export default apiHandler(
         targetUrl,
         {
           method: "GET",
-          headers: BROWSER_HEADERS,
+          headers: buildBrowserHeaders({
+            targetUrl,
+            resourceType: "document",
+            referrerUrl,
+            method: "GET",
+          }),
         },
         { maxRedirects: 10 }
       );
@@ -635,6 +791,7 @@ export default apiHandler(
       logger.info("Executing in 'check' mode");
       const result = await checkSiteEmbeddingAllowed();
       res.setHeader("Content-Type", "application/json");
+      setDiagnosticsHeader(res, debugProxy, diagnostics);
       logger.response(200, Date.now() - startTime);
       return res.status(200).json(result);
     }
@@ -645,29 +802,60 @@ export default apiHandler(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000); // 30-second timeout
 
-    // Add Referer header for the target site (some sites require valid referer)
     try {
-      BROWSER_HEADERS['Referer'] = new URL(targetUrl).origin + '/';
-    } catch { /* ignore URL parse errors */ }
-
-    try {
-      const { response: upstreamRes, finalUrl } = await safeFetchWithRedirects(
+      const cookieJar = await loadProxyCookies(redis, proxySessionId);
+      const cookieHeader = cookieJar
+        ? getCookieHeaderForUrl(cookieJar.cookies, targetUrl)
+        : null;
+      const contentTypeHeader = getQueryValue(req.headers["content-type"]);
+      const upstreamBody = method === "POST" ? await readProxyRequestBody(req) : undefined;
+      const browserHeaders = buildBrowserHeaders({
         targetUrl,
-        {
-          method: "GET",
-          signal: controller.signal,
-          headers: BROWSER_HEADERS,
-        },
-        { maxRedirects: 10 }
-      );
+        resourceType,
+        referrerUrl,
+        method,
+        contentType: contentTypeHeader,
+        cookieHeader,
+      });
+      const fixtureResponse = fixtureName
+        ? createLocalProxyFixtureResponse(fixtureName, targetUrl, browserHeaders)
+        : null;
+      const { response: upstreamRes, finalUrl, redirectChain } =
+        fixtureResponse ??
+        (await safeFetchWithRedirects(
+          targetUrl,
+          {
+            method,
+            signal: controller.signal,
+            headers: browserHeaders,
+            body: upstreamBody,
+          },
+          { maxRedirects: 10 }
+        ));
 
       clearTimeout(timeout); // Clear timeout on successful fetch
+      diagnostics.upstreamStatus = upstreamRes.status;
+      diagnostics.finalUrl = finalUrl;
+      diagnostics.redirectCount = redirectChain.length;
+
+      if (cookieJar) {
+        const updatedCookies = mergeProxyCookies(
+          cookieJar.cookies,
+          getSetCookieHeaders(upstreamRes.headers),
+          finalUrl
+        );
+        await redis.set(cookieJar.key, JSON.stringify(updatedCookies), {
+          ex: 60 * 60 * 2,
+        });
+      }
 
       // If the upstream fetch failed (e.g., 403 Forbidden, 404 Not Found), return an error response
       if (!upstreamRes.ok) {
         logger.error(`Upstream fetch failed with status ${upstreamRes.status}`, { url: targetUrl });
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Access-Control-Allow-Origin", "*");
+        diagnostics.errorType = "http_error";
+        setDiagnosticsHeader(res, debugProxy, diagnostics);
         logger.response(upstreamRes.status, Date.now() - startTime);
         return res.status(upstreamRes.status).json({
           error: true,
@@ -681,6 +869,7 @@ export default apiHandler(
       }
 
       const contentType = upstreamRes.headers.get("content-type") || "";
+      diagnostics.contentType = contentType;
       logger.info(`Proxying content type: ${contentType}`);
       let pageTitle: string | undefined = undefined; // Initialize title for proxy mode
 
@@ -704,6 +893,18 @@ export default apiHandler(
         // Strip Content-Security-Policy headers embedded via <meta> with reversed attribute order
         html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
 
+        const appPublicOrigin = getAppPublicOrigin(origin);
+        const rewriteResult = rewriteHtmlForProxy(html, {
+          baseUrl: finalUrl,
+          proxyOrigin: appPublicOrigin,
+          referrerUrl: finalUrl,
+          sessionId: proxySessionId,
+          theme,
+        });
+        html = rewriteResult.html;
+        diagnostics.rewrites = rewriteResult.stats;
+        logger.info("Rewrote proxied HTML resources", rewriteResult.stats);
+
         // Extract title before modifying HTML
         const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (titleMatch && titleMatch[1]) {
@@ -720,7 +921,6 @@ export default apiHandler(
           : "";
 
         // Add font override styles (conditionally injected based on theme)
-        const appPublicOrigin = getAppPublicOrigin(origin);
         const fontOverrideStyles = shouldInjectFontOverrides
           ? `
 <link rel="stylesheet" href="${appPublicOrigin}/fonts/fonts.css">
@@ -969,23 +1169,37 @@ export default apiHandler(
     return originalOpen ? originalOpen.call(window, url, target, features) : null;
   };
 
-  // --- Sub-resource proxy: route fetch/XHR through the proxy for CORS-blocked requests ---
+  // --- Sub-resource proxy: route dynamic fetch/XHR GETs through the proxy ---
   var proxyOrigin = window.location.origin;
   var baseOrigin = null;
+  var proxySession = ${JSON.stringify(proxySessionId || "")};
+  var proxyTheme = ${JSON.stringify(theme || "")};
   try { baseOrigin = new URL(document.baseURI).origin; } catch(e) {}
+
+  function buildProxyUrl(url, resourceType) {
+    var resolved = new URL(url, document.baseURI);
+    if (resolved.protocol !== 'http:' && resolved.protocol !== 'https:') return null;
+    var proxyUrl = new URL('/api/iframe-check', proxyOrigin);
+    proxyUrl.searchParams.set('url', resolved.href);
+    proxyUrl.searchParams.set('resource', resourceType || 'xhr');
+    proxyUrl.searchParams.set('ref', document.baseURI || window.location.href);
+    if (proxySession) proxyUrl.searchParams.set('session', proxySession);
+    if (proxyTheme) proxyUrl.searchParams.set('theme', proxyTheme);
+    return proxyUrl.toString();
+  }
 
   if (baseOrigin && baseOrigin !== proxyOrigin) {
     var origFetch = window.fetch;
     window.fetch = function(input, init) {
       try {
         var url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
-        var resolved = new URL(url, document.baseURI);
         var method = 'GET';
         if (init && init.method) method = init.method.toUpperCase();
         else if (input instanceof Request) method = input.method.toUpperCase();
 
-        if (method === 'GET' && resolved.origin === baseOrigin) {
-          var proxyUrl = proxyOrigin + '/api/iframe-check?url=' + encodeURIComponent(resolved.href);
+        if (method === 'GET') {
+          var proxyUrl = buildProxyUrl(url, 'xhr');
+          if (!proxyUrl) return origFetch.call(window, input, init);
           return origFetch.call(window, proxyUrl, init);
         }
       } catch(e) {}
@@ -998,10 +1212,8 @@ export default apiHandler(
         var method = arguments[0];
         var url = arguments[1];
         if (typeof url === 'string' && method && method.toUpperCase() === 'GET') {
-          var resolved = new URL(url, document.baseURI);
-          if (resolved.origin === baseOrigin) {
-            arguments[1] = proxyOrigin + '/api/iframe-check?url=' + encodeURIComponent(resolved.href);
-          }
+          var proxyUrl = buildProxyUrl(url, 'xhr');
+          if (proxyUrl) arguments[1] = proxyUrl;
         }
       } catch(e) {}
       return origXHROpen.apply(this, arguments);
@@ -1066,13 +1278,33 @@ export default apiHandler(
         }
 
         res.setHeader("Content-Type", "text/html; charset=utf-8");
+        setDiagnosticsHeader(res, debugProxy, diagnostics);
         logger.response(upstreamRes.status, Date.now() - startTime);
         return res.status(upstreamRes.status).send(html);
+      } else if (contentType.includes("text/css")) {
+        const css = await upstreamRes.text();
+        const appPublicOrigin = getAppPublicOrigin(origin);
+        const rewriteResult = rewriteCssForProxy(css, {
+          baseUrl: finalUrl,
+          proxyOrigin: appPublicOrigin,
+          referrerUrl: finalUrl,
+          sessionId: proxySessionId,
+        });
+        diagnostics.rewrites = {
+          ...emptyRewriteStats(),
+          cssUrls: rewriteResult.count,
+        };
+        res.setHeader("Content-Type", contentType || "text/css; charset=utf-8");
+        setDiagnosticsHeader(res, debugProxy, diagnostics);
+        logger.response(upstreamRes.status, Date.now() - startTime);
+        return res.status(upstreamRes.status).send(rewriteResult.css);
       } else {
         logger.info("Proxying non-HTML content directly");
         // For non‑HTML content, stream the body directly
         const arrayBuffer = await upstreamRes.arrayBuffer();
         res.setHeader("Content-Type", contentType);
+        diagnostics.rewrites = emptyRewriteStats();
+        setDiagnosticsHeader(res, debugProxy, diagnostics);
         logger.response(upstreamRes.status, Date.now() - startTime);
         return res.status(upstreamRes.status).send(Buffer.from(arrayBuffer));
       }
@@ -1085,6 +1317,8 @@ export default apiHandler(
         if (effectiveOrigin) {
           res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
         }
+        diagnostics.errorType = "ssrf_blocked";
+        setDiagnosticsHeader(res, debugProxy, diagnostics);
         logger.response(400, Date.now() - startTime);
         return res.status(400).json({
           error: true,
@@ -1102,6 +1336,8 @@ export default apiHandler(
       if (effectiveOrigin) {
         res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
       }
+      diagnostics.errorType = "connection_error";
+      setDiagnosticsHeader(res, debugProxy, diagnostics);
       logger.response(503, Date.now() - startTime);
       return res.status(503).json({
         error: true,

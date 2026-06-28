@@ -2,6 +2,12 @@ import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  DIRECT_PASSTHROUGH_DOMAINS,
+  shouldDirectPassthroughUrl,
+} from "@/shared/ieCompatibility";
+
+export { DIRECT_PASSTHROUGH_DOMAINS };
 
 // Define types
 export interface Favorite {
@@ -12,15 +18,6 @@ export interface Favorite {
   children?: Favorite[]; // Add children for nested folders
   isDirectory?: boolean; // New: Flag to indicate if it's a folder
 }
-
-// Define a constant for domains that bypass the proxy when in "now" mode
-export const DIRECT_PASSTHROUGH_DOMAINS = [
-  "os.ryo.lu",
-  "hcsimulator.com",
-  "os.rocorgi.wang",
-  "iso-city.com",
-  "shaoruu.io",
-];
 
 export interface HistoryEntry {
   url: string;
@@ -887,15 +884,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
 
 // Utility function to check if a URL should bypass the proxy
 export const isDirectPassthrough = (url: string): boolean => {
-  try {
-    const hostname = new URL(url.startsWith("http") ? url : `https://${url}`)
-      .hostname;
-    return DIRECT_PASSTHROUGH_DOMAINS.some(
-      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
-    );
-  } catch {
-    return false;
-  }
+  return shouldDirectPassthroughUrl(url);
 };
 
 /**

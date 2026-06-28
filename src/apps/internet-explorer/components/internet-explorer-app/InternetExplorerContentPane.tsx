@@ -74,11 +74,27 @@ export function InternetExplorerContentPane({
     const primaryMessage =
       errorDetails.message || t("apps.internet-explorer.anErrorOccurred");
     const secondaryMessage = errorDetails.details;
-    const suggestions = [
+    const suggestions: (string | ReactNode)[] = [
       t("apps.internet-explorer.checkWebAddressAndTryAgain"),
       t("apps.internet-explorer.goBackToPreviousPage"),
       t("apps.internet-explorer.tryRefreshingThePage"),
     ];
+    const directOpenUrl = url.startsWith("http") ? url : `https://${url}`;
+    try {
+      const parsedDirectOpenUrl = new URL(directOpenUrl);
+      suggestions.push(
+        <a
+          href={parsedDirectOpenUrl.toString()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-red-600 underline"
+        >
+          {parsedDirectOpenUrl.toString()}
+        </a>
+      );
+    } catch {
+      // Invalid user input is already covered by the primary error message.
+    }
     const footerText = errorDetails.hostname
       ? t("apps.internet-explorer.host", {
           hostname: errorDetails.hostname,

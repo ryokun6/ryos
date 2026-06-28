@@ -57,6 +57,14 @@ const logDirectPassthrough = (url: string) => {
   log.debug("Direct passthrough mode", { url });
 };
 
+const createProxySessionId = (instanceId: string): string => {
+  const randomPart =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+  return `ie_${instanceId}_${randomPart}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+};
+
 interface UseInternetExplorerLogicProps {
   isWindowOpen: boolean;
   isForeground?: boolean;
@@ -79,6 +87,10 @@ export function useInternetExplorerLogic({
   const bringInstanceToForeground = useAppStore(
     (state) => state.bringInstanceToForeground
   );
+  const proxySessionIdRef = useRef<string | null>(null);
+  if (!proxySessionIdRef.current) {
+    proxySessionIdRef.current = createProxySessionId(instanceId);
+  }
   const clearInstanceInitialData = useAppStore(
     (state) => state.clearInstanceInitialData
   );
@@ -520,9 +532,12 @@ export function useInternetExplorerLogic({
       typeof currentTheme === "string"
         ? `&theme=${encodeURIComponent(currentTheme)}`
         : "";
+    const sessionParam = proxySessionIdRef.current
+      ? `&session=${encodeURIComponent(proxySessionIdRef.current)}`
+      : "";
     return `/api/iframe-check?url=${encodeURIComponent(
       formattedUrl
-    )}&year=${year}&month=${month}${themeParam}`;
+    )}&year=${year}&month=${month}${themeParam}${sessionParam}`;
   }, [currentTheme]);
 
   // Ref to keep the most recent navigation token in sync without waiting for a render
@@ -945,7 +960,11 @@ export function useInternetExplorerLogic({
               // Proxy current year sites through iframe-check
               urlToLoad = `/api/iframe-check?url=${encodeURIComponent(
                 normalizedTargetUrl
-              )}&theme=${encodeURIComponent(currentTheme)}`;
+              )}&theme=${encodeURIComponent(currentTheme)}${
+                proxySessionIdRef.current
+                  ? `&session=${encodeURIComponent(proxySessionIdRef.current)}`
+                  : ""
+              }`;
             }
 
             try {
