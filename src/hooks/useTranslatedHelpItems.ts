@@ -5,7 +5,7 @@ import { INTERNET_EXPLORER_HELP_I18N_KEYS } from "@/apps/internet-explorer/helpK
 import { MAPS_HELP_I18N_KEYS } from "@/apps/maps/helpKeys";
 import type { AppId } from "@/utils/i18n";
 
-const HELP_KEYS: Record<AppId, string[]> = {
+export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
   finder: [
     "browseNavigate",
     "fileManagement",
@@ -214,7 +214,7 @@ export function useTranslatedHelpItems<TIcon extends ReactNode = string>(
   const { t } = useTranslation();
 
   return useMemo(() => {
-    const keys = HELP_KEYS[appId] || [];
+    const keys = APP_HELP_I18N_KEYS[appId] || [];
     return originalHelpItems.map((item, index) => {
       const key = keys[index];
       if (!key) return item; // Fallback to original if no key
