@@ -545,6 +545,10 @@ export function useInternetExplorerLogic({
   const pendingNavigationRequestRef = useRef<string | null>(null);
 
   const handleIframeLoad = async () => {
+    if (useInternetExplorerStore.getState().status !== "loading") {
+      return;
+    }
+
     if (
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
@@ -1697,7 +1701,7 @@ export function useInternetExplorerLogic({
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const messageData = event.data as
-        | { type?: string; url?: string }
+        | { type?: string; url?: string; title?: string }
         | undefined;
       if (!messageData?.type) {
         return;
@@ -1739,6 +1743,48 @@ export function useInternetExplorerLogic({
         // truncated) by loadSuccess.
         useInternetExplorerStore.getState().setNavigatingHistory(false);
         latestNavigateRef.current(messageData.url, latestYearRef.current);
+      } else if (messageData.type === "iframeReady") {
+        const state = useInternetExplorerStore.getState();
+        if (state.status !== "loading") {
+          return;
+        }
+
+        const targetUrl = state.url;
+        const targetYear = state.year;
+        let loadedTitle =
+          typeof messageData.title === "string" && messageData.title
+            ? messageData.title
+            : state.prefetchedTitle;
+        if (loadedTitle) {
+          try {
+            loadedTitle = decodeHtmlEntities(
+              decodeURIComponent(loadedTitle)
+            ).trim();
+          } catch {
+            loadedTitle = decodeHtmlEntities(loadedTitle).trim();
+          }
+        }
+
+        const fallbackTitle = formatTitle(getHostnameFromUrl(targetUrl));
+        const favicon = `https://www.google.com/s2/favicons?domain=${getHostnameFromUrl(
+          targetUrl
+        )}&sz=32`;
+
+        track(IE_ANALYTICS.NAVIGATION_SUCCESS, {
+          ...normalizeUrlForAnalytics(targetUrl),
+          year: targetYear,
+          mode: state.mode,
+          hasTitle: Boolean(loadedTitle || fallbackTitle),
+          source: "iframeReady",
+        });
+
+        state.loadSuccess({
+          title: loadedTitle || fallbackTitle,
+          targetUrl,
+          targetYear,
+          favicon,
+          addToHistory: !state.isNavigatingHistory,
+        });
       } else if (messageData.type === "goBack") {
         log.debug("Received back button request from iframe");
         latestGoBackRef.current();

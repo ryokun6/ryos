@@ -124,6 +124,8 @@ describe("iframe-check", () => {
       expect(html).toContain("resource=script");
       expect(html).toContain('type="text/plain"');
       expect(html).toContain('data-ryos-blocked-script="true"');
+      expect(html).toContain("type: 'iframeReady'");
+      expect(html).toContain("postReady('timeout')");
       expect(html).toContain("resource=image");
       expect(html).toContain("resource=iframe");
       expect(html).toContain("form=1");

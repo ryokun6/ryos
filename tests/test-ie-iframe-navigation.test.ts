@@ -25,8 +25,16 @@ describe("internet explorer iframe navigation", () => {
     expect(hookSource).not.toMatch(/iframeRef\.current\.src\s*=\s*urlToLoad/);
     expect(hookSource).toContain("pendingNavigationRequestRef");
     expect(hookSource).toContain("Ignoring duplicate in-flight navigation");
+    expect(hookSource).toContain('messageData.type === "iframeReady"');
+    expect(hookSource).toContain('source: "iframeReady"');
     expect(hookSource).toMatch(
       /iframeRef\.current\.dataset\.navToken = newToken\.toString\(\);\s*\}\s*setFinalUrl\(urlToLoad\);/
     );
+  });
+
+  test("proxied documents can clear loading before every subresource finishes", () => {
+    expect(hookSource).toContain("state.status !== \"loading\"");
+    expect(hookSource).toContain("state.loadSuccess({");
+    expect(contentPaneSource).toContain("onLoad={handleIframeLoad}");
   });
 });

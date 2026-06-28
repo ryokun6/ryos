@@ -973,6 +973,30 @@ export default apiHandler(
     }
   }
 
+  var readyPosted = false;
+  function postReady(source) {
+    if (readyPosted) return;
+    readyPosted = true;
+    try {
+      var metaTitle = document.querySelector('meta[name="page-title"]');
+      realParent.postMessage({
+        type: 'iframeReady',
+        title: document.title || (metaTitle && metaTitle.getAttribute('content')) || '',
+        source: source
+      }, '*');
+    } catch (e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { postReady('dom-content-loaded'); }, { once: true });
+  } else {
+    setTimeout(function() { postReady('already-ready'); }, 0);
+  }
+
+  // Some pages keep subresources pending for a long time; unblock ryOS once
+  // the static document has had a chance to paint.
+  setTimeout(function() { postReady('timeout'); }, 1500);
+
   // --- Frame-busting neutralization ---
   // Make the page think it is the top-level window so that
   // "if (top !== self) top.location = ..." guards become no-ops.
