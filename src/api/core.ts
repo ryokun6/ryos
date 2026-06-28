@@ -105,10 +105,17 @@ async function performApiRequest<TBody = unknown>(
     headers,
     signal,
     timeout = 15000,
-    retry = { maxAttempts: 1, initialDelayMs: 250 },
+    retry,
   } = options;
 
   const hasBody = body !== undefined;
+  const normalizedMethod = method.toUpperCase();
+  const retryConfig =
+    retry ??
+    (normalizedMethod === "GET"
+      ? { maxAttempts: 2, initialDelayMs: 500 }
+      : { maxAttempts: 1, initialDelayMs: 250 });
+
   return abortableFetch(buildUrl(path, query), {
     method,
     headers: buildHeaders(headers, hasBody),
@@ -116,7 +123,7 @@ async function performApiRequest<TBody = unknown>(
     signal,
     timeout,
     throwOnHttpError: false,
-    retry,
+    retry: retryConfig,
   });
 }
 
