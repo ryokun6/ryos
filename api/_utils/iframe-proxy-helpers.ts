@@ -1,3 +1,5 @@
+import { decodeHtmlEntitiesOnce } from "./html-entities.js";
+
 export type ProxyResourceType =
   | "document"
   | "style"
@@ -189,11 +191,15 @@ export function createProxyUrl(
     sessionId?: string | null;
     form?: boolean;
     theme?: string | null;
+    decodeHtmlEntities?: boolean;
   }
 ): string | null {
-  if (!shouldProxyUrl(rawUrl)) return null;
+  const urlForParsing = options.decodeHtmlEntities
+    ? decodeHtmlEntitiesOnce(rawUrl)
+    : rawUrl;
+  if (!shouldProxyUrl(urlForParsing)) return null;
   try {
-    const absoluteUrl = new URL(rawUrl, options.baseUrl);
+    const absoluteUrl = new URL(urlForParsing, options.baseUrl);
     if (absoluteUrl.protocol !== "http:" && absoluteUrl.protocol !== "https:") {
       return null;
     }
@@ -277,7 +283,11 @@ function rewriteTagAttributes(
   const stats = createEmptyRewriteStats();
 
   for (const attr of attrs) {
-    const attrOptions = { ...options, resourceType: attr.resourceType };
+    const attrOptions = {
+      ...options,
+      resourceType: attr.resourceType,
+      decodeHtmlEntities: true,
+    };
     const result = rewriteQuotedAttribute(next, attr.name, (value) =>
       attr.srcset
         ? rewriteSrcset(value, attrOptions)

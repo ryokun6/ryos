@@ -50,6 +50,27 @@ describe("iframe proxy helpers", () => {
     expect(result.stats.cssUrls).toBe(1);
   });
 
+  test("rewriteHtmlForProxy decodes HTML entities in ResourceLoader links", () => {
+    const result = rewriteHtmlForProxy(
+      `<html><head><link rel="stylesheet" href="/w/load.php?lang=en&amp;modules=site.styles&amp;only=styles&amp;skin=vector-2022"></head></html>`,
+      {
+        baseUrl: "https://en.wikipedia.org/wiki/Internet_Explorer",
+        proxyOrigin: "https://os.example",
+        referrerUrl: "https://en.wikipedia.org/wiki/Internet_Explorer",
+      }
+    );
+
+    const href = result.html.match(/href="([^"]+)"/)?.[1];
+    expect(href).toBeTruthy();
+    const proxyUrl = new URL(href ?? "");
+    const upstreamUrl = proxyUrl.searchParams.get("url");
+    expect(upstreamUrl).toBeTruthy();
+    const resourceLoaderUrl = new URL(upstreamUrl ?? "");
+    expect(resourceLoaderUrl.searchParams.get("modules")).toBe("site.styles");
+    expect(resourceLoaderUrl.searchParams.get("only")).toBe("styles");
+    expect(resourceLoaderUrl.searchParams.has("amp;modules")).toBe(false);
+  });
+
   test("rewriteCssForProxy proxies imports and url references", () => {
     const result = rewriteCssForProxy(
       `@import "/theme.css"; .hero{background:url(./hero.png)} .inline{background:url(data:image/png;base64,abc)}`,
