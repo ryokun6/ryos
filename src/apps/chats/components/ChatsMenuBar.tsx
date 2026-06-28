@@ -24,6 +24,7 @@ import {
 } from "@/utils/browserNotifications";
 import type {
   TelegramLinkCreateResponse,
+  TelegramHeartbeatSettings,
   TelegramLinkSession,
   TelegramLinkedAccount,
   TelegramLinkStatusResponse,
@@ -66,11 +67,14 @@ interface ChatsMenuBarProps {
   isTelegramStatusLoading: boolean;
   isCreatingTelegramLink: boolean;
   isDisconnectingTelegramLink: boolean;
+  telegramHeartbeatSettings: TelegramHeartbeatSettings;
+  isSavingTelegramHeartbeatSettings: boolean;
   onRefreshTelegramLinkStatus: () => Promise<TelegramLinkStatusResponse | null>;
   onCreateTelegramLink: () => Promise<TelegramLinkCreateResponse | null>;
   onOpenTelegramLink: () => void;
   onCopyTelegramCode: () => void;
   onDisconnectTelegramLink: () => void;
+  onSaveTelegramHeartbeatInstructions: (instructions: string) => Promise<boolean>;
 }
 
 export const ChatsMenuBar = memo(function ChatsMenuBar({
@@ -107,11 +111,14 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
   isTelegramStatusLoading,
   isCreatingTelegramLink,
   isDisconnectingTelegramLink,
+  telegramHeartbeatSettings,
+  isSavingTelegramHeartbeatSettings,
   onRefreshTelegramLinkStatus,
   onCreateTelegramLink,
   onOpenTelegramLink,
   onCopyTelegramCode,
   onDisconnectTelegramLink,
+  onSaveTelegramHeartbeatInstructions,
 }: ChatsMenuBarProps) {
   const { t } = useTranslation();
   const [isTelegramDialogOpen, setIsTelegramDialogOpen] = useState(false);
@@ -456,10 +463,13 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
         isStatusLoading={isTelegramStatusLoading}
         isCreatingLink={isCreatingTelegramLink}
         isDisconnectingLink={isDisconnectingTelegramLink}
+        heartbeatSettings={telegramHeartbeatSettings}
+        isSavingHeartbeatSettings={isSavingTelegramHeartbeatSettings}
         onCreateLink={onCreateTelegramLink}
         onOpenTelegramLink={onOpenTelegramLink}
         onCopyTelegramCode={onCopyTelegramCode}
         onDisconnectTelegramLink={onDisconnectTelegramLink}
+        onSaveHeartbeatInstructions={onSaveTelegramHeartbeatInstructions}
       />
     </>
   );

@@ -18,12 +18,16 @@ import {
   getCurrentBriefingType,
   getTelegramConversationSinceLastHeartbeat,
   getTelegramHeartbeatAuthSecret,
+  getTelegramHeartbeatSettings,
   getTelegramHeartbeatSlot,
   isTelegramHeartbeatLegacyNoteEntry,
+  normalizeTelegramHeartbeatInstructions,
   parseTelegramHeartbeatResult,
+  setTelegramHeartbeatInstructions,
   shouldSendTelegramHeartbeat,
   TELEGRAM_BRIEFING_MORNING_HOUR,
   TELEGRAM_BRIEFING_EVENING_HOUR,
+  TELEGRAM_HEARTBEAT_INSTRUCTIONS_MAX_LENGTH,
   TELEGRAM_HEARTBEAT_CRON_PATH,
   TELEGRAM_HEARTBEAT_CRON_SCHEDULE,
   TELEGRAM_HEARTBEAT_SKIP_TOKEN,
@@ -166,6 +170,54 @@ describe("telegram heartbeat helpers", () => {
     expect(prompt).toContain("Do not mention that this message is automated");
     expect(prompt).toContain("RECENT TELEGRAM CHAT:");
     expect(prompt).toContain(TELEGRAM_HEARTBEAT_SKIP_TOKEN);
+    expect(prompt).not.toContain("USER-CUSTOMIZED HEARTBEAT INSTRUCTIONS");
+  });
+
+  test("adds custom heartbeat instructions to the prompt when configured", () => {
+    const prompt = buildTelegramHeartbeatPrompt({
+      dailyNoteSnapshot: "- 10:15:00: need to review the latest cron behavior",
+      recentTelegramSnapshot: "(none)",
+      heartbeatLogSnapshot: "(none)",
+      customInstructions:
+        "Focus on shipping blockers and keep reminders concrete.",
+    });
+
+    expect(prompt).toContain("USER-CUSTOMIZED HEARTBEAT INSTRUCTIONS");
+    expect(prompt).toContain("Focus on shipping blockers");
+  });
+
+  test("normalizes and stores custom heartbeat instructions", async () => {
+    const redis = makeRedis();
+    const longInstructions = `  remind me about ryOS\n\r\n${"x".repeat(
+      TELEGRAM_HEARTBEAT_INSTRUCTIONS_MAX_LENGTH + 20
+    )}`;
+
+    const saved = await setTelegramHeartbeatInstructions(
+      redis,
+      "Ryo",
+      longInstructions
+    );
+
+    expect(saved.instructions.startsWith("remind me about ryOS\n\n")).toBe(true);
+    expect(saved.instructions.length).toBe(
+      TELEGRAM_HEARTBEAT_INSTRUCTIONS_MAX_LENGTH
+    );
+    expect(saved.updatedAt).toBeNumber();
+
+    const loaded = await getTelegramHeartbeatSettings(redis, "ryo");
+    expect(loaded.instructions).toBe(saved.instructions);
+
+    const reset = await setTelegramHeartbeatInstructions(redis, "ryo", "   ");
+    expect(reset).toEqual({ instructions: "", updatedAt: null });
+    expect(await getTelegramHeartbeatSettings(redis, "ryo")).toEqual({
+      instructions: "",
+      updatedAt: null,
+    });
+  });
+
+  test("rejects non-string heartbeat instructions as empty", () => {
+    expect(normalizeTelegramHeartbeatInstructions(null)).toBe("");
+    expect(normalizeTelegramHeartbeatInstructions({ text: "hello" })).toBe("");
   });
 
   test("keeps daily-note context clean by ignoring legacy heartbeat strings", () => {

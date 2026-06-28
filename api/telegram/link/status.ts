@@ -7,6 +7,7 @@ import {
   buildTelegramDeepLink,
   getTelegramBotUsername,
 } from "../../_utils/telegram.js";
+import { getTelegramHeartbeatSettings } from "../../_utils/telegram-heartbeat.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -23,6 +24,7 @@ export default apiHandler(
       ? null
       : await getTelegramPendingLinkSession(redis, username);
     const botUsername = pendingLink ? getTelegramBotUsername() : null;
+    const heartbeatSettings = await getTelegramHeartbeatSettings(redis, username);
 
     logger.response(200, Date.now() - startTime);
     res.status(200).json({
@@ -47,6 +49,7 @@ export default apiHandler(
             ),
           }
         : null,
+      heartbeatSettings,
     });
   }
 );

@@ -23,6 +23,12 @@ export interface TelegramLinkStatusResponse {
   linked: boolean;
   account: TelegramLinkedAccount | null;
   pendingLink: TelegramLinkSession | null;
+  heartbeatSettings: TelegramHeartbeatSettings;
+}
+
+export interface TelegramHeartbeatSettings {
+  instructions: string;
+  updatedAt: number | null;
 }
 
 export async function createTelegramLink(): Promise<TelegramLinkCreateResponse> {
@@ -42,5 +48,15 @@ export async function disconnectTelegramLink(): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>({
     path: "/api/telegram/link/disconnect",
     method: "POST",
+  });
+}
+
+export async function updateTelegramHeartbeatSettings(
+  instructions: string
+): Promise<{ settings: TelegramHeartbeatSettings }> {
+  return apiRequest<{ settings: TelegramHeartbeatSettings }>({
+    path: "/api/telegram/heartbeat-settings",
+    method: "POST",
+    body: { instructions },
   });
 }

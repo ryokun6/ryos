@@ -23,6 +23,7 @@ import {
   formatTelegramHeartbeatDailyNoteEntries,
   formatTelegramHeartbeatHistoryEntries,
   getCurrentBriefingType,
+  getTelegramHeartbeatSettings,
   getTelegramConversationSinceLastHeartbeat,
   getTelegramHeartbeatAuthSecret,
   parseTelegramHeartbeatResult,
@@ -285,6 +286,7 @@ export default async function handler(
   const todaysDailyNote = await getDailyNote(redis, username, today);
   const noteContext = buildTelegramHeartbeatNoteContext(todaysDailyNote);
   const conversationContext = buildTelegramHeartbeatConversationContext(history);
+  const heartbeatSettings = await getTelegramHeartbeatSettings(redis, username);
   const gateDecision = shouldSendTelegramHeartbeat(
     noteContext,
     heartbeatHistoryContext,
@@ -356,6 +358,7 @@ export default async function handler(
           heartbeatHistoryContext.entries
         ),
         briefingType,
+        customInstructions: heartbeatSettings.instructions,
       }),
     },
   ];

@@ -160,11 +160,14 @@ export function ControlPanelsAppComponent({
     isTelegramStatusLoading,
     isCreatingTelegramLink,
     isDisconnectingTelegramLink,
+    telegramHeartbeatSettings,
+    isSavingTelegramHeartbeatSettings,
     refreshTelegramLinkStatus,
     handleCreateTelegramLink,
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
+    handleSaveTelegramHeartbeatInstructions,
     recoveryEmailStatus,
     isEmailStatusLoading,
     refreshRecoveryEmailStatus,
@@ -493,10 +496,15 @@ export function ControlPanelsAppComponent({
           isTelegramStatusLoading={isTelegramStatusLoading}
           isCreatingTelegramLink={isCreatingTelegramLink}
           isDisconnectingTelegramLink={isDisconnectingTelegramLink}
+          telegramHeartbeatSettings={telegramHeartbeatSettings}
+          isSavingTelegramHeartbeatSettings={isSavingTelegramHeartbeatSettings}
           handleCreateTelegramLink={handleCreateTelegramLink}
           handleOpenTelegramLink={handleOpenTelegramLink}
           handleCopyTelegramCode={handleCopyTelegramCode}
           handleDisconnectTelegramLink={handleDisconnectTelegramLink}
+          handleSaveTelegramHeartbeatInstructions={
+            handleSaveTelegramHeartbeatInstructions
+          }
         />
       }
     >
