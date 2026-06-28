@@ -30,7 +30,11 @@ const browserGlobals = globalThis as typeof globalThis & {
   navigator?: Navigator;
 };
 if (!browserGlobals.localStorage) {
-  browserGlobals.localStorage = new MemoryStorage();
+  Object.defineProperty(browserGlobals, "localStorage", {
+    configurable: true,
+    value: new MemoryStorage(),
+    writable: true,
+  });
 }
 Object.defineProperty(browserGlobals, "navigator", {
   value: {

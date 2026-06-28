@@ -17,6 +17,7 @@ Object.defineProperty(globalThis, "localStorage", {
         localStorageMap.delete(key);
       },
     } satisfies Pick<Storage, "getItem" | "setItem" | "removeItem">),
+  writable: true,
 });
 
 const { readBookBlobContent } = await import(
@@ -83,6 +84,7 @@ afterAll(() => {
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     value: originalLocalStorage,
+    writable: true,
   });
 });
 

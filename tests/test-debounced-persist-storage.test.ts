@@ -7,9 +7,21 @@
  * semantics and explicit flush/halt hooks for backup/restore/reset flows.
  */
 
-import { describe, test, expect, beforeEach, afterEach, jest } from "bun:test";
+import {
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+  afterAll,
+  jest,
+} from "bun:test";
 
 // Minimal localStorage polyfill for the bun test environment.
+const originalLocalStorage = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "localStorage"
+);
 const backing = new Map<string, string>();
 Object.defineProperty(globalThis, "localStorage", {
   configurable: true,
@@ -46,6 +58,15 @@ beforeEach(() => {
 afterEach(() => {
   jest.useRealTimers();
   resetDebouncedPersistWritesForTests();
+});
+
+afterAll(() => {
+  resetDebouncedPersistWritesForTests();
+  if (originalLocalStorage) {
+    Object.defineProperty(globalThis, "localStorage", originalLocalStorage);
+  } else {
+    delete (globalThis as { localStorage?: Storage }).localStorage;
+  }
 });
 
 describe("createDebouncedPersistStorage", () => {

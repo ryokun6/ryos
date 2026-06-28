@@ -41,7 +41,11 @@ class MemoryStorage implements Storage {
 
 const globals = globalThis as typeof globalThis & { localStorage?: Storage };
 if (!globals.localStorage) {
-  globals.localStorage = new MemoryStorage();
+  Object.defineProperty(globals, "localStorage", {
+    configurable: true,
+    value: new MemoryStorage(),
+    writable: true,
+  });
 }
 
 let listRoomsImpl: () => Promise<{ rooms: ChatRoom[] }> = async () => ({

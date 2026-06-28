@@ -29,6 +29,7 @@ type PendingFlush = () => void;
 
 // name -> flush, so a global flush can drain every adapter instance.
 const pendingFlushes = new Map<string, PendingFlush>();
+const adapterResetters = new Set<() => void>();
 let lifecycleFlushRegistered = false;
 let halted = false;
 
@@ -54,6 +55,9 @@ export function haltDebouncedPersistWrites(): void {
 /** @internal Test-only reset for Bun's shared-process test runner. */
 export function resetDebouncedPersistWritesForTests(): void {
   halted = false;
+  for (const resetAdapter of Array.from(adapterResetters)) {
+    resetAdapter();
+  }
   pendingFlushes.clear();
 }
 
@@ -101,6 +105,20 @@ export function createDebouncedPersistStorage<S>(
       );
     }
   };
+
+  const resetForTests = () => {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    if (pendingName !== null) {
+      pendingFlushes.delete(pendingName);
+    }
+    pendingName = null;
+    pendingValue = null;
+  };
+
+  adapterResetters.add(resetForTests);
 
   return {
     getItem: (name) => {

@@ -2,6 +2,7 @@
 
 import { describe, expect, test, beforeAll, afterAll, beforeEach, afterEach } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import { ensureTestLocalStorage } from "./setup";
 
 // These helpers operate on the real DOM (document.getElementById,
 // document.documentElement, document.fullscreenElement). Bun has no DOM by
@@ -17,6 +18,7 @@ afterAll(() => {
   if (GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }
+  ensureTestLocalStorage();
 });
 
 import {

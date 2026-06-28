@@ -31,10 +31,17 @@ const browserGlobals = globalThis as typeof globalThis & {
   navigator?: Navigator;
 };
 if (!browserGlobals.localStorage) {
-  browserGlobals.localStorage = new MemoryStorage();
+  Object.defineProperty(browserGlobals, "localStorage", {
+    configurable: true,
+    value: new MemoryStorage(),
+    writable: true,
+  });
 }
 if (!browserGlobals.navigator) {
-  browserGlobals.navigator = { onLine: true, userAgent: "test" } as Navigator;
+  Object.defineProperty(browserGlobals, "navigator", {
+    configurable: true,
+    value: { onLine: true, userAgent: "test" } as Navigator,
+  });
 }
 
 const {

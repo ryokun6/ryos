@@ -91,6 +91,7 @@ beforeEach(() => {
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     value: new MemoryStorage(),
+    writable: true,
   });
 });
 
@@ -104,6 +105,7 @@ afterEach(async () => {
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     value: originalLocalStorage,
+    writable: true,
   });
 });
 
