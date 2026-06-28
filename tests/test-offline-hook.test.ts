@@ -34,6 +34,8 @@ interface FakeWindow {
 
 const ORIGINAL_WINDOW = (globalThis as { window?: unknown }).window;
 const ORIGINAL_NAVIGATOR = globalThis.navigator;
+const ORIGINAL_WINDOW_DESCRIPTOR = Object.getOwnPropertyDescriptor(globalThis, "window");
+const ORIGINAL_NAVIGATOR_DESCRIPTOR = Object.getOwnPropertyDescriptor(globalThis, "navigator");
 const ORIGINAL_SET_INTERVAL = globalThis.setInterval;
 const ORIGINAL_CLEAR_INTERVAL = globalThis.clearInterval;
 
@@ -58,13 +60,39 @@ function makeFakeWindow(): FakeWindow {
   };
 }
 
+function setGlobalProperty(name: "window" | "navigator", value: unknown): void {
+  Object.defineProperty(globalThis, name, {
+    configurable: true,
+    value,
+    writable: true,
+  });
+}
+
+function restoreGlobalProperty(
+  name: "window" | "navigator",
+  descriptor: PropertyDescriptor | undefined,
+  value: unknown
+): void {
+  if (descriptor) {
+    Object.defineProperty(globalThis, name, descriptor);
+    return;
+  }
+
+  if (value === undefined) {
+    delete (globalThis as Record<string, unknown>)[name];
+    return;
+  }
+
+  setGlobalProperty(name, value);
+}
+
 beforeEach(() => {
   fakeWindow = makeFakeWindow();
   navState = { onLine: true };
   activeIntervals = 0;
 
-  (globalThis as { window?: unknown }).window = fakeWindow;
-  globalThis.navigator = navState as unknown as Navigator;
+  setGlobalProperty("window", fakeWindow);
+  setGlobalProperty("navigator", navState);
 
   let nextId = 1;
   const liveIds = new Set<number>();
@@ -81,8 +109,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  (globalThis as { window?: unknown }).window = ORIGINAL_WINDOW;
-  globalThis.navigator = ORIGINAL_NAVIGATOR;
+  restoreGlobalProperty("window", ORIGINAL_WINDOW_DESCRIPTOR, ORIGINAL_WINDOW);
+  restoreGlobalProperty("navigator", ORIGINAL_NAVIGATOR_DESCRIPTOR, ORIGINAL_NAVIGATOR);
   globalThis.setInterval = ORIGINAL_SET_INTERVAL;
   globalThis.clearInterval = ORIGINAL_CLEAR_INTERVAL;
 });

@@ -11,7 +11,9 @@ import { describe, test, expect, beforeEach, afterEach, jest } from "bun:test";
 
 // Minimal localStorage polyfill for the bun test environment.
 const backing = new Map<string, string>();
-(globalThis as Record<string, unknown>).localStorage = {
+Object.defineProperty(globalThis, "localStorage", {
+  configurable: true,
+  value: {
   getItem: (key: string) => backing.get(key) ?? null,
   setItem: (key: string, value: string) => {
     backing.set(key, String(value));
@@ -24,11 +26,14 @@ const backing = new Map<string, string>();
   get length() {
     return backing.size;
   },
-};
+  },
+  writable: true,
+});
 
 const {
   createDebouncedPersistStorage,
   flushDebouncedPersistWrites,
+  resetDebouncedPersistWritesForTests,
 } = await import("../src/utils/debouncedPersistStorage");
 
 // Fake timers make the debounce window deterministic: we advance time by an
@@ -40,6 +45,7 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.useRealTimers();
+  resetDebouncedPersistWritesForTests();
 });
 
 describe("createDebouncedPersistStorage", () => {

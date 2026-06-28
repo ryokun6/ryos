@@ -42,6 +42,9 @@ const {
   resolveLyricsOverrideTargetId,
 } = await import("../src/apps/ipod/utils/lyricsTrackMetadata");
 const { useIpodStore } = await import("../src/stores/useIpodStore");
+const { flushDebouncedPersistWrites } = await import(
+  "../src/utils/debouncedPersistStorage"
+);
 type Track = import("../src/stores/useIpodStore").Track;
 
 function readPersistedIpodState(): unknown {
@@ -254,6 +257,7 @@ describe("setTrackCoverColor", () => {
       updated.appleMusicPlaylistTracks["pl.favorites-mix"]?.[0]?.coverColor
     ).toBe("#abcdef");
 
+    flushDebouncedPersistWrites();
     const persisted = readPersistedIpodState() as {
       state?: { tracks?: Track[] };
     };

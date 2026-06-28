@@ -47,6 +47,18 @@ export const makeRateLimitBypassHeaders = (): Record<string, string> => ({
 });
 
 /**
+ * Generate a unique validator-safe username.
+ */
+export function uniqueTestUsername(prefix: string): string {
+  const alphabet = "bcdfghjklmnpqrstvwxz";
+  let suffix = "";
+  for (let i = 0; i < 12; i++) {
+    suffix += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return `${prefix}${suffix}`;
+}
+
+/**
  * Extract the auth token from a response's `ryos_auth` httpOnly cookie.
  *
  * The login/register/refresh endpoints no longer return `token` in the
@@ -61,6 +73,16 @@ export function getTokenFromAuthCookie(response: Response): string | null {
 
   const match = setCookie.match(/(?:^|;\s*)ryos_auth=([^:;]+):([^;]+)/);
   return match?.[2] || null;
+}
+
+/**
+ * Extract the full `ryos_auth=...` cookie for fetch/WebSocket handshakes.
+ */
+export function getAuthCookieHeader(response: Response): string | null {
+  const setCookie = response.headers.get("set-cookie");
+  if (!setCookie) return null;
+  const match = setCookie.match(/(?:^|;\s*)(ryos_auth=[^;]+)/);
+  return match?.[1] ?? null;
 }
 
 /**

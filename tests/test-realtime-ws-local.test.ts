@@ -14,19 +14,13 @@
  */
 
 import { describe, test, expect, beforeAll } from "bun:test";
+import { getAuthCookieHeader } from "./test-utils";
 
 const LOCAL_URL = process.env.REALTIME_LOCAL_URL || "";
 const PASSWORD = "testpassword123";
 
 const origin = LOCAL_URL || "http://localhost:3001";
 const wsOrigin = origin.replace(/^http/, "ws");
-
-function authCookieFrom(res: Response): string | null {
-  const setCookie = res.headers.get("set-cookie");
-  if (!setCookie) return null;
-  const match = setCookie.match(/(?:^|;\s*)(ryos_auth=[^;]+)/);
-  return match?.[1] ?? null;
-}
 
 async function register(
   username: string
@@ -40,7 +34,7 @@ async function register(
     },
     body: JSON.stringify({ username, password: PASSWORD }),
   });
-  return { cookie: authCookieFrom(res) };
+  return { cookie: getAuthCookieHeader(res) };
 }
 
 async function getTicket(cookie: string): Promise<string | null> {

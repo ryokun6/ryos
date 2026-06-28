@@ -32,9 +32,14 @@ export interface ElevenLabsVoiceSettings {
   speed?: number;
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  openai ??= new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  return openai;
+}
 
 type TranscribeAudioBufferDeps = {
   toFileImpl?: typeof toFile;
@@ -63,7 +68,7 @@ export async function transcribeAudioBuffer({
     ((options: {
       file: Awaited<ReturnType<typeof toFile>>;
       model: string;
-    }) => openai.audio.transcriptions.create(options));
+    }) => getOpenAIClient().audio.transcriptions.create(options));
 
   const file = await toFileImpl(buffer, fileName, { type: mimeType });
   const transcription = await createTranscription({

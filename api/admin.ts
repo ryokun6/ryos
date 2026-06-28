@@ -109,6 +109,10 @@ async function getAdminRoomMessages(redis: Redis, roomId: string): Promise<unkno
   return await redis.lrange<unknown>(redisKeys.chat.roomMessages(roomId), 0, -1);
 }
 
+async function getAdminRoomMessageCount(redis: Redis, roomId: string): Promise<number> {
+  return await redis.llen(redisKeys.chat.roomMessages(roomId));
+}
+
 async function getAllUsers(redis: Redis): Promise<{ username: string; lastActive: number; banned?: boolean }[]> {
   try {
     const keys = await scanRedisKeys(redis, "auth:user:*:profile");
@@ -368,10 +372,10 @@ async function getStats(redis: Redis): Promise<{ totalUsers: number; totalRooms:
     const roomIds = await getAdminRoomIds(redis);
     const roomCount = roomIds?.length || 0;
 
-    let messageCount = 0;
-    for (const roomId of roomIds) {
-      messageCount += (await getAdminRoomMessages(redis, roomId)).length;
-    }
+    const roomCounts = await Promise.all(
+      roomIds.map((roomId) => getAdminRoomMessageCount(redis, roomId))
+    );
+    const messageCount = roomCounts.reduce((total, count) => total + count, 0);
 
     return { totalUsers: userCount, totalRooms: roomCount, totalMessages: messageCount };
   } catch (error) {

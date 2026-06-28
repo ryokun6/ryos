@@ -21,6 +21,7 @@ import {
   makeRateLimitBypassHeaders,
   getTokenFromAuthCookie,
   getAuthFromCookie,
+  uniqueTestUsername,
 } from "./test-utils";
 import { createRedis } from "../api/_utils/redis";
 import { redisKeys } from "../src/shared/redisKeys";
@@ -32,17 +33,6 @@ import {
 } from "../api/_utils/auth/_user-record";
 
 const redis = createRedis();
-
-// Consonant-only suffix avoids digit leetspeak / profanity false-positives in
-// the username validator while staying unique enough for test isolation.
-function uniqueUser(prefix: string): string {
-  const alphabet = "bcdfghjklmnpqrstvwxz";
-  let suffix = "";
-  for (let i = 0; i < 12; i++) {
-    suffix += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return `${prefix}${suffix}`;
-}
 
 async function registerUser(
   username: string,
@@ -76,7 +66,7 @@ describe("Account Recovery API", () => {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({
-          identifier: uniqueUser("nobody"),
+          identifier: uniqueTestUsername("nobody"),
           channel: "telegram",
         }),
       });
@@ -87,7 +77,7 @@ describe("Account Recovery API", () => {
     });
 
     test("known username (no deliverable channel) -> 200 generic success", async () => {
-      const username = uniqueUser("recreq");
+      const username = uniqueTestUsername("recreq");
       await registerUser(username, "testpassword123");
 
       const res = await fetchWithOrigin(`${BASE_URL}/api/auth/recovery/request`, {
@@ -113,7 +103,7 @@ describe("Account Recovery API", () => {
   // ==========================================================================
   describe("recovery/reset", () => {
     test("happy path: seeded code resets password, invalidates old session, logs in", async () => {
-      const username = uniqueUser("recreset");
+      const username = uniqueTestUsername("recreset");
       const { token: oldToken } = await registerUser(username, "oldpassword123");
       expect(oldToken).toBeTruthy();
 
@@ -174,7 +164,7 @@ describe("Account Recovery API", () => {
     });
 
     test("wrong code -> 400 generic", async () => {
-      const username = uniqueUser("recwrong");
+      const username = uniqueTestUsername("recwrong");
       await registerUser(username, "oldpassword123");
       await issueRecoveryCode(
         redis,
@@ -195,7 +185,7 @@ describe("Account Recovery API", () => {
     });
 
     test("code is single-use (reuse fails)", async () => {
-      const username = uniqueUser("recreuse");
+      const username = uniqueTestUsername("recreuse");
       await registerUser(username, "oldpassword123");
       const code = await issueRecoveryCode(
         redis,
@@ -231,7 +221,7 @@ describe("Account Recovery API", () => {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({
-          identifier: uniqueUser("ghost"),
+          identifier: uniqueTestUsername("ghost"),
           code: "123456",
           newPassword: "brandnewpass456",
         }),
@@ -240,7 +230,7 @@ describe("Account Recovery API", () => {
     });
 
     test("weak new password -> 400", async () => {
-      const username = uniqueUser("recweak");
+      const username = uniqueTestUsername("recweak");
       await registerUser(username, "oldpassword123");
       const code = await issueRecoveryCode(
         redis,
@@ -262,7 +252,7 @@ describe("Account Recovery API", () => {
   // ==========================================================================
   describe("email management", () => {
     test("status reflects no email + provider config", async () => {
-      const username = uniqueUser("emailstat");
+      const username = uniqueTestUsername("emailstat");
       const { token } = await registerUser(username, "testpassword123");
 
       const res = await fetchWithAuth(
@@ -279,7 +269,7 @@ describe("Account Recovery API", () => {
 
     test("email/set returns 503 when provider unconfigured", async () => {
       // This environment has no RESEND_API_KEY; set must report unavailable.
-      const username = uniqueUser("emailset");
+      const username = uniqueTestUsername("emailset");
       const { token } = await registerUser(username, "testpassword123");
 
       const statusRes = await fetchWithAuth(
@@ -309,7 +299,7 @@ describe("Account Recovery API", () => {
     });
 
     test("email/verify with seeded code verifies + indexes, enabling email reset", async () => {
-      const username = uniqueUser("emailver");
+      const username = uniqueTestUsername("emailver");
       const { token } = await registerUser(username, "oldpassword123");
       const email = `${username}@example.com`;
 
@@ -382,7 +372,7 @@ describe("Account Recovery API", () => {
     });
 
     test("email/verify with wrong code -> 400", async () => {
-      const username = uniqueUser("emailbad");
+      const username = uniqueTestUsername("emailbad");
       const { token } = await registerUser(username, "testpassword123");
       const email = `${username}@example.com`;
       const record = await getStoredUserRecord(redis, username);

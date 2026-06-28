@@ -51,6 +51,12 @@ export function haltDebouncedPersistWrites(): void {
   pendingFlushes.clear();
 }
 
+/** @internal Test-only reset for Bun's shared-process test runner. */
+export function resetDebouncedPersistWritesForTests(): void {
+  halted = false;
+  pendingFlushes.clear();
+}
+
 function ensureLifecycleFlush(): void {
   if (lifecycleFlushRegistered || typeof window === "undefined") return;
   lifecycleFlushRegistered = true;
