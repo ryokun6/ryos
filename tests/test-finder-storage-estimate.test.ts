@@ -1,4 +1,4 @@
-import { afterEach, describe, test, expect } from "bun:test";
+import { afterEach, describe, test, expect, spyOn } from "bun:test";
 import { formatStorageSize, estimateStorageSpace, calculateStorageSpace } from "../src/stores/useFinderStore";
 
 const originalNavigator = globalThis.navigator;
@@ -60,6 +60,7 @@ describe("storage helpers", () => {
   test("estimateStorageSpace falls back when estimate() rejects", async () => {
     // Mirrors the observed cloud-VM behavior where Chrome throws
     // "Internal error when calculating storage usage".
+    const consoleError = spyOn(console, "error").mockImplementation(() => {});
     setGlobalProperty("navigator", {
       storage: {
         estimate: async () => {
@@ -72,9 +73,17 @@ describe("storage helpers", () => {
       key: () => null,
       getItem: () => null,
     });
-    const r = await estimateStorageSpace();
-    const fb = calculateStorageSpace();
-    expect(r.total).toBe(fb.total);
-    expect(r.available).toBe(fb.total - fb.used);
+    try {
+      const r = await estimateStorageSpace();
+      const fb = calculateStorageSpace();
+      expect(r.total).toBe(fb.total);
+      expect(r.available).toBe(fb.total - fb.used);
+      expect(consoleError).toHaveBeenCalledWith(
+        "[FinderStore] Error estimating storage space",
+        expect.any(TypeError)
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });
