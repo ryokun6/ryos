@@ -44,6 +44,8 @@ const SAFE_MARKDOWN_ATTRIBUTES = [
   "title",
   "type",
 ];
+const SAFE_MARKDOWN_ATTRIBUTE_SET = new Set(SAFE_MARKDOWN_ATTRIBUTES);
+const SAFE_HREF_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
 
 const markdownProcessor = unified()
   .use(remarkParse)
@@ -155,7 +157,7 @@ export function sanitizeHtmlForEditor(html: string): string {
     return html;
   }
 
-  return String(
+  const sanitizedHtml = String(
     purifier.sanitize(html, {
       ALLOWED_ATTR: SAFE_MARKDOWN_ATTRIBUTES,
       ALLOWED_TAGS: SAFE_MARKDOWN_TAGS,
@@ -163,4 +165,28 @@ export function sanitizeHtmlForEditor(html: string): string {
       ALLOW_DATA_ATTR: false,
     })
   );
+
+  const template = window.document.createElement("template");
+  template.innerHTML = sanitizedHtml;
+  for (const element of Array.from(template.content.querySelectorAll("*"))) {
+    for (const attribute of Array.from(element.attributes)) {
+      if (!SAFE_MARKDOWN_ATTRIBUTE_SET.has(attribute.name)) {
+        element.removeAttribute(attribute.name);
+        continue;
+      }
+
+      if (attribute.name === "href") {
+        try {
+          const parsedUrl = new URL(attribute.value, "https://ryos.local");
+          if (!SAFE_HREF_PROTOCOLS.has(parsedUrl.protocol)) {
+            element.removeAttribute(attribute.name);
+          }
+        } catch {
+          element.removeAttribute(attribute.name);
+        }
+      }
+    }
+  }
+
+  return template.innerHTML;
 }
