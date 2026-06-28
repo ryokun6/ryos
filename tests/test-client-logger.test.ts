@@ -126,6 +126,7 @@ describe("client logger", () => {
   test("redacts sensitive fields and summarizes large values", () => {
     const summarized = summarizeForLog({
       prompt: "please keep this private",
+      message: "private chat text",
       contentMarkdown: "# secret note",
       nested: {
         deviceId: "camera-123",
@@ -135,6 +136,7 @@ describe("client logger", () => {
     }) as Record<string, unknown>;
 
     expect(summarized.prompt).toBe("[redacted]");
+    expect(summarized.message).toBe("[redacted]");
     expect(summarized.contentMarkdown).toBe("[redacted]");
     expect((summarized.nested as Record<string, unknown>).deviceId).toBe(
       "[redacted]"
@@ -143,6 +145,49 @@ describe("client logger", () => {
       "truncated"
     );
     expect(summarized.list).toEqual([0, 1, 2, 3, 4, 5, 6, 7, "... (4 more)"]);
+  });
+
+  test("keeps error message, stack, cause, and safe custom fields", () => {
+    const cause = new Error("zip container missing package document");
+    cause.stack = `Error: zip container missing package document\n${"at epub.js loader\n".repeat(20)}`;
+    const error = new Error("failed to display EPUB") as Error & {
+      cause?: unknown;
+      requestToken?: string;
+      sectionHref?: string;
+    };
+    error.stack = "Error: failed to display EPUB\nat Rendition.display (epubjs.js:1:2)";
+    error.cause = cause;
+    error.requestToken = "secret-token";
+    error.sectionHref = "chapter-1.xhtml";
+
+    const summarized = summarizeForLog(error) as Record<string, unknown>;
+    const summarizedCause = summarized.cause as Record<string, unknown>;
+    const props = summarized.props as Record<string, unknown>;
+
+    expect(summarized.kind).toBe("Error");
+    expect(summarized.message).toBe("failed to display EPUB");
+    expect(summarized.stack).toContain("Rendition.display");
+    expect(summarizedCause.message).toBe("zip container missing package document");
+    expect(summarizedCause.stack).toContain("epub.js loader");
+    expect(props.requestToken).toBe("[redacted]");
+    expect(props.sectionHref).toBe("chapter-1.xhtml");
+  });
+
+  test("preserves serialized error messages without unredacting normal messages", () => {
+    const summarized = summarizeForLog({
+      message: "user-authored chat message",
+      error: {
+        kind: "Error",
+        name: "Error",
+        message: "Cannot read properties of undefined",
+        stack: "TypeError: Cannot read properties of undefined\nat book.js:1:2",
+      },
+    }) as Record<string, unknown>;
+    const error = summarized.error as Record<string, unknown>;
+
+    expect(summarized.message).toBe("[redacted]");
+    expect(error.message).toBe("Cannot read properties of undefined");
+    expect(error.stack).toContain("book.js");
   });
 });
 
