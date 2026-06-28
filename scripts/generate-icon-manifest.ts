@@ -1,8 +1,7 @@
 #!/usr/bin/env bun
 /**
  * Generate an icon manifest for themed icons.
- * Currently only processes the `default` theme folder under public/icons/default.
- * Later, additional theme folders (e.g. system7, macosx) can be added.
+ * Auto-detects every theme directory under public/icons.
  */
 import { readdir, stat, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";

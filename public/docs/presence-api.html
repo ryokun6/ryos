@@ -470,7 +470,7 @@
 <h2>Overview</h2>
 <p>Presence tracking keeps track of which users are currently active in which rooms. The AI endpoint allows users to get AI-generated responses within chat rooms.</p>
 <h2>Endpoint Summary</h2>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/presence/switch</code></td><td>Switch rooms (presence tracking)</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/presence/heartbeat</code></td><td>Refresh global online presence</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/presence/heartbeat</code></td><td>List globally online users</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/users?search=...</code></td><td>Search users</td><td>No</td></tr><tr><td>POST</td><td><code>/api/ai/ryo-reply</code></td><td>Generate Ryo AI reply</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/pusher/auth</code></td><td>Authorize a private/presence Pusher channel</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/realtime/ticket</code></td><td>Mint a local WebSocket realtime ticket</td><td>Yes</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/presence/switch</code></td><td>Switch rooms (presence tracking)</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/presence/heartbeat</code></td><td>Refresh global online presence</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/presence/heartbeat</code></td><td>List globally online users</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/users?search=...</code></td><td>Search users</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/ai/ryo-reply</code></td><td>Generate Ryo AI reply</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/pusher/auth</code></td><td>Authorize a private/presence Pusher channel</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/realtime/ticket</code></td><td>Mint a local WebSocket realtime ticket</td><td>Yes</td></tr></tbody></table>
 <h2>Presence</h2>
 <h3>Switch Rooms</h3>
 <p>Update presence when a user switches between rooms. This is used for real-time "who's online" functionality.</p>
@@ -513,9 +513,12 @@ X-Username: alice</code></pre>
 <h2>User Search</h2>
 <h3>Search Users</h3>
 <p>Search for users by username prefix.</p>
-<pre><code>GET /api/users?search=ali</code></pre>
+<pre><code>GET /api/users?search=ali
+Authorization: Bearer {token}
+X-Username: alice</code></pre>
 <strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>search</code></td><td>string</td><td>Yes</td><td>Username search string (minimum 2 chars; shorter queries return empty list)</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>search</code></td><td>string</td><td>Yes</td><td>Username search string (minimum 2 chars; shorter queries return <code>400</code>)</td></tr></tbody></table>
+<p>Requires a valid <code>Authorization</code> token and <code>X-Username</code> pair. User search is rate-limited per authenticated user and can return <code>429</code> when the search bucket is exhausted.</p>
 <strong>Response (200):</strong>
 <pre><code>{
   "users": [

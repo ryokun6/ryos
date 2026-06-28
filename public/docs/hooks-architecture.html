@@ -506,7 +506,7 @@
         UMQ[useMediaQuery]
         UT[useToast]
         UO[useOffline]
-        ULP[useLongPress]
+        UPLP[usePointerLongPress]
         USN[useSwipeNavigation]
         UW[useWallpaper]
         UCB[useCacheBustTrigger]
@@ -720,16 +720,15 @@ if (isOffline) {
 }</code></pre>
 <strong>Features:</strong>
 <ul><li><code>navigator.onLine</code> monitoring</li><li>Periodic polling (5s intervals)</li><li>Last online timestamp</li></ul>
-<h3>useLongPress</h3>
-<p>Touch long-press detection.</p>
-<pre><code>interface UseLongPressReturn {
-  onTouchStart: (e: TouchEvent) =&gt; void;
-  onTouchEnd: () =&gt; void;
-  onTouchMove: () =&gt; void;
+<h3>usePointerLongPress</h3>
+<p>Pointer-based long-press detection for mouse, pen, and touch call sites.</p>
+<pre><code>interface UsePointerLongPressOptions {
+  onLongPress: (event: PointerEvent) =&gt; void;
+  delay?: number;
 }
 
 // Usage
-const longPressHandlers = useLongPress({
+const longPressHandlers = usePointerLongPress({
   onLongPress: () =&gt; showContextMenu(),
   delay: 500, // ms
 });

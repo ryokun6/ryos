@@ -893,7 +893,7 @@ const { quotes, chart } = await response.json();</code></pre>
 }</code></pre>
 <hr>
 <h2>Admin API</h2>
-<p>Administrative endpoints for user and memory management in the chat system. All operations require admin authentication (user <code>ryo</code> with valid token).</p>
+<p>Administrative endpoints for user, memory, analytics, Cursor-agent, Redis-browser, and moderation operations. All operations require admin authentication (user <code>ryo</code> with valid token).</p>
 <p>The endpoint is rate-limited to 30 admin requests/minute.</p>
 <h3>Endpoint</h3>
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/admin</code></td><td>Query users and statistics</td></tr><tr><td>POST</td><td><code>/api/admin</code></td><td>Perform admin actions</td></tr></tbody></table>
@@ -904,6 +904,8 @@ const { quotes, chart } = await response.json();</code></pre>
 <h3>GET Operations</h3>
 <strong>Query Parameters:</strong>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>username</code></td><td>string</td><td>For some actions</td><td>Target username</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Result limit (default: 50)</td></tr></tbody></table>
+<strong>Supported GET actions:</strong>
+<table><thead><tr><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><code>getStats</code></td><td>System-wide user, room, and message statistics</td></tr><tr><td><code>getAllUsers</code></td><td>Registered users and ban status</td></tr><tr><td><code>getUserProfile</code></td><td>Detailed user profile, rooms, and message counts</td></tr><tr><td><code>getUserMessages</code></td><td>Recent messages for a user</td></tr><tr><td><code>getUserMemories</code></td><td>Long-term memories and daily notes for a user</td></tr><tr><td><code>getUserHeartbeats</code></td><td>Recent global-presence heartbeats for a user</td></tr><tr><td><code>getServerInfo</code></td><td>Deployment, Redis, storage, realtime, and environment health</td></tr><tr><td><code>getAnalytics</code></td><td>API/product analytics summary or detail (<code>detail=true</code>)</td></tr><tr><td><code>getCursorAgentRuns</code></td><td>Recent Cursor cloud-agent run records</td></tr><tr><td><code>listRedisKeys</code></td><td>Redis browser key scan with summaries</td></tr><tr><td><code>getRedisKey</code></td><td>Redis key document preview</td></tr><tr><td><code>backupRedisKeys</code></td><td>Export matching Redis key documents</td></tr><tr><td><code>getAuditLog</code></td><td>Append-only admin action audit log</td></tr></tbody></table>
 <h4><code>getStats</code> Action</h4>
 <p>Get system-wide statistics.</p>
 <strong>Response:</strong>
@@ -988,6 +990,8 @@ const { quotes, chart } = await response.json();</code></pre>
 <h3>POST Operations</h3>
 <strong>Request Body:</strong>
 <table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>targetUsername</code></td><td>string</td><td>Yes</td><td>User to act on</td></tr><tr><td><code>reason</code></td><td>string</td><td>No</td><td>Reason for action (for bans)</td></tr></tbody></table>
+<strong>Supported POST actions:</strong>
+<table><thead><tr><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><code>deleteUser</code></td><td>Permanently delete a user account</td></tr><tr><td><code>banUser</code></td><td>Ban a user and invalidate sessions</td></tr><tr><td><code>unbanUser</code></td><td>Remove a user's ban</td></tr><tr><td><code>clearUserMemories</code></td><td>Delete long-term memories for a user</td></tr><tr><td><code>forceProcessDailyNotes</code></td><td>Reprocess recent daily notes into memories</td></tr><tr><td><code>startCursorAgent</code></td><td>Start a Cursor cloud-agent run from Admin</td></tr><tr><td><code>deleteRedisKey</code></td><td>Delete one Redis key after key confirmation</td></tr></tbody></table>
 <h4><code>deleteUser</code> Action</h4>
 <p>Permanently delete a user account (cannot delete admin "ryo").</p>
 <strong>Request:</strong>

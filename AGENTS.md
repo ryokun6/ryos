@@ -53,18 +53,21 @@ The frontend runs on port 5173 by default. The standalone API defaults to port 3
 The following environment variables are required for full functionality:
 
 ### Required for Core Features
-- `REDIS_KV_REST_API_URL` - Upstash Redis REST API URL (for caching, chat rooms, authentication)
-- `REDIS_KV_REST_API_TOKEN` - Upstash Redis REST API token
+- Redis backend, either:
+  - `REDIS_KV_REST_API_URL` + `REDIS_KV_REST_API_TOKEN` - Upstash Redis REST API
+  - `REDIS_URL` - standard Redis / Valkey connection string (required for local WebSocket pub/sub)
 
 ### Required for AI Features
 - AI provider API keys (at least one):
   - OpenAI, Anthropic, or Google AI keys are configured via Vercel AI SDK
 
 ### Required for Real-time Features
-- `PUSHER_APP_ID` - Pusher app ID (for chat rooms)
-- `PUSHER_KEY` - Pusher key
-- `PUSHER_SECRET` - Pusher secret
-- `PUSHER_CLUSTER` - Pusher cluster
+- Pusher mode (`REALTIME_PROVIDER=pusher`, default):
+  - `PUSHER_APP_ID`
+  - `PUSHER_KEY`
+  - `PUSHER_SECRET`
+  - `PUSHER_CLUSTER`
+- Local WebSocket mode (`REALTIME_PROVIDER=local`): requires `REDIS_URL`; optional `REALTIME_WS_PATH` defaults to `/ws`.
 
 ### Optional Features
 - `RESEND_API_KEY` - Resend API key enabling the account-recovery **email** channel (verify recovery email + email-delivered password-reset codes). **Required together with `RECOVERY_EMAIL_FROM`** — both must be set for the email channel to work. When either is unset, email recovery is unavailable and account recovery falls back to a linked Telegram account.
@@ -118,7 +121,7 @@ bun run i18n:translate
 
 ## Testing
 
-Tests use **Bun's native test runner** (`bun:test`). Test files live in `tests/` and use the `.test.ts` extension.
+Tests use **Bun's native test runner** (`bun:test`). Test files live in `tests/` and use the `.test.ts` or `.test.tsx` extension.
 
 ### Running Tests
 
@@ -141,13 +144,22 @@ bun run test:api
 | Command | What it runs |
 |---------|-------------|
 | `bun run test` | All tests (`bun test`) |
+| `bun run test:registration` | Verify API/opt-in test registration |
 | `bun run test:api` | All API integration suites |
 | `bun run test:unit` | All unit/wiring suites |
+| `bun run test:sync-v2:unit` | Sync v2 unit suites |
+| `bun run test:sync-v2` | Sync v2 unit + API suites |
+| `bun run test:api-validation` | API validation boundary tests |
 | `bun run test:new-api` | Auth, rooms, messages, presence |
 | `bun run test:admin` | Admin endpoint |
 | `bun run test:song` | Songs endpoints |
 | `bun run test:ai` | AI endpoints (chat, applet-ai, ie-generate, ryo-reply) |
 | `bun run test:media` | audio-transcribe, youtube-search |
+| `bun run test:auth-extra` | Auth edge-case suites |
+| `bun run test:auth-ban-lockout` | Auth ban/lockout suites |
+| `bun run test:listen-security` | Listen Together security suites |
+| `bun run test:realtime-auth` | Realtime auth/channel suites |
+| `bun run test:realtime-ws-local` | Opt-in local WebSocket realtime suite |
 | `bun run test:chat-wiring` | All chat wiring suites |
 | `bun run test:pusher-regression` | All Pusher-related suites |
 | `bun run test:chat-regression` | Chat + Pusher regression suites |
@@ -189,6 +201,6 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 - **Linter warnings**: The codebase has pre-existing linter warnings for unused variables. These are not blockers.
 - **Linting**: `bun run lint` may still report pre-existing issues unrelated to your change. Check the current output before treating a lint failure as a regression.
 - **API endpoints**: API routes are Node-style handlers under `api/` and require Redis for caching/storage.
-- **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
+- **Build process**: `bun run build` writes Vite output and generated service worker files (`sw.js`, `workbox-*.js`) to `dist/`; Vercel packaging may copy them into `.vercel/output/static/`.
 - **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
 - **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run dev:api` and adjust proxy target accordingly.
