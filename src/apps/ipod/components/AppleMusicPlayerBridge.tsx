@@ -658,12 +658,13 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           });
         }
         if (isStale()) return;
-        if (currentTrack.durationMs && currentTrack.durationMs > 0) {
+        const durationMs = currentTrack.durationMs;
+        if (durationMs && durationMs > 0) {
           callBridgeCallback(
             "queue:onDuration",
-            () => onDurationRef.current?.(currentTrack.durationMs / 1000),
+            () => onDurationRef.current?.(durationMs / 1000),
             {
-              durationMs: currentTrack.durationMs,
+              durationMs,
               snapshot: getBridgeSnapshot(),
             }
           );
