@@ -14,7 +14,7 @@ export type CalculatorSpeechSettings = {
 };
 
 export const DEFAULT_CALCULATOR_SPEECH: CalculatorSpeechSettings = {
-  speechEnabled: false,
+  speechEnabled: true,
   speakButtonPresses: true,
   speakResults: true,
 };
