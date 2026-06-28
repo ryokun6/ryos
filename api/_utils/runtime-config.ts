@@ -1,3 +1,5 @@
+import { isIeLiveBrowserConfigured } from "./_ie-live.js";
+
 export type RealtimeProvider = "pusher" | "local";
 
 const DEFAULT_PUBLIC_ORIGIN = "https://os.ryo.lu";
@@ -20,6 +22,12 @@ export interface ClientRuntimeConfig {
         forceTLS: boolean;
       }
     | null;
+  /**
+   * Whether the optional Internet Explorer "live browser" mode is configured
+   * on this deployment (feature flag + provider URL). Lets the client surface
+   * the live-view affordance only when it will actually work.
+   */
+  ieLiveBrowserAvailable: boolean;
 }
 
 function trimTrailingSlash(value: string): string {
@@ -130,6 +138,7 @@ export function buildClientRuntimeConfig(
         ? buildWebSocketUrl(appPublicOrigin, websocketPath)
         : null,
     pusher: realtimeProvider === "pusher" ? getPusherClientConfig() : null,
+    ieLiveBrowserAvailable: isIeLiveBrowserConfigured(),
   };
 }
 

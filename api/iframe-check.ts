@@ -10,6 +10,17 @@ import {
   isHeadlessRenderConfigured,
   renderUrlToHtml,
 } from "./_utils/_headless.js";
+import {
+  areIeProxySessionsEnabled,
+  ensureIeSessionCookie,
+  readIeSessionId,
+  loadIeCookieHeader,
+  saveIeCookies,
+} from "./_utils/_ie-session.js";
+import {
+  isIeLiveBrowserConfigured,
+  buildLiveViewUrl,
+} from "./_utils/_ie-live.js";
 import type { VercelRequest } from "@vercel/node";
 
 export const runtime = "nodejs";
@@ -828,6 +839,24 @@ export default apiHandler(
   };
 
   try {
+    // 0. Live browser mode — return the embeddable live-view URL (or 501 when
+    // the capability isn't configured). Feature-flagged; off by default.
+    if (mode === "live") {
+      logger.info("Executing in 'live' mode");
+      res.setHeader("Content-Type", "application/json");
+      if (!isIeLiveBrowserConfigured()) {
+        logger.response(501, Date.now() - startTime);
+        return res.status(501).json({
+          error: true,
+          type: "live_not_configured",
+          message: "Live browser mode is not enabled on this server.",
+        });
+      }
+      const liveViewUrl = buildLiveViewUrl(normalizedUrl);
+      logger.response(200, Date.now() - startTime);
+      return res.status(200).json({ liveViewUrl });
+    }
+
     // 1. Pure header‑check mode
     if (mode === "check") {
       logger.info("Executing in 'check' mode");
@@ -913,12 +942,31 @@ export default apiHandler(
     // 307/308 redirects that preserve the method.
     const forwardBody = await readForwardBody(req);
 
+    // Optional cookie/session passthrough (env-gated). When enabled, replay
+    // the stored per-host cookie jar so logins/sessions persist across proxied
+    // requests. We mint the first-party session id on top-level navigations.
+    let ieSessionId: string | null = null;
+    if (areIeProxySessionsEnabled()) {
+      ieSessionId =
+        !isRawProxy && httpMethod === "GET"
+          ? ensureIeSessionCookie(req, res)
+          : readIeSessionId(req);
+      if (ieSessionId) {
+        const cookieHeader = await loadIeCookieHeader(
+          redis,
+          ieSessionId,
+          targetUrl
+        );
+        if (cookieHeader) BROWSER_HEADERS["Cookie"] = cookieHeader;
+      }
+    }
+
     // Top-level navigations may fall back to (or force) headless rendering.
     const headlessEligible =
       !isRawProxy && httpMethod === "GET" && isHeadlessRenderConfigured();
 
     try {
-      let { response: upstreamRes, finalUrl } = await safeFetchWithRedirects(
+      const fetchResult = await safeFetchWithRedirects(
         targetUrl,
         {
           method: httpMethod,
@@ -928,8 +976,17 @@ export default apiHandler(
         },
         { maxRedirects: 10 }
       );
+      let upstreamRes = fetchResult.response;
+      let finalUrl = fetchResult.finalUrl;
+      const setCookies = fetchResult.setCookies;
 
       clearTimeout(timeout); // Clear timeout on successful fetch
+
+      // Persist any cookies the upstream set (login flows set them on the
+      // intermediate redirects, which safeFetchWithRedirects also collects).
+      if (ieSessionId && setCookies.length) {
+        await saveIeCookies(redis, ieSessionId, finalUrl || targetUrl, setCookies);
+      }
 
       // Headless fallback: when the upstream blocked the proxy (or the caller
       // forced `render=headless`), render the page with a real browser engine

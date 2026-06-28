@@ -613,6 +613,7 @@
       "checkWebAddressAndTryAgain": "Check the web address you typed and try again.",
       "goBackToPreviousPage": "Go back to the previous page.",
       "tryRefreshingThePage": "Try refreshing the page.",
+      "openInLiveBrowser": "Open this page in a live browser.",
       "host": "Host: {{hostname}}",
       "loadingTitle": "Internet Explorer - Loading",
       "loadingTitleWithSite": "{{site}} - Loading",
