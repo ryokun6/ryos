@@ -44,31 +44,38 @@ export function getShouldShowAdminImportStatus(
 export function getAdminImportProgressPercent(
   importStatus: AdminImportStatus,
 ): number {
-  return importStatus.phase === "completed"
-    ? 100
-    : importStatus.phase === "refreshing-library"
-      ? 95
-      : importStatus.totalSongs > 0
+  switch (importStatus.phase) {
+    case "completed":
+    case "failed":
+      return 100;
+    case "refreshing-library":
+      return 95;
+    case "preparing-songs":
+    case "uploading-batches":
+    case "waiting-rate-limit":
+      return importStatus.totalSongs > 0
         ? Math.min(
             94,
             Math.round(
               (importStatus.processedSongs / importStatus.totalSongs) * 100,
             ),
           )
-        : importStatus.phase === "reading-file"
-          ? 5
-          : importStatus.phase === "parsing-file"
-            ? 10
-            : importStatus.phase === "validating-data"
-              ? 15
-              : importStatus.phase === "preparing-songs"
-                ? 20
-                : importStatus.phase === "uploading-batches" ||
-                    importStatus.phase === "waiting-rate-limit"
-                  ? 30
-                  : importStatus.phase === "failed"
-                    ? 100
-                    : 0;
+        : importStatus.phase === "preparing-songs"
+          ? 20
+          : 30;
+    case "reading-file":
+      return 5;
+    case "parsing-file":
+      return 10;
+    case "validating-data":
+      return 15;
+    case "idle":
+      return 0;
+    default: {
+      const _exhaustive: never = importStatus.phase;
+      return _exhaustive;
+    }
+  }
 }
 
 export function getAdminImportStatusText(
