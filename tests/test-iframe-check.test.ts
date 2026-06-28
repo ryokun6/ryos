@@ -138,6 +138,22 @@ describe("iframe-check", () => {
       expect(diagnostics.cookieSession).toBe(true);
     });
 
+    test("Proxy mode - rewrites assets to the request origin", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/fixture/page"
+        )}&mode=proxy&fixture=html-assets&debug=1`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      const stylesheetHref = html.match(
+        /<link\b[^>]*href="([^"]*resource=style[^"]*)"[^>]*>/i
+      )?.[1];
+      expect(stylesheetHref).toBeTruthy();
+      expect(new URL(stylesheetHref ?? "").origin).toBe("http://localhost:3000");
+    });
+
     test("Proxy mode - disables scripts only for flagged compatibility domains", async () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(

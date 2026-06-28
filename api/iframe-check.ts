@@ -67,6 +67,9 @@ const emptyRewriteStats = (): RewriteStats => ({
   forms: 0,
 });
 
+const getProxyAssetOrigin = (requestOrigin: string | null): string =>
+  requestOrigin || getAppPublicOrigin(requestOrigin);
+
 // Live modern sites can overwhelm the sandboxed iframe; keep their HTML static
 // while preserving ryOS's own injected navigation helper.
 const disableExecutableScripts = (
@@ -914,7 +917,7 @@ export default apiHandler(
           html = disableExecutableScripts(html);
         }
 
-        const appPublicOrigin = getAppPublicOrigin(origin);
+        const appPublicOrigin = getProxyAssetOrigin(origin);
         const rewriteResult = rewriteHtmlForProxy(html, {
           baseUrl: finalUrl,
           proxyOrigin: appPublicOrigin,
@@ -1328,7 +1331,7 @@ export default apiHandler(
         return res.status(upstreamRes.status).send(html);
       } else if (contentType.includes("text/css")) {
         const css = await upstreamRes.text();
-        const appPublicOrigin = getAppPublicOrigin(origin);
+        const appPublicOrigin = getProxyAssetOrigin(origin);
         const rewriteResult = rewriteCssForProxy(css, {
           baseUrl: finalUrl,
           proxyOrigin: appPublicOrigin,
