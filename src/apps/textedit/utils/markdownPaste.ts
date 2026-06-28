@@ -137,15 +137,24 @@ export function getMarkdownTextForPaste(
 export function markdownToSafeHtml(markdown: string): string {
   const generatedHtml = String(markdownProcessor.processSync(markdown));
 
+  return sanitizeHtmlForEditor(generatedHtml);
+}
+
+/**
+ * Sanitizes HTML before it enters TipTap through TextEdit import/load paths.
+ * TipTap also filters by schema, but this strips unsafe attributes and links
+ * before ProseMirror has to interpret them.
+ */
+export function sanitizeHtmlForEditor(html: string): string {
   if (
     typeof window === "undefined" ||
     typeof DOMPurify.sanitize !== "function"
   ) {
-    return generatedHtml;
+    return html;
   }
 
   return String(
-    DOMPurify.sanitize(generatedHtml, {
+    DOMPurify.sanitize(html, {
       ALLOWED_ATTR: SAFE_MARKDOWN_ATTRIBUTES,
       ALLOWED_TAGS: SAFE_MARKDOWN_TAGS,
       ALLOW_ARIA_ATTR: false,

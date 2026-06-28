@@ -19,7 +19,6 @@ import {
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { markdownToSafeHtml } from "../utils/markdownPaste";
 import { useTranslation } from "react-i18next";
 import {
   onDocumentUpdated,
@@ -446,9 +445,10 @@ function TextEditContent({
             path.startsWith("/Documents/") ||
             path.startsWith("/Downloads/")
           ) {
-            const processedContent = path.endsWith(".md")
-              ? markdownToSafeHtml(content)
-              : content;
+            const processedContent = persistedContentToEditorContent(
+              path,
+              typeof content === "string" ? content : ""
+            );
             editor.commands.setContent(processedContent, false);
             setCurrentFilePath(path);
             setHasUnsavedChanges(false);
