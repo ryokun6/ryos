@@ -6,6 +6,10 @@ import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 import { redisKey, redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
+import {
+  isHeadlessRenderConfigured,
+  renderUrlToHtml,
+} from "./_utils/_headless.js";
 import type { VercelRequest } from "@vercel/node";
 
 export const runtime = "nodejs";
@@ -344,6 +348,10 @@ export default apiHandler(
   if (isRawProxy) {
     mode = "proxy";
   }
+  // `render=headless` forces the (optional, env-gated) headless-browser
+  // renderer even when a plain fetch would have succeeded. Otherwise headless
+  // is only used as an automatic fallback when the upstream blocks the proxy.
+  const forceHeadless = req.query.render === "headless";
 
   // Generate a fresh, randomized browser header set for this request
   const BROWSER_HEADERS = generateRandomBrowserHeaders();
@@ -905,8 +913,12 @@ export default apiHandler(
     // 307/308 redirects that preserve the method.
     const forwardBody = await readForwardBody(req);
 
+    // Top-level navigations may fall back to (or force) headless rendering.
+    const headlessEligible =
+      !isRawProxy && httpMethod === "GET" && isHeadlessRenderConfigured();
+
     try {
-      const { response: upstreamRes, finalUrl } = await safeFetchWithRedirects(
+      let { response: upstreamRes, finalUrl } = await safeFetchWithRedirects(
         targetUrl,
         {
           method: httpMethod,
@@ -918,6 +930,36 @@ export default apiHandler(
       );
 
       clearTimeout(timeout); // Clear timeout on successful fetch
+
+      // Headless fallback: when the upstream blocked the proxy (or the caller
+      // forced `render=headless`), render the page with a real browser engine
+      // and feed the resulting HTML through the normal rewrite pipeline below.
+      const upstreamBlocked =
+        !upstreamRes.ok &&
+        [401, 403, 405, 406, 429, 451].includes(upstreamRes.status);
+      if (headlessEligible && (forceHeadless || upstreamBlocked)) {
+        logger.info(
+          `Attempting headless render fallback for ${targetUrl} (status ${upstreamRes.status}, forced=${forceHeadless})`
+        );
+        const rendered = await renderUrlToHtml(finalUrl || targetUrl, {
+          logger,
+        });
+        if (rendered) {
+          logger.info(
+            `Headless render succeeded via ${rendered.provider}; serving rendered HTML`
+          );
+          try {
+            upstreamRes.body?.cancel();
+          } catch {
+            /* ignore */
+          }
+          upstreamRes = new Response(rendered.html, {
+            status: 200,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          });
+          finalUrl = rendered.finalUrl || finalUrl;
+        }
+      }
 
       // If the upstream fetch failed (e.g., 403 Forbidden, 404 Not Found), return an error response
       if (!upstreamRes.ok) {
