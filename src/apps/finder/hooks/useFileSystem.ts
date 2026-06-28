@@ -39,6 +39,7 @@ import {
   getFileTypeFromExtension,
   BOOK_FILE_ICON_PATH,
   isEpubFile,
+  resolveFinderSelectionSnapshot,
 } from "../utils/fileSystemHelpers";
 
 const log = createClientLogger("FileSystem");
@@ -228,10 +229,15 @@ export function useFileSystem(
   const currentPath = finderInstance?.currentPath || localCurrentPath;
   const history = finderInstance?.navigationHistory || localHistory;
   const historyIndex = finderInstance?.navigationIndex || localHistoryIndex;
-  const selectedFilePath = finderInstance?.selectedFile || localSelectedFilePath;
-  const selectedFiles = finderInstance?.selectedFiles || localSelectedFiles;
-  const selectionAnchorPath =
-    finderInstance?.selectionAnchorPath || localSelectionAnchorPath;
+  const {
+    selectedFile: selectedFilePath,
+    selectedFiles,
+    selectionAnchorPath,
+  } = resolveFinderSelectionSnapshot(finderInstance, {
+    selectedFile: localSelectedFilePath,
+    selectedFiles: localSelectedFiles,
+    selectionAnchorPath: localSelectionAnchorPath,
+  });
 
   // State setters that work with both instance and local mode
   const setCurrentPath = useCallback(
