@@ -23,6 +23,7 @@ export interface InternetExplorerContentPaneProps {
   currentTheme: string;
   iframeRef: RefObject<HTMLIFrameElement | null>;
   loadingBarVariants: Variants;
+  t: (key: string, options?: Record<string, unknown>) => string;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
   playDingSound: () => void;
@@ -51,6 +52,7 @@ export function InternetExplorerContentPane({
   currentTheme,
   iframeRef,
   loadingBarVariants,
+  t,
   playElevatorMusic,
   stopElevatorMusic,
   playDingSound,
@@ -67,17 +69,20 @@ export function InternetExplorerContentPane({
 
     const title =
       errorDetails.type === "network"
-        ? "Cannot find server or DNS Error"
-        : "Error";
-    const primaryMessage = errorDetails.message || "An error occurred";
+        ? t("apps.internet-explorer.cannotFindServerOrDnsError")
+        : t("apps.internet-explorer.error");
+    const primaryMessage =
+      errorDetails.message || t("apps.internet-explorer.anErrorOccurred");
     const secondaryMessage = errorDetails.details;
     const suggestions = [
-      "Check the web address you typed and try again.",
-      "Go back to the previous page.",
-      "Try refreshing the page.",
+      t("apps.internet-explorer.checkWebAddressAndTryAgain"),
+      t("apps.internet-explorer.goBackToPreviousPage"),
+      t("apps.internet-explorer.tryRefreshingThePage"),
     ];
     const footerText = errorDetails.hostname
-      ? `Host: ${errorDetails.hostname}`
+      ? t("apps.internet-explorer.host", {
+          hostname: errorDetails.hostname,
+        })
       : "";
 
     return (
@@ -88,6 +93,7 @@ export function InternetExplorerContentPane({
         suggestions={suggestions}
         details={errorDetails.details}
         footerText={footerText}
+        t={t}
         onGoBack={handleGoBack}
         onRetry={() => handleNavigate(url, year)}
       />

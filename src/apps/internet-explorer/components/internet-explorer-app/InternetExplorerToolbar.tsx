@@ -40,7 +40,7 @@ export interface InternetExplorerToolbarProps {
   cachedYears: string[];
   isFetchingCachedYears: boolean;
   isSelectingText: boolean;
-  t: (key: string) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
   setLocalUrl: (value: string) => void;
   setUrl: (value: string) => void;
   setIsUrlDropdownOpen: (open: boolean) => void;
@@ -144,13 +144,13 @@ export function InternetExplorerToolbar({
                 size="icon"
                 onClick={handleSharePage}
                 className="size-8 focus-visible:ring-0 focus-visible:ring-offset-0"
-                aria-label="Share this page"
+                aria-label={t("apps.internet-explorer.shareThisPage")}
               >
                 <Export size={14} weight="bold" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>Share this page</p>
+              <p>{t("apps.internet-explorer.shareThisPage")}</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -168,6 +168,7 @@ export function InternetExplorerToolbar({
           cachedYears={cachedYears}
           isFetchingCachedYears={isFetchingCachedYears}
           isSelectingText={isSelectingText}
+          t={t}
           setLocalUrl={setLocalUrl}
           setUrl={setUrl}
           setIsUrlDropdownOpen={setIsUrlDropdownOpen}
@@ -192,7 +193,7 @@ export function InternetExplorerToolbar({
                     : "!text-[16px]"
               }
             >
-              <SelectValue placeholder="Year" />
+              <SelectValue placeholder={t("apps.internet-explorer.year")} />
             </SelectTrigger>
             <SelectContent className="px-0">
               {futureYears.map((y) => (
