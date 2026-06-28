@@ -173,8 +173,8 @@
         "en": "Englisch",
         "ja": "Japanisch",
         "ko": "Koreanisch",
-        "zh-CN": "Chinesisch (vereinfacht)",
-        "zh-TW": "Chinesisch (traditionell)"
+        "zh-CN": "Chinesisch (Vereinfacht)",
+        "zh-TW": "Chinesisch (Traditionell)"
       },
       "loadMore": "Mehr laden ({{remaining}} übrig)",
       "menu": {
@@ -245,7 +245,7 @@
         "pendingTooltip": "Noch nicht ins Langzeitgedächtnis verarbeitet",
         "processed": "verarbeitet",
         "processedTooltip": "Ins Langzeitgedächtnis verarbeitet",
-        "processing": "Wird verarbeitet…",
+        "processing": "Bearbeiten …",
         "reason": "Grund",
         "recentMessages": "Aktuelle Nachrichten",
         "reprocess": "Neu verarbeiten",
@@ -272,7 +272,7 @@
         "keys": "Schlüssel",
         "length": "Länge",
         "loadMore": "Mehr laden",
-        "loading": "Lädt...",
+        "loading": "Laden …",
         "messages": {
           "alreadyDeleted": "Redis-Schlüssel war bereits gelöscht",
           "backupReady": "{{count}} Redis-Schlüssel gesichert",
@@ -415,7 +415,7 @@
       "title": "Admin",
       "user": {
         "active": "Aktiv",
-        "admin": "admin",
+        "admin": "Admin",
         "banned": "Gesperrt",
         "user": "Benutzer"
       }
@@ -456,7 +456,7 @@
         "failedToUpdateApplets": "Applets konnten nicht aktualisiert werden.",
         "failedToUpdateFeaturedStatus": "Der Empfehlungsstatus konnte nicht aktualisiert werden.",
         "importFailed": "Import fehlgeschlagen",
-        "loading": "Laden...",
+        "loading": "Laden …",
         "loginRequired": "Anmeldung erforderlich",
         "mustBeLoggedInToShare": "Sie müssen angemeldet sein, um Applets freizugeben.",
         "newAppletUpdates": "{{count}} neues Applet-Update",
@@ -512,7 +512,7 @@
         "discover": "Entdecken",
         "removeFromFeatured": "Aus den Empfehlungen entfernen",
         "searchApplets": "Applets suchen",
-        "showAll": "Alle anzeigen"
+        "showAll": "Alle einblenden"
       },
       "menu": {
         "aboutApplets": "Über Applets",
@@ -624,9 +624,9 @@
         "emptyHint": "Klicke auf „Buch hinzufügen“, um ein EPUB zu importieren.",
         "emptyTitle": "Dein Bücherregal ist leer",
         "finished": "Fertig",
-        "gridView": "Gitteransicht",
+        "gridView": "Rasterdarstellung",
         "import": "Buch hinzufügen",
-        "listView": "Listenansicht",
+        "listView": "Listendarstellung",
         "percentRead": "{{percent}}%"
       },
       "theme": {
@@ -780,7 +780,7 @@
           "e": "e",
           "equals": "gleich",
           "factorial": "Fakultät",
-          "ln": "natürlicher Logarithmus",
+          "ln": "Natürlicher Logarithmus",
           "log": "Logarithmus",
           "memoryClear": "Speicher löschen",
           "memoryMinus": "Speicher subtrahieren",
@@ -792,11 +792,11 @@
           "openParenthesis": "Klammer auf",
           "percent": "Prozent",
           "pi": "Pi",
-          "plus": "Plus",
+          "plus": "plus",
           "point": "Punkt",
           "power": "x hoch y",
           "radians": "Bogenmaß",
-          "random": "Zufall",
+          "random": "Zufällig",
           "root": "y-te Wurzel aus x",
           "sin": "Sinus",
           "sqrt": "Quadratwurzel",
@@ -1040,7 +1040,7 @@
         "nudgeSent": "👋 *Stupser gesendet*",
         "pleaseLoginToDeleteRooms": "Bitte melden Sie sich an, um Räume zu löschen.",
         "pleaseLoginToSendMessages": "Bitte melden Sie sich an, um Nachrichten zu senden.",
-        "recording": "Aufnahme läuft...",
+        "recording": "Aufnahme…",
         "retry": "Wiederholen",
         "ryo": "@ryo",
         "ryoWillRespond": "Ryo wird auf diese Nachricht antworten.",
@@ -1342,7 +1342,7 @@
         "searchedWebFor": "Im Web nach {{query}} gesucht",
         "searchingSongs": "Suche „{{query}}“…",
         "searchingWeb": "Suche im Web…",
-        "settingsCheckingForUpdates": "Suche nach Updates…",
+        "settingsCheckingForUpdates": "Nach Updates suchen …",
         "settingsLanguageChanged": "Sprache wurde auf {{language}} geändert",
         "settingsMasterVolumeSet": "Lautstärke auf {{volume}}% gesetzt",
         "settingsNoChanges": "Keine Änderungen",
@@ -1620,7 +1620,7 @@
         "forceDownloadFailed": "Download aus der Cloud fehlgeschlagen",
         "forceDownloadNoData": "Keine Cloud-Daten für aktivierte Elemente gefunden",
         "forceDownloadSuccess": "Download aus der Cloud abgeschlossen",
-        "forceDownloading": "Wird heruntergeladen…",
+        "forceDownloading": "Laden …",
         "forceSyncDescription": "Aktivierte Auto-Sync-Elemente hochladen oder herunterladen",
         "forceSyncNoDomains": "Aktivieren Sie zuerst mindestens ein Auto-Sync-Element",
         "forceUpload": "Hochladen",
@@ -1641,7 +1641,7 @@
         },
         "restoreFailed": "Wiederherstellung aus der Cloud fehlgeschlagen",
         "restoreFromCloud": "Aus Cloud wiederherstellen",
-        "restoring": "Wiederherstellung läuft…",
+        "restoring": "Wiederherstellen …",
         "tooLarge": "Backup zu groß ({{size}} MB). Die maximale komprimierte Größe beträgt {{limit}} MB."
       },
       "cloudSyncTabs": {
@@ -1651,7 +1651,7 @@
       "color": "Farbe",
       "connectionStatus": {
         "connected": "Verbunden",
-        "connecting": "Verbinden…",
+        "connecting": "Verbinden …",
         "disconnected": "Getrennt"
       },
       "crashApp": "App abstürzen",
@@ -1673,7 +1673,7 @@
         "confirmLabel": "Geben Sie Ihren Benutzernamen zur Bestätigung ein",
         "confirmMismatch": "Benutzername stimmt nicht überein",
         "confirmPlaceholder": "{{username}}",
-        "deleting": "Löschen...",
+        "deleting": "Löschen …",
         "description": "Dies löscht dauerhaft Ihr Konto, Ihr Passwort, Ihre E-Mail zur Wiederherstellung, das verknüpfte Telegram-Konto und synchronisierte Daten. Dies kann nicht rückgängig gemacht werden.",
         "genericError": "Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
         "passwordLabel": "Aktuelles Passwort",
@@ -1695,7 +1695,7 @@
       "dynamicWallpapers": {
         "dayNight": "Tag & Nacht",
         "lyrics": "Liedtext",
-        "nowPlaying": "Läuft gerade",
+        "nowPlaying": "Jetzt läuft",
         "shuffle": "Zufällig",
         "weather": "Wetter"
       },
@@ -1767,7 +1767,7 @@
       "logOutOfAllDevicesRowDescription": "Von deinem ryOS-Konto auf allen Geräten abmelden",
       "logOutRowDescription": "Melden Sie sich auf diesem Gerät von Ihrem ryOS-Konto ab",
       "loggedInToRyOS": "Bei ryOS angemeldet",
-      "loggingOut": "Abmelden...",
+      "loggingOut": "Abmelden …",
       "login": "Anmelden",
       "loginToSendMessages": "Anmelden, um Nachrichten zu senden und mehr",
       "logoutAll": {
@@ -1790,7 +1790,7 @@
         "controlPanelsHelp": "Hilfe zur Systemsteuerung",
         "controlPanelsHelpForMacosX": "Systemeinstellungen Hilfe"
       },
-      "min": "min",
+      "min": "Min.",
       "minute": "Minute",
       "minutes": "Minuten",
       "mono": "Mono",
@@ -1817,7 +1817,7 @@
       "patterns": "Muster",
       "preview": "Vorschau",
       "previewActive": "Klicken Sie irgendwo zum Beenden",
-      "privacyPolicy": "Datenschutzerklärung",
+      "privacyPolicy": "Datenschutzvereinbarung",
       "recoveryEmail": {
         "close": "Schließen",
         "codeLabel": "Verifizierungscode",
@@ -1834,13 +1834,13 @@
         "removedToast": "Wiederherstellungs-E-Mail entfernt",
         "removing": "Wird entfernt...",
         "save": "Bestätigung senden",
-        "saving": "Wird gesendet...",
+        "saving": "Senden …",
         "title": "Wiederherstellungs-E-Mail",
         "unverified": "Nicht verifiziert",
         "verified": "Verifiziert",
         "verifiedToast": "Wiederherstellungs-E-Mail verifiziert",
         "verify": "Verifizieren",
-        "verifying": "Wird verifiziert..."
+        "verifying": "Überprüfen …"
       },
       "recoveryEmailDescription": "E-Mail-Adresse für die Passwortwiederherstellung hinzufügen",
       "recoveryEmailMenu": "Wiederherstellungs-E-Mail…",
@@ -1953,10 +1953,10 @@
         "loginRequired": "Bitte melden Sie sich an, um Telegram zu verknüpfen",
         "manage": "Verwalten",
         "openTelegram": "Telegram öffnen",
-        "preparing": "Wird vorbereitet...",
+        "preparing": "Vorbereiten …",
         "resetInstructions": "Zurücksetzen",
         "saveInstructions": "Sichern",
-        "savingInstructions": "Speichern...",
+        "savingInstructions": "Sichern …",
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "Synth",
@@ -2136,7 +2136,7 @@
         "modeKaraoke": "Karaoke",
         "next": "Weiter",
         "noTrack": "Kein Titel",
-        "nowPlaying": "Aktuelle Wiedergabe",
+        "nowPlaying": "Jetzt läuft",
         "openIpod": "iPod-App öffnen",
         "openKaraoke": "Karaoke-App oeffnen",
         "pause": "Pause",
@@ -2173,7 +2173,7 @@
         "resetDefaults": "Auf Standard zurücksetzen",
         "retry": "Wiederholen",
         "searchSymbol": "Symbole suchen...",
-        "searching": "Sucht...",
+        "searching": "Suchen …",
         "unavailable": "Börsendaten nicht verfügbar"
       },
       "title": "Dashboard",
@@ -2181,7 +2181,7 @@
         "defaultLanguages": "Standardsprachen",
         "error": "Übersetzung fehlgeschlagen",
         "from": "Von",
-        "inputPlaceholder": "Text eingeben...",
+        "inputPlaceholder": "Text eingeben…",
         "outputPlaceholder": "Übersetzung",
         "poweredBy": "Unterstützt von MyMemory",
         "save": "Sichern",
@@ -2210,14 +2210,14 @@
         "low": "L:",
         "noResults": "Keine Städte gefunden",
         "searchCity": "Städte suchen...",
-        "searching": "Sucht...",
+        "searching": "Suchen …",
         "selectCity": "Stadt auswählen",
         "unavailable": "Wetter nicht verfügbar",
         "useMyLocation": "Meinen Standort verwenden",
         "wind": "Wind"
       },
       "widgets": {
-        "addWidget": "Widget hinzufügen...",
+        "addWidget": "Widget hinzufügen…",
         "aquarium": "Aquarium",
         "calendar": "Kalender",
         "clock": "Uhr",
@@ -2260,7 +2260,7 @@
         "open": "Öffnen",
         "openAirDrop": "AirDrop öffnen",
         "putBack": "Zurücklegen",
-        "rename": "Umbenennen…",
+        "rename": "Umbenennen …",
         "searchingForAirDropUsers": "Suche nach Nutzern in der Nähe…",
         "shareViaAirDrop": "Über AirDrop teilen",
         "size": "Größe",
@@ -2268,7 +2268,7 @@
       },
       "defaultNames": {
         "copy": "Kopie",
-        "untitledFolder": "Unbenannter Ordner"
+        "untitledFolder": "Neuer Ordner"
       },
       "description": "Dateien durchsuchen und verwalten",
       "dialogs": {
@@ -2364,7 +2364,7 @@
         "newFolder": "Neuer Ordner…",
         "newWindow": "Neues Fenster",
         "putBack": "Zurücklegen",
-        "rename": "Umbenennen...",
+        "rename": "Umbenennen …",
         "sidebar": "Seitenleiste"
       },
       "messages": {
@@ -2376,7 +2376,7 @@
         "importFailedDesc": "Die Datei konnte nicht importiert werden.",
         "invalidFileType": "Ungültiger Dateityp",
         "invalidFileTypeDesc": "Nur .app-, .gz- und .html-Dateien können in Applets importiert werden",
-        "loading": "Laden..."
+        "loading": "Laden …"
       },
       "name": "Finder",
       "placeholders": {
@@ -2385,8 +2385,8 @@
       },
       "statusBar": {
         "available": "verfügbar",
-        "item": "Element",
-        "items": "Elemente"
+        "item": "Objekt",
+        "items": "Objekte"
       },
       "tableHeaders": {
         "modified": "Geändert",
@@ -2530,7 +2530,7 @@
       "korean": "Koreanisch",
       "latin": "Latein",
       "loading": "Lade {{hostname}}...",
-      "loadingEllipsis": "Lade...",
+      "loadingEllipsis": "Laden …",
       "loadingTitle": "Internet Explorer - Lade",
       "loadingTitleWithSite": "{{site}} - Lade",
       "menu": {
@@ -2650,8 +2650,8 @@
         "translateLyrics": "Liedtext übersetzen"
       },
       "brickGame": {
-        "gameOver": "Game Over",
-        "gameOverTitle": "Game Over",
+        "gameOver": "Spiel aus",
+        "gameOverTitle": "Spiel aus",
         "menuToExit": "Menü zum Beenden",
         "paused": "Pause",
         "pressCenterToContinue": "Mitte drücken zum Fortfahren",
@@ -2693,7 +2693,7 @@
         "appleMusicRecentlyAddedFailed": "Fehler beim Laden der zuletzt hinzugefügten Titel",
         "appleMusicSearchAppleMusic": "Apple Music",
         "appleMusicSearchLibrary": "Mediathek",
-        "appleMusicSearchPlaceholder": "Apple Music durchsuchen...",
+        "appleMusicSearchPlaceholder": "Apple Music durchsuchen…",
         "appleMusicSearchSelectResult": "Wähle einen Titel zum Hinzufügen aus:",
         "appleMusicSearchSignInRequired": "Bei Apple Music anmelden, um zu suchen",
         "appleMusicSearchUnavailable": "Apple Music-Suche ist nicht verfügbar",
@@ -2729,7 +2729,7 @@
         "lyricsSearchPlaceholder": "Suchbegriff eingeben (z.B. Songtitel, Künstler)",
         "lyricsSearchReset": "Auf Auto zurücksetzen",
         "lyricsSearchSearch": "Suchen",
-        "lyricsSearchSearching": "Suche...",
+        "lyricsSearchSearching": "Suchen …",
         "lyricsSearchSelectResult": "Ergebnis auswählen:",
         "lyricsSearchTitle": "Liedtext suchen",
         "lyricsSearchUseSelected": "Ausgewähltes verwenden",
@@ -2749,7 +2749,7 @@
         "songSearchNoResults": "Keine Ergebnisse gefunden",
         "songSearchPlaceholder": "Suchen oder URL einfügen...",
         "songSearchSearch": "Suchen",
-        "songSearchSearching": "Wird gesucht...",
+        "songSearchSearching": "Suchen …",
         "songSearchSelectResult": "Wählen Sie ein Lied zum Hinzufügen aus:",
         "songSearchTitle": "Lieder suchen",
         "syncFailed": "Synchronisierung fehlgeschlagen",
@@ -2871,7 +2871,7 @@
         "screenModern": "Modern",
         "searchSongs": "Lieder suchen",
         "shareApp": "App teilen...",
-        "shareSong": "Titel teilen...",
+        "shareSong": "Titel teilen…",
         "showLyrics": "Liedtext anzeigen",
         "shuffle": "Zufallswiedergabe",
         "single": "Einzeln",
@@ -2904,12 +2904,12 @@
         "libraryAppleMusic": "Apple Music",
         "librarySource": "Mediathek",
         "libraryYoutube": "YouTube",
-        "loading": "Laden …",
+        "loading": "Laden …",
         "music": "Musik",
         "musicQuiz": "Musik-Quiz",
         "noSongs": "Keine Musiktitel",
         "noStations": "Keine Sender",
-        "nowPlaying": "Aktuelle Wiedergabe",
+        "nowPlaying": "Jetzt läuft",
         "off": "Aus",
         "on": "Ein",
         "one": "Eins",
@@ -3225,7 +3225,7 @@
       "searchButton": "Suchen",
       "searchFailed": "Suche fehlgeschlagen",
       "searchPlaceholder": "In Karten suchen",
-      "searching": "Suchen …",
+      "searching": "Suchen …",
       "status": {
         "error": "Apple Maps konnte nicht geladen werden: {{error}}",
         "idle": "Apple Maps wird initialisiert …",
@@ -3288,7 +3288,7 @@
         "failedToLoadImageContent": "Bildinhalt konnte nicht geladen werden.",
         "failedToSaveImage": "Bild konnte nicht gespeichert werden",
         "imageSavedSuccessfully": "Bild erfolgreich gespeichert",
-        "saveImage": "Bild speichern"
+        "saveImage": "Bild sichern"
       },
       "filtersMenu": {
         "openFiltersMenu": "Filtermenü öffnen"
@@ -3589,9 +3589,9 @@
       "status": {
         "booting": "Bootet…",
         "bytesZero": "0 MB",
-        "connecting": "Verbinden…",
+        "connecting": "Verbinden …",
         "emulatorStartFailed": "Emulator konnte nicht gestartet werden",
-        "loading": "Laden…"
+        "loading": "Laden …"
       },
       "systemsAvailable": "{{count}} SYSTEME VERFÜGBAR",
       "tabs": {
@@ -3965,8 +3965,8 @@
     },
     "textedit": {
       "alignCenter": "Zentriert ausrichten",
-      "alignLeft": "Links ausrichten",
-      "alignRight": "Rechts ausrichten",
+      "alignLeft": "Linksbündig",
+      "alignRight": "Rechtsbündig",
       "bold": "Fett",
       "bulletList": "Aufzählungsliste",
       "description": "Ein einfacher Rich-Text-Editor",
@@ -4161,16 +4161,16 @@
         "title": "Kanäle zurücksetzen"
       },
       "status": {
-        "add": "HINZUFÜGEN",
+        "add": "Hinzufügen",
         "channel": "CH",
         "channelDown": "CH−",
         "channelUp": "CH+",
         "network": "NET",
         "next": "WEITER",
         "noSignal": "KEIN SIGNAL",
-        "now": "JETZT",
+        "now": "Jetzt",
         "time": "ZEIT",
-        "title": "TITEL",
+        "title": "Titel",
         "video": "VID"
       },
       "title": "TV",
@@ -4248,14 +4248,14 @@
         "repeatAll": "Alle wiederholen",
         "repeatOne": "Einen wiederholen",
         "resetLibrary": "Mediathek zurücksetzen...",
-        "shareVideo": "Video teilen...",
+        "shareVideo": "Video teilen…",
         "shuffle": "Zufallswiedergabe",
         "unknownArtist": "Unbekannter Künstler",
         "videosHelp": "Videos-Hilfe"
       },
       "name": "Videos",
       "status": {
-        "add": "HINZUFÜGEN",
+        "add": "Hinzufügen",
         "addVideos": "Videos hinzufügen",
         "errorAdding": "Fehler beim Hinzufügen: {{error}}",
         "failedToAddVideo": "Video konnte nicht hinzugefügt werden",
@@ -4268,7 +4268,7 @@
         "playlistReset": "PLAYLIST ZURÜCKGESETZT",
         "pressToPlay": "DRÜCKEN SIE ⏯ ZUM ABSPIELEN",
         "prev": "ZURÜCK ⏮",
-        "repeat": "WIEDERHOLEN",
+        "repeat": "Wiederholen",
         "repeatingPlaylist": "PLAYLIST WIRD WIEDERHOLT",
         "shuffle": "ZUFALLS WIEDERGABE",
         "shuffleOff": "ZUFALLS WIEDERGABE AUS",
@@ -4340,7 +4340,7 @@
       "gb": "GB",
       "largestUnusedBlock": "Größter ungenutzter Block",
       "mb": "MB",
-      "privacyPolicy": "Datenschutzerklärung",
+      "privacyPolicy": "Datenschutzvereinbarung",
       "system": "System",
       "termsOfService": "Nutzungsbedingungen",
       "title": "Über diesen Computer",
@@ -4377,7 +4377,7 @@
       "noRecentDocuments": "Keine kürzlich verwendeten Dokumente",
       "recentItems": "Benutzte Objekte",
       "softwareUpdate": "Softwareaktualisierung…",
-      "systemPreferences": "Systemeinstellungen…"
+      "systemPreferences": "Systemeinstellungen …"
     },
     "auth": {
       "changePassword": {
@@ -4389,7 +4389,7 @@
         "mismatch": "Neue Passwörter stimmen nicht überein",
         "newPassword": "Neues Passwort",
         "sameAsCurrent": "Das neue Passwort muss sich vom aktuellen Passwort unterscheiden",
-        "saving": "Wird gespeichert …",
+        "saving": "Sichern …",
         "submit": "Passwort ändern",
         "title": "Passwort ändern",
         "toastChangedDescription": "Dein Passwort wurde aktualisiert",
@@ -4398,14 +4398,14 @@
         "toastSetTitle": "Passwort festgelegt",
         "tooShort": "Das Passwort muss mindestens 8 Zeichen lang sein"
       },
-      "createAccount": "Konto erstellen",
+      "createAccount": "Account erstellen",
       "creatingAccount": "Wird erstellt...",
       "dialogTitle": "ryOS-Login",
       "forgotPassword": "Passwort vergessen?",
       "logIn": "Anmelden",
       "logOut": "Abmelden",
       "logOutDescription": "Möchten Sie sich wirklich abmelden? Sie werden von Ihrem Konto abgemeldet.",
-      "loggingIn": "Wird angemeldet...",
+      "loggingIn": "Anmelden …",
       "loginDescription": "Melden Sie sich bei Ihrem Konto an",
       "password": "Passwort",
       "recovery": {
@@ -4421,11 +4421,11 @@
         "genericError": "Passwort konnte nicht zurückgesetzt werden. Überprüfen Sie den Code und versuchen Sie es erneut.",
         "identifier": "Benutzername oder E-Mail",
         "identifierRequired": "Benutzername oder E-Mail eingeben",
-        "mismatch": "Passwörter stimmen nicht überein",
+        "mismatch": "Die Passwörter stimmen nicht überein.",
         "newPassword": "Neues Passwort",
         "resetting": "Wird zurückgesetzt...",
         "sendCode": "Code senden",
-        "sending": "Wird gesendet...",
+        "sending": "Senden …",
         "submit": "Passwort zurücksetzen",
         "successDescription": "Sie sind jetzt mit Ihrem neuen Passwort angemeldet.",
         "successTitle": "Passwort-Reset",
@@ -4456,7 +4456,7 @@
     "dialog": {
       "about": "Über",
       "aboutApp": "Über {{appName}}",
-      "adding": "Hinzufügen...",
+      "adding": "Hinzufügen…",
       "cancel": "Abbrechen",
       "close": "Schließen",
       "confirm": "Bestätigen",
@@ -4568,7 +4568,7 @@
       "escape": "Escape"
     },
     "loading": {
-      "default": "Lädt...",
+      "default": "Laden …",
       "openingAppletStore": "Applet Store wird geöffnet...",
       "openingSharedApplet": "Freigegebenes Applet wird geöffnet...",
       "openingSharedIELink": "Freigegebener Internet Explorer-Link wird geöffnet...",
@@ -4609,7 +4609,7 @@
     "noResults": "Keine Ergebnisse",
     "startMenu": {
       "aboutThisComputer": "Über diesen Computer",
-      "run": "Ausführen...",
+      "run": "Ausführen…",
       "ryos98": "98",
       "ryosProfessional": "Professionell",
       "start": "Start"
@@ -4701,7 +4701,7 @@
       "historyWindow": "Letzte {{count}} Sekunden",
       "jsHeap": "JS-Heap",
       "lightMode": "Hell",
-      "loading": "Laden …",
+      "loading": "Laden …",
       "locale": "Locale",
       "logHealth": "Log-Integrität",
       "logHealthValue": "{{errors}} Fehler · {{warnings}} Warnungen",
@@ -4769,7 +4769,7 @@
       "spotlightSearch": "Spotlight-Suche (⌘+Leertaste)"
     },
     "askRyo": "Ryo fragen",
-    "hintClose": "schließen",
+    "hintClose": "Schließen",
     "hintNavigate": "navigieren",
     "hintOpen": "öffnen",
     "noResults": "Keine Ergebnisse",
@@ -4794,7 +4794,7 @@
       "wallpaper": "Hintergrundbild"
     },
     "title": "Spotlight",
-    "topHits": "Top-Treffer"
+    "topHits": "Toptreffer"
   },
   "updates": {
     "desktopAppOffer": "ryOS ist als {{platform}}-App verfügbar",
