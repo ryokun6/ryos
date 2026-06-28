@@ -19,6 +19,13 @@ let attackerToken: string | null = null;
 let sessionId: string | null = null;
 let testRoomId: string | null = null;
 
+function requireSetup(
+  value: unknown,
+  name: string
+): asserts value {
+  if (!value) throw new Error(`Listen security setup missing ${name}`);
+}
+
 async function setupUsersAndRoom(): Promise<void> {
   const ts = Date.now();
   ownerUsername = `listenowner${ts}`;
@@ -27,20 +34,26 @@ async function setupUsersAndRoom(): Promise<void> {
   ownerToken = await ensureUserAuth(ownerUsername, "testpassword123");
   attackerToken = await ensureUserAuth(attackerUsername, "testpassword123");
 
-  if (!ownerToken || !attackerToken || !ownerUsername) return;
+  requireSetup(ownerToken, "owner token");
+  requireSetup(attackerToken, "attacker token");
+  requireSetup(ownerUsername, "owner username");
 
   const roomsRes = await fetchWithAuth(`${BASE_URL}/api/rooms`, ownerUsername, ownerToken, {
     method: "GET",
   });
-  if (!roomsRes.ok) return;
+  if (!roomsRes.ok) {
+    throw new Error(`Listen security room setup failed: ${roomsRes.status}`);
+  }
   const roomsData = await roomsRes.json();
   if (Array.isArray(roomsData.rooms) && roomsData.rooms.length > 0) {
     testRoomId = roomsData.rooms[0].id;
   }
+  requireSetup(testRoomId, "test room");
 }
 
 async function setupListenSession(): Promise<void> {
-  if (!ownerUsername || !ownerToken) return;
+  requireSetup(ownerUsername, "owner username");
+  requireSetup(ownerToken, "owner token");
   const res = await fetchWithAuth(`${BASE_URL}/api/listen/sessions`, ownerUsername, ownerToken, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -49,7 +62,10 @@ async function setupListenSession(): Promise<void> {
   if (res.status === 201) {
     const data = await res.json();
     sessionId = data.session?.id ?? null;
+  } else {
+    throw new Error(`Listen session setup failed: ${res.status}`);
   }
+  requireSetup(sessionId, "session id");
 }
 
 describe("Listen Security API", () => {
@@ -60,7 +76,9 @@ describe("Listen Security API", () => {
 
   describe("Listen Session Identity Binding", () => {
     test("Create session - username mismatch rejected", async () => {
-      if (!ownerUsername || !ownerToken || !attackerUsername) return;
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
+      requireSetup(attackerUsername, "attacker username");
       const res = await fetchWithAuth(`${BASE_URL}/api/listen/sessions`, ownerUsername, ownerToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,7 +88,8 @@ describe("Listen Security API", () => {
     });
 
     test("Create session - success", async () => {
-      if (!ownerUsername || !ownerToken) return;
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
       const res = await fetchWithAuth(`${BASE_URL}/api/listen/sessions`, ownerUsername, ownerToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,7 +102,10 @@ describe("Listen Security API", () => {
     });
 
     test("Join session - username mismatch rejected", async () => {
-      if (!sessionId || !attackerUsername || !attackerToken || !ownerUsername) return;
+      requireSetup(sessionId, "session id");
+      requireSetup(attackerUsername, "attacker username");
+      requireSetup(attackerToken, "attacker token");
+      requireSetup(ownerUsername, "owner username");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/listen/sessions/${sessionId}/join`,
         attackerUsername,
@@ -98,7 +120,9 @@ describe("Listen Security API", () => {
     });
 
     test("Join session - success", async () => {
-      if (!sessionId || !attackerUsername || !attackerToken) return;
+      requireSetup(sessionId, "session id");
+      requireSetup(attackerUsername, "attacker username");
+      requireSetup(attackerToken, "attacker token");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/listen/sessions/${sessionId}/join`,
         attackerUsername,
@@ -118,7 +142,10 @@ describe("Listen Security API", () => {
     });
 
     test("Sync - username mismatch rejected", async () => {
-      if (!sessionId || !ownerUsername || !ownerToken || !attackerUsername) return;
+      requireSetup(sessionId, "session id");
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
+      requireSetup(attackerUsername, "attacker username");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/listen/sessions/${sessionId}/sync`,
         ownerUsername,
@@ -141,7 +168,9 @@ describe("Listen Security API", () => {
     });
 
     test("Sync - success", async () => {
-      if (!sessionId || !ownerUsername || !ownerToken) return;
+      requireSetup(sessionId, "session id");
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/listen/sessions/${sessionId}/sync`,
         ownerUsername,
@@ -164,7 +193,10 @@ describe("Listen Security API", () => {
     });
 
     test("Reaction - username mismatch rejected", async () => {
-      if (!sessionId || !ownerUsername || !ownerToken || !attackerUsername) return;
+      requireSetup(sessionId, "session id");
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
+      requireSetup(attackerUsername, "attacker username");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/listen/sessions/${sessionId}/reaction`,
         ownerUsername,
@@ -179,7 +211,9 @@ describe("Listen Security API", () => {
     });
 
     test("Reaction - success", async () => {
-      if (!sessionId || !ownerUsername || !ownerToken) return;
+      requireSetup(sessionId, "session id");
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/listen/sessions/${sessionId}/reaction`,
         ownerUsername,
@@ -196,7 +230,10 @@ describe("Listen Security API", () => {
 
   describe("Presence Identity Binding", () => {
     test("Presence switch - username mismatch rejected", async () => {
-      if (!testRoomId || !ownerUsername || !ownerToken || !attackerUsername) return;
+      requireSetup(testRoomId, "test room");
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
+      requireSetup(attackerUsername, "attacker username");
       const res = await fetchWithAuth(`${BASE_URL}/api/presence/switch`, ownerUsername, ownerToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,7 +247,9 @@ describe("Listen Security API", () => {
     });
 
     test("Presence switch - success without username claim", async () => {
-      if (!testRoomId || !ownerUsername || !ownerToken) return;
+      requireSetup(testRoomId, "test room");
+      requireSetup(ownerUsername, "owner username");
+      requireSetup(ownerToken, "owner token");
       const res = await fetchWithAuth(`${BASE_URL}/api/presence/switch`, ownerUsername, ownerToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

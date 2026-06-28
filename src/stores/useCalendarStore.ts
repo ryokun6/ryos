@@ -11,6 +11,12 @@ import {
   getEffectiveTimezone,
   getZonedDateTimeParts,
 } from "@/lib/timezoneConfig";
+import {
+  addCivilDays,
+  daysInCivilMonth,
+  formatCivilDate,
+  parseCivilDate,
+} from "@/shared/calendarCivilDate";
 
 export type EventColor = "blue" | "red" | "green" | "orange" | "purple";
 
@@ -98,10 +104,6 @@ interface CalendarStoreState {
 /** Get today as YYYY-MM-DD in the user's effective timezone preference. */
 const getTodayStr = (): string =>
   formatZonedDateString(new Date(), getEffectiveTimezone());
-
-/** Format a Date as YYYY-MM-DD (civil date in host local — used for nav only). */
-const formatDate = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export const useCalendarStore = create<CalendarStoreState>()(
   persist(
@@ -275,14 +277,13 @@ export const useCalendarStore = create<CalendarStoreState>()(
 
         navigateWeek: (delta) => {
           set((state) => {
-            const [y, m, d] = state.selectedDate.split("-").map(Number);
-            const current = new Date(y, m - 1, d);
-            current.setDate(current.getDate() + delta * 7);
-            const newDate = formatDate(current);
+            const current = parseCivilDate(state.selectedDate);
+            if (!current) return state;
+            const next = addCivilDays(current, delta * 7);
             return {
-              selectedDate: newDate,
-              currentYear: current.getFullYear(),
-              currentMonth: current.getMonth(),
+              selectedDate: formatCivilDate(next),
+              currentYear: next.year,
+              currentMonth: next.month - 1,
             };
           });
         },
@@ -317,7 +318,11 @@ export const useCalendarStore = create<CalendarStoreState>()(
         getEventsForMonth: (year, month) => {
           const state = get();
           const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-          const endDate = formatDate(new Date(year, month + 1, 0));
+          const endDate = formatCivilDate({
+            year,
+            month: month + 1,
+            day: daysInCivilMonth(year, month + 1),
+          });
           const visibleCalendarIds = new Set(
             state.calendars.reduce<string[]>((acc, calendar) => {
               if (calendar.visible) {

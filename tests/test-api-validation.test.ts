@@ -81,6 +81,11 @@ describe("apiHandler bodySchema validation", () => {
       });
       if (res.status === 201) {
         token = getTokenFromAuthCookie(res);
+        if (!token) {
+          throw new Error("Validation test registration returned no auth cookie");
+        }
+      } else {
+        throw new Error(`Validation test user setup failed: ${res.status}`);
       }
     });
 
@@ -94,7 +99,9 @@ describe("apiHandler bodySchema validation", () => {
     });
 
     test("authed + invalid body → 400 validation_error", async () => {
-      if (!token || !username) return;
+      if (!token || !username) {
+        throw new Error("Validation test setup missing authentication");
+      }
       const res = await fetchWithAuth(
         `${BASE_URL}/api/tv/create-channel`,
         username,
@@ -114,7 +121,9 @@ describe("apiHandler bodySchema validation", () => {
     });
 
     test("authed + missing body field → 400 validation_error", async () => {
-      if (!token || !username) return;
+      if (!token || !username) {
+        throw new Error("Validation test setup missing authentication");
+      }
       const res = await fetchWithAuth(
         `${BASE_URL}/api/tv/create-channel`,
         username,

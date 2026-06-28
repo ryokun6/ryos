@@ -48,17 +48,20 @@ beforeAll(async () => {
   memberToken = await register(memberUser);
   outsiderToken = await register(outsiderUser);
 
-  if (memberToken) {
-    const res = await fetchWithAuth(`${BASE_URL}/api/rooms`, memberUser, memberToken, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "private", members: [memberUser] }),
-    });
-    if (res.status === 201) {
-      const data = await res.json();
-      privateRoomId = data?.room?.id ?? data?.roomId ?? null;
-    }
+  if (!memberToken || !outsiderToken) {
+    throw new Error("Pusher auth setup failed to register test users");
   }
+  const res = await fetchWithAuth(`${BASE_URL}/api/rooms`, memberUser, memberToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "private", members: [memberUser] }),
+  });
+  if (res.status !== 201) {
+    throw new Error(`Pusher auth room setup failed: ${res.status}`);
+  }
+  const data = await res.json();
+  privateRoomId = data?.room?.id ?? data?.roomId ?? null;
+  if (!privateRoomId) throw new Error("Pusher auth setup returned no room id");
 });
 
 describe("POST /api/pusher/auth", () => {
@@ -147,7 +150,9 @@ describe("POST /api/pusher/auth", () => {
   });
 
   test("authorizes a private room channel for a member", async () => {
-    if (!privateRoomId || !memberToken) return;
+    if (!privateRoomId || !memberToken) {
+      throw new Error("Pusher auth setup missing private room or member token");
+    }
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
       memberUser,
@@ -162,7 +167,9 @@ describe("POST /api/pusher/auth", () => {
   });
 
   test("denies a private room channel for a non-member", async () => {
-    if (!privateRoomId || !outsiderToken) return;
+    if (!privateRoomId || !outsiderToken) {
+      throw new Error("Pusher auth setup missing private room or outsider token");
+    }
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
       outsiderUser,

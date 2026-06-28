@@ -167,23 +167,31 @@ maybeDescribe("local WebSocket realtime authorization", () => {
     outsiderUser = `wso_${Date.now()}`;
     memberCookie = (await register(memberUser)).cookie;
     outsiderCookie = (await register(outsiderUser)).cookie;
-    if (memberCookie) memberTicket = await getTicket(memberCookie);
-    if (outsiderCookie) outsiderTicket = await getTicket(outsiderCookie);
+    if (!memberCookie || !outsiderCookie) {
+      throw new Error("Local realtime setup failed to register test users");
+    }
+    memberTicket = await getTicket(memberCookie);
+    outsiderTicket = await getTicket(outsiderCookie);
+    if (!memberTicket || !outsiderTicket) {
+      throw new Error("Local realtime setup failed to issue tickets");
+    }
 
-    if (memberCookie) {
-      const res = await fetch(`${origin}/api/rooms`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Origin: origin,
-          Cookie: memberCookie,
-        },
-        body: JSON.stringify({ type: "private", members: [memberUser] }),
-      });
-      if (res.status === 201) {
-        const data = await res.json();
-        privateRoomId = data?.room?.id ?? data?.roomId ?? null;
-      }
+    const res = await fetch(`${origin}/api/rooms`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: origin,
+        Cookie: memberCookie,
+      },
+      body: JSON.stringify({ type: "private", members: [memberUser] }),
+    });
+    if (res.status !== 201) {
+      throw new Error(`Local realtime room setup failed: ${res.status}`);
+    }
+    const data = await res.json();
+    privateRoomId = data?.room?.id ?? data?.roomId ?? null;
+    if (!privateRoomId) {
+      throw new Error("Local realtime setup returned no private room id");
     }
   });
 
@@ -231,7 +239,9 @@ maybeDescribe("local WebSocket realtime authorization", () => {
   });
 
   test("private room membership is authorized and messages use current-member fanout", async () => {
-    if (!privateRoomId || !memberCookie) return;
+    if (!privateRoomId || !memberCookie) {
+      throw new Error("Local realtime setup missing private room or member cookie");
+    }
 
     const freshMemberTicket = memberCookie ? await getTicket(memberCookie) : null;
     const channel = `private-room-${privateRoomId}`;

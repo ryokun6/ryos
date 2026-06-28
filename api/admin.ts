@@ -28,6 +28,10 @@ import {
   listCursorSdkRunsFromRedis,
 } from "./chat/tools/cursor-repo-agent.js";
 import { redisKeys } from "../src/shared/redisKeys.js";
+import {
+  clampAdminInteger,
+  parseAdminStoredMessage,
+} from "./_utils/admin-parsing.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -176,8 +180,8 @@ async function getUserProfile(redis: Redis, targetUsername: string): Promise<Use
       let roomMessageCount = 0;
       
       for (const msg of messages || []) {
-        const msgData = typeof msg === "string" ? JSON.parse(msg) : msg;
-        if (msgData?.username?.toLowerCase() === normalizedUsername) {
+        const msgData = parseAdminStoredMessage(msg);
+        if (msgData?.username.toLowerCase() === normalizedUsername) {
           roomMessageCount++;
           messageCount++;
         }
@@ -227,8 +231,8 @@ async function getUserMessages(redis: Redis, targetUsername: string, limit = 50)
     for (const roomId of roomIds || []) {
       const roomMessages = await getAdminRoomMessages(redis, roomId);
       for (const msg of roomMessages || []) {
-        const msgData = typeof msg === "string" ? JSON.parse(msg) : msg;
-        if (msgData?.username?.toLowerCase() === normalizedUsername) {
+        const msgData = parseAdminStoredMessage(msg);
+        if (msgData?.username.toLowerCase() === normalizedUsername) {
           messages.push({ id: msgData.id, roomId, roomName: roomNameMap[roomId] || roomId, content: msgData.content, timestamp: msgData.timestamp });
         }
       }
@@ -422,14 +426,7 @@ function normalizeRedisPattern(pattern: unknown): string {
 }
 
 function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
-  const parsed =
-    typeof value === "number"
-      ? value
-      : typeof value === "string"
-        ? Number.parseInt(value, 10)
-        : NaN;
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(Math.max(parsed, min), max);
+  return clampAdminInteger(value, fallback, min, max);
 }
 
 function normalizeRedisCursor(cursor: unknown): string | number {
@@ -829,7 +826,7 @@ export default apiHandler<AdminRequest>(
         }
         case "getUserMessages": {
           const targetUsername = req.query.username as string | undefined;
-          const limit = parseInt((req.query.limit as string) || "50");
+          const limit = clampAdminInteger(req.query.limit, 50, 1, 500);
           if (!targetUsername) {
             logger.response(400, Date.now() - startTime);
             res.status(400).json({ error: "Username is required" });
@@ -863,7 +860,7 @@ export default apiHandler<AdminRequest>(
         }
         case "getUserHeartbeats": {
           const targetUsername = req.query.username as string | undefined;
-          const days = Math.min(parseInt((req.query.days as string) || "7"), 30);
+          const days = clampAdminInteger(req.query.days, 7, 1, 30);
           if (!targetUsername) {
             logger.response(400, Date.now() - startTime);
             res.status(400).json({ error: "Username is required" });
@@ -891,7 +888,7 @@ export default apiHandler<AdminRequest>(
           return;
         }
         case "getAnalytics": {
-          const days = Math.min(Math.max(parseInt((req.query.days as string) || "7"), 1), 90);
+          const days = clampAdminInteger(req.query.days, 7, 1, 90);
           const detail = req.query.detail === "true";
           if (detail) {
             const data: AnalyticsDetail = await getAnalyticsDetail(redis, days);
@@ -907,10 +904,7 @@ export default apiHandler<AdminRequest>(
           return;
         }
         case "getCursorAgentRuns": {
-          const limit = Math.min(
-            Math.max(parseInt((req.query.limit as string) || "50", 10) || 50, 1),
-            100
-          );
+          const limit = clampAdminInteger(req.query.limit, 50, 1, 100);
           const { runs, totalCount, scanIncomplete } =
             await listCursorSdkRunsForAdmin(redis, limit);
           const sliceTruncated = totalCount > limit;
@@ -990,10 +984,7 @@ export default apiHandler<AdminRequest>(
           return;
         }
         case "getAuditLog": {
-          const limit = Math.min(
-            Math.max(parseInt((req.query.limit as string) || "100", 10) || 100, 1),
-            500
-          );
+          const limit = clampAdminInteger(req.query.limit, 100, 1, 500);
           const entries = await getAdminAuditLog(redis, limit);
           logger.info("Admin audit log retrieved", { count: entries.length, limit });
           logger.response(200, Date.now() - startTime);

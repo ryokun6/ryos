@@ -16,9 +16,36 @@ if (files.length === 0) {
 
 console.log(`Running ${files.length} ${group} test files`);
 
-const child = Bun.spawn(["bun", "test", ...files], {
-  stdout: "inherit",
-  stderr: "inherit",
-});
+if (group === "api") {
+  const child = Bun.spawn(["bun", "test", ...files], {
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  process.exit(await child.exited);
+}
 
-process.exit(await child.exited);
+let failedFiles = 0;
+for (const file of files) {
+  // This suite statically imports every persisted store. Install happy-dom
+  // before module evaluation so Zustand captures a real window.localStorage.
+  const needsHappyDomAtImport =
+    file === "tests/test-sync-v2-codecs.test.ts";
+  const child = Bun.spawn(["bun", "test", file], {
+    env: {
+      ...process.env,
+      ...(needsHappyDomAtImport
+        ? { RYOS_TEST_GLOBAL_DOM: "happy-dom" }
+        : {}),
+    },
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  if ((await child.exited) !== 0) {
+    failedFiles++;
+  }
+}
+
+if (failedFiles > 0) {
+  console.error(`${failedFiles} unit test file(s) failed`);
+  process.exit(1);
+}

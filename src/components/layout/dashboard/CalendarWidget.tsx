@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import { useCalendarStore, type CalendarEvent, type EventColor } from "@/stores/useCalendarStore";
 import { requestAppLaunch } from "@/utils/appEventBus";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,11 @@ import {
   formatZonedDateString,
   getZonedDateTimeParts,
 } from "@/lib/timezoneConfig";
+import {
+  civilWeekday,
+  daysInCivilMonth,
+  millisecondsUntilNextZonedDay,
+} from "@/shared/calendarCivilDate";
 
 function getLocalizedDayHeaders(locale: string): string[] {
   const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
@@ -66,7 +71,20 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
     return allEvents.filter((ev) => !hiddenColors.includes(ev.color));
   }, [allEvents, hiddenColors]);
 
-  const now = useMemo(() => new Date(), []);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const scheduleRefresh = () => {
+      const current = new Date();
+      timeoutId = setTimeout(() => {
+        setNow(new Date());
+        scheduleRefresh();
+      }, millisecondsUntilNextZonedDay(current, timeZone));
+    };
+    scheduleRefresh();
+    return () => clearTimeout(timeoutId);
+  }, [timeZone]);
+
   const todayStr = useMemo(
     () => formatZonedDateString(now, timeZone),
     [now, timeZone]
@@ -80,10 +98,11 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   const weeks = useMemo(() => {
     const month = zonedNow.month - 1;
     const year = zonedNow.year;
-    const firstDay = new Date(year, month, 1);
-    const startDow = firstDay.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrev = new Date(year, month, 0).getDate();
+    const startDow = civilWeekday({ year, month: month + 1, day: 1 });
+    const daysInMonth = daysInCivilMonth(year, month + 1);
+    const previousMonth = month === 0 ? 12 : month;
+    const previousYear = month === 0 ? year - 1 : year;
+    const daysInPrev = daysInCivilMonth(previousYear, previousMonth);
 
     const weeks: Array<
       Array<{

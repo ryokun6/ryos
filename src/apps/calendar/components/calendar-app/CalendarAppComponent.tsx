@@ -10,7 +10,7 @@ import { DEFAULT_TIME_GRID_HOUR_HEIGHT } from "../../hooks/useTimeScaleGestures"
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { cn } from "@/lib/utils";
 import { useCalendarStore } from "@/stores/useCalendarStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { AppDrawer } from "@/components/shared/AppDrawer";
@@ -28,8 +28,8 @@ import { isKeyboardDeleteTargetEditable } from "./calendarAppUtils";
 export function CalendarAppComponent({
   isWindowOpen, onClose, isForeground, skipInitialSound, instanceId, onNavigateNext, onNavigatePrevious,
 }: AppProps) {
-  const username = useChatsStore((s) => s.username);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.username);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const calendarSyncReady = useCloudSyncStore(
     (s) => s.autoSyncEnabled && s.syncCalendar
   );

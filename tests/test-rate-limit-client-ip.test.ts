@@ -9,7 +9,7 @@
  *   - The standalone Bun server's PEER_IP_HEADER is trusted unconditionally.
  */
 
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { getClientIp, PEER_IP_HEADER } from "../api/_utils/_rate-limit.js";
 
@@ -24,6 +24,10 @@ function setTrustedProxyCount(value: string | undefined): void {
     process.env.TRUSTED_PROXY_COUNT = value;
   }
 }
+
+beforeEach(() => {
+  setTrustedProxyCount(undefined);
+});
 
 afterEach(() => {
   setTrustedProxyCount(ORIGINAL_TRUSTED_PROXY_COUNT);

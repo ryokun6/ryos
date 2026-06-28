@@ -1,10 +1,16 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   createStorageUploadDescriptor,
   getStorageBackend,
 } from "../api/_utils/storage";
 
 const ORIGINAL_ENV = { ...process.env };
+
+beforeEach(() => {
+  delete process.env.S3_PUBLIC_ENDPOINT;
+  delete process.env.S3_FORCE_PATH_STYLE;
+  delete process.env.STORAGE_CLIENT_UPLOAD;
+});
 
 afterEach(() => {
   for (const key of Object.keys(process.env)) {

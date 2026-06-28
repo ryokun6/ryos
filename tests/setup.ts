@@ -1,4 +1,5 @@
 import { afterEach, beforeEach } from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import {
   flushDebouncedPersistWrites,
   resetDebouncedPersistWritesForTests,
@@ -40,6 +41,13 @@ export class MemoryStorage implements Storage {
 
 const sharedTestLocalStorage = new MemoryStorage();
 
+if (
+  process.env.RYOS_TEST_GLOBAL_DOM === "happy-dom" &&
+  !GlobalRegistrator.isRegistered
+) {
+  GlobalRegistrator.register();
+}
+
 function isUsableStorage(storage: unknown): storage is Storage {
   return (
     typeof storage === "object" &&
@@ -78,6 +86,16 @@ export function ensureTestLocalStorage(): Storage {
   return installTestLocalStorage(isUsableStorage(storage) ? storage : undefined);
 }
 
+function resetHappyDomState(): void {
+  if (typeof window !== "undefined" && isUsableStorage(window.sessionStorage)) {
+    window.sessionStorage.clear();
+  }
+  if (typeof document !== "undefined") {
+    document.head?.replaceChildren();
+    document.body?.replaceChildren();
+  }
+}
+
 installTestLocalStorage();
 
 beforeEach(() => {
@@ -85,6 +103,7 @@ beforeEach(() => {
   flushDebouncedPersistWrites();
   resetDebouncedPersistWritesForTests();
   ensureTestLocalStorage().clear();
+  resetHappyDomState();
 });
 
 afterEach(() => {
@@ -92,4 +111,5 @@ afterEach(() => {
   flushDebouncedPersistWrites();
   resetDebouncedPersistWritesForTests();
   ensureTestLocalStorage().clear();
+  resetHappyDomState();
 });

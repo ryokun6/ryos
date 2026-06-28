@@ -16,6 +16,14 @@ import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
 import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
 import { formatZonedDateString } from "@/lib/timezoneConfig";
+import {
+  addCivilDays,
+  civilWeekday,
+  daysInCivilMonth,
+  formatCivilDate,
+  parseCivilDate,
+  startOfCivilWeek,
+} from "@/shared/calendarCivilDate";
 
 type CalendarUndoAction =
   | { type: "addEvent"; event: CalendarEvent }
@@ -42,10 +50,6 @@ export interface WeekDay {
   allDayEvents: CalendarEvent[];
   timedEvents: CalendarEvent[];
 }
-
-/** Format Date as YYYY-MM-DD */
-const formatDate = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export function useCalendarLogic() {
   const { t, i18n } = useTranslation();
@@ -244,25 +248,22 @@ export function useCalendarLogic() {
   // ==========================================================================
 
   const weekDates = useMemo((): WeekDay[] => {
-    const [y, m, d] = selectedDate.split("-").map(Number);
-    const sel = new Date(y, m - 1, d);
-    const dayOfWeek = sel.getDay();
-    const sunday = new Date(sel);
-    sunday.setDate(sunday.getDate() - dayOfWeek);
+    const selected = parseCivilDate(selectedDate);
+    if (!selected) return [];
+    const sunday = startOfCivilWeek(selected);
 
     const days: WeekDay[] = [];
     for (let i = 0; i < 7; i++) {
-      const date = new Date(sunday);
-      date.setDate(date.getDate() + i);
-      const dateStr = formatDate(date);
+      const date = addCivilDays(sunday, i);
+      const dateStr = formatCivilDate(date);
       const dayEvents = visibleEvents.filter((ev) =>
         calendarEventOccursOnDate(ev, dateStr)
       );
 
       days.push({
         date: dateStr,
-        dayOfMonth: date.getDate(),
-        dayName: shortDayNames[date.getDay()],
+        dayOfMonth: date.day,
+        dayName: shortDayNames[civilWeekday(date)],
         isToday: dateStr === todayStr,
         isSelected: dateStr === selectedDate,
         events: dayEvents,
@@ -281,11 +282,17 @@ export function useCalendarLogic() {
     const last = weekDates[6];
     const [fy, fm, fd] = first.date.split("-").map(Number);
     const [ly, lm, ld] = last.date.split("-").map(Number);
-    const firstDate = new Date(fy, fm - 1, fd);
-    const lastDate = new Date(ly, lm - 1, ld);
+    const firstDate = new Date(Date.UTC(fy, fm - 1, fd));
+    const lastDate = new Date(Date.UTC(ly, lm - 1, ld));
 
-    const fMonth = firstDate.toLocaleDateString(locale, { month: "short" });
-    const lMonth = lastDate.toLocaleDateString(locale, { month: "short" });
+    const fMonth = firstDate.toLocaleDateString(locale, {
+      month: "short",
+      timeZone: "UTC",
+    });
+    const lMonth = lastDate.toLocaleDateString(locale, {
+      month: "short",
+      timeZone: "UTC",
+    });
 
     if (fm === lm) {
       return `${fMonth} ${fd} – ${ld}, ${fy}`;
@@ -298,11 +305,15 @@ export function useCalendarLogic() {
   // ==========================================================================
 
   const calendarGrid = useMemo((): CalendarDayCell[][] => {
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const startDayOfWeek = firstDay.getDay();
-
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const startDayOfWeek = civilWeekday({
+      year: currentYear,
+      month: currentMonth + 1,
+      day: 1,
+    });
+    const daysInMonth = daysInCivilMonth(currentYear, currentMonth + 1);
+    const previousMonth = currentMonth === 0 ? 12 : currentMonth;
+    const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const daysInPrevMonth = daysInCivilMonth(previousYear, previousMonth);
 
     const weeks: CalendarDayCell[][] = [];
     let dayCounter = 1;
@@ -378,22 +389,24 @@ export function useCalendarLogic() {
 
   // Month/Year display label
   const monthYearLabel = useMemo(() => {
-    const date = new Date(currentYear, currentMonth, 1);
+    const date = new Date(Date.UTC(currentYear, currentMonth, 1));
     return date.toLocaleDateString(locale, {
       month: "long",
       year: "numeric",
+      timeZone: "UTC",
     });
   }, [currentYear, currentMonth, locale]);
 
   // Selected date display label
   const selectedDateLabel = useMemo(() => {
     const [year, month, day] = selectedDate.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
+    const date = new Date(Date.UTC(year, month - 1, day));
     return date.toLocaleDateString(locale, {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
+      timeZone: "UTC",
     });
   }, [selectedDate, locale]);
 

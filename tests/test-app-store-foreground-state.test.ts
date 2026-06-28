@@ -58,13 +58,23 @@ function installBrowserStubs() {
     });
   }
 
-  Object.defineProperty(globalThis, "window", {
-    configurable: true,
-    value: {
-      dispatchEvent: () => true,
-      innerWidth: 1024,
-    },
-  });
+  if (typeof window === "undefined") {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        dispatchEvent: () => true,
+        innerWidth: 1024,
+        localStorage: localStorageStub,
+        location: { pathname: "/" },
+        sessionStorage: localStorageStub,
+      },
+    });
+  } else {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: localStorageStub,
+    });
+  }
 }
 
 beforeAll(async () => {
