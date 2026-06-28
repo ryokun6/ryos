@@ -22,7 +22,6 @@ import {
   clearEntry,
   createInitialCalcState,
   factorial,
-  formatNumber,
   inputDecimal,
   inputDigit,
   inputOperator,
