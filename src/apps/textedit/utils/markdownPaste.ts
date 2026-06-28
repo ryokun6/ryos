@@ -146,15 +146,17 @@ export function markdownToSafeHtml(markdown: string): string {
  * before ProseMirror has to interpret them.
  */
 export function sanitizeHtmlForEditor(html: string): string {
-  if (
-    typeof window === "undefined" ||
-    typeof DOMPurify.sanitize !== "function"
-  ) {
+  if (typeof window === "undefined") {
+    return html;
+  }
+
+  const purifier = DOMPurify(window);
+  if (typeof purifier.sanitize !== "function") {
     return html;
   }
 
   return String(
-    DOMPurify.sanitize(html, {
+    purifier.sanitize(html, {
       ALLOWED_ATTR: SAFE_MARKDOWN_ATTRIBUTES,
       ALLOWED_TAGS: SAFE_MARKDOWN_TAGS,
       ALLOW_ARIA_ATTR: false,
