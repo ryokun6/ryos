@@ -12,6 +12,7 @@ import {
 } from "@aws-sdk/middleware-flexible-checksums";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { del as deleteBlob, head as headBlob } from "@vercel/blob";
+import { signStorageUploadToken } from "./storage-upload-token.js";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
 export type StorageBackend = "vercel-blob" | "s3";
@@ -44,7 +45,7 @@ export interface VercelBlobUploadDescriptor extends BaseStorageUploadDescriptor 
 
 export interface S3UploadDescriptor extends BaseStorageUploadDescriptor {
   provider: "s3";
-  uploadMethod: "presigned-put";
+  uploadMethod: "presigned-put" | "api-proxy-put";
   uploadUrl: string;
   storageUrl: string;
   headers: Record<string, string>;
@@ -171,6 +172,16 @@ function getS3Config(): S3Config | null {
 
 export function shouldEnableStorageDebugLogs(): boolean {
   return isTruthy(process.env.STORAGE_DEBUG);
+}
+
+export type StorageClientUploadMode = "presigned" | "proxy";
+
+export function getStorageClientUploadMode(): StorageClientUploadMode {
+  const explicit = process.env.STORAGE_CLIENT_UPLOAD?.trim().toLowerCase();
+  if (explicit === "proxy" || explicit === "api-proxy") {
+    return "proxy";
+  }
+  return "presigned";
 }
 
 export function logStorageDebug(message: string, details?: unknown): void {
@@ -448,6 +459,10 @@ export async function createStorageUploadDescriptor(
     };
   }
 
+  if (getStorageClientUploadMode() === "proxy") {
+    return createS3ProxyUploadDescriptor(options);
+  }
+
   const uploadUrl = await getSignedUrl(
     getS3PresignClient(),
     new PutObjectCommand({
@@ -470,6 +485,56 @@ export async function createStorageUploadDescriptor(
       "Content-Type": options.contentType,
     },
   };
+}
+
+async function createS3ProxyUploadDescriptor(
+  options: StorageUploadOptions
+): Promise<S3UploadDescriptor> {
+  const pathname = normalizePathname(options.pathname);
+  const token = await signStorageUploadToken({
+    pathname,
+    contentType: options.contentType,
+    maximumSizeInBytes: options.maximumSizeInBytes,
+  });
+  const params = new URLSearchParams({ token });
+
+  return {
+    provider: "s3",
+    uploadMethod: "api-proxy-put",
+    pathname,
+    contentType: options.contentType,
+    maximumSizeInBytes: options.maximumSizeInBytes,
+    uploadUrl: `/api/sync/v2/blob-upload?${params.toString()}`,
+    storageUrl: toS3StorageUrl(pathname),
+    headers: {
+      "Content-Type": options.contentType,
+    },
+  };
+}
+
+export async function uploadStoredObject(options: {
+  pathname: string;
+  contentType: string;
+  body: Uint8Array | Buffer;
+}): Promise<void> {
+  if (getStorageBackend() !== "s3") {
+    throw new Error("uploadStoredObject requires S3-compatible storage.");
+  }
+
+  const pathname = normalizePathname(options.pathname);
+  const config = getS3Config();
+  if (!config) {
+    throw new Error("Missing S3-compatible storage configuration.");
+  }
+
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: pathname,
+      Body: options.body,
+      ContentType: options.contentType,
+    })
+  );
 }
 
 export function getStorageUploadDebugInfo(

@@ -498,6 +498,17 @@ async function parseBody(request: Request): Promise<ParsedBody> {
     return { bodyValue: body, bodyError: null, rawBody: null };
   }
 
+  if (
+    contentType.includes("application/gzip") ||
+    contentType.includes("application/octet-stream") ||
+    contentType.startsWith("image/") ||
+    contentType.startsWith("audio/") ||
+    contentType.startsWith("video/")
+  ) {
+    const rawBody = new Uint8Array(await request.arrayBuffer());
+    return { bodyValue: undefined, bodyError: null, rawBody };
+  }
+
   return { bodyValue: undefined, bodyError: null, rawBody: null };
 }
 

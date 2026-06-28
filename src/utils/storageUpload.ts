@@ -1,3 +1,5 @@
+import { getApiUrl } from "@/utils/platform";
+
 export interface StorageUploadProgress {
   loaded: number;
   total: number;
@@ -21,7 +23,7 @@ export interface VercelBlobUploadInstruction
 
 export interface S3UploadInstruction extends BaseStorageUploadInstruction {
   provider: "s3";
-  uploadMethod: "presigned-put";
+  uploadMethod: "presigned-put" | "api-proxy-put";
   uploadUrl: string;
   storageUrl: string;
   headers?: Record<string, string>;
@@ -35,11 +37,15 @@ function uploadWithXhr(
   uploadUrl: string,
   body: Blob,
   headers: Record<string, string>,
-  onProgress?: (progress: StorageUploadProgress) => void
+  onProgress?: (progress: StorageUploadProgress) => void,
+  options?: { withCredentials?: boolean }
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", uploadUrl, true);
+    if (options?.withCredentials) {
+      xhr.withCredentials = true;
+    }
 
     for (const [key, value] of Object.entries(headers)) {
       xhr.setRequestHeader(key, value);
@@ -69,7 +75,7 @@ function uploadWithXhr(
     xhr.onerror = () =>
       reject(
         new Error(
-          `Upload failed before an HTTP response was received for ${uploadUrl}. Check bucket CORS, endpoint reachability, and TLS/mixed-content configuration.`
+          `Upload failed before an HTTP response was received for ${uploadUrl}. Check bucket CORS, endpoint reachability, and TLS/mixed-content configuration. For S3-compatible providers without working browser CORS, set STORAGE_CLIENT_UPLOAD=proxy.`
         )
       );
     xhr.ontimeout = () => reject(new Error("Upload timed out"));
@@ -93,6 +99,19 @@ export async function uploadBlobWithStorageInstruction(
     });
 
     return { storageUrl: result.url };
+  }
+
+  if (instruction.uploadMethod === "api-proxy-put") {
+    await uploadWithXhr(
+      getApiUrl(instruction.uploadUrl),
+      blob,
+      instruction.headers || {
+        "Content-Type": instruction.contentType,
+      },
+      onProgress,
+      { withCredentials: true }
+    );
+    return { storageUrl: instruction.storageUrl };
   }
 
   await uploadWithXhr(

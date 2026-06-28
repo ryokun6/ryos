@@ -13,11 +13,37 @@ const API_PORT = process.env.API_PORT ?? "3000";
 const VITE_PORT = process.env.VITE_PORT ?? "5173";
 const PORT = VITE_PORT === API_PORT ? "5173" : VITE_PORT;
 
+/** S3 presigned PUT from localhost needs bucket CORS; proxy via the API in dev. */
+function devStorageUploadEnv(): Record<string, string> {
+  if (process.env.STORAGE_CLIENT_UPLOAD?.trim()) {
+    return {};
+  }
+
+  const provider = process.env.STORAGE_PROVIDER?.trim().toLowerCase();
+  const usesS3 =
+    provider === "s3" ||
+    provider === "s3-compatible" ||
+    provider === "minio" ||
+    provider === "r2" ||
+    Boolean(process.env.S3_BUCKET?.trim() && process.env.S3_ENDPOINT?.trim());
+
+  if (!usesS3) {
+    return {};
+  }
+
+  return { STORAGE_CLIENT_UPLOAD: "proxy" };
+}
+
+const sharedDevEnv = {
+  ...process.env,
+  ...devStorageUploadEnv(),
+};
+
 const api = Bun.spawn(
   ["bun", "run", "dev:api"],
   {
     cwd: import.meta.dirname + "/..",
-    env: { ...process.env, API_PORT },
+    env: { ...sharedDevEnv, API_PORT },
     stdout: "pipe",
     stderr: "pipe",
   }
@@ -28,7 +54,7 @@ const vite = Bun.spawn(
   {
     cwd: import.meta.dirname + "/..",
     env: {
-      ...process.env,
+      ...sharedDevEnv,
       STANDALONE_API_PROXY_TARGET: `http://localhost:${API_PORT}`,
       API_PORT,
       PORT,
