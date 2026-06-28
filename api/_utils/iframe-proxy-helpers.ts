@@ -226,6 +226,111 @@ export function createProxyUrl(
   }
 }
 
+export function isBingSearchUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLowerCase();
+    return (
+      (hostname === "bing.com" || hostname.endsWith(".bing.com")) &&
+      url.pathname.replace(/\/+$/, "") === "/search" &&
+      Boolean(url.searchParams.get("q")?.trim())
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function buildBingRssSearchUrl(rawUrl: string): string | null {
+  if (!isBingSearchUrl(rawUrl)) return null;
+  const url = new URL(rawUrl);
+  url.searchParams.set("format", "rss");
+  return url.toString();
+}
+
+export function htmlContainsBingChallenge(html: string): boolean {
+  return /CfConfig|challenge\/verify|captchaSuccessPostMessage|verificationComplete|One last step|Please solve the challenge/i.test(html);
+}
+
+const stripCdata = (value: string): string =>
+  value.replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "");
+
+const stripMarkup = (value: string): string =>
+  value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const readXmlTag = (xml: string, tagName: string): string => {
+  const match = xml.match(new RegExp(`<${tagName}\\b[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i"));
+  if (!match?.[1]) return "";
+  return stripMarkup(decodeHtmlEntitiesOnce(stripCdata(match[1]).trim()));
+};
+
+export function renderBingRssSearchFallbackHtml(options: {
+  originalSearchUrl: string;
+  rssUrl: string;
+  rssXml: string;
+}): string | null {
+  if (!isBingSearchUrl(options.originalSearchUrl)) return null;
+
+  const originalUrl = new URL(options.originalSearchUrl);
+  const query = originalUrl.searchParams.get("q")?.trim() || "Bing search";
+  const items = Array.from(options.rssXml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi))
+    .slice(0, 10)
+    .map((match) => {
+      const itemXml = match[1] ?? "";
+      const title = readXmlTag(itemXml, "title");
+      const link = readXmlTag(itemXml, "link");
+      const description = readXmlTag(itemXml, "description");
+      return { title, link, description };
+    })
+    .filter((item) => item.title && item.link);
+
+  const resultItems = items.length
+    ? items
+        .map(
+          (item) => `<li class="result"><a href="${escapeHtml(item.link)}">${escapeHtml(
+            item.title
+          )}</a><p>${escapeHtml(item.description)}</p><span>${escapeHtml(item.link)}</span></li>`
+        )
+        .join("")
+    : `<li class="empty">No RSS results returned for ${escapeHtml(query)}.</li>`;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(query)} - Search</title>
+<style>
+body{margin:0;background:#fff;color:#111;font:14px Arial,Helvetica,sans-serif}
+header{border-bottom:1px solid #d9d9d9;padding:16px 24px}
+h1{font-size:20px;font-weight:400;margin:0}
+main{max-width:820px;padding:18px 24px}
+.notice{background:#fff8d6;border:1px solid #ead27a;margin:0 0 18px;padding:10px 12px}
+ol{list-style:none;margin:0;padding:0}
+.result{margin:0 0 18px}
+.result a{color:#04c;font-size:18px;text-decoration:underline}
+.result p{margin:4px 0;color:#333;line-height:1.35}
+.result span{color:#080;font-size:12px}
+.empty{color:#555}
+</style>
+</head>
+<body>
+<header><h1>Bing results for "${escapeHtml(query)}"</h1></header>
+<main>
+<p class="notice">Bing returned a browser challenge for the full results page, so ryOS is showing Bing RSS results instead.</p>
+<ol>${resultItems}</ol>
+<p><a href="${escapeHtml(options.rssUrl)}">Open Bing RSS feed</a></p>
+</main>
+</body>
+</html>`;
+}
+
 function rewriteQuotedAttribute(
   tag: string,
   attr: string,

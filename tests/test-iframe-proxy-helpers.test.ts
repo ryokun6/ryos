@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+  buildBingRssSearchUrl,
   buildBrowserHeaders,
   getCookieHeaderForUrl,
+  htmlContainsBingChallenge,
   mergeProxyCookies,
+  renderBingRssSearchFallbackHtml,
   rewriteCssForProxy,
   rewriteHtmlForProxy,
 } from "../api/_utils/iframe-proxy-helpers";
@@ -85,6 +88,33 @@ describe("iframe proxy helpers", () => {
     expect(result.css).toContain("resource=image");
     expect(result.css).toContain("data:image/png");
     expect(result.count).toBe(2);
+  });
+
+  test("renders a Bing RSS fallback for challenged search HTML", () => {
+    const searchUrl = "https://www.bing.com/search?q=ryos";
+    const rssUrl = buildBingRssSearchUrl(searchUrl);
+    const challengeHtml =
+      '<script>var CfConfig = { verifyEndpoint: "https://www.bing.com/challenge/verify" };</script>';
+    const rssXml = `<?xml version="1.0" encoding="utf-8" ?>
+<rss><channel><title>Bing: ryos</title>
+<item><title>ryOS</title><link>https://ryo.lu/</link><description>A web desktop.</description></item>
+<item><title><![CDATA[Ryo Lu]]></title><link>https://example.com/?a=1&amp;b=2</link><description><![CDATA[Creator <b>profile</b>.]]></description></item>
+</channel></rss>`;
+
+    expect(rssUrl).toBe("https://www.bing.com/search?q=ryos&format=rss");
+    expect(htmlContainsBingChallenge(challengeHtml)).toBe(true);
+
+    const fallbackHtml = renderBingRssSearchFallbackHtml({
+      originalSearchUrl: searchUrl,
+      rssUrl: rssUrl ?? "",
+      rssXml,
+    });
+
+    expect(fallbackHtml).toContain('Bing results for "ryos"');
+    expect(fallbackHtml).toContain("Bing returned a browser challenge");
+    expect(fallbackHtml).toContain("https://ryo.lu/");
+    expect(fallbackHtml).toContain("https://example.com/?a=1&amp;b=2");
+    expect(fallbackHtml).not.toContain("<b>profile</b>");
   });
 
   test("mergeProxyCookies scopes cookies by host, domain, path, and secure flag", () => {

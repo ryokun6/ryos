@@ -8,11 +8,13 @@ import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
 import {
   buildBrowserHeaders,
-  createProxyUrl,
+  buildBingRssSearchUrl,
   getCookieHeaderForUrl,
   getSetCookieHeaders,
+  htmlContainsBingChallenge,
   mergeProxyCookies,
   normalizeProxyResourceType,
+  renderBingRssSearchFallbackHtml,
   rewriteCssForProxy,
   rewriteHtmlForProxy,
   type ProxyResourceType,
@@ -57,6 +59,7 @@ type ProxyDiagnostics = {
   rewrites?: RewriteStats;
   cookieSession?: boolean;
   compatibilityMode?: string;
+  bingRssFallback?: boolean;
   errorType?: string;
 };
 
@@ -234,6 +237,38 @@ function createLocalProxyFixtureResponse(
   }
 
   return null;
+}
+
+async function buildBingSearchChallengeFallbackHtml(
+  finalUrl: string
+): Promise<string | null> {
+  const rssUrl = buildBingRssSearchUrl(finalUrl);
+  if (!rssUrl) return null;
+
+  const { response } = await safeFetchWithRedirects(
+    rssUrl,
+    {
+      method: "GET",
+      headers: {
+        ...buildBrowserHeaders({
+          targetUrl: rssUrl,
+          resourceType: "document",
+          referrerUrl: "https://www.bing.com/",
+          method: "GET",
+        }),
+        Accept: "application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5",
+      },
+    },
+    { maxRedirects: 5 }
+  );
+
+  if (!response.ok) return null;
+  const rssXml = await response.text();
+  return renderBingRssSearchFallbackHtml({
+    originalSearchUrl: finalUrl,
+    rssUrl,
+    rssXml,
+  });
 }
 
 async function readProxyRequestBody(req: {
@@ -921,6 +956,21 @@ export default apiHandler(
       // If it's HTML, inject the <base> tag and click interceptor script
       if (contentType.includes("text/html")) {
         let html = await upstreamRes.text();
+
+        if (htmlContainsBingChallenge(html)) {
+          try {
+            const fallbackHtml = await buildBingSearchChallengeFallbackHtml(finalUrl);
+            if (fallbackHtml) {
+              html = fallbackHtml;
+              diagnostics.bingRssFallback = true;
+              logger.info("Rendered Bing RSS fallback for challenged search page", {
+                finalUrl,
+              });
+            }
+          } catch (fallbackError) {
+            logger.warn("Bing RSS fallback failed", fallbackError);
+          }
+        }
 
         // --- Sanitize HTML for proxy embedding ---
         // Strip existing <base> tags to prevent conflicts with our injected base tag
