@@ -8,9 +8,10 @@ import { hasLibraryTrackMetadataChanges } from "@/stores/ipodTrackMetadataSync";
 import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
 import { fetchSongsVersion, type SongsVersionInfo } from "@/api/songs";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
-import { debug } from "@/utils/debug";
+import { createClientLogger } from "@/utils/logger";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
+const debug = createClientLogger("IpodLibraryUpdateChecker").debug;
 
 export function useLibraryUpdateChecker(isActive: boolean) {
   const { t } = useTranslation();

@@ -17,6 +17,9 @@ import {
   type SoramimiResult,
 } from "@/utils/chunkedStream";
 import { renderLyricsWithAnnotations } from "@/utils/renderLyricsWithAnnotations";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("Furigana");
 
 // Re-export FuriganaSegment for consumers
 export type { FuriganaSegment };
@@ -414,7 +417,10 @@ export function useFurigana({
         
         const currentLines = linesRef.current;
         if (lineIndex < currentLines.length && segments) {
-          console.log(`[Furigana] Line ${lineIndex} received:`, segments.length, 'segments');
+          log.debug("Furigana line received", {
+            lineIndex,
+            segmentCount: segments.length,
+          });
           progressiveMap.set(
             currentLines[lineIndex].startTimeMs,
             normalizeClientFuriganaSegments(segments)
@@ -550,7 +556,7 @@ export function useFurigana({
     // For Japanese songs, wait for furigana to be ready before fetching soramimi
     // This allows us to pass furigana readings to the AI for accurate kanji pronunciation
     if (isJapanese && !furiganaReadyForSoramimi) {
-      console.log('[Soramimi] Waiting for furigana to complete for Japanese song...');
+      log.debug("Waiting for furigana before starting Soramimi");
       return;
     }
 
@@ -625,7 +631,7 @@ export function useFurigana({
       if (!hasReadings) {
         furiganaForApi = undefined;
       } else {
-        console.log('[Soramimi] Starting with furigana data for Japanese song');
+        log.debug("Starting Soramimi with furigana data");
       }
     }
     
@@ -650,7 +656,10 @@ export function useFurigana({
         
         const currentLines = linesRef.current;
         if (lineIndex < currentLines.length && segments) {
-          console.log(`[Soramimi] Line ${lineIndex} received:`, segments.length, 'segments');
+          log.debug("Soramimi line received", {
+            lineIndex,
+            segmentCount: segments.length,
+          });
           progressiveMap.set(currentLines[lineIndex].startTimeMs, segments);
           progressiveFlusher.schedule();
         }

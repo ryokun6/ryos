@@ -9,6 +9,9 @@ import {
   isPointInSelection,
 } from "./paintCanvasUtils";
 import type { PaintCanvasComponentProps, Point, Selection } from "./types";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("PaintCanvas");
 
 export function usePaintCanvas({
   ref,
@@ -432,7 +435,7 @@ export function usePaintCanvas({
         navigator.clipboard
           .write([item])
           .then(() => {
-            console.log("Successfully copied to clipboard");
+            log.debug("Copied canvas selection to clipboard");
             resolve();
           })
           .catch((err) => {

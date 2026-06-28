@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { debug } from "@/utils/debug";
+import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import {
@@ -43,6 +43,8 @@ import {
   saveAppleMusicTrackCollection,
 } from "@/utils/appleMusicLibraryCache";
 import type { IpodMenuKind } from "@/apps/ipod/types";
+
+const debug = createClientLogger("IpodStore").debug;
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";

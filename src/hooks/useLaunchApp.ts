@@ -1,6 +1,9 @@
 import { useCallback } from "react";
 import { useAppStore, LaunchOriginRect } from "@/stores/useAppStore";
 import { AppId } from "@/config/appRegistry";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("LaunchApp");
 
 // Export the interface
 export interface LaunchAppOptions {
@@ -22,7 +25,12 @@ export const useLaunchApp = () => {
 
   const launchApp = useCallback(
     (appId: AppId, options?: LaunchAppOptions) => {
-      console.log(`[useLaunchApp] Launch event received for ${appId}`, options);
+      log.debug("Launch event received", {
+        appId,
+        hasInitialPath: Boolean(options?.initialPath),
+        hasInitialData: Boolean(options?.initialData),
+        multiWindow: options?.multiWindow,
+      });
       const { instances } = useAppStore.getState();
 
       // Convert initialPath to proper initialData for Finder
@@ -71,9 +79,11 @@ export const useLaunchApp = () => {
               if (existingInstance) {
                 // Same applet already open, bring it to foreground
                 const identifier = data.path || data.shareCode;
-                console.log(
-                  `[useLaunchApp] Applet with ${data.path ? 'path' : 'shareCode'} ${identifier} already open in instance ${existingInstance.instanceId}, bringing to foreground`
-                );
+                log.debug("Applet already open; bringing to foreground", {
+                  identifierType: data.path ? "path" : "shareCode",
+                  hasIdentifier: Boolean(identifier),
+                  instanceId: existingInstance.instanceId,
+                });
                 bringInstanceToForeground(existingInstance.instanceId);
                 // Refresh initialData so persisted instances (whose content was
                 // stripped to "" for storage) pick up the freshly loaded content.
@@ -103,9 +113,9 @@ export const useLaunchApp = () => {
 
               if (emptyInstance) {
                 // Reuse the empty applet store instance
-                console.log(
-                  `[useLaunchApp] Found empty applet store instance ${emptyInstance.instanceId}, reusing`
-                );
+                log.debug("Reusing empty applet store instance", {
+                  instanceId: emptyInstance.instanceId,
+                });
                 bringInstanceToForeground(emptyInstance.instanceId);
                 return emptyInstance.instanceId;
               }
@@ -127,18 +137,16 @@ export const useLaunchApp = () => {
 
           if (appletStoreInstance) {
             // Bring the applet store window to foreground
-            console.log(
-              `[useLaunchApp] Found existing applet store window ${appletStoreInstance.instanceId}, bringing to foreground`
-            );
+            log.debug("Existing applet store window found", {
+              instanceId: appletStoreInstance.instanceId,
+            });
             bringInstanceToForeground(appletStoreInstance.instanceId);
             return appletStoreInstance.instanceId;
           }
 
           // If no applet store window exists, create a new one
           // (fall through to the launchAppInstance call below)
-          console.log(
-            `[useLaunchApp] No applet store window found, creating new one`
-          );
+          log.debug("No applet store window found; creating new one");
         }
       }
 
@@ -164,9 +172,11 @@ export const useLaunchApp = () => {
 
           // Bring the most recently restored instance to foreground
           if (lastRestoredId) {
-            console.log(
-              `[useLaunchApp] All instances of ${appId} were minimized, restored and bringing ${lastRestoredId} to foreground`
-            );
+            log.debug("Restored minimized app instances", {
+              appId,
+              foregroundInstanceId: lastRestoredId,
+              instanceCount: appInstances.length,
+            });
             bringInstanceToForeground(lastRestoredId);
             // Update initialData if provided (e.g. pre-fill commands from Spotlight)
             if (initialData) {
@@ -192,9 +202,7 @@ export const useLaunchApp = () => {
         multiWindow,
         options?.launchOrigin
       );
-      console.log(
-        `[useLaunchApp] Created instance ${instanceId} for app ${appId} with multiWindow: ${multiWindow}`
-      );
+      log.debug("Created app instance", { instanceId, appId, multiWindow });
 
       return instanceId;
     },

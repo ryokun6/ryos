@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { relative, resolve } from "node:path";
 
 import {
   createClientLogger,
@@ -14,6 +14,32 @@ import {
 
 const readSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
+
+const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
+
+function listSourceFiles(relativeDir: string): string[] {
+  const absoluteDir = resolve(process.cwd(), relativeDir);
+  const files: string[] = [];
+
+  for (const entry of readdirSync(absoluteDir)) {
+    const absolutePath = resolve(absoluteDir, entry);
+    const stats = statSync(absolutePath);
+
+    if (stats.isDirectory()) {
+      files.push(...listSourceFiles(relative(process.cwd(), absolutePath)));
+      continue;
+    }
+
+    const extension = entry.includes(".")
+      ? entry.slice(entry.lastIndexOf("."))
+      : "";
+    if (SOURCE_EXTENSIONS.has(extension)) {
+      files.push(relative(process.cwd(), absolutePath));
+    }
+  }
+
+  return files.sort();
+}
 
 const originalConsoleLog = console.log;
 const originalConsoleInfo = console.info;
@@ -128,26 +154,34 @@ describe("client logging guardrails", () => {
     expect(source).toContain("setRuntimeDebugEnabled(Boolean(state?.debugMode))");
   });
 
-  test("sensitive/noisy client paths do not use raw console.log", () => {
-    const files = [
-      "src/apps/chats/hooks/useAiChat.ts",
-      "src/apps/chats/hooks/useChatRoom.ts",
-      "src/apps/chats/hooks/useSyncedAiMessages.ts",
-      "src/apps/chats/components/chats-app/useChatsAppController.tsx",
-      "src/apps/chats/tools/appHandlers.ts",
-      "src/apps/chats/tools/settingsHandler.ts",
-      "src/apps/chats/tools/ipodHandler.ts",
-      "src/apps/chats/tools/karaokeHandler.ts",
-      "src/apps/finder/hooks/useFileSystem.ts",
-      "src/apps/internet-explorer/hooks/useInternetExplorerLogic.ts",
-      "src/apps/photo-booth/hooks/usePhotoBoothLogic.ts",
-      "src/apps/pc/hooks/usePcLogic.ts",
-      "src/utils/prefetch.ts",
-    ];
+  test("client code does not use raw console.log or console.debug outside logger sinks", () => {
+    const allowedFiles = new Set(["src/utils/debug.ts", "src/utils/logger.ts"]);
+    const offenders = listSourceFiles("src")
+      .filter((file) => !allowedFiles.has(file))
+      .flatMap((file) => {
+        const source = readSource(file);
+        return ["console.log", "console.debug"]
+          .filter((needle) => source.includes(needle))
+          .map((needle) => `${file}: ${needle}`);
+      });
 
-    for (const file of files) {
-      expect(readSource(file)).not.toContain("console.log");
-    }
+    expect(offenders).toEqual([]);
+  });
+
+  test("legacy debug helper is not imported by feature code", () => {
+    const offenders = listSourceFiles("src").flatMap((file) => {
+      const source = readSource(file);
+      if (!source.includes("@/utils/debug")) return [];
+      if (
+        file === "src/utils/logger.ts" ||
+        file === "src/stores/useDisplaySettingsStore.ts"
+      ) {
+        return [];
+      }
+      return [file];
+    });
+
+    expect(offenders).toEqual([]);
   });
 
   test("high-risk payload logs stay summarized", () => {

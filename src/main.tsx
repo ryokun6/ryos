@@ -87,7 +87,7 @@ const handlePreloadError = (event: Event) => {
 
   isPreloadReloading = true;
   markStaleReload();
-  console.log("[ryOS] Stale chunk detected — clearing caches and reloading...");
+  console.warn("[ryOS] Stale chunk detected — clearing caches and reloading...");
 
   const doNavigate = () => {
     const url = new URL(window.location.href);

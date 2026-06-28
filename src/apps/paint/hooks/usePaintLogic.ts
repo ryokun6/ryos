@@ -16,6 +16,9 @@ import type { PaintInitialData } from "../../base/types";
 import { emitFileSaved } from "@/utils/appEventBus";
 import { PAINT_ANALYTICS, track } from "@/utils/analytics";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("Paint");
 
 interface PaintCanvasHandle {
   undo: () => void;
@@ -136,11 +139,16 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
   useEffect(() => {
     if (initialData?.path && initialData?.content && canvasRef.current) {
       const { path, content } = initialData;
-      console.log("[Paint] Loading content from initialData:", path);
+      log.debug("Loading content from initialData", { path });
 
       if (content instanceof Blob) {
         const blobUrl = URL.createObjectURL(content);
-        console.log("[Paint] Created Blob URL from initialData:", blobUrl);
+        log.debug("Created Blob URL from initialData", {
+          path,
+          hasBlobUrl: Boolean(blobUrl),
+          blobSize: content.size,
+          blobType: content.type,
+        });
 
         if (lastConsumedBlobUrl.current) {
           URL.revokeObjectURL(lastConsumedBlobUrl.current);
@@ -409,7 +417,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
         const blob = await readImageBlobContent(currentFilePath);
         if (blob) {
           const blobUrl = URL.createObjectURL(blob);
-          console.log("[Paint] Loading persisted file", currentFilePath);
+          log.debug("Loading persisted file", { path: currentFilePath });
           handleFileOpen(currentFilePath, blobUrl);
           setInitialFileLoaded(true);
         } else {

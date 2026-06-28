@@ -12,6 +12,9 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("TTS");
 
 /**
  * Hook that turns short text chunks into speech and queues them in the same
@@ -102,7 +105,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     ctxRef.current = getAudioContext();
     // Detect context change and reset timeline
     if (ctxRef.current !== lastCtxRef.current) {
-      console.debug("[TTS] AudioContext changed, resetting timeline");
+      log.debug("AudioContext changed; resetting timeline");
       lastCtxRef.current = ctxRef.current;
       nextStartRef.current = ctxRef.current.currentTime;
     }
@@ -245,7 +248,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       scheduleChainRef.current = scheduleChainRef.current.then(async () => {
         // Check if stop was called while this chunk was waiting in the queue
         if (isStoppedRef.current) {
-          console.debug("TTS queue stopped, skipping scheduled chunk.");
+          log.debug("Queue stopped; skipping scheduled chunk");
           return;
         }
 
@@ -312,7 +315,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
   const stop = useCallback(() => {
-    console.debug("Stopping TTS queue...");
+    log.debug("Stopping TTS queue");
     isStoppedRef.current = true; // Signal to pending operations to stop
 
     controllersRef.current.forEach((c) => c.abort());

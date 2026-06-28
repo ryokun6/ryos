@@ -18,6 +18,9 @@ import {
 } from "../windowConfig";
 import { useShallow } from "zustand/react/shallow";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("InfiniteMac");
 
 // Re-export types and presets for consumers
 export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
@@ -285,12 +288,12 @@ export function useInfiniteMacLogic({
           }
         }
       } catch (e) {
-        console.log("Screenshot: Canvas fallback failed", e);
+        log.debug("Screenshot canvas fallback failed", e);
       }
     }
 
     // If all else fails, show helpful message
-    console.log("Screenshot: Unable to capture. Screen data not available from emulator.");
+    log.debug("Screenshot unavailable from emulator screen data");
     alert(t("apps.infinite-mac.screenshotUnavailable", "Screenshot not available. Use your browser's screenshot tool (Cmd+Shift+4 on Mac, Win+Shift+S on Windows)."));
   }, [selectedPreset, t]);
 

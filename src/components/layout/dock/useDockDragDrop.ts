@@ -3,6 +3,9 @@ import type { AppId } from "@/config/appRegistry";
 import { appRegistry } from "@/config/appRegistry";
 import { PROTECTED_DOCK_ITEMS, type DockItem } from "@/stores/useDockStore";
 import type { FileSystemItem } from "@/stores/useFilesStore";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("DockDragDrop");
 
 const REORDER_DELAY = 150;
 const REORDER_COOLDOWN = 300;
@@ -107,7 +110,6 @@ export function useDockDragDrop({
         }
 
         const data = JSON.parse(jsonData);
-        console.log("[Dock] Drop data:", data);
 
         const { path, name, appId, aliasType, aliasTarget } = data;
 
@@ -134,11 +136,15 @@ export function useDockDragDrop({
           };
         }
 
-        console.log("[Dock] Adding item:", newItem, "at index:", dropIndex);
+        log.debug("Adding dropped item", {
+          itemType: newItem?.type,
+          hasPath: Boolean(newItem && "path" in newItem && newItem.path),
+          dropIndex,
+        });
 
         if (newItem) {
           const added = addDockItem(newItem, dropIndex);
-          console.log("[Dock] Item added:", added);
+          log.debug("Dropped item add result", { added });
         }
       } catch (err) {
         console.warn("[Dock] Failed to handle drop:", err);

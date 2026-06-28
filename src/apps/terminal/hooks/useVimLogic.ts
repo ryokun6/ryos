@@ -6,11 +6,14 @@ import type {
   SetStateAction,
 } from "react";
 import { useTerminalStoreShallow } from "@/stores/useTerminalStore";
+import { createClientLogger } from "@/utils/logger";
 import type {
   CommandHistory,
   SaveFileData,
   TerminalFileItem,
 } from "../types";
+
+const log = createClientLogger("Terminal");
 
 interface UseVimLogicOptions {
   currentCommand: string;
@@ -178,7 +181,10 @@ export const useVimLogic = ({
         type: "text",
       });
 
-      console.log(`Saved vim file ${vimFileToSave.name} to ${fileObj.path}`);
+      log.debug("Saved vim file", {
+        name: vimFileToSave.name,
+        path: fileObj.path,
+      });
     } catch (error) {
       const err = error as Error;
       console.error(`Error saving vim file: ${err.message || "Unknown error"}`);

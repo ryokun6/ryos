@@ -6,6 +6,9 @@ import {
   getRealtimeWebSocketUrl,
 } from "@/utils/runtimeConfig";
 import { getApiUrl } from "@/utils/platform";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("PusherClient");
 
 type ChannelEventHandler = {
   bivarianceHack(data: unknown): void;
@@ -974,6 +977,6 @@ if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     globalWithPusher.__pusherChannelRefCounts = {};
     globalWithPusher.__pusherChannelRecoveryWarnings = {};
-    console.debug("[pusherClient] HMR: keeping connection alive");
+    log.debug("HMR: keeping connection alive");
   });
 }

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef } from "react";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("Sound");
 
 // Mobile detection for performance tuning
 const isMobileDevice =
@@ -170,7 +173,10 @@ export function useSound(soundPath: string, volume: number = 0.3) {
 
       // If too many concurrent sources are active, skip to avoid audio congestion
       if (activeSources.size > MAX_CONCURRENT_SOURCES) {
-        console.debug("Skipping sound – too many concurrent sources");
+        log.debug("Skipping sound; too many concurrent sources", {
+          activeSourceCount: activeSources.size,
+          maxConcurrentSources: MAX_CONCURRENT_SOURCES,
+        });
         return null;
       }
 

@@ -41,6 +41,9 @@ import {
   onAppletUpdated,
   type AppletUpdatedEventDetail,
 } from "@/utils/appEventBus";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("AppletViewer");
 
 interface UseAppletViewerLogicProps {
   instanceId?: string;
@@ -616,7 +619,7 @@ export function useAppletViewerLogic({
   ]);
 
   useEffect(() => {
-    console.log("[AppletViewer] Loaded applet:", {
+    log.debug("Loaded applet", {
       path: appletPath,
       contentLength: htmlContent.length,
       hasContent: !!htmlContent,

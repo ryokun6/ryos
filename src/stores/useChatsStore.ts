@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { debug } from "@/utils/debug";
+import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
@@ -33,6 +33,8 @@ import {
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
+
+const debug = createClientLogger("ChatsStore").debug;
 
 // Username recovery - plain text, username is public info
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";

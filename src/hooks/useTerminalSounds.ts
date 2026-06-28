@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useEventListener } from "@/hooks/useEventListener";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("TerminalSounds");
 
 type SoundType = "command" | "error" | "aiResponse";
 type TimeMode = "past" | "future" | "now";
@@ -494,7 +497,7 @@ export function useTerminalSounds() {
           padSynth.triggerAttackRelease(fifthNote, "2n");
         }, 200); // Gentle stagger
       } catch (error) {
-        console.debug("Error playing pad chord:", error);
+        log.debug("Error playing pad chord", error);
       }
     }
 
@@ -555,7 +558,7 @@ export function useTerminalSounds() {
           }
         }
       } catch (error) {
-        console.debug("Error playing swell pad:", error);
+        log.debug("Error playing swell pad", error);
       }
     }
 
@@ -713,7 +716,7 @@ export function useTerminalSounds() {
       }
       timeoutIds.push(timeoutId);
     } catch (error) {
-      console.debug("Error playing melody note:", error);
+      log.debug("Error playing melody note", error);
     }
   }, [generateMelodySequence]);
 
@@ -784,7 +787,7 @@ export function useTerminalSounds() {
           mooSynthRef.current = null;
         }
 
-        console.debug("Tone context was closed – created a new context and cleared synth cache");
+        log.debug("Tone context was closed; created a new context and cleared synth cache");
       } catch (err) {
         console.error("Failed to reset Tone context:", err);
       }
@@ -810,7 +813,7 @@ export function useTerminalSounds() {
         }
         return true;
       } catch (error) {
-        console.debug("Could not initialize Tone.js:", error);
+          log.debug("Could not initialize Tone.js", error);
         return false;
       }
     }
@@ -843,7 +846,7 @@ export function useTerminalSounds() {
           synth.triggerAttackRelease(preset.note, preset.duration, now);
           lastSoundTimeRef.current = now;
         } catch (error) {
-          console.debug("Skipping sound due to timing", error);
+          log.debug("Skipping sound due to timing", error);
         }
       }
     },
@@ -874,7 +877,7 @@ export function useTerminalSounds() {
         try {
           await Tone.context.resume();
         } catch (error) {
-          console.debug("Could not resume audio context:", error);
+          log.debug("Could not resume audio context", error);
           return;
         }
       }
@@ -920,7 +923,7 @@ export function useTerminalSounds() {
             (synth as Tone.MonoSynth).triggerRelease();
           }
         } catch (error) {
-          console.debug("Error releasing synth:", error);
+          log.debug("Error releasing synth", error);
         }
       }
     });
@@ -930,7 +933,7 @@ export function useTerminalSounds() {
       try {
         elevatorMusicRef.current.melodySequencer.synth.triggerRelease();
       } catch (error) {
-        console.debug("Error releasing melody synth:", error);
+        log.debug("Error releasing melody synth", error);
       }
     }
 
@@ -953,7 +956,7 @@ export function useTerminalSounds() {
       try {
         dingSynthRef.current.triggerAttackRelease("C6", "16n", now);
       } catch (error) {
-        console.debug("Error playing ding sound:", error);
+      log.debug("Error playing ding sound", error);
       }
     }
   }, [isMuted, initializeToneOnce]);
@@ -970,7 +973,7 @@ export function useTerminalSounds() {
       try {
         mooSynthRef.current.triggerAttackRelease(MOO_PRESET.note, MOO_PRESET.duration, now);
       } catch (error) {
-        console.debug("Error playing moo sound:", error);
+      log.debug("Error playing moo sound", error);
       }
     }
   }, [isMuted, initializeToneOnce]);
