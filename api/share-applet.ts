@@ -20,6 +20,10 @@ const RATE_LIMITS = {
 };
 
 const appletShareKey = (id: string): string => redisKeys.media.appletShare(id);
+const appletShareIndexKey = (): string => redisKeys.media.appletShareIndex();
+const APPLET_SHARE_KEY_PREFIX = "media:applet:share:";
+const APPLET_SHARE_SCAN_PATTERN = `${APPLET_SHARE_KEY_PREFIX}*`;
+const SHARE_APPLET_LIST_LIMIT = 100;
 
 // Generate unique ID for applets
 const generateId = (): string => generateAuthToken().substring(0, 32);
@@ -68,25 +72,44 @@ export default apiHandler<Record<string, unknown>>(
       }
       
       if (listParam === "true") {
+        const seenAppletIds = new Set<string>();
+        const indexedAppletIds = await redis.zrange(
+          appletShareIndexKey(),
+          -SHARE_APPLET_LIST_LIMIT,
+          -1
+        );
         const appletIds: string[] = [];
+        for (const id of [...indexedAppletIds].reverse()) {
+          if (!seenAppletIds.has(id)) {
+            seenAppletIds.add(id);
+            appletIds.push(id);
+          }
+        }
         let cursor = 0;
 
         do {
-          const [newCursor, keys] = await redis.scan(cursor, { match: "media:applet:share:*", count: 100 });
+          const [newCursor, keys] = await redis.scan(cursor, { match: APPLET_SHARE_SCAN_PATTERN, count: 100 });
           cursor = parseInt(newCursor as unknown as string, 10);
           for (const key of keys) {
-            const id = key.slice("media:applet:share:".length);
-            if (id) appletIds.push(decodeURIComponent(id));
+            const id = key.slice(APPLET_SHARE_KEY_PREFIX.length);
+            if (!id) continue;
+            const decodedId = decodeURIComponent(id);
+            if (!seenAppletIds.has(decodedId)) {
+              seenAppletIds.add(decodedId);
+              appletIds.push(decodedId);
+            }
           }
-        } while (cursor !== 0);
+        } while (cursor !== 0 && appletIds.length < SHARE_APPLET_LIST_LIMIT);
         
         const applets: { id: string; title?: string; name?: string; icon?: string; createdAt: number; featured: boolean; createdBy?: string }[] = [];
         
         if (appletIds.length > 0) {
-          const uniqueAppletIds = [...new Set(appletIds)];
-          
-          for (const appletId of uniqueAppletIds) {
-            const appletData = await redis.get(appletShareKey(appletId));
+          const uniqueAppletIds = appletIds.slice(0, SHARE_APPLET_LIST_LIMIT);
+          const appletValues = await redis.mget(...uniqueAppletIds.map(appletShareKey));
+
+          for (let index = 0; index < uniqueAppletIds.length; index++) {
+            const appletId = uniqueAppletIds[index];
+            const appletData = appletValues[index];
             if (!appletData) continue;
             try {
               const parsed = typeof appletData === "string" ? JSON.parse(appletData) : appletData;
@@ -223,6 +246,10 @@ export default apiHandler<Record<string, unknown>>(
       };
 
       await redis.set(key, JSON.stringify(appletData));
+      await redis.zadd(appletShareIndexKey(), {
+        score: appletData.createdAt,
+        member: id,
+      });
       const shareUrl = `${getAppPublicOrigin(origin)}/applet-viewer/${id}`;
 
       logger.info("Saved applet", { id, isUpdate });
@@ -264,6 +291,9 @@ export default apiHandler<Record<string, unknown>>(
 
       const key = appletShareKey(id);
       const deleted = await redis.del(key);
+      if (deleted > 0) {
+        await redis.zrem(appletShareIndexKey(), id);
+      }
 
       if (deleted === 0) {
         logger.response(404, Date.now() - startTime);
