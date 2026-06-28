@@ -110,6 +110,55 @@ export interface RedisLike {
   ): Promise<T>;
 }
 
+export interface IncrementWithExpiryResult {
+  count: number;
+  ttlSeconds: number;
+}
+
+const INCREMENT_WITH_EXPIRY_SCRIPT = `
+-- ryos-increment-with-expiry
+local count = redis.call("INCR", KEYS[1])
+local ttl = redis.call("TTL", KEYS[1])
+if count == 1 or ttl < 0 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+  ttl = redis.call("TTL", KEYS[1])
+end
+return { count, ttl }
+`;
+
+/**
+ * Increment a counter and attach its initial TTL in one Redis operation.
+ * Lua keeps the behavior atomic for both Upstash REST and standard Redis.
+ */
+export async function incrementWithExpiry(
+  redis: Pick<RedisLike, "eval">,
+  key: string,
+  ttlSeconds: number
+): Promise<IncrementWithExpiryResult> {
+  if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0) {
+    throw new Error("Counter TTL must be a positive integer.");
+  }
+
+  const result = await redis.eval<unknown>(
+    INCREMENT_WITH_EXPIRY_SCRIPT,
+    [key],
+    [ttlSeconds]
+  );
+  if (
+    !Array.isArray(result) ||
+    result.length !== 2 ||
+    !Number.isFinite(Number(result[0])) ||
+    !Number.isFinite(Number(result[1]))
+  ) {
+    throw new Error("Redis returned an invalid counter result.");
+  }
+
+  return {
+    count: Number(result[0]),
+    ttlSeconds: Number(result[1]),
+  };
+}
+
 const redisClientCache = globalThis as typeof globalThis & {
   __ryosStandardRedis?: IORedis;
 };

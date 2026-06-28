@@ -134,6 +134,30 @@ export const mergeFetchedRoomMessages = (
   );
 };
 
+export const reconcileCanonicalRoomMessage = (
+  existing: ChatMessage[],
+  tempId: string,
+  canonical: ApiMessage
+): ChatMessage[] => {
+  const normalized: ChatMessage = {
+    ...canonical,
+    content: decodeHtmlEntities(String(canonical.content || "")),
+    timestamp: normalizeChatTimestamp(canonical.timestamp),
+  };
+  return capRoomMessages(
+    existing
+      .filter(
+        (message) =>
+          message.id !== tempId &&
+          message.id !== normalized.id &&
+          (!normalized.clientId ||
+            message.clientId !== normalized.clientId)
+      )
+      .concat(normalized)
+      .sort((a, b) => a.timestamp - b.timestamp)
+  );
+};
+
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
 const ROOMS_FETCH_TTL_MS = 1_500;
@@ -319,8 +343,50 @@ const getInitialState = (): Omit<
   };
 };
 
-const STORE_VERSION = 3;
+export const CHATS_STORE_VERSION = 4;
 const STORE_NAME = "ryos:chats";
+
+function isPersistedChatMessage(value: unknown): value is ChatMessage {
+  if (!value || typeof value !== "object") return false;
+  const message = value as Partial<ChatMessage>;
+  return (
+    typeof message.id === "string" &&
+    typeof message.roomId === "string" &&
+    typeof message.username === "string" &&
+    typeof message.content === "string" &&
+    typeof message.timestamp === "number" &&
+    Number.isFinite(message.timestamp) &&
+    (message.clientId === undefined || typeof message.clientId === "string")
+  );
+}
+
+/**
+ * Version 4 keeps valid local room history from older stores, caps each room
+ * to the server retention limit, and drops stale auth fields that used to be
+ * persisted before auth moved behind the session boundary.
+ */
+export function migrateChatsPersistedState(
+  persistedState: unknown,
+  _version: number
+): Record<string, unknown> {
+  if (!persistedState || typeof persistedState !== "object") return {};
+  const migrated = { ...(persistedState as Record<string, unknown>) };
+  const rawRoomMessages = migrated.roomMessages;
+  const roomMessages: Record<string, ChatMessage[]> = {};
+  if (rawRoomMessages && typeof rawRoomMessages === "object") {
+    for (const [roomId, messages] of Object.entries(rawRoomMessages)) {
+      if (!Array.isArray(messages)) continue;
+      roomMessages[roomId] = capRoomMessages(
+        messages.filter(isPersistedChatMessage)
+      );
+    }
+  }
+  migrated.roomMessages = roomMessages;
+  delete migrated.username;
+  delete migrated.isAuthenticated;
+  delete migrated.hasPassword;
+  return migrated;
+}
 
 export const useChatsStore = create<ChatsStoreState>()(
   persist(
@@ -885,15 +951,24 @@ export const useChatsStore = create<ChatsStoreState>()(
           get().addMessageToRoom(roomId, optimisticMessage);
 
           try {
-            await sendRoomMessageApi(roomId, {
+            const response = await sendRoomMessageApi(roomId, {
               content: content.trim(),
               clientId,
             });
+            set((state) => ({
+              roomMessages: {
+                ...state.roomMessages,
+                [roomId]: reconcileCanonicalRoomMessage(
+                  state.roomMessages[roomId] || [],
+                  tempId,
+                  response.message
+                ),
+              },
+            }));
             track(CHAT_ANALYTICS.TEXT_MESSAGE, {
               ...getTextAnalytics(content.trim()),
               source: "room_store",
             });
-            // Real message will be added via Pusher, which will replace the optimistic one
             return { ok: true };
           } catch (error) {
             // Remove optimistic message on failure
@@ -932,7 +1007,8 @@ export const useChatsStore = create<ChatsStoreState>()(
     },
     {
       name: STORE_NAME,
-      version: STORE_VERSION,
+      version: CHATS_STORE_VERSION,
+      migrate: migrateChatsPersistedState,
       // Write-behind storage: chat history (aiMessages + capped roomMessages)
       // used to be JSON.stringify'd and written synchronously on every
       // appended message. Serialization now happens once per quiet window.

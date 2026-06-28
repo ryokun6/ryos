@@ -17,6 +17,10 @@ import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
 export type StorageBackend = "vercel-blob" | "s3";
 
+export type StorageOwnershipConfig =
+  | { provider: "vercel-blob" }
+  | { provider: "s3"; bucket: string };
+
 export interface StorageObjectMetadata {
   size: number;
   contentType: string | null;
@@ -433,6 +437,56 @@ export function getStorageBackend(): StorageBackend {
   throw new Error(
     "Missing storage configuration. Set BLOB_READ_WRITE_TOKEN for Vercel Blob or S3_BUCKET + S3_REGION + S3_ENDPOINT + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY for S3-compatible storage."
   );
+}
+
+function getStorageOwnershipConfig(): StorageOwnershipConfig {
+  const provider = getStorageBackend();
+  if (provider === "vercel-blob") {
+    return { provider };
+  }
+
+  const config = getS3Config();
+  if (!config) {
+    throw new Error("Missing S3-compatible storage configuration."); // pragma: allowlist secret
+  }
+  return { provider, bucket: config.bucket };
+}
+
+/**
+ * Return a deletion target only when the registered URL belongs to the
+ * configured provider and exactly matches the expected object path.
+ */
+export function resolveOwnedStorageObjectUrl(
+  storageUrl: string,
+  expectedPathname: string,
+  config: StorageOwnershipConfig = getStorageOwnershipConfig()
+): string | null {
+  const pathname = normalizePathname(expectedPathname);
+  if (config.provider === "s3") {
+    try {
+      const parsed = parseS3StorageUrl(storageUrl);
+      return parsed.bucket === config.bucket && parsed.key === pathname
+        ? `s3://${config.bucket}/${pathname}`
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const parsed = new URL(storageUrl);
+    const isVercelBlobHost =
+      parsed.protocol === "https:" &&
+      parsed.hostname.endsWith(".blob.vercel-storage.com");
+    return isVercelBlobHost &&
+      parsed.pathname === `/${pathname}` &&
+      parsed.search === "" &&
+      parsed.hash === ""
+      ? parsed.toString()
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function createStorageUploadDescriptor(

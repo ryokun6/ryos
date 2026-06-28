@@ -1098,7 +1098,7 @@ export class CloudSyncEngine {
       emitProgress(0);
 
       for (let index = 0; index < downloads.length; index += 1) {
-        const { op, contentHash, size } = downloads[index];
+        const { op, size } = downloads[index];
         const downloadUrl = urls[index];
         if (!downloadUrl) {
           throw new Error(`Blob download URL missing for ${op.k}`);

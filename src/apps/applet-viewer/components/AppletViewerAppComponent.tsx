@@ -38,7 +38,7 @@ export function AppletViewerAppComponent({
     windowTitle,
     injectAppletAuthScript,
     ensureMacFonts,
-    sendAuthPayload,
+    handleAppletIframeLoad,
     focusWindow,
     handleExportAsApp,
     handleExportAsHtml,
@@ -174,7 +174,9 @@ export function AppletViewerAppComponent({
                   height: "calc(100% + 1px)",
                 }}
                 onLoad={() =>
-                  sendAuthPayload(iframeRef.current?.contentWindow || null)
+                  handleAppletIframeLoad(
+                    iframeRef.current?.contentWindow || null
+                  )
                 }
                 onFocus={focusWindow}
                 onFocusCapture={focusWindow}

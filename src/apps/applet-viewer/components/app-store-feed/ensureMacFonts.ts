@@ -1,11 +1,9 @@
-import {
-  APPLET_AUTH_BRIDGE_SCRIPT,
-} from "@/utils/appletAuthBridge";
+import { createAppletAuthBridgeScript } from "@/utils/appletAuthBridge";
 
 export function ensureMacFonts(
   content: string,
   isMacTheme: boolean,
-  trusted: boolean
+  bridgeNonce: string | null
 ): string {
   if (!content) return content;
 
@@ -18,7 +16,9 @@ export function ensureMacFonts(
   </style>`
     : "";
 
-  const authBridge = trusted ? APPLET_AUTH_BRIDGE_SCRIPT : "";
+  const authBridge = bridgeNonce
+    ? createAppletAuthBridgeScript(bridgeNonce)
+    : "";
   const injectedContent = `${authBridge}${preload}${fontStyle}`;
 
   const headCloseIdx = content.toLowerCase().lastIndexOf("</head>");

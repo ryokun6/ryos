@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
 } from "react";
 import {
   ArrowDown,
@@ -38,6 +39,7 @@ import {
   subscribeConsoleCapture,
   type ConsoleLogEntry,
   type ConsoleLogLevel,
+  type ConsoleSegmentStyle,
 } from "@/utils/consoleCapture";
 import { osCardClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
@@ -103,6 +105,13 @@ function formatTime(timestamp: number): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
     d.getSeconds()
   )}.${pad(d.getMilliseconds(), 3)}`;
+}
+
+function getSegmentStyle(
+  style: ConsoleSegmentStyle | undefined
+): CSSProperties | undefined {
+  if (!style) return undefined;
+  return { ...style };
 }
 
 function findFirstVisibleIndex(
@@ -671,7 +680,7 @@ export function DebugLogOverlay() {
                           ? entry.styledSegments.map((segment, segmentIndex) => (
                               <span
                                 key={`${entry.id}-${segmentIndex}`}
-                                style={segment.style}
+                                style={getSegmentStyle(segment.style)}
                               >
                                 {segment.text}
                               </span>

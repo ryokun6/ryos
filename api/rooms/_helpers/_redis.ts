@@ -251,6 +251,121 @@ export async function addMessage(
   await client.ltrim(messagesKey, 0, ROOM_MESSAGE_HISTORY_LIMIT - 1);
 }
 
+const MESSAGE_IDEMPOTENCY_PENDING_TTL_SECONDS = 15;
+const MESSAGE_IDEMPOTENCY_RESULT_TTL_SECONDS = 24 * 60 * 60;
+
+export interface MessageIdempotencyClaim {
+  key: string;
+  marker: string;
+}
+
+export type MessageIdempotencyClaimResult =
+  | { status: "claimed"; claim: MessageIdempotencyClaim }
+  | { status: "existing"; message: Message }
+  | { status: "pending" };
+
+function parseIdempotentMessage(data: unknown): Message | null {
+  const message = parseMessageData(data);
+  return message &&
+    typeof message.id === "string" &&
+    typeof message.roomId === "string" &&
+    typeof message.username === "string"
+    ? message
+    : null;
+}
+
+export async function claimMessageIdempotency(
+  roomId: string,
+  username: string,
+  clientId: string,
+  client: Redis = createRedisClient()
+): Promise<MessageIdempotencyClaimResult> {
+  const key = redisKeys.chat.messageIdempotency(roomId, username, clientId);
+  const marker = JSON.stringify({ pending: generateId() });
+  const acquired = await client.set(key, marker, {
+    ex: MESSAGE_IDEMPOTENCY_PENDING_TTL_SECONDS,
+    nx: true,
+  });
+  if (acquired) {
+    return { status: "claimed", claim: { key, marker } };
+  }
+
+  const current = await client.get(key);
+  const existing = parseIdempotentMessage(current);
+  return existing
+    ? { status: "existing", message: existing }
+    : { status: "pending" };
+}
+
+export async function waitForIdempotentMessage(
+  roomId: string,
+  username: string,
+  clientId: string,
+  client: Redis = createRedisClient()
+): Promise<Message | null> {
+  const key = redisKeys.chat.messageIdempotency(roomId, username, clientId);
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const current = await client.get(key);
+    const message = parseIdempotentMessage(current);
+    if (message) return message;
+    if (current === null) return null;
+    await new Promise<void>((resolve) => setTimeout(resolve, 25));
+  }
+  return null;
+}
+
+export async function commitIdempotentMessage(
+  roomId: string,
+  message: Message,
+  claim: MessageIdempotencyClaim,
+  client: Redis = createRedisClient()
+): Promise<{ created: boolean; message: Message }> {
+  const serialized = JSON.stringify(message);
+  const result = await client.eval<[number, string]>(
+    `
+      local current = redis.call("GET", KEYS[2])
+      if current and current ~= ARGV[1] then
+        return {0, current}
+      end
+      if current ~= ARGV[1] then
+        return {-1, ""}
+      end
+      redis.call("LPUSH", KEYS[1], ARGV[2])
+      redis.call("LTRIM", KEYS[1], 0, tonumber(ARGV[3]) - 1)
+      redis.call("SET", KEYS[2], ARGV[2], "EX", tonumber(ARGV[4]))
+      return {1, ARGV[2]}
+    `,
+    [redisKeys.chat.roomMessages(roomId), claim.key],
+    [
+      claim.marker,
+      serialized,
+      ROOM_MESSAGE_HISTORY_LIMIT,
+      MESSAGE_IDEMPOTENCY_RESULT_TTL_SECONDS,
+    ]
+  );
+  const canonical = parseIdempotentMessage(result[1]);
+  if (!canonical) {
+    throw new Error("Message idempotency claim expired before commit");
+  }
+  return { created: result[0] === 1, message: canonical };
+}
+
+export async function releaseMessageIdempotencyClaim(
+  claim: MessageIdempotencyClaim,
+  client: Redis = createRedisClient()
+): Promise<void> {
+  await client.eval(
+    `
+      if redis.call("GET", KEYS[1]) == ARGV[1] then
+        return redis.call("DEL", KEYS[1])
+      end
+      return 0
+    `,
+    [claim.key],
+    [claim.marker]
+  );
+}
+
 /**
  * Delete a message from a room
  */

@@ -10,11 +10,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   APPLET_AI_PATH,
-  APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
+  AppletBridgeHost,
+  createAppletAuthBridgeScript,
   getAppletSandboxAttribute,
   getServerAttestedAppletAuthor,
-  handleAppletBridgeMessage,
   isTrustedAppletAuthor,
   parseAppletAiBridgeRequest,
   TRUSTED_APPLET_AUTHOR,
@@ -136,66 +136,169 @@ describe("applet AI parent bridge", () => {
         request: { ...request.request, method: "GET" },
       })
     ).toBeNull();
-    expect(APPLET_AUTH_BRIDGE_SCRIPT).toContain(
-      'window.parent.postMessage({'
-    );
-    expect(APPLET_AUTH_BRIDGE_SCRIPT).toContain('action: "ai-request"');
+    const script = createAppletAuthBridgeScript("document-capability");
+    expect(script).toContain('action: "connect"');
+    expect(script).toContain("new MessageChannel()");
+    expect(script).toContain("port.postMessage({");
+    expect(script.match(/window\.parent\.postMessage/g)).toHaveLength(1);
   });
 
-  test("rejects a valid-looking request from an unregistered window", async () => {
+  test("rejects a connection from an unregistered window", () => {
     let fetchCount = 0;
     const untrustedWindow = { postMessage() {} } as unknown as Window;
     const trustedWindow = { postMessage() {} } as unknown as Window;
-    const event = new MessageEvent("message", { data: request });
+    const host = new AppletBridgeHost(async () => {
+      fetchCount += 1;
+      return new Response();
+    });
+    host.prepareDocument("nonce");
+    host.handleIframeLoad(trustedWindow);
+    const channel = new MessageChannel();
+    const event = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
     Object.defineProperty(event, "source", { value: untrustedWindow });
 
-    const handled = await handleAppletBridgeMessage({
-      event,
-      trustedWindows: [trustedWindow],
-      fetchImpl: async () => {
-        fetchCount += 1;
-        return new Response();
-      },
-    });
-
-    expect(handled).toBe(false);
+    expect(host.handleConnect(event)).toBe(false);
     expect(fetchCount).toBe(0);
+    channel.port1.close();
+    channel.port2.close();
   });
 
-  test("performs a credentialed fetch for a registered iframe", async () => {
-    const posted: unknown[] = [];
-    const trustedWindow = {
-      postMessage(message: unknown) {
-        posted.push(message);
-      },
-    } as unknown as Window;
-    const event = new MessageEvent("message", { data: request });
-    Object.defineProperty(event, "source", { value: trustedWindow });
+  test("performs a credentialed fetch over the document port", async () => {
+    const trustedWindow = {} as Window;
     let receivedUrl = "";
     let receivedCredentials: RequestCredentials | undefined;
-
-    const handled = await handleAppletBridgeMessage({
-      event,
-      trustedWindows: [trustedWindow],
-      fetchImpl: async (input, init) => {
+    const host = new AppletBridgeHost(
+      async (input, init) => {
         receivedUrl = String(input);
         receivedCredentials = init?.credentials;
         return new Response('{"text":"ok"}', {
           status: 200,
           headers: { "content-type": "application/json" },
         });
+      }
+    );
+    host.prepareDocument("nonce");
+    host.handleIframeLoad(trustedWindow);
+    const channel = new MessageChannel();
+    const connectEvent = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
       },
+      ports: [channel.port2],
     });
+    Object.defineProperty(connectEvent, "source", { value: trustedWindow });
+    expect(host.handleConnect(connectEvent)).toBe(true);
 
-    expect(handled).toBe(true);
+    const response = new Promise<Record<string, unknown>>((resolve) => {
+      channel.port1.onmessage = (event) => resolve(event.data);
+      channel.port1.start();
+    });
+    channel.port1.postMessage(request);
+    const posted = await response;
     expect(receivedUrl).toBe(APPLET_AI_PATH);
     expect(receivedCredentials).toBe("include");
-    expect(posted).toHaveLength(1);
-    expect(posted[0]).toMatchObject({
+    expect(posted).toMatchObject({
       type: APPLET_AUTH_MESSAGE_TYPE,
       action: "ai-response",
       requestId: "request-1",
       status: 200,
     });
+    host.invalidateAll();
+    channel.port1.close();
+  });
+
+  test("navigation revokes the port and cannot re-authorize the WindowProxy", async () => {
+    const trustedWindow = {} as Window;
+    let fetchCount = 0;
+    const host = new AppletBridgeHost(async () => {
+      fetchCount += 1;
+      return new Response('{"text":"secret"}');
+    });
+    host.prepareDocument("initial-srcdoc-nonce");
+    host.handleIframeLoad(trustedWindow);
+
+    const trustedChannel = new MessageChannel();
+    const trustedConnect = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "initial-srcdoc-nonce",
+      },
+      ports: [trustedChannel.port2],
+    });
+    Object.defineProperty(trustedConnect, "source", { value: trustedWindow });
+    expect(host.handleConnect(trustedConnect)).toBe(true);
+
+    // The WindowProxy is unchanged, but this second load is a new document.
+    host.handleIframeLoad(trustedWindow);
+
+    const attackerChannel = new MessageChannel();
+    const attackerConnect = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "initial-srcdoc-nonce",
+      },
+      ports: [attackerChannel.port2],
+    });
+    Object.defineProperty(attackerConnect, "source", { value: trustedWindow });
+    expect(host.handleConnect(attackerConnect)).toBe(false);
+
+    attackerChannel.port1.postMessage(request);
+    await Bun.sleep(10);
+    expect(fetchCount).toBe(0);
+    trustedChannel.port1.close();
+    attackerChannel.port1.close();
+    attackerChannel.port2.close();
+  });
+
+  test("navigation aborts an in-flight fetch without returning its body", async () => {
+    const trustedWindow = {} as Window;
+    let releaseFetch: (() => void) | undefined;
+    let fetchSignal: AbortSignal | null = null;
+    const host = new AppletBridgeHost(async (_input, init) => {
+      fetchSignal = init?.signal || null;
+      await new Promise<void>((resolve) => {
+        releaseFetch = resolve;
+      });
+      return new Response('{"text":"credentialed secret"}');
+    });
+    host.prepareDocument("nonce");
+    host.handleIframeLoad(trustedWindow);
+
+    const channel = new MessageChannel();
+    const connectEvent = new MessageEvent("message", {
+      data: {
+        type: APPLET_AUTH_MESSAGE_TYPE,
+        action: "connect",
+        nonce: "nonce",
+      },
+      ports: [channel.port2],
+    });
+    Object.defineProperty(connectEvent, "source", { value: trustedWindow });
+    expect(host.handleConnect(connectEvent)).toBe(true);
+
+    let responseCount = 0;
+    channel.port1.onmessage = () => {
+      responseCount += 1;
+    };
+    channel.port1.start();
+    channel.port1.postMessage(request);
+    await Bun.sleep(0);
+    host.handleIframeLoad(trustedWindow);
+    expect(fetchSignal?.aborted).toBe(true);
+    releaseFetch?.();
+    await Bun.sleep(10);
+    expect(responseCount).toBe(0);
+    channel.port1.close();
   });
 });

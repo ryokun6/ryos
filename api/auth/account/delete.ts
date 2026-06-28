@@ -68,30 +68,34 @@ export default apiHandler<DeleteAccountRequest>(
     }
 
     // Per-user rate limit (limits brute forcing currentPassword via this route).
-    try {
-      const rlKey = RateLimit.makeKey([
-        "rl",
-        "auth",
-        "account",
-        "delete",
-        "user",
-        username,
-      ]);
-      const rl = await RateLimit.checkCounterLimit({
+    const rlKey = RateLimit.makeKey([
+      "rl",
+      "auth",
+      "account",
+      "delete",
+      "user",
+      username,
+    ]);
+    const rateLimit = await RateLimit.runFailClosedRateLimit(() =>
+      RateLimit.checkCounterLimit({
         key: rlKey,
         windowSeconds: DELETE_RL_WINDOW_SECONDS,
         limit: DELETE_RL_LIMIT,
+      })
+    );
+    if (!rateLimit.available) {
+      logger.error("Account delete rate limit unavailable", rateLimit.error);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({ error: "rate_limit_unavailable" });
+      return;
+    }
+    if (!rateLimit.result.allowed) {
+      res.setHeader("Retry-After", String(rateLimit.result.resetSeconds));
+      logger.response(429, Date.now() - startTime);
+      res.status(429).json({
+        error: "Too many deletion attempts. Please try again later.",
       });
-      if (!rl.allowed) {
-        res.setHeader("Retry-After", String(rl.resetSeconds));
-        logger.response(429, Date.now() - startTime);
-        res.status(429).json({
-          error: "Too many deletion attempts. Please try again later.",
-        });
-        return;
-      }
-    } catch (rateLimitError) {
-      logger.warn("Account delete rate limit check failed", rateLimitError);
+      return;
     }
 
     // Verify password when one is set.

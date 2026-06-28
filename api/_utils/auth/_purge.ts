@@ -18,7 +18,10 @@ import {
   getTelegramPendingLinkSession,
   unlinkTelegramAccountByUsername,
 } from "../telegram-link.js";
-import { deleteStoredObject } from "../storage.js";
+import {
+  deleteStoredObject,
+  resolveOwnedStorageObjectUrl,
+} from "../storage.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 export interface PurgeAccountResult {
@@ -30,6 +33,10 @@ export interface PurgeAccountResult {
 
 interface PurgeAccountOptions {
   deleteObject?: (storageUrl: string) => Promise<void>;
+  resolveObjectUrl?: (
+    storageUrl: string,
+    expectedPathname: string
+  ) => string | null;
 }
 
 function parseBlobStorageUrl(raw: unknown): string | null {
@@ -88,6 +95,8 @@ export async function purgeUserAccount(
   let deletedCount = 0;
   let objectStorageFailures = 0;
   const deleteObject = options.deleteObject ?? deleteStoredObject;
+  const resolveObjectUrl =
+    options.resolveObjectUrl ?? resolveOwnedStorageObjectUrl;
 
   // Read related records before deleting their reverse indexes.
   const record = await getStoredUserRecord(redis, normalized).catch(() => null);
@@ -107,11 +116,29 @@ export async function purgeUserAccount(
   const blobRegistry = await redis
     .hgetall<Record<string, unknown>>(blobRegistryKey)
     .catch(() => null);
-  const storageUrls = new Set(
-    Object.values(blobRegistry ?? {})
-      .map(parseBlobStorageUrl)
-      .filter((url): url is string => url !== null)
-  );
+  const storageUrls = new Set<string>();
+  for (const [digest, rawEntry] of Object.entries(blobRegistry ?? {})) {
+    if (!/^[0-9a-f]{64}$/.test(digest)) {
+      continue;
+    }
+    const registeredUrl = parseBlobStorageUrl(rawEntry);
+    if (!registeredUrl) {
+      continue;
+    }
+    let ownedUrl: string | null;
+    try {
+      ownedUrl = resolveObjectUrl(
+        registeredUrl,
+        `sync/${normalized}/blobs/${digest}.gz`
+      );
+    } catch {
+      objectStorageFailures += 1;
+      continue;
+    }
+    if (ownedUrl) {
+      storageUrls.add(ownedUrl);
+    }
+  }
   for (const storageUrl of storageUrls) {
     try {
       await deleteObject(storageUrl);

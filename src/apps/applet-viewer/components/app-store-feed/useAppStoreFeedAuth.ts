@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { handleAppletBridgeMessage } from "@/utils/appletAuthBridge";
+import { AppletBridgeHost } from "@/utils/appletAuthBridge";
 
 export function useAppStoreFeedAuth(
   feedRef: React.RefObject<HTMLDivElement | null>,
@@ -8,28 +8,29 @@ export function useAppStoreFeedAuth(
   appletContents: Map<string, string>
 ) {
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const sourceWindow = event.source as Window | null;
-      const iframes = feedRef.current?.querySelectorAll<HTMLIFrameElement>(
-        "iframe[data-ryos-trusted-applet='1']"
+    const host = new AppletBridgeHost();
+    const feed = feedRef.current;
+    const handleLoad = (event: Event) => {
+      if (!(event.target instanceof HTMLIFrameElement)) return;
+      const iframe = event.target;
+      host.handleIframeLoad(
+        iframe.contentWindow,
+        iframe.dataset.ryosTrustedApplet === "1"
+          ? iframe.dataset.ryosAppletNonce || null
+          : null
       );
-      const frameWindows: Window[] = [];
-      iframes?.forEach((iframe) => {
-        if (iframe.contentWindow) {
-          frameWindows.push(iframe.contentWindow);
-        }
-      });
+    };
+    feed?.addEventListener("load", handleLoad, true);
 
-      if (!sourceWindow) return;
-      void handleAppletBridgeMessage({
-        event,
-        trustedWindows: frameWindows,
-      });
+    const handleMessage = (event: MessageEvent) => {
+      host.handleConnect(event);
     };
 
     window.addEventListener("message", handleMessage);
     return () => {
       window.removeEventListener("message", handleMessage);
+      feed?.removeEventListener("load", handleLoad, true);
+      host.invalidateAll();
     };
   }, [feedRef, appletContents]);
 }

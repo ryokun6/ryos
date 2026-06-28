@@ -1,48 +1,45 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import {
-  handleAppletBridgeMessage,
+  AppletBridgeHost,
+  createAppletBridgeNonce,
   isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
 import { useEventListener } from "@/hooks/useEventListener";
 
 export function useAppletAuthMessaging(
   appletCreatedBy: string | null | undefined,
-  iframeRef: React.RefObject<HTMLIFrameElement | null>,
-  fullscreenIframeRef: React.RefObject<HTMLIFrameElement | null>
+  htmlContent: string
 ) {
   const isTrustedApplet = isTrustedAppletAuthor(appletCreatedBy);
+  const bridgeHostRef = useRef<AppletBridgeHost | null>(null);
+  if (!bridgeHostRef.current) bridgeHostRef.current = new AppletBridgeHost();
+  const appletBridgeNonce = useMemo(
+    () => (isTrustedApplet ? createAppletBridgeNonce() : null),
+    [htmlContent, isTrustedApplet]
+  );
 
-  const sendAuthPayload = useCallback(
-    (_target: Window | null | undefined) => {},
+  useLayoutEffect(() => {
+    const host = bridgeHostRef.current;
+    host?.prepareDocument(appletBridgeNonce);
+    return () => host?.invalidateAll();
+  }, [appletBridgeNonce]);
+
+  const handleIframeLoad = useCallback(
+    (target: Window | null | undefined) => {
+      bridgeHostRef.current?.handleIframeLoad(target);
+    },
     []
   );
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
-      const sourceWindow = event.source as Window | null;
-      const frameWindows: Window[] = [];
-      if (iframeRef.current?.contentWindow) {
-        frameWindows.push(iframeRef.current.contentWindow);
-      }
-      if (fullscreenIframeRef.current?.contentWindow) {
-        frameWindows.push(fullscreenIframeRef.current.contentWindow);
-      }
-
-      if (!isTrustedApplet || !sourceWindow) return;
-      void handleAppletBridgeMessage({
-        event,
-        trustedWindows: frameWindows,
-      });
+      if (!isTrustedApplet) return;
+      bridgeHostRef.current?.handleConnect(event);
     },
-    [isTrustedApplet, iframeRef, fullscreenIframeRef]
+    [isTrustedApplet]
   );
 
   useEventListener("message", handleMessage);
 
-  useEffect(() => {
-    sendAuthPayload(iframeRef.current?.contentWindow);
-    sendAuthPayload(fullscreenIframeRef.current?.contentWindow);
-  }, [sendAuthPayload, iframeRef, fullscreenIframeRef]);
-
-  return { isTrustedApplet, sendAuthPayload };
+  return { isTrustedApplet, appletBridgeNonce, handleIframeLoad };
 }

@@ -9,6 +9,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   BASE_URL,
   fetchWithOrigin,
@@ -26,8 +27,13 @@ import {
   getUsernameByEmail,
 } from "../api/_utils/auth/_user-record";
 import { purgeUserAccount } from "../api/_utils/auth/_purge";
+import { resolveOwnedStorageObjectUrl } from "../api/_utils/storage";
 
 const redis = createRedis();
+const accountDeleteSource = readFileSync(
+  "api/auth/account/delete.ts",
+  "utf8"
+);
 
 async function registerUser(
   username: string,
@@ -45,6 +51,15 @@ async function registerUser(
 }
 
 describe("Account Deletion API", () => {
+  test("fails closed when the deletion limiter is unavailable", () => {
+    expect(accountDeleteSource).toContain(
+      "RateLimit.runFailClosedRateLimit"
+    );
+    expect(accountDeleteSource).toContain(
+      'res.status(503).json({ error: "rate_limit_unavailable" })'
+    );
+  });
+
   test("requires auth -> 401", async () => {
     const res = await fetchWithOrigin(`${BASE_URL}/api/auth/account/delete`, {
       method: "POST",
@@ -180,7 +195,8 @@ describe("Account Deletion API", () => {
     const telegramUserId = `tg-${username}`;
     const telegramChatId = `chat-${username}`;
     const linkCode = `code-${username}`;
-    const blobUrl = `s3://test-bucket/sync/${username}/blob.gz`;
+    const blobDigest = "a".repeat(64);
+    const blobUrl = `s3://test-bucket/sync/${username}/blobs/${blobDigest}.gz`;
     const sharedRoomId = `room-${username}`;
     const sharedMessage = JSON.stringify({
       id: "message-1",
@@ -250,12 +266,17 @@ describe("Account Deletion API", () => {
       member: username,
     });
     await redis.hset(redisKeys.sync.v2Blobs(username), {
-      digest: JSON.stringify({ url: blobUrl, size: 7 }),
+      [blobDigest]: JSON.stringify({ url: blobUrl, size: 7 }),
     });
     await redis.lpush(redisKeys.chat.roomMessages(sharedRoomId), sharedMessage);
 
     const deletedObjects: string[] = [];
     const result = await purgeUserAccount(redis, username, {
+      resolveObjectUrl: (url, expectedPathname) =>
+        resolveOwnedStorageObjectUrl(url, expectedPathname, {
+          provider: "s3",
+          bucket: "test-bucket",
+        }),
       deleteObject: async (url) => {
         expect(
           await redis.hgetall(redisKeys.sync.v2Blobs(username))
@@ -296,14 +317,20 @@ describe("Account Deletion API", () => {
   test("shared purge retains the blob registry when object deletion fails", async () => {
     const username = uniqueTestUsername("purgeblobfail").toLowerCase();
     const registryKey = redisKeys.sync.v2Blobs(username);
+    const blobDigest = "b".repeat(64);
     await redis.hset(registryKey, {
-      digest: JSON.stringify({
-        url: `s3://test-bucket/sync/${username}/blob.gz`,
+      [blobDigest]: JSON.stringify({
+        url: `s3://test-bucket/sync/${username}/blobs/${blobDigest}.gz`,
         size: 7,
       }),
     });
 
     const result = await purgeUserAccount(redis, username, {
+      resolveObjectUrl: (url, expectedPathname) =>
+        resolveOwnedStorageObjectUrl(url, expectedPathname, {
+          provider: "s3",
+          bucket: "test-bucket",
+        }),
       deleteObject: async () => {
         throw new Error("simulated storage failure");
       },
@@ -312,6 +339,34 @@ describe("Account Deletion API", () => {
     expect(result.objectStorageFailures).toBe(1);
     expect(await redis.hgetall(registryKey)).not.toBeNull();
     await redis.del(registryKey);
+  });
+
+  test("shared purge never deletes another user's registered blob URL", async () => {
+    const username = uniqueTestUsername("purgeblobowner").toLowerCase();
+    const otherUsername = uniqueTestUsername("purgeblobother").toLowerCase();
+    const registryKey = redisKeys.sync.v2Blobs(username);
+    const blobDigest = "c".repeat(64);
+    const crossUserUrl =
+      `s3://test-bucket/sync/${otherUsername}/blobs/${blobDigest}.gz`;
+    await redis.hset(registryKey, {
+      [blobDigest]: JSON.stringify({ url: crossUserUrl, size: 7 }),
+    });
+
+    const deletedObjects: string[] = [];
+    const result = await purgeUserAccount(redis, username, {
+      resolveObjectUrl: (url, expectedPathname) =>
+        resolveOwnedStorageObjectUrl(url, expectedPathname, {
+          provider: "s3",
+          bucket: "test-bucket",
+        }),
+      deleteObject: async (url) => {
+        deletedObjects.push(url);
+      },
+    });
+
+    expect(result.objectStorageFailures).toBe(0);
+    expect(deletedObjects).toEqual([]);
+    expect(await redis.exists(registryKey)).toBe(0);
   });
 
   test("admin account cannot self-delete (when present)", async () => {

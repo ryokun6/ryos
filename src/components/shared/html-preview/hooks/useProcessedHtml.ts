@@ -9,6 +9,7 @@ export function useProcessedHtml(
   htmlContent: string,
   normalizedBaseUrl: string | null,
   isTrustedApplet: boolean,
+  appletBridgeNonce: string | null,
   isStreaming: boolean = false
 ) {
   const contentTimestamp = useRef(Date.now());
@@ -21,8 +22,15 @@ export function useProcessedHtml(
       normalizedBaseUrl,
       isMacOsXTheme,
       isTrustedApplet,
+      appletBridgeNonce,
     }),
-    [htmlContent, normalizedBaseUrl, isMacOsXTheme, isTrustedApplet]
+    [
+      htmlContent,
+      normalizedBaseUrl,
+      isMacOsXTheme,
+      isTrustedApplet,
+      appletBridgeNonce,
+    ]
   );
 
   // While streaming, the iframe is not rendered and the preview uses the

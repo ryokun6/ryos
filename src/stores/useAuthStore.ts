@@ -80,6 +80,10 @@ async function teardownLocalSession(
 let restorePromise: Promise<AuthResult> | null = null;
 let authOperationVersion = 0;
 
+function isAuthOperationCurrent(operationVersion: number): boolean {
+  return operationVersion === authOperationVersion;
+}
+
 export const useAuthStore = create<AuthStoreState>()((set, get) => ({
   username: readRecoveredUsername(),
   isAuthenticated: false,
@@ -104,17 +108,23 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
       set({ isRestoringSession: true });
       try {
         const session = await getAuthSession();
-        if (operationVersion !== authOperationVersion) {
+        if (!isAuthOperationCurrent(operationVersion)) {
           return { ok: false, error: "Session restore superseded" };
         }
         if (!session.ok) {
           if (session.status === 401 || session.status === 403) {
             await get().handleUnauthorized();
+            if (!isAuthOperationCurrent(operationVersion)) {
+              return { ok: false, error: "Session restore superseded" };
+            }
           }
           return { ok: false, error: `Session restore failed (${session.status})` };
         }
         if (!session.data.authenticated || !session.data.username) {
           await get().handleUnauthorized();
+          if (!isAuthOperationCurrent(operationVersion)) {
+            return { ok: false, error: "Session restore superseded" };
+          }
           return { ok: false, error: "No authenticated session" };
         }
 
@@ -141,13 +151,16 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
     const operationVersion = ++authOperationVersion;
     try {
       const result = await loginWithPassword({ username, password });
-      if (operationVersion !== authOperationVersion) {
+      if (!isAuthOperationCurrent(operationVersion)) {
         return { ok: false, error: "Login superseded" };
       }
       if (!result.username) return { ok: false, error: "Invalid response format" };
       const previousUsername = get().username;
       if (previousUsername && previousUsername !== result.username) {
         await teardownLocalSession(previousUsername, "logout");
+        if (!isAuthOperationCurrent(operationVersion)) {
+          return { ok: false, error: "Login superseded" };
+        }
       }
       persistRecoveredUsername(result.username);
       set({ username: result.username, isAuthenticated: true, hasPassword: true });
@@ -162,7 +175,7 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
     const operationVersion = ++authOperationVersion;
     try {
       const result = await verifyAuthToken({ username, token });
-      if (operationVersion !== authOperationVersion) {
+      if (!isAuthOperationCurrent(operationVersion)) {
         return { ok: false, error: "Login superseded" };
       }
       if (!result.valid || !result.username) {
@@ -171,6 +184,9 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
       const previousUsername = get().username;
       if (previousUsername && previousUsername !== result.username) {
         await teardownLocalSession(previousUsername, "logout");
+        if (!isAuthOperationCurrent(operationVersion)) {
+          return { ok: false, error: "Login superseded" };
+        }
       }
       persistRecoveredUsername(result.username);
       set({ username: result.username, isAuthenticated: true, hasPassword: null });
@@ -203,13 +219,16 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
 
     try {
       const result = await registerUser({ username: trimmedUsername, password });
-      if (operationVersion !== authOperationVersion) {
+      if (!isAuthOperationCurrent(operationVersion)) {
         return { ok: false, error: "Registration superseded" };
       }
       if (!result.user) return { ok: false, error: "Invalid response format" };
       const previousUsername = get().username;
       if (previousUsername && previousUsername !== result.user.username) {
         await teardownLocalSession(previousUsername, "logout");
+        if (!isAuthOperationCurrent(operationVersion)) {
+          return { ok: false, error: "Registration superseded" };
+        }
       }
       persistRecoveredUsername(result.user.username);
       set({
@@ -227,31 +246,43 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
 
   checkHasPassword: async () => {
     const username = get().username;
+    const operationVersion = authOperationVersion;
     if (!username) {
       set({ hasPassword: null });
       return { ok: false, error: "Authentication required" };
     }
     try {
       const result = await checkUserPassword();
-      if (get().username === username && get().isAuthenticated) {
+      if (
+        isAuthOperationCurrent(operationVersion) &&
+        get().username === username &&
+        get().isAuthenticated
+      ) {
         set({ hasPassword: result.hasPassword });
       }
       return { ok: true };
     } catch (error) {
-      set({ hasPassword: null });
+      if (isAuthOperationCurrent(operationVersion)) {
+        set({ hasPassword: null });
+      }
       return { ok: false, error: errorMessage(error, "Network error while checking password") };
     }
   },
 
   setPassword: async (password, currentPassword) => {
     const username = get().username;
+    const operationVersion = authOperationVersion;
     if (!username) return { ok: false, error: "Authentication required" };
     try {
       await setUserPassword({
         password,
         ...(currentPassword ? { currentPassword } : {}),
       });
-      if (get().username === username && get().isAuthenticated) {
+      if (
+        isAuthOperationCurrent(operationVersion) &&
+        get().username === username &&
+        get().isAuthenticated
+      ) {
         set({ hasPassword: true });
       }
       return { ok: true };
@@ -261,11 +292,13 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
   },
 
   logout: async () => {
-    authOperationVersion += 1;
+    const operationVersion = ++authOperationVersion;
     const username = get().username;
     if (username) {
       await teardownLocalSession(username, "logout");
+      if (!isAuthOperationCurrent(operationVersion)) return;
       await logoutUserSafe();
+      if (!isAuthOperationCurrent(operationVersion)) return;
       track(APP_ANALYTICS.USER_LOGOUT, { username });
     }
     persistRecoveredUsername(null);
@@ -273,7 +306,7 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
   },
 
   deleteAccount: async ({ confirmUsername, currentPassword }) => {
-    authOperationVersion += 1;
+    const operationVersion = ++authOperationVersion;
     const username = get().username;
     if (!username) return { ok: false, error: "Authentication required" };
     try {
@@ -282,20 +315,27 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
         confirmUsername,
         ...(currentPassword ? { currentPassword } : {}),
       });
+      if (!isAuthOperationCurrent(operationVersion)) {
+        return { ok: false, error: "Account deletion superseded" };
+      }
     } catch (error) {
       return { ok: false, error: errorMessage(error, "Network error while deleting account") };
     }
     track(APP_ANALYTICS.USER_LOGOUT, { username });
     await teardownLocalSession(username, "account-deleted");
+    if (!isAuthOperationCurrent(operationVersion)) {
+      return { ok: false, error: "Account deletion superseded" };
+    }
     persistRecoveredUsername(null);
     set({ username: null, isAuthenticated: false, hasPassword: null });
     return { ok: true };
   },
 
   handleUnauthorized: async () => {
-    authOperationVersion += 1;
+    const operationVersion = ++authOperationVersion;
     const username = get().username;
     if (username) await teardownLocalSession(username, "unauthorized");
+    if (!isAuthOperationCurrent(operationVersion)) return;
     persistRecoveredUsername(null);
     set({ username: null, isAuthenticated: false, hasPassword: null });
   },

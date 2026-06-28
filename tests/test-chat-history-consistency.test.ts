@@ -32,7 +32,13 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
-const { capRoomMessages, mergeFetchedRoomMessages } = await import(
+const {
+  CHATS_STORE_VERSION,
+  capRoomMessages,
+  mergeFetchedRoomMessages,
+  migrateChatsPersistedState,
+  reconcileCanonicalRoomMessage,
+} = await import(
   "../src/stores/useChatsStore"
 );
 
@@ -72,5 +78,51 @@ describe("chat history consistency", () => {
     expect(mergeFetchedRoomMessages([optimistic], [fetched])).toEqual([
       fetched,
     ]);
+  });
+
+  test("uses the HTTP response as canonical even if realtime arrived first", () => {
+    const clientId = "9b8c784d-98bb-4f4e-9a90-78cd741e819d";
+    const optimistic = {
+      ...message(1),
+      id: `temp_${clientId}`,
+      clientId,
+    };
+    const canonical = {
+      ...message(2),
+      id: "server-id",
+      clientId,
+    };
+
+    expect(
+      reconcileCanonicalRoomMessage(
+        [optimistic, canonical],
+        optimistic.id,
+        canonical
+      )
+    ).toEqual([canonical]);
+  });
+
+  test("version 4 migration preserves safe old messages and drops invalid ones", () => {
+    const safeMessages = Array.from(
+      { length: ROOM_MESSAGE_HISTORY_LIMIT + 1 },
+      (_, index) => message(index)
+    );
+    const migrated = migrateChatsPersistedState(
+      {
+        username: "stale-user",
+        isAuthenticated: true,
+        roomMessages: {
+          general: [...safeMessages, { id: "unsafe" }],
+          malformed: "not-an-array",
+        },
+      },
+      CHATS_STORE_VERSION - 1
+    );
+
+    expect(migrated.username).toBeUndefined();
+    expect(migrated.isAuthenticated).toBeUndefined();
+    expect(migrated.roomMessages).toEqual({
+      general: safeMessages.slice(-ROOM_MESSAGE_HISTORY_LIMIT),
+    });
   });
 });

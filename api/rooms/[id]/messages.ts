@@ -23,7 +23,20 @@ import {
 } from "../_helpers/_constants.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
 import { ensureUserExists } from "../_helpers/_users.js";
-import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, setUser } from "../_helpers/_redis.js";
+import {
+  addMessage,
+  claimMessageIdempotency,
+  commitIdempotentMessage,
+  generateId,
+  getCurrentTimestamp,
+  getLastMessage,
+  getMessages,
+  getRoom,
+  releaseMessageIdempotencyClaim,
+  setUser,
+  waitForIdempotentMessage,
+  type MessageIdempotencyClaim,
+} from "../_helpers/_redis.js";
 import { setRoomPresence } from "../_helpers/_presence.js";
 import type { Message } from "../_helpers/_types.js";
 import { getRoomReadAccessError, getRoomWriteAccessError } from "../_helpers/_access.js";
@@ -147,24 +160,54 @@ export default apiHandler(
       return;
     }
 
+    let idempotencyClaim: MessageIdempotencyClaim | null = null;
+    let idempotencyCommitted = false;
     if (clientId) {
-      const existingMessage = (
-        await getMessages(roomId, ROOM_MESSAGE_HISTORY_LIMIT, redis)
-      ).find(
-        (candidate) =>
-          candidate.clientId === clientId && candidate.username === username
+      const claimResult = await claimMessageIdempotency(
+        roomId,
+        username,
+        clientId,
+        redis
       );
-      if (existingMessage) {
+      if (claimResult.status === "existing") {
         logger.info("Idempotent message replay", {
           roomId,
-          messageId: existingMessage.id,
+          messageId: claimResult.message.id,
           clientId,
         });
         logger.response(200, Date.now() - startTime);
-        res.status(200).json({ message: existingMessage });
+        res.status(200).json({ message: claimResult.message });
         return;
       }
+      if (claimResult.status === "pending") {
+        const existingMessage = await waitForIdempotentMessage(
+          roomId,
+          username,
+          clientId,
+          redis
+        );
+        if (existingMessage) {
+          logger.info("Concurrent idempotent message replay", {
+            roomId,
+            messageId: existingMessage.id,
+            clientId,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({ message: existingMessage });
+          return;
+        }
+        logger.response(409, Date.now() - startTime);
+        res.status(409).json({ error: "Message request is still being processed" });
+        return;
+      }
+      idempotencyClaim = claimResult.claim;
     }
+
+    const releaseUncommittedIdempotencyClaim = async (): Promise<void> => {
+      if (idempotencyClaim && !idempotencyCommitted) {
+        await releaseMessageIdempotencyClaim(idempotencyClaim, redis);
+      }
+    };
 
     const isPublicRoom = !roomData.type || roomData.type === "public";
 
@@ -178,6 +221,7 @@ export default apiHandler(
         if (shortCount === 1) await redis.expire(shortKey, CHAT_BURST_SHORT_WINDOW_SECONDS);
         if (shortCount > CHAT_BURST_SHORT_LIMIT) {
           logger.warn("Short burst rate limit exceeded", { username, roomId });
+          await releaseUncommittedIdempotencyClaim();
           logger.response(429, Date.now() - startTime);
           res.status(429).json({ error: "You're sending messages too quickly." });
           return;
@@ -187,6 +231,7 @@ export default apiHandler(
         if (longCount === 1) await redis.expire(longKey, CHAT_BURST_LONG_WINDOW_SECONDS);
         if (longCount > CHAT_BURST_LONG_LIMIT) {
           logger.warn("Long burst rate limit exceeded", { username, roomId });
+          await releaseUncommittedIdempotencyClaim();
           logger.response(429, Date.now() - startTime);
           res.status(429).json({ error: "Too many messages. Please wait." });
           return;
@@ -198,6 +243,7 @@ export default apiHandler(
           const delta = nowSeconds - parseInt(lastSent);
           if (delta < CHAT_MIN_INTERVAL_SECONDS) {
             logger.warn("Min interval not met", { username, roomId });
+            await releaseUncommittedIdempotencyClaim();
             logger.response(429, Date.now() - startTime);
             res.status(429).json({ error: "Please wait before sending another message." });
             return;
@@ -215,6 +261,7 @@ export default apiHandler(
         userData = await ensureUserExists(username, "send-message");
         if (!userData) {
           logger.error("Failed to verify user", { username });
+          await releaseUncommittedIdempotencyClaim();
           logger.response(500, Date.now() - startTime);
           res.status(500).json({ error: "Failed to verify user" });
           return;
@@ -222,11 +269,13 @@ export default apiHandler(
       } catch (error) {
         if (error instanceof Error && error.message === "Username contains inappropriate language") {
           logger.warn("Inappropriate username", { username });
+          await releaseUncommittedIdempotencyClaim();
           logger.response(400, Date.now() - startTime);
           res.status(400).json({ error: "Username contains inappropriate language" });
           return;
         }
         logger.error("Failed to verify user", error);
+        await releaseUncommittedIdempotencyClaim();
         logger.response(500, Date.now() - startTime);
         res.status(500).json({ error: "Failed to verify user" });
         return;
@@ -234,6 +283,7 @@ export default apiHandler(
 
       if (content.length > MAX_MESSAGE_LENGTH) {
         logger.warn("Message too long", { length: content.length, max: MAX_MESSAGE_LENGTH });
+        await releaseUncommittedIdempotencyClaim();
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH}` });
         return;
@@ -242,6 +292,7 @@ export default apiHandler(
       const lastMsg = await getLastMessage(roomId, redis);
       if (lastMsg && lastMsg.username === username && lastMsg.content === content) {
         logger.warn("Duplicate message detected", { username, roomId });
+        await releaseUncommittedIdempotencyClaim();
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Duplicate message detected" });
         return;
@@ -256,7 +307,27 @@ export default apiHandler(
         timestamp: getCurrentTimestamp(),
       };
 
-      await addMessage(roomId, message, redis);
+      if (idempotencyClaim) {
+        const result = await commitIdempotentMessage(
+          roomId,
+          message,
+          idempotencyClaim,
+          redis
+        );
+        idempotencyCommitted = true;
+        if (!result.created) {
+          logger.info("Idempotent message replay at commit", {
+            roomId,
+            messageId: result.message.id,
+            clientId,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({ message: result.message });
+          return;
+        }
+      } else {
+        await addMessage(roomId, message, redis);
+      }
 
       // setUser's plain SET clears any legacy TTL: user records persist
       // forever (an old expire call here used to attach one on each send).
@@ -285,6 +356,7 @@ export default apiHandler(
       logger.response(201, Date.now() - startTime);
       res.status(201).json({ message });
     } catch (error) {
+      await releaseUncommittedIdempotencyClaim();
       logger.error(`Error sending message in room ${roomId}`, error);
       logger.response(500, Date.now() - startTime);
       res.status(500).json({ error: "Failed to send message" });

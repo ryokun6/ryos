@@ -237,6 +237,93 @@ export class FakeRedis {
     keys: string[],
     args: Array<string | number>
   ): Promise<number> {
+    if (script.includes("ryos-increment-with-expiry")) {
+      const key = keys[0];
+      const seconds = Number(args[0]);
+      if (!key || !Number.isInteger(seconds) || seconds <= 0) {
+        throw new Error("Invalid atomic counter arguments");
+      }
+      const current = Number.parseInt(this.kv.get(key) || "0", 10) || 0;
+      const count = current + 1;
+      this.kv.set(key, String(count));
+      if (count === 1 || !this.ttls.has(key)) {
+        this.ttls.set(key, seconds);
+      }
+      return [count, this.ttls.get(key) ?? -1] as unknown as number;
+    }
+
+    if (script.includes("sync-v2-initialize-with-lock")) {
+      const [lockKey, seqKey] = keys;
+      if (
+        !lockKey ||
+        !seqKey ||
+        this.kv.get(lockKey) !== String(args[0])
+      ) {
+        return 0;
+      }
+      if (!this.kv.has(seqKey)) {
+        this.setSync(seqKey, "0", { ex: Number(args[1]) });
+      }
+      return 1;
+    }
+
+    if (script.includes("sync-v2-commit-with-lock")) {
+      const [lockKey, seqKey, kvKey, journalKey, blobsKey] = keys;
+      if (
+        !lockKey ||
+        !seqKey ||
+        !kvKey ||
+        !journalKey ||
+        !blobsKey ||
+        this.kv.get(lockKey) !== String(args[0])
+      ) {
+        return 0;
+      }
+      if ((this.kv.get(seqKey) ?? "0") !== String(args[1])) {
+        return -1;
+      }
+
+      const nextSeq = String(args[2]);
+      const ttl = Number(args[3]);
+      const trimBefore = Number(args[4]);
+      let cursor = 5;
+      const kvCount = Number(args[cursor]);
+      cursor += 1;
+      for (let index = 0; index < kvCount; index += 1) {
+        this.hsetSync(kvKey, {
+          [String(args[cursor])]: String(args[cursor + 1]),
+        });
+        cursor += 2;
+      }
+
+      const journalCount = Number(args[cursor]);
+      cursor += 1;
+      for (let index = 0; index < journalCount; index += 1) {
+        this.zaddSync(journalKey, {
+          score: Number(args[cursor]),
+          member: String(args[cursor + 1]),
+        });
+        cursor += 2;
+      }
+
+      this.setSync(seqKey, nextSeq, { ex: ttl });
+      this.zremrangebyscoreSync(journalKey, "-inf", trimBefore);
+
+      const blobCount = Number(args[cursor]);
+      cursor += 1;
+      for (let index = 0; index < blobCount; index += 1) {
+        this.hsetSync(blobsKey, {
+          [String(args[cursor])]: String(args[cursor + 1]),
+        });
+        cursor += 2;
+      }
+
+      this.expireSync(kvKey, ttl);
+      this.expireSync(journalKey, ttl);
+      this.expireSync(blobsKey, ttl);
+      return 1;
+    }
+
     const key = keys[0];
     const expected = args[0];
     if (!key || expected === undefined || this.kv.get(key) !== String(expected)) {

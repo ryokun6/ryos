@@ -7,8 +7,11 @@ import {
 } from "../api/_utils/ai-request-validation.js";
 import {
   checkAndIncrementAIMessageCount,
+  checkAndIncrementAIMessageCountWithRedis,
   runFailClosedRateLimit,
 } from "../api/_utils/_rate-limit.js";
+import type { Redis } from "../api/_utils/redis.js";
+import { deleteToken, storeToken } from "../api/_utils/auth/_tokens.js";
 import { APPLET_AI_REQUEST_SCHEMA } from "../api/applet-ai.js";
 import {
   APPLET_AI_REQUEST_BODY_LIMIT_BYTES,
@@ -17,6 +20,7 @@ import {
   SYNC_BLOB_REQUEST_BODY_LIMIT_BYTES,
   getRequestBodyLimitBytes,
 } from "../scripts/api-standalone-server.js";
+import { FakeRedis } from "./fake-redis.js";
 
 describe("chat request validation", () => {
   test("accepts bounded user and assistant text with completed tool output", () => {
@@ -164,6 +168,29 @@ describe("fail-closed rate limiting", () => {
     );
     expect(result.allowed).toBe(true);
     expect(result.count).toBe(0);
+  });
+
+  test("allows an authenticated ryo request after validating its token", async () => {
+    const fakeRedis = new FakeRedis();
+    const redis = fakeRedis as unknown as Redis;
+    const token = "valid-ryo-test-token";
+    await storeToken(redis, "ryo", token);
+
+    try {
+      const result = await checkAndIncrementAIMessageCountWithRedis(
+        redis,
+        "ryo",
+        true,
+        token
+      );
+      expect(result).toEqual({
+        allowed: true,
+        count: 0,
+        limit: 15,
+      });
+    } finally {
+      await deleteToken(redis, token, "ryo");
+    }
   });
 
   test("executes a generation charge exactly once", async () => {

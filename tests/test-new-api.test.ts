@@ -297,14 +297,29 @@ describe("New API", () => {
           clientId,
         }),
       };
-      const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${testRoomId}/messages`, testUsername, testToken, {
-        ...request,
-      });
-      expect(res.status).toBe(201);
-      const data = await res.json();
+      const [first, duplicate] = await Promise.all([
+        fetchWithAuth(
+          `${BASE_URL}/api/rooms/${testRoomId}/messages`,
+          testUsername,
+          testToken,
+          request
+        ),
+        fetchWithAuth(
+          `${BASE_URL}/api/rooms/${testRoomId}/messages`,
+          testUsername,
+          testToken,
+          request
+        ),
+      ]);
+      expect([first.status, duplicate.status].sort()).toEqual([200, 201]);
+      const [data, duplicateData] = await Promise.all([
+        first.json(),
+        duplicate.json(),
+      ]);
       expect(data.message).toBeTruthy();
       expect(data.message.content).toContain("Test message");
       expect(data.message.clientId).toBe(clientId);
+      expect(duplicateData.message.id).toBe(data.message.id);
 
       const replay = await fetchWithAuth(
         `${BASE_URL}/api/rooms/${testRoomId}/messages`,
@@ -315,6 +330,16 @@ describe("New API", () => {
       expect(replay.status).toBe(200);
       const replayData = await replay.json();
       expect(replayData.message.id).toBe(data.message.id);
+
+      const history = await fetchWithOrigin(
+        `${BASE_URL}/api/rooms/${testRoomId}/messages`
+      );
+      const historyData = await history.json();
+      expect(
+        historyData.messages.filter(
+          (message: { clientId?: string }) => message.clientId === clientId
+        )
+      ).toHaveLength(1);
     });
 
     test("Bulk messages", async () => {

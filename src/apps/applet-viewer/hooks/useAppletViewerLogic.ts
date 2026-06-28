@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { helpItems, AppletViewerInitialData } from "../index";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -15,10 +23,11 @@ import { toast } from "sonner";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
-  APPLET_AUTH_BRIDGE_SCRIPT,
+  AppletBridgeHost,
   APPLET_AUTH_MESSAGE_TYPE,
+  createAppletAuthBridgeScript,
+  createAppletBridgeNonce,
   getServerAttestedAppletAuthor,
-  handleAppletBridgeMessage,
   isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
@@ -332,15 +341,6 @@ export function useAppletViewerLogic({
     }
   }, [updatesAvailable, actions, checkForUpdates, t]);
 
-  // This ref gates the parent-side bridge. Trust is set only after the
-  // rendered content and author arrive from the applet API.
-  const isTrustedAppletRef = useRef(false);
-
-  const sendAuthPayload = useCallback(
-    (_target: Window | null | undefined) => {},
-    []
-  );
-
   const focusWindow = useCallback(() => {
     const state = useAppStore.getState();
 
@@ -364,27 +364,6 @@ export function useAppletViewerLogic({
 
   const getFileItem = getFileMetadata;
   const updateFileItemMetadata = updateFileMetadata;
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const sourceWindow = event.source as Window | null;
-      const trustedWindow =
-        isTrustedAppletRef.current &&
-        sourceWindow === iframeRef.current?.contentWindow
-          ? sourceWindow
-          : null;
-      if (!trustedWindow) return;
-      void handleAppletBridgeMessage({
-        event,
-        trustedWindows: [trustedWindow],
-      });
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, []);
 
   const fetchAndCacheAppletContent = useCallback(
     async (
@@ -493,10 +472,6 @@ export function useAppletViewerLogic({
       ? ""
       : loadedContent || typedInitialData?.content || sharedContent || "";
   const hasAppletContent = htmlContent.trim().length > 0;
-
-  useEffect(() => {
-    sendAuthPayload(iframeRef.current?.contentWindow);
-  }, [sendAuthPayload, htmlContent]);
 
   useEffect(() => {
     if (!appletPath || appletPath.startsWith("/Applets/") === false) {
@@ -854,11 +829,33 @@ export function useAppletViewerLogic({
     { content: sharedContent, createdBy: sharedCreatedBy }
   );
   const isTrustedApplet = isTrustedAppletAuthor(attestedCreatedBy);
+  const appletBridgeNonce = useMemo(
+    () => (isTrustedApplet ? createAppletBridgeNonce() : null),
+    [htmlContent, isTrustedApplet]
+  );
+  const bridgeHostRef = useRef<AppletBridgeHost | null>(null);
+  if (!bridgeHostRef.current) bridgeHostRef.current = new AppletBridgeHost();
 
-  // Mirror trust into the stable parent-side bridge listener.
+  useLayoutEffect(() => {
+    const host = bridgeHostRef.current;
+    host?.prepareDocument(appletBridgeNonce);
+    return () => host?.invalidateAll();
+  }, [appletBridgeNonce]);
+
   useEffect(() => {
-    isTrustedAppletRef.current = isTrustedApplet;
-  }, [isTrustedApplet]);
+    const handleMessage = (event: MessageEvent) => {
+      bridgeHostRef.current?.handleConnect(event);
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  const handleAppletIframeLoad = useCallback(
+    (target: Window | null | undefined) => {
+      bridgeHostRef.current?.handleIframeLoad(target);
+    },
+    []
+  );
 
   const injectAppletAuthScript = useCallback(
     (content: string): string => {
@@ -868,13 +865,15 @@ export function useAppletViewerLogic({
       if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
         return content;
       }
+      if (!appletBridgeNonce) return content;
+      const bridgeScript = createAppletAuthBridgeScript(appletBridgeNonce);
 
       const lower = content.toLowerCase();
       const headCloseIdx = lower.lastIndexOf("</head>");
       if (headCloseIdx !== -1) {
         return (
           content.slice(0, headCloseIdx) +
-          APPLET_AUTH_BRIDGE_SCRIPT +
+          bridgeScript +
           content.slice(headCloseIdx)
         );
       }
@@ -884,7 +883,7 @@ export function useAppletViewerLogic({
         const insertIdx = headOpenMatch.index + headOpenMatch[0].length;
         return (
           content.slice(0, insertIdx) +
-          APPLET_AUTH_BRIDGE_SCRIPT +
+          bridgeScript +
           content.slice(insertIdx)
         );
       }
@@ -894,14 +893,14 @@ export function useAppletViewerLogic({
         const insertIdx = htmlOpenMatch.index + htmlOpenMatch[0].length;
         return (
           content.slice(0, insertIdx) +
-          `<head>${APPLET_AUTH_BRIDGE_SCRIPT}</head>` +
+          `<head>${bridgeScript}</head>` +
           content.slice(insertIdx)
         );
       }
 
-      return `<!DOCTYPE html><html><head>${APPLET_AUTH_BRIDGE_SCRIPT}</head><body>${content}</body></html>`;
+      return `<!DOCTYPE html><html><head>${bridgeScript}</head><body>${content}</body></html>`;
     },
-    [isTrustedApplet]
+    [appletBridgeNonce, isTrustedApplet]
   );
 
   const launchApp = useLaunchApp();
@@ -1565,7 +1564,7 @@ export function useAppletViewerLogic({
     windowTitle,
     injectAppletAuthScript,
     ensureMacFonts,
-    sendAuthPayload,
+    handleAppletIframeLoad,
     focusWindow,
     handleExportAsApp,
     handleExportAsHtml,

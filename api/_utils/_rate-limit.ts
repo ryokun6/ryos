@@ -1,4 +1,8 @@
-import { createRedis } from "./redis.js";
+import {
+  createRedis,
+  incrementWithExpiry,
+  type Redis,
+} from "./redis.js";
 import { validateAuth } from "./auth/index.js";
 import { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
 
@@ -34,6 +38,22 @@ export async function checkAndIncrementAIMessageCount(
   authToken: string | null = null,
   options: { internal?: boolean } = {}
 ): Promise<AIRateLimitResult> {
+  return checkAndIncrementAIMessageCountWithRedis(
+    redis,
+    identifier,
+    isAuthenticated,
+    authToken,
+    options
+  );
+}
+
+export async function checkAndIncrementAIMessageCountWithRedis(
+  redisClient: Redis,
+  identifier: string,
+  isAuthenticated: boolean,
+  authToken: string | null = null,
+  options: { internal?: boolean } = {}
+): Promise<AIRateLimitResult> {
   const key = getAIRateLimitKey(identifier);
 
   // Determine if user is anonymous (identifier starts with "anon:")
@@ -56,7 +76,7 @@ export async function checkAndIncrementAIMessageCount(
   // If authenticated, validate the token
   if (isAuthenticated && authToken) {
     const lower = identifier.toLowerCase();
-    const validation = await validateAuth(redis, lower, authToken);
+    const validation = await validateAuth(redisClient, lower, authToken);
     if (!validation.valid) {
       // Invalid token for this user – treat as unauthenticated (use anon limit)
       return {
@@ -68,23 +88,21 @@ export async function checkAndIncrementAIMessageCount(
 
   }
 
-  // If the user *claims* to be ryo but is **not** authenticated, deny the request outright
+  // A valid admin session keeps the intended rate-limit bypass. A bare claim
+  // to the username never bypasses authentication.
   if (isRyo) {
     return {
-      allowed: false,
+      allowed: isAuthenticated && Boolean(authToken),
       count: 0,
-      limit: AI_LIMIT_ANON_PER_DAY,
+      limit,
     };
   }
 
-  // ATOMIC rate limit check: increment first, then check
-  // This prevents race conditions where two requests read the same count
-  const newCount = await redis.incr(key);
-
-  // Set TTL only if this is the first increment (count became 1)
-  if (newCount === 1) {
-    await redis.expire(key, ttlSeconds);
-  }
+  const { count: newCount } = await incrementWithExpiry(
+    redisClient,
+    key,
+    ttlSeconds
+  );
 
   // Check if the NEW count exceeds the limit
   if (newCount > limit) {
@@ -145,19 +163,12 @@ export async function checkCounterLimit({
   windowSeconds,
   limit,
 }: CounterLimitArgs): Promise<CounterLimitResult> {
-  // ATOMIC approach: increment first, then check
-  // This prevents race conditions where two concurrent requests both read
-  // the same count and both pass the limit check
-  const newCount = await redis.incr(key);
-
-  // Set TTL only if this is the first increment (count became 1)
-  // This is safe because INCR is atomic - only one request will see newCount === 1
-  if (newCount === 1) {
-    await redis.expire(key, windowSeconds);
-  }
-
-  const ttl = await redis.ttl(key);
-  const resetSeconds = typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds;
+  const { count: newCount, ttlSeconds } = await incrementWithExpiry(
+    redis,
+    key,
+    windowSeconds
+  );
+  const resetSeconds = ttlSeconds > 0 ? ttlSeconds : windowSeconds;
 
   // Check if the NEW count exceeds the limit
   if (newCount > limit) {

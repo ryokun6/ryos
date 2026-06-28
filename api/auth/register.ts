@@ -33,6 +33,7 @@ import {
   setStoredUserRecord,
   updateStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
+import { incrementWithExpiry } from "../_utils/redis.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -61,10 +62,7 @@ export default apiHandler(
     }
 
     const rlKey = makeKey(["rl", "auth:register", "ip", ip]);
-    const current = await redis.incr(rlKey);
-    if (current === 1) {
-      await redis.expire(rlKey, 60);
-    }
+    const { count: current } = await incrementWithExpiry(redis, rlKey, 60);
     if (current > 5) {
       await redis.set(blockKey, "1", { ex: 86400 });
       res.status(429).json({

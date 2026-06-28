@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import {
+  createAppletBridgeNonce,
   getAppletSandboxAttribute,
   isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
+import { useMemo } from "react";
 import type { TFunction } from "i18next";
 import type { Applet } from "../../utils/appletActions";
 import type { useAppletActions } from "../../utils/appletActions";
@@ -50,6 +52,11 @@ export function AppStoreFeedCard({
   const displayIcon = applet.icon || "📱";
   const installed = actions.isAppletInstalled(applet.id);
   const updateAvailable = actions.needsUpdate(applet);
+  const trusted = isTrustedAppletAuthor(applet.createdBy);
+  const bridgeNonce = useMemo(
+    () => (trusted && content ? createAppletBridgeNonce() : null),
+    [content, trusted]
+  );
 
   return (
     <div
@@ -128,14 +135,14 @@ export function AppStoreFeedCard({
       >
         {content ? (
           (() => {
-            const trusted = isTrustedAppletAuthor(applet.createdBy);
             return (
               <iframe
-                srcDoc={ensureMacFonts(content, isMacTheme, trusted)}
+                srcDoc={ensureMacFonts(content, isMacTheme, bridgeNonce)}
                 title={displayName}
                 className="w-full h-full border-0"
                 sandbox={getAppletSandboxAttribute(trusted)}
                 data-ryos-trusted-applet={trusted ? "1" : "0"}
+                data-ryos-applet-nonce={bridgeNonce || undefined}
                 style={{
                   display: "block",
                 }}

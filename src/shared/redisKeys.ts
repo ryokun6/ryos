@@ -152,6 +152,19 @@ export const redisKeys = {
       redisKeyCaseSensitive("chat", "rooms", roomId, "meta"),
     roomMessages: (roomId: string) =>
       redisKeyCaseSensitive("chat", "rooms", roomId, "messages"),
+    messageIdempotency: (
+      roomId: string,
+      username: string,
+      clientId: string
+    ) =>
+      redisKeyCaseSensitive(
+        "chat",
+        "rooms",
+        roomId,
+        "message-idempotency",
+        username,
+        clientId
+      ),
     roomPresence: (roomId: string) =>
       redisKeyCaseSensitive("chat", "rooms", roomId, "presence"),
   },

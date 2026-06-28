@@ -83,11 +83,11 @@ function HtmlPreview({
       : `https://${baseUrlForAiContent}`
     : null;
 
-  const { isTrustedApplet, sendAuthPayload } = useAppletAuthMessaging(
-    appletCreatedBy,
-    iframeRef,
-    fullscreenIframeRef
-  );
+  const { isTrustedApplet, appletBridgeNonce, handleIframeLoad } =
+    useAppletAuthMessaging(
+      appletCreatedBy,
+      htmlContent
+    );
   const sandboxAttribute = getAppletSandboxAttribute(isTrustedApplet);
 
   const registerNavigationWindow = useCallback(
@@ -131,7 +131,13 @@ function HtmlPreview({
   );
 
   const { processedHtmlContent, getProcessedHtmlContentForSave } =
-    useProcessedHtml(htmlContent, normalizedBaseUrl, isTrustedApplet, isStreaming);
+    useProcessedHtml(
+      htmlContent,
+      normalizedBaseUrl,
+      isTrustedApplet,
+      appletBridgeNonce,
+      isStreaming
+    );
 
   const streamPreviewHtml = useStreamPreview(htmlContent, isStreaming);
 
@@ -185,21 +191,15 @@ function HtmlPreview({
         // Update inline iframe
         if (iframeRef.current) {
           iframeRef.current.srcdoc = finalContent;
-          setTimeout(() => {
-            sendAuthPayload(iframeRef.current?.contentWindow || null);
-          }, 0);
         }
 
         // Update fullscreen iframe if it exists
         if (fullscreenIframeRef.current) {
           fullscreenIframeRef.current.srcdoc = finalContent;
-          setTimeout(() => {
-            sendAuthPayload(fullscreenIframeRef.current?.contentWindow || null);
-          }, 0);
         }
       });
     },
-    [sendAuthPayload]
+    []
   );
 
   // NEW: Effect to update iframe *after* streaming finishes or when content changes while not streaming
@@ -489,7 +489,7 @@ function HtmlPreview({
               onLoad={() => {
                 const frameWindow = iframeRef.current?.contentWindow || null;
                 registerNavigationWindow(frameWindow);
-                sendAuthPayload(frameWindow);
+                handleIframeLoad(frameWindow);
               }}
           />
         )}
@@ -628,7 +628,7 @@ function HtmlPreview({
                           const frameWindow =
                             fullscreenIframeRef.current?.contentWindow || null;
                           registerNavigationWindow(frameWindow);
-                          sendAuthPayload(frameWindow);
+                          handleIframeLoad(frameWindow);
                         }}
                         style={{
                           display: "block",

@@ -32,6 +32,7 @@ const logoutMock = mock(async () => {});
 const registerMock = mock(async ({ username }: { username: string }) => ({
   user: { username },
 }));
+let loginImpl = async ({ username }: { username: string }) => ({ username });
 let sessionImpl = async () => ({
   ok: true as const,
   data: { authenticated: true, username: "restored-user" },
@@ -41,9 +42,7 @@ mock.module("@/api/auth", () => ({
   checkUserPassword: mock(async () => ({ hasPassword: true })),
   deleteAccount: mock(async () => ({ success: true })),
   getAuthSession: mock(() => sessionImpl()),
-  loginWithPassword: mock(async ({ username }: { username: string }) => ({
-    username,
-  })),
+  loginWithPassword: mock((params: { username: string }) => loginImpl(params)),
   logoutUserSafe: logoutMock,
   registerUser: registerMock,
   setUserPassword: mock(async () => ({ success: true })),
@@ -79,6 +78,7 @@ describe("auth session boundary", () => {
       ok: true,
       data: { authenticated: true, username: "restored-user" },
     });
+    loginImpl = async ({ username }) => ({ username });
   });
 
   test("owns registration state and the recovery identity", async () => {
@@ -151,5 +151,65 @@ describe("auth session boundary", () => {
       error: "Session restore superseded",
     });
     expect(useAuthStore.getState().username).toBe("explicit-user");
+  });
+
+  test("does not let a login response publish after logout", async () => {
+    let resolveLogin: ((value: { username: string }) => void) | undefined;
+    loginImpl =
+      () =>
+        new Promise((resolve) => {
+          resolveLogin = resolve;
+        });
+
+    const login = useAuthStore.getState().login({
+      username: "late-user",
+      password: "password123",
+    });
+    await useAuthStore.getState().logout();
+    resolveLogin?.({ username: "late-user" });
+
+    await expect(login).resolves.toEqual({
+      ok: false,
+      error: "Login superseded",
+    });
+    expect(useAuthStore.getState()).toMatchObject({
+      username: null,
+      isAuthenticated: false,
+    });
+  });
+
+  test("checks the auth generation again after session teardown", async () => {
+    let releaseLoginTeardown: (() => void) | undefined;
+    const unregister = registerSessionTeardown(({ reason }) => {
+      if (reason !== "logout") return;
+      return new Promise<void>((resolve) => {
+        releaseLoginTeardown = resolve;
+      });
+    });
+    useAuthStore.setState({
+      username: "old-user",
+      isAuthenticated: true,
+      hasPassword: true,
+    });
+
+    const login = useAuthStore.getState().login({
+      username: "new-user",
+      password: "password123",
+    });
+    while (!releaseLoginTeardown) {
+      await Promise.resolve();
+    }
+    await useAuthStore.getState().handleUnauthorized();
+    releaseLoginTeardown();
+
+    await expect(login).resolves.toEqual({
+      ok: false,
+      error: "Login superseded",
+    });
+    expect(useAuthStore.getState()).toMatchObject({
+      username: null,
+      isAuthenticated: false,
+    });
+    unregister();
   });
 });

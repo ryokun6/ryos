@@ -1,4 +1,4 @@
-import { APPLET_AUTH_BRIDGE_SCRIPT } from "@/utils/appletAuthBridge";
+import { createAppletAuthBridgeScript } from "@/utils/appletAuthBridge";
 
 export interface GenerateProcessedHtmlOptions {
   htmlContent: string;
@@ -6,6 +6,7 @@ export interface GenerateProcessedHtmlOptions {
   normalizedBaseUrl: string | null;
   isMacOsXTheme: boolean;
   isTrustedApplet: boolean;
+  appletBridgeNonce: string | null;
   useFallbackFonts: boolean;
 }
 
@@ -23,7 +24,10 @@ const shouldUseMacFonts = !options.useFallbackFonts && options.isMacOsXTheme;
 // Only trusted (ryo-authored) HTML receives the auth bridge.
 // Every preview runs without `allow-same-origin`. The parent bridge also
 // accepts requests only from registered, server-attested iframe windows.
-const authBridge = options.isTrustedApplet ? APPLET_AUTH_BRIDGE_SCRIPT : "";
+const authBridge =
+  options.isTrustedApplet && options.appletBridgeNonce
+    ? createAppletAuthBridgeScript(options.appletBridgeNonce)
+    : "";
 
 const postStreamHeadContent = `
 <link rel="stylesheet" href="/fonts/fonts.css">

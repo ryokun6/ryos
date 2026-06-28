@@ -35,26 +35,42 @@ function redis(): Redis {
   return new FakeRedis() as unknown as Redis;
 }
 
-class TrackingRedis extends FakeRedis {
-  directZaddCount = 0;
-  pipelineZaddCount = 0;
+class CommitTrackingRedis extends FakeRedis {
+  atomicCommitCount = 0;
 
-  async zadd(
-    key: string,
-    entry: { score: number; member: string }
+  override async eval(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
   ): Promise<number> {
-    this.directZaddCount += 1;
-    return super.zadd(key, entry);
+    if (script.includes("sync-v2-commit-with-lock")) {
+      this.atomicCommitCount += 1;
+    }
+    return super.eval(script, keys, args);
   }
+}
 
-  pipeline(): ReturnType<FakeRedis["pipeline"]> {
-    const pipeline = super.pipeline();
-    const originalZadd = pipeline.zadd.bind(pipeline);
-    pipeline.zadd = ((key, entry) => {
-      this.pipelineZaddCount += 1;
-      return originalZadd(key, entry);
-    }) as typeof pipeline.zadd;
-    return pipeline;
+class LeaseLossRedis extends FakeRedis {
+  loseLeaseOnNextCommit: "expire" | "replace" | null = null;
+  readonly replacementToken = "replacement-owner";
+
+  override async eval(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<number> {
+    if (
+      this.loseLeaseOnNextCommit &&
+      script.includes("sync-v2-commit-with-lock")
+    ) {
+      const mode = this.loseLeaseOnNextCommit;
+      this.loseLeaseOnNextCommit = null;
+      this.delSync(keys[0]);
+      if (mode === "replace") {
+        this.setSync(keys[0], this.replacementToken, { ex: 30 });
+      }
+    }
+    return super.eval(script, keys, args);
   }
 }
 
@@ -215,8 +231,8 @@ describe("sync v2 ops + LWW", () => {
     expect(entry?.url).toBe("s3://bucket/sync/user1/blobs/aa.gz");
   });
 
-  test("pipelines journal writes for large accepted batches", async () => {
-    const r = new TrackingRedis();
+  test("commits large batches through one atomic script", async () => {
+    const r = new CommitTrackingRedis();
     const ops = Array.from({ length: 25 }, (_, index) => ({
       k: `settings/bulk-${index}`,
       v: { value: index },
@@ -225,9 +241,62 @@ describe("sync v2 ops + LWW", () => {
 
     await applySyncOps(r as unknown as Redis, "bulk-user", ops, "client-a");
 
-    expect(r.directZaddCount).toBe(0);
-    expect(r.pipelineZaddCount).toBe(ops.length);
+    expect(r.atomicCommitCount).toBe(1);
     expect(await r.zcard(sync2JournalKey("bulk-user"))).toBe(ops.length);
+  });
+
+  test("does not mutate after its lease expires before commit", async () => {
+    const fake = new LeaseLossRedis();
+    const r = fake as unknown as Redis;
+    await ensureSync2Initialized(r, "expired-writer");
+    fake.loseLeaseOnNextCommit = "expire";
+
+    await expect(
+      applySyncOps(
+        r,
+        "expired-writer",
+        [{ k: "settings/theme", v: { current: "stale" }, t: t(0) }],
+        "stale-client"
+      )
+    ).rejects.toThrow("Sync lock ownership was lost");
+
+    const snapshot = await readSyncSnapshot(r, "expired-writer");
+    expect(snapshot.seq).toBe(0);
+    expect(snapshot.entries).toEqual({});
+    expect(await fake.zcard(sync2JournalKey("expired-writer"))).toBe(0);
+  });
+
+  test("a replacement owner wins contention when the stale writer resumes", async () => {
+    const fake = new LeaseLossRedis();
+    const r = fake as unknown as Redis;
+    await ensureSync2Initialized(r, "contended-writer");
+    fake.loseLeaseOnNextCommit = "replace";
+
+    await expect(
+      applySyncOps(
+        r,
+        "contended-writer",
+        [{ k: "settings/theme", v: { current: "stale" }, t: t(0) }],
+        "stale-client"
+      )
+    ).rejects.toThrow("Sync lock ownership was lost");
+
+    expect(
+      await fake.get("sync:v2:user:contended-writer:lock")
+    ).toBe(fake.replacementToken);
+    fake.delSync("sync:v2:user:contended-writer:lock");
+
+    const winner = await applySyncOps(
+      r,
+      "contended-writer",
+      [{ k: "settings/theme", v: { current: "winner" }, t: t(1) }],
+      "replacement-client"
+    );
+    const snapshot = await readSyncSnapshot(r, "contended-writer");
+    expect(winner.seq).toBe(1);
+    expect(snapshot.entries["settings/theme"].v).toEqual({
+      current: "winner",
+    });
   });
 });
 

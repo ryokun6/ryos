@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
+import { incrementWithExpiry } from "../api/_utils/redis";
 import { makeKey } from "../api/_utils/_rate-limit";
 import { deleteLegacyRedisKeys } from "../scripts/lib/redis-key-migration";
 import { FakeRedis } from "./fake-redis";
@@ -30,5 +31,21 @@ describe("rate-limit Redis keys", () => {
     expect(deletion.deleted).toBe(0);
     expect(await redis.exists(key)).toBe(1);
     expect(await redis.ttl(key)).toBe(60);
+  });
+
+  test("increments and installs the initial TTL atomically", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    const key = makeKey(["rl", "atomic-test", "user", "alice"]);
+
+    expect(await incrementWithExpiry(redis, key, 60)).toEqual({
+      count: 1,
+      ttlSeconds: 60,
+    });
+    fake.ttls.set(key, 42);
+    expect(await incrementWithExpiry(redis, key, 60)).toEqual({
+      count: 2,
+      ttlSeconds: 42,
+    });
   });
 });

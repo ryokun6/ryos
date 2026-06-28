@@ -59,6 +59,59 @@ if redis.call("get", KEYS[1]) == ARGV[1] then
 end
 return 0
 `;
+const INITIALIZE_WITH_LOCK_SCRIPT = `
+-- sync-v2-initialize-with-lock
+if redis.call("get", KEYS[1]) ~= ARGV[1] then
+  return 0
+end
+if redis.call("exists", KEYS[2]) == 0 then
+  redis.call("set", KEYS[2], "0", "EX", ARGV[2])
+end
+return 1
+`;
+const COMMIT_WITH_LOCK_SCRIPT = `
+-- sync-v2-commit-with-lock
+if redis.call("get", KEYS[1]) ~= ARGV[1] then
+  return 0
+end
+
+local current_seq = redis.call("get", KEYS[2])
+if (current_seq or "0") ~= ARGV[2] then
+  return -1
+end
+
+local ttl = tonumber(ARGV[4])
+local trim_before = tonumber(ARGV[5])
+local cursor = 6
+local kv_count = tonumber(ARGV[cursor])
+cursor = cursor + 1
+for _ = 1, kv_count do
+  redis.call("hset", KEYS[3], ARGV[cursor], ARGV[cursor + 1])
+  cursor = cursor + 2
+end
+
+local journal_count = tonumber(ARGV[cursor])
+cursor = cursor + 1
+for _ = 1, journal_count do
+  redis.call("zadd", KEYS[4], ARGV[cursor], ARGV[cursor + 1])
+  cursor = cursor + 2
+end
+
+redis.call("set", KEYS[2], ARGV[3], "EX", ttl)
+redis.call("zremrangebyscore", KEYS[4], "-inf", trim_before)
+
+local blob_count = tonumber(ARGV[cursor])
+cursor = cursor + 1
+for _ = 1, blob_count do
+  redis.call("hset", KEYS[5], ARGV[cursor], ARGV[cursor + 1])
+  cursor = cursor + 2
+end
+
+redis.call("expire", KEYS[3], ttl)
+redis.call("expire", KEYS[4], ttl)
+redis.call("expire", KEYS[5], ttl)
+return 1
+`;
 
 export interface UserLockHandle {
   readonly key: string;
@@ -124,11 +177,11 @@ async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function evalLockScript(
+async function evalRedisScript(
   redis: Redis,
   script: string,
   keys: string[],
-  args: string[]
+  args: Array<string | number>
 ): Promise<unknown> {
   if (typeof redis.eval === "function") {
     return redis.eval(script, keys, args);
@@ -146,9 +199,9 @@ async function evalLockScript(
     };
   };
   if (typeof adapter.client?.eval === "function") {
-    return adapter.client.eval(script, keys.length, ...keys, ...args);
+    return adapter.client.eval(script, keys.length, ...keys, ...args.map(String));
   }
-  throw new Error("Redis backend does not support atomic lock scripts");
+  throw new Error("Redis backend does not support atomic scripts");
 }
 
 export async function acquireUserLock(
@@ -176,7 +229,7 @@ export async function renewUserLock(
   redis: Redis,
   handle: UserLockHandle
 ): Promise<boolean> {
-  const result = await evalLockScript(
+  const result = await evalRedisScript(
     redis,
     COMPARE_AND_EXPIRE_SCRIPT,
     [handle.key],
@@ -190,7 +243,7 @@ export async function releaseUserLock(
   handle: UserLockHandle
 ): Promise<void> {
   try {
-    await evalLockScript(
+    await evalRedisScript(
       redis,
       COMPARE_AND_DELETE_SCRIPT,
       [handle.key],
@@ -263,7 +316,15 @@ export async function ensureSync2Initialized(
       throw new Error("Lost sync lock during initialization");
     }
 
-    await redis.set(sync2SeqKey(username), "0", { ex: USER_TTL_SECONDS });
+    const initialized = await evalRedisScript(
+      redis,
+      INITIALIZE_WITH_LOCK_SCRIPT,
+      [lock.key, sync2SeqKey(username)],
+      [lock.token, USER_TTL_SECONDS]
+    );
+    if (initialized !== 1 && initialized !== "1") {
+      throw new Error("Lost sync lock during initialization");
+    }
     await touchTtls(redis, username);
     console.log(`[sync2] Initialized ${username}`);
   } finally {
@@ -322,6 +383,53 @@ export function resolveSyncOp(
 ): "accept" | "reject" {
   if (!existing) return "accept";
   return compareHlc(op.t, existing.t) > 0 ? "accept" : "reject";
+}
+
+async function commitSyncOps(
+  redis: Redis,
+  username: string,
+  lock: UserLockHandle,
+  expectedSeq: number,
+  nextSeq: number,
+  kvWrites: Record<string, string>,
+  journalEntries: Array<{ seq: number; member: string }>,
+  blobRegistry: Record<string, string>
+): Promise<boolean> {
+  const kvEntries = Object.entries(kvWrites);
+  const blobEntries = Object.entries(blobRegistry);
+  const args: Array<string | number> = [
+    lock.token,
+    expectedSeq,
+    nextSeq,
+    USER_TTL_SECONDS,
+    nextSeq - JOURNAL_MAX_LENGTH,
+    kvEntries.length,
+  ];
+  for (const [key, value] of kvEntries) {
+    args.push(key, value);
+  }
+  args.push(journalEntries.length);
+  for (const { seq, member } of journalEntries) {
+    args.push(seq, member);
+  }
+  args.push(blobEntries.length);
+  for (const [digest, value] of blobEntries) {
+    args.push(digest, value);
+  }
+
+  const result = await evalRedisScript(
+    redis,
+    COMMIT_WITH_LOCK_SCRIPT,
+    [
+      lock.key,
+      sync2SeqKey(username),
+      sync2KvKey(username),
+      sync2JournalKey(username),
+      sync2BlobsKey(username),
+    ],
+    args
+  );
+  return result === 1 || result === "1";
 }
 
 export async function applySyncOps(
@@ -409,32 +517,23 @@ export async function applySyncOps(
     }
 
     if (accepted.length > 0) {
-      if (!(await renewUserLock(redis, lock))) {
+      const committed = await commitSyncOps(
+        redis,
+        username,
+        lock,
+        currentSeq,
+        nextSeq,
+        kvWrites,
+        journalEntries,
+        blobRegistry
+      );
+      if (!committed) {
         throw new Error("Sync lock ownership was lost, please retry");
       }
-      const journalKey = sync2JournalKey(username);
-      const pipeline = redis.pipeline();
-      pipeline.hset(sync2KvKey(username), kvWrites);
-      for (const { seq, member } of journalEntries) {
-        pipeline.zadd(journalKey, { score: seq, member });
-      }
-      pipeline.set(sync2SeqKey(username), String(nextSeq), {
-        ex: USER_TTL_SECONDS,
-      });
-      // Trim to the last JOURNAL_MAX_LENGTH ops by dropping the lowest seqs.
-      pipeline.zremrangebyscore(
-        journalKey,
-        "-inf",
-        nextSeq - JOURNAL_MAX_LENGTH
-      );
-      if (Object.keys(blobRegistry).length > 0) {
-        pipeline.hset(sync2BlobsKey(username), blobRegistry);
-      }
-      pipeline.expire(sync2SeqKey(username), USER_TTL_SECONDS);
-      pipeline.expire(sync2KvKey(username), USER_TTL_SECONDS);
-      pipeline.expire(journalKey, USER_TTL_SECONDS);
-      pipeline.expire(sync2BlobsKey(username), USER_TTL_SECONDS);
-      await pipeline.exec();
+    } else if (!(await renewUserLock(redis, lock))) {
+      // Rejections include the current winner and sequence. Do not return a
+      // stale view if another owner took over while this batch was resolving.
+      throw new Error("Sync lock ownership was lost, please retry");
     }
 
     return { seq: nextSeq, results, accepted };

@@ -231,7 +231,7 @@ describe("useProcessedHtml streaming gate wiring", () => {
       "src/components/shared/html-preview/HtmlPreview.tsx"
     );
     expect(previewSource).toMatch(
-      /useProcessedHtml\(htmlContent, normalizedBaseUrl, isTrustedApplet, isStreaming\)/
+      /useProcessedHtml\(\s*htmlContent,\s*normalizedBaseUrl,\s*isTrustedApplet,\s*appletBridgeNonce,\s*isStreaming\s*\)/
     );
     expect(previewSource).toContain("export default memo(HtmlPreview);");
   });
