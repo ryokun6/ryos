@@ -650,8 +650,9 @@ Idempotent and one-way per user; v1 keys are left to expire via their
 `cloudSync*` utility constellation (~7,000 lines down to roughly a quarter
 of that). The Control Panels sync tab and menu-bar indicator now read
 per-category status from the slimmed `useCloudSyncStore`; force upload =
-re-stamped full flush, force download = snapshot apply. The manual backup
-endpoints were kept unchanged.
+re-stamped full flush, force download = snapshot apply. The v1 manual cloud
+backup endpoints are retired; local `.gz` restores set a one-shot intent that
+promotes restored local state back into Sync v2 on the next boot.
 
 ---
 

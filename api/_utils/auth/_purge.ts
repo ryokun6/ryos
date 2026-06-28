@@ -57,7 +57,7 @@ export async function purgeUserAccount(
   // Telegram link (both directions).
   await unlinkTelegramAccountByUsername(redis, normalized).catch(() => {});
 
-  // Sync / backup data.
+  // Sync data.
   deletedCount += await redis
     .del(
       redisKeys.sync.v2Seq(normalized),
@@ -66,7 +66,6 @@ export async function purgeUserAccount(
       redisKeys.sync.v2Blobs(normalized),
       redisKeys.sync.v2Lock(normalized),
       redisKeys.sync.v2TtlTouched(normalized),
-      redisKeys.sync.backupMeta(normalized),
       redisKeys.sync.autoSyncPreference(normalized)
     )
     .catch(() => 0);

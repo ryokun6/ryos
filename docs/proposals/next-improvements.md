@@ -27,9 +27,9 @@ Recent work has been dominated by a few large efforts that are now in their
 final-cleanup phase:
 
 - **Cloud Sync v2** — journal-based delta sync, shipped via direct cutover
-  (`docs/proposals/cloud-sync-v2.md`). v1 manual-backup routes
-  (`api/sync/backup.ts`, `status.ts`, `backup-token.ts`) still back the
-  Control Panels backup UI and remain until that UI has a v2-only replacement.
+  (`docs/proposals/cloud-sync-v2.md`). Sync v1 manual-backup routes and the
+  Control Panels cloud backup UI are retired; manual local restores now promote
+  into Sync v2 on the next boot for logged-in users.
 - **Canonical Redis key scheme** — `src/shared/redisKeys.ts` is now the source
   of truth. Listen-session and Airdrop presence dual reads are retired, and
   `rl:*` rate-limit callers canonicalize through `makeKey` into `rate:*`.
@@ -116,9 +116,9 @@ stores. The typed persisted-store factory remains pending because it touches
 
 ### 2.4 Finish the migrations that left dual paths
 
-- **Sync v1 retirement**: remove `api/sync/backup*.ts` + `status.ts` once the
-  Control Panels backup UI no longer calls them (or has explicit v2-only
-  replacement telemetry).
+- **Sync v1 retirement**: **shipped** — `api/sync/backup*.ts` + `status.ts`
+  and the Control Panels cloud backup UI are removed; local restores now
+  promote into Sync v2.
 - **Legacy Redis dual-reads**: **shipped** for listen sessions and Airdrop
   presence; `rl:*` callers already canonicalize through `makeKey` into `rate:*`.
   Room/listen helpers now accept handler-injected `redis` clients while keeping

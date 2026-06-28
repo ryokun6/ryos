@@ -2952,10 +2952,6 @@
         "effects": "Effects",
         "output": "Output"
       },
-      "cloudSyncTabs": {
-        "sync": "Sync",
-        "backup": "Backup"
-      },
       "accountsTabs": {
         "accounts": "Accounts",
         "security": "Security",
@@ -3165,9 +3161,6 @@
       },
       "cloudSync": {
         "accountDescription": "Sync settings across your devices",
-        "description": "Back up or restore all settings and files to the cloud. Max {{limit}} MB",
-        "checking": "Checking cloud backup…",
-        "lastBackup": "Last cloud backup: {{date}} ({{size}} MB)",
         "forceUpload": "Upload",
         "forceUploading": "Uploading…",
         "forceDownload": "Download",
@@ -3183,27 +3176,7 @@
         "confirmForceUploadDesc": "This will overwrite cloud data with this device's current data for each selected Auto Sync item.",
         "confirmForceDownload": "Download from Cloud?",
         "confirmForceDownloadDesc": "This will overwrite this device's data with cloud data for each selected Auto Sync item.",
-        "backupToCloud": "Cloud Backup",
-        "restoreFromCloud": "Cloud Restore",
-        "backingUp": "Backing up…",
-        "restoring": "Restoring…",
-        "backupSuccess": "Backup saved to cloud",
-        "backupFailed": "Failed to back up to cloud",
-        "restoreFailed": "Failed to restore from cloud",
-        "loginRequired": "Sign in to use cloud sync",
-        "confirmRestore": "Restore from Cloud?",
-        "confirmRestoreDesc": "This will replace all your current settings and files with the cloud backup. ryOS will restart.",
-        "tooLarge": "Backup too large ({{size}} MB). Maximum size is {{limit}} MB compressed.",
-        "progress": {
-          "collecting": "Collecting data…",
-          "serializing": "Serializing files…",
-          "compressing": "Compressing…",
-          "uploading": "Uploading to cloud…",
-          "downloading": "Downloading from cloud…",
-          "decompressing": "Decompressing…",
-          "restoring": "Restoring data…",
-          "finishing": "Finishing up…"
-        }
+        "loginRequired": "Sign in to use cloud sync"
       },
       "resetAllSettings": "Reset All Settings",
       "resetAllSettingsDescription": "This will clear all saved settings and restore defaults",

@@ -198,25 +198,15 @@ export function ControlPanelsAppComponent({
     autoSyncLastCheckedAt,
     autoSyncLastError,
     autoSyncDomainStatus,
-    cloudSyncStatus,
-    isCloudBackingUp,
-    isCloudRestoring,
     isCloudForceSyncing,
     isCloudForceUploading,
     isCloudForceDownloading,
-    isCloudStatusLoading,
-    isConfirmCloudRestoreOpen,
-    setIsConfirmCloudRestoreOpen,
     isConfirmForceUploadOpen,
     setIsConfirmForceUploadOpen,
     isConfirmForceDownloadOpen,
     setIsConfirmForceDownloadOpen,
     handleCloudForceUpload,
     handleCloudForceDownload,
-    handleCloudBackup,
-    handleCloudRestore,
-    cloudProgress,
-    CLOUD_BACKUP_MAX_SIZE,
   } = logic;
 
   const isAdmin = useIsRyoAdmin();
@@ -351,18 +341,10 @@ export function ControlPanelsAppComponent({
       setSyncStickies={setSyncStickies}
       setSyncBooks={setSyncBooks}
       isCloudForceSyncing={isCloudForceSyncing}
-      isCloudBackingUp={isCloudBackingUp}
-      isCloudRestoring={isCloudRestoring}
       isCloudForceUploading={isCloudForceUploading}
       isCloudForceDownloading={isCloudForceDownloading}
       setIsConfirmForceUploadOpen={setIsConfirmForceUploadOpen}
       setIsConfirmForceDownloadOpen={setIsConfirmForceDownloadOpen}
-      handleCloudBackup={handleCloudBackup}
-      setIsConfirmCloudRestoreOpen={setIsConfirmCloudRestoreOpen}
-      cloudSyncStatus={cloudSyncStatus}
-      cloudProgress={cloudProgress}
-      isCloudStatusLoading={isCloudStatusLoading}
-      CLOUD_BACKUP_MAX_SIZE={CLOUD_BACKUP_MAX_SIZE}
       myContact={myContact}
       accountAvatarLabel={accountAvatarLabel}
       accountAvatarInitials={accountAvatarInitials}
@@ -480,9 +462,6 @@ export function ControlPanelsAppComponent({
           isLogoutConfirmDialogOpen={isLogoutConfirmDialogOpen}
           setIsLogoutConfirmDialogOpen={setIsLogoutConfirmDialogOpen}
           confirmLogout={confirmLogout}
-          isConfirmCloudRestoreOpen={isConfirmCloudRestoreOpen}
-          setIsConfirmCloudRestoreOpen={setIsConfirmCloudRestoreOpen}
-          handleCloudRestore={handleCloudRestore}
           isConfirmForceUploadOpen={isConfirmForceUploadOpen}
           setIsConfirmForceUploadOpen={setIsConfirmForceUploadOpen}
           handleCloudForceUpload={handleCloudForceUpload}

@@ -60,7 +60,6 @@ export const LEGACY_REDIS_SCAN_PATTERNS = [
   "rt:*",
   "ryos:presence:*",
   "song:*",
-  "sync:meta:*",
   "sync:pref:*",
   "sync2:*",
   "telegram:*",
@@ -167,8 +166,6 @@ export const redisKeys = {
     v2TtlTouched: (username: string) =>
       redisKey("sync", "v2", "user", username, "ttl-touched"),
     maintenanceCursor: () => redisKey("sync", "maintenance", "cursor"),
-    backupMeta: (username: string) =>
-      redisKey("sync", "backup", "user", username, "meta"),
     autoSyncPreference: (username: string) =>
       redisKey("sync", "preference", "user", username, "auto-sync"),
   },

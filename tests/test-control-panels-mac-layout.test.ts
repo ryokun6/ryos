@@ -232,7 +232,7 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(categoriesSource.includes("control-panels/displays.png")).toBe(true);
   });
 
-  test("Cloud Sync pane uses Sync and Backup tabs with cloud backup UI", () => {
+  test("Cloud Sync pane exposes Sync v2 controls without legacy cloud backup UI", () => {
     const dotMacSource = readSource(
       "src/apps/control-panels/components/control-panels-app/DotMacPaneContent.tsx"
     );
@@ -243,30 +243,16 @@ describe("Control Panels macOS 10.3 layout", () => {
       "src/apps/control-panels/components/control-panels-app/ControlPanelsMacPaneRenderer.tsx"
     );
 
-    expect(dotMacSource.includes("control-panels-pref-form-tabbed")).toBe(true);
-    expect(dotMacSource.includes("control-panels-pref-tab-bar")).toBe(true);
-    expect(dotMacSource.includes("cloudSyncTabs.sync")).toBe(true);
-    expect(dotMacSource.includes("cloudSyncTabs.backup")).toBe(true);
-    expect(dotMacSource.includes("control-panels-pref-tab-panel")).toBe(true);
-    expect(dotMacSource.includes("handleCloudBackup")).toBe(true);
+    expect(dotMacSource.includes("control-panels-pref-form-tabbed")).toBe(false);
+    expect(dotMacSource.includes("control-panels-pref-tab-bar")).toBe(false);
+    expect(dotMacSource.includes("cloudSyncTabs.sync")).toBe(false);
+    expect(dotMacSource.includes("cloudSyncTabs.backup")).toBe(false);
+    expect(dotMacSource.includes("control-panels-pref-tab-panel")).toBe(false);
+    expect(dotMacSource.includes("handleCloudBackup")).toBe(false);
     expect(dotMacSource.includes("setIsConfirmForceUploadOpen")).toBe(true);
+    expect(dotMacSource.includes("setIsConfirmForceDownloadOpen")).toBe(true);
     expect(dotMacSource.includes("forceSyncDescription")).toBe(true);
     expect(dotMacSource.includes("sharingDescription")).toBe(false);
-
-    const syncTabPanel = dotMacSource.slice(
-      dotMacSource.indexOf('hidden={dotMacTab !== "sync"}'),
-      dotMacSource.indexOf('hidden={dotMacTab !== "backup"}')
-    );
-    const backupTabPanel = dotMacSource.slice(
-      dotMacSource.indexOf('hidden={dotMacTab !== "backup"}'),
-      dotMacSource.indexOf("</div>\n      </div>\n    </div>\n  );")
-    );
-    expect(syncTabPanel.includes("setIsConfirmForceUploadOpen")).toBe(true);
-    expect(syncTabPanel.includes("setIsConfirmForceDownloadOpen")).toBe(true);
-    expect(syncTabPanel.includes("handleCloudBackup")).toBe(false);
-    expect(backupTabPanel.includes("handleCloudBackup")).toBe(true);
-    expect(backupTabPanel.includes("setIsConfirmForceUploadOpen")).toBe(false);
-    expect(backupTabPanel.includes("setIsConfirmForceDownloadOpen")).toBe(false);
 
     expect(sharingSource.includes("handleCloudBackup")).toBe(false);
     expect(sharingSource.includes("control-panels-pref-divider")).toBe(false);
@@ -277,8 +263,9 @@ describe("Control Panels macOS 10.3 layout", () => {
       rendererSource.indexOf('case "dot-mac":'),
       rendererSource.indexOf('case "sharing":')
     );
-    expect(dotMacCase.includes("handleCloudBackup")).toBe(true);
-    expect(dotMacCase.includes("cloudSyncStatus")).toBe(true);
+    expect(dotMacCase.includes("handleCloudBackup")).toBe(false);
+    expect(dotMacCase.includes("cloudSyncStatus")).toBe(false);
+    expect(dotMacCase.includes("setIsConfirmForceUploadOpen")).toBe(true);
 
     const sharingCase = rendererSource.slice(
       rendererSource.indexOf('case "sharing":'),

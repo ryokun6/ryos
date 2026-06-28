@@ -1604,18 +1604,10 @@
       "checkForUpdates": "檢查更新",
       "cloudSync": {
         "accountDescription": "在裝置間同步設定",
-        "backingUp": "正在備份⋯",
-        "backupFailed": "備份到雲端失敗",
-        "backupSuccess": "備份已儲存到雲端",
-        "backupToCloud": "雲端備份",
-        "checking": "正在檢查雲端備份⋯",
         "confirmForceDownload": "從雲端下載？",
         "confirmForceDownloadDesc": "每個已啟用的自動同步項目的裝置資料將被雲端資料覆蓋。",
         "confirmForceUpload": "上傳至雲端？",
         "confirmForceUploadDesc": "每個已啟用的自動同步項目的雲端資料將被此裝置的目前資料覆蓋。",
-        "confirmRestore": "要從雲端還原嗎？",
-        "confirmRestoreDesc": "這會以雲端備份取代你目前的所有設定與檔案，ryOS 將重新啟動。",
-        "description": "將所有設定與檔案備份到雲端或從雲端還原。上限 {{limit}}MB。",
         "forceDownload": "下載",
         "forceDownloadFailed": "從雲端下載失敗",
         "forceDownloading": "下載中⋯",
@@ -1627,26 +1619,7 @@
         "forceUploadFailed": "上傳至雲端失敗",
         "forceUploading": "上傳中⋯",
         "forceUploadSuccess": "上傳至雲端已完成",
-        "lastBackup": "上次雲端備份：{{date}}（{{size}}MB）",
-        "loginRequired": "請先登入以使用雲端同步",
-        "progress": {
-          "collecting": "正在收集資料⋯",
-          "compressing": "正在壓縮⋯",
-          "decompressing": "正在解壓縮⋯",
-          "downloading": "正在從雲端下載⋯",
-          "finishing": "即將完成⋯",
-          "restoring": "正在還原資料⋯",
-          "serializing": "正在序列化檔案⋯",
-          "uploading": "正在上傳到雲端⋯"
-        },
-        "restoreFailed": "從雲端還原失敗",
-        "restoreFromCloud": "從雲端還原",
-        "restoring": "正在還原⋯",
-        "tooLarge": "備份檔過大（{{size}}MB）。壓縮後上限為 {{limit}}MB。"
-      },
-      "cloudSyncTabs": {
-        "backup": "備份",
-        "sync": "同步"
+        "loginRequired": "請先登入以使用雲端同步"
       },
       "color": "顏色",
       "connectionStatus": {

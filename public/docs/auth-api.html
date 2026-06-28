@@ -677,7 +677,7 @@ POST /api/auth/email/remove                                      # clears email<
 <code>set</code> and <code>remove</code> require a fresh (non-grace) token. <code>verify</code> writes a reverse
 index so the email can be used as a recovery identifier.
 <h2>Delete Account</h2>
-<p>Permanently delete the authenticated user's own account and all associated data (profile, password, sessions, recovery-email index, Telegram link, sync/backup data). Requires a fresh (non-grace) token.</p>
+<p>Permanently delete the authenticated user's own account and all associated data (profile, password, sessions, recovery-email index, Telegram link, and Sync v2 data). Requires a fresh (non-grace) token.</p>
 <pre><code>POST /api/auth/account/delete
 Authorization: Bearer {token}
 X-Username: alice

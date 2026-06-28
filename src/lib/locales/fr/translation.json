@@ -1606,18 +1606,10 @@
       "checkForUpdates": "Rechercher les mises à jour",
       "cloudSync": {
         "accountDescription": "Paramètres de synchronisation sur vos appareils",
-        "backingUp": "Sauvegarde en cours…",
-        "backupFailed": "Échec de la sauvegarde dans le cloud",
-        "backupSuccess": "Sauvegarde enregistrée dans le cloud",
-        "backupToCloud": "Sauvegarde cloud",
-        "checking": "Vérification de la sauvegarde cloud…",
         "confirmForceDownload": "Télécharger depuis le cloud ?",
         "confirmForceDownloadDesc": "Les données de cet appareil seront remplacées par les données du cloud pour chaque élément de synchronisation automatique activé.",
         "confirmForceUpload": "Téléverser vers le cloud ?",
         "confirmForceUploadDesc": "Les données du cloud seront remplacées par les données actuelles de cet appareil pour chaque élément de synchronisation automatique activé.",
-        "confirmRestore": "Restaurer depuis le cloud ?",
-        "confirmRestoreDesc": "Cela remplacera tous vos réglages et fichiers actuels par la sauvegarde cloud. ryOS redémarrera.",
-        "description": "Sauvegardez ou restaurez tous les réglages et fichiers dans le cloud. Max {{limit}} Mo",
         "forceDownload": "Télécharger",
         "forceDownloadFailed": "Échec du téléchargement depuis le cloud",
         "forceDownloadNoData": "Aucune donnée cloud trouvée pour les éléments activés",
@@ -1629,26 +1621,7 @@
         "forceUploadFailed": "Échec du téléversement vers le cloud",
         "forceUploadSuccess": "Téléversement vers le cloud terminé",
         "forceUploading": "Téléversement…",
-        "lastBackup": "Dernière sauvegarde cloud : {{date}} ({{size}} Mo)",
-        "loginRequired": "Veuillez vous connecter pour utiliser la synchronisation cloud",
-        "progress": {
-          "collecting": "Collecte des données…",
-          "compressing": "Compression…",
-          "decompressing": "Décompression…",
-          "downloading": "Téléchargement depuis le cloud…",
-          "finishing": "Finalisation…",
-          "restoring": "Restauration des données…",
-          "serializing": "Sérialisation des fichiers…",
-          "uploading": "Envoi vers le cloud…"
-        },
-        "restoreFailed": "Échec de la restauration depuis le cloud",
-        "restoreFromCloud": "Restaurer depuis le cloud",
-        "restoring": "Restauration…",
-        "tooLarge": "Sauvegarde trop volumineuse ({{size}} Mo). La taille maximale compressée est de {{limit}} Mo."
-      },
-      "cloudSyncTabs": {
-        "backup": "Sauvegarde",
-        "sync": "Synchronisation"
+        "loginRequired": "Veuillez vous connecter pour utiliser la synchronisation cloud"
       },
       "color": "Couleur",
       "connectionStatus": {

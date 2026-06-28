@@ -23,7 +23,7 @@ export const helpItems = [
   {
     icon: "☁️",
     title: "Cloud Sync",
-    description: "Configure auto-sync and manual cloud backups for contacts, calendar, and more",
+    description: "Configure Auto Sync and force Sync v2 upload/download for contacts, calendar, and more",
   },
   {
     icon: "📦",

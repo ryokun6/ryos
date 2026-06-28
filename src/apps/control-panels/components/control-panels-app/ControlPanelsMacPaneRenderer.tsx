@@ -107,26 +107,10 @@ export type ControlPanelsMacPaneRendererProps = {
   setSyncStickies: (enabled: boolean) => void;
   setSyncBooks: (enabled: boolean) => void;
   isCloudForceSyncing: boolean;
-  isCloudBackingUp: boolean;
-  isCloudRestoring: boolean;
   isCloudForceUploading: boolean;
   isCloudForceDownloading: boolean;
   setIsConfirmForceUploadOpen: (open: boolean) => void;
   setIsConfirmForceDownloadOpen: (open: boolean) => void;
-  handleCloudBackup: () => void;
-  setIsConfirmCloudRestoreOpen: (open: boolean) => void;
-  cloudSyncStatus: {
-    hasBackup: boolean;
-    metadata: {
-      timestamp: string;
-      totalSize: number;
-      version?: number;
-      createdAt?: string;
-    } | null;
-  } | null;
-  cloudProgress: { phase: string; percent: number } | null;
-  isCloudStatusLoading: boolean;
-  CLOUD_BACKUP_MAX_SIZE: number;
   myContact: Contact | null;
   accountAvatarLabel: string;
   accountAvatarInitials: string;
@@ -308,20 +292,11 @@ export function ControlPanelsMacPaneRenderer(
           setSyncTv={props.setSyncTv}
           setSyncStickies={props.setSyncStickies}
           setSyncBooks={props.setSyncBooks}
-          isMacOSTheme={props.isMacOSTheme}
           isCloudForceSyncing={props.isCloudForceSyncing}
-          isCloudBackingUp={props.isCloudBackingUp}
-          isCloudRestoring={props.isCloudRestoring}
           isCloudForceUploading={props.isCloudForceUploading}
           isCloudForceDownloading={props.isCloudForceDownloading}
           setIsConfirmForceUploadOpen={props.setIsConfirmForceUploadOpen}
           setIsConfirmForceDownloadOpen={props.setIsConfirmForceDownloadOpen}
-          handleCloudBackup={props.handleCloudBackup}
-          setIsConfirmCloudRestoreOpen={props.setIsConfirmCloudRestoreOpen}
-          cloudSyncStatus={props.cloudSyncStatus}
-          cloudProgress={props.cloudProgress}
-          isCloudStatusLoading={props.isCloudStatusLoading}
-          CLOUD_BACKUP_MAX_SIZE={props.CLOUD_BACKUP_MAX_SIZE}
         />
       );
     case "sharing":

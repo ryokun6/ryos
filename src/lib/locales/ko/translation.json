@@ -1604,18 +1604,10 @@
       "checkForUpdates": "업데이트 확인",
       "cloudSync": {
         "accountDescription": "기기 간 동기화 설정",
-        "backingUp": "백업 중…",
-        "backupFailed": "클라우드 백업에 실패했습니다",
-        "backupSuccess": "백업이 클라우드에 저장되었습니다",
-        "backupToCloud": "클라우드 백업",
-        "checking": "클라우드 백업 확인 중…",
         "confirmForceDownload": "클라우드에서 다운로드하시겠습니까?",
         "confirmForceDownloadDesc": "활성화된 자동 동기화 항목에 대해 이 기기의 데이터가 클라우드 데이터로 덮어쓰여집니다.",
         "confirmForceUpload": "클라우드에 업로드하시겠습니까?",
         "confirmForceUploadDesc": "활성화된 자동 동기화 항목에 대해 클라우드 데이터가 이 기기의 현재 데이터로 덮어쓰여집니다.",
-        "confirmRestore": "클라우드에서 복원할까요?",
-        "confirmRestoreDesc": "현재 설정과 파일이 모두 클라우드 백업으로 대체됩니다. ryOS가 다시 시작됩니다.",
-        "description": "모든 설정과 파일을 클라우드에 백업하거나 복원합니다. 최대 {{limit}}MB",
         "forceDownload": "다운로드",
         "forceDownloadFailed": "클라우드 다운로드에 실패했습니다",
         "forceDownloadNoData": "활성화된 항목에 대한 클라우드 데이터가 없습니다",
@@ -1627,26 +1619,7 @@
         "forceUploadFailed": "클라우드 업로드에 실패했습니다",
         "forceUploadSuccess": "클라우드 업로드가 완료되었습니다",
         "forceUploading": "업로드 중…",
-        "lastBackup": "마지막 클라우드 백업: {{date}} ({{size}}MB)",
-        "loginRequired": "클라우드 동기화를 사용하려면 로그인하세요",
-        "progress": {
-          "collecting": "데이터 수집 중…",
-          "compressing": "압축 중…",
-          "decompressing": "압축 해제 중…",
-          "downloading": "클라우드에서 다운로드 중…",
-          "finishing": "마무리 중…",
-          "restoring": "데이터 복원 중…",
-          "serializing": "파일 직렬화 중…",
-          "uploading": "클라우드에 업로드 중…"
-        },
-        "restoreFailed": "클라우드에서 복원하지 못했습니다",
-        "restoreFromCloud": "클라우드에서 복원",
-        "restoring": "복원 중…",
-        "tooLarge": "백업이 너무 큽니다 ({{size}}MB). 압축 후 최대 크기는 {{limit}}MB입니다."
-      },
-      "cloudSyncTabs": {
-        "backup": "백업",
-        "sync": "동기화"
+        "loginRequired": "클라우드 동기화를 사용하려면 로그인하세요"
       },
       "color": "색상",
       "connectionStatus": {

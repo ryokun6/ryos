@@ -1606,18 +1606,10 @@
       "checkForUpdates": "Buscar Atualizações",
       "cloudSync": {
         "accountDescription": "Configurações de sincronização nos seus dispositivos",
-        "backingUp": "Fazendo o Backup…",
-        "backupFailed": "Falha ao salvar backup na nuvem",
-        "backupSuccess": "Backup salvo na nuvem",
-        "backupToCloud": "Backup na nuvem",
-        "checking": "Verificando backup na nuvem…",
         "confirmForceDownload": "Baixar da nuvem?",
         "confirmForceDownloadDesc": "Os dados deste dispositivo serão substituídos pelos dados da nuvem para cada item de Sincronização Automática ativado.",
         "confirmForceUpload": "Enviar para a nuvem?",
         "confirmForceUploadDesc": "Os dados na nuvem serão substituídos pelos dados atuais deste dispositivo para cada item de Sincronização Automática ativado.",
-        "confirmRestore": "Restaurar da nuvem?",
-        "confirmRestoreDesc": "Isso substituirá todas as suas configurações e arquivos atuais pelo backup na nuvem. O ryOS será reiniciado.",
-        "description": "Faça backup ou restaure todas as configurações e arquivos na nuvem. Máx. {{limit}} MB",
         "forceDownload": "Baixar",
         "forceDownloadFailed": "Falha ao baixar da nuvem",
         "forceDownloadNoData": "Nenhum dado na nuvem encontrado para os itens ativados",
@@ -1629,26 +1621,7 @@
         "forceUploadFailed": "Falha ao enviar para a nuvem",
         "forceUploadSuccess": "Envio para a nuvem concluído",
         "forceUploading": "Enviando…",
-        "lastBackup": "Último backup na nuvem: {{date}} ({{size}} MB)",
-        "loginRequired": "Faça login para usar a sincronização em nuvem",
-        "progress": {
-          "collecting": "Coletando dados…",
-          "compressing": "Comprimindo…",
-          "decompressing": "Descomprimindo…",
-          "downloading": "Baixando da nuvem…",
-          "finishing": "Finalizando…",
-          "restoring": "Restaurando dados…",
-          "serializing": "Serializando arquivos…",
-          "uploading": "Enviando para a nuvem…"
-        },
-        "restoreFailed": "Falha ao restaurar da nuvem",
-        "restoreFromCloud": "Restaurar da nuvem",
-        "restoring": "Restaurando…",
-        "tooLarge": "Backup muito grande ({{size}} MB). O tamanho máximo compactado é {{limit}} MB."
-      },
-      "cloudSyncTabs": {
-        "backup": "Backup",
-        "sync": "Sincronizar"
+        "loginRequired": "Faça login para usar a sincronização em nuvem"
       },
       "color": "Cor",
       "connectionStatus": {

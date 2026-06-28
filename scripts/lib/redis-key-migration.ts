@@ -365,13 +365,6 @@ export async function planRedisKeyMigration(
       return { legacyKey, targetKey: redisKeys.sync.maintenanceCursor(), action: "copy" };
     }
   }
-  if (legacyKey.startsWith("sync:meta:")) {
-    return {
-      legacyKey,
-      targetKey: redisKeys.sync.backupMeta(suffixAfter(legacyKey, "sync:meta:")),
-      action: "copy",
-    };
-  }
   if (legacyKey.startsWith("sync:pref:autoSync:")) {
     return {
       legacyKey,

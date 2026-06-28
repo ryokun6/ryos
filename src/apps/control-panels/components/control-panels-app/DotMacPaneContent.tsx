@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -8,7 +7,6 @@ import { AUTO_SYNC_ITEM_ICONS } from "./constants";
 import { SyncDomainRow } from "./SyncDomainRow";
 import { SyncSectionTitle } from "./SyncSectionTitle";
 import { formatRelativeTime, formatSyncStatus, type SyncAuditStatus } from "./syncUtils";
-import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 
 export type DotMacPaneContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -41,31 +39,12 @@ export type DotMacPaneContentProps = {
   setSyncTv: (enabled: boolean) => void;
   setSyncStickies: (enabled: boolean) => void;
   setSyncBooks: (enabled: boolean) => void;
-  isMacOSTheme: boolean;
   isCloudForceSyncing: boolean;
-  isCloudBackingUp: boolean;
-  isCloudRestoring: boolean;
   isCloudForceUploading: boolean;
   isCloudForceDownloading: boolean;
   setIsConfirmForceUploadOpen: (open: boolean) => void;
   setIsConfirmForceDownloadOpen: (open: boolean) => void;
-  handleCloudBackup: () => void;
-  setIsConfirmCloudRestoreOpen: (open: boolean) => void;
-  cloudSyncStatus: {
-    hasBackup: boolean;
-    metadata: {
-      timestamp: string;
-      totalSize: number;
-      version?: number;
-      createdAt?: string;
-    } | null;
-  } | null;
-  cloudProgress: { phase: string; percent: number } | null;
-  isCloudStatusLoading: boolean;
-  CLOUD_BACKUP_MAX_SIZE: number;
 };
-
-type DotMacPaneTab = "sync" | "backup";
 
 export function DotMacPaneContent({
   t,
@@ -98,63 +77,15 @@ export function DotMacPaneContent({
   setSyncTv,
   setSyncStickies,
   setSyncBooks,
-  isMacOSTheme,
   isCloudForceSyncing,
-  isCloudBackingUp,
-  isCloudRestoring,
   isCloudForceUploading,
   isCloudForceDownloading,
   setIsConfirmForceUploadOpen,
   setIsConfirmForceDownloadOpen,
-  handleCloudBackup,
-  setIsConfirmCloudRestoreOpen,
-  cloudSyncStatus,
-  cloudProgress,
-  isCloudStatusLoading,
-  CLOUD_BACKUP_MAX_SIZE,
 }: DotMacPaneContentProps) {
-  const [dotMacTab, setDotMacTab] = useState<DotMacPaneTab>("sync");
-  const { barClassName, triggerClassName, triggerStyle } =
-    useControlPanelsTabClasses();
-
   return (
-    <div className="control-panels-pref-form control-panels-pref-form-tabbed h-full overflow-y-auto">
-      <div className="control-panels-pref-tabbed">
-        <div
-          role="tablist"
-          className={cn("control-panels-pref-tab-bar", barClassName)}
-          aria-label={t("apps.control-panels.panes.dotMac")}
-        >
-          <button
-            type="button"
-            role="tab"
-            className={triggerClassName}
-            style={triggerStyle}
-            data-state={dotMacTab === "sync" ? "active" : "inactive"}
-            aria-selected={dotMacTab === "sync"}
-            onClick={() => setDotMacTab("sync")}
-          >
-            {t("apps.control-panels.cloudSyncTabs.sync")}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={triggerClassName}
-            style={triggerStyle}
-            data-state={dotMacTab === "backup" ? "active" : "inactive"}
-            aria-selected={dotMacTab === "backup"}
-            onClick={() => setDotMacTab("backup")}
-          >
-            {t("apps.control-panels.cloudSyncTabs.backup")}
-          </button>
-        </div>
-        <div className="control-panels-pref-well">
-          <div
-            role="tabpanel"
-            className="control-panels-pref-tab-panel space-y-3"
-            hidden={dotMacTab !== "sync"}
-            aria-hidden={dotMacTab !== "sync"}
-          >
+    <div className="control-panels-pref-form h-full overflow-y-auto">
+      <div className="control-panels-pref-well space-y-3">
             {username ? (
               <div className="flex items-center justify-between gap-4">
                 <SyncSectionTitle
@@ -299,7 +230,7 @@ export function DotMacPaneContent({
                 <Button
                   variant="retro"
                   onClick={() => setIsConfirmForceUploadOpen(true)}
-                  disabled={isCloudForceSyncing || isCloudBackingUp || isCloudRestoring}
+                  disabled={isCloudForceSyncing}
                   tabIndex={!username ? -1 : undefined}
                   className="flex-1"
                 >
@@ -310,7 +241,7 @@ export function DotMacPaneContent({
                 <Button
                   variant="retro"
                   onClick={() => setIsConfirmForceDownloadOpen(true)}
-                  disabled={isCloudForceSyncing || isCloudBackingUp || isCloudRestoring}
+                  disabled={isCloudForceSyncing}
                   tabIndex={!username ? -1 : undefined}
                   className="flex-1"
                 >
@@ -323,95 +254,6 @@ export function DotMacPaneContent({
                 {t("apps.control-panels.cloudSync.forceSyncDescription")}
               </p>
             </div>
-          </div>
-          <div
-            role="tabpanel"
-            className={cn(
-              "control-panels-pref-tab-panel space-y-2",
-              !username && "opacity-50 pointer-events-none select-none"
-            )}
-            hidden={dotMacTab !== "backup"}
-            aria-hidden={dotMacTab !== "backup"}
-          >
-            <div className="flex gap-2">
-              <Button
-                variant="retro"
-                onClick={handleCloudBackup}
-                disabled={isCloudForceSyncing || isCloudBackingUp || isCloudRestoring}
-                tabIndex={!username ? -1 : undefined}
-                className="flex-1"
-              >
-                {isCloudBackingUp
-                  ? t("apps.control-panels.cloudSync.backingUp")
-                  : t("apps.control-panels.cloudSync.backupToCloud")}
-              </Button>
-              <Button
-                variant="retro"
-                onClick={() => setIsConfirmCloudRestoreOpen(true)}
-                disabled={
-                  isCloudForceSyncing ||
-                  isCloudBackingUp ||
-                  isCloudRestoring ||
-                  !cloudSyncStatus?.hasBackup
-                }
-                tabIndex={!username ? -1 : undefined}
-                className="flex-1"
-              >
-                {isCloudRestoring
-                  ? t("apps.control-panels.cloudSync.restoring")
-                  : t("apps.control-panels.cloudSync.restoreFromCloud")}
-              </Button>
-            </div>
-            {cloudProgress && (
-              <div className="space-y-1">
-                {isMacOSTheme ? (
-                  <div className="aqua-progress w-full h-[14px]">
-                    <div
-                      className="aqua-progress-fill transition-all duration-300 ease-out"
-                      style={{ width: `${cloudProgress.percent}%` }}
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
-                    <div
-                      className="h-full bg-neutral-600 transition-all duration-300 ease-out"
-                      style={{ width: `${cloudProgress.percent}%` }}
-                    />
-                  </div>
-                )}
-                <p className="text-[11px] text-neutral-600 font-geneva-12">
-                  {cloudProgress.phase}
-                  {cloudProgress.percent > 0 &&
-                    cloudProgress.percent < 100 &&
-                    ` (${cloudProgress.percent}%)`}
-                </p>
-              </div>
-            )}
-            {!cloudProgress && (
-              <p className="text-[11px] text-neutral-600 font-geneva-12">
-                {!username
-                  ? t("apps.control-panels.cloudSync.description", {
-                      limit: (CLOUD_BACKUP_MAX_SIZE / (1024 * 1024)).toFixed(0),
-                    })
-                  : isCloudStatusLoading
-                    ? t("apps.control-panels.cloudSync.checking")
-                    : cloudSyncStatus?.hasBackup && cloudSyncStatus.metadata
-                      ? t("apps.control-panels.cloudSync.lastBackup", {
-                          date: new Date(
-                            cloudSyncStatus.metadata.timestamp
-                          ).toLocaleString(),
-                          size: (
-                            cloudSyncStatus.metadata.totalSize /
-                            (1024 * 1024)
-                          ).toFixed(1),
-                        })
-                      : t("apps.control-panels.cloudSync.description", {
-                          limit: (CLOUD_BACKUP_MAX_SIZE / (1024 * 1024)).toFixed(0),
-                        })}
-              </p>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
