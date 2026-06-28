@@ -15,6 +15,7 @@ import {
   fetchWithAuth,
   makeRateLimitBypassHeaders,
   getTokenFromAuthCookie,
+  uniqueTestUsername,
 } from "./test-utils";
 import { createRedis } from "../api/_utils/redis";
 import { redisKeys } from "../src/shared/redisKeys";
@@ -26,17 +27,6 @@ import {
 } from "../api/_utils/auth/_user-record";
 
 const redis = createRedis();
-
-// Consonant-only suffix avoids digit leetspeak / profanity false-positives in
-// the username validator while staying unique enough for test isolation.
-function uniqueUser(prefix: string): string {
-  const alphabet = "bcdfghjklmnpqrstvwxz";
-  let suffix = "";
-  for (let i = 0; i < 12; i++) {
-    suffix += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return `${prefix}${suffix}`;
-}
 
 async function registerUser(
   username: string,
@@ -64,7 +54,7 @@ describe("Account Deletion API", () => {
   });
 
   test("missing confirm flag -> 400", async () => {
-    const username = uniqueUser("delconfirm");
+    const username = uniqueTestUsername("delconfirm");
     const token = await registerUser(username, "testpassword123");
 
     const res = await fetchWithAuth(
@@ -84,7 +74,7 @@ describe("Account Deletion API", () => {
   });
 
   test("confirmUsername mismatch -> 400", async () => {
-    const username = uniqueUser("delmismatch");
+    const username = uniqueTestUsername("delmismatch");
     const token = await registerUser(username, "testpassword123");
 
     const res = await fetchWithAuth(
@@ -105,7 +95,7 @@ describe("Account Deletion API", () => {
   });
 
   test("wrong password -> 401", async () => {
-    const username = uniqueUser("delwrongpw");
+    const username = uniqueTestUsername("delwrongpw");
     const token = await registerUser(username, "testpassword123");
 
     const res = await fetchWithAuth(
@@ -126,7 +116,7 @@ describe("Account Deletion API", () => {
   });
 
   test("happy path: purges profile, sessions, and recovery email index", async () => {
-    const username = uniqueUser("delok");
+    const username = uniqueTestUsername("delok");
     const token = await registerUser(username, "testpassword123");
     const email = `${username}@example.com`;
 

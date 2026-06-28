@@ -40,7 +40,7 @@ describe("New API", () => {
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({}),
       });
-      if (res.status === 429) return; // rate-limited, skip
+      expect(res.status).not.toBe(429);
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.error).toContain("Username");
@@ -52,7 +52,7 @@ describe("New API", () => {
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({ username: "testuser_nopwd" }),
       });
-      if (res.status === 429) return;
+      expect(res.status).not.toBe(429);
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.error).toContain("Password");
@@ -64,7 +64,7 @@ describe("New API", () => {
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({ username: "testuser_short", password: "123" }),
       });
-      if (res.status === 429) return;
+      expect(res.status).not.toBe(429);
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.error).toContain("Password must be");
@@ -77,7 +77,8 @@ describe("New API", () => {
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({ username: testUsername, password: "testpassword123" }),
       });
-      if (res.status === 429 || res.status === 409) return;
+      expect(res.status).not.toBe(429);
+      expect(res.status).not.toBe(409);
       expect(res.status).toBe(201);
       const token = getTokenFromAuthCookie(res);
       expect(token).toBeTruthy();
@@ -87,13 +88,13 @@ describe("New API", () => {
     });
 
     test("Login - success", async () => {
-      if (!testUsername) return;
+      if (!testUsername) throw new Error("setup failed: testUsername missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({ username: testUsername, password: "testpassword123" }),
       });
-      if (res.status === 429) return;
+      expect(res.status).not.toBe(429);
       expect(res.status).toBe(200);
       const token = getTokenFromAuthCookie(res);
       expect(token).toBeTruthy();
@@ -103,18 +104,18 @@ describe("New API", () => {
     });
 
     test("Login - invalid password → 401", async () => {
-      if (!testUsername) return;
+      if (!testUsername) throw new Error("setup failed: testUsername missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({ username: testUsername, password: "wrongpassword" }),
       });
-      if (res.status === 429) return;
+      expect(res.status).not.toBe(429);
       expect(res.status).toBe(401);
     });
 
     test("Token verify", async () => {
-      if (!testToken || !testUsername) return;
+      if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/auth/token/verify`, testUsername, testToken, {
         method: "POST",
       });
@@ -124,7 +125,7 @@ describe("New API", () => {
     });
 
     test("Token refresh", async () => {
-      if (!testToken || !testUsername) return;
+      if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/auth/token/refresh`, {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
@@ -139,7 +140,7 @@ describe("New API", () => {
     });
 
     test("Password check", async () => {
-      if (!testToken || !testUsername) return;
+      if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/auth/password/check`, testUsername, testToken, {
         method: "GET",
       });
@@ -149,7 +150,7 @@ describe("New API", () => {
     });
 
     test("List tokens", async () => {
-      if (!testToken || !testUsername) return;
+      if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/auth/tokens`, testUsername, testToken, {
         method: "GET",
       });
@@ -190,7 +191,7 @@ describe("New API", () => {
     });
 
     test("Get rooms with username", async () => {
-      if (!testToken || !testUsername) return;
+      if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/rooms?username=${testUsername}`,
         testUsername, testToken, { method: "GET" },
@@ -201,7 +202,7 @@ describe("New API", () => {
     });
 
     test("Get single room", async () => {
-      if (!testRoomId) return;
+      if (!testRoomId) throw new Error("setup failed: testRoomId missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}`);
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -210,10 +211,10 @@ describe("New API", () => {
     });
 
     test("Create private room", async () => {
-      if (!testToken || !testUsername) return;
+      if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       outsiderUsername = `outsider${Date.now()}`;
       outsiderToken = await ensureUserAuth(outsiderUsername, "testpassword123");
-      if (!outsiderToken) return;
+      if (!outsiderToken) throw new Error("setup failed: outsiderToken missing");
 
       const res = await fetchWithAuth(`${BASE_URL}/api/rooms`, testUsername, testToken, {
         method: "POST",
@@ -228,7 +229,7 @@ describe("New API", () => {
     });
 
     test("Private room hidden from anonymous query spoof", async () => {
-      if (!privateRoomId || !testUsername) return;
+      if (!privateRoomId || !testUsername) throw new Error("setup failed: private room missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/rooms?username=${testUsername}`);
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -237,7 +238,7 @@ describe("New API", () => {
     });
 
     test("Private room visible to authenticated member", async () => {
-      if (!privateRoomId || !testToken || !testUsername) return;
+      if (!privateRoomId || !testToken || !testUsername) throw new Error("setup failed: private room auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/rooms`, testUsername, testToken, { method: "GET" });
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -246,19 +247,19 @@ describe("New API", () => {
     });
 
     test("Private room read forbidden for outsider", async () => {
-      if (!privateRoomId || !outsiderUsername || !outsiderToken) return;
+      if (!privateRoomId || !outsiderUsername || !outsiderToken) throw new Error("setup failed: outsider room auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${privateRoomId}`, outsiderUsername, outsiderToken, { method: "GET" });
       expect(res.status).toBe(403);
     });
 
     test("Private room messages read forbidden for outsider", async () => {
-      if (!privateRoomId || !outsiderUsername || !outsiderToken) return;
+      if (!privateRoomId || !outsiderUsername || !outsiderToken) throw new Error("setup failed: outsider room auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${privateRoomId}/messages`, outsiderUsername, outsiderToken, { method: "GET" });
       expect(res.status).toBe(403);
     });
 
     test("Private room message write forbidden for outsider", async () => {
-      if (!privateRoomId || !outsiderUsername || !outsiderToken) return;
+      if (!privateRoomId || !outsiderUsername || !outsiderToken) throw new Error("setup failed: outsider room auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${privateRoomId}/messages`, outsiderUsername, outsiderToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -268,7 +269,7 @@ describe("New API", () => {
     });
 
     test("Private room users read forbidden for outsider", async () => {
-      if (!privateRoomId || !outsiderUsername || !outsiderToken) return;
+      if (!privateRoomId || !outsiderUsername || !outsiderToken) throw new Error("setup failed: outsider room auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${privateRoomId}/users`, outsiderUsername, outsiderToken, { method: "GET" });
       expect(res.status).toBe(403);
     });
@@ -278,7 +279,7 @@ describe("New API", () => {
 
   describe("Messages", () => {
     test("Get messages", async () => {
-      if (!testRoomId) return;
+      if (!testRoomId) throw new Error("setup failed: testRoomId missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/messages`);
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -286,7 +287,7 @@ describe("New API", () => {
     });
 
     test("Send message", async () => {
-      if (!testRoomId || !testToken || !testUsername) return;
+      if (!testRoomId || !testToken || !testUsername) throw new Error("setup failed: room auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${testRoomId}/messages`, testUsername, testToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -299,7 +300,7 @@ describe("New API", () => {
     });
 
     test("Bulk messages", async () => {
-      if (!testRoomId) return;
+      if (!testRoomId) throw new Error("setup failed: testRoomId missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/messages/bulk?roomIds=${testRoomId}`);
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -311,7 +312,7 @@ describe("New API", () => {
 
   describe("Presence", () => {
     test("Presence switch", async () => {
-      if (!testRoomId || !testUsername || !testToken) return;
+      if (!testRoomId || !testUsername || !testToken) throw new Error("setup failed: room auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/presence/switch`, testUsername, testToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -336,7 +337,7 @@ describe("New API", () => {
     });
 
     test("Presence heartbeat GET with auth → 200", async () => {
-      if (!testUsername || !testToken) return;
+      if (!testUsername || !testToken) throw new Error("setup failed: auth missing");
       const res = await fetchWithAuth(
         `${BASE_URL}/api/presence/heartbeat`,
         testUsername,
@@ -348,7 +349,7 @@ describe("New API", () => {
     });
 
     test("Get room users", async () => {
-      if (!testRoomId) return;
+      if (!testRoomId) throw new Error("setup failed: testRoomId missing");
       const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/users`);
       expect(res.status).toBe(200);
       const data = await res.json();
@@ -360,7 +361,7 @@ describe("New API", () => {
 
   describe("Logout", () => {
     test("Logout", async () => {
-      if (!testToken || !testUsername) return;
+      if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/auth/logout`, testUsername, testToken, {
         method: "POST",
       });

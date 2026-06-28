@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Check test registration
+        run: bun run test:registration
+
       - name: Run unit tests
         run: bun run test:unit
 

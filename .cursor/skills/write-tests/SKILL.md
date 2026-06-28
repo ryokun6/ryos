@@ -23,8 +23,9 @@ Prefer a **unit test** when the logic can be exercised without a server (most sc
 - [ ] 2. Create tests/test-<feature>.test.ts
 - [ ] 3. Use describe / test / expect from "bun:test"
 - [ ] 4. For API tests, use helpers from tests/test-utils.ts
-- [ ] 5. Register the file in the right package.json script (test:unit / test:api)
-- [ ] 6. Run it; iterate until green
+- [ ] 5. For API or opt-in tests, add the file to `scripts/test-groups.ts`
+- [ ] 6. Run `bun run test:registration`; iterate until green
+- [ ] 7. Run it; iterate until green
 ```
 
 ## Unit / Wiring Test
@@ -114,11 +115,14 @@ describe("My feature", () => {
 
 ## Registering New Test Files
 
-The suite commands list files explicitly (Bun globs can otherwise pull in server-only suites). Add your new file to the matching script in `package.json`:
+Unit/wiring tests are discovered automatically by `bun run test:unit`.
+Server-backed and opt-in suites are explicit in `scripts/test-groups.ts`:
 
-- Unit/wiring → append to `"test:unit"`.
-- API integration → append to `"test:api"`.
+- Unit/wiring → no manual registration; `test:unit` runs every discovered test except API/opt-in files.
+- API integration → append to `API_TEST_FILES`.
+- Opt-in/local-service suites → append to `OPT_IN_TEST_FILES`.
 - Optionally add a focused `"test:<feature>"` script for fast local runs.
+- Run `bun run test:registration` after adding or renaming tests.
 
 `bun test` (no args / `"test"`) runs everything, including API suites, so it needs the server too.
 
