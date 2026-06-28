@@ -17,6 +17,9 @@ import {
 } from "../utils/richMarkdown";
 import { TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("TextEdit");
 
 interface UseFileOperationsProps {
   editor: Editor | null;
@@ -58,7 +61,7 @@ export function useFileOperations({
 
       track(TEXTEDIT_ANALYTICS.SAVE, { appId: "textedit", format: "md" });
       onSaveSuccess?.(currentFilePath);
-      console.log("[TextEdit] File saved successfully:", currentFilePath);
+      log.debug("File saved successfully", { path: currentFilePath });
     } catch (error) {
       console.error("[TextEdit] Failed to save file:", error);
       throw error;
@@ -89,7 +92,7 @@ export function useFileOperations({
 
         track(TEXTEDIT_ANALYTICS.SAVE_AS, { appId: "textedit", format: "md" });
         onSaveSuccess?.(filePath);
-        console.log("[TextEdit] File saved successfully:", filePath);
+        log.debug("File saved successfully", { path: filePath });
         return filePath;
       } catch (error) {
         console.error("[TextEdit] Failed to save file:", error);
@@ -147,7 +150,7 @@ export function useFileOperations({
             file.size <= 10_000 ? "small" : file.size <= 100_000 ? "medium" : "large",
         });
         onLoadSuccess?.(filePath);
-        console.log("[TextEdit] File imported successfully:", filePath);
+        log.debug("File imported successfully", { path: filePath });
         return filePath;
       } catch (error) {
         console.error("[TextEdit] Failed to import file:", error);
@@ -253,7 +256,7 @@ export function useFileOperations({
           if (editorContent) {
             editor.commands.setContent(editorContent, false);
             onLoadSuccess?.(filePath);
-            console.log("Loaded content from file:", filePath);
+            log.debug("Loaded content from file", { path: filePath });
             return true;
           }
         } else {

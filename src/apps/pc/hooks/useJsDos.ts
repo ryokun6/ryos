@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("JsDos");
 
 // Type declarations for js-dos v8
 declare global {
@@ -50,15 +53,17 @@ export function useJsDos() {
 
     // Only load script if it hasn't been loaded yet
     if (!scriptRef && !window.Dos) {
-      console.log("Loading js-dos script...");
+      log.debug("Loading js-dos script");
       const script = document.createElement("script");
       script.src = "https://v8.js-dos.com/latest/js-dos.js";
       script.async = true;
       script.onload = () => {
-        console.log("js-dos script loaded successfully");
+        log.debug("js-dos script loaded successfully");
         // Wait a bit to ensure the script is fully initialized
         loadCheckTimeoutId = setTimeout(() => {
-          console.log("Checking if Dos function is available:", !!window.Dos);
+          log.debug("Checking if Dos function is available", {
+            available: Boolean(window.Dos),
+          });
           isScriptLoadedRef = true;
           setIsScriptLoaded(true);
           loadCheckTimeoutId = null;

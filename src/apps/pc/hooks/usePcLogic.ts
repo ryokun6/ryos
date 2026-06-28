@@ -6,6 +6,9 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { Game, loadGames } from "@/stores/usePcStore";
 import { useJsDos, DosProps, DosEvent } from "./useJsDos";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("PC");
 
 interface UsePcLogicProps {
   isWindowOpen: boolean;
@@ -50,29 +53,32 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
       if (!window.Dos) {
         console.error("Dos function is not available");
         if (!isScriptLoaded) {
-          console.log("Script not loaded yet, queuing game load...");
+          log.debug("Script not loaded yet; queuing game load", {
+            gameId: game.id,
+          });
           setPendingGame(game);
           return;
         }
         return;
       }
       if (!isScriptLoaded) {
-        console.log("Script not fully loaded yet, queuing game load...");
+        log.debug("Script not fully loaded yet; queuing game load", {
+          gameId: game.id,
+        });
         setPendingGame(game);
         return;
       }
 
       try {
-        console.log("Starting game load...");
-        console.log("Selected game:", game);
-        console.log("Container dimensions:", {
+        log.debug("Starting game load", { gameId: game.id, path: game.path });
+        log.debug("Container dimensions", {
           width: containerRef.current.offsetWidth,
           height: containerRef.current.offsetHeight,
         });
         setIsLoading(true);
 
         if (dosPropsRef.current) {
-          console.log("Stopping existing instance...");
+          log.debug("Stopping existing instance");
           await dosPropsRef.current.stop();
           dosPropsRef.current = null;
         }
@@ -80,7 +86,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
         containerRef.current.innerHTML = "";
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        console.log("Creating new Dos instance...");
+        log.debug("Creating new Dos instance");
         const options = {
           url: game.path,
           theme: "dark",
@@ -93,16 +99,16 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
           autoStart: true,
           kiosk: true,
           onEvent: (event: DosEvent, arg?: unknown) => {
-            console.log("js-dos event:", event, arg);
+            log.debug("js-dos event", { event, arg });
             if (event === "emu-ready") {
-              console.log("Emulator is ready");
+              log.debug("Emulator is ready");
             } else if (event === "ci-ready") {
-              console.log("Command interface is ready");
+              log.debug("Command interface is ready");
               setIsLoading(false);
             } else if (event === "bnd-play") {
-              console.log("Play button clicked");
+              log.debug("Play button clicked");
           } else if (event === "exit") {
-              console.log("Program terminated:", arg);
+              log.debug("Program terminated", { arg });
               if (containerRef.current) {
                 containerRef.current.innerHTML = "";
               handleLoadGame(targetGame);
@@ -110,17 +116,22 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
             }
           },
           onload: () => {
-            console.log("Game bundle loaded successfully");
+            log.debug("Game bundle loaded successfully");
           },
           onerror: (error: Error) => {
             console.error("Failed to load game:", error);
             setIsLoading(false);
           },
         };
-        console.log("Dos options:", options);
+        log.debug("Dos options prepared", {
+          url: options.url,
+          renderAspect: options.renderAspect,
+          mouseCapture: options.mouseCapture,
+          mouseSensitivity: options.mouseSensitivity,
+        });
 
         dosPropsRef.current = window.Dos(containerRef.current, options);
-        console.log("Dos instance created:", !!dosPropsRef.current);
+        log.debug("Dos instance created", { created: Boolean(dosPropsRef.current) });
       } catch (error) {
         console.error("Failed to start DOSBox:", error);
         setIsLoading(false);
@@ -131,11 +142,11 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
 
   useEffect(() => {
     if (!isWindowOpen && dosPropsRef.current) {
-      console.log("Stopping dosbox instance...");
+      log.debug("Stopping dosbox instance");
       dosPropsRef.current
         .stop()
         .then(() => {
-          console.log("Dosbox instance stopped");
+          log.debug("Dosbox instance stopped");
           dosPropsRef.current = null;
           setIsGameRunning(false);
           if (containerRef.current) {
@@ -157,7 +168,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
     const containerEl = containerRef.current;
     return () => {
       if (dosPropsRef.current) {
-        console.log("Cleaning up dosbox instance on unmount...");
+        log.debug("Cleaning up dosbox instance on unmount");
         dosPropsRef.current.stop().catch(console.error);
         dosPropsRef.current = null;
         if (containerEl) {
@@ -169,7 +180,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
 
   useEffect(() => {
     if (isScriptLoaded && pendingGame) {
-      console.log("Loading pending game:", pendingGame);
+      log.debug("Loading pending game", { gameId: pendingGame.id });
       handleLoadGame(pendingGame);
       setPendingGame(null);
     }
@@ -230,17 +241,17 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
   }, []);
 
   const handleSaveState = useCallback(() => {
-    console.log("Save state not available in v8");
+    log.debug("Save state not available in v8");
   }, []);
 
   const handleLoadState = useCallback(() => {
-    console.log("Load state not available in v8");
+    log.debug("Load state not available in v8");
   }, []);
 
   const handleReset = useCallback(async () => {
     if (containerRef.current) {
       if (dosPropsRef.current) {
-        console.log("Stopping dosbox instance before reset...");
+        log.debug("Stopping dosbox instance before reset");
         await dosPropsRef.current.stop();
         dosPropsRef.current = null;
       }

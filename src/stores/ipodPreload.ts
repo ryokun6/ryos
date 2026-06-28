@@ -8,6 +8,9 @@
 import { listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
 import type { Track } from "@/stores/useIpodStore";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("IpodPreload");
 
 // In-memory cache for iPod tracks data
 let cachedIpodData: { tracks: Track[]; version: number } | null = null;
@@ -53,9 +56,10 @@ export async function loadDefaultTracks(forceRefresh = false): Promise<{
       // Only sync songs created by user "ryo" (the admin/curator)
       const cachedSongs = await listAllCachedSongMetadata("ryo");
 
-      console.log(
-        `[iPod Store] Loaded ${cachedSongs.length} tracks from Redis cache (by ryo)`
-      );
+      log.debug("Loaded tracks from Redis cache", {
+        trackCount: cachedSongs.length,
+        createdBy: "ryo",
+      });
       // Songs are already sorted by createdAt (newest first) from the API
       const tracks: Track[] = cachedSongs.map(mapCatalogSongToTrack);
       // Use the latest createdAt timestamp as version (or 1 if empty)

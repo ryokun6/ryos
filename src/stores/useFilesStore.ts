@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { debug } from "@/utils/debug";
+import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
@@ -10,6 +10,8 @@ import type { OsThemeId } from "@/themes/types";
 import { getAppBasicInfoList } from "@/config/appRegistryData";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+
+const debug = createClientLogger("FilesStore").debug;
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {

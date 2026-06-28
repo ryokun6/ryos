@@ -10,6 +10,9 @@ import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("ChatTools");
 
 export interface SettingsInput {
   language?: string;
@@ -69,7 +72,7 @@ export const handleSettings = (
         language: getLanguageDisplayName(language),
       })
     );
-    console.log(`[ToolCall] Language changed to: ${language}`);
+    log.debug("Language changed", { language });
   }
 
   // Theme change
@@ -82,7 +85,7 @@ export const handleSettings = (
           theme: themeName,
         })
       );
-      console.log(`[ToolCall] Theme changed to: ${theme}`);
+      log.debug("Theme changed", { theme });
     }
   }
 
@@ -95,7 +98,7 @@ export const handleSettings = (
         volume: volumePercent,
       })
     );
-    console.log(`[ToolCall] Master volume set to: ${masterVolume}`);
+    log.debug("Master volume set", { masterVolume });
   }
 
   // Speech enabled
@@ -106,14 +109,14 @@ export const handleSettings = (
         ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")
         : i18n.t("apps.chats.toolCalls.settingsSpeechDisabled")
     );
-    console.log(`[ToolCall] Speech ${speechEnabled ? "enabled" : "disabled"}`);
+    log.debug("Speech setting changed", { speechEnabled });
   }
 
   // Check for updates
   if (checkForUpdates) {
     forceRefreshCache();
     changes.push(i18n.t("apps.chats.toolCalls.settingsCheckingForUpdates"));
-    console.log("[ToolCall] Checking for updates...");
+    log.debug("Checking for updates");
   }
 
   // Build result message

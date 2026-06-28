@@ -44,9 +44,7 @@ export function decodeData(code: string): { url: string; year: string } | null {
         return { url: data.url, year: data.year };
       }
     } catch {
-      console.debug(
-        "[IE] Failed to parse as JSON, not a valid share code format"
-      );
+      // Not every share code uses the JSON format; compact codes are handled above.
     }
 
     console.error("[IE] Decoded data structure invalid:", { url, year });

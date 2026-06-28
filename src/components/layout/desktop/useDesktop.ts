@@ -42,11 +42,14 @@ import {
   getDesktopShortcutDisplayName,
   getDesktopShortcutIcon,
 } from "./desktopShortcutUtils";
+import { createClientLogger } from "@/utils/logger";
 import type {
   DesktopProps,
   DesktopItemId,
   DesktopItemDefinition,
 } from "./desktopTypes";
+
+const log = createClientLogger("Desktop");
 import { useDesktopVideoWallpaper } from "./useDesktopVideoWallpaper";
 
 export function useDesktop({
@@ -358,7 +361,9 @@ export function useDesktop({
       for (const uuid of contentUUIDsToDelete) {
         await dbOperations.delete(STORES.TRASH, uuid);
       }
-      console.log("[Desktop] Cleared trash content from IndexedDB.");
+      log.debug("Cleared trash content from IndexedDB", {
+        deletedContentCount: contentUUIDsToDelete.length,
+      });
     } catch (err) {
       console.error("Error clearing trash content from IndexedDB:", err);
     }

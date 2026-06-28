@@ -19,6 +19,7 @@ import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { shouldShowNativeToastNotification } from "@/utils/nativeToastNotifications";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createClientLogger } from "@/utils/logger";
 import { shouldSubscribeToForegroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 import {
   getChatRoomChannelName,
@@ -55,6 +56,7 @@ interface RoomHandlers {
 }
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
+const log = createClientLogger("ChatRoom");
 
 export function useChatRoom(
   isWindowOpen: boolean,
@@ -142,7 +144,7 @@ export function useChatRoom(
   const initializePusher = useCallback(() => {
     if (pusherRef.current) return;
 
-    console.log("[Pusher Hook] Getting singleton Pusher client...");
+    log.debug("Getting singleton Pusher client");
     pusherRef.current = getPusherClient();
 
     // Reconnect handling (channel resubscription) lives in the realtime
@@ -150,7 +152,7 @@ export function useChatRoom(
     connectionStateUnsubscribeRef.current = subscribeRealtimeConnection(
       (state) => {
         if (state === "connected") {
-          console.log("[Pusher Hook] Connected to Pusher");
+          log.debug("Connected to Pusher");
         }
       }
     );
@@ -189,16 +191,14 @@ export function useChatRoom(
       globalChannelRef.current &&
       globalChannelRef.current.name !== channelName
     ) {
-      console.log(
-        `[Pusher Hook] Unsubscribing from old global channel: ${globalChannelRef.current.name}`
-      );
+      log.debug("Unsubscribing from old global channel", {
+        channelName: globalChannelRef.current.name,
+      });
       unsubscribeGlobalChannel();
     }
 
     if (!globalChannelRef.current) {
-      console.log(
-        `[Pusher Hook] Subscribing to global channel: ${channelName}`
-      );
+      log.debug("Subscribing to global channel", { channelName });
       const channel = subscribePusherChannel(channelName);
 
       // Create event handlers (apply local diffs to avoid refetch)
@@ -209,7 +209,10 @@ export function useChatRoom(
             return;
           }
 
-          console.log("[Pusher Hook] Room created:", data.room);
+          log.debug("Room created", {
+            roomId: data.room.id,
+            roomType: data.room.type,
+          });
           const { rooms: currentRooms } = useChatsStore.getState();
           setRooms(upsertChatRoom(currentRooms, data.room));
         },
@@ -219,7 +222,7 @@ export function useChatRoom(
             return;
           }
 
-          console.log("[Pusher Hook] Room deleted:", data.roomId);
+          log.debug("Room deleted", { roomId: data.roomId });
           const { rooms: currentRooms } = useChatsStore.getState();
           setRooms(removeChatRoomById(currentRooms, data.roomId));
         },
@@ -229,7 +232,10 @@ export function useChatRoom(
             return;
           }
 
-          console.log("[Pusher Hook] Room updated:", data.room);
+          log.debug("Room updated", {
+            roomId: data.room.id,
+            roomType: data.room.type,
+          });
           const { rooms: currentRooms } = useChatsStore.getState();
           setRooms(upsertChatRoom(currentRooms, data.room));
         },
@@ -239,11 +245,7 @@ export function useChatRoom(
             return;
           }
 
-          console.log(
-            "[Pusher Hook] Rooms updated:",
-            data.rooms.length,
-            "rooms"
-          );
+          log.debug("Rooms updated", { roomCount: data.rooms.length });
           // Update rooms directly instead of fetching from API
           setRooms(data.rooms);
         },
@@ -265,7 +267,7 @@ export function useChatRoom(
       if (!pusherRef.current || roomChannelsRef.current[roomId]) return;
 
       const roomChannelName = getChatRoomChannelName(roomId, roomType);
-      console.log(`[Pusher Hook] Subscribing to room channel: ${roomChannelName}`);
+      log.debug("Subscribing to room channel", { roomChannelName });
       const roomChannel = subscribePusherChannel(roomChannelName);
 
       const handlers: RoomHandlers = {
@@ -274,7 +276,11 @@ export function useChatRoom(
             return;
           }
 
-          console.log("[Pusher Hook] Received room-message:", data.message);
+          log.debug("Received room message", {
+            roomId: data.message.roomId,
+            messageId: data.message.id,
+            username: data.message.username,
+          });
 
           const { roomMessages: roomMessagesMap } = useChatsStore.getState();
           const existingMessages = roomMessagesMap[data.message.roomId] || [];
@@ -334,7 +340,10 @@ export function useChatRoom(
           });
         },
         onMessageDeleted: (data) => {
-          console.log("[Pusher Hook] Message deleted:", data.messageId);
+          log.debug("Message deleted", {
+            roomId: data.roomId,
+            messageId: data.messageId,
+          });
           removeMessageFromRoom(data.roomId, data.messageId);
         },
         onPresenceUpdate: (data) => {
@@ -411,9 +420,7 @@ export function useChatRoom(
       return;
     }
 
-    console.log(
-      `[Pusher Hook] Unsubscribing from room channel: ${channel.name}`
-    );
+    log.debug("Unsubscribing from room channel", { channelName: channel.name });
     if (handlers) {
       channel.unbind("room-message", handlers.onRoomMessage);
       channel.unbind("message-deleted", handlers.onMessageDeleted);
@@ -472,7 +479,7 @@ export function useChatRoom(
     async (newRoomId: string | null) => {
       if (newRoomId === currentRoomId) return;
 
-      console.log(`[Room Hook] Switching to room: ${newRoomId || "@ryo"}`);
+      log.debug("Switching room", { roomId: newRoomId || "@ryo" });
 
       // Check if the target room has unread messages before switching
       const { unreadCounts } = useChatsStore.getState();
@@ -649,7 +656,7 @@ export function useChatRoom(
   useEffect(() => {
     if (!isWindowOpen || hasInitialized.current) return;
 
-    console.log("[Room Hook] Initializing chat room...");
+    log.debug("Initializing chat room");
 
     const runInit = () => {
       if (hasInitialized.current) return;
@@ -666,9 +673,9 @@ export function useChatRoom(
         const fetchInitialMessages = async (roomIds: string[]) => {
           if (roomIds.length === 0) return null;
 
-          console.log(
-            `[useChatRoom] Initial bulk fetch of messages for ${roomIds.length} rooms`
-          );
+          log.debug("Initial bulk fetch of room messages", {
+            roomCount: roomIds.length,
+          });
           return fetchBulkMessages(roomIds);
         };
 
@@ -693,14 +700,10 @@ export function useChatRoom(
 
           if (!hasEverUsedChats) {
             // First time user - mark all as read from this point forward
-            console.log(
-              `[useChatRoom] First-time user detected - skipping unread calculation and marking as experienced user`
-            );
+            log.debug("First-time user detected; skipping unread calculation");
             setHasEverUsedChats(true);
           } else {
-            console.log(
-              `[useChatRoom] Experienced user - skipping unread recalculation on reload, will track new messages only`
-            );
+            log.debug("Experienced user; skipping unread recalculation on reload");
           }
         }
       })();
@@ -753,7 +756,7 @@ export function useChatRoom(
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      console.log("[Pusher Hook] Cleaning up...");
+      log.debug("Cleaning up Pusher subscriptions");
 
       // Unsubscribe from all room channels
       unsubscribeAllRoomChannels();

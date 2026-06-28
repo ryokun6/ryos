@@ -17,6 +17,9 @@ import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 import { formatSecondsMmSs } from "@/utils/formatDuration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("Videos");
 
 interface Video {
   id: string;
@@ -80,15 +83,14 @@ export function useVideosLogic({
     (videoId: string | null) => {
       // Get fresh state from store to avoid stale closure issues
       const currentVideos = useVideoStore.getState().videos;
-      console.log(
-        `[Videos] safeSetCurrentVideoId called with: ${videoId}. Videos in store: ${currentVideos.length}`
-      );
+      log.debug("safeSetCurrentVideoId called", {
+        videoId,
+        videoCount: currentVideos.length,
+      });
 
       if (!videoId || currentVideos.length === 0) {
         const fallbackId = currentVideos.length > 0 ? currentVideos[0].id : null;
-        console.log(
-          `[Videos] No videoId or empty videos, setting to fallback: ${fallbackId}`
-        );
+        log.debug("Using fallback video ID", { fallbackId });
         setCurrentVideoId(fallbackId);
         return;
       }
@@ -99,11 +101,11 @@ export function useVideosLogic({
         : currentVideos.length > 0
         ? currentVideos[0].id
         : null;
-      console.log(
-        `[Videos] Video ${videoId} ${
-          validVideo ? "found" : "NOT FOUND"
-        } in store. Setting currentVideoId to: ${resultId}`
-      );
+      log.debug("Resolved current video ID", {
+        requestedVideoId: videoId,
+        found: Boolean(validVideo),
+        resultId,
+      });
       setCurrentVideoId(resultId);
     },
     [setCurrentVideoId]
@@ -352,9 +354,11 @@ export function useVideosLogic({
         // Add video to store
         const currentVideos = useVideoStore.getState().videos;
         const newVideos = [...currentVideos, newVideo];
-        console.log(
-          `[Videos] Adding video ${newVideo.id} (${newVideo.title}). Videos count: ${currentVideos.length} -> ${newVideos.length}`
-        );
+        log.debug("Adding video", {
+          videoId: newVideo.id,
+          previousCount: currentVideos.length,
+          nextCount: newVideos.length,
+        });
         setVideos(newVideos);
 
         // Update original order if not shuffled
@@ -363,14 +367,12 @@ export function useVideosLogic({
         }
 
         // Set current video to the newly added video
-        console.log(
-          `[Videos] Setting current video to newly added: ${newVideo.id}`
-        );
+        log.debug("Setting current video to newly added", {
+          videoId: newVideo.id,
+        });
         safeSetCurrentVideoId(newVideo.id);
         setIsPlaying(true);
-        console.log(
-          `[Videos] Video added successfully. Current video should be: ${newVideo.id}`
-        );
+        log.debug("Video added successfully", { videoId: newVideo.id });
         track(MEDIA_ANALYTICS.VIDEO_ADD, {
           appId: "videos",
           source: "url",
@@ -468,9 +470,10 @@ export function useVideosLogic({
         // --- End check ---
 
         if (existingVideoIndex !== -1) {
-          console.log(
-            `[Videos] Video ID ${videoId} found in playlist. Playing.`
-          );
+          log.debug("Video found in playlist", {
+            videoId,
+            shouldAutoplay,
+          });
           safeSetCurrentVideoId(videoId);
           // --- Only set playing if allowed ---
           if (shouldAutoplay) {
@@ -483,9 +486,10 @@ export function useVideosLogic({
             })
           );
         } else {
-          console.log(
-            `[Videos] Video ID ${videoId} not found. Adding and playing.`
-          );
+          log.debug("Video not found in playlist; adding", {
+            videoId,
+            shouldAutoplay,
+          });
           await handleAddAndPlayVideoById(videoId);
           // Note: handleAddAndPlayVideoById already sets isPlaying to true
           // Only need to handle mobile Safari case here
@@ -839,9 +843,7 @@ export function useVideosLogic({
       // Skip if this videoId has already been processed
       if (lastProcessedVideoIdRef.current === initialData.videoId) return;
       const videoIdToProcess = initialData.videoId;
-      console.log(
-        `[Videos] Processing initialData.videoId on mount: ${videoIdToProcess}`
-      );
+      log.debug("Processing initial video ID", { videoId: videoIdToProcess });
 
       toast.info(sharedVideoToastContent());
 
@@ -852,9 +854,9 @@ export function useVideosLogic({
           if (instanceId) {
             clearInstanceInitialData(instanceId);
           }
-          console.log(
-            `[Videos] Successfully processed and cleared initialData for ${videoIdToProcess}`
-          );
+          log.debug("Processed and cleared initial video ID", {
+            videoId: videoIdToProcess,
+          });
         })
         .catch((error) => {
           console.error(
@@ -899,9 +901,7 @@ export function useVideosLogic({
         )
           return;
         const videoId = updateInitialData.videoId;
-        console.log(
-          `[Videos] Received updateApp event with videoId: ${videoId}`
-        );
+        log.debug("Received updateApp event with video ID", { videoId });
         if (instanceId) {
           bringInstanceToForeground(instanceId);
         }

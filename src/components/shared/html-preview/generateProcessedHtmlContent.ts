@@ -128,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
         // Use a specific message type for AI HTML navigation
         window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
-        console.log('Intercepted link click:', absoluteUrl);
       } catch (e) { console.error("Error resolving/posting URL:", e); }
     }
   }, true); // Use capture phase to intercept early
@@ -148,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
         // Use a specific message type for AI HTML navigation
         window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
-        console.log('Intercepted link click (immediate handler):', absoluteUrl);
       } catch (e) { console.error("Error resolving/posting URL:", e); }
     }
   }, true); // Use capture phase to intercept early

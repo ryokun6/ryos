@@ -10,6 +10,7 @@ import {
 } from "@/utils/cloudSyncDeletionMarkers";
 import { persistAutoSyncPreferenceToServer } from "@/utils/autoSyncPreference";
 import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
+import { cloudSyncLog } from "@/sync/logging";
 
 export interface CloudSyncCategoryStatus {
   lastUploadedAt: string | null;
@@ -207,30 +208,50 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       deletionMarkers: createEmptyDeletionMarkers(),
 
       setAutoSyncEnabled: (enabled) => {
+        cloudSyncLog.debug("Auto Sync preference changed locally", { enabled });
         set({ autoSyncEnabled: enabled });
         if (typeof window !== "undefined") {
           void persistAutoSyncPreferenceToServer(enabled);
         }
       },
 
-      applyServerAutoSyncPreference: (enabled) =>
-        set({ autoSyncEnabled: enabled }),
+      applyServerAutoSyncPreference: (enabled) => {
+        cloudSyncLog.debug("Auto Sync preference applied from server", {
+          enabled,
+        });
+        set({ autoSyncEnabled: enabled });
+      },
 
-      setCategoryEnabled: (category, enabled) =>
-        set({ [CATEGORY_TOGGLE_FIELDS[category]]: enabled } as Partial<CloudSyncStoreState>),
+      setCategoryEnabled: (category, enabled) => {
+        cloudSyncLog.debug("Category preference changed", { category, enabled });
+        set({ [CATEGORY_TOGGLE_FIELDS[category]]: enabled } as Partial<CloudSyncStoreState>);
+      },
 
       isCategoryEnabled: (category) =>
         Boolean(get()[CATEGORY_TOGGLE_FIELDS[category]]),
 
-      setCheckingRemote: (checking) =>
+      setCheckingRemote: (checking) => {
+        cloudSyncLog.debug("Remote check state changed", { checking });
         set({
           isCheckingRemote: checking,
           lastCheckedAt: checking ? get().lastCheckedAt : new Date().toISOString(),
-        }),
+        });
+      },
 
-      setLastError: (error) => set({ lastError: error }),
+      setLastError: (error) => {
+        cloudSyncLog.debug("Last error changed", {
+          hasError: Boolean(error),
+          error,
+        });
+        set({ lastError: error });
+      },
 
-      markCategorySyncing: (category, direction, active) =>
+      markCategorySyncing: (category, direction, active) => {
+        cloudSyncLog.debug("Category sync state changed", {
+          category,
+          direction,
+          active,
+        });
         set((state) => ({
           categoryStatus: {
             ...state.categoryStatus,
@@ -247,7 +268,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                   }),
             },
           },
-        })),
+        }));
+      },
 
       markCategoryUploadProgress: (category, progress) =>
         set((state) => {
@@ -289,7 +311,11 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           };
         }),
 
-      markCategoryUploaded: (category, uploadedAt) =>
+      markCategoryUploaded: (category, uploadedAt) => {
+        cloudSyncLog.debug("Category upload marked complete", {
+          category,
+          uploadedAt,
+        });
         set((state) => ({
           categoryStatus: {
             ...state.categoryStatus,
@@ -300,9 +326,14 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             },
           },
           lastError: null,
-        })),
+        }));
+      },
 
-      markCategoryApplied: (category, appliedAt) =>
+      markCategoryApplied: (category, appliedAt) => {
+        cloudSyncLog.debug("Category remote apply marked complete", {
+          category,
+          appliedAt,
+        });
         set((state) => ({
           categoryStatus: {
             ...state.categoryStatus,
@@ -314,20 +345,27 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             },
           },
           lastError: null,
-        })),
+        }));
+      },
 
       markDeletedKeys: (bucket, keys, deletedAt = new Date().toISOString()) =>
         set((state) => {
           const nextBucket = { ...state.deletionMarkers[bucket] };
           let changed = false;
+          let markerCount = 0;
           for (const key of keys) {
             if (!key) continue;
+            markerCount += 1;
             if (nextBucket[key] !== deletedAt) {
               nextBucket[key] = deletedAt;
               changed = true;
             }
           }
           if (!changed) return state;
+          cloudSyncLog.debug("Deletion markers added", {
+            bucket,
+            markerCount,
+          });
           return {
             deletionMarkers: {
               ...state.deletionMarkers,
@@ -340,13 +378,19 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         set((state) => {
           const nextBucket = { ...state.deletionMarkers[bucket] };
           let changed = false;
+          let clearedCount = 0;
           for (const key of keys) {
             if (key && key in nextBucket) {
               delete nextBucket[key];
               changed = true;
+              clearedCount += 1;
             }
           }
           if (!changed) return state;
+          cloudSyncLog.debug("Deletion markers cleared", {
+            bucket,
+            clearedCount,
+          });
           return {
             deletionMarkers: {
               ...state.deletionMarkers,
@@ -368,6 +412,11 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               ([key, value]) => currentBucket[key] !== value
             );
           if (!changed) return state;
+          cloudSyncLog.debug("Deletion markers merged", {
+            bucket,
+            incomingCount: Object.keys(markers).length,
+            markerCount: Object.keys(nextBucket).length,
+          });
           return {
             deletionMarkers: {
               ...state.deletionMarkers,

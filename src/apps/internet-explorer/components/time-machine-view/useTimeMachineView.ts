@@ -17,6 +17,9 @@ import { exitVariants, loadingBarVariants, pulsingAnimationVariants } from "./an
 import { getMaskStyle, getHostname, timeMachineGenerateShareUrl } from "./utils";
 import { initialState, timeMachineUiReducer } from "./time-machine-ui-reducer";
 import type { PreviewSource, TimeMachineViewProps } from "./types";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("TimeMachine");
 
 export function useTimeMachineView({
   isOpen,
@@ -370,9 +373,7 @@ export function useTimeMachineView({
     // Generate an id so that we can ignore stale async completions
     const myRequestId = ++previewRequestIdRef.current;
 
-    console.log(
-      `[TimeMachine] Determining content source for year: ${previewYear}`
-    );
+    log.debug("Determining content source", { year: previewYear });
     setPreviewStatus("loading");
     setPreviewContent(null);
     setPreviewSourceType(null);
@@ -382,14 +383,15 @@ export function useTimeMachineView({
     const determineSource = async () => {
       try {
         // Local caching removed to save localStorage space
-        console.log(
-          `[TimeMachine] Determining API source for ${currentUrl} (${previewYear})...`
-        );
+        log.debug("Determining API source", {
+          year: previewYear,
+          hasUrl: Boolean(currentUrl),
+        });
 
         // Determine API source based on year
         if (previewYear === "current") {
           // 2a. 'current' uses direct proxy URL
-          console.log(`[TimeMachine] Source: current -> URL`);
+          log.debug("Using current URL source", { year: previewYear });
           const proxyUrl = `/api/iframe-check?url=${encodeURIComponent(
             currentUrl
           )}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`;
@@ -410,9 +412,7 @@ export function useTimeMachineView({
 
           if (!isBC && yearInt >= 1996 && yearInt <= currentYear) {
             // 2b. Year >= 1996 uses Wayback proxy URL
-            console.log(
-              `[TimeMachine] Source: ${previewYear} >= 1996 -> URL (Wayback Proxy)`
-            );
+            log.debug("Using Wayback proxy URL source", { year: previewYear });
             const currentMonth = (new Date().getMonth() + 1)
               .toString()
               .padStart(2, "0");
@@ -430,9 +430,7 @@ export function useTimeMachineView({
             // isIframeLoaded remains false until iframe onLoad fires
           } else {
             // 2c. Year < 1996 or BC uses AI cache (fetches HTML)
-            console.log(
-              `[TimeMachine] Source: ${previewYear} < 1996 or BC -> HTML (AI Fetch)`
-            );
+            log.debug("Using AI HTML source", { year: previewYear });
             const aiResponse = await abortableFetch(
               `/api/iframe-check?mode=ai&url=${encodeURIComponent(
                 currentUrl
@@ -452,9 +450,7 @@ export function useTimeMachineView({
               return;
 
             if (aiResponse.ok) {
-              console.log(
-                `[TimeMachine] AI Fetch SUCCESS for ${currentUrl} (${previewYear})`
-              );
+              log.debug("AI fetch succeeded", { year: previewYear });
               const html = await aiResponse.text();
               const cleanHtml = html.replace(/^<!--\s*TITLE:.*?-->\s*\n?/, "");
 
@@ -470,9 +466,10 @@ export function useTimeMachineView({
               setIsIframeLoaded(true);
               // Local caching removed to save localStorage space
             } else if (aiResponse.status === 404) {
-              console.log(
-                `[TimeMachine] AI Fetch MISS (404) for ${currentUrl} (${previewYear}).`
-              );
+              log.debug("AI fetch missed", {
+                year: previewYear,
+                status: aiResponse.status,
+              });
               throw new Error(
                 `No AI-generated version available for ${previewYear}.`
               );

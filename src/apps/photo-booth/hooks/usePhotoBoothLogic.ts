@@ -14,6 +14,9 @@ import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
 import { PHOTO_BOOTH_ANALYTICS, track } from "@/utils/analytics";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("PhotoBooth");
 
 interface Effect {
   name: string;
@@ -298,7 +301,7 @@ export function usePhotoBoothLogic({
 
   const handleExportPhotos = useCallback(async () => {
     if (photos.length === 0) {
-      console.log("No photos to export");
+      log.debug("No photos to export");
       return;
     }
     track(PHOTO_BOOTH_ANALYTICS.EXPORT, {
@@ -416,7 +419,7 @@ export function usePhotoBoothLogic({
     }
 
     try {
-      console.log("Environment:", {
+      log.debug("Camera environment", {
         protocol: window.location.protocol,
         isSecure: window.isSecureContext,
         hostname: window.location.hostname,
@@ -444,24 +447,32 @@ export function usePhotoBoothLogic({
         audio: false,
       } as const;
 
-      console.log("Requesting camera access with constraints:", constraints);
+      log.debug("Requesting camera access", {
+        hasSelectedCamera: Boolean(selectedCameraId),
+        width: constraints.video.width.ideal,
+        height: constraints.video.height.ideal,
+      });
       const mediaStream = await navigator.mediaDevices.getUserMedia(
         constraints
       );
-      console.log(
-        "Camera access granted:",
-        mediaStream.active,
-        "Video tracks:",
-        mediaStream.getVideoTracks().length
-      );
+      log.debug("Camera access granted", {
+        active: mediaStream.active,
+        videoTrackCount: mediaStream.getVideoTracks().length,
+      });
 
       const videoTrack = mediaStream.getVideoTracks()[0];
       if (videoTrack) {
-        console.log("Video track:", videoTrack.label);
+        log.debug("Video track acquired", { hasLabel: Boolean(videoTrack.label) });
 
         try {
           const settings = videoTrack.getSettings();
-          console.log("Track settings:", settings);
+          log.debug("Track settings", {
+            width: settings.width,
+            height: settings.height,
+            frameRate: settings.frameRate,
+            facingMode: settings.facingMode,
+            hasDeviceId: Boolean(settings.deviceId),
+          });
           activeCameraIdRef.current =
             settings.deviceId ?? selectedCameraId ?? null;
 
@@ -471,10 +482,9 @@ export function usePhotoBoothLogic({
             settings.facingMode as string | undefined
           );
           setIsBackCamera(isBack);
-          console.log(
-            "Camera facing:",
-            isBack ? "back/environment" : "front/user"
-          );
+          log.debug("Camera facing detected", {
+            facing: isBack ? "back/environment" : "front/user",
+          });
         } catch (e) {
           console.warn("Couldn't read track settings:", e);
           activeCameraIdRef.current = selectedCameraId;
@@ -511,7 +521,7 @@ export function usePhotoBoothLogic({
       let errorMessage = t("apps.photo-booth.errors.couldNotAccessCamera");
 
       if (error instanceof DOMException) {
-        console.log("DOMException type:", error.name);
+        log.debug("Camera DOMException", { name: error.name });
         if (error.name === "NotAllowedError") {
           errorMessage = t("apps.photo-booth.errors.cameraPermissionDenied");
         } else if (error.name === "NotFoundError") {
@@ -566,7 +576,7 @@ export function usePhotoBoothLogic({
 
   const handleCameraSelect = useCallback(
     async (deviceId: string) => {
-      console.log("Switching to camera:", deviceId);
+      log.debug("Switching camera", { hasDeviceId: Boolean(deviceId) });
       track(PHOTO_BOOTH_ANALYTICS.CAMERA_CHANGE, {
         appId: "photo-booth",
         cameraCount: availableCameras.length,
@@ -588,7 +598,7 @@ export function usePhotoBoothLogic({
 
   useEffect(() => {
     // Print device info on mount
-    console.log("Device info:", {
+    log.debug("Device info", {
       userAgent: navigator.userAgent,
       isIOS,
       isChrome,
@@ -605,7 +615,7 @@ export function usePhotoBoothLogic({
       timeoutIds.push(timeoutId);
     };
 
-    console.log("Applying Chrome-specific visibility fixes");
+    log.debug("Applying Chrome-specific visibility fixes");
 
     // Force visibility in Chrome by cycling CSS properties
     const forceVisibility = () => {
@@ -646,7 +656,7 @@ export function usePhotoBoothLogic({
     let isPlaying = false;
 
     const handleCanPlay = () => {
-      console.log("Video can play now");
+      log.debug("Video can play");
 
       // iOS Safari needs display none/block toggle to render properly sometimes
       if (isIOS) {
@@ -661,7 +671,7 @@ export function usePhotoBoothLogic({
         .play()
         .then(() => {
           isPlaying = true;
-          console.log("Video playing successfully");
+          log.debug("Video playing successfully");
         })
         .catch((e) => {
           console.error("Play error:", e);
@@ -672,7 +682,7 @@ export function usePhotoBoothLogic({
     // Recovery check - if video isn't playing after a moment, try again
     const recoveryTimer = setTimeout(() => {
       if (!isPlaying && videoElement && stream.active) {
-        console.log("Attempting recovery of video playback");
+        log.debug("Attempting recovery of video playback");
         videoElement
           .play()
           .catch((e) => console.error("Recovery attempt failed:", e));
@@ -691,7 +701,7 @@ export function usePhotoBoothLogic({
   useEffect(() => {
     if (!stream || !videoRef.current) return;
 
-    console.log("Stream connected, verifying video display");
+    log.debug("Stream connected, verifying video display");
 
     // Force video element to reinitialize
     const videoEl = videoRef.current;
@@ -701,7 +711,7 @@ export function usePhotoBoothLogic({
       if (!videoEl) return;
 
       // Display detailed info about video element
-      console.log("Video element status:", {
+      log.debug("Video element status", {
         videoWidth: videoEl.videoWidth,
         videoHeight: videoEl.videoHeight,
         paused: videoEl.paused,
@@ -722,7 +732,7 @@ export function usePhotoBoothLogic({
           videoEl.srcObject = currentStream;
           videoEl
             .play()
-            .then(() => console.log("Video forced to play successfully"))
+            .then(() => log.debug("Video forced to play successfully"))
             .catch((err) => console.error("Force play failed:", err));
         }
       }, 50);
@@ -734,15 +744,13 @@ export function usePhotoBoothLogic({
 
     // Add explicit metadata event listener
     const handleLoadedMetadata = () => {
-      console.log("Video metadata loaded, dimensions:", {
+      log.debug("Video metadata loaded", {
         videoWidth: videoEl.videoWidth,
         videoHeight: videoEl.videoHeight,
       });
 
       if (videoEl.videoWidth === 0 || videoEl.videoHeight === 0) {
-        console.log(
-          "Metadata loaded but dimensions still zero, applying fix..."
-        );
+        log.debug("Metadata dimensions still zero; applying fix");
         // Force dimensions if needed
         if (videoEl.style.width === "" && videoEl.style.height === "") {
           // Try to set reasonable defaults based on container

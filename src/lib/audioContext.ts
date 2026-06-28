@@ -13,6 +13,10 @@
 // pull this module in transitively via the iPod store; without the
 // guard, just loading the module would throw `ReferenceError: window
 // is not defined` and abort the suite.
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("audioContext");
+
 const AudioContextClass =
   typeof window !== "undefined"
     ? window.AudioContext ||
@@ -57,9 +61,9 @@ export const getAudioContext = (): AudioContext => {
       }
       audioContext = new AudioContextClass({ latencyHint: "interactive" });
       audioContext.onstatechange = () => {
-        console.debug("[audioContext] State changed to:", audioContext?.state);
+        log.debug("State changed", { state: audioContext?.state });
       };
-      console.debug("[audioContext] Created new AudioContext");
+      log.debug("Created new AudioContext");
       notifyContextChange(audioContext);
     } catch (err) {
       console.error("[audioContext] Failed to create AudioContext:", err);
@@ -138,23 +142,23 @@ export const resumeAudioContext = async (): Promise<void> => {
         // Safari may need a moment for the state to actually update
         const resumed = await waitForRunningState(ctx);
         if (resumed) {
-          console.debug("[audioContext] Resumed AudioContext");
+          log.debug("Resumed AudioContext");
           return; // Successfully resumed, exit early
         }
       } catch (err) {
         // Expected on iOS Safari when the context is "interrupted"/"suspended"
         // (e.g. returning from background). We immediately recreate the context
         // below, so keep this at debug level to avoid alarming error noise.
-        console.debug("[audioContext] Failed to resume AudioContext:", err);
+        log.debug("Failed to resume AudioContext", err);
       }
     }
 
     state = ctx.state as AudioContextState | "interrupted";
     if (state !== "running") {
       try {
-        console.debug(
-          `[audioContext] AudioContext still in state "${state}" after resume – recreating`
-        );
+        log.debug("AudioContext still not running after resume; recreating", {
+          state,
+        });
         await ctx.close();
       } catch (err) {
         console.error("[audioContext] Failed to close AudioContext:", err);
@@ -169,12 +173,9 @@ export const resumeAudioContext = async (): Promise<void> => {
         try {
           await ctx.resume();
           await waitForRunningState(ctx);
-          console.debug("[audioContext] Resumed newly created AudioContext");
+          log.debug("Resumed newly created AudioContext");
         } catch (err) {
-          console.debug(
-            "[audioContext] Could not resume new context (may need user gesture):",
-            err
-          );
+          log.debug("Could not resume new context; may need user gesture", err);
         }
       }
     }
@@ -242,11 +243,11 @@ const unlockAudioHandler = () => {
       .then(() => {
         if (ctx.state === "running") {
           needsGestureReunlock = false;
-          console.debug("[audioContext] Audio unlocked/resumed via user gesture");
+          log.debug("Audio unlocked/resumed via user gesture");
         }
       })
       .catch((err) => {
-        console.debug("[audioContext] Audio unlock attempt failed:", err);
+        log.debug("Audio unlock attempt failed", err);
       });
   }
 
@@ -285,7 +286,7 @@ function attachUnlockListeners() {
     document.addEventListener(event, unlockAudioHandler, { capture: true, passive: true });
   });
   unlockListenersAttached = true;
-  console.debug("[audioContext] Attached audio unlock listeners");
+  log.debug("Attached audio unlock listeners");
 }
 
 function detachUnlockListeners() {
@@ -295,7 +296,7 @@ function detachUnlockListeners() {
     document.removeEventListener(event, unlockAudioHandler, true);
   });
   unlockListenersAttached = false;
-  console.debug("[audioContext] Detached audio unlock listeners");
+  log.debug("Detached audio unlock listeners");
 }
 
 function setupAudioContextListeners() {
@@ -338,7 +339,7 @@ function setupAudioContextListeners() {
         );
       }
       deviceChangeHandler = () => {
-        console.debug("[audioContext] Audio device changed, resuming context");
+        log.debug("Audio device changed; resuming context");
         void resumeAudioContext();
       };
       navigator.mediaDevices.addEventListener(
@@ -388,18 +389,16 @@ function setupAudioContextListeners() {
           (state === "interrupted" || state === "suspended") &&
           document.visibilityState === "visible"
         ) {
-          console.debug(
-            `[audioContext] Health check: context in "${state}" state while visible, attempting resume`
-          );
+          log.debug("Health check: context not running while visible", {
+            state,
+          });
           // Don't await - just trigger the resume attempt
           void resumeAudioContext();
         }
         
         // If context is closed while tab is visible, try to recreate
         if (state === "closed" && document.visibilityState === "visible") {
-          console.debug(
-            "[audioContext] Health check: context closed while visible, recreating"
-          );
+          log.debug("Health check: context closed while visible; recreating");
           audioContext = null;
           getAudioContext();
         }
@@ -441,6 +440,6 @@ if (import.meta.hot) {
       healthCheckInterval = null;
     }
     detachUnlockListeners();
-    console.debug("[audioContext] HMR cleanup: removed listeners");
+    log.debug("HMR cleanup: removed listeners");
   });
 }

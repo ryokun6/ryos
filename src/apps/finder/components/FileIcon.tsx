@@ -9,6 +9,9 @@ import {
   BOOK_FILE_ICON_PATH,
   isEpubFile,
 } from "@/apps/finder/utils/fileSystemHelpers";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("FileIcon");
 
 interface FileIconProps {
   name: string;
@@ -208,7 +211,7 @@ export const FileIcon = memo(function FileIcon({
     ) {
       // Only try once per blob to avoid loops
       if (!attemptedUrlsRef.current.has("blob-retry")) {
-        console.log(`[FileIcon] Retrying with new URL for ${name}`);
+        log.debug("Retrying image preview with new object URL", { name });
         attemptedUrlsRef.current.add("blob-retry");
 
         // Revoke current URL
@@ -218,18 +221,16 @@ export const FileIcon = memo(function FileIcon({
         const newUrl = URL.createObjectURL(contentRef.current);
         blobUrlRef.current = newUrl;
         dispatch({ type: "setImage", imgSrc: newUrl });
-        console.log(
-          `[FileIcon] Created new URL for ${name}: ${newUrl.substring(
-            0,
-            50
-          )}...`
-        );
+        log.debug("Created replacement object URL", {
+          name,
+          hasObjectUrl: Boolean(newUrl),
+        });
         return;
       }
     }
 
     // Otherwise fall back to icon
-    console.log(`[FileIcon] Falling back to icon for ${name}`);
+    log.debug("Falling back to icon", { name });
     dispatch({ type: "fallback" });
   }, [fallbackToIcon, imgSrc, name]);
 
