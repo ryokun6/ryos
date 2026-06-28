@@ -204,3 +204,11 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 - **Build process**: `bun run build` writes Vite output and generated service worker files (`sw.js`, `workbox-*.js`) to `dist/`; Vercel packaging may copy them into `.vercel/output/static/`.
 - **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
 - **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run dev:api` and adjust proxy target accordingly.
+
+## Cursor Cloud specific instructions
+
+These notes are specific to the Cursor Cloud Agent VM (where dependencies are already installed by the startup update script). They complement the guide above; standard commands live in the `## Cloud-specific instructions` / README / `package.json` sections.
+
+- **Secrets are pre-injected as environment variables** — there is **no `.env.local` file** on the cloud VM. Redis (Upstash REST: `REDIS_KV_REST_API_URL`/`REDIS_KV_REST_API_TOKEN`), Pusher, and AI keys (OpenAI/Anthropic/Google) are already present, so `bun run dev` works with full functionality out of the box. The README's `.env.local` instructions are for local maintainer machines only.
+- **AI chat is rate-limited, which can look like a broken AI.** `/api/chat` (the Ryo assistant in the Chats app) allows only **3 messages/day for anonymous users (per IP)** and **15 per 5h for authenticated users (per username)** (see `api/_utils/_rate-limit.ts`). The shared anonymous per-IP budget is quickly exhausted by the API test suite, so if Ryo doesn't reply while logged out you're almost certainly rate-limited (HTTP 429), not missing keys. **Sign in (register/login) before testing AI in the UI.**
+- **`bun run test:unit` aggregate run has pre-existing failures unrelated to the environment.** Running all unit suites in one process currently yields ~21 deterministic failures from cross-file state pollution (zustand persist + happy-dom storage), reproducible across bun 1.3.5/1.3.9/1.3.14. Each affected suite **passes in isolation** (e.g. `bun test ./tests/test-app-store-foreground-state.test.ts`). Before treating a unit failure as a regression, re-run the specific suite on its own. The full API integration suite (`bun run dev:api` + `bun run test:api`) passes 325/325.
