@@ -44,9 +44,11 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
-const { createIndexedDBPersistStorage, settlePersistWrites } = await import(
-  "../src/utils/indexedDBPersistStorage"
-);
+const {
+  clearIndexedDBPersistedState,
+  createIndexedDBPersistStorage,
+  settlePersistWrites,
+} = await import("../src/utils/indexedDBPersistStorage");
 const { resetPersistWritesForTests, haltPersistWrites } = await import(
   "../src/utils/persistWriteQueue"
 );
@@ -154,6 +156,22 @@ describe("createIndexedDBPersistStorage", () => {
 
     expect(await storage.getItem("r")).toBeNull();
     expect(backing.has("r")).toBe(false);
+  });
+
+  test("clearIndexedDBPersistedState clears all persisted slice records", async () => {
+    const storage = createIndexedDBPersistStorage<{ a: number }>({
+      delayMs: 5,
+    });
+    storage.setItem("slice-a", { state: { a: 1 }, version: 1 });
+    await settlePersistWrites();
+    storage.setItem("slice-b", { state: { a: 2 }, version: 1 });
+    await settlePersistWrites();
+
+    await clearIndexedDBPersistedState();
+
+    const fresh = createIndexedDBPersistStorage<{ a: number }>();
+    expect(await fresh.getItem("slice-a")).toBeNull();
+    expect(await fresh.getItem("slice-b")).toBeNull();
   });
 
   test("halted writes are not committed to IndexedDB", async () => {

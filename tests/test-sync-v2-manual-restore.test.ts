@@ -45,6 +45,32 @@ describe("manual backup Sync v2 metadata filtering", () => {
     expect(localRestoreBlock).toContain("createManualRestoreIntent");
     expect(localRestoreBlock).toContain("setManualRestoreIntent");
   });
+
+  test("Control Panels reset clears IndexedDB persisted app state", () => {
+    const source = readFileSync(
+      "src/apps/control-panels/hooks/useControlPanelsLogic.ts",
+      "utf8"
+    );
+
+    const resetBlock = source.slice(
+      source.indexOf("const performReset = async () =>"),
+      source.indexOf("const handleBackup = async () =>")
+    );
+    const restoreBlock = source.slice(
+      source.indexOf("const performRestore = async () =>"),
+      source.indexOf("const performFormat = async () =>")
+    );
+
+    expect(resetBlock).toContain("await settlePersistWrites()");
+    expect(resetBlock).toContain("haltDebouncedPersistWrites()");
+    expect(resetBlock).toContain("clearIndexedDBPersistedState()");
+    expect(resetBlock.indexOf("await settlePersistWrites()")).toBeLessThan(
+      resetBlock.indexOf("haltDebouncedPersistWrites()")
+    );
+    expect(restoreBlock.indexOf("await settlePersistWrites()")).toBeLessThan(
+      restoreBlock.indexOf("haltDebouncedPersistWrites()")
+    );
+  });
 });
 
 describe("manual restore intent", () => {

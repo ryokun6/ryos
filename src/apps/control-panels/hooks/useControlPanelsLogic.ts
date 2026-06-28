@@ -8,10 +8,12 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { clearAllAppStates } from "@/stores/useAppStore";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import {
-  flushDebouncedPersistWrites,
   haltDebouncedPersistWrites,
 } from "@/utils/debouncedPersistStorage";
-import { settlePersistWrites } from "@/utils/indexedDBPersistStorage";
+import {
+  clearIndexedDBPersistedState,
+  settlePersistWrites,
+} from "@/utils/indexedDBPersistStorage";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
 import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
@@ -691,10 +693,10 @@ export function useControlPanelsLogic({
     performReset();
   };
 
-  const performReset = () => {
-    // Flush write-behind persist queues so the preserved keys are current,
-    // then halt further writes until the reload.
-    flushDebouncedPersistWrites();
+  const performReset = async () => {
+    // Drain write-behind persist queues so preserved keys are current, then
+    // halt writes before clearing storage for the reset reload.
+    await settlePersistWrites();
     haltDebouncedPersistWrites();
     // Preserve critical recovery keys while clearing everything else
     const fileMetadataStore = localStorage.getItem("ryos:files");
@@ -702,6 +704,11 @@ export function useControlPanelsLogic({
 
     clearAllAppStates();
     clearPrefetchFlag(); // Force re-prefetch on next boot
+    try {
+      await clearIndexedDBPersistedState();
+    } catch (error) {
+      console.error("Error clearing IndexedDB persisted app state:", error);
+    }
 
     if (fileMetadataStore) {
       localStorage.setItem("ryos:files", fileMetadataStore);
@@ -905,7 +912,7 @@ export function useControlPanelsLogic({
         // Clear current state. Drain write-behind persist queues first so a
         // pending debounced write can't fire mid-restore and clobber a
         // freshly restored key before the reload.
-        flushDebouncedPersistWrites();
+        await settlePersistWrites();
         haltDebouncedPersistWrites();
         clearAllAppStates();
         clearPrefetchFlag(); // Force re-prefetch on next boot

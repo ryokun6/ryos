@@ -92,6 +92,21 @@ async function deleteRecord(name: string): Promise<void> {
   }
 }
 
+async function clearRecords(): Promise<void> {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
 /**
  * One-time migration of a slice that previously persisted to localStorage.
  * Returns the parsed value (now also written to IndexedDB) or null.
@@ -248,4 +263,15 @@ export function createIndexedDBPersistStorage<S>(
  */
 export async function settlePersistWrites(): Promise<void> {
   await settleAllPersistWrites();
+}
+
+/**
+ * Clear every Zustand persist slice stored in IndexedDB.
+ *
+ * Used by system reset after write-behind queues have settled and been halted,
+ * so IndexedDB-backed app state follows the same reset semantics as
+ * localStorage-backed app state.
+ */
+export async function clearIndexedDBPersistedState(): Promise<void> {
+  await clearRecords();
 }
