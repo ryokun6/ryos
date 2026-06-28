@@ -15,7 +15,7 @@
 // is not defined` and abort the suite.
 import { createClientLogger } from "@/utils/logger";
 
-const log = createClientLogger("audioContext");
+const log = createClientLogger("AudioContext");
 
 const AudioContextClass =
   typeof window !== "undefined"
@@ -43,7 +43,7 @@ const notifyContextChange = (newContext: AudioContext) => {
     try {
       listener(newContext);
     } catch (err) {
-      console.error("[audioContext] Context change listener error:", err);
+      console.error("[AudioContext] Context change listener error:", err);
     }
   });
 };
@@ -66,7 +66,7 @@ export const getAudioContext = (): AudioContext => {
       log.debug("Created new AudioContext");
       notifyContextChange(audioContext);
     } catch (err) {
-      console.error("[audioContext] Failed to create AudioContext:", err);
+      console.error("[AudioContext] Failed to create AudioContext:", err);
       // Return a dummy context to avoid callers exploding – this will do
       // nothing but at least has the expected shape.
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -161,7 +161,7 @@ export const resumeAudioContext = async (): Promise<void> => {
         });
         await ctx.close();
       } catch (err) {
-        console.error("[audioContext] Failed to close AudioContext:", err);
+        console.error("[AudioContext] Failed to close AudioContext:", err);
       }
 
       audioContext = null; // Force getAudioContext() to make a new one
