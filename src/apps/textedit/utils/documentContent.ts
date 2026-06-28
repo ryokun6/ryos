@@ -2,6 +2,8 @@ import type { JSONContent } from "@tiptap/core";
 import { markdownToSafeHtml, sanitizeHtmlForEditor } from "./markdownPaste";
 import { parseRichMarkdown } from "./richMarkdown";
 
+type EditorMark = NonNullable<JSONContent["marks"]>[number];
+
 const SAFE_LINK_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -42,7 +44,7 @@ function sanitizeAttrs(attrs: unknown): Record<string, unknown> | undefined {
   return Object.keys(sanitized).length > 0 ? sanitized : undefined;
 }
 
-function sanitizeMark(mark: unknown): JSONContent["marks"][number] | null {
+function sanitizeMark(mark: unknown): EditorMark | null {
   if (!isRecord(mark) || typeof mark.type !== "string") {
     return null;
   }
@@ -73,7 +75,7 @@ function sanitizeEditorJsonContent(value: unknown): JSONContent | null {
   if (Array.isArray(value.marks)) {
     const marks = value.marks
       .map(sanitizeMark)
-      .filter((mark): mark is JSONContent["marks"][number] => mark !== null);
+      .filter((mark): mark is EditorMark => mark !== null);
     if (marks.length > 0) {
       sanitized.marks = marks;
     }
