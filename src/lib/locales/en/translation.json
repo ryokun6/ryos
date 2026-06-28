@@ -4707,6 +4707,8 @@
     "copyLogs": "Copy logs",
     "copied": "Copied",
     "copy": "Copy",
+    "fix": "Fix",
+    "fixLogs": "Send logs to Cursor agent",
     "clearLogs": "Clear logs",
     "closeConsole": "Close console",
     "hideConsole": "Hide console",

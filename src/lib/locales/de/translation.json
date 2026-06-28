@@ -4690,6 +4690,8 @@
     "console": "Logs",
     "copied": "Kopiert",
     "copy": "Kopieren",
+    "fix": "Beheben",
+    "fixLogs": "Logs an Cursor-Agent senden",
     "copyLogs": "Logs kopieren",
     "errorCount": "{{count}} Fehl.",
     "hideConsole": "Konsole ausblenden",

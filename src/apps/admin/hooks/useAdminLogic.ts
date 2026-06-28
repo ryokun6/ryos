@@ -34,6 +34,7 @@ import {
   getClearedAdminDetailSelection,
   type AdminSection,
 } from "../utils/navigationState";
+import type { AdminInitialData } from "../types";
 import { formatAdminRelativeTime } from "../utils/adminTime";
 import { helpItems } from "..";
 
@@ -192,9 +193,10 @@ const INITIAL_IMPORT_STATUS: ImportStatus = {
 
 export interface UseAdminLogicProps {
   isWindowOpen: boolean;
+  initialData?: AdminInitialData;
 }
 
-export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
+export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("admin", helpItems);
   const { username, isAuthenticated } = useAuth();
@@ -276,6 +278,41 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const setActiveSection = useCallback((nextSection: AdminSection) => {
     dispatchNavigation({ type: "setActiveSection", activeSection: nextSection });
   }, []);
+
+  const adminLaunchAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const section = initialData?.section;
+    const launchKey =
+      initialData?.cursorAgentRequestId ??
+      (initialData?.cursorAgentPrompt && initialData.autoStartCursorAgent
+        ? initialData.cursorAgentPrompt
+        : undefined);
+
+    if (!section && !launchKey) return;
+    if (launchKey && launchKey === adminLaunchAppliedRef.current) return;
+    if (launchKey) adminLaunchAppliedRef.current = launchKey;
+
+    if (section) {
+      setActiveSection(section);
+      dispatchNavigation({
+        type: "applyClearedSelection",
+        payload: getClearedAdminDetailSelection(section, {
+          selectedRoomId,
+          selectedUserProfile,
+          selectedSongId,
+        }),
+      });
+    }
+  }, [
+    initialData?.section,
+    initialData?.cursorAgentPrompt,
+    initialData?.autoStartCursorAgent,
+    initialData?.cursorAgentRequestId,
+    selectedRoomId,
+    selectedUserProfile,
+    selectedSongId,
+    setActiveSection,
+  ]);
   const setSelectedRoomId = useCallback((roomId: string | null) => {
     dispatchNavigation({ type: "setSelectedRoomId", selectedRoomId: roomId });
   }, []);

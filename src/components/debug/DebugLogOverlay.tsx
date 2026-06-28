@@ -7,10 +7,13 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ArrowDown, Bug, Check, Copy, Trash, X } from "@phosphor-icons/react";
+import { ArrowDown, Bug, Check, Copy, Trash, Wrench, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
+import type { AdminInitialData } from "@/apps/admin/types";
 import {
   clearConsoleCapture,
   formatConsoleEntriesForCopy,
@@ -34,6 +37,21 @@ const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
 const ESTIMATED_LOG_ROW_HEIGHT = 22;
 const VIRTUAL_OVERSCAN = 8;
 const STICK_TO_BOTTOM_THRESHOLD = 24;
+
+const DEBUG_FIX_PROMPT_HEADER =
+  "Investigate these debug console logs and fix any errors in the ryOS codebase.";
+const CURSOR_AGENT_PROMPT_MAX = 32_000;
+
+function buildDebugFixPrompt(logText: string): string {
+  const wrapperOverhead =
+    DEBUG_FIX_PROMPT_HEADER.length + "\n\n```\n\n```".length + 32;
+  const maxLogChars = Math.max(0, CURSOR_AGENT_PROMPT_MAX - wrapperOverhead);
+  let logs = logText;
+  if (logs.length > maxLogChars) {
+    logs = `… (truncated — showing last ${maxLogChars} chars)\n${logs.slice(-maxLogChars)}`;
+  }
+  return `${DEBUG_FIX_PROMPT_HEADER}\n\n\`\`\`\n${logs}\n\`\`\``;
+}
 
 function formatTime(timestamp: number): string {
   const d = new Date(timestamp);
@@ -75,6 +93,8 @@ function findFirstVisibleIndex(
  */
 export function DebugLogOverlay() {
   const { t } = useTranslation();
+  const launchApp = useLaunchApp();
+  const isRyoAdmin = useIsRyoAdmin();
   const debugMode = useDisplaySettingsStore((s) => s.debugMode);
   const flags = useThemeFlags();
   const [open, setOpen] = useState(false);
@@ -257,6 +277,17 @@ export function DebugLogOverlay() {
     }
   }, [copyText]);
 
+  const handleFix = useCallback(() => {
+    const prompt = buildDebugFixPrompt(copyText);
+    const initialData: AdminInitialData = {
+      section: "cursorAgents",
+      cursorAgentPrompt: prompt,
+      autoStartCursorAgent: true,
+      cursorAgentRequestId: `${Date.now()}-${entries.length}`,
+    };
+    launchApp("admin", { initialData });
+  }, [copyText, entries.length, launchApp]);
+
   useEffect(() => {
     return () => {
       if (copiedTimer.current) clearTimeout(copiedTimer.current);
@@ -316,6 +347,18 @@ export function DebugLogOverlay() {
               </span>
             )}
             <div className="ml-auto flex items-center gap-0.5">
+              {isRyoAdmin ? (
+                <button
+                  type="button"
+                  onClick={handleFix}
+                  title={t("debug.fixLogs")}
+                  aria-label={t("debug.fixLogs")}
+                  className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                >
+                  <Wrench weight="bold" className="size-3.5" />
+                  <span>{t("debug.fix")}</span>
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={handleCopy}

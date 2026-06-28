@@ -4690,6 +4690,8 @@
     "console": "ログ",
     "copied": "コピーしました",
     "copy": "コピー",
+    "fix": "修正",
+    "fixLogs": "ログを Cursor エージェントに送信",
     "copyLogs": "ログをコピー",
     "errorCount": "{{count}} エラー",
     "hideConsole": "コンソールを非表示",

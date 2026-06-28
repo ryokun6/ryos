@@ -4675,6 +4675,8 @@
     "console": "Logs",
     "copied": "Copiado",
     "copy": "Copiar",
+    "fix": "Corrigir",
+    "fixLogs": "Enviar logs ao agente Cursor",
     "copyLogs": "Copiar logs",
     "errorCount": "{{count}} err",
     "hideConsole": "Ocultar console",

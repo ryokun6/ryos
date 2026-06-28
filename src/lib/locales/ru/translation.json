@@ -4675,6 +4675,8 @@
     "console": "Логи",
     "copied": "Скопировано",
     "copy": "Копировать",
+    "fix": "Исправить",
+    "fixLogs": "Отправить логи агенту Cursor",
     "copyLogs": "Копировать логи",
     "errorCount": "{{count}} ош.",
     "hideConsole": "Скрыть консоль",
