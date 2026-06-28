@@ -727,7 +727,7 @@
           "yd": "碼"
         }
       },
-      "description": "基本、科學和單位轉換計算器",
+      "description": "基本、科學和單位轉換計算機",
       "help": {
         "basicMode": {
           "description": "使用記憶鍵和百分比進行加、減、乘和除",
@@ -750,16 +750,16 @@
           "title": "科學模式"
         },
         "themeDesigns": {
-          "description": "經典Mac、Aqua、Windows 98和Windows XP計算器主題",
+          "description": "經典Mac、Aqua、Windows 98和Windows XP計算機主題",
           "title": "主題設計"
         }
       },
       "menu": {
-        "about": "關於計算器",
+        "about": "關於計算機",
         "basic": "基本",
         "clear": "清除",
         "conversion": "轉換",
-        "help": "計算器幫助",
+        "help": "計算機輔助說明",
         "scientific": "科學",
         "sound": "聲音",
         "speakButtonPresses": "朗讀按下的按鈕",
