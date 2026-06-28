@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} salas",
         "songsCount": "{{count}} músicas",
         "usersCount": "{{count}} usuário",
-        "usersCount_plural": "{{count}} usuários"
+        "usersCount_plural": "{{count}} usuários",
+        "redisKeysCount_many": "{{count}} chaves",
+        "auditLogCount_many": "{{count}} entradas"
       },
       "tableHeaders": {
         "added": "Adicionado",
@@ -1297,7 +1299,7 @@
         "launching": "Iniciando {{appName}}…",
         "launchingApp": "Iniciando aplicativo…",
         "listCursorCloudAgentRuns": {
-          "listed": "{{count}} execuções recentes listadas.",
+          "listed": "Execuções recentes listadas: {{count}}.",
           "loading": "Listando execuções do agente do Cursor Cloud…",
           "openDashboard": "Abrir agente no Cursor",
           "truncatedHint": "(a lista pode estar truncada)"
@@ -2700,7 +2702,7 @@
         "appleMusicSignInFailed": "Falha ao iniciar sessão",
         "autoUpdateFailed": "Falha na Atualização Automática",
         "autoUpdatedLibraryAddedSongs": "Biblioteca atualizada automaticamente: adicionada{{newPlural}} {{newCount}} nova{{newPlural}} música{{newPlural}} ao topo{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Metadados de {{count}} faixas atualizados automaticamente",
+        "autoUpdatedTrackMetadata": "Metadados de faixas atualizados automaticamente: {{count}}",
         "clearLibraryDescription": "Tem certeza de que deseja limpar toda a sua biblioteca de músicas? Esta ação não pode ser desfeita.",
         "clearLibraryTitle": "Limpar Biblioteca",
         "errorAdding": "Erro ao adicionar:",
@@ -2716,7 +2718,7 @@
         "libraryExportedSuccessfully": "Biblioteca exportada com sucesso",
         "libraryImportedSuccessfully": "Biblioteca importada com sucesso",
         "librarySynced": "Biblioteca Sincronizada",
-        "libraryUpToDateWithSongs": "A biblioteca está atualizada com {{count}} músicas",
+        "libraryUpToDateWithSongs": "A biblioteca está atualizada. Músicas: {{count}}",
         "libraryUpdated": "Biblioteca Atualizada",
         "listenSessionJoinFailed": "Falha ao entrar na sessão",
         "lyricsSearchCurrentSelection": "Seleção atual:",
@@ -2927,7 +2929,8 @@
         "songs": "Músicas",
         "theme": "Tema",
         "unconfigured": "Não Configurado",
-        "unknownAlbum": "Álbum desconhecido"
+        "unknownAlbum": "Álbum desconhecido",
+        "playlistTrackCount_many": "{{count}} músicas"
       },
       "musicQuiz": {
         "correct": "Correto!",
@@ -4181,7 +4184,8 @@
         "importFailed": "Não foi possível importar os canais — o arquivo pode ser inválido",
         "importSuccess_one": "Importado {{count}} canal ({{skipped}} ignorado)",
         "importSuccess_other": "Importados {{count}} canais ({{skipped}} ignorados)",
-        "resetSuccess": "Canais redefinidos para os padrões"
+        "resetSuccess": "Canais redefinidos para os padrões",
+        "importSuccess_many": "Importados {{count}} canais ({{skipped}} ignorados)"
       },
       "youtubePaste": {
         "added": "«{{title}}» adicionado a este canal",

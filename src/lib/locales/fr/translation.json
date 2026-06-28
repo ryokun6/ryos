@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} pièces",
         "songsCount": "{{count}} morceaux",
         "usersCount": "{{count}} utilisateur",
-        "usersCount_plural": "{{count}} utilisateurs"
+        "usersCount_plural": "{{count}} utilisateurs",
+        "redisKeysCount_many": "{{count}} clés",
+        "auditLogCount_many": "{{count}} entrées"
       },
       "tableHeaders": {
         "added": "Ajouté",
@@ -523,7 +525,7 @@
         "exportAs": "Exporter sous...",
         "html": "HTML",
         "importFromDevice": "Importer depuis l'appareil...",
-        "logOut": "Fermer la session",
+        "logOut": "Se déconnecter",
         "login": "Connexion...",
         "noAppletsOpen": "Aucune applet ouverte",
         "open": "Ouvrir…",
@@ -994,7 +996,7 @@
         "increaseFontSize": "Augmenter la taille de la police",
         "keepTalking": "Continuer à parler",
         "linkToTelegram": "Lien vers Telegram",
-        "logOut": "Fermer la session",
+        "logOut": "Se déconnecter",
         "login": "Se connecter...",
         "newChat": "Nouvelle discussion...",
         "resetFontSize": "Réinitialiser la taille de la police",
@@ -1297,7 +1299,7 @@
         "launching": "Lancement de {{appName}}…",
         "launchingApp": "Lancement de l'application…",
         "listCursorCloudAgentRuns": {
-          "listed": "{{count}} exécutions récentes répertoriées.",
+          "listed": "Exécutions récentes répertoriées : {{count}}.",
           "loading": "Liste des exécutions de l’agent Cursor Cloud…",
           "openDashboard": "Ouvrir l’agent dans Cursor",
           "truncatedHint": "(la liste peut être tronquée)"
@@ -1761,7 +1763,7 @@
       "ipod": "iPod",
       "ipodVolume": "Volume de l'iPod",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
+      "logOut": "Se déconnecter",
       "logOutAll": "Tout déconnecter",
       "logOutOfAllDevices": "Se déconnecter de tous les appareils",
       "logOutOfAllDevicesRowDescription": "Se déconnecter de votre compte ryOS sur tous les appareils",
@@ -2700,7 +2702,7 @@
         "appleMusicSignInFailed": "Échec de la connexion",
         "autoUpdateFailed": "Échec de la mise à jour automatique",
         "autoUpdatedLibraryAddedSongs": "Bibliothèque mise à jour automatiquement : ajouté {{newCount}} nouvelle{{newPlural}} chanson{{newPlural}} en haut{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Métadonnées de {{count}} pistes mises à jour automatiquement",
+        "autoUpdatedTrackMetadata": "Métadonnées de pistes mises à jour automatiquement : {{count}}",
         "clearLibraryDescription": "Voulez-vous vraiment vider toute votre bibliothèque musicale ? Cette action est irréversible.",
         "clearLibraryTitle": "Vider la bibliothèque",
         "errorAdding": "Erreur lors de l'ajout :",
@@ -2716,7 +2718,7 @@
         "libraryExportedSuccessfully": "Bibliothèque exportée avec succès",
         "libraryImportedSuccessfully": "Bibliothèque importée avec succès",
         "librarySynced": "Bibliothèque synchronisée",
-        "libraryUpToDateWithSongs": "La bibliothèque est à jour avec {{count}} morceaux",
+        "libraryUpToDateWithSongs": "La bibliothèque est à jour. Morceaux : {{count}}",
         "libraryUpdated": "Bibliothèque mise à jour",
         "listenSessionJoinFailed": "Échec de la participation à la session",
         "lyricsSearchCurrentSelection": "Sélection actuelle:",
@@ -2927,7 +2929,8 @@
         "songs": "Morceaux",
         "theme": "Thème",
         "unconfigured": "Non configuré",
-        "unknownAlbum": "Album inconnu"
+        "unknownAlbum": "Album inconnu",
+        "playlistTrackCount_many": "{{count}} morceaux"
       },
       "musicQuiz": {
         "correct": "Correct !",
@@ -4181,7 +4184,8 @@
         "importFailed": "Impossible d’importer les chaînes — le fichier est peut-être non valide",
         "importSuccess_one": "{{count}} chaîne importée ({{skipped}} ignorée)",
         "importSuccess_other": "{{count}} chaînes importées ({{skipped}} ignorées)",
-        "resetSuccess": "Chaînes réinitialisées par défaut"
+        "resetSuccess": "Chaînes réinitialisées par défaut",
+        "importSuccess_many": "{{count}} chaînes importées ({{skipped}} ignorées)"
       },
       "youtubePaste": {
         "added": "« {{title}} » ajouté à cette chaîne",
@@ -4403,7 +4407,7 @@
       "dialogTitle": "Connexion ryOS",
       "forgotPassword": "Mot de passe oublié ?",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
+      "logOut": "Se déconnecter",
       "logOutDescription": "Voulez-vous vraiment vous déconnecter ? Vous serez déconnecté de votre compte.",
       "loggingIn": "Connexion...",
       "loginDescription": "Connectez-vous à votre compte",

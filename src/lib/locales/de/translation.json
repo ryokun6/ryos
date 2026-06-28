@@ -1297,7 +1297,7 @@
         "launching": "{{appName}} wird gestartet…",
         "launchingApp": "App wird gestartet…",
         "listCursorCloudAgentRuns": {
-          "listed": "{{count}} aktuelle Ausführungen aufgelistet.",
+          "listed": "Anzahl der aufgelisteten letzten Ausführungen: {{count}}.",
           "loading": "Cursor Cloud-Agent-Ausführungen werden aufgelistet…",
           "openDashboard": "Agent in Cursor öffnen",
           "truncatedHint": "(Liste ist möglicherweise gekürzt)"
@@ -2700,7 +2700,7 @@
         "appleMusicSignInFailed": "Anmeldung fehlgeschlagen",
         "autoUpdateFailed": "Auto-Update fehlgeschlagen",
         "autoUpdatedLibraryAddedSongs": "Bibliothek automatisch aktualisiert: {{newCount}} Song{{newPlural}} neu an den Anfang hinzugefügt{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Metadaten von {{count}} Titeln automatisch aktualisiert",
+        "autoUpdatedTrackMetadata": "Automatisch aktualisierte Titelmetadaten: {{count}}",
         "clearLibraryDescription": "Möchten Sie Ihre gesamte Musikbibliothek wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "clearLibraryTitle": "Bibliothek löschen",
         "errorAdding": "Fehler beim Hinzufügen:",
@@ -2716,7 +2716,7 @@
         "libraryExportedSuccessfully": "Bibliothek erfolgreich exportiert",
         "libraryImportedSuccessfully": "Bibliothek erfolgreich importiert",
         "librarySynced": "Bibliothek synchronisiert",
-        "libraryUpToDateWithSongs": "Die Mediathek ist mit {{count}} Titeln auf dem neuesten Stand",
+        "libraryUpToDateWithSongs": "Die Mediathek ist auf dem neuesten Stand. Titel: {{count}}",
         "libraryUpdated": "Bibliothek aktualisiert",
         "listenSessionJoinFailed": "Beitritt zur Sitzung fehlgeschlagen",
         "lyricsSearchCurrentSelection": "Aktuelle Auswahl:",

@@ -391,7 +391,11 @@
         "roomsCount_plural": "{{count}} комнат",
         "songsCount": "{{count}} песен",
         "usersCount": "{{count}} пользователь",
-        "usersCount_plural": "{{count}} пользователей"
+        "usersCount_plural": "{{count}} пользователей",
+        "redisKeysCount_few": "{{count}} ключа",
+        "redisKeysCount_many": "{{count}} ключей",
+        "auditLogCount_few": "{{count}} записи",
+        "auditLogCount_many": "{{count}} записей"
       },
       "tableHeaders": {
         "added": "Добавлено",
@@ -523,7 +527,7 @@
         "exportAs": "Экспортировать как...",
         "html": "HTML",
         "importFromDevice": "Импортировать с устройства...",
-        "logOut": "Завершить сеанс",
+        "logOut": "Выйти",
         "login": "Войти...",
         "noAppletsOpen": "Нет открытых апплетов",
         "open": "Открыть…",
@@ -994,7 +998,7 @@
         "increaseFontSize": "Увеличить размер шрифта",
         "keepTalking": "Продолжать разговор",
         "linkToTelegram": "Ссылка на Telegram",
-        "logOut": "Завершить сеанс",
+        "logOut": "Выйти",
         "login": "Войти...",
         "newChat": "Новый чат...",
         "resetFontSize": "Сбросить размер шрифта",
@@ -1761,7 +1765,7 @@
       "ipod": "iPod",
       "ipodVolume": "Громкость iPod",
       "logIn": "Войти",
-      "logOut": "Завершить сеанс",
+      "logOut": "Выйти",
       "logOutAll": "Выйти везде",
       "logOutOfAllDevices": "Выйти со всех устройств",
       "logOutOfAllDevicesRowDescription": "Выйти из учетной записи ryOS на всех устройствах",
@@ -2716,7 +2720,7 @@
         "libraryExportedSuccessfully": "Медиатека успешно экспортирована",
         "libraryImportedSuccessfully": "Медиатека успешно импортирована",
         "librarySynced": "Медиатека синхронизирована",
-        "libraryUpToDateWithSongs": "Медиатека обновлена, содержит {{count}} песен",
+        "libraryUpToDateWithSongs": "Медиатека обновлена. Количество песен: {{count}}",
         "libraryUpdated": "Медиатека обновлена",
         "listenSessionJoinFailed": "Не удалось присоединиться к сессии",
         "lyricsSearchCurrentSelection": "Текущий выбор:",
@@ -2927,7 +2931,9 @@
         "songs": "Песни",
         "theme": "Тема",
         "unconfigured": "Не настроено",
-        "unknownAlbum": "Неизвестный альбом"
+        "unknownAlbum": "Неизвестный альбом",
+        "playlistTrackCount_few": "{{count}} песни",
+        "playlistTrackCount_many": "{{count}} песен"
       },
       "musicQuiz": {
         "correct": "Верно!",
@@ -4181,7 +4187,9 @@
         "importFailed": "Не удалось импортировать каналы — возможно, файл недействителен",
         "importSuccess_one": "Импортирован {{count}} канал ({{skipped}} пропущено)",
         "importSuccess_other": "Импортировано {{count}} каналов ({{skipped}} пропущено)",
-        "resetSuccess": "Каналы сброшены к значениям по умолчанию"
+        "resetSuccess": "Каналы сброшены к значениям по умолчанию",
+        "importSuccess_few": "Импортировано {{count}} канала ({{skipped}} пропущено)",
+        "importSuccess_many": "Импортировано {{count}} каналов ({{skipped}} пропущено)"
       },
       "youtubePaste": {
         "added": "Добавлено «{{title}}» на этот канал",
@@ -4403,7 +4411,7 @@
       "dialogTitle": "Вход в ryOS",
       "forgotPassword": "Забыли пароль?",
       "logIn": "Войти",
-      "logOut": "Завершить сеанс",
+      "logOut": "Выйти",
       "logOutDescription": "Вы уверены, что хотите выйти? Вы будете отключены от своего аккаунта.",
       "loggingIn": "Вход...",
       "loginDescription": "Войдите в свой аккаунт",

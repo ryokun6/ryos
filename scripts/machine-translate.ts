@@ -23,12 +23,13 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import {
   formatAppleTerminologyForPrompt,
+  TRANSLATION_LOCALES,
   type TranslationLocale,
 } from "./apple-ui-terminology";
 
 const LOCALES_DIR = join(process.cwd(), "src/lib/locales");
 const ENGLISH_FILE = join(LOCALES_DIR, "en/translation.json");
-const OTHER_LANGUAGES = ["zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"];
+const OTHER_LANGUAGES: readonly TranslationLocale[] = TRANSLATION_LOCALES;
 
 // Language names for better context in prompts
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -123,12 +124,10 @@ function updateNestedValue(
  */
 async function translateBatch(
   texts: string[],
-  targetLanguage: string
+  targetLanguage: TranslationLocale
 ): Promise<string[]> {
   const languageName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
-  const terminology = formatAppleTerminologyForPrompt(
-    targetLanguage as TranslationLocale
-  );
+  const terminology = formatAppleTerminologyForPrompt(targetLanguage);
   
   const prompt = `You are a professional translator. Translate the following English strings to ${languageName}.
 
@@ -203,7 +202,7 @@ function sortKeys(obj: TranslationObject): TranslationObject {
  * Translate all [TODO] keys for a language
  */
 async function translateLanguage(
-  lang: string,
+  lang: TranslationLocale,
   dryRun: boolean = false,
   batchSize: number = 20
 ): Promise<{ translated: number; total: number }> {
@@ -325,15 +324,15 @@ Environment:
   console.log("🤖 Machine Translation using Gemini 2.5 Flash");
   console.log("═".repeat(60));
 
-  let languagesToProcess: string[];
+  let languagesToProcess: readonly TranslationLocale[];
   
   if (langArg) {
-    if (!OTHER_LANGUAGES.includes(langArg)) {
+    if (!(OTHER_LANGUAGES as readonly string[]).includes(langArg)) {
       console.error(`❌ Error: Invalid language "${langArg}"`);
       console.error(`Valid languages: ${OTHER_LANGUAGES.join(", ")}`);
       process.exit(1);
     }
-    languagesToProcess = [langArg];
+    languagesToProcess = [langArg as TranslationLocale];
   } else {
     languagesToProcess = OTHER_LANGUAGES;
   }

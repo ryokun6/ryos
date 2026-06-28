@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} stanze",
         "songsCount": "{{count}} brani",
         "usersCount": "{{count}} utente",
-        "usersCount_plural": "{{count}} utenti"
+        "usersCount_plural": "{{count}} utenti",
+        "redisKeysCount_many": "{{count}} chiavi",
+        "auditLogCount_many": "{{count}} voci"
       },
       "tableHeaders": {
         "added": "Aggiunto",
@@ -523,7 +525,7 @@
         "exportAs": "Esporta come...",
         "html": "HTML",
         "importFromDevice": "Importa da Dispositivo...",
-        "logOut": "Logout",
+        "logOut": "Esci",
         "login": "Accedi...",
         "noAppletsOpen": "Nessuna applet aperta",
         "open": "Apri…",
@@ -994,7 +996,7 @@
         "increaseFontSize": "Aumenta Dimensione Carattere",
         "keepTalking": "Continua a parlare",
         "linkToTelegram": "Collega a Telegram",
-        "logOut": "Logout",
+        "logOut": "Esci",
         "login": "Accedi...",
         "newChat": "Nuova Chat...",
         "resetFontSize": "Reimposta Dimensione Carattere",
@@ -1297,7 +1299,7 @@
         "launching": "Avvio {{appName}}…",
         "launchingApp": "Avvio app…",
         "listCursorCloudAgentRuns": {
-          "listed": "Elencate {{count}} esecuzioni recenti.",
+          "listed": "Esecuzioni recenti elencate: {{count}}.",
           "loading": "Elenco delle esecuzioni dell’agente Cursor Cloud…",
           "openDashboard": "Apri l’agente in Cursor",
           "truncatedHint": "(l’elenco potrebbe essere troncato)"
@@ -1761,7 +1763,7 @@
       "ipod": "iPod",
       "ipodVolume": "Volume iPod",
       "logIn": "Accedi",
-      "logOut": "Logout",
+      "logOut": "Esci",
       "logOutAll": "Esci da tutti",
       "logOutOfAllDevices": "Esci da tutti i dispositivi",
       "logOutOfAllDevicesRowDescription": "Esci dal tuo account ryOS su tutti i dispositivi",
@@ -2700,7 +2702,7 @@
         "appleMusicSignInFailed": "Accesso non riuscito",
         "autoUpdateFailed": "Aggiornamento automatico non riuscito",
         "autoUpdatedLibraryAddedSongs": "Libreria aggiornata automaticamente: aggiunti {{newCount}} nuovi brano{{newPlural}} in cima{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Metadati di {{count}} brani aggiornati automaticamente",
+        "autoUpdatedTrackMetadata": "Metadati dei brani aggiornati automaticamente: {{count}}",
         "clearLibraryDescription": "Sei sicuro di voler svuotare l'intera libreria musicale? Questa azione non può essere annullata.",
         "clearLibraryTitle": "Svuota Libreria",
         "errorAdding": "Errore durante l'aggiunta:",
@@ -2716,7 +2718,7 @@
         "libraryExportedSuccessfully": "Libreria esportata con successo",
         "libraryImportedSuccessfully": "Libreria importata con successo",
         "librarySynced": "Libreria sincronizzata",
-        "libraryUpToDateWithSongs": "La libreria è aggiornata con {{count}} brani",
+        "libraryUpToDateWithSongs": "La libreria è aggiornata. Brani: {{count}}",
         "libraryUpdated": "Libreria aggiornata",
         "listenSessionJoinFailed": "Impossibile partecipare alla sessione",
         "lyricsSearchCurrentSelection": "Selezione corrente:",
@@ -2927,7 +2929,8 @@
         "songs": "Brani",
         "theme": "Tema",
         "unconfigured": "Non configurato",
-        "unknownAlbum": "Album sconosciuto"
+        "unknownAlbum": "Album sconosciuto",
+        "playlistTrackCount_many": "{{count}} brani"
       },
       "musicQuiz": {
         "correct": "Esatto!",
@@ -4181,7 +4184,8 @@
         "importFailed": "Impossibile importare i canali — il file potrebbe non essere valido",
         "importSuccess_one": "Importato {{count}} canale ({{skipped}} ignorati)",
         "importSuccess_other": "Importati {{count}} canali ({{skipped}} ignorati)",
-        "resetSuccess": "Canali ripristinati ai valori predefiniti"
+        "resetSuccess": "Canali ripristinati ai valori predefiniti",
+        "importSuccess_many": "Importati {{count}} canali ({{skipped}} ignorati)"
       },
       "youtubePaste": {
         "added": "Aggiunto «{{title}}» a questo canale",
@@ -4403,7 +4407,7 @@
       "dialogTitle": "Accesso a ryOS",
       "forgotPassword": "Password dimenticata?",
       "logIn": "Accedi",
-      "logOut": "Logout",
+      "logOut": "Esci",
       "logOutDescription": "Sei sicuro di voler uscire? Verrai disconnesso dal tuo account.",
       "loggingIn": "Accesso in corso...",
       "loginDescription": "Accedi al tuo account",

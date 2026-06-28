@@ -30,6 +30,19 @@ export interface TranslationAuditIssue {
 const LOCALES_DIR = join(process.cwd(), "src/lib/locales");
 const ENGLISH_FILE = join(LOCALES_DIR, "en/translation.json");
 const OPTIONAL_PLACEHOLDERS = new Set(["plural", "newPlural"]);
+const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/u;
+
+const PLURAL_OVERRIDES: Partial<
+  Record<TranslationLocale, Record<string, string>>
+> = {
+  ru: {
+    "apps.admin.statusBar.auditLogCount_few": "{{count}} записи",
+    "apps.admin.statusBar.redisKeysCount_few": "{{count}} ключа",
+    "apps.ipod.menuItems.playlistTrackCount_few": "{{count}} песни",
+    "apps.tv.toasts.importSuccess_few":
+      "Импортировано {{count}} канала ({{skipped}} пропущено)",
+  },
+};
 
 type RequiredKeyTranslations = Record<
   string,
@@ -45,11 +58,11 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     "zh-TW": "已列出最近的 {{count}} 次執行。",
     ja: "最近の実行を {{count}} 件表示しました。",
     ko: "최근 실행 {{count}}개를 표시했습니다.",
-    fr: "{{count}} exécutions récentes répertoriées.",
-    de: "{{count}} aktuelle Ausführungen aufgelistet.",
-    es: "Se mostraron {{count}} ejecuciones recientes.",
-    pt: "{{count}} execuções recentes listadas.",
-    it: "Elencate {{count}} esecuzioni recenti.",
+    fr: "Exécutions récentes répertoriées : {{count}}.",
+    de: "Anzahl der aufgelisteten letzten Ausführungen: {{count}}.",
+    es: "Ejecuciones recientes mostradas: {{count}}.",
+    pt: "Execuções recentes listadas: {{count}}.",
+    it: "Esecuzioni recenti elencate: {{count}}.",
     ru: "Показано недавних запусков: {{count}}.",
   },
   "apps.chats.toolCalls.listCursorCloudAgentRuns.loading": {
@@ -131,25 +144,25 @@ export const REQUIRED_KEY_TRANSLATIONS = {
   },
   "apps.ipod.dialogs.autoUpdatedTrackMetadata": {
     "zh-TW": "已自動更新 {{count}} 首曲目的中繼資料",
-    ja: "{{count}} 曲のメタデータを自動更新しました",
+    ja: "{{count}}曲のメタデータを自動更新しました",
     ko: "트랙 메타데이터 {{count}}개 자동 업데이트됨",
-    fr: "Métadonnées de {{count}} pistes mises à jour automatiquement",
-    de: "Metadaten von {{count}} Titeln automatisch aktualisiert",
-    es: "Metadatos de {{count}} pistas actualizados automáticamente",
-    pt: "Metadados de {{count}} faixas atualizados automaticamente",
-    it: "Metadati di {{count}} brani aggiornati automaticamente",
+    fr: "Métadonnées de pistes mises à jour automatiquement : {{count}}",
+    de: "Automatisch aktualisierte Titelmetadaten: {{count}}",
+    es: "Metadatos de pistas actualizados automáticamente: {{count}}",
+    pt: "Metadados de faixas atualizados automaticamente: {{count}}",
+    it: "Metadati dei brani aggiornati automaticamente: {{count}}",
     ru: "Метаданные треков обновлены: {{count}}",
   },
   "apps.ipod.dialogs.libraryUpToDateWithSongs": {
     "zh-TW": "資料庫已是最新版本，共 {{count}} 首歌曲",
-    ja: "ライブラリは {{count}} 曲で最新です",
+    ja: "ライブラリは{{count}}曲で最新です",
     ko: "라이브러리가 총 {{count}}곡으로 최신 상태입니다",
-    fr: "La bibliothèque est à jour avec {{count}} morceaux",
-    de: "Die Mediathek ist mit {{count}} Titeln auf dem neuesten Stand",
-    es: "La biblioteca está actualizada con {{count}} canciones",
-    pt: "A biblioteca está atualizada com {{count}} músicas",
-    it: "La libreria è aggiornata con {{count}} brani",
-    ru: "Медиатека обновлена, содержит {{count}} песен",
+    fr: "La bibliothèque est à jour. Morceaux : {{count}}",
+    de: "Die Mediathek ist auf dem neuesten Stand. Titel: {{count}}",
+    es: "La biblioteca está actualizada. Canciones: {{count}}",
+    pt: "A biblioteca está atualizada. Músicas: {{count}}",
+    it: "La libreria è aggiornata. Brani: {{count}}",
+    ru: "Медиатека обновлена. Количество песен: {{count}}",
   },
 } as const satisfies RequiredKeyTranslations;
 
@@ -190,13 +203,44 @@ function setNestedValue(
   current[parts.at(-1)!] = value;
 }
 
+function pluralCategories(locale: TranslationLocale): Set<string> {
+  const localeName = locale === "pt" ? "pt-BR" : locale;
+  return new Set(
+    new Intl.PluralRules(localeName).resolvedOptions().pluralCategories
+  );
+}
+
+function isLocalePluralKey(
+  key: string,
+  locale: TranslationLocale,
+  englishKeys: Set<string>
+): boolean {
+  const match = key.match(PLURAL_SUFFIX);
+  if (!match) {
+    return false;
+  }
+
+  const base = key.slice(0, -match[0].length);
+  return (
+    pluralCategories(locale).has(match[1]) &&
+    englishKeys.has(`${base}_one`) &&
+    englishKeys.has(`${base}_other`)
+  );
+}
+
 function removeExtraKeys(
   source: TranslationObject,
-  target: TranslationObject
+  target: TranslationObject,
+  locale: TranslationLocale,
+  englishKeys: Set<string>,
+  prefix = ""
 ): void {
   for (const key of Object.keys(target)) {
+    const path = prefix ? `${prefix}.${key}` : key;
     if (!(key in source)) {
-      delete target[key];
+      if (!isLocalePluralKey(path, locale, englishKeys)) {
+        delete target[key];
+      }
       continue;
     }
 
@@ -206,7 +250,39 @@ function removeExtraKeys(
       typeof sourceValue !== "string" &&
       typeof targetValue !== "string"
     ) {
-      removeExtraKeys(sourceValue, targetValue);
+      removeExtraKeys(sourceValue, targetValue, locale, englishKeys, path);
+    }
+  }
+}
+
+function ensureLocalePluralForms(
+  locale: TranslationLocale,
+  english: FlatTranslations,
+  targetObject: TranslationObject
+): void {
+  const target = flattenTranslations(targetObject);
+
+  for (const key of Object.keys(english)) {
+    if (!key.endsWith("_other")) {
+      continue;
+    }
+
+    const base = key.slice(0, -"_other".length);
+    if (!(`${base}_one` in english)) {
+      continue;
+    }
+
+    for (const category of pluralCategories(locale)) {
+      const pluralKey = `${base}_${category}`;
+      if (target[pluralKey]) {
+        continue;
+      }
+
+      const value =
+        PLURAL_OVERRIDES[locale]?.[pluralKey] ?? target[`${base}_other`];
+      if (value) {
+        setNestedValue(targetObject, pluralKey, value);
+      }
     }
   }
 }
@@ -294,13 +370,36 @@ function auditLocale(
   }
 
   for (const key of targetKeys) {
-    if (!englishKeys.has(key)) {
+    if (!englishKeys.has(key) && !isLocalePluralKey(key, locale, englishKeys)) {
       issues.push({
         locale,
         key,
         kind: "extra-key",
         message: "obsolete key is not present in the English source",
       });
+    }
+  }
+
+  for (const key of englishKeys) {
+    if (!key.endsWith("_other")) {
+      continue;
+    }
+
+    const base = key.slice(0, -"_other".length);
+    if (!englishKeys.has(`${base}_one`)) {
+      continue;
+    }
+
+    for (const category of pluralCategories(locale)) {
+      const pluralKey = `${base}_${category}`;
+      if (!targetKeys.has(pluralKey)) {
+        issues.push({
+          locale,
+          key: pluralKey,
+          kind: "missing-key",
+          message: `CLDR plural form "${category}" is missing`,
+        });
+      }
     }
   }
 
@@ -360,6 +459,7 @@ async function fixTranslations(): Promise<void> {
     await readFile(ENGLISH_FILE, "utf8")
   ) as TranslationObject;
   const english = flattenTranslations(englishObject);
+  const englishKeys = new Set(Object.keys(english));
 
   for (const locale of TRANSLATION_LOCALES) {
     const targetFile = join(LOCALES_DIR, locale, "translation.json");
@@ -367,7 +467,7 @@ async function fixTranslations(): Promise<void> {
       await readFile(targetFile, "utf8")
     ) as TranslationObject;
 
-    removeExtraKeys(englishObject, targetObject);
+    removeExtraKeys(englishObject, targetObject, locale, englishKeys);
 
     for (const [key, englishValue] of Object.entries(english)) {
       const expectedTerm = getExpectedAppleUiTerm(englishValue, locale);
@@ -381,6 +481,8 @@ async function fixTranslations(): Promise<void> {
     )) {
       setNestedValue(targetObject, key, translations[locale]);
     }
+
+    ensureLocalePluralForms(locale, english, targetObject);
 
     if (locale === "zh-TW") {
       const target = flattenTranslations(targetObject);

@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} habitaciones",
         "songsCount": "{{count}} canciones",
         "usersCount": "{{count}} usuario",
-        "usersCount_plural": "{{count}} usuarios"
+        "usersCount_plural": "{{count}} usuarios",
+        "redisKeysCount_many": "{{count}} claves",
+        "auditLogCount_many": "{{count}} entradas"
       },
       "tableHeaders": {
         "added": "Añadido",
@@ -1297,7 +1299,7 @@
         "launching": "Iniciando {{appName}}…",
         "launchingApp": "Iniciando aplicación…",
         "listCursorCloudAgentRuns": {
-          "listed": "Se mostraron {{count}} ejecuciones recientes.",
+          "listed": "Ejecuciones recientes mostradas: {{count}}.",
           "loading": "Mostrando ejecuciones del agente de Cursor Cloud…",
           "openDashboard": "Abrir agente en Cursor",
           "truncatedHint": "(la lista puede estar truncada)"
@@ -2700,7 +2702,7 @@
         "appleMusicSignInFailed": "Error al iniciar sesión",
         "autoUpdateFailed": "Error de Autoactualización",
         "autoUpdatedLibraryAddedSongs": "Biblioteca autoactualizada: se añadió{{newPlural}} {{newCount}} canción{{newPlural}} nueva{{newPlural}} al inicio{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Metadatos de {{count}} pistas actualizados automáticamente",
+        "autoUpdatedTrackMetadata": "Metadatos de pistas actualizados automáticamente: {{count}}",
         "clearLibraryDescription": "¿Estás seguro de que quieres vaciar toda tu biblioteca de música? Esta acción no se puede deshacer.",
         "clearLibraryTitle": "Vaciar Biblioteca",
         "errorAdding": "Error al añadir:",
@@ -2716,7 +2718,7 @@
         "libraryExportedSuccessfully": "Biblioteca exportada correctamente",
         "libraryImportedSuccessfully": "Biblioteca importada correctamente",
         "librarySynced": "Biblioteca Sincronizada",
-        "libraryUpToDateWithSongs": "La biblioteca está actualizada con {{count}} canciones",
+        "libraryUpToDateWithSongs": "La biblioteca está actualizada. Canciones: {{count}}",
         "libraryUpdated": "Biblioteca Actualizada",
         "listenSessionJoinFailed": "Error al unirse a la sesión",
         "lyricsSearchCurrentSelection": "Selección actual:",
@@ -2927,7 +2929,8 @@
         "songs": "Canciones",
         "theme": "Tema",
         "unconfigured": "Sin configurar",
-        "unknownAlbum": "Álbum desconocido"
+        "unknownAlbum": "Álbum desconocido",
+        "playlistTrackCount_many": "{{count}} canciones"
       },
       "musicQuiz": {
         "correct": "¡Correcto!",
@@ -4181,7 +4184,8 @@
         "importFailed": "No se pudieron importar los canales: el archivo puede no ser válido",
         "importSuccess_one": "Se importó {{count}} canal ({{skipped}} omitido)",
         "importSuccess_other": "Se importaron {{count}} canales ({{skipped}} omitidos)",
-        "resetSuccess": "Canales restablecidos a los predeterminados"
+        "resetSuccess": "Canales restablecidos a los predeterminados",
+        "importSuccess_many": "Se importaron {{count}} canales ({{skipped}} omitidos)"
       },
       "youtubePaste": {
         "added": "Se añadió «{{title}}» a este canal",
