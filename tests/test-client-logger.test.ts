@@ -243,13 +243,16 @@ describe("client logger", () => {
 });
 
 describe("client logging guardrails", () => {
-  test("Control Panels Debug Mode feeds the runtime debug logger flag", () => {
+  test("Control Panels Debug Mode feeds logger and console capture flags", () => {
     const source = readSource("src/stores/useDisplaySettingsStore.ts");
 
     expect(source).toContain("setRuntimeDebugEnabled(enabled)");
+    expect(source).toContain("setConsoleCaptureEnabled(enabled)");
     expect(source).toContain(
-      "setRuntimeDebugEnabled(normalizeDebugMode(state?.debugMode))"
+      "const debugEnabled = normalizeDebugMode(state?.debugMode)"
     );
+    expect(source).toContain("setRuntimeDebugEnabled(debugEnabled)");
+    expect(source).toContain("setConsoleCaptureEnabled(debugEnabled)");
     expect(source).toContain(
       "debugMode: normalizeDebugMode(persisted?.debugMode)"
     );
