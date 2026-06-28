@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import type { Favorite } from "@/stores/useInternetExplorerStore";
+import { useTranslation } from "react-i18next";
 
 export interface InternetExplorerFavoritesBarProps {
   favorites: Favorite[];
@@ -26,6 +27,8 @@ export function InternetExplorerFavoritesBar({
   normalizeUrlForHistory,
   handleNavigateWithHistory,
 }: InternetExplorerFavoritesBarProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="relative flex items-center">
       <div
@@ -53,7 +56,7 @@ export function InternetExplorerFavoritesBar({
                       >
                         <ThemedIcon
                           name="directory.png"
-                          alt="Folder"
+                          alt={t("apps.internet-explorer.folder")}
                           className="size-4 mr-1 [image-rendering:pixelated]"
                         />
                         <span className="truncate">{favorite.title}</span>
@@ -130,7 +133,7 @@ export function InternetExplorerFavoritesBar({
                     {favorite.favicon && !isOffline ? (
                       <img
                         src={favorite.favicon}
-                        alt="Site"
+                        alt={t("apps.internet-explorer.site")}
                         className="size-4 mr-1"
                         onError={(e) => {
                           e.currentTarget.src = "/icons/default/ie-site.png";
@@ -139,7 +142,7 @@ export function InternetExplorerFavoritesBar({
                     ) : (
                       <ThemedIcon
                         name="ie-site.png"
-                        alt="Site"
+                        alt={t("apps.internet-explorer.site")}
                         className="size-4 mr-1 [image-rendering:pixelated]"
                       />
                     )}

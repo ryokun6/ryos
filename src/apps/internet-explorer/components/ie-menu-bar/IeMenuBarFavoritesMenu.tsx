@@ -40,8 +40,10 @@ export function IeMenuBarFavoritesMenu({
           <>
             <MenubarSeparator className="h-[2px] bg-black my-1" />
             {favorites.map((favorite) =>
-              renderFavoriteItem(favorite, (url, year) =>
-                onNavigateToFavorite?.(url, year)
+              renderFavoriteItem(
+                favorite,
+                (url, year) => onNavigateToFavorite?.(url, year),
+                t("apps.internet-explorer.menu.folder")
               )
             )}
             <MenubarSeparator className="h-[2px] bg-black my-1" />

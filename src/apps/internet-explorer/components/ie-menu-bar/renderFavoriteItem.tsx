@@ -10,7 +10,8 @@ import type { Favorite } from "@/stores/useInternetExplorerStore";
 /** Recursive render for favorite items or submenus (folders). */
 export function renderFavoriteItem(
   favorite: Favorite,
-  onNavigate: (url: string, year?: string) => void
+  onNavigate: (url: string, year?: string) => void,
+  folderLabel: string
 ) {
   if (favorite.children && favorite.children.length > 0) {
     return (
@@ -18,14 +19,14 @@ export function renderFavoriteItem(
         <MenubarSubTrigger className="text-md h-6 px-3 flex items-center gap-2">
           <ThemedIcon
             name="directory.png"
-            alt="Folder"
+            alt={folderLabel}
             className="size-4 [image-rendering:pixelated]"
           />
           {favorite.title}
         </MenubarSubTrigger>
         <MenubarSubContent className="max-w-xs">
           {favorite.children.map((child) =>
-            renderFavoriteItem(child, onNavigate)
+            renderFavoriteItem(child, onNavigate, folderLabel)
           )}
         </MenubarSubContent>
       </MenubarSub>

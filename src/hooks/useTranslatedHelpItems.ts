@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { CALCULATOR_HELP_I18N_KEYS } from "@/apps/calculator/helpKeys";
+import { INTERNET_EXPLORER_HELP_I18N_KEYS } from "@/apps/internet-explorer/helpKeys";
 import { MAPS_HELP_I18N_KEYS } from "@/apps/maps/helpKeys";
 import type { AppId } from "@/utils/i18n";
 
@@ -21,14 +22,7 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "multipleBoards",
     "importExport",
   ],
-  "internet-explorer": [
-    "browseWeb",
-    "travelThroughTime",
-    "historyReimagined",
-    "saveFavorites",
-    "exploreTimeNodes",
-    "shareJourney",
-  ],
+  "internet-explorer": [...INTERNET_EXPLORER_HELP_I18N_KEYS],
   chats: [
     "chatWithRyo",
     "createEditFiles",

@@ -500,6 +500,7 @@ bun run i18n:sync:mark-todo
 # Machine-translate [TODO] keys after exporting the Google API key
 export GOOGLE_GENERATIVE_AI_API_KEY="$(grep GOOGLE_GENERATIVE_AI_API_KEY .env.local | cut -d'"' -f2)"
 bun run i18n:translate
+bun run i18n:translate:dry-run
 
 # Validate locale shape and remaining candidate strings
 bun run i18n:sync:dry-run
@@ -531,7 +532,7 @@ t("apps.admin.statusBar.usersCount_plural", { count: 5 })  // "5 users"</code></
 <h2>Helper Functions and Hooks</h2>
 <table><thead><tr><th>Function</th><th>Purpose</th></tr></thead><tbody><tr><td><code>getTranslatedAppName(appId)</code></td><td>Get localized app name (theme-aware)</td></tr><tr><td><code>getTranslatedAppDescription(appId)</code></td><td>Get localized app description</td></tr><tr><td><code>getTranslatedFolderName(path)</code></td><td>Get localized folder name from path</td></tr></tbody></table>
 <p>App help dialogs use <code>useTranslatedHelpItems(appId, helpItems)</code> from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useTranslatedHelpItems.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/hooks/useTranslatedHelpItems.ts</a></code>. The hook keeps the app-provided icons and replaces titles/descriptions from <code>apps.{appId}.help.{key}.title</code> and <code>.description</code>.</p>
-<p>When adding help rows, keep the source <code>helpItems</code> array and the app's help key list in the same order. Maps uses <code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/maps/helpKeys.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/maps/helpKeys.ts</a></code> plus <code><a href="https://github.com/ryokun6/ryos/blob/main/src/tests/test-maps-help-i18n.test.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">tests/test-maps-help-i18n.test.ts</a></code>; Calculator uses the same alignment pattern in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calculator/helpKeys.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/calculator/helpKeys.ts</a></code> and <code><a href="https://github.com/ryokun6/ryos/blob/main/src/tests/test-calculator-help-i18n.test.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">tests/test-calculator-help-i18n.test.ts</a></code>.</p>
+<p>When adding help rows, keep the source <code>helpItems</code> array and the app's help key list in the same order. Maps uses <code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/maps/helpKeys.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/maps/helpKeys.ts</a></code> plus <code><a href="https://github.com/ryokun6/ryos/blob/main/src/tests/test-maps-help-i18n.test.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">tests/test-maps-help-i18n.test.ts</a></code>; Calculator and Internet Explorer use the same alignment pattern in <code>src/apps/{calculator,internet-explorer}/helpKeys.ts</code> and their matching <code>tests/test-*-help-i18n.test.ts</code> files.</p>
       </article>
       
       <nav class="nav">

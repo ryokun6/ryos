@@ -284,7 +284,11 @@ export function useAiGeneration({
     currentHtmlContent?: string | null
   ) => {
     // Check if offline and show error
-    if (checkOfflineAndShowError("AI website generation requires an internet connection")) {
+    if (
+      checkOfflineAndShowError(
+        i18n.t("apps.internet-explorer.requiresInternetConnection")
+      )
+    ) {
       return;
     }
 
