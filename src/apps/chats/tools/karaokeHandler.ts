@@ -20,6 +20,9 @@ import {
   computeMatchScore,
   deriveScoreThreshold,
 } from "@/apps/chats/utils/fuzzySearch";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("ChatTools");
 
 export interface KaraokeControlInput {
   action?: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
@@ -58,14 +61,16 @@ const applyKaraokeSettings = (
     if (shouldDisableTranslation(enableTranslation)) {
       ipod.setLyricsTranslationLanguage(null);
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
-      console.log("[ToolCall] Karaoke lyrics translation disabled.");
+      log.debug("Karaoke lyrics translation disabled");
     } else if (enableTranslation) {
       ipod.setLyricsTranslationLanguage(enableTranslation);
       const langName = getLanguageName(enableTranslation);
       stateChanges.push(
         i18n.t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName })
       );
-      console.log(`[ToolCall] Karaoke lyrics translation enabled for language: ${enableTranslation}.`);
+      log.debug("Karaoke lyrics translation enabled", {
+        language: enableTranslation,
+      });
     }
   }
 
@@ -73,11 +78,11 @@ const applyKaraokeSettings = (
     if (enableFullscreen && !karaoke.isFullScreen) {
       karaoke.toggleFullScreen();
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
-      console.log("[ToolCall] Karaoke fullscreen enabled.");
+      log.debug("Karaoke fullscreen enabled");
     } else if (!enableFullscreen && karaoke.isFullScreen) {
       karaoke.toggleFullScreen();
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
-      console.log("[ToolCall] Karaoke fullscreen disabled.");
+      log.debug("Karaoke fullscreen disabled");
     }
   }
 
@@ -110,7 +115,7 @@ const handlePlaybackState = (
       toolCallId,
       output: buildResultMessage(resultParts),
     });
-    console.log("[ToolCall] iOS detected - user must manually start karaoke playback.");
+    log.debug("iOS detected; user must manually start karaoke playback");
     return;
   }
 
@@ -159,7 +164,7 @@ const handlePlaybackState = (
     output: buildResultMessage(resultParts),
   });
 
-  console.log(`[ToolCall] Karaoke is now ${nowPlaying ? "playing" : "paused"}.`);
+  log.debug("Karaoke playback state changed", { isPlaying: nowPlaying });
 };
 
 /**
@@ -240,7 +245,6 @@ const handlePlayKnown = (
 
   const randomIndex = candidateIndices[Math.floor(Math.random() * candidateIndices.length)];
   const track = tracks[randomIndex];
-  const trackDescForLog = formatTrackDescription(track.title, track.artist);
 
   const { setCurrentSongId, setIsPlaying } = useKaraokeStore.getState();
   setCurrentSongId(track?.id ?? null);
@@ -263,7 +267,9 @@ const handlePlayKnown = (
       toolCallId,
       output: buildResultMessage(resultParts),
     });
-    console.log(`[ToolCall] iOS detected - selected ${trackDescForLog} in Karaoke, user must manually start playback.`);
+    log.debug("iOS detected; selected Karaoke track without autoplay", {
+      trackId: track.id,
+    });
     return;
   }
 
@@ -281,7 +287,7 @@ const handlePlayKnown = (
     output: buildResultMessage(resultParts),
   });
 
-  console.log(`[ToolCall] Karaoke started playing ${trackDescForLog}.`);
+  log.debug("Karaoke started playing track", { trackId: track.id });
 };
 
 /**
@@ -348,11 +354,11 @@ const handleAddAndPlay = async (
         output: buildResultMessage(resultParts),
       });
 
-      console.log(
-        isIOS
-          ? `[ToolCall] iOS detected - added '${addedTrack.title}' to library for Karaoke, user must manually start playback.`
-          : `[ToolCall] Added '${addedTrack.title}' and started playing in Karaoke.`
-      );
+      log.debug("Added track to Karaoke library", {
+        trackId: addedTrack.id,
+        isIOS,
+        autoPlayed: !isIOS,
+      });
     } else {
       const errorMsg = i18n.t("apps.chats.toolCalls.karaokeFailedToAdd", {
         id,
@@ -433,7 +439,10 @@ const handleNavigation = (
       output: buildResultMessage(resultParts),
     });
 
-    console.log(`[ToolCall] Karaoke ${action === "next" ? "skipped to" : "went back to"} ${desc}.`);
+    log.debug("Karaoke navigation selected track", {
+      action,
+      trackId: track.id,
+    });
     return;
   }
 
@@ -451,9 +460,7 @@ const handleNavigation = (
     output: buildResultMessage(resultParts),
   });
 
-  console.log(
-    `[ToolCall] Karaoke ${action === "next" ? "skipped to next track." : "went back to previous track."}`
-  );
+  log.debug("Karaoke navigation changed track", { action, hasTrack: false });
 };
 
 /**
@@ -466,7 +473,14 @@ export const handleKaraokeControl = async (
 ): Promise<void> => {
   const { action = "toggle", enableTranslation, enableFullscreen } = input;
 
-  console.log("[ToolCall] karaokeControl:", input);
+  log.debug("karaokeControl", {
+    action,
+    hasId: Boolean(input.id),
+    hasTitle: Boolean(input.title),
+    hasArtist: Boolean(input.artist),
+    enableTranslation,
+    enableFullscreen,
+  });
 
   const isIOS = isIOSDevice();
 

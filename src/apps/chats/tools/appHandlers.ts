@@ -9,6 +9,9 @@ import type { AppId } from "@/config/appIds";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
 import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("ChatTools");
 
 export interface LaunchAppInput {
   id: string;
@@ -43,7 +46,7 @@ export const handleLaunchApp = (
   }
 
   const appName = appRegistry[id as AppId]?.name || id;
-  console.log("[ToolCall] launchApp:", { id, url, year });
+  log.debug("launchApp", { id, hasUrl: Boolean(url), year });
 
   const launchOptions: LaunchAppOptions = {};
   if (id === "internet-explorer" && (url || year)) {
@@ -58,7 +61,7 @@ export const handleLaunchApp = (
     const yearPart = year && year !== "current" ? ` in ${year}` : "";
     result += `${urlPart}${yearPart}`;
   }
-  console.log(`[ToolCall] ${result}`);
+  log.debug("launchApp result", { appId: id });
   return result;
 };
 
@@ -85,7 +88,7 @@ export const handleCloseApp = (
   }
 
   const appName = appRegistry[id as AppId]?.name || id;
-  console.log("[ToolCall] closeApp:", id);
+  log.debug("closeApp", { id });
 
   // Close all instances of the specified app
   const appStore = useAppStore.getState();
@@ -93,7 +96,7 @@ export const handleCloseApp = (
   const openInstances = appInstances.filter((inst) => inst.isOpen);
 
   if (openInstances.length === 0) {
-    console.log(`[ToolCall] ${appName} is not currently running.`);
+    log.debug("closeApp target not running", { id });
     return `${appName} is not running`;
   }
 
@@ -102,11 +105,7 @@ export const handleCloseApp = (
     requestCloseWindow(instance.instanceId);
   });
 
-  console.log(
-    `[ToolCall] Closed ${appName} (${openInstances.length} window${
-      openInstances.length === 1 ? "" : "s"
-    }).`
-  );
+  log.debug("Closed app windows", { id, windowCount: openInstances.length });
 
   return `Closed ${appName}`;
 };

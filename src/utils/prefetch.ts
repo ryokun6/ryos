@@ -29,6 +29,9 @@ import { shouldPrefetchNow } from "@/utils/network";
 import { track, SYSTEM_ANALYTICS } from "@/utils/analytics";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 import { getSupportedDesktopDownloadTarget } from "@/utils/desktopDownload";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("Prefetch");
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -43,7 +46,7 @@ if (import.meta.hot) {
     if (disposeUpdateCheckInterval) {
       disposeUpdateCheckInterval();
       disposeUpdateCheckInterval = null;
-      console.log('[Prefetch] HMR cleanup: cleared update check interval');
+      log.debug("HMR cleanup: cleared update check interval");
     }
   });
 }
@@ -70,7 +73,7 @@ function getStoredVersion(): { version: string | null; buildNumber: string | nul
  */
 function storeVersion(version: string, buildNumber: string, buildTime?: string): void {
   useAppStore.getState().setRyOSVersion(version, buildNumber, buildTime);
-  console.log(`[Prefetch] Stored version: ${version} (${buildNumber})`);
+  log.debug("Stored version", { version, buildNumber });
 }
 
 /**
@@ -129,7 +132,7 @@ async function reloadPage(version?: string, buildNumber?: string): Promise<void>
 export function clearPrefetchFlag(): void {
   try {
     localStorage.removeItem(MANIFEST_KEY);
-    console.log('[Prefetch] Flag cleared, will re-prefetch on next boot');
+    log.debug("Flag cleared; will re-prefetch on next boot");
   } catch {
     // localStorage might not be available
   }
@@ -274,17 +277,20 @@ async function determineUpdateAction(): Promise<CheckResult> {
   
   // First-time user (no stored version)
   if (!stored.buildNumber) {
-    console.log('[Prefetch] First-time user detected');
+    log.debug("First-time user detected");
     return { action: 'first-time', server: serverVersion };
   }
   
   // Check if versions differ
   if (serverVersion.buildNumber !== stored.buildNumber) {
-    console.log(`[Prefetch] Update available: ${stored.buildNumber} → ${serverVersion.buildNumber}`);
+    log.debug("Update available", {
+      storedBuildNumber: stored.buildNumber,
+      serverBuildNumber: serverVersion.buildNumber,
+    });
     return { action: 'update', server: serverVersion };
   }
   
-  console.log('[Prefetch] Already on latest version');
+  log.debug("Already on latest version");
   return { action: 'none', server: serverVersion };
 }
 
@@ -296,7 +302,7 @@ async function determineUpdateAction(): Promise<CheckResult> {
  */
 async function checkAndUpdate(isManual: boolean = false): Promise<void> {
   if (isUpdateInProgress) {
-    console.log('[Prefetch] Update already in progress, skipping');
+    log.debug("Update already in progress; skipping");
     return;
   }
   
@@ -312,7 +318,7 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
       });
     }
     if (shouldWarmAssets && result.server) {
-      console.log('[Prefetch] Asset warmup flag missing, refreshing runtime assets');
+      log.debug("Asset warmup flag missing; refreshing runtime assets");
       isUpdateInProgress = true;
       try {
         await runPrefetchWithToast(false, result.server);
@@ -355,13 +361,13 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
  * Only shows reboot button if version is actually new
  */
 export async function forceRefreshCache(): Promise<void> {
-  console.log('[Prefetch] Manual update check triggered...');
+  log.debug("Manual update check triggered");
   
   // Also check for desktop updates when manually checking
   await checkAndNotifyDesktopUpdate();
   
   if (isUpdateInProgress) {
-    console.log('[Prefetch] Update already in progress, skipping');
+    log.debug("Update already in progress; skipping");
     return;
   }
   
@@ -412,7 +418,7 @@ async function runPrefetchWithToast(
   showVersionToast: boolean,
   server: ServerVersion
 ): Promise<void> {
-  console.log('[Prefetch] Starting prefetch...');
+  log.debug("Starting prefetch");
 
   // JS chunks are now precached by the service worker (Workbox) and load from
   // cache offline, so we no longer crawl/prefetch them here. This pass only
@@ -422,7 +428,7 @@ async function runPrefetchWithToast(
   // but still finalize the version + update toast. Missing assets just load
   // on-demand (and the SW caches them then).
   if (!shouldPrefetchNow()) {
-    console.log('[Prefetch] Skipping asset warmup (data saver / slow network)');
+    log.debug("Skipping asset warmup (data saver / slow network)");
     track(SYSTEM_ANALYTICS.PREFETCH_SKIPPED_NETWORK, { category: "events" });
     finalizePrefetch(showVersionToast, server);
     return;
@@ -432,7 +438,7 @@ async function runPrefetchWithToast(
   const manifest = await fetchIconManifest();
   if (!manifest) {
     toast.error('Failed to load asset manifest');
-    console.log('[Prefetch] Could not fetch manifest');
+    log.debug("Could not fetch manifest");
     return;
   }
   
@@ -445,7 +451,7 @@ async function runPrefetchWithToast(
   
   if (totalItems === 0) {
     toast.info('No assets to cache');
-    console.log('[Prefetch] No assets to prefetch');
+    log.debug("No assets to prefetch");
     return;
   }
 
@@ -545,7 +551,10 @@ function finalizePrefetch(
   storeVersion(server.version, server.buildNumber, server.buildTime);
 
   if (showVersionToast) {
-    console.log(`[Prefetch] Showing update toast: ${server.version} (${server.buildNumber})`);
+    log.debug("Showing update toast", {
+      version: server.version,
+      buildNumber: server.buildNumber,
+    });
     toast.success(
       createElement(PrefetchCompleteToast, {
         version: server.version,
@@ -690,7 +699,11 @@ async function prefetchUrlsWithProgress(
     }
   });
 
-  console.log(`[Prefetch] ${label}: ${succeeded}/${urls.length} cached`);
+  log.debug("Asset cache batch complete", {
+    label,
+    succeeded,
+    total: urls.length,
+  });
   return succeeded;
 }
 
@@ -776,10 +789,10 @@ async function clearRuntimeCaches(): Promise<void> {
       (name) => !name.startsWith('workbox-precache')
     );
     await Promise.all(runtimeCaches.map((name) => caches.delete(name)));
-    console.log(
-      `[Prefetch] Cleared ${runtimeCaches.length} runtime caches (precache preserved):`,
-      runtimeCaches
-    );
+    log.debug("Cleared runtime caches; precache preserved", {
+      runtimeCacheCount: runtimeCaches.length,
+      runtimeCaches,
+    });
 
     // Ask the service worker to check for an updated precache.
     if ('serviceWorker' in navigator) {
@@ -788,7 +801,7 @@ async function clearRuntimeCaches(): Promise<void> {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
       await registration?.update();
-      console.log('[Prefetch] Service worker update triggered');
+      log.debug("Service worker update triggered");
     }
   } catch (error) {
     console.warn('[Prefetch] Failed to clear runtime caches:', error);
@@ -815,12 +828,14 @@ function createToastContent(props: {
 function startPeriodicUpdateCheck(): void {
   if (disposeUpdateCheckInterval) return; // Already running
   
-  console.log(`[Prefetch] Starting periodic update checks every ${UPDATE_CHECK_INTERVAL / 1000}s`);
+  log.debug("Starting periodic update checks", {
+    intervalSeconds: UPDATE_CHECK_INTERVAL / 1000,
+  });
   
   // Paused while the tab is hidden; catches up immediately on return when a
   // check is overdue.
   disposeUpdateCheckInterval = createVisibilityGatedInterval(() => {
-    console.log('[Prefetch] Periodic update check...');
+    log.debug("Periodic update check");
     void (async () => {
       await checkAndUpdate(false);
       // Also check for desktop updates during periodic checks
@@ -836,7 +851,7 @@ export function stopPeriodicUpdateCheck(): void {
   if (disposeUpdateCheckInterval) {
     disposeUpdateCheckInterval();
     disposeUpdateCheckInterval = null;
-    console.log('[Prefetch] Stopped periodic update checks');
+    log.debug("Stopped periodic update checks");
   }
 }
 

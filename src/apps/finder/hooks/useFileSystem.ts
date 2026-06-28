@@ -27,6 +27,7 @@ import type { SyncNamespace } from "@/shared/sync2/namespaces";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
+import { createClientLogger } from "@/utils/logger";
 import {
   ExtendedDisplayFileItem,
   getParentPath,
@@ -39,6 +40,8 @@ import {
   BOOK_FILE_ICON_PATH,
   isEpubFile,
 } from "../utils/fileSystemHelpers";
+
+const log = createClientLogger("FileSystem");
 
 // Interface for content stored in IndexedDB. The persisted shape is the shared
 // StoredContent ({ name, content }); contentUrl is a runtime-only Blob URL.
@@ -183,7 +186,7 @@ export function useFileSystem(
     import.meta.env?.MODE === "development" &&
     !loggedInitializationPaths.has(initialPath)
   ) {
-    console.log(`[useFileSystem] Hook initialized for path: ${initialPath}`);
+    log.debug("Hook initialized", { path: initialPath });
     loggedInitializationPaths.add(initialPath);
   }
 
@@ -496,41 +499,34 @@ export function useFileSystem(
         if (virtualMedia) {
           displayFiles = virtualMedia.items;
         } else if (currentPath.startsWith("/Sites")) {
-        console.log(
-          `[useFileSystem:loadFiles] Loading /Sites path: ${currentPath}`
-        ); // Log entry
+        log.debug("Loading Sites path", { currentPath });
         const pathParts = currentPath.split("/").filter(Boolean);
-        console.log(`[useFileSystem:loadFiles] Path parts:`, pathParts); // Log parts
+        log.debug("Sites path parts", { depth: pathParts.length, pathParts });
         let currentLevelFavorites = internetExplorerFavorites;
         let currentVirtualPath = "/Sites";
 
         // Traverse down the favorites structure based on the path
         for (let i = 1; i < pathParts.length; i++) {
           const folderName = decodeURIComponent(pathParts[i]);
-          console.log(
-            `[useFileSystem:loadFiles] Traversing into folder: ${folderName}`
-          ); // Log traversal
+          log.debug("Traversing Sites folder", { folderName });
           const parentFolder = currentLevelFavorites.find(
             (fav) => fav.isDirectory && fav.title === folderName
           );
           if (parentFolder && parentFolder.children) {
             currentLevelFavorites = parentFolder.children;
             currentVirtualPath += `/${folderName}`;
-            console.log(
-              `[useFileSystem:loadFiles] Found sub-folder, new level count: ${currentLevelFavorites.length}`
-            ); // Log sub-level
+            log.debug("Found Sites sub-folder", {
+              childCount: currentLevelFavorites.length,
+            });
           } else {
-            console.log(
-              `[useFileSystem:loadFiles] Sub-folder "${folderName}" not found or has no children.`
-            ); // Log not found
+            log.debug("Sites sub-folder not found", { folderName });
             currentLevelFavorites = [];
             break;
           }
         }
-        console.log(
-          `[useFileSystem:loadFiles] Final level favorites to map (count: ${currentLevelFavorites.length}):`,
-          currentLevelFavorites
-        ); // Log before map
+        log.debug("Final Sites favorites to map", {
+          favoriteCount: currentLevelFavorites.length,
+        });
 
         // Map the current level favorites to FileItems
         displayFiles = currentLevelFavorites.map((fav: Favorite) => {
@@ -551,10 +547,9 @@ export function useFileSystem(
               : { url: fav.url, year: fav.year || "current" },
           };
         });
-        console.log(
-          `[useFileSystem:loadFiles] Mapped displayFiles for /Sites (count: ${displayFiles.length}):`,
-          displayFiles
-        ); // Log final result
+        log.debug("Mapped Sites display files", {
+          displayFileCount: displayFiles.length,
+        });
         } else if (currentPath === "/Trash") {
       // 2. Handle Trash Directory (Uses fileStore)
         // Get metadata from the store
@@ -604,27 +599,31 @@ export function useFileSystem(
               let contentUrl: string | undefined;
               if (!item.isDirectory && item.uuid) {
                 try {
-                  console.log(
-                    `[useFileSystem:loadFiles] Fetching content for ${item.name}, UUID: ${item.uuid}, type: ${item.type}`
-                  );
+                  log.debug("Fetching image content for display", {
+                    name: item.name,
+                    uuid: item.uuid,
+                    type: item.type,
+                  });
                   const contentData = await dbOperations.get<DocumentContent>(
                     STORES.IMAGES,
                     item.uuid // Use UUID instead of name
                   );
 
                   if (contentData?.content instanceof Blob) {
-                    console.log(
-                      `[useFileSystem:loadFiles] Found Blob content for ${item.name}, creating URL`
-                    );
+                    log.debug("Found Blob content for display", {
+                      name: item.name,
+                    });
                     contentUrl = URL.createObjectURL(contentData.content);
                     nextObjectUrls.add(contentUrl);
-                    console.log(
-                      `[useFileSystem:loadFiles] Created URL: ${contentUrl}`
-                    );
+                    log.debug("Created runtime content URL", {
+                      name: item.name,
+                      hasContentUrl: Boolean(contentUrl),
+                    });
                   } else {
-                    console.log(
-                      `[useFileSystem:loadFiles] No Blob content found for ${item.name} with UUID ${item.uuid}`
-                    );
+                    log.debug("No Blob content found for display", {
+                      name: item.name,
+                      uuid: item.uuid,
+                    });
                   }
                 } catch (err) {
                   console.error(
@@ -830,16 +829,14 @@ export function useFileSystem(
               storeName,
               fileMetadata.uuid // Use UUID instead of name
             );
-            console.log(
-              `[useFileSystem] Fetched content for ${file.path}:`,
-              contentData
-                ? {
-                    hasContent: !!contentData.content,
-                    contentType: typeof contentData.content,
-                    isBlob: contentData.content instanceof Blob,
-                  }
-                : "No content data"
-            );
+            log.debug("Fetched file content metadata", {
+              path: file.path,
+              hasContent: contentData?.content != null,
+              contentType:
+                contentData?.content instanceof Blob
+                  ? "blob"
+                  : typeof contentData?.content,
+            });
             if (contentData) {
               contentToUse = contentData.content;
             } else {
@@ -867,9 +864,9 @@ export function useFileSystem(
                   );
                   if (retryData) {
                     contentToUse = retryData.content;
-                    console.log(
-                      `[useFileSystem] Successfully loaded default content for ${file.path}`
-                    );
+                    log.debug("Loaded default content fallback", {
+                      path: file.path,
+                    });
                   }
                 }
               }
@@ -894,25 +891,29 @@ export function useFileSystem(
             storeName === STORES.APPLETS
           ) {
             contentAsString = await contentToUse.text();
-            console.log(
-              `[useFileSystem] Read Blob as text for ${file.name}, length: ${contentAsString?.length}`
-            );
+            log.debug("Read Blob as text", {
+              name: file.name,
+              contentLength: contentAsString?.length ?? 0,
+            });
           } else if (storeName === STORES.IMAGES) {
             // Don't create URL here, pass the Blob itself
             // contentUrlToUse = URL.createObjectURL(contentToUse);
-            // console.log(`[useFileSystem] Created Blob URL for ${file.name}: ${contentUrlToUse}`);
+            // Avoid logging Blob URLs; they are runtime-only and user-content-derived.
           }
         } else if (typeof contentToUse === "string") {
           contentAsString = contentToUse;
-          console.log(
-            `[useFileSystem] Using string content directly for ${file.name}, length: ${contentAsString?.length}`
-          );
+          log.debug("Using string content directly", {
+            name: file.name,
+            contentLength: contentAsString?.length ?? 0,
+          });
         }
 
         // 3. Launch Appropriate App
-        console.log(`[useFileSystem] Preparing initialData for ${file.path}:`, {
-          contentAsString,
-          contentUrlToUse,
+        log.debug("Preparing app launch data", {
+          path: file.path,
+          hasTextContent: Boolean(contentAsString),
+          contentLength: contentAsString?.length ?? 0,
+          hasContentUrl: Boolean(contentUrlToUse),
         });
         if (file.path.startsWith("/Applications/") && file.appId) {
           launchApp(file.appId as AppId, { launchOrigin });
@@ -930,15 +931,17 @@ export function useFileSystem(
 
             if (instanceExists) {
               // File is already open - bring that window to foreground
-              console.log(
-                `[useFileSystem] File already open in TextEdit instance ${existingInstanceId}, bringing to foreground`
-              );
+              log.debug("TextEdit file already open; bringing to foreground", {
+                path: file.path,
+                instanceId: existingInstanceId,
+              });
               appStore.bringInstanceToForeground(existingInstanceId);
             } else {
               // Stale instance reference - clean it up and open new instance
-              console.log(
-                `[useFileSystem] Stale TextEdit instance ${existingInstanceId} for ${file.path}, removing and opening new instance`
-              );
+              log.debug("Removing stale TextEdit instance", {
+                path: file.path,
+                instanceId: existingInstanceId,
+              });
               textEditStore.removeInstance(existingInstanceId);
               launchApp("textedit", {
                 initialData: { path: file.path, content: contentAsString ?? "" },
@@ -972,7 +975,7 @@ export function useFileSystem(
           (file.path.endsWith(".app") || file.path.endsWith(".html"))
         ) {
           // Open HTML applets with applet-viewer
-          console.log("[useFileSystem] Opening applet:", {
+          log.debug("Opening applet", {
             path: file.path,
             contentLength: contentAsString?.length || 0,
             hasContent: !!contentAsString,
@@ -1172,7 +1175,7 @@ export function useFileSystem(
       createdBy?: string;
     }) => {
       const { path, name, content } = fileData;
-      console.log(`[useFileSystem:saveFile] Attempting to save: ${path}`);
+      log.debug("Attempting to save file", { path });
       setError(undefined);
 
       const isDirectory = false;
@@ -1225,9 +1228,7 @@ export function useFileSystem(
 
       // 2. Add/Update Metadata in FileStore (will generate UUID if new)
       try {
-        console.log(
-          `[useFileSystem:saveFile] Updating metadata store for: ${path}`
-        );
+        log.debug("Updating metadata store", { path });
         // Pass the complete metadata object to addItem
         addFileItem(metadata);
         track(FINDER_ANALYTICS.FILE_SAVE, {
@@ -1243,16 +1244,15 @@ export function useFileSystem(
           throw new Error("Failed to get UUID for saved item");
         }
 
-        console.log(
-          `[useFileSystem:saveFile] Metadata store updated for: ${path} with UUID: ${savedItem.uuid}`
-        );
+        log.debug("Metadata store updated", {
+          path,
+          uuid: savedItem.uuid,
+        });
 
         // 3. Save Content to IndexedDB using UUID
-        console.log(
-          `[useFileSystem:saveFile] Determining store for path: ${path}`
-        );
+        log.debug("Determining content store", { path });
         const storeName = getStoreForFile(path, { name, type: fileType });
-        console.log(`[useFileSystem:saveFile] Selected store: ${storeName}`);
+        log.debug("Selected content store", { path, storeName });
         if (storeName) {
           try {
             const contentToStore: DocumentContent = {
@@ -1262,9 +1262,13 @@ export function useFileSystem(
                   ? await content.arrayBuffer()
                   : content,
             };
-            console.log(
-              `[useFileSystem:saveFile] Saving content to IndexedDB (${storeName}) with UUID: ${savedItem.uuid}`
-            );
+            log.debug("Saving content to IndexedDB", {
+              storeName,
+              uuid: savedItem.uuid,
+              contentLength:
+                typeof content === "string" ? content.length : undefined,
+              contentType: content instanceof Blob ? "blob" : typeof content,
+            });
             await dbOperations.put<DocumentContent>(
               storeName,
               contentToStore,
@@ -1274,9 +1278,10 @@ export function useFileSystem(
             if (syncDomain) {
               emitCloudSyncContentChange(syncDomain, savedItem.uuid);
             }
-            console.log(
-              `[useFileSystem:saveFile] Content saved to IndexedDB with UUID: ${savedItem.uuid}`
-            );
+            log.debug("Content saved to IndexedDB", {
+              storeName,
+              uuid: savedItem.uuid,
+            });
           } catch (err) {
             console.error(
               `[useFileSystem:saveFile] Error saving content to IndexedDB for ${path}:`,
@@ -1395,9 +1400,7 @@ export function useFileSystem(
           toTopLevel: getFinderAnalyticsPathInfo(newPath, sourceFile.type).topLevel,
           fileType: getFinderAnalyticsPathInfo(sourcePath, sourceFile.type).fileType,
         });
-        console.log(
-          `[useFileSystem:moveFile] Successfully moved ${sourcePath} to ${newPath}`
-        );
+        log.debug("Moved file", { sourcePath, newPath });
         return true;
       } catch (err) {
         console.error(`[useFileSystem:moveFile] Error moving file: ${err}`);
@@ -1556,9 +1559,11 @@ export function useFileSystem(
               );
             }
             emitCloudSyncContentChange("trash", fileMetadata.uuid);
-            console.log(
-              `[useFileSystem] Moved content for ${fileMetadata.name} from ${storeName} to Trash DB with UUID ${fileMetadata.uuid}.`
-            );
+            log.debug("Moved content to Trash DB", {
+              name: fileMetadata.name,
+              storeName,
+              uuid: fileMetadata.uuid,
+            });
           } else {
             console.warn(
               `[useFileSystem] Content not found for ${fileMetadata.name} (UUID: ${fileMetadata.uuid}) in ${storeName} during move to trash.`
@@ -1632,9 +1637,11 @@ export function useFileSystem(
               );
             }
             emitCloudSyncContentChange("trash", fileMetadata.uuid);
-            console.log(
-              `[useFileSystem] Restored content for ${fileMetadata.name} from Trash DB to ${targetStoreName} with UUID ${fileMetadata.uuid}.`
-            );
+            log.debug("Restored content from Trash DB", {
+              name: fileMetadata.name,
+              targetStoreName,
+              uuid: fileMetadata.uuid,
+            });
           } else {
             console.warn(
               `[useFileSystem] Content not found for ${fileMetadata.name} (UUID: ${fileMetadata.uuid}) in Trash DB during restore.`
@@ -1675,7 +1682,7 @@ export function useFileSystem(
           .markDeletedKeys("fileTrashKeys", contentUUIDsToDelete);
         emitCloudSyncDomainChange("trash");
       }
-      console.log("[useFileSystem] Cleared trash content from IndexedDB.");
+      log.debug("Cleared trash content from IndexedDB");
       track(FINDER_ANALYTICS.EMPTY_TRASH, {
         appId: "finder",
         deletedCount: contentUUIDsToDelete.length,

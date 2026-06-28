@@ -20,6 +20,9 @@ import {
   getLanguageName,
   isIOSDevice,
 } from "./helpers";
+import { createClientLogger } from "@/utils/logger";
+
+const log = createClientLogger("ChatTools");
 
 export interface IpodControlInput {
   action?: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
@@ -60,11 +63,11 @@ const applyIpodSettings = (
     if (enableVideo && !ipod.showVideo) {
       ipod.setShowVideo(true);
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnVideo"));
-      console.log("[ToolCall] Video enabled.");
+      log.debug("iPod video enabled");
     } else if (!enableVideo && ipod.showVideo) {
       ipod.setShowVideo(false);
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffVideo"));
-      console.log("[ToolCall] Video disabled.");
+      log.debug("iPod video disabled");
     }
   }
 
@@ -72,14 +75,14 @@ const applyIpodSettings = (
     if (shouldDisableTranslation(enableTranslation)) {
       ipod.setLyricsTranslationLanguage(null);
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
-      console.log("[ToolCall] Lyrics translation disabled.");
+      log.debug("iPod lyrics translation disabled");
     } else if (enableTranslation) {
       ipod.setLyricsTranslationLanguage(enableTranslation);
       const langName = getLanguageName(enableTranslation);
       stateChanges.push(
         i18n.t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName })
       );
-      console.log(`[ToolCall] Lyrics translation enabled for language: ${enableTranslation}.`);
+      log.debug("iPod lyrics translation enabled", { language: enableTranslation });
     }
   }
 
@@ -87,11 +90,11 @@ const applyIpodSettings = (
     if (enableFullscreen && !ipod.isFullScreen) {
       ipod.toggleFullScreen();
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
-      console.log("[ToolCall] Fullscreen enabled.");
+      log.debug("iPod fullscreen enabled");
     } else if (!enableFullscreen && ipod.isFullScreen) {
       ipod.toggleFullScreen();
       stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
-      console.log("[ToolCall] Fullscreen disabled.");
+      log.debug("iPod fullscreen disabled");
     }
   }
 
@@ -126,7 +129,7 @@ const handlePlaybackState = (
       toolCallId,
       output: buildResultMessage(resultParts),
     });
-    console.log("[ToolCall] iOS detected - user must manually start playback.");
+    log.debug("iOS detected; user must manually start playback");
     return;
   }
 
@@ -170,7 +173,7 @@ const handlePlaybackState = (
     output: buildResultMessage(resultParts),
   });
 
-  console.log(`[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`);
+  log.debug("iPod playback state changed", { isPlaying: nowPlaying });
 };
 
 /**
@@ -234,7 +237,7 @@ const handlePlayKnown = (
       toolCallId,
       output: errorMsg,
     });
-    console.log(`[ToolCall] ${errorMsg}`);
+    log.debug("iPod playKnown found no matching track");
     return;
   }
 
@@ -255,7 +258,6 @@ const handlePlayKnown = (
   const activeIpodState = useIpodStore.getState();
   setActiveIpodCurrentSongId(activeIpodState, track.id);
   const { setIsPlaying } = useIpodStore.getState();
-  const trackDescForLog = formatTrackDescription(track.title, track.artist);
 
   // On iOS, don't auto-play - just select the track
   if (isIOS) {
@@ -274,9 +276,9 @@ const handlePlayKnown = (
       toolCallId,
       output: buildResultMessage(resultParts),
     });
-    console.log(
-      `[ToolCall] iOS detected - selected ${trackDescForLog}, user must manually start playback.`
-    );
+    log.debug("iOS detected; selected iPod track without autoplay", {
+      trackId: track.id,
+    });
     return;
   }
 
@@ -297,7 +299,7 @@ const handlePlayKnown = (
     output: buildResultMessage(resultParts),
   });
 
-  console.log(`[ToolCall] Playing ${trackDescForLog}.`);
+  log.debug("iPod started playing track", { trackId: track.id });
 };
 
 /**
@@ -363,11 +365,11 @@ const handleAddAndPlay = async (
         output: buildResultMessage(resultParts),
       });
 
-      console.log(
-        isIOS
-          ? `[ToolCall] iOS detected - added '${addedTrack.title}' to iPod, user must manually start playback.`
-          : `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`
-      );
+      log.debug("Added track to iPod", {
+        trackId: addedTrack.id,
+        isIOS,
+        autoPlayed: !isIOS,
+      });
     } else {
       const errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAdd", { id });
       context.addToolOutput({
@@ -433,9 +435,10 @@ const handleNavigation = (
       toolCallId,
       output: buildResultMessage(resultParts),
     });
-    console.log(
-      `[ToolCall] ${action === "next" ? "Skipped to" : "Went back to"} ${desc}.`
-    );
+    log.debug("iPod navigation selected track", {
+      action,
+      trackId: track.id,
+    });
     return;
   }
 
@@ -453,9 +456,7 @@ const handleNavigation = (
     output: buildResultMessage(resultParts),
   });
 
-  console.log(
-    `[ToolCall] ${action === "next" ? "Skipped to next track." : "Went back to previous track."}`
-  );
+  log.debug("iPod navigation changed track", { action, hasTrack: false });
 };
 
 /**
@@ -473,7 +474,15 @@ export const handleIpodControl = async (
     enableFullscreen,
   } = input;
 
-  console.log("[ToolCall] ipodControl:", input);
+  log.debug("ipodControl", {
+    action,
+    hasId: Boolean(input.id),
+    hasTitle: Boolean(input.title),
+    hasArtist: Boolean(input.artist),
+    enableVideo,
+    enableTranslation,
+    enableFullscreen,
+  });
 
   const isIOS = isIOSDevice();
 

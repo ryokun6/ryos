@@ -13,11 +13,11 @@
  * surface real problems and are always shown.
  */
 
-const DEBUG_FLAG_KEY = "ryos:debug";
+export const DEBUG_FLAG_KEY = "ryos:debug";
 
 let runtimeDebugEnabled: boolean | null = null;
 
-function isDebugEnabled(): boolean {
+export function isDebugEnabled(): boolean {
   // Dev builds always log.
   if (import.meta.env.DEV) return true;
 
@@ -30,6 +30,25 @@ function isDebugEnabled(): boolean {
     runtimeDebugEnabled = false;
   }
   return runtimeDebugEnabled;
+}
+
+export function setRuntimeDebugEnabled(enabled: boolean): void {
+  runtimeDebugEnabled = enabled;
+  try {
+    if (typeof localStorage !== "undefined") {
+      if (enabled) {
+        localStorage.setItem(DEBUG_FLAG_KEY, "1");
+      } else {
+        localStorage.removeItem(DEBUG_FLAG_KEY);
+      }
+    }
+  } catch {
+    // Storage can be unavailable in private modes; keep the in-memory flag.
+  }
+}
+
+export function refreshRuntimeDebugFlag(): void {
+  runtimeDebugEnabled = null;
 }
 
 /** Production-silent `console.log`. */
