@@ -97,6 +97,11 @@ export function DebugLogOverlay() {
   const isRyoAdmin = useIsRyoAdmin();
   const debugMode = useDisplaySettingsStore((s) => s.debugMode);
   const flags = useThemeFlags();
+  const { isWindowsTheme, metadata } = flags;
+  const debugFabGapPx = 8;
+  const debugFabBottom = isWindowsTheme
+    ? `calc(env(safe-area-inset-bottom, 0px) + ${metadata.taskbarHeight + debugFabGapPx}px)`
+    : `calc(env(safe-area-inset-bottom, 0px) + ${debugFabGapPx}px)`;
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -307,9 +312,12 @@ export function DebugLogOverlay() {
 
   return (
     <div
-      className="fixed left-2 select-none"
+      className={cn(
+        "fixed select-none flex flex-col",
+        isWindowsTheme ? "right-2 items-end" : "left-2 items-start"
+      )}
       style={{
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+        bottom: debugFabBottom,
         zIndex: 2147483000,
       }}
     >
