@@ -51,9 +51,10 @@ export const makeRateLimitBypassHeaders = (): Record<string, string> => ({
  */
 export function uniqueTestUsername(prefix: string): string {
   const alphabet = "bcdfghjklmnpqrstvwxz";
+  const randomBytes = crypto.getRandomValues(new Uint8Array(12));
   let suffix = "";
   for (let i = 0; i < 12; i++) {
-    suffix += alphabet[Math.floor(Math.random() * alphabet.length)];
+    suffix += alphabet[randomBytes[i] % alphabet.length];
   }
   return `${prefix}${suffix}`;
 }
