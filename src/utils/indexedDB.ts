@@ -8,11 +8,12 @@ const summarizeIndexedDBLogValue = (value: unknown): string => {
   if (value === undefined) return "undefined";
   if (value === null) return "null";
 
+  if (typeof value === "string") {
+    return `string(length=${value.length})`;
+  }
+
   const valueType = typeof value;
   if (valueType !== "object") {
-    if (valueType === "string") {
-      return `string(length=${value.length})`;
-    }
     return valueType;
   }
 
