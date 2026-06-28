@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, jest, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
 import {
   writeSongsState,
@@ -28,21 +28,27 @@ describe("songs sync deletion tombstones (v2 core)", () => {
   test("a deleted track stays deleted across reads", async () => {
     const redis = new FakeRedis() as unknown as Redis;
     const username = "tombstone-user";
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-06-28T07:23:15.661Z"));
 
-    await writeSongsState(redis, username, {
-      tracks: [track("A"), track("B")],
-      libraryState: "loaded",
-      lastKnownVersion: 1,
-    });
+    try {
+      await writeSongsState(redis, username, {
+        tracks: [track("A"), track("B")],
+        libraryState: "loaded",
+        lastKnownVersion: 1,
+      });
 
-    await writeSongsState(redis, username, {
-      tracks: [track("A")],
-      libraryState: "loaded",
-      lastKnownVersion: 2,
-    });
+      await writeSongsState(redis, username, {
+        tracks: [track("A")],
+        libraryState: "loaded",
+        lastKnownVersion: 2,
+      });
 
-    const state = await readSongsState(redis, username);
-    expect(state?.data.tracks.map((t) => t.id)).toEqual(["A"]);
+      const state = await readSongsState(redis, username);
+      expect(state?.data.tracks.map((t) => t.id)).toEqual(["A"]);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test("a stale client write cannot resurrect a deleted track", async () => {
