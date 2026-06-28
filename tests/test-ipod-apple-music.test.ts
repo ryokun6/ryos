@@ -72,6 +72,9 @@ const {
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
   isStaleQueueLoad,
   isLikelyMusicKitUnhandledRejection,
+  isMusicKitPlaying,
+  isMusicKitRedundantPlayError,
+  MUSICKIT_PLAYBACK_STATE_PLAYING,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -132,6 +135,25 @@ describe("Apple Music error logging helpers", () => {
     expect(isLikelyMusicKitUnhandledRejection(new Error("No lyrics found"))).toBe(
       false
     );
+  });
+
+  test("detects redundant MusicKit play() rejections", () => {
+    expect(
+      isMusicKitRedundantPlayError(
+        new Error(
+          "The play() method was called without a previous stop() or pause() call."
+        )
+      )
+    ).toBe(true);
+    expect(isMusicKitRedundantPlayError(new Error("Autoplay blocked"))).toBe(
+      false
+    );
+  });
+
+  test("recognizes MusicKit playing playback state", () => {
+    expect(isMusicKitPlaying(MUSICKIT_PLAYBACK_STATE_PLAYING)).toBe(true);
+    expect(isMusicKitPlaying(3)).toBe(false);
+    expect(isMusicKitPlaying(undefined)).toBe(false);
   });
 });
 

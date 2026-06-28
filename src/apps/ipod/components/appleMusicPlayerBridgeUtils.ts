@@ -142,6 +142,27 @@ export function isLikelyMusicKitUnhandledRejection(reason: unknown): boolean {
   return /(?:musickit|music\.apple\.com)/i.test(getErrorLikeText(reason));
 }
 
+/** MusicKit `playbackState` value for actively playing audio. */
+export const MUSICKIT_PLAYBACK_STATE_PLAYING = 2;
+
+export function isMusicKitPlaying(
+  playbackState: number | undefined
+): boolean {
+  return playbackState === MUSICKIT_PLAYBACK_STATE_PLAYING;
+}
+
+/**
+ * MusicKit JS v3 rejects when `play()` is called while already playing:
+ * "The play() method was called without a previous stop() or pause() call."
+ * Detect that known rejection so callers can skip redundant play() calls or
+ * downgrade the log level.
+ */
+export function isMusicKitRedundantPlayError(reason: unknown): boolean {
+  return /play\(\) method was called without a previous stop\(\) or pause\(\) call/i.test(
+    getErrorLikeText(reason)
+  );
+}
+
 export function getMusicKitEventItemId(
   item:
     | {
