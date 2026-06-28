@@ -21,6 +21,10 @@ import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import {
+  formatAppleTerminologyForPrompt,
+  type TranslationLocale,
+} from "./apple-ui-terminology";
 
 const LOCALES_DIR = join(process.cwd(), "src/lib/locales");
 const ENGLISH_FILE = join(LOCALES_DIR, "en/translation.json");
@@ -34,7 +38,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   "fr": "French",
   "de": "German",
   "es": "Spanish",
-  "pt": "Portuguese",
+  "pt": "Brazilian Portuguese",
   "it": "Italian",
   "ru": "Russian",
 };
@@ -122,16 +126,23 @@ async function translateBatch(
   targetLanguage: string
 ): Promise<string[]> {
   const languageName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
+  const terminology = formatAppleTerminologyForPrompt(
+    targetLanguage as TranslationLocale
+  );
   
   const prompt = `You are a professional translator. Translate the following English strings to ${languageName}.
 
 Rules:
 - Maintain the exact same meaning and tone
 - Keep technical terms consistent (e.g., "Finder", "iPod", "Applet")
+- Apply the Apple terminology below exactly to standalone labels and naturally to compounds
 - Preserve formatting and special characters
 - For UI strings, use natural, concise language appropriate for that language
 - Return ONLY a JSON array of translated strings in the same order
 - Do not include any explanations or additional text
+
+Apple UI terminology:
+${terminology}
 
 English strings to translate:
 ${JSON.stringify(texts, null, 2)}

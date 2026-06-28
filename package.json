@@ -35,6 +35,8 @@
     "i18n:sync:dry-run": "bun run scripts/sync-translations.ts --dry-run",
     "i18n:sync:mark-todo": "bun run scripts/sync-translations.ts --mark-untranslated",
     "i18n:find-untranslated": "bun run scripts/find-untranslated-strings.ts",
+    "i18n:audit": "bun run scripts/audit-translations.ts",
+    "i18n:audit:fix": "bun run scripts/audit-translations.ts --fix",
     "i18n:translate": "bun run scripts/machine-translate.ts",
     "i18n:translate:dry-run": "bun run scripts/machine-translate.ts --dry-run",
     "electron:bundle": "bun run scripts/bundle-electron.ts",
