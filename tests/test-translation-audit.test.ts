@@ -3,6 +3,7 @@ import i18next from "i18next";
 import {
   APPLE_STYLE_GUIDE_SOURCE,
   APPLE_UI_TERMINOLOGY,
+  ENGLISH_FORBIDDEN_VALUE_PATTERNS,
   ENGLISH_STYLE_EXPECTATIONS,
   getExpectedAppleUiTerm,
 } from "../scripts/apple-ui-terminology";
@@ -10,21 +11,33 @@ import { auditTranslations } from "../scripts/audit-translations";
 import en from "../src/lib/locales/en/translation.json";
 import ru from "../src/lib/locales/ru/translation.json";
 
-function getNestedTranslationValue(
-  source: Record<string, unknown>,
-  key: string
-): string | undefined {
-  let current: unknown = source;
-  for (const segment of key.split(".")) {
-    if (!current || typeof current !== "object" || !(segment in current)) {
-      return undefined;
+function collectEnglishStringValues(
+  source: Record<string, unknown>
+): Array<{ key: string; value: string }> {
+  const entries: Array<{ key: string; value: string }> = [];
+
+  const walk = (value: unknown, path: string[]) => {
+    if (typeof value === "string") {
+      entries.push({ key: path.join("."), value });
+      return;
     }
-    current = (current as Record<string, unknown>)[segment];
-  }
-  return typeof current === "string" ? current : undefined;
+    if (value && typeof value === "object") {
+      for (const [segment, nested] of Object.entries(value)) {
+        walk(nested, [...path, segment]);
+      }
+    }
+  };
+
+  walk(source, []);
+  return entries;
 }
 
 describe("translation audit", () => {
+  const getNestedTranslationValue = (
+    source: Record<string, unknown>,
+    key: string
+  ): string | undefined =>
+    collectEnglishStringValues(source).find((entry) => entry.key === key)?.value;
   test("uses Apple English account and punctuation style", () => {
     expect(APPLE_STYLE_GUIDE_SOURCE.edition).toBe("June 2026");
     expect(en.common.auth.logIn).toBe("Sign In");
@@ -54,6 +67,24 @@ describe("translation audit", () => {
     expect(getNestedTranslationValue(en, "apps.control-panels.masterVolume")).not.toMatch(
       /\bMaster\b/u
     );
+    expect(getNestedTranslationValue(en, "apps.control-panels.master")).not.toMatch(
+      /\bMaster\b/u
+    );
+  });
+
+  test("avoids forbidden Apple English style patterns in catalog values", () => {
+    const retroIeKeys = new Set([
+      "apps.internet-explorer.pleaseTryTheFollowing",
+      "apps.internet-explorer.cannotFindServerOrDnsError",
+      "apps.internet-explorer.cannotAccessWebsite",
+    ]);
+
+    for (const { key, value } of collectEnglishStringValues(en)) {
+      if (retroIeKeys.has(key)) continue;
+      for (const { pattern, reason } of ENGLISH_FORBIDDEN_VALUE_PATTERNS) {
+        expect(value, `${key}: ${reason}`).not.toMatch(pattern);
+      }
+    }
   });
 
   test("uses the expanded terminology extracted from Apple glossaries", () => {

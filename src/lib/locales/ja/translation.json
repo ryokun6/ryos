@@ -4442,12 +4442,12 @@
     },
     "auto": "自動",
     "colors": {
-      "blue": "青",
-      "green": "緑",
+      "blue": "ブルー",
+      "green": "グリーン",
       "orange": "オレンジ",
       "pink": "ピンク",
       "purple": "紫",
-      "yellow": "黄色"
+      "yellow": "イエロー"
     },
     "desktop": {
       "myComputer": "マイコンピュータ",

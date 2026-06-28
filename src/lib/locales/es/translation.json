@@ -4446,12 +4446,12 @@
     },
     "auto": "Automático",
     "colors": {
-      "blue": "azul",
-      "green": "verde",
+      "blue": "Azul",
+      "green": "Verde",
       "orange": "naranja",
-      "pink": "rosa",
+      "pink": "Rosa",
       "purple": "púrpura",
-      "yellow": "amarillo"
+      "yellow": "Amarillo"
     },
     "desktop": {
       "myComputer": "Mi PC",

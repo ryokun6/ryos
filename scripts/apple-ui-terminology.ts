@@ -25,6 +25,7 @@ export const APPLE_STYLE_GUIDE_SOURCE = {
  */
 export const ENGLISH_STYLE_EXPECTATIONS = {
   "apps.control-panels.masterVolume": "Main Volume",
+  "apps.control-panels.master": "Main",
   "apps.chats.tokenStatus.authenticated": "Signed In",
   "apps.finder.menu.goUp": "go up",
   "apps.ipod.menu.repeatAll": "repeat all",
@@ -33,7 +34,25 @@ export const ENGLISH_STYLE_EXPECTATIONS = {
   "apps.videos.menu.repeatOne": "repeat one",
   "apps.karaoke.menu.repeatAll": "repeat all",
   "apps.karaoke.menu.repeatOne": "repeat one",
+  "apps.dashboard.ipod.repeatAll": "repeat all",
+  "apps.dashboard.ipod.repeatOne": "repeat one",
+  "common.colors.yellow": "Yellow",
+  "common.colors.blue": "Blue",
+  "common.colors.green": "Green",
+  "common.colors.pink": "Pink",
+  "common.colors.purple": "Purple",
+  "common.colors.orange": "Orange",
+  "common.auth.username": "user name",
+  "common.auth.recovery.identifier": "user name or email",
 } as const satisfies Record<string, string>;
+
+/** Patterns that must not appear in English catalog values (retro exceptions allowed). */
+export const ENGLISH_FORBIDDEN_VALUE_PATTERNS = [
+  { pattern: /\bMaster Volume\b/u, reason: "use Main Volume (inclusive language)" },
+  { pattern: /\bPlease sign in\b/u, reason: "omit Please in sign-in prompts" },
+  { pattern: /cannot be undone/u, reason: "prefer can't be undone" },
+  { pattern: /\benable account recovery\b/u, reason: "use for account recovery phrasing" },
+] as const;
 
 export const TRANSLATION_LOCALES = [
   "zh-TW",
