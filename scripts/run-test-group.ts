@@ -16,15 +16,9 @@ if (files.length === 0) {
 
 console.log(`Running ${files.length} ${group} test files`);
 
-if (group === "api") {
-  const child = Bun.spawn(["bun", "test", ...files], {
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-  process.exit(await child.exited);
-}
-
 let failedFiles = 0;
+// Run every file in its own Bun process. API files still share the standalone
+// server, but cannot leak mocked clocks or globals into later suites.
 for (const file of files) {
   // This suite statically imports every persisted store. Install happy-dom
   // before module evaluation so Zustand captures a real window.localStorage.
@@ -46,6 +40,6 @@ for (const file of files) {
 }
 
 if (failedFiles > 0) {
-  console.error(`${failedFiles} unit test file(s) failed`);
+  console.error(`${failedFiles} ${group} test file(s) failed`);
   process.exit(1);
 }

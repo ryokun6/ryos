@@ -10,8 +10,13 @@ import { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
 // importing them from this module.
 export { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
 
-// Set up Redis client
-const redis = createRedis();
+// Keep pure imports usable without Redis configuration. Runtime limiter calls
+// still create the client synchronously and propagate configuration failures.
+let redis: Redis | undefined;
+function getRedis(): Redis {
+  redis ??= createRedis();
+  return redis;
+}
 
 // Constants for rate limiting
 export const AI_LIMIT_PER_5_HOURS = 15;
@@ -38,8 +43,18 @@ export async function checkAndIncrementAIMessageCount(
   authToken: string | null = null,
   options: { internal?: boolean } = {}
 ): Promise<AIRateLimitResult> {
+  // Trusted internal work does not consume a counter and therefore does not
+  // need Redis. Keep this aligned with the injected-client implementation.
+  if (options.internal === true) {
+    return {
+      allowed: true,
+      count: 0,
+      limit: getAIMessageLimit(identifier),
+    };
+  }
+
   return checkAndIncrementAIMessageCountWithRedis(
-    redis,
+    getRedis(),
     identifier,
     isAuthenticated,
     authToken,
@@ -60,7 +75,7 @@ export async function checkAndIncrementAIMessageCountWithRedis(
   const isAnonymous = identifier.startsWith("anon:");
 
   // Set limit and window based on authentication status
-  const limit = isAnonymous ? AI_LIMIT_ANON_PER_DAY : AI_LIMIT_PER_5_HOURS;
+  const limit = getAIMessageLimit(identifier);
   const ttlSeconds = isAnonymous ? AI_WINDOW_ANONYMOUS : AI_WINDOW_AUTHENTICATED;
 
   // This option is available only to trusted server call sites and is never
@@ -114,6 +129,12 @@ export async function checkAndIncrementAIMessageCountWithRedis(
   return { allowed: true, count: newCount, limit };
 }
 
+function getAIMessageLimit(identifier: string): number {
+  return identifier.startsWith("anon:")
+    ? AI_LIMIT_ANON_PER_DAY
+    : AI_LIMIT_PER_5_HOURS;
+}
+
 // ------------------------------
 // Generic rate-limit utilities
 // ------------------------------
@@ -164,7 +185,7 @@ export async function checkCounterLimit({
   limit,
 }: CounterLimitArgs): Promise<CounterLimitResult> {
   const { count: newCount, ttlSeconds } = await incrementWithExpiry(
-    redis,
+    getRedis(),
     key,
     windowSeconds
   );

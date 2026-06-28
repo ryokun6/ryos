@@ -53,10 +53,26 @@ export const makeRateLimitBypassHeaders = (
  */
 export function uniqueTestUsername(prefix: string): string {
   const alphabet = "bcdfghjklmnpqrstvwxz";
-  const randomBytes = crypto.getRandomValues(new Uint8Array(12));
+  const suffixLength = 12;
+  const candidateShape = `${prefix}${"a".repeat(suffixLength)}`;
+  if (!/^[a-z](?:[a-z0-9]|[-_](?=[a-z0-9])){2,29}$/i.test(candidateShape)) {
+    throw new Error(
+      "Test username prefix must produce a valid username of at most 30 characters"
+    );
+  }
+
+  // Only map the largest byte range divisible by the alphabet size. Rejecting
+  // the remainder keeps every character equally likely.
+  const unbiasedByteLimit = Math.floor(256 / alphabet.length) * alphabet.length;
   let suffix = "";
-  for (let i = 0; i < 12; i++) {
-    suffix += alphabet[randomBytes[i] % alphabet.length];
+  while (suffix.length < suffixLength) {
+    const randomBytes = crypto.getRandomValues(
+      new Uint8Array(suffixLength - suffix.length)
+    );
+    for (const randomByte of randomBytes) {
+      if (randomByte >= unbiasedByteLimit) continue;
+      suffix += alphabet[randomByte % alphabet.length];
+    }
   }
   return `${prefix}${suffix}`;
 }

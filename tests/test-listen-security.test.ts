@@ -47,6 +47,27 @@ async function setupUsersAndRoom(): Promise<void> {
   const roomsData = await roomsRes.json();
   if (Array.isArray(roomsData.rooms) && roomsData.rooms.length > 0) {
     testRoomId = roomsData.rooms[0].id;
+  } else {
+    const createRoomRes = await fetchWithAuth(
+      `${BASE_URL}/api/rooms`,
+      ownerUsername,
+      ownerToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "private",
+          members: [ownerUsername],
+        }),
+      }
+    );
+    if (createRoomRes.status !== 201) {
+      throw new Error(
+        `Listen security room creation failed: ${createRoomRes.status}`
+      );
+    }
+    const createRoomData = await createRoomRes.json();
+    testRoomId = createRoomData.room?.id ?? null;
   }
   requireSetup(testRoomId, "test room");
 }

@@ -39,6 +39,15 @@ describe("chat auth API wiring", () => {
     expect(authStoreSource).not.toContain("legacyToken");
   });
 
+  test("restores cookie sessions without a web-storage identity hint", () => {
+    expect(authStoreSource).not.toContain("localStorage");
+    expect(authStoreSource).not.toContain("_usr_recovery_key_");
+    expect(authStoreSource).toMatch(
+      /if \(typeof window !== "undefined"\) \{\s+queueMicrotask/
+    );
+    expect(controlPanelsSource).not.toContain("_usr_recovery_key_");
+  });
+
   test("auth API exports session and password helpers", () => {
     for (const symbol of [
       "checkUserPassword",

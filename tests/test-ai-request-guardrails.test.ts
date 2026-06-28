@@ -193,6 +193,52 @@ describe("applet AI validation", () => {
 });
 
 describe("fail-closed rate limiting", () => {
+  test("imports without Redis configuration and fails closed when a counter is needed", async () => {
+    const redisEnvironmentKeys = [
+      "REDIS_PROVIDER",
+      "REDIS_URL",
+      "REDIS_KV_REST_API_URL",
+      "REDIS_KV_REST_API_TOKEN",
+    ];
+    const previousValues = new Map(
+      redisEnvironmentKeys.map((key) => [key, process.env[key]])
+    );
+
+    for (const key of redisEnvironmentKeys) delete process.env[key];
+
+    try {
+      const rateLimit = await import(
+        `../api/_utils/_rate-limit.js?no-redis=${crypto.randomUUID()}`
+      );
+
+      expect(rateLimit.makeKey(["rl", "import-only", "test"])).toMatch(
+        /^rate:import-only:test:global:[a-f0-9]{64}$/
+      );
+
+      const result = await rateLimit.runFailClosedRateLimit(() =>
+        rateLimit.checkCounterLimit({
+          key: rateLimit.makeKey(["rl", "requires-redis", "test"]),
+          windowSeconds: 60,
+          limit: 1,
+        })
+      );
+
+      expect(result.available).toBe(false);
+      if (!result.available) {
+        expect(String(result.error)).toContain("Missing Redis configuration");
+      }
+    } finally {
+      for (const key of redisEnvironmentKeys) {
+        const previousValue = previousValues.get(key);
+        if (previousValue === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = previousValue;
+        }
+      }
+    }
+  });
+
   test("allows only an explicit server-internal charge bypass", async () => {
     const result = await checkAndIncrementAIMessageCount(
       "internal:proactive-job",

@@ -133,7 +133,7 @@ describe("auth session boundary", () => {
     ).resolves.toBe("next");
   });
 
-  test("owns registration state and the recovery identity", async () => {
+  test("owns registration state without persisting the public identity", async () => {
     const result = await useAuthStore.getState().register({
       username: "new-user",
       password: "password123",
@@ -146,7 +146,19 @@ describe("auth session boundary", () => {
       isAuthenticated: true,
       hasPassword: true,
     });
-    expect(localStorage.getItem("_usr_recovery_key_")).toBe("new-user");
+    expect(localStorage.length).toBe(0);
+  });
+
+  test("restores the canonical username from the HTTP-only cookie session", async () => {
+    const result = await useAuthStore.getState().restoreSession();
+
+    expect(result).toEqual({ ok: true });
+    expect(networkStarts).toEqual(["session"]);
+    expect(useAuthStore.getState()).toMatchObject({
+      username: "restored-user",
+      isAuthenticated: true,
+    });
+    expect(localStorage.length).toBe(0);
   });
 
   test("tears down user state before publishing logged-out state", async () => {
@@ -160,8 +172,6 @@ describe("auth session boundary", () => {
       isAuthenticated: true,
       hasPassword: true,
     });
-    localStorage.setItem("_usr_recovery_key_", "signed-in-user");
-
     await useAuthStore.getState().logout();
     unregister();
 
@@ -173,7 +183,7 @@ describe("auth session boundary", () => {
       isAuthenticated: false,
       hasPassword: null,
     });
-    expect(localStorage.getItem("_usr_recovery_key_")).toBeNull();
+    expect(localStorage.length).toBe(0);
   });
 
   test("does not let a stale restore replace an explicit login", async () => {

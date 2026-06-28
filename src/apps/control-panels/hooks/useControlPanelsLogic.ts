@@ -687,18 +687,15 @@ export function useControlPanelsLogic({
     // then halt further writes until the reload.
     flushDebouncedPersistWrites();
     haltDebouncedPersistWrites();
-    // Preserve critical recovery keys while clearing everything else
+    // Preserve file metadata while clearing settings. Authentication restores
+    // from the HTTP-only session cookie after reload, not from web storage.
     const fileMetadataStore = localStorage.getItem("ryos:files");
-    const usernameRecovery = localStorage.getItem("_usr_recovery_key_");
 
     clearAllAppStates();
     clearPrefetchFlag(); // Force re-prefetch on next boot
 
     if (fileMetadataStore) {
       localStorage.setItem("ryos:files", fileMetadataStore);
-    }
-    if (usernameRecovery) {
-      localStorage.setItem("_usr_recovery_key_", usernameRecovery);
     }
 
     window.location.reload();

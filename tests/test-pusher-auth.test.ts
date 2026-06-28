@@ -20,6 +20,9 @@ import {
 } from "./test-utils";
 
 const PASSWORD = "testpassword123";
+// Secret-free CI uses local realtime so API tests never contact Pusher.
+// Channel authorization remains covered by test-realtime-auth.test.ts.
+const pusherTest = test.skipIf(process.env.REALTIME_PROVIDER === "local");
 
 let memberUser: string;
 let memberToken: string | null = null;
@@ -74,7 +77,7 @@ describe("POST /api/pusher/auth", () => {
     expect(res.status).toBe(401);
   });
 
-  test("authorizes the user's own per-user channel", async () => {
+  pusherTest("authorizes the user's own per-user channel", async () => {
     if (!memberToken) throw new Error("missing member token");
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
@@ -92,7 +95,7 @@ describe("POST /api/pusher/auth", () => {
     expect(data.auth.length).toBeGreaterThan(0);
   });
 
-  test("denies another user's per-user channel", async () => {
+  pusherTest("denies another user's per-user channel", async () => {
     if (!outsiderToken) throw new Error("missing outsider token");
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
@@ -107,7 +110,7 @@ describe("POST /api/pusher/auth", () => {
     expect(res.status).toBe(403);
   });
 
-  test("denies another user's sync channel", async () => {
+  pusherTest("denies another user's sync channel", async () => {
     if (!outsiderToken) throw new Error("missing outsider token");
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
@@ -122,7 +125,7 @@ describe("POST /api/pusher/auth", () => {
     expect(res.status).toBe(403);
   });
 
-  test("AirDrop channel is private to its owning user", async () => {
+  pusherTest("AirDrop channel is private to its owning user", async () => {
     if (!memberToken || !outsiderToken) throw new Error("missing auth tokens");
     const own = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
@@ -149,7 +152,7 @@ describe("POST /api/pusher/auth", () => {
     expect(other.status).toBe(403);
   });
 
-  test("authorizes a private room channel for a member", async () => {
+  pusherTest("authorizes a private room channel for a member", async () => {
     if (!privateRoomId || !memberToken) {
       throw new Error("Pusher auth setup missing private room or member token");
     }
@@ -166,7 +169,7 @@ describe("POST /api/pusher/auth", () => {
     expect(res.status).toBe(200);
   });
 
-  test("denies a private room channel for a non-member", async () => {
+  pusherTest("denies a private room channel for a non-member", async () => {
     if (!privateRoomId || !outsiderToken) {
       throw new Error("Pusher auth setup missing private room or outsider token");
     }
@@ -183,7 +186,7 @@ describe("POST /api/pusher/auth", () => {
     expect(res.status).toBe(403);
   });
 
-  test("authorizes global presence for an authenticated user", async () => {
+  pusherTest("authorizes global presence for an authenticated user", async () => {
     if (!memberToken) throw new Error("missing member token");
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
@@ -202,7 +205,7 @@ describe("POST /api/pusher/auth", () => {
     expect(typeof data.channel_data).toBe("string");
   });
 
-  test("authorizes a public channel for any authenticated user", async () => {
+  pusherTest("authorizes a public channel for any authenticated user", async () => {
     if (!outsiderToken) throw new Error("missing outsider token");
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,
@@ -217,7 +220,7 @@ describe("POST /api/pusher/auth", () => {
     expect(res.status).toBe(200);
   });
 
-  test("denies unknown private channels", async () => {
+  pusherTest("denies unknown private channels", async () => {
     if (!memberToken) throw new Error("missing member token");
     const res = await fetchWithAuth(
       `${BASE_URL}/api/pusher/auth`,

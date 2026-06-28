@@ -307,9 +307,15 @@ describe("Account Deletion API", () => {
     expect(
       await redis.zrange(redisKeys.presence.globalOnline(), 0, -1)
     ).not.toContain(username);
-    expect(
-      await redis.lrange(redisKeys.chat.roomMessages(sharedRoomId), 0, -1)
-    ).toContainEqual(JSON.parse(sharedMessage));
+    const remainingMessages = await redis.lrange<unknown>(
+      redisKeys.chat.roomMessages(sharedRoomId),
+      0,
+      -1
+    );
+    const normalizedMessages = remainingMessages.map((message) =>
+      typeof message === "string" ? JSON.parse(message) : message
+    );
+    expect(normalizedMessages).toContainEqual(JSON.parse(sharedMessage));
 
     await redis.del(redisKeys.chat.roomMessages(sharedRoomId));
   });

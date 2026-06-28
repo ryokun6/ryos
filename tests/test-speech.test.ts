@@ -7,6 +7,9 @@
 import { describe, test, expect } from "bun:test";
 import { BASE_URL, fetchWithOrigin } from "./test-utils";
 
+const hasElevenLabsProvider = Boolean(process.env.ELEVENLABS_API_KEY?.trim());
+const hasOpenAIProvider = Boolean(process.env.OPENAI_API_KEY?.trim());
+
 describe("speech", () => {
   describe("HTTP Methods", () => {
     test("GET method not allowed", async () => {
@@ -63,7 +66,7 @@ describe("speech", () => {
   });
 
   describe("TTS Generation", () => {
-    test("Basic speech generation", async () => {
+    test.skipIf(!hasElevenLabsProvider)("Basic speech generation", async () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,7 +87,7 @@ describe("speech", () => {
       }
     });
 
-    test("OpenAI model", async () => {
+    test.skipIf(!hasOpenAIProvider)("OpenAI model", async () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,7 +124,7 @@ describe("speech", () => {
       }
     });
 
-    test("OpenAI voice options", async () => {
+    test.skipIf(!hasOpenAIProvider)("OpenAI voice options", async () => {
       const voices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
       const voice = voices[Math.floor(Math.random() * voices.length)];
 

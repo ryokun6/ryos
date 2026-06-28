@@ -10,6 +10,8 @@ import {
   makeRateLimitBypassHeaders,
 } from "./test-utils";
 
+const hasOpenAIProvider = Boolean(process.env.OPENAI_API_KEY?.trim());
+
 // ============================================================================
 // Audio Transcribe Tests
 // ============================================================================
@@ -66,7 +68,7 @@ describe("audio-transcribe", () => {
   });
 
   describe("Transcription", () => {
-    test("Valid audio file upload", async () => {
+    test.skipIf(!hasOpenAIProvider)("Valid audio file upload", async () => {
       const wavHeader = new Uint8Array([
         0x52, 0x49, 0x46, 0x46,
         0x24, 0x00, 0x00, 0x00,
@@ -114,7 +116,7 @@ describe("audio-transcribe", () => {
       expect(allowOrigin).toBe("http://localhost:3000");
     });
 
-    test("Rate limit headers", async () => {
+    test.skipIf(!hasOpenAIProvider)("Rate limit headers", async () => {
       const formData = new FormData();
       const audioBlob = new Blob([new Uint8Array(44)], { type: "audio/wav" });
       formData.append("audio", audioBlob, "test.wav");

@@ -16,7 +16,6 @@ import { createClientLogger } from "@/utils/logger";
 import { PASSWORD_MIN_LENGTH, USERNAME_REGEX } from "@/shared/validation";
 import { deleteSyncClientState } from "@/sync/state";
 
-const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
 const authLog = createClientLogger("AuthStore");
 
 export type AuthResult = { ok: boolean; error?: string };
@@ -41,20 +40,6 @@ export interface AuthStoreState {
     currentPassword?: string;
   }) => Promise<AuthResult>;
   handleUnauthorized: () => Promise<void>;
-}
-
-function readRecoveredUsername(): string | null {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage.getItem(USERNAME_RECOVERY_KEY);
-}
-
-function persistRecoveredUsername(username: string | null): void {
-  if (typeof localStorage === "undefined") return;
-  if (username) {
-    localStorage.setItem(USERNAME_RECOVERY_KEY, username);
-  } else {
-    localStorage.removeItem(USERNAME_RECOVERY_KEY);
-  }
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -85,14 +70,13 @@ function isAuthOperationCurrent(operationVersion: number): boolean {
 }
 
 export const useAuthStore = create<AuthStoreState>()((set, get) => ({
-  username: readRecoveredUsername(),
+  username: null,
   isAuthenticated: false,
   hasPassword: null,
   isRestoringSession: false,
 
   setUsername: (username) => {
     authOperationVersion += 1;
-    persistRecoveredUsername(username);
     set({ username, hasPassword: username ? get().hasPassword : null });
   },
   setAuthenticated: (isAuthenticated) => {
@@ -128,7 +112,6 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
           return { ok: false, error: "No authenticated session" };
         }
 
-        persistRecoveredUsername(session.data.username);
         set({
           username: session.data.username,
           isAuthenticated: true,
@@ -162,7 +145,6 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
           return { ok: false, error: "Login superseded" };
         }
       }
-      persistRecoveredUsername(result.username);
       set({ username: result.username, isAuthenticated: true, hasPassword: true });
       track(APP_ANALYTICS.USER_LOGIN_PASSWORD, { username: result.username });
       return { ok: true };
@@ -188,7 +170,6 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
           return { ok: false, error: "Login superseded" };
         }
       }
-      persistRecoveredUsername(result.username);
       set({ username: result.username, isAuthenticated: true, hasPassword: null });
       void get().checkHasPassword();
       track(APP_ANALYTICS.USER_LOGIN_TOKEN, { username: result.username });
@@ -230,7 +211,6 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
           return { ok: false, error: "Registration superseded" };
         }
       }
-      persistRecoveredUsername(result.user.username);
       set({
         username: result.user.username,
         isAuthenticated: true,
@@ -302,7 +282,6 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
     await logoutRequest;
     if (!isAuthOperationCurrent(operationVersion)) return;
     if (username) track(APP_ANALYTICS.USER_LOGOUT, { username });
-    persistRecoveredUsername(null);
     set({ username: null, isAuthenticated: false, hasPassword: null });
   },
 
@@ -327,7 +306,6 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
     if (!isAuthOperationCurrent(operationVersion)) {
       return { ok: false, error: "Account deletion superseded" };
     }
-    persistRecoveredUsername(null);
     set({ username: null, isAuthenticated: false, hasPassword: null });
     return { ok: true };
   },
@@ -340,11 +318,12 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
     if (!isAuthOperationCurrent(operationVersion)) return;
     await logoutRequest;
     if (!isAuthOperationCurrent(operationVersion)) return;
-    persistRecoveredUsername(null);
     set({ username: null, isAuthenticated: false, hasPassword: null });
   },
 }));
 
-if (typeof window !== "undefined" && useAuthStore.getState().username) {
+// The HTTP-only auth cookie is the session source of truth. The session
+// endpoint returns the public username, so no identity hint belongs in web storage.
+if (typeof window !== "undefined") {
   queueMicrotask(() => void useAuthStore.getState().restoreSession());
 }

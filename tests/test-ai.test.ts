@@ -7,6 +7,12 @@ import {
   ensureUserAuth,
 } from "./test-utils";
 
+const hasAnthropicProvider = Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+const hasGoogleProvider = Boolean(
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()
+);
+const hasOpenAIProvider = Boolean(process.env.OPENAI_API_KEY?.trim());
+
 // A real authenticated user so the ryo-reply input-validation tests actually
 // reach the validation branches (with an invalid token they only ever got
 // 401, so the 400 paths were never exercised). Created fresh per run to avoid
@@ -611,10 +617,10 @@ describe("Ai", () => {
   });
 
   describe("AI Endpoints - /api/chat - Generation", () => {
-    test("Basic chat request", async () => {
+    test.skipIf(!hasOpenAIProvider)("Basic chat request", async () => {
       await testChatBasicRequest();
     });
-    test("Chat with model query param", async () => {
+    test.skipIf(!hasAnthropicProvider)("Chat with model query param", async () => {
       await testChatWithModelQuery();
     });
   });
@@ -662,19 +668,19 @@ describe("Ai", () => {
   });
 
   describe("AI Endpoints - /api/applet-ai - Generation", () => {
-    test("Basic text request", async () => {
+    test.skipIf(!hasGoogleProvider)("Basic text request", async () => {
       await testAppletAiBasicTextRequest();
     });
-    test("Request with context", async () => {
+    test.skipIf(!hasGoogleProvider)("Request with context", async () => {
       await testAppletAiWithContext();
     });
-    test("Request with messages array", async () => {
+    test.skipIf(!hasGoogleProvider)("Request with messages array", async () => {
       await testAppletAiWithMessagesArray();
     });
   });
 
   describe("AI Endpoints - /api/applet-ai - Rate Limiting", () => {
-    test("Rate limit headers", async () => {
+    test.skipIf(!hasGoogleProvider)("Rate limit headers", async () => {
       await testAppletAiRateLimitHeaders();
     });
   });
@@ -701,16 +707,16 @@ describe("Ai", () => {
   });
 
   describe("AI Endpoints - /api/ie-generate - Generation", () => {
-    test("Basic IE generate request", async () => {
+    test.skipIf(!hasOpenAIProvider)("Basic IE generate request", async () => {
       await testIeGenerateBasicRequest();
     });
-    test("IE generate with body params", async () => {
+    test.skipIf(!hasOpenAIProvider)("IE generate with body params", async () => {
       await testIeGenerateWithBodyParams();
     });
   });
 
   describe("AI Endpoints - /api/ie-generate - Rate Limiting", () => {
-    test("Rate limit response structure", async () => {
+    test.skipIf(!hasOpenAIProvider)("Rate limit response structure", async () => {
       await testIeGenerateRateLimitBurst();
     });
   });
@@ -768,7 +774,7 @@ describe("Ai", () => {
       await testRyoReplyPrivateRoomOutsiderDenied();
     });
 
-    test("Private room member is allowed", async () => {
+    test.skipIf(!hasGoogleProvider)("Private room member is allowed", async () => {
       await testRyoReplyPrivateRoomMemberAllowed();
     });
   });

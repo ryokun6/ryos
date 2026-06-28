@@ -187,7 +187,31 @@ describe("New API", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(Array.isArray(data.rooms)).toBe(true);
-      if (data.rooms.length > 0) testRoomId = data.rooms[0].id;
+      if (data.rooms.length > 0) {
+        testRoomId = data.rooms[0].id;
+        return;
+      }
+
+      if (!testToken || !testUsername) {
+        throw new Error("setup failed: auth missing");
+      }
+      const createRes = await fetchWithAuth(
+        `${BASE_URL}/api/rooms`,
+        testUsername,
+        testToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "private",
+            members: [testUsername],
+          }),
+        }
+      );
+      expect(createRes.status).toBe(201);
+      const createData = await createRes.json();
+      testRoomId = createData.room?.id ?? null;
+      if (!testRoomId) throw new Error("setup failed: created room id missing");
     });
 
     test("Get rooms with username", async () => {
@@ -203,7 +227,14 @@ describe("New API", () => {
 
     test("Get single room", async () => {
       if (!testRoomId) throw new Error("setup failed: testRoomId missing");
-      const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}`);
+      if (!testToken || !testUsername) {
+        throw new Error("setup failed: auth missing");
+      }
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/rooms/${testRoomId}`,
+        testUsername,
+        testToken
+      );
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.room).toBeTruthy();
@@ -279,8 +310,14 @@ describe("New API", () => {
 
   describe("Messages", () => {
     test("Get messages", async () => {
-      if (!testRoomId) throw new Error("setup failed: testRoomId missing");
-      const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/messages`);
+      if (!testRoomId || !testToken || !testUsername) {
+        throw new Error("setup failed: room auth missing");
+      }
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/rooms/${testRoomId}/messages`,
+        testUsername,
+        testToken
+      );
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(Array.isArray(data.messages)).toBe(true);
@@ -331,8 +368,10 @@ describe("New API", () => {
       const replayData = await replay.json();
       expect(replayData.message.id).toBe(data.message.id);
 
-      const history = await fetchWithOrigin(
-        `${BASE_URL}/api/rooms/${testRoomId}/messages`
+      const history = await fetchWithAuth(
+        `${BASE_URL}/api/rooms/${testRoomId}/messages`,
+        testUsername,
+        testToken
       );
       const historyData = await history.json();
       expect(
@@ -392,8 +431,14 @@ describe("New API", () => {
     });
 
     test("Get room users", async () => {
-      if (!testRoomId) throw new Error("setup failed: testRoomId missing");
-      const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/users`);
+      if (!testRoomId || !testToken || !testUsername) {
+        throw new Error("setup failed: room auth missing");
+      }
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/rooms/${testRoomId}/users`,
+        testUsername,
+        testToken
+      );
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(Array.isArray(data.users)).toBe(true);
