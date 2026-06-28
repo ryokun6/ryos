@@ -1288,11 +1288,10 @@ async function restoreSessionFromCookie(expectedUsername: string) {
 
     const data = session.data;
     if (data.authenticated && data.username) {
-      debug(
-        "[ChatsStore] Session restored for",
-        data.username,
-        "(from cookie)"
-      );
+      debug("[ChatsStore] Session restored", {
+        username: data.username,
+        source: "cookie",
+      });
       const store = useChatsStore.getState();
 
       if (store.username === expectedUsername) {
