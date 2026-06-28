@@ -1598,9 +1598,9 @@
       "bootScreenDescription": "測試開機畫面動畫",
       "changePassword": "更改密碼",
       "changePasswordButton": "更改",
-      "chatSynth": "聊天合成",
+      "chatSynth": "聊天合成器",
       "chatSynthDescription": "聊天打字音效的合成器預設",
-      "chatSynthVolume": "聊天合成音量",
+      "chatSynthVolume": "聊天合成器音量",
       "checkForUpdates": "檢查更新",
       "cloudSync": {
         "accountDescription": "在裝置間同步設定",
@@ -1742,7 +1742,7 @@
           "title": "著色器效果"
         },
         "sounds": {
-          "description": "切換使用者介面點擊聲、打字合成音以及終端機/IE 音效",
+          "description": "切換使用者介面點擊聲、打字合成器以及終端機/IE 音效",
           "title": "聲音"
         },
         "sync": {
@@ -1918,7 +1918,7 @@
       "startupDiskDescription": "選擇用來啟動電腦的系統",
       "startupDiskNote": "當「帳號」中啟用「除錯模式」時，即可預覽啟動畫面。",
       "sync": "同步",
-      "synth": "合成",
+      "synth": "合成器",
       "system": "系統",
       "systemFont": "系統字型",
       "systemFontDescription": "覆寫 OS UI 字型堆疊",
@@ -1959,8 +1959,8 @@
         "savingInstructions": "儲存中⋯",
         "title": "Telegram"
       },
-      "terminalIeAmbientSynth": "合成",
-      "terminalIeAmbientSynthDescription": "終端機與 IE 的音效與合成音",
+      "terminalIeAmbientSynth": "合成器",
+      "terminalIeAmbientSynthDescription": "終端機與 IE 的音效與合成器",
       "termsOfService": "服務條款",
       "theme": "主題",
       "themeDescription": "變更視窗、選單和控制項的外觀",
@@ -2765,7 +2765,7 @@
         },
         "coverFlow": {
           "description": "長按螢幕以開啟 Cover Flow 並翻閱專輯",
-          "title": "封面暢覽"
+          "title": "Cover Flow"
         },
         "displayFullscreen": {
           "description": "選擇封面、風景、扭曲、網格或水波視覺效果；Apple Music 預設使用封面並隱藏影片模式",
@@ -2800,7 +2800,7 @@
         "aboutIpod": "關於 iPod",
         "addSong": "加入歌曲⋯",
         "addToFavorites": "加入最愛",
-        "addToLibrary": "加入書庫⋯",
+        "addToLibrary": "加入資料庫⋯",
         "adjustTiming": "調整時間⋯",
         "allSongs": "所有歌曲",
         "alternating": "交替",
@@ -2815,7 +2815,7 @@
         "clearCache": "清除緩存",
         "clearLibrary": "清除資料庫⋯",
         "controls": "控制",
-        "coverFlow": "封面暢覽",
+        "coverFlow": "Cover Flow",
         "deviceTheme": "裝置主題",
         "display": "顯示",
         "displayCover": "封面",
@@ -2854,7 +2854,7 @@
         "lyrics": "歌詞",
         "menubarArtistLimit": "正在顯示 {{total}} 位演出者中的 {{limit}} 位",
         "menubarTrackLimit": "正在顯示 {{total}} 個中的 {{limit}} 個 — 開啟 iPod 以瀏覽全部",
-        "multi": "多聲道",
+        "multi": "多行",
         "next": "下一首",
         "pause": "暫停",
         "play": "播放",
@@ -3838,7 +3838,7 @@
         "resetSynth": "重設合成器",
         "synthHelp": "合成器輔助說明"
       },
-      "name": "合成",
+      "name": "合成器",
       "noPresetsYet": "尚無預設。請使用「新增」按鈕建立一個。",
       "oscillator": "振盪器",
       "selectPreset": "選擇預設",
@@ -4235,7 +4235,7 @@
       },
       "menu": {
         "aboutVideos": "關於影片",
-        "addToLibrary": "加入書庫⋯",
+        "addToLibrary": "加入資料庫⋯",
         "allVideos": "所有影片",
         "clearLibrary": "清除資料庫⋯",
         "controls": "控制",
