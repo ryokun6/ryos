@@ -730,9 +730,7 @@
         "debug": "Debug",
         "proxySessions": "Cookie / Session Passthrough",
         "forceHeadless": "Force Headless Render",
-        "verboseLogging": "Verbose Logging",
-        "openLiveBrowser": "Open in Live Browser",
-        "openDebugConsole": "Open Debug Console"
+        "verboseLogging": "Verbose Logging"
       },
       "futureTimeline": {
         "title": "Edit Future Timeline",

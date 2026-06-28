@@ -39,15 +39,12 @@ export function useInternetExplorerMenuBar(props: InternetExplorerMenuBarProps) 
     onYearChange,
     onSharePage,
     showDebugMenu = false,
-    ieLiveBrowserAvailable = false,
     debugProxySessions = false,
     debugForceHeadless = false,
     debugVerboseLogging = false,
     onToggleProxySessions,
     onToggleForceHeadless,
     onToggleVerboseLogging,
-    onOpenLiveBrowser,
-    onOpenDebugConsole,
   } = props;
 
   const { t } = useTranslation();
@@ -103,14 +100,11 @@ export function useInternetExplorerMenuBar(props: InternetExplorerMenuBarProps) 
     onYearChange,
     onSharePage,
     showDebugMenu,
-    ieLiveBrowserAvailable,
     debugProxySessions,
     debugForceHeadless,
     debugVerboseLogging,
     onToggleProxySessions,
     onToggleForceHeadless,
     onToggleVerboseLogging,
-    onOpenLiveBrowser,
-    onOpenDebugConsole,
   };
 }

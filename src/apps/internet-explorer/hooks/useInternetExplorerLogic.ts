@@ -32,8 +32,6 @@ import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { createClientLogger } from "@/utils/logger";
-import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
-import { isIeLiveBrowserAvailable } from "@/utils/runtimeConfig";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import {
@@ -79,8 +77,6 @@ export function useInternetExplorerLogic({
   helpItems,
 }: UseInternetExplorerLogicProps) {
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
-  const setDebugMode = useDisplaySettingsStore((state) => state.setDebugMode);
-  const isRyoAdmin = useIsRyoAdmin();
   const terminalSoundsEnabled = useAudioSettingsStore(
     (state) => state.terminalSoundsEnabled
   );
@@ -222,11 +218,10 @@ export function useInternetExplorerLogic({
   );
   const appName = t("apps.internet-explorer.appName");
 
-  // The IE Debug menu is only available to the admin (ryo) user or when global
-  // debug mode is on. The advanced proxy toggles below opt into env-gated proxy
-  // features (cookie/session passthrough, forced headless) per browser.
-  const showDebugMenu = isRyoAdmin || debugMode;
-  const ieLiveBrowserAvailable = isIeLiveBrowserAvailable();
+  // The IE Debug menu is only available when global debug mode is on. The
+  // advanced proxy toggles below opt into env-gated proxy features
+  // (cookie/session passthrough, forced headless) per browser.
+  const showDebugMenu = debugMode;
 
   // Append the active debug toggles to a proxy (`/api/iframe-check`) URL so the
   // server opts the request into the gated features. `dbg=1` signals the server
@@ -252,35 +247,6 @@ export function useInternetExplorerLogic({
     },
     [debugForceHeadless, debugProxySessions, debugVerboseLogging]
   );
-
-  // Open the current page in the external live browser (env-gated escape hatch).
-  const handleOpenLiveBrowser = useCallback(async () => {
-    const target = url?.startsWith("http") ? url : url ? `https://${url}` : "";
-    if (!target) return;
-    if (debugVerboseLogging) log.info("[debug] open live browser", { target });
-    try {
-      const res = await fetch(
-        `/api/iframe-check?mode=live&url=${encodeURIComponent(target)}`
-      );
-      if (!res.ok) {
-        log.warn("[debug] live browser unavailable", { status: res.status });
-        return;
-      }
-      const data = (await res.json()) as { liveViewUrl?: string };
-      if (data.liveViewUrl) {
-        window.open(data.liveViewUrl, "_blank", "noopener,noreferrer");
-      }
-    } catch (error) {
-      log.warn("[debug] live browser request failed", { error });
-    }
-  }, [url, debugVerboseLogging]);
-
-  // "Show Debug Console" turns on global debug mode, which reveals the
-  // DebugLogOverlay (the in-app console) where IE logs surface.
-  const handleOpenDebugConsole = useCallback(() => {
-    setDebugMode(true);
-    log.info("[debug] debug console enabled from IE");
-  }, [setDebugMode]);
 
   const getSharedPageToastDescription = useCallback(
     (sharedPage: { url: string; year?: string }) =>
@@ -2054,15 +2020,12 @@ export function useInternetExplorerLogic({
 
     // Debug menu (admin / debug-mode only)
     showDebugMenu,
-    ieLiveBrowserAvailable,
     debugProxySessions,
     debugForceHeadless,
     debugVerboseLogging,
     setDebugProxySessions,
     setDebugForceHeadless,
     setDebugVerboseLogging,
-    handleOpenLiveBrowser,
-    handleOpenDebugConsole,
 
     // Years
     pastYears,

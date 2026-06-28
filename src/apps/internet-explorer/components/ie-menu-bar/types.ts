@@ -43,13 +43,10 @@ export interface InternetExplorerMenuBarProps
 
   // Debug menu (only rendered for the admin user or in global debug mode)
   showDebugMenu?: boolean;
-  ieLiveBrowserAvailable?: boolean;
   debugProxySessions?: boolean;
   debugForceHeadless?: boolean;
   debugVerboseLogging?: boolean;
   onToggleProxySessions?: (enabled: boolean) => void;
   onToggleForceHeadless?: (enabled: boolean) => void;
   onToggleVerboseLogging?: (enabled: boolean) => void;
-  onOpenLiveBrowser?: () => void;
-  onOpenDebugConsole?: () => void;
 }

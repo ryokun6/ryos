@@ -2,9 +2,7 @@ import {
   MenubarMenu,
   MenubarTrigger,
   MenubarContent,
-  MenubarItem,
   MenubarCheckboxItem,
-  MenubarSeparator,
 } from "@/components/ui/menubar";
 import type { InternetExplorerMenuBarViewModel } from "./useInternetExplorerMenuBar";
 
@@ -24,12 +22,9 @@ export function IeMenuBarDebugMenu({
     debugProxySessions,
     debugForceHeadless,
     debugVerboseLogging,
-    ieLiveBrowserAvailable,
     onToggleProxySessions,
     onToggleForceHeadless,
     onToggleVerboseLogging,
-    onOpenLiveBrowser,
-    onOpenDebugConsole,
   } = vm;
 
   return (
@@ -59,21 +54,6 @@ export function IeMenuBarDebugMenu({
         >
           {t("apps.internet-explorer.menu.verboseLogging")}
         </MenubarCheckboxItem>
-        <MenubarSeparator className="h-[2px] bg-black my-1" />
-        <MenubarItem
-          onClick={onOpenLiveBrowser}
-          disabled={!ieLiveBrowserAvailable}
-          className={
-            !ieLiveBrowserAvailable
-              ? "text-neutral-400 text-md h-6 px-3"
-              : "text-md h-6 px-3"
-          }
-        >
-          {t("apps.internet-explorer.menu.openLiveBrowser")}
-        </MenubarItem>
-        <MenubarItem onClick={onOpenDebugConsole} className="text-md h-6 px-3">
-          {t("apps.internet-explorer.menu.openDebugConsole")}
-        </MenubarItem>
       </MenubarContent>
     </MenubarMenu>
   );
