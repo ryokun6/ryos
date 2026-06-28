@@ -507,6 +507,7 @@ async function fetchAppleMusicRecommendations(): Promise<
 export async function fetchAppleMusicRadioStations(
   options: FetchPlaylistTracksOptions = {}
 ): Promise<Track[]> {
+  const syncGeneration = getAppleMusicSyncGeneration();
   const cached = await loadAppleMusicTrackCollection(
     RADIO_STATIONS_COLLECTION_KEY
   );
@@ -573,6 +574,9 @@ export async function fetchAppleMusicRadioStations(
     ]);
     if (stations.length === 0 && cached) {
       return cached.tracks;
+    }
+    if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+      return cached?.tracks ?? [];
     }
     void saveAppleMusicTrackCollection(RADIO_STATIONS_COLLECTION_KEY, {
       tracks: stations,
@@ -691,6 +695,7 @@ async function fetchAppleMusicRecentlyAddedTracksFromApi(): Promise<Track[]> {
 export async function fetchAppleMusicRecentlyAddedTracks(
   options: FetchPlaylistTracksOptions = {}
 ): Promise<Track[]> {
+  const syncGeneration = getAppleMusicSyncGeneration();
   const cached = await loadAppleMusicTrackCollection(
     RECENTLY_ADDED_COLLECTION_KEY
   );
@@ -713,6 +718,9 @@ export async function fetchAppleMusicRecentlyAddedTracks(
       return cached.tracks;
     }
 
+    if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+      return cached?.tracks ?? [];
+    }
     void saveAppleMusicTrackCollection(RECENTLY_ADDED_COLLECTION_KEY, {
       tracks,
       loadedAt: Date.now(),
@@ -770,6 +778,7 @@ async function findFavoriteSongsPlaylist(): Promise<AppleMusicPlaylist | null> {
 export async function fetchAppleMusicFavoriteSongTracks(
   options: FetchPlaylistTracksOptions = {}
 ): Promise<Track[]> {
+  const syncGeneration = getAppleMusicSyncGeneration();
   const cached = await loadAppleMusicTrackCollection(
     FAVORITE_SONGS_COLLECTION_KEY
   );
@@ -788,6 +797,9 @@ export async function fetchAppleMusicFavoriteSongTracks(
     const tracks = await fetchAppleMusicPlaylistTracks(playlist.id, {
       force: options.force,
     });
+    if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+      return cached?.tracks ?? [];
+    }
     if (tracks.length === 0 && cached?.tracks.length) {
       warnAppleMusic(
         "[apple music] favorite songs refresh returned 0 songs; keeping cached collection",
@@ -990,6 +1002,34 @@ const APPLE_MUSIC_SYNC_TTL_MS = {
   radio: 6 * 60 * 60 * 1000,
 } as const;
 
+let appleMusicSyncGeneration = 0;
+
+export function bumpAppleMusicSyncGeneration(): number {
+  appleMusicSyncGeneration += 1;
+  inFlightPlaylistsRefresh = null;
+  inFlightRecentlyAddedRefresh = null;
+  inFlightFavoritesRefresh = null;
+  inFlightPlaylistTracksRefresh.clear();
+  return appleMusicSyncGeneration;
+}
+
+export function getAppleMusicSyncGeneration(): number {
+  return appleMusicSyncGeneration;
+}
+
+function isCurrentAppleMusicSyncGeneration(syncGeneration: number): boolean {
+  return syncGeneration === appleMusicSyncGeneration;
+}
+
+export function shouldApplyAppleMusicSyncResult(
+  syncGeneration: number
+): boolean {
+  return (
+    isCurrentAppleMusicSyncGeneration(syncGeneration) &&
+    Boolean(getMusicKitInstance()?.isAuthorized)
+  );
+}
+
 function isFreshByTtl(
   loadedAt: number | null | undefined,
   ttlMs: number
@@ -1033,11 +1073,15 @@ export async function refreshAppleMusicPlaylists(
   if (!instance || !instance.isAuthorized) {
     return store.appleMusicPlaylists;
   }
+  const syncGeneration = getAppleMusicSyncGeneration();
 
   useIpodStore.getState().setAppleMusicPlaylistsLoading(true);
   inFlightPlaylistsRefresh = (async () => {
     try {
       const playlists = await fetchAppleMusicPlaylistsList();
+      if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+        return useIpodStore.getState().appleMusicPlaylists;
+      }
       const existing = useIpodStore.getState().appleMusicPlaylists;
       // Defensive: never overwrite a non-empty cached list with an empty
       // refresh result. Apple Music occasionally returns 0 playlists when
@@ -1062,7 +1106,9 @@ export async function refreshAppleMusicPlaylists(
       return playlists;
     } finally {
       inFlightPlaylistsRefresh = null;
-      useIpodStore.getState().setAppleMusicPlaylistsLoading(false);
+      if (isCurrentAppleMusicSyncGeneration(syncGeneration)) {
+        useIpodStore.getState().setAppleMusicPlaylistsLoading(false);
+      }
     }
   })();
 
@@ -1095,6 +1141,7 @@ export async function refreshStaleAppleMusicPlaylistTracks(
 ): Promise<void> {
   const instance = getMusicKitInstance();
   if (!instance || !instance.isAuthorized) return;
+  const syncGeneration = getAppleMusicSyncGeneration();
 
   const state = useIpodStore.getState();
   const loadedAtMap = state.appleMusicPlaylistTracksLoadedAt;
@@ -1125,6 +1172,7 @@ export async function refreshStaleAppleMusicPlaylistTracks(
     workers.push(
       (async () => {
         while (queue.length > 0) {
+          if (!shouldApplyAppleMusicSyncResult(syncGeneration)) break;
           const id = queue.shift();
           if (!id) break;
           inFlightPlaylistTracksRefresh.add(id);
@@ -1186,12 +1234,16 @@ export async function refreshAppleMusicRecentlyAdded(
   if (!instance || !instance.isAuthorized) {
     return store.appleMusicRecentlyAddedTracks;
   }
+  const syncGeneration = getAppleMusicSyncGeneration();
 
   store.setAppleMusicRecentlyAddedLoading(true);
 
   inFlightRecentlyAddedRefresh = (async () => {
     try {
       const tracks = await fetchAppleMusicRecentlyAddedTracks({ force: true });
+      if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+        return useIpodStore.getState().appleMusicRecentlyAddedTracks;
+      }
       const existing = useIpodStore.getState().appleMusicRecentlyAddedTracks;
       if (tracks.length === 0 && existing.length > 0) {
         // The fetcher's defensive guard already returns the cached array
@@ -1205,7 +1257,9 @@ export async function refreshAppleMusicRecentlyAdded(
       return tracks;
     } finally {
       inFlightRecentlyAddedRefresh = null;
-      useIpodStore.getState().setAppleMusicRecentlyAddedLoading(false);
+      if (isCurrentAppleMusicSyncGeneration(syncGeneration)) {
+        useIpodStore.getState().setAppleMusicRecentlyAddedLoading(false);
+      }
     }
   })();
 
@@ -1239,12 +1293,16 @@ export async function refreshAppleMusicFavorites(
   if (!instance || !instance.isAuthorized) {
     return store.appleMusicFavoriteTracks;
   }
+  const syncGeneration = getAppleMusicSyncGeneration();
 
   store.setAppleMusicFavoritesLoading(true);
 
   inFlightFavoritesRefresh = (async () => {
     try {
       const tracks = await fetchAppleMusicFavoriteSongTracks({ force: true });
+      if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+        return useIpodStore.getState().appleMusicFavoriteTracks;
+      }
       const existing = useIpodStore.getState().appleMusicFavoriteTracks;
       if (tracks.length === 0 && existing.length > 0) {
         return existing;
@@ -1255,7 +1313,9 @@ export async function refreshAppleMusicFavorites(
       return tracks;
     } finally {
       inFlightFavoritesRefresh = null;
-      useIpodStore.getState().setAppleMusicFavoritesLoading(false);
+      if (isCurrentAppleMusicSyncGeneration(syncGeneration)) {
+        useIpodStore.getState().setAppleMusicFavoritesLoading(false);
+      }
     }
   })();
 
@@ -1345,6 +1405,7 @@ export async function fetchAppleMusicLibrary(
   if (!instance.isAuthorized) {
     throw new Error("Apple Music user is not authorized");
   }
+  const syncGeneration = getAppleMusicSyncGeneration();
 
   const store = useIpodStore.getState();
   if (!options.force && store.appleMusicLibraryLoading) {
@@ -1375,6 +1436,9 @@ export async function fetchAppleMusicLibrary(
           "include[library-songs]": "catalog,albums",
         }
       );
+      if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+        return useIpodStore.getState().appleMusicTracks.length;
+      }
       const data = response?.data as LibrarySongsResponse | undefined;
       const items = data?.data ?? [];
       const albums = buildIncludedAlbumMap(data?.included);
@@ -1401,6 +1465,9 @@ export async function fetchAppleMusicLibrary(
     // successful fetch. Treat empty-after-non-empty as a refresh failure
     // and keep the existing tracks.
     const existingTracks = useIpodStore.getState().appleMusicTracks;
+    if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+      return existingTracks.length;
+    }
     if (aggregated.length === 0 && existingTracks.length > 0) {
       store.setAppleMusicLibraryLoading(false);
       warnAppleMusic(
@@ -1412,6 +1479,9 @@ export async function fetchAppleMusicLibrary(
       store.setAppleMusicTracks(aggregated);
     }
 
+    if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+      return useIpodStore.getState().appleMusicTracks.length;
+    }
     try {
       // Run via the standalone helper so the same in-flight de-dup,
       // defensive empty-result guard, and cache write applies whether the
@@ -1425,8 +1495,14 @@ export async function fetchAppleMusicLibrary(
     return aggregated.length || existingTracks.length;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    store.setAppleMusicLibraryError(message);
+    if (isCurrentAppleMusicSyncGeneration(syncGeneration)) {
+      store.setAppleMusicLibraryError(message);
+    }
     throw err;
+  } finally {
+    if (isCurrentAppleMusicSyncGeneration(syncGeneration)) {
+      store.setAppleMusicLibraryLoading(false);
+    }
   }
 }
 
@@ -1444,6 +1520,7 @@ export async function fetchAppleMusicPlaylistTracks(
   if (!instance.isAuthorized) {
     throw new Error("Apple Music user is not authorized");
   }
+  const syncGeneration = getAppleMusicSyncGeneration();
 
   const store = useIpodStore.getState();
   let cachedTracks = store.appleMusicPlaylistTracks[playlistId];
@@ -1451,6 +1528,9 @@ export async function fetchAppleMusicPlaylistTracks(
 
   if (!cachedTracks || cachedTracks.length === 0) {
     const cached = await loadAppleMusicPlaylistTracks(playlistId);
+    if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+      return [];
+    }
     if (cached && cached.tracks.length > 0) {
       useIpodStore.setState((state) => ({
         appleMusicPlaylistTracks: {
@@ -1519,6 +1599,9 @@ export async function fetchAppleMusicPlaylistTracks(
           throw err;
         }
       }
+      if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+        return useIpodStore.getState().appleMusicPlaylistTracks[playlistId] ?? [];
+      }
       const data = response?.data as LibraryPlaylistTracksResponse | undefined;
       const items = data?.data ?? [];
       const albums = buildIncludedAlbumMap(data?.included);
@@ -1538,6 +1621,9 @@ export async function fetchAppleMusicPlaylistTracks(
     }
 
     const savedAt = Date.now();
+    if (!shouldApplyAppleMusicSyncResult(syncGeneration)) {
+      return useIpodStore.getState().appleMusicPlaylistTracks[playlistId] ?? [];
+    }
     store.setAppleMusicPlaylistTracks(playlistId, aggregated);
     void saveAppleMusicPlaylistTracks(playlistId, {
       tracks: aggregated,
@@ -1545,8 +1631,14 @@ export async function fetchAppleMusicPlaylistTracks(
     });
     return aggregated;
   } catch (err) {
-    store.setAppleMusicPlaylistTracksLoading(playlistId, false);
+    if (isCurrentAppleMusicSyncGeneration(syncGeneration)) {
+      store.setAppleMusicPlaylistTracksLoading(playlistId, false);
+    }
     throw err;
+  } finally {
+    if (isCurrentAppleMusicSyncGeneration(syncGeneration)) {
+      store.setAppleMusicPlaylistTracksLoading(playlistId, false);
+    }
   }
 }
 
@@ -1644,7 +1736,9 @@ export function useAppleMusicLibrary({
     return runWithProgressToast(true);
   }, [isAuthorized, runWithProgressToast]);
 
-  // Hydrate from IndexedDB as soon as the iPod opens — auth not required.
+  // Hydrate from IndexedDB as soon as the iPod opens for an authorized
+  // Apple Music session. Skipping this while signed out prevents a sign-out
+  // reset from immediately reloading the previous user's cached library.
   //
   // Important: do NOT guard this behind a `useRef(false)` flag. React Fast
   // Refresh preserves component state across HMR, but Vite invalidation
@@ -1659,10 +1753,11 @@ export function useAppleMusicLibrary({
   // the store so a *runtime* reset (HMR, sign-out + back-in, etc.) fires
   // a fresh hydration pass.
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isAuthorized) return;
 
     let cancelled = false;
     let inFlight = false;
+    const syncGeneration = getAppleMusicSyncGeneration();
 
     const hydrateFromCache = async () => {
       if (cancelled || inFlight) return;
@@ -1671,7 +1766,7 @@ export function useAppleMusicLibrary({
         // Library tracks --------------------------------------------------
         if (useIpodStore.getState().appleMusicTracks.length === 0) {
           const cached = await loadAppleMusicLibrary();
-          if (cancelled) return;
+          if (cancelled || !shouldApplyAppleMusicSyncResult(syncGeneration)) return;
           const latest = useIpodStore.getState();
           if (
             cached &&
@@ -1690,7 +1785,7 @@ export function useAppleMusicLibrary({
         // Playlist list ---------------------------------------------------
         if (useIpodStore.getState().appleMusicPlaylists.length === 0) {
           const cachedPlaylists = await loadAppleMusicPlaylists();
-          if (cancelled) return;
+          if (cancelled || !shouldApplyAppleMusicSyncResult(syncGeneration)) return;
           if (
             cachedPlaylists &&
             cachedPlaylists.playlists.length > 0 &&
@@ -1717,7 +1812,7 @@ export function useAppleMusicLibrary({
           const cached = await loadAppleMusicTrackCollection(
             "recently-added"
           );
-          if (cancelled) return;
+          if (cancelled || !shouldApplyAppleMusicSyncResult(syncGeneration)) return;
           if (
             cached &&
             cached.tracks.length > 0 &&
@@ -1736,7 +1831,7 @@ export function useAppleMusicLibrary({
           const cached = await loadAppleMusicTrackCollection(
             "favorite-songs"
           );
-          if (cancelled) return;
+          if (cancelled || !shouldApplyAppleMusicSyncResult(syncGeneration)) return;
           if (
             cached &&
             cached.tracks.length > 0 &&
@@ -1777,7 +1872,7 @@ export function useAppleMusicLibrary({
       cancelled = true;
       unsubscribe();
     };
-  }, [enabled]);
+  }, [enabled, isAuthorized]);
 
   // Decide whether the cache is fresh enough or needs a network refresh.
   // Auth IS required here because this path may hit the Apple Music API.
@@ -1796,8 +1891,9 @@ export function useAppleMusicLibrary({
       let { appleMusicTracks, appleMusicLibraryLoadedAt } =
         useIpodStore.getState();
       if (appleMusicTracks.length === 0) {
+        const syncGeneration = getAppleMusicSyncGeneration();
         const cached = await loadAppleMusicLibrary();
-        if (cancelled) return;
+        if (cancelled || !shouldApplyAppleMusicSyncResult(syncGeneration)) return;
         if (cached && cached.tracks.length > 0) {
           useIpodStore.setState({
             appleMusicTracks: cached.tracks,
