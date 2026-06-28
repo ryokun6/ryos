@@ -3,7 +3,11 @@ import type {
   RyosDesktopNotificationOptions,
 } from "@/types/ryos-desktop";
 import { toast } from "sonner";
-import { replaceControlCharacters } from "@/shared/sanitizeControlCharacters";
+import {
+  sanitizeSystemNotificationPayload,
+  type SystemNotificationTimeoutType,
+  type SystemNotificationUrgency,
+} from "@/utils/systemNotifications";
 
 export type NativeToastKind = "basic" | "success" | "error" | "info" | "warning";
 
@@ -14,18 +18,13 @@ export type NativeToastOptions = {
   duration?: unknown;
   id?: unknown;
   chatRoomId?: unknown;
+  tag?: unknown;
+  silent?: unknown;
+  urgency?: unknown;
+  timeoutType?: unknown;
 };
 
-const MAX_TITLE_LENGTH = 120;
-const MAX_BODY_LENGTH = 240;
 const PROGRESS_TOAST_ID_PATTERN = /(progress|loading|prefetch)/i;
-const SENSITIVE_TEXT_PATTERNS = [
-  /\bBearer\s+[A-Za-z0-9._~+/=-]+/i,
-  /\b(?:access|refresh|id)?_?token\s*[:=]\s*\S+/i,
-  /\b(?:api[_-]?key|secret|password|authorization)\s*[:=]\s*\S+/i,
-  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/,
-  /\b[A-Za-z0-9+/=_-]{48,}\b/,
-];
 
 let installed = false;
 
@@ -67,33 +66,6 @@ export function getNativeToastOptions(
   return isPlainObject(value) ? value : undefined;
 }
 
-function hasSensitiveText(value: string): boolean {
-  return SENSITIVE_TEXT_PATTERNS.some((pattern) => pattern.test(value));
-}
-
-function toSafeNotificationText(
-  value: unknown,
-  maxLength: number
-): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const normalized = replaceControlCharacters(value)
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!normalized || hasSensitiveText(normalized)) {
-    return null;
-  }
-
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
-}
-
 function shouldSkipNativeToast(options: NativeToastOptions | undefined): boolean {
   if (!options) {
     return false;
@@ -126,6 +98,24 @@ function getNativeToastChatRoomId(
     : undefined;
 }
 
+function getNativeToastUrgency(
+  options: NativeToastOptions | undefined
+): SystemNotificationUrgency | undefined {
+  return options?.urgency === "low" ||
+    options?.urgency === "normal" ||
+    options?.urgency === "critical"
+    ? options.urgency
+    : undefined;
+}
+
+function getNativeToastTimeoutType(
+  options: NativeToastOptions | undefined
+): SystemNotificationTimeoutType | undefined {
+  return options?.timeoutType === "default" || options?.timeoutType === "never"
+    ? options.timeoutType
+    : undefined;
+}
+
 export function getNativeToastNotification(
   _kind: NativeToastKind,
   message: unknown,
@@ -135,22 +125,24 @@ export function getNativeToastNotification(
     return null;
   }
 
-  const title = toSafeNotificationText(message, MAX_TITLE_LENGTH);
-  if (!title) {
+  const chatRoomId = getNativeToastChatRoomId(options);
+  const hasDescription =
+    options?.description !== undefined && options.description !== null;
+  const payload = sanitizeSystemNotificationPayload({
+    title: message,
+    body: hasDescription ? options.description : undefined,
+    chatRoomId,
+    tag: options?.tag,
+    silent: options?.silent === true,
+    urgency: getNativeToastUrgency(options),
+    timeoutType: getNativeToastTimeoutType(options),
+  });
+
+  if (hasDescription && !payload?.body) {
     return null;
   }
 
-  if (options?.description !== undefined && options.description !== null) {
-    const body = toSafeNotificationText(options.description, MAX_BODY_LENGTH);
-    if (!body) {
-      return null;
-    }
-    const chatRoomId = getNativeToastChatRoomId(options);
-    return chatRoomId !== undefined ? { title, body, chatRoomId } : { title, body };
-  }
-
-  const chatRoomId = getNativeToastChatRoomId(options);
-  return chatRoomId !== undefined ? { title, chatRoomId } : { title };
+  return payload;
 }
 
 function getDesktopApi() {

@@ -14,7 +14,11 @@ import path from "node:path";
 import { setupAutoUpdater } from "./updater";
 import { buildApplicationMenu } from "./menu";
 import { registerChatNotificationIpcHandlers } from "./chat-notifications";
-import { replaceControlCharacters } from "../src/shared/sanitizeControlCharacters";
+import {
+  sanitizeSystemNotificationPayload,
+  type SystemNotificationPayload,
+  type SystemNotificationStatus,
+} from "../src/utils/systemNotifications";
 
 const DEFAULT_APP_URL = "https://os.ryo.lu";
 const APP_URL = process.env.RYOS_ELECTRON_URL?.trim() || DEFAULT_APP_URL;
@@ -48,12 +52,6 @@ type NativeSaveFileOptions = {
   defaultPath?: string;
   filters?: NativeFileFilter[];
   data: ArrayBuffer | ArrayBufferView;
-};
-
-type NativeNotificationOptions = {
-  title?: string;
-  body?: string;
-  chatRoomId?: string | null;
 };
 
 const ALLOWED_WEB_PERMISSIONS = new Set([
@@ -98,45 +96,21 @@ function isTrustedWebContents(contents: WebContents | null | undefined): boolean
   return isInAppNavigation(contents.getURL()) || isBlankUrl(contents.getURL());
 }
 
-function sanitizeNotificationText(
-  value: unknown,
-  maxLength: number
-): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const normalized = replaceControlCharacters(value)
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!normalized) {
-    return undefined;
-  }
-
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
-}
-
 function sanitizeNotificationOptions(
-  options: NativeNotificationOptions
+  options: SystemNotificationPayload
 ): Electron.NotificationConstructorOptions | null {
-  const title = sanitizeNotificationText(options?.title, 120);
-  if (!title) {
-    return null;
-  }
-
   return {
-    title,
-    body: sanitizeNotificationText(options?.body, 240),
+    title: options.title,
+    body: options.body,
+    tag: options.tag,
+    silent: options.silent,
+    urgency: options.urgency,
+    timeoutType: options.timeoutType,
   };
 }
 
 function getNotificationChatRoomId(
-  options: NativeNotificationOptions
+  options: SystemNotificationPayload
 ): string | null | undefined {
   if (!("chatRoomId" in options)) {
     return undefined;
@@ -151,6 +125,27 @@ function canShowNativeNotifications(): boolean {
     typeof Notification.isSupported === "function" &&
     Notification.isSupported()
   );
+}
+
+function getNativeNotificationStatus(
+  trusted: boolean
+): SystemNotificationStatus {
+  if (!trusted) {
+    return {
+      supported: false,
+      foreground: isMainWindowForeground(),
+      platform: process.platform,
+      reason: "untrusted",
+    };
+  }
+
+  const supported = canShowNativeNotifications();
+  return {
+    supported,
+    foreground: isMainWindowForeground(),
+    platform: process.platform,
+    reason: supported ? undefined : "unsupported",
+  };
 }
 
 function isMainWindowForeground(): boolean {
@@ -382,6 +377,10 @@ function registerIpcHandlers(): void {
     return isTrustedWebContents(event.sender) && canShowNativeNotifications();
   });
 
+  ipcMain.handle("ryos-desktop:get-notification-status", (event) => {
+    return getNativeNotificationStatus(isTrustedWebContents(event.sender));
+  });
+
   ipcMain.handle("ryos-desktop:should-show-native-notification", (event) => {
     return (
       isTrustedWebContents(event.sender) &&
@@ -392,7 +391,7 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle(
     "ryos-desktop:show-notification",
-    (event, options: NativeNotificationOptions = {}) => {
+    (event, options: unknown = {}) => {
       if (!isTrustedWebContents(event.sender)) {
         return { shown: false, reason: "untrusted" };
       }
@@ -403,7 +402,11 @@ function registerIpcHandlers(): void {
         return { shown: false, reason: "unsupported" };
       }
 
-      const notificationOptions = sanitizeNotificationOptions(options);
+      const payload = sanitizeSystemNotificationPayload(options);
+      if (!payload) {
+        return { shown: false, reason: "invalid-payload" };
+      }
+      const notificationOptions = sanitizeNotificationOptions(payload);
       if (!notificationOptions) {
         return { shown: false, reason: "invalid-payload" };
       }
@@ -411,7 +414,7 @@ function registerIpcHandlers(): void {
         return { shown: false, reason: "foreground" };
       }
 
-      const chatRoomId = getNotificationChatRoomId(options);
+      const chatRoomId = getNotificationChatRoomId(payload);
       showRetainedNativeNotification(
         notificationOptions,
         chatRoomId !== undefined

@@ -1,5 +1,9 @@
 import type { ChatMessage, ChatRoom } from "@/shared/contracts/chat";
 import type {
+  SystemNotificationPayload,
+  SystemNotificationStatus,
+} from "@/utils/systemNotifications";
+import type {
   DesktopChatNotificationConfig,
   DesktopChatNotificationManageResult,
   DesktopChatNotificationState,
@@ -50,11 +54,7 @@ export type RyosDesktopSaveFileResult =
   | { canceled: true }
   | { canceled: false; filePath: string };
 
-export interface RyosDesktopNotificationOptions {
-  title: string;
-  body?: string;
-  chatRoomId?: string | null;
-}
+export type RyosDesktopNotificationOptions = SystemNotificationPayload;
 
 export type RyosDesktopNotificationResult =
   | { shown: true }
@@ -103,6 +103,8 @@ export interface RyosDesktopApi {
   getVersion: () => Promise<string>;
   /** Whether this trusted desktop renderer can ask the OS to show notifications. */
   canShowNotifications: () => Promise<boolean>;
+  /** Current native notification capability and foreground state. */
+  getNotificationStatus: () => Promise<SystemNotificationStatus>;
   /** Whether the desktop shell should mirror the next toast to a native OS notification. */
   shouldShowNativeNotification: () => Promise<boolean>;
   /** Show a text-only native OS notification from the sandboxed renderer. */

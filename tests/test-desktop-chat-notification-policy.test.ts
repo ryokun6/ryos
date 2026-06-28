@@ -117,8 +117,26 @@ describe("desktop chat notification policy", () => {
     expect(source).toContain("/api/realtime/ticket");
     expect(source).toContain("subscription_error");
     expect(source).toContain("ryos-desktop:chat-notification-status");
+    expect(source).toContain("buildChatRoomNotificationTag(message.roomId)");
     expect(source).toContain('"channel-auth-failed"');
     expect(source).toContain('"service-start-failed"');
+  });
+
+  test("desktop shell exposes notification status and shared sanitizer", () => {
+    const mainSource = readSource("electron/main.ts");
+    const preloadSource = readSource("electron/preload.ts");
+    const typeSource = readSource("src/types/ryos-desktop.d.ts");
+    expect(mainSource).toContain("ryos-desktop:get-notification-status");
+    expect(mainSource).toContain("sanitizeSystemNotificationPayload(options)");
+    expect(preloadSource).toContain("getNotificationStatus");
+    expect(typeSource).toContain("getNotificationStatus");
+  });
+
+  test("renderer chat display uses stable shared notification tags", () => {
+    const source = readSource("src/utils/chatNotificationDisplay.ts");
+    expect(source).toContain("buildChatRoomNotificationTag(roomId)");
+    expect(source).toContain("buildChatAiNotificationTag()");
+    expect(source).toContain("tag,");
   });
 
   test("sanitizes local WebSocket config and strips ticket params", () => {

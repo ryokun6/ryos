@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld("ryosDesktop", {
     ipcRenderer.invoke("ryos-desktop:get-app-version") as Promise<string>,
   canShowNotifications: () =>
     ipcRenderer.invoke("ryos-desktop:can-show-notifications") as Promise<boolean>,
+  getNotificationStatus: () =>
+    ipcRenderer.invoke(
+      "ryos-desktop:get-notification-status"
+    ) as Promise<unknown>,
   shouldShowNativeNotification: () =>
     ipcRenderer.invoke(
       "ryos-desktop:should-show-native-notification"

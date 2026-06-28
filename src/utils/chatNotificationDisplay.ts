@@ -8,6 +8,11 @@ import i18n from "@/lib/i18n";
 import { showChatNotification } from "@/utils/browserNotifications";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { showNativeToastNotification } from "@/utils/nativeToastNotifications";
+import {
+  buildChatAiNotificationTag,
+  buildChatRoomNotificationTag,
+  toSafeSystemNotificationText,
+} from "@/utils/systemNotifications";
 
 const openLabel = () => i18n.t("apps.chats.notification.openAction");
 
@@ -23,6 +28,7 @@ function showNotificationFallback(params: {
   void showNativeToastNotification("basic", title, {
     ...(body ? { description: body } : {}),
     chatRoomId,
+    tag,
   }).then((shown) => {
     if (shown) {
       return;
@@ -56,9 +62,9 @@ export function showRoomMessageNotification(
   params: ShowRoomMessageNotificationParams
 ): void {
   const { username, content, roomId, messageId } = params;
-  const preview = content.replace(/\s+/g, " ").trim().slice(0, 80);
+  const preview = toSafeSystemNotificationText(content, 80) ?? "";
   const title = `@${username}`;
-  const tag = `room-${roomId}`;
+  const tag = buildChatRoomNotificationTag(roomId);
 
   showNotificationFallback({
     title,
@@ -91,10 +97,10 @@ export function showAiMessageNotification(
   params: ShowAiMessageNotificationParams
 ): void {
   const { content, messageId } = params;
-  const preview = content.replace(/\s+/g, " ").trim().slice(0, 100);
+  const preview = toSafeSystemNotificationText(content, 100) ?? "";
   const title = "@Ryo";
-  const tag = "chat-ai";
-  const body = preview + (content.length > 100 ? "…" : "");
+  const tag = buildChatAiNotificationTag();
+  const body = preview;
 
   showNotificationFallback({
     title,

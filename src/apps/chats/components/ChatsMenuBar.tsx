@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -22,6 +22,7 @@ import {
   useNotificationPermission,
   isNotificationApiAvailable,
 } from "@/utils/browserNotifications";
+import { sanitizeSystemNotificationStatus } from "@/utils/systemNotifications";
 import type {
   TelegramLinkCreateResponse,
   TelegramHeartbeatSettings,
@@ -153,6 +154,51 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
 
   const { permission: notificationPermission, requestPermission: requestNotificationPermission } =
     useNotificationPermission();
+  const [desktopNotificationSupported, setDesktopNotificationSupported] =
+    useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.ryosDesktop) {
+      setDesktopNotificationSupported(null);
+      return;
+    }
+
+    let cancelled = false;
+    void (window.ryosDesktop.getNotificationStatus?.() ??
+      window.ryosDesktop
+        .canShowNotifications()
+        .then((supported) => ({
+          supported,
+          foreground: false,
+          platform: window.ryosDesktop?.platform ?? "unknown",
+        })))
+      .then((status) => {
+        if (cancelled) {
+          return;
+        }
+        const sanitized = sanitizeSystemNotificationStatus(status);
+        setDesktopNotificationSupported(sanitized?.supported ?? false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDesktopNotificationSupported(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const hasDesktopNotificationStatus = desktopNotificationSupported !== null;
+  const systemNotificationsChecked = hasDesktopNotificationStatus
+    ? desktopNotificationSupported
+    : notificationPermission === "granted";
+  const systemNotificationsDisabled = hasDesktopNotificationStatus
+    ? !desktopNotificationSupported
+    : notificationPermission === "denied";
+  const shouldRenderSystemNotificationsItem =
+    hasDesktopNotificationStatus || isNotificationApiAvailable();
 
   const openTelegramDialog = async () => {
     const status = await onRefreshTelegramLinkStatus();
@@ -413,13 +459,16 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
             >
               {t("apps.chats.menu.showRooms")}
             </MenubarCheckboxItem>
-            {isNotificationApiAvailable() && (
+            {shouldRenderSystemNotificationsItem && (
               <>
                 <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
                 <MenubarCheckboxItem
-                  checked={notificationPermission === "granted"}
-                  disabled={notificationPermission === "denied"}
+                  checked={systemNotificationsChecked}
+                  disabled={systemNotificationsDisabled}
                   onCheckedChange={(checked) => {
+                    if (hasDesktopNotificationStatus) {
+                      return;
+                    }
                     if (checked && notificationPermission === "default") {
                       void requestNotificationPermission();
                     }

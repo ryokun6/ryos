@@ -23,11 +23,13 @@ describe("native toast notifications", () => {
       getNativeToastNotification("info", "@Ryo", {
         description: "I found the answer.",
         chatRoomId: null,
+        tag: "chat-ai",
       })
     ).toEqual({
       title: "@Ryo",
       body: "I found the answer.",
       chatRoomId: null,
+      tag: "chat-ai",
     });
 
     expect(
@@ -104,6 +106,25 @@ describe("native toast notifications", () => {
     expect(payload?.title.endsWith("...")).toBe(true);
     expect(payload?.body).toHaveLength(240);
     expect(payload?.body?.endsWith("...")).toBe(true);
+  });
+
+  test("passes through supported desktop notification hints", () => {
+    expect(
+      getNativeToastNotification("warning", "Connection unstable", {
+        description: "Messages may be delayed.",
+        tag: "chat-room-general",
+        silent: true,
+        urgency: "normal",
+        timeoutType: "default",
+      })
+    ).toEqual({
+      title: "Connection unstable",
+      body: "Messages may be delayed.",
+      tag: "chat-room-general",
+      silent: true,
+      urgency: "normal",
+      timeoutType: "default",
+    });
   });
 
   test("only mirrors native toasts when desktop gate allows it", async () => {

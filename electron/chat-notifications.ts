@@ -15,6 +15,10 @@ import {
 } from "../src/shared/contracts/chat";
 import { decodeHtmlEntities } from "../src/utils/decodeHtmlEntities";
 import {
+  buildChatRoomNotificationTag,
+  toSafeSystemNotificationText,
+} from "../src/utils/systemNotifications";
+import {
   buildLocalRealtimeClientMessage,
   buildLocalRealtimeTicketWebSocketUrl,
 } from "../src/utils/desktopChatNotificationRealtime";
@@ -27,7 +31,6 @@ import {
   type DesktopChatNotificationConfig,
   type DesktopChatNotificationManageFailureReason,
   type DesktopChatNotificationManageResult,
-  type DesktopChatNotificationRoom,
   type DesktopChatNotificationState,
 } from "../src/utils/desktopChatNotificationPolicy";
 
@@ -138,13 +141,6 @@ function removeRoom(rooms: ChatRoom[], roomId: string): ChatRoom[] {
   return rooms.filter((room) => room.id !== roomId);
 }
 
-function getRoomType(
-  rooms: DesktopChatNotificationRoom[],
-  roomId: string
-): ChatRoom["type"] | undefined {
-  return rooms.find((room) => room.id === roomId)?.type ?? undefined;
-}
-
 function isChatRoom(value: unknown): value is ChatRoom {
   return isRecord(value) && typeof value.id === "string";
 }
@@ -160,7 +156,7 @@ function isChatMessage(value: unknown): value is ChatMessage {
 
 function toNotificationPreview(content: unknown): string {
   const decoded = decodeHtmlEntities(String(content || ""));
-  return decoded.replace(/\s+/g, " ").trim().slice(0, MAX_NOTIFICATION_PREVIEW_LENGTH);
+  return toSafeSystemNotificationText(decoded, MAX_NOTIFICATION_PREVIEW_LENGTH) ?? "";
 }
 
 function asPusherConstructor(namespace: unknown): PusherConstructor {
@@ -976,14 +972,12 @@ export class ElectronChatNotificationService {
       return;
     }
 
-    const roomType = getRoomType(this.state.rooms, message.roomId);
-    const channelName = getChatRoomChannelName(message.roomId, roomType);
     const body = toNotificationPreview(message.content);
     this.options.showNotification(
       {
         title: `@${message.username}`,
         body,
-        tag: `chat-${channelName}`,
+        tag: buildChatRoomNotificationTag(message.roomId),
       },
       () => this.openChatRoom(message.roomId)
     );
