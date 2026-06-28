@@ -2187,7 +2187,7 @@
         "save": "儲存",
         "swap": "交換語言",
         "to": "到",
-        "translateFrom": "從...翻譯",
+        "translateFrom": "從⋯翻譯",
         "translating": "翻譯中⋯"
       },
       "weather": {
@@ -2682,8 +2682,8 @@
         "appleMusicLibraryFailed": "無法載入 Apple Music 資料庫",
         "appleMusicLibraryLoaded": "已載入 Apple Music 資料庫 — {{count}} 首歌曲",
         "appleMusicLibraryLoading": "正在載入 Apple Music 資料庫⋯",
-        "appleMusicLibraryProgress": "正在載入 Apple Music 資料庫… {{loaded}} 首歌曲",
-        "appleMusicLibraryProgressOf": "正在載入 Apple Music 資料庫… {{loaded}} / {{total}}",
+        "appleMusicLibraryProgress": "正在載入 Apple Music 資料庫⋯ {{loaded}} 首歌曲",
+        "appleMusicLibraryProgressOf": "正在載入 Apple Music 資料庫⋯ {{loaded}} / {{total}}",
         "appleMusicNoRecommendations": "目前尚無可用的 Apple Music 推薦",
         "appleMusicNotConfigured": "Apple Music 尚未設定",
         "appleMusicNotConfiguredDescription": "請設定 MUSICKIT_TEAM_ID、MUSICKIT_KEY_ID 與 MUSICKIT_PRIVATE_KEY。",
