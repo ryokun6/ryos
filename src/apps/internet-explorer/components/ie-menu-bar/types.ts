@@ -40,4 +40,13 @@ export interface InternetExplorerMenuBarProps
   year?: string;
   onYearChange?: (year: string) => void;
   onSharePage?: () => void;
+
+  // Debug menu (only rendered for the admin user or in global debug mode)
+  showDebugMenu?: boolean;
+  debugProxySessions?: boolean;
+  debugForceHeadless?: boolean;
+  debugVerboseLogging?: boolean;
+  onToggleProxySessions?: (enabled: boolean) => void;
+  onToggleForceHeadless?: (enabled: boolean) => void;
+  onToggleVerboseLogging?: (enabled: boolean) => void;
 }

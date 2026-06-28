@@ -418,6 +418,13 @@ interface InternetExplorerStore {
   pendingUrl: string | null;
   pendingYear: string | null;
 
+  // Debug / advanced proxy toggles (surfaced via the IE Debug menu, which is
+  // only shown to the admin user or when global debug mode is on). These opt
+  // into env-gated proxy capabilities on a per-browser basis.
+  debugProxySessions: boolean; // cookie/session passthrough
+  debugForceHeadless: boolean; // force headless render of every page
+  debugVerboseLogging: boolean; // emit verbose IE logs to the debug console
+
   // Actions
   setUrl: (url: string) => void;
   setYear: (year: string) => void;
@@ -489,6 +496,11 @@ interface InternetExplorerStore {
   setPendingNavigation: (url: string, year?: string) => void;
   clearPendingNavigation: () => void;
 
+  // Debug toggle actions
+  setDebugProxySessions: (enabled: boolean) => void;
+  setDebugForceHeadless: (enabled: boolean) => void;
+  setDebugVerboseLogging: (enabled: boolean) => void;
+
   // Utility functions
   updateBrowserState: () => void;
 }
@@ -555,6 +567,10 @@ const getInitialState = () => ({
   // Add initial state for pending navigation
   pendingUrl: null as string | null,
   pendingYear: null as string | null,
+  // Debug toggles (off by default)
+  debugProxySessions: false,
+  debugForceHeadless: false,
+  debugVerboseLogging: false,
 });
 
 export const useInternetExplorerStore = create<InternetExplorerStore>()(
@@ -867,6 +883,12 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
       clearPendingNavigation: () =>
         set({ pendingUrl: null, pendingYear: null }),
 
+      setDebugProxySessions: (enabled) =>
+        set({ debugProxySessions: enabled }),
+      setDebugForceHeadless: (enabled) => set({ debugForceHeadless: enabled }),
+      setDebugVerboseLogging: (enabled) =>
+        set({ debugVerboseLogging: enabled }),
+
       updateBrowserState: () => {},
     }),
     {
@@ -880,6 +902,9 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         timelineSettings: state.timelineSettings,
         language: state.language,
         location: state.location,
+        debugProxySessions: state.debugProxySessions,
+        debugForceHeadless: state.debugForceHeadless,
+        debugVerboseLogging: state.debugVerboseLogging,
       }),
     }
   )

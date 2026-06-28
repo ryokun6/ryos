@@ -11,6 +11,7 @@ export interface ClientRuntimeConfig {
     cluster: string;
     forceTLS?: boolean;
   } | null;
+  ieLiveBrowserAvailable?: boolean;
 }
 
 declare global {
@@ -114,6 +115,15 @@ export function getDocsBaseUrl(): string {
 
 export function getRealtimeProvider(): RealtimeProvider {
   return getClientRuntimeConfig().realtimeProvider || getBuildTimeRealtimeProvider();
+}
+
+/**
+ * Whether the optional Internet Explorer "live browser" escape hatch is
+ * configured on this deployment. Off unless the server sets the feature flag +
+ * provider URL, so the client only surfaces the affordance when it will work.
+ */
+export function isIeLiveBrowserAvailable(): boolean {
+  return getClientRuntimeConfig().ieLiveBrowserAvailable === true;
 }
 
 export function getRealtimeWebSocketPath(): string {

@@ -613,6 +613,7 @@
       "checkWebAddressAndTryAgain": "Check the web address you typed and try again.",
       "goBackToPreviousPage": "Go back to the previous page.",
       "tryRefreshingThePage": "Try refreshing the page.",
+      "openInLiveBrowser": "Open this page in a live browser.",
       "host": "Host: {{hostname}}",
       "loadingTitle": "Internet Explorer - Loading",
       "loadingTitleWithSite": "{{site}} - Loading",
@@ -725,7 +726,11 @@
         "clearHistory": "Clear History…",
         "internetExplorerHelp": "Internet Explorer Help",
         "aboutInternetExplorer": "About Internet Explorer",
-        "folder": "Folder"
+        "folder": "Folder",
+        "debug": "Debug",
+        "proxySessions": "Cookie / Session Passthrough",
+        "forceHeadless": "Force Headless Render",
+        "verboseLogging": "Verbose Logging"
       },
       "futureTimeline": {
         "title": "Edit Future Timeline",
