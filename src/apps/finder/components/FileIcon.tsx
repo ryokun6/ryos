@@ -370,6 +370,13 @@ export const FileIcon = memo(function FileIcon({
           }`}
           data-selected={isSelected ? "true" : undefined}
           style={{
+            ...(isSelected && isMacOSTheme && isFinderContext
+              ? {
+                  background:
+                    "color-mix(in srgb, var(--os-accent-color, #2765ca) 88%, transparent)",
+                  textShadow: "none",
+                }
+              : {}),
             ...(!isSelected && (isWindowsTheme || isMacOSTheme) && !isFinderContext
               ? isMacOSTheme
                 ? {

@@ -141,7 +141,7 @@ export function DebugLogOverlay() {
   const isRyoAdmin = useIsRyoAdmin();
   const debugMode = useDisplaySettingsStore((s) => s.debugMode);
   const flags = useThemeFlags();
-  const { isWindowsTheme, metadata } = flags;
+  const { isMacOSTheme, isWindowsTheme, metadata } = flags;
   const debugFabGapPx = 8;
   const debugFabBottom = isWindowsTheme
     ? `calc(env(safe-area-inset-bottom, 0px) + ${metadata.taskbarHeight + debugFabGapPx}px)`
@@ -469,22 +469,29 @@ export function DebugLogOverlay() {
             setActiveTab(value === "live" ? "live" : "logs")
           }
           className={cn(
-            osCardClassName(flags, {
-              embed: "panel",
-              className: cn(
-                "mb-2 h-[min(60vh,420px)] w-[min(92vw,440px)] shadow-os-window",
-                flags.isAquaGlass &&
-                  "window window-material-glass is-foreground"
-              ),
-            })
+            isMacOSTheme
+              ? cn(
+                  "window is-foreground flex flex-col overflow-hidden rounded-[0.5rem] font-geneva-12 text-os-text-primary",
+                  flags.isAquaGlass && "window-material-glass"
+                )
+              : osCardClassName(flags, { embed: "panel" }),
+            "mb-2 h-[min(60vh,420px)] w-[min(92vw,440px)] shadow-os-window"
           )}
+          style={
+            isMacOSTheme && !flags.isAquaGlass
+              ? {
+                  backgroundColor: "var(--os-color-window-bg)",
+                  backgroundImage: "var(--os-pinstripe-window)",
+                }
+              : undefined
+          }
         >
           {/* Header */}
           <div
             className={cn(
               "flex h-8 shrink-0 items-center gap-1.5 border-b px-2 py-1",
               "border-[color:var(--os-color-separator)]",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-panel-bg"
+              isMacOSTheme ? "bg-transparent" : "bg-os-panel-bg"
             )}
           >
             {activeTab === "logs" ? (
@@ -628,7 +635,7 @@ export function DebugLogOverlay() {
             value="logs"
             className={cn(
               "relative mt-0 min-h-0 flex-1 overflow-hidden",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-window-bg"
+              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
             )}
           >
             <div
@@ -706,7 +713,7 @@ export function DebugLogOverlay() {
             value="live"
             className={cn(
               "relative mt-0 min-h-0 flex-1 overflow-hidden",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-window-bg"
+              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
             )}
           >
             <DebugLiveDashboard
@@ -719,7 +726,7 @@ export function DebugLogOverlay() {
             className={cn(
               "flex h-8 shrink-0 items-center justify-center border-t px-2 py-1",
               "border-[color:var(--os-color-separator)]",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-panel-bg"
+              isMacOSTheme ? "bg-transparent" : "bg-os-panel-bg"
             )}
           >
             <TabsList

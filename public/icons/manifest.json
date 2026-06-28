@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-28T04:44:29.902Z",
+  "generatedAt": "2026-06-28T19:11:51.827Z",
   "themes": {
     "default": [
       "admin.png",
@@ -331,6 +331,7 @@
       "macpaint/select.png",
       "macpaint/spray.png",
       "macpaint/text.png",
+      "mail.png",
       "maps.png",
       "minesweeper-app.png",
       "minesweeper.png",
@@ -483,6 +484,7 @@
       "macpaint/select.png",
       "macpaint/spray.png",
       "macpaint/text.png",
+      "mail.png",
       "maps.png",
       "minesweeper-app.png",
       "minesweeper.png",
