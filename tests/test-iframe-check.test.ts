@@ -122,8 +122,7 @@ describe("iframe-check", () => {
       expect(html).toContain("/api/iframe-check");
       expect(html).toContain("resource=style");
       expect(html).toContain("resource=script");
-      expect(html).toContain('type="text/plain"');
-      expect(html).toContain('data-ryos-blocked-script="true"');
+      expect(html).not.toContain('type="text/plain" data-ryos-blocked-script="true"');
       expect(html).toContain("type: 'iframeReady'");
       expect(html).toContain("postReady('timeout')");
       expect(html).toContain("resource=image");
@@ -137,6 +136,20 @@ describe("iframe-check", () => {
       expect(diagnostics.rewrites.htmlAttributes).toBeGreaterThan(0);
       expect(diagnostics.rewrites.cssUrls).toBeGreaterThan(0);
       expect(diagnostics.cookieSession).toBe(true);
+    });
+
+    test("Proxy mode - disables scripts only for flagged compatibility domains", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://www.nytimes.com/fixture/page"
+        )}&mode=proxy&fixture=html-assets&debug=1&session=test_nytimes_assets`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('type="text/plain"');
+      expect(html).toContain('data-ryos-blocked-script="true"');
+      expect(html).toContain("resource=script");
     });
 
     test("Proxy mode - rewrites stylesheet urls", async () => {

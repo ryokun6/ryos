@@ -7,6 +7,7 @@ export interface IeDomainCompatibilityRule {
   domain: string;
   mode: IeDomainCompatibilityMode;
   notes: string;
+  inertScripts?: boolean;
 }
 
 export const IE_DOMAIN_COMPATIBILITY_RULES: IeDomainCompatibilityRule[] = [
@@ -21,7 +22,7 @@ export const IE_DOMAIN_COMPATIBILITY_RULES: IeDomainCompatibilityRule[] = [
   { domain: "twitter.com", mode: "auto-proxy", notes: "Uses restrictive embedding headers." },
   { domain: "x.com", mode: "auto-proxy", notes: "Uses restrictive embedding headers." },
   { domain: "medium.com", mode: "auto-proxy", notes: "Uses restrictive embedding headers." },
-  { domain: "nytimes.com", mode: "auto-proxy", notes: "Uses restrictive embedding headers." },
+  { domain: "nytimes.com", mode: "auto-proxy", inertScripts: true, notes: "Modern live scripts can freeze the sandboxed IE iframe." },
   { domain: "bbc.com", mode: "auto-proxy", notes: "Uses restrictive embedding headers." },
   { domain: "bbc.co.uk", mode: "auto-proxy", notes: "Uses restrictive embedding headers." },
   { domain: "theguardian.com", mode: "auto-proxy", notes: "Uses restrictive embedding headers." },
@@ -84,4 +85,8 @@ export function shouldAutoProxyUrl(url: string): boolean {
 
 export function shouldDirectPassthroughUrl(url: string): boolean {
   return getIeDomainCompatibility(url)?.mode === "direct-passthrough";
+}
+
+export function shouldUseInertProxyScripts(url: string): boolean {
+  return getIeDomainCompatibility(url)?.inertScripts === true;
 }

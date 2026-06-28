@@ -22,6 +22,7 @@ import {
 import {
   getIeDomainCompatibility,
   shouldAutoProxyUrl,
+  shouldUseInertProxyScripts,
 } from "../src/shared/ieCompatibility.js";
 
 export const runtime = "nodejs";
@@ -909,7 +910,7 @@ export default apiHandler(
         // Strip Content-Security-Policy headers embedded via <meta> with reversed attribute order
         html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
 
-        if (!isWaybackRequest) {
+        if (!isWaybackRequest && shouldUseInertProxyScripts(finalUrl)) {
           html = disableExecutableScripts(html);
         }
 
