@@ -168,6 +168,40 @@ describe("iframe-check", () => {
       expect(html).toContain("resource=script");
     });
 
+    test("Proxy mode - promotes noscript image fallbacks only when scripts are inert", async () => {
+      const inertRes = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://www.nytimes.com/fixture/page"
+        )}&mode=proxy&fixture=noscript-images&debug=1&session=test_nytimes_noscript`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(inertRes.status).toBe(200);
+      const inertHtml = await inertRes.text();
+      const inertVisibleHtml = inertHtml.replace(
+        /<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi,
+        ""
+      );
+      expect(inertHtml).toContain('data-ryos-blocked-script="true"');
+      expect(inertVisibleHtml).toContain("fallback.jpg");
+      expect(inertVisibleHtml).toContain("resource=image");
+      expect(inertHtml).toContain("<noscript><p>No image fallback</p></noscript>");
+
+      const passthroughRes = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com/fixture/page"
+        )}&mode=proxy&fixture=noscript-images&debug=1`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(passthroughRes.status).toBe(200);
+      const passthroughHtml = await passthroughRes.text();
+      const passthroughVisibleHtml = passthroughHtml.replace(
+        /<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi,
+        ""
+      );
+      expect(passthroughHtml).toContain("<noscript><picture>");
+      expect(passthroughVisibleHtml).not.toContain("fallback.jpg");
+    });
+
     test("Proxy mode - rewrites stylesheet urls", async () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(

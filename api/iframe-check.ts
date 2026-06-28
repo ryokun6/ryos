@@ -86,6 +86,13 @@ const disableExecutableScripts = (
     }
   );
 
+const promoteNoscriptImageFallbacks = (html: string): string =>
+  html.replace(
+    /<noscript\b[^>]*>([\s\S]*?)<\/noscript>/gi,
+    (match, content: string) =>
+      /<(?:picture|img)\b/i.test(content) ? content : match
+  );
+
 const getQueryValue = (value: string | string[] | undefined): string | undefined =>
   Array.isArray(value) ? value[0] : value;
 
@@ -146,6 +153,20 @@ function createLocalProxyFixtureResponse(
             "content-type": "text/html; charset=utf-8",
             "x-fixture-accept": headers.Accept || "",
           },
+        }
+      ),
+    };
+  }
+
+  if (fixture === "noscript-images") {
+    return {
+      finalUrl: targetUrl,
+      redirectChain: [],
+      response: new Response(
+        `<!doctype html><html><head><title>Noscript Fixture</title><script src="/assets/app.js"></script></head><body><picture><img alt="lazy placeholder" loading="lazy"></picture><noscript><picture><source srcset="/assets/fallback.webp 1x"><img src="/assets/fallback.jpg" alt="fallback"></picture></noscript><noscript><p>No image fallback</p></noscript></body></html>`,
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
         }
       ),
     };
@@ -914,6 +935,7 @@ export default apiHandler(
         html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
 
         if (!isWaybackRequest && shouldUseInertProxyScripts(finalUrl)) {
+          html = promoteNoscriptImageFallbacks(html);
           html = disableExecutableScripts(html);
         }
 
