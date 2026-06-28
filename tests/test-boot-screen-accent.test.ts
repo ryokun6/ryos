@@ -1,6 +1,5 @@
 import {
   afterAll,
-  afterEach,
   beforeAll,
   describe,
   expect,
@@ -22,7 +21,8 @@ beforeAll(() => {
   }
 });
 
-afterAll(() => {
+afterAll(async () => {
+  await flushReact();
   if (GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }
@@ -87,6 +87,7 @@ async function renderBootScreen(theme: OsThemeId): Promise<string[]> {
     console.warn = originalWarn;
     console.error = originalError;
     root?.unmount();
+    await flushReact();
     host.remove();
     document.body.innerHTML = "";
   }
