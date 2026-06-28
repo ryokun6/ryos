@@ -8,6 +8,7 @@ import { ROOM_ID_REGEX } from "../_utils/_validation.js";
 import { getMessages, getRoom } from "../rooms/_helpers/_redis.js";
 import { getRoomReadAccessError } from "../rooms/_helpers/_access.js";
 import type { Message } from "../rooms/_helpers/_types.js";
+import { ROOM_MESSAGE_HISTORY_LIMIT } from "../rooms/_helpers/_constants.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -69,7 +70,11 @@ export default apiHandler(
       }
 
       const messagePromises = validRoomIds.map(async (roomId) => {
-        const messages = await getMessages(roomId, 20, redis);
+        const messages = await getMessages(
+          roomId,
+          ROOM_MESSAGE_HISTORY_LIMIT,
+          redis
+        );
         return { roomId, messages };
       });
 

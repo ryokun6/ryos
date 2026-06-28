@@ -59,6 +59,11 @@ function storageKey(username: string): string {
   return `ryos:sync2:state:${username.toLowerCase()}`;
 }
 
+export function deleteSyncClientState(username: string): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.removeItem(storageKey(username));
+}
+
 export class SyncClientState {
   private readonly username: string;
   private state: PersistedSyncState;

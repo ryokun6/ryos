@@ -6,7 +6,7 @@ import {
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { GLOBAL_PRESENCE_CHANNEL } from "@/shared/constants/realtime";
 
 const HEARTBEAT_INTERVAL_MS = 60_000;
@@ -24,8 +24,8 @@ interface PresenceEntry {
  * closed but the app instance stays mounted).
  */
 export function useGlobalPresence(): string[] {
-  const username = useChatsStore((s) => s.username);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.username);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const presenceMapRef = useRef<Record<string, PresenceEntry>>({});

@@ -8,6 +8,7 @@ import {
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "@/types/chat";
@@ -68,8 +69,6 @@ export function useChatRoom(
 ) {
   const { t } = useTranslation();
   const {
-    username,
-    isAuthenticated,
     rooms,
     currentRoomId,
     isSidebarVisible,
@@ -87,8 +86,6 @@ export function useChatRoom(
     incrementUnread,
     messageRenderLimit,
   } = useChatsStoreShallow((state) => ({
-    username: state.username,
-    isAuthenticated: state.isAuthenticated,
     rooms: state.rooms,
     currentRoomId: state.currentRoomId,
     isSidebarVisible: state.isSidebarVisible,
@@ -105,6 +102,8 @@ export function useChatRoom(
     incrementUnread: state.incrementUnread,
     messageRenderLimit: state.messageRenderLimit,
   }));
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const isAdmin = useIsRyoAdmin();
 
@@ -380,7 +379,7 @@ export function useChatRoom(
         },
         onUserTyping: (data) => {
           if (!data?.username) return;
-          const selfUsername = useChatsStore.getState().username;
+          const selfUsername = useAuthStore.getState().username;
           if (data.username === selfUsername) return;
 
           if (data.isTyping) {

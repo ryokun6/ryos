@@ -46,7 +46,7 @@ import { useIpodStoreShallow } from "@/stores/useIpodStore";
 import { shouldRestartTrackOnPrevious } from "@/shared/media/previousTrackBehavior";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
@@ -253,7 +253,7 @@ export function useIpodLogic({
     : youtubePreviousTrack;
 
   // Auth for protected operations (force refresh, change lyrics source)
-  const { username, isAuthenticated } = useChatsStore(
+  const { username, isAuthenticated } = useAuthStore(
     useShallow((s) => ({ username: s.username, isAuthenticated: s.isAuthenticated }))
   );
   const auth = useMemo(
@@ -4581,7 +4581,7 @@ export function useIpodLogic({
       // YouTube ryOS shares are backed by cached song metadata. Apple Music
       // shares should stay as public Apple Music links and not mark createdBy.
       if (track && shouldCacheSongMetadataForShare(track)) {
-        const { username, isAuthenticated } = useChatsStore.getState();
+        const { username, isAuthenticated } = useAuthStore.getState();
         const auth = username && isAuthenticated ? { username, isAuthenticated } : null;
         saveSongMetadataFromTrack(track, auth, { isShare: true }).catch((error) => {
           console.error("[iPod] Error saving song metadata to cache:", error);

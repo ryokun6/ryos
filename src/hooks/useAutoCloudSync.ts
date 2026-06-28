@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   getRealtimeConnectionState,
@@ -43,8 +43,8 @@ const API_AVAILABILITY_RETRY_MS = 15_000;
  * slow heartbeat poll.
  */
 export function useAutoCloudSync() {
-  const username = useChatsStore((state) => state.username);
-  const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const autoSyncEnabled = useCloudSyncStore((state) => state.autoSyncEnabled);
   const [syncApiAvailable, setSyncApiAvailable] = useState(false);
   const [restoreIntentVersion, setRestoreIntentVersion] = useState(0);

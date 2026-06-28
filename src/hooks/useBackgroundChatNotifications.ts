@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChatsStoreShallow } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ChatMessage } from "@/types/chat";
@@ -63,8 +64,6 @@ const buildDesktopChatNotificationConfig =
 
 export function useBackgroundChatNotifications() {
   const {
-    username,
-    isAuthenticated,
     rooms,
     currentRoomId,
     fetchRooms,
@@ -73,8 +72,6 @@ export function useBackgroundChatNotifications() {
     removeMessageFromRoom,
     incrementUnread,
   } = useChatsStoreShallow((state) => ({
-    username: state.username,
-    isAuthenticated: state.isAuthenticated,
     rooms: state.rooms,
     currentRoomId: state.currentRoomId,
     fetchRooms: state.fetchRooms,
@@ -83,6 +80,8 @@ export function useBackgroundChatNotifications() {
     removeMessageFromRoom: state.removeMessageFromRoom,
     incrementUnread: state.incrementUnread,
   }));
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const hasOpenChatsInstance = useAppStore((state) =>
     Object.values(state.instances).some(

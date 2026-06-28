@@ -48,6 +48,9 @@ import {
 } from "@/utils/indexedDBBackup";
 import type { SyncNamespace } from "@/shared/sync2/namespaces";
 import { emitDocumentContentSynced } from "@/utils/appEventBus";
+import { createSyncCodecRegistry } from "@/sync/codecRegistry";
+
+export { NAMESPACE_APPLY_ORDER } from "@/sync/codecRegistry";
 
 export interface AppliedSyncOp {
   k: string;
@@ -1608,7 +1611,7 @@ const wallpapersCodec = createBlobCodec("wallpapers", STORES.CUSTOM_WALLPAPERS, 
 // Registry
 // ---------------------------------------------------------------------------
 
-export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
+export const SYNC_CODECS = createSyncCodecRegistry({
   settings: settingsCodec,
   files: filesCodec,
   songs: songsCodec,
@@ -1624,7 +1627,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   trash: trashCodec,
   applets: appletsCodec,
   wallpapers: wallpapersCodec,
-};
+});
 
 export function isBlobCodec(codec: SyncCodec): codec is BlobSyncCodec {
   return "putItems" in codec;
@@ -1634,20 +1637,3 @@ export function isBlobCodec(codec: SyncCodec): codec is BlobSyncCodec {
  * Namespace apply order within a batch: wallpapers before settings so
  * indexeddb:// wallpaper references resolve during the same sync pass.
  */
-export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
-  "wallpapers",
-  "images",
-  "books",
-  "trash",
-  "applets",
-  "settings",
-  "files",
-  "bookshelf",
-  "songs",
-  "videos",
-  "tv",
-  "stickies",
-  "calendar",
-  "contacts",
-  "maps",
-];

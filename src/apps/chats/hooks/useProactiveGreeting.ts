@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { AIChatMessage } from "@/types/chat";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -61,7 +62,8 @@ export function useProactiveGreeting({
       state.aiMessages.length === 1 &&
       state.aiMessages[0].id === "1" &&
       state.aiMessages[0].role === "assistant";
-    const eligible = !!state.username && !!state.isAuthenticated;
+    const auth = useAuthStore.getState();
+    const eligible = !!auth.username && !!auth.isAuthenticated;
     return fresh && eligible;
   });
   const hasTriggeredFreshRef = useRef(false);
@@ -74,8 +76,8 @@ export function useProactiveGreeting({
   });
   liveMessageAccessorsRef.current = { getLiveMessages, patchLiveMessages };
 
-  const username = useChatsStore((s) => s.username);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.username);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const aiMessages = useChatsStore((s) => s.aiMessages);
   const setAiMessages = useChatsStore((s) => s.setAiMessages);
 
@@ -229,7 +231,8 @@ export function useProactiveGreeting({
         (state.aiMessages[0].id === "1" ||
           state.aiMessages[0].id === "proactive-1") &&
         state.aiMessages[0].role === "assistant";
-      const stillEligible = !!state.username && !!state.isAuthenticated;
+      const auth = useAuthStore.getState();
+      const stillEligible = !!auth.username && !!auth.isAuthenticated;
 
       if (stillFresh && stillEligible && !fetchInFlightRef.current) {
         hasTriggeredFreshRef.current = true;

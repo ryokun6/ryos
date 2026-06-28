@@ -288,15 +288,33 @@ describe("New API", () => {
 
     test("Send message", async () => {
       if (!testRoomId || !testToken || !testUsername) throw new Error("setup failed: room auth missing");
-      const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${testRoomId}/messages`, testUsername, testToken, {
+      const clientId = crypto.randomUUID();
+      const request = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: "Test message from bun:test" }),
+        body: JSON.stringify({
+          content: "Test message from bun:test",
+          clientId,
+        }),
+      };
+      const res = await fetchWithAuth(`${BASE_URL}/api/rooms/${testRoomId}/messages`, testUsername, testToken, {
+        ...request,
       });
       expect(res.status).toBe(201);
       const data = await res.json();
       expect(data.message).toBeTruthy();
       expect(data.message.content).toContain("Test message");
+      expect(data.message.clientId).toBe(clientId);
+
+      const replay = await fetchWithAuth(
+        `${BASE_URL}/api/rooms/${testRoomId}/messages`,
+        testUsername,
+        testToken,
+        request
+      );
+      expect(replay.status).toBe(200);
+      const replayData = await replay.json();
+      expect(replayData.message.id).toBe(data.message.id);
     });
 
     test("Bulk messages", async () => {

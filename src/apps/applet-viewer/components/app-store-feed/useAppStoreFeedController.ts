@@ -10,7 +10,7 @@ import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../../utils/appletActions";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
-import { useChatsStoreShallow } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import type { AppStoreFeedProps, AppStoreFeedRef } from "./types";
 import { MAX_VISIBLE_PREVIEWS } from "./constants";
@@ -52,10 +52,8 @@ export function useAppStoreFeedController({
     isSystem7Theme: osIsSystem7,
     isWindowsTheme: osIsXp,
   } = useThemeFlags();
-  const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
-    username: state.username,
-    isAuthenticated: state.isAuthenticated,
-  }));
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const isMacTheme = theme === "macosx" || osIsMac;
   const isSystem7Theme = theme === "system7" || osIsSystem7;

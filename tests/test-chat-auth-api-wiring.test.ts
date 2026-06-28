@@ -4,11 +4,12 @@ import { readFileSync } from "node:fs";
 import * as authApi from "../src/api/auth";
 
 const storeSource = readFileSync("src/stores/useChatsStore.ts", "utf8");
+const authStoreSource = readFileSync("src/stores/useAuthStore.ts", "utf8");
 const chatApiSource = readFileSync("api/chat.ts", "utf8");
 
 describe("chat auth API wiring", () => {
-  test("routes auth HTTP calls through src/api/auth", () => {
-    expect(storeSource).toContain("from \"@/api/auth\"");
+  test("routes auth HTTP calls through the dedicated auth store", () => {
+    expect(authStoreSource).toContain("from \"@/api/auth\"");
     for (const symbol of [
       "checkUserPassword",
       "getAuthSession",
@@ -16,20 +17,18 @@ describe("chat auth API wiring", () => {
       "registerUser",
       "setUserPassword",
     ]) {
-      expect(storeSource).toContain(symbol);
+      expect(authStoreSource).toContain(symbol);
     }
 
-    expect(storeSource).not.toContain("/api/auth/password/check");
-    expect(storeSource).not.toContain("/api/auth/password/set");
-    expect(storeSource).not.toContain("/api/auth/logout");
-    expect(storeSource).not.toContain("/api/auth/register");
-    expect(storeSource).not.toContain("/api/auth/session");
+    expect(storeSource).not.toContain("from \"@/api/auth\"");
+    expect(storeSource).toContain("useAuthStore.getState()");
+    expect(authStoreSource).not.toContain("/api/auth/");
   });
 
   test("keeps legacy token migration helpers out of the store", () => {
-    expect(storeSource).not.toContain("@/utils/legacyAuthTokenMigration");
-    expect(storeSource).not.toContain("LEGACY_AUTH_TOKEN_RECOVERY_KEY");
-    expect(storeSource).not.toContain("legacyToken");
+    expect(authStoreSource).not.toContain("@/utils/legacyAuthTokenMigration");
+    expect(authStoreSource).not.toContain("LEGACY_AUTH_TOKEN_RECOVERY_KEY");
+    expect(authStoreSource).not.toContain("legacyToken");
   });
 
   test("auth API exports session and password helpers", () => {

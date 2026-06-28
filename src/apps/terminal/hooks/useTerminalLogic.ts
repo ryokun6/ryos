@@ -15,6 +15,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { getTextAnalytics, track } from "@/utils/analytics";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
@@ -165,7 +166,7 @@ export const useTerminalLogic = ({
     playMooSound,
   } = useTerminalSounds();
 
-  const username = useChatsStore((state) => state.username);
+  const username = useAuthStore((state) => state.username);
   const { isWindowsTheme } = useThemeFlags();
 
   // Load command history from store
@@ -946,7 +947,7 @@ export const useTerminalLogic = ({
         class LogoutHandler {
           async perform() {
             try {
-              await useChatsStore.getState().logout();
+              await useAuthStore.getState().logout();
               this.updateOutput("logged out");
             } catch (err) {
               const errorMsg =

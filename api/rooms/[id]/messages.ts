@@ -19,6 +19,7 @@ import {
   CHAT_BURST_LONG_WINDOW_SECONDS,
   CHAT_BURST_LONG_LIMIT,
   CHAT_MIN_INTERVAL_SECONDS,
+  ROOM_MESSAGE_HISTORY_LIMIT,
 } from "../_helpers/_constants.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
 import { ensureUserExists } from "../_helpers/_users.js";
@@ -76,7 +77,12 @@ export default apiHandler(
         }
 
         const limitParam = req.query.limit as string | undefined;
-        const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 20, 500) : 20;
+        const limit = limitParam
+          ? Math.min(
+              Math.max(parseInt(limitParam, 10) || ROOM_MESSAGE_HISTORY_LIMIT, 1),
+              ROOM_MESSAGE_HISTORY_LIMIT
+            )
+          : ROOM_MESSAGE_HISTORY_LIMIT;
 
         const messages = await getMessages(roomId, limit, redis);
 
@@ -111,6 +117,11 @@ export default apiHandler(
 
     const body = req.body;
     const originalContent = body?.content;
+    const clientId =
+      typeof body?.clientId === "string" &&
+      /^[A-Za-z0-9_-]{8,128}$/.test(body.clientId)
+        ? body.clientId
+        : undefined;
     if (!originalContent || typeof originalContent !== "string") {
       logger.warn("Missing content");
       logger.response(400, Date.now() - startTime);
@@ -134,6 +145,25 @@ export default apiHandler(
       logger.response(writeAccessError.status, Date.now() - startTime);
       res.status(writeAccessError.status).json({ error: writeAccessError.error });
       return;
+    }
+
+    if (clientId) {
+      const existingMessage = (
+        await getMessages(roomId, ROOM_MESSAGE_HISTORY_LIMIT, redis)
+      ).find(
+        (candidate) =>
+          candidate.clientId === clientId && candidate.username === username
+      );
+      if (existingMessage) {
+        logger.info("Idempotent message replay", {
+          roomId,
+          messageId: existingMessage.id,
+          clientId,
+        });
+        logger.response(200, Date.now() - startTime);
+        res.status(200).json({ message: existingMessage });
+        return;
+      }
     }
 
     const isPublicRoom = !roomData.type || roomData.type === "public";
@@ -219,6 +249,7 @@ export default apiHandler(
 
       const message: Message = {
         id: generateId(),
+        ...(clientId ? { clientId } : {}),
         roomId,
         username,
         content,

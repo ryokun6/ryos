@@ -4,7 +4,9 @@ import type {
   ChatMessage,
   ChatRoom,
   CreateRoomRequest,
+  SendRoomMessageRequest,
 } from "@/shared/contracts/chat";
+import { ROOM_MESSAGE_HISTORY_LIMIT } from "@/shared/contracts/chat";
 
 export type RoomSummary = ChatRoom;
 
@@ -25,6 +27,7 @@ export async function getRoomMessages(
   return apiRequest<{ messages: RoomMessage[] }>({
     path: `/api/rooms/${encodeURIComponent(roomId)}/messages`,
     method: "GET",
+    query: { limit: ROOM_MESSAGE_HISTORY_LIMIT },
   });
 }
 
@@ -69,7 +72,7 @@ export async function createRoom(
 
 export async function sendRoomMessage(
   roomId: string,
-  payload: { content: string },
+  payload: SendRoomMessageRequest,
 ): Promise<{ message: RoomMessage }> {
   return apiRequest<{ message: RoomMessage }, typeof payload>({
     path: `/api/rooms/${encodeURIComponent(roomId)}/messages`,

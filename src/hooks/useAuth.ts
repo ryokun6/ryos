@@ -1,32 +1,30 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { APP_ANALYTICS } from "@/utils/analytics";
-import { track } from "@/utils/analytics";
-import { useChatsStoreShallow } from "@/stores/useChatsStore";
-import { loginWithPassword, verifyAuthToken } from "@/api/auth";
+import { useShallow } from "zustand/react/shallow";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function useAuth() {
   const {
     username,
     isAuthenticated,
     hasPassword,
-    setAuthenticated,
-    setUsername,
-    createUser,
+    login,
+    loginWithToken,
+    register,
     logout,
     checkHasPassword: storeCheckHasPassword,
     setPassword: storeSetPassword,
-  } = useChatsStoreShallow((state) => ({
+  } = useAuthStore(useShallow((state) => ({
     username: state.username,
     isAuthenticated: state.isAuthenticated,
     hasPassword: state.hasPassword,
-    setAuthenticated: state.setAuthenticated,
-    setUsername: state.setUsername,
-    createUser: state.createUser,
+    login: state.login,
+    loginWithToken: state.loginWithToken,
+    register: state.register,
     logout: state.logout,
     checkHasPassword: state.checkHasPassword,
     setPassword: state.setPassword,
-  }));
+  })));
 
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
   const [usernameDialogInitialTab, setUsernameDialogInitialTab] = useState<
@@ -74,10 +72,6 @@ export function useAuth() {
       return;
     }
 
-    if (username && username !== trimmedUsername) {
-      await logout();
-    }
-
     if (!newPassword.trim()) {
       setUsernameError("Password is required.");
       setIsSettingUsername(false);
@@ -90,7 +84,10 @@ export function useAuth() {
       return;
     }
 
-    const result = await createUser(trimmedUsername, newPassword);
+    const result =
+      usernameDialogInitialTab === "login"
+        ? await login({ username: trimmedUsername, password: newPassword })
+        : await register({ username: trimmedUsername, password: newPassword });
 
     if (result.ok) {
       setIsUsernameDialogOpen(false);
@@ -104,7 +101,13 @@ export function useAuth() {
     }
 
     setIsSettingUsername(false);
-  }, [newUsername, newPassword, createUser, username, logout]);
+  }, [
+    newUsername,
+    newPassword,
+    usernameDialogInitialTab,
+    login,
+    register,
+  ]);
 
   const promptVerifyToken = useCallback(() => {
     setVerifyTokenInput("");
@@ -128,49 +131,35 @@ export function useAuth() {
         if (isPassword) {
           const targetUsername = verifyUsernameInput.trim() || username || "";
 
-          if (username && username !== targetUsername) {
-            await logout();
-          }
-
-          const result = await loginWithPassword({
+          const result = await login({
             username: targetUsername,
             password: input.trim(),
           });
-          if (result.username) {
-            setUsername(result.username);
-            setAuthenticated(true);
-            track(APP_ANALYTICS.USER_LOGIN_PASSWORD, {
-              username: result.username,
-            });
+          if (result.ok) {
             toast.success("Success", {
               description: "Logged in successfully with password",
             });
             setVerifyDialogOpen(false);
             setVerifyPasswordInput("");
             setIsUsernameDialogOpen(false);
+          } else {
+            setVerifyError(result.error || "Login failed");
           }
         } else {
-          if (username || isAuthenticated) {
-            await logout();
-          }
-
-          const result = await verifyAuthToken({
+          const result = await loginWithToken({
             username: verifyUsernameInput.trim() || "",
             token: input.trim(),
           });
 
-          if (result.valid && result.username) {
-            setUsername(result.username);
-            setAuthenticated(true);
-            track(APP_ANALYTICS.USER_LOGIN_TOKEN, {
-              username: result.username,
-            });
+          if (result.ok) {
             toast.success("Success", {
               description: "Token verified and set successfully",
             });
             setVerifyDialogOpen(false);
             setVerifyTokenInput("");
             setIsUsernameDialogOpen(false);
+          } else {
+            setVerifyError(result.error || "Token verification failed");
           }
         }
       } catch (err) {
@@ -182,7 +171,7 @@ export function useAuth() {
         setIsVerifyingToken(false);
       }
     },
-    [setAuthenticated, setUsername, username, verifyUsernameInput, isAuthenticated, logout]
+    [login, loginWithToken, username, verifyUsernameInput]
   );
 
   const checkHasPassword = useCallback(async () => {

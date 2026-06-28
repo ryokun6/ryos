@@ -6,7 +6,7 @@ import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppletUpdates } from "./useAppletUpdates";
@@ -157,8 +157,8 @@ export function useAppletViewerLogic({
     isWindowsTheme,
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
-  const username = useChatsStore((state) => state.username);
-  const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { t } = useTranslation();
 
   const authResult = useAuth();

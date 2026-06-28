@@ -210,6 +210,12 @@ export class FakeRedis {
     return this.getSync<T>(key);
   }
 
+  async getdel<T = unknown>(key: string): Promise<T | null> {
+    const value = this.getSync<T>(key);
+    this.delSync(key);
+    return value;
+  }
+
   async set(
     key: string,
     value: unknown,

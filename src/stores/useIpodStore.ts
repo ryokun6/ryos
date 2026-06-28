@@ -21,7 +21,7 @@ import {
   patchSongMetadata,
 } from "@/api/songs";
 import i18n from "@/lib/i18n";
-import { useChatsStore } from "./useChatsStore";
+import { useAuthStore } from "./useAuthStore";
 import {
   fetchYouTubeOembed,
   parseYouTubeTitle,
@@ -50,23 +50,23 @@ import {
   stopPlayback,
   togglePlayback,
 } from "@/shared/media/confirmedPlayback";
+import type {
+  LibrarySource,
+  LyricsSource,
+  Track,
+} from "@/shared/domains/media";
+
+export type {
+  AppleMusicPlayParams,
+  LibrarySource,
+  LyricsSource,
+  Track,
+} from "@/shared/domains/media";
 
 const debug = createClientLogger("IpodStore").debug;
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
-
-/** Lyrics source from Kugou */
-export interface LyricsSource {
-  hash: string;
-  albumId: string | number;
-  title: string;
-  artist: string;
-  album?: string;
-}
-
-/** Library source the iPod is currently displaying. */
-export type LibrarySource = "youtube" | "appleMusic";
 
 export const IPOD_BACKLIGHT_TIMEOUT_OPTIONS = ["2s", "10s", "always-on", "off"] as const;
 export type IpodBacklightTimeout = (typeof IPOD_BACKLIGHT_TIMEOUT_OPTIONS)[number];
@@ -103,54 +103,6 @@ export interface AppleMusicPlaylist {
   description?: string;
   trackCount?: number;
   canEdit?: boolean;
-}
-
-/** Apple Music play parameters needed for `setQueue` (catalog vs library). */
-export interface AppleMusicPlayParams {
-  /** Catalog song ID (numeric string) when available — preferred for setQueue. */
-  catalogId?: string;
-  /** Library song ID (`i.<hash>` form) for personal library tracks. */
-  libraryId?: string;
-  /** Catalog station ID (`ra.*` form) for Apple Music radio playback. */
-  stationId?: string;
-  /** Catalog playlist ID (`pl.*` form) for recommendation playback. */
-  playlistId?: string;
-  /** MusicKit kind, e.g. "song", "library-song". */
-  kind: string;
-  isLibrary?: boolean;
-}
-
-// Define the Track type (can be shared or defined here)
-export interface Track {
-  id: string;
-  url: string;
-  title: string;
-  artist?: string;
-  album?: string;
-  /** Album-level artist for grouping compilations/collaborative albums. */
-  albumArtist?: string;
-  /** Apple Music album/library album id when available, used for album grouping. */
-  appleMusicAlbumId?: string;
-  /** Cover image URL from Kugou */
-  cover?: string;
-  /** Cached boosted cover color for lyrics/title glow */
-  coverColor?: string;
-  /** Offset in milliseconds to adjust lyrics timing for this track (positive = lyrics earlier) */
-  lyricOffset?: number;
-  /** Selected lyrics source from Kugou (user override) */
-  lyricsSource?: LyricsSource;
-  /** Server/library creation time (ms); used for All Songs order (newest first) */
-  createdAt?: number;
-  /** Stable sequence when createdAt ties (e.g. bulk import index) */
-  importOrder?: number;
-  /** Last metadata update from server (ms); tiebreaker for list order */
-  updatedAt?: number;
-  /** Origin of this track. Defaults to "youtube" when unset for back-compat. */
-  source?: LibrarySource;
-  /** Track duration in milliseconds (Apple Music exposes this up front). */
-  durationMs?: number;
-  /** Apple Music play parameters used to drive MusicKit playback. */
-  appleMusicPlayParams?: AppleMusicPlayParams;
 }
 
 function updateTrackCoverColorList(
@@ -1033,7 +985,7 @@ async function saveLyricOffsetToServer(
   lyricOffset: number
 ): Promise<boolean> {
   // Get auth state from chats store
-  const { username, isAuthenticated } = useChatsStore.getState();
+  const { username, isAuthenticated } = useAuthStore.getState();
   
   // Skip if not authenticated
   if (!username || !isAuthenticated) {
@@ -1131,7 +1083,7 @@ async function saveLyricsSourceToServer(
   lyricsSource: LyricsSource | null
 ): Promise<void> {
   // Get auth state from chats store
-  const { username, isAuthenticated } = useChatsStore.getState();
+  const { username, isAuthenticated } = useAuthStore.getState();
   
   // Skip if not authenticated
   if (!username || !isAuthenticated) {

@@ -7,8 +7,10 @@
  */
 
 import type { Redis } from "./redis.js";
-import type { Track } from "../../src/stores/useIpodStore.js";
-import { sortTracksLikeServerOrder } from "../../src/stores/ipodTrackOrder.js";
+import {
+  sortTracksLikeServerOrder,
+  type Track,
+} from "../../src/shared/domains/media.js";
 import {
   hlcFromTimestamp,
   nextHlc,

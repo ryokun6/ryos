@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback, useReducer } from "react";
 import { toast } from "sonner";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppletActions, type Applet } from "../../utils/appletActions";
@@ -45,7 +45,7 @@ export function useAppStore({ theme, sharedAppletId, focusWindow }: AppStoreProp
     dispatch({ type: "setBulkUpdating", value });
   }, []);
   const feedRef = useRef<AppStoreFeedRef>(null);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isAdmin = useIsRyoAdmin() && !!isAuthenticated;
   const {
     isMacOSTheme: osIsMac,

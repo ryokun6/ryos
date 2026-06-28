@@ -46,7 +46,7 @@ import {
   SHUFFLE_INTERVAL_MS,
 } from "@/utils/dynamicWallpaper";
 import { DEFAULT_COVER_PALETTE } from "@/hooks/useCoverPalette";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -490,7 +490,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const setDisplayMode = useDisplaySettingsStore((s) => s.setDisplayMode);
   // Same per-user seed component used by `useShuffleWallpaper`, so the preview
   // resolves to the exact asset the desktop would (and other devices do) show.
-  const username = useChatsStore((s) => s.username);
+  const username = useAuthStore((s) => s.username);
   // Advance a tick at each wall-clock bucket boundary so inactive shuffle tile
   // previews rotate in lockstep with what shuffle would actually display.
   const [shuffleTick, setShuffleTick] = useState(() => shuffleBucket());

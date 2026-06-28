@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { PusherChannel } from "@/lib/pusherClient";
 import { getPusherClient } from "@/lib/pusherClient";
 import { toast } from "@/hooks/useToast";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import {
   assignListenSessionDj,
   createListenSession,
@@ -127,7 +127,7 @@ function generateAnonymousId(): string {
 }
 
 function hasMatchingAuth(username: string): boolean {
-  const { username: authUsername, isAuthenticated } = useChatsStore.getState();
+  const { username: authUsername, isAuthenticated } = useAuthStore.getState();
   if (!authUsername || !isAuthenticated) return false;
   return authUsername.toLowerCase() === username.toLowerCase();
 }

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { requestRecovery, resetPasswordWithCode } from "@/api/auth";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiRequestError } from "@/api/core";
 import { PASSWORD_MIN_LENGTH } from "@/shared/validation";
 import { track, APP_ANALYTICS } from "@/utils/analytics";
@@ -117,7 +117,7 @@ export function ResetPasswordDialog({
         code: code.trim(),
         newPassword,
       });
-      const store = useChatsStore.getState();
+      const store = useAuthStore.getState();
       store.setUsername(result.username);
       store.setAuthenticated(true);
       track(APP_ANALYTICS.USER_LOGIN_PASSWORD, { username: result.username });

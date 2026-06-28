@@ -4,7 +4,7 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { getIpodChatContextTrack, useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useTvStore } from "@/stores/useTvStore";
 import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
@@ -39,7 +39,7 @@ export const getSystemState = () => {
   const ipodStore = useIpodStore.getState();
   const karaokeStore = useKaraokeStore.getState();
   const textEditStore = useTextEditStore.getState();
-  const chatsStore = useChatsStore.getState();
+  const authStore = useAuthStore.getState();
   const languageStore = useLanguageStore.getState();
   const tvStore = useTvStore.getState();
 
@@ -192,7 +192,7 @@ export const getSystemState = () => {
   }
 
   return {
-    username: chatsStore.username,
+    username: authStore.username,
     userOS: detectUserOS(),
     locale: languageStore.current,
     userLocalTime: {

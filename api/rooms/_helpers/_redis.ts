@@ -12,6 +12,7 @@ import {
   parseJSON,
 } from "../../_utils/redis-helpers.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
+import { ROOM_MESSAGE_HISTORY_LIMIT } from "./_constants.js";
 import {
   getStoredUserRecord,
   setStoredUserRecord,
@@ -219,7 +220,7 @@ export async function userExists(
  */
 export async function getMessages(
   roomId: string,
-  limit: number = 20,
+  limit: number = ROOM_MESSAGE_HISTORY_LIMIT,
   client: Redis = createRedisClient()
 ): Promise<Message[]> {
   const messagesKey = redisKeys.chat.roomMessages(roomId);
@@ -247,7 +248,7 @@ export async function addMessage(
   const serialized = JSON.stringify(message);
   const messagesKey = redisKeys.chat.roomMessages(roomId);
   await client.lpush(messagesKey, serialized);
-  await client.ltrim(messagesKey, 0, 99);
+  await client.ltrim(messagesKey, 0, ROOM_MESSAGE_HISTORY_LIMIT - 1);
 }
 
 /**

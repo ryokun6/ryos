@@ -27,6 +27,8 @@ export const CHAT_BURST_LONG_WINDOW_SECONDS = 60;
 export const CHAT_BURST_LONG_LIMIT = 20;
 export const CHAT_MIN_INTERVAL_SECONDS = 2;
 
+export { ROOM_MESSAGE_HISTORY_LIMIT } from "../../../src/shared/contracts/chat.js";
+
 // ============================================================================
 // API Configuration
 // ============================================================================

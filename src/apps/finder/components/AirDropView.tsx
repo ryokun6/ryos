@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import type { DragEvent } from "react";
 import { useAirDropStore } from "@/stores/useAirDropStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { getContactInitials } from "@/utils/contacts";
 import { cn } from "@/lib/utils";
@@ -164,8 +164,8 @@ export function AirDropView({
   onRequestLogin,
 }: AirDropViewProps) {
   const { t } = useTranslation();
-  const username = useChatsStore((s) => s.username);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.username);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const nearbyUsers = useAirDropStore((s) => s.nearbyUsers);
   const isDiscovering = useAirDropStore((s) => s.isDiscovering);
   const startAirDrop = useAirDropStore((s) => s.startAirDrop);

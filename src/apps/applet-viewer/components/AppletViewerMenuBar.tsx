@@ -20,7 +20,7 @@ import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import React from "react";
 import { useAppStore } from "@/stores/useAppStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useTranslation } from "react-i18next";
 
 interface AppletViewerMenuBarProps {
@@ -80,8 +80,8 @@ export function AppletViewerMenuBar({
       ),
     [instances]
   );
-  const username = useChatsStore((s) => s.username);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.username);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoggedIn = !!(username && isAuthenticated);
 
   const menus: MenuDescriptor[] = [

@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { AppProps, KaraokeInitialData } from "@/apps/base/types";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { DisplayMode } from "@/types/lyrics";
 import {
   useDisplayModeOptions,
@@ -75,7 +75,7 @@ export function useKaraokeAppController({
     isListenSessionHost,
   } = logic;
 
-  const { username, isAuthenticated } = useChatsStore(
+  const { username, isAuthenticated } = useAuthStore(
     useShallow((s) => ({ username: s.username, isAuthenticated: s.isAuthenticated }))
   );
   const auth = useMemo(

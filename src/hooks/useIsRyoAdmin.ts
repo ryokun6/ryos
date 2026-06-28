@@ -1,7 +1,7 @@
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 /** True when the signed-in user is the ryOS admin account (ryo). */
 export function useIsRyoAdmin(): boolean {
-  const username = useChatsStore((state) => state.username);
+  const username = useAuthStore((state) => state.username);
   return username?.toLowerCase() === "ryo";
 }

@@ -8,20 +8,16 @@ import {
   type ChatMessage,
   type AIChatMessage,
 } from "@/types/chat";
-import { APP_ANALYTICS, CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
+import { CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import i18n from "@/lib/i18n";
 import { ApiRequestError } from "@/api/core";
-import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
-import { normalizeChatTimestamp } from "@/shared/contracts/chat";
 import {
-  checkUserPassword,
-  deleteAccount as deleteAccountApi,
-  getAuthSession,
-  logoutUserSafe,
-  registerUser,
-  setUserPassword,
-} from "@/api/auth";
+  normalizeChatTimestamp,
+  ROOM_MESSAGE_HISTORY_LIMIT,
+} from "@/shared/contracts/chat";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { registerSessionTeardown } from "@/auth/sessionBoundary";
 import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
@@ -37,22 +33,12 @@ import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 const chatsStoreLog = createClientLogger("ChatsStore");
 const debug = chatsStoreLog.debug;
 
-// Username recovery - plain text, username is public info
-const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
+export const capRoomMessages = (messages: ChatMessage[]): ChatMessage[] =>
+  messages.slice(-ROOM_MESSAGE_HISTORY_LIMIT);
 
-const MESSAGE_HISTORY_CAP = 500;
-
-const capRoomMessages = (messages: ChatMessage[]): ChatMessage[] =>
-  messages.slice(-MESSAGE_HISTORY_CAP);
-
-// API Response Types
-interface ApiMessage {
-  id: string;
-  roomId: string;
-  username: string;
-  content: string;
+type ApiMessage = Omit<ChatMessage, "timestamp"> & {
   timestamp: string | number;
-}
+};
 
 /**
  * Merge messages fetched from the API into a room's existing message list.
@@ -63,7 +49,7 @@ interface ApiMessage {
  * caps the result to the history limit. Shared by fetchMessagesForRoom and
  * fetchBulkMessages.
  */
-const mergeFetchedRoomMessages = (
+export const mergeFetchedRoomMessages = (
   existing: ChatMessage[],
   fetched: ApiMessage[]
 ): ChatMessage[] => {
@@ -109,8 +95,7 @@ const mergeFetchedRoomMessages = (
     // Check if any server message matches this temp message
     for (const serverMsg of fetchedMessages) {
       // Match by clientId if the server echoes it back
-      const serverClientId = (serverMsg as ChatMessage & { clientId?: string })
-        .clientId;
+      const serverClientId = serverMsg.clientId;
       if (serverClientId && serverClientId === tempClientId) {
         // Server message has matching clientId - associate and skip temp
         byId.set(serverMsg.id, {
@@ -149,19 +134,6 @@ const mergeFetchedRoomMessages = (
   );
 };
 
-// Username recovery: plain-text localStorage (username is not secret)
-const saveUsernameToRecovery = (username: string | null) => {
-  if (username) {
-    localStorage.setItem(USERNAME_RECOVERY_KEY, username);
-  }
-};
-
-const getUsernameFromRecovery = (): string | null => {
-  const raw = localStorage.getItem(USERNAME_RECOVERY_KEY);
-  if (!raw) return null;
-  return raw;
-};
-
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
 const ROOMS_FETCH_TTL_MS = 1_500;
@@ -195,28 +167,8 @@ const clearApiUnavailable = (key: string): void => {
  * indicating the session is definitively invalid.
  */
 function forceLogoutOnUnauthorized() {
-  const store = useChatsStore.getState();
-  if (!store.username) return;
-  debug("Unauthorized — clearing auth state for", store.username);
-  localStorage.removeItem(USERNAME_RECOVERY_KEY);
-  useChatsStore.setState({
-    username: null,
-    isAuthenticated: false,
-    hasPassword: null,
-    currentRoomId: null,
-  });
+  void useAuthStore.getState().handleUnauthorized();
 }
-
-// Ensure username recovery key is set if username exists but recovery key doesn't.
-const ensureUsernameRecovery = (username: string | null) => {
-  if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
-    debug(
-      "Setting recovery key for existing username:",
-      username
-    );
-    saveUsernameToRecovery(username);
-  }
-};
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -347,14 +299,13 @@ const getInitialState = (): Omit<
   | "clearUnread"
   | "setHasEverUsedChats"
 > => {
-  // Recover username from localStorage (auth token lives in httpOnly cookie)
-  const recoveredUsername = getUsernameFromRecovery();
+  const auth = useAuthStore.getState();
 
   return {
     aiMessages: [getInitialAiMessage()],
-    username: recoveredUsername,
-    isAuthenticated: false,
-    hasPassword: null,
+    username: auth.username,
+    isAuthenticated: auth.isAuthenticated,
+    hasPassword: auth.hasPassword,
     rooms: [],
     currentRoomId: null,
     roomMessages: {},
@@ -376,9 +327,6 @@ export const useChatsStore = create<ChatsStoreState>()(
     (set, get) => {
       // Get initial state
       const initialState = getInitialState();
-      // Ensure username recovery key is set.
-      ensureUsernameRecovery(initialState.username);
-
       return {
         ...initialState,
 
@@ -388,97 +336,20 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (get().username !== username) {
             resetRoomsFetchCache();
           }
-          saveUsernameToRecovery(username);
-          set({ username });
-
-          // Re-filter rooms: drop private rooms the new identity cannot see.
-          // IRC rooms remain visible to everyone.
-          const lowerUser = username?.toLowerCase() ?? null;
-          const currentRooms = get().rooms;
-          if (currentRooms.length > 0) {
-            const filtered = currentRooms.filter((room) => {
-              if (!room.type || room.type === "public" || room.type === "irc")
-                return true;
-              if (!lowerUser) return false;
-              return Array.isArray(room.members) && room.members.includes(lowerUser);
-            });
-            if (filtered.length !== currentRooms.length) {
-              set({ rooms: filtered });
-            }
-          }
-
-          if (username) {
-            setTimeout(() => {
-              get().checkHasPassword();
-            }, 100);
-          } else {
-            set({ hasPassword: null });
-          }
+          useAuthStore.getState().setUsername(username);
         },
         setAuthenticated: (authenticated) => {
           if (get().isAuthenticated !== authenticated) {
             resetRoomsFetchCache();
           }
-          set({ isAuthenticated: authenticated });
+          useAuthStore.getState().setAuthenticated(authenticated);
         },
         setHasPassword: (hasPassword) => {
-          set({ hasPassword });
+          useAuthStore.getState().setHasPassword(hasPassword);
         },
-        checkHasPassword: async () => {
-          const currentUsername = get().username;
-
-          if (!currentUsername) {
-            set({ hasPassword: null });
-            return { ok: false, error: "Authentication required" };
-          }
-
-          try {
-            const data = await checkUserPassword();
-            set({ hasPassword: data.hasPassword });
-            return { ok: true };
-          } catch (error) {
-            chatsStoreLog.error(
-              "Error checking password status:",
-              error
-            );
-            set({ hasPassword: null });
-            return {
-              ok: false,
-              error: "Network error while checking password",
-            };
-          }
-        },
-        setPassword: async (password, currentPassword) => {
-          const currentUsername = get().username;
-
-          if (!currentUsername) {
-            return { ok: false, error: "Authentication required" };
-          }
-
-          try {
-            const payload: { password: string; currentPassword?: string } = {
-              password,
-            };
-            if (typeof currentPassword === "string" && currentPassword.length > 0) {
-              payload.currentPassword = currentPassword;
-            }
-
-            await setUserPassword(payload);
-
-            // Update local state to reflect password has been set
-            set({ hasPassword: true });
-            return { ok: true };
-          } catch (error) {
-            chatsStoreLog.error("Error setting password:", error);
-            return {
-              ok: false,
-              error:
-                error instanceof ApiRequestError
-                  ? error.message
-                  : "Network error while setting password",
-            };
-          }
-        },
+        checkHasPassword: () => useAuthStore.getState().checkHasPassword(),
+        setPassword: (password, currentPassword) =>
+          useAuthStore.getState().setPassword(password, currentPassword),
         setRooms: (newRooms) => {
           // Ensure incoming data is an array
           if (!Array.isArray(newRooms)) {
@@ -710,111 +581,11 @@ export const useChatsStore = create<ChatsStoreState>()(
         setMessageRenderLimit: (limit: number) =>
           set(() => ({ messageRenderLimit: Math.max(20, Math.floor(limit)) })),
         reset: () => {
-          const currentUsername = get().username;
-          if (currentUsername) {
-            saveUsernameToRecovery(currentUsername);
-          }
           resetRoomsFetchCache();
           set(getInitialState());
         },
-        logout: async () => {
-          debug("Logging out user...");
-
-          const currentUsername = get().username;
-
-          if (currentUsername) {
-            try {
-              await logoutUserSafe();
-            } catch (err) {
-              chatsStoreLog.warn(
-                "Failed to notify server during logout:",
-                err
-              );
-            }
-          }
-
-          if (currentUsername) {
-            track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
-          }
-
-          localStorage.removeItem(USERNAME_RECOVERY_KEY);
-          resetRoomsFetchCache();
-
-          set((state) => ({
-            ...state,
-            aiMessages: [getInitialAiMessage()],
-            username: null,
-            isAuthenticated: false,
-            hasPassword: null,
-            currentRoomId: null,
-            rooms: [],
-            roomMessages: {},
-            unreadCounts: {},
-          }));
-
-          try {
-            await get().fetchRooms({ force: true });
-          } catch (error) {
-            chatsStoreLog.error(
-              "Error refreshing rooms after logout:",
-              error
-            );
-          }
-
-          debug("User logged out successfully");
-        },
-        deleteAccount: async ({ confirmUsername, currentPassword }) => {
-          const currentUsername = get().username;
-          if (!currentUsername) {
-            return { ok: false, error: "Authentication required" };
-          }
-
-          try {
-            await deleteAccountApi({
-              confirm: true,
-              confirmUsername,
-              ...(currentPassword ? { currentPassword } : {}),
-            });
-          } catch (error) {
-            chatsStoreLog.error("Error deleting account:", error);
-            return {
-              ok: false,
-              error:
-                error instanceof ApiRequestError
-                  ? error.message
-                  : "Network error while deleting account",
-            };
-          }
-
-          // Account is gone server-side (cookie cleared in the response). Clear
-          // all local state without calling the logout endpoint.
-          track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
-          localStorage.removeItem(USERNAME_RECOVERY_KEY);
-          resetRoomsFetchCache();
-
-          set((state) => ({
-            ...state,
-            aiMessages: [getInitialAiMessage()],
-            username: null,
-            isAuthenticated: false,
-            hasPassword: null,
-            currentRoomId: null,
-            rooms: [],
-            roomMessages: {},
-            unreadCounts: {},
-          }));
-
-          try {
-            await get().fetchRooms({ force: true });
-          } catch (error) {
-            chatsStoreLog.error(
-              "Error refreshing rooms after deletion:",
-              error
-            );
-          }
-
-          return { ok: true };
-        },
+        logout: () => useAuthStore.getState().logout(),
+        deleteAccount: (params) => useAuthStore.getState().deleteAccount(params),
         fetchRooms: async (options = {}) => {
           if (roomsFetchPromise) {
             debug("Reusing in-flight rooms fetch...");
@@ -1099,10 +870,11 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           // Create optimistic message
-          const tempId = `temp_${Math.random().toString(36).substring(2, 9)}`;
+          const clientId = crypto.randomUUID();
+          const tempId = `temp_${clientId}`;
           const optimisticMessage: ChatMessage = {
             id: tempId,
-            clientId: tempId,
+            clientId,
             roomId,
             username,
             content: content.trim(),
@@ -1113,7 +885,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           get().addMessageToRoom(roomId, optimisticMessage);
 
           try {
-            await sendRoomMessageApi(roomId, { content: content.trim() });
+            await sendRoomMessageApi(roomId, {
+              content: content.trim(),
+              clientId,
+            });
             track(CHAT_ANALYTICS.TEXT_MESSAGE, {
               ...getTextAnalytics(content.trim()),
               source: "room_store",
@@ -1134,62 +909,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Network error. Please try again." };
           }
         },
-        createUser: async (username: string, password: string) => {
-          const trimmedUsername = username.trim();
-          if (!trimmedUsername) {
-            return { ok: false, error: "Username cannot be empty" };
-          }
-
-          // Client-side validation mirroring server rules to provide instant feedback
-          const isValid = USERNAME_REGEX.test(trimmedUsername);
-          if (!isValid) {
-            return {
-              ok: false,
-              error:
-                "Invalid username: use 3-30 letters/numbers; '-' or '_' allowed between characters; no spaces or symbols",
-            };
-          }
-
-          // Require password client-side and enforce minimum length consistent with server
-          if (!password || password.trim().length === 0) {
-            return { ok: false, error: "Password is required" };
-          }
-          if (password.length < PASSWORD_MIN_LENGTH) {
-            return {
-              ok: false,
-              error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-            };
-          }
-
-          try {
-            const data = await registerUser({
-              username: trimmedUsername,
-              password,
-            });
-            if (data.user) {
-              set({ username: data.user.username, isAuthenticated: true });
-
-              setTimeout(() => {
-                get().checkHasPassword();
-              }, 100);
-
-              track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
-
-              return { ok: true };
-            }
-
-            return { ok: false, error: "Invalid response format" };
-          } catch (error) {
-            chatsStoreLog.error("Error creating user:", error);
-            return {
-              ok: false,
-              error:
-                error instanceof ApiRequestError
-                  ? error.message
-                  : "Network error. Please try again.",
-            };
-          }
-        },
+        createUser: (username, password) =>
+          useAuthStore.getState().register({ username, password }),
         incrementUnread: (roomId) => {
           set((state) => ({
             unreadCounts: {
@@ -1218,8 +939,6 @@ export const useChatsStore = create<ChatsStoreState>()(
       storage: createDebouncedPersistStorage(),
       partialize: (state) => ({
         aiMessages: state.aiMessages,
-        username: state.username,
-        hasPassword: state.hasPassword,
         currentRoomId: state.currentRoomId,
         isSidebarVisible: state.isSidebarVisible,
         isChannelsOpen: state.isChannelsOpen,
@@ -1241,28 +960,16 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (error) {
             chatsStoreLog.error("Error during rehydration:", error);
           } else if (state) {
-            debug(
-              "Rehydration complete. Current state username:",
-              state.username
+            const auth = useAuthStore.getState();
+            state.username = auth.username;
+            state.isAuthenticated = auth.isAuthenticated;
+            state.hasPassword = auth.hasPassword;
+            state.roomMessages = Object.fromEntries(
+              Object.entries(state.roomMessages).map(([roomId, messages]) => [
+                roomId,
+                capRoomMessages(messages),
+              ])
             );
-
-            // Recover username if missing
-            if (state.username === null) {
-              const recoveredUsername = getUsernameFromRecovery();
-              if (recoveredUsername) {
-                debug(
-                  `Recovered username '${recoveredUsername}' from recovery storage.`
-                );
-                state.username = recoveredUsername;
-              }
-            }
-
-            ensureUsernameRecovery(state.username);
-
-            // Restore session from the httpOnly cookie.
-            if (state.username) {
-              restoreSessionFromCookie(state.username);
-            }
           }
         };
       },
@@ -1270,45 +977,28 @@ export const useChatsStore = create<ChatsStoreState>()(
   )
 );
 
-/**
- * Verify the current session with the server.
- *
- * The httpOnly cookie authenticates the request automatically.
- */
-async function restoreSessionFromCookie(expectedUsername: string) {
-  try {
-    const session = await getAuthSession();
-
-    if (!session.ok) {
-      debug("Session restore failed:", session.status);
-      if (session.status === 401 || session.status === 403) {
-        forceLogoutOnUnauthorized();
-      }
-      return;
-    }
-
-    const data = session.data;
-    if (data.authenticated && data.username) {
-      debug("Session restored", {
-        username: data.username,
-        source: "cookie",
-      });
-      const store = useChatsStore.getState();
-
-      if (store.username === expectedUsername) {
-        store.setAuthenticated(true);
-        store.checkHasPassword();
-      }
-    } else {
-      debug("No valid session — logging out.");
-      forceLogoutOnUnauthorized();
-    }
-  } catch (err) {
-    // Network error — keep state, don't force-logout.
-    // The user may come back online and the cookie will still be valid.
-    chatsStoreLog.warn("Session restore request failed:", err);
+useAuthStore.subscribe((auth, previousAuth) => {
+  if (auth.username !== previousAuth.username) {
+    resetRoomsFetchCache();
   }
-}
+  useChatsStore.setState({
+    username: auth.username,
+    isAuthenticated: auth.isAuthenticated,
+    hasPassword: auth.hasPassword,
+  });
+});
+
+registerSessionTeardown(async () => {
+  resetRoomsFetchCache();
+  useChatsStore.setState({
+    aiMessages: [getInitialAiMessage()],
+    currentRoomId: null,
+    rooms: [],
+    roomMessages: {},
+    unreadCounts: {},
+  });
+  await useChatsStore.persist.clearStorage();
+});
 
 /**
  * Shallow-equality selector hook for this store. Co-located with the store

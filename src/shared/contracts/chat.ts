@@ -1,5 +1,7 @@
 export type RoomType = "public" | "private" | "irc";
 
+export const ROOM_MESSAGE_HISTORY_LIMIT = 100;
+
 export interface ChatRoom {
   id: string;
   name: string;
@@ -33,7 +35,12 @@ export interface ChatMessage {
   timestamp: number;
 }
 
-export type ApiChatMessage = Omit<ChatMessage, "clientId">;
+export type ApiChatMessage = ChatMessage;
+
+export interface SendRoomMessageRequest {
+  content: string;
+  clientId: string;
+}
 
 export interface ChatUser {
   username: string;

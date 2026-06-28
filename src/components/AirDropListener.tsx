@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, type CSSProperties } from "react";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import {
   useAirDropStore,
   type AirDropTransfer,
@@ -48,8 +48,8 @@ const macOsSecondaryToastButtonStyle: CSSProperties = {
 
 export function AirDropListener() {
   const { t } = useTranslation();
-  const username = useChatsStore((s) => s.username);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const username = useAuthStore((s) => s.username);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { currentTheme } = useThemeFlags();
   const getFileItem = useFilesStore((s) => s.getItem);
   const pendingTransfers = useAirDropStore((s) => s.pendingTransfers);

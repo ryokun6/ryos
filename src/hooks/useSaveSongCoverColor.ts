@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
 import { updateSongById } from "@/api/songs";
 import { getNewCoverColorToSave } from "@/apps/ipod/components/lyrics-display/colorUtils";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 
 interface SongCoverColorTrack {
@@ -11,8 +11,8 @@ interface SongCoverColorTrack {
 
 export function useSaveSongCoverColor(track: SongCoverColorTrack | null) {
   const savedKeysRef = useRef<Set<string>>(new Set());
-  const username = useChatsStore((state) => state.username);
-  const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const setTrackCoverColor = useIpodStore((state) => state.setTrackCoverColor);
 
   return useCallback(

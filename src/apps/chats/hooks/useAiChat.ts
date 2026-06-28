@@ -36,6 +36,7 @@ import {
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { markdownToHtml } from "@/utils/markdown";
 import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
@@ -231,13 +232,13 @@ function getSharedAiChat(): Chat<AIChatMessage> {
 }
 
 export function useAiChat(onPromptSetUsername?: () => void) {
-  const { aiMessages, setAiMessages, username, isAuthenticated } =
+  const { aiMessages, setAiMessages } =
     useChatsStoreShallow((state) => ({
       aiMessages: state.aiMessages,
       setAiMessages: state.setAiMessages,
-      username: state.username,
-      isAuthenticated: state.isAuthenticated,
     }));
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const launchApp = useLaunchApp();
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
@@ -1480,7 +1481,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         console.error("Authentication error - clearing invalid session");
 
         // Clear auth state (cookie will be cleared server-side on next request)
-        useChatsStore.getState().setAuthenticated(false);
+        void useAuthStore.getState().handleUnauthorized();
 
         // Show user-friendly error message with action button
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {

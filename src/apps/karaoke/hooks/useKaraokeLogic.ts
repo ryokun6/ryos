@@ -26,7 +26,7 @@ import { resolveMediaCoverUrl } from "@/utils/coverArt";
 import { TRANSLATION_LANGUAGES } from "@/utils/lyricsTranslation";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/cover-flow/types";
@@ -176,7 +176,7 @@ export function useKaraokeLogic({
     }))
   );
 
-  const { username } = useChatsStore(
+  const { username } = useAuthStore(
     useShallow((s) => ({ username: s.username }))
   );
   const {
@@ -1044,7 +1044,7 @@ export function useKaraokeLogic({
       // Save song metadata to cache when sharing (requires auth)
       // Pass isShare: true to update createdBy (if allowed)
       if (track) {
-        const { username, isAuthenticated } = useChatsStore.getState();
+        const { username, isAuthenticated } = useAuthStore.getState();
         const auth = username && isAuthenticated ? { username, isAuthenticated } : null;
         saveSongMetadataFromTrack(track, auth, { isShare: true }).catch((error) => {
           console.error("[Karaoke] Error saving song metadata to cache:", error);

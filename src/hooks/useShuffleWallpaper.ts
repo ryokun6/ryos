@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import {
   SHUFFLE_INTERVAL_MS,
@@ -39,7 +39,7 @@ export function useShuffleWallpaper() {
   const setRuntimeWallpaperSource = useDisplaySettingsStore(
     (s) => s.setRuntimeWallpaperSource
   );
-  const username = useChatsStore((s) => s.username);
+  const username = useAuthStore((s) => s.username);
 
   // Keep the latest resolved source in a ref so resolution can skip redundant
   // updates without re-subscribing.

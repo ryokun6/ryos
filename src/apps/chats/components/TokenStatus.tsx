@@ -1,5 +1,5 @@
 import { CheckCircle } from "@phosphor-icons/react";
-import { useChatsStore } from "@/stores/useChatsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useTranslation } from "react-i18next";
 
@@ -10,8 +10,8 @@ import { useTranslation } from "react-i18next";
 export function TokenStatus() {
   const { t } = useTranslation();
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
-  const username = useChatsStore((state) => state.username);
-  const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
+  const username = useAuthStore((state) => state.username);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   // Debug mode: Show simple auth status
   if (debugMode && username && isAuthenticated) {
