@@ -185,6 +185,7 @@ export function InternetExplorerAppComponent({
           isOpen={isShareDialogOpen}
           onClose={() => setIsShareDialogOpen(false)}
           itemType={t("apps.internet-explorer.page")}
+          itemTypeKey="page"
           itemIdentifier={url}
           secondaryIdentifier={year}
           title={currentPageTitle || url}

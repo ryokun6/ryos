@@ -23,7 +23,8 @@ const QRCodeSVG = React.lazy(() =>
 interface ShareItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  itemType: string; // e.g., "Page", "Song", "Item"
+  itemType: string; // Display label, e.g., "Page", "Song", "Item"
+  itemTypeKey?: string; // Stable key for translations/behavior, e.g., "page"
   itemIdentifier: string; // e.g., URL for IE, videoId for iPod
   secondaryIdentifier?: string; // e.g., year for IE
   title?: string; // e.g., Webpage title, Song title
@@ -37,6 +38,7 @@ export function ShareItemDialog({
   isOpen,
   onClose,
   itemType,
+  itemTypeKey,
   itemIdentifier,
   secondaryIdentifier,
   title,
@@ -71,8 +73,11 @@ export function ShareItemDialog({
     isWinXp,
   } = useThemeFlags();
 
-  // Translate itemType (e.g., "Page" -> translated "Page", "Song" -> translated "Song")
-  const translatedItemType = t(`common.dialog.share.itemTypes.${itemType.toLowerCase()}`, { defaultValue: itemType });
+  const itemTypeLookupKey = itemTypeKey ?? itemType.toLowerCase();
+  const translatedItemType = t(
+    `common.dialog.share.itemTypes.${itemTypeLookupKey}`,
+    { defaultValue: itemType }
+  );
 
   // Generate the share link when the dialog opens or identifiers change
   useEffect(() => {
@@ -99,7 +104,16 @@ export function ShareItemDialog({
       }
     };
     // Include all dependencies that affect URL generation
-  }, [isOpen, itemIdentifier, secondaryIdentifier, itemType, generateShareUrl, t, translatedItemType]);
+  }, [
+    isOpen,
+    itemIdentifier,
+    secondaryIdentifier,
+    itemType,
+    itemTypeKey,
+    generateShareUrl,
+    t,
+    translatedItemType,
+  ]);
 
   // Focus the input when the share URL is available
   useEffect(() => {
@@ -141,8 +155,8 @@ export function ShareItemDialog({
       text += ` ${t("common.dialog.share.by")} ${details}`;
     }
     if (secondaryIdentifier) {
-      // Handle year specifically for now, could be made more generic
-      if (itemType === "Page" && secondaryIdentifier !== "current") {
+      // Handle year specifically for page shares.
+      if (itemTypeLookupKey === "page" && secondaryIdentifier !== "current") {
         text += ` ${t("common.dialog.share.from")} ${secondaryIdentifier}`;
       }
     }
