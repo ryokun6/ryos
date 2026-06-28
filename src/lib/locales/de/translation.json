@@ -4442,12 +4442,12 @@
     },
     "auto": "Automatisch",
     "colors": {
-      "blue": "blau",
-      "green": "grün",
+      "blue": "Blau",
+      "green": "Grün",
       "orange": "orange",
-      "pink": "rosa",
+      "pink": "Rosa",
       "purple": "lila",
-      "yellow": "gelb"
+      "yellow": "Gelb"
     },
     "desktop": {
       "myComputer": "Arbeitsplatz",

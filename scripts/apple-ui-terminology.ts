@@ -18,6 +18,42 @@ export const APPLE_STYLE_GUIDE_SOURCE = {
     "76118d81e4ff9eb74b1217ff8b82bbd01f62d1ff0057a1802bec288d20a5bbfe",
 } as const;
 
+/**
+ * High-confidence English source strings aligned with Apple glossaries and the
+ * June 2026 Apple Style Guide. Non-English locales keep their existing
+ * translations; these keys are enforced in unit tests only.
+ */
+export const ENGLISH_STYLE_EXPECTATIONS = {
+  "apps.control-panels.masterVolume": "Main Volume",
+  "apps.control-panels.master": "Main",
+  "apps.chats.tokenStatus.authenticated": "Signed In",
+  "apps.finder.menu.goUp": "go up",
+  "apps.ipod.menu.repeatAll": "repeat all",
+  "apps.ipod.menu.repeatOne": "repeat one",
+  "apps.videos.menu.repeatAll": "repeat all",
+  "apps.videos.menu.repeatOne": "repeat one",
+  "apps.karaoke.menu.repeatAll": "repeat all",
+  "apps.karaoke.menu.repeatOne": "repeat one",
+  "apps.dashboard.ipod.repeatAll": "repeat all",
+  "apps.dashboard.ipod.repeatOne": "repeat one",
+  "common.colors.yellow": "Yellow",
+  "common.colors.blue": "Blue",
+  "common.colors.green": "Green",
+  "common.colors.pink": "Pink",
+  "common.colors.purple": "Purple",
+  "common.colors.orange": "Orange",
+  "common.auth.username": "user name",
+  "common.auth.recovery.identifier": "user name or email",
+} as const satisfies Record<string, string>;
+
+/** Patterns that must not appear in English catalog values (retro exceptions allowed). */
+export const ENGLISH_FORBIDDEN_VALUE_PATTERNS = [
+  { pattern: /\bMaster Volume\b/u, reason: "use Main Volume (inclusive language)" },
+  { pattern: /\bPlease sign in\b/u, reason: "omit Please in sign-in prompts" },
+  { pattern: /cannot be undone/u, reason: "prefer can't be undone" },
+  { pattern: /\benable account recovery\b/u, reason: "use for account recovery phrasing" },
+] as const;
+
 export const TRANSLATION_LOCALES = [
   "zh-TW",
   "ja",
@@ -121,6 +157,9 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
   "apps.calculator.speech.keys.memoryRecall": {
     pt: "recuperar memória",
   },
+  "common.colors.pink": {
+    "zh-TW": "粉色",
+  },
 } as const satisfies Record<string, Partial<LocalizedTerm>>;
 
 const APPLE_UI_CONTEXTUAL_ENGLISH = {
@@ -147,6 +186,7 @@ const APPLE_UI_CONTEXTUAL_ENGLISH = {
   "apps.calendar.event.cancel": "Cancel",
   "apps.contacts.picturePicker.cancel": "Cancel",
   "apps.calculator.speech.keys.memoryRecall": "memory recall",
+  "common.colors.pink": "Pink",
 } as const satisfies Record<
   keyof typeof APPLE_UI_CONTEXTUAL_TERMINOLOGY,
   string
