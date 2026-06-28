@@ -8,12 +8,21 @@ let useAppStore: typeof UseAppStoreHook;
 // The partial `window` stub must not leak into later test files (e.g. code
 // guarded by `typeof window !== "undefined"` expecting addEventListener).
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+const originalLocalStorage = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "localStorage"
+);
 
 afterAll(() => {
   if (originalWindow) {
     Object.defineProperty(globalThis, "window", originalWindow);
   } else {
     delete (globalThis as { window?: unknown }).window;
+  }
+  if (originalLocalStorage) {
+    Object.defineProperty(globalThis, "localStorage", originalLocalStorage);
+  } else {
+    delete (globalThis as { localStorage?: Storage }).localStorage;
   }
 });
 
@@ -31,6 +40,7 @@ function installBrowserStubs() {
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     value: localStorageStub,
+    writable: true,
   });
 
   if (typeof globalThis.CustomEvent === "undefined") {

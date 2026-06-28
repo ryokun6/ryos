@@ -36,6 +36,7 @@ if (!originalLocalStorage) {
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     value: new MemoryStorage(),
+    writable: true,
   });
 }
 

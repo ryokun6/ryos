@@ -14,6 +14,10 @@ import { createRoot, type Root } from "react-dom/client";
 import { getAccentCssVars } from "../src/themes/accents";
 import { darkAquaThemeCss } from "./theme-css-fixtures";
 import type { OsThemeId } from "../src/themes/types";
+import { ensureTestLocalStorage } from "./setup";
+
+const actualSound = await import("../src/hooks/useSound");
+const actualReactI18next = await import("react-i18next");
 
 beforeAll(() => {
   if (typeof document === "undefined") {
@@ -26,9 +30,13 @@ afterAll(async () => {
   if (GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }
+  ensureTestLocalStorage();
+  mock.module("@/hooks/useSound", () => actualSound);
+  mock.module("react-i18next", () => actualReactI18next);
 });
 
 mock.module("@/hooks/useSound", () => ({
+  ...actualSound,
   Sounds: {
     BOOT: "/sounds/boot.mp3",
     WINDOW_CLOSE: "/sounds/window-close.mp3",
@@ -38,6 +46,7 @@ mock.module("@/hooks/useSound", () => ({
 }));
 
 mock.module("react-i18next", () => ({
+  ...actualReactI18next,
   useTranslation: () => ({
     t: (key: string) =>
       key === "common.system.systemRestoring" ? "System Restoring..." : key,

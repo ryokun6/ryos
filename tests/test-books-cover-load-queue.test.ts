@@ -14,6 +14,7 @@ import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { dbOperations, STORES } from "../src/utils/indexedDB";
 import type { FileSystemItem } from "../src/stores/useFilesStore";
+import { ensureTestLocalStorage } from "./setup";
 
 let activeParses = 0;
 let maxActiveParses = 0;
@@ -142,6 +143,7 @@ describe("Books cover loading queue", () => {
     if (GlobalRegistrator.isRegistered) {
       GlobalRegistrator.unregister();
     }
+    ensureTestLocalStorage();
   });
 
   test("serializes shelf EPUB cover reads to limit startup memory", async () => {

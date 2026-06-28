@@ -17,6 +17,7 @@ Object.defineProperty(globalThis, "localStorage", {
         localStorageMap.delete(key);
       },
     } satisfies Pick<Storage, "getItem" | "setItem" | "removeItem">),
+  writable: true,
 });
 
 const { SYNC_CODECS, isBlobCodec } = await import("../src/sync/codecs");
@@ -50,6 +51,7 @@ describe("Books cloud blob sync", () => {
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: originalLocalStorage,
+      writable: true,
     });
   });
 

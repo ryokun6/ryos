@@ -27,6 +27,7 @@ describe("broadcastListenState", () => {
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: new MemoryStorage(),
+      writable: true,
     });
     const { broadcastListenState } = await import(
       "../src/shared/media/playbackListenSync"

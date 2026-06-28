@@ -9,6 +9,7 @@ import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import StarterKit from "@tiptap/starter-kit";
+import { ensureTestLocalStorage } from "./setup";
 import { handleMarkdownPaste } from "../src/apps/textedit/extensions/MarkdownPaste";
 import {
   getMarkdownTextForPaste,
@@ -67,6 +68,7 @@ afterAll(() => {
   if (GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }
+  ensureTestLocalStorage();
 });
 
 describe("TextEdit Markdown paste detection", () => {

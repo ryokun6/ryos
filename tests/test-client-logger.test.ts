@@ -60,6 +60,7 @@ function installMemoryStorage() {
       removeItem: (key: string) => data.delete(key),
       clear: () => data.clear(),
     } satisfies Pick<Storage, "getItem" | "setItem" | "removeItem" | "clear">,
+    writable: true,
   });
 }
 
@@ -100,6 +101,7 @@ describe("client logger", () => {
       Object.defineProperty(globalThis, "localStorage", {
         configurable: true,
         value: originalLocalStorage,
+        writable: true,
       });
     }
     refreshRuntimeDebugFlag();

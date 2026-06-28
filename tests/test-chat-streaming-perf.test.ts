@@ -21,6 +21,7 @@ import type { AIChatMessage, ChatMessage } from "../src/types/chat";
 import { buildDisplayMessages } from "../src/apps/chats/utils/messages";
 import { getStreamPreviewThrottleMs } from "../src/components/shared/html-preview/hooks/useStreamPreview";
 import { decodeHtmlEntities } from "../src/utils/decodeHtmlEntities";
+import { ensureTestLocalStorage } from "./setup";
 
 const readSource = (relPath: string): string =>
   readFileSync(resolve(process.cwd(), relPath), "utf-8");
@@ -173,6 +174,7 @@ describe("decodeHtmlEntities streaming fast path", () => {
       if (GlobalRegistrator.isRegistered) {
         GlobalRegistrator.unregister();
       }
+      ensureTestLocalStorage();
     });
 
     test("does not take the fast path when tags are present", () => {
