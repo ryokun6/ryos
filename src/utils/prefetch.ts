@@ -313,8 +313,13 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
       Boolean(result.server) && !hasStoredPrefetchManifestTimestamp();
     if (isManual) {
       const stored = getStoredVersion();
-      toast.success('Already running the latest version', {
-        description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
+      toast.success(i18n.t("common.toast.alreadyLatestVersion"), {
+        description: stored.version
+          ? i18n.t("common.toast.alreadyLatestVersionDetail", {
+              version: stored.version,
+              buildNumber: stored.buildNumber,
+            })
+          : undefined,
       });
     }
     if (shouldWarmAssets && result.server) {
@@ -374,7 +379,7 @@ export async function forceRefreshCache(): Promise<void> {
   const serverVersion = await fetchServerVersion();
   
   if (!serverVersion) {
-    toast.error('Could not check for updates');
+    toast.error(i18n.t("common.toast.couldNotCheckUpdates"));
     return;
   }
   
@@ -383,8 +388,13 @@ export async function forceRefreshCache(): Promise<void> {
   
   // If already on latest version, just show success message without reboot
   if (!isNewVersion) {
-    toast.success('Already running the latest version', {
-      description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
+    toast.success(i18n.t("common.toast.alreadyLatestVersion"), {
+      description: stored.version
+        ? i18n.t("common.toast.alreadyLatestVersionDetail", {
+            version: stored.version,
+            buildNumber: stored.buildNumber,
+          })
+        : undefined,
     });
     return;
   }
@@ -437,7 +447,7 @@ async function runPrefetchWithToast(
   // Fetch manifest first
   const manifest = await fetchIconManifest();
   if (!manifest) {
-    toast.error('Failed to load asset manifest');
+    toast.error(i18n.t("common.toast.failedToLoadAssetManifest"));
     log.debug("Could not fetch manifest");
     return;
   }
@@ -450,7 +460,7 @@ async function runPrefetchWithToast(
   const totalItems = iconUrls.length + soundUrls.length + assetUrls.length;
   
   if (totalItems === 0) {
-    toast.info('No assets to cache');
+    toast.info(i18n.t("common.toast.noAssetsToCache"));
     log.debug("No assets to prefetch");
     return;
   }
@@ -535,7 +545,7 @@ async function runPrefetchWithToast(
     finalizePrefetch(showVersionToast, server);
   } catch (error) {
     console.error('[Prefetch] Error during prefetch:', error);
-    toast.error('Failed to cache assets', { id: toastId });
+    toast.error(i18n.t("common.toast.failedToCacheAssets"), { id: toastId });
   }
 }
 

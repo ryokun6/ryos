@@ -21,6 +21,7 @@ import {
   type ConsoleLogLevel,
 } from "@/utils/consoleCapture";
 import { osCardClassName } from "@/components/shared/osThemePrimitives";
+import { useTranslation } from "react-i18next";
 
 const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
   log: "text-os-text-primary",
@@ -45,6 +46,7 @@ function formatTime(timestamp: number): string {
  * where the browser dev tools are unavailable.
  */
 export function DebugLogOverlay() {
+  const { t } = useTranslation();
   const debugMode = useDisplaySettingsStore((s) => s.debugMode);
   const flags = useThemeFlags();
   const [open, setOpen] = useState(false);
@@ -150,26 +152,28 @@ export function DebugLogOverlay() {
               "border-[color:var(--os-color-separator)]"
             )}
           >
-            <span className="font-os-ui text-[12px] font-semibold">Console</span>
+            <span className="font-os-ui text-[12px] font-semibold">
+              {t("debug.console")}
+            </span>
             <span className="font-os-ui text-[12px] opacity-60">
               {entries.length}
             </span>
             {errorCount > 0 && (
               <span className="font-os-ui text-[12px] text-red-500">
-                {errorCount} err
+                {t("debug.errorCount", { count: errorCount })}
               </span>
             )}
             {warnCount > 0 && (
               <span className="font-os-ui text-[12px] text-amber-500">
-                {warnCount} warn
+                {t("debug.warnCount", { count: warnCount })}
               </span>
             )}
             <div className="ml-auto flex items-center gap-0.5">
               <button
                 type="button"
                 onClick={handleCopy}
-                title="Copy logs"
-                aria-label="Copy logs"
+                title={t("debug.copyLogs")}
+                aria-label={t("debug.copyLogs")}
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
                 {copied ? (
@@ -177,13 +181,13 @@ export function DebugLogOverlay() {
                 ) : (
                   <Copy weight="bold" className="size-3.5" />
                 )}
-                <span>{copied ? "Copied" : "Copy"}</span>
+                <span>{copied ? t("debug.copied") : t("debug.copy")}</span>
               </button>
               <button
                 type="button"
                 onClick={() => clearConsoleCapture()}
-                title="Clear logs"
-                aria-label="Clear logs"
+                title={t("debug.clearLogs")}
+                aria-label={t("debug.clearLogs")}
                 className="flex items-center rounded p-1 hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
                 <Trash weight="bold" className="size-3" />
@@ -191,8 +195,8 @@ export function DebugLogOverlay() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                title="Close"
-                aria-label="Close console"
+                title={t("common.window.close")}
+                aria-label={t("debug.closeConsole")}
                 className="flex items-center rounded p-1 hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
                 <X weight="bold" className="size-3" />
@@ -208,7 +212,7 @@ export function DebugLogOverlay() {
           >
             {entries.length === 0 ? (
               <div className="py-4 text-center text-[11px] opacity-50">
-                No logs captured yet.
+                {t("debug.noLogsYet")}
               </div>
             ) : (
               entries.map((entry: ConsoleLogEntry) => (
@@ -238,8 +242,8 @@ export function DebugLogOverlay() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title={open ? "Hide console" : "Show console"}
-        aria-label={open ? "Hide console" : "Show console"}
+        title={open ? t("debug.hideConsole") : t("debug.showConsole")}
+        aria-label={open ? t("debug.hideConsole") : t("debug.showConsole")}
         aria-pressed={open}
         className={cn(
           "flex items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-os-window",
@@ -250,7 +254,7 @@ export function DebugLogOverlay() {
         )}
       >
         <Bug weight="fill" className="size-3.5" />
-        <span>Debug</span>
+        <span>{t("debug.toggleLabel")}</span>
         {(errorCount > 0 || warnCount > 0) && (
           <span
             className={cn(

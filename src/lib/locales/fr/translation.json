@@ -4643,6 +4643,7 @@
     },
     "toast": {
       "alreadyLatestVersion": "Vous utilisez déjà la dernière version",
+      "alreadyLatestVersionDetail": "ryOS {{version}} ({{buildNumber}})",
       "couldNotCheckUpdates": "Impossible de vérifier les mises à jour",
       "failedToCacheAssets": "Échec de la mise en cache des ressources",
       "failedToLoadAssetManifest": "Échec du chargement du manifeste des ressources",
@@ -4672,6 +4673,20 @@
       "openKaraoke": "Ouvrir le Karaoké",
       "openYouTube": "Ouvrir YouTube"
     }
+  },
+  "debug": {
+    "clearLogs": "Effacer les logs",
+    "closeConsole": "Fermer la console",
+    "console": "Console",
+    "copied": "Copié",
+    "copy": "Copier",
+    "copyLogs": "Copier les logs",
+    "errorCount": "{{count}} err",
+    "hideConsole": "Masquer la console",
+    "noLogsYet": "Aucun log capturé pour le moment.",
+    "showConsole": "Afficher la console",
+    "toggleLabel": "Debug",
+    "warnCount": "{{count}} avert"
   },
   "settings": {
     "language": {
@@ -4721,5 +4736,10 @@
     },
     "title": "Spotlight",
     "topHits": "Résultats principaux"
+  },
+  "updates": {
+    "desktopAppOffer": "ryOS est disponible en tant qu'application {{platform}}",
+    "desktopAvailable": "ryOS {{version}} pour {{platform}} est disponible",
+    "download": "Télécharger"
   }
 }

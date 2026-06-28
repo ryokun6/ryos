@@ -4628,6 +4628,7 @@
     },
     "toast": {
       "alreadyLatestVersion": "Уже установлена последняя версия",
+      "alreadyLatestVersionDetail": "ryOS {{version}} ({{buildNumber}})",
       "couldNotCheckUpdates": "Не удалось проверить наличие обновлений",
       "failedToCacheAssets": "Не удалось кэшировать ресурсы",
       "failedToLoadAssetManifest": "Не удалось загрузить манифест ресурсов",
@@ -4657,6 +4658,20 @@
       "openKaraoke": "Открыть Караоке",
       "openYouTube": "Открыть YouTube"
     }
+  },
+  "debug": {
+    "clearLogs": "Очистить логи",
+    "closeConsole": "Закрыть консоль",
+    "console": "Консоль",
+    "copied": "Скопировано",
+    "copy": "Копировать",
+    "copyLogs": "Копировать логи",
+    "errorCount": "{{count}} ош.",
+    "hideConsole": "Скрыть консоль",
+    "noLogsYet": "Логи пока не собраны.",
+    "showConsole": "Показать консоль",
+    "toggleLabel": "Отладка",
+    "warnCount": "{{count}} предупр."
   },
   "settings": {
     "language": {
@@ -4706,5 +4721,10 @@
     },
     "title": "Spotlight",
     "topHits": "Лучшие результаты"
+  },
+  "updates": {
+    "desktopAppOffer": "ryOS доступна как приложение для {{platform}}",
+    "desktopAvailable": "Доступна ryOS {{version}} для {{platform}}",
+    "download": "Скачать"
   }
 }

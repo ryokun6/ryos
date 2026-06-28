@@ -235,6 +235,7 @@
       "failedToLoadAssetManifest": "Failed to load asset manifest",
       "noAssetsToCache": "No assets to cache",
       "alreadyLatestVersion": "Already running the latest version",
+      "alreadyLatestVersionDetail": "ryOS {{version}} ({{buildNumber}})",
       "couldNotCheckUpdates": "Could not check for updates"
     },
     "auth": {
@@ -4524,7 +4525,7 @@
         "clear": "Clear",
         "basic": "Basic",
         "scientific": "Scientific",
-        "conversion": "Conversion",
+        "conversion": "Convert",
         "sound": "Sound",
         "speechEnabled": "Speech",
         "speakButtonPresses": "Speak Button Presses",
@@ -4688,6 +4689,25 @@
       "openYouTube": "Open YouTube",
       "addToIpod": "Add to iPod"
     }
+  },
+  "debug": {
+    "console": "Console",
+    "errorCount": "{{count}} err",
+    "warnCount": "{{count}} warn",
+    "copyLogs": "Copy logs",
+    "copied": "Copied",
+    "copy": "Copy",
+    "clearLogs": "Clear logs",
+    "closeConsole": "Close console",
+    "hideConsole": "Hide console",
+    "showConsole": "Show console",
+    "noLogsYet": "No logs captured yet.",
+    "toggleLabel": "Debug"
+  },
+  "updates": {
+    "desktopAvailable": "ryOS {{version}} for {{platform}} is available",
+    "desktopAppOffer": "ryOS is available as a {{platform}} app",
+    "download": "Download"
   },
   "settings": {
     "language": {

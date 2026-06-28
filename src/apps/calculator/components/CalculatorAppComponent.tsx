@@ -7,6 +7,7 @@ import { calculatorStyles } from "../utils/calculatorStyles";
 import { getCalculatorWindowSize } from "../utils/windowSizes";
 import { CalculatorBody } from "./CalculatorBody";
 import { CalculatorMenuBar } from "./CalculatorMenuBar";
+import { CalculatorTitlebarModeControl } from "./CalculatorTitlebarModeControl";
 import { useCalculatorLogic } from "../hooks/useCalculatorLogic";
 
 export function CalculatorAppComponent({
@@ -40,6 +41,15 @@ export function CalculatorAppComponent({
   } = logic;
 
   const size = getCalculatorWindowSize(mode, calculatorTheme);
+
+  const modeControl = (
+    <CalculatorTitlebarModeControl
+      mode={mode}
+      onSetMode={setMode}
+      isForeground={isForeground ?? false}
+      isBrushedMetal={isMacTheme}
+    />
+  );
 
   const menuBar = (
     <CalculatorMenuBar
@@ -92,6 +102,7 @@ export function CalculatorAppComponent({
           minHeight: size.height,
           maxHeight: size.height,
         },
+        titleBarRightContent: modeControl,
       }}
     >
       <CalculatorBody logic={logic} />

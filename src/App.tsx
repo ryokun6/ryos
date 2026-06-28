@@ -177,12 +177,15 @@ export function App() {
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
         // New version available - show update toast (both web and desktop shell)
-        toast(`ryOS ${result.version} for ${desktopDownloadTarget.platformLabel} is available`, {
+        toast(t("updates.desktopAvailable", {
+          version: result.version,
+          platform: desktopDownloadTarget.platformLabel,
+        }), {
           id: 'desktop-update',
           icon: <DownloadSimple className="size-4" weight="bold" />,
           duration: Infinity,
           action: {
-            label: "Download",
+            label: t("updates.download"),
             onClick: () => {
               window.open(downloadUrl, "_blank");
             },
@@ -196,12 +199,14 @@ export function App() {
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
         // First time user on web - show initial download toast (not in desktop shell)
-        toast(`ryOS is available as a ${desktopDownloadTarget.platformLabel} app`, {
+        toast(t("updates.desktopAppOffer", {
+          platform: desktopDownloadTarget.platformLabel,
+        }), {
           id: 'desktop-update',
           icon: <DownloadSimple className="size-4" weight="bold" />,
           duration: Infinity,
           action: {
-            label: "Download",
+            label: t("updates.download"),
             onClick: () => {
               window.open(downloadUrl, "_blank");
             },
@@ -223,7 +228,7 @@ export function App() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [setLastSeenDesktopVersion]);
+  }, [setLastSeenDesktopVersion, t]);
 
   if (showBootScreen) {
     return (

@@ -336,6 +336,30 @@ export const calculatorStyles = `
   .calc-conversion-unit-trigger::after {
     right: 2px !important;
   }
+  .calc-titlebar-mode-trigger {
+    height: 100%;
+    min-height: 0;
+    align-items: center;
+  }
+  .calc-titlebar-mode-chevron {
+    width: 8px;
+    height: 10px !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-inline-start: 1px;
+    opacity: 0.62;
+    align-self: center;
+  }
+  .calc-titlebar-mode-chevron::before {
+    content: none !important;
+    background: none !important;
+  }
+  .calc-titlebar-mode-chevron::after {
+    right: 0 !important;
+  }
   .calc-conversion-swap {
     position: absolute;
     left: 0;

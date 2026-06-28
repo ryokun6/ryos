@@ -4643,6 +4643,7 @@
     },
     "toast": {
       "alreadyLatestVersion": "最新バージョンです",
+      "alreadyLatestVersionDetail": "ryOS {{version}} ({{buildNumber}})",
       "couldNotCheckUpdates": "アップデートを確認できませんでした",
       "failedToCacheAssets": "アセットのキャッシュに失敗しました",
       "failedToLoadAssetManifest": "アセットマニフェストの読み込みに失敗しました",
@@ -4672,6 +4673,20 @@
       "openKaraoke": "カラオケを開く",
       "openYouTube": "YouTubeを開く"
     }
+  },
+  "debug": {
+    "clearLogs": "ログを消去",
+    "closeConsole": "コンソールを閉じる",
+    "console": "コンソール",
+    "copied": "コピーしました",
+    "copy": "コピー",
+    "copyLogs": "ログをコピー",
+    "errorCount": "{{count}} エラー",
+    "hideConsole": "コンソールを非表示",
+    "noLogsYet": "ログはまだ記録されていません。",
+    "showConsole": "コンソールを表示",
+    "toggleLabel": "デバッグ",
+    "warnCount": "{{count}} 警告"
   },
   "settings": {
     "language": {
@@ -4721,5 +4736,10 @@
     },
     "title": "Spotlight",
     "topHits": "トップヒット"
+  },
+  "updates": {
+    "desktopAppOffer": "ryOSは{{platform}}アプリとして利用可能です",
+    "desktopAvailable": "{{platform}}版ryOS {{version}}が利用可能です",
+    "download": "ダウンロード"
   }
 }

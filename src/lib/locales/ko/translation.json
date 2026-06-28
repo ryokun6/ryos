@@ -4643,6 +4643,7 @@
     },
     "toast": {
       "alreadyLatestVersion": "이미 최신 버전입니다.",
+      "alreadyLatestVersionDetail": "ryOS {{version}} ({{buildNumber}})",
       "couldNotCheckUpdates": "업데이트를 확인할 수 없습니다.",
       "failedToCacheAssets": "에셋 캐시 실패",
       "failedToLoadAssetManifest": "에셋 매니페스트 로드 실패",
@@ -4672,6 +4673,20 @@
       "openKaraoke": "노래방 열기",
       "openYouTube": "유튜브 열기"
     }
+  },
+  "debug": {
+    "clearLogs": "로그 지우기",
+    "closeConsole": "콘솔 닫기",
+    "console": "콘솔",
+    "copied": "복사됨",
+    "copy": "복사",
+    "copyLogs": "로그 복사",
+    "errorCount": "{{count}} 오류",
+    "hideConsole": "콘솔 숨기기",
+    "noLogsYet": "아직 캡처된 로그가 없습니다.",
+    "showConsole": "콘솔 표시",
+    "toggleLabel": "디버그",
+    "warnCount": "{{count}} 경고"
   },
   "settings": {
     "language": {
@@ -4721,5 +4736,10 @@
     },
     "title": "Spotlight",
     "topHits": "인기 항목"
+  },
+  "updates": {
+    "desktopAppOffer": "ryOS를 {{platform}} 앱으로 사용할 수 있습니다",
+    "desktopAvailable": "{{platform}}용 ryOS {{version}}을 사용할 수 있습니다",
+    "download": "다운로드"
   }
 }
