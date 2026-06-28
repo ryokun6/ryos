@@ -56,6 +56,10 @@ async function flushReact(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+async function wait(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function renderBootScreen(theme: OsThemeId): Promise<string[]> {
   const warnings: string[] = [];
   const originalWarn = console.warn;
@@ -183,6 +187,59 @@ describe("macOS boot screen accent tokens", () => {
             warning.includes("aria-describedby={undefined}")
         )
       ).toBe(false);
+    }
+  });
+
+  test("debug mode does not start the boot progress interval", async () => {
+    const originalSetInterval = window.setInterval;
+    const boundSetInterval: typeof window.setInterval =
+      originalSetInterval.bind(window);
+    let intervalCount = 0;
+
+    window.setInterval = (...args) => {
+      intervalCount += 1;
+      return boundSetInterval(...args);
+    };
+
+    try {
+      await renderBootScreen("system7");
+      expect(intervalCount).toBe(0);
+    } finally {
+      window.setInterval = originalSetInterval;
+    }
+  });
+
+  test("unmounting after progress reaches 100 clears pending completion", async () => {
+    let root: Root | null = null;
+    const host = document.createElement("div");
+    let completeCount = 0;
+
+    document.body.appendChild(host);
+    useThemeStore.setState({ current: "system7" });
+
+    try {
+      root = createRoot(host);
+      root.render(
+        React.createElement(BootScreen, {
+          isOpen: true,
+          onOpenChange: () => {},
+          onBootComplete: () => {
+            completeCount += 1;
+          },
+        })
+      );
+      await flushReact();
+      await wait(2100);
+
+      root.unmount();
+      root = null;
+      await wait(650);
+
+      expect(completeCount).toBe(0);
+    } finally {
+      root?.unmount();
+      host.remove();
+      document.body.innerHTML = "";
     }
   });
 
