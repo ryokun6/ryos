@@ -44,6 +44,11 @@ import { useTelegramLink } from "@/hooks/useTelegramLink";
 import { useRecoveryEmail } from "@/hooks/useRecoveryEmail";
 import { useAccountJoinDate } from "@/hooks/useAccountJoinDate";
 import { getActiveCloudSyncEngine } from "@/sync/engine";
+import { shouldIncludeManualBackupLocalStorageKey } from "@/sync/manualBackup";
+import {
+  createManualRestoreIntent,
+  setManualRestoreIntent,
+} from "@/sync/manualRestoreIntent";
 import { SYNC_CATEGORIES } from "@/shared/sync2/namespaces";
 import {
   readStoreItems,
@@ -627,7 +632,7 @@ export function useControlPanelsLogic({
       flushDebouncedPersistWrites();
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key) {
+        if (key && shouldIncludeManualBackupLocalStorageKey(key)) {
           backup.localStorage[key] = localStorage.getItem(key);
         }
       }
@@ -933,7 +938,10 @@ export function useControlPanelsLogic({
 
       // Restore localStorage
       Object.entries(backup.localStorage).forEach(([key, value]) => {
-        if (value !== null) {
+        if (
+          value !== null &&
+          shouldIncludeManualBackupLocalStorageKey(key)
+        ) {
           localStorage.setItem(key, value as string);
         }
       });
@@ -999,6 +1007,9 @@ export function useControlPanelsLogic({
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 100 });
 
       setNextBootMessage(t("common.system.restoringSystem"));
+      setManualRestoreIntent(
+        createManualRestoreIntent(username, backup.timestamp)
+      );
 
       // Reload the page to apply changes
       window.location.reload();

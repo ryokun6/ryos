@@ -89,6 +89,17 @@ interface EngineStatusCallbacks {
   onError?: (error: string | null) => void;
 }
 
+export interface RestoreLocalStateToCloudOptions {
+  /** Test seam / targeted repair path; production restore uses every namespace. */
+  namespaces?: readonly SyncNamespace[];
+}
+
+export interface RestoreLocalStateToCloudResult {
+  seq: number;
+  uploaded: number;
+  deleted: number;
+}
+
 export class CloudSyncEngine {
   private readonly state: SyncClientState;
   private readonly callbacks: EngineStatusCallbacks;
@@ -1104,6 +1115,160 @@ export class CloudSyncEngine {
       this.reportError(null);
     } finally {
       syncStore.setCheckingRemote(false);
+    }
+  }
+
+  /**
+   * Manual backup restore is a local-state restore first. Promote the restored
+   * local snapshot to Sync v2 before normal bootstrap can pull the server over it.
+   */
+  async restoreLocalStateToCloud(
+    options: RestoreLocalStateToCloudOptions = {}
+  ): Promise<RestoreLocalStateToCloudResult> {
+    if (this.stopped) {
+      throw new DOMException("Cloud sync stopped", "AbortError");
+    }
+
+    const requested = options.namespaces
+      ? new Set(options.namespaces)
+      : new Set<SyncNamespace>(SYNC_NAMESPACES);
+    const namespaces = NAMESPACE_APPLY_ORDER.filter((namespace) =>
+      requested.has(namespace)
+    );
+    if (namespaces.length === 0) {
+      return { seq: this.state.cursor ?? 0, uploaded: 0, deleted: 0 };
+    }
+
+    for (const namespace of namespaces) {
+      const codec = SYNC_CODECS[namespace];
+      if (codec.isReady && !codec.isReady()) {
+        throw new Error(`Sync namespace ${namespace} is not ready for restore`);
+      }
+    }
+
+    const syncStore = useCloudSyncStore.getState();
+    const categories = new Set(namespaces.map(getSyncNamespaceCategory));
+    for (const category of categories) {
+      syncStore.markCategorySyncing(category, "upload", true);
+    }
+
+    const needsDb = namespaces.some((ns) => SYNC_CODECS[ns].usesIndexedDb);
+    const db = needsDb ? await ensureIndexedDBInitialized() : undefined;
+    const ctx: CodecContext = { db };
+    let uploaded = 0;
+    let deleted = 0;
+
+    try {
+      cloudSyncLog.debug("Manual restore promotion started", { namespaces });
+      const snapshot = await getSyncSnapshot(this.abortController.signal);
+      if (this.stopped) {
+        throw new DOMException("Cloud sync stopped", "AbortError");
+      }
+
+      // Drop stale cursor/shadow restored from a backup. The server snapshot is
+      // only used as the deletion baseline; it must not be applied locally.
+      this.state.reset();
+      for (const entry of Object.values(snapshot.entries)) {
+        this.state.observeTimestamp(entry.t);
+      }
+      this.state.setCursor(snapshot.seq);
+
+      const ops: SyncOp[] = [];
+      const shadowUpdates = new Map<string, { t: string; h: string }>();
+      const localKeys = new Set<string>();
+
+      for (const namespace of namespaces) {
+        const codec = SYNC_CODECS[namespace];
+        const collected = await codec.collect(ctx);
+        for (const key of collected.keys()) {
+          localKeys.add(key);
+        }
+
+        if (isSyncBlobNamespace(namespace)) {
+          const pendingUploads: BlobUploadItem[] = [];
+          const pendingTimestamps = new Map<string, string>();
+          let itemIndex = 0;
+          for (const [key, item] of collected) {
+            if (itemIndex > 0 && itemIndex % BLOB_HASH_YIELD_INTERVAL === 0) {
+              await yieldToMainThread();
+              if (this.stopped) {
+                throw new DOMException("Cloud sync stopped", "AbortError");
+              }
+            }
+            itemIndex += 1;
+            const sha256 = await sha256Json(item);
+            pendingUploads.push({ key, sha256, item });
+            pendingTimestamps.set(key, this.state.nextTimestamp());
+          }
+
+          if (pendingUploads.length > 0) {
+            const category = getSyncNamespaceCategory(namespace);
+            syncStore.markCategoryUploadProgress(category, 0);
+            const refs = await uploadBlobItems(pendingUploads, {
+              signal: this.abortController.signal,
+              onProgress: (progress) => {
+                syncStore.markCategoryUploadProgress(
+                  category,
+                  progress.percentage
+                );
+              },
+            });
+            for (const upload of pendingUploads) {
+              const ref = refs.get(upload.key);
+              if (!ref) continue;
+              const t = pendingTimestamps.get(upload.key)!;
+              ops.push({ k: upload.key, v: { blob: ref }, t });
+              shadowUpdates.set(upload.key, { t, h: upload.sha256 });
+              uploaded += 1;
+            }
+          }
+        } else {
+          for (const [key, doc] of collected) {
+            const h = hashDoc(doc);
+            const t = this.state.nextTimestamp();
+            ops.push({ k: key, v: doc, t });
+            shadowUpdates.set(key, { t, h });
+            uploaded += 1;
+          }
+        }
+      }
+
+      for (const [key, entry] of Object.entries(snapshot.entries)) {
+        const namespace = getSyncKeyNamespace(key);
+        if (!namespace || !requested.has(namespace)) continue;
+        if (localKeys.has(key) || entry.del) continue;
+        const t = this.state.nextTimestamp();
+        ops.push({ k: key, del: true, t });
+        shadowUpdates.set(key, { t, h: "__del__" });
+        deleted += 1;
+      }
+
+      if (ops.length > 0) {
+        cloudSyncLog.debug("Manual restore promotion uploading ops", {
+          uploaded,
+          deleted,
+          ops: summarizeSyncOps(ops),
+        });
+        await this.sendOps(ops, shadowUpdates);
+      }
+
+      const completedAt = new Date().toISOString();
+      for (const category of categories) {
+        syncStore.markCategoryUploaded(category, completedAt);
+      }
+      this.reportError(null);
+      cloudSyncLog.debug("Manual restore promotion complete", {
+        seq: this.state.cursor,
+        uploaded,
+        deleted,
+      });
+      return { seq: this.state.cursor ?? snapshot.seq, uploaded, deleted };
+    } finally {
+      db?.close();
+      for (const category of categories) {
+        syncStore.markCategorySyncing(category, "upload", false);
+        syncStore.markCategoryUploadProgress(category, null);
+      }
     }
   }
 
