@@ -7,6 +7,7 @@ import { fetchSongLyrics } from "@/api/songs";
 import { createClientLogger } from "@/utils/logger";
 import {
   getLyricsErrorMessage,
+  isExpectedLyricsMissError,
   normalizeLyricsFetchError,
 } from "@/utils/lyricsError";
 import {
@@ -726,7 +727,12 @@ function handleLyricsError(
   setCurrentLine: (line: number) => void
 ) {
   const displayError = getLyricsErrorMessage(err);
-  lyricsLog.error("fetch:failed", { error: err, displayError, context });
+  const logPayload = { error: err, displayError, context };
+  if (isExpectedLyricsMissError(err)) {
+    lyricsLog.warn("fetch:notFound", logPayload);
+  } else {
+    lyricsLog.error("fetch:failed", logPayload);
+  }
   setError(displayError);
   setOriginalLines([]);
   setCurrentLine(-1);

@@ -4,6 +4,7 @@ import { parseLrcToLines } from "../api/songs/_lyrics";
 import { ApiRequestError } from "../src/api/core";
 import {
   getLyricsErrorMessage,
+  isExpectedLyricsMissError,
   normalizeLyricsFetchError,
 } from "../src/utils/lyricsError";
 
@@ -99,5 +100,19 @@ describe("lyrics error handling", () => {
     expect(
       getLyricsErrorMessage(new DOMException("cancelled", "AbortError"))
     ).toBe("Lyrics search timed out.");
+  });
+
+  test("treats 404 and no-lyrics errors as expected misses", () => {
+    expect(
+      isExpectedLyricsMissError(
+        normalizeLyricsFetchError(new ApiRequestError(404, "missing", {}))
+      )
+    ).toBe(true);
+    expect(isExpectedLyricsMissError(new Error("No lyrics found"))).toBe(true);
+    expect(
+      isExpectedLyricsMissError(
+        normalizeLyricsFetchError(new ApiRequestError(503, "upstream", {}))
+      )
+    ).toBe(false);
   });
 });

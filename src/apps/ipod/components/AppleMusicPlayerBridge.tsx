@@ -12,6 +12,8 @@ import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
   getMusicKitEventItemId,
   isLikelyMusicKitUnhandledRejection,
+  isMusicKitPlaying,
+  isMusicKitRedundantPlayError,
   isStaleQueueLoad,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
@@ -433,10 +435,15 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     const onUnhandledRejection = (event: PromiseRejectionEvent) => {
       if (!isLikelyMusicKitUnhandledRejection(event.reason)) return;
       event.preventDefault();
-      appleMusicLog.error("musickit:unhandledrejection", {
+      const payload = {
         error: event.reason,
         snapshot: getBridgeSnapshot(),
-      });
+      };
+      if (isMusicKitRedundantPlayError(event.reason)) {
+        appleMusicLog.warn("musickit:redundantPlay", payload);
+        return;
+      }
+      appleMusicLog.error("musickit:unhandledrejection", payload);
     };
     window.addEventListener("unhandledrejection", onUnhandledRejection);
     return () => {
@@ -670,8 +677,9 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           );
         }
         lastQueuedTrackIdRef.current = localQueueKey;
-        if (shouldPlayAfterQueue) {
+        if (shouldPlayAfterQueue && !isMusicKitPlaying(inst.playbackState)) {
           await inst.play().catch((err) => {
+            if (isMusicKitRedundantPlayError(err)) return;
             // Browsers block autoplay until the user interacts; surface as
             // a paused state so the iPod's play button shows the right icon.
             appleMusicLog.warn("queue:play:blocked", {
@@ -728,6 +736,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         const queuedTrackId = lastQueuedTrackIdRef.current;
         if (queuedTrackId !== track.id) return;
         if (playing) {
+          if (isMusicKitPlaying(inst.playbackState)) return;
           const startSeconds = getSafeStartSeconds(
             track,
             resumeAtSecondsRef.current
@@ -746,6 +755,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           inst.pause();
         }
       } catch (err) {
+        if (isMusicKitRedundantPlayError(err)) return;
         appleMusicLog.warn("playback:playPause:failed", {
           error: err,
           playing,

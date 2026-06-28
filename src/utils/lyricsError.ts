@@ -19,6 +19,18 @@ export function normalizeLyricsFetchError(err: unknown): unknown {
   return err;
 }
 
+export function isExpectedLyricsMissError(err: unknown): boolean {
+  if (err instanceof ApiRequestError && err.status === 404) {
+    return true;
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    msg.includes("No lyrics") ||
+    msg.includes("404") ||
+    msg.includes("not found")
+  );
+}
+
 export function getLyricsErrorMessage(err: unknown): string {
   if (err instanceof DOMException && err.name === "AbortError") {
     return "Lyrics search timed out.";
