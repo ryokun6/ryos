@@ -28,6 +28,8 @@ export type SecurityPaneContentProps = {
   setPasswordInput: (value: string) => void;
   setPasswordError: (error: string | null) => void;
   setIsPasswordDialogOpen: (open: boolean) => void;
+  /** When false, profile is rendered elsewhere (e.g. above Accounts tabs). */
+  showProfileHeader?: boolean;
 };
 
 export function SecurityPaneContent({
@@ -48,6 +50,7 @@ export function SecurityPaneContent({
   setPasswordInput,
   setPasswordError,
   setIsPasswordDialogOpen,
+  showProfileHeader = true,
 }: SecurityPaneContentProps) {
   const [isRecoveryEmailOpen, setIsRecoveryEmailOpen] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
@@ -62,18 +65,20 @@ export function SecurityPaneContent({
   return (
     <div className="control-panels-pref-form space-y-0 h-full overflow-y-auto">
       <div className="control-panels-pref-form-section">
-        <AccountProfileHeader
-          t={t}
-          username={username}
-          myContact={myContact}
-          accountAvatarLabel={accountAvatarLabel}
-          accountAvatarInitials={accountAvatarInitials}
-          realtimeStatus={realtimeStatus}
-          accountJoinedAt={accountJoinedAt}
-          locale={locale}
-          promptSetUsername={promptSetUsername}
-          promptLogin={promptLogin}
-        />
+        {showProfileHeader ? (
+          <AccountProfileHeader
+            t={t}
+            username={username}
+            myContact={myContact}
+            accountAvatarLabel={accountAvatarLabel}
+            accountAvatarInitials={accountAvatarInitials}
+            realtimeStatus={realtimeStatus}
+            accountJoinedAt={accountJoinedAt}
+            locale={locale}
+            promptSetUsername={promptSetUsername}
+            promptLogin={promptLogin}
+          />
+        ) : null}
 
         <ControlPanelsPrefFormRow
           label={t("apps.control-panels.password")}

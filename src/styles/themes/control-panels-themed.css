@@ -549,6 +549,18 @@
   padding-top: 8px;
 }
 
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-tabbed:has(> .control-panels-account-profile) {
+  padding-top: 4px;
+}
+
+:root:not([data-os-theme="macosx"])
+  .control-panels-pref-tabbed
+  > .control-panels-account-profile {
+  flex-shrink: 0;
+  padding-bottom: 14px;
+}
+
 /* The strip carries each theme's real tab-list classes (System 7 / Aqua);
    we own its box so it sits flush on the tabbed well below. */
 :root:not([data-os-theme="macosx"]) .control-panels-pref-tab-bar {

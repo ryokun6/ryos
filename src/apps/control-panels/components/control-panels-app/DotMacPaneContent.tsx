@@ -122,7 +122,7 @@ export function DotMacPaneContent({
 
         {username && autoSyncEnabled && (
           <>
-            <hr className="my-2 border-t" style={tabStyles.separatorStyle} />
+            <hr className="border-t" style={tabStyles.separatorStyle} />
             <div className="space-y-3">
               <SyncDomainRow
                 appId={AUTO_SYNC_ITEM_ICONS.files}
@@ -219,7 +219,7 @@ export function DotMacPaneContent({
           </>
         )}
 
-        <hr className="my-2 border-t" style={tabStyles.separatorStyle} />
+        <hr className="border-t" style={tabStyles.separatorStyle} />
         <div
           className={cn(
             "space-y-2",
