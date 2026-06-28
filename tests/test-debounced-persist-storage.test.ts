@@ -33,6 +33,7 @@ Object.defineProperty(globalThis, "localStorage", {
 const {
   createDebouncedPersistStorage,
   flushDebouncedPersistWrites,
+  resetDebouncedPersistWritesForTests,
 } = await import("../src/utils/debouncedPersistStorage");
 
 // Fake timers make the debounce window deterministic: we advance time by an
@@ -44,6 +45,7 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.useRealTimers();
+  resetDebouncedPersistWritesForTests();
 });
 
 describe("createDebouncedPersistStorage", () => {
