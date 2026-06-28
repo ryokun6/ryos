@@ -62,16 +62,3 @@ export async function sendTelegramToUser(
   }
 }
 
-/**
- * Whether the user has a Telegram chat we could deliver to (and the bot is
- * configured). Used to decide whether to offer the Telegram channel.
- */
-export async function hasTelegramChannel(
-  redis: Redis,
-  username: string
-): Promise<boolean> {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
-  if (!botToken) return false;
-  const linked = await getLinkedTelegramAccountByUsername(redis, username);
-  return !!linked?.chatId;
-}
