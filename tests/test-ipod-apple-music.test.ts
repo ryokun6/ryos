@@ -402,6 +402,7 @@ describe("useIpodStore Apple Music slice", () => {
       appleMusicCurrentSongId: null,
       appleMusicKitNowPlaying: null,
       isPlaying: false,
+      playbackRequested: false,
       currentSongId: null,
       tracks: [],
       loopAll: false,
@@ -411,6 +412,7 @@ describe("useIpodStore Apple Music slice", () => {
     useKaraokeStore.setState({
       currentSongId: null,
       isPlaying: false,
+      playbackRequested: false,
       loopAll: true,
       loopCurrent: false,
       isShuffled: false,
@@ -418,7 +420,7 @@ describe("useIpodStore Apple Music slice", () => {
     });
   });
 
-  test("playAppleMusicTrack switches to Apple Music, inserts, and plays", () => {
+  test("playAppleMusicTrack switches libraries, inserts, and requests playback", () => {
     const track: Track = {
       id: "am:1616228595",
       url: "https://music.apple.com/us/song/1616228595",
@@ -431,7 +433,8 @@ describe("useIpodStore Apple Music slice", () => {
     const state = useIpodStore.getState();
     expect(state.librarySource).toBe("appleMusic");
     expect(state.appleMusicCurrentSongId).toBe("am:1616228595");
-    expect(state.isPlaying).toBe(true);
+    expect(state.playbackRequested).toBe(true);
+    expect(state.isPlaying).toBe(false);
     expect(state.appleMusicTracks.map((t) => t.id)).toContain("am:1616228595");
     expect(getActiveIpodCurrentTrack(state)?.id).toBe("am:1616228595");
   });
@@ -454,12 +457,14 @@ describe("useIpodStore Apple Music slice", () => {
     // The pre-existing track is preserved (not overwritten by the new copy).
     expect(state.appleMusicTracks[0]?.title).toBe("Bohemian Rhapsody");
     expect(state.appleMusicCurrentSongId).toBe("am:1616228595");
-    expect(state.isPlaying).toBe(true);
+    expect(state.playbackRequested).toBe(true);
+    expect(state.isPlaying).toBe(false);
   });
 
   test("setLibrarySource clears transient playback state", () => {
     useIpodStore.setState({
       isPlaying: true,
+      playbackRequested: true,
       elapsedTime: 42,
       totalTime: 200,
       appleMusicKitNowPlaying: { title: "On Air", id: "1616228595" },
@@ -895,7 +900,8 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.appleMusicCurrentSongId).toBe("am:2");
     expect(state.appleMusicPlaybackQueue).toBeNull();
     expect(state.currentSongId).toBe("yt1");
-    expect(state.isPlaying).toBe(true);
+    expect(state.playbackRequested).toBe(true);
+    expect(state.isPlaying).toBe(false);
     expect(results).toHaveLength(1);
   });
 
@@ -966,7 +972,8 @@ describe("useIpodStore Apple Music slice", () => {
     const ipodState = useIpodStore.getState();
     const karaokeState = useKaraokeStore.getState();
     expect(karaokeState.currentSongId).toBe("yt2");
-    expect(karaokeState.isPlaying).toBe(true);
+    expect(karaokeState.playbackRequested).toBe(true);
+    expect(karaokeState.isPlaying).toBe(false);
     expect(ipodState.librarySource).toBe("appleMusic");
     expect(ipodState.appleMusicCurrentSongId).toBe("am:2");
     expect(ipodState.currentSongId).toBeNull();

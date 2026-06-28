@@ -9,7 +9,7 @@ const isIOSSafari = isIOS && isSafari;
 interface KaraokeIosAutoplayWatchdogProps {
   listenSession: unknown;
   isListenSessionDj: boolean;
-  isPlaying: boolean;
+  playbackRequested: boolean;
   setIsPlaying: (playing: boolean) => void;
   showStatus: (message: string) => void;
   userHasInteractedRef: MutableRefObject<boolean>;
@@ -22,7 +22,7 @@ interface KaraokeIosAutoplayWatchdogProps {
 export function KaraokeIosAutoplayWatchdog({
   listenSession,
   isListenSessionDj,
-  isPlaying,
+  playbackRequested,
   setIsPlaying,
   showStatus,
   userHasInteractedRef,
@@ -32,7 +32,7 @@ export function KaraokeIosAutoplayWatchdog({
   useEffect(() => {
     if (
       (listenSession && !isListenSessionDj) ||
-      !isPlaying ||
+      !playbackRequested ||
       !isIOSSafari ||
       userHasInteractedRef.current
     ) {
@@ -41,7 +41,10 @@ export function KaraokeIosAutoplayWatchdog({
 
     const startElapsed = elapsedTime;
     const timer = setTimeout(() => {
-      if (useKaraokeStore.getState().isPlaying && useKaraokeStore.getState().elapsedTime === startElapsed) {
+      if (
+        useKaraokeStore.getState().playbackRequested &&
+        useKaraokeStore.getState().elapsedTime === startElapsed
+      ) {
         setIsPlaying(false);
         showStatus("⏸");
       }
@@ -52,7 +55,7 @@ export function KaraokeIosAutoplayWatchdog({
     elapsedTime,
     isIOSSafari,
     isListenSessionDj,
-    isPlaying,
+    playbackRequested,
     listenSession,
     setIsPlaying,
     showStatus,

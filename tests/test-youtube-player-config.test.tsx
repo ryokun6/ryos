@@ -72,4 +72,24 @@ describe("YouTubePlayer", () => {
       loading: "lazy",
     });
   });
+
+  test("does not ask ReactPlayer to play before YouTube reports ready", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: { location: { origin: "http://localhost:3000" } },
+    });
+
+    renderToStaticMarkup(
+      React.createElement(YouTubePlayer, {
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        playing: true,
+      })
+    );
+
+    const lastCall = playerMock.mock.calls[playerMock.mock.calls.length - 1];
+    expect(lastCall[0]).toMatchObject({
+      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      playing: false,
+    });
+  });
 });

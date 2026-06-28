@@ -121,10 +121,10 @@ const handlePlaybackState = (
 
   switch (action) {
     case "play":
-      if (!karaoke.isPlaying) karaoke.setIsPlaying(true);
+      if (!karaoke.playbackRequested) karaoke.setIsPlaying(true);
       break;
     case "pause":
-      if (karaoke.isPlaying) karaoke.setIsPlaying(false);
+      if (karaoke.playbackRequested) karaoke.setIsPlaying(false);
       break;
     default:
       karaoke.togglePlay();
@@ -133,7 +133,7 @@ const handlePlaybackState = (
 
   const stateChanges = applyKaraokeSettings(input.enableTranslation, input.enableFullscreen);
   const updatedKaraoke = useKaraokeStore.getState();
-  const nowPlaying = updatedKaraoke.isPlaying;
+  const nowPlaying = updatedKaraoke.playbackRequested;
   const ipodTracks = useIpodStore.getState().tracks;
   const track = updatedKaraoke.currentSongId
     ? ipodTracks.find((t) => t.id === updatedKaraoke.currentSongId)

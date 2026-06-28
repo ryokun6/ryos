@@ -9,6 +9,13 @@ import {
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
 import type { Video } from "@/stores/useVideoStore";
+import {
+  confirmPlayback,
+  requestPlayback,
+  resetPlaybackConfirmation,
+  stopPlayback,
+  togglePlayback,
+} from "@/shared/media/confirmedPlayback";
 
 /** Persisted custom channel; `number` is assigned at runtime from lineup order. */
 export interface CustomChannel extends Omit<Channel, "number"> {
@@ -36,6 +43,9 @@ export interface ImportChannelsResult {
 interface TvStoreState {
   currentChannelId: string;
   lastVideoIndexByChannel: Record<string, number>;
+  /** Desired player state, including an in-flight play attempt. */
+  playbackRequested: boolean;
+  /** True only after ReactPlayer emits `onPlay`. */
   isPlaying: boolean;
   customChannels: CustomChannel[];
   hiddenDefaultChannelIds: string[];
@@ -56,6 +66,7 @@ interface TvStoreState {
   setCurrentChannelId: (id: string) => void;
   setVideoIndex: (channelId: string, index: number) => void;
   setIsPlaying: (playing: boolean) => void;
+  confirmPlayback: () => void;
   togglePlay: () => void;
   toggleLcdFilter: () => void;
   setLcdFilterOn: (on: boolean) => void;
@@ -106,7 +117,7 @@ export const useTvStore = create<TvStoreState>()(
     (set, get) => ({
       currentChannelId: DEFAULT_CHANNEL_ID,
       lastVideoIndexByChannel: {},
-      isPlaying: false,
+      ...stopPlayback(),
       customChannels: [],
       hiddenDefaultChannelIds: [],
       hiddenDefaultChannelIdsUpdatedAt: null,
@@ -114,16 +125,28 @@ export const useTvStore = create<TvStoreState>()(
       lcdFilterOn: true,
       closedCaptionsOn: true,
       playedSeconds: 0,
-      setCurrentChannelId: (id) => set({ currentChannelId: id }),
+      setCurrentChannelId: (id) =>
+        set((s) => ({
+          currentChannelId: id,
+          ...(id !== s.currentChannelId
+            ? resetPlaybackConfirmation(s)
+            : {}),
+        })),
       setVideoIndex: (channelId, index) =>
         set((s) => ({
           lastVideoIndexByChannel: {
             ...s.lastVideoIndexByChannel,
             [channelId]: index,
           },
+          ...(channelId === s.currentChannelId &&
+          index !== (s.lastVideoIndexByChannel[channelId] ?? 0)
+            ? resetPlaybackConfirmation(s)
+            : {}),
         })),
-      setIsPlaying: (isPlaying) => set({ isPlaying }),
-      togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
+      setIsPlaying: (playing) =>
+        set(playing ? requestPlayback() : stopPlayback()),
+      confirmPlayback: () => set((s) => confirmPlayback(s)),
+      togglePlay: () => set((s) => togglePlayback(s)),
       toggleLcdFilter: () =>
         set((s) => ({ lcdFilterOn: !s.lcdFilterOn })),
       setLcdFilterOn: (on) => set({ lcdFilterOn: on }),
@@ -177,6 +200,9 @@ export const useTvStore = create<TvStoreState>()(
               ? new Date().toISOString()
               : s.hiddenDefaultChannelIdsUpdatedAt,
             currentChannelId: fallbackId,
+            ...(fallbackId !== s.currentChannelId
+              ? resetPlaybackConfirmation(s)
+              : {}),
           };
         }),
       removeCustomChannel: (id) => get().removeChannel(id),
@@ -362,6 +388,7 @@ export const useTvStore = create<TvStoreState>()(
           hiddenDefaultChannelIdsResetAt,
           currentChannelId: DEFAULT_CHANNEL_ID,
           lastVideoIndexByChannel: {},
+          ...stopPlayback(),
         });
       },
     }),

@@ -21,6 +21,7 @@ export function VideosVideoPane({
     setIsAddDialogOpen,
     getCurrentVideo,
     isPlaying,
+    playbackRequested,
     isFullScreen,
     playerRef,
     handleVideoEnd,
@@ -29,6 +30,7 @@ export function VideosVideoPane({
     handlePlay,
     handleMainPlayerPause,
     handleReady,
+    handlePlaybackAttemptFailed,
     loopCurrent,
     setIsVideoHovered,
     duration,
@@ -68,7 +70,7 @@ export function VideosVideoPane({
           <YouTubePlayer
             ref={playerRef}
             url={getCurrentVideo()?.url || ""}
-            playing={isPlaying && !isFullScreen}
+            playing={playbackRequested && !isFullScreen}
             controls={false}
             width="calc(100% + 1px)"
             height="calc(100% + 1px)"
@@ -78,6 +80,7 @@ export function VideosVideoPane({
             onPlay={handlePlay}
             onPause={handleMainPlayerPause}
             onReady={handleReady}
+            onPlaybackAttemptFailed={handlePlaybackAttemptFailed}
             loop={loopCurrent}
             config={{
               youtube: {

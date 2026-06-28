@@ -152,6 +152,7 @@ export interface FullScreenPortalProps {
 export interface IpodScreenProps {
   currentTrack: Track | null;
   isPlaying: boolean;
+  playbackRequested: boolean;
   totalTime: number;
   menuMode: boolean;
   menuHistory: MenuHistoryEntry[];
@@ -171,6 +172,7 @@ export interface IpodScreenProps {
   handlePlay: () => void;
   handlePause: () => void;
   handleReady: () => void;
+  handlePlaybackAttemptFailed: () => void;
   loopCurrent: boolean;
   loopAll: boolean;
   isShuffled: boolean;

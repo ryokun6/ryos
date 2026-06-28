@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
-import ReactPlayer from "react-player";
+import type ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -127,6 +127,7 @@ export function useKaraokeLogic({
   const {
     currentSongId,
     isPlaying,
+    playbackRequested,
     displayMode,
     loopCurrent,
     loopAll,
@@ -136,6 +137,7 @@ export function useKaraokeLogic({
     setCurrentSongId,
     togglePlay,
     setIsPlaying,
+    confirmPlayback,
     toggleLoopCurrent,
     toggleLoopAll,
     toggleShuffle,
@@ -150,6 +152,7 @@ export function useKaraokeLogic({
     useShallow((s) => ({
       currentSongId: s.currentSongId,
       isPlaying: s.isPlaying,
+      playbackRequested: s.playbackRequested,
       displayMode: s.displayMode ?? DisplayMode.Video,
       loopCurrent: s.loopCurrent,
       loopAll: s.loopAll,
@@ -159,6 +162,7 @@ export function useKaraokeLogic({
       setCurrentSongId: s.setCurrentSongId,
       togglePlay: s.togglePlay,
       setIsPlaying: s.setIsPlaying,
+      confirmPlayback: s.confirmPlayback,
       toggleLoopCurrent: s.toggleLoopCurrent,
       toggleLoopAll: s.toggleLoopAll,
       toggleShuffle: s.toggleShuffle,
@@ -556,18 +560,18 @@ export function useKaraokeLogic({
       showOfflineStatus();
     } else if (listenRemoteOnly) {
       const positionMs = Math.round(useKaraokeStore.getState().elapsedTime * 1000);
-      const action = isPlaying ? "pause" : "play";
+      const action = playbackRequested ? "pause" : "play";
       void sendRemotePlaybackCommand({ action, positionMs }).then((r) => {
         if (!r.ok) toast.error(r.error ?? "Remote control failed");
       });
-      showStatus(isPlaying ? "⏸" : "▶");
+      showStatus(playbackRequested ? "⏸" : "▶");
     } else {
       togglePlay();
-      showStatus(isPlaying ? "⏸" : "▶");
+      showStatus(playbackRequested ? "⏸" : "▶");
     }
   }, [
     isOffline,
-    isPlaying,
+    playbackRequested,
     listenRemoteOnly,
     sendRemotePlaybackCommand,
     showOfflineStatus,
@@ -674,6 +678,7 @@ export function useKaraokeLogic({
 
   // Cleanup
   useEffect(() => {
+    if (!isWindowOpen) setIsPlaying(false);
     return () => {
       if (statusTimeoutRef.current) {
         clearTimeout(statusTimeoutRef.current);
@@ -684,8 +689,9 @@ export function useKaraokeLogic({
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
       }
+      setIsPlaying(false);
     };
-  }, []);
+  }, [isWindowOpen, setIsPlaying]);
 
   // Exit fullscreen when browser exits fullscreen mode
   useEffect(() => {
@@ -819,11 +825,11 @@ export function useKaraokeLogic({
 
   const handlePlay = useCallback(() => {
     if (listenRemoteOnly) return;
+    confirmPlayback();
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
       return;
     }
-    setIsPlaying(true);
     const currentTrack = tracks[currentIndex];
     if (currentTrack) {
       trackAnalytics(MEDIA_ANALYTICS.SONG_PLAY, {
@@ -833,7 +839,7 @@ export function useKaraokeLogic({
         artist: currentTrack.artist || "",
       });
     }
-  }, [currentIndex, listenRemoteOnly, setIsPlaying, tracks]);
+  }, [confirmPlayback, currentIndex, listenRemoteOnly, tracks]);
 
   const handlePause = useCallback(() => {
     if (listenRemoteOnly) return;
@@ -856,6 +862,10 @@ export function useKaraokeLogic({
 
   // Handle player ready
   const handleReady = useCallback(() => {}, []);
+
+  const handlePlaybackAttemptFailed = useCallback(() => {
+    if (!listenRemoteOnly) setIsPlaying(false);
+  }, [listenRemoteOnly, setIsPlaying]);
 
   // Seek time (delta)
   const seekTime = useCallback(
@@ -1681,6 +1691,7 @@ export function useKaraokeLogic({
     loopAll,
     isShuffled,
     isPlaying,
+    playbackRequested,
     isFullScreen,
     karaokeKtvRoomFx,
     showLyrics,
@@ -1765,6 +1776,7 @@ export function useKaraokeLogic({
     handlePause,
     handleMainPlayerPause,
     handleReady,
+    handlePlaybackAttemptFailed,
     seekTime,
     seekToTime,
     cycleAlignment,

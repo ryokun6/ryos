@@ -135,10 +135,10 @@ const handlePlaybackState = (
 
   switch (action) {
     case "play":
-      if (!ipod.isPlaying) ipod.setIsPlaying(true);
+      if (!ipod.playbackRequested) ipod.setIsPlaying(true);
       break;
     case "pause":
-      if (ipod.isPlaying) ipod.setIsPlaying(false);
+      if (ipod.playbackRequested) ipod.setIsPlaying(false);
       break;
     default:
       ipod.togglePlay();
@@ -151,7 +151,7 @@ const handlePlaybackState = (
     input.enableFullscreen
   );
   const updatedIpod = useIpodStore.getState();
-  const nowPlaying = updatedIpod.isPlaying;
+  const nowPlaying = updatedIpod.playbackRequested;
   const track = getActiveIpodCurrentTrack(updatedIpod);
 
   let playbackState: string;

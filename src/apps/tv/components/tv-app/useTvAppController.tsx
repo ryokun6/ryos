@@ -36,7 +36,9 @@ export function useTvAppController({
     isFullScreen,
     toggleFullScreen,
     isPlaying,
+    playbackRequested,
     setIsPlaying,
+    confirmPlayback,
     togglePlay,
     currentChannel,
     currentVideo,
@@ -48,6 +50,7 @@ export function useTvAppController({
     prevVideo,
     handleVideoEnd,
     handleError,
+    handlePlaybackAttemptFailed,
     selectVideoFromPlaylist,
     playlistRemoveVideo,
     playerRef,
@@ -113,10 +116,7 @@ export function useTvAppController({
   } = useTvSoundFx();
 
   const handleTogglePlay = useTvTogglePlay({
-    isPlaying,
     togglePlay,
-    playerRef,
-    fullScreenPlayerRef,
   });
 
   const lcdFilterOn = useTvStore((s) => s.lcdFilterOn);
@@ -269,7 +269,9 @@ export function useTvAppController({
     isFullScreen,
     toggleFullScreen,
     isPlaying,
+    playbackRequested,
     setIsPlaying,
+    confirmPlayback,
     togglePlay,
     currentChannel,
     currentVideo,
@@ -281,6 +283,7 @@ export function useTvAppController({
     prevVideo,
     handleVideoEnd,
     handleError,
+    handlePlaybackAttemptFailed,
     selectVideoFromPlaylist,
     playlistRemoveVideo,
     playerRef,

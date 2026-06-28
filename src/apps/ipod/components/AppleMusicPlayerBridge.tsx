@@ -751,6 +751,13 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           playing,
           snapshot: getBridgeSnapshot(),
         });
+        if (playing) {
+          callBridgeCallback(
+            "playback:onPauseAfterFailedPlay",
+            onPauseRef.current,
+            { snapshot: getBridgeSnapshot() }
+          );
+        }
       }
     };
     void apply();

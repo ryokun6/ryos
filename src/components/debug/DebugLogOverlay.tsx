@@ -736,7 +736,7 @@ export function DebugLogOverlay() {
                 value="logs"
                 className={cn(
                   "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
-                  "border border-transparent data-[state=active]:border-os-window",
+                  "border border-transparent",
                   "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
                   "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
                   "os-theme-system7:rounded-none os-windows:rounded-none"
@@ -748,7 +748,7 @@ export function DebugLogOverlay() {
                 value="live"
                 className={cn(
                   "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
-                  "border border-transparent data-[state=active]:border-os-window",
+                  "border border-transparent",
                   "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
                   "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
                   "os-theme-system7:rounded-none os-windows:rounded-none"
