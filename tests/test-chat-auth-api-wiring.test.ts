@@ -6,6 +6,14 @@ import * as authApi from "../src/api/auth";
 const storeSource = readFileSync("src/stores/useChatsStore.ts", "utf8");
 const authStoreSource = readFileSync("src/stores/useAuthStore.ts", "utf8");
 const chatApiSource = readFileSync("api/chat.ts", "utf8");
+const terminalSource = readFileSync(
+  "src/apps/terminal/hooks/useTerminalLogic.ts",
+  "utf8"
+);
+const controlPanelsSource = readFileSync(
+  "src/apps/control-panels/hooks/useControlPanelsLogic.ts",
+  "utf8"
+);
 
 describe("chat auth API wiring", () => {
   test("routes auth HTTP calls through the dedicated auth store", () => {
@@ -35,10 +43,18 @@ describe("chat auth API wiring", () => {
     for (const symbol of [
       "checkUserPassword",
       "getAuthSession",
+      "logoutAllSessionsRaw",
       "logoutUserSafe",
     ] as const) {
       expect(typeof authApi[symbol]).toBe("function");
     }
+  });
+
+  test("routes secondary cookie-writing entry points through auth helpers", () => {
+    expect(terminalSource).not.toContain('abortableFetch("/api/auth/login"');
+    expect(terminalSource).toContain("useAuthStore.getState().login");
+    expect(controlPanelsSource).toContain("logoutAllSessionsRaw");
+    expect(controlPanelsSource).not.toContain('getApiUrl("/api/auth/logout-all")');
   });
 
   test("does not log AI prompt or response content snippets", () => {

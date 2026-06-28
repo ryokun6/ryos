@@ -10,7 +10,7 @@
 import { apiHandler } from "../../_utils/api-handler.js";
 import {
   getStoredUserRecord,
-  setStoredUserRecord,
+  patchStoredUserRecord,
   getUsernameByEmail,
   setUserEmailIndex,
 } from "../../_utils/auth/_user-record.js";
@@ -108,8 +108,7 @@ export default apiHandler<VerifyEmailRequest>(
       return;
     }
 
-    await setStoredUserRecord(redis, username, {
-      ...record,
+    await patchStoredUserRecord(redis, username, {
       emailVerified: true,
     });
     await setUserEmailIndex(redis, record.email, username);

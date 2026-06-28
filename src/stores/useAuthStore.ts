@@ -199,7 +199,6 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
   },
 
   register: async ({ username, password }) => {
-    const operationVersion = ++authOperationVersion;
     const trimmedUsername = username.trim();
     if (!trimmedUsername) return { ok: false, error: "Username cannot be empty" };
     if (!USERNAME_REGEX.test(trimmedUsername)) {
@@ -217,6 +216,7 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
       };
     }
 
+    const operationVersion = ++authOperationVersion;
     try {
       const result = await registerUser({ username: trimmedUsername, password });
       if (!isAuthOperationCurrent(operationVersion)) {
@@ -294,21 +294,22 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
   logout: async () => {
     const operationVersion = ++authOperationVersion;
     const username = get().username;
+    const logoutRequest = logoutUserSafe();
     if (username) {
       await teardownLocalSession(username, "logout");
       if (!isAuthOperationCurrent(operationVersion)) return;
-      await logoutUserSafe();
-      if (!isAuthOperationCurrent(operationVersion)) return;
-      track(APP_ANALYTICS.USER_LOGOUT, { username });
     }
+    await logoutRequest;
+    if (!isAuthOperationCurrent(operationVersion)) return;
+    if (username) track(APP_ANALYTICS.USER_LOGOUT, { username });
     persistRecoveredUsername(null);
     set({ username: null, isAuthenticated: false, hasPassword: null });
   },
 
   deleteAccount: async ({ confirmUsername, currentPassword }) => {
-    const operationVersion = ++authOperationVersion;
     const username = get().username;
     if (!username) return { ok: false, error: "Authentication required" };
+    const operationVersion = ++authOperationVersion;
     try {
       await deleteAccountApi({
         confirm: true,
@@ -334,7 +335,10 @@ export const useAuthStore = create<AuthStoreState>()((set, get) => ({
   handleUnauthorized: async () => {
     const operationVersion = ++authOperationVersion;
     const username = get().username;
+    const logoutRequest = logoutUserSafe();
     if (username) await teardownLocalSession(username, "unauthorized");
+    if (!isAuthOperationCurrent(operationVersion)) return;
+    await logoutRequest;
     if (!isAuthOperationCurrent(operationVersion)) return;
     persistRecoveredUsername(null);
     set({ username: null, isAuthenticated: false, hasPassword: null });

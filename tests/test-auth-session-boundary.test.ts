@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import {
+  registerSessionTeardown,
+  serializeAuthCookieRequest,
+} from "../src/auth/sessionBoundary";
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -28,10 +32,21 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
-const logoutMock = mock(async () => {});
-const registerMock = mock(async ({ username }: { username: string }) => ({
-  user: { username },
-}));
+let serverCookie: string | null = null;
+const networkStarts: string[] = [];
+const logoutMock = mock(() =>
+  serializeAuthCookieRequest(async () => {
+    networkStarts.push("logout");
+    serverCookie = null;
+  })
+);
+const registerMock = mock(({ username }: { username: string }) =>
+  serializeAuthCookieRequest(async () => {
+    networkStarts.push(`register:${username}`);
+    serverCookie = username;
+    return { user: { username } };
+  })
+);
 let loginImpl = async ({ username }: { username: string }) => ({ username });
 let sessionImpl = async () => ({
   ok: true as const,
@@ -40,16 +55,41 @@ let sessionImpl = async () => ({
 
 mock.module("@/api/auth", () => ({
   checkUserPassword: mock(async () => ({ hasPassword: true })),
-  deleteAccount: mock(async () => ({ success: true })),
-  getAuthSession: mock(() => sessionImpl()),
-  loginWithPassword: mock((params: { username: string }) => loginImpl(params)),
+  deleteAccount: mock(() =>
+    serializeAuthCookieRequest(async () => {
+      networkStarts.push("delete");
+      serverCookie = null;
+      return { success: true };
+    })
+  ),
+  getAuthSession: mock(() =>
+    serializeAuthCookieRequest(async () => {
+      networkStarts.push("session");
+      const result = await sessionImpl();
+      if (result.ok && result.data.authenticated && result.data.username) {
+        serverCookie = result.data.username;
+      }
+      return result;
+    })
+  ),
+  loginWithPassword: mock((params: { username: string }) =>
+    serializeAuthCookieRequest(async () => {
+      networkStarts.push(`login:${params.username}`);
+      const result = await loginImpl(params);
+      serverCookie = result.username;
+      return result;
+    })
+  ),
   logoutUserSafe: logoutMock,
   registerUser: registerMock,
   setUserPassword: mock(async () => ({ success: true })),
-  verifyAuthToken: mock(async ({ username }: { username: string }) => ({
-    valid: true,
-    username,
-  })),
+  verifyAuthToken: mock(({ username }: { username: string }) =>
+    serializeAuthCookieRequest(async () => {
+      networkStarts.push(`token:${username}`);
+      serverCookie = username;
+      return { valid: true, username };
+    })
+  ),
 }));
 
 const destroyEngineMock = mock(() => {});
@@ -57,10 +97,11 @@ mock.module("@/sync/engine", () => ({
   destroyCloudSyncEngine: destroyEngineMock,
 }));
 
-const { registerSessionTeardown } = await import(
-  "../src/auth/sessionBoundary"
-);
 const { useAuthStore } = await import("../src/stores/useAuthStore");
+
+async function allowQueuedRequestToStart(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 describe("auth session boundary", () => {
   beforeEach(() => {
@@ -74,11 +115,22 @@ describe("auth session boundary", () => {
     logoutMock.mockClear();
     registerMock.mockClear();
     destroyEngineMock.mockClear();
+    serverCookie = null;
+    networkStarts.length = 0;
     sessionImpl = async () => ({
       ok: true,
       data: { authenticated: true, username: "restored-user" },
     });
     loginImpl = async ({ username }) => ({ username });
+  });
+
+  test("continues the cookie queue after a failed request", async () => {
+    await expect(
+      serializeAuthCookieRequest(() => Promise.reject(new Error("failed")))
+    ).rejects.toThrow("failed");
+    await expect(
+      serializeAuthCookieRequest(() => Promise.resolve("next"))
+    ).resolves.toBe("next");
   });
 
   test("owns registration state and the recovery identity", async () => {
@@ -137,10 +189,12 @@ describe("auth session boundary", () => {
       });
 
     const restore = useAuthStore.getState().restoreSession();
-    await useAuthStore.getState().login({
+    const login = useAuthStore.getState().login({
       username: "explicit-user",
       password: "password123",
     });
+    await allowQueuedRequestToStart();
+    expect(networkStarts).toEqual(["session"]);
     resolveSession?.({
       ok: true,
       data: { authenticated: true, username: "stale-cookie-user" },
@@ -150,10 +204,50 @@ describe("auth session boundary", () => {
       ok: false,
       error: "Session restore superseded",
     });
+    await expect(login).resolves.toEqual({ ok: true });
+    expect(serverCookie).toBe("explicit-user");
     expect(useAuthStore.getState().username).toBe("explicit-user");
   });
 
-  test("does not let a login response publish after logout", async () => {
+  test("serializes concurrent logins so the winning identity matches the cookie", async () => {
+    let resolveFirstLogin: ((value: { username: string }) => void) | undefined;
+    loginImpl = ({ username }) => {
+      if (username !== "first-user") return Promise.resolve({ username });
+      return new Promise((resolve) => {
+        resolveFirstLogin = resolve;
+      });
+    };
+
+    const firstLogin = useAuthStore.getState().login({
+      username: "first-user",
+      password: "password123",
+    });
+    const secondLogin = useAuthStore.getState().login({
+      username: "second-user",
+      password: "password123",
+    });
+    await allowQueuedRequestToStart();
+
+    expect(networkStarts).toEqual(["login:first-user"]);
+    resolveFirstLogin?.({ username: "first-user" });
+
+    await expect(firstLogin).resolves.toEqual({
+      ok: false,
+      error: "Login superseded",
+    });
+    await expect(secondLogin).resolves.toEqual({ ok: true });
+    expect(networkStarts).toEqual([
+      "login:first-user",
+      "login:second-user",
+    ]);
+    expect(serverCookie).toBe("second-user");
+    expect(useAuthStore.getState()).toMatchObject({
+      username: "second-user",
+      isAuthenticated: true,
+    });
+  });
+
+  test("queues logout behind an in-flight login and clears both sessions", async () => {
     let resolveLogin: ((value: { username: string }) => void) | undefined;
     loginImpl =
       () =>
@@ -165,13 +259,48 @@ describe("auth session boundary", () => {
       username: "late-user",
       password: "password123",
     });
-    await useAuthStore.getState().logout();
-    resolveLogin?.({ username: "late-user" });
+    const logout = useAuthStore.getState().logout();
+    await allowQueuedRequestToStart();
 
-    await expect(login).resolves.toEqual({
-      ok: false,
-      error: "Login superseded",
+    expect(networkStarts).toEqual(["login:late-user"]);
+    resolveLogin?.({ username: "late-user" });
+    await Promise.all([login, logout]);
+
+    expect(networkStarts).toEqual(["login:late-user", "logout"]);
+    expect(serverCookie).toBeNull();
+    expect(useAuthStore.getState()).toMatchObject({
+      username: null,
+      isAuthenticated: false,
     });
+  });
+
+  test("queues a 401 teardown behind login and clears its new cookie", async () => {
+    let resolveLogin: ((value: { username: string }) => void) | undefined;
+    loginImpl =
+      () =>
+        new Promise((resolve) => {
+          resolveLogin = resolve;
+        });
+    serverCookie = "old-user";
+    useAuthStore.setState({
+      username: "old-user",
+      isAuthenticated: true,
+      hasPassword: true,
+    });
+
+    const login = useAuthStore.getState().login({
+      username: "new-user",
+      password: "password123",
+    });
+    const unauthorized = useAuthStore.getState().handleUnauthorized();
+    await allowQueuedRequestToStart();
+
+    expect(networkStarts).toEqual(["login:new-user"]);
+    resolveLogin?.({ username: "new-user" });
+    await Promise.all([login, unauthorized]);
+
+    expect(networkStarts).toEqual(["login:new-user", "logout"]);
+    expect(serverCookie).toBeNull();
     expect(useAuthStore.getState()).toMatchObject({
       username: null,
       isAuthenticated: false,

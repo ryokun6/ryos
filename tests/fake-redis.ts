@@ -237,6 +237,41 @@ export class FakeRedis {
     keys: string[],
     args: Array<string | number>
   ): Promise<number> {
+    if (script.includes("ryos-create-auth-account")) {
+      const [profileKey, passwordKey, sessionKey, sessionsKey] = keys;
+      if (
+        !profileKey ||
+        !passwordKey ||
+        !sessionKey ||
+        !sessionsKey ||
+        this.hasKey(profileKey)
+      ) {
+        return 0;
+      }
+      this.setSync(profileKey, String(args[0]));
+      this.setSync(passwordKey, String(args[1]));
+      this.setSync(sessionKey, String(args[2]), { ex: Number(args[4]) });
+      this.saddSync(sessionsKey, String(args[3]));
+      this.expireSync(sessionsKey, Number(args[4]));
+      return 1;
+    }
+
+    if (script.includes("ryos-patch-user-record")) {
+      const key = keys[0];
+      const raw = key ? this.kv.get(key) : null;
+      if (!key || !raw) return null;
+      const record = JSON.parse(raw) as Record<string, unknown>;
+      const patch = JSON.parse(String(args[0])) as Record<string, unknown>;
+      const removals = JSON.parse(String(args[1])) as string[];
+      Object.assign(record, patch);
+      for (const field of removals) {
+        delete record[field];
+      }
+      const updated = JSON.stringify(record);
+      this.setSync(key, updated);
+      return updated as unknown as number;
+    }
+
     if (script.includes("ryos-increment-with-expiry")) {
       const key = keys[0];
       const seconds = Number(args[0]);

@@ -16,7 +16,6 @@ import {
 } from "../_utils/auth/index.js";
 import {
   hashPassword,
-  setUserPasswordHash,
   verifyPassword,
   getUserPasswordHash,
 } from "../_utils/auth/_password.js";
@@ -28,12 +27,14 @@ import { buildSetAuthCookie } from "../_utils/_cookie.js";
 import { getClientIp, makeKey } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import {
+  createStoredUserAccount,
   getStoredUserRecord,
   normalizeUserTimeZone,
-  setStoredUserRecord,
   updateStoredUserTimeZone,
+  type StoredUserRecord,
 } from "../_utils/auth/_user-record.js";
 import { incrementWithExpiry } from "../_utils/redis.js";
+import { sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -115,9 +116,9 @@ export default apiHandler(
 
     const username = rawUsername.toLowerCase();
 
-    // Check if user already exists
-    const existingUser = await getStoredUserRecord(redis, username);
-    if (existingUser) {
+    const handleExistingUser = async (
+      existingUser: StoredUserRecord
+    ): Promise<void> => {
       // User exists - try to log them in with provided password. This path is
       // subject to the SAME per-username lockout as /api/auth/login so it
       // cannot be used to bypass login throttling for password guessing.
@@ -160,10 +161,18 @@ export default apiHandler(
       }
       // Password doesn't match or no password set
       res.status(409).json({ error: "Username already taken" });
+    };
+
+    // Preserve the existing endpoint semantics: registering an existing
+    // username logs in when the supplied password matches.
+    const existingUser = await getStoredUserRecord(redis, username);
+    if (existingUser) {
+      await handleExistingUser(existingUser);
       return;
     }
 
-    // Create user
+    // Hash before the atomic claim so the winning Redis transaction contains
+    // the profile, password, and initial session together.
     const now = Date.now();
     const requestTimeZone = normalizeUserTimeZone(getHeader(req, "x-user-timezone"));
     const userData = {
@@ -174,15 +183,26 @@ export default apiHandler(
         ? { timeZone: requestTimeZone, timeZoneUpdatedAt: now }
         : {}),
     };
-    await setStoredUserRecord(redis, username, userData);
-
-    // Hash and store password
     const passwordHash = await hashPassword(password);
-    await setUserPasswordHash(redis, username, passwordHash);
-
-    // Generate and store token
     const token = generateAuthToken();
-    await storeToken(redis, username, token);
+    const tokenHash = await sha256RedisIdentifier(token);
+    const created = await createStoredUserAccount(
+      redis,
+      username,
+      userData,
+      passwordHash,
+      tokenHash,
+      now
+    );
+
+    if (!created) {
+      const concurrentlyCreatedUser = await getStoredUserRecord(redis, username);
+      if (!concurrentlyCreatedUser) {
+        throw new Error("Concurrent account creation completed without a profile");
+      }
+      await handleExistingUser(concurrentlyCreatedUser);
+      return;
+    }
 
     res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
     res.status(201).json({ user: { username } });

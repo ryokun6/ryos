@@ -9,7 +9,7 @@ import type { Redis } from "./_utils/redis.js";
 import { deleteAllUserTokens, purgeUserAccount } from "./_utils/auth/index.js";
 import {
   getStoredUserRecord,
-  setStoredUserRecord,
+  patchStoredUserRecord,
 } from "./_utils/auth/_user-record.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
@@ -254,8 +254,11 @@ async function banUser(redis: Redis, targetUsername: string, reason?: string): P
     const userData = await getStoredUserRecord(redis, normalizedUsername);
     if (!userData) return { success: false, error: "User not found" };
 
-    const updatedUser = { ...userData, banned: true, banReason: reason || "No reason provided", bannedAt: Date.now() };
-    await setStoredUserRecord(redis, normalizedUsername, updatedUser);
+    await patchStoredUserRecord(redis, normalizedUsername, {
+      banned: true,
+      banReason: reason || "No reason provided",
+      bannedAt: Date.now(),
+    });
     await deleteAllUserTokens(redis, normalizedUsername);
     return { success: true };
   } catch (error) {
@@ -271,8 +274,12 @@ async function unbanUser(redis: Redis, targetUsername: string): Promise<{ succes
     const userData = await getStoredUserRecord(redis, normalizedUsername);
     if (!userData) return { success: false, error: "User not found" };
 
-    const updatedUser = { ...userData, banned: false, banReason: undefined, bannedAt: undefined };
-    await setStoredUserRecord(redis, normalizedUsername, updatedUser);
+    await patchStoredUserRecord(
+      redis,
+      normalizedUsername,
+      { banned: false },
+      ["banReason", "bannedAt"]
+    );
     return { success: true };
   } catch (error) {
     console.error(`Error unbanning user ${normalizedUsername}:`, error);

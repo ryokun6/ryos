@@ -12,7 +12,7 @@
 import { apiHandler } from "../../_utils/api-handler.js";
 import {
   getStoredUserRecord,
-  setStoredUserRecord,
+  patchStoredUserRecord,
   normalizeEmail,
   isValidEmail,
   getUsernameByEmail,
@@ -111,8 +111,7 @@ export default apiHandler<SetEmailRequest>(
       await deleteUserEmailIndex(redis, record.email);
     }
 
-    await setStoredUserRecord(redis, username, {
-      ...record,
+    await patchStoredUserRecord(redis, username, {
       email,
       emailVerified: false,
       emailUpdatedAt: Date.now(),

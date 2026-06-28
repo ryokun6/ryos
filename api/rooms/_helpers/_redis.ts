@@ -14,8 +14,9 @@ import {
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 import { ROOM_MESSAGE_HISTORY_LIMIT } from "./_constants.js";
 import {
+  createStoredUserRecordIfAbsent,
   getStoredUserRecord,
-  setStoredUserRecord,
+  patchStoredUserRecord,
 } from "../../_utils/auth/_user-record.js";
 
 // Export for direct usage in endpoints and feature helpers.
@@ -182,7 +183,14 @@ export async function setUser(
   user: User,
   client: Redis = createRedisClient()
 ): Promise<void> {
-  await setStoredUserRecord(client, username, user);
+  const profileFields = {
+    username: user.username,
+    lastActive: user.lastActive,
+  };
+  const updated = await patchStoredUserRecord(client, username, profileFields);
+  if (!updated) {
+    await createStoredUserRecordIfAbsent(client, username, profileFields);
+  }
 }
 
 /**
@@ -194,10 +202,7 @@ export async function createUserIfNotExists(
   user: User,
   client: Redis = createRedisClient()
 ): Promise<boolean> {
-  const existing = await getStoredUserRecord(client, username);
-  if (existing) return false;
-  await setStoredUserRecord(client, username, user);
-  return true;
+  return createStoredUserRecordIfAbsent(client, username, user);
 }
 
 /**

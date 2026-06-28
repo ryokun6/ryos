@@ -9,7 +9,7 @@
 import { apiHandler } from "../../_utils/api-handler.js";
 import {
   getStoredUserRecord,
-  setStoredUserRecord,
+  patchStoredUserRecord,
   deleteUserEmailIndex,
 } from "../../_utils/auth/_user-record.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
@@ -34,9 +34,12 @@ export default apiHandler(
     const record = await getStoredUserRecord(redis, username);
     if (record?.email) {
       await deleteUserEmailIndex(redis, record.email);
-      const { email: _email, emailVerified: _verified, emailUpdatedAt: _updated, ...rest } =
-        record;
-      await setStoredUserRecord(redis, username, rest);
+      await patchStoredUserRecord(
+        redis,
+        username,
+        {},
+        ["email", "emailVerified", "emailUpdatedAt"]
+      );
     }
     await redis.del(redisKeys.auth.emailVerify(username));
 

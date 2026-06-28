@@ -16,14 +16,18 @@
 import { describe, test, expect, beforeAll } from "bun:test";
 import {
   BASE_URL,
+  fetchWithAuth,
   fetchWithOrigin,
   getTokenFromAuthCookie,
 } from "./test-utils";
 import { createRedis } from "../api/_utils/redis";
 import {
   getStoredUserRecord,
-  setStoredUserRecord,
+  patchStoredUserRecord,
+  updateStoredUserTimeZone,
 } from "../api/_utils/auth/_user-record";
+import { getUserPasswordHash, verifyPassword } from "../api/_utils/auth/_password";
+import { redisKeys } from "../src/shared/redisKeys";
 
 const PASSWORD = "testpassword123";
 
@@ -34,10 +38,14 @@ function ipHeaders(): Record<string, string> {
   };
 }
 
-async function register(username: string, password = PASSWORD): Promise<Response> {
+async function register(
+  username: string,
+  password = PASSWORD,
+  headers = ipHeaders()
+): Promise<Response> {
   return fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
-    headers: ipHeaders(),
+    headers,
     body: JSON.stringify({ username, password }),
   });
 }
@@ -52,16 +60,103 @@ async function login(username: string, password = PASSWORD): Promise<Response> {
 
 async function setBanned(username: string, banned: boolean): Promise<void> {
   const redis = createRedis();
-  // Read and write via the same canonical-first path the server uses
-  // (`auth:user:<username>:profile`, falling back to the legacy
-  // `chat:users:<username>`) so the ban flag lands in the record that
-  // login / register / token-refresh actually read.
-  const existing =
-    (await getStoredUserRecord(redis, username)) ?? {
-      username: username.toLowerCase(),
-    };
-  await setStoredUserRecord(redis, username, { ...existing, banned });
+  const existing = await getStoredUserRecord(redis, username);
+  if (!existing) throw new Error(`Missing test user: ${username}`);
+  await patchStoredUserRecord(redis, username, { banned });
 }
+
+describe("concurrent registration", () => {
+  test("one creator wins without credential or initial-session overwrite", async () => {
+    const username = `register_race_${Date.now()}`;
+    const passwords = Array.from(
+      { length: 8 },
+      (_, index) => `concurrent-password-${index}`
+    );
+    const runIpOctet = (Date.now() % 200) + 20;
+
+    const responses = await Promise.all(
+      passwords.map((password, index) =>
+        register(username, password, {
+          "Content-Type": "application/json",
+          "X-Forwarded-For": `10.77.${runIpOctet}.${index + 1}`,
+        })
+      )
+    );
+    const statuses = responses.map((response) => response.status);
+    expect(statuses.filter((status) => status === 201)).toHaveLength(1);
+    expect(statuses.filter((status) => status === 409)).toHaveLength(
+      passwords.length - 1
+    );
+
+    const winner = statuses.indexOf(201);
+    const redis = createRedis();
+    const storedHash = await getUserPasswordHash(redis, username);
+    expect(storedHash).toBeTruthy();
+    expect(await verifyPassword(passwords[winner]!, storedHash!)).toBe(true);
+    expect(
+      await redis.smembers(redisKeys.auth.userSessions(username))
+    ).toHaveLength(1);
+
+    const existingUserLogin = await register(username, passwords[winner]!);
+    expect(existingUserLogin.status).toBe(200);
+    const losingPassword = await register(
+      username,
+      passwords[(winner + 1) % passwords.length]!
+    );
+    expect(losingPassword.status).toBe(409);
+    expect(
+      await verifyPassword(
+        passwords[winner]!,
+        (await getUserPasswordHash(redis, username))!
+      )
+    ).toBe(true);
+  }, 30000);
+});
+
+describe("concurrent admin ban and profile updates", () => {
+  test("the admin ban remains set after racing atomic profile writes", async () => {
+    const username = `ban_race_${Date.now()}`;
+    const registration = await register(username);
+    expect(registration.status).toBe(201);
+
+    const adminLogin = await login("ryo", "testtest");
+    expect(adminLogin.status).toBe(200);
+    const adminToken = getTokenFromAuthCookie(adminLogin);
+    expect(adminToken).toBeTruthy();
+
+    const redis = createRedis();
+    const banRequest = fetchWithAuth(
+      `${BASE_URL}/api/admin`,
+      "ryo",
+      adminToken!,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "banUser",
+          targetUsername: username,
+          reason: "concurrency test",
+        }),
+      }
+    );
+    const profileWrites = Array.from({ length: 20 }, (_, index) =>
+      Promise.all([
+        updateStoredUserTimeZone(redis, username, "America/New_York", index),
+        patchStoredUserRecord(redis, username, { lastActive: index }),
+      ])
+    );
+
+    const [banResponse] = await Promise.all([banRequest, ...profileWrites]);
+    expect(banResponse.status).toBe(200);
+    const record = await getStoredUserRecord(redis, username);
+    expect(record).toMatchObject({
+      banned: true,
+      banReason: "concurrency test",
+      timeZone: "America/New_York",
+    });
+    expect(typeof record?.lastActive).toBe("number");
+  });
+});
 
 describe("banned-user enforcement", () => {
   let user: string;

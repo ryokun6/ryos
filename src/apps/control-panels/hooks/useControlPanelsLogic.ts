@@ -21,10 +21,10 @@ import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
 import { AI_MODEL_METADATA } from "@/types/aiModels";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/hooks/useAuth";
+import { logoutAllSessionsRaw } from "@/api/auth";
 import { toast } from "sonner";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { getApiUrl } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { normalizeControlPanelClassicTabId } from "@/apps/control-panels/components/control-panels-app/controlPanelsCategories";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
@@ -32,7 +32,6 @@ import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useTimezoneStore } from "@/stores/useTimezoneStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
@@ -457,15 +456,7 @@ export function useControlPanelsLogic({
         return;
       }
 
-      const response = await abortableFetch(getApiUrl("/api/auth/logout-all"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
+      const response = await logoutAllSessionsRaw();
 
       const data = await response.json();
 

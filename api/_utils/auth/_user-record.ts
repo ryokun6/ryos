@@ -10,6 +10,7 @@ import {
   redisKeys,
   sha256RedisIdentifier,
 } from "../../../src/shared/redisKeys.js";
+import { USER_EXPIRATION_TIME } from "./_constants.js";
 
 export interface StoredUserRecord {
   username?: string;
@@ -27,6 +28,39 @@ export interface StoredUserRecord {
   /** When the recovery email was last set/changed. */
   emailUpdatedAt?: number;
 }
+
+const CREATE_ACCOUNT_SCRIPT = `
+-- ryos-create-auth-account
+if redis.call("EXISTS", KEYS[1]) == 1 then
+  return 0
+end
+redis.call("SET", KEYS[1], ARGV[1])
+redis.call("SET", KEYS[2], ARGV[2])
+redis.call("SET", KEYS[3], ARGV[3], "EX", ARGV[5])
+redis.call("SADD", KEYS[4], ARGV[4])
+redis.call("EXPIRE", KEYS[4], ARGV[5])
+return 1
+`;
+
+const PATCH_USER_RECORD_SCRIPT = `
+-- ryos-patch-user-record
+local raw = redis.call("GET", KEYS[1])
+if not raw then
+  return false
+end
+local record = cjson.decode(raw)
+local patch = cjson.decode(ARGV[1])
+for field, value in pairs(patch) do
+  record[field] = value
+end
+local removals = cjson.decode(ARGV[2])
+for _, field in ipairs(removals) do
+  record[field] = nil
+end
+local updated = cjson.encode(record)
+redis.call("SET", KEYS[1], updated)
+return updated
+`;
 
 /** Basic email shape check. Intentionally permissive (server is not an MX validator). */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -107,6 +141,71 @@ export async function setStoredUserRecord(
   );
 }
 
+export async function createStoredUserRecordIfAbsent(
+  redis: Redis,
+  username: string,
+  record: StoredUserRecord
+): Promise<boolean> {
+  const result = await redis.set(
+    redisKeys.auth.userProfile(username.toLowerCase()),
+    JSON.stringify(record),
+    { nx: true }
+  );
+  return result !== null;
+}
+
+/**
+ * Create the profile, password, and first session as one Redis transaction.
+ * A concurrent caller for the same username receives false and cannot replace
+ * any data written by the winner.
+ */
+export async function createStoredUserAccount(
+  redis: Redis,
+  username: string,
+  record: StoredUserRecord,
+  passwordHash: string,
+  tokenHash: string,
+  sessionCreatedAt: number = Date.now()
+): Promise<boolean> {
+  const normalizedUsername = username.toLowerCase();
+  const result = await redis.eval<number>(
+    CREATE_ACCOUNT_SCRIPT,
+    [
+      redisKeys.auth.userProfile(normalizedUsername),
+      redisKeys.auth.userPassword(normalizedUsername),
+      redisKeys.auth.session(tokenHash),
+      redisKeys.auth.userSessions(normalizedUsername),
+    ],
+    [
+      JSON.stringify(record),
+      passwordHash,
+      sessionCreatedAt,
+      tokenHash,
+      USER_EXPIRATION_TIME,
+    ]
+  );
+  return Number(result) === 1;
+}
+
+/**
+ * Atomically merge selected profile fields into the current JSON record.
+ * This avoids stale read-modify-write callers reverting independent fields
+ * such as the admin ban flag.
+ */
+export async function patchStoredUserRecord(
+  redis: Redis,
+  username: string,
+  patch: Partial<StoredUserRecord>,
+  removeFields: ReadonlyArray<keyof StoredUserRecord> = []
+): Promise<StoredUserRecord | null> {
+  const result = await redis.eval<unknown>(
+    PATCH_USER_RECORD_SCRIPT,
+    [redisKeys.auth.userProfile(username.toLowerCase())],
+    [JSON.stringify(patch), JSON.stringify(removeFields)]
+  );
+  return parseStoredUser(result);
+}
+
 export async function getStoredUserTimeZone(
   redis: Redis | undefined,
   username?: string | null
@@ -130,7 +229,6 @@ export async function updateStoredUserTimeZone(
     return null;
   }
 
-  const key = redisKeys.auth.userProfile(username.toLowerCase());
   const existingRecord = await getStoredUserRecord(redis, username);
   if (!existingRecord) {
     return null;
@@ -140,13 +238,10 @@ export async function updateStoredUserTimeZone(
     return existingRecord;
   }
 
-  const updatedRecord: StoredUserRecord = {
-    ...existingRecord,
+  return patchStoredUserRecord(redis, username, {
     timeZone: normalizedTimeZone,
     timeZoneUpdatedAt: now,
-  };
-  await redis.set(key, JSON.stringify(updatedRecord));
-  return updatedRecord;
+  });
 }
 
 /**

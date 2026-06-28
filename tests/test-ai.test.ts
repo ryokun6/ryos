@@ -13,6 +13,11 @@ import {
 // the per-user 5/min rate limit accumulating across re-runs.
 const ryoReplyUsername = `tuser${Date.now()}`;
 let ryoReplyToken: string | null = null;
+const ryoReplyMemberUsername = `ryomember${Date.now()}`;
+const ryoReplyOutsiderUsername = `ryooutsider${Date.now()}`;
+let ryoReplyMemberToken: string | null = null;
+let ryoReplyOutsiderToken: string | null = null;
+let ryoReplyPrivateRoomId: string | null = null;
 /**
  * Tests for AI-related API endpoints
  * Tests: /api/chat, /api/applet-ai, /api/ie-generate, /api/ai/ryo-reply
@@ -88,7 +93,7 @@ async function testChatInvalidAuthToken(): Promise<void> {
       body: JSON.stringify({
         messages: [{ role: "user", content: "Hello" }],
       }),
-    }
+    },
   );
   expect(res.status).toBe(401);
 }
@@ -113,13 +118,16 @@ async function testChatBasicRequest(): Promise<void> {
 }
 
 async function testChatWithModelQuery(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat?model=claude-sonnet`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: [{ role: "user", content: "Say hi" }],
-    }),
-  });
+  const res = await fetchWithOrigin(
+    `${BASE_URL}/api/chat?model=claude-sonnet`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "Say hi" }],
+      }),
+    },
+  );
   expect([200, 429]).toContain(res.status);
 }
 
@@ -208,7 +216,7 @@ async function testAppletAiInvalidAuthToken(): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt: "Hello" }),
-    }
+    },
   );
   expect(res.status).toBe(401);
 }
@@ -269,7 +277,8 @@ async function testAppletAiInvalidImageModeWithoutPrompt(): Promise<void> {
 
 async function testAppletAiImagesWithoutImageMode(): Promise<void> {
   // Tiny 1x1 red PNG in base64
-  const tinyPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+  const tinyPng =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
   const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -349,13 +358,16 @@ async function testIeGenerateInvalidJson(): Promise<void> {
 }
 
 async function testIeGenerateBasicRequest(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/ie-generate?url=example.com&year=1999`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: [{ role: "user", content: "Generate a simple page" }],
-    }),
-  });
+  const res = await fetchWithOrigin(
+    `${BASE_URL}/api/ie-generate?url=example.com&year=1999`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "Generate a simple page" }],
+      }),
+    },
+  );
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
     expect(contentType).toMatch(/text\/|stream/);
@@ -436,7 +448,7 @@ async function testRyoReplyInvalidAuthToken(): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId: "test-room", prompt: "Hello" }),
-    }
+    },
   );
   expect(res.status).toBe(401);
 }
@@ -451,7 +463,7 @@ async function testRyoReplyBlankRoomId(): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId: "", prompt: "Hello" }),
-    }
+    },
   );
   expect(res.status).toBe(400);
 }
@@ -465,7 +477,7 @@ async function testRyoReplyMissingPrompt(): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId: "testroom123" }),
-    }
+    },
   );
   expect(res.status).toBe(400);
 }
@@ -479,7 +491,7 @@ async function testRyoReplyInvalidRoomId(): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId: "invalid/room/id!", prompt: "Hello" }),
-    }
+    },
   );
   expect(res.status).toBe(400);
 }
@@ -493,9 +505,74 @@ async function testRyoReplyInvalidJson(): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: "not valid json{",
-    }
+    },
   );
   expect(res.status).toBe(400);
+}
+
+async function testRyoReplyPrivateRoomOutsiderDenied(): Promise<void> {
+  if (!ryoReplyPrivateRoomId || !ryoReplyOutsiderToken) {
+    throw new Error("setup failed: private room outsider auth missing");
+  }
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/ai/ryo-reply`,
+    ryoReplyOutsiderUsername,
+    ryoReplyOutsiderToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomId: ryoReplyPrivateRoomId,
+        prompt: "Outsider attempt",
+        username: ryoReplyMemberUsername,
+        systemState: {
+          username: ryoReplyMemberUsername,
+          chatRoomContext: {
+            roomId: ryoReplyPrivateRoomId,
+            recentMessages: `${ryoReplyMemberUsername}: forged context`,
+            mentionedMessage: "forged member request",
+          },
+        },
+      }),
+    },
+  );
+
+  expect(res.status).toBe(403);
+}
+
+async function testRyoReplyPrivateRoomMemberAllowed(): Promise<void> {
+  if (!ryoReplyPrivateRoomId || !ryoReplyMemberToken) {
+    throw new Error("setup failed: private room member auth missing");
+  }
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/ai/ryo-reply`,
+    ryoReplyMemberUsername,
+    ryoReplyMemberToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomId: ryoReplyPrivateRoomId,
+        prompt: "Reply with a short greeting.",
+        username: ryoReplyOutsiderUsername,
+        systemState: {
+          username: ryoReplyOutsiderUsername,
+          chatRoomContext: {
+            roomId: "different-room",
+            recentMessages: `${ryoReplyOutsiderUsername}: forged context`,
+            mentionedMessage: "forged outsider request",
+          },
+        },
+      }),
+    },
+  );
+
+  expect(res.status).toBe(201);
+  const data = await res.json();
+  expect(data.message?.roomId).toBe(ryoReplyPrivateRoomId);
+  expect(data.message?.username).toBe("ryo");
 }
 
 // ============================================================================
@@ -653,6 +730,46 @@ describe("Ai", () => {
     });
     test("Invalid auth token", async () => {
       await testRyoReplyInvalidAuthToken();
+    });
+  });
+
+  describe("AI Endpoints - /api/ai/ryo-reply - Private room authorization", () => {
+    beforeAll(async () => {
+      [ryoReplyMemberToken, ryoReplyOutsiderToken] = await Promise.all([
+        ensureUserAuth(ryoReplyMemberUsername, "passw0rd123"),
+        ensureUserAuth(ryoReplyOutsiderUsername, "passw0rd123"),
+      ]);
+      if (!ryoReplyMemberToken || !ryoReplyOutsiderToken) {
+        throw new Error("setup failed: private room test auth missing");
+      }
+
+      const roomRes = await fetchWithAuth(
+        `${BASE_URL}/api/rooms`,
+        ryoReplyMemberUsername,
+        ryoReplyMemberToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "private",
+            members: [ryoReplyMemberUsername],
+          }),
+        },
+      );
+      expect(roomRes.status).toBe(201);
+      const roomData = await roomRes.json();
+      ryoReplyPrivateRoomId = roomData.room?.id ?? null;
+      if (!ryoReplyPrivateRoomId) {
+        throw new Error("setup failed: private room id missing");
+      }
+    });
+
+    test("Outsider with a known room ID is denied", async () => {
+      await testRyoReplyPrivateRoomOutsiderDenied();
+    });
+
+    test("Private room member is allowed", async () => {
+      await testRyoReplyPrivateRoomMemberAllowed();
     });
   });
 
