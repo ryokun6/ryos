@@ -9,19 +9,7 @@ import {
 } from "../api/_utils/auth/_user-record";
 import { redisKeys } from "../src/shared/redisKeys";
 import { buildUserLocalTimeContext } from "../api/_utils/user-time-context";
-
-class FakeRedis {
-  private readonly store = new Map<string, unknown>();
-
-  async get<T = unknown>(key: string): Promise<T | null> {
-    return (this.store.has(key) ? this.store.get(key) : null) as T | null;
-  }
-
-  async set(key: string, value: unknown): Promise<"OK"> {
-    this.store.set(key, value);
-    return "OK";
-  }
-}
+import { FakeRedis } from "./fake-redis";
 
 function makeRedis(): Redis {
   return new FakeRedis() as unknown as Redis;
