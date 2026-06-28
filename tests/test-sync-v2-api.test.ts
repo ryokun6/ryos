@@ -5,6 +5,7 @@ import {
   fetchWithAuth,
   fetchWithOrigin,
 } from "./test-utils";
+import { MAX_CHANGES_OPS_PER_RESPONSE } from "../api/sync/v2/_core";
 import { formatHlc } from "../src/shared/sync2/hlc";
 
 /**
@@ -94,6 +95,44 @@ describe("sync v2 API", () => {
     );
     const body = (await changes.json()) as { ops: unknown[] };
     expect(body.ops).toEqual([]);
+  });
+
+  test("large cursor gaps fall back to snapshot without streaming the journal", async () => {
+    const username = `sync2large${Date.now().toString(36)}`;
+    const authToken = await ensureUserAuth(username, PASSWORD);
+    const ops = Array.from(
+      { length: MAX_CHANGES_OPS_PER_RESPONSE + 1 },
+      (_, index) => ({
+        k: `settings/large-gap-${index}`,
+        v: { value: index },
+        t: t(20_000 + index, "large-gap-client"),
+      })
+    );
+
+    const upload = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/ops`,
+      username,
+      authToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: "large-gap-client", ops }),
+      }
+    );
+    expect(upload.status).toBe(200);
+
+    const changes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/changes?since=0`,
+      username,
+      authToken
+    );
+    expect(changes.status).toBe(200);
+    const body = (await changes.json()) as {
+      snapshotRequired?: boolean;
+      ops?: unknown[];
+    };
+    expect(body.snapshotRequired).toBe(true);
+    expect(body.ops).toBeUndefined();
   });
 
   test("LWW: an older write loses and receives the winner inline", async () => {
