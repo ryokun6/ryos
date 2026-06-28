@@ -2949,18 +2949,12 @@
         "effects": "Effects",
         "output": "Output"
       },
-      "cloudSyncTabs": {
-        "sync": "Sync",
-        "backup": "Backup"
-      },
       "accountsTabs": {
         "accounts": "Accounts",
         "security": "Security",
         "debug": "Debug"
       },
       "setup": "Setup",
-      "desktopTab": "Desktop",
-      "screenSaverTab": "Screen Saver",
       "desktopTab": "Desktop",
       "screenSaverTab": "Screen Saver",
       "noMatchingPreferences": "No matching preferences",
@@ -3164,9 +3158,6 @@
       },
       "cloudSync": {
         "accountDescription": "Sync settings across your devices",
-        "description": "Backup or restore all settings and files to the cloud. Max {{limit}}MB",
-        "checking": "Checking cloud backup…",
-        "lastBackup": "Last cloud backup: {{date}} ({{size}}MB)",
         "forceUpload": "Upload",
         "forceUploading": "Uploading…",
         "forceDownload": "Download",
@@ -3182,27 +3173,7 @@
         "confirmForceUploadDesc": "This will overwrite cloud data with this device's current data for each enabled Auto Sync item.",
         "confirmForceDownload": "Download from Cloud?",
         "confirmForceDownloadDesc": "This will overwrite this device's data with cloud data for each enabled Auto Sync item.",
-        "backupToCloud": "Cloud Backup",
-        "restoreFromCloud": "Cloud Restore",
-        "backingUp": "Backing up…",
-        "restoring": "Restoring…",
-        "backupSuccess": "Backup saved to cloud",
-        "backupFailed": "Failed to backup to cloud",
-        "restoreFailed": "Failed to restore from cloud",
-        "loginRequired": "Please log in to use cloud sync",
-        "confirmRestore": "Restore from Cloud?",
-        "confirmRestoreDesc": "This will replace all your current settings and files with the cloud backup. ryOS will restart.",
-        "tooLarge": "Backup too large ({{size}}MB). Maximum size is {{limit}}MB compressed.",
-        "progress": {
-          "collecting": "Collecting data…",
-          "serializing": "Serializing files…",
-          "compressing": "Compressing…",
-          "uploading": "Uploading to cloud…",
-          "downloading": "Downloading from cloud…",
-          "decompressing": "Decompressing…",
-          "restoring": "Restoring data…",
-          "finishing": "Finishing up…"
-        }
+        "loginRequired": "Please log in to use cloud sync"
       },
       "resetAllSettings": "Reset All Settings",
       "resetAllSettingsDescription": "This will clear all saved settings and restore defaults",
@@ -3301,7 +3272,7 @@
         },
         "sync": {
           "title": "Cloud Sync",
-          "description": "Configure auto-sync and manual cloud backups for contacts, calendar, and more"
+          "description": "Configure Auto Sync for contacts, calendar, and more"
         },
         "backupRestore": {
           "title": "Backup & Reset",

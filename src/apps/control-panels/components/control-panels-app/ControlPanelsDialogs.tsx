@@ -62,9 +62,6 @@ export type ControlPanelsDialogsProps = {
   isLogoutConfirmDialogOpen: boolean;
   setIsLogoutConfirmDialogOpen: (open: boolean) => void;
   confirmLogout: () => void;
-  isConfirmCloudRestoreOpen: boolean;
-  setIsConfirmCloudRestoreOpen: (open: boolean) => void;
-  handleCloudRestore: () => void;
   isConfirmForceUploadOpen: boolean;
   setIsConfirmForceUploadOpen: (open: boolean) => void;
   handleCloudForceUpload: () => void;
@@ -132,9 +129,6 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
     isLogoutConfirmDialogOpen,
     setIsLogoutConfirmDialogOpen,
     confirmLogout,
-    isConfirmCloudRestoreOpen,
-    setIsConfirmCloudRestoreOpen,
-    handleCloudRestore,
     isConfirmForceUploadOpen,
     setIsConfirmForceUploadOpen,
     handleCloudForceUpload,
@@ -254,16 +248,6 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
           setPasswordError(null);
           setIsPasswordDialogOpen(true);
         }}
-      />
-      <ConfirmDialog
-        isOpen={isConfirmCloudRestoreOpen}
-        onOpenChange={setIsConfirmCloudRestoreOpen}
-        onConfirm={() => {
-          setIsConfirmCloudRestoreOpen(false);
-          handleCloudRestore();
-        }}
-        title={t("apps.control-panels.cloudSync.confirmRestore")}
-        description={t("apps.control-panels.cloudSync.confirmRestoreDesc")}
       />
       <ConfirmDialog
         isOpen={isConfirmForceUploadOpen}

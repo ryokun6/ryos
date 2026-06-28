@@ -11,7 +11,6 @@ import { formatRelativeTime, formatSyncStatus, type SyncAuditStatus } from "./sy
 export type SyncTabContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
   tabStyles: TabStyleConfig;
-  isMacOSTheme: boolean;
   username: string | null;
   promptSetUsername: () => void;
   autoSyncEnabled: boolean;
@@ -41,33 +40,16 @@ export type SyncTabContentProps = {
   setSyncStickies: (enabled: boolean) => void;
   setSyncBooks: (enabled: boolean) => void;
   isCloudForceSyncing: boolean;
-  isCloudBackingUp: boolean;
-  isCloudRestoring: boolean;
   isCloudForceUploading: boolean;
   isCloudForceDownloading: boolean;
   setIsConfirmForceUploadOpen: (open: boolean) => void;
   setIsConfirmForceDownloadOpen: (open: boolean) => void;
-  handleCloudBackup: () => void;
-  setIsConfirmCloudRestoreOpen: (open: boolean) => void;
-  cloudSyncStatus: {
-    hasBackup: boolean;
-    metadata: {
-      timestamp: string;
-      totalSize: number;
-      version?: number;
-      createdAt?: string;
-    } | null;
-  } | null;
-  cloudProgress: { phase: string; percent: number } | null;
-  isCloudStatusLoading: boolean;
-  CLOUD_BACKUP_MAX_SIZE: number;
   prefPaneLayout?: boolean;
 };
 
 export function SyncTabContent({
   t,
   tabStyles,
-  isMacOSTheme,
   username,
   promptSetUsername,
   autoSyncEnabled,
@@ -97,18 +79,10 @@ export function SyncTabContent({
   setSyncStickies,
   setSyncBooks,
   isCloudForceSyncing,
-  isCloudBackingUp,
-  isCloudRestoring,
   isCloudForceUploading,
   isCloudForceDownloading,
   setIsConfirmForceUploadOpen,
   setIsConfirmForceDownloadOpen,
-  handleCloudBackup,
-  setIsConfirmCloudRestoreOpen,
-  cloudSyncStatus,
-  cloudProgress,
-  isCloudStatusLoading,
-  CLOUD_BACKUP_MAX_SIZE,
   prefPaneLayout = false,
 }: SyncTabContentProps) {
   return (
@@ -269,7 +243,7 @@ export function SyncTabContent({
           <Button
             variant="retro"
             onClick={() => setIsConfirmForceUploadOpen(true)}
-            disabled={isCloudForceSyncing || isCloudBackingUp || isCloudRestoring}
+            disabled={isCloudForceSyncing}
             tabIndex={!username ? -1 : undefined}
             className="flex-1"
           >
@@ -280,7 +254,7 @@ export function SyncTabContent({
           <Button
             variant="retro"
             onClick={() => setIsConfirmForceDownloadOpen(true)}
-            disabled={isCloudForceSyncing || isCloudBackingUp || isCloudRestoring}
+            disabled={isCloudForceSyncing}
             tabIndex={!username ? -1 : undefined}
             className="flex-1"
           >
@@ -292,84 +266,6 @@ export function SyncTabContent({
         <p className="text-[11px] text-neutral-600 font-geneva-12">
           {t("apps.control-panels.cloudSync.forceSyncDescription")}
         </p>
-
-        <div className="flex gap-2">
-          <Button
-            variant="retro"
-            onClick={handleCloudBackup}
-            disabled={isCloudForceSyncing || isCloudBackingUp || isCloudRestoring}
-            tabIndex={!username ? -1 : undefined}
-            className="flex-1"
-          >
-            {isCloudBackingUp
-              ? t("apps.control-panels.cloudSync.backingUp")
-              : t("apps.control-panels.cloudSync.backupToCloud")}
-          </Button>
-          <Button
-            variant="retro"
-            onClick={() => setIsConfirmCloudRestoreOpen(true)}
-            disabled={
-              isCloudForceSyncing ||
-              isCloudBackingUp ||
-              isCloudRestoring ||
-              !cloudSyncStatus?.hasBackup
-            }
-            tabIndex={!username ? -1 : undefined}
-            className="flex-1"
-          >
-            {isCloudRestoring
-              ? t("apps.control-panels.cloudSync.restoring")
-              : t("apps.control-panels.cloudSync.restoreFromCloud")}
-          </Button>
-        </div>
-        {cloudProgress && (
-          <div className="space-y-1">
-            {isMacOSTheme ? (
-              <div className="aqua-progress w-full h-[14px]">
-                <div
-                  className="aqua-progress-fill transition-all duration-300 ease-out"
-                  style={{ width: `${cloudProgress.percent}%` }}
-                />
-              </div>
-            ) : (
-              <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
-                <div
-                  className="h-full bg-neutral-600 transition-all duration-300 ease-out"
-                  style={{ width: `${cloudProgress.percent}%` }}
-                />
-              </div>
-            )}
-            <p className="text-[11px] text-neutral-600 font-geneva-12">
-              {cloudProgress.phase}
-              {cloudProgress.percent > 0 &&
-                cloudProgress.percent < 100 &&
-                ` (${cloudProgress.percent}%)`}
-            </p>
-          </div>
-        )}
-        {!cloudProgress && (
-          <p className="text-[11px] text-neutral-600 font-geneva-12">
-            {!username
-              ? t("apps.control-panels.cloudSync.description", {
-                  limit: (CLOUD_BACKUP_MAX_SIZE / (1024 * 1024)).toFixed(0),
-                })
-              : isCloudStatusLoading
-                ? t("apps.control-panels.cloudSync.checking")
-                : cloudSyncStatus?.hasBackup && cloudSyncStatus.metadata
-                  ? t("apps.control-panels.cloudSync.lastBackup", {
-                      date: new Date(
-                        cloudSyncStatus.metadata.timestamp
-                      ).toLocaleString(),
-                      size: (
-                        cloudSyncStatus.metadata.totalSize /
-                        (1024 * 1024)
-                      ).toFixed(1),
-                    })
-                  : t("apps.control-panels.cloudSync.description", {
-                      limit: (CLOUD_BACKUP_MAX_SIZE / (1024 * 1024)).toFixed(0),
-                    })}
-          </p>
-        )}
       </div>
     </div>
   );

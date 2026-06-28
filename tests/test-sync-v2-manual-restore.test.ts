@@ -1,5 +1,6 @@
 import "./local-storage-stub";
 import { beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { shouldIncludeManualBackupLocalStorageKey } from "../src/sync/manualBackup";
 import {
   clearManualRestoreIntent,
@@ -22,6 +23,27 @@ describe("manual backup Sync v2 metadata filtering", () => {
         "ryos:sync2:manual-restore-intent"
       )
     ).toBe(false);
+  });
+
+  test("Control Panels local backup and restore filter stale Sync v2 metadata", () => {
+    const source = readFileSync(
+      "src/apps/control-panels/hooks/useControlPanelsLogic.ts",
+      "utf8"
+    );
+
+    const localBackupBlock = source.slice(
+      source.indexOf("const handleBackup = async () =>"),
+      source.indexOf("const handleRestore =")
+    );
+    const localRestoreBlock = source.slice(
+      source.indexOf("const performRestore = async () =>"),
+      source.indexOf("const performFormat = async () =>")
+    );
+
+    expect(localBackupBlock).toContain("shouldIncludeManualBackupLocalStorageKey");
+    expect(localRestoreBlock).toContain("shouldIncludeManualBackupLocalStorageKey");
+    expect(localRestoreBlock).toContain("createManualRestoreIntent");
+    expect(localRestoreBlock).toContain("setManualRestoreIntent");
   });
 });
 

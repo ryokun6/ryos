@@ -48,7 +48,7 @@ graph LR
 ## Infrastructure Adapters
 
 - **Redis** (`api/_utils/redis.ts`): Centralized Redis client factory supporting Upstash REST (`REDIS_KV_REST_API_URL`) and standard Redis (`REDIS_URL`) backends with a unified API.
-- **Storage** (`api/_utils/storage.ts`): Switchable object storage adapter supporting Vercel Blob and S3-compatible backends for cloud backups and sync.
+- **Storage** (`api/_utils/storage.ts`): Switchable object storage adapter for Sync v2 blobs and media assets.
 
 ## Quick Reference
 
@@ -123,9 +123,6 @@ graph LR
 | `/api/mapkit-token` | MapKit JS token |
 | `/api/musickit-token` | MusicKit JS token |
 | `/api/tv/create-channel` | AI-assisted TV channel creation |
-| `/api/sync/backup-token` | Generate cloud backup upload descriptor |
-| `/api/sync/backup` | Save/list/delete cloud backup metadata |
-| `/api/sync/status` | Cloud backup status summary |
 | `/api/sync/auto-sync-preference` | Read/update the cross-device Auto Sync toggle |
 | `/api/sync/v2/ops` | Apply batched journal ops |
 | `/api/sync/v2/changes` | Read journal ops after a cursor |

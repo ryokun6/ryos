@@ -2,7 +2,7 @@
  * POST /api/auth/account/delete
  *
  * Permanently delete the authenticated user's own account and all associated
- * data (sessions, password, recovery email, Telegram link, sync/backup data).
+ * data (sessions, password, recovery email, Telegram link, and Sync v2 data).
  *
  * Safety:
  * - Requires a fresh (non-grace) token.

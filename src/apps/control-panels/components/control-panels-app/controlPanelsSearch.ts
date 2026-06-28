@@ -275,22 +275,12 @@ export const CONTROL_PANEL_SEARCH_ENTRIES: ControlPanelSearchEntry[] = [
   {
     paneId: "dot-mac",
     labelKey: `${CP}.panes.dotMac`,
-    keywords: ["cloud", "sync", "icloud", ".mac", "backup"],
+    keywords: ["cloud", "sync", "icloud", ".mac"],
   },
   {
     paneId: "dot-mac",
     labelKey: `${CP}.autoSync.title`,
     keywords: ["auto sync", "sync", "devices"],
-  },
-  {
-    paneId: "dot-mac",
-    labelKey: `${CP}.cloudSync.backupToCloud`,
-    keywords: ["cloud backup", "backup", "upload", "cloud"],
-  },
-  {
-    paneId: "dot-mac",
-    labelKey: `${CP}.cloudSync.restoreFromCloud`,
-    keywords: ["cloud restore", "restore", "download", "cloud"],
   },
 
   // Backup & Restore (sharing)

@@ -466,7 +466,7 @@
     <main class="content">
       <article>
         <h1>Utility APIs</h1>
-<p>ryOS provides several utility API endpoints for common operations like fetching link previews, checking iframe embeddability, sharing applets, cloud backup metadata, and admin operations. These endpoints are implemented as Node.js API functions.</p>
+<p>ryOS provides several utility API endpoints for common operations like fetching link previews, checking iframe embeddability, sharing applets, Sync v2, and admin operations. These endpoints are implemented as Node.js API functions.</p>
 <p>Many utility endpoints now use the shared <code>apiHandler</code> + <code>request-auth</code> utilities for consistent CORS/auth/method handling.</p>
 <h2>Link Preview</h2>
 <p>Fetches metadata from URLs for rich link previews. Supports Open Graph, Twitter Cards, and standard meta tags with special handling for YouTube URLs.</p>
@@ -789,7 +789,7 @@ const { quotes, chart } = await response.json();</code></pre>
 <h2>Sync APIs</h2>
 <p>Cloud sync uses a journal-based delta protocol (v2): all synced state is a per-user map of <code>key → document</code>, changes travel as ops with hybrid-logical- clock timestamps, and a single integer cursor (<code>seq</code>) answers "am I up to date?". Conflicts resolve per key via last-writer-wins; losing writes receive the winning entry inline (no 409s, no retry loops). See <code><a href="https://github.com/ryokun6/ryos/blob/main/docs/proposals/cloud-sync-v2.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">docs/proposals/cloud-sync-v2.md</a></code> for the full design.</p>
 <h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/v2/ops</code></td><td>Apply a batch of ops (per-key LWW)</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/v2/changes?since={seq}</code></td><td>Ops after the cursor, or <code>snapshotRequired</code></td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/v2/snapshot</code></td><td>Full key-value state + current <code>seq</code></td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/v2/blobs</code></td><td>Batch blob upload prepare (sha256 dedupe) + download URL signing</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/cron/sync-maintenance</code></td><td>Maintenance cron: blob GC + user-record healing</td><td><code>CRON_SECRET</code></td></tr><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate backup upload instructions</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET/PUT</td><td><code>/api/sync/auto-sync-preference</code></td><td>Cross-device Auto Sync toggle</td><td>Required</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/v2/ops</code></td><td>Apply a batch of ops (per-key LWW)</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/v2/changes?since={seq}</code></td><td>Ops after the cursor, or <code>snapshotRequired</code></td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/v2/snapshot</code></td><td>Full key-value state + current <code>seq</code></td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/v2/blobs</code></td><td>Batch blob upload prepare (sha256 dedupe) + download URL signing</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/cron/sync-maintenance</code></td><td>Maintenance cron: blob GC + user-record healing</td><td><code>CRON_SECRET</code></td></tr><tr><td>GET/PUT</td><td><code>/api/sync/auto-sync-preference</code></td><td>Cross-device Auto Sync toggle</td><td>Required</td></tr></tbody></table>
 <h3>POST /api/sync/v2/ops</h3>
 <p>Request:</p>
 <pre><code>{
@@ -833,63 +833,6 @@ const { quotes, chart } = await response.json();</code></pre>
   "blobsDeleted": 2,
   "userRecordsPersisted": 3,
   "errors": 0
-}</code></pre>
-<h3>POST /api/sync/backup-token</h3>
-<p>Generates direct-upload instructions for <code>backups/{username}/backup.gz</code>. The route is rate-limited to 10 requests per hour per user.</p>
-<p>Response:</p>
-<pre><code>{
-  "provider": "vercel-blob",
-  "uploadMethod": "vercel-client-token",
-  "pathname": "backups/alice/backup.gz",
-  "contentType": "application/gzip",
-  "maximumSizeInBytes": 52428800,
-  "clientToken": "vercel_blob_client_token..."
-}</code></pre>
-<h3>GET /api/sync/status</h3>
-<p>Returns <code>hasBackup: false</code> with <code>metadata: null</code> when no backup exists.</p>
-<p>Response:</p>
-<pre><code>{
-  "hasBackup": true,
-  "metadata": {
-    "timestamp": "2026-02-29T12:34:56.000Z",
-    "version": 3,
-    "totalSize": 1234567,
-    "createdAt": "2026-02-29T12:35:10.000Z"
-  }
-}</code></pre>
-<h3>/api/sync/backup</h3>
-<h4>POST request body</h4>
-<pre><code>{
-  "storageUrl": "https://...blob.vercel-storage.com/backups/user/backup.gz",
-  "timestamp": "2026-02-29T12:34:56.000Z",
-  "version": 3,
-  "totalSize": 1234567
-}</code></pre>
-<code>blobUrl</code> is also accepted for backward compatibility; the server resolves either field.
-<h4>POST response</h4>
-<pre><code>{
-  "ok": true,
-  "metadata": {
-    "timestamp": "2026-02-29T12:34:56.000Z",
-    "version": 3,
-    "totalSize": 1234567,
-    "createdAt": "2026-02-29T12:35:10.000Z"
-  }
-}</code></pre>
-<h4>GET response</h4>
-<pre><code>{
-  "ok": true,
-  "data": "BASE64_GZIP_DATA",
-  "metadata": {
-    "timestamp": "2026-02-29T12:34:56.000Z",
-    "version": 3,
-    "totalSize": 1234567,
-    "createdAt": "2026-02-29T12:35:10.000Z"
-  }
-}</code></pre>
-<h4>DELETE response</h4>
-<pre><code>{
-  "ok": true
 }</code></pre>
 <hr>
 <h2>Admin API</h2>

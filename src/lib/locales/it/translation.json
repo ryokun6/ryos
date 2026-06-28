@@ -1606,18 +1606,10 @@
       "checkForUpdates": "Verifica aggiornamenti",
       "cloudSync": {
         "accountDescription": "Impostazioni di sincronizzazione sui tuoi dispositivi",
-        "backingUp": "Backup in corso…",
-        "backupFailed": "Backup nel cloud non riuscito",
-        "backupSuccess": "Backup salvato nel cloud",
-        "backupToCloud": "Backup nel cloud",
-        "checking": "Controllo backup cloud…",
         "confirmForceDownload": "Scaricare dal cloud?",
         "confirmForceDownloadDesc": "I dati di questo dispositivo verranno sovrascritti con i dati del cloud per ogni elemento di Sincronizzazione Automatica abilitato.",
         "confirmForceUpload": "Caricare sul cloud?",
         "confirmForceUploadDesc": "I dati nel cloud verranno sovrascritti con i dati attuali di questo dispositivo per ogni elemento di Sincronizzazione Automatica abilitato.",
-        "confirmRestore": "Ripristinare dal cloud?",
-        "confirmRestoreDesc": "Questo sostituirà tutte le impostazioni e i file correnti con il backup nel cloud. ryOS verrà riavviato.",
-        "description": "Esegui il backup o ripristina tutte le impostazioni e i file nel cloud. Max {{limit}} MB",
         "forceDownload": "Scarica",
         "forceDownloadFailed": "Scaricamento dal cloud non riuscito",
         "forceDownloadNoData": "Nessun dato cloud trovato per gli elementi abilitati",
@@ -1629,26 +1621,7 @@
         "forceUploadFailed": "Caricamento sul cloud non riuscito",
         "forceUploadSuccess": "Caricamento sul cloud completato",
         "forceUploading": "Caricamento…",
-        "lastBackup": "Ultimo backup cloud: {{date}} ({{size}} MB)",
-        "loginRequired": "Accedi per usare la sincronizzazione cloud",
-        "progress": {
-          "collecting": "Raccolta dati…",
-          "compressing": "Compressione…",
-          "decompressing": "Decompressione…",
-          "downloading": "Download dal cloud…",
-          "finishing": "Completamento…",
-          "restoring": "Ripristino dati…",
-          "serializing": "Serializzazione file…",
-          "uploading": "Caricamento nel cloud…"
-        },
-        "restoreFailed": "Ripristino dal cloud non riuscito",
-        "restoreFromCloud": "Ripristina dal cloud",
-        "restoring": "Ripristino in corso…",
-        "tooLarge": "Backup troppo grande ({{size}} MB). La dimensione massima compressa è {{limit}} MB."
-      },
-      "cloudSyncTabs": {
-        "backup": "Backup",
-        "sync": "Sincronizzazione"
+        "loginRequired": "Accedi per usare la sincronizzazione cloud"
       },
       "color": "Colore",
       "connectionStatus": {
