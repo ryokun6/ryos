@@ -202,4 +202,67 @@ describe("iframe-check", () => {
       expect(second.headers.get("x-embed-cache")).toBe("HIT");
     });
   });
+
+  describe("Proxy diagnostics + session gating", () => {
+    test("proxy response exposes X-IE-Proxy diagnostics header", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com"
+        )}`
+      );
+      expect(res.status).toBe(200);
+      const diag = res.headers.get("x-ie-proxy");
+      expect(diag).toBeTruthy();
+      // Shape: cookies=N;headless=0|1;status=NNN;blocked=0|1
+      expect(diag).toContain("cookies=");
+      expect(diag).toContain("headless=");
+      expect(diag).toContain("status=");
+    });
+
+    test("does not arm proxy sessions without env/admin/debug opt-in", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+          "https://example.com"
+        )}`
+      );
+      expect(res.status).toBe(200);
+      const setCookie = res.headers.get("set-cookie") || "";
+      expect(setCookie).not.toContain("ie_psid=");
+    });
+
+    test("does not arm sessions with dbg=1 unless sessions are requested", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?dbg=1&url=${encodeURIComponent(
+          "https://example.com"
+        )}`
+      );
+      expect(res.status).toBe(200);
+      const setCookie = res.headers.get("set-cookie") || "";
+      expect(setCookie).not.toContain("ie_psid=");
+    });
+
+    test("arms proxy sessions on a top-level GET when ieSessions=1&dbg=1 opts in", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?ieSessions=1&dbg=1&url=${encodeURIComponent(
+          "https://example.com"
+        )}`
+      );
+      expect(res.status).toBe(200);
+      const setCookie = res.headers.get("set-cookie") || "";
+      expect(setCookie).toContain("ie_psid=");
+      expect(setCookie).toContain("HttpOnly");
+      expect(setCookie).toContain("Path=/api");
+    });
+
+    test("does not arm sessions for raw sub-resource requests even when opted in", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?raw=1&ieSessions=1&dbg=1&url=${encodeURIComponent(
+          "https://example.com"
+        )}`
+      );
+      expect(res.status).toBe(200);
+      const setCookie = res.headers.get("set-cookie") || "";
+      expect(setCookie).not.toContain("ie_psid=");
+    });
+  });
 });

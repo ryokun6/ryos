@@ -21,6 +21,8 @@ import {
   isIeLiveBrowserConfigured,
   buildLiveViewUrl,
 } from "./_utils/_ie-live.js";
+import { resolveRequestAuth } from "./_utils/request-auth.js";
+import type { Redis } from "./_utils/redis.js";
 import type { VercelRequest } from "@vercel/node";
 
 export const runtime = "nodejs";
@@ -38,6 +40,35 @@ const FORWARDABLE_SUBRESOURCE_HEADERS = [
 
 /** Methods whose body must be forwarded to the upstream origin. */
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * Whether the caller is permitted to opt into the IE Debug proxy features
+ * (cookie/session passthrough, forced headless). This is the "gate under admin
+ * ryo user, optional in debug mode" check:
+ *   - `dbg=1` — the IE Debug menu (shown only to the admin user or in global
+ *     debug mode) sends this to opt in, OR
+ *   - the authenticated caller is the `ryo` admin (resolved from the
+ *     first-party auth cookie that same-origin iframe navigations carry).
+ *
+ * Env flags (`IE_PROXY_SESSIONS`, headless provider) are checked separately by
+ * each caller and make a feature always-on regardless of this gate.
+ *
+ * Auth is resolved at most once per request (memoized by the caller) and only
+ * when a gated feature was actually requested, so the common anonymous browse
+ * path adds no extra Redis round-trip.
+ */
+async function isIeDebugCallerPermitted(
+  req: VercelRequest,
+  redis: Redis
+): Promise<boolean> {
+  if (req.query.dbg === "1" || req.query.dbg === "true") return true;
+  try {
+    const auth = await resolveRequestAuth(req, redis);
+    return auth.user?.username === "ryo";
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Read the raw request body so it can be forwarded verbatim to the upstream
@@ -360,12 +391,39 @@ export default apiHandler(
     mode = "proxy";
   }
   // `render=headless` forces the (optional, env-gated) headless-browser
-  // renderer even when a plain fetch would have succeeded. Otherwise headless
-  // is only used as an automatic fallback when the upstream blocks the proxy.
-  const forceHeadless = req.query.render === "headless";
+  // renderer even when a plain fetch would have succeeded — but only for
+  // permitted (admin / debug) callers. Resolved below alongside sessions.
+  // Otherwise headless is only used as an automatic fallback when the upstream
+  // blocks the proxy (available to everyone).
+  const wantsForceHeadless = req.query.render === "headless";
+  let forceHeadless = false;
 
   // Generate a fresh, randomized browser header set for this request
   const BROWSER_HEADERS = generateRandomBrowserHeaders();
+
+  // Diagnostics surfaced via the `X-IE-Proxy` response header so the IE Debug
+  // menu / tests can see what the proxy actually did for this request.
+  const proxyDebug: {
+    cookiesApplied: number;
+    headless: boolean;
+    upstreamStatus: number | null;
+    blocked: boolean;
+  } = { cookiesApplied: 0, headless: false, upstreamStatus: null, blocked: false };
+  const writeProxyDebugHeader = () => {
+    try {
+      res.setHeader(
+        "X-IE-Proxy",
+        `cookies=${proxyDebug.cookiesApplied};headless=${
+          proxyDebug.headless ? 1 : 0
+        };status=${proxyDebug.upstreamStatus ?? "-"};blocked=${
+          proxyDebug.blocked ? 1 : 0
+        }`
+      );
+      res.setHeader("Access-Control-Expose-Headers", "X-IE-Proxy");
+    } catch {
+      /* headers already sent */
+    }
+  };
 
   // Helper for consistent error responses with CORS
   const errorResponseWithCors = (message: string, status: number = 400) => {
@@ -942,24 +1000,48 @@ export default apiHandler(
     // 307/308 redirects that preserve the method.
     const forwardBody = await readForwardBody(req);
 
-    // Optional cookie/session passthrough (env-gated). When enabled, replay
-    // the stored per-host cookie jar so logins/sessions persist across proxied
-    // requests. We mint the first-party session id on top-level navigations.
-    let ieSessionId: string | null = null;
-    if (areIeProxySessionsEnabled()) {
-      ieSessionId =
-        !isRawProxy && httpMethod === "GET"
-          ? ensureIeSessionCookie(req, res)
-          : readIeSessionId(req);
-      if (ieSessionId) {
-        const cookieHeader = await loadIeCookieHeader(
-          redis,
-          ieSessionId,
-          targetUrl
-        );
-        if (cookieHeader) BROWSER_HEADERS["Cookie"] = cookieHeader;
+    // Resolve the admin/debug permission at most once, and only when a gated
+    // feature (sessions / forced headless) was actually requested — keeping the
+    // common anonymous browse path free of extra auth round-trips.
+    const isTopLevelGet = !isRawProxy && httpMethod === "GET";
+    const wantsSessions =
+      req.query.ieSessions === "1" || req.query.ieSessions === "true";
+    let gatePermittedCache: boolean | null = null;
+    const isDebugCallerPermitted = async (): Promise<boolean> => {
+      if (gatePermittedCache === null) {
+        gatePermittedCache = await isIeDebugCallerPermitted(req, redis);
+      }
+      return gatePermittedCache;
+    };
+
+    // Optional cookie/session passthrough. Always-on when `IE_PROXY_SESSIONS`
+    // is set; otherwise opt-in via the IE Debug menu (`ieSessions=1`) for
+    // permitted (admin / debug) callers. On a permitted top-level navigation we
+    // mint the first-party `ie_psid` cookie ("arm" the session); thereafter
+    // every request — including sub-resource fetch/XHR that already carry the
+    // same-origin cookie — replays and persists the per-host jar.
+    const existingPsid = readIeSessionId(req);
+    let ieSessionId: string | null = existingPsid;
+    if (isTopLevelGet) {
+      const sessionsPermitted =
+        areIeProxySessionsEnabled() ||
+        (wantsSessions && (await isDebugCallerPermitted()));
+      if (sessionsPermitted) {
+        ieSessionId = ensureIeSessionCookie(req, res);
       }
     }
+    if (ieSessionId) {
+      const cookieHeader = await loadIeCookieHeader(redis, ieSessionId, targetUrl);
+      if (cookieHeader) {
+        BROWSER_HEADERS["Cookie"] = cookieHeader;
+        proxyDebug.cookiesApplied = cookieHeader.split(";").length;
+      }
+    }
+
+    // Forced headless is a permitted-caller-only affordance (auto-fallback on
+    // block still works for everyone below).
+    forceHeadless =
+      wantsForceHeadless && isTopLevelGet && (await isDebugCallerPermitted());
 
     // Top-level navigations may fall back to (or force) headless rendering.
     const headlessEligible =
@@ -979,6 +1061,7 @@ export default apiHandler(
       let upstreamRes = fetchResult.response;
       let finalUrl = fetchResult.finalUrl;
       const setCookies = fetchResult.setCookies;
+      proxyDebug.upstreamStatus = upstreamRes.status;
 
       clearTimeout(timeout); // Clear timeout on successful fetch
 
@@ -1002,6 +1085,7 @@ export default apiHandler(
           logger,
         });
         if (rendered) {
+          proxyDebug.headless = true;
           logger.info(
             `Headless render succeeded via ${rendered.provider}; serving rendered HTML`
           );
@@ -1028,6 +1112,8 @@ export default apiHandler(
         const isAccessBlocked = [401, 403, 405, 406, 429, 451].includes(
           upstreamRes.status
         );
+        proxyDebug.blocked = isAccessBlocked;
+        writeProxyDebugHeader();
         const blockedMessage = `This website blocked the request (HTTP ${
           upstreamRes.status
         } - ${
@@ -1055,6 +1141,7 @@ export default apiHandler(
       // Set response headers
       res.setHeader("content-security-policy", "frame-ancestors *");
       res.setHeader("access-control-allow-origin", "*");
+      writeProxyDebugHeader();
 
       // Raw sub-resource forward: return the upstream payload untouched (no
       // HTML rewriting / interceptor injection) so JSON, scripts, assets and

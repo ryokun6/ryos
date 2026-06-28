@@ -32,6 +32,8 @@ import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { createClientLogger } from "@/utils/logger";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
+import { isIeLiveBrowserAvailable } from "@/utils/runtimeConfig";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import {
@@ -77,6 +79,8 @@ export function useInternetExplorerLogic({
   helpItems,
 }: UseInternetExplorerLogicProps) {
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
+  const setDebugMode = useDisplaySettingsStore((state) => state.setDebugMode);
+  const isRyoAdmin = useIsRyoAdmin();
   const terminalSoundsEnabled = useAudioSettingsStore(
     (state) => state.terminalSoundsEnabled
   );
@@ -139,6 +143,12 @@ export function useInternetExplorerLogic({
     setLocation,
     setTimeMachineViewOpen,
     fetchCachedYears,
+    debugProxySessions,
+    debugForceHeadless,
+    debugVerboseLogging,
+    setDebugProxySessions,
+    setDebugForceHeadless,
+    setDebugVerboseLogging,
   } = useInternetExplorerStoreShallow((state) => ({
     url: state.url,
     year: state.year,
@@ -191,6 +201,12 @@ export function useInternetExplorerLogic({
     setLocation: state.setLocation,
     setTimeMachineViewOpen: state.setTimeMachineViewOpen,
     fetchCachedYears: state.fetchCachedYears,
+    debugProxySessions: state.debugProxySessions,
+    debugForceHeadless: state.debugForceHeadless,
+    debugVerboseLogging: state.debugVerboseLogging,
+    setDebugProxySessions: state.setDebugProxySessions,
+    setDebugForceHeadless: state.setDebugForceHeadless,
+    setDebugVerboseLogging: state.setDebugVerboseLogging,
   }));
 
   const { t } = useTranslation();
@@ -205,6 +221,66 @@ export function useInternetExplorerLogic({
     helpItems ?? []
   );
   const appName = t("apps.internet-explorer.appName");
+
+  // The IE Debug menu is only available to the admin (ryo) user or when global
+  // debug mode is on. The advanced proxy toggles below opt into env-gated proxy
+  // features (cookie/session passthrough, forced headless) per browser.
+  const showDebugMenu = isRyoAdmin || debugMode;
+  const ieLiveBrowserAvailable = isIeLiveBrowserAvailable();
+
+  // Append the active debug toggles to a proxy (`/api/iframe-check`) URL so the
+  // server opts the request into the gated features. `dbg=1` signals the server
+  // that this is an admin/debug-mode caller permitted to use them.
+  const appendIeDebugParams = useCallback(
+    (proxyUrl: string): string => {
+      if (!proxyUrl.startsWith("/api/iframe-check")) return proxyUrl;
+      const extra: string[] = [];
+      if (debugForceHeadless) extra.push("render=headless", "dbg=1");
+      if (debugProxySessions) extra.push("ieSessions=1", "dbg=1");
+      if (extra.length === 0) return proxyUrl;
+      // De-dupe the dbg flag.
+      const unique = Array.from(new Set(extra));
+      const sep = proxyUrl.includes("?") ? "&" : "?";
+      const next = `${proxyUrl}${sep}${unique.join("&")}`;
+      if (debugVerboseLogging) {
+        log.info("[debug] proxy params", {
+          headless: debugForceHeadless,
+          sessions: debugProxySessions,
+        });
+      }
+      return next;
+    },
+    [debugForceHeadless, debugProxySessions, debugVerboseLogging]
+  );
+
+  // Open the current page in the external live browser (env-gated escape hatch).
+  const handleOpenLiveBrowser = useCallback(async () => {
+    const target = url?.startsWith("http") ? url : url ? `https://${url}` : "";
+    if (!target) return;
+    if (debugVerboseLogging) log.info("[debug] open live browser", { target });
+    try {
+      const res = await fetch(
+        `/api/iframe-check?mode=live&url=${encodeURIComponent(target)}`
+      );
+      if (!res.ok) {
+        log.warn("[debug] live browser unavailable", { status: res.status });
+        return;
+      }
+      const data = (await res.json()) as { liveViewUrl?: string };
+      if (data.liveViewUrl) {
+        window.open(data.liveViewUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      log.warn("[debug] live browser request failed", { error });
+    }
+  }, [url, debugVerboseLogging]);
+
+  // "Show Debug Console" turns on global debug mode, which reveals the
+  // DebugLogOverlay (the in-app console) where IE logs surface.
+  const handleOpenDebugConsole = useCallback(() => {
+    setDebugMode(true);
+    log.info("[debug] debug console enabled from IE");
+  }, [setDebugMode]);
 
   const getSharedPageToastDescription = useCallback(
     (sharedPage: { url: string; year?: string }) =>
@@ -762,6 +838,16 @@ export function useInternetExplorerLogic({
 
       navigateStart(urlToNavigate, targetYearParam, newMode, newToken);
 
+      if (debugVerboseLogging) {
+        log.info("[debug] navigate", {
+          url: urlToNavigate,
+          year: targetYearParam,
+          mode: newMode,
+          headless: debugForceHeadless,
+          sessions: debugProxySessions,
+        });
+      }
+
       const normalizedTargetUrl = urlToNavigate.startsWith("http")
         ? urlToNavigate
         : `https://${urlToNavigate}`;
@@ -926,9 +1012,11 @@ export function useInternetExplorerLogic({
               urlToLoad = normalizedTargetUrl;
             } else {
               // Proxy current year sites through iframe-check
-              urlToLoad = `/api/iframe-check?url=${encodeURIComponent(
-                normalizedTargetUrl
-              )}&theme=${encodeURIComponent(currentTheme)}`;
+              urlToLoad = appendIeDebugParams(
+                `/api/iframe-check?url=${encodeURIComponent(
+                  normalizedTargetUrl
+                )}&theme=${encodeURIComponent(currentTheme)}`
+              );
             }
 
             try {
@@ -1005,6 +1093,10 @@ export function useInternetExplorerLogic({
       localUrl,
       playElevatorMusic,
       terminalSoundsEnabled,
+      appendIeDebugParams,
+      debugVerboseLogging,
+      debugForceHeadless,
+      debugProxySessions,
       t,
     ]
   );
@@ -1959,6 +2051,18 @@ export function useInternetExplorerLogic({
     debugMode,
     terminalSoundsEnabled,
     isOffline,
+
+    // Debug menu (admin / debug-mode only)
+    showDebugMenu,
+    ieLiveBrowserAvailable,
+    debugProxySessions,
+    debugForceHeadless,
+    debugVerboseLogging,
+    setDebugProxySessions,
+    setDebugForceHeadless,
+    setDebugVerboseLogging,
+    handleOpenLiveBrowser,
+    handleOpenDebugConsole,
 
     // Years
     pastYears,

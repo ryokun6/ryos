@@ -120,6 +120,16 @@ export function InternetExplorerAppComponent({
     bringInstanceToForeground,
     t,
     getDebugStatusMessage,
+    showDebugMenu,
+    ieLiveBrowserAvailable,
+    debugProxySessions,
+    debugForceHeadless,
+    debugVerboseLogging,
+    setDebugProxySessions,
+    setDebugForceHeadless,
+    setDebugVerboseLogging,
+    handleOpenLiveBrowser,
+    handleOpenDebugConsole,
   } = logic;
 
   const menuBar = (
@@ -157,6 +167,16 @@ export function InternetExplorerAppComponent({
       onLocationChange={setLocation}
       onYearChange={(newYear) => handleNavigate(url, newYear)}
       onSharePage={handleSharePage}
+      showDebugMenu={showDebugMenu}
+      ieLiveBrowserAvailable={ieLiveBrowserAvailable}
+      debugProxySessions={debugProxySessions}
+      debugForceHeadless={debugForceHeadless}
+      debugVerboseLogging={debugVerboseLogging}
+      onToggleProxySessions={setDebugProxySessions}
+      onToggleForceHeadless={setDebugForceHeadless}
+      onToggleVerboseLogging={setDebugVerboseLogging}
+      onOpenLiveBrowser={handleOpenLiveBrowser}
+      onOpenDebugConsole={handleOpenDebugConsole}
       skipInitialSound={skipInitialSound}
       instanceId={instanceId}
       onNavigateNext={onNavigateNext}
