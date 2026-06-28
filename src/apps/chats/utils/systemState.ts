@@ -10,6 +10,7 @@ import { useTvStore } from "@/stores/useTvStore";
 import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
 import { htmlToMarkdown } from "@/utils/markdown";
 import { generateHtmlFromJsonSync } from "@/utils/tiptapHtml";
+import { getEffectiveTimezone } from "@/lib/timezoneConfig";
 
 export const detectUserOS = (): string => {
   if (typeof navigator === "undefined") return "Unknown";
@@ -139,8 +140,7 @@ export const getSystemState = () => {
   );
 
   const nowClient = new Date();
-  const userTimeZone =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+  const userTimeZone = getEffectiveTimezone();
   const userTimeString = nowClient.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
