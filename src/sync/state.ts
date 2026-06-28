@@ -52,6 +52,7 @@ interface PersistedSyncState {
   lastHlc: string | null;
   shadow: Record<string, ShadowEntry>;
   dirty: SyncNamespace[];
+  localReconcileRequired: boolean;
 }
 
 function storageKey(username: string): string {
@@ -74,6 +75,7 @@ export class SyncClientState {
       lastHlc: null,
       shadow: {},
       dirty: [],
+      localReconcileRequired: false,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -93,6 +95,7 @@ export class SyncClientState {
         dirty: Array.isArray(parsed.dirty)
           ? (parsed.dirty as SyncNamespace[])
           : [],
+        localReconcileRequired: parsed.localReconcileRequired === true,
       };
     } catch {
       return fallback;
@@ -174,6 +177,16 @@ export class SyncClientState {
     return [...this.state.dirty];
   }
 
+  get localReconcileRequired(): boolean {
+    return this.state.localReconcileRequired;
+  }
+
+  setLocalReconcileRequired(required: boolean): void {
+    if (this.state.localReconcileRequired === required) return;
+    this.state.localReconcileRequired = required;
+    this.schedulePersist();
+  }
+
   markDirty(namespace: SyncNamespace): void {
     if (!this.state.dirty.includes(namespace)) {
       this.state.dirty.push(namespace);
@@ -192,9 +205,21 @@ export class SyncClientState {
 
   /** Wipe cursor + shadow (force re-bootstrap). Keeps the client id. */
   reset(): void {
-    this.state = { cursor: null, lastHlc: this.state.lastHlc, shadow: {}, dirty: [] };
+    this.state = {
+      cursor: null,
+      lastHlc: this.state.lastHlc,
+      shadow: {},
+      dirty: [],
+      localReconcileRequired: false,
+    };
     this.persistNow();
   }
+}
+
+export function markSyncLocalReconcileRequired(username: string): void {
+  const state = new SyncClientState(username);
+  state.setLocalReconcileRequired(true);
+  state.persistNow();
 }
 
 /** Fast 53-bit string hash (cyrb53) for shadow content hashes. */
