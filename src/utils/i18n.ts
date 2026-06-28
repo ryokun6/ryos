@@ -83,6 +83,7 @@ export function getTranslatedFolderName(folderPath: string): string {
     "/Videos": "videos",
     "/Sites": "sites",
     "/Applets": "applets",
+    "/System": "system",
     "/Trash": "trash",
   };
 
@@ -114,6 +115,7 @@ export function getTranslatedFolderNameFromName(folderName: string): string {
     "Videos": "videos",
     "Sites": "sites",
     "Applets": "applets",
+    "System": "system",
     "Trash": "trash",
   };
 
