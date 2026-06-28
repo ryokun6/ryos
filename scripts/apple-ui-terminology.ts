@@ -158,7 +158,12 @@ const contextualEnglish: Record<string, string> = APPLE_UI_CONTEXTUAL_ENGLISH;
 
 export type AppleUiTerm = keyof typeof APPLE_UI_TERMINOLOGY;
 
-const ELLIPSIS_SUFFIX = /(?:\.\.\.|…)$/u;
+const ELLIPSIS_SUFFIX = /(?:\.\.\.|…|⋯)$/u;
+
+/** Apple Taiwan uses midline ellipsis (U+22EF); other locales use U+2026. */
+function getAppleEllipsisSuffix(locale: TranslationLocale): string {
+  return locale === "zh-TW" ? "⋯" : "…";
+}
 
 function isAppleUiTerm(value: string): value is AppleUiTerm {
   return Object.hasOwn(APPLE_UI_TERMINOLOGY, value);
@@ -184,7 +189,9 @@ export function getExpectedAppleUiTerm(
   }
 
   const translations = APPLE_UI_TERMINOLOGY[source];
-  const suffix = ELLIPSIS_SUFFIX.test(englishValue) ? "…" : "";
+  const suffix = ELLIPSIS_SUFFIX.test(englishValue)
+    ? getAppleEllipsisSuffix(locale)
+    : "";
   return `${translations[locale]}${suffix}`;
 }
 

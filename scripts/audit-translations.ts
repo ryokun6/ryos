@@ -67,7 +67,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "Показано недавних запусков: {{count}}.",
   },
   "apps.chats.toolCalls.listCursorCloudAgentRuns.loading": {
-    "zh-TW": "正在列出 Cursor Cloud 代理執行…",
+    "zh-TW": "正在列出 Cursor Cloud 代理執行⋯",
     ja: "Cursor Cloud エージェントの実行を一覧表示中…",
     ko: "Cursor Cloud 에이전트 실행 목록을 불러오는 중…",
     fr: "Liste des exécutions de l’agent Cursor Cloud…",
