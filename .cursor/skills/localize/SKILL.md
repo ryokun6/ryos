@@ -91,7 +91,12 @@ Adds missing keys to all 10 language files, marked with `[TODO]`.
 bun run i18n:translate
 ```
 
-Requires `GOOGLE_GENERATIVE_AI_API_KEY` env variable.
+Requires `GOOGLE_GENERATIVE_AI_API_KEY`. In Cursor Cloud the key is already injected into the environment. On local maintainer machines, export it from `.env.local` before running the script because Bun does not auto-load that file for standalone scripts:
+
+```bash
+export GOOGLE_GENERATIVE_AI_API_KEY="$(grep GOOGLE_GENERATIVE_AI_API_KEY .env.local | cut -d'"' -f2)"
+bun run i18n:translate
+```
 
 ## Step 6: Validate
 

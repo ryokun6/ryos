@@ -501,7 +501,9 @@ bun run i18n:extract --pattern "src/apps/calculator/**/*.{ts,tsx}"
 # Add new English keys, then sync missing keys to every locale as [TODO]
 bun run i18n:sync:mark-todo
 
-# Machine-translate [TODO] keys after exporting the Google API key
+# Machine-translate [TODO] keys.
+# Cursor Cloud already injects GOOGLE_GENERATIVE_AI_API_KEY.
+# Local maintainer machines only: export it from .env.local first.
 export GOOGLE_GENERATIVE_AI_API_KEY="$(grep GOOGLE_GENERATIVE_AI_API_KEY .env.local | cut -d'"' -f2)"
 bun run i18n:translate
 bun run i18n:translate:dry-run
@@ -510,7 +512,7 @@ bun run i18n:translate:dry-run
 bun run i18n:sync:dry-run
 bun run i18n:audit
 bun run i18n:find-untranslated</code></pre>
-<code>i18n:translate</code> does not auto-load <code>.env.local</code>; export <code>GOOGLE_GENERATIVE_AI_API_KEY</code> first. Review machine translations before committing because UI length, tone, and product terminology still need maintainer judgment.
+<code>i18n:translate</code> reads <code>GOOGLE_GENERATIVE_AI_API_KEY</code> from the process environment. Cursor Cloud already injects it. Local maintainer machines should export it from <code>.env.local</code> first because standalone Bun scripts do not auto-load that file. Review machine translations before committing because UI length, tone, and product terminology still need maintainer judgment.
 <p>Always add new keys to the English locale JSON file before using them in <code>t()</code> calls. A key that appears only as a <code>defaultValue</code> fallback still renders in English, but <code>i18n:sync:*</code> and <code>i18n:audit</code> cannot discover it, so other locales never receive the string.</p>
 <code>i18n:audit</code> is the terminology gate. It checks placeholder parity, <code>[TODO]</code> leftovers, CLDR plural forms, and Apple UI terminology pulled from <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/apple-ui-terminology.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">scripts/apple-ui-terminology.ts</a></code>. Use <code>bun run i18n:audit:fix</code> only for terminology drift that the script can repair safely, then rerun the audit.
 <h2>Key Hooks</h2>
