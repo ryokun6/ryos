@@ -4,7 +4,11 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "./test-utils";
+import {
+  BASE_URL,
+  fetchWithOrigin,
+  makeRateLimitBypassHeaders,
+} from "./test-utils";
 
 // ============================================================================
 // Audio Transcribe Tests
@@ -32,6 +36,7 @@ describe("audio-transcribe", () => {
       const formData = new FormData();
       const res = await fetchWithOrigin(`${BASE_URL}/api/audio-transcribe`, {
         method: "POST",
+        headers: makeRateLimitBypassHeaders(false),
         body: formData,
       });
       expect(res.status).toBe(400);
@@ -48,6 +53,7 @@ describe("audio-transcribe", () => {
 
       const res = await fetchWithOrigin(`${BASE_URL}/api/audio-transcribe`, {
         method: "POST",
+        headers: makeRateLimitBypassHeaders(false),
         body: formData,
       });
       expect(res.status).toBe(400);
@@ -83,6 +89,7 @@ describe("audio-transcribe", () => {
 
       const res = await fetchWithOrigin(`${BASE_URL}/api/audio-transcribe`, {
         method: "POST",
+        headers: makeRateLimitBypassHeaders(false),
         body: formData,
       });
 
@@ -114,6 +121,7 @@ describe("audio-transcribe", () => {
 
       const res = await fetchWithOrigin(`${BASE_URL}/api/audio-transcribe`, {
         method: "POST",
+        headers: makeRateLimitBypassHeaders(false),
         body: formData,
       });
 

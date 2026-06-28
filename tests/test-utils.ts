@@ -41,8 +41,10 @@ export async function fetchWithAuth(
 /**
  * Rate-limit-bypass headers with a random IP each call.
  */
-export const makeRateLimitBypassHeaders = (): Record<string, string> => ({
-  "Content-Type": "application/json",
+export const makeRateLimitBypassHeaders = (
+  includeJsonContentType = true
+): Record<string, string> => ({
+  ...(includeJsonContentType ? { "Content-Type": "application/json" } : {}),
   "X-Forwarded-For": `10.2.${Date.now() % 255}.${Math.floor(Math.random() * 255)}`,
 });
 
