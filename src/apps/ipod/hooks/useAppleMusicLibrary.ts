@@ -18,6 +18,9 @@ import {
   saveAppleMusicTrackCollection,
   type AppleMusicTrackCollectionKey,
 } from "@/utils/appleMusicLibraryCache";
+import { createClientLogger } from "@/utils/logger";
+
+const appleMusicLog = createClientLogger("AppleMusic");
 
 /**
  * Apple Music library fetcher.
@@ -392,7 +395,7 @@ const FAVORITE_SONGS_COLLECTION_KEY: AppleMusicTrackCollectionKey =
 const RADIO_STATIONS_COLLECTION_KEY: AppleMusicTrackCollectionKey =
   "radio-stations";
 
-function describeAppleMusicError(err: unknown): string {
+export function describeAppleMusicError(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === "object" && err !== null) {
     const errorLike = err as {
@@ -412,12 +415,20 @@ function describeAppleMusicError(err: unknown): string {
   return String(err);
 }
 
-function warnAppleMusic(message: string, err?: unknown): void {
+function warnAppleMusic(
+  message: string,
+  err?: unknown,
+  context?: Record<string, unknown>
+): void {
   if (err === undefined) {
-    console.warn(message);
+    appleMusicLog.warn(message, context);
     return;
   }
-  console.warn(`${message}: ${describeAppleMusicError(err)}`);
+  appleMusicLog.warn(message, {
+    ...context,
+    summary: describeAppleMusicError(err),
+    error: err,
+  });
 }
 
 function getAppleMusicInstanceForUser() {
@@ -694,8 +705,10 @@ export async function fetchAppleMusicRecentlyAddedTracks(
   try {
     const tracks = await fetchAppleMusicRecentlyAddedTracksFromApi();
     if (tracks.length === 0 && cached?.tracks.length) {
-      console.warn(
-        "[apple music] recently added refresh returned 0 songs; keeping cached collection"
+      warnAppleMusic(
+        "[apple music] recently added refresh returned 0 songs; keeping cached collection",
+        undefined,
+        { cachedCount: cached.tracks.length }
       );
       return cached.tracks;
     }
@@ -776,8 +789,10 @@ export async function fetchAppleMusicFavoriteSongTracks(
       force: options.force,
     });
     if (tracks.length === 0 && cached?.tracks.length) {
-      console.warn(
-        "[apple music] favorite songs refresh returned 0 songs; keeping cached collection"
+      warnAppleMusic(
+        "[apple music] favorite songs refresh returned 0 songs; keeping cached collection",
+        undefined,
+        { cachedCount: cached.tracks.length }
       );
       return cached.tracks;
     }
@@ -1033,8 +1048,10 @@ export async function refreshAppleMusicPlaylists(
         existing.length > 0 &&
         !options.allowEmpty
       ) {
-        console.warn(
-          "[apple music] playlist refresh returned 0; keeping cached list"
+        warnAppleMusic(
+          "[apple music] playlist refresh returned 0; keeping cached list",
+          undefined,
+          { cachedCount: existing.length }
         );
         return existing;
       }
@@ -1386,8 +1403,10 @@ export async function fetchAppleMusicLibrary(
     const existingTracks = useIpodStore.getState().appleMusicTracks;
     if (aggregated.length === 0 && existingTracks.length > 0) {
       store.setAppleMusicLibraryLoading(false);
-      console.warn(
-        "[apple music] refresh returned 0 songs; keeping cached library"
+      warnAppleMusic(
+        "[apple music] refresh returned 0 songs; keeping cached library",
+        undefined,
+        { cachedCount: existingTracks.length }
       );
     } else {
       store.setAppleMusicTracks(aggregated);
@@ -1489,14 +1508,15 @@ export async function fetchAppleMusicPlaylistTracks(
               offset,
             }
           );
-        } else {
-        if (offset > 0 && isAppleMusicNotFoundError(err)) {
-          console.warn(
-            `[apple music] playlist ${playlistId} returned 404 after ${aggregated.length} tracks; treating as end of pagination`
+        } else if (offset > 0 && isAppleMusicNotFoundError(err)) {
+          warnAppleMusic(
+            "[apple music] playlist page returned 404; treating as end of pagination",
+            err,
+            { playlistId, offset, aggregatedCount: aggregated.length }
           );
           break;
-        }
-        throw err;
+        } else {
+          throw err;
         }
       }
       const data = response?.data as LibraryPlaylistTracksResponse | undefined;
@@ -1822,9 +1842,10 @@ export function useAppleMusicLibrary({
       // toast since the user has nothing to look at until this
       // finishes.
       runWithProgressToast(false).catch((err) => {
-        console.error(
-          `[apple music] initial library load failed: ${describeAppleMusicError(err)}`
-        );
+        appleMusicLog.error("[apple music] initial library load failed", {
+          summary: describeAppleMusicError(err),
+          error: err,
+        });
       });
     };
 

@@ -13,6 +13,7 @@ interface VideoFullScreenPortalProps {
   isOpen: boolean;
   onClose: () => void;
   url: string;
+  playbackRequested: boolean;
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
@@ -21,6 +22,8 @@ interface VideoFullScreenPortalProps {
   onProgress: (state: { playedSeconds: number }) => void;
   onDuration: (duration: number) => void;
   onReady: () => void;
+  onPlaybackAttemptFailed: () => void;
+  onPlayerError?: () => void;
   loop: boolean;
   volume: number;
   playerRef: React.RefObject<ReactPlayer>;
@@ -72,6 +75,7 @@ export function VideoFullScreenPortal({
   isOpen,
   onClose,
   url,
+  playbackRequested,
   isPlaying,
   onPlay,
   onPause,
@@ -80,6 +84,8 @@ export function VideoFullScreenPortal({
   onProgress,
   onDuration,
   onReady,
+  onPlaybackAttemptFailed,
+  onPlayerError,
   loop,
   volume,
   playerRef,
@@ -335,7 +341,7 @@ export function VideoFullScreenPortal({
               <YouTubePlayer
                 ref={playerRef}
                 url={url}
-                playing={isPlaying}
+                playing={playbackRequested}
                 controls={false}
                 width="100%"
                 height="100%"
@@ -348,6 +354,8 @@ export function VideoFullScreenPortal({
                 onPlay={onPlay}
                 onPause={onPause}
                 onReady={onReady}
+                onPlaybackAttemptFailed={onPlaybackAttemptFailed}
+                onError={onPlayerError}
                 config={{
                   youtube: {
                     playerVars: { fs: 1 },

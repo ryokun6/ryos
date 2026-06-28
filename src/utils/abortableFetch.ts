@@ -2,6 +2,15 @@
  * Fetch wrapper with timeout, abort support, and optional retry logic
  */
 
+const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+class HttpStatusError extends Error {
+  constructor(response: Response) {
+    super(`HTTP ${response.status}: ${response.statusText}`);
+    this.name = "HttpStatusError";
+  }
+}
+
 export interface AbortableFetchOptions extends RequestInit {
   /** Timeout in milliseconds (default: 30000) */
   timeout?: number;
@@ -9,7 +18,7 @@ export interface AbortableFetchOptions extends RequestInit {
   throwOnHttpError?: boolean;
   /** Retry configuration */
   retry?: {
-    /** Maximum number of retry attempts (default: 3) */
+    /** Maximum number of attempts (default: 3 when retry is provided) */
     maxAttempts?: number;
     /** Initial delay in milliseconds (default: 1000) */
     initialDelayMs?: number;
@@ -36,7 +45,13 @@ export async function abortableFetch(
     ...fetchOptions
   } = options;
 
-  const maxAttempts = retry?.maxAttempts ?? 3;
+  const method = (fetchOptions.method ?? "GET").toUpperCase();
+  const defaultMaxAttempts = retry
+    ? 3
+    : IDEMPOTENT_METHODS.has(method)
+      ? 2
+      : 1;
+  const maxAttempts = retry?.maxAttempts ?? defaultMaxAttempts;
   const initialDelayMs = retry?.initialDelayMs ?? 1000;
   const backoffMultiplier = retry?.backoffMultiplier ?? 2;
 
@@ -78,7 +93,7 @@ export async function abortableFetch(
       }
 
       if (throwOnHttpError && !response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new HttpStatusError(response);
       }
 
       return response;
@@ -118,6 +133,10 @@ export async function abortableFetch(
       // abort stays an AbortError so callers keep treating it as a silent,
       // expected cancellation rather than a real failure.
       if (err instanceof Error && err.name === "AbortError") {
+        throw err;
+      }
+
+      if (err instanceof HttpStatusError) {
         throw err;
       }
 

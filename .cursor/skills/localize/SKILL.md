@@ -13,7 +13,7 @@ description: Localize ryOS apps and components by extracting hardcoded strings, 
 - [ ] 3. Add English translations to en/translation.json
 - [ ] 4. Sync translations across languages
 - [ ] 5. Machine translate [TODO] keys
-- [ ] 6. Validate coverage
+- [ ] 6. Validate coverage and terminology
 ```
 
 ## Step 1: Extract Hardcoded Strings
@@ -95,8 +95,11 @@ Requires `GOOGLE_GENERATIVE_AI_API_KEY` env variable.
 
 ```bash
 bun run i18n:sync:dry-run
+bun run i18n:audit
 bun run i18n:find-untranslated
 ```
+
+Use `bun run i18n:audit:fix` only for terminology drift the script can safely repair, then rerun `bun run i18n:audit`.
 
 ## Component Guidelines
 
@@ -111,5 +114,6 @@ bun run i18n:find-untranslated
 
 - Emoji/symbols (♪, ✓) can stay hardcoded
 - Help items use pattern: `apps.[appName].help.[key].title/description`
-- Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps can export their key list (for example `src/apps/maps/helpKeys.ts` or `src/apps/calculator/helpKeys.ts`) and add a small alignment test
+- Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps with longer localized help rows can export their key list (for example `src/apps/maps/helpKeys.ts`, `src/apps/calculator/helpKeys.ts`, or `src/apps/internet-explorer/helpKeys.ts`) and spread it into `APP_HELP_I18N_KEYS`
+- `tests/test-help-i18n-alignment.test.ts` covers every registered app; update it only if the global help-key contract changes
 - Include `t` in dependency arrays when used in `useMemo`/`useCallback`

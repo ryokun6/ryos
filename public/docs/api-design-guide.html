@@ -468,7 +468,7 @@
         <h1>ryOS API Design Guide</h1>
 <p>This document outlines the current patterns and conventions used in the ryOS API.</p>
 <h2>Architecture Overview</h2>
-<p>The API is implemented as Node.js route handlers under <code>api/</code>.   The default implementation pattern is the shared <code>apiHandler</code> wrapper, which centralizes: <ul><li>CORS preflight and response headers</li></ul><ul><li>origin allowlist checks</li><li>method allowlists</li><li>optional JSON body handling</li><li>optional/required auth resolution</li><li>logger setup and consistent fallback error handling</li></ul></p>
+<p>The API is implemented as Node.js route handlers under <code>api/</code>.   The default implementation pattern is the shared <code>apiHandler</code> wrapper, which centralizes: <ul><li>CORS preflight and response headers</li></ul><ul><li>origin allowlist checks</li><li>method allowlists</li><li>optional JSON body handling</li><li>optional Zod request-body validation</li><li>optional/required auth resolution</li><li>logger setup and consistent fallback error handling</li></ul></p>
 <p>Auth boundaries are unified through <code>request-auth.ts</code>, which enforces paired auth headers.</p>
 <h2>File Structure</h2>
 <pre><code>api/
@@ -502,13 +502,19 @@
 export const maxDuration = 30; // endpoint-dependent</code></pre>
 <h3>2. <code>apiHandler</code> Wrapper (Primary Pattern)</h3>
 <pre><code>import { apiHandler } from "../_utils/api-handler.js";
+import { z } from "zod";
 
-export default apiHandler(
+const RequestSchema = z.object({
+  name: z.string().min(1),
+});
+
+export default apiHandler&lt;z.infer&lt;typeof RequestSchema&gt;&gt;(
   {
     methods: ["GET", "POST"],
     auth: "optional",         // "none" | "optional" | "required"
     allowExpiredAuth: false,  // optional
-    parseJsonBody: true,      // optional
+    parseJsonBody: true,      // optional; implied when bodySchema is set
+    bodySchema: RequestSchema, // optional Zod validation + typed body
     contentType: "application/json", // optional, null disables default header
   },
   async ({ req, res, redis, logger, startTime, origin, user, body }) =&gt; {

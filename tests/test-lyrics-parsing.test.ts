@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
 import { parseLrcToLines } from "../api/songs/_lyrics";
+import { ApiRequestError } from "../src/api/core";
+import {
+  getLyricsErrorMessage,
+  isExpectedLyricsMissError,
+  normalizeLyricsFetchError,
+} from "../src/utils/lyricsError";
 
 describe("lyrics prefix filtering", () => {
   test("skips additional metadata prefixes in LRC content", () => {
@@ -67,5 +73,46 @@ describe("lyrics prefix filtering", () => {
         words: "Plain lyric",
       },
     ]);
+  });
+});
+
+describe("lyrics error handling", () => {
+  test("normalizes lyrics API errors while preserving the original cause", () => {
+    const original = new ApiRequestError(503, "upstream failed", {
+      code: "LYRICS_UPSTREAM",
+    });
+    const normalized = normalizeLyricsFetchError(original);
+
+    expect(normalized).toBeInstanceOf(Error);
+    if (!(normalized instanceof Error)) {
+      throw new Error("Expected lyrics error to normalize to Error");
+    }
+    expect(normalized.message).toBe("Failed to fetch lyrics (status 503)");
+    expect(Object.getOwnPropertyDescriptor(normalized, "cause")?.value).toBe(
+      original
+    );
+  });
+
+  test("maps not-found and abort errors to user-facing lyrics messages", () => {
+    expect(getLyricsErrorMessage(new Error("No lyrics found"))).toBe(
+      "No lyrics available"
+    );
+    expect(
+      getLyricsErrorMessage(new DOMException("cancelled", "AbortError"))
+    ).toBe("Lyrics search timed out.");
+  });
+
+  test("treats 404 and no-lyrics errors as expected misses", () => {
+    expect(
+      isExpectedLyricsMissError(
+        normalizeLyricsFetchError(new ApiRequestError(404, "missing", {}))
+      )
+    ).toBe(true);
+    expect(isExpectedLyricsMissError(new Error("No lyrics found"))).toBe(true);
+    expect(
+      isExpectedLyricsMissError(
+        normalizeLyricsFetchError(new ApiRequestError(503, "upstream", {}))
+      )
+    ).toBe(false);
   });
 });

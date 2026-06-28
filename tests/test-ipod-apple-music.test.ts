@@ -50,6 +50,7 @@ const {
   refreshAppleMusicFavorites,
   APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS,
   APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
+  describeAppleMusicError,
 } = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
 const {
   useIpodStore,
@@ -70,6 +71,10 @@ const {
   getMusicKitEventItemId,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
   isStaleQueueLoad,
+  isLikelyMusicKitUnhandledRejection,
+  isMusicKitPlaying,
+  isMusicKitRedundantPlayError,
+  MUSICKIT_PLAYBACK_STATE_PLAYING,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -102,6 +107,53 @@ describe("MusicKit configuration", () => {
       bitrate: 256,
     });
     expect(APPLE_MUSIC_STREAMING_BITRATE_KBPS).toBe(256);
+  });
+});
+
+describe("Apple Music error logging helpers", () => {
+  test("summarizes MusicKit API errors with status details", () => {
+    expect(
+      describeAppleMusicError({
+        message: "Forbidden",
+        response: { status: 403 },
+      })
+    ).toBe("Forbidden (status 403)");
+    expect(describeAppleMusicError({ statusCode: 429 })).toBe("status 429");
+  });
+
+  test("detects MusicKit-owned unhandled rejections without catching app errors", () => {
+    const musicKitError = new Error("");
+    musicKitError.stack =
+      "@https://js-cdn.music.apple.com/musickit/v3/musickit.js:28:48338";
+
+    expect(isLikelyMusicKitUnhandledRejection(musicKitError)).toBe(true);
+    expect(
+      isLikelyMusicKitUnhandledRejection({
+        message: "MusicKit authorization failed",
+      })
+    ).toBe(true);
+    expect(isLikelyMusicKitUnhandledRejection(new Error("No lyrics found"))).toBe(
+      false
+    );
+  });
+
+  test("detects redundant MusicKit play() rejections", () => {
+    expect(
+      isMusicKitRedundantPlayError(
+        new Error(
+          "The play() method was called without a previous stop() or pause() call."
+        )
+      )
+    ).toBe(true);
+    expect(isMusicKitRedundantPlayError(new Error("Autoplay blocked"))).toBe(
+      false
+    );
+  });
+
+  test("recognizes MusicKit playing playback state", () => {
+    expect(isMusicKitPlaying(MUSICKIT_PLAYBACK_STATE_PLAYING)).toBe(true);
+    expect(isMusicKitPlaying(3)).toBe(false);
+    expect(isMusicKitPlaying(undefined)).toBe(false);
   });
 });
 
@@ -372,6 +424,7 @@ describe("useIpodStore Apple Music slice", () => {
       appleMusicCurrentSongId: null,
       appleMusicKitNowPlaying: null,
       isPlaying: false,
+      playbackRequested: false,
       currentSongId: null,
       tracks: [],
       loopAll: false,
@@ -381,6 +434,7 @@ describe("useIpodStore Apple Music slice", () => {
     useKaraokeStore.setState({
       currentSongId: null,
       isPlaying: false,
+      playbackRequested: false,
       loopAll: true,
       loopCurrent: false,
       isShuffled: false,
@@ -388,7 +442,7 @@ describe("useIpodStore Apple Music slice", () => {
     });
   });
 
-  test("playAppleMusicTrack switches to Apple Music, inserts, and plays", () => {
+  test("playAppleMusicTrack switches libraries, inserts, and requests playback", () => {
     const track: Track = {
       id: "am:1616228595",
       url: "https://music.apple.com/us/song/1616228595",
@@ -401,7 +455,8 @@ describe("useIpodStore Apple Music slice", () => {
     const state = useIpodStore.getState();
     expect(state.librarySource).toBe("appleMusic");
     expect(state.appleMusicCurrentSongId).toBe("am:1616228595");
-    expect(state.isPlaying).toBe(true);
+    expect(state.playbackRequested).toBe(true);
+    expect(state.isPlaying).toBe(false);
     expect(state.appleMusicTracks.map((t) => t.id)).toContain("am:1616228595");
     expect(getActiveIpodCurrentTrack(state)?.id).toBe("am:1616228595");
   });
@@ -424,12 +479,14 @@ describe("useIpodStore Apple Music slice", () => {
     // The pre-existing track is preserved (not overwritten by the new copy).
     expect(state.appleMusicTracks[0]?.title).toBe("Bohemian Rhapsody");
     expect(state.appleMusicCurrentSongId).toBe("am:1616228595");
-    expect(state.isPlaying).toBe(true);
+    expect(state.playbackRequested).toBe(true);
+    expect(state.isPlaying).toBe(false);
   });
 
   test("setLibrarySource clears transient playback state", () => {
     useIpodStore.setState({
       isPlaying: true,
+      playbackRequested: true,
       elapsedTime: 42,
       totalTime: 200,
       appleMusicKitNowPlaying: { title: "On Air", id: "1616228595" },
@@ -865,7 +922,8 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.appleMusicCurrentSongId).toBe("am:2");
     expect(state.appleMusicPlaybackQueue).toBeNull();
     expect(state.currentSongId).toBe("yt1");
-    expect(state.isPlaying).toBe(true);
+    expect(state.playbackRequested).toBe(true);
+    expect(state.isPlaying).toBe(false);
     expect(results).toHaveLength(1);
   });
 
@@ -936,7 +994,8 @@ describe("useIpodStore Apple Music slice", () => {
     const ipodState = useIpodStore.getState();
     const karaokeState = useKaraokeStore.getState();
     expect(karaokeState.currentSongId).toBe("yt2");
-    expect(karaokeState.isPlaying).toBe(true);
+    expect(karaokeState.playbackRequested).toBe(true);
+    expect(karaokeState.isPlaying).toBe(false);
     expect(ipodState.librarySource).toBe("appleMusic");
     expect(ipodState.appleMusicCurrentSongId).toBe("am:2");
     expect(ipodState.currentSongId).toBeNull();

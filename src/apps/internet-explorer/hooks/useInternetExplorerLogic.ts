@@ -200,6 +200,24 @@ export function useInternetExplorerLogic({
     "internet-explorer",
     helpItems ?? []
   );
+  const appName = t("apps.internet-explorer.appName");
+
+  const getSharedPageToastDescription = useCallback(
+    (sharedPage: { url: string; year?: string }) =>
+      `${sharedPage.url}${
+        sharedPage.year && sharedPage.year !== "current"
+          ? ` ${t("apps.internet-explorer.from")} ${sharedPage.year}`
+          : ""
+      }`,
+    [t]
+  );
+
+  const showInvalidShareLinkToast = useCallback(() => {
+    toast.error(t("apps.internet-explorer.invalidShareLink"), {
+      description: t("apps.internet-explorer.shareLinkInvalidOrCorrupted"),
+      duration: 5000,
+    });
+  }, [t]);
 
   const getLoadingTitle = useCallback(
     (baseTitle: string): string => {
@@ -435,11 +453,11 @@ export function useInternetExplorerLogic({
     []
   );
 
-  const [displayTitle, setDisplayTitle] = useState<string>("Internet Explorer");
+  const [displayTitle, setDisplayTitle] = useState<string>(appName);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   useEffect(() => {
-    let newTitle = "Internet Explorer";
+    let newTitle = appName;
     const baseTitle = currentPageTitle || url;
     const isTimeTravelling = status === "loading" && year !== "current";
 
@@ -483,13 +501,13 @@ export function useInternetExplorerLogic({
             hasFinalUrl: Boolean(finalUrl),
             hasUrl: Boolean(url),
           });
-          newTitle = "Internet Explorer";
+          newTitle = appName;
         }
       }
     }
 
     setDisplayTitle(newTitle);
-  }, [status, currentPageTitle, finalUrl, url, year, t, getLoadingTitle]);
+  }, [status, currentPageTitle, finalUrl, url, year, t, getLoadingTitle, appName]);
 
   const getWaybackUrl = useCallback(async (targetUrl: string, year: string) => {
     const now = new Date();
@@ -672,16 +690,19 @@ export function useInternetExplorerLogic({
                 error: true,
                 type: "connection_error",
                 status: 404,
-                message: `Cannot access ${targetUrlForError}. The website might be blocking access or requires authentication.`,
-                details:
-                  "The page could not be loaded in the iframe. This could be due to security restrictions or network issues.",
+                message: t("apps.internet-explorer.cannotAccessWebsite", {
+                  url: targetUrlForError,
+                }),
+                details: t(
+                  "apps.internet-explorer.pageCouldNotBeLoadedInIframe"
+                ),
               },
               targetUrlForError
             );
-          } catch (error) {
-            const errorMsg = `Cannot access the requested website. ${
-              error instanceof Error ? error.message : String(error)
-            }`;
+          } catch {
+            const errorMsg = t("apps.internet-explorer.cannotAccessWebsite", {
+              url: finalUrl || url,
+            });
             track(IE_ANALYTICS.NAVIGATION_ERROR, {
               ...normalizeUrlForAnalytics(finalUrl || url),
               type: "generic_error",
@@ -708,7 +729,7 @@ export function useInternetExplorerLogic({
       // Check if offline and show error
       if (
         checkOfflineAndShowError(
-          "Internet Explorer requires an internet connection to navigate"
+          t("apps.internet-explorer.requiresInternetConnection")
         )
       ) {
         return;
@@ -865,8 +886,9 @@ export function useInternetExplorerLogic({
               {
                 error: true,
                 type: "ai_generation_error",
-                message:
-                  "Failed to generate futuristic website. AI model may not be selected.",
+                message: t(
+                  "apps.internet-explorer.failedToGenerateFuturisticWebsite"
+                ),
                 details: error instanceof Error ? error.message : String(error),
               },
               normalizedTargetUrl
@@ -1000,6 +1022,7 @@ export function useInternetExplorerLogic({
       localUrl,
       playElevatorMusic,
       terminalSoundsEnabled,
+      t,
     ]
   );
 
@@ -1152,7 +1175,7 @@ export function useInternetExplorerLogic({
 
       if (inputValue.trim() && !isValidUrl(inputValue)) {
         finalSuggestions.push({
-          title: `Search "${inputValue}"`,
+          title: `${t("apps.internet-explorer.search")} "${inputValue}"`,
           url: `bing:${inputValue}`, // Special marker for search
           type: "search" as const,
           favicon: "/icons/bing.png", // Assumes a bing icon exists
@@ -1162,7 +1185,7 @@ export function useInternetExplorerLogic({
       setFilteredSuggestions(finalSuggestions);
       setSelectedSuggestionIndex(finalSuggestions.length > 0 ? 0 : -1);
     },
-    [favorites, history, isValidUrl]
+    [favorites, history, isValidUrl, t]
   );
 
   const handleGoBack = useCallback(() => {
@@ -1235,7 +1258,7 @@ export function useInternetExplorerLogic({
             error
           );
         }
-        return "Page";
+        return t("apps.internet-explorer.page");
       })();
     setNewFavoriteTitle(titleSource);
     setTitleDialogOpen(true);
@@ -1245,6 +1268,7 @@ export function useInternetExplorerLogic({
     url,
     setNewFavoriteTitle,
     setTitleDialogOpen,
+    t,
   ]);
 
   const handleTitleSubmit = useCallback(() => {
@@ -1357,12 +1381,8 @@ export function useInternetExplorerLogic({
             url: decodedData.url,
             year: decodedData.year,
           });
-          toast.info(`Opening shared page`, {
-            description: `${decodedData.url}${
-              decodedData.year && decodedData.year !== "current"
-                ? ` from ${decodedData.year}`
-                : ""
-            }`,
+          toast.info(t("apps.internet-explorer.openingSharedPage"), {
+            description: getSharedPageToastDescription(decodedData),
             duration: 4000,
           });
           // Navigate synchronously to avoid cleanup races dropping first-open navigation
@@ -1378,10 +1398,7 @@ export function useInternetExplorerLogic({
           console.warn(
             "[IE] Failed to decode share link code from initialData prop."
           );
-          toast.error("Invalid Share Link", {
-            description: "The share link provided is invalid or corrupted.",
-            duration: 5000,
-          });
+          showInvalidShareLinkToast();
           // Fall through to check for direct url/year or default navigation
         }
       }
@@ -1435,6 +1452,9 @@ export function useInternetExplorerLogic({
     instanceId,
     setUrl,
     setYear,
+    t,
+    getSharedPageToastDescription,
+    showInvalidShareLinkToast,
   ]);
 
   // --- Watch for initialData changes when app is already open ---
@@ -1465,12 +1485,8 @@ export function useInternetExplorerLogic({
             url: decodedData.url,
             year: decodedData.year,
           });
-          toast.info(`Opening shared page`, {
-            description: `${decodedData.url}${
-              decodedData.year && decodedData.year !== "current"
-                ? ` from ${decodedData.year}`
-                : ""
-            }`,
+          toast.info(t("apps.internet-explorer.openingSharedPage"), {
+            description: getSharedPageToastDescription(decodedData),
             duration: 4000,
           });
           timeoutId = setTimeout(() => {
@@ -1524,6 +1540,8 @@ export function useInternetExplorerLogic({
     handleNavigate,
     clearInstanceInitialData,
     instanceId,
+    t,
+    getSharedPageToastDescription,
   ]);
 
   // --- Add listener for updateApp event (handles share links when app is already open) ---
@@ -1577,12 +1595,8 @@ export function useInternetExplorerLogic({
             });
 
             // Show toast and navigate
-            toast.info(`Opening shared page`, {
-              description: `${decodedData.url}${
-                decodedData.year && decodedData.year !== "current"
-                  ? ` from ${decodedData.year}`
-                  : ""
-              }`,
+            toast.info(t("apps.internet-explorer.openingSharedPage"), {
+              description: getSharedPageToastDescription(decodedData),
               duration: 4000,
             });
             // Use timeout to allow potential state updates (like foreground) to settle
@@ -1599,10 +1613,7 @@ export function useInternetExplorerLogic({
             console.warn(
               "[IE] Failed to decode share link code from updateApp event."
             );
-            toast.error("Invalid Share Link", {
-              description: "The share link provided is invalid or corrupted.",
-              duration: 5000,
-            });
+            showInvalidShareLinkToast();
           }
         } else if (initialData?.url && typeof initialData.url === "string") {
           // --- NEW: Handle direct url/year from updateApp event ---
@@ -1632,7 +1643,14 @@ export function useInternetExplorerLogic({
       timeoutIds.clear();
     };
     // Add isForeground to dependencies to refresh navigation when focus changes
-  }, [handleNavigate, isForeground, instanceId]);
+  }, [
+    handleNavigate,
+    isForeground,
+    instanceId,
+    t,
+    getSharedPageToastDescription,
+    showInvalidShareLinkToast,
+  ]);
   // --- End updateApp listener ---
 
   useEffect(() => {

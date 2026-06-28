@@ -244,12 +244,27 @@ export const htmlToMarkdown = (html: string): string => {
         return (
           "| " +
           cells
-            .map((cell: string) =>
-              cell
+            .map((cell: string) => {
+              return cell
                 .replace(/<t[dh][^>]*>(.*?)<\/t[dh]>/i, "$1")
+                .replace(/<br[^>]*>/gi, " ")
+                .replace(/<\/?p[^>]*>/gi, "")
+                .replace(/<(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)>/gi, "**$1**")
+                .replace(/<(?:em|i)[^>]*>(.*?)<\/(?:em|i)>/gi, "*$1*")
+                .replace(/<code[^>]*>(.*?)<\/code>/gi, "`$1`")
+                .replace(
+                  /<a[^>]*href=['"]([^'"]+)['"][^>]*>(.*?)<\/a>/gi,
+                  "[$2]($1)"
+                )
+                .replace(/<[^>]+>/g, "")
+                .replace(/&nbsp;/g, " ")
+                .replace(/&amp;/g, "&")
+                .replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">")
+                .replace(/\s*\n\s*/g, " ")
                 .trim()
-                .replace(/\|/g, "\\|")
-            )
+                .replace(/\|/g, "\\|");
+            })
             .join(" | ") +
           " |"
         );
@@ -257,8 +272,9 @@ export const htmlToMarkdown = (html: string): string => {
 
       // Insert header separator after first row
       if (markdownRows.length > 0) {
-        const columnCount = (markdownRows[0].match(/\|/g) || []).length - 1;
-        const separator = "\n|" + " --- |".repeat(columnCount);
+        const columnCount =
+          rows[0].match(/<t[dh][^>]*>.*?<\/t[dh]>/gis)?.length || 0;
+        const separator = "|" + " --- |".repeat(columnCount);
         markdownRows.splice(1, 0, separator);
       }
 

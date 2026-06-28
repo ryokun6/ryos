@@ -1,4 +1,4 @@
-import ReactPlayer from "react-player";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { AppleMusicPlayerBridge } from "../AppleMusicPlayerBridge";
 import { MenuListItem } from "../screen";
@@ -330,7 +330,7 @@ export function MusicQuizView({
           aria-hidden
         >
           {correctTrackUrl && phase !== "idle" && (
-            <ReactPlayer
+            <YouTubePlayer
               ref={youtubePlayerRef}
               url={correctTrackUrl}
               playing={phase === "playing" || phase === "starting"}

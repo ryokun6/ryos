@@ -17,18 +17,48 @@ export const DEBUG_FLAG_KEY = "ryos:debug";
 
 let runtimeDebugEnabled: boolean | null = null;
 
-export function isDebugEnabled(): boolean {
-  // Dev builds always log.
-  if (import.meta.env.DEV) return true;
-
-  if (runtimeDebugEnabled !== null) return runtimeDebugEnabled;
+function readStoredDebugOverride(): boolean | null {
   try {
-    runtimeDebugEnabled =
-      typeof localStorage !== "undefined" &&
-      localStorage.getItem(DEBUG_FLAG_KEY) === "1";
+    if (typeof localStorage === "undefined") return null;
+
+    const storedValue = localStorage.getItem(DEBUG_FLAG_KEY);
+    if (storedValue === "1") return true;
+    if (storedValue === null) return null;
+
+    // Older builds could leave false-like or malformed values behind. Absence
+    // is the canonical disabled state, so clean up every non-affirmative value.
+    localStorage.removeItem(DEBUG_FLAG_KEY);
+    return false;
   } catch {
-    runtimeDebugEnabled = false;
+    // Storage can be unavailable in private modes.
   }
+  return null;
+}
+
+export function resolveDebugEnabled({
+  runtimeOverride,
+  storedOverride,
+  developmentDefault,
+}: {
+  runtimeOverride: boolean | null;
+  storedOverride: boolean | null;
+  developmentDefault: boolean;
+}): boolean {
+  return runtimeOverride ?? storedOverride ?? developmentDefault;
+}
+
+export function normalizeDebugMode(value: unknown): boolean {
+  return value === true;
+}
+
+export function isDebugEnabled(): boolean {
+  if (runtimeDebugEnabled !== null) return runtimeDebugEnabled;
+
+  runtimeDebugEnabled = resolveDebugEnabled({
+    runtimeOverride: null,
+    storedOverride: readStoredDebugOverride(),
+    developmentDefault: import.meta.env.DEV === true,
+  });
   return runtimeDebugEnabled;
 }
 

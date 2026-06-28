@@ -9,11 +9,15 @@
 import type { Redis } from "./redis.js";
 import type { Track } from "../../src/stores/useIpodStore.js";
 import { sortTracksLikeServerOrder } from "../../src/stores/ipodTrackOrder.js";
-import { hlcFromTimestamp } from "../../src/shared/sync2/hlc.js";
+import {
+  hlcFromTimestamp,
+  nextHlc,
+} from "../../src/shared/sync2/hlc.js";
 import type { SyncOp } from "../../src/shared/sync2/types.js";
 import type { DeletionMarkerMap } from "../../src/utils/cloudSyncDeletionMarkers.js";
 import {
   readSyncDocsByPrefix,
+  readSyncSnapshot,
   SERVER_SYNC_CLIENT_ID,
   writeSyncOpsFromServer,
 } from "../sync/v2/_core.js";
@@ -153,9 +157,25 @@ export async function writeSongsState(
   username: string,
   data: SongsSnapshotData
 ): Promise<SongsStateMetadata> {
-  const existingDocs = await readSyncDocsByPrefix(redis, username, "songs/");
-  const now = new Date().toISOString();
-  const t = hlcFromTimestamp(now, SERVER_SYNC_CLIENT_ID);
+  const { entries: existingEntries } = await readSyncSnapshot(
+    redis,
+    username,
+    "songs/"
+  );
+  const existingDocs: Record<string, unknown> = {};
+  let lastHlc: string | null = null;
+  for (const [key, entry] of Object.entries(existingEntries)) {
+    if (!lastHlc || entry.t > lastHlc) {
+      lastHlc = entry.t;
+    }
+    if (!entry.del && entry.v !== undefined) {
+      existingDocs[key] = entry.v;
+    }
+  }
+
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  const t = nextHlc(lastHlc, SERVER_SYNC_CLIENT_ID, nowMs);
 
   const nextTracks: Track[] = [];
   const seenIds = new Set<string>();

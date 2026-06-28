@@ -9,28 +9,28 @@
       "auditLog": {
         "action": "Action",
         "details": "Détails",
-        "empty": "Aucune action d'administration enregistrée pour le moment",
-        "loadFailed": "Impossible de charger le journal d'audit",
-        "loading": "Chargement du journal d'audit…",
+        "empty": "Aucune action d’administration enregistrée pour le moment",
+        "loadFailed": "Impossible de charger le journal d’audit",
+        "loading": "Chargement du journal d’audit…",
         "refresh": "Actualiser",
         "retry": "Réessayer",
         "target": "Cible",
         "time": "Heure",
-        "title": "Journal d'audit"
+        "title": "Journal d’audit"
       },
       "cursorAgents": {
         "colLink": "Lien",
         "colModel": "Modèle",
         "colRun": "Exécution / agent",
-        "colStatus": "Statut",
+        "colStatus": "État",
         "colTask": "Tâche",
         "colUpdated": "Mis à jour",
-        "emptyHint": "Les exécutions s'affichent ici lorsque l'outil d'agent de dépôt démarre une tâche Cursor Cloud (mode asynchrone avec Redis). Les clés expirent après environ 24 heures.",
+        "emptyHint": "Les exécutions s'affichent ici lorsque l'outil d’agent de dépôt démarre une tâche Cursor Cloud (mode asynchrone avec Redis). Les clés expirent après environ 24 heures.",
         "emptyTitle": "Aucun agent Cursor",
         "followupFrom": "Suivi de {{id}}",
         "loadFailed": "Impossible de charger les exécutions",
-        "loading": "Chargement des exécutions de l'agent Cursor…",
-        "newAgentAria": "Nouveau prompt d'agent Cursor",
+        "loading": "Chargement des exécutions de l’agent Cursor…",
+        "newAgentAria": "Nouveau prompt d’agent Cursor",
         "newAgentPlaceholder": "Envoyer à Cursor",
         "openAgent": "Agent",
         "openPr": "PR",
@@ -38,7 +38,7 @@
         "retry": "Réessayer",
         "scanIncompleteHint": "Le scan des clés Redis s'est arrêté prématurément ; réessayez ou contactez l'équipe ops si le problème persiste.",
         "startAgent": "Exécution",
-        "startFailed": "Impossible de démarrer l'agent",
+        "startFailed": "Impossible de démarrer l’agent",
         "startedLine": "Démarré à {{time}}",
         "truncatedHint": "La liste peut être tronquée (limite de lignes ou de balayage)."
       },
@@ -51,7 +51,7 @@
           "uniqueVisitors": "Visiteurs uniques"
         },
         "empty": {
-          "noAiUsage": "Aucune utilisation de l'IA pour le moment",
+          "noAiUsage": "Aucune utilisation de l’IA pour le moment",
           "noCountries": "Aucune donnée de pays pour le moment",
           "noData": "Aucune donnée pour le moment",
           "noSites": "Aucun site visité pour le moment",
@@ -61,23 +61,23 @@
         "kpi": {
           "aiRequests": "Requêtes IA",
           "apiCalls": "Appels API",
-          "appEvents": "Événements d'application",
-          "errorRate": "Taux d'erreur",
+          "appEvents": "Événements d’application",
+          "errorRate": "Taux d’erreur",
           "pageViews": "Pages vues",
           "productEvents": "Événements de produit",
           "sessions": "Sessions",
           "visitors": "Visiteurs"
         },
-        "loading": "Chargement des analyses...",
+        "loading": "Chargement des analyses…",
         "range": {
-          "today": "Aujourd'hui"
+          "today": "Aujourd’hui"
         },
         "retry": "Réessayer",
         "sections": {
-          "aiUsageByUser": "Utilisation de l'IA par utilisateur",
-          "eventCategories": "Catégories d'événements",
+          "aiUsageByUser": "Utilisation de l’IA par utilisateur",
+          "eventCategories": "Catégories d’événements",
           "productAnalytics": "Analyses de produit",
-          "statusCodes": "Codes d'état",
+          "statusCodes": "Codes d’état",
           "topApps": "Meilleures applications",
           "topCountries": "Meilleurs pays",
           "topEndpoints": "Principaux points de terminaison",
@@ -98,32 +98,32 @@
           "vsPrevDay": "vs la veille"
         }
       },
-      "description": "Panneau d'administration système",
+      "description": "Panneau d’administration système",
       "dialogs": {
         "banDescription": "Voulez-vous vraiment bannir {{username}} ? Il/Elle sera déconnecté(e) et ne pourra plus accéder au service.",
-        "banTitle": "Bannir l'utilisateur ?",
+        "banTitle": "Bannir l’utilisateur ?",
         "clearMemoriesDescription": "Ceci supprimera définitivement tous les {{count}} souvenirs à long terme de {{username}}. Les notes quotidiennes seront conservées. Cette action est irréversible.",
         "clearMemoriesTitle": "Effacer tous les souvenirs",
         "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{type}} « {{name}} » ? Cette action est irréversible.",
         "deleteTitle": "Supprimer {{type}} ?",
         "editSong": "Modifier {{field}}",
         "editSongDescription": "Saisir la nouvelle valeur",
-        "reprocessDailyNotesDescription": "Ceci réinitialisera toutes les notes quotidiennes de {{username}} et en réextraira les souvenirs à long terme. Les souvenirs existants seront mis à jour/fusionnés. Seuls les jours passés seront traités (pas aujourd'hui).",
+        "reprocessDailyNotesDescription": "Ceci réinitialisera toutes les notes quotidiennes de {{username}} et en réextraira les souvenirs à long terme. Les souvenirs existants seront mis à jour/fusionnés. Seuls les jours passés seront traités (pas aujourd’hui).",
         "reprocessDailyNotesTitle": "Retraiter les notes quotidiennes",
         "unshareDescription": "Ceci supprimera \"{{name}}\" des chansons partagées de {{user}}. La chanson restera dans la bibliothèque mais ne sera associée à aucun utilisateur.",
         "unshareTitle": "Cesser le partage"
       },
       "errors": {
-        "cannotForceRefresh": "Impossible de forcer l'actualisation - aucune source de paroles ou non authentifié",
+        "cannotForceRefresh": "Impossible de forcer l’actualisation - aucune source de paroles ou non authentifié",
         "deleteAllFailed": "Échec de la suppression des chansons",
-        "exportFailed": "Échec de l'exportation",
-        "failedToAddToLibrary": "Échec de l'ajout à la bibliothèque",
-        "failedToBanUser": "Échec du bannissement de l'utilisateur",
-        "failedToClearMemories": "Échec de l'effacement des souvenirs",
+        "exportFailed": "Échec de l’exportation",
+        "failedToAddToLibrary": "Échec de l’ajout à la bibliothèque",
+        "failedToBanUser": "Échec du bannissement de l’utilisateur",
+        "failedToClearMemories": "Échec de l’effacement des souvenirs",
         "failedToDeleteMessage": "Échec de la suppression du message",
         "failedToDeleteRoom": "Échec de la suppression du salon",
         "failedToDeleteSong": "Impossible de supprimer le morceau",
-        "failedToDeleteUser": "Échec de la suppression de l'utilisateur",
+        "failedToDeleteUser": "Échec de la suppression de l’utilisateur",
         "failedToFetchMessages": "Échec de la récupération des messages",
         "failedToFetchProfile": "Échec de la récupération du profil utilisateur",
         "failedToFetchRooms": "Échec de la récupération des salons",
@@ -131,21 +131,21 @@
         "failedToFetchSongs": "Impossible de récupérer les morceaux",
         "failedToFetchUsers": "Échec de la récupération des utilisateurs",
         "failedToProcessDailyNotes": "Échec du traitement des notes quotidiennes",
-        "failedToRefreshLyrics": "Échec de l'actualisation des paroles",
+        "failedToRefreshLyrics": "Échec de l’actualisation des paroles",
         "failedToResetLyrics": "Échec de la réinitialisation des paroles",
-        "failedToUnbanUser": "Échec du débannissement de l'utilisateur",
+        "failedToUnbanUser": "Échec du débannissement de l’utilisateur",
         "failedToUnshareSong": "Échec de la cessation du partage de la chanson",
         "failedToUpdateLyrics": "Échec de la mise à jour des paroles",
         "failedToUpdateMetadata": "Échec de la mise à jour des métadonnées",
         "failedToUpdateSong": "Impossible de mettre à jour le morceau",
-        "importFailed": "Échec de l'importation",
+        "importFailed": "Échec de l’importation",
         "invalidImportFormat": "Format de fichier non valide",
         "notAuthenticated": "Non authentifié",
         "songNotInLibrary": "Chanson absente de la bibliothèque"
       },
       "help": {
         "adminAccess": {
-          "description": "Limité à l'administrateur (ryo) — authentification requise pour chaque action",
+          "description": "Limité à l’administrateur (ryo) — authentification requise pour chaque action",
           "title": "Admin uniquement"
         },
         "roomManagement": {
@@ -178,13 +178,13 @@
       },
       "loadMore": "Charger plus ({{remaining}} restants)",
       "menu": {
-        "aboutAdmin": "À propos d'Admin",
+        "aboutAdmin": "À propos d’Admin",
         "adminHelp": "Aide Admin",
         "refreshData": "Actualiser les données",
         "showSidebar": "Afficher la barre latérale"
       },
       "messages": {
-        "addingToLibrary": "Ajout à la bibliothèque...",
+        "addingToLibrary": "Ajout à la bibliothèque…",
         "dataRefreshed": "Données actualisées",
         "deleteAllSuccess": "Supprimé {{success}} des {{total}} chansons",
         "exportSuccess": "Exporté {{count}} chansons",
@@ -207,14 +207,14 @@
       },
       "name": "Admin",
       "offline": {
-        "description": "Une connexion internet est requise pour que l'administrateur puisse gérer les données.",
+        "description": "Une connexion internet est requise pour que l’administrateur puisse gérer les données.",
         "title": "Hors ligne"
       },
       "profile": {
         "actions": "Actions",
         "activeRooms": "Actif dans les salons",
         "back": "Retour",
-        "ban": "Bannir l'utilisateur",
+        "ban": "Bannir l’utilisateur",
         "banDetails": "Détails du bannissement",
         "banReasonPlaceholder": "Raison du bannissement (facultatif)",
         "banned": "Banni",
@@ -224,13 +224,13 @@
         "confirmBan": "Bannir",
         "dailyNotes": "Notes quotidiennes",
         "dailyNotesProcessed": "Notes quotidiennes traitées",
-        "delete": "Supprimer l'utilisateur",
+        "delete": "Supprimer l’utilisateur",
         "entries": "entrées",
         "heartbeatSent": "envoyé",
         "heartbeatSkipped": "ignoré",
         "heartbeats": "Enregistrements heartbeat",
         "lastActive": "Dernière activité",
-        "loading": "Chargement du profil...",
+        "loading": "Chargement du profil…",
         "longTermMemories": "Souvenirs à long terme",
         "memories": "Souvenirs",
         "memoriesCleared": "Souvenirs effacés",
@@ -251,8 +251,8 @@
         "reprocess": "Retraiter",
         "room": "Salon",
         "rooms": "Salons",
-        "today": "aujourd'hui",
-        "unban": "Débannir l'utilisateur"
+        "today": "aujourd’hui",
+        "unban": "Débannir l’utilisateur"
       },
       "redis": {
         "backup": "Sauvegarde",
@@ -272,16 +272,16 @@
         "keys": "Clés",
         "length": "Longueur",
         "loadMore": "Charger plus",
-        "loading": "Chargement...",
+        "loading": "Chargement…",
         "messages": {
-          "alreadyDeleted": "La clé Redis n'existait plus",
+          "alreadyDeleted": "La clé Redis n’existait plus",
           "backupReady": "{{count}} clés Redis sauvegardées",
           "backupTruncated": "La sauvegarde a atteint la limite de clés ; affinez le motif pour un export complet",
           "deleted": "Clé Redis supprimée"
         },
         "noKeys": "Aucune clé Redis ne correspond à ce motif",
         "patternPlaceholder": "Motif Redis, par ex. chat:*",
-        "previewTruncated": "L'aperçu est tronqué ; utilisez Sauvegarde pour la valeur complète.",
+        "previewTruncated": "L’aperçu est tronqué ; utilisez Sauvegarde pour la valeur complète.",
         "refresh": "Actualiser les clés Redis",
         "root": "racine",
         "scan": "Scanner",
@@ -295,8 +295,8 @@
       },
       "search": {
         "noResults": "Aucun utilisateur trouvé",
-        "placeholder": "Rechercher des utilisateurs...",
-        "songsPlaceholder": "Rechercher des morceaux..."
+        "placeholder": "Rechercher des utilisateurs…",
+        "songsPlaceholder": "Rechercher des morceaux…"
       },
       "server": {
         "buildInfo": "Build",
@@ -308,7 +308,7 @@
           "vercel": "Vercel"
         },
         "deploymentLabel": "Déploiement",
-        "loading": "Chargement des infos du serveur...",
+        "loading": "Chargement des infos du serveur…",
         "notConfigured": "Non configuré",
         "ok": "OK",
         "provider": {
@@ -324,7 +324,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
-        "auditLog": "Journal d'audit",
+        "auditLog": "Journal d’audit",
         "cursorAgents": "Agents de curseur",
         "dashboard": "Tableau de bord",
         "messagesCount": "{{count}} messages",
@@ -338,10 +338,10 @@
       },
       "song": {
         "album": "Album",
-        "appleMusicId": "ID Apple Music",
+        "appleMusicId": "ID Apple Music",
         "createdAt": "Créé",
-        "delete": "Supprimer la chanson",
-        "forceRefresh": "Forcer l'actualisation",
+        "delete": "Supprimer le morceau",
+        "forceRefresh": "Forcer l’actualisation",
         "forceRefreshTooltip": "Recharger les paroles depuis Kugou et vider le cache des annotations",
         "furigana": "Furigana",
         "info": "Infos",
@@ -353,7 +353,7 @@
         "notAvailable": "Non disponible",
         "notFound": "Chanson introuvable",
         "notGenerated": "Non généré",
-        "openInAppleMusic": "Ouvrir dans Apple Music",
+        "openInAppleMusic": "Ouvrir dans Apple Music",
         "playInIpod": "Lire sur iPod",
         "playInKaraoke": "Lire en Karaoké",
         "searchLyrics": "Rechercher des paroles",
@@ -391,7 +391,9 @@
         "roomsCount_plural": "{{count}} pièces",
         "songsCount": "{{count}} morceaux",
         "usersCount": "{{count}} utilisateur",
-        "usersCount_plural": "{{count}} utilisateurs"
+        "usersCount_plural": "{{count}} utilisateurs",
+        "redisKeysCount_many": "{{count}} clés",
+        "auditLogCount_many": "{{count}} entrées"
       },
       "tableHeaders": {
         "added": "Ajouté",
@@ -400,11 +402,11 @@
         "lastActive": "Dernière activité",
         "message": "Message",
         "role": "Rôle",
-        "status": "Statut",
+        "status": "État",
         "time": "Heure",
         "title": "Titre",
         "user": "Utilisateur",
-        "username": "Nom d'utilisateur"
+        "username": "Nom d’utilisateur"
       },
       "time": {
         "daysAgo": "{{count}}j",
@@ -417,7 +419,7 @@
         "active": "Actif",
         "admin": "admin",
         "banned": "Banni",
-        "user": "utilisateur"
+        "user": "Utilisateur"
       }
     },
     "applet-viewer": {
@@ -431,41 +433,41 @@
         "appletExportedDescription": "{{fileName}}.app exporté avec succès.",
         "appletImported": "Applet importée !",
         "appletImportedDescription": "{{fileName}} enregistré dans /Applets{{iconText}}",
-        "appletImportedIconSuffix": " avec l'icône {{icon}}",
+        "appletImportedIconSuffix": " avec l’icône {{icon}}",
         "appletNotFound": "Applet introuvable",
-        "appletNotFoundDescription": "L'applet partagée a peut-être été supprimée ou le lien est invalide.",
+        "appletNotFoundDescription": "L’applet partagée a peut-être été supprimée ou le lien est invalide.",
         "appletSaved": "Applet enregistrée",
         "appletSavedDescription": "Enregistré dans /Applets/{{fileName}}",
         "appletShared": "Applet partagée !",
-        "appletStore": "Magasin d'Applets",
-        "appletUpdateAvailable": "Mise à jour d'applet disponible",
+        "appletStore": "Magasin d’Applets",
+        "appletUpdateAvailable": "Mise à jour d’applet disponible",
         "appletUpdateAvailableDescription": "Une mise à jour est disponible pour {{appletName}}.",
         "appletUpdated": "Applet mise à jour",
         "appletUpdatedShare": "Applet mise à jour !",
         "appletsUpdated": "{{count}} applets mises à jour",
         "areYouSureDeleteApplet": "Voulez-vous vraiment supprimer cette applet ?",
-        "couldNotCompressAppletFile": "Impossible de compresser le fichier de l'applet.",
-        "couldNotImportFile": "Impossible d'importer le fichier.",
-        "exportFailed": "Échec de l'exportation",
-        "failedToDeleteApplet": "Échec de la suppression de l'applet",
-        "failedToFetchSharedApplet": "Échec de la récupération de l'applet partagée",
-        "failedToLoadSharedApplet": "Échec du chargement de l'applet partagée",
+        "couldNotCompressAppletFile": "Impossible de compresser le fichier de l’applet.",
+        "couldNotImportFile": "Impossible d’importer le fichier.",
+        "exportFailed": "Échec de l’exportation",
+        "failedToDeleteApplet": "Échec de la suppression de l’applet",
+        "failedToFetchSharedApplet": "Échec de la récupération de l’applet partagée",
+        "failedToLoadSharedApplet": "Échec du chargement de l’applet partagée",
         "failedToSaveApplet": "Échec de l'enregistrement de l'applet",
-        "failedToShareApplet": "Échec du partage de l'applet",
-        "failedToUpdateApplet": "Échec de la mise à jour de l'applet",
+        "failedToShareApplet": "Échec du partage de l’applet",
+        "failedToUpdateApplet": "Échec de la mise à jour de l’applet",
         "failedToUpdateApplets": "Échec de la mise à jour des applets",
         "failedToUpdateFeaturedStatus": "Échec de la mise à jour du statut de mise en avant",
-        "importFailed": "Échec de l'importation",
-        "loading": "Chargement...",
+        "importFailed": "Échec de l’importation",
+        "loading": "Chargement…",
         "loginRequired": "Connexion requise",
         "mustBeLoggedInToShare": "Vous devez être connecté(e) pour partager des applets.",
-        "newAppletUpdates": "{{count}} nouvelle mise à jour d'applet",
-        "newAppletUpdatesPlural": "{{count}} nouvelles mises à jour d'applets",
+        "newAppletUpdates": "{{count}} nouvelle mise à jour d’applet",
+        "newAppletUpdatesPlural": "{{count}} nouvelles mises à jour d’applets",
         "noAppletToShare": "Aucune applet à partager",
         "noAppletsAvailable": "Aucune applet disponible pour le moment.",
         "noAppletsFound": "Aucune applet trouvée correspondant à \"{{query}}\".",
         "pleaseCheckConnection": "Veuillez vérifier votre connexion et réessayer.",
-        "pleaseOpenAppletFirst": "Veuillez d'abord ouvrir une Applet.",
+        "pleaseOpenAppletFirst": "Veuillez d’abord ouvrir une Applet.",
         "pleaseTryAgainLater": "Veuillez réessayer plus tard.",
         "removedFromFeatured": "Retiré des sélections",
         "shareLinkGeneratedSuccessfully": "Lien de partage généré avec succès.",
@@ -475,14 +477,14 @@
         "showingExistingShareLink": "Affichage du lien de partage existant.",
         "untitled": "Sans titre",
         "untitledApplet": "Applet sans titre",
-        "updatingApplet": "Mise à jour de l'Applet...",
-        "updatingAppletSingle": "Mise à jour d'1 Applet...",
-        "updatingApplets": "Mise à jour de {{count}} Applets...",
-        "updatingAppletsPlural": "Mise à jour de {{count}} applets..."
+        "updatingApplet": "Mise à jour de l’Applet…",
+        "updatingAppletSingle": "Mise à jour d’1 Applet…",
+        "updatingApplets": "Mise à jour de {{count}} Applets…",
+        "updatingAppletsPlural": "Mise à jour de {{count}} applets…"
       },
       "help": {
         "appletStore": {
-          "description": "Ouvrez l'onglet Boutique pour découvrir des applications créées par la communauté et les installer en un clic",
+          "description": "Ouvrez l’onglet Boutique pour découvrir des applications créées par la communauté et les installer en un clic",
           "title": "Parcourir la boutique"
         },
         "createWithRyosChat": {
@@ -494,7 +496,7 @@
           "title": "Vérification automatique des mises à jour"
         },
         "openFromFinder": {
-          "description": "Déposez des paquets d'applets .app ou .gz dans le Finder et ils apparaîtront dans /Applets",
+          "description": "Déposez des paquets d’applets .app ou .gz dans le Finder et ils apparaîtront dans /Applets",
           "title": "Ouvrir depuis le Finder"
         },
         "shareApplets": {
@@ -502,41 +504,41 @@
           "title": "Partager via un code"
         },
         "viewApplets": {
-          "description": "L'exécuteur en bac à sable lance toute applet HTML enregistrée sur votre système en toute sécurité",
+          "description": "L’exécuteur en bac à sable lance toute applet HTML enregistrée sur votre système en toute sécurité",
           "title": "Tout exécuter"
         }
       },
       "labels": {
         "addToFeatured": "Ajouter aux sélections",
-        "deleteApplet": "Supprimer l'Applet",
+        "deleteApplet": "Supprimer l’Applet",
         "discover": "Découvrir",
         "removeFromFeatured": "Retirer des sélections",
         "searchApplets": "Rechercher des Applets",
-        "showAll": "Afficher tout"
+        "showAll": "Tout afficher"
       },
       "menu": {
         "aboutApplets": "À propos des applets",
-        "appletStore": "Magasin d'Applets",
+        "appletStore": "Magasin d’Applets",
         "appletsHelp": "Aide sur les applets",
-        "checkForUpdates": "Vérifier les mises à jour",
-        "createAccount": "Créer un compte...",
-        "exportAs": "Exporter sous...",
+        "checkForUpdates": "Rechercher les mises à jour",
+        "createAccount": "Créer un compte…",
+        "exportAs": "Exporter comme’…",
         "html": "HTML",
-        "importFromDevice": "Importer depuis l'appareil...",
-        "logOut": "Se déconnecter",
-        "login": "Connexion...",
+        "importFromDevice": "Importer depuis l’appareil…",
+        "logOut": "Fermer la session",
+        "login": "Se connecter…",
         "noAppletsOpen": "Aucune applet ouverte",
-        "open": "Ouvrir...",
-        "openAppletStore": "Ouvrir le Magasin d'applets",
+        "open": "Ouvrir…",
+        "openAppletStore": "Ouvrir le Magasin d’applets",
         "ryosApp": "Application ryOS",
-        "shareApplet": "Partager l'applet...",
+        "shareApplet": "Partager l’applet…",
         "store": "Magasin",
         "untitled": "Sans titre",
         "updateApplets": "Mettre à jour {{count}} applet",
         "updateAppletsPlural": "Mettre à jour {{count}} applets",
         "window": "Fenêtre"
       },
-      "name": "Magasin d'applets",
+      "name": "Magasin d’applets",
       "sections": {
         "featured": "En vedette",
         "installed": "Installé",
@@ -550,7 +552,7 @@
         "update": "Mettre à jour",
         "updatedDaysAgo": "Mis à jour il y a {{days}} j",
         "updatedHoursAgo": "Mis à jour il y a {{hours}} h",
-        "updatedJustNow": "Mis à jour à l'instant",
+        "updatedJustNow": "Mis à jour à l’instant",
         "updatedMinutesAgo": "Mis à jour il y a {{minutes}} min",
         "updatedMonthsAgo": "Mis à jour il y a {{months}} mois",
         "updatedWeeksAgo": "Mis à jour il y a {{weeks}} sem",
@@ -580,7 +582,7 @@
           "title": "Mode sombre"
         },
         "fonts": {
-          "description": "Choisissez une police de lecture (dont EB Garamond), la taille du texte et l'affichage sur une ou deux colonnes dans le menu Présentation.",
+          "description": "Choisissez une police de lecture (dont EB Garamond), la taille du texte et l’affichage sur une ou deux colonnes dans le menu Présentation.",
           "title": "Polices et mise en page"
         },
         "import": {
@@ -624,9 +626,9 @@
         "emptyHint": "Cliquez sur Ajouter un livre pour importer un EPUB.",
         "emptyTitle": "Votre bibliothèque est vide",
         "finished": "Terminé",
-        "gridView": "Vue Grille",
+        "gridView": "Présentation en grille",
         "import": "Ajouter un livre",
-        "listView": "Vue Liste",
+        "listView": "Présentation par liste",
         "percentRead": "{{percent}} %"
       },
       "theme": {
@@ -639,7 +641,7 @@
       "toasts": {
         "deleteFailed": "Échec de la suppression du livre",
         "deleted": "Livre supprimé",
-        "importFailed": "Échec de l'importation du livre",
+        "importFailed": "Échec de l’importation du livre",
         "imported": "Livre importé",
         "invalidFile": "Fichier non pris en charge",
         "invalidFileDesc": "Seuls les livres au format .epub peuvent être importés."
@@ -656,7 +658,7 @@
         "amount": "Montant",
         "categories": {
           "area": "Surface",
-          "currency": "Monnaie",
+          "currency": "Devise",
           "energy": "Énergie",
           "length": "Longueur",
           "mass": "Poids & Masse",
@@ -671,12 +673,12 @@
         "from": "De",
         "result": "Résultat",
         "selectUnit": "Unité",
-        "swap": "Échanger",
+        "swap": "Permuter",
         "title": "Convertir",
         "to": "À",
         "units": {
           "acre": "Acres",
-          "atm": "Atmosphères",
+          "atm": "atmosphère",
           "bar": "Bar",
           "c": "Celsius",
           "cal": "Calories",
@@ -688,18 +690,18 @@
           "ft": "Pieds",
           "g": "Grammes",
           "gal": "Gallons (US)",
-          "ha": "Hectares",
+          "ha": "hectare",
           "hr": "Heures",
           "in": "Pouces",
           "j": "Joules",
-          "k": "Kelvin",
+          "k": "kelvin",
           "kcal": "Kilocalories",
           "kg": "Kilogrammes",
           "kj": "Kilojoules",
           "km": "Kilomètres",
           "knot": "Nœuds",
           "kpa": "Kilopascals",
-          "kph": "Kilomètres/Heure",
+          "kph": "kilomètre/heure",
           "kwh": "Kilowatt-heures",
           "l": "Litres",
           "lb": "Livres",
@@ -709,25 +711,25 @@
           "min": "Minutes",
           "ml": "Millilitres",
           "mm": "Millimètres",
-          "mph": "Miles/Heure",
-          "mps": "Mètres/Seconde",
+          "mph": "mile/heure",
+          "mps": "mètre/s",
           "oz": "Onces",
-          "pa": "Pascals",
+          "pa": "pascal",
           "psi": "PSI",
           "pt": "Pintes",
           "qt": "Quarts",
           "s": "Secondes",
-          "sqft": "Pieds carrés",
-          "sqkm": "Kilomètres carrés",
-          "sqm": "Mètres carrés",
-          "sqmi": "Miles carrés",
+          "sqft": "pied carré",
+          "sqkm": "kilomètre carré",
+          "sqm": "mètre carré",
+          "sqmi": "mile carré",
           "t": "Tonnes",
           "wh": "Watt-heures",
           "wk": "Semaines",
           "yd": "Yards"
         }
       },
-      "description": "Calculatrice basique, scientifique et de conversion d'unités",
+      "description": "Calculatrice basique, scientifique et de conversion d’unités",
       "help": {
         "basicMode": {
           "description": "Ajouter, soustraire, multiplier et diviser avec les touches mémoire et pourcentage",
@@ -738,11 +740,11 @@
           "title": "Mode Conversion"
         },
         "keyboard": {
-          "description": "Taper des chiffres et des opérateurs depuis le clavier; le menu d'affichage change de modes",
+          "description": "Taper des chiffres et des opérateurs depuis le clavier; le menu d’affichage change de modes",
           "title": "Clavier"
         },
         "liveCurrency": {
-          "description": "Les conversions de monnaies récupèrent les taux de change via l'API ryOS",
+          "description": "Les conversions de monnaies récupèrent les taux de change via l’API ryOS",
           "title": "Monnaie en Direct"
         },
         "scientificMode": {
@@ -766,26 +768,26 @@
         "speakResults": "Énoncer les résultats",
         "speechEnabled": "Parole"
       },
-      "name": "Calculatrice",
+      "name": "Calculette",
       "speech": {
         "error": "Erreur",
         "keys": {
           "backspace": "retour arrière",
           "clear": "effacer",
-          "clearEntry": "effacer l'entrée",
+          "clearEntry": "effacer l’entrée",
           "closeParenthesis": "parenthèse fermante",
           "cos": "cosinus",
           "degrees": "degrés",
-          "divide": "divisé par",
+          "divide": "Divisé par",
           "e": "e",
           "equals": "égal",
           "factorial": "factorielle",
           "ln": "logarithme népérien",
           "log": "log",
           "memoryClear": "effacer la mémoire",
-          "memoryMinus": "mémoire moins",
-          "memoryPlus": "mémoire plus",
-          "memoryRecall": "rappel mémoire",
+          "memoryMinus": "soustraire à la mémoire",
+          "memoryPlus": "ajouter à la mémoire",
+          "memoryRecall": "rappeler la mémoire",
           "memoryStore": "mise en mémoire",
           "minus": "moins",
           "negate": "plus ou moins",
@@ -796,12 +798,12 @@
           "point": "virgule",
           "power": "x puissance y",
           "radians": "radians",
-          "random": "aléatoire",
+          "random": "Aléatoire",
           "root": "racine y-ième de x",
           "sin": "sinus",
           "sqrt": "racine carrée",
           "tan": "tangente",
-          "times": "multiplier"
+          "times": "fois"
         },
         "negative": "moins {{value}}",
         "scientific": "{{mantissa}} fois 10 puissance {{exponent}}"
@@ -809,7 +811,7 @@
       "status": {
         "memory": "M={{value}}"
       },
-      "title": "Calculatrice"
+      "title": "Calculette"
     },
     "calendar": {
       "description": "Calendrier avec événements",
@@ -821,13 +823,13 @@
         "date": "Date",
         "delete": "Supprimer",
         "deleteConfirm": "Supprimer cet événement ?",
-        "editEvent": "Modifier l'événement",
+        "editEvent": "Modifier l’événement",
         "endTime": "Heure de fin",
         "newEvent": "Nouvel événement",
         "noEvents": "Aucun événement",
         "notes": "Notes",
         "save": "Enregistrer",
-        "startTime": "Heure de début",
+        "startTime": "Début",
         "title": "Titre"
       },
       "export": {
@@ -849,8 +851,8 @@
           "title": "Naviguer entre les mois"
         },
         "ryoSchedules": {
-          "description": "Demandez à Ryo dans les Chats d'ajouter, de modifier ou de résumer vos événements à venir",
-          "title": "Ryo s'occupe du planning"
+          "description": "Demandez à Ryo dans les Chats d’ajouter, de modifier ou de résumer vos événements à venir",
+          "title": "Ryo s’occupe du planning"
         },
         "todosSidebar": {
           "description": "Affichez ou masquez le panneau des tâches pour gérer vos activités parallèlement à vos événements",
@@ -867,33 +869,33 @@
       },
       "menu": {
         "about": "À propos de Calendrier",
-        "dayView": "Vue Jour",
-        "deleteEvent": "Supprimer l'événement",
-        "editEvent": "Modifier l'événement",
+        "dayView": "Présentation par jour",
+        "deleteEvent": "Supprimer l’événement",
+        "editEvent": "Modifier l’événement",
         "exportToIcs": "Exporter les événements…",
-        "goToToday": "Aller à aujourd'hui",
+        "goToToday": "Aller à Aujourd’hui",
         "help": "Aide Calendrier",
-        "importFromDevice": "Importer depuis l'appareil…",
-        "monthView": "Vue Mois",
+        "importFromDevice": "Importer depuis l’appareil…",
+        "monthView": "Présentation par mois",
         "newEvent": "Nouvel événement",
         "showToDoItems": "Afficher les tâches",
         "syncCalendar": "Synchroniser le calendrier",
-        "weekView": "Vue Semaine"
+        "weekView": "Présentation par semaine"
       },
       "name": "Calendrier",
       "sidebar": {
         "calendars": "Calendriers",
-        "newTodoPlaceholder": "Nouvelle tâche...",
+        "newTodoPlaceholder": "Nouvelle tâche…",
         "noTodoItems": "Aucune tâche",
         "toDoItems": "Tâches"
       },
       "title": "Calendrier",
-      "today": "Aujourd'hui",
+      "today": "Aujourd’hui",
       "tray": {
         "done": "terminé",
         "due": "échéance",
         "empty": "Sélectionnez un événement ou une tâche",
-        "eventDetails": "Détails de l'événement",
+        "eventDetails": "Détails de l’événement",
         "from": "de",
         "locationPlaceholder": "lieu",
         "markComplete": "Marquer comme terminé",
@@ -912,14 +914,14 @@
     "chats": {
       "ariaLabels": {
         "attachImage": "Joindre une image",
-        "clearImage": "Effacer l'image",
+        "clearImage": "Effacer l’image",
         "copyMessage": "Copier le message",
         "deleteMessage": "Supprimer le message",
         "deleteRoom": "Supprimer le salon",
         "leaveConversation": "Quitter la conversation",
         "mentionRyo": "Mentionner Ryo",
         "messageUser": "Message à {{username}}",
-        "newChat": "Nouveau chat",
+        "newChat": "Nouvelle conversation",
         "pushToTalk": "Appuyer pour parler",
         "selectedImage": "Image sélectionnée",
         "sendNudge": "Envoyer un Nudge",
@@ -927,14 +929,14 @@
         "stopGeneration": "Arrêter la génération",
         "stopSpeech": "Arrêter la lecture"
       },
-      "description": "Discuter avec l'IA",
+      "description": "Discuter avec l’IA",
       "dialogs": {
         "addUsersToPrivateChat": "Ajouter des utilisateurs au chat privé",
         "cancel": "Annuler",
         "clearChatsDescription": "Êtes-vous sûr de vouloir effacer ce chat ? Cette action est irréversible.",
         "clearChatsTitle": "Effacer les chats",
         "create": "Créer",
-        "creating": "Création en cours...",
+        "creating": "Création…",
         "deleteChatRoomDescription": "Voulez-vous vraiment supprimer le salon « {{name}} » ? Cette action est irréversible.",
         "deleteChatRoomTitle": "Supprimer le salon de discussion",
         "failedToCreateRoom": "Échec de la création de la salle",
@@ -952,30 +954,30 @@
         "roomNamePlaceholder": "général",
         "saveTranscriptDescription": "Saisissez un nom pour le fichier de transcription de votre discussion",
         "saveTranscriptTitle": "Enregistrer la transcription",
-        "searchUsernamePlaceholder": "Rechercher un nom d'utilisateur...",
+        "searchUsernamePlaceholder": "Rechercher un nom d’utilisateur…",
         "setPasswordButton": "Définir le mot de passe",
-        "setPasswordDescription": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez utiliser ce mot de passe pour obtenir un nouveau jeton si vous perdez l'accès.",
+        "setPasswordDescription": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez utiliser ce mot de passe pour obtenir un nouveau jeton si vous perdez l’accès.",
         "setPasswordTitle": "Définir le mot de passe"
       },
       "help": {
         "chatWithRyo": {
-          "description": "Posez n'importe quelle question — Ryo peut écrire du code, résumer des documents ou expliquer les fonctionnalités de ryOS.",
+          "description": "Posez n’importe quelle question — Ryo peut écrire du code, résumer des documents ou expliquer les fonctionnalités de ryOS.",
           "title": "Discuter avec Ryo"
         },
         "controlApps": {
-          "description": "Ryo peut lancer des applications, changer de thème, déplacer des mémos, régler la TV et lire des morceaux sur l'iPod.",
+          "description": "Ryo peut lancer des applications, changer de thème, déplacer des mémos, régler la TV et lire des morceaux sur l’iPod.",
           "title": "Contrôlez votre OS"
         },
         "createEditFiles": {
-          "description": "Demandez à Ryo de générer des Applets HTML, de modifier vos documents TextEdit ou de parcourir l'Applet Store.",
+          "description": "Demandez à Ryo de générer des Applets HTML, de modifier vos documents TextEdit ou de parcourir l’Applet Store.",
           "title": "Créer et modifier des fichiers"
         },
         "joinChatRooms": {
-          "description": "Rejoignez des salons pour discuter avec tout le monde en ligne — mentionnez @ryo pour obtenir des réponses de l'IA.",
+          "description": "Rejoignez des salons pour discuter avec tout le monde en ligne — mentionnez @ryo pour obtenir des réponses de l’IA.",
           "title": "Rejoindre des salons publics"
         },
         "nudgeDjMode": {
-          "description": "Envoyez un 👋 nudge pour obtenir des conseils contextuels ; Ryo se transforme en DJ lorsque l'iPod est en lecture.",
+          "description": "Envoyez un 👋 nudge pour obtenir des conseils contextuels ; Ryo se transforme en DJ lorsque l’iPod est en lecture.",
           "title": "Nudge et Mode DJ"
         },
         "pushToTalk": {
@@ -989,28 +991,24 @@
         "chats": "Discussions",
         "chatsHelp": "Aide sur les discussions",
         "clearChat": "Effacer la discussion",
-        "createAccount": "Créer un compte...",
-        "decreaseFontSize": "Diminuer la taille de la police",
-        "enableBrowserNotifications": "Activer les notifications du navigateur",
-        "increaseFontSize": "Augmenter la taille de la police",
+        "createAccount": "Créer un compte…",
+        "decreaseFontSize": "Diminuer la taille de police",
+        "increaseFontSize": "Augmenter la taille de police",
         "keepTalking": "Continuer à parler",
         "linkToTelegram": "Lien vers Telegram",
-        "logOut": "Se déconnecter",
-        "login": "Se connecter...",
-        "newChat": "Nouvelle discussion...",
-        "notificationsBlocked": "Notifications bloquées – activer dans les paramètres du navigateur",
+        "logOut": "Fermer la session",
+        "login": "Se connecter…",
+        "newChat": "Nouvelle conversation’…",
         "resetFontSize": "Réinitialiser la taille de la police",
-        "saveTranscript": "Enregistrer l'historique...",
+        "saveTranscript": "Enregistrer l’historique…",
         "showRooms": "Afficher les salons",
         "sound": "Son",
         "systemNotifications": "Notifications système",
-        "turnOffNotifications": "Désactiver les notifications",
-        "turnOnNotifications": "Activer les notifications",
         "typingSynth": "Synthétiseur de frappe"
       },
       "messages": {
         "delete": "Supprimer",
-        "greeting": "👋 salut ! je suis ryo. demande-moi n'importe quoi !",
+        "greeting": "👋 salut ! je suis ryo. demande-moi n’importe quoi !",
         "ryo": "Ryo",
         "you": "Vous"
       },
@@ -1028,40 +1026,40 @@
       "status": {
         "chatRequiresInternet": "Le chat nécessite une connexion internet",
         "clear": "Effacer",
-        "createAccountToContinue": "Créer un compte pour continuer...",
+        "createAccountToContinue": "Créer un compte pour continuer…",
         "dailyLimitReached": "Limite quotidienne de messages IA atteinte.",
         "describeThisImage": "Décrire cette image",
-        "editing": "Modification en cours...",
+        "editing": "modification…",
         "leave": "Quitter",
         "listening": "Écoute",
-        "loginButton": "Connexion",
+        "loginButton": "Se connecter",
         "loginRequired": "Connexion requise",
         "loginToChat": "Se connecter au chat",
         "loginToContinue": "Connectez-vous pour continuer à discuter avec Ryo.",
         "loginToRyOS": "Se connecter à ryOS",
-        "newChat": "Nouveau chat",
+        "newChat": "Nouvelle conversation",
         "noTranscriptionText": "Aucun texte de transcription reçu",
         "nudgeSent": "👋 *rappel envoyé*",
         "pleaseLoginToDeleteRooms": "Veuillez vous connecter pour supprimer des salons.",
         "pleaseLoginToSendMessages": "Veuillez vous connecter pour envoyer des messages.",
-        "recording": "Enregistrement en cours...",
+        "recording": "Enregistrement…",
         "retry": "Réessayer",
         "ryo": "@ryo",
         "ryoWillRespond": "Ryo répondra à ce message",
         "scrollToBottom": "Faire défiler vers le bas",
         "sessionExpired": "Session expirée. Veuillez vous reconnecter.",
         "startNewConversation": "Démarrer une nouvelle conversation ?",
-        "thinking": "Réflexion en cours",
-        "transcribing": "Transcription en cours...",
-        "typeMessage": "Écrire un message...",
-        "typeOrPushSpace": "Écrire ou appuyer sur 'espace' pour parler...",
+        "thinking": "Réflexion",
+        "transcribing": "Transcription…",
+        "typeMessage": "Écrire un message…",
+        "typeOrPushSpace": "Écrire ou appuyer sur 'espace' pour parler…",
         "usingModel": "Utilisation de {{model}}"
       },
       "toasts": {
-        "aiError": "Erreur de l'IA",
-        "failedToGetResponse": "Échec de l'obtention de la réponse.",
-        "failedToSaveTranscript": "Échec de l'enregistrement de la transcription",
-        "loginButton": "Connexion",
+        "aiError": "Erreur de l’IA",
+        "failedToGetResponse": "Échec de l’obtention de la réponse.",
+        "failedToSaveTranscript": "Échec de l’enregistrement de la transcription",
+        "loginButton": "Se connecter",
         "loginRequired": "Connexion requise",
         "open": "Ouvrir",
         "pleaseLoginToContinueChatting": "Veuillez vous connecter pour continuer à discuter.",
@@ -1079,12 +1077,12 @@
         "daysAgo": "il y a {{days}}j",
         "daysOld": "{{days}} jours",
         "hoursAgo": "il y a {{hours}}h",
-        "justNow": "à l'instant",
+        "justNow": "à l’instant",
         "last": "Dernier",
         "minutesAgo": "il y a {{minutes}}min",
         "refresh": "Actualiser",
         "refreshed": "Actualisé",
-        "refreshing": "Actualisation en cours...",
+        "refreshing": "Actualisation…",
         "tokenRefreshed": "Jeton actualisé"
       },
       "toolCalls": {
@@ -1094,22 +1092,22 @@
         "calendar": {
           "addedEvent": "Événement «{{title}}» ajouté",
           "addedTodo": "Tâche «{{title}}» ajoutée",
-          "addingEvent": "Ajout de l'événement «{{title}}»…",
+          "addingEvent": "Ajout de l’événement «{{title}}»…",
           "addingTodo": "Ajout de la tâche «{{title}}»…",
-          "createEventMissingFields": "La création d'un événement nécessite 'title' et 'date'.",
-          "createTodoMissingTitle": "La création d'une tâche nécessite 'title'.",
+          "createEventMissingFields": "La création d'un événement nécessite 'title' et 'date’.",
+          "createTodoMissingTitle": "La création d'une tâche nécessite 'title’.",
           "createdEvent": "Événement \"{{title}}\" créé le {{date}}.",
           "createdTodo": "Tâche \"{{title}}\" créée.",
           "createdTodoDue": "Tâche \"{{title}}\" créée, échéance le {{date}}.",
-          "deleteEventMissingId": "La suppression d'un événement nécessite 'id'.",
-          "deleteTodoMissingId": "La suppression d'une tâche nécessite 'id'.",
+          "deleteEventMissingId": "La suppression d'un événement nécessite 'id’.",
+          "deleteTodoMissingId": "La suppression d'une tâche nécessite 'id’.",
           "deletedEvent": "Événement «{{title}}» supprimé",
           "deletedEventMsg": "Événement \"{{title}}\" supprimé.",
           "deletedTodo": "Tâche «{{title}}» supprimée",
           "deletedTodoMsg": "Tâche \"{{title}}\" supprimée.",
-          "deletingEvent": "Suppression de l'événement…",
+          "deletingEvent": "Suppression de l’événement…",
           "deletingTodo": "Suppression de la tâche…",
-          "eventNotFound": "Événement avec l'id '{{id}}' introuvable.",
+          "eventNotFound": "Événement avec l'id '{{id}}’ introuvable.",
           "foundEvents": "Trouvé {{count}} événement(s)",
           "foundEventsForDate": "{{count}} événement trouvé pour le {{date}}.",
           "foundEventsForDatePlural": "{{count}} événements trouvés pour le {{date}}.",
@@ -1124,7 +1122,7 @@
           "listingTodos": "Affichage des tâches…",
           "markedTodoCompleted": "Tâche «{{title}}» marquée comme terminée.",
           "markedTodoPending": "Tâche «{{title}}» marquée comme en attente.",
-          "todoNotFound": "Tâche avec l'ID '{{id}}' introuvable.",
+          "todoNotFound": "Tâche avec l'ID '{{id}}’ introuvable.",
           "toggleTodoMissingId": "Basculer une tâche nécessite 'id'.",
           "toggledTodoCompleted": "«{{title}}» terminé",
           "toggledTodoPending": "«{{title}}» marqué comme incomplet",
@@ -1133,7 +1131,7 @@
           "updateEventMissingId": "Mettre à jour un événement nécessite 'id'.",
           "updatedEvent": "Événement «{{title}}» mis à jour",
           "updatedEventMsg": "Événement «{{title}}» mis à jour.",
-          "updatingEvent": "Mise à jour de l'événement…"
+          "updatingEvent": "Mise à jour de l’événement…"
         },
         "calling": "Appel de {{toolName}}…",
         "changingSettings": "Modification des paramètres…",
@@ -1166,29 +1164,31 @@
         "createdDocument": "Document créé : {{path}}",
         "cursorCloudAgent": {
           "finished": "Terminé",
-          "followupAriaLabel": "Message de suivi pour l'agent Cursor",
+          "followupAriaLabel": "Message de suivi pour l’agent Cursor",
           "followupBusy": "L'agent est toujours en cours d'exécution…",
-          "followupPlaceholder": "Répondre à l'agent…",
+          "followupPlaceholder": "Répondre à l’agent…",
           "followupSend": "Envoyer le suivi",
           "followupSending": "Envoi du suivi…",
           "noEventsYet": "En attente des événements de flux…",
           "openPr": "Ouvrir la PR",
           "panelTitle": "Agent de dépôt Cursor",
-          "running": "En cours d'exécution",
-          "starting": "Démarrage de l'agent Cursor Cloud…",
+          "running": "En cours d’exécution",
+          "starting": "Démarrage de l’agent Cursor Cloud…",
           "stream": {
             "args": "Arguments",
             "emptyAssistant": "(Aucun contenu de message)",
             "result": "Résultat",
             "runEnded": "Exécution terminée · {{status}}",
             "runEndedError": "L'exécution s'est terminée par une erreur",
-            "status": "Statut",
+            "showLess": "Afficher moins",
+            "status": "État",
             "system": "Session démarrée",
             "thinking": "Réflexion",
             "toolCall": "Outil · {{name}}",
-            "toolUse": "Demande d'outil · {{name}}",
+            "toolUse": "Demande d’outil · {{name}}",
             "truncated": "tronqué",
-            "userPrompt": "Prompt"
+            "userPrompt": "Prompt",
+            "workedFor": "Travaillé pendant {{duration}}"
           }
         },
         "document": "Document",
@@ -1198,11 +1198,11 @@
         "editingFile": "Modification du fichier…",
         "error": "Erreur : {{errorText}}",
         "failedToEditFile": "Échec de la modification du fichier",
-        "failedToListItems": "Échec de l'affichage des éléments",
-        "failedToOpen": "Échec de l'ouverture",
+        "failedToListItems": "Échec de l’affichage des éléments",
+        "failedToOpen": "Échec de l’ouverture",
         "failedToReadFile": "Échec de la lecture du fichier",
-        "failedToWriteFile": "Échec de l'écriture du fichier",
-        "fetchingApplet": "Récupération de l'applet…",
+        "failedToWriteFile": "Échec de l’écriture du fichier",
+        "fetchingApplet": "Récupération de l’applet…",
         "fileContent": "Contenu de {{fileLabel}} : {{fileName}} ({{charCount}} caractères)",
         "fileCreated": "Fichier créé",
         "findingFiles": "Recherche de fichiers…",
@@ -1226,11 +1226,11 @@
         "generating": "Génération…",
         "infiniteMac": {
           "capturedScreen": "Écran capturé",
-          "capturingScreen": "Capture de l'écran…",
+          "capturingScreen": "Capture de l’écran…",
           "clicked": "Clic à ({{x}}, {{y}})",
-          "clicking": "Clic en cours…",
+          "clicking": "Clic…",
           "doubleClicked": "Double-clic à ({{x}}, {{y}})",
-          "doubleClicking": "Double-clic en cours…",
+          "doubleClicking": "Double-clic…",
           "gettingStatus": "Récupération du statut…",
           "movedMouse": "Déplacement à ({{x}}, {{y}})",
           "movingMouse": "Déplacement de la souris…",
@@ -1239,31 +1239,31 @@
           "pressedKey": "Appui sur {{key}}",
           "pressingKey": "Appui sur la touche…",
           "resumed": "Reprise",
-          "resuming": "Reprise en cours…",
+          "resuming": "Reprise…",
           "rightClicked": "Clic droit à ({{x}}, {{y}})",
           "startedSystem": "Démarré {{system}}",
           "startingSystem": "Démarrage de {{system}}…",
-          "statusNotRunning": "Aucun système en cours d'exécution",
-          "statusRunning": "{{system}} en cours d'exécution",
+          "statusNotRunning": "Aucun système en cours d’exécution",
+          "statusRunning": "{{system}} en cours d’exécution",
           "systemLoading": "{{system}} en cours de chargement…"
         },
-        "invalidFilename": "Nom de fichier invalide : {{fileName}}. Les fichiers de document doivent se terminer par l'extension .md (par exemple, /Documents/mes-notes.md)",
+        "invalidFilename": "Nom de fichier invalide : {{fileName}}. Les fichiers de document doivent se terminer par l’extension .md (par exemple, /Documents/mes-notes.md)",
         "invalidPath": "Chemin invalide : {{path}}",
         "invalidPathForEdit": "Chemin invalide pour la modification : {{path}}. Utilisez /Documents/* ou /Applets/*",
         "invalidPathForList": "Chemin invalide : {{path}}. Chemins pris en charge : /Applets, /Documents, /Applications, /Music, /Applets Store",
         "invalidPathForRead": "Chemin invalide pour la lecture : {{path}}. Utilisez /Applets/*, /Documents/* ou /Applets Store/*",
         "invalidPathForWrite": "Chemin invalide : {{path}}. Utilisez /Documents/nomdefichier.md pour les documents. Pour les applets, utilisez generateHtml (nouveau) ou edit (petites modifications).",
         "ipodAdded": "« {{title}} » ajouté à l'iPod. Appuyez sur le bouton central ou le bouton de lecture sur l'iPod pour commencer la lecture",
-        "ipodAddedAndPlaying": "« {{title}} » ajouté à l'iPod et lecture démarrée",
-        "ipodCannotAdd": "Impossible d'ajouter {{id}} : vidéo indisponible ou invalide",
+        "ipodAddedAndPlaying": "« {{title}} » ajouté à l’iPod et lecture démarrée",
+        "ipodCannotAdd": "Impossible d’ajouter {{id}} : vidéo indisponible ou invalide",
         "ipodFailedToAdd": "Échec de l'ajout de {{id}} à l'iPod",
-        "ipodFailedToAddWithError": "Échec de l'ajout de {{id}} : {{error}}",
+        "ipodFailedToAddWithError": "Échec de l’ajout de {{id}} : {{error}}",
         "ipodPaused": "En pause",
         "ipodPausedTrack": "{{trackDesc}} en pause",
         "ipodPlaying": "En lecture",
         "ipodPlayingTrack": "Lecture de {{trackDesc}}",
-        "ipodReady": "iPod prêt. Appuyez sur le bouton central ou le bouton de lecture sur l'iPod pour commencer la lecture",
-        "ipodSelected": "{{trackDesc}} sélectionné. Appuyez sur le bouton central ou le bouton de lecture sur l'iPod pour commencer la lecture",
+        "ipodReady": "iPod prêt. Appuyez sur le bouton central ou le bouton de lecture sur l’iPod pour commencer la lecture",
+        "ipodSelected": "{{trackDesc}} sélectionné. Appuyez sur le bouton central ou le bouton de lecture sur l’iPod pour commencer la lecture",
         "ipodSkippedTo": "Passé à {{trackDesc}}",
         "ipodSkippedToNext": "Passé à la piste suivante",
         "ipodSongNotFound": "Chanson introuvable dans la bibliothèque iPod",
@@ -1277,9 +1277,9 @@
         "ipodWentBackToPrevious": "Revenu à la piste précédente",
         "karaokeAdded": "Ajouté '{{title}}' à la bibliothèque. Appuyez sur lecture pour démarrer en Karaoké",
         "karaokeAddedAndPlaying": "Ajouté '{{title}}' et la lecture a démarré en Karaoké",
-        "karaokeCannotAdd": "Impossible d'ajouter {{id}} : Vidéo indisponible ou invalide",
-        "karaokeFailedToAdd": "Échec de l'ajout de {{id}} à la bibliothèque",
-        "karaokeFailedToAddWithError": "Échec de l'ajout de {{id}} : {{error}}",
+        "karaokeCannotAdd": "Impossible d’ajouter {{id}} : Vidéo indisponible ou invalide",
+        "karaokeFailedToAdd": "Échec de l’ajout de {{id}} à la bibliothèque",
+        "karaokeFailedToAddWithError": "Échec de l’ajout de {{id}} : {{error}}",
         "karaokeNoIdProvided": "Aucun ID ou URL YouTube fourni pour addAndPlay",
         "karaokePaused": "Karaoké en pause",
         "karaokePausedTrack": "Karaoké en pause {{trackDesc}}",
@@ -1297,12 +1297,12 @@
         "launchedWithUrl": "{{url}} lancé",
         "launchedWithUrlAndYear": "{{url}} lancé en {{year}}",
         "launching": "Lancement de {{appName}}…",
-        "launchingApp": "Lancement de l'application…",
+        "launchingApp": "Lancement de l’application…",
         "listCursorCloudAgentRuns": {
-          "listed": "Listed {{count}} recent run(s).",
-          "loading": "Listing Cursor Cloud agent runs…",
-          "openDashboard": "Open agent in Cursor",
-          "truncatedHint": "(list may be truncated)"
+          "listed": "Exécutions récentes répertoriées : {{count}}.",
+          "loading": "Liste des exécutions de l’agent Cursor Cloud…",
+          "openDashboard": "Ouvrir l’agent dans Cursor",
+          "truncatedHint": "(la liste peut être tronquée)"
         },
         "listedItems": "Éléments listés",
         "listingApplications": "Liste des applications…",
@@ -1311,15 +1311,15 @@
         "missingEditParameters": "Paramètres requis manquants : path, old_string et new_string",
         "multipleMatchesFound": "Plusieurs correspondances trouvées",
         "musicLibraryEmpty": "La bibliothèque Musique est vide",
-        "noAppIdProvided": "Aucun ID d'application fourni",
+        "noAppIdProvided": "Aucun ID d’application fourni",
         "noContentProvided": "Aucun contenu fourni",
         "noFileTypeFound": "Pas de {{fileType}}s trouvés dans le répertoire {{path}}",
         "noItemsFound": "Aucun élément trouvé",
         "noPathProvided": "Aucun chemin fourni",
-        "noSharedAppletsAvailable": "Pas d'applets partagées disponibles",
+        "noSharedAppletsAvailable": "Pas d’applets partagées disponibles",
         "noSharedAppletsMatched": "Aucune applet partagée ne correspond à \"{{query}}\"",
         "oldStringMultipleMatches": "old_string correspond à {{count}} emplacements. Ajoutez plus de contexte pour le rendre unique.",
-        "oldStringNotFound": "old_string introuvable dans le fichier. Utilisez l'outil de lecture pour vérifier le contenu actuel.",
+        "oldStringNotFound": "old_string introuvable dans le fichier. Utilisez l’outil de lecture pour vérifier le contenu actuel.",
         "opened": "Ouvert",
         "openedApplet": "Ouvert {{appletName}}",
         "openedDocument": "Document ouvert : {{fileName}}",
@@ -1336,7 +1336,7 @@
         "playingSongWithId": "Lecture de la chanson ({{id}})",
         "playingTrack": "Lecture de {{title}}",
         "playingTrackByArtist": "Lecture de {{title}} par {{artist}}",
-        "preparingHtmlPreview": "Préparation de l'aperçu HTML...",
+        "preparingHtmlPreview": "Préparation de l’aperçu HTML…",
         "read": "{{fileName}} lu",
         "readingFile": "Lecture du fichier…",
         "running": "Exécution de {{toolName}}…",
@@ -1432,14 +1432,14 @@
         "phone": "téléphone",
         "url": "URL"
       },
-      "changePicture": "Changer l'image",
-      "description": "Carnet d'adresses avec importation vCard",
+      "changePicture": "Changer l’image",
+      "description": "Carnet d’adresses avec importation vCard",
       "emptySelection": "Sélectionnez un contact ou créez-en un nouveau",
-      "emptyState": "Aucun contact pour l'instant. Créez-en un ou importez une vCard pour commencer.",
+      "emptyState": "Aucun contact pour l’instant. Créez-en un ou importez une vCard pour commencer.",
       "fields": {
         "addresses": "Adresses",
         "birthday": "Date de naissance",
-        "displayName": "Nom d'affichage",
+        "displayName": "Nom d’affichage",
         "emails": "Adresses e-mail",
         "firstName": "Prénom",
         "jobTitle": "Fonction",
@@ -1450,7 +1450,7 @@
         "phones": "Numéros de téléphone",
         "source": "Source",
         "telegramUserId": "ID utilisateur Telegram",
-        "telegramUsername": "Nom d'utilisateur Telegram",
+        "telegramUsername": "Nom d’utilisateur Telegram",
         "urls": "Sites web / Liens"
       },
       "groupHeaders": {
@@ -1470,11 +1470,11 @@
           "title": "Parcourir les contacts"
         },
         "cloudSync": {
-          "description": "Activez la synchronisation des contacts dans les Tableaux de bord pour sauvegarder votre carnet d'adresses dans le cloud",
+          "description": "Activez la synchronisation des contacts dans les Tableaux de bord pour sauvegarder votre carnet d’adresses dans le cloud",
           "title": "Synchronisation Cloud"
         },
         "createContacts": {
-          "description": "Fichier ▸ Nouveau contact permet d'ajouter des noms, numéros, e-mails, adresses et notes libres",
+          "description": "Fichier ▸ Nouveau contact permet d’ajouter des noms, numéros, e-mails, adresses et notes libres",
           "title": "Créer des contacts"
         },
         "importVCards": {
@@ -1529,7 +1529,7 @@
       }
     },
     "control-panels": {
-      "accent": "Couleur d'accentuation",
+      "accent": "Couleur d’accentuation",
       "accentColors": {
         "blue": "Bleu",
         "default": "Système",
@@ -1540,21 +1540,21 @@
         "purple": "Violet",
         "red": "Rouge",
         "teal": "Sarcelle",
-        "wallpaper": "Fond d'écran",
+        "wallpaper": "Fond d’écran",
         "yellow": "Jaune"
       },
       "accentDescription": "Applique une couleur aux sélections, aux menus et aux commandes",
       "accountJoined": "Inscrit en {{date}}",
-      "accountMenu": "Account",
+      "accountMenu": "Compte",
       "accountsTabs": {
         "accounts": "Comptes",
         "debug": "Debug",
         "security": "Sécurité"
       },
-      "aiModel": "Modèle d'IA",
+      "aiModel": "Modèle d’IA",
       "aiModelDescription": "Utilisé dans les discussions, IE, et plus encore",
       "alerts": {
-        "errorUploadingWallpaper": "Erreur lors du téléchargement du fond d'écran. Veuillez réessayer avec un fichier plus petit.",
+        "errorUploadingWallpaper": "Erreur lors du téléchargement du fond d’écran. Veuillez réessayer avec un fichier plus petit.",
         "failedToBackupFileSystem": "Échec de la sauvegarde des données du système de fichiers. Seuls les réglages seront sauvegardés.",
         "failedToCreateBackup": "Échec de la création de la sauvegarde compressée : {{error}}",
         "failedToRestoreBackup": "Échec de la restauration de la sauvegarde : {{error}}",
@@ -1574,7 +1574,7 @@
         "fetching": "Récupération",
         "files": "Fichiers",
         "hoursAgo": "il y a {{count}}h",
-        "justNow": "à l'instant",
+        "justNow": "à l’instant",
         "lastChecked": "Dernière vérification {{date}}",
         "lastFetched": "Récupéré le {{date}}",
         "lastSynced": "Dernière synchronisation {{date}}",
@@ -1586,8 +1586,8 @@
         "neverUploaded": "Jamais mis en ligne",
         "openSettings": "Réglages de synchronisation…",
         "settings": "Réglages",
-        "songs": "Musique",
-        "stickies": "Pense-bêtes",
+        "songs": "Morceaux",
+        "stickies": "Aide-mémoire",
         "title": "Synchronisation cloud",
         "tvChannels": "Chaînes TV",
         "uploading": "Mise en ligne",
@@ -1595,7 +1595,7 @@
         "waiting": "En attente du prochain changement éligible"
       },
       "backup": "Sauvegarde",
-      "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l'application",
+      "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l’application",
       "bootScreen": "Écran de démarrage",
       "bootScreenDescription": "Tester l'animation de l'écran de démarrage",
       "changePassword": "Changer le mot de passe",
@@ -1616,7 +1616,7 @@
         "forceDownloadSuccess": "Téléchargement depuis le cloud terminé",
         "forceDownloading": "Téléchargement…",
         "forceSyncDescription": "Téléverser ou télécharger les éléments de synchronisation automatique activés",
-        "forceSyncNoDomains": "Activez d'abord au moins un élément de synchronisation automatique",
+        "forceSyncNoDomains": "Activez d’abord au moins un élément de synchronisation automatique",
         "forceUpload": "Téléverser",
         "forceUploadFailed": "Échec du téléversement vers le cloud",
         "forceUploadSuccess": "Téléversement vers le cloud terminé",
@@ -1629,7 +1629,7 @@
         "connecting": "Connexion…",
         "disconnected": "Déconnecté"
       },
-      "crashApp": "Planter l'appli",
+      "crashApp": "Planter l’appli",
       "crashDesktop": "Planter le bureau",
       "crt": "CRT",
       "currentTime": "Heure actuelle",
@@ -1640,15 +1640,15 @@
       "darkModeLight": "Clair",
       "darkModeSystem": "Système",
       "dateTimeDescription": "La date et l’heure sont définies par votre appareil. ryOS utilise votre fuseau horaire pour l’horloge, la programmation et le contexte de l’IA",
-      "debugMode": "Mode débogage",
+      "debugMode": "Mode Débogage",
       "debugModeDescription": "Activer les réglages de débogage",
       "default": "Par défaut",
       "deleteAccount": {
         "cancel": "Annuler",
-        "confirmLabel": "Saisissez votre nom d'utilisateur pour confirmer",
-        "confirmMismatch": "Le nom d'utilisateur ne correspond pas",
+        "confirmLabel": "Saisissez votre nom d’utilisateur pour confirmer",
+        "confirmMismatch": "Le nom d’utilisateur ne correspond pas",
         "confirmPlaceholder": "{{username}}",
-        "deleting": "Suppression...",
+        "deleting": "Suppression…",
         "description": "Ceci supprimera définitivement votre compte, votre mot de passe, votre e-mail de récupération, votre compte Telegram lié et vos données synchronisées. Cette action est irréversible.",
         "genericError": "Impossible de supprimer le compte. Veuillez réessayer.",
         "passwordLabel": "Mot de passe actuel",
@@ -1661,16 +1661,16 @@
       "deleteAccountMenu": "Supprimer le compte…",
       "deleteAccountRowDescription": "Supprimer définitivement votre compte et vos données synchronisées",
       "description": "Paramètres système",
-      "desktopAndScreenSaver": "Bureau et économiseur d'écran",
+      "desktopAndScreenSaver": "Bureau et économiseur d’écran",
       "desktopTab": "Bureau",
-      "displayMode": "Mode d'affichage",
-      "displayModeDescription": "Applique un filtre de couleur sur le fond d'écran du bureau",
-      "downloadMacApp": "Télécharger l'app Mac",
-      "dream": "Rêve",
+      "displayMode": "Mode d’affichage",
+      "displayModeDescription": "Applique un filtre de couleur sur le fond d’écran du bureau",
+      "downloadMacApp": "Télécharger l’app Mac",
+      "dream": "Dream",
       "dynamicWallpapers": {
         "dayNight": "Jour et nuit",
         "lyrics": "Paroles",
-        "nowPlaying": "À l'écoute",
+        "nowPlaying": "À l’écoute",
         "shuffle": "Aléatoire",
         "weather": "Météo"
       },
@@ -1684,14 +1684,14 @@
         "linkForRecovery": "Lier une adresse e-mail pour la récupération du compte",
         "loggedOutDescription": "Connectez-vous pour gérer vos e-mails",
         "manage": "Gérer",
-        "notAvailable": "La récupération par e-mail n'est pas disponible sur ce serveur",
+        "notAvailable": "La récupération par e-mail n’est pas disponible sur ce serveur",
         "title": "E-mail",
         "unverifiedAs": "{{email}} · Non vérifié",
         "verifiedAs": "{{email}} · Vérifié",
         "verify": "Vérifier"
       },
-      "errorBoundaries": "Limites d'erreur",
-      "errorBoundariesDescription": "Déclencher les solutions de repli en cas de plantage de l'appli ou du bureau pour les tests",
+      "errorBoundaries": "Limites d’erreur",
+      "errorBoundariesDescription": "Déclencher les solutions de repli en cas de plantage de l’appli ou du bureau pour les tests",
       "formatFileSystem": "Formater le système de fichiers",
       "formatFileSystemDescription": "Ceci effacera tous les fichiers (sauf les documents d'exemple), les images et les fonds d'écran personnalisés. ryOS redémarrera après le formatage",
       "formatSamples": {
@@ -1702,10 +1702,10 @@
       "help": {
         "aiModel": {
           "description": "Choisissez le modèle d'IA qui alimente Chats et l'assistant Ryo du Terminal",
-          "title": "Modèle d'IA"
+          "title": "Modèle d’IA"
         },
         "appearance": {
-          "description": "Choisissez des fonds d'écran, des motifs ou des effets de shader en direct pour personnaliser votre bureau",
+          "description": "Choisissez des fonds d’écran, des motifs ou des effets de shader en direct pour personnaliser votre bureau",
           "title": "Apparence"
         },
         "backupRestore": {
@@ -1717,7 +1717,7 @@
           "title": "Effets de shader"
         },
         "sounds": {
-          "description": "Activez ou désactivez les clics d'interface, le synthé de frappe et les effets sonores Terminal/IE",
+          "description": "Activez ou désactivez les clics d’interface, le synthé de frappe et les effets sonores Terminal/IE",
           "title": "Sons"
         },
         "sync": {
@@ -1734,20 +1734,20 @@
       "invert": "Inversion",
       "iosVolumeHint": "Sous iOS, utilisez les boutons physiques pour contrôler le volume des médias",
       "ipod": "iPod",
-      "ipodVolume": "Volume de l'iPod",
+      "ipodVolume": "Volume de l’iPod",
       "logIn": "Se connecter",
-      "logOut": "Se déconnecter",
+      "logOut": "Fermer la session",
       "logOutAll": "Tout déconnecter",
       "logOutOfAllDevices": "Se déconnecter de tous les appareils",
       "logOutOfAllDevicesRowDescription": "Se déconnecter de votre compte ryOS sur tous les appareils",
       "logOutRowDescription": "Se déconnecter de votre compte ryOS sur cet appareil",
       "loggedInToRyOS": "Connecté à ryOS",
-      "loggingOut": "Déconnexion...",
-      "login": "Connexion",
+      "loggingOut": "Déconnexion…",
+      "login": "Se connecter",
       "loginToSendMessages": "Connectez-vous pour envoyer des messages et plus encore",
       "logoutAll": {
         "authErrorDescription": "Non authentifié",
-        "authErrorTitle": "Erreur d'authentification",
+        "authErrorTitle": "Erreur d’authentification",
         "failedDescription": "Échec de la déconnexion de tous les appareils",
         "failedTitle": "Échec de la déconnexion",
         "networkErrorDescription": "Échec de la connexion au serveur",
@@ -1772,7 +1772,7 @@
       "name": "Panneaux de configuration",
       "nameForMacosX": "Préférences Système",
       "noMatchingPreferences": "Aucune préférence correspondante",
-      "noWallpapers": "Aucun fond d'écran",
+      "noWallpapers": "Aucun fond d’écran",
       "openai": "OpenAI",
       "openaiVoice": "Voix OpenAI",
       "panes": {
@@ -1791,7 +1791,7 @@
       "passwordDescription": "Protégez votre compte ryOS avec un mot de passe",
       "patterns": "Motifs",
       "preview": "Aperçu",
-      "previewActive": "Cliquez n'importe où pour quitter",
+      "previewActive": "Cliquez n’importe où pour quitter",
       "privacyPolicy": "Politique de confidentialité",
       "recoveryEmail": {
         "close": "Fermer",
@@ -1800,22 +1800,22 @@
         "codeSentDescription": "Consultez votre boîte de réception pour obtenir le code de vérification.",
         "codeSentTitle": "Vérification envoyée",
         "currentLabel": "E-mail de récupération actuel",
-        "description": "Ajoutez une adresse e-mail pour pouvoir réinitialiser votre mot de passe si vous l'oubliez.",
+        "description": "Ajoutez une adresse e-mail pour pouvoir réinitialiser votre mot de passe si vous l’oubliez.",
         "emailLabel": "Adresse e-mail",
         "genericError": "Une erreur est survenue. Veuillez réessayer.",
         "invalidEmail": "Saisissez une adresse e-mail valide",
-        "notConfigured": "La récupération par e-mail n'est pas disponible sur ce serveur. Vous pouvez toujours effectuer une récupération via un compte Telegram lié.",
+        "notConfigured": "La récupération par e-mail n’est pas disponible sur ce serveur. Vous pouvez toujours effectuer une récupération via un compte Telegram lié.",
         "remove": "Supprimer",
         "removedToast": "E-mail de récupération supprimé",
-        "removing": "Suppression...",
+        "removing": "Suppression…",
         "save": "Envoyer la vérification",
-        "saving": "Envoi...",
+        "saving": "Envoi…",
         "title": "E-mail de récupération",
         "unverified": "Non vérifié",
         "verified": "Vérifié",
         "verifiedToast": "E-mail de récupération vérifié",
         "verify": "Vérifier",
-        "verifying": "Vérification..."
+        "verifying": "Vérification…"
       },
       "recoveryEmailDescription": "Ajouter un e-mail pour récupérer le mot de passe",
       "recoveryEmailMenu": "E-mail de récupération…",
@@ -1824,9 +1824,9 @@
       "resetAllSettingsDescription": "Cela effacera tous les paramètres enregistrés et restaurera les valeurs par défaut",
       "restore": "Restaurer",
       "ryOSAccount": "Compte ryOS",
-      "screenSaver": "Économiseur d'écran",
+      "screenSaver": "Économiseur d’écran",
       "screenSaverDescription": "S'active après une période d'inactivité",
-      "screenSaverExitHint": "Cliquez ou appuyez sur n'importe quelle touche pour quitter",
+      "screenSaverExitHint": "Cliquez ou appuyez sur n’importe quelle touche pour quitter",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "Rebondissement style DVD",
@@ -1850,7 +1850,7 @@
         },
         "starfield": {
           "description": "Effet de distorsion stellaire classique",
-          "name": "Champ d'étoiles"
+          "name": "Champ d’étoiles"
         }
       },
       "screenSaverTab": "Économiseur d’écran",
@@ -1863,7 +1863,7 @@
       "select": "Sélectionner",
       "selectACategory": "Sélectionner une catégorie",
       "selectAPreset": "Sélectionner un préréglage",
-      "selectScreenSaver": "Sélectionner un économiseur d'écran",
+      "selectScreenSaver": "Sélectionner un économiseur d’écran",
       "sepia": "Sépia",
       "setPassword": "Définir le mot de passe",
       "setPasswordDialog": {
@@ -1873,13 +1873,13 @@
       },
       "setup": "Configurer",
       "shaderEffect": "Effet Shader",
-      "shaderEffectDescription": "Effet d'arrière-plan gourmand en performances",
+      "shaderEffectDescription": "Effet d’arrière-plan gourmand en performances",
       "sharingDescription": "Sauvegardez et partagez vos données ryOS avec le stockage cloud",
       "show": "Afficher",
-      "showBootScreen": "Afficher l'écran de démarrage",
+      "showBootScreen": "Afficher l’écran de démarrage",
       "showResizers": "Afficher les poignées de redimensionnement",
       "showResizersDescription": "Mettre en évidence les poignées de redimensionnement des fenêtres",
-      "signUp": "S'inscrire",
+      "signUp": "S’inscrire",
       "softwareUpdateDescription": "Vérifier si une version plus récente de ryOS est disponible",
       "sound": "Son",
       "soundTabs": {
@@ -1896,7 +1896,7 @@
       "synth": "Synthé",
       "system": "Système",
       "systemFont": "Police système",
-      "systemFontDescription": "Remplace la pile de polices de l'interface OS",
+      "systemFontDescription": "Remplace la pile de polices de l’interface OS",
       "systemFontThemeDefault": "Thème",
       "telegram": {
         "checking": "Vérification du lien Telegram…",
@@ -1905,17 +1905,17 @@
         "connect": "Lier Telegram",
         "copyCode": "Copier le code",
         "copyFailed": "Échec de la copie du code de lien Telegram",
-        "deepLinkUnavailable": "Le lien profond Telegram n'est pas disponible",
+        "deepLinkUnavailable": "Le lien profond Telegram n’est pas disponible",
         "description": "Discutez avec Ryo dans Telegram",
         "disconnect": "Déconnecter",
         "disconnectFailed": "Échec de la déconnexion de Telegram",
         "disconnected": "Telegram déconnecté",
-        "disconnecting": "Déconnexion en cours...",
+        "disconnecting": "Déconnexion…",
         "expiresInMinutes": "Expire dans environ {{minutes}} min",
-        "heartbeatInstructionsDescription": "Personnalisez ce que Ryo doit prioriser lors de l'envoi de messages de suivi proactifs sur Telegram.",
-        "heartbeatInstructionsFailed": "Échec de l'enregistrement des instructions heartbeat Telegram",
+        "heartbeatInstructionsDescription": "Personnalisez ce que Ryo doit prioriser lors de l’envoi de messages de suivi proactifs sur Telegram.",
+        "heartbeatInstructionsFailed": "Échec de l’enregistrement des instructions heartbeat Telegram",
         "heartbeatInstructionsLabel": "Instructions heartbeat",
-        "heartbeatInstructionsPlaceholder": "Exemple : Concentrez-vous sur le travail ryOS inachevé, évitez les rappels génériques et gardez les briefings du matin axés sur l'action.",
+        "heartbeatInstructionsPlaceholder": "Exemple : Concentrez-vous sur le travail ryOS inachevé, évitez les rappels génériques et gardez les briefings du matin axés sur l’action.",
         "heartbeatInstructionsSaved": "Instructions heartbeat Telegram enregistrées",
         "instructionsCodeOnly": "Copiez le code ci-dessous et utilisez-le dans Telegram pour finaliser le lien.",
         "instructionsDeepLink": "Ouvrez Telegram avec le bouton ci-dessous, puis appuyez sur Démarrer pour finaliser le lien.",
@@ -1928,17 +1928,17 @@
         "loginRequired": "Veuillez vous connecter pour lier Telegram",
         "manage": "Gérer",
         "openTelegram": "Ouvrir Telegram",
-        "preparing": "Préparation en cours...",
+        "preparing": "Préparation…",
         "resetInstructions": "Réinitialiser",
         "saveInstructions": "Enregistrer",
-        "savingInstructions": "Enregistrement...",
+        "savingInstructions": "Enregistrement…",
         "title": "Telegram"
       },
       "terminalIeAmbientSynth": "Synthé",
       "terminalIeAmbientSynthDescription": "Effets et synthé pour Terminal et IE",
-      "termsOfService": "Conditions d'utilisation",
+      "termsOfService": "Conditions d’utilisation",
       "theme": "Thème",
-      "themeDescription": "Modifie l'apparence des fenêtres, des menus et des contrôles",
+      "themeDescription": "Modifie l’apparence des fenêtres, des menus et des contrôles",
       "themeNames": {
         "aqua": "Aqua",
         "aquaGlass": "Aqua Glass",
@@ -2002,9 +2002,9 @@
         "shimmer": "Scintillement"
       },
       "ui": "Interface utilisateur",
-      "uiSounds": "Sons de l'interface utilisateur",
+      "uiSounds": "Sons de l’interface utilisateur",
       "uiSoundsDescription": "Clics et retours pour fenêtres et menus",
-      "uiVolume": "Volume de l'interface utilisateur",
+      "uiVolume": "Volume de l’interface utilisateur",
       "verify": "Vérifier",
       "verifyAccount": "Vérifier le compte",
       "verifyAccountDescription": "Confirmez votre identité pour accéder aux fonctionnalités protégées",
@@ -2065,20 +2065,20 @@
       },
       "description": "Superposition du tableau de bord des widgets",
       "dictionary": {
-        "dataSources": "Données provenant de Wiktionary et d'autres dictionnaires ouverts. Les résultats peuvent varier pour les mots rares.",
+        "dataSources": "Données provenant de Wiktionary et d’autres dictionnaires ouverts. Les résultats peuvent varier pour les mots rares.",
         "error": "Échec de la recherche.",
         "loading": "Recherche en cours…",
         "noDefinition": "Aucune définition trouvée.",
         "noResults": "Aucun résultat.",
         "placeholder": "Saisissez un mot pour le rechercher.",
-        "poweredBy": "Définitions fournies par l'API Free Dictionary, un projet open source.",
+        "poweredBy": "Définitions fournies par l’API Free Dictionary, un projet open source.",
         "searchPlaceholder": "Rechercher…",
         "thesaurus": "Thésaurus",
         "title": "Dictionnaire"
       },
       "help": {
         "closeDashboard": {
-          "description": "Cliquez sur l'arrière-plan ou appuyez sur F4/Échap pour masquer instantanément le Dashboard",
+          "description": "Cliquez sur l’arrière-plan ou appuyez sur F4/Échap pour masquer instantanément le Dashboard",
           "title": "Fermeture rapide"
         },
         "layoutPersists": {
@@ -2090,11 +2090,11 @@
           "title": "Faire glisser pour organiser"
         },
         "openDashboard": {
-          "description": "Appuyez sur F4 (ou cliquez sur l'icône Dashboard) pour faire apparaître vos widgets en superposition",
+          "description": "Appuyez sur F4 (ou cliquez sur l’icône Dashboard) pour faire apparaître vos widgets en superposition",
           "title": "Ouvrir le Dashboard"
         },
         "weatherWidget": {
-          "description": "Le widget météo récupère les conditions réelles de votre position après une demande d'autorisation rapide",
+          "description": "Le widget météo récupère les conditions réelles de votre position après une demande d’autorisation rapide",
           "title": "Météo en direct"
         },
         "widgetLibrary": {
@@ -2103,23 +2103,23 @@
         }
       },
       "ipod": {
-        "iTunesNotOpen": "iTunes n'est pas ouvert",
+        "controlLabel": "Commandes",
+        "iTunesNotOpen": "iTunes n’est pas ouvert",
+        "karaokeNotOpen": "Karaoke n’est pas ouvert",
         "menu": "MENU",
+        "modeIpod": "iPod",
+        "modeKaraoke": "Karaoké",
         "next": "Suivant",
         "noTrack": "Aucune piste",
         "nowPlaying": "Lecture en cours",
-        "openIpod": "Ouvrir l'app iPod",
+        "openIpod": "Ouvrir l’app iPod",
+        "openKaraoke": "Ouvrir l’app Karaoke",
         "pause": "Pause",
         "play": "Lecture",
         "previous": "Précédent",
         "repeatAll": "Répéter tout",
         "repeatOne": "Répéter un",
-        "shuffle": "Aléatoire",
-        "openKaraoke": "Ouvrir l'app Karaoke",
-        "karaokeNotOpen": "Karaoke n'est pas ouvert",
-        "controlLabel": "Commandes",
-        "modeIpod": "iPod",
-        "modeKaraoke": "Karaoke"
+        "shuffle": "Aléatoire"
       },
       "menu": {
         "about": "À propos du tableau de bord",
@@ -2137,18 +2137,18 @@
           "yellow": "Jaune"
         },
         "noteColor": "Couleur de la note",
-        "placeholder": "Saisir une note..."
+        "placeholder": "Saisir une note…"
       },
       "stocks": {
         "allAdded": "Tous les symboles ajoutés",
         "currentSymbols": "Symboles actuels",
-        "delayed": "Retardé jusqu'à 20 minutes",
-        "loading": "Chargement des actions...",
+        "delayed": "Retardé jusqu’à 20 minutes",
+        "loading": "Chargement des actions…",
         "noResults": "Aucun symbole trouvé",
         "resetDefaults": "Rétablir les valeurs par défaut",
         "retry": "Réessayer",
-        "searchSymbol": "Rechercher des symboles...",
-        "searching": "Recherche en cours...",
+        "searchSymbol": "Rechercher des symboles…",
+        "searching": "Recherche…",
         "unavailable": "Données boursières indisponibles"
       },
       "title": "Tableau de bord",
@@ -2156,14 +2156,14 @@
         "defaultLanguages": "Langues par défaut",
         "error": "Échec de la traduction",
         "from": "De",
-        "inputPlaceholder": "Saisir du texte...",
+        "inputPlaceholder": "Saisir du texte…",
         "outputPlaceholder": "Traduction",
         "poweredBy": "Propulsé par MyMemory",
         "save": "Enregistrer",
         "swap": "Inverser les langues",
         "to": "À",
         "translateFrom": "Traduire depuis",
-        "translating": "Traduction en cours..."
+        "translating": "Traduction…"
       },
       "weather": {
         "changeCity": "Changer de ville",
@@ -2180,19 +2180,19 @@
         "feelsLike": "Ressenti",
         "high": "Max:",
         "humidity": "Humidité",
-        "loading": "Chargement de la météo...",
+        "loading": "Chargement de la météo…",
         "locationDenied": "Accès à la localisation refusé",
         "low": "Min:",
         "noResults": "Aucune ville trouvée",
-        "searchCity": "Rechercher des villes...",
-        "searching": "Recherche...",
+        "searchCity": "Rechercher des villes…",
+        "searching": "Recherche…",
         "selectCity": "Choisir une ville",
         "unavailable": "Météo indisponible",
         "useMyLocation": "Utiliser ma position",
         "wind": "Vent"
       },
       "widgets": {
-        "addWidget": "Ajouter un widget...",
+        "addWidget": "Ajouter un widget…",
         "aquarium": "Aquarium",
         "calendar": "Calendrier",
         "clock": "Horloge",
@@ -2200,7 +2200,7 @@
         "dictionary": "Dictionnaire",
         "ipod": "iPod",
         "removeWidget": "Supprimer le widget",
-        "stickyNote": "Note adhésive",
+        "stickyNote": "Note",
         "stocks": "Bourse",
         "terrarium": "Terrarium",
         "translation": "Traduction",
@@ -2213,20 +2213,20 @@
         "decline": "Refuser",
         "fileNotFound": "Fichier introuvable",
         "fileReceived": "Reçu « {{fileName}} » de @{{sender}}",
-        "hint": "Faites glisser des fichiers sur un utilisateur pour les partager, ou utilisez le menu contextuel sur n'importe quel fichier.",
+        "hint": "Faites glisser des fichiers sur un utilisateur pour les partager, ou utilisez le menu contextuel sur n’importe quel fichier.",
         "incomingFile": "@{{sender}} souhaite vous envoyer « {{fileName}} »",
         "loginRequired": "Connectez-vous à Chats pour utiliser AirDrop et partager des fichiers avec les utilisateurs à proximité.",
-        "looking": "Recherche d'utilisateurs à proximité…",
+        "looking": "Recherche d’utilisateurs à proximité…",
         "noContent": "Impossible de lire le contenu du fichier",
         "noUsers": "Personne d'autre n'est à proximité. Demandez à quelqu'un d'ouvrir AirDrop.",
-        "saveFailed": "Échec de l'enregistrement du fichier reçu",
+        "saveFailed": "Échec de l’enregistrement du fichier reçu",
         "title": "AirDrop"
       },
       "contextMenu": {
         "addToDesktop": "Ajouter au Bureau",
         "date": "Date",
         "duplicate": "Dupliquer",
-        "emptyTrash": "Vider la corbeille...",
+        "emptyTrash": "Vider la corbeille…",
         "kind": "Type",
         "moveToTrash": "Placer dans la corbeille",
         "name": "Nom",
@@ -2264,7 +2264,7 @@
         "application": "Application",
         "bmpImage": "Image BMP",
         "book": "Livre",
-        "directory": "Dossier",
+        "directory": "Répertoire",
         "document": "Document",
         "file": "Fichier",
         "folder": "Dossier",
@@ -2274,7 +2274,7 @@
         "jpegImage": "Image JPEG",
         "mp3Audio": "Audio MP3",
         "pngImage": "Image PNG",
-        "quicktimeMovie": "Film QuickTime",
+        "quicktimeMovie": "Séquence QuickTime",
         "unknown": "Inconnu",
         "webpImage": "Image WebP"
       },
@@ -2293,7 +2293,7 @@
       },
       "help": {
         "airdropSharing": {
-          "description": "Faites un clic droit sur un fichier pour l'envoyer via AirDrop aux utilisateurs ryOS à proximité",
+          "description": "Faites un clic droit sur un fichier pour l’envoyer via AirDrop aux utilisateurs ryOS à proximité",
           "title": "Partage AirDrop"
         },
         "browseNavigate": {
@@ -2301,7 +2301,7 @@
           "title": "Parcourir et naviguer"
         },
         "dropToImport": {
-          "description": "Déposez des fichiers .app, .gz ou .html n'importe où pour les installer dans Applets",
+          "description": "Déposez des fichiers .app, .gz ou .html n’importe où pour les installer dans Applets",
           "title": "Glisser pour importer"
         },
         "fileManagement": {
@@ -2328,30 +2328,30 @@
         "bySize": "par taille",
         "bySmallIcon": "par petite icône",
         "duplicate": "Dupliquer",
-        "emptyTrash": "Vider la Corbeille...",
+        "emptyTrash": "Vider la corbeille…",
         "finderHelp": "Aide Finder",
         "forward": "Suivant",
         "goUp": "Remonter",
         "import": "Importer un fichier…",
-        "importFromDevice": "Importer d'un appareil...",
-        "moveToTrash": "Placer dans la Corbeille",
+        "importFromDevice": "Importer d’un appareil…",
+        "moveToTrash": "Placer dans la corbeille",
         "newFinderWindow": "Nouvelle fenêtre Finder",
-        "newFolder": "Nouveau dossier...",
+        "newFolder": "Nouveau dossier…",
         "newWindow": "Nouvelle fenêtre",
         "putBack": "Remettre à sa place",
-        "rename": "Renommer...",
+        "rename": "Renommer…",
         "sidebar": "Barre latérale"
       },
       "messages": {
         "appletImported": "Applet importée !",
         "appletImportedDesc": "{{name}} enregistrée dans /Applets{{iconText}}",
-        "appletImportedIconText": " avec l'icône {{icon}}",
-        "importFailed": "Échec de l'importation",
+        "appletImportedIconText": " avec l’icône {{icon}}",
+        "importFailed": "Échec de l’importation",
         "importFailedAppletDesc": "Impossible d'importer le fichier d'applet.",
-        "importFailedDesc": "Impossible d'importer le fichier.",
+        "importFailedDesc": "Impossible d’importer le fichier.",
         "invalidFileType": "Type de fichier invalide",
         "invalidFileTypeDesc": "Seuls les fichiers .app, .gz et .html peuvent être importés dans les Applets",
-        "loading": "Chargement..."
+        "loading": "Chargement…"
       },
       "name": "Finder",
       "placeholders": {
@@ -2379,7 +2379,7 @@
       "help": {
         "captureScreenshot": {
           "description": "Présentation ▸ Capture d'écran enregistre l'affichage actuel directement dans un fichier",
-          "title": "Capture d'écran"
+          "title": "Capturer l’aperçu"
         },
         "chatsCanDriveIt": {
           "description": "Demandez à Ryo dans les Chats de suspendre, reprendre, redimensionner ou capturer l'écran de l'émulateur",
@@ -2394,27 +2394,27 @@
           "title": "Mise à l'échelle de l'affichage"
         },
         "pauseResume": {
-          "description": "Présentation ▸ Suspendre arrête la VM pour économiser le processeur en cas d'inactivité",
-          "title": "Suspendre pour économiser l'énergie"
+          "description": "Présentation ▸ Suspendre arrête la VM pour économiser le processeur en cas d’inactivité",
+          "title": "Suspendre pour économiser l’énergie"
         },
         "selectSystem": {
-          "description": "Choisissez un préréglage Mac OS classique dans la grille pour lancer l'émulateur",
+          "description": "Choisissez un préréglage Mac OS classique dans la grille pour lancer l’émulateur",
           "title": "Choisir un système"
         }
       },
-      "loadingEmulator": "Chargement de l'émulateur...",
-      "loadingSystem": "Chargement de {{name}}...",
+      "loadingEmulator": "Chargement de l’émulateur…",
+      "loadingSystem": "Chargement de {{name}}…",
       "menu": {
-        "aboutInfiniteMac": "À propos d'Infinite Mac",
+        "aboutInfiniteMac": "À propos d’Infinite Mac",
         "backToPresets": "Retour aux systèmes",
-        "captureScreenshot": "Capturer l'écran",
+        "captureScreenshot": "Capturer l’aperçu",
         "infiniteMacHelp": "Aide Infinite Mac",
         "pause": "Pause",
         "resume": "Reprendre",
-        "scaling": "Mise à l'échelle"
+        "scaling": "Mise à l’échelle"
       },
       "name": "Infinite Mac",
-      "screenshotUnavailable": "Capture d'écran non disponible. Utilisez l'outil de capture d'écran de votre navigateur (Cmd+Maj+4 sur Mac, Win+Maj+S sur Windows).",
+      "screenshotUnavailable": "Capture d'écran non disponible. Utilisez l'outil de capture d’écran de votre navigateur (Cmd+Maj+4 sur Mac, Win+Maj+S sur Windows).",
       "selectSystem": "Sélectionner un système Classic Mac",
       "systemsAvailable": "{{count}} SYSTÈMES DISPONIBLES",
       "title": "Infinite Mac"
@@ -2423,12 +2423,12 @@
       "addFavorite": "Ajouter aux favoris",
       "aiLanguage": "Langue IA",
       "alienLanguage": "Langue extraterrestre",
-      "anErrorOccurred": "Une erreur est survenue",
+      "anErrorOccurred": "Une erreur s’est produite",
       "appName": "Internet Explorer",
       "areYouSureClearFavorites": "Voulez-vous vraiment supprimer tous les favoris ?",
-      "areYouSureClearHistory": "Voulez-vous vraiment supprimer tout l'historique ?",
+      "areYouSureClearHistory": "Voulez-vous vraiment supprimer tout l’historique ?",
       "areYouSureResetFavorites": "Voulez-vous vraiment réinitialiser les favoris par défaut ?",
-      "aurora": "Aurora",
+      "aurora": "Aurore",
       "australia": "Australie",
       "autodetected": "Détecté automatiquement",
       "back": "Retour",
@@ -2436,24 +2436,24 @@
       "canada": "Canada",
       "cannotAccessWebsite": "Impossible d'accéder à {{url}}. Le site web pourrait bloquer l'accès ou nécessiter une authentification.",
       "cannotFindServerOrDnsError": "Impossible de trouver le serveur ou erreur DNS",
-      "checkWebAddressAndTryAgain": "Vérifiez l'adresse web que vous avez saisie et réessayez.",
+      "checkWebAddressAndTryAgain": "Vérifiez l’adresse web que vous avez saisie et réessayez.",
       "china": "Chine",
       "chineseTraditional": "Chinois (traditionnel)",
       "clearFavorites": "Effacer les favoris",
-      "clearHistory": "Effacer l'historique",
+      "clearHistory": "Effacer l’historique",
       "closeTimeMachine": "Fermer Time Machine",
       "description": "Naviguer sur le Web",
-      "digitalBeingLanguage": "Langage d'être numérique",
+      "digitalBeingLanguage": "Langage d’être numérique",
       "english": "Anglais",
       "enterTitleForFavorite": "Saisissez un titre pour ce favori",
-      "enterUrl": "Saisir l'URL",
+      "enterUrl": "Saisir une URL",
       "error": "Erreur",
-      "errorLoadingPreview": "Erreur lors du chargement de l'aperçu.",
+      "errorLoadingPreview": "Erreur lors du chargement de l’aperçu.",
       "failedToGenerateFuturisticWebsite": "Échec de la génération du site web futuriste. Le modèle d'IA n'est peut-être pas sélectionné.",
       "favorite": "Favori",
       "fetch": "Récupérer",
-      "fetchingContentForReconstruction": "Récupération du contenu de {{hostname}} pour reconstruction...",
-      "fetchingFromYear": "Récupération de {{hostname}} de l'année {{year}}...",
+      "fetchingContentForReconstruction": "Récupération du contenu de {{hostname}} pour reconstruction…",
+      "fetchingFromYear": "Récupération de {{hostname}} de l’année {{year}}…",
       "folder": "Dossier",
       "france": "France",
       "french": "Français",
@@ -2461,25 +2461,25 @@
       "futureTimeline": {
         "description": "Modifier les paramètres de la chronologie future",
         "reset": "Réinitialiser",
-        "selectYear": "Sélectionner l'année",
+        "selectYear": "Sélectionner l’année",
         "title": "Modifier la chronologie future"
       },
       "galaxy": "Galaxie",
       "german": "Allemand",
       "germany": "Allemagne",
       "goBackToPreviousPage": "Revenir à la page précédente.",
-      "goToNow": "Accéder à l'instant",
+      "goToNow": "Accéder à l’instant",
       "help": {
         "browseWeb": {
-          "description": "Saisissez n'importe quelle URL et utilisez Précédent, Suivant, Actualiser et Arrêter pour naviguer.",
+          "description": "Saisissez n’importe quelle URL et utilisez Précédent, Suivant, Actualiser et Arrêter pour naviguer.",
           "title": "Naviguer sur le Web"
         },
         "exploreTimeNodes": {
-          "description": "Cliquez sur l'horloge dans la barre d'adresse pour passer d'un instantané en cache à l'autre pour n'importe quel site.",
+          "description": "Cliquez sur l'horloge dans la barre d'adresse pour passer d'un instantané en cache à l'autre pour n’importe quel site.",
           "title": "Explorer les nœuds temporels"
         },
         "historyReimagined": {
-          "description": "Les pages antérieures à 1996 et les années futures sont reconstruites en direct par l'IA en streaming HTML.",
+          "description": "Les pages antérieures à 1996 et les années futures sont reconstruites en direct par l’IA en streaming HTML.",
           "title": "L'histoire réimaginée par l'IA"
         },
         "saveFavorites": {
@@ -2487,11 +2487,11 @@
           "title": "Favoris liés à une année"
         },
         "shareJourney": {
-          "description": "Générez un lien de partage qui rouvre la page et l'année exactes que vous consultez.",
+          "description": "Générez un lien de partage qui rouvre la page et l’année exactes que vous consultez.",
           "title": "Partagez votre voyage"
         },
         "travelThroughTime": {
-          "description": "Choisissez n'importe quelle année de 1000 jusqu'au futur lointain pour voir les sites tels qu'ils étaient — ou pourraient être.",
+          "description": "Choisissez n'importe quelle année de 1000 jusqu'au futur lointain pour voir les sites tels qu’ils étaient — ou pourraient être.",
           "title": "Voyager dans le temps"
         }
       },
@@ -2504,13 +2504,13 @@
       "japanese": "Japonais",
       "korean": "Coréen",
       "latin": "Latin",
-      "loading": "Chargement de {{hostname}}...",
-      "loadingEllipsis": "Chargement...",
+      "loading": "Chargement de {{hostname}}…",
+      "loadingEllipsis": "Chargement…",
       "loadingTitle": "Internet Explorer - Chargement",
       "loadingTitleWithSite": "{{site}} - Chargement",
       "menu": {
-        "aboutInternetExplorer": "À propos d'Internet Explorer",
-        "addToFavorites": "Ajouter aux favoris...",
+        "aboutInternetExplorer": "À propos d’Internet Explorer",
+        "addToFavorites": "Ajouter aux favoris…",
         "aiLanguage": "Langage IA",
         "alien": "Extraterrestre",
         "australia": "Australie",
@@ -2520,10 +2520,10 @@
         "canada": "Canada",
         "china": "Chine",
         "chinese": "Chinois",
-        "clearFavorites": "Effacer les favoris...",
-        "clearHistory": "Effacer l'historique...",
+        "clearFavorites": "Effacer les favoris…",
+        "clearHistory": "Effacer l’historique…",
         "digitalBeing": "Être numérique",
-        "editFuture": "Modifier l'avenir...",
+        "editFuture": "Modifier l’avenir…",
         "english": "Anglais",
         "favorites": "Favoris",
         "folder": "Dossier",
@@ -2532,11 +2532,11 @@
         "french": "Français",
         "german": "Allemand",
         "germany": "Allemagne",
-        "goHome": "Aller à l'accueil",
-        "goToUrl": "Aller à l'URL",
+        "goHome": "Aller à l’accueil",
+        "goToUrl": "Aller à l’URL",
         "history": "Historique",
         "india": "Inde",
-        "internetExplorerHelp": "Aide d'Internet Explorer",
+        "internetExplorerHelp": "Aide d’Internet Explorer",
         "italian": "Italien",
         "japan": "Japon",
         "japanese": "Japonais",
@@ -2550,11 +2550,11 @@
         "portugal": "Portugal",
         "portuguese": "Portugais",
         "refresh": "Actualiser",
-        "resetFavorites": "Réinitialiser les favoris...",
+        "resetFavorites": "Réinitialiser les favoris…",
         "russia": "Russie",
         "russian": "Russe",
         "sanskrit": "Sanskrit",
-        "sharePage": "Partager la page...",
+        "sharePage": "Partager la page…",
         "spain": "Espagne",
         "spanish": "Espagnol",
         "stop": "Arrêter",
@@ -2571,7 +2571,7 @@
       "now": "Maintenant",
       "off": "Désactivé",
       "older": "Plus ancien",
-      "olderVersion": "Ancienne version",
+      "olderVersion": "Version plus ancienne",
       "oldest": "Le plus ancien",
       "openingRequestedPage": "Ouverture de la page demandée",
       "openingSharedPage": "Ouverture de la page partagée",
@@ -2580,9 +2580,9 @@
       "pleaseTryTheFollowing": "Veuillez essayer ce qui suit :",
       "portugal": "Portugal",
       "portuguese": "Portugais",
-      "reconstructingHistoryForYear": "Reconstruction de l'historique de {{hostname}} pour l'année {{year}}...",
+      "reconstructingHistoryForYear": "Reconstruction de l'historique de {{hostname}} pour l'année {{year}}…",
       "refresh": "Actualiser",
-      "reimaginingForYear": "Réimagination de {{hostname}} pour l'année {{year}}...",
+      "reimaginingForYear": "Réimagination de {{hostname}} pour l’année {{year}}…",
       "requiresInternetConnection": "Internet Explorer nécessite une connexion internet pour naviguer",
       "resetFavorites": "Réinitialiser les favoris",
       "russia": "Russie",
@@ -2590,7 +2590,7 @@
       "search": "Rechercher",
       "shareLinkInvalidOrCorrupted": "Le lien de partage fourni est invalide ou corrompu.",
       "shareThisPage": "Partager cette page",
-      "shareThisPageAndTime": "Partager cette page et l'heure",
+      "shareThisPageAndTime": "Partager cette page et l’heure",
       "showCachedVersionsTimeMachine": "Afficher les versions en cache (Time Machine)",
       "site": "Site",
       "southKorea": "Corée du Sud",
@@ -2601,8 +2601,8 @@
       "travel": "Voyage",
       "travellingTitle": "Internet Explorer - En déplacement",
       "travellingTitleWithSite": "{{site}} - En déplacement",
-      "tryRefreshingThePage": "Essayez d'actualiser la page.",
-      "unableToLoadPreview": "Impossible de charger l'aperçu.",
+      "tryRefreshingThePage": "Essayez d’actualiser la page.",
+      "unableToLoadPreview": "Impossible de charger l’aperçu.",
       "unitedKingdom": "Royaume-Uni",
       "unitedStates": "États-Unis",
       "welsh": "Gallois",
@@ -2644,65 +2644,67 @@
       },
       "description": "Lecteur de musique",
       "dialogs": {
-        "addSongDescription": "Collez un lien YouTube pour l'ajouter à votre iPod",
+        "addSongDescription": "Collez un lien YouTube pour l’ajouter à votre iPod",
         "addSongTitle": "Ajouter un morceau",
         "addedNewSongsToTop": "Ajouté {{newCount}} nouvelle{{newPlural}} chanson{{newPlural}} en haut{{updatedText}}. Total : {{total}} chansons",
         "addedSongsToTop": "Ajouté {{count}} chanson{{plural}} en haut. Première chanson prête à être jouée !",
-        "addingNewTrack": "Ajout d'une nouvelle piste depuis l'URL...",
+        "addingNewTrack": "Ajout d'une nouvelle piste depuis l'URL…",
         "andUpdated": " et mis à jour {{count}} piste{{plural}}",
         "appleMusicAddToFavoritesFailed": "Échec de l’ajout aux favoris",
         "appleMusicAddedToFavorites": "Ajouté aux favoris",
         "appleMusicFavoritesFailed": "Échec du chargement des morceaux favoris",
-        "appleMusicGeniusFailed": "Échec de la lecture des recommandations Apple Music",
-        "appleMusicLibraryFailed": "Échec du chargement de la bibliothèque Apple Music",
-        "appleMusicLibraryLoaded": "Bibliothèque Apple Music chargée — {{count}} morceaux",
-        "appleMusicLibraryLoading": "Chargement de la bibliothèque Apple Music…",
-        "appleMusicLibraryProgress": "Chargement de la bibliothèque Apple Music… {{loaded}} morceaux",
-        "appleMusicLibraryProgressOf": "Chargement de la bibliothèque Apple Music… {{loaded}} sur {{total}}",
-        "appleMusicNoRecommendations": "Aucune recommandation Apple Music n'est encore disponible",
-        "appleMusicNotConfigured": "Apple Music n'est pas configuré",
+        "appleMusicGeniusFailed": "Échec de la lecture des recommandations Apple Music",
+        "appleMusicLibraryFailed": "Échec du chargement de la bibliothèque Apple Music",
+        "appleMusicLibraryLoaded": "Bibliothèque Apple Music chargée — {{count}} morceaux",
+        "appleMusicLibraryLoading": "Chargement de la bibliothèque Apple Music…",
+        "appleMusicLibraryProgress": "Chargement de la bibliothèque Apple Music… {{loaded}} morceaux",
+        "appleMusicLibraryProgressOf": "Chargement de la bibliothèque Apple Music… {{loaded}} sur {{total}}",
+        "appleMusicNoRecommendations": "Aucune recommandation Apple Music n’est encore disponible",
+        "appleMusicNotConfigured": "Apple Music n’est pas configuré",
         "appleMusicNotConfiguredDescription": "Définissez MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID et MUSICKIT_PRIVATE_KEY.",
         "appleMusicNotConfiguredDescriptionShort": "Définissez MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
-        "appleMusicRadioFailed": "Échec du chargement de la radio Apple Music",
+        "appleMusicPlaylistsFailed": "Echec du chargement des playlists",
+        "appleMusicRadioFailed": "Échec du chargement de la radio Apple Music",
         "appleMusicRecentlyAddedFailed": "Échec du chargement des morceaux ajoutés récemment",
-        "appleMusicSearchAppleMusic": "Apple Music",
+        "appleMusicSearchAppleMusic": "Apple Music",
         "appleMusicSearchLibrary": "Bibliothèque",
-        "appleMusicSearchPlaceholder": "Rechercher dans Apple Music…",
+        "appleMusicSearchPlaceholder": "Rechercher dans Apple Music…",
         "appleMusicSearchSelectResult": "Sélectionnez un morceau à ajouter :",
-        "appleMusicSearchSignInRequired": "Connectez-vous à Apple Music pour effectuer une recherche",
-        "appleMusicSearchUnavailable": "La recherche Apple Music est indisponible",
+        "appleMusicSearchSignInRequired": "Connectez-vous à Apple Music pour effectuer une recherche",
+        "appleMusicSearchUnavailable": "La recherche Apple Music est indisponible",
         "appleMusicSignInFailed": "Échec de la connexion",
         "autoUpdateFailed": "Échec de la mise à jour automatique",
         "autoUpdatedLibraryAddedSongs": "Bibliothèque mise à jour automatiquement : ajouté {{newCount}} nouvelle{{newPlural}} chanson{{newPlural}} en haut{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Mise à jour automatique des métadonnées de {{count}} piste{{plural}}",
+        "autoUpdatedTrackMetadata": "Métadonnées de pistes mises à jour automatiquement : {{count}}",
         "clearLibraryDescription": "Voulez-vous vraiment vider toute votre bibliothèque musicale ? Cette action est irréversible.",
         "clearLibraryTitle": "Vider la bibliothèque",
-        "errorAdding": "Erreur lors de l'ajout :",
+        "errorAdding": "Erreur lors de l’ajout :",
         "failedToAutoUpdateLibrary": "Échec de la mise à jour automatique de la bibliothèque",
         "failedToCheckForLibraryUpdates": "Échec de la vérification des mises à jour de la bibliothèque",
-        "failedToExportLibrary": "Échec de l'exportation de la bibliothèque",
-        "failedToImportLibrary": "Échec de l'importation de la bibliothèque : Format invalide",
+        "failedToExportLibrary": "Échec de l’exportation de la bibliothèque",
+        "failedToImportLibrary": "Échec de l’importation de la bibliothèque : Format invalide",
         "failedToLoadSharedTrack": "Échec du chargement de la piste partagée",
         "failedToSyncWithServerLibrary": "Échec de la synchronisation avec la bibliothèque du serveur",
-        "ipodRequiresInternet": "L'iPod nécessite une connexion internet",
+        "ipodRequiresInternet": "L’iPod nécessite une connexion internet",
         "libraryAlreadyUpToDate": "Votre bibliothèque est déjà à jour",
         "libraryAutoUpdated": "Bibliothèque mise à jour automatiquement",
         "libraryExportedSuccessfully": "Bibliothèque exportée avec succès",
         "libraryImportedSuccessfully": "Bibliothèque importée avec succès",
         "librarySynced": "Bibliothèque synchronisée",
-        "libraryUpToDateWithSongs": "La bibliothèque est à jour avec {{count}} chansons",
+        "libraryUpToDateWithSongs": "La bibliothèque est à jour. Morceaux : {{count}}",
         "libraryUpdated": "Bibliothèque mise à jour",
         "listenSessionJoinFailed": "Échec de la participation à la session",
         "lyricsSearchCurrentSelection": "Sélection actuelle:",
         "lyricsSearchDescription": "Rechercher les paroles pour \"{{title}}\" de {{artist}}",
         "lyricsSearchEmptyQuery": "Veuillez entrer une requête de recherche",
         "lyricsSearchError": "Erreur lors de la recherche de paroles",
+        "lyricsSearchHttpError": "La recherche a echoue (statut {{status}})",
         "lyricsSearchInvalidResponse": "Réponse invalide du serveur",
         "lyricsSearchNoResults": "Aucun résultat trouvé",
         "lyricsSearchPlaceholder": "Entrez une requête de recherche (ex. titre de chanson, artiste)",
         "lyricsSearchReset": "Réinitialiser à auto",
         "lyricsSearchSearch": "Rechercher",
-        "lyricsSearchSearching": "Recherche...",
+        "lyricsSearchSearching": "Recherche…",
         "lyricsSearchSelectResult": "Sélectionnez un résultat:",
         "lyricsSearchTitle": "Rechercher les paroles",
         "lyricsSearchUseSelected": "Utiliser la sélection",
@@ -2712,37 +2714,35 @@
         "sharedTrackVideoId": "ID vidéo : {{videoId}}",
         "songSearchAdd": "Ajouter",
         "songSearchAddSelected": "Ajouter un morceau",
-        "songSearchAdding": "Ajout du morceau...",
+        "songSearchAdding": "Ajout du morceau…",
         "songSearchDescription": "Rechercher un morceau, un artiste, ou coller une URL YouTube",
         "songSearchEmptyQuery": "Veuillez saisir une requête de recherche",
         "songSearchError": "Erreur lors de la recherche de morceaux",
+        "songSearchHttpError": "La recherche a echoue (statut {{status}})",
+        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "Réponse invalide du serveur",
         "songSearchNoResults": "Aucun résultat trouvé",
-        "songSearchPlaceholder": "Rechercher ou coller une URL...",
+        "songSearchPlaceholder": "Rechercher ou coller une URL…",
         "songSearchSearch": "Rechercher",
-        "songSearchSearching": "Recherche en cours...",
+        "songSearchSearching": "Recherche…",
         "songSearchSelectResult": "Sélectionnez un morceau à ajouter :",
         "songSearchTitle": "Rechercher des morceaux",
         "syncFailed": "Échec de la synchronisation",
         "unknownError": "Erreur inconnue",
         "updateCheckFailed": "Échec de la vérification des mises à jour",
-        "youreOffline": "Vous êtes hors ligne",
-        "lyricsSearchHttpError": "La recherche a echoue (statut {{status}})",
-        "songSearchHttpError": "La recherche a echoue (statut {{status}})",
-        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
-        "appleMusicPlaylistsFailed": "Echec du chargement des playlists"
+        "youreOffline": "Vous êtes hors ligne"
       },
       "help": {
         "addSongs": {
-          "description": "Ajoutez des morceaux YouTube ou passez à Apple Music pour parcourir votre bibliothèque, vos playlists, les ajouts récents et les favoris",
-          "title": "YouTube et Apple Music"
+          "description": "Ajoutez des morceaux YouTube ou passez à Apple Music pour parcourir votre bibliothèque, vos playlists, les ajouts récents et les favoris",
+          "title": "YouTube et Apple Music"
         },
         "coverFlow": {
-          "description": "Appuyez longuement sur l'écran pour ouvrir Cover Flow et faire défiler les albums.",
+          "description": "Appuyez longuement sur l’écran pour ouvrir Cover Flow et faire défiler les albums.",
           "title": "Cover Flow"
         },
         "displayFullscreen": {
-          "description": "Choisissez les visuels pochette, paysage, warp, mesh ou eau; Apple Music utilise la pochette par défaut et masque le mode vidéo",
+          "description": "Choisissez les visuels pochette, paysage, warp, mesh ou eau; Apple Music utilise la pochette par défaut et masque le mode vidéo",
           "title": "Visuels plein écran"
         },
         "lyricsPronunciation": {
@@ -2750,7 +2750,7 @@
           "title": "Paroles synchronisées"
         },
         "shareSongs": {
-          "description": "Les morceaux YouTube se partagent avec des liens ryOS, tandis que les morceaux Apple Music copient leur lien Apple Music",
+          "description": "Les morceaux YouTube se partagent avec des liens ryOS, tandis que les morceaux Apple Music copient leur lien Apple Music",
           "title": "Partager des morceaux"
         },
         "wheelNavigation": {
@@ -2771,15 +2771,15 @@
         "unableToLoad": "Impossible de charger les paroles"
       },
       "menu": {
-        "aboutIpod": "À propos de l'iPod",
-        "addSong": "Ajouter un morceau...",
+        "aboutIpod": "À propos de l’iPod",
+        "addSong": "Ajouter un morceau…",
         "addToFavorites": "Ajouter aux favoris",
-        "addToLibrary": "Ajouter à la bibliothèque...",
-        "adjustTiming": "Ajuster le timing...",
+        "addToLibrary": "Ajouter à la bibliothèque…",
+        "adjustTiming": "Ajuster le timing…",
         "allSongs": "Tous les morceaux",
         "alternating": "Alterné",
-        "appleMusicSignIn": "Se connecter à Apple Music…",
-        "appleMusicSignOut": "Se déconnecter d’Apple Music…",
+        "appleMusicSignIn": "Se connecter à Apple Music…",
+        "appleMusicSignOut": "Se déconnecter d’Apple Music…",
         "backlight": "Rétroéclairage",
         "black": "Noir",
         "cacheCleared": "Cache vidé",
@@ -2787,7 +2787,7 @@
         "chineseSoramimi": "Mondegreen (Chinois)",
         "classic": "Classique",
         "clearCache": "Vider le cache",
-        "clearLibrary": "Effacer la bibliothèque...",
+        "clearLibrary": "Effacer la bibliothèque…",
         "controls": "Commandes",
         "coverFlow": "Cover Flow",
         "deviceTheme": "Thème de l’appareil",
@@ -2801,9 +2801,9 @@
         "displayVideo": "Vidéo",
         "displayWater": "Eau",
         "enableRomanization": "Activer la romanisation",
-        "exportLibrary": "Exporter la bibliothèque...",
+        "exportLibrary": "Exporter la bibliothèque…",
         "file": "Fichier",
-        "fontGoldGlow": "Lueur",
+        "fontGoldGlow": "Éclat",
         "fontGradient": "Dégradé",
         "fontRounded": "Arrondi",
         "fontSansSerif": "Sans empattement",
@@ -2811,10 +2811,10 @@
         "fontSerifRed": "Serif (Contour)",
         "fullScreen": "Plein écran",
         "furigana": "Furigana",
-        "goToAlbum": "Accéder à l'album",
-        "goToArtist": "Accéder à l'artiste",
+        "goToAlbum": "Accéder à l’album",
+        "goToArtist": "Accéder à l’artiste",
         "goToPlaylist": "Accéder à la playlist",
-        "importLibrary": "Importer la bibliothèque...",
+        "importLibrary": "Importer la bibliothèque…",
         "ipodHelp": "Aide iPod",
         "japaneseFurigana": "Japonais (Furigana)",
         "japaneseRomaji": "Japonais (Romaji)",
@@ -2822,7 +2822,7 @@
         "koreanRomanization": "Coréen",
         "lcdFilter": "Filtre LCD",
         "library": "Bibliothèque",
-        "libraryAppleMusic": "Apple Music",
+        "libraryAppleMusic": "Apple Music",
         "librarySource": "Bibliothèque",
         "libraryYoutube": "Bibliothèque YouTube",
         "lyrics": "Paroles",
@@ -2836,7 +2836,7 @@
         "pronunciation": "Prononciation",
         "pronunciationOnly": "Prononciation uniquement",
         "refreshAppleMusic": "Actualiser la bibliothèque",
-        "refreshLyrics": "Rechercher les paroles...",
+        "refreshLyrics": "Rechercher les paroles…",
         "repeatAll": "Répéter tout",
         "repeatOne": "Répéter un",
         "romanization": "Romanisation",
@@ -2845,15 +2845,15 @@
         "screenClassic": "Classique",
         "screenModern": "Moderne",
         "searchSongs": "Rechercher des morceaux",
-        "shareApp": "Partager l'app...",
-        "shareSong": "Partager le morceau...",
+        "shareApp": "Partager l’app…",
+        "shareSong": "Partager le morceau…",
         "showLyrics": "Afficher les paroles",
         "shuffle": "Aléatoire",
         "single": "Simple",
         "soramimi": "Mondegreen (Anglais)",
-        "switchToAppleMusic": "Passer à Apple Music",
+        "switchToAppleMusic": "Passer à Apple Music",
         "switchToYoutubeLibrary": "Passer à la bibliothèque YouTube",
-        "syncLibrary": "Synchroniser la bibliothèque...",
+        "syncLibrary": "Synchroniser la bibliothèque…",
         "traditionalChinese": "繁體",
         "translate": "Traduire",
         "u2": "U2",
@@ -2867,16 +2867,16 @@
         "all": "Tout",
         "allSongs": "Toutes les chansons",
         "alwaysOn": "Maintenir activé",
-        "appleMusicSignIn": "Apple Music",
-        "appleMusicSignOut": "Apple Music",
+        "appleMusicSignIn": "Apple Music",
+        "appleMusicSignOut": "Apple Music",
         "artists": "Artistes",
         "backlight": "Rétroéclairage",
-        "brickGame": "Brick",
+        "brickGame": "Brique",
         "extras": "Extras",
         "favoriteSongs": "Morceaux favoris",
         "genius": "Genius",
         "ipod": "iPod",
-        "libraryAppleMusic": "Apple Music",
+        "libraryAppleMusic": "Apple Music",
         "librarySource": "Bibliothèque",
         "libraryYoutube": "YouTube",
         "loading": "Chargement…",
@@ -2888,21 +2888,22 @@
         "off": "Désactivé",
         "on": "Activé",
         "one": "Un",
-        "playlistTrackCount_one": "{{count}} song",
-        "playlistTrackCount_other": "{{count}} songs",
+        "playlistTrackCount_one": "{{count}} morceau",
+        "playlistTrackCount_other": "{{count}} morceaux",
         "playlists": "Playlists",
         "radio": "Radio",
         "recentlyAdded": "Ajouts récents",
         "repeat": "Répétition",
         "settings": "Réglages",
         "shuffle": "Aléatoire",
-        "shuffleSongs": "Lecture aléatoire des morceaux",
+        "shuffleSongs": "Mix de morceaux",
         "signedIn": "Connecté",
         "signedOut": "Déconnecté",
         "songs": "Morceaux",
         "theme": "Thème",
         "unconfigured": "Non configuré",
-        "unknownAlbum": "Album inconnu"
+        "unknownAlbum": "Album inconnu",
+        "playlistTrackCount_many": "{{count}} morceaux"
       },
       "musicQuiz": {
         "correct": "Correct !",
@@ -2910,8 +2911,8 @@
         "finalScore": "Score final",
         "greatJob": "Bravo !",
         "guessTheSong": "Devinez le morceau",
-        "keepPracticing": "Continuez d'écouter !",
-        "loading": "Chargement de l'extrait…",
+        "keepPracticing": "Continuez d’écouter !",
+        "loading": "Chargement de l’extrait…",
         "menuToExit": "Menu pour quitter",
         "notBad": "Pas mal !",
         "notEnoughTracks": "Ajoutez plus de morceaux pour jouer au quiz",
@@ -2935,7 +2936,7 @@
         "appleMusicAddedToFavorites": "Ajouté aux favoris",
         "appleMusicGeniusPlaying": "Mix Genius",
         "appleMusicLibrarySynced": "Bibliothèque : {{count}} morceaux",
-        "appleMusicSignedIn": "Apple Music ✓",
+        "appleMusicSignedIn": "Apple Music ✓",
         "appleMusicSignedOut": "Déconnecté",
         "fontGoldGlow": "Police : Lueur",
         "fontGradient": "Police : Dégradé",
@@ -2948,7 +2949,7 @@
         "layoutAlternating": "Disposition : Alternée",
         "layoutCenter": "Disposition : Centrée",
         "layoutFocus": "Disposition : Focus",
-        "libraryAppleMusic": "Bibliothèque : Apple Music",
+        "libraryAppleMusic": "Bibliothèque : Apple Music",
         "libraryCleared": "Bibliothèque effacée",
         "libraryYoutube": "Bibliothèque : YouTube",
         "lightOff": "Lumière éteinte",
@@ -3003,7 +3004,7 @@
       },
       "help": {
         "addSearchSongs": {
-          "description": "Recherchez sur YouTube ou collez n'importe quelle URL pour ajouter instantanément des pistes à votre bibliothèque",
+          "description": "Recherchez sur YouTube ou collez n’importe quelle URL pour ajouter instantanément des pistes à votre bibliothèque",
           "title": "Ajouter et rechercher des chansons"
         },
         "keyboardShortcuts": {
@@ -3024,7 +3025,7 @@
         },
         "syncedWithIpod": {
           "description": "Même bibliothèque et base de données de paroles que l'app iPod — ajoutez des pistes n'importe où",
-          "title": "Partagé avec l'iPod"
+          "title": "Partagé avec l’iPod"
         }
       },
       "ktvRoomFx": "Réactions du public",
@@ -3044,7 +3045,7 @@
         "invite": "Inviter dans la salle KTV",
         "inviteTitle": "Inviter",
         "inviteToListen": "Inviter dans la salle KTV",
-        "join": "Rejoindre la salle KTV...",
+        "join": "Rejoindre la salle KTV…",
         "joinButton": "Rejoindre",
         "joinSession": "Rejoindre la salle KTV",
         "leave": "Quitter la salle KTV",
@@ -3054,11 +3055,11 @@
         "listener": "personne",
         "listenerPlural": "personnes",
         "listening": "{{count}} dans la salle",
-        "loadingSessions": "Chargement des salles...",
+        "loadingSessions": "Chargement des salles…",
         "makeHost": "Nommer hôte",
         "noActiveSessions": "Aucune salle KTV active",
         "nowPlaying": "En train de chanter",
-        "orEnterSessionId": "Ou saisissez l'ID de la salle",
+        "orEnterSessionId": "Ou saisissez l’ID de la salle",
         "passPlayback": "Transférer la lecture",
         "pasteLinkOrId": "Collez un lien ou un ID de salle pour rejoindre.",
         "playbackBadge": "Lecture",
@@ -3085,7 +3086,7 @@
         "previous": "Précédent",
         "repeatAll": "Répéter tout",
         "repeatOne": "Répéter un",
-        "shareApp": "Partager l'app...",
+        "shareApp": "Partager l’app…",
         "showLyrics": "Afficher les paroles",
         "shuffle": "Aléatoire",
         "view": "Affichage"
@@ -3139,9 +3140,9 @@
         "close": "Fermer la fiche du lieu",
         "directions": "Itinéraire",
         "favorite": "Favori",
-        "favorited": "Ajouté aux favoris",
+        "favorited": "Favori",
         "home": "Domicile",
-        "openDirections": "Obtenir l'itinéraire dans Plans",
+        "openDirections": "Obtenir l’itinéraire dans Plans",
         "regionLabel": "Lieu sélectionné",
         "removeFavorite": "Supprimer des favoris",
         "setHome": "Définir comme domicile",
@@ -3149,18 +3150,18 @@
         "work": "Bureau"
       },
       "places": {
-        "allEmpty": "Recherchez un lieu et utilisez les actions de la fiche pour l'enregistrer comme domicile, bureau ou favori.",
+        "allEmpty": "Recherchez un lieu et utilisez les actions de la fiche pour l’enregistrer comme domicile, bureau ou favori.",
         "favorites": "Favoris",
         "home": "Domicile",
-        "recents": "Lieux récents",
+        "recents": "Emplacements récents",
         "title": "Lieux",
         "work": "Bureau"
       },
       "poiCategory": {
         "airport": "Aéroport",
-        "amusementPark": "Parc d'attractions",
+        "amusementPark": "Parc d’attractions",
         "aquarium": "Aquarium",
-        "atm": "Distributeur",
+        "atm": "Distributeur automatique de billets",
         "bakery": "Boulangerie",
         "bank": "Banque",
         "beach": "Plage",
@@ -3170,7 +3171,7 @@
         "carRental": "Location de voitures",
         "evCharger": "Borne de recharge",
         "fireStation": "Caserne de pompiers",
-        "fitnessCenter": "Salle de sport",
+        "fitnessCenter": "Centre de remise en forme",
         "foodMarket": "Marché",
         "gasStation": "Station-service",
         "hospital": "Hôpital",
@@ -3238,7 +3239,7 @@
           "title": "Redémarrage rapide"
         },
         "smileyStatus": {
-          "description": "Le smiley indique l'état de la partie : 🙂 en cours, 💀 boum, 😎 victoire",
+          "description": "Le smiley indique l’état de la partie : 🙂 en cours, 💀 boum, 😎 victoire",
           "title": "État du smiley"
         }
       },
@@ -3260,17 +3261,17 @@
         "discardChangesDescription": "Vous avez des modifications non enregistrées. Créer un nouveau fichier quand même ?",
         "enterImageName": "Saisissez un nom pour votre image",
         "error": "Erreur",
-        "failedToLoadImageContent": "Échec du chargement du contenu de l'image.",
+        "failedToLoadImageContent": "Échec du chargement du contenu de l’image.",
         "failedToSaveImage": "Échec de l'enregistrement de l'image",
         "imageSavedSuccessfully": "Image enregistrée avec succès",
-        "saveImage": "Enregistrer l'image"
+        "saveImage": "Enregistrer l’image"
       },
       "filtersMenu": {
         "openFiltersMenu": "Ouvrir le menu des filtres"
       },
       "help": {
         "autoSaveExport": {
-          "description": "Les modifications s'enregistrent automatiquement toutes les quelques secondes ; exportez les PNG vers /Images pour le Finder",
+          "description": "Les modifications s’enregistrent automatiquement toutes les quelques secondes ; exportez les PNG vers /Images pour le Finder",
           "title": "Enregistrement auto et export"
         },
         "cutCopyPaste": {
@@ -3282,7 +3283,7 @@
           "title": "Outils de dessin"
         },
         "filters": {
-          "description": "Appliquez l'inversion, les niveaux de gris, la luminosité et plus encore depuis le menu Filtres",
+          "description": "Appliquez l’inversion, les niveaux de gris, la luminosité et plus encore depuis le menu Filtres",
           "title": "Filtres"
         },
         "patterns": {
@@ -3290,7 +3291,7 @@
           "title": "Motifs de remplissage"
         },
         "strokeWidth": {
-          "description": "Ajustez l'épaisseur du pinceau et du crayon avec le sélecteur de taille sous les outils",
+          "description": "Ajustez l’épaisseur du pinceau et du crayon avec le sélecteur de taille sous les outils",
           "title": "Épaisseur du trait"
         }
       },
@@ -3311,21 +3312,21 @@
         "filterGlitch": "Glitche",
         "filterGrayscale": "Niveaux de gris",
         "filterInvert": "Inverser",
-        "filterMotionBlur": "Flou de mouvement",
+        "filterMotionBlur": "Flou mouvement",
         "filterNoise": "Bruit",
         "filterOldPhoto": "Vieille photo",
-        "filterPixelate": "Pixelliser",
+        "filterPixelate": "Pixéliser",
         "filterRadialBlur": "Flou radial",
         "filterSepia": "Sépia",
         "filterSharpen": "Netteté",
         "filterVhs": "VHS",
         "filters": "Filtres",
-        "importFromDevice": "Importer depuis l'appareil...",
+        "importFromDevice": "Importer depuis l’appareil…",
         "newFile": "Nouveau fichier",
-        "open": "Ouvrir...",
+        "open": "Ouvrir…",
         "paintHelp": "Aide Peinture",
         "save": "Enregistrer",
-        "saveEllipsis": "Enregistrer..."
+        "saveEllipsis": "Enregistrer…"
       },
       "name": "Peinture",
       "selectedPattern": "Motif sélectionné",
@@ -3357,16 +3358,16 @@
       },
       "description": "Simulation PC 3D",
       "dialogs": {
-        "resetVirtualPcDescription": "Êtes-vous sûr de vouloir réinitialiser le PC ? Cela effacera tout l'état actuel.",
+        "resetVirtualPcDescription": "Êtes-vous sûr de vouloir réinitialiser le PC ? Cela effacera tout l’état actuel.",
         "resetVirtualPcTitle": "Réinitialiser le PC Virtuel"
       },
       "help": {
         "backToSystems": {
-          "description": "Fichier ▸ Retour permet de revenir au navigateur d'OS et de jeux pour choisir une nouvelle image",
+          "description": "Fichier ▸ Retour permet de revenir au navigateur d’OS et de jeux pour choisir une nouvelle image",
           "title": "Retour aux systèmes"
         },
         "dosGames": {
-          "description": "Accédez à l'onglet Jeux pour une sélection de classiques js-dos",
+          "description": "Accédez à l’onglet Jeux pour une sélection de classiques js-dos",
           "title": "Bibliothèque de jeux DOS"
         },
         "keyboardInput": {
@@ -3374,34 +3375,34 @@
           "title": "Redirection du clavier"
         },
         "mouseCapture": {
-          "description": "Cliquez dans l'écran pour capturer le curseur ; appuyez sur Échap pour le relâcher",
+          "description": "Cliquez dans l’écran pour capturer le curseur ; appuyez sur Échap pour le relâcher",
           "title": "Capture de la souris"
         },
         "pcEmulator": {
           "description": "Démarrez de véritables images Windows, Linux et FreeDOS dans le navigateur via v86",
-          "title": "Émulateur d'OS x86"
+          "title": "Émulateur d’OS x86"
         },
         "screenshotFullscreen": {
-          "description": "Utilisez Affichage pour capturer l'écran ou remplir votre moniteur bord à bord",
-          "title": "Capture d'écran et plein écran"
+          "description": "Utilisez Affichage pour capturer l’écran ou remplir votre moniteur bord à bord",
+          "title": "Capture d’écran et plein écran"
         }
       },
       "loadingEmulator": "CHARGEMENT ÉMULATEUR",
-      "loadingGame": "Chargement de {{gameName}}...",
-      "loadingSystem": "Chargement de {{name}}...",
+      "loadingGame": "Chargement de {{gameName}}…",
+      "loadingSystem": "Chargement de {{name}}…",
       "menu": {
         "aboutVirtualPc": "À propos de PC virtuel",
-        "aspectRatio": "Format d'image",
+        "aspectRatio": "Proportions",
         "backToBrowse": "Retour",
         "backToPresets": "Retour aux systèmes",
-        "captureScreenshot": "Prendre une capture d'écran",
+        "captureScreenshot": "Capturer l’aperçu",
         "controls": "Commandes",
         "fullScreen": "Plein écran",
         "loadGame": "Charger la partie",
-        "loadState": "Charger l'état",
+        "loadState": "Charger l’état",
         "mouseSensitivity": "Sensibilité de la souris",
         "reset": "Réinitialiser",
-        "saveState": "Enregistrer l'état",
+        "saveState": "Enregistrer l’état",
         "toggleMouseCapture": "Basculer la capture de la souris",
         "virtualPcHelp": "Aide de PC virtuel"
       },
@@ -3413,7 +3414,7 @@
           "year": "2019"
         },
         "beos": {
-          "description": "Système d'exploitation de bureau de Be Inc. orienté multimédia",
+          "description": "Système d’exploitation de bureau de Be Inc. orienté multimédia",
           "name": "BeOS 5",
           "year": "2000"
         },
@@ -3438,12 +3439,12 @@
           "year": "2018"
         },
         "freebsd": {
-          "description": "Système d'exploitation de type Unix BSD",
+          "description": "Système d’exploitation de type Unix BSD",
           "name": "FreeBSD",
           "year": "2003"
         },
         "freedos": {
-          "description": "Système d'exploitation libre et open-source compatible DOS",
+          "description": "Système d’exploitation libre et open-source compatible DOS",
           "name": "FreeDOS",
           "year": "1998"
         },
@@ -3453,7 +3454,7 @@
           "year": "2009"
         },
         "helenos": {
-          "description": "Système d'exploitation de recherche à micro-noyau multiserveur",
+          "description": "Système d’exploitation de recherche à micro-noyau multiserveur",
           "name": "HelenOS",
           "year": "2011"
         },
@@ -3478,17 +3479,17 @@
           "year": "2009"
         },
         "minix": {
-          "description": "OS d'enseignement à micro-noyau de Tanenbaum",
+          "description": "OS d’enseignement à micro-noyau de Tanenbaum",
           "name": "Minix",
           "year": "1987"
         },
         "msdos": {
-          "description": "Le système d'exploitation de disque classique de Microsoft",
+          "description": "Le système d’exploitation de disque classique de Microsoft",
           "name": "MS-DOS 6.22",
           "year": "1994"
         },
         "netbsd": {
-          "description": "Unix BSD portable - « Bien sûr qu'il tourne sous NetBSD »",
+          "description": "Unix BSD portable - « Bien sûr qu’il tourne sous NetBSD »",
           "name": "NetBSD",
           "year": "2018"
         },
@@ -3559,13 +3560,13 @@
         }
       },
       "programsAvailable": "{{count}} PROGRAMMES DISPONIBLES",
-      "screenshotUnavailable": "Capture d'écran non disponible. Utilisez l'outil de capture d'écran de votre navigateur (Cmd+Maj+4 sur Mac, Win+Maj+S sur Windows).",
-      "selectSystem": "Sélectionnez un système d'exploitation x86",
+      "screenshotUnavailable": "Capture d'écran non disponible. Utilisez l'outil de capture d’écran de votre navigateur (Cmd+Maj+4 sur Mac, Win+Maj+S sur Windows).",
+      "selectSystem": "Sélectionnez un système d’exploitation x86",
       "status": {
         "booting": "Démarrage…",
-        "bytesZero": "0 Mo",
+        "bytesZero": "0 Mo",
         "connecting": "Connexion…",
-        "emulatorStartFailed": "Échec du démarrage de l'émulateur",
+        "emulatorStartFailed": "Échec du démarrage de l’émulateur",
         "loading": "Chargement…"
       },
       "systemsAvailable": "{{count}} SYSTÈMES DISPONIBLES",
@@ -3586,9 +3587,9 @@
       "description": "Prendre des photos avec effets",
       "effects": {
         "blackAndWhite": "Noir et blanc",
-        "bulge": "Bombement",
+        "bulge": "Renflement",
         "coldBlue": "Bleu froid",
-        "fishEye": "Oeil de poisson",
+        "fishEye": "Fish Eye",
         "glitch": "Glitch",
         "highContrast": "Contraste élevé",
         "kaleidoscope": "Kaléidoscope",
@@ -3599,16 +3600,16 @@
         "ripple": "Ondulation",
         "squeeze": "Compression",
         "stretch": "Étirement",
-        "twirl": "Tourbillon",
+        "twirl": "Tournoiement",
         "vibrant": "Vibrant",
         "vintage": "Vintage",
-        "xRay": "Rayons X"
+        "xRay": "Rayon X"
       },
       "errors": {
-        "cameraApiNotAvailable": "API de l'appareil photo non disponible",
-        "cameraError": "Erreur de l'appareil photo : {{error}}",
-        "cameraPermissionDenied": "Autorisation de l'appareil photo refusée",
-        "cameraRequiresHttps": "L'appareil photo nécessite HTTPS",
+        "cameraApiNotAvailable": "API de l’appareil photo non disponible",
+        "cameraError": "Erreur de l’appareil photo : {{error}}",
+        "cameraPermissionDenied": "Autorisation de l’appareil photo refusée",
+        "cameraRequiresHttps": "L’appareil photo nécessite HTTPS",
         "couldNotAccessCamera": "Impossible d'accéder à l'appareil photo",
         "noCameraFound": "Aucun appareil photo trouvé"
       },
@@ -3618,19 +3619,19 @@
           "title": "Effets en direct"
         },
         "downloadingPhotos": {
-          "description": "Les photos s'enregistrent automatiquement dans /Images — cliquez sur une vignette pour la télécharger instantanément",
+          "description": "Les photos s’enregistrent automatiquement dans /Images — cliquez sur une vignette pour la télécharger instantanément",
           "title": "Enregistrement auto dans le Finder"
         },
         "quickSnaps": {
-          "description": "Appuyez sur le bouton du minuteur pour capturer quatre photos à la suite, à une seconde d'intervalle",
+          "description": "Appuyez sur le bouton du minuteur pour capturer quatre photos à la suite, à une seconde d’intervalle",
           "title": "Rafale de quatre photos"
         },
         "switchingCameras": {
-          "description": "Choisissez n'importe quelle caméra connectée (avant, arrière, USB) depuis le menu Caméra dans la barre des menus",
+          "description": "Choisissez n’importe quelle caméra connectée (avant, arrière, USB) depuis le menu Caméra dans la barre des menus",
           "title": "Changer de caméra"
         },
         "takingPhoto": {
-          "description": "Appuyez sur le gros bouton rouge de l'appareil photo pour prendre un cliché avec votre webcam",
+          "description": "Appuyez sur le gros bouton rouge de l’appareil photo pour prendre un cliché avec votre webcam",
           "title": "Prendre une photo"
         },
         "viewingPhotos": {
@@ -3643,16 +3644,16 @@
         "camera": "Appareil photo",
         "clearAllPhotos": "Effacer toutes les photos",
         "effects": "Effets",
-        "exportPhotos": "Exporter les photos",
+        "exportPhotos": "Exporter des photos",
         "photoBoothHelp": "Aide Photomaton"
       },
-      "name": "Photomaton"
+      "name": "Photo Booth"
     },
     "soundboard": {
-      "description": "Lire des effets sonores",
+      "description": "Émettre des effets sonores",
       "help": {
         "customizeSlot": {
-          "description": "Attribuez un emoji et un nom à chaque slot pour les retrouver en un clin d'œil",
+          "description": "Attribuez un emoji et un nom à chaque slot pour les retrouver en un clin d’œil",
           "title": "Emoji et titre personnalisés"
         },
         "importExport": {
@@ -3669,11 +3670,11 @@
         },
         "recordSlot": {
           "description": "Cliquez sur un slot vide pour enregistrer directement depuis votre micro ; cliquez pour arrêter",
-          "title": "Slot d'enregistrement"
+          "title": "Slot d’enregistrement"
         },
         "waveformView": {
           "description": "Visualisez la forme d'onde en temps réel pendant l'enregistrement ou la lecture de chaque clip",
-          "title": "Forme d'onde en temps réel"
+          "title": "Forme d’onde en temps réel"
         }
       },
       "importedSoundboard": "Tableau de sons importé",
@@ -3681,14 +3682,14 @@
         "aboutSoundboard": "À propos de Tableau de sons",
         "deleteSoundboard": "Supprimer le Soundboard",
         "emojis": "Émojis",
-        "exportSoundboards": "Exporter les Soundboards...",
-        "importSoundboards": "Importer des tables de sons...",
+        "exportSoundboards": "Exporter les Soundboards…",
+        "importSoundboards": "Importer des tables de sons…",
         "loadSpecialSoundboards": "Charger des tables de sons spéciales",
         "newSoundboard": "Nouvelle table de sons",
         "renameSoundboard": "Renommer la table de sons",
         "resetSoundboards": "Réinitialiser les tables de sons",
         "soundboardHelp": "Aide Tableau de sons",
-        "waveforms": "Formes d'onde"
+        "waveforms": "Formes d’onde"
       },
       "name": "Tableau de sons",
       "newSoundboardDefault": "Nouvelle table de sons",
@@ -3705,17 +3706,17 @@
       },
       "description": "Pense-bêtes pour des rappels rapides",
       "empty": {
-        "createNote": "Nouveau pense-bête",
+        "createNote": "Nouvelle note",
         "description": "Créez un pense-bête pour commencer",
-        "title": "Aucun pense-bête pour l'instant"
+        "title": "Aucun pense-bête pour l’instant"
       },
       "help": {
         "autoSave": {
-          "description": "Les notes s'enregistrent automatiquement et réapparaissent au même endroit au prochain lancement",
+          "description": "Les notes s’enregistrent automatiquement et réapparaissent au même endroit au prochain lancement",
           "title": "Enregistrement automatique"
         },
         "clearAll": {
-          "description": "Fichier ▸ Tout effacer nettoie le tableau d'affichage en un seul geste",
+          "description": "Fichier ▸ Tout effacer nettoie le tableau d’affichage en un seul geste",
           "title": "Tout effacer"
         },
         "colors": {
@@ -3731,7 +3732,7 @@
           "title": "Déplacer et redimensionner"
         },
         "ryoCanEdit": {
-          "description": "Demandez à Ryo dans les Chats d'ajouter, déplacer, recolorer ou réécrire des notes pour vous",
+          "description": "Demandez à Ryo dans les Chats d’ajouter, déplacer, recolorer ou réécrire des notes pour vous",
           "title": "Ryo peut modifier"
         }
       },
@@ -3739,15 +3740,15 @@
         "about": "À propos de Stickies",
         "clearAll": "Effacer tous les pense-bêtes",
         "color": "Couleur",
-        "deleteNote": "Supprimer le pense-bête",
+        "deleteNote": "Supprimer la note",
         "help": "Aide de Stickies",
         "newNote": "Nouvelle note",
         "note": "Note",
         "syncStickies": "Synchroniser les notes"
       },
-      "name": "Stickies",
-      "placeholder": "Écrire une note...",
-      "title": "Stickies"
+      "name": "Aide-mémoire",
+      "placeholder": "Écrire une note…",
+      "title": "Aide-mémoire"
     },
     "synth": {
       "addPreset": "AJOUTER PRÉRÉGLAGE",
@@ -3762,7 +3763,7 @@
       "effects": "Effets",
       "effectsParams": {
         "bitcrusher": "Bitcrusher",
-        "chorus": "Chorus",
+        "chorus": "Chœurs",
         "delay": "Délai",
         "distortion": "Distorsion",
         "gain": "Gain",
@@ -3772,7 +3773,7 @@
       "envelope": "Enveloppe",
       "envelopeParams": {
         "attack": "Attaque",
-        "decay": "Déclin",
+        "decay": "Chute",
         "release": "Relâchement",
         "sustain": "Maintien"
       },
@@ -3786,19 +3787,19 @@
           "title": "Effets empilés"
         },
         "octaveShift": {
-          "description": "Appuyez sur -/+ ou utilisez les boutons pour décaler le clavier d'une octave vers le haut ou vers le bas",
-          "title": "Décalage d'octave"
+          "description": "Appuyez sur -/+ ou utilisez les boutons pour décaler le clavier d’une octave vers le haut ou vers le bas",
+          "title": "Décalage d’octave"
         },
         "presets": {
           "description": "Enregistrez, chargez et renommez des préréglages personnalisés pour créer votre propre banque de sons",
           "title": "Enregistrer les préréglages"
         },
         "virtualKeyboard": {
-          "description": "Jouez des notes avec les touches à l'écran ou utilisez votre clavier QWERTY comme clavier de commande",
+          "description": "Jouez des notes avec les touches à l’écran ou utilisez votre clavier QWERTY comme clavier de commande",
           "title": "Clavier virtuel"
         },
         "waveform3d": {
-          "description": "Regardez un maillage de forme d'onde 3D en direct réagir à chaque note lorsque le panneau est ouvert",
+          "description": "Regardez un maillage de forme d’onde 3D en direct réagir à chaque note lorsque le panneau est ouvert",
           "title": "Visualiseur FFT 3D"
         }
       },
@@ -3812,8 +3813,8 @@
         "resetSynth": "Réinitialiser Synth",
         "synthHelp": "Aide Synth"
       },
-      "name": "Synthétiseur",
-      "noPresetsYet": "Aucun préréglage pour l'instant. Créez-en un avec le bouton NOUVEAU.",
+      "name": "Synthé",
+      "noPresetsYet": "Aucun préréglage pour l’instant. Créez-en un avec le bouton NOUVEAU.",
       "oscillator": "Oscillateur",
       "selectPreset": "Sélectionner un préréglage",
       "status": {
@@ -3823,7 +3824,7 @@
         "presetUpdated": "Préréglage \"{{name}}\" mis à jour",
         "synthResetToDefaults": "Synthé réinitialisé aux valeurs par défaut"
       },
-      "waveform": "Forme d'onde",
+      "waveform": "Forme d’onde",
       "waveforms": {
         "sawtooth": "Dent de scie",
         "sine": "Sinus",
@@ -3833,20 +3834,20 @@
     },
     "terminal": {
       "commands": {
-        "about": "À propos du terminal",
+        "about": "À propos de Terminal",
         "ai": "Entrer en mode chat IA avec ryo",
         "cat": "Afficher le contenu du fichier",
         "cd": "Changer de répertoire",
         "chat": "Discuter avec ryo (alias)",
-        "clear": "Effacer l'écran du terminal",
+        "clear": "Effacer l’écran du terminal",
         "cowsay": "Une vache qui parle",
         "date": "Afficher la date/heure actuelle",
         "echo": "Afficher du texte",
-        "edit": "Ouvrir dans l'éditeur de texte",
+        "edit": "Ouvrir dans l’éditeur de texte",
         "grep": "Rechercher un motif dans le fichier",
         "help": "Afficher les commandes disponibles",
-        "history": "Afficher l'historique des commandes",
-        "logout": "Déconnecter l'utilisateur actuel",
+        "history": "Afficher l’historique des commandes",
+        "logout": "Déconnecter l’utilisateur actuel",
         "ls": "Lister le contenu du répertoire",
         "mkdir": "Créer un répertoire",
         "open": "Ouvrir une app, un fichier ou un applet",
@@ -3856,8 +3857,8 @@
         "su": "Changer ou créer un utilisateur",
         "touch": "Créer un fichier vide",
         "uptime": "Afficher le temps de disponibilité du système",
-        "vim": "Ouvrir le fichier dans l'éditeur vim",
-        "whoami": "Afficher l'utilisateur actuel"
+        "vim": "Ouvrir le fichier dans l’éditeur vim",
+        "whoami": "Afficher l’utilisateur actuel"
       },
       "description": "Interface de ligne de commande",
       "help": {
@@ -3867,10 +3868,10 @@
         },
         "basicCommands": {
           "description": "Utilisez ls, cd, cat, pwd, mkdir, touch et clear pour naviguer dans votre système de fichiers",
-          "title": "Bases d'Unix"
+          "title": "Bases d’Unix"
         },
         "commandHistory": {
-          "description": "Appuyez sur ↑ / ↓ pour parcourir les commandes précédentes et les relancer en un clin d'œil",
+          "description": "Appuyez sur ↑ / ↓ pour parcourir les commandes précédentes et les relancer en un clin d’œil",
           "title": "Historique des commandes"
         },
         "fileEditing": {
@@ -3882,15 +3883,15 @@
           "title": "Partagé avec le Finder"
         },
         "terminalSounds": {
-          "description": "Sons de clic et de cloche nets pour les sorties, erreurs et réponses de l'IA — activez-les dans Présentation ▸ Sons",
+          "description": "Sons de clic et de cloche nets pour les sorties, erreurs et réponses de l’IA — activez-les dans Présentation ▸ Sons",
           "title": "Sons du terminal"
         }
       },
       "menu": {
         "aboutTerminal": "À propos de Terminal",
         "clearTerminal": "Effacer le Terminal",
-        "decreaseFontSize": "Diminuer la taille de la police",
-        "increaseFontSize": "Augmenter la taille de la police",
+        "decreaseFontSize": "Diminuer la taille de police",
+        "increaseFontSize": "Augmenter la taille de police",
         "muteSounds": "Couper le son",
         "resetFontSize": "Réinitialiser la taille de police",
         "terminalHelp": "Aide Terminal"
@@ -3898,8 +3899,8 @@
       "name": "Terminal",
       "output": {
         "addedAndStartedPlaying": "Nouvelle chanson ajoutée et lecture démarrée",
-        "askRyoAnything": "demandez n'importe quoi à ryo. tapez 'exit' pour revenir au terminal.",
-        "askRyoWithPrompt": "demandez n'importe quoi à ryo. tapez 'exit' pour revenir au terminal.\n→ depuis votre commande : {{prompt}}",
+        "askRyoAnything": "demandez n'importe quoi à ryo. tapez 'exit’ pour revenir au terminal.",
+        "askRyoWithPrompt": "demandez n'importe quoi à ryo. tapez 'exit’ pour revenir au terminal.\n→ depuis votre commande : {{prompt}}",
         "chatCleared": "chat effacé. vous discutez toujours avec ryo. tapez 'exit' pour revenir au terminal.",
         "commandNotFound": "commande introuvable : {{cmd}}. tapez 'help' pour une liste des commandes disponibles.",
         "contentWritten": "Contenu écrit",
@@ -3919,10 +3920,10 @@
         "noItemsFound": "Aucun élément trouvé",
         "noSuchDirectory": "cd: {{dir}}: aucun répertoire de ce type",
         "openExamples": "Exemples",
-        "openNotFound": "Impossible d'ouvrir '{{target}}' : aucune application ou fichier trouvé",
+        "openNotFound": "Impossible d'ouvrir '{{target}}’ : aucune application ou fichier trouvé",
         "opened": "Ouvert",
         "openedApp": "{{app}} ouvert",
-        "openedApplet": "{{applet}} ouvert dans le visualiseur d'applet",
+        "openedApplet": "{{applet}} ouvert dans le visualiseur d’applet",
         "openedFile": "{{file}} ouvert",
         "openedFolder": "{{folder}} ouvert dans le Finder",
         "pausedIpod": "iPod en pause",
@@ -3973,7 +3974,7 @@
           "title": "Mise en forme enrichie"
         },
         "listsTasks": {
-          "description": "Mélangez listes à puces, numérotées et cases à cocher interactives dans n'importe quel doc",
+          "description": "Mélangez listes à puces, numérotées et cases à cocher interactives dans n’importe quel doc",
           "title": "Listes et cases à cocher"
         },
         "slashCommands": {
@@ -3993,27 +3994,27 @@
         "alignRight": "Aligner à droite",
         "bold": "Gras",
         "bulletList": "Liste à puces",
-        "exportAs": "Exporter sous...",
+        "exportAs": "Exporter comme’…",
         "format": "Format",
         "heading1": "Titre 1",
         "heading2": "Titre 2",
         "heading3": "Titre 3",
         "html": "HTML",
-        "importFromDevice": "Importer depuis un appareil...",
+        "importFromDevice": "Importer depuis un appareil…",
         "italic": "Italique",
         "markdown": "Markdown",
         "newFile": "Nouveau fichier",
         "numberedList": "Liste numérotée",
-        "open": "Ouvrir...",
-        "plainText": "Texte brut",
+        "open": "Ouvrir…",
+        "plainText": "Format texte",
         "save": "Enregistrer",
-        "saveEllipsis": "Enregistrer...",
+        "saveEllipsis": "Enregistrer…",
         "taskList": "Liste de tâches",
         "text": "Texte",
         "texteditHelp": "Aide Éditeur de texte",
         "underline": "Souligner"
       },
-      "name": "Éditeur de texte",
+      "name": "TextEdit",
       "numberedList": "Liste numérotée",
       "slashCommands": {
         "bulletList": {
@@ -4045,7 +4046,7 @@
           "title": "Texte"
         }
       },
-      "speak": "Parler",
+      "speak": "Prononcer",
       "stopSpeech": "Arrêter la parole",
       "text": "Texte",
       "underline": "Souligner",
@@ -4054,13 +4055,13 @@
     "tv": {
       "channelBadge": "CH {{number}} — {{name}}",
       "create": {
-        "creating": "Création...",
-        "description": "Décrivez une chaîne et l'IA la programmera avec des vidéos de YouTube.",
+        "creating": "Création…",
+        "description": "Décrivez une chaîne et l’IA la programmera avec des vidéos de YouTube.",
         "errorEmpty": "Décrivez une chaîne pour commencer.",
         "errorGeneric": "Impossible de créer la chaîne. Veuillez réessayer.",
         "errorNoVideos": "Aucune vidéo trouvée pour cette idée. Essayez une autre description.",
         "errorRateLimit": "Trop de chaînes créées. Veuillez patienter un instant et réessayer.",
-        "inlinePlaceholder": "Créez une nouvelle chaîne...",
+        "inlinePlaceholder": "Créez une nouvelle chaîne…",
         "placeholder": "ex. : Figures et parcs de skate",
         "signInRequired": "Connectez-vous pour créer des chaînes",
         "signInRequiredDescription": "Connectez-vous ou créez un compte pour programmer vos propres chaînes TV.",
@@ -4069,7 +4070,7 @@
         "statusTuning": "Réglage en cours",
         "submit": "Créer une chaîne",
         "title": "Nouvelle chaîne",
-        "toastSuccess": "À l'écoute de {{name}}"
+        "toastSuccess": "À l’écoute de {{name}}"
       },
       "delete": {
         "description": "Supprimer la chaîne « {{name}} » de votre téléviseur ?",
@@ -4084,8 +4085,8 @@
       },
       "help": {
         "aiChannels": {
-          "description": "Utilisez Chaînes ▸ Créer pour demander à l'IA une liste de lecture thématique personnalisée",
-          "title": "Chaînes créées par l'IA"
+          "description": "Utilisez Chaînes ▸ Créer pour demander à l’IA une liste de lecture thématique personnalisée",
+          "title": "Chaînes créées par l’IA"
         },
         "channels": {
           "description": "Passez d'une chaîne YouTube sélectionnée à l'autre comme devant la télé le samedi matin",
@@ -4116,16 +4117,16 @@
         "closedCaptions": "Sous-titres codés",
         "controls": "Commandes",
         "deleteChannel": "Supprimer la chaîne",
-        "exportChannels": "Exporter les chaînes...",
+        "exportChannels": "Exporter les chaînes…",
         "fullScreen": "Plein écran",
-        "importChannels": "Importer les chaînes...",
+        "importChannels": "Importer les chaînes…",
         "lcdFilter": "Filtre LCD",
-        "newChannel": "Nouvelle chaîne...",
+        "newChannel": "Nouvelle chaîne…",
         "next": "Suivant",
         "pause": "Pause",
         "play": "Lecture",
         "previous": "Précédent",
-        "resetChannels": "Réinitialiser les chaînes...",
+        "resetChannels": "Réinitialiser les chaînes…",
         "showVideos": "Afficher les vidéos",
         "tvHelp": "Aide TV"
       },
@@ -4150,13 +4151,14 @@
       },
       "title": "TV",
       "toasts": {
-        "exportFailed": "Impossible d'exporter les chaînes",
+        "exportFailed": "Impossible d’exporter les chaînes",
         "exportSuccess": "Chaînes exportées",
         "importEmpty": "Aucune chaîne valide trouvée dans ce fichier",
         "importFailed": "Impossible d’importer les chaînes — le fichier est peut-être non valide",
         "importSuccess_one": "{{count}} chaîne importée ({{skipped}} ignorée)",
         "importSuccess_other": "{{count}} chaînes importées ({{skipped}} ignorées)",
-        "resetSuccess": "Chaînes réinitialisées par défaut"
+        "resetSuccess": "Chaînes réinitialisées par défaut",
+        "importSuccess_many": "{{count}} chaînes importées ({{skipped}} ignorées)"
       },
       "youtubePaste": {
         "added": "« {{title}} » ajouté à cette chaîne",
@@ -4183,7 +4185,7 @@
       },
       "help": {
         "addVideo": {
-          "description": "Collez n'importe quelle URL YouTube et ryOS récupère les métadonnées dans votre liste de lecture",
+          "description": "Collez n’importe quelle URL YouTube et ryOS récupère les métadonnées dans votre liste de lecture",
           "title": "Ajouter depuis YouTube"
         },
         "loop": {
@@ -4191,11 +4193,11 @@
           "title": "Mode boucle"
         },
         "playback": {
-          "description": "Lecture, pause, saut, défilement et réglage du volume depuis l'épaisse barre de transport",
+          "description": "Lecture, pause, saut, défilement et réglage du volume depuis l’épaisse barre de transport",
           "title": "Lecture classique"
         },
         "powersTv": {
-          "description": "Votre playlist alimente également la sélection de chaînes de l'application TV",
+          "description": "Votre playlist alimente également la sélection de chaînes de l’application TV",
           "title": "Alimente Ryo TV"
         },
         "shareDeepLinks": {
@@ -4209,21 +4211,21 @@
       },
       "menu": {
         "aboutVideos": "À propos des vidéos",
-        "addToLibrary": "Ajouter à la bibliothèque...",
+        "addToLibrary": "Ajouter à la bibliothèque…",
         "allVideos": "Toutes les vidéos",
-        "clearLibrary": "Vider la bibliothèque...",
+        "clearLibrary": "Vider la bibliothèque…",
         "controls": "Commandes",
         "fullScreen": "Plein écran",
         "library": "Bibliothèque",
         "next": "Suivant",
-        "openVideo": "Ouvrir la vidéo...",
+        "openVideo": "Ouvrir la vidéo…",
         "pause": "Pause",
         "play": "Lire",
         "previous": "Précédent",
         "repeatAll": "Répéter tout",
         "repeatOne": "Répéter un",
-        "resetLibrary": "Réinitialiser la bibliothèque...",
-        "shareVideo": "Partager la vidéo...",
+        "resetLibrary": "Réinitialiser la bibliothèque…",
+        "shareVideo": "Partager la vidéo…",
         "shuffle": "Aléatoire",
         "unknownArtist": "Artiste inconnu",
         "videosHelp": "Aide Vidéos"
@@ -4232,8 +4234,8 @@
       "status": {
         "add": "AJOUTER",
         "addVideos": "Ajouter des vidéos",
-        "errorAdding": "Erreur lors de l'ajout : {{error}}",
-        "failedToAddVideo": "Échec de l'ajout de la vidéo",
+        "errorAdding": "Erreur lors de l’ajout : {{error}}",
+        "failedToAddVideo": "Échec de l’ajout de la vidéo",
         "failedToProcessVideo": "Échec du traitement de la vidéo : {{videoId}}",
         "fullscreen": "PLEIN ÉCRAN",
         "next": "SUIVANT ⏭",
@@ -4243,7 +4245,7 @@
         "playlistReset": "PLAYLIST RÉINITIALISÉE",
         "pressToPlay": "APPUYEZ SUR ⏯ POUR LIRE",
         "prev": "PRÉCÉDENT ⏮",
-        "repeat": "RÉPÉTITION",
+        "repeat": "RÉPÉTER",
         "repeatingPlaylist": "RÉPÉTITION DE LA PLAYLIST",
         "shuffle": "LECTURE ALÉATOIRE",
         "shuffleOff": "LECTURE ALÉATOIRE DÉSACTIVÉE",
@@ -4264,15 +4266,15 @@
           "title": "Commandes de lecture classiques"
         },
         "equalizer": {
-          "description": "Ouvrez la fenêtre de l'égaliseur pour sculpter les fréquences et choisir parmi les préréglages de genres classiques",
+          "description": "Ouvrez la fenêtre de l’égaliseur pour sculpter les fréquences et choisir parmi les préréglages de genres classiques",
           "title": "Égaliseur 10 bandes"
         },
         "playMusic": {
           "description": "Faites glisser des fichiers audio n'importe où sur Winamp ou ajoutez-les via l'éditeur de playlist",
-          "title": "Lire de la musique"
+          "title": "Lire la musique"
         },
         "playlist": {
-          "description": "Gérez votre file d'attente, réorganisez les pistes et enregistrez des playlists .m3u pour plus tard",
+          "description": "Gérez votre file d’attente, réorganisez les pistes et enregistrez des playlists .m3u pour plus tard",
           "title": "Éditeur de playlist"
         },
         "shuffleRepeat": {
@@ -4317,7 +4319,7 @@
       "mb": "Mo",
       "privacyPolicy": "Politique de confidentialité",
       "system": "Système",
-      "termsOfService": "Conditions d'utilisation",
+      "termsOfService": "Conditions d’utilisation",
       "title": "À propos de cet ordinateur",
       "viewChangelog": "Journal des modifications",
       "virtualMemory": "Mémoire virtuelle",
@@ -4343,10 +4345,10 @@
       "controlPanels": "Panneau de configuration…",
       "createAccount": "Créer un compte…",
       "enterFullScreen": "Passer en plein écran",
-      "exitFullScreen": "Quitter le plein écran",
+      "exitFullScreen": "Quitter le mode plein écran",
       "logOut": "Déconnecter {{username}}…",
-      "login": "Connexion…",
-      "moreApps": "Plus d'apps…",
+      "login": "Se connecter…",
+      "moreApps": "Plus d’apps…",
       "moreDocuments": "Plus de documents…",
       "noRecentApps": "Aucune app récente",
       "noRecentDocuments": "Aucun document récent",
@@ -4364,7 +4366,7 @@
         "mismatch": "Les nouveaux mots de passe ne correspondent pas",
         "newPassword": "Nouveau mot de passe",
         "sameAsCurrent": "Le nouveau mot de passe doit être différent de votre mot de passe actuel",
-        "saving": "Enregistrement...",
+        "saving": "Enregistrement…",
         "submit": "Changer le mot de passe",
         "title": "Changer le mot de passe",
         "toastChangedDescription": "Votre mot de passe a été mis à jour",
@@ -4374,13 +4376,13 @@
         "tooShort": "Le mot de passe doit comporter au moins 8 caractères"
       },
       "createAccount": "Créer un compte",
-      "creatingAccount": "Création...",
+      "creatingAccount": "Création…",
       "dialogTitle": "Connexion ryOS",
       "forgotPassword": "Mot de passe oublié ?",
       "logIn": "Se connecter",
-      "logOut": "Se déconnecter",
+      "logOut": "Fermer la session",
       "logOutDescription": "Voulez-vous vraiment vous déconnecter ? Vous serez déconnecté de votre compte.",
-      "loggingIn": "Connexion...",
+      "loggingIn": "Connexion…",
       "loginDescription": "Connectez-vous à votre compte",
       "password": "Mot de passe",
       "recovery": {
@@ -4394,13 +4396,13 @@
         "confirmPassword": "Confirmer le nouveau mot de passe",
         "description": "Envoyez un code de réinitialisation vers un canal de récupération, puis choisissez un nouveau mot de passe.",
         "genericError": "Impossible de réinitialiser le mot de passe. Vérifiez votre code et réessayez.",
-        "identifier": "Nom d'utilisateur ou e-mail",
-        "identifierRequired": "Saisissez votre nom d'utilisateur ou e-mail",
+        "identifier": "Nom d’utilisateur ou e-mail",
+        "identifierRequired": "Saisissez votre nom d’utilisateur ou e-mail",
         "mismatch": "Les mots de passe ne correspondent pas",
         "newPassword": "Nouveau mot de passe",
-        "resetting": "Réinitialisation...",
+        "resetting": "Réinitialisation…",
         "sendCode": "Envoyer le code",
-        "sending": "Envoi...",
+        "sending": "Envoi…",
         "submit": "Réinitialiser le mot de passe",
         "successDescription": "Vous êtes maintenant connecté avec votre nouveau mot de passe.",
         "successTitle": "Réinitialisation du mot de passe",
@@ -4411,27 +4413,27 @@
       "setPasswordRequired": "Définir un mot de passe requis",
       "setPasswordRequiredDescription": "Vous devez définir un mot de passe avant de vous déconnecter pour pouvoir récupérer votre compte. Souhaitez-vous définir un mot de passe maintenant ?",
       "signupDescription": "Créez un compte pour accéder aux salons de discussion et enregistrer vos paramètres",
-      "username": "Nom d'utilisateur",
+      "username": "Nom d’utilisateur",
       "verifyEmailDescription": "Saisissez le code de vérification que nous vous avons envoyé par e-mail pour terminer la sécurisation de votre compte.",
       "verifyEmailTitle": "Vérifiez votre adresse e-mail"
     },
     "auto": "Auto",
     "colors": {
-      "blue": "bleu",
-      "green": "vert",
+      "blue": "Bleu",
+      "green": "Vert",
       "orange": "orange",
-      "pink": "rose",
+      "pink": "Rose",
       "purple": "violet",
-      "yellow": "jaune"
+      "yellow": "Jaune"
     },
     "desktop": {
       "myComputer": "Mon ordinateur",
-      "setWallpaper": "Définir le fond d'écran…"
+      "setWallpaper": "Définir le fond d’écran…"
     },
     "dialog": {
       "about": "À propos",
       "aboutApp": "À propos de {{appName}}",
-      "adding": "Ajout en cours...",
+      "adding": "Ajout…",
       "cancel": "Annuler",
       "close": "Fermer",
       "confirm": "Confirmer",
@@ -4442,12 +4444,12 @@
       "emoji": {
         "chooseEmoji": "Choisir un emoji",
         "description": "Choisir un emoji pour cet emplacement sonore",
-        "setEmoji": "Définir l'emoji"
+        "setEmoji": "Définir l’emoji"
       },
       "enterFileName": "Entrez un nom pour votre fichier",
       "enterFilenameToSave": "Entrez un nom de fichier à enregistrer, ou supprimez-le avant de fermer.",
       "help": "Aide",
-      "informationAboutApp": "Informations sur l'application",
+      "informationAboutApp": "Informations sur l’application",
       "keepNewDocument": "Conserver le nouveau document",
       "madeBy": "Créé par",
       "openInGitHub": "Ouvrir dans GitHub",
@@ -4462,13 +4464,13 @@
         "failedToCopyLink": "Échec de la copie du lien",
         "failedToGenerateShareLink": "Échec de la génération du lien de partage pour {{itemType}}",
         "from": "de",
-        "generating": "Génération en cours...",
+        "generating": "Génération…",
         "itemTypes": {
           "app": "App",
           "applet": "Applet",
           "item": "Élément",
           "page": "Page",
-          "song": "Chanson"
+          "song": "Morceau"
         },
         "linkCopied": "Lien copié",
         "linkCopiedToClipboard": "Lien {{itemType}} copié dans le presse-papiers",
@@ -4486,7 +4488,7 @@
     },
     "dock": {
       "addToDock": "Ajouter au Dock",
-      "appletStore": "Magasin d'Applets",
+      "appletStore": "Magasin d’Applets",
       "applications": "Applications",
       "folderContents": "Contenu du dossier",
       "hide": "Masquer",
@@ -4494,13 +4496,13 @@
       "newWindow": "Nouvelle fenêtre",
       "open": "Ouvrir",
       "quit": "Quitter",
-      "removeFromDock": "Retirer du Dock",
+      "removeFromDock": "Supprimer du Dock",
       "showAllWindows": "Afficher toutes les fenêtres",
       "trash": "Corbeille",
-      "turnHidingOff": "Désactiver le masquage automatique",
-      "turnHidingOn": "Activer le masquage automatique",
-      "turnMagnificationOff": "Désactiver l'agrandissement",
-      "turnMagnificationOn": "Activer l'agrandissement"
+      "turnHidingOff": "Désactiver le masquage",
+      "turnHidingOn": "Activer le masquage",
+      "turnMagnificationOff": "Désactiver l’agrandissement",
+      "turnMagnificationOn": "Activer l’agrandissement"
     },
     "errorBoundaries": {
       "appDescription": "Relancez-la pour ouvrir une nouvelle fenêtre, ou quittez cette fenêtre plantée. Les autres applications ouvertes continueront de fonctionner.",
@@ -4511,7 +4513,7 @@
       "reloadDesktop": "Recharger le Bureau"
     },
     "errors": {
-      "failedToAccessCamera": "Impossible d'accéder à la caméra",
+      "failedToAccessCamera": "Impossible d’accéder à la caméra",
       "failedToFetchFurigana": "Impossible de récupérer le furigana",
       "failedToFetchSoramimi": "Impossible de récupérer le soramimi"
     },
@@ -4526,64 +4528,49 @@
       "downloadHtml": "Télécharger HTML",
       "exitFullscreen": "Quitter le mode plein écran",
       "full": "Plein",
-      "maximizePreview": "Agrandir l'aperçu",
-      "minimizePreview": "Réduire l'aperçu",
+      "maximizePreview": "Agrandir l’aperçu",
+      "minimizePreview": "Réduire l’aperçu",
       "saveApplet": "Enregistrer comme Applet",
-      "saveAppletDescription": "Saisissez le nom de l'applet, une applet existante sera écrasée :",
+      "saveAppletDescription": "Saisissez le nom de l’applet, une applet existante sera écrasée :",
       "split": "Diviser",
       "toastOpenAction": "Ouvrir",
       "toastSaveFailed": "Échec de l'enregistrement de l'applet",
       "toastSaveFailedDescription": "Une erreur est survenue lors de l'enregistrement de l'applet.",
       "toastSaved": "Applet enregistrée avec succès",
       "toggleCode": "Basculer le code",
-      "toggleSplitView": "Basculer l'affichage fractionné"
+      "toggleSplitView": "Basculer l’affichage fractionné"
     },
     "keys": {
       "enter": "Entrer",
       "escape": "Échap"
     },
     "loading": {
-      "default": "Chargement...",
-      "openingAppletStore": "Ouverture de l'Applet Store...",
-      "openingSharedApplet": "Ouverture de l'applet partagée...",
-      "openingSharedIELink": "Ouverture du lien Internet Explorer partagé...",
-      "openingSharedIpodTrack": "Ouverture de la piste iPod partagée...",
-      "openingSharedKaraokeTrack": "Ouverture de la piste karaoké partagée...",
-      "openingSharedVideo": "Ouverture de la vidéo partagée..."
+      "default": "Chargement…",
+      "openingAppletStore": "Ouverture de l’Applet Store…",
+      "openingSharedApplet": "Ouverture de l’applet partagée…",
+      "openingSharedIELink": "Ouverture du lien Internet Explorer partagé…",
+      "openingSharedIpodTrack": "Ouverture de la piste iPod partagée…",
+      "openingSharedKaraokeTrack": "Ouverture de la piste karaoké partagée…",
+      "openingSharedVideo": "Ouverture de la vidéo partagée…"
     },
     "menu": {
-      "aboutFinder": "À propos de Finder",
       "applications": "Applications",
-      "back": "Précédent",
-      "byDate": "Date",
-      "byIcon": "Icône",
-      "byKind": "Type",
-      "byList": "Liste",
-      "byName": "Nom",
-      "bySize": "Taille",
-      "bySmallIcon": "Petite icône",
       "clear": "Effacer",
       "close": "Fermer",
       "copy": "Copier",
       "cut": "Couper",
       "documents": "Documents",
       "edit": "Édition",
-      "emptyTrash": "Vider la corbeille...",
       "file": "Fichier",
-      "finderHelp": "Aide Finder",
-      "forward": "Suivant",
       "go": "Aller",
       "help": "Aide",
       "images": "Images",
-      "moveToTrash": "Mettre à la corbeille",
       "music": "Musique",
-      "newFinderWindow": "Nouvelle fenêtre Finder",
-      "newFolder": "Nouveau dossier",
       "paste": "Coller",
       "redo": "Rétablir",
       "selectAll": "Tout sélectionner",
-      "settings": "Paramètres",
-      "shareApp": "Partager l'app...",
+      "settings": "Réglages",
+      "shareApp": "Partager l’app…",
       "sites": "Sites",
       "trash": "Corbeille",
       "undo": "Annuler",
@@ -4599,9 +4586,9 @@
     "noResults": "Aucun résultat",
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",
-      "run": "Exécuter...",
+      "run": "Exécuter…",
       "ryos98": "98",
-      "ryosProfessional": "Professional",
+      "ryosProfessional": "Professionnel",
       "start": "Démarrer"
     },
     "swipeInstructions": {
@@ -4611,18 +4598,18 @@
       "title": "Balayez pour changer de fenêtre"
     },
     "system": {
-      "debugBootScreenTest": "Test de l'écran de démarrage de débogage...",
+      "debugBootScreenTest": "Test de l’écran de démarrage de débogage…",
       "formatFileSystem": "Formatter le système de fichiers",
       "formatFileSystemDesc": "Êtes-vous sûr de vouloir formater le système de fichiers ? Cela supprimera définitivement tous les documents (sauf les documents d'exemple), images et fonds d'écran personnalisés. ryOS redémarrera après le formatage.",
-      "formattingFileSystem": "Formatage du système de fichiers...",
-      "rebooting": "Redémarrage...",
+      "formattingFileSystem": "Formatage du système de fichiers…",
+      "rebooting": "Redémarrage…",
       "resetAllSettings": "Réinitialiser tous les paramètres",
       "resetAllSettingsDesc": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres ? Cela effacera tous les paramètres enregistrés et restaurera les états par défaut. ryOS redémarrera après la réinitialisation.",
-      "resettingSystem": "Réinitialisation du système...",
-      "restoringSystem": "Restauration du système...",
-      "systemRestoring": "Restauration du système...",
-      "updatingToRyOS": "Mise à jour vers ryOS {{version}}...",
-      "updatingToRyOSWithBuild": "Mise à jour vers ryOS {{version}} ({{buildNumber}})..."
+      "resettingSystem": "Réinitialisation du système…",
+      "restoringSystem": "Restauration du système…",
+      "systemRestoring": "Restauration du système…",
+      "updatingToRyOS": "Mise à jour vers ryOS {{version}}…",
+      "updatingToRyOSWithBuild": "Mise à jour vers ryOS {{version}} ({{buildNumber}})…"
     },
     "toast": {
       "alreadyLatestVersion": "Vous utilisez déjà la dernière version",
@@ -4645,14 +4632,14 @@
       "fullscreen": "Plein écran",
       "maximize": "Agrandir",
       "maximizeDisabled": "Agrandir (désactivé)",
-      "minimize": "Réduire",
+      "minimize": "Placer dans le Dock",
       "minimizeDisabled": "Réduire (désactivé)"
     }
   },
   "components": {
     "linkPreview": {
-      "addToIpod": "Ajouter à l'iPod",
-      "openIpod": "Ouvrir l'iPod",
+      "addToIpod": "Ajouter à l’iPod",
+      "openIpod": "Ouvrir l’iPod",
       "openKaraoke": "Ouvrir le Karaoké",
       "openYouTube": "Ouvrir YouTube"
     }
@@ -4660,29 +4647,94 @@
   "debug": {
     "clearLogs": "Effacer les logs",
     "closeConsole": "Fermer la console",
-    "console": "Console",
-    "copied": "Copié",
+    "console": "Journaux",
+    "copied": "Copié(s)",
     "copy": "Copier",
     "copyLogs": "Copier les logs",
     "errorCount": "{{count}} err",
+    "filterAll": "Tous les logs",
+    "filterByLogger": "Filtrer par logger",
+    "filterOther": "Autres",
+    "fix": "Réparer",
+    "fixLogs": "Envoyer les logs à l’agent Cursor",
     "hideConsole": "Masquer la console",
+    "live": {
+      "appVersion": "App",
+      "average": "Moyenne",
+      "bufferedLogs": "{{count}} mis en mémoire tampon",
+      "copySnapshot": "Copier l'instantané de l'environnement",
+      "current": "Actuel",
+      "darkMode": "Sombre",
+      "dashboardLabel": "Capture de l’environnement en direct",
+      "domNodes": "Nœuds DOM",
+      "environment": "Environnement",
+      "errors": "Erreurs",
+      "fps": "Cadence de rendu",
+      "fpsChartAria": "Historique de la cadence de rendu, actuellement {{value}}",
+      "fpsUnit": "ips",
+      "frameTime": "{{value}} ms/image",
+      "frameTimeLabel": "Temps de trame",
+      "historySummary": "Résumé de l’historique",
+      "historyWindow": "{{count}} dernières secondes",
+      "jsHeap": "Tas JS",
+      "lightMode": "Clair",
+      "loading": "Chargement…",
+      "locale": "Locale",
+      "logHealth": "Santé des logs",
+      "logHealthValue": "{{errors}} erreurs · {{warnings}} avertissements",
+      "logRate": "Activité des logs",
+      "logRateChartAria": "Historique de l’activité des logs, actuellement {{count}} logs par seconde",
+      "logging": "Journalisation",
+      "logsPerSecond": "{{count}}/s",
+      "maximum": "Maximum",
+      "metric": "Métrique",
+      "minimum": "Minimum",
+      "network": "Réseau",
+      "offline": "Hors ligne",
+      "online": "En ligne",
+      "performance": "Performance",
+      "reportTitle": "Instantané de l’environnement en direct",
+      "runtime": {
+        "browser": "Navigateur",
+        "electron": "Electron",
+        "pwa": "PWA"
+      },
+      "runtimeLabel": "Runtime",
+      "sampling": "Échantillonnage chaque seconde",
+      "samplingPaused": "Échantillonnage en pause",
+      "storage": "Stockage",
+      "theme": "Thème",
+      "themeValue": "{{theme}} · {{mode}}",
+      "totalLogs": "Total des journaux",
+      "unavailable": "Indisponible",
+      "value": "Valeur",
+      "viewport": "Viewport",
+      "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
+      "warnings": "Avertissements"
+    },
+    "noLogsForFilter": "Aucun log ne correspond à ce filtre.",
     "noLogsYet": "Aucun log capturé pour le moment.",
-    "showConsole": "Afficher la console",
     "scrollToBottom": "Faire défiler vers le bas",
+    "showConsole": "Afficher la console",
+    "tabs": {
+      "label": "Vues du panneau de débogage",
+      "live": "En direct",
+      "logs": "Journaux"
+    },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} avert"
   },
   "settings": {
     "language": {
       "chineseTraditional": "中文",
-      "description": "Sélectionnez votre langue préférée pour l'interface ryOS",
+      "description": "Sélectionnez votre langue préférée pour l’interface ryOS",
       "english": "English",
       "french": "Français",
       "german": "Deutsch",
       "italian": "Italiano",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Português",
+      "portuguese": "Português (Brasil)",
       "russian": "Русский",
       "spanish": "Español",
       "title": "Langue"
@@ -4713,16 +4765,16 @@
     },
     "settings": {
       "language": "Langue",
-      "screenSaver": "Économiseur d'écran",
+      "screenSaver": "Économiseur d’écran",
       "sounds": "Sons et volume",
       "theme": "Thème",
-      "wallpaper": "Fond d'écran"
+      "wallpaper": "Fond d’écran"
     },
     "title": "Spotlight",
-    "topHits": "Résultats principaux"
+    "topHits": "Meilleurs résultats"
   },
   "updates": {
-    "desktopAppOffer": "ryOS est disponible en tant qu'application {{platform}}",
+    "desktopAppOffer": "ryOS est disponible en tant qu’application {{platform}}",
     "desktopAvailable": "ryOS {{version}} pour {{platform}} est disponible",
     "download": "Télécharger"
   }

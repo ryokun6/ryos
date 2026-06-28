@@ -1,4 +1,5 @@
 import { AppProps } from "../../../base/types";
+import type { AdminInitialData } from "../../types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AdminMenuBar } from "../AdminMenuBar";
 import { useMemo } from "react";
@@ -20,7 +21,9 @@ export function AdminAppComponent({
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
+  initialData: rawInitialData,
 }: AppProps) {
+  const initialData = rawInitialData as AdminInitialData | undefined;
   const {
     t,
     translatedHelpItems,
@@ -88,7 +91,7 @@ export function AdminAppComponent({
     promptDelete,
     formatRelativeTime,
     formatKugouImageUrl,
-  } = useAdminLogic({ isWindowOpen });
+  } = useAdminLogic({ isWindowOpen, initialData });
 
   const menuBar = (
     <AdminMenuBar
@@ -240,6 +243,7 @@ export function AdminAppComponent({
           importStatusText={importStatusText}
           showCursorAgentsPanel={showCursorAgentsPanel}
           cursorAgentsRefreshSignal={cursorAgentsRefreshSignal}
+          cursorAgentInitialData={initialData}
           setCursorAgentCount={setCursorAgentCount}
           users={users}
           visibleUsersCount={visibleUsersCount}

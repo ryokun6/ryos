@@ -58,6 +58,3 @@ export function getCalculatorWindowSize(
 
   return base;
 }
-
-/** @deprecated use getCalculatorWindowSize */
-export const CALCULATOR_WINDOW_SIZES = DEFAULT_SIZES;

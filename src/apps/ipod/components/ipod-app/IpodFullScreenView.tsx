@@ -1,5 +1,4 @@
 import { AnimatePresence, motion } from "motion/react";
-import ReactPlayer from "react-player";
 import { Suspense } from "react";
 import type React from "react";
 import { DisplayMode } from "@/types/lyrics";
@@ -11,6 +10,7 @@ import { LyricsDisplay } from "../lyrics-display/LyricsDisplay";
 import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 import type { IpodAppController } from "./useIpodAppController";
 import { useIpodElapsedTime } from "../../hooks/useIpodElapsedTime";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import {
   AmbientBackground,
   LandscapeVideoBackground,
@@ -30,6 +30,7 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
     currentTrack,
     loopCurrent,
     isPlaying,
+    playbackRequested,
     isFullScreen,
     toggleFullScreen,
     togglePlay,
@@ -71,6 +72,7 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
     handlePlay,
     handlePause,
     handleReady,
+    handlePlaybackAttemptFailed,
     handleTrackEnd,
     setAppleMusicKitNowPlaying,
     shouldRenderFullScreenAnimatedVisuals,
@@ -191,7 +193,7 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
                           fullScreenPlayerRef as unknown as React.RefObject<never>
                         }
                         currentTrack={tracks[currentIndex]}
-                        playing={isPlaying && isFullScreen}
+                        playing={playbackRequested && isFullScreen}
                         resumeAtSeconds={elapsedTime}
                         volume={finalIpodVolume}
                         onProgress={handleProgress}
@@ -203,10 +205,10 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
                         onNowPlayingItemChange={setAppleMusicKitNowPlaying}
                       />
                     ) : (
-                      <ReactPlayer
+                      <YouTubePlayer
                         ref={fullScreenPlayerRef}
                         url={tracks[currentIndex].url}
-                        playing={isPlaying && isFullScreen}
+                        playing={playbackRequested && isFullScreen}
                         controls
                         width="100%"
                         height="100%"
@@ -218,6 +220,7 @@ export function IpodFullScreenView({ c }: IpodFullScreenViewProps) {
                         onPlay={handlePlay}
                         onPause={handlePause}
                         onReady={handleReady}
+                        onPlaybackAttemptFailed={handlePlaybackAttemptFailed}
                         config={{
                           youtube: {
                             playerVars: {

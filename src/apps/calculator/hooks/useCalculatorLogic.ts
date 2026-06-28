@@ -7,7 +7,12 @@ import { useAppStore } from "@/stores/useAppStore";
 import { fetchCurrencyRateForWidget } from "@/lib/currency/frankfurter";
 import {
   convertValue,
+  DEFAULT_CONVERSION_CATEGORY,
+  DEFAULT_CONVERSION_FROM_UNIT,
+  DEFAULT_CONVERSION_TO_UNIT,
+  formatSwappedConversionValue,
   getCategoryById,
+  resolveConversionAmount,
   type ConversionCategoryId,
 } from "../utils/conversionData";
 import {
@@ -18,7 +23,6 @@ import {
   clearEntry,
   createInitialCalcState,
   factorial,
-  formatNumber,
   inputDecimal,
   inputDigit,
   inputOperator,
@@ -38,6 +42,7 @@ import {
   type Operator,
 } from "../utils/calculatorEngine";
 import { getCalculatorWindowSize } from "../utils/windowSizes";
+import { formatCalculatorConversionResult } from "../utils/formatCalculatorDisplay";
 import type { CalculatorTheme } from "../components/types";
 import { helpItems } from "..";
 import {
@@ -124,10 +129,14 @@ export function useCalculatorLogic({
     createInitialCalcState()
   );
   const [conversionCategory, setConversionCategory] = useStateWithDefault<ConversionCategoryId>(
-    persisted.conversionCategory ?? "length"
+    persisted.conversionCategory ?? DEFAULT_CONVERSION_CATEGORY
   );
-  const [fromUnit, setFromUnit] = useStateWithDefault(persisted.fromUnit ?? "m");
-  const [toUnit, setToUnit] = useStateWithDefault(persisted.toUnit ?? "ft");
+  const [fromUnit, setFromUnit] = useStateWithDefault(
+    persisted.fromUnit ?? DEFAULT_CONVERSION_FROM_UNIT
+  );
+  const [toUnit, setToUnit] = useStateWithDefault(
+    persisted.toUnit ?? DEFAULT_CONVERSION_TO_UNIT
+  );
   const [conversionCalcState, dispatchConversionCalc] = useReducer(
     calcReducer,
     {
@@ -140,6 +149,9 @@ export function useCalculatorLogic({
   calcStateRef.current = calcState;
   const conversionCalcStateRef = useRef(conversionCalcState);
   conversionCalcStateRef.current = conversionCalcState;
+  const [conversionExactAmount, setConversionExactAmount] = useState<
+    number | null
+  >(null);
   const [currencyRate, setCurrencyRate] = useState(1);
   const [currencyLoading, setCurrencyLoading] = useState(false);
   const [currencyError, setCurrencyError] = useState<string | null>(null);
@@ -248,7 +260,10 @@ export function useCalculatorLogic({
   }, [category, fromUnit, toUnit]);
 
   const conversionRawResult = useMemo(() => {
-    const amount = Number(conversionAmount.replace(/,/g, ""));
+    const amount = resolveConversionAmount(
+      conversionAmount,
+      conversionExactAmount
+    );
     if (!Number.isFinite(amount)) return NaN;
     return convertValue(
       amount,
@@ -259,6 +274,7 @@ export function useCalculatorLogic({
     );
   }, [
     conversionAmount,
+    conversionExactAmount,
     conversionCategory,
     fromUnit,
     toUnit,
@@ -266,16 +282,11 @@ export function useCalculatorLogic({
   ]);
 
   const conversionResult = useMemo(() => {
-    if (!Number.isFinite(conversionRawResult)) return "—";
     const locale = i18n.resolvedLanguage || i18n.language;
-    if (conversionCategory === "currency") {
-      return new Intl.NumberFormat(locale, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(conversionRawResult);
-    }
-    return new Intl.NumberFormat(locale, { maximumFractionDigits: 8 }).format(
-      conversionRawResult
+    return formatCalculatorConversionResult(
+      conversionRawResult,
+      locale,
+      conversionCategory === "currency"
     );
   }, [
     conversionRawResult,
@@ -288,6 +299,7 @@ export function useCalculatorLogic({
     (next: CalculatorMode) => {
       if (next === mode) return;
       if (next === "conversion") {
+        setConversionExactAmount(null);
         dispatchConversionCalc({
           type: "set",
           payload: {
@@ -296,6 +308,7 @@ export function useCalculatorLogic({
           },
         });
       } else if (mode === "conversion") {
+        setConversionExactAmount(null);
         dispatchCalc({
           type: "set",
           payload: {
@@ -336,6 +349,7 @@ export function useCalculatorLogic({
       reducer: (state: CalcState) => CalcState,
       options?: { speakResult?: boolean }
     ) => {
+      setConversionExactAmount(null);
       const prev = conversionCalcStateRef.current;
       const next = reducer(prev);
       conversionCalcStateRef.current = next;
@@ -499,6 +513,7 @@ export function useCalculatorLogic({
   }, [runCalc, speech]);
 
   const handleCategoryChange = useCallback((id: ConversionCategoryId) => {
+    setConversionExactAmount(null);
     setConversionCategory(id);
     const nextCategory = getCategoryById(id);
     setFromUnit(nextCategory.units[0]?.id ?? "m");
@@ -507,11 +522,15 @@ export function useCalculatorLogic({
 
   const swapConversionUnits = useCallback(() => {
     if (Number.isFinite(conversionRawResult)) {
+      setConversionExactAmount(conversionRawResult);
       dispatchConversionCalc({
         type: "set",
         payload: {
           ...createInitialCalcState(),
-          display: formatNumber(conversionRawResult),
+          display: formatSwappedConversionValue(
+            conversionRawResult,
+            conversionAmount
+          ),
         },
       });
     }
@@ -522,6 +541,7 @@ export function useCalculatorLogic({
     setToUnit(fromUnit);
   }, [
     conversionRawResult,
+    conversionAmount,
     conversionCategory,
     currencyRate,
     fromUnit,

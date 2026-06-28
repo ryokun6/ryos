@@ -149,6 +149,13 @@ function markdownToHtml(md: string, appContext?: string): string {
     if (filePathMatch) {
       fullPath = filePathMatch[1] + filePathMatch[2];
     } else {
+      filePathMatch = content.match(/^(\/embed\/[a-zA-Z0-9_\-/.]+\.(html))$/);
+      if (filePathMatch) {
+        fullPath = `public${filePathMatch[1]}`;
+      }
+    }
+
+    if (!fullPath) {
       filePathMatch = content.match(/([a-zA-Z0-9_\-/]+)\/([a-zA-Z0-9_\-/.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
       if (filePathMatch && filePathMatch[1] && filePathMatch[2]) {
         const folder = filePathMatch[1];

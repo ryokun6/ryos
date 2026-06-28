@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -58,55 +58,60 @@ export function BootScreen({
   } = useThemeFlags();
   const localizedTitle = title ?? t("common.system.systemRestoring");
   const dialogDescription = localizedTitle;
-
-  const handleDone = () => {
-    onBootComplete?.();
-    onOpenChange(false);
-  };
+  const onBootCompleteRef = useRef(onBootComplete);
+  const onOpenChangeRef = useRef(onOpenChange);
 
   useEffect(() => {
-    let interval: number;
-    let timer: number;
-    let soundTimer: number;
+    onBootCompleteRef.current = onBootComplete;
+    onOpenChangeRef.current = onOpenChange;
+  }, [onBootComplete, onOpenChange]);
 
-    if (isOpen) {
-      // Play boot sound with a delay (skip in debug mode)
-      if (!debugMode) {
-        soundTimer = window.setTimeout(() => {
-          play();
-        }, 100);
-      }
+  const completeBoot = useCallback(() => {
+    onBootCompleteRef.current?.();
+    onOpenChangeRef.current(false);
+  }, []);
 
-      // Simulate boot progress
-      interval = window.setInterval(() => {
-        dispatch({ type: "increment", amount: Math.random() * 10 });
-      }, 100);
+  const handleDone = completeBoot;
 
-      // Close after boot completes (2 seconds) - skip in debug mode
-      if (!debugMode) {
-        timer = window.setTimeout(() => {
-          window.clearInterval(interval);
-          dispatch({ type: "setProgress", value: 100 });
+  useEffect(() => {
+    let progressInterval: number | undefined;
+    let bootTimer: number | undefined;
+    let soundTimer: number | undefined;
+    let completeTimer: number | undefined;
 
-          // Wait a moment at 100% before completing
-          const completeTimer = window.setTimeout(() => {
-            onBootComplete?.();
-            onOpenChange(false);
-          }, 500);
-
-          return () => window.clearTimeout(completeTimer);
-        }, 2000);
-      }
-    } else {
+    if (!isOpen) {
       dispatch({ type: "reset" });
+      return undefined;
     }
 
+    if (debugMode) {
+      dispatch({ type: "setProgress", value: 100 });
+      return undefined;
+    }
+
+    soundTimer = window.setTimeout(() => {
+      play();
+    }, 100);
+
+    progressInterval = window.setInterval(() => {
+      dispatch({ type: "increment", amount: Math.random() * 10 });
+    }, 100);
+
+    bootTimer = window.setTimeout(() => {
+      window.clearInterval(progressInterval);
+      progressInterval = undefined;
+      dispatch({ type: "setProgress", value: 100 });
+
+      completeTimer = window.setTimeout(completeBoot, 500);
+    }, 2000);
+
     return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(timer);
+      window.clearInterval(progressInterval);
+      window.clearTimeout(bootTimer);
       window.clearTimeout(soundTimer);
+      window.clearTimeout(completeTimer);
     };
-  }, [isOpen, play, onBootComplete, onOpenChange, debugMode]);
+  }, [isOpen, play, completeBoot, debugMode]);
 
   if (!isOpen) return null;
 

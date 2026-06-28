@@ -4,6 +4,13 @@ import type { SetStateAction } from "react";
 import { DisplayMode } from "@/types/lyrics";
 import { useIpodStore, Track } from "./useIpodStore";
 import { shouldUpdatePlaybackTime } from "./playbackTime";
+import {
+  confirmPlayback,
+  requestPlayback,
+  resetPlaybackConfirmation,
+  stopPlayback,
+  togglePlayback,
+} from "@/shared/media/confirmedPlayback";
 
 /** Helper to get current index from song ID */
 function getIndexFromSongId(tracks: Track[], songId: string | null): number {
@@ -30,6 +37,9 @@ function getRandomSongId(tracks: Track[], currentSongId: string | null): string 
 interface KaraokeData {
   /** The ID of the currently playing song */
   currentSongId: string | null;
+  /** Desired player state, including an in-flight play attempt. */
+  playbackRequested: boolean;
+  /** True only after ReactPlayer emits `onPlay`. */
   isPlaying: boolean;
   loopCurrent: boolean;
   loopAll: boolean;
@@ -56,6 +66,7 @@ export interface KaraokeState extends KaraokeData {
   setCurrentSongId: (songId: string | null) => void;
   togglePlay: () => void;
   setIsPlaying: (playing: boolean) => void;
+  confirmPlayback: () => void;
   toggleLoopCurrent: () => void;
   toggleLoopAll: () => void;
   toggleShuffle: () => void;
@@ -72,7 +83,7 @@ export interface KaraokeState extends KaraokeData {
 
 const initialKaraokeData: KaraokeData = {
   currentSongId: null,
-  isPlaying: false,
+  ...stopPlayback(),
   loopCurrent: false,
   loopAll: true,
   isShuffled: false,
@@ -106,14 +117,20 @@ export const useKaraokeStore = create<KaraokeState>()(
         return getIndexFromSongId(tracks, currentSongId);
       },
 
-      setCurrentSongId: (songId) => set({ currentSongId: songId }),
+      setCurrentSongId: (songId) =>
+        set((state) => ({
+          currentSongId: songId,
+          ...(songId !== state.currentSongId
+            ? resetPlaybackConfirmation(state)
+            : {}),
+        })),
 
       togglePlay: () => {
         // Prevent playback when offline
         if (typeof navigator !== "undefined" && !navigator.onLine) {
           return;
         }
-        set((state) => ({ isPlaying: !state.isPlaying }));
+        set((state) => togglePlayback(state));
       },
 
       setIsPlaying: (playing) => {
@@ -121,8 +138,9 @@ export const useKaraokeStore = create<KaraokeState>()(
         if (playing && typeof navigator !== "undefined" && !navigator.onLine) {
           return;
         }
-        set({ isPlaying: playing });
+        set(playing ? requestPlayback() : stopPlayback());
       },
+      confirmPlayback: () => set((state) => confirmPlayback(state)),
 
       toggleLoopCurrent: () => set((state) => ({ loopCurrent: !state.loopCurrent })),
 
@@ -137,7 +155,9 @@ export const useKaraokeStore = create<KaraokeState>()(
       nextTrack: () =>
         set((state) => {
           const tracks = useIpodStore.getState().tracks;
-          if (tracks.length === 0) return { currentSongId: null };
+          if (tracks.length === 0) {
+            return { currentSongId: null, ...stopPlayback() };
+          }
 
           let nextSongId: string | null;
           let newPlaybackHistory = state.playbackHistory;
@@ -161,9 +181,9 @@ export const useKaraokeStore = create<KaraokeState>()(
                 nextSongId = tracks[0]?.id ?? null;
               } else {
                 // Stop at end
-                return { 
-                  currentSongId: tracks[tracks.length - 1]?.id ?? null, 
-                  isPlaying: false 
+                return {
+                  currentSongId: tracks[tracks.length - 1]?.id ?? null,
+                  ...stopPlayback(),
                 };
               }
             } else {
@@ -171,9 +191,9 @@ export const useKaraokeStore = create<KaraokeState>()(
             }
           }
 
-          return { 
-            currentSongId: nextSongId, 
-            isPlaying: true,
+          return {
+            currentSongId: nextSongId,
+            ...requestPlayback(),
             playbackHistory: newPlaybackHistory,
           };
         }),
@@ -181,7 +201,9 @@ export const useKaraokeStore = create<KaraokeState>()(
       previousTrack: () =>
         set((state) => {
           const tracks = useIpodStore.getState().tracks;
-          if (tracks.length === 0) return { currentSongId: null };
+          if (tracks.length === 0) {
+            return { currentSongId: null, ...stopPlayback() };
+          }
 
           let prevSongId: string | null;
           let newPlaybackHistory = state.playbackHistory;
@@ -202,9 +224,9 @@ export const useKaraokeStore = create<KaraokeState>()(
             prevSongId = tracks[prevIndex]?.id ?? null;
           }
 
-          return { 
-            currentSongId: prevSongId, 
-            isPlaying: true,
+          return {
+            currentSongId: prevSongId,
+            ...requestPlayback(),
             playbackHistory: newPlaybackHistory,
           };
         }),

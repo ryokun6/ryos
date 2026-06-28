@@ -1,9 +1,16 @@
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
+import Table from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import "../textedit.css";
+import { MarkdownPaste } from "../extensions/MarkdownPaste";
 import { SlashCommands } from "../extensions/SlashCommands";
 import { SpeechHighlight } from "../extensions/SpeechHighlight";
 import { EditorContext } from "./EditorContext";
@@ -16,6 +23,9 @@ export function EditorProvider({ children }: EditorProviderProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Link.configure({
+        openOnClick: false,
+      }),
       Underline,
       TextAlign.configure({
         types: ["heading", "paragraph"],
@@ -24,6 +34,13 @@ export function EditorProvider({ children }: EditorProviderProps) {
       TaskItem.configure({
         nested: true,
       }),
+      Table.configure({
+        resizable: false,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      MarkdownPaste,
       SlashCommands,
       SpeechHighlight,
     ],

@@ -8,7 +8,10 @@ import {
 } from "../src/utils/logger";
 import {
   DEBUG_FLAG_KEY,
+  isDebugEnabled,
+  normalizeDebugMode,
   refreshRuntimeDebugFlag,
+  resolveDebugEnabled,
   setRuntimeDebugEnabled,
 } from "../src/utils/debug";
 
@@ -102,7 +105,7 @@ describe("client logger", () => {
     refreshRuntimeDebugFlag();
   });
 
-  test("gates debug and info while keeping warnings visible", () => {
+  test("gates debug and info immediately while keeping warnings and errors visible", () => {
     const logger = createClientLogger("TestScope");
 
     logger.debug("hidden debug");
@@ -121,11 +124,60 @@ describe("client logger", () => {
     expect(logCalls).toHaveLength(1);
     expect(infoCalls).toHaveLength(1);
     expect(globalThis.localStorage.getItem(DEBUG_FLAG_KEY)).toBe("1");
+
+    setRuntimeDebugEnabled(false);
+    logger.debug("hidden again");
+    logger.info("hidden again");
+    logger.warn("still visible");
+    logger.error("still visible");
+
+    expect(logCalls).toHaveLength(1);
+    expect(infoCalls).toHaveLength(1);
+    expect(warnCalls).toHaveLength(2);
+    expect(errorCalls).toHaveLength(1);
+    expect(globalThis.localStorage.getItem(DEBUG_FLAG_KEY)).toBeNull();
+  });
+
+  test("an explicit disable overrides development and stored defaults", () => {
+    expect(
+      resolveDebugEnabled({
+        runtimeOverride: false,
+        storedOverride: true,
+        developmentDefault: true,
+      })
+    ).toBe(false);
+    expect(
+      resolveDebugEnabled({
+        runtimeOverride: null,
+        storedOverride: false,
+        developmentDefault: true,
+      })
+    ).toBe(false);
+  });
+
+  test("cleans up legacy non-affirmative debug flags at startup", () => {
+    for (const storedValue of ["false", "0", "true", "malformed", ""]) {
+      globalThis.localStorage.setItem(DEBUG_FLAG_KEY, storedValue);
+      refreshRuntimeDebugFlag();
+
+      expect(isDebugEnabled()).toBe(false);
+      expect(globalThis.localStorage.getItem(DEBUG_FLAG_KEY)).toBeNull();
+    }
+  });
+
+  test("normalizes malformed persisted Control Panels values as disabled", () => {
+    expect(normalizeDebugMode(true)).toBe(true);
+    expect(normalizeDebugMode(false)).toBe(false);
+    expect(normalizeDebugMode("false")).toBe(false);
+    expect(normalizeDebugMode("0")).toBe(false);
+    expect(normalizeDebugMode(1)).toBe(false);
+    expect(normalizeDebugMode(null)).toBe(false);
   });
 
   test("redacts sensitive fields and summarizes large values", () => {
     const summarized = summarizeForLog({
       prompt: "please keep this private",
+      message: "private chat text",
       contentMarkdown: "# secret note",
       nested: {
         deviceId: "camera-123",
@@ -135,6 +187,7 @@ describe("client logger", () => {
     }) as Record<string, unknown>;
 
     expect(summarized.prompt).toBe("[redacted]");
+    expect(summarized.message).toBe("[redacted]");
     expect(summarized.contentMarkdown).toBe("[redacted]");
     expect((summarized.nested as Record<string, unknown>).deviceId).toBe(
       "[redacted]"
@@ -144,14 +197,65 @@ describe("client logger", () => {
     );
     expect(summarized.list).toEqual([0, 1, 2, 3, 4, 5, 6, 7, "... (4 more)"]);
   });
+
+  test("keeps error message, stack, cause, and safe custom fields", () => {
+    const cause = new Error("zip container missing package document");
+    cause.stack = `Error: zip container missing package document\n${"at epub.js loader\n".repeat(20)}`;
+    const error = new Error("failed to display EPUB") as Error & {
+      cause?: unknown;
+      requestToken?: string;
+      sectionHref?: string;
+    };
+    error.stack = "Error: failed to display EPUB\nat Rendition.display (epubjs.js:1:2)";
+    error.cause = cause;
+    error.requestToken = "secret-token";
+    error.sectionHref = "chapter-1.xhtml";
+
+    const summarized = summarizeForLog(error) as Record<string, unknown>;
+    const summarizedCause = summarized.cause as Record<string, unknown>;
+    const props = summarized.props as Record<string, unknown>;
+
+    expect(summarized.kind).toBe("Error");
+    expect(summarized.message).toBe("failed to display EPUB");
+    expect(summarized.stack).toContain("Rendition.display");
+    expect(summarizedCause.message).toBe("zip container missing package document");
+    expect(summarizedCause.stack).toContain("epub.js loader");
+    expect(props.requestToken).toBe("[redacted]");
+    expect(props.sectionHref).toBe("chapter-1.xhtml");
+  });
+
+  test("preserves serialized error messages without unredacting normal messages", () => {
+    const summarized = summarizeForLog({
+      message: "user-authored chat message",
+      error: {
+        kind: "Error",
+        name: "Error",
+        message: "Cannot read properties of undefined",
+        stack: "TypeError: Cannot read properties of undefined\nat book.js:1:2",
+      },
+    }) as Record<string, unknown>;
+    const error = summarized.error as Record<string, unknown>;
+
+    expect(summarized.message).toBe("[redacted]");
+    expect(error.message).toBe("Cannot read properties of undefined");
+    expect(error.stack).toContain("book.js");
+  });
 });
 
 describe("client logging guardrails", () => {
-  test("Control Panels Debug Mode feeds the runtime debug logger flag", () => {
+  test("Control Panels Debug Mode feeds logger and console capture flags", () => {
     const source = readSource("src/stores/useDisplaySettingsStore.ts");
 
     expect(source).toContain("setRuntimeDebugEnabled(enabled)");
-    expect(source).toContain("setRuntimeDebugEnabled(Boolean(state?.debugMode))");
+    expect(source).toContain("setConsoleCaptureEnabled(enabled)");
+    expect(source).toContain(
+      "const debugEnabled = normalizeDebugMode(state?.debugMode)"
+    );
+    expect(source).toContain("setRuntimeDebugEnabled(debugEnabled)");
+    expect(source).toContain("setConsoleCaptureEnabled(debugEnabled)");
+    expect(source).toContain(
+      "debugMode: normalizeDebugMode(persisted?.debugMode)"
+    );
   });
 
   test("client code does not use raw console.log or console.debug outside logger sinks", () => {

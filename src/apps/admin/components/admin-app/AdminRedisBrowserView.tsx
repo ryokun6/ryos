@@ -597,7 +597,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
         title={t("apps.admin.redis.deleteTitle", "Delete Redis key?")}
         description={t("apps.admin.redis.deleteDescription", {
           key: deleteCandidate,
-          defaultValue: `Delete Redis key "${deleteCandidate}"? This cannot be undone.`,
+          defaultValue: `Delete Redis key "${deleteCandidate}"? This can't be undone.`,
         })}
       />
     </div>

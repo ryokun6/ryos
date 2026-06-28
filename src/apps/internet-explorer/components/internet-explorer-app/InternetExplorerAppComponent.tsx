@@ -184,7 +184,8 @@ export function InternetExplorerAppComponent({
         <ShareItemDialog
           isOpen={isShareDialogOpen}
           onClose={() => setIsShareDialogOpen(false)}
-          itemType="Page"
+          itemType={t("apps.internet-explorer.page")}
+          itemTypeKey="page"
           itemIdentifier={url}
           secondaryIdentifier={year}
           title={currentPageTitle || url}
@@ -251,6 +252,7 @@ export function InternetExplorerAppComponent({
               currentTheme={currentTheme}
               iframeRef={iframeRef}
               loadingBarVariants={loadingBarVariants}
+              t={t}
               playElevatorMusic={playElevatorMusic}
               stopElevatorMusic={stopElevatorMusic}
               playDingSound={playDingSound}

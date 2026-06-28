@@ -18,7 +18,7 @@ interface TimeNavigationControlsProps {
   isNowDisabled: boolean;
   olderLabel: string;
   newerLabel: string;
-  nowLabel?: string; // Optional, defaults to "Now"
+  nowLabel?: string;
   layout: "horizontal" | "vertical";
   playClickSound: () => void;
 }
@@ -32,11 +32,12 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
   isNowDisabled,
   olderLabel,
   newerLabel,
-  nowLabel = "Now",
+  nowLabel,
   layout,
   playClickSound,
 }) => {
   const { t } = useTranslation();
+  const resolvedNowLabel = nowLabel ?? t("apps.internet-explorer.now");
   const OlderIcon = layout === "vertical" ? CaretDown : CaretRight;
   const NewerIcon = layout === "vertical" ? CaretUp : CaretLeft;
 
@@ -108,7 +109,7 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
             </button>
           </TooltipTrigger>
           <TooltipContent side={layout === "vertical" ? "right" : "bottom"}>
-            <p>{nowLabel}</p>
+            <p>{resolvedNowLabel}</p>
           </TooltipContent>
         </Tooltip>
 

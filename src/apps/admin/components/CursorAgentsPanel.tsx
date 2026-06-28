@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -18,11 +18,14 @@ import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChat
 import {
   adminCursorAgentBannerClass,
   adminCursorAgentRunningRowClass,
+  adminCursorAgentRunningSelectedRowClass,
+  adminCursorAgentSelectedRowClass,
   adminCursorAgentsPanelClass,
   adminSurfaceClass,
   adminTableRowClass,
   adminToolbarClass,
 } from "../utils/adminStyles";
+import type { AdminInitialData } from "../types";
 
 export interface AdminCursorAgentRunRow {
   runId: string;
@@ -53,6 +56,7 @@ interface CursorAgentsResponse {
 
 interface CursorAgentsPanelProps {
   refreshSignal?: number;
+  launchInitialData?: AdminInitialData;
   onTotalCountChange?: (count: number) => void;
 }
 
@@ -156,6 +160,7 @@ function CursorAgentsToolbar({
 
 export function CursorAgentsPanel({
   refreshSignal = 0,
+  launchInitialData,
   onTotalCountChange,
 }: CursorAgentsPanelProps) {
   const { t } = useTranslation();
@@ -207,49 +212,77 @@ export function CursorAgentsPanel({
     void fetchRuns();
   };
 
-  const handleStartAgent = async () => {
-    const prompt = newPrompt.trim();
-    if (!prompt || isSubmitting) return;
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      const result = await postAdminStartCursorAgent<{
-        async?: boolean;
-        runId?: string;
-        agentId?: string;
-        agentDashboardUrl?: string;
-        success?: boolean;
-        error?: string;
-        message?: string;
-      }>({ prompt });
+  const handleStartAgent = useCallback(
+    async (promptOverride?: string) => {
+      const prompt = (promptOverride ?? newPrompt).trim();
+      if (!prompt || isSubmitting) return;
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        const result = await postAdminStartCursorAgent<{
+          async?: boolean;
+          runId?: string;
+          agentId?: string;
+          agentDashboardUrl?: string;
+          success?: boolean;
+          error?: string;
+          message?: string;
+        }>({ prompt });
 
-      if (result.async && result.runId) {
-        setNewPrompt("");
-        setSelectedRunId(result.runId);
-        await fetchRuns();
-        return;
-      }
-      if (result.success) {
-        setNewPrompt("");
-        await fetchRuns();
-        return;
-      }
-      setSubmitError(
-        result.error ??
-          t("apps.admin.cursorAgents.startFailed", "Could not start agent")
-      );
-    } catch (err) {
-      const message =
-        err instanceof ApiRequestError
-          ? err.message
-          : err instanceof Error
+        if (result.async && result.runId) {
+          setNewPrompt("");
+          setSelectedRunId(result.runId);
+          await fetchRuns();
+          return;
+        }
+        if (result.success) {
+          setNewPrompt("");
+          await fetchRuns();
+          return;
+        }
+        setSubmitError(
+          result.error ??
+            t("apps.admin.cursorAgents.startFailed", "Could not start agent")
+        );
+      } catch (err) {
+        const message =
+          err instanceof ApiRequestError
             ? err.message
-            : t("apps.admin.cursorAgents.startFailed", "Could not start agent");
-      setSubmitError(message);
-    } finally {
-      setIsSubmitting(false);
+            : err instanceof Error
+              ? err.message
+              : t("apps.admin.cursorAgents.startFailed", "Could not start agent");
+        setSubmitError(message);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [fetchRuns, isSubmitting, newPrompt, t]
+  );
+
+  const launchPrefillAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prompt = launchInitialData?.cursorAgentPrompt?.trim();
+    const requestKey =
+      launchInitialData?.cursorAgentRequestId ?? prompt ?? null;
+
+    if (
+      !prompt ||
+      !requestKey ||
+      !launchInitialData?.autoStartCursorAgent ||
+      requestKey === launchPrefillAppliedRef.current
+    ) {
+      return;
     }
-  };
+
+    launchPrefillAppliedRef.current = requestKey;
+    setNewPrompt(prompt);
+    void handleStartAgent(prompt);
+  }, [
+    launchInitialData?.cursorAgentPrompt,
+    launchInitialData?.autoStartCursorAgent,
+    launchInitialData?.cursorAgentRequestId,
+    handleStartAgent,
+  ]);
 
   const toolbar = (
     <CursorAgentsToolbar
@@ -374,6 +407,12 @@ export function CursorAgentsPanel({
                   adminTableRowClass,
                   "cursor-pointer",
                   run.status === "running" && adminCursorAgentRunningRowClass,
+                  selectedRunId === run.runId &&
+                    run.status === "running" &&
+                    adminCursorAgentRunningSelectedRowClass,
+                  selectedRunId === run.runId &&
+                    run.status !== "running" &&
+                    adminCursorAgentSelectedRowClass,
                 )}
                 data-selected={selectedRunId === run.runId ? "true" : undefined}
               >

@@ -24,8 +24,8 @@ describe("cursorAgentToolDisplay", () => {
         },
       },
     ]);
-    expect(running.primary).toBe("Running");
-    expect(running.secondary).toBe("cd /workspace && bun test");
+    expect(running.verb).toBe("Running");
+    expect(running.detail).toBe("cd /workspace && bun test");
     expect(running.done).toBe(false);
 
     const done = buildToolInvocationLabel([
@@ -39,12 +39,12 @@ describe("cursorAgentToolDisplay", () => {
         },
       },
     ]);
-    expect(done.primary).toBe("Ran");
-    expect(done.secondary).toBe("bun test");
+    expect(done.verb).toBe("Ran");
+    expect(done.detail).toBe("bun test");
     expect(done.done).toBe(true);
   });
 
-  test("keeps file path secondary for non-terminal tools", () => {
+  test("splits read verb from file detail", () => {
     const read = buildToolInvocationLabel([
       {
         ev: {
@@ -55,8 +55,32 @@ describe("cursorAgentToolDisplay", () => {
         },
       },
     ]);
-    expect(read.primary).toBe("Read foo.ts");
-    expect(read.secondary).toBe("/workspace/src/foo.ts");
+    expect(read.verb).toBe("Read");
+    expect(read.detail).toBe("foo.ts");
+  });
+
+  test("splits search verb from query detail", () => {
+    const search = buildToolInvocationLabel([
+      {
+        ev: {
+          type: "tool_call",
+          name: "grep_search",
+          status: "completed",
+          args: { pattern: ".error" },
+        },
+      },
+    ]);
+    expect(search.verb).toBe("Search text");
+    expect(search.detail).toBe(".error");
+  });
+
+  test("shows file count in detail for grouped reads", () => {
+    const reads = buildToolInvocationLabel([
+      { ev: { type: "tool_call", name: "read_file", status: "completed", args: { path: "a.ts" } } },
+      { ev: { type: "tool_call", name: "read_file", status: "completed", args: { path: "b.ts" } } },
+    ]);
+    expect(reads.verb).toBe("Read");
+    expect(reads.detail).toBe("2 files");
   });
 
   test("shouldRenderTerminalMarkerInPlainStream hides success end banner", () => {
@@ -77,7 +101,7 @@ describe("cursorAgentToolDisplay", () => {
         status: "finished",
         summary: "Shipped the fix.",
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 });
 

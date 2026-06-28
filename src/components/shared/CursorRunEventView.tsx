@@ -43,24 +43,24 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 const markdownStreamClass =
   "cursor-stream-md px-1 py-0.5 font-geneva-12 text-[12px] leading-snug text-neutral-700 break-words dark:text-neutral-200";
 
+const toolRowVerbClass = "shrink-0 text-os-text-secondary";
+const toolRowDetailClass =
+  "min-w-0 truncate text-os-text-disabled dark:text-neutral-500";
+
 function CursorToolInvocationRow({
-  primary,
-  secondary,
+  verb,
+  detail,
   done,
 }: {
-  primary: string;
-  secondary?: string;
+  verb: string;
+  detail?: string;
   done: boolean;
 }) {
   return (
-    <div className="mb-0 px-1 py-0.5 text-[12px]">
-      <div className="flex min-w-0 flex-nowrap items-baseline gap-1 text-neutral-700 dark:text-neutral-200">
-        <span className={`shrink-0 ${done ? "" : "shimmer"}`}>{primary}</span>
-        {secondary ? (
-          <span className="min-w-0 truncate text-neutral-500 dark:text-neutral-400">
-            {secondary}
-          </span>
-        ) : null}
+    <div className="mb-0 px-1 py-0.5 text-[12px] leading-snug">
+      <div className="flex min-w-0 flex-nowrap items-baseline gap-1">
+        <span className={`${toolRowVerbClass} ${done ? "" : "shimmer"}`}>{verb}</span>
+        {detail ? <span className={toolRowDetailClass}>{detail}</span> : null}
       </div>
     </div>
   );
@@ -223,22 +223,14 @@ function ThinkingBody({
 function ToolCallEvent({ ev }: { ev: Record<string, unknown> }) {
   const parts = buildToolInvocationLabel([{ ev }]);
   return (
-    <CursorToolInvocationRow
-      primary={parts.primary}
-      secondary={parts.secondary}
-      done={parts.done}
-    />
+    <CursorToolInvocationRow verb={parts.verb} detail={parts.detail} done={parts.done} />
   );
 }
 
 function ToolCallGroupEvent({ rows }: { rows: Record<string, unknown>[] }) {
   const parts = buildToolInvocationLabel(rows);
   return (
-    <CursorToolInvocationRow
-      primary={parts.primary}
-      secondary={parts.secondary}
-      done={parts.done}
-    />
+    <CursorToolInvocationRow verb={parts.verb} detail={parts.detail} done={parts.done} />
   );
 }
 

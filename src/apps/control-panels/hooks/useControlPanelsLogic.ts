@@ -530,6 +530,7 @@ export function useControlPanelsLogic({
     useState(false);
   const isCloudForceSyncing = isCloudForceUploading || isCloudForceDownloading;
 
+
   /** Force-upload all enabled sync categories so local state wins. */
   const handleCloudForceUpload = useCallback(async () => {
     if (!username || !isAuthenticated) {
@@ -591,6 +592,7 @@ export function useControlPanelsLogic({
       setIsCloudForceDownloading(false);
     }
   }, [isAuthenticated, t, username]);
+
 
   // States for previous volume levels for mute/unmute functionality
   const [prevMasterVolume, setPrevMasterVolume] = useState(

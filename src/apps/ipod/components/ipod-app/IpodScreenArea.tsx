@@ -20,6 +20,7 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
     loopAll,
     isShuffled,
     isPlaying,
+    playbackRequested,
     showVideo,
     backlightOn,
     lcdFilterOn,
@@ -62,6 +63,7 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
     handlePlay,
     handlePause,
     handleReady,
+    handlePlaybackAttemptFailed,
     toggleVideo,
     ipodVolume,
     showStatus,
@@ -109,6 +111,7 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
       <IpodScreen
         currentTrack={tracks[currentIndex] || null}
         isPlaying={isPlaying && !isFullScreen}
+        playbackRequested={playbackRequested && !isFullScreen}
         totalTime={totalTime}
         menuMode={menuMode}
         menuHistory={menuHistory}
@@ -128,6 +131,7 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
         handlePlay={handlePlay}
         handlePause={handlePause}
         handleReady={handleReady}
+        handlePlaybackAttemptFailed={handlePlaybackAttemptFailed}
         loopCurrent={loopCurrent}
         loopAll={loopAll}
         isShuffled={isShuffled}

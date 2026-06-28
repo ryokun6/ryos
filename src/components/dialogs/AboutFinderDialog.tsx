@@ -397,7 +397,7 @@ export function AboutFinderDialog({
           {/* Memory usage bars */}
           <div className={cn("space-y-2 p-2 px-4 pb-4", aboutFinderSmallClass)}>
             {memoryUsage.map((app) => (
-              <div className="flex flex-row items-center gap-1" key={app.name}>
+              <div className="flex flex-row items-center gap-3" key={app.name}>
                 <div className="flex justify-between w-full gap-2">
                   <div className="flex-1 min-w-0 truncate">{app.name}</div>
                   <div className="shrink-0 whitespace-nowrap text-right">{app.memoryMB.toFixed(1)} {t("common.aboutThisMac.mb")}</div>

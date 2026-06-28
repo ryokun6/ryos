@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { shouldUpdatePlaybackTime } from "./playbackTime";
+import {
+  confirmPlayback,
+  requestPlayback,
+  resetPlaybackConfirmation,
+  stopPlayback,
+  togglePlayback,
+} from "@/shared/media/confirmedPlayback";
 
 export interface Video {
   id: string;
@@ -133,6 +140,9 @@ interface VideoStoreState {
   loopAll: boolean;
   loopCurrent: boolean;
   isShuffled: boolean;
+  /** Desired player state, including an in-flight play attempt. */
+  playbackRequested: boolean;
+  /** True only after ReactPlayer emits `onPlay`. */
   isPlaying: boolean;
   /**
    * Transient playback clock reported by ReactPlayer's `onProgress`. NOT
@@ -151,7 +161,9 @@ interface VideoStoreState {
   setLoopCurrent: (val: boolean) => void;
   setIsShuffled: (val: boolean) => void;
   togglePlay: () => void;
+  /** Request play or stop; `true` remains pending until `confirmPlayback`. */
   setIsPlaying: (val: boolean) => void;
+  confirmPlayback: () => void;
   /** Update the playback clock from a progress tick (fine + floored). */
   setPlaybackTime: (seconds: number) => void;
   /** Reset the playback clock to zero (e.g. on track change). */
@@ -169,7 +181,7 @@ const getInitialState = () => ({
   loopAll: true,
   loopCurrent: false,
   isShuffled: false,
-  isPlaying: false,
+  ...stopPlayback(),
   playedSeconds: 0,
   elapsedTime: 0,
 });
@@ -198,6 +210,9 @@ export const useVideoStore = create<VideoStoreState>()(
           return {
             videos: newVideos,
             currentVideoId,
+            ...(currentVideoId !== state.currentVideoId
+              ? resetPlaybackConfirmation(state)
+              : {}),
           };
         });
       },
@@ -208,13 +223,20 @@ export const useVideoStore = create<VideoStoreState>()(
             videoId && state.videos.find((v) => v.id === videoId)
               ? videoId
               : null;
-          return { currentVideoId: validVideoId };
+          return {
+            currentVideoId: validVideoId,
+            ...(validVideoId !== state.currentVideoId
+              ? resetPlaybackConfirmation(state)
+              : {}),
+          };
         }),
       setLoopAll: (val) => set({ loopAll: val }),
       setLoopCurrent: (val) => set({ loopCurrent: val }),
       setIsShuffled: (val) => set({ isShuffled: val }),
-      togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
-      setIsPlaying: (val) => set({ isPlaying: val }),
+      togglePlay: () => set((state) => togglePlayback(state)),
+      setIsPlaying: (val) =>
+        set(val ? requestPlayback() : stopPlayback()),
+      confirmPlayback: () => set((state) => confirmPlayback(state)),
       setPlaybackTime: (seconds) =>
         set((state) => {
           const flooredSeconds = Math.floor(seconds);

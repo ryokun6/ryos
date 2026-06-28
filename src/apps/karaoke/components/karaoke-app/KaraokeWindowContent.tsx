@@ -27,7 +27,7 @@ type KaraokeWindowContentProps = { c: KaraokeAppController };
 export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
   const effectiveIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
   const {
-    t, tracks, currentIndex, loopCurrent, isPlaying, isFullScreen, showLyrics,
+    t, tracks, currentIndex, loopCurrent, isPlaying, playbackRequested, isFullScreen, showLyrics,
     lyricsAlignment, lyricsFont, romanization,
     setRomanization, lyricsTranslationLanguage, setLyricsTranslationLanguage,
     isShuffled, toggleShuffle, isListenSessionRemoteOnly, isOffline, isLangMenuOpen,
@@ -43,7 +43,8 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
     handleOpenCoverFlowFromTitleCard, setLyricOffset, closeSyncMode, handleRefreshLyrics,
     handleCoverFlowSelectTrack, handleCoverFlowRotation, handleCoverFlowPlayInPlace,
     handlePlayPause, handleTrackEnd, handleProgress, setDuration, handlePlay, handleMainPlayerPause,
-    handleReady, handleToggleCoverFlow, handleAddSong, restartAutoHideTimer, setIsPlaying,
+    handleReady, handlePlaybackAttemptFailed, handleToggleCoverFlow, handleAddSong,
+    restartAutoHideTimer, setIsPlaying,
     setIsSyncModeOpen, setIsListenInviteOpen, handleLeaveListenSession, handleAssignPlaybackDevice,
     handlePassDj, handleTransferSessionHost, handleSendReaction, cycleAlignment, cycleLyricsFont,
     displayMode, handleDisplayModeSelect, displayModeOptions,
@@ -140,7 +141,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
       <KaraokeIosAutoplayWatchdog
         listenSession={listenSession}
         isListenSessionDj={isListenSessionDj}
-        isPlaying={isPlaying}
+        playbackRequested={playbackRequested}
         setIsPlaying={setIsPlaying}
         showStatus={showStatus}
         userHasInteractedRef={userHasInteractedRef}
@@ -164,7 +165,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
             <YouTubePlayer
               ref={playerRef}
               url={currentTrack.url}
-              playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
+              playing={playbackRequested && !isFullScreen && !isListenSessionRemoteOnly}
               width="100%"
               height="100%"
               volume={effectiveIpodVolume}
@@ -176,6 +177,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
               onPlay={handlePlay}
               onPause={handleMainPlayerPause}
               onReady={!isFullScreen ? handleReady : undefined}
+              onPlaybackAttemptFailed={handlePlaybackAttemptFailed}
               style={{ pointerEvents: "none" }}
               config={{
                 youtube: {

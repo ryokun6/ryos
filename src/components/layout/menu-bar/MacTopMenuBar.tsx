@@ -19,6 +19,7 @@ import { CloudSyncIndicator } from "./CloudSyncIndicator";
 import { ExposeButton } from "./ExposeButton";
 import { SpotlightMenuBarButton } from "./SpotlightMenuBarButton";
 import { useDesktopFullscreen } from "./useDesktopFullscreen";
+import { shouldShowDesktopDragDebugZone } from "./desktopDragDebug";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
 const dragRegionStyle = { WebkitAppRegion: "drag" } as CSSProperties;
@@ -33,7 +34,10 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
     exposeMode: s.exposeMode,
   }));
 
-  const debugMode = useDisplaySettingsStoreShallow((s) => s.debugMode);
+  const { debugMode, showResizers } = useDisplaySettingsStoreShallow((s) => ({
+    debugMode: s.debugMode,
+    showResizers: s.showResizers,
+  }));
   const foregroundInstance = getForegroundInstance();
   const hasActiveApp = !!foregroundInstance;
 
@@ -42,6 +46,11 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
     useWallpaperMenubarText(isAquaGlass);
   const isPhone = useIsPhone();
   const isDesktopApp = isDesktop();
+  const showDesktopDragDebugZone = shouldShowDesktopDragDebugZone({
+    isDesktopApp,
+    debugMode,
+    showResizers,
+  });
   const isFullscreen = useDesktopFullscreen();
 
   const isWindowsPlatform = isDesktopWindows();
@@ -121,7 +130,9 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
           className="flex-1"
           style={{
             ...dragRegionStyle,
-            background: debugMode ? "rgba(255, 0, 0, 0.3)" : undefined,
+            background: showDesktopDragDebugZone
+              ? "rgba(255, 0, 0, 0.3)"
+              : undefined,
             minHeight: "100%",
           }}
           onDoubleClick={() => {

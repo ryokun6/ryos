@@ -11,6 +11,7 @@ import { AdminScrollContent } from "./AdminScrollContent";
 import { AdminStatusBar } from "./AdminStatusBar";
 import { AdminRedisBrowserView } from "./AdminRedisBrowserView";
 import type { AdminSection } from "../../utils/navigationState";
+import type { AdminInitialData } from "../../types";
 import type { TFunction } from "i18next";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
 import type { AdminImportStatus } from "./adminImportStatus";
@@ -92,6 +93,7 @@ export interface AdminMainPaneProps {
   importStatusText: string;
   showCursorAgentsPanel: boolean;
   cursorAgentsRefreshSignal: number;
+  cursorAgentInitialData?: AdminInitialData;
   setCursorAgentCount: (n: number) => void;
   users: UserRow[];
   visibleUsersCount: number;
@@ -158,6 +160,7 @@ export function AdminMainPane({
   importStatusText,
   showCursorAgentsPanel,
   cursorAgentsRefreshSignal,
+  cursorAgentInitialData,
   setCursorAgentCount,
   users,
   visibleUsersCount,
@@ -251,6 +254,7 @@ export function AdminMainPane({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <CursorAgentsPanel
               refreshSignal={cursorAgentsRefreshSignal}
+              launchInitialData={cursorAgentInitialData}
               onTotalCountChange={setCursorAgentCount}
             />
           </div>

@@ -1,9 +1,12 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 import {
   clearConsoleCapture,
+  formatConsoleArguments,
   formatConsoleEntriesForCopy,
   getConsoleCaptureSnapshot,
   installConsoleCapture,
+  setConsoleCaptureEnabled,
+  sanitizeConsoleStyle,
   subscribeConsoleCapture,
 } from "../src/utils/consoleCapture";
 
@@ -13,6 +16,7 @@ const flush = () => new Promise<void>((r) => queueMicrotask(() => r()));
 describe("consoleCapture", () => {
   beforeEach(async () => {
     installConsoleCapture();
+    setConsoleCaptureEnabled(true);
     clearConsoleCapture();
     await flush();
   });
@@ -73,5 +77,77 @@ describe("consoleCapture", () => {
     await flush();
     const text = formatConsoleEntriesForCopy(getConsoleCaptureSnapshot());
     expect(text).toContain("[LOG] copy line");
+  });
+
+  test("skips buffering while capture is disabled", async () => {
+    setConsoleCaptureEnabled(false);
+    await flush();
+
+    console.log("not buffered");
+    await flush();
+
+    expect(getConsoleCaptureSnapshot()).toHaveLength(0);
+
+    setConsoleCaptureEnabled(true);
+    console.log("buffered again");
+    await flush();
+
+    expect(getConsoleCaptureSnapshot().at(-1)?.text).toBe("buffered again");
+  });
+
+  test("sanitizes console styles to a strict safe subset", () => {
+    expect(
+      sanitizeConsoleStyle(
+        "color: #FFF; background: #000; font-weight: bold; position: fixed; background-image: url(https://example.com/x)"
+      )
+    ).toEqual({
+      color: "#fff",
+      backgroundColor: "#000",
+      fontWeight: "bold",
+    });
+  });
+
+  test("parses multiple %c segments and keeps readable plain text", () => {
+    const formatted = formatConsoleArguments([
+      "%cRed%c white on black",
+      "color: red",
+      "color: #fff; background-color: #000",
+    ]);
+
+    expect(formatted.text).toBe("Red white on black");
+    expect(formatted.styledSegments).toEqual([
+      { text: "Red", style: { color: "red" } },
+      {
+        text: " white on black",
+        style: { color: "#fff", backgroundColor: "#000" },
+      },
+    ]);
+  });
+
+  test("captures Tone-style %c logs without exposing formatting syntax", async () => {
+    console.log(
+      "%c * Tone.js v15.1.22 *",
+      "background: #000; color: #fff"
+    );
+    await flush();
+
+    const entries = getConsoleCaptureSnapshot();
+    const last = entries[entries.length - 1];
+    expect(last.text).toBe(" * Tone.js v15.1.22 *");
+    expect(last.styledSegments).toEqual([
+      {
+        text: " * Tone.js v15.1.22 *",
+        style: { backgroundColor: "#000", color: "#fff" },
+      },
+    ]);
+
+    const copied = formatConsoleEntriesForCopy([last]);
+    expect(copied).toContain("[LOG]  * Tone.js v15.1.22 *");
+    expect(copied).not.toContain("%c");
+    expect(copied).not.toContain("background:");
+  });
+
+  test("falls back to plain text for unmatched %c placeholders", () => {
+    expect(formatConsoleArguments(["%c unmatched"]).text).toBe("%c unmatched");
   });
 });

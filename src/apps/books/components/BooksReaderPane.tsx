@@ -82,6 +82,7 @@ interface FlipState {
 }
 
 type BooksDebugLevel = "info" | "warn" | "error";
+type BooksDebugSnapshot = Record<string, unknown>;
 
 // Extra top clearance so the page never sits under the hover-revealed window
 // titlebar (the window uses the full-bleed "notitlebar" material).
@@ -164,14 +165,22 @@ function serializeDebugValue(
   seen = new WeakSet<object>()
 ): unknown {
   if (value instanceof Error) {
+    if (seen.has(value)) return "[Circular]";
+    seen.add(value);
+    const cause = "cause" in value ? value.cause : undefined;
     return {
+      kind: "Error",
       name: value.name,
       message: value.message,
       stack: value.stack,
+      cause: cause === undefined ? undefined : serializeDebugValue(cause, seen),
     };
   }
-  if (value instanceof DOMException) {
+  if (typeof DOMException !== "undefined" && value instanceof DOMException) {
+    if (seen.has(value)) return "[Circular]";
+    seen.add(value);
     return {
+      kind: "DOMException",
       name: value.name,
       message: value.message,
       code: value.code,
@@ -230,6 +239,25 @@ function getBooksDebugEnvironment() {
       "standalone" in window.navigator
         ? Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
         : undefined,
+  };
+}
+
+function getElementSnapshot(element: HTMLElement | null): BooksDebugSnapshot | null {
+  if (!element) return null;
+  const rect = element.getBoundingClientRect();
+  return {
+    clientWidth: element.clientWidth,
+    clientHeight: element.clientHeight,
+    offsetWidth: element.offsetWidth,
+    offsetHeight: element.offsetHeight,
+    rect: {
+      width: rect.width,
+      height: rect.height,
+      top: rect.top,
+      left: rect.left,
+    },
+    isConnected: element.isConnected,
+    childElementCount: element.childElementCount,
   };
 }
 
@@ -435,9 +463,72 @@ export const BooksReaderPane = forwardRef<
         requestAnimationFrame(() => resolve())
       );
 
+    const getReaderDebugSnapshot = (
+      step: string,
+      startedAt?: number
+    ): BooksDebugSnapshot => {
+      const debugBook = book as unknown as
+        | {
+            archived?: boolean;
+            container?: { packagePath?: string };
+            package?: { metadata?: unknown };
+            settings?: unknown;
+          }
+        | null;
+      const debugRendition = rendition as unknown as
+        | {
+            location?: unknown;
+            manager?: { constructor?: { name?: string } };
+            settings?: unknown;
+            views?: () => unknown;
+          }
+        | null;
+      let viewCount: number | undefined;
+      try {
+        const views = debugRendition?.views?.();
+        viewCount = Array.isArray(views) ? views.length : undefined;
+      } catch {
+        viewCount = undefined;
+      }
+      return {
+        step,
+        elapsedMs: startedAt ? Date.now() - startedAt : undefined,
+        entry: {
+          path: entry.path,
+          fileName: entry.fileName,
+          name: entry.name,
+          modifiedAt: entry.modifiedAt,
+        },
+        initialCfi: initialCfiRef.current,
+        activeSectionHref: activeSectionHrefRef.current,
+        host: getElementSnapshot(renderHostRef.current),
+        book: book
+          ? {
+              archived: debugBook?.archived,
+              packagePath: debugBook?.container?.packagePath,
+              metadata: debugBook?.package?.metadata,
+              settings: debugBook?.settings,
+            }
+          : null,
+        rendition: rendition
+          ? {
+              location: debugRendition?.location,
+              managerName: debugRendition?.manager?.constructor?.name,
+              settings: debugRendition?.settings,
+              viewCount,
+            }
+          : null,
+      };
+    };
+
     const watch = async <T,>(step: string, promise: Promise<T>): Promise<T> => {
+      const startedAt = Date.now();
       const timeout = window.setTimeout(() => {
-        appendDebugEvent(`${step}:stillPending`, undefined, "warn");
+        appendDebugEvent(
+          `${step}:stillPending`,
+          getReaderDebugSnapshot(step, startedAt),
+          "warn"
+        );
       }, 8000);
       try {
         return await promise;
@@ -553,7 +644,14 @@ export const BooksReaderPane = forwardRef<
           on?: (eventName: string, handler: (...args: unknown[]) => void) => void;
         };
         bookEvents.on?.("openFailed", (error) => {
-          appendDebugEvent("epubjs:book:openFailed", error, "error");
+          appendDebugEvent(
+            "epubjs:book:openFailed",
+            {
+              error,
+              snapshot: getReaderDebugSnapshot("epubjs:book:openFailed"),
+            },
+            "error"
+          );
           if (!cancelled) {
             setLoadError(t("apps.books.reader.error"));
             setCoverVisible(false);
@@ -623,7 +721,14 @@ export const BooksReaderPane = forwardRef<
           })
         );
         rendition.on("displayError", (error: unknown) =>
-          appendDebugEvent("epubjs:rendition:displayError", error, "error")
+          appendDebugEvent(
+            "epubjs:rendition:displayError",
+            {
+              error,
+              snapshot: getReaderDebugSnapshot("epubjs:rendition:displayError"),
+            },
+            "error"
+          )
         );
         rendition.on(
           "layout",
@@ -744,8 +849,13 @@ export const BooksReaderPane = forwardRef<
           // Corrupt / incompatible EPUB — show an error instead of revealing an
           // empty reader shell. Do not proceed to setIsReady / cover hide.
           if (!cancelled) {
-            console.error("[Books] Failed to display book", err);
-            appendDebugEvent("epubjs:display:failed", err, "error");
+            const snapshot = getReaderDebugSnapshot("epubjs:display:failed");
+            booksLog.error("epubjs:display:failed", { error: err, snapshot });
+            appendDebugEvent(
+              "epubjs:display:failed",
+              { error: err, snapshot },
+              "error"
+            );
             setLoadError(t("apps.books.reader.error"));
             setCoverVisible(false);
             setIsReady(true);
@@ -774,8 +884,13 @@ export const BooksReaderPane = forwardRef<
           );
       } catch (err) {
         if (!cancelled) {
-          console.error("[Books] Failed to open book", err);
-          appendDebugEvent("reader:open:failed", err, "error");
+          const snapshot = getReaderDebugSnapshot("reader:open:failed");
+          booksLog.error("reader:open:failed", { error: err, snapshot });
+          appendDebugEvent(
+            "reader:open:failed",
+            { error: err, snapshot },
+            "error"
+          );
           setLoadError(t("apps.books.reader.error"));
           setCoverVisible(false);
           setIsReady(true);

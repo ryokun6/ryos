@@ -114,6 +114,55 @@ export function isStaleQueueLoad(
   return cancelled || loadGeneration !== currentGeneration;
 }
 
+function getErrorLikeText(value: unknown): string {
+  if (value instanceof Error) {
+    return [value.name, value.message, value.stack].filter(Boolean).join("\n");
+  }
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") {
+    const record = value as {
+      name?: unknown;
+      message?: unknown;
+      stack?: unknown;
+    };
+    return [record.name, record.message, record.stack]
+      .filter((part): part is string => typeof part === "string")
+      .join("\n");
+  }
+  return String(value);
+}
+
+/**
+ * MusicKit JS v3 sometimes rejects internally from its event dispatcher. Those
+ * rejections otherwise surface as bare `Unhandled rejection: @...musickit.js`
+ * logs with no iPod context. Detect only MusicKit-owned stacks so app errors
+ * still bubble normally.
+ */
+export function isLikelyMusicKitUnhandledRejection(reason: unknown): boolean {
+  return /(?:musickit|music\.apple\.com)/i.test(getErrorLikeText(reason));
+}
+
+/** MusicKit `playbackState` value for actively playing audio. */
+export const MUSICKIT_PLAYBACK_STATE_PLAYING = 2;
+
+export function isMusicKitPlaying(
+  playbackState: number | undefined
+): boolean {
+  return playbackState === MUSICKIT_PLAYBACK_STATE_PLAYING;
+}
+
+/**
+ * MusicKit JS v3 rejects when `play()` is called while already playing:
+ * "The play() method was called without a previous stop() or pause() call."
+ * Detect that known rejection so callers can skip redundant play() calls or
+ * downgrade the log level.
+ */
+export function isMusicKitRedundantPlayError(reason: unknown): boolean {
+  return /play\(\) method was called without a previous stop\(\) or pause\(\) call/i.test(
+    getErrorLikeText(reason)
+  );
+}
+
 export function getMusicKitEventItemId(
   item:
     | {

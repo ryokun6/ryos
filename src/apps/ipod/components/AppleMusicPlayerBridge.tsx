@@ -1,14 +1,27 @@
-import { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Track } from "@/stores/useIpodStore";
 import { getMusicKitInstance, onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
   getMusicKitEventItemId,
+  isLikelyMusicKitUnhandledRejection,
+  isMusicKitPlaying,
+  isMusicKitRedundantPlayError,
   isStaleQueueLoad,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
 } from "./appleMusicPlayerBridgeUtils";
+import { createClientLogger } from "@/utils/logger";
+
+const appleMusicLog = createClientLogger("AppleMusic");
 
 /**
  * Apple Music playback bridge.
@@ -114,6 +127,41 @@ function mediaItemToNowPlayingMetadata(
   };
 }
 
+function summarizeTrackForLog(track: Track | null): Record<string, unknown> | null {
+  if (!track) return null;
+  return {
+    id: track.id,
+    title: track.title,
+    artist: track.artist,
+    source: track.source,
+    hasPlayParams: Boolean(track.appleMusicPlayParams),
+    playParams: track.appleMusicPlayParams
+      ? {
+          kind: track.appleMusicPlayParams.kind,
+          hasCatalogId: Boolean(track.appleMusicPlayParams.catalogId),
+          hasLibraryId: Boolean(track.appleMusicPlayParams.libraryId),
+          hasStationId: Boolean(track.appleMusicPlayParams.stationId),
+          hasPlaylistId: Boolean(track.appleMusicPlayParams.playlistId),
+        }
+      : null,
+  };
+}
+
+function callBridgeCallback(
+  name: string,
+  callback: (() => unknown) | undefined,
+  context: Record<string, unknown>
+): void {
+  try {
+    const result = callback?.();
+    void Promise.resolve(result).catch((error) => {
+      appleMusicLog.error(`callback:${name}:rejected`, { error, context });
+    });
+  } catch (error) {
+    appleMusicLog.error(`callback:${name}:threw`, { error, context });
+  }
+}
+
 export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   {
     ref,
@@ -180,7 +228,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         } catch {
           /* ignore — unmount is best-effort */
         }
-        console.warn("[apple music] stop() on unmount failed", err);
+        appleMusicLog.warn("stop:onUnmount:failed", { error: err });
       }
     };
   }, []);
@@ -205,6 +253,24 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
   // without resubscribing on every render.
   const currentTrackRef = useRef(currentTrack);
   currentTrackRef.current = currentTrack;
+
+  const getBridgeSnapshot = useCallback(() => {
+    const inst = instanceRef.current;
+    return {
+      currentTrack: summarizeTrackForLog(currentTrackRef.current),
+      queuedTrackId: lastQueuedTrackIdRef.current,
+      queueGeneration: queueGenerationRef.current,
+      hasPendingQueueLoad: queueLoadingRef.current !== null,
+      instance: inst
+        ? {
+            isAuthorized: inst.isAuthorized,
+            playbackState: inst.playbackState,
+            currentPlaybackTime: inst.currentPlaybackTime,
+            storefrontId: inst.storefrontId,
+          }
+        : null,
+    };
+  }, []);
 
   // Dedup state for `onEnded` fan-out. MusicKit JS fires both `ended`
   // (5) and `completed` (10) when a single-song queue's only item
@@ -250,11 +316,17 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         return;
       }
       if (state === 2) {
-        onPlayRef.current?.();
+        callBridgeCallback("playbackStateDidChange:onPlay", onPlayRef.current, {
+          state,
+          snapshot: getBridgeSnapshot(),
+        });
         return;
       }
       if (state === 3 || state === 4) {
-        onPauseRef.current?.();
+        callBridgeCallback("playbackStateDidChange:onPause", onPauseRef.current, {
+          state,
+          snapshot: getBridgeSnapshot(),
+        });
         return;
       }
       if (
@@ -284,7 +356,11 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           lastEndedFiredForItemIdRef.current = eventItemId;
         }
         lastEndedFiredAtRef.current = now;
-        onEndedRef.current?.();
+        callBridgeCallback("playbackStateDidChange:onEnded", onEndedRef.current, {
+          state,
+          eventItemId,
+          snapshot: getBridgeSnapshot(),
+        });
         return;
       }
       // loading/seeking/waiting/stalled and the suppressed mid-queue
@@ -298,10 +374,22 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         event.item?.playbackDuration ??
         0;
       if (durationMs > 0) {
-        onDurationRef.current?.(durationMs / 1000);
+        callBridgeCallback(
+          "mediaItemDidChange:onDuration",
+          () => onDurationRef.current?.(durationMs / 1000),
+          { durationMs, snapshot: getBridgeSnapshot() }
+        );
       }
-      onNowPlayingItemChangeRef.current?.(
-        mediaItemToNowPlayingMetadata(event.item)
+      callBridgeCallback(
+        "mediaItemDidChange:onNowPlayingItemChange",
+        () =>
+          onNowPlayingItemChangeRef.current?.(
+            mediaItemToNowPlayingMetadata(event.item)
+          ),
+        {
+          itemId: getMusicKitEventItemId(event.item),
+          snapshot: getBridgeSnapshot(),
+        }
       );
     };
 
@@ -336,7 +424,32 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         );
       }
     };
-  }, []);
+  }, [getBridgeSnapshot]);
+
+  // MusicKit JS can reject inside its own event dispatcher, outside any promise
+  // we directly await. Convert those known MusicKit-owned unhandled rejections
+  // into scoped logs with playback context, but let unrelated app rejections
+  // keep bubbling to the global console capture.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (!isLikelyMusicKitUnhandledRejection(event.reason)) return;
+      event.preventDefault();
+      const payload = {
+        error: event.reason,
+        snapshot: getBridgeSnapshot(),
+      };
+      if (isMusicKitRedundantPlayError(event.reason)) {
+        appleMusicLog.warn("musickit:redundantPlay", payload);
+        return;
+      }
+      appleMusicLog.error("musickit:unhandledrejection", payload);
+    };
+    window.addEventListener("unhandledrejection", onUnhandledRejection);
+    return () => {
+      window.removeEventListener("unhandledrejection", onUnhandledRejection);
+    };
+  }, [getBridgeSnapshot]);
 
   // Steady-cadence progress polling with wall-clock interpolation.
   //
@@ -439,9 +552,13 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         Math.min(1, volume)
       );
     } catch (err) {
-      console.warn("[apple music] failed to set volume", err);
+      appleMusicLog.warn("volume:set:failed", {
+        error: err,
+        volume,
+        snapshot: getBridgeSnapshot(),
+      });
     }
-  }, [volume]);
+  }, [getBridgeSnapshot, volume]);
 
   // Stable representation of the queue so we only call setQueue when the
   // *track* (not unrelated prop changes) actually flips.
@@ -474,10 +591,10 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
 
     const queueOptions = getQueueOptions(currentTrack);
     if (!queueOptions) {
-      console.warn(
-        "[apple music] track is missing playParams, skipping",
-        currentTrack
-      );
+      appleMusicLog.warn("queue:missingPlayParams", {
+        currentTrack: summarizeTrackForLog(currentTrack),
+        snapshot: getBridgeSnapshot(),
+      });
       return;
     }
 
@@ -540,30 +657,49 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         if (isStale()) return;
         if (resumeSeconds != null) {
           await inst.seekToTime(resumeSeconds).catch((err) => {
-            console.warn("[apple music] resume seek failed", err);
+            appleMusicLog.warn("queue:resumeSeek:failed", {
+              error: err,
+              resumeSeconds,
+              snapshot: getBridgeSnapshot(),
+            });
           });
         }
         if (isStale()) return;
-        if (currentTrack.durationMs && currentTrack.durationMs > 0) {
-          onDurationRef.current?.(currentTrack.durationMs / 1000);
+        const durationMs = currentTrack.durationMs;
+        if (durationMs && durationMs > 0) {
+          callBridgeCallback(
+            "queue:onDuration",
+            () => onDurationRef.current?.(durationMs / 1000),
+            {
+              durationMs,
+              snapshot: getBridgeSnapshot(),
+            }
+          );
         }
         lastQueuedTrackIdRef.current = localQueueKey;
-        if (shouldPlayAfterQueue) {
+        if (shouldPlayAfterQueue && !isMusicKitPlaying(inst.playbackState)) {
           await inst.play().catch((err) => {
+            if (isMusicKitRedundantPlayError(err)) return;
             // Browsers block autoplay until the user interacts; surface as
             // a paused state so the iPod's play button shows the right icon.
-            console.warn(
-              "[apple music] play() blocked, awaiting user gesture",
-              err
-            );
-            onPauseRef.current?.();
+            appleMusicLog.warn("queue:play:blocked", {
+              error: err,
+              snapshot: getBridgeSnapshot(),
+            });
+            callBridgeCallback("queue:onPauseAfterBlockedPlay", onPauseRef.current, {
+              snapshot: getBridgeSnapshot(),
+            });
           });
         }
       } catch (err) {
         if (!isStale()) {
           lastQueuedTrackIdRef.current = null;
         }
-        console.error("[apple music] setQueue failed", err);
+        appleMusicLog.error("queue:setQueue:failed", {
+          error: err,
+          queueOptions,
+          snapshot: getBridgeSnapshot(),
+        });
       } finally {
         // Only clear the shared ref when *we* are still the most recent
         // load. A newer track change already replaced `queueLoadingRef`
@@ -600,13 +736,18 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         const queuedTrackId = lastQueuedTrackIdRef.current;
         if (queuedTrackId !== track.id) return;
         if (playing) {
+          if (isMusicKitPlaying(inst.playbackState)) return;
           const startSeconds = getSafeStartSeconds(
             track,
             resumeAtSecondsRef.current
           );
           if (startSeconds != null) {
             await inst.seekToTime(startSeconds).catch((err) => {
-              console.warn("[apple music] play seek failed", err);
+              appleMusicLog.warn("playback:playSeek:failed", {
+                error: err,
+                startSeconds,
+                snapshot: getBridgeSnapshot(),
+              });
             });
           }
           await inst.play();
@@ -614,11 +755,23 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           inst.pause();
         }
       } catch (err) {
-        console.warn("[apple music] play/pause failed", err);
+        if (isMusicKitRedundantPlayError(err)) return;
+        appleMusicLog.warn("playback:playPause:failed", {
+          error: err,
+          playing,
+          snapshot: getBridgeSnapshot(),
+        });
+        if (playing) {
+          callBridgeCallback(
+            "playback:onPauseAfterFailedPlay",
+            onPauseRef.current,
+            { snapshot: getBridgeSnapshot() }
+          );
+        }
       }
     };
     void apply();
-  }, [playing, instanceReadyTick]);
+  }, [getBridgeSnapshot, playing, instanceReadyTick]);
 
   useImperativeHandle(
     ref,
@@ -632,7 +785,11 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           await inst.seekToTime(seconds);
         };
         apply().catch((err) => {
-          console.warn("[apple music] seekToTime failed", err);
+          appleMusicLog.warn("imperativeSeek:failed", {
+            error: err,
+            seconds,
+            snapshot: getBridgeSnapshot(),
+          });
         });
       },
       getCurrentTime() {
@@ -642,7 +799,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         return instanceRef.current;
       },
     }),
-    []
+    [getBridgeSnapshot]
   );
 
   return null;
