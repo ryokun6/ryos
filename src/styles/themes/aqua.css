@@ -308,6 +308,17 @@
   font-smooth: auto;
 }
 
+.aqua-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  pointer-events: none;
+}
+
+.aqua-button.primary:disabled {
+  animation: none;
+}
+
 /* Aqua button pulse animation - classic Mac OS X pulsing effect */
 @keyframes aqua-pulse {
   0%, 100% {
@@ -383,6 +394,30 @@
 .aqua-button.orange span {
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Destructive variant keeps native Aqua gloss while clearly signaling danger. */
+.aqua-button.destructive {
+  background: linear-gradient(
+    rgba(177, 20, 30, 0.9),
+    rgba(225, 53, 62, 0.9),
+    rgba(248, 125, 130, 0.9)
+  );
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(150, 0, 10, 0.55),
+    inset 0 1px 3px rgba(92, 0, 7, 0.85),
+    inset 0 2px 3px 1px rgba(225, 53, 62, 0.75);
+}
+.aqua-button.destructive:focus,
+.aqua-button.destructive:active {
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(150, 0, 10, 0.55),
+    inset 0 1px 3px rgba(92, 0, 7, 0.85),
+    inset 0 2px 3px 1px rgba(225, 53, 62, 0.75),
+    0 0 3px rgba(225, 53, 62, 0.55);
+}
+.aqua-button.destructive,
+.aqua-button.destructive span {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(70, 0, 5, 0.55);
 }
 
 /* Top shine */

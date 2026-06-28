@@ -160,7 +160,7 @@ export function ResetPasswordDialog({
           {error}
         </p>
       )}
-      <DialogFooter className="mt-4 gap-1 sm:justify-end">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-end">
         <Button
           type="submit"
           variant="retro"
@@ -234,7 +234,7 @@ export function ResetPasswordDialog({
           {error}
         </p>
       )}
-      <DialogFooter className="mt-4 gap-1 sm:justify-between">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-between">
         <Button
           type="button"
           variant="retro"

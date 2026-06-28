@@ -102,7 +102,7 @@ export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
       )}
 
       {hasResults && (
-        <DialogFooter className="mt-4 gap-1 sm:justify-end">
+        <DialogFooter className="mt-4 gap-1.5 sm:justify-end">
           <div className="flex flex-col-reverse gap-2 w-full sm:w-auto sm:flex-row">
             <Button
               variant={isMacTheme ? "secondary" : "retro"}

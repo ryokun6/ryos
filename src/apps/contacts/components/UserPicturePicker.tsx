@@ -104,8 +104,8 @@ export function UserPicturePicker({
         className="hidden"
         onChange={handleCustomImage}
       />
-      <DialogFooter className="mt-4 gap-1 sm:justify-between">
-        <div className="flex gap-1 w-full sm:w-auto">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-between">
+        <div className="flex gap-1.5 w-full sm:w-auto">
           <Button
             variant="retro"
             onClick={() => fileInputRef.current?.click()}

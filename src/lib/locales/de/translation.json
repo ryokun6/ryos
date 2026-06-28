@@ -1683,7 +1683,8 @@
         "submit": "Konto löschen",
         "successDescription": "Ihr Konto und Ihre Daten wurden entfernt.",
         "successTitle": "Konto gelöscht",
-        "title": "Konto löschen"
+        "title": "Konto löschen",
+        "openButton": "Konto löschen…"
       },
       "deleteAccountMenu": "Konto löschen…",
       "deleteAccountRowDescription": "Dein Konto und die synchronisierten Daten dauerhaft löschen",
@@ -1715,7 +1716,7 @@
         "title": "E-Mail",
         "unverifiedAs": "{{email}} · Nicht verifiziert",
         "verifiedAs": "{{email}} · Verifiziert",
-        "verify": "Verifizieren"
+        "verify": "Verifizieren…"
       },
       "errorBoundaries": "Fehlergrenzen",
       "errorBoundariesDescription": "App- oder Desktop-Absturz-Fallbacks zum Testen auslösen",
@@ -1764,7 +1765,7 @@
       "ipodVolume": "iPod-Lautstärke",
       "logIn": "Anmelden",
       "logOut": "Abmelden",
-      "logOutAll": "Alle abmelden",
+      "logOutAll": "Alle abmelden…",
       "logOutOfAllDevices": "Von allen Geräten abmelden",
       "logOutOfAllDevicesRowDescription": "Von deinem ryOS-Konto auf allen Geräten abmelden",
       "logOutRowDescription": "Melden Sie sich auf diesem Gerät von Ihrem ryOS-Konto ab",
@@ -1892,7 +1893,7 @@
       "selectAPreset": "Voreinstellung auswählen",
       "selectScreenSaver": "Bildschirmschoner auswählen",
       "sepia": "Sepia",
-      "setPassword": "Passwort festlegen",
+      "setPassword": "Passwort festlegen…",
       "setPasswordDialog": {
         "description": "Legen Sie ein Passwort fest, um die Kontowiederherstellung zu ermöglichen. Sie können dieses Passwort verwenden, um ein neues Token zu erhalten, wenn Sie den Zugriff verlieren.",
         "submitLabel": "Passwort festlegen",
@@ -2049,7 +2050,8 @@
         "objects": "Objekte",
         "plants": "Pflanzen",
         "structures": "Strukturen"
-      }
+      },
+      "logOutButton": "Abmelden…"
     },
     "dashboard": {
       "calendar": {

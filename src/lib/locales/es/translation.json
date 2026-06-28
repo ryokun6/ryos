@@ -1685,7 +1685,8 @@
         "submit": "Eliminar cuenta",
         "successDescription": "Tu cuenta y tus datos han sido eliminados.",
         "successTitle": "Cuenta eliminada",
-        "title": "Eliminar cuenta"
+        "title": "Eliminar cuenta",
+        "openButton": "Eliminar cuenta…"
       },
       "deleteAccountMenu": "Eliminar cuenta…",
       "deleteAccountRowDescription": "Eliminar permanentemente tu cuenta y los datos sincronizados",
@@ -1717,7 +1718,7 @@
         "title": "Correo electrónico",
         "unverifiedAs": "{{email}} · No verificado",
         "verifiedAs": "{{email}} · Verificado",
-        "verify": "Verificar"
+        "verify": "Verificar…"
       },
       "errorBoundaries": "Límites de error",
       "errorBoundariesDescription": "Activa los mecanismos de recuperación ante fallos de la aplicación o del escritorio para pruebas",
@@ -1766,7 +1767,7 @@
       "ipodVolume": "Volumen del iPod",
       "logIn": "Iniciar sesión",
       "logOut": "Cerrar sesión",
-      "logOutAll": "Cerrar todo",
+      "logOutAll": "Cerrar todo…",
       "logOutOfAllDevices": "Cerrar sesión en todos los dispositivos",
       "logOutOfAllDevicesRowDescription": "Cerrar sesión de tu cuenta de ryOS en todos los dispositivos",
       "logOutRowDescription": "Cerrar sesión de tu cuenta de ryOS en este dispositivo",
@@ -1894,7 +1895,7 @@
       "selectAPreset": "Seleccionar un preajuste",
       "selectScreenSaver": "Seleccionar protector de pantalla",
       "sepia": "Sepia",
-      "setPassword": "Definir contraseña",
+      "setPassword": "Definir contraseña…",
       "setPasswordDialog": {
         "description": "Establece una contraseña para habilitar la recuperación de la cuenta. Puedes usar esta contraseña para obtener un nuevo token si pierdes el acceso.",
         "submitLabel": "Definir contraseña",
@@ -2051,7 +2052,8 @@
         "objects": "Objetos",
         "plants": "Plantas",
         "structures": "Estructuras"
-      }
+      },
+      "logOutButton": "Cerrar sesión…"
     },
     "dashboard": {
       "calendar": {

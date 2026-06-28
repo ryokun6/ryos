@@ -1685,7 +1685,8 @@
         "submit": "Supprimer le compte",
         "successDescription": "Votre compte et vos données ont été supprimés.",
         "successTitle": "Compte supprimé",
-        "title": "Supprimer le compte"
+        "title": "Supprimer le compte",
+        "openButton": "Supprimer le compte…"
       },
       "deleteAccountMenu": "Supprimer le compte…",
       "deleteAccountRowDescription": "Supprimer définitivement votre compte et vos données synchronisées",
@@ -1717,7 +1718,7 @@
         "title": "E-mail",
         "unverifiedAs": "{{email}} · Non vérifié",
         "verifiedAs": "{{email}} · Vérifié",
-        "verify": "Vérifier"
+        "verify": "Vérifier…"
       },
       "errorBoundaries": "Limites d’erreur",
       "errorBoundariesDescription": "Déclencher les solutions de repli en cas de plantage de l’appli ou du bureau pour les tests",
@@ -1766,7 +1767,7 @@
       "ipodVolume": "Volume de l’iPod",
       "logIn": "Se connecter",
       "logOut": "Fermer la session",
-      "logOutAll": "Tout déconnecter",
+      "logOutAll": "Tout déconnecter…",
       "logOutOfAllDevices": "Se déconnecter de tous les appareils",
       "logOutOfAllDevicesRowDescription": "Se déconnecter de votre compte ryOS sur tous les appareils",
       "logOutRowDescription": "Se déconnecter de votre compte ryOS sur cet appareil",
@@ -1894,7 +1895,7 @@
       "selectAPreset": "Sélectionner un préréglage",
       "selectScreenSaver": "Sélectionner un économiseur d’écran",
       "sepia": "Sépia",
-      "setPassword": "Définir le mot de passe",
+      "setPassword": "Définir le mot de passe…",
       "setPasswordDialog": {
         "description": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez l'utiliser pour obtenir un nouveau jeton si vous perdez l'accès.",
         "submitLabel": "Définir le mot de passe",
@@ -2051,7 +2052,8 @@
         "objects": "Objets",
         "plants": "Plantes",
         "structures": "Structures"
-      }
+      },
+      "logOutButton": "Fermer la session…"
     },
     "dashboard": {
       "calendar": {

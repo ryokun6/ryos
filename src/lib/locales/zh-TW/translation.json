@@ -1683,7 +1683,8 @@
         "submit": "刪除帳號",
         "successDescription": "您的帳號和數據已移除。",
         "successTitle": "帳號已刪除",
-        "title": "刪除帳號"
+        "title": "刪除帳號",
+        "openButton": "刪除帳號⋯"
       },
       "deleteAccountMenu": "刪除帳號⋯",
       "deleteAccountRowDescription": "永久移除您的帳號及同步資料",
@@ -1715,7 +1716,7 @@
         "title": "電子郵件",
         "unverifiedAs": "{{email}} · 未驗證",
         "verifiedAs": "{{email}} · 已驗證",
-        "verify": "驗證"
+        "verify": "驗證⋯"
       },
       "errorBoundaries": "錯誤邊界",
       "errorBoundariesDescription": "觸發 App 或桌面崩潰的備用方案以供測試。",
@@ -1764,7 +1765,7 @@
       "ipodVolume": "iPod 音量",
       "logIn": "登入",
       "logOut": "登出",
-      "logOutAll": "全部登出",
+      "logOutAll": "全部登出⋯",
       "logOutOfAllDevices": "登出所有裝置",
       "logOutOfAllDevicesRowDescription": "在所有裝置上登出您的 ryOS 帳號",
       "logOutRowDescription": "在此裝置登出您的 ryOS 帳號",
@@ -1892,7 +1893,7 @@
       "selectAPreset": "選取預設值",
       "selectScreenSaver": "選取螢幕保護程式",
       "sepia": "深褐色",
-      "setPassword": "設定密碼",
+      "setPassword": "設定密碼⋯",
       "setPasswordDialog": {
         "description": "設定密碼以啟用帳號復原。如果您失去存取權，可以使用此密碼來取得新的權杖。",
         "submitLabel": "設定密碼",
@@ -2049,7 +2050,8 @@
         "objects": "物件",
         "plants": "植物",
         "structures": "建築"
-      }
+      },
+      "logOutButton": "登出⋯"
     },
     "dashboard": {
       "calendar": {

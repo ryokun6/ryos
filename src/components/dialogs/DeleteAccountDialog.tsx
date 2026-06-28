@@ -150,7 +150,7 @@ export function DeleteAccountDialog({
           {error}
         </p>
       )}
-      <DialogFooter className="mt-4 gap-1 sm:justify-end">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-end">
         <Button
           type="button"
           variant="retro"
@@ -163,9 +163,9 @@ export function DeleteAccountDialog({
         </Button>
         <Button
           type="submit"
-          variant="retro"
+          variant="destructive"
           disabled={busy}
-          className={cn("w-full sm:w-auto h-7 text-red-600", themeFont)}
+          className={cn("w-full sm:w-auto h-7", themeFont)}
           style={themeFontStyle}
         >
           {busy

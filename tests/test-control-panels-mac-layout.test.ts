@@ -335,7 +335,7 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(securitySource.includes("AccountProfileHeader")).toBe(true);
     expect(securitySource.includes("DeleteAccountDialog")).toBe(true);
     expect(securitySource.includes("deleteAccountRowDescription")).toBe(true);
-    expect(securitySource.includes("deleteAccount.submit")).toBe(true);
+    expect(securitySource.includes("deleteAccount.openButton")).toBe(true);
 
     const securityCase = rendererSource.slice(
       rendererSource.indexOf('case "security":'),

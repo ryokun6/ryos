@@ -42,6 +42,7 @@ interface RecoveryEmailDialogProps {
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RECOVERY_EMAIL_FORM_ID = "recovery-email-form";
 
 export function RecoveryEmailDialog({
   isOpen,
@@ -234,7 +235,11 @@ export function RecoveryEmailDialog({
       )}
 
       {pendingVerify ? (
-        <form onSubmit={handleVerify} className="space-y-2">
+        <form
+          id={RECOVERY_EMAIL_FORM_ID}
+          onSubmit={handleVerify}
+          className="space-y-2"
+        >
           <Label
             className={cn("text-neutral-700", themeFont)}
             style={themeFontStyle}
@@ -253,20 +258,13 @@ export function RecoveryEmailDialog({
             style={themeFontStyle}
             disabled={busy}
           />
-          <Button
-            type="submit"
-            variant="retro"
-            disabled={busy || !codeInput.trim()}
-            className={cn("h-7 w-full", themeFont)}
-            style={themeFontStyle}
-          >
-            {busy
-              ? t("apps.control-panels.recoveryEmail.verifying")
-              : t("apps.control-panels.recoveryEmail.verify")}
-          </Button>
         </form>
       ) : (
-        <form onSubmit={handleSendVerification} className="space-y-2">
+        <form
+          id={RECOVERY_EMAIL_FORM_ID}
+          onSubmit={handleSendVerification}
+          className="space-y-2"
+        >
           <Label
             className={cn("text-neutral-700", themeFont)}
             style={themeFontStyle}
@@ -284,17 +282,6 @@ export function RecoveryEmailDialog({
             style={themeFontStyle}
             disabled={busy || !!notConfigured || loadingStatus}
           />
-          <Button
-            type="submit"
-            variant="retro"
-            disabled={busy || !!notConfigured || loadingStatus || !emailInput.trim()}
-            className={cn("h-7 w-full", themeFont)}
-            style={themeFontStyle}
-          >
-            {busy
-              ? t("apps.control-panels.recoveryEmail.saving")
-              : t("apps.control-panels.recoveryEmail.save")}
-          </Button>
         </form>
       )}
 
@@ -317,7 +304,7 @@ export function RecoveryEmailDialog({
         </p>
       )}
 
-      <DialogFooter className="mt-2 gap-1 sm:justify-between">
+      <DialogFooter className="mt-2 gap-1.5 sm:justify-between">
         {status?.hasEmail && !hideRemove ? (
           <Button
             type="button"
@@ -331,19 +318,39 @@ export function RecoveryEmailDialog({
               ? t("apps.control-panels.recoveryEmail.removing")
               : t("apps.control-panels.recoveryEmail.remove")}
           </Button>
-        ) : (
-          <span />
-        )}
-        <Button
-          type="button"
-          variant="retro"
-          onClick={() => onOpenChange(false)}
-          disabled={busy}
-          className={cn("h-7 w-full sm:w-auto", themeFont)}
-          style={themeFontStyle}
-        >
-          {t("apps.control-panels.recoveryEmail.close")}
-        </Button>
+        ) : null}
+        <div className="flex w-full flex-col-reverse gap-1.5 sm:ml-auto sm:w-auto sm:flex-row">
+          <Button
+            type="button"
+            variant="retro"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+            className={cn("h-7 w-full sm:w-auto", themeFont)}
+            style={themeFontStyle}
+          >
+            {t("common.dialog.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            form={RECOVERY_EMAIL_FORM_ID}
+            variant={isMacOSTheme ? "default" : "retro"}
+            disabled={
+              pendingVerify
+                ? busy || !codeInput.trim()
+                : busy || !!notConfigured || loadingStatus || !emailInput.trim()
+            }
+            className={cn("h-7 w-full sm:w-auto", themeFont)}
+            style={themeFontStyle}
+          >
+            {pendingVerify
+              ? busy
+                ? t("apps.control-panels.recoveryEmail.verifying")
+                : t("apps.control-panels.recoveryEmail.verify")
+              : busy
+                ? t("apps.control-panels.recoveryEmail.saving")
+                : t("apps.control-panels.recoveryEmail.save")}
+          </Button>
+        </div>
       </DialogFooter>
     </div>
   );

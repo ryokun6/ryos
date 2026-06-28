@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { RecoveryEmailDialog } from "@/components/dialogs/RecoveryEmailDialog";
 import { DeleteAccountDialog } from "@/components/dialogs/DeleteAccountDialog";
 import type { LanguageCode } from "@/stores/useLanguageStore";
@@ -7,6 +8,7 @@ import type { RealtimeConnectionState } from "@/lib/pusherClient";
 import type { Contact } from "@/utils/contacts";
 import { AccountProfileHeader } from "./AccountProfileHeader";
 import { ControlPanelsPrefFormRow } from "./ControlPanelsPrefFormRow";
+import { cn } from "@/lib/utils";
 
 export type SecurityPaneContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -49,6 +51,7 @@ export function SecurityPaneContent({
 }: SecurityPaneContentProps) {
   const [isRecoveryEmailOpen, setIsRecoveryEmailOpen] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
+  const [isLogoutAllConfirmOpen, setIsLogoutAllConfirmOpen] = useState(false);
 
   const openPasswordDialog = () => {
     setPasswordInput("");
@@ -72,72 +75,87 @@ export function SecurityPaneContent({
           promptLogin={promptLogin}
         />
 
-        {username ? (
-          <>
-            <ControlPanelsPrefFormRow
-              label={t("apps.control-panels.password")}
-              description={t("apps.control-panels.passwordDescription")}
-            >
-              <Button variant="retro" onClick={openPasswordDialog} className="h-7">
-                {hasPassword
-                  ? t("apps.control-panels.changePasswordButton")
-                  : t("apps.control-panels.setPassword")}
-              </Button>
-            </ControlPanelsPrefFormRow>
+        <ControlPanelsPrefFormRow
+          label={t("apps.control-panels.password")}
+          description={t("apps.control-panels.passwordDescription")}
+          className={cn(!username && "opacity-50")}
+        >
+          <Button
+            variant="retro"
+            onClick={openPasswordDialog}
+            disabled={!username}
+            className="h-7"
+          >
+            {hasPassword
+              ? t("apps.control-panels.changePasswordButton")
+              : t("apps.control-panels.setPassword")}
+          </Button>
+        </ControlPanelsPrefFormRow>
 
-            <ControlPanelsPrefFormRow
-              label={t("apps.control-panels.recoveryEmailTitle")}
-              description={t("apps.control-panels.recoveryEmailDescription")}
-            >
-              <Button
-                variant="retro"
-                onClick={() => setIsRecoveryEmailOpen(true)}
-                className="h-7"
-              >
-                {t("apps.control-panels.manage")}
-              </Button>
-            </ControlPanelsPrefFormRow>
+        <ControlPanelsPrefFormRow
+          label={t("apps.control-panels.recoveryEmailTitle")}
+          description={t("apps.control-panels.recoveryEmailDescription")}
+          className={cn(!username && "opacity-50")}
+        >
+          <Button
+            variant="retro"
+            onClick={() => setIsRecoveryEmailOpen(true)}
+            disabled={!username}
+            className="h-7"
+          >
+            {t("apps.control-panels.manage")}
+          </Button>
+        </ControlPanelsPrefFormRow>
 
-            <ControlPanelsPrefFormRow
-              label={t("apps.control-panels.logOut")}
-              description={t("apps.control-panels.logOutRowDescription")}
-            >
-              <Button variant="retro" onClick={logout} className="h-7">
-                {t("apps.control-panels.logOut")}
-              </Button>
-            </ControlPanelsPrefFormRow>
+        <ControlPanelsPrefFormRow
+          label={t("apps.control-panels.logOut")}
+          description={t("apps.control-panels.logOutRowDescription")}
+          className={cn(!username && "opacity-50")}
+        >
+          <Button
+            variant="retro"
+            onClick={logout}
+            disabled={!username}
+            className="h-7"
+          >
+            {t("apps.control-panels.logOutButton")}
+          </Button>
+        </ControlPanelsPrefFormRow>
 
-            <ControlPanelsPrefFormRow
-              label={t("apps.control-panels.logOutOfAllDevices")}
-              description={t("apps.control-panels.logOutOfAllDevicesRowDescription")}
-            >
-              <Button
-                variant="retro"
-                onClick={handleLogoutAllDevices}
-                disabled={isLoggingOutAllDevices}
-                className="h-7"
-              >
-                {isLoggingOutAllDevices
-                  ? t("apps.control-panels.loggingOut")
-                  : t("apps.control-panels.logOutAll")}
-              </Button>
-            </ControlPanelsPrefFormRow>
+        <ControlPanelsPrefFormRow
+          label={t("apps.control-panels.logOutOfAllDevices")}
+          description={t("apps.control-panels.logOutOfAllDevicesRowDescription")}
+          className={cn(!username && "opacity-50")}
+        >
+          <Button
+            variant="retro"
+            onClick={() => setIsLogoutAllConfirmOpen(true)}
+            disabled={!username || isLoggingOutAllDevices}
+            className="h-7"
+          >
+            {isLoggingOutAllDevices
+              ? t("apps.control-panels.loggingOut")
+              : t("apps.control-panels.logOutAll")}
+          </Button>
+        </ControlPanelsPrefFormRow>
 
-            <ControlPanelsPrefFormRow
-              label={t("apps.control-panels.deleteAccount.title")}
-              description={t("apps.control-panels.deleteAccountRowDescription")}
-              className="[&_.control-panels-pref-form-label-text]:text-red-600"
-            >
-              <Button
-                variant="retro"
-                onClick={() => setIsDeleteAccountOpen(true)}
-                className="h-7 text-red-600"
-              >
-                {t("apps.control-panels.deleteAccount.submit")}
-              </Button>
-            </ControlPanelsPrefFormRow>
-          </>
-        ) : null}
+        <ControlPanelsPrefFormRow
+          label={t("apps.control-panels.deleteAccount.title")}
+          description={t("apps.control-panels.deleteAccountRowDescription")}
+          className={cn(
+            "[&_.control-panels-pref-form-label-text]:text-red-600",
+            !username && "opacity-50"
+          )}
+        >
+          <Button
+            variant="retro"
+            onClick={() => setIsDeleteAccountOpen(true)}
+            disabled={!username}
+            className="h-7 text-red-600"
+          >
+            {t("apps.control-panels.deleteAccount.openButton")}
+          </Button>
+        </ControlPanelsPrefFormRow>
       </div>
       <RecoveryEmailDialog
         isOpen={isRecoveryEmailOpen}
@@ -147,6 +165,16 @@ export function SecurityPaneContent({
         isOpen={isDeleteAccountOpen}
         onOpenChange={setIsDeleteAccountOpen}
         hasPassword={hasPassword}
+      />
+      <ConfirmDialog
+        isOpen={isLogoutAllConfirmOpen}
+        onOpenChange={setIsLogoutAllConfirmOpen}
+        onConfirm={() => {
+          setIsLogoutAllConfirmOpen(false);
+          handleLogoutAllDevices();
+        }}
+        title={t("apps.control-panels.logOutOfAllDevices")}
+        description={t("apps.control-panels.logOutOfAllDevicesRowDescription")}
       />
     </div>
   );

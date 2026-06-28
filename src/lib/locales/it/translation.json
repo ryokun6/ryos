@@ -1685,7 +1685,8 @@
         "submit": "Elimina account",
         "successDescription": "Il tuo account e i tuoi dati sono stati rimossi.",
         "successTitle": "Account eliminato",
-        "title": "Elimina account"
+        "title": "Elimina account",
+        "openButton": "Elimina account…"
       },
       "deleteAccountMenu": "Elimina account…",
       "deleteAccountRowDescription": "Rimuovi permanentemente il tuo account e i dati sincronizzati",
@@ -1717,7 +1718,7 @@
         "title": "E-mail",
         "unverifiedAs": "{{email}} · Non verificata",
         "verifiedAs": "{{email}} · Verificata",
-        "verify": "Verifica"
+        "verify": "Verifica…"
       },
       "errorBoundaries": "Limiti di errore",
       "errorBoundariesDescription": "Attiva i fallback di crash dell'app o del desktop per i test",
@@ -1766,7 +1767,7 @@
       "ipodVolume": "Volume iPod",
       "logIn": "Accedi",
       "logOut": "Esci",
-      "logOutAll": "Esci da tutti",
+      "logOutAll": "Esci da tutti…",
       "logOutOfAllDevices": "Esci da tutti i dispositivi",
       "logOutOfAllDevicesRowDescription": "Esci dal tuo account ryOS su tutti i dispositivi",
       "logOutRowDescription": "Esci dal tuo account ryOS su questo dispositivo",
@@ -1894,7 +1895,7 @@
       "selectAPreset": "Seleziona un preset",
       "selectScreenSaver": "Seleziona salvaschermo",
       "sepia": "Seppia",
-      "setPassword": "Imposta password",
+      "setPassword": "Imposta password…",
       "setPasswordDialog": {
         "description": "Imposta una password per abilitare il recupero dell'account. Puoi usare questa password per ottenere un nuovo token se perdi l'accesso.",
         "submitLabel": "Imposta password",
@@ -2051,7 +2052,8 @@
         "objects": "Oggetti",
         "plants": "Piante",
         "structures": "Strutture"
-      }
+      },
+      "logOutButton": "Esci…"
     },
     "dashboard": {
       "calendar": {

@@ -90,7 +90,7 @@ export function CreateRoomDialogContent({ vm }: Props) {
         </p>
       )}
 
-      <DialogFooter className="mt-4 gap-1 sm:gap-0">
+      <DialogFooter className="mt-4 gap-1.5">
         <Button
           variant="retro"
           onClick={() => onOpenChange(false)}

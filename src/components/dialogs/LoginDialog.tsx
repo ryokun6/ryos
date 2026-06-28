@@ -302,7 +302,7 @@ export function LoginDialog({
           </p>
         )}
 
-        <DialogFooter className="mt-6 gap-1 sm:justify-end">
+        <DialogFooter className="mt-6 gap-1.5 sm:justify-end">
           <Button
             type="submit"
             variant="retro"

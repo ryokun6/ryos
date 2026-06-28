@@ -3017,14 +3017,14 @@
       },
       "logIn": "Sign In",
       "accountMenu": "Account",
-      "setPassword": "Set Password",
+      "setPassword": "Set Password…",
       "changePassword": "Change Password",
       "changePasswordButton": "Change",
       "logOut": "Sign Out",
       "logOutRowDescription": "Sign out of your ryOS account on this device",
       "loggingOut": "Signing out…",
       "logOutOfAllDevices": "Sign Out of All Devices",
-      "logOutAll": "Sign Out Everywhere",
+      "logOutAll": "Sign Out Everywhere…",
       "logOutOfAllDevicesRowDescription": "Sign out of your ryOS account on every device",
       "ryOSAccount": "ryOS Account",
       "loginToSendMessages": "Sign in to send messages and more",
@@ -3070,7 +3070,8 @@
         "confirmMismatch": "user name doesn't match",
         "genericError": "Couldn't delete account. Try again.",
         "successTitle": "Account Deleted",
-        "successDescription": "Your account and data have been removed."
+        "successDescription": "Your account and data have been removed.",
+        "openButton": "Delete Account…"
       },
       "email": {
         "title": "Email",
@@ -3083,7 +3084,7 @@
         "notAvailable": "Email recovery is not available on this server",
         "add": "Add",
         "link": "Link",
-        "verify": "Verify",
+        "verify": "Verify…",
         "manage": "Manage"
       },
       "telegram": {
@@ -3330,7 +3331,8 @@
         "failedDescription": "Failed to sign out of all devices",
         "networkErrorTitle": "Network Error",
         "networkErrorDescription": "Failed to connect to server"
-      }
+      },
+      "logOutButton": "Sign Out…"
     },
     "stickies": {
       "name": "Stickies",

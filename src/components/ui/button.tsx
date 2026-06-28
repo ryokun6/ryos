@@ -62,7 +62,7 @@ const Button = (
 ) => {
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const Comp = asChild ? Slot : "button";
-  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     playButtonClick();
@@ -74,6 +74,9 @@ const Button = (
     if (isMacOSTheme && variant === "default") return cn("aqua-button primary", className);
     if (isMacOSTheme && variant === "secondary") return cn("aqua-button secondary", className);
     if (isMacOSTheme && variant === "retro") return cn("aqua-button secondary", className);
+    if (isMacOSTheme && variant === "destructive") {
+      return cn("aqua-button destructive", className);
+    }
 
     // macOS: aqua_select → CSS-driven aqua select button
     if (isMacOSTheme && variant === "aqua_select") {
@@ -89,6 +92,13 @@ const Button = (
 
     // XP/Win98: default/aqua_select → xp.css button class
     if (isWindowsTheme && (variant === "default" || variant === "aqua_select")) return cn("button", className);
+    if (isWindowsTheme && variant === "destructive") {
+      return cn("button text-red-600", className);
+    }
+
+    if (isSystem7Theme && variant === "destructive") {
+      return cn(buttonVariants({ variant: "retro", size }), "text-red-600", className);
+    }
 
     // XP/Win98 + macOS: ghost → transparent reset to fight global button styles
     if ((isWindowsTheme || isMacOSTheme) && variant === "ghost") {
@@ -99,7 +109,13 @@ const Button = (
   })();
 
   const resolvedStyle = (() => {
-    if (isMacOSTheme && (variant === "default" || variant === "secondary" || variant === "retro")) {
+    if (
+      isMacOSTheme &&
+      (variant === "default" ||
+        variant === "secondary" ||
+        variant === "retro" ||
+        variant === "destructive")
+    ) {
       return { position: "relative" as const, zIndex: 1, ...props.style };
     }
     return props.style;

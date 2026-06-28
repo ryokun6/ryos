@@ -510,8 +510,8 @@ export function LyricsSearchDialog({
         </div>
       )}
 
-      <DialogFooter className="mt-4 gap-1 sm:justify-between">
-        <div className="flex gap-1 w-full sm:w-auto">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-between">
+        <div className="flex gap-1.5 w-full sm:w-auto">
           {hasOverride && (
             <Button
               variant="retro"

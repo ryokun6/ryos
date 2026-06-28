@@ -1683,7 +1683,8 @@
         "submit": "계정 삭제",
         "successDescription": "계정과 데이터가 삭제되었습니다.",
         "successTitle": "계정 삭제됨",
-        "title": "계정 삭제"
+        "title": "계정 삭제",
+        "openButton": "계정 삭제…"
       },
       "deleteAccountMenu": "계정 삭제…",
       "deleteAccountRowDescription": "계정 및 동기화된 데이터를 영구적으로 삭제합니다.",
@@ -1715,7 +1716,7 @@
         "title": "이메일",
         "unverifiedAs": "{{email}} · 인증되지 않음",
         "verifiedAs": "{{email}} · 인증됨",
-        "verify": "확인"
+        "verify": "확인…"
       },
       "errorBoundaries": "오류 경계",
       "errorBoundariesDescription": "테스트를 위해 앱 또는 데스크톱 충돌 대체 기능을 유발합니다",
@@ -1764,7 +1765,7 @@
       "ipodVolume": "iPod 음량",
       "logIn": "로그인",
       "logOut": "로그아웃",
-      "logOutAll": "전체 로그아웃",
+      "logOutAll": "전체 로그아웃…",
       "logOutOfAllDevices": "모든 기기에서 로그아웃",
       "logOutOfAllDevicesRowDescription": "모든 기기에서 ryOS 계정 로그아웃",
       "logOutRowDescription": "이 기기에서 ryOS 계정에서 로그아웃",
@@ -1892,7 +1893,7 @@
       "selectAPreset": "사전 설정 선택",
       "selectScreenSaver": "화면 보호기 선택",
       "sepia": "세피아",
-      "setPassword": "암호 설정",
+      "setPassword": "암호 설정…",
       "setPasswordDialog": {
         "description": "계정 복구를 활성화하려면 암호를 설정하십시오. 접근 권한을 잃어버린 경우 이 암호를 사용하여 새 토큰을 받을 수 있습니다.",
         "submitLabel": "암호 설정",
@@ -2049,7 +2050,8 @@
         "objects": "사물",
         "plants": "식물",
         "structures": "구조물"
-      }
+      },
+      "logOutButton": "로그아웃…"
     },
     "dashboard": {
       "calendar": {

@@ -1683,7 +1683,8 @@
         "submit": "アカウントを削除",
         "successDescription": "アカウントとデータが削除されました。",
         "successTitle": "アカウントが削除されました",
-        "title": "アカウントを削除"
+        "title": "アカウントを削除",
+        "openButton": "アカウントを削除…"
       },
       "deleteAccountMenu": "アカウントを削除…",
       "deleteAccountRowDescription": "アカウントと同期データを完全に削除します",
@@ -1715,7 +1716,7 @@
         "title": "メール",
         "unverifiedAs": "{{email}} · 未認証",
         "verifiedAs": "{{email}} · 認証済み",
-        "verify": "認証"
+        "verify": "認証…"
       },
       "errorBoundaries": "エラー境界",
       "errorBoundariesDescription": "テスト用に、アプリまたはデスクトップのクラッシュ時のフォールバックをトリガーします。",
@@ -1764,7 +1765,7 @@
       "ipodVolume": "iPodの音量",
       "logIn": "サインイン",
       "logOut": "サインアウト",
-      "logOutAll": "すべてログアウト",
+      "logOutAll": "すべてログアウト…",
       "logOutOfAllDevices": "すべてのデバイスからログアウト",
       "logOutOfAllDevicesRowDescription": "すべてのデバイスでryOSアカウントからサインアウトする",
       "logOutRowDescription": "このデバイスで ryOS アカウントからサインアウト",
@@ -1892,7 +1893,7 @@
       "selectAPreset": "プリセットを選択",
       "selectScreenSaver": "スクリーンセーバーを選択",
       "sepia": "セピア",
-      "setPassword": "パスワードを設定",
+      "setPassword": "パスワードを設定…",
       "setPasswordDialog": {
         "description": "アカウント復元を有効にするにはパスワードを設定してください。アクセスできなくなった場合、このパスワードで新しいトークンを取得できます。",
         "submitLabel": "パスワードを設定",
@@ -2049,7 +2050,8 @@
         "objects": "オブジェクト",
         "plants": "植物",
         "structures": "ストラクチャ"
-      }
+      },
+      "logOutButton": "サインアウト…"
     },
     "dashboard": {
       "calendar": {

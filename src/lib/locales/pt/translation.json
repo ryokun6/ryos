@@ -1685,7 +1685,8 @@
         "submit": "Apagar Conta",
         "successDescription": "Sua conta e seus dados foram removidos.",
         "successTitle": "Conta excluída",
-        "title": "Apagar Conta"
+        "title": "Apagar Conta",
+        "openButton": "Apagar Conta…"
       },
       "deleteAccountMenu": "Apagar Conta…",
       "deleteAccountRowDescription": "Remover permanentemente a sua conta e os dados sincronizados",
@@ -1717,7 +1718,7 @@
         "title": "E-mail",
         "unverifiedAs": "{{email}} · Não verificado",
         "verifiedAs": "{{email}} · Verificado",
-        "verify": "Verificar"
+        "verify": "Verificar…"
       },
       "errorBoundaries": "Limites de Erro",
       "errorBoundariesDescription": "Acionar mecanismos de recuperação de falha do app ou do desktop para testes",
@@ -1766,7 +1767,7 @@
       "ipodVolume": "Volume do iPod",
       "logIn": "Iniciar Sessão",
       "logOut": "Finalizar Sessão",
-      "logOutAll": "Sair de Todos",
+      "logOutAll": "Sair de Todos…",
       "logOutOfAllDevices": "Sair de Todos os Dispositivos",
       "logOutOfAllDevicesRowDescription": "Encerrar sessão da sua conta ryOS em todos os dispositivos",
       "logOutRowDescription": "Sair da sua conta ryOS neste dispositivo",
@@ -1894,7 +1895,7 @@
       "selectAPreset": "Selecionar uma predefinição",
       "selectScreenSaver": "Selecionar protetor de tela",
       "sepia": "Sépia",
-      "setPassword": "Definir Senha",
+      "setPassword": "Definir Senha…",
       "setPasswordDialog": {
         "description": "Defina uma senha para ativar a recuperação da conta. Você pode usar esta senha para obter um novo token se perder o acesso.",
         "submitLabel": "Definir Senha",
@@ -2051,7 +2052,8 @@
         "objects": "Objetos",
         "plants": "Plantas",
         "structures": "Estruturas"
-      }
+      },
+      "logOutButton": "Finalizar Sessão…"
     },
     "dashboard": {
       "calendar": {

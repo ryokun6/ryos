@@ -265,7 +265,7 @@ export function ChangePasswordDialog({
         </p>
       )}
 
-      <DialogFooter className="mt-4 gap-1 sm:justify-end">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-end">
         <Button
           type="button"
           variant={isMacTheme ? "secondary" : "retro"}
