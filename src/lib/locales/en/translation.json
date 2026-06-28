@@ -4711,6 +4711,7 @@
     "closeConsole": "Close console",
     "hideConsole": "Hide console",
     "showConsole": "Show console",
+    "scrollToBottom": "Scroll to bottom",
     "noLogsYet": "No logs captured yet.",
     "toggleLabel": "Debug"
   },

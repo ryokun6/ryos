@@ -4695,6 +4695,7 @@
     "hideConsole": "Masquer la console",
     "noLogsYet": "Aucun log capturé pour le moment.",
     "showConsole": "Afficher la console",
+    "scrollToBottom": "Faire défiler vers le bas",
     "toggleLabel": "Debug",
     "warnCount": "{{count}} avert"
   },

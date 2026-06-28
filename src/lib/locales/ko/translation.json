@@ -4695,6 +4695,7 @@
     "hideConsole": "콘솔 숨기기",
     "noLogsYet": "아직 캡처된 로그가 없습니다.",
     "showConsole": "콘솔 표시",
+    "scrollToBottom": "맨 아래로 스크롤",
     "toggleLabel": "디버그",
     "warnCount": "{{count}} 경고"
   },

@@ -4680,6 +4680,7 @@
     "hideConsole": "Ocultar console",
     "noLogsYet": "Nenhum log capturado ainda.",
     "showConsole": "Mostrar console",
+    "scrollToBottom": "Rolar até o fim",
     "toggleLabel": "Debug",
     "warnCount": "{{count}} warn"
   },

@@ -4680,6 +4680,7 @@
     "hideConsole": "Скрыть консоль",
     "noLogsYet": "Логи пока не собраны.",
     "showConsole": "Показать консоль",
+    "scrollToBottom": "Прокрутить вниз",
     "toggleLabel": "Отладка",
     "warnCount": "{{count}} предупр."
   },
