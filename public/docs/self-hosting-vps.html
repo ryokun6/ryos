@@ -374,6 +374,7 @@
     <a href="/docs/books" class="nav-child ">2.24 Books</a>
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
+    <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -490,7 +491,12 @@ bun run start</code></pre>
 <pre><code>REDIS_KV_REST_API_URL="https://..."
 REDIS_KV_REST_API_TOKEN="..."</code></pre>
 <hr>
-<h2>4) Realtime backend options</h2>
+<h2>4) Optional account recovery email</h2>
+<p>Email-based account recovery uses Resend. Set both variables together; if either one is missing, ryOS falls back to Telegram-linked account recovery when available.</p>
+<pre><code>RESEND_API_KEY="..."
+RECOVERY_EMAIL_FROM="ryOS &lt;noreply@example.com&gt;"</code></pre>
+<hr>
+<h2>5) Realtime backend options</h2>
 <p>ryOS supports <strong>two realtime modes</strong>.</p>
 <h3>Option A — Pusher</h3>
 <pre><code>REALTIME_PROVIDER="pusher"
@@ -504,7 +510,7 @@ PUSHER_CLUSTER="us3"</code></pre>
 REALTIME_WS_PATH="/ws"</code></pre>
 <p>Notes: <ul><li>local websocket mode works best with <code>REDIS_URL</code></li></ul><ul><li>with <code>REDIS_URL</code>, websocket events can fan out across instances via Redis pub/sub</li><li>without <code>REDIS_URL</code>, local websocket delivery falls back to in-process fanout only</li></ul></p>
 <hr>
-<h2>5) Object storage backend</h2>
+<h2>6) Object storage backend</h2>
 <p>ryOS supports <strong>two object storage backends</strong> for cloud sync (backups, wallpapers, images).</p>
 <h3>Option A — S3-compatible (recommended for self-hosted)</h3>
 <p>Works with MinIO, Cloudflare R2, Backblaze B2, AWS S3, or any S3-compatible provider:</p>
@@ -522,7 +528,7 @@ S3_FORCE_PATH_STYLE=true   # required for MinIO and some providers</code></pre>
 BLOB_READ_WRITE_TOKEN=vercel_blob_...</code></pre>
 <p>When <code>STORAGE_PROVIDER</code> is not set explicitly, the backend is auto-detected: Vercel Blob if <code>BLOB_READ_WRITE_TOKEN</code> is present, S3 if the S3 environment variables are set.</p>
 <hr>
-<h2>6) Coolify deployment</h2>
+<h2>7) Coolify deployment</h2>
 <p>The repository includes a <code>Dockerfile</code> suitable for Coolify Dockerfile deployments. The image includes a health check endpoint at <code>/health</code>.</p>
 <h3>Suggested Coolify settings</h3>
 <ul><li><strong>Build Pack:</strong> Dockerfile</li></ul><ul><li><strong>Port Exposes:</strong> <code>3000</code> (or whatever you set via <code>PORT</code>)</li><li><strong>Command override:</strong> not required</li><li><strong>Environment variables:</strong> set them in the Coolify UI</li></ul>
@@ -552,7 +558,7 @@ S3_SECRET_ACCESS_KEY=your-secret-key</code></pre>
 <p>To wire it up: <ol><li>In Coolify, open your application → <strong>Webhooks</strong> → copy the <strong>Deploy webhook URL</strong> (it looks like <code>https://coolify.example.com/api/v1/deploy?uuid=&lt;resource-uuid&gt;</code>) and the <strong>API token</strong>.</li></ol><ol><li>In GitHub, open <strong>Settings → Secrets and variables → Actions → New repository secret</strong> and add:<ul><li><code>COOLIFY_WEBHOOK_URL</code> — the deploy webhook URL</li><li><code>COOLIFY_TOKEN</code> — the Coolify API token (sent as <code>Authorization: Bearer ...</code>)</li></ul></li><li>Optional: under <strong>Variables</strong>, set <code>COOLIFY_APP_URL</code> to your public app URL so it shows up on the GitHub deployment timeline.</li><li>Optional: in Coolify, disable the built-in Git auto-deploy so the webhook from GitHub Actions is the single source of truth.</li></ol></p>
 <p>The workflow also exposes a manual <code>workflow_dispatch</code> trigger with a <code>force_deploy</code> input that appends <code>force=true</code> to the webhook URL (useful when only environment variables changed).</p>
 <hr>
-<h2>7) VPS + systemd example</h2>
+<h2>8) VPS + systemd example</h2>
 <p>Example unit file:</p>
 <pre><code>[Unit]
 Description=ryOS self-hosted server
@@ -579,7 +585,7 @@ Group=www-data
 [Install]
 WantedBy=multi-user.target</code></pre>
 <hr>
-<h2>8) Reverse proxy example (optional)</h2>
+<h2>9) Reverse proxy example (optional)</h2>
 <p>If you still want Nginx or Caddy in front, just proxy the single Bun server:</p>
 <pre><code>server {
   listen 443 ssl http2;
@@ -606,10 +612,10 @@ WantedBy=multi-user.target</code></pre>
 }</code></pre>
 <p>No separate static file server is required.</p>
 <hr>
-<h2>9) Notes and caveats</h2>
+<h2>10) Notes and caveats</h2>
 <ul><li><code>/api/sync/*</code> endpoints use the switchable storage adapter (<code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/storage.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/storage.ts</a></code>), which supports both Vercel Blob and S3-compatible storage. See section 5 for configuration.</li></ul><ul><li>For local development without Vercel:<ul><li><code>bun run dev</code></li><li>or <code>bun run dev:api</code> + <code>bun run dev:vite</code></li></ul></li><li>API tests can target standalone mode:<ul><li><code>API_URL=http://localhost:3000 bun run test:new-api</code></li></ul></li></ul>
 <hr>
-<h2>10) Troubleshooting Docker bridge networking</h2>
+<h2>11) Troubleshooting Docker bridge networking</h2>
 <p>If you deploy a multi-container self-hosted stack with <code>REDIS_URL</code> and see: <ul><li>container-to-container Redis connections timing out</li></ul><ul><li>local websocket fanout failing across instances</li><li>Docker DNS resolving service names correctly, but TCP never connects</li></ul></p>
 <p>then the issue is usually the host's Docker bridge / iptables setup, not ryOS itself.</p>
 <p>This showed up in nested Docker testing when the host had mixed <code>iptables-nft</code> and <code>iptables-legacy</code> state, and bridge traffic was blocked even though containers and DNS were healthy.</p>

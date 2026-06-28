@@ -286,7 +286,9 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   );
 
   const track = getCurrentTrack();
-  const title = track?.title || (isKaraoke ? "Karaoke" : "iPod");
+  const title =
+    track?.title ||
+    t(isKaraoke ? "apps.dashboard.ipod.modeKaraoke" : "apps.dashboard.ipod.modeIpod");
   const artist = track?.artist || "";
   const hasTrack = !!track;
 
@@ -455,7 +457,7 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
               }}
             >
               {isKaraoke
-                ? t("apps.dashboard.ipod.karaokeNotOpen", "Karaoke is not open")
+                ? t("apps.dashboard.ipod.karaokeNotOpen")
                 : t("apps.dashboard.ipod.iTunesNotOpen", "iTunes is not open")}
             </div>
           )}
@@ -588,7 +590,7 @@ export function IpodBackPanel({
         <label
           style={{ fontSize: 11, fontWeight: 600, color: textColor, whiteSpace: "nowrap" }}
         >
-          {t("apps.dashboard.ipod.controlLabel", "Controls")}
+          {t("apps.dashboard.ipod.controlLabel")}
         </label>
         <select
           value={controlMode}
@@ -608,10 +610,10 @@ export function IpodBackPanel({
           }}
         >
           <option value="ipod" style={{ color: "#000" }}>
-            {t("apps.dashboard.ipod.modeIpod", "iPod")}
+            {t("apps.dashboard.ipod.modeIpod")}
           </option>
           <option value="karaoke" style={{ color: "#000" }}>
-            {t("apps.dashboard.ipod.modeKaraoke", "Karaoke")}
+            {t("apps.dashboard.ipod.modeKaraoke")}
           </option>
         </select>
       </div>
@@ -628,7 +630,7 @@ export function IpodBackPanel({
         }}
       >
         {controlMode === "karaoke"
-          ? t("apps.dashboard.ipod.openKaraoke", "Open Karaoke App")
+          ? t("apps.dashboard.ipod.openKaraoke")
           : t("apps.dashboard.ipod.openIpod", "Open iPod App")}
       </button>
 

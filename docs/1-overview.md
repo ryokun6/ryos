@@ -1,13 +1,13 @@
 # Overview
 
-ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 26 fully-functional apps, an AI assistant, and a complete virtual file system.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 27 fully-functional apps, an AI assistant, and a complete virtual file system.
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
 ```mermaid
 graph TB
     subgraph Presentation["Presentation Layer"]
-        Apps[26 App Modules]
+        Apps[27 App Modules]
         UI[UI Components]
         Themes[4 Themes]
     end
@@ -103,7 +103,7 @@ graph TB
 │   ├── lib/locales/  # i18n translation files (10 languages)
 │   ├── services/     # VFS and realtime service facades
 │   ├── shared/       # Contracts, sync helpers, domain types
-│   ├── stores/       # 38 Zustand store modules
+│   ├── stores/       # 40 Zustand store modules
 │   ├── styles/       # CSS
 │   ├── sync/         # Cloud Sync v2 client engine
 │   ├── themes/       # 4 theme definitions

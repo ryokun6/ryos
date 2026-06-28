@@ -2141,7 +2141,12 @@
         "previous": "Zurück",
         "repeatAll": "Alle wiederholen",
         "repeatOne": "Einen wiederholen",
-        "shuffle": "Zufallswiedergabe"
+        "shuffle": "Zufallswiedergabe",
+        "openKaraoke": "Karaoke-App oeffnen",
+        "karaokeNotOpen": "Karaoke ist nicht geoeffnet",
+        "controlLabel": "Steuerelemente",
+        "modeIpod": "iPod",
+        "modeKaraoke": "Karaoke"
       },
       "menu": {
         "about": "Über das Dashboard",
@@ -2748,7 +2753,11 @@
         "syncFailed": "Synchronisierung fehlgeschlagen",
         "unknownError": "Unbekannter Fehler",
         "updateCheckFailed": "Update-Überprüfung fehlgeschlagen",
-        "youreOffline": "Sie sind offline"
+        "youreOffline": "Sie sind offline",
+        "lyricsSearchHttpError": "Suche fehlgeschlagen (Status {{status}})",
+        "songSearchHttpError": "Suche fehlgeschlagen (Status {{status}})",
+        "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
+        "appleMusicPlaylistsFailed": "Playlists konnten nicht geladen werden"
       },
       "help": {
         "addSongs": {
@@ -2994,7 +3003,8 @@
         "instructions": "Tippen Sie auf die Zeile, die Sie hören",
         "offset": "Versatz",
         "searchLyrics": "Liedtexte suchen",
-        "syncScroll": "Bildlauf synchronisieren"
+        "syncScroll": "Bildlauf synchronisieren",
+        "title": "Liedtext synchronisieren"
       },
       "translationLanguages": {
         "auto": "Auto",

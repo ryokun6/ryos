@@ -5,6 +5,7 @@ import FutureSettingsDialog from "@/components/dialogs/FutureSettingsDialog";
 import TimeMachineView from "../TimeMachineView";
 import { appMetadata } from "../..";
 import type { AppProps } from "@/apps/base/types";
+import { useTranslation } from "react-i18next";
 
 export interface InternetExplorerAppDialogsProps {
   isTitleDialogOpen: boolean;
@@ -65,14 +66,16 @@ export function InternetExplorerAppDialogs({
   clearHistory,
   handleNavigate,
 }: InternetExplorerAppDialogsProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       <InputDialog
         isOpen={isTitleDialogOpen}
         onOpenChange={setTitleDialogOpen}
         onSubmit={handleTitleSubmit}
-        title="Add Favorite"
-        description="Enter a title for this favorite"
+        title={t("apps.internet-explorer.addFavorite")}
+        description={t("apps.internet-explorer.enterTitleForFavorite")}
         value={newFavoriteTitle}
         onChange={setNewFavoriteTitle}
       />
@@ -89,8 +92,8 @@ export function InternetExplorerAppDialogs({
         isOpen={isClearFavoritesDialogOpen}
         onOpenChange={setClearFavoritesDialogOpen}
         onConfirm={handleClearFavorites}
-        title="Clear Favorites"
-        description="Are you sure you want to clear all favorites?"
+        title={t("apps.internet-explorer.clearFavorites")}
+        description={t("apps.internet-explorer.areYouSureClearFavorites")}
       />
       <ConfirmDialog
         isOpen={isClearHistoryDialogOpen}
@@ -99,15 +102,15 @@ export function InternetExplorerAppDialogs({
           clearHistory();
           setClearHistoryDialogOpen(false);
         }}
-        title="Clear History"
-        description="Are you sure you want to clear all history?"
+        title={t("apps.internet-explorer.clearHistory")}
+        description={t("apps.internet-explorer.areYouSureClearHistory")}
       />
       <ConfirmDialog
         isOpen={isResetFavoritesDialogOpen}
         onOpenChange={setResetFavoritesDialogOpen}
         onConfirm={handleResetFavorites}
-        title="Reset Favorites"
-        description="Are you sure you want to reset favorites to default?"
+        title={t("apps.internet-explorer.resetFavorites")}
+        description={t("apps.internet-explorer.areYouSureResetFavorites")}
       />
       <FutureSettingsDialog
         isOpen={isFutureSettingsDialogOpen}
