@@ -10,6 +10,7 @@ import {
   DEFAULT_CONVERSION_CATEGORY,
   DEFAULT_CONVERSION_FROM_UNIT,
   DEFAULT_CONVERSION_TO_UNIT,
+  formatSwappedConversionValue,
   getCategoryById,
   type ConversionCategoryId,
 } from "../utils/conversionData";
@@ -518,7 +519,10 @@ export function useCalculatorLogic({
         type: "set",
         payload: {
           ...createInitialCalcState(),
-          display: formatNumber(conversionRawResult),
+          display: formatSwappedConversionValue(
+            conversionRawResult,
+            conversionAmount
+          ),
         },
       });
     }
@@ -529,6 +533,7 @@ export function useCalculatorLogic({
     setToUnit(fromUnit);
   }, [
     conversionRawResult,
+    conversionAmount,
     conversionCategory,
     currencyRate,
     fromUnit,

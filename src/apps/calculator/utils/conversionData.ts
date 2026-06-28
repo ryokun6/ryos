@@ -1,3 +1,5 @@
+import { formatNumber } from "./calculatorEngine";
+
 export type ConversionCategoryId =
   | "length"
   | "area"
@@ -26,6 +28,25 @@ export interface ConversionCategory {
 export const DEFAULT_CONVERSION_CATEGORY: ConversionCategoryId = "currency";
 export const DEFAULT_CONVERSION_FROM_UNIT = "USD";
 export const DEFAULT_CONVERSION_TO_UNIT = "EUR";
+
+export function formatSwappedConversionValue(
+  value: number,
+  sourceDisplay: string
+): string {
+  const normalizedSource = sourceDisplay.replace(/,/g, "");
+  const sourceMantissa = normalizedSource.split(/[eE]/, 1)[0] ?? "";
+  const decimalIndex = sourceMantissa.lastIndexOf(".");
+  if (decimalIndex === -1) {
+    return formatNumber(value);
+  }
+
+  const decimalPlaces = sourceMantissa.length - decimalIndex - 1;
+  if (decimalPlaces === 0) {
+    return formatNumber(value);
+  }
+
+  return value.toFixed(decimalPlaces);
+}
 
 export const CONVERSION_CATEGORIES: ConversionCategory[] = [
   {

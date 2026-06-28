@@ -18,6 +18,7 @@ import {
   DEFAULT_CONVERSION_CATEGORY,
   DEFAULT_CONVERSION_FROM_UNIT,
   DEFAULT_CONVERSION_TO_UNIT,
+  formatSwappedConversionValue,
 } from "../src/apps/calculator/utils/conversionData";
 import { formatCalculatorDisplay } from "../src/apps/calculator/utils/formatCalculatorDisplay";
 
@@ -113,6 +114,14 @@ describe("conversionData", () => {
     expect(currencyIds).toContain("TWD");
     expect(currencyIds).toContain("SGD");
     expect(currencyIds).toContain("KRW");
+  });
+
+  test("preserves entered decimal places when swapping units", () => {
+    expect(formatSwappedConversionValue(12.3, "1.00")).toBe("12.30");
+    expect(formatSwappedConversionValue(12.3, "1.000")).toBe("12.300");
+    expect(formatSwappedConversionValue(12.3, "1.00e+3")).toBe("12.30");
+    expect(formatSwappedConversionValue(12.3, "1")).toBe("12.3");
+    expect(formatSwappedConversionValue(12.3, "1.")).toBe("12.3");
   });
 
   test("length feet to meters", () => {
