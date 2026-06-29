@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-29T18:53:06.572430+00:00",
+  "generatedAt": "2026-06-29T18:59:40.610461+00:00",
   "source": {
     "name": "Mac OS X Tiger 10.4 Retail DVD",
     "url": "https://archive.org/details/macosx10.4tigerretaildvd"
@@ -2108,10 +2108,10 @@
       "bundleIdentifier": "com.apple.preference.internet",
       "version": "3.4",
       "sourceBundlePath": "/System/Library/PreferencePanes/Internet.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Internet.prefPane/Contents/Resources/Internet.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/Internet.prefPane/Contents/Resources/Internet.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/mac.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
@@ -2119,10 +2119,10 @@
       "bundleIdentifier": "com.apple.preference.internet",
       "version": "3.4",
       "sourceBundlePath": "/System/Library/PreferencePanes/Mac.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Mac.prefPane/Contents/Resources/Internet.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/Mac.prefPane/Contents/Resources/Internet.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/mac-2.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
@@ -2174,14 +2174,14 @@
       "bundleIdentifier": "com.apple.preference.classic",
       "version": "1.1",
       "sourceBundlePath": "/System/Library/PreferencePanes/Classic.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Classic.prefPane/Contents/Resources/Classic.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/Classic.prefPane/Contents/Resources/Classic.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/classic.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
-      "name": "Dashboard & Expos\u00e9",
+      "name": "Dashboard & Expose",
       "bundleIdentifier": "com.apple.preference.expose",
       "version": "1.1",
       "sourceBundlePath": "/System/Library/PreferencePanes/Expose.prefPane",
@@ -2295,10 +2295,10 @@
       "bundleIdentifier": "com.apple.preference.network",
       "version": "1.6",
       "sourceBundlePath": "/System/Library/PreferencePanes/Network.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Network.prefPane/Contents/Resources/Network.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/Network.prefPane/Contents/Resources/Network.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/network.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
@@ -2306,10 +2306,10 @@
       "bundleIdentifier": "com.apple.preference.printfax",
       "version": "2.0",
       "sourceBundlePath": "/System/Library/PreferencePanes/PrintAndFax.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/PrintFaxPref.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/Printer.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/print-and-fax.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
@@ -2339,10 +2339,10 @@
       "bundleIdentifier": "com.apple.preferences.sharing",
       "version": "1.4.0",
       "sourceBundlePath": "/System/Library/PreferencePanes/SharingPref.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/SharingPref.prefPane/Contents/Resources/SharingPref.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/SharingPref.prefPane/Contents/Resources/SharingPref.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/sharing.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
@@ -2361,10 +2361,10 @@
       "bundleIdentifier": "com.apple.preference.sound",
       "version": "2.3",
       "sourceBundlePath": "/System/Library/PreferencePanes/Sound.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Sound.prefPane/Contents/Resources/SoundPref.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/Sound.prefPane/Contents/Resources/Sound.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/sound.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
@@ -2383,10 +2383,10 @@
       "bundleIdentifier": "com.apple.preference.spotlight",
       "version": "1.0",
       "sourceBundlePath": "/System/Library/PreferencePanes/Spotlight.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/spotlight.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     },
     {
       "type": "system-preference",
@@ -2405,10 +2405,10 @@
       "bundleIdentifier": "com.apple.preference.universalaccess",
       "version": "2.0",
       "sourceBundlePath": "/System/Library/PreferencePanes/UniversalAccessPref.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/universal-access.png",
-      "width": 128,
-      "height": 128
+      "width": 32,
+      "height": 32
     }
   ]
 }
