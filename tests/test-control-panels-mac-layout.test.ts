@@ -203,25 +203,33 @@ describe("Control Panels macOS 10.3 layout", () => {
       expect(macosxIcons.has(icon)).toBe(true);
     }
 
-    expect(categoriesSource.includes("desktop.png")).toBe(true);
+    expect(categoriesSource.includes('icon: "desktop.png"')).toBe(false);
     expect(categoriesSource.includes("control-panels/desktop-screen-saver.png")).toBe(
-      false
+      true
     );
     expect(getControlPanelCategory("desktop-screen-saver")?.icon).toBe(
-      "desktop.png"
+      "control-panels/desktop-screen-saver.png"
     );
-    expect(categoriesSource.includes("sound.png")).toBe(true);
-    expect(getControlPanelCategory("sound")?.icon).toBe("sound.png");
-    expect(categoriesSource.includes("cloud-sync.png")).toBe(true);
-    expect(categoriesSource.includes("software-update.png")).toBe(true);
-    expect(getControlPanelCategory("dot-mac")?.icon).toBe("cloud-sync.png");
+    expect(getControlPanelCategory("sound")?.icon).toBe(
+      "control-panels/sound.png"
+    );
+    expect(categoriesSource.includes("cloud-sync.png")).toBe(false);
+    expect(getControlPanelCategory("dot-mac")?.icon).toBe(
+      "control-panels/dot-mac.png"
+    );
     expect(getControlPanelCategory("software-update")?.icon).toBe(
-      "software-update.png"
+      "control-panels/software-update.png"
+    );
+    expect(getControlPanelCategory("sharing")?.icon).toBe(
+      "control-panels/sharing.png"
     );
     expect(categoriesSource.includes("background-fill.png")).toBe(false);
     expect(categoriesSource.includes("location/app.png")).toBe(false);
     expect(categoriesSource.includes("floppy.png")).toBe(false);
-    expect(categoriesSource.includes("control-panels/keychain.png")).toBe(true);
+    expect(categoriesSource.includes("control-panels/keychain.png")).toBe(false);
+    expect(getControlPanelCategory("security")?.icon).toBe(
+      "control-panels/security.png"
+    );
     expect(getControlPanelCategory("security")?.icon).toBe(
       "control-panels/keychain.png"
     );
