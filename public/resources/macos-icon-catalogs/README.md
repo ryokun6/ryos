@@ -1,0 +1,18 @@
+# Mac OS X icon catalogs
+
+Historical Mac OS X icon resources extracted for future ryOS asset work.
+
+These catalogs are intentionally stored outside `public/icons` so they do not
+participate in active theme icon resolution or replace existing app icons.
+
+## Catalogs
+
+- `panther/` - Mac OS X Panther 10.3 CD, from https://archive.org/details/mac-os-x-10.3
+- `tiger/` - Mac OS X Tiger 10.4 Retail DVD, from https://archive.org/details/macosx10.4tigerretaildvd
+
+Each catalog contains:
+
+- `applications/` - converted PNGs for top-level application bundles.
+- `system-preferences/` - converted PNGs for System Preferences panes.
+- `catalog.json` - machine-readable metadata with source bundle/icon paths.
+- `catalog.md` - browsable table of the same entries.
