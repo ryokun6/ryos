@@ -4769,7 +4769,16 @@
       "clear": "Cancella richieste",
       "copy": "Copia richieste",
       "empty": "Nessuna richiesta acquisita.",
+      "emptyForFilter": "Nessuna richiesta corrisponde a questo filtro.",
       "failedCount": "{{count}} non riusciti",
+      "filterAll": "Tutte le richieste",
+      "filterRequests": "Filtra richieste",
+      "filters": {
+        "error": "Non riuscite",
+        "ok": "Riuscite",
+        "pending": "In sospeso",
+        "warn": "Avvisi"
+      },
       "pending": "···",
       "title": "Richieste"
     },

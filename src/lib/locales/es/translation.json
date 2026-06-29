@@ -4769,7 +4769,16 @@
       "clear": "Borrar solicitudes",
       "copy": "Copiar solicitudes",
       "empty": "Aún no se han capturado solicitudes.",
+      "emptyForFilter": "Ninguna solicitud coincide con este filtro.",
       "failedCount": "{{count}} fallidas",
+      "filterAll": "Todas las solicitudes",
+      "filterRequests": "Filtrar solicitudes",
+      "filters": {
+        "error": "Fallidas",
+        "ok": "Correctas",
+        "pending": "Pendientes",
+        "warn": "Advertencias"
+      },
       "pending": "···",
       "title": "Peticiones"
     },

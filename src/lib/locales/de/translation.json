@@ -4765,7 +4765,16 @@
       "clear": "Anfragen löschen",
       "copy": "Anfragen kopieren",
       "empty": "Noch keine Anfragen erfasst.",
+      "emptyForFilter": "Keine Anfragen entsprechen diesem Filter.",
       "failedCount": "{{count}} fehlgeschlagen",
+      "filterAll": "Alle Anfragen",
+      "filterRequests": "Anfragen filtern",
+      "filters": {
+        "error": "Fehlgeschlagen",
+        "ok": "Erfolgreich",
+        "pending": "Ausstehend",
+        "warn": "Warnungen"
+      },
       "pending": "···",
       "title": "Anfragen"
     },
