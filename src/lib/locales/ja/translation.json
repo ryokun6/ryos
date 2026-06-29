@@ -341,7 +341,7 @@
         "appleMusicId": "Apple Music ID",
         "createdAt": "作成",
         "delete": "曲を削除",
-        "forceRefresh": "強制リフレッシュ",
+        "forceRefresh": "強制更新",
         "forceRefreshTooltip": "Kugouから歌詞を再取得し、キャッシュされた注釈をクリアします",
         "furigana": "ふりがな",
         "info": "情報",
