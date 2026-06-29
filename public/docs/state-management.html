@@ -656,13 +656,18 @@ const STORES = {
   APPLE_MUSIC_LIBRARY: "apple_music_library",
   APPLE_MUSIC_PLAYLISTS: "apple_music_playlists",
   APPLE_MUSIC_PLAYLIST_TRACKS: "apple_music_playlist_tracks",
+  PERSISTED_STATE: "persisted_state", // Large Zustand persist slices
 };
 
-// Database: ryOS (version 12)
+// Database: ryOS (version 13)
 interface StoredContent {
   name: string;               // Original filename
   content: string | Blob;     // File content
 }</code></pre>
+<h3>IndexedDB-backed Zustand persist</h3>
+<p>Stores that can exceed the per-origin localStorage quota use <code>createIndexedDBPersistStorage()</code> from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/indexedDBPersistStorage.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/utils/indexedDBPersistStorage.ts</a></code>. The adapter keeps Zustand's <code>persist</code> shape but writes the serialized slice into the <code>persisted_state</code> object store with debounced write-behind semantics.</p>
+<p>Soundboard uses this path for recorded audio clips. On first read, the adapter migrates a legacy localStorage value into IndexedDB and removes the old key only after the copy succeeds. Pending writes flush on <code>pagehide</code> and tab-hidden events through the shared persist write queue.</p>
+<p>Manual backups call <code>settlePersistWrites()</code> before reading browser storage so queued localStorage and IndexedDB persist writes are included. Backup format v4 includes the <code>persisted_state</code> object store, which keeps Soundboard recordings and any future large persisted slices in local <code>.gz</code> exports.</p>
 <h3>Hybrid Persistence (Files Store)</h3>
 <p>The <code>useFilesStore</code> demonstrates a sophisticated two-layer architecture:</p>
 <pre class="mermaid">flowchart TB

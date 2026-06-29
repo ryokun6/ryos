@@ -19,7 +19,9 @@ description: Localize ryOS apps and components by extracting hardcoded strings, 
 ## Step 1: Extract Hardcoded Strings
 
 ```bash
+bun run i18n:extract --dir=src/apps/[app]
 bun run i18n:extract --pattern [PATTERN]
+bun run i18n:extract --exclude=test,spec
 ```
 
 ## Step 2: Replace Strings with t() Calls
@@ -81,15 +83,19 @@ Do not rely on `defaultValue` as the only copy of a new key. `t("some.key", { de
 ## Step 4: Sync Across Languages
 
 ```bash
+bun run i18n:sync
 bun run i18n:sync:mark-todo
 ```
 
-Adds missing keys to all 10 language files, marked with `[TODO]`.
+`i18n:sync` adds missing keys using English copy. `i18n:sync:mark-todo` adds missing keys to all 10 language files, marked with `[TODO]`.
 
 ## Step 5: Machine Translate
 
 ```bash
 bun run i18n:translate
+bun run i18n:translate --lang ja
+bun run i18n:translate --batch-size=10
+bun run i18n:translate:dry-run
 ```
 
 Requires `GOOGLE_GENERATIVE_AI_API_KEY` env variable.
@@ -99,10 +105,11 @@ Requires `GOOGLE_GENERATIVE_AI_API_KEY` env variable.
 ```bash
 bun run i18n:sync:dry-run
 bun run i18n:audit
+bun test tests/test-translation-audit.test.ts
 bun run i18n:find-untranslated
 ```
 
-Use `bun run i18n:audit:fix` only for terminology drift the script can safely repair, then rerun `bun run i18n:audit`.
+Use `bun run i18n:audit:fix` only for missing/obsolete keys, required translation overrides, plural backfills, and terminology drift the script can safely repair, then rerun `bun run i18n:audit`.
 
 ## Component Guidelines
 
@@ -117,6 +124,7 @@ Use `bun run i18n:audit:fix` only for terminology drift the script can safely re
 ## Notes
 
 - Emoji/symbols (♪, ✓) can stay hardcoded
+- Refresh Apple glossary data with `bun run i18n:apple-glossary` only when the AppleGlot glossary source files change. The audit, audit fix, and machine-translation prompt all use this terminology data.
 - Help items use pattern: `apps.[appName].help.[key].title/description`
 - Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps with longer localized help rows can export their key list (for example `src/apps/maps/helpKeys.ts`, `src/apps/calculator/helpKeys.ts`, or `src/apps/internet-explorer/helpKeys.ts`) and spread it into `APP_HELP_I18N_KEYS`
 - `tests/test-help-i18n-alignment.test.ts` covers every registered app; update it only if the global help-key contract changes

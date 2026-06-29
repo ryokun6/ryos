@@ -150,7 +150,7 @@ interface FileSystemItem {
 
 ## IndexedDB Storage
 
-Database: `ryOS` (version 12)
+Database: `ryOS` (version 13)
 
 | Object Store | Content Type | Key |
 |--------------|--------------|-----|
@@ -164,6 +164,7 @@ Database: `ryOS` (version 12)
 | `apple_music_library` | Apple Music library cache | Apple Music ID |
 | `apple_music_playlists` | Apple Music playlist cache | Playlist ID |
 | `apple_music_playlist_tracks` | Apple Music playlist track cache | Playlist ID |
+| `persisted_state` | Large Zustand persist slices, such as Soundboard recordings | Persist key |
 
 Content structure stored in IndexedDB:
 ```typescript

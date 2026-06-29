@@ -24,9 +24,11 @@ A summary of changes and updates to ryOS, organized by month.
 - **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; mirror player visuals in lyrics wallpaper backgrounds; improve palette extraction and karaoke timing/alignment.
 
 <details>
-<summary>Minor changes (33)</summary>
+<summary>Minor changes (35)</summary>
 
 - Allow multi-day all-day calendar events.
+- Add Internet Explorer proxy v2 support for cross-origin subresources, opt-in proxy sessions, optional headless fallback, and env-gated live-browser handoff.
+- Move Soundboard recordings to IndexedDB-backed persisted state so large boards no longer hit localStorage quota limits.
 - Show cloud sync upload progress in the menubar.
 - Adopt a shared Help/About dialog state across apps.
 - Add a Zod request-body validation layer at the apiHandler boundary.
