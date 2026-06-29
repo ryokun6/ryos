@@ -4712,7 +4712,16 @@
     "tabs": {
       "label": "Debug panel views",
       "logs": "Logs",
-      "live": "Live"
+      "live": "Live",
+      "network": "Network"
+    },
+    "network": {
+      "title": "Requests",
+      "copy": "Copy requests",
+      "clear": "Clear requests",
+      "empty": "No requests captured yet.",
+      "pending": "···",
+      "failedCount": "{{count}} failed"
     },
     "live": {
       "dashboardLabel": "Live environment snapshot",
@@ -4751,6 +4760,25 @@
       "online": "Online",
       "offline": "Offline",
       "storage": "Storage",
+      "services": "Services",
+      "realtime": "Realtime",
+      "realtimeState": {
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "disconnected": "Disconnected"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} channels",
+      "cloudSync": "Cloud sync",
+      "syncSyncing": "Syncing…",
+      "syncError": "Error",
+      "syncAuto": "Auto",
+      "syncOff": "Off",
+      "syncReport": "{{status}} · last checked {{checkedAt}}",
+      "session": "Session",
+      "sessionGuest": "Guest",
+      "sessionAdmin": "{{username}} (admin)",
+      "sessionSignedOut": "{{username}} (signed out)",
       "logHealth": "Log health",
       "logHealthValue": "{{errors}} errors · {{warnings}} warnings",
       "appVersion": "App",

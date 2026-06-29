@@ -1678,13 +1678,13 @@
         "deleting": "삭제 중…",
         "description": "계정, 암호, 복구 이메일, 연결된 Telegram 및 동기화된 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
         "genericError": "계정을 삭제할 수 없습니다. 다시 시도해 주세요.",
+        "openButton": "계정 삭제…",
         "passwordLabel": "현재 암호",
         "passwordRequired": "현재 암호를 입력하세요",
         "submit": "계정 삭제",
         "successDescription": "계정과 데이터가 삭제되었습니다.",
         "successTitle": "계정 삭제됨",
-        "title": "계정 삭제",
-        "openButton": "계정 삭제…"
+        "title": "계정 삭제"
       },
       "deleteAccountMenu": "계정 삭제…",
       "deleteAccountRowDescription": "계정 및 동기화된 데이터를 영구적으로 삭제합니다.",
@@ -1766,6 +1766,7 @@
       "logIn": "로그인",
       "logOut": "로그아웃",
       "logOutAll": "전체 로그아웃…",
+      "logOutButton": "로그아웃…",
       "logOutOfAllDevices": "모든 기기에서 로그아웃",
       "logOutOfAllDevicesRowDescription": "모든 기기에서 ryOS 계정 로그아웃",
       "logOutRowDescription": "이 기기에서 ryOS 계정에서 로그아웃",
@@ -2050,8 +2051,7 @@
         "objects": "사물",
         "plants": "식물",
         "structures": "구조물"
-      },
-      "logOutButton": "로그아웃…"
+      }
     },
     "dashboard": {
       "calendar": {
@@ -4692,6 +4692,7 @@
       "appVersion": "앱",
       "average": "평균",
       "bufferedLogs": "{{count}}개 버퍼링됨",
+      "cloudSync": "클라우드 동기화",
       "copySnapshot": "환경 스냅샷 복사",
       "current": "현재",
       "darkMode": "다크",
@@ -4723,6 +4724,14 @@
       "offline": "오프라인",
       "online": "온라인",
       "performance": "성능",
+      "realtime": "실시간",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}}개 채널",
+      "realtimeState": {
+        "connected": "연결됨",
+        "connecting": "연결 중",
+        "disconnected": "연결 끊김"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
       "reportTitle": "라이브 환경 스냅샷",
       "runtime": {
         "browser": "브라우저",
@@ -4732,7 +4741,17 @@
       "runtimeLabel": "런타임",
       "sampling": "매초 샘플링 중",
       "samplingPaused": "샘플링 일시 정지됨",
+      "services": "서비스",
+      "session": "세션",
+      "sessionAdmin": "{{username}} (관리자)",
+      "sessionGuest": "게스트",
+      "sessionSignedOut": "{{username}} (로그아웃됨)",
       "storage": "저장소",
+      "syncAuto": "자동",
+      "syncError": "오류",
+      "syncOff": "끔",
+      "syncReport": "{{status}} · 마지막 확인: {{checkedAt}}",
+      "syncSyncing": "동기화 중…",
       "theme": "테마",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "총 로그",
@@ -4742,6 +4761,14 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "경고"
     },
+    "network": {
+      "clear": "요청 지우기",
+      "copy": "요청 복사하기",
+      "empty": "아직 캡처된 요청이 없습니다.",
+      "failedCount": "{{count}}개 실패",
+      "pending": "···",
+      "title": "요청"
+    },
     "noLogsForFilter": "이 필터와 일치하는 로그가 없습니다.",
     "noLogsYet": "아직 캡처된 로그가 없습니다.",
     "scrollToBottom": "맨 아래로 스크롤",
@@ -4749,7 +4776,8 @@
     "tabs": {
       "label": "디버그 패널 뷰",
       "live": "라이브",
-      "logs": "로그"
+      "logs": "로그",
+      "network": "네트워크"
     },
     "toggleLabel": "디버그",
     "warnCount": "{{count}} 경고"

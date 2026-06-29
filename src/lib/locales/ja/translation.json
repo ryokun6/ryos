@@ -1678,13 +1678,13 @@
         "deleting": "削除中…",
         "description": "これにより、アカウント、パスワード、リカバリメール、連携済みのTelegram、および同期されたデータが完全に削除されます。この操作は取り消せません。",
         "genericError": "アカウントを削除できませんでした。もう一度お試しください。",
+        "openButton": "アカウントを削除…",
         "passwordLabel": "現在のパスワード",
         "passwordRequired": "現在のパスワードを入力してください",
         "submit": "アカウントを削除",
         "successDescription": "アカウントとデータが削除されました。",
         "successTitle": "アカウントが削除されました",
-        "title": "アカウントを削除",
-        "openButton": "アカウントを削除…"
+        "title": "アカウントを削除"
       },
       "deleteAccountMenu": "アカウントを削除…",
       "deleteAccountRowDescription": "アカウントと同期データを完全に削除します",
@@ -1766,6 +1766,7 @@
       "logIn": "サインイン",
       "logOut": "サインアウト",
       "logOutAll": "すべてログアウト…",
+      "logOutButton": "サインアウト…",
       "logOutOfAllDevices": "すべてのデバイスからログアウト",
       "logOutOfAllDevicesRowDescription": "すべてのデバイスでryOSアカウントからサインアウトする",
       "logOutRowDescription": "このデバイスで ryOS アカウントからサインアウト",
@@ -2050,8 +2051,7 @@
         "objects": "オブジェクト",
         "plants": "植物",
         "structures": "ストラクチャ"
-      },
-      "logOutButton": "サインアウト…"
+      }
     },
     "dashboard": {
       "calendar": {
@@ -4692,6 +4692,7 @@
       "appVersion": "App",
       "average": "平均",
       "bufferedLogs": "{{count}}件バッファ済み",
+      "cloudSync": "クラウド同期",
       "copySnapshot": "環境スナップショットをコピー",
       "current": "現在",
       "darkMode": "ダーク",
@@ -4723,6 +4724,14 @@
       "offline": "オフライン",
       "online": "オンライン",
       "performance": "パフォーマンス",
+      "realtime": "リアルタイム",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} チャンネル",
+      "realtimeState": {
+        "connected": "接続済み",
+        "connecting": "接続中",
+        "disconnected": "未接続"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
       "reportTitle": "ライブ環境スナップショット",
       "runtime": {
         "browser": "ブラウザ",
@@ -4732,7 +4741,17 @@
       "runtimeLabel": "ランタイム",
       "sampling": "毎秒サンプリング中",
       "samplingPaused": "サンプリング一時停止中",
+      "services": "サービス",
+      "session": "セッション",
+      "sessionAdmin": "{{username}} (管理者)",
+      "sessionGuest": "ゲスト",
+      "sessionSignedOut": "{{username}} (サインアウト済み)",
       "storage": "ストレージ",
+      "syncAuto": "自動",
+      "syncError": "エラー",
+      "syncOff": "オフ",
+      "syncReport": "{{status}} · 最終確認: {{checkedAt}}",
+      "syncSyncing": "同期中…",
       "theme": "テーマ",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "ログの総数",
@@ -4742,6 +4761,14 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "警告"
     },
+    "network": {
+      "clear": "リクエストを消去",
+      "copy": "リクエストをコピー",
+      "empty": "キャプチャされたリクエストはまだありません。",
+      "failedCount": "{{count}}件失敗",
+      "pending": "···",
+      "title": "リクエスト"
+    },
     "noLogsForFilter": "このフィルターに一致するログはありません。",
     "noLogsYet": "ログはまだ記録されていません。",
     "scrollToBottom": "一番下へスクロール",
@@ -4749,7 +4776,8 @@
     "tabs": {
       "label": "デバッグパネルの表示",
       "live": "ライブ",
-      "logs": "ログ"
+      "logs": "ログ",
+      "network": "ネットワーク"
     },
     "toggleLabel": "デバッグ",
     "warnCount": "{{count}}警告"

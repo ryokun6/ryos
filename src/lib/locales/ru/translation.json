@@ -1685,13 +1685,13 @@
         "deleting": "Удаление…",
         "description": "Это навсегда удалит вашу учетную запись, пароль, адрес электронной почты для восстановления, привязанный Telegram и синхронизированные данные. Это действие нельзя отменить.",
         "genericError": "Не удалось удалить учетную запись. Пожалуйста, попробуйте еще раз.",
+        "openButton": "Удалить учетную запись…",
         "passwordLabel": "Текущий пароль",
         "passwordRequired": "Введите текущий пароль",
         "submit": "Удалить учетную запись",
         "successDescription": "Ваша учетная запись и данные были удалены.",
         "successTitle": "Учетная запись удалена",
-        "title": "Удалить учетную запись",
-        "openButton": "Удалить учетную запись…"
+        "title": "Удалить учетную запись"
       },
       "deleteAccountMenu": "Удалить учетную запись…",
       "deleteAccountRowDescription": "Безвозвратно удалить вашу учетную запись и синхронизированные данные",
@@ -1773,6 +1773,7 @@
       "logIn": "Войти",
       "logOut": "Выйти",
       "logOutAll": "Выйти везде…",
+      "logOutButton": "Выйти…",
       "logOutOfAllDevices": "Выйти со всех устройств",
       "logOutOfAllDevicesRowDescription": "Выйти из учетной записи ryOS на всех устройствах",
       "logOutRowDescription": "Выйти из учетной записи ryOS на этом устройстве",
@@ -2057,8 +2058,7 @@
         "objects": "Объекты",
         "plants": "Растения",
         "structures": "Структуры"
-      },
-      "logOutButton": "Выйти…"
+      }
     },
     "dashboard": {
       "calendar": {
@@ -4703,6 +4703,7 @@
       "appVersion": "Приложение",
       "average": "Среднее",
       "bufferedLogs": "{{count}} буферизовано",
+      "cloudSync": "Облачная синхронизация",
       "copySnapshot": "Копировать снимок окружения",
       "current": "Текущее",
       "darkMode": "Темная",
@@ -4734,6 +4735,14 @@
       "offline": "Офлайн",
       "online": "Онлайн",
       "performance": "Производительность",
+      "realtime": "В реальном времени",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} каналов",
+      "realtimeState": {
+        "connected": "Подключено",
+        "connecting": "Подключение…",
+        "disconnected": "Отключено"
+      },
+      "realtimeValue": "{{state}} · {{count}} кан.",
       "reportTitle": "Снимок окружения в реальном времени",
       "runtime": {
         "browser": "Браузер",
@@ -4743,7 +4752,17 @@
       "runtimeLabel": "Среда выполнения",
       "sampling": "Сэмплирование каждую секунду",
       "samplingPaused": "Сэмплирование приостановлено",
+      "services": "Службы",
+      "session": "Сеанс",
+      "sessionAdmin": "{{username}} (администратор)",
+      "sessionGuest": "Гость",
+      "sessionSignedOut": "{{username}} (выход выполнен)",
       "storage": "Хранилище",
+      "syncAuto": "Авто",
+      "syncError": "Ошибка",
+      "syncOff": "Выкл.",
+      "syncReport": "{{status}} · последняя проверка: {{checkedAt}}",
+      "syncSyncing": "Синхронизация…",
       "theme": "Тема",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "Всего логов",
@@ -4753,6 +4772,14 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "Предупреждения"
     },
+    "network": {
+      "clear": "Очистить запросы",
+      "copy": "Скопировать запросы",
+      "empty": "Запросы пока не зафиксированы.",
+      "failedCount": "{{count}} не выполнено",
+      "pending": "···",
+      "title": "Запросы"
+    },
     "noLogsForFilter": "Нет логов для этого фильтра.",
     "noLogsYet": "Логи пока не собраны.",
     "scrollToBottom": "Прокрутить вниз",
@@ -4760,7 +4787,8 @@
     "tabs": {
       "label": "Виды панели отладки",
       "live": "В реальном времени",
-      "logs": "Журналы"
+      "logs": "Журналы",
+      "network": "Сеть"
     },
     "toggleLabel": "Отладка",
     "warnCount": "{{count}} предупр."
