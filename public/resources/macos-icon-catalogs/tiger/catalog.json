@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-29T18:49:41.289940+00:00",
+  "generatedAt": "2026-06-29T18:53:06.572430+00:00",
   "source": {
     "name": "Mac OS X Tiger 10.4 Retail DVD",
     "url": "https://archive.org/details/macosx10.4tigerretaildvd"
@@ -2181,7 +2181,7 @@
     },
     {
       "type": "system-preference",
-      "name": "Dashboard & Expose",
+      "name": "Dashboard & Expos\u00e9",
       "bundleIdentifier": "com.apple.preference.expose",
       "version": "1.1",
       "sourceBundlePath": "/System/Library/PreferencePanes/Expose.prefPane",
@@ -2203,23 +2203,23 @@
     },
     {
       "type": "system-preference",
-      "name": "DesktopScreenEffectsPref",
+      "name": "Desktop & Screen Saver",
       "bundleIdentifier": "com.apple.preference.desktopscreeneffect",
       "version": "1.3",
       "sourceBundlePath": "/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane",
       "sourceIconPath": "/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane/Contents/Resources/DesktopScreenEffectsPref.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/desktopscreeneffectspref.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/desktop-and-screen-saver.png",
       "width": 128,
       "height": 128
     },
     {
       "type": "system-preference",
-      "name": "DesktopScreenEffectsPref",
+      "name": "Desktop & Screen Saver",
       "bundleIdentifier": "com.apple.preference.desktopscreeneffect",
       "version": "1.3",
       "sourceBundlePath": "/System/Library/PreferencePanes/ScreenSaver.prefPane",
       "sourceIconPath": "/System/Library/PreferencePanes/ScreenSaver.prefPane/Contents/Resources/DesktopScreenEffectsPref.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/desktopscreeneffectspref-2.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/desktop-and-screen-saver-2.png",
       "width": 128,
       "height": 128
     },
@@ -2383,10 +2383,10 @@
       "bundleIdentifier": "com.apple.preference.spotlight",
       "version": "1.0",
       "sourceBundlePath": "/System/Library/PreferencePanes/Spotlight.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.tiff",
+      "sourceIconPath": "/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.icns",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/spotlight.png",
-      "width": 32,
-      "height": 32
+      "width": 128,
+      "height": 128
     },
     {
       "type": "system-preference",
