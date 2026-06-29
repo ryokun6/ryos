@@ -71,42 +71,20 @@ export async function storeToken(
 /**
  * Delete a single token.
  *
- * When the owning `username` is known (the common case — logout, refresh,
- * login rotation), the token hash is removed from that user's session set
- * directly. Without it, we fall back to a full keyspace SCAN of
- * `auth:user:*:sessions`, which is O(all users) and should be avoided.
+ * Callers already validate or extract the owning username before rotating or
+ * clearing a session, so deletion can target the user's session set directly.
  */
 export async function deleteToken(
   redis: Redis,
   token: string,
-  username?: string
+  username: string
 ): Promise<void> {
   if (!token) return;
   const tokenHash = await sha256RedisIdentifier(token);
   await redis.del(redisKeys.auth.session(tokenHash));
 
-  const normalizedUsername = username?.toLowerCase();
-  if (normalizedUsername) {
-    await redis.srem(
-      redisKeys.auth.userSessions(normalizedUsername),
-      tokenHash
-    );
-    return;
-  }
-
-  // Fallback: owner unknown — scan all user session sets. Kept for safety,
-  // but callers should pass `username` to avoid the full keyspace scan.
-  let canonicalCursor = 0;
-  do {
-    const [newCursor, foundKeys] = await redis.scan(canonicalCursor, {
-      match: "auth:user:*:sessions",
-      count: 100,
-    });
-    canonicalCursor = parseInt(String(newCursor));
-    for (const key of foundKeys) {
-      await redis.srem(key, tokenHash);
-    }
-  } while (canonicalCursor !== 0);
+  const normalizedUsername = username.toLowerCase();
+  await redis.srem(redisKeys.auth.userSessions(normalizedUsername), tokenHash);
 }
 
 /**
