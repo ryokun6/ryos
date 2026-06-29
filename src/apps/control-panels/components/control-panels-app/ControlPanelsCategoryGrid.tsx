@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import {
   CONTROL_PANEL_CATEGORIES,
@@ -25,6 +26,7 @@ export function ControlPanelsCategoryGrid({
   spotlightPaneIds,
   focusedPaneId = null,
 }: ControlPanelsCategoryGridProps) {
+  const { isMacOSTheme } = useThemeFlags();
   const visibleSections = CONTROL_PANEL_SECTIONS.map((section) => {
     const categories = section.paneIds
       .map((paneId) =>
@@ -62,6 +64,10 @@ export function ControlPanelsCategoryGrid({
               const isMatch =
                 spotlightActive && !!spotlightPaneIds?.has(category.id);
               const isFocused = spotlightActive && focusedPaneId === category.id;
+              const iconName =
+                isMacOSTheme && category.macosxIcon
+                  ? category.macosxIcon
+                  : category.icon;
               return (
               <button
                 key={category.id}
@@ -75,7 +81,7 @@ export function ControlPanelsCategoryGrid({
               >
                 <span className="control-panels-category-icon-shell">
                   <ThemedIcon
-                    name={category.icon}
+                    name={iconName}
                     alt={t(category.labelKey)}
                     className="control-panels-category-icon"
                     draggable={false}

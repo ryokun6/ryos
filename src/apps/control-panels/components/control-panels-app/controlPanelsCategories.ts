@@ -20,6 +20,7 @@ export type ControlPanelCategory = {
   id: ControlPanelPaneId;
   labelKey: string;
   icon: string;
+  macosxIcon?: string;
 };
 
 export type ControlPanelSectionId =
@@ -42,7 +43,8 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "desktop-screen-saver",
     labelKey: "apps.control-panels.panes.desktopScreenSaver",
-    icon: "control-panels/desktop-screen-saver.png",
+    icon: "desktop.png",
+    macosxIcon: "control-panels/desktop-screen-saver.png",
   },
   {
     id: "international",
@@ -52,7 +54,8 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "security",
     labelKey: "apps.control-panels.panes.security",
-    icon: "control-panels/security.png",
+    icon: "control-panels/keychain.png",
+    macosxIcon: "control-panels/security.png",
   },
   {
     id: "displays",
@@ -62,17 +65,20 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "sound",
     labelKey: "apps.control-panels.panes.sound",
-    icon: "control-panels/sound.png",
+    icon: "sound.png",
+    macosxIcon: "control-panels/sound.png",
   },
   {
     id: "dot-mac",
     labelKey: "apps.control-panels.panes.dotMac",
-    icon: "control-panels/dot-mac.png",
+    icon: "cloud-sync.png",
+    macosxIcon: "control-panels/dot-mac.png",
   },
   {
     id: "sharing",
     labelKey: "apps.control-panels.panes.sharing",
-    icon: "control-panels/sharing.png",
+    icon: "control-panels/backup-restore.png",
+    macosxIcon: "control-panels/sharing.png",
   },
   {
     id: "accounts",
@@ -82,7 +88,8 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "software-update",
     labelKey: "apps.control-panels.panes.softwareUpdate",
-    icon: "control-panels/software-update.png",
+    icon: "software-update.png",
+    macosxIcon: "control-panels/software-update.png",
   },
 ];
 
