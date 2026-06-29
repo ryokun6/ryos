@@ -179,7 +179,7 @@ function InstrumentCard({
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="truncate font-os-ui text-[10px] font-medium uppercase tracking-wide text-os-text-secondary">
+        <h3 className="truncate font-os-ui text-[10px] font-medium text-os-text-secondary">
           {label}
         </h3>
         <span className="shrink-0 font-os-mono text-[15px] font-semibold tabular-nums text-os-text-primary">
@@ -199,7 +199,7 @@ function InstrumentCard({
 function MetricSection({ title, glassy, children }: MetricSectionProps) {
   return (
     <section className="mt-2.5">
-      <h3 className="mb-1 px-0.5 font-os-ui text-[9px] font-semibold uppercase tracking-wider text-os-text-secondary">
+      <h3 className="mb-1 px-0.5 font-os-ui text-[10px] font-semibold text-os-text-secondary">
         {title}
       </h3>
       <dl
