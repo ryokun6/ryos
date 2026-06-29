@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   appendHistoryPoint,
+  buildSparklineGeometry,
   buildSparklinePoints,
   calculateLogMetrics,
   formatBytes,
@@ -81,6 +82,42 @@ describe("debug live metrics", () => {
     );
     expect(buildSparklinePoints([null, 5, null], 100, 40)).toBe("50.0,20.0");
     expect(buildSparklinePoints([null], 100, 40)).toBe("");
+  });
+
+  test("returns null geometry when no finite values are present", () => {
+    expect(buildSparklineGeometry([], 200, 56, 5)).toBeNull();
+    expect(buildSparklineGeometry([null, null], 200, 56, 5)).toBeNull();
+  });
+
+  test("builds area geometry with summary, padding, and live marker", () => {
+    const geometry = buildSparklineGeometry([0, 5, 10], 200, 60, 5);
+    expect(geometry).not.toBeNull();
+    if (!geometry) return;
+
+    expect(geometry.minimum).toBe(0);
+    expect(geometry.maximum).toBe(10);
+    expect(geometry.average).toBe(5);
+    // Trend line spans the full width and respects vertical padding.
+    expect(geometry.line).toBe("0.0,55.0 100.0,30.0 200.0,5.0");
+    // Average reference line sits at the vertical midpoint here.
+    expect(geometry.averageY).toBeCloseTo(30, 5);
+    // Filled polygon drops to the baseline (full height) at both ends.
+    expect(geometry.area).toBe(
+      "0.0,60.0 0.0,55.0 100.0,30.0 200.0,5.0 200.0,60.0"
+    );
+    // Newest point anchors the live marker at the right edge.
+    expect(geometry.last).toEqual({ x: 200, y: 5, value: 10 });
+  });
+
+  test("centers a flat series and keeps it within the padded band", () => {
+    const geometry = buildSparklineGeometry([7, 7, 7], 200, 60, 5);
+    expect(geometry).not.toBeNull();
+    if (!geometry) return;
+
+    expect(geometry.minimum).toBe(7);
+    expect(geometry.maximum).toBe(7);
+    expect(geometry.line).toBe("0.0,30.0 100.0,30.0 200.0,30.0");
+    expect(geometry.averageY).toBeCloseTo(30, 5);
   });
 
   test("restores a remounted log scroller without losing its position", () => {
