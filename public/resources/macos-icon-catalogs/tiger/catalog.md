@@ -2,7 +2,7 @@
 
 Source: [Mac OS X Tiger 10.4 Retail DVD](https://archive.org/details/macosx10.4tigerretaildvd)
 
-Generated entries: 270 (51 applications, 28 System Preferences panes, 61 folders, 49 devices/displays, 81 file types).
+Generated entries: 252 (51 applications, 10 System Preferences panes, 61 folders, 49 devices/displays, 81 file types).
 
 ## Applications
 
@@ -66,31 +66,13 @@ Generated entries: 270 (51 applications, 28 System Preferences panes, 61 folders
 | --- | --- | --- | --- | --- |
 | .Mac | `/public/resources/macos-icon-catalogs/tiger/system-preferences/mac.png` | `/System/Library/PreferencePanes/Internet.prefPane` | `/System/Library/PreferencePanes/Internet.prefPane/Contents/Resources/Internet.tiff` | 32x32 |
 | .Mac | `/public/resources/macos-icon-catalogs/tiger/system-preferences/mac-2.png` | `/System/Library/PreferencePanes/Mac.prefPane` | `/System/Library/PreferencePanes/Mac.prefPane/Contents/Resources/Internet.tiff` | 32x32 |
-| Accounts | `/public/resources/macos-icon-catalogs/tiger/system-preferences/accounts.png` | `/System/Library/PreferencePanes/Accounts.prefPane` | `/System/Library/PreferencePanes/Accounts.prefPane/Contents/Resources/AccountsPref.icns` | 128x128 |
-| Appearance | `/public/resources/macos-icon-catalogs/tiger/system-preferences/appearance.png` | `/System/Library/PreferencePanes/Appearance.prefPane` | `/System/Library/PreferencePanes/Appearance.prefPane/Contents/Resources/General.icns` | 128x128 |
-| Bluetooth | `/public/resources/macos-icon-catalogs/tiger/system-preferences/bluetooth.png` | `/System/Library/PreferencePanes/Bluetooth.prefPane` | `/System/Library/PreferencePanes/Bluetooth.prefPane/Contents/Resources/BluetoothPref.icns` | 128x128 |
-| CDs & DVDs | `/public/resources/macos-icon-catalogs/tiger/system-preferences/cds-and-dvds.png` | `/System/Library/PreferencePanes/DigiHubDiscs.prefPane` | `/System/Library/PreferencePanes/DigiHubDiscs.prefPane/Contents/Resources/cd.icns` | 128x128 |
 | Classic | `/public/resources/macos-icon-catalogs/tiger/system-preferences/classic.png` | `/System/Library/PreferencePanes/Classic.prefPane` | `/System/Library/PreferencePanes/Classic.prefPane/Contents/Resources/Classic.tiff` | 32x32 |
-| Dashboard & Expose | `/public/resources/macos-icon-catalogs/tiger/system-preferences/dashboard-and-expose.png` | `/System/Library/PreferencePanes/Expose.prefPane` | `/System/Library/PreferencePanes/Expose.prefPane/Contents/Resources/Expose.icns` | 128x128 |
-| Date & Time | `/public/resources/macos-icon-catalogs/tiger/system-preferences/date-and-time.png` | `/System/Library/PreferencePanes/DateAndTime.prefPane` | `/System/Library/PreferencePanes/DateAndTime.prefPane/Contents/Resources/DateAndTime.icns` | 128x128 |
-| Desktop & Screen Saver | `/public/resources/macos-icon-catalogs/tiger/system-preferences/desktop-and-screen-saver.png` | `/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane` | `/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane/Contents/Resources/DesktopScreenEffectsPref.icns` | 128x128 |
-| Desktop & Screen Saver | `/public/resources/macos-icon-catalogs/tiger/system-preferences/desktop-and-screen-saver-2.png` | `/System/Library/PreferencePanes/ScreenSaver.prefPane` | `/System/Library/PreferencePanes/ScreenSaver.prefPane/Contents/Resources/DesktopScreenEffectsPref.icns` | 128x128 |
-| Displays | `/public/resources/macos-icon-catalogs/tiger/system-preferences/displays.png` | `/System/Library/PreferencePanes/Displays.prefPane` | `/System/Library/PreferencePanes/Displays.prefPane/Contents/Resources/Displays.icns` | 128x128 |
-| Dock | `/public/resources/macos-icon-catalogs/tiger/system-preferences/dock.png` | `/System/Library/PreferencePanes/Dock.prefPane` | `/System/Library/PreferencePanes/Dock.prefPane/Contents/Resources/Dock.icns` | 128x128 |
-| Energy Saver | `/public/resources/macos-icon-catalogs/tiger/system-preferences/energy-saver.png` | `/System/Library/PreferencePanes/EnergySaver.prefPane` | `/System/Library/PreferencePanes/EnergySaver.prefPane/Contents/Resources/EnergySaver.icns` | 128x128 |
-| Ink | `/public/resources/macos-icon-catalogs/tiger/system-preferences/ink.png` | `/System/Library/PreferencePanes/Ink.prefPane` | `/System/Library/PreferencePanes/Ink.prefPane/Contents/Resources/Ink.icns` | 128x128 |
-| International | `/public/resources/macos-icon-catalogs/tiger/system-preferences/international.png` | `/System/Library/PreferencePanes/Localization.prefPane` | `/System/Library/PreferencePanes/Localization.prefPane/Contents/Resources/Localization.icns` | 128x128 |
-| Keyboard & Mouse | `/public/resources/macos-icon-catalogs/tiger/system-preferences/keyboard-and-mouse.png` | `/System/Library/PreferencePanes/Keyboard.prefPane` | `/System/Library/PreferencePanes/Keyboard.prefPane/Contents/Resources/Keyboard.icns` | 128x128 |
 | Network | `/public/resources/macos-icon-catalogs/tiger/system-preferences/network.png` | `/System/Library/PreferencePanes/Network.prefPane` | `/System/Library/PreferencePanes/Network.prefPane/Contents/Resources/Network.tiff` | 32x32 |
 | Print & Fax | `/public/resources/macos-icon-catalogs/tiger/system-preferences/print-and-fax.png` | `/System/Library/PreferencePanes/PrintAndFax.prefPane` | `/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/Printer.tiff` | 32x32 |
-| QuickTime | `/public/resources/macos-icon-catalogs/tiger/system-preferences/quicktime.png` | `/System/Library/PreferencePanes/QuickTime.prefPane` | `/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QuickTimePref.icns` | 128x128 |
-| Security | `/public/resources/macos-icon-catalogs/tiger/system-preferences/security.png` | `/System/Library/PreferencePanes/Security.prefPane` | `/System/Library/PreferencePanes/Security.prefPane/Contents/Resources/FileVault.icns` | 128x128 |
+| QuickTime | `/public/resources/macos-icon-catalogs/tiger/system-preferences/quicktime.png` | `/System/Library/PreferencePanes/QuickTime.prefPane` | `/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QTPlugIn.prefPane/Contents/Resources/QuickTime.tiff` | 122x122 |
 | Sharing | `/public/resources/macos-icon-catalogs/tiger/system-preferences/sharing.png` | `/System/Library/PreferencePanes/SharingPref.prefPane` | `/System/Library/PreferencePanes/SharingPref.prefPane/Contents/Resources/SharingPref.tiff` | 32x32 |
-| SoftwareUpdate | `/public/resources/macos-icon-catalogs/tiger/system-preferences/softwareupdate.png` | `/System/Library/PreferencePanes/SoftwareUpdate.prefPane` | `/System/Library/PreferencePanes/SoftwareUpdate.prefPane/Contents/Resources/SoftwareUpdate.icns` | 128x128 |
 | Sound | `/public/resources/macos-icon-catalogs/tiger/system-preferences/sound.png` | `/System/Library/PreferencePanes/Sound.prefPane` | `/System/Library/PreferencePanes/Sound.prefPane/Contents/Resources/Sound.tiff` | 32x32 |
-| Speech | `/public/resources/macos-icon-catalogs/tiger/system-preferences/speech.png` | `/System/Library/PreferencePanes/Speech.prefPane` | `/System/Library/PreferencePanes/Speech.prefPane/Contents/Resources/Speech.icns` | 128x128 |
 | Spotlight | `/public/resources/macos-icon-catalogs/tiger/system-preferences/spotlight.png` | `/System/Library/PreferencePanes/Spotlight.prefPane` | `/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.tiff` | 32x32 |
-| Startup Disk | `/public/resources/macos-icon-catalogs/tiger/system-preferences/startup-disk.png` | `/System/Library/PreferencePanes/StartupDisk.prefPane` | `/System/Library/PreferencePanes/StartupDisk.prefPane/Contents/Resources/StartupDiskPref.icns` | 128x128 |
 | Universal Access | `/public/resources/macos-icon-catalogs/tiger/system-preferences/universal-access.png` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.tiff` | 32x32 |
 
 ## Folders

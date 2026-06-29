@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-06-29T18:59:40.610461+00:00",
+  "generatedAt": "2026-06-29T19:03:30.939326+00:00",
   "source": {
     "name": "Mac OS X Tiger 10.4 Retail DVD",
     "url": "https://archive.org/details/macosx10.4tigerretaildvd"
   },
   "counts": {
     "applications": 51,
-    "systemPreferences": 28,
+    "systemPreferences": 10,
     "folders": 61,
     "devices": 49,
     "fileTypes": 81,
-    "total": 270
+    "total": 252
   },
   "entries": [
     {
@@ -2126,50 +2126,6 @@
     },
     {
       "type": "system-preference",
-      "name": "Accounts",
-      "bundleIdentifier": "com.apple.preferences.users",
-      "version": "1.6",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Accounts.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Accounts.prefPane/Contents/Resources/AccountsPref.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/accounts.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Appearance",
-      "bundleIdentifier": "com.apple.preference.general",
-      "version": "1.3",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Appearance.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Appearance.prefPane/Contents/Resources/General.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/appearance.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Bluetooth",
-      "bundleIdentifier": "com.apple.preferences.Bluetooth",
-      "version": "1.6",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Bluetooth.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Bluetooth.prefPane/Contents/Resources/BluetoothPref.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/bluetooth.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "CDs & DVDs",
-      "bundleIdentifier": "com.apple.preference.digihub.discs",
-      "version": "1.4",
-      "sourceBundlePath": "/System/Library/PreferencePanes/DigiHubDiscs.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/DigiHubDiscs.prefPane/Contents/Resources/cd.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/cds-and-dvds.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
       "name": "Classic",
       "bundleIdentifier": "com.apple.preference.classic",
       "version": "1.1",
@@ -2178,116 +2134,6 @@
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/classic.png",
       "width": 32,
       "height": 32
-    },
-    {
-      "type": "system-preference",
-      "name": "Dashboard & Expose",
-      "bundleIdentifier": "com.apple.preference.expose",
-      "version": "1.1",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Expose.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Expose.prefPane/Contents/Resources/Expose.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/dashboard-and-expose.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Date & Time",
-      "bundleIdentifier": "com.apple.preference.datetime",
-      "version": "2.2",
-      "sourceBundlePath": "/System/Library/PreferencePanes/DateAndTime.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/DateAndTime.prefPane/Contents/Resources/DateAndTime.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/date-and-time.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Desktop & Screen Saver",
-      "bundleIdentifier": "com.apple.preference.desktopscreeneffect",
-      "version": "1.3",
-      "sourceBundlePath": "/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane/Contents/Resources/DesktopScreenEffectsPref.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/desktop-and-screen-saver.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Desktop & Screen Saver",
-      "bundleIdentifier": "com.apple.preference.desktopscreeneffect",
-      "version": "1.3",
-      "sourceBundlePath": "/System/Library/PreferencePanes/ScreenSaver.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/ScreenSaver.prefPane/Contents/Resources/DesktopScreenEffectsPref.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/desktop-and-screen-saver-2.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Displays",
-      "bundleIdentifier": "com.apple.preference.displays",
-      "version": "2.1.1",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Displays.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Displays.prefPane/Contents/Resources/Displays.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/displays.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Dock",
-      "bundleIdentifier": "com.apple.preference.dock",
-      "version": "1.4",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Dock.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Dock.prefPane/Contents/Resources/Dock.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/dock.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Energy Saver",
-      "bundleIdentifier": "com.apple.preference.energysaver",
-      "version": "3.1",
-      "sourceBundlePath": "/System/Library/PreferencePanes/EnergySaver.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/EnergySaver.prefPane/Contents/Resources/EnergySaver.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/energy-saver.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Ink",
-      "bundleIdentifier": "com.apple.preference.ink",
-      "version": "1.2",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Ink.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Ink.prefPane/Contents/Resources/Ink.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/ink.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "International",
-      "bundleIdentifier": "com.apple.Localization",
-      "version": "1.2",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Localization.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Localization.prefPane/Contents/Resources/Localization.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/international.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Keyboard & Mouse",
-      "bundleIdentifier": "com.apple.preference.keyboard",
-      "version": "3.0",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Keyboard.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Keyboard.prefPane/Contents/Resources/Keyboard.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/keyboard-and-mouse.png",
-      "width": 128,
-      "height": 128
     },
     {
       "type": "system-preference",
@@ -2317,21 +2163,10 @@
       "bundleIdentifier": "com.apple.preference.quicktime",
       "version": "7.0",
       "sourceBundlePath": "/System/Library/PreferencePanes/QuickTime.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QuickTimePref.icns",
+      "sourceIconPath": "/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QTPlugIn.prefPane/Contents/Resources/QuickTime.tiff",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/quicktime.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
-      "name": "Security",
-      "bundleIdentifier": "com.apple.preference.security",
-      "version": "1.2",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Security.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Security.prefPane/Contents/Resources/FileVault.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/security.png",
-      "width": 128,
-      "height": 128
+      "width": 122,
+      "height": 122
     },
     {
       "type": "system-preference",
@@ -2346,17 +2181,6 @@
     },
     {
       "type": "system-preference",
-      "name": "SoftwareUpdate",
-      "bundleIdentifier": "com.apple.preferences.softwareupdate",
-      "version": "2.0",
-      "sourceBundlePath": "/System/Library/PreferencePanes/SoftwareUpdate.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/SoftwareUpdate.prefPane/Contents/Resources/SoftwareUpdate.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/softwareupdate.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
       "name": "Sound",
       "bundleIdentifier": "com.apple.preference.sound",
       "version": "2.3",
@@ -2368,17 +2192,6 @@
     },
     {
       "type": "system-preference",
-      "name": "Speech",
-      "bundleIdentifier": "com.apple.preference.speech",
-      "version": "3.3",
-      "sourceBundlePath": "/System/Library/PreferencePanes/Speech.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/Speech.prefPane/Contents/Resources/Speech.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/speech.png",
-      "width": 128,
-      "height": 128
-    },
-    {
-      "type": "system-preference",
       "name": "Spotlight",
       "bundleIdentifier": "com.apple.preference.spotlight",
       "version": "1.0",
@@ -2387,17 +2200,6 @@
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/spotlight.png",
       "width": 32,
       "height": 32
-    },
-    {
-      "type": "system-preference",
-      "name": "Startup Disk",
-      "bundleIdentifier": "com.apple.preference.startupdisk",
-      "version": "10.4",
-      "sourceBundlePath": "/System/Library/PreferencePanes/StartupDisk.prefPane",
-      "sourceIconPath": "/System/Library/PreferencePanes/StartupDisk.prefPane/Contents/Resources/StartupDiskPref.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/startup-disk.png",
-      "width": 128,
-      "height": 128
     },
     {
       "type": "system-preference",
