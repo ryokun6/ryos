@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
 } from "react";
 import {
   ArrowDown,
@@ -759,7 +760,7 @@ export function DebugLogOverlay() {
                           ? entry.styledSegments.map((segment, segmentIndex) => (
                               <span
                                 key={`${entry.id}-${segmentIndex}`}
-                                style={segment.style}
+                                style={segment.style as CSSProperties | undefined}
                               >
                                 {segment.text}
                               </span>
