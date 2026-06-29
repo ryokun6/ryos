@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export type BooksColumnMode = "auto" | "single" | "double";
 export type BooksThemeOverride = "auto" | "light" | "sepia" | "dark";
@@ -153,6 +153,7 @@ export const useBooksStore = create<BooksStoreState>()(
     }),
     {
       name: "ryos:books",
+      storage: createJSONStorage(() => localStorage),
       version: 2,
       partialize: (state) => ({
         progressByPath: state.progressByPath,

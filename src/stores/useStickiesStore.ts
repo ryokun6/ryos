@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 export type StickyColor = "yellow" | "blue" | "green" | "pink" | "purple" | "orange";
@@ -116,6 +116,7 @@ export const useStickiesStore = create<StickiesState>()(
     }),
     {
       name: "stickies-storage",
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );
