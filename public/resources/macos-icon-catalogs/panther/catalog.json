@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-29T18:46:05.919588+00:00",
+  "generatedAt": "2026-06-29T18:49:36.305619+00:00",
   "source": {
     "name": "Mac OS X Panther 10.3 CD",
     "url": "https://archive.org/details/mac-os-x-10.3"
@@ -8,7 +8,9 @@
     "applications": 45,
     "systemPreferences": 27,
     "folders": 60,
-    "total": 132
+    "devices": 40,
+    "fileTypes": 75,
+    "total": 247
   },
   "entries": [
     {
@@ -503,6 +505,926 @@
       "sourceBundlePath": "/Applications/TextEdit.app",
       "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/Edit.icns",
       "catalogPath": "/public/resources/macos-icon-catalogs/panther/applications/textedit.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "AFPServer",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AFPServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/afpserver.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Apple Talk",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleTalkIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/apple-talk.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Apple Talk Zone",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleTalkZoneIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/apple-talk-zone.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "CD",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/cd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "CD Audio Volume",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CDAudioVolumeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/cd-audio-volume.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "CD-R",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD-R.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/cd-r.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "CD-RW",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD-RW.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/cd-rw.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Disconnected File Server",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DisconnectedFileServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/disconnected-file-server.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Displays",
+      "sourceIconPath": "/System/Library/PreferencePanes/Displays.prefPane/Contents/Resources/Displays.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/displays.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "DVD",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/dvd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD+R",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD+R.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/dvd-r.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD+RW",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD+RW.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/dvd-rw.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD-R",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD-R.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/dvd-r-2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD-RAM",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD-RAM.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/dvd-ram.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD-RW",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD-RW.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/dvd-rw-2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Eject Media",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/EjectMediaIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/eject-media.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "External",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/External.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/external.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Fibre Channel HD",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FibreChannelHD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/fibre-channel-hd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Fire Wire HD",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FireWireHD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/fire-wire-hd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Floppy",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Floppy.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/floppy.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "FTPServer",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FTPServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/ftpserver.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Generic File Server",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericFileServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/generic-file-server.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Generic Network",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericNetworkIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/generic-network.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Generic RAMDisk",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericRAMDiskIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/generic-ramdisk.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "HTTPServer",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/HTTPServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/httpserver.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "i Disk Generic",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iDiskGenericIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/i-disk-generic.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "i Disk User",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iDiskUserIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/i-disk-user.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "i Mac",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iMac.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/i-mac.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Internal",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Internal.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/internal.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "IPFile Server",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/IPFileServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/ipfile-server.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Magneto Optical",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MagnetoOptical.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/magneto-optical.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Memory Stick",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MemoryStick.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/memory-stick.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Net Boot Volume",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/NetBootVolume.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/net-boot-volume.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "PC Card",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PCCard.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/pc-card.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Removable",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Removable.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/removable.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Smart Media",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SmartMedia.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/smart-media.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Status Bar CDROM",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/StatusBarCDROMIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/status-bar-cdrom.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "device",
+      "name": "Super Disk",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SuperDisk.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/super-disk.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "USB HD",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/USBHD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/usb-hd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Xserve RAID",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/XserveRAID.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/devices/xserve-raid.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Apple Script Badge",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleScriptBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/apple-script-badge.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Application",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Application.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/application.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Picture",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingPicture.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/clipping-picture.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Sound",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingSound.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/clipping-sound.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Text",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingText.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/clipping-text.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Unknown",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingUnknown.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/clipping-unknown.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Executable Binary",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ExecutableBinaryIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/executable-binary.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "File Vault",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FileVaultIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/file-vault.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Application",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericApplicationIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-application.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Document",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericDocumentIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-document.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Edition File",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericEditionFileIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-edition-file.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Font",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericFontIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-font.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Preferences",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericPreferencesIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-preferences.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Question Mark",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericQuestionMarkIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-question-mark.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Shared Library",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericSharedLibaryIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-shared-library.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Stationery",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericStationeryIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-stationery.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic URL",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericURLIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-url.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Window",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericWindowIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/generic-window.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer AVI",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/AVI.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-avi.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer GIF",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/GIF.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-gif.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer html",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/html.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-html.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer Internet Explorer Document",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/MIEE.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-internet-explorer-document.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer JPEG",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/JPEG.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-jpeg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer png",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/png.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-png.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer text",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/text.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-text.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Explorer Web Archive",
+      "sourceIconPath": "/Applications/Internet Explorer.app/Contents/Resources/WAFF.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-web-archive.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location AFP",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationAFP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-location-afp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location File",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationFile.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-location-file.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location FTP",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationFTP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-location-ftp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location Generic",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationGeneric.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-location-generic.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location HTTP",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationHTTP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-location-http.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location Mailto",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationMAILTO.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-location-mailto.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location News",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationNEWS.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/internet-location-news.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-aac",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-aac.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-aac.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-aacp",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-aacp.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-aacp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-aiff",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-aiff.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-aiff.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-audible",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-audible.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-audible.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-cd",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-cd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-cd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-database",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-database.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-database.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-movie",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-movie.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-movie.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mp2",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mp2.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-mp2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mp3",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mp3.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-mp3.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mpg",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mpg.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-mpg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-nvf",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-nvf.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-nvf.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-playlist",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-playlist.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-playlist.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-sd2",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-sd2.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-sd2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-snd",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-snd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-snd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-wav",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-wav.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-wav.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-wma",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-wma.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-wma.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Kernel Extension",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/KEXT.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/kernel-extension.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "No Files",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/NoFilesIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/no-files.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "file-type",
+      "name": "Preview bmp",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/bmp.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-bmp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview eps",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/eps.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-eps.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview fax",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/fax.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-fax.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview fpx",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/fpx.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-fpx.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview gif",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/gif.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-gif.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview icns",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/icns.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-icns.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview ico",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/ico.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-ico.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview jpeg",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/jpeg.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-jpeg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview pdf",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/pdf.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-pdf.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview pict",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/pict.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-pict.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview png",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/png.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-png.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview pntg",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/pntg.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-pntg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview ps",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/ps.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-ps.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview psd",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/psd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-psd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview qtif",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/qtif.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-qtif.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview sgi",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/sgi.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-sgi.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview tga",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/tga.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-tga.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview tiff",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/tiff.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/preview-tiff.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Safari document",
+      "sourceIconPath": "/Applications/Safari.app/Contents/Resources/document.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/safari-document.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit html",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/html.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/textedit-html.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit rtf",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/rtf.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/textedit-rtf.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit rtfd",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/rtfd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/textedit-rtfd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit txt",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/txt.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/textedit-txt.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Unknown FSObject",
+      "sourceIconPath": "/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/UnknownFSObjectIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/file-types/unknown-fsobject.png",
       "width": 128,
       "height": 128
     },

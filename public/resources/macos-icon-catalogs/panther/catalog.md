@@ -2,7 +2,7 @@
 
 Source: [Mac OS X Panther 10.3 CD](https://archive.org/details/mac-os-x-10.3)
 
-Generated entries: 132 (45 applications, 27 System Preferences panes, 60 folders).
+Generated entries: 247 (45 applications, 27 System Preferences panes, 60 folders, 40 devices/displays, 75 file types).
 
 ## Applications
 
@@ -150,4 +150,129 @@ Generated entries: 132 (45 applications, 27 System Preferences panes, 60 folders
 | Toolbar Pictures Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-pictures-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarPicturesFolderIcon.icns` | 32x32 |
 | Toolbar Public Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-public-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarPublicFolderIcon.icns` | 32x32 |
 | Users Folder | `/public/resources/macos-icon-catalogs/panther/folders/users-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/UsersFolderIcon.icns` | 128x128 |
+
+## Devices and Displays
+
+| Name | PNG | Source icon | Size |
+| --- | --- | --- | --- |
+| AFPServer | `/public/resources/macos-icon-catalogs/panther/devices/afpserver.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AFPServerIcon.icns` | 32x32 |
+| Apple Talk | `/public/resources/macos-icon-catalogs/panther/devices/apple-talk.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleTalkIcon.icns` | 32x32 |
+| Apple Talk Zone | `/public/resources/macos-icon-catalogs/panther/devices/apple-talk-zone.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleTalkZoneIcon.icns` | 32x32 |
+| CD | `/public/resources/macos-icon-catalogs/panther/devices/cd.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD.icns` | 128x128 |
+| CD Audio Volume | `/public/resources/macos-icon-catalogs/panther/devices/cd-audio-volume.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CDAudioVolumeIcon.icns` | 128x128 |
+| CD-R | `/public/resources/macos-icon-catalogs/panther/devices/cd-r.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD-R.icns` | 128x128 |
+| CD-RW | `/public/resources/macos-icon-catalogs/panther/devices/cd-rw.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD-RW.icns` | 128x128 |
+| Disconnected File Server | `/public/resources/macos-icon-catalogs/panther/devices/disconnected-file-server.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DisconnectedFileServerIcon.icns` | 128x128 |
+| Displays | `/public/resources/macos-icon-catalogs/panther/devices/displays.png` | `/System/Library/PreferencePanes/Displays.prefPane/Contents/Resources/Displays.tiff` | 32x32 |
+| DVD | `/public/resources/macos-icon-catalogs/panther/devices/dvd.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD.icns` | 128x128 |
+| DVD+R | `/public/resources/macos-icon-catalogs/panther/devices/dvd-r.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD+R.icns` | 128x128 |
+| DVD+RW | `/public/resources/macos-icon-catalogs/panther/devices/dvd-rw.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD+RW.icns` | 128x128 |
+| DVD-R | `/public/resources/macos-icon-catalogs/panther/devices/dvd-r-2.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD-R.icns` | 128x128 |
+| DVD-RAM | `/public/resources/macos-icon-catalogs/panther/devices/dvd-ram.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD-RAM.icns` | 128x128 |
+| DVD-RW | `/public/resources/macos-icon-catalogs/panther/devices/dvd-rw-2.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DVD-RW.icns` | 128x128 |
+| Eject Media | `/public/resources/macos-icon-catalogs/panther/devices/eject-media.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/EjectMediaIcon.icns` | 128x128 |
+| External | `/public/resources/macos-icon-catalogs/panther/devices/external.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/External.icns` | 128x128 |
+| Fibre Channel HD | `/public/resources/macos-icon-catalogs/panther/devices/fibre-channel-hd.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FibreChannelHD.icns` | 128x128 |
+| Fire Wire HD | `/public/resources/macos-icon-catalogs/panther/devices/fire-wire-hd.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FireWireHD.icns` | 128x128 |
+| Floppy | `/public/resources/macos-icon-catalogs/panther/devices/floppy.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Floppy.icns` | 128x128 |
+| FTPServer | `/public/resources/macos-icon-catalogs/panther/devices/ftpserver.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FTPServerIcon.icns` | 32x32 |
+| Generic File Server | `/public/resources/macos-icon-catalogs/panther/devices/generic-file-server.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericFileServerIcon.icns` | 128x128 |
+| Generic Network | `/public/resources/macos-icon-catalogs/panther/devices/generic-network.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericNetworkIcon.icns` | 128x128 |
+| Generic RAMDisk | `/public/resources/macos-icon-catalogs/panther/devices/generic-ramdisk.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericRAMDiskIcon.icns` | 32x32 |
+| HTTPServer | `/public/resources/macos-icon-catalogs/panther/devices/httpserver.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/HTTPServerIcon.icns` | 32x32 |
+| i Disk Generic | `/public/resources/macos-icon-catalogs/panther/devices/i-disk-generic.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iDiskGenericIcon.icns` | 128x128 |
+| i Disk User | `/public/resources/macos-icon-catalogs/panther/devices/i-disk-user.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iDiskUserIcon.icns` | 128x128 |
+| i Mac | `/public/resources/macos-icon-catalogs/panther/devices/i-mac.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iMac.icns` | 32x32 |
+| Internal | `/public/resources/macos-icon-catalogs/panther/devices/internal.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Internal.icns` | 128x128 |
+| IPFile Server | `/public/resources/macos-icon-catalogs/panther/devices/ipfile-server.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/IPFileServerIcon.icns` | 32x32 |
+| Magneto Optical | `/public/resources/macos-icon-catalogs/panther/devices/magneto-optical.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MagnetoOptical.icns` | 128x128 |
+| Memory Stick | `/public/resources/macos-icon-catalogs/panther/devices/memory-stick.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MemoryStick.icns` | 128x128 |
+| Net Boot Volume | `/public/resources/macos-icon-catalogs/panther/devices/net-boot-volume.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/NetBootVolume.icns` | 128x128 |
+| PC Card | `/public/resources/macos-icon-catalogs/panther/devices/pc-card.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PCCard.icns` | 128x128 |
+| Removable | `/public/resources/macos-icon-catalogs/panther/devices/removable.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Removable.icns` | 128x128 |
+| Smart Media | `/public/resources/macos-icon-catalogs/panther/devices/smart-media.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SmartMedia.icns` | 128x128 |
+| Status Bar CDROM | `/public/resources/macos-icon-catalogs/panther/devices/status-bar-cdrom.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/StatusBarCDROMIcon.icns` | 16x16 |
+| Super Disk | `/public/resources/macos-icon-catalogs/panther/devices/super-disk.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SuperDisk.icns` | 128x128 |
+| USB HD | `/public/resources/macos-icon-catalogs/panther/devices/usb-hd.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/USBHD.icns` | 128x128 |
+| Xserve RAID | `/public/resources/macos-icon-catalogs/panther/devices/xserve-raid.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/XserveRAID.icns` | 128x128 |
+
+## File Types
+
+| Name | PNG | Source icon | Size |
+| --- | --- | --- | --- |
+| Apple Script Badge | `/public/resources/macos-icon-catalogs/panther/file-types/apple-script-badge.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleScriptBadgeIcon.icns` | 32x32 |
+| Application | `/public/resources/macos-icon-catalogs/panther/file-types/application.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Application.icns` | 128x128 |
+| Clipping Picture | `/public/resources/macos-icon-catalogs/panther/file-types/clipping-picture.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingPicture.icns` | 128x128 |
+| Clipping Sound | `/public/resources/macos-icon-catalogs/panther/file-types/clipping-sound.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingSound.icns` | 128x128 |
+| Clipping Text | `/public/resources/macos-icon-catalogs/panther/file-types/clipping-text.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingText.icns` | 128x128 |
+| Clipping Unknown | `/public/resources/macos-icon-catalogs/panther/file-types/clipping-unknown.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClippingUnknown.icns` | 128x128 |
+| Executable Binary | `/public/resources/macos-icon-catalogs/panther/file-types/executable-binary.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ExecutableBinaryIcon.icns` | 128x128 |
+| File Vault | `/public/resources/macos-icon-catalogs/panther/file-types/file-vault.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FileVaultIcon.icns` | 128x128 |
+| Generic Application | `/public/resources/macos-icon-catalogs/panther/file-types/generic-application.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericApplicationIcon.icns` | 128x128 |
+| Generic Document | `/public/resources/macos-icon-catalogs/panther/file-types/generic-document.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericDocumentIcon.icns` | 128x128 |
+| Generic Edition File | `/public/resources/macos-icon-catalogs/panther/file-types/generic-edition-file.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericEditionFileIcon.icns` | 32x32 |
+| Generic Font | `/public/resources/macos-icon-catalogs/panther/file-types/generic-font.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericFontIcon.icns` | 128x128 |
+| Generic Preferences | `/public/resources/macos-icon-catalogs/panther/file-types/generic-preferences.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericPreferencesIcon.icns` | 32x32 |
+| Generic Question Mark | `/public/resources/macos-icon-catalogs/panther/file-types/generic-question-mark.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericQuestionMarkIcon.icns` | 128x128 |
+| Generic Shared Library | `/public/resources/macos-icon-catalogs/panther/file-types/generic-shared-library.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericSharedLibaryIcon.icns` | 32x32 |
+| Generic Stationery | `/public/resources/macos-icon-catalogs/panther/file-types/generic-stationery.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericStationeryIcon.icns` | 32x32 |
+| Generic URL | `/public/resources/macos-icon-catalogs/panther/file-types/generic-url.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericURLIcon.icns` | 128x128 |
+| Generic Window | `/public/resources/macos-icon-catalogs/panther/file-types/generic-window.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericWindowIcon.icns` | 32x32 |
+| Internet Explorer AVI | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-avi.png` | `/Applications/Internet Explorer.app/Contents/Resources/AVI.icns` | 128x128 |
+| Internet Explorer GIF | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-gif.png` | `/Applications/Internet Explorer.app/Contents/Resources/GIF.icns` | 128x128 |
+| Internet Explorer html | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-html.png` | `/Applications/Internet Explorer.app/Contents/Resources/html.icns` | 128x128 |
+| Internet Explorer Internet Explorer Document | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-internet-explorer-document.png` | `/Applications/Internet Explorer.app/Contents/Resources/MIEE.icns` | 128x128 |
+| Internet Explorer JPEG | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-jpeg.png` | `/Applications/Internet Explorer.app/Contents/Resources/JPEG.icns` | 128x128 |
+| Internet Explorer png | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-png.png` | `/Applications/Internet Explorer.app/Contents/Resources/png.icns` | 128x128 |
+| Internet Explorer text | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-text.png` | `/Applications/Internet Explorer.app/Contents/Resources/text.icns` | 128x128 |
+| Internet Explorer Web Archive | `/public/resources/macos-icon-catalogs/panther/file-types/internet-explorer-web-archive.png` | `/Applications/Internet Explorer.app/Contents/Resources/WAFF.icns` | 128x128 |
+| Internet Location AFP | `/public/resources/macos-icon-catalogs/panther/file-types/internet-location-afp.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationAFP.icns` | 128x128 |
+| Internet Location File | `/public/resources/macos-icon-catalogs/panther/file-types/internet-location-file.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationFile.icns` | 128x128 |
+| Internet Location FTP | `/public/resources/macos-icon-catalogs/panther/file-types/internet-location-ftp.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationFTP.icns` | 128x128 |
+| Internet Location Generic | `/public/resources/macos-icon-catalogs/panther/file-types/internet-location-generic.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationGeneric.icns` | 128x128 |
+| Internet Location HTTP | `/public/resources/macos-icon-catalogs/panther/file-types/internet-location-http.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationHTTP.icns` | 128x128 |
+| Internet Location Mailto | `/public/resources/macos-icon-catalogs/panther/file-types/internet-location-mailto.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationMAILTO.icns` | 128x128 |
+| Internet Location News | `/public/resources/macos-icon-catalogs/panther/file-types/internet-location-news.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetLocationNEWS.icns` | 128x128 |
+| iTunes i Tunes-aac | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-aac.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-aac.icns` | 128x128 |
+| iTunes i Tunes-aacp | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-aacp.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-aacp.icns` | 128x128 |
+| iTunes i Tunes-aiff | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-aiff.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-aiff.icns` | 128x128 |
+| iTunes i Tunes-audible | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-audible.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-audible.icns` | 128x128 |
+| iTunes i Tunes-cd | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-cd.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-cd.icns` | 128x128 |
+| iTunes i Tunes-database | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-database.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-database.icns` | 128x128 |
+| iTunes i Tunes-movie | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-movie.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-movie.icns` | 128x128 |
+| iTunes i Tunes-mp2 | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-mp2.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-mp2.icns` | 128x128 |
+| iTunes i Tunes-mp3 | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-mp3.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-mp3.icns` | 128x128 |
+| iTunes i Tunes-mpg | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-mpg.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-mpg.icns` | 128x128 |
+| iTunes i Tunes-nvf | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-nvf.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-nvf.icns` | 128x128 |
+| iTunes i Tunes-playlist | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-playlist.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-playlist.icns` | 128x128 |
+| iTunes i Tunes-sd2 | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-sd2.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-sd2.icns` | 128x128 |
+| iTunes i Tunes-snd | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-snd.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-snd.icns` | 128x128 |
+| iTunes i Tunes-wav | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-wav.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-wav.icns` | 128x128 |
+| iTunes i Tunes-wma | `/public/resources/macos-icon-catalogs/panther/file-types/itunes-i-tunes-wma.png` | `/Applications/iTunes.app/Contents/Resources/iTunes-wma.icns` | 128x128 |
+| Kernel Extension | `/public/resources/macos-icon-catalogs/panther/file-types/kernel-extension.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/KEXT.icns` | 128x128 |
+| No Files | `/public/resources/macos-icon-catalogs/panther/file-types/no-files.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/NoFilesIcon.icns` | 16x16 |
+| Preview bmp | `/public/resources/macos-icon-catalogs/panther/file-types/preview-bmp.png` | `/Applications/Preview.app/Contents/Resources/bmp.icns` | 128x128 |
+| Preview eps | `/public/resources/macos-icon-catalogs/panther/file-types/preview-eps.png` | `/Applications/Preview.app/Contents/Resources/eps.icns` | 128x128 |
+| Preview fax | `/public/resources/macos-icon-catalogs/panther/file-types/preview-fax.png` | `/Applications/Preview.app/Contents/Resources/fax.icns` | 128x128 |
+| Preview fpx | `/public/resources/macos-icon-catalogs/panther/file-types/preview-fpx.png` | `/Applications/Preview.app/Contents/Resources/fpx.icns` | 128x128 |
+| Preview gif | `/public/resources/macos-icon-catalogs/panther/file-types/preview-gif.png` | `/Applications/Preview.app/Contents/Resources/gif.icns` | 128x128 |
+| Preview icns | `/public/resources/macos-icon-catalogs/panther/file-types/preview-icns.png` | `/Applications/Preview.app/Contents/Resources/icns.icns` | 128x128 |
+| Preview ico | `/public/resources/macos-icon-catalogs/panther/file-types/preview-ico.png` | `/Applications/Preview.app/Contents/Resources/ico.icns` | 128x128 |
+| Preview jpeg | `/public/resources/macos-icon-catalogs/panther/file-types/preview-jpeg.png` | `/Applications/Preview.app/Contents/Resources/jpeg.icns` | 128x128 |
+| Preview pdf | `/public/resources/macos-icon-catalogs/panther/file-types/preview-pdf.png` | `/Applications/Preview.app/Contents/Resources/pdf.icns` | 128x128 |
+| Preview pict | `/public/resources/macos-icon-catalogs/panther/file-types/preview-pict.png` | `/Applications/Preview.app/Contents/Resources/pict.icns` | 128x128 |
+| Preview png | `/public/resources/macos-icon-catalogs/panther/file-types/preview-png.png` | `/Applications/Preview.app/Contents/Resources/png.icns` | 128x128 |
+| Preview pntg | `/public/resources/macos-icon-catalogs/panther/file-types/preview-pntg.png` | `/Applications/Preview.app/Contents/Resources/pntg.icns` | 128x128 |
+| Preview ps | `/public/resources/macos-icon-catalogs/panther/file-types/preview-ps.png` | `/Applications/Preview.app/Contents/Resources/ps.icns` | 128x128 |
+| Preview psd | `/public/resources/macos-icon-catalogs/panther/file-types/preview-psd.png` | `/Applications/Preview.app/Contents/Resources/psd.icns` | 128x128 |
+| Preview qtif | `/public/resources/macos-icon-catalogs/panther/file-types/preview-qtif.png` | `/Applications/Preview.app/Contents/Resources/qtif.icns` | 128x128 |
+| Preview sgi | `/public/resources/macos-icon-catalogs/panther/file-types/preview-sgi.png` | `/Applications/Preview.app/Contents/Resources/sgi.icns` | 128x128 |
+| Preview tga | `/public/resources/macos-icon-catalogs/panther/file-types/preview-tga.png` | `/Applications/Preview.app/Contents/Resources/tga.icns` | 128x128 |
+| Preview tiff | `/public/resources/macos-icon-catalogs/panther/file-types/preview-tiff.png` | `/Applications/Preview.app/Contents/Resources/tiff.icns` | 128x128 |
+| Safari document | `/public/resources/macos-icon-catalogs/panther/file-types/safari-document.png` | `/Applications/Safari.app/Contents/Resources/document.icns` | 128x128 |
+| TextEdit html | `/public/resources/macos-icon-catalogs/panther/file-types/textedit-html.png` | `/Applications/TextEdit.app/Contents/Resources/html.icns` | 128x128 |
+| TextEdit rtf | `/public/resources/macos-icon-catalogs/panther/file-types/textedit-rtf.png` | `/Applications/TextEdit.app/Contents/Resources/rtf.icns` | 128x128 |
+| TextEdit rtfd | `/public/resources/macos-icon-catalogs/panther/file-types/textedit-rtfd.png` | `/Applications/TextEdit.app/Contents/Resources/rtfd.icns` | 128x128 |
+| TextEdit txt | `/public/resources/macos-icon-catalogs/panther/file-types/textedit-txt.png` | `/Applications/TextEdit.app/Contents/Resources/txt.icns` | 128x128 |
+| Unknown FSObject | `/public/resources/macos-icon-catalogs/panther/file-types/unknown-fsobject.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/UnknownFSObjectIcon.icns` | 128x128 |
 
