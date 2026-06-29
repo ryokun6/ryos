@@ -215,10 +215,7 @@ export function useLiveEnvironmentSnapshot({
         errorCount: logMetrics.errorCount,
         warnCount: logMetrics.warnCount,
         bufferedLogCount: entriesRef.current.length,
-        history: appendHistoryPoint(
-          includeCadence ? previous.history : [],
-          historyPoint
-        ),
+        history: appendHistoryPoint(previous.history, historyPoint),
       }));
 
       if (includeCadence) {

@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useRef } from "react";
+import { memo } from "react";
 import { AppProps } from "../../base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { MinesweeperMenuBar } from "./MinesweeperMenuBar";
@@ -10,92 +10,27 @@ import { appMetadata } from "..";
 import { isMobileDevice } from "@/utils/device";
 import { getTranslatedAppName } from "@/utils/i18n";
 import {
+  usePointerLongPress,
+  type PointerLongPressEvent,
+} from "@/hooks/usePointerLongPress";
+import {
   useMinesweeperLogic,
   type CellContent,
 } from "../hooks/useMinesweeperLogic";
+
+type CellRightClickEvent =
+  | React.MouseEvent
+  | React.TouchEvent
+  | PointerLongPressEvent;
 
 type CellProps = {
   cell: CellContent;
   rowIndex: number;
   colIndex: number;
   onCellClick: (row: number, col: number, isDoubleClick?: boolean) => void;
-  onCellRightClick: (
-    e: React.MouseEvent | React.TouchEvent,
-    row: number,
-    col: number
-  ) => void;
+  onCellRightClick: (e: CellRightClickEvent, row: number, col: number) => void;
   disabled: boolean;
 };
-
-function useLongPress(
-  onLongPress: (e: React.TouchEvent | React.MouseEvent) => void,
-  onClick: () => void,
-  { shouldPreventDefault = false, delay = 500 } = {}
-) {
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout>();
-  const longPressTriggeredRef = useRef(false);
-  const lastButtonRef = useRef<number | null>(null);
-  const lastWasTouchRef = useRef(false);
-
-  const start = useCallback(
-    (e: React.TouchEvent | React.MouseEvent) => {
-      if (shouldPreventDefault && e.target) {
-        e.preventDefault();
-      }
-      longPressTriggeredRef.current = false;
-
-      if ("touches" in e) {
-        lastWasTouchRef.current = true;
-        lastButtonRef.current = null;
-      } else {
-        const me = e as React.MouseEvent;
-        lastWasTouchRef.current = false;
-        lastButtonRef.current = typeof me.button === "number" ? me.button : 0;
-      }
-
-      const timer = setTimeout(() => {
-        onLongPress(e);
-        longPressTriggeredRef.current = true;
-      }, delay);
-      setTimeoutId(timer);
-    },
-    [onLongPress, delay, shouldPreventDefault]
-  );
-
-  const clear = useCallback(
-    (_: React.TouchEvent | React.MouseEvent, shouldTriggerClick = true) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      setTimeoutId(undefined);
-
-      const isRightClick = lastButtonRef.current === 2;
-      const allowClick =
-        shouldTriggerClick &&
-        !longPressTriggeredRef.current &&
-        (lastWasTouchRef.current || !isRightClick);
-
-      if (allowClick) {
-        onClick();
-      }
-
-      setTimeout(() => {
-        longPressTriggeredRef.current = false;
-        lastButtonRef.current = null;
-        lastWasTouchRef.current = false;
-      }, 100);
-    },
-    [onClick, timeoutId]
-  );
-
-  return {
-    onMouseDown: (e: React.MouseEvent) => start(e),
-    onTouchStart: (e: React.TouchEvent) => start(e),
-    onMouseUp: (e: React.MouseEvent) => clear(e),
-    onMouseLeave: (e: React.MouseEvent) => clear(e, false),
-    onTouchEnd: (e: React.TouchEvent) => clear(e),
-  };
-}
 
 const Cell = memo(function Cell({
   cell,
@@ -113,11 +48,17 @@ const Cell = memo(function Cell({
     }
   };
 
-  const longPressHandlers = useLongPress(
+  const longPressHandlers = usePointerLongPress(
     (e) => onCellRightClick(e, rowIndex, colIndex),
-    handleClick,
-    { delay: 500, shouldPreventDefault: false }
+    { delay: 500 }
   );
+  const { consumeClickIfLongPressFired, ...longPressDomBindings } =
+    longPressHandlers;
+
+  const handlePointerClick = () => {
+    if (consumeClickIfLongPressFired()) return;
+    handleClick();
+  };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -136,7 +77,8 @@ const Cell = memo(function Cell({
       key={`${rowIndex}-${colIndex}`}
       className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-none select-none touch-none minesweeper-cell
         ${cell.isRevealed ? "minesweeper-revealed" : "minesweeper-hidden"}`}
-      {...longPressHandlers}
+      {...longPressDomBindings}
+      onClick={handlePointerClick}
       onContextMenu={handleContextMenu}
       onDoubleClick={handleDoubleClick}
       disabled={disabled}

@@ -363,8 +363,8 @@ async function getWaybackCacheKey(
  *     title?: string
  *   }
  *
- * On network or other unexpected errors we default to `allowed: true` so that navigation is not
- * blocked accidentally (the front‑end still has its own error handling for actual iframe errors).
+ * On network or other unexpected errors we default to `allowed: false` so the
+ * proxy does not silently embed pages it could not verify.
  */
 
 export default apiHandler(
@@ -460,18 +460,21 @@ export default apiHandler(
   // ---------------------------
   // Rate limiting (mode-specific)
   // ---------------------------
+  const ip = getClientIp(req);
+
   try {
-    const ip = getClientIp(req);
     const BURST_WINDOW = 60; // 1 minute
     const burstKeyBase = ["rl", "iframe", mode, "ip", ip];
 
-    if (mode === "proxy" || mode === "check") {
+    if (mode === "proxy" || mode === "check" || mode === "live") {
+      const globalLimit = mode === "live" ? 60 : 300;
+      const hostLimit = mode === "live" ? 20 : 100;
       // Global per-IP burst
       const globalKey = RateLimit.makeKey(burstKeyBase);
       const global = await RateLimit.checkCounterLimit({
         key: globalKey,
         windowSeconds: BURST_WINDOW,
-        limit: 300, // Relaxed global limit for proxy/check
+        limit: globalLimit,
       });
       if (!global.allowed) {
         logger.warn("Rate limit exceeded (global)", { ip, mode });
@@ -505,7 +508,7 @@ export default apiHandler(
         const host = await RateLimit.checkCounterLimit({
           key: hostKey,
           windowSeconds: BURST_WINDOW,
-          limit: 100, // Relaxed per-host limit for proxy/check
+          limit: hostLimit,
         });
         if (!host.allowed) {
           logger.warn("Rate limit exceeded (host)", { ip, hostname, mode });
@@ -546,6 +549,7 @@ export default apiHandler(
     }
   } catch (e) {
     logger.error("Rate limit check failed (iframe-check)", e);
+    return errorResponseWithCors("rate_limit_unavailable", 503);
   }
 
   // --- AI cache retrieval mode (PRIORITIZE THIS) ---
@@ -1078,6 +1082,35 @@ export default apiHandler(
         !upstreamRes.ok &&
         [401, 403, 405, 406, 429, 451].includes(upstreamRes.status);
       if (headlessEligible && (forceHeadless || upstreamBlocked)) {
+        try {
+          const HEADLESS_WINDOW = 60;
+          const headless = await RateLimit.checkCounterLimit({
+            key: RateLimit.makeKey(["rl", "iframe", "headless", "ip", ip]),
+            windowSeconds: HEADLESS_WINDOW,
+            limit: 10,
+          });
+          if (!headless.allowed) {
+            logger.warn("Rate limit exceeded (headless)", { ip, mode });
+            res.setHeader(
+              "Retry-After",
+              String(headless.resetSeconds ?? HEADLESS_WINDOW)
+            );
+            res.setHeader("Content-Type", "application/json");
+            if (effectiveOrigin) {
+              res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+            }
+            logger.response(429, Date.now() - startTime);
+            return res.status(429).json({
+              error: "rate_limit_exceeded",
+              scope: "headless",
+              mode,
+            });
+          }
+        } catch (e) {
+          logger.error("Headless rate limit check failed (iframe-check)", e);
+          return errorResponseWithCors("rate_limit_unavailable", 503);
+        }
+
         logger.info(
           `Attempting headless render fallback for ${targetUrl} (status ${upstreamRes.status}, forced=${forceHeadless})`
         );
