@@ -14,7 +14,7 @@ description: Create new applications for ryOS following established patterns and
 - [ ] 4. Create logic hook: hooks/use[AppName]Logic.ts
 - [ ] 5. Create metadata: metadata.ts (appMetadata + exactly 6 help items)
 - [ ] 6. Create app definition: index.tsx (re-export metadata, declare initialData type)
-- [ ] 7. Add icon: public/icons/default/[app-name].png
+- [ ] 7. Add icon: choose from existing icons or the resource catalogs, then place active assets under `public/icons/<theme>/[app-name].png`
 - [ ] 8. Register the app id: add to appIds + appNames in src/config/appRegistryData.ts
 - [ ] 9. Register the app: lazy component + registry entry in src/config/appRegistry.tsx
 - [ ] 10. Register help key order in src/hooks/useTranslatedHelpItems.ts
@@ -62,6 +62,20 @@ export const helpItems = [
   { icon: "❓", title: "Help & About", description: "Open Help from the Help menu for more info" },
 ];
 ```
+
+### App icon sourcing
+
+Before creating a new app icon from scratch, check the active icon themes and the historical icon resource catalogs:
+
+1. Look for an existing logical icon in `public/icons/default`, `public/icons/macosx`, `public/icons/win98`, and `public/icons/xp`.
+2. Search the resource catalogs for historically appropriate source art:
+   - Mac OS X: `public/resources/macos-icon-catalogs/{panther,tiger}/catalog.md`
+   - Windows: `public/resources/windows-icon-catalogs/{win98,xp}/catalog.md`
+3. If a catalog asset is the right source, copy or adapt it into the active icon tree (`public/icons/<theme>/...`) instead of referencing `public/resources/...` directly from app metadata.
+4. Add at least `public/icons/default/[app-name].png`; add theme-specific variants when the catalog has a better era-matched asset.
+5. Run `bun run generate:icons` after adding or moving active files under `public/icons`.
+
+Keep `public/resources/*-icon-catalogs` as source libraries. Do not replace unrelated active icons just because a catalog contains a historical equivalent.
 
 ### App Definition (`index.tsx`)
 
