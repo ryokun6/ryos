@@ -228,9 +228,7 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(getControlPanelCategory("software-update")?.icon).toBe(
       "software-update.png"
     );
-    expect(getControlPanelCategory("sharing")?.macosxIcon).toBe(
-      "control-panels/sharing.png"
-    );
+    expect(getControlPanelCategory("sharing")?.macosxIcon).toBeUndefined();
     expect(getControlPanelCategory("sharing")?.icon).toBe(
       "control-panels/backup-restore.png"
     );

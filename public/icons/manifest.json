@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-29T23:12:39.532Z",
+  "generatedAt": "2026-06-29T23:17:38.768Z",
   "themes": {
     "default": [
       "admin.png",
@@ -191,7 +191,6 @@
       "control-panels/keychain.png",
       "control-panels/screen-sharing.png",
       "control-panels/security.png",
-      "control-panels/sharing.png",
       "control-panels/software-update.png",
       "control-panels/sound-on.png",
       "control-panels/sound.png",

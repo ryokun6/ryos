@@ -78,7 +78,6 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
     id: "sharing",
     labelKey: "apps.control-panels.panes.sharing",
     icon: "control-panels/backup-restore.png",
-    macosxIcon: "control-panels/sharing.png",
   },
   {
     id: "accounts",
