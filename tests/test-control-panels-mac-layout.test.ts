@@ -230,9 +230,6 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(getControlPanelCategory("security")?.icon).toBe(
       "control-panels/security.png"
     );
-    expect(getControlPanelCategory("security")?.icon).toBe(
-      "control-panels/keychain.png"
-    );
     expect(categoriesSource.includes("control-panels/users.png")).toBe(true);
     expect(getControlPanelCategory("accounts")?.icon).toBe(
       "control-panels/users.png"
