@@ -2,7 +2,7 @@
 
 Source: [Mac OS X Tiger 10.4 Retail DVD](https://archive.org/details/macosx10.4tigerretaildvd)
 
-Generated entries: 79 (51 applications, 28 System Preferences panes).
+Generated entries: 140 (51 applications, 28 System Preferences panes, 61 folders).
 
 ## Applications
 
@@ -92,4 +92,70 @@ Generated entries: 79 (51 applications, 28 System Preferences panes).
 | Spotlight | `/public/resources/macos-icon-catalogs/tiger/system-preferences/spotlight.png` | `/System/Library/PreferencePanes/Spotlight.prefPane` | `/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.tiff` | 32x32 |
 | Startup Disk | `/public/resources/macos-icon-catalogs/tiger/system-preferences/startup-disk.png` | `/System/Library/PreferencePanes/StartupDisk.prefPane` | `/System/Library/PreferencePanes/StartupDisk.prefPane/Contents/Resources/StartupDiskPref.icns` | 128x128 |
 | Universal Access | `/public/resources/macos-icon-catalogs/tiger/system-preferences/universal-access.png` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.icns` | 128x128 |
+
+## Folders
+
+| Name | PNG | Source icon | Size |
+| --- | --- | --- | --- |
+| Apple Menu Folder | `/public/resources/macos-icon-catalogs/tiger/folders/apple-menu-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleMenuFolderIcon.icns` | 32x32 |
+| Application Support Folder | `/public/resources/macos-icon-catalogs/tiger/folders/application-support-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationSupportFolderIcon.icns` | 32x32 |
+| Applications Folder | `/public/resources/macos-icon-catalogs/tiger/folders/applications-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationsFolderIcon.icns` | 128x128 |
+| Assistants Folder | `/public/resources/macos-icon-catalogs/tiger/folders/assistants-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AssistantsFolderIcon.icns` | 32x32 |
+| Classic System Folder | `/public/resources/macos-icon-catalogs/tiger/folders/classic-system-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ClassicSystemFolderIcon.icns` | 128x128 |
+| Color Sync Folder | `/public/resources/macos-icon-catalogs/tiger/folders/color-sync-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ColorSyncFolderIcon.icns` | 32x32 |
+| Contextual Menu Items Folder | `/public/resources/macos-icon-catalogs/tiger/folders/contextual-menu-items-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ContextualMenuItemsFolderIcon.icns` | 32x32 |
+| Control Panel Disabled Folder | `/public/resources/macos-icon-catalogs/tiger/folders/control-panel-disabled-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ControlPanelDisabledFolderIcon.icns` | 32x32 |
+| Control Panel Folder | `/public/resources/macos-icon-catalogs/tiger/folders/control-panel-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ControlPanelFolderIcon.icns` | 32x32 |
+| Desktop Folder | `/public/resources/macos-icon-catalogs/tiger/folders/desktop-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DesktopFolderIcon.icns` | 128x128 |
+| Developer Folder | `/public/resources/macos-icon-catalogs/tiger/folders/developer-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DeveloperFolderIcon.icns` | 128x128 |
+| Documents Folder | `/public/resources/macos-icon-catalogs/tiger/folders/documents-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DocumentsFolderIcon.icns` | 128x128 |
+| Drop Folder | `/public/resources/macos-icon-catalogs/tiger/folders/drop-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DropFolderIcon.icns` | 128x128 |
+| Extensions Disabled Folder | `/public/resources/macos-icon-catalogs/tiger/folders/extensions-disabled-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ExtensionsDisabledFolderIcon.icns` | 32x32 |
+| Fonts Folder | `/public/resources/macos-icon-catalogs/tiger/folders/fonts-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FontsFolderIcon.icns` | 32x32 |
+| Generic Folder | `/public/resources/macos-icon-catalogs/tiger/folders/generic-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFolderIcon.icns` | 128x128 |
+| Group Folder | `/public/resources/macos-icon-catalogs/tiger/folders/group-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GroupFolder.icns` | 128x128 |
+| Help Folder | `/public/resources/macos-icon-catalogs/tiger/folders/help-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HelpFolderIcon.icns` | 32x32 |
+| Home Folder | `/public/resources/macos-icon-catalogs/tiger/folders/home-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HomeFolderIcon.icns` | 128x128 |
+| Internet Folder | `/public/resources/macos-icon-catalogs/tiger/folders/internet-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetFolderIcon.icns` | 32x32 |
+| Internet Plug In Folder | `/public/resources/macos-icon-catalogs/tiger/folders/internet-plug-in-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetPlugInFolderIcon.icns` | 32x32 |
+| Library Folder | `/public/resources/macos-icon-catalogs/tiger/folders/library-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LibraryFolderIcon.icns` | 128x128 |
+| Locales Folder | `/public/resources/macos-icon-catalogs/tiger/folders/locales-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LocalesFolderIcon.icns` | 32x32 |
+| Mounted Folder | `/public/resources/macos-icon-catalogs/tiger/folders/mounted-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MountedFolderIcon.icns` | 32x32 |
+| Movie Folder | `/public/resources/macos-icon-catalogs/tiger/folders/movie-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MovieFolderIcon.icns` | 128x128 |
+| Music Folder | `/public/resources/macos-icon-catalogs/tiger/folders/music-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MusicFolderIcon.icns` | 128x128 |
+| No Folder | `/public/resources/macos-icon-catalogs/tiger/folders/no-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NoFolderIcon.icns` | 16x16 |
+| Open Folder | `/public/resources/macos-icon-catalogs/tiger/folders/open-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/OpenFolderIcon.icns` | 128x128 |
+| Owned Folder | `/public/resources/macos-icon-catalogs/tiger/folders/owned-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/OwnedFolderIcon.icns` | 32x32 |
+| Pictures Folder | `/public/resources/macos-icon-catalogs/tiger/folders/pictures-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PicturesFolderIcon.icns` | 128x128 |
+| Preferences Folder | `/public/resources/macos-icon-catalogs/tiger/folders/preferences-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PreferencesFolderIcon.icns` | 32x32 |
+| Print Monitor Folder | `/public/resources/macos-icon-catalogs/tiger/folders/print-monitor-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrintMonitorFolderIcon.icns` | 32x32 |
+| Printer Description Folder | `/public/resources/macos-icon-catalogs/tiger/folders/printer-description-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrinterDescriptionFolderIcon.icns` | 32x32 |
+| Printer Driver Folder | `/public/resources/macos-icon-catalogs/tiger/folders/printer-driver-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrinterDriverFolderIcon.icns` | 32x32 |
+| Private Folder | `/public/resources/macos-icon-catalogs/tiger/folders/private-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrivateFolderIcon.icns` | 128x128 |
+| Protected Application Folder | `/public/resources/macos-icon-catalogs/tiger/folders/protected-application-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ProtectedApplicationFolderIcon.icns` | 32x32 |
+| Protected System Folder | `/public/resources/macos-icon-catalogs/tiger/folders/protected-system-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ProtectedSystemFolderIcon.icns` | 32x32 |
+| Public Folder | `/public/resources/macos-icon-catalogs/tiger/folders/public-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PublicFolderIcon.icns` | 128x128 |
+| Read Only Folder | `/public/resources/macos-icon-catalogs/tiger/folders/read-only-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ReadOnlyFolderIcon.icns` | 128x128 |
+| Recent Applications Folder | `/public/resources/macos-icon-catalogs/tiger/folders/recent-applications-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentApplicationsFolderIcon.icns` | 32x32 |
+| Recent Documents Folder | `/public/resources/macos-icon-catalogs/tiger/folders/recent-documents-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentDocumentsFolderIcon.icns` | 32x32 |
+| Recent Servers Folder | `/public/resources/macos-icon-catalogs/tiger/folders/recent-servers-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentServersFolderIcon.icns` | 32x32 |
+| Scripting Additions Folder | `/public/resources/macos-icon-catalogs/tiger/folders/scripting-additions-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ScriptingAdditionsFolderIcon.icns` | 32x32 |
+| Scripts Folder | `/public/resources/macos-icon-catalogs/tiger/folders/scripts-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ScriptsFolderIcon.icns` | 32x32 |
+| Shared Folder | `/public/resources/macos-icon-catalogs/tiger/folders/shared-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SharedFolderIcon.icns` | 32x32 |
+| Shutdown Items Disabled Folder | `/public/resources/macos-icon-catalogs/tiger/folders/shutdown-items-disabled-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ShutdownItemsDisabledFolderIcon.icns` | 32x32 |
+| Sites Folder | `/public/resources/macos-icon-catalogs/tiger/folders/sites-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SitesFolderIcon.icns` | 128x128 |
+| Smart Folder | `/public/resources/macos-icon-catalogs/tiger/folders/smart-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SmartFolderIcon.icns` | 128x128 |
+| Startup Folder | `/public/resources/macos-icon-catalogs/tiger/folders/startup-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StartupFolderIcon.icns` | 32x32 |
+| Startup Items Disabled Folder | `/public/resources/macos-icon-catalogs/tiger/folders/startup-items-disabled-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StartupItemsDisabledFolderIcon.icns` | 32x32 |
+| System Extension Disabled Folder | `/public/resources/macos-icon-catalogs/tiger/folders/system-extension-disabled-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SystemExtensionDisabledFolderIcon.icns` | 32x32 |
+| System Folder | `/public/resources/macos-icon-catalogs/tiger/folders/system-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SystemFolderIcon.icns` | 128x128 |
+| Text Encodings Folder | `/public/resources/macos-icon-catalogs/tiger/folders/text-encodings-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/TextEncodingsFolderIcon.icns` | 32x32 |
+| Themes Folder | `/public/resources/macos-icon-catalogs/tiger/folders/themes-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ThemesFolderIcon.icns` | 32x32 |
+| Toolbar Apps Folder | `/public/resources/macos-icon-catalogs/tiger/folders/toolbar-apps-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarAppsFolderIcon.icns` | 32x32 |
+| Toolbar Documents Folder | `/public/resources/macos-icon-catalogs/tiger/folders/toolbar-documents-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarDocumentsFolderIcon.icns` | 32x32 |
+| Toolbar Movie Folder | `/public/resources/macos-icon-catalogs/tiger/folders/toolbar-movie-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMovieFolderIcon.icns` | 32x32 |
+| Toolbar Music Folder | `/public/resources/macos-icon-catalogs/tiger/folders/toolbar-music-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMusicFolderIcon.icns` | 32x32 |
+| Toolbar Pictures Folder | `/public/resources/macos-icon-catalogs/tiger/folders/toolbar-pictures-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPicturesFolderIcon.icns` | 32x32 |
+| Toolbar Public Folder | `/public/resources/macos-icon-catalogs/tiger/folders/toolbar-public-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPublicFolderIcon.icns` | 32x32 |
+| Users Folder | `/public/resources/macos-icon-catalogs/tiger/folders/users-folder.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UsersFolderIcon.icns` | 128x128 |
 

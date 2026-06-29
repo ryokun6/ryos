@@ -14,5 +14,6 @@ Each catalog contains:
 
 - `applications/` - converted PNGs for top-level application bundles.
 - `system-preferences/` - converted PNGs for System Preferences panes.
+- `folders/` - converted PNGs for CoreServices folder icons.
 - `catalog.json` - machine-readable metadata with source bundle/icon paths.
 - `catalog.md` - browsable table of the same entries.

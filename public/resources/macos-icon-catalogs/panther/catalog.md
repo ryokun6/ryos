@@ -2,7 +2,7 @@
 
 Source: [Mac OS X Panther 10.3 CD](https://archive.org/details/mac-os-x-10.3)
 
-Generated entries: 72 (45 applications, 27 System Preferences panes).
+Generated entries: 132 (45 applications, 27 System Preferences panes, 60 folders).
 
 ## Applications
 
@@ -85,4 +85,69 @@ Generated entries: 72 (45 applications, 27 System Preferences panes).
 | Speech | `/public/resources/macos-icon-catalogs/panther/system-preferences/speech.png` | `/System/Library/PreferencePanes/Speech.prefPane` | `/System/Library/PreferencePanes/Speech.prefPane/Contents/Resources/Speech.tiff` | 32x32 |
 | Startup Disk | `/public/resources/macos-icon-catalogs/panther/system-preferences/startup-disk.png` | `/System/Library/PreferencePanes/StartupDisk.prefPane` | `/System/Library/PreferencePanes/StartupDisk.prefPane/Contents/Resources/StartupDisk.tiff` | 32x32 |
 | Universal Access | `/public/resources/macos-icon-catalogs/panther/system-preferences/universal-access.png` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.tiff` | 32x32 |
+
+## Folders
+
+| Name | PNG | Source icon | Size |
+| --- | --- | --- | --- |
+| Apple Menu Folder | `/public/resources/macos-icon-catalogs/panther/folders/apple-menu-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleMenuFolderIcon.icns` | 32x32 |
+| Application Support Folder | `/public/resources/macos-icon-catalogs/panther/folders/application-support-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ApplicationSupportFolderIcon.icns` | 32x32 |
+| Applications Folder | `/public/resources/macos-icon-catalogs/panther/folders/applications-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ApplicationsFolderIcon.icns` | 128x128 |
+| Assistants Folder | `/public/resources/macos-icon-catalogs/panther/folders/assistants-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AssistantsFolderIcon.icns` | 32x32 |
+| Classic System Folder | `/public/resources/macos-icon-catalogs/panther/folders/classic-system-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ClassicSystemFolderIcon.icns` | 128x128 |
+| Color Sync Folder | `/public/resources/macos-icon-catalogs/panther/folders/color-sync-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ColorSyncFolderIcon.icns` | 32x32 |
+| Contextual Menu Items Folder | `/public/resources/macos-icon-catalogs/panther/folders/contextual-menu-items-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ContextualMenuItemsFolderIcon.icns` | 32x32 |
+| Control Panel Disabled Folder | `/public/resources/macos-icon-catalogs/panther/folders/control-panel-disabled-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ControlPanelDisabledFolderIcon.icns` | 32x32 |
+| Control Panel Folder | `/public/resources/macos-icon-catalogs/panther/folders/control-panel-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ControlPanelFolderIcon.icns` | 32x32 |
+| Desktop Folder | `/public/resources/macos-icon-catalogs/panther/folders/desktop-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DesktopFolderIcon.icns` | 128x128 |
+| Developer Folder | `/public/resources/macos-icon-catalogs/panther/folders/developer-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DeveloperFolderIcon.icns` | 128x128 |
+| Documents Folder | `/public/resources/macos-icon-catalogs/panther/folders/documents-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DocumentsFolderIcon.icns` | 128x128 |
+| Drop Folder | `/public/resources/macos-icon-catalogs/panther/folders/drop-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DropFolderIcon.icns` | 128x128 |
+| Extensions Disabled Folder | `/public/resources/macos-icon-catalogs/panther/folders/extensions-disabled-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ExtensionsDisabledFolderIcon.icns` | 32x32 |
+| Fonts Folder | `/public/resources/macos-icon-catalogs/panther/folders/fonts-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/FontsFolderIcon.icns` | 32x32 |
+| Generic Folder | `/public/resources/macos-icon-catalogs/panther/folders/generic-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericFolderIcon.icns` | 128x128 |
+| Group Folder | `/public/resources/macos-icon-catalogs/panther/folders/group-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GroupFolder.icns` | 128x128 |
+| Help Folder | `/public/resources/macos-icon-catalogs/panther/folders/help-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/HelpFolderIcon.icns` | 32x32 |
+| Home Folder | `/public/resources/macos-icon-catalogs/panther/folders/home-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/HomeFolderIcon.icns` | 128x128 |
+| Internet Folder | `/public/resources/macos-icon-catalogs/panther/folders/internet-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetFolderIcon.icns` | 32x32 |
+| Internet Plug In Folder | `/public/resources/macos-icon-catalogs/panther/folders/internet-plug-in-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/InternetPlugInFolderIcon.icns` | 32x32 |
+| Library Folder | `/public/resources/macos-icon-catalogs/panther/folders/library-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/LibraryFolderIcon.icns` | 128x128 |
+| Locales Folder | `/public/resources/macos-icon-catalogs/panther/folders/locales-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/LocalesFolderIcon.icns` | 32x32 |
+| Mounted Folder | `/public/resources/macos-icon-catalogs/panther/folders/mounted-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MountedFolderIcon.icns` | 32x32 |
+| Movie Folder | `/public/resources/macos-icon-catalogs/panther/folders/movie-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MovieFolderIcon.icns` | 128x128 |
+| Music Folder | `/public/resources/macos-icon-catalogs/panther/folders/music-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MusicFolderIcon.icns` | 128x128 |
+| No Folder | `/public/resources/macos-icon-catalogs/panther/folders/no-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/NoFolderIcon.icns` | 16x16 |
+| Open Folder | `/public/resources/macos-icon-catalogs/panther/folders/open-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/OpenFolderIcon.icns` | 128x128 |
+| Owned Folder | `/public/resources/macos-icon-catalogs/panther/folders/owned-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/OwnedFolderIcon.icns` | 32x32 |
+| Pictures Folder | `/public/resources/macos-icon-catalogs/panther/folders/pictures-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PicturesFolderIcon.icns` | 128x128 |
+| Preferences Folder | `/public/resources/macos-icon-catalogs/panther/folders/preferences-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PreferencesFolderIcon.icns` | 32x32 |
+| Print Monitor Folder | `/public/resources/macos-icon-catalogs/panther/folders/print-monitor-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PrintMonitorFolderIcon.icns` | 32x32 |
+| Printer Description Folder | `/public/resources/macos-icon-catalogs/panther/folders/printer-description-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PrinterDescriptionFolderIcon.icns` | 32x32 |
+| Printer Driver Folder | `/public/resources/macos-icon-catalogs/panther/folders/printer-driver-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PrinterDriverFolderIcon.icns` | 32x32 |
+| Private Folder | `/public/resources/macos-icon-catalogs/panther/folders/private-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PrivateFolderIcon.icns` | 128x128 |
+| Protected Application Folder | `/public/resources/macos-icon-catalogs/panther/folders/protected-application-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ProtectedApplicationFolderIcon.icns` | 32x32 |
+| Protected System Folder | `/public/resources/macos-icon-catalogs/panther/folders/protected-system-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ProtectedSystemFolderIcon.icns` | 32x32 |
+| Public Folder | `/public/resources/macos-icon-catalogs/panther/folders/public-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PublicFolderIcon.icns` | 128x128 |
+| Read Only Folder | `/public/resources/macos-icon-catalogs/panther/folders/read-only-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ReadOnlyFolderIcon.icns` | 128x128 |
+| Recent Applications Folder | `/public/resources/macos-icon-catalogs/panther/folders/recent-applications-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/RecentApplicationsFolderIcon.icns` | 32x32 |
+| Recent Documents Folder | `/public/resources/macos-icon-catalogs/panther/folders/recent-documents-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/RecentDocumentsFolderIcon.icns` | 32x32 |
+| Recent Servers Folder | `/public/resources/macos-icon-catalogs/panther/folders/recent-servers-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/RecentServersFolderIcon.icns` | 32x32 |
+| Scripting Additions Folder | `/public/resources/macos-icon-catalogs/panther/folders/scripting-additions-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ScriptingAdditionsFolderIcon.icns` | 32x32 |
+| Scripts Folder | `/public/resources/macos-icon-catalogs/panther/folders/scripts-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ScriptsFolderIcon.icns` | 32x32 |
+| Shared Folder | `/public/resources/macos-icon-catalogs/panther/folders/shared-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SharedFolderIcon.icns` | 32x32 |
+| Shutdown Items Disabled Folder | `/public/resources/macos-icon-catalogs/panther/folders/shutdown-items-disabled-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ShutdownItemsDisabledFolderIcon.icns` | 32x32 |
+| Sites Folder | `/public/resources/macos-icon-catalogs/panther/folders/sites-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SitesFolderIcon.icns` | 128x128 |
+| Startup Folder | `/public/resources/macos-icon-catalogs/panther/folders/startup-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/StartupFolderIcon.icns` | 32x32 |
+| Startup Items Disabled Folder | `/public/resources/macos-icon-catalogs/panther/folders/startup-items-disabled-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/StartupItemsDisabledFolderIcon.icns` | 32x32 |
+| System Extension Disabled Folder | `/public/resources/macos-icon-catalogs/panther/folders/system-extension-disabled-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SystemExtensionDisabledFolderIcon.icns` | 32x32 |
+| System Folder | `/public/resources/macos-icon-catalogs/panther/folders/system-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SystemFolderIcon.icns` | 128x128 |
+| Text Encodings Folder | `/public/resources/macos-icon-catalogs/panther/folders/text-encodings-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/TextEncodingsFolderIcon.icns` | 32x32 |
+| Themes Folder | `/public/resources/macos-icon-catalogs/panther/folders/themes-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ThemesFolderIcon.icns` | 32x32 |
+| Toolbar Apps Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-apps-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarAppsFolderIcon.icns` | 32x32 |
+| Toolbar Documents Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-documents-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarDocumentsFolderIcon.icns` | 32x32 |
+| Toolbar Movie Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-movie-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarMovieFolderIcon.icns` | 32x32 |
+| Toolbar Music Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-music-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarMusicFolderIcon.icns` | 32x32 |
+| Toolbar Pictures Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-pictures-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarPicturesFolderIcon.icns` | 32x32 |
+| Toolbar Public Folder | `/public/resources/macos-icon-catalogs/panther/folders/toolbar-public-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/ToolbarPublicFolderIcon.icns` | 32x32 |
+| Users Folder | `/public/resources/macos-icon-catalogs/panther/folders/users-folder.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/UsersFolderIcon.icns` | 128x128 |
 

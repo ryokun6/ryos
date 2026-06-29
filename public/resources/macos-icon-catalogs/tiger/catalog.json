@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-29T18:40:28.365261+00:00",
+  "generatedAt": "2026-06-29T18:46:08.368991+00:00",
   "source": {
     "name": "Mac OS X Tiger 10.4 Retail DVD",
     "url": "https://archive.org/details/macosx10.4tigerretaildvd"
@@ -7,7 +7,8 @@
   "counts": {
     "applications": 51,
     "systemPreferences": 28,
-    "total": 79
+    "folders": 61,
+    "total": 140
   },
   "entries": [
     {
@@ -568,6 +569,494 @@
       "sourceBundlePath": "/Applications/Utilities/VoiceOver Utility.app",
       "sourceIconPath": "/Applications/Utilities/VoiceOver Utility.app/Contents/Resources/voiceover.icns",
       "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/voiceover-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Apple Menu Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleMenuFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/apple-menu-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Application Support Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationSupportFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/application-support-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Applications Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/applications-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Assistants Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AssistantsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/assistants-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Classic System Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ClassicSystemFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/classic-system-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Color Sync Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ColorSyncFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/color-sync-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Contextual Menu Items Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ContextualMenuItemsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/contextual-menu-items-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Control Panel Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ControlPanelDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/control-panel-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Control Panel Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ControlPanelFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/control-panel-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Desktop Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DesktopFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/desktop-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Developer Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DeveloperFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/developer-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Documents Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DocumentsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/documents-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Drop Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DropFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/drop-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Extensions Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ExtensionsDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/extensions-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Fonts Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FontsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/fonts-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Generic Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/generic-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Group Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GroupFolder.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/group-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Help Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HelpFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/help-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Home Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HomeFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/home-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Internet Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/internet-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Internet Plug In Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetPlugInFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/internet-plug-in-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Library Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LibraryFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/library-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Locales Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LocalesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/locales-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Mounted Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MountedFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/mounted-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Movie Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MovieFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/movie-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Music Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MusicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/music-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "No Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NoFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/no-folder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "folder",
+      "name": "Open Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/OpenFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/open-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Owned Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/OwnedFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/owned-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Pictures Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PicturesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/pictures-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Preferences Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PreferencesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/preferences-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Print Monitor Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrintMonitorFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/print-monitor-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Printer Description Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrinterDescriptionFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/printer-description-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Printer Driver Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrinterDriverFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/printer-driver-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Private Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrivateFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/private-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Protected Application Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ProtectedApplicationFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/protected-application-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Protected System Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ProtectedSystemFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/protected-system-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Public Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PublicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/public-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Read Only Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ReadOnlyFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/read-only-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Recent Applications Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentApplicationsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/recent-applications-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Recent Documents Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentDocumentsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/recent-documents-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Recent Servers Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentServersFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/recent-servers-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Scripting Additions Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ScriptingAdditionsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/scripting-additions-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Scripts Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ScriptsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/scripts-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Shared Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SharedFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/shared-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Shutdown Items Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ShutdownItemsDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/shutdown-items-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Sites Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SitesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/sites-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Smart Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SmartFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/smart-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Startup Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StartupFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/startup-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Startup Items Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StartupItemsDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/startup-items-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "System Extension Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SystemExtensionDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/system-extension-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "System Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SystemFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/system-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Text Encodings Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/TextEncodingsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/text-encodings-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Themes Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ThemesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/themes-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Apps Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarAppsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-apps-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Documents Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarDocumentsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-documents-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Movie Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMovieFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-movie-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Music Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMusicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-music-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Pictures Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPicturesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-pictures-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Public Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPublicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-public-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Users Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UsersFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/users-folder.png",
       "width": 128,
       "height": 128
     },
