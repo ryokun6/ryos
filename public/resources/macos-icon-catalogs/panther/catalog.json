@@ -650,12 +650,12 @@
     },
     {
       "type": "system-preference",
-      "name": "Expos\u00e9",
+      "name": "Expose",
       "bundleIdentifier": "com.apple.preference.expose",
       "version": "1.0",
       "sourceBundlePath": "/System/Library/PreferencePanes/Expose.prefPane",
       "sourceIconPath": "/System/Library/PreferencePanes/Expose.prefPane/Contents/Resources/WindowVous.tif",
-      "catalogPath": "/public/resources/macos-icon-catalogs/panther/system-preferences/expos.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/panther/system-preferences/expose.png",
       "width": 32,
       "height": 32
     },

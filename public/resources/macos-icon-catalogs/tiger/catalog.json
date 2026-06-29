@@ -650,12 +650,12 @@
     },
     {
       "type": "system-preference",
-      "name": "Dashboard & Expos\u00e9",
+      "name": "Dashboard & Expose",
       "bundleIdentifier": "com.apple.preference.expose",
       "version": "1.1",
       "sourceBundlePath": "/System/Library/PreferencePanes/Expose.prefPane",
       "sourceIconPath": "/System/Library/PreferencePanes/Expose.prefPane/Contents/Resources/Expose.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/dashboard-and-expos.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/dashboard-and-expose.png",
       "width": 128,
       "height": 128
     },
