@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
 } from "react";
 import {
   ArrowDown,
@@ -39,9 +40,17 @@ import {
   type ConsoleLogEntry,
   type ConsoleLogLevel,
 } from "@/utils/consoleCapture";
+import {
+  classifyNetworkStatus,
+  clearNetworkCapture,
+  formatNetworkEntriesForCopy,
+  getNetworkCaptureSnapshot,
+  subscribeNetworkCapture,
+} from "@/utils/networkCapture";
 import { osCardClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
 import { DebugLiveDashboard } from "./DebugLiveDashboard";
+import { DebugNetworkPanel } from "./DebugNetworkPanel";
 import { getRestoredScrollTop } from "./debugLogVirtualization";
 
 const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
@@ -58,7 +67,7 @@ const STICK_TO_BOTTOM_THRESHOLD = 24;
 const LOGGER_TAG_RE = /^\[([^\]]+)\]/;
 const ALL_LOGGERS_FILTER = "__all__";
 const OTHER_LOGGER_FILTER = "__other__";
-type DebugPanelTab = "logs" | "live";
+type DebugPanelTab = "logs" | "live" | "network";
 
 function extractLoggerTag(text: string): string | null {
   const match = text.match(LOGGER_TAG_RE);
@@ -157,6 +166,29 @@ export function DebugLogOverlay() {
     subscribeConsoleCapture,
     getConsoleCaptureSnapshot,
     getConsoleCaptureSnapshot
+  );
+
+  const networkEntries = useSyncExternalStore(
+    subscribeNetworkCapture,
+    getNetworkCaptureSnapshot,
+    getNetworkCaptureSnapshot
+  );
+
+  const networkFailedCount = useMemo(
+    () =>
+      networkEntries.reduce(
+        (acc, entry) =>
+          classifyNetworkStatus(entry.status, entry.outcome) === "error"
+            ? acc + 1
+            : acc,
+        0
+      ),
+    [networkEntries]
+  );
+
+  const networkCopyText = useMemo(
+    () => formatNetworkEntriesForCopy(networkEntries),
+    [networkEntries]
   );
 
   const loggerStats = useMemo(() => {
@@ -403,6 +435,14 @@ export function DebugLogOverlay() {
     void copyToClipboard(liveReportRef.current);
   }, [copyToClipboard]);
 
+  const handleCopyNetwork = useCallback(() => {
+    void copyToClipboard(networkCopyText);
+  }, [copyToClipboard, networkCopyText]);
+
+  const handleClearNetwork = useCallback(() => {
+    clearNetworkCapture();
+  }, []);
+
   const handleLiveReportChange = useCallback((report: string) => {
     liveReportRef.current = report;
   }, []);
@@ -466,7 +506,13 @@ export function DebugLogOverlay() {
         <Tabs
           value={activeTab}
           onValueChange={(value) =>
-            setActiveTab(value === "live" ? "live" : "logs")
+            setActiveTab(
+              value === "live"
+                ? "live"
+                : value === "network"
+                  ? "network"
+                  : "logs"
+            )
           }
           className={cn(
             isMacOSTheme
@@ -569,6 +615,22 @@ export function DebugLogOverlay() {
                   </span>
                 )}
               </>
+            ) : activeTab === "network" ? (
+              <>
+                <span className="shrink-0 font-os-ui text-[12px]">
+                  {t("debug.network.title")}
+                  <span className="ml-1 tabular-nums opacity-60">
+                    {networkEntries.length}
+                  </span>
+                </span>
+                {networkFailedCount > 0 && (
+                  <span className="shrink-0 font-os-ui text-[12px] text-red-500">
+                    {t("debug.network.failedCount", {
+                      count: networkFailedCount,
+                    })}
+                  </span>
+                )}
+              </>
             ) : null}
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
               {activeTab === "logs" ? (
@@ -587,16 +649,26 @@ export function DebugLogOverlay() {
               ) : null}
               <button
                 type="button"
-                onClick={activeTab === "logs" ? handleCopy : handleCopyLive}
+                onClick={
+                  activeTab === "logs"
+                    ? handleCopy
+                    : activeTab === "network"
+                      ? handleCopyNetwork
+                      : handleCopyLive
+                }
                 title={
                   activeTab === "logs"
                     ? t("debug.copyLogs")
-                    : t("debug.live.copySnapshot")
+                    : activeTab === "network"
+                      ? t("debug.network.copy")
+                      : t("debug.live.copySnapshot")
                 }
                 aria-label={
                   activeTab === "logs"
                     ? t("debug.copyLogs")
-                    : t("debug.live.copySnapshot")
+                    : activeTab === "network"
+                      ? t("debug.network.copy")
+                      : t("debug.live.copySnapshot")
                 }
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
@@ -607,12 +679,22 @@ export function DebugLogOverlay() {
                 )}
                 <span>{copied ? t("debug.copied") : t("debug.copy")}</span>
               </button>
-              {activeTab === "logs" ? (
+              {activeTab === "logs" || activeTab === "network" ? (
                 <button
                   type="button"
-                  onClick={handleClear}
-                  title={t("debug.clearLogs")}
-                  aria-label={t("debug.clearLogs")}
+                  onClick={
+                    activeTab === "logs" ? handleClear : handleClearNetwork
+                  }
+                  title={
+                    activeTab === "logs"
+                      ? t("debug.clearLogs")
+                      : t("debug.network.clear")
+                  }
+                  aria-label={
+                    activeTab === "logs"
+                      ? t("debug.clearLogs")
+                      : t("debug.network.clear")
+                  }
                   className="flex items-center rounded p-1 hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
                 >
                   <Trash weight="bold" className="size-3" />
@@ -678,7 +760,7 @@ export function DebugLogOverlay() {
                           ? entry.styledSegments.map((segment, segmentIndex) => (
                               <span
                                 key={`${entry.id}-${segmentIndex}`}
-                                style={segment.style}
+                                style={segment.style as CSSProperties | undefined}
                               >
                                 {segment.text}
                               </span>
@@ -722,6 +804,15 @@ export function DebugLogOverlay() {
               onReportChange={handleLiveReportChange}
             />
           </TabsContent>
+          <TabsContent
+            value="network"
+            className={cn(
+              "relative mt-0 min-h-0 flex-1 overflow-hidden",
+              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
+            )}
+          >
+            <DebugNetworkPanel entries={networkEntries} />
+          </TabsContent>
           <div
             className={cn(
               "flex h-8 shrink-0 items-center justify-center border-t px-2 py-1",
@@ -756,6 +847,18 @@ export function DebugLogOverlay() {
                 )}
               >
                 {t("debug.tabs.live")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="network"
+                className={cn(
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
+                  "border border-transparent",
+                  "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
+                  "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
+                  "os-theme-system7:rounded-none os-windows:rounded-none"
+                )}
+              >
+                {t("debug.tabs.network")}
               </TabsTrigger>
             </TabsList>
           </div>

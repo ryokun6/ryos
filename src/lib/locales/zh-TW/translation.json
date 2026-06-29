@@ -1678,13 +1678,13 @@
         "deleting": "正在刪除⋯",
         "description": "這將永久刪除您的帳號、密碼、備援電子郵件、連結的 Telegram 以及同步數據。此操作無法復原。",
         "genericError": "無法刪除帳號。請再試一次。",
+        "openButton": "刪除帳號⋯",
         "passwordLabel": "目前密碼",
         "passwordRequired": "輸入您目前的密碼",
         "submit": "刪除帳號",
         "successDescription": "您的帳號和數據已移除。",
         "successTitle": "帳號已刪除",
-        "title": "刪除帳號",
-        "openButton": "刪除帳號⋯"
+        "title": "刪除帳號"
       },
       "deleteAccountMenu": "刪除帳號⋯",
       "deleteAccountRowDescription": "永久移除您的帳號及同步資料",
@@ -1766,6 +1766,7 @@
       "logIn": "登入",
       "logOut": "登出",
       "logOutAll": "全部登出⋯",
+      "logOutButton": "登出⋯",
       "logOutOfAllDevices": "登出所有裝置",
       "logOutOfAllDevicesRowDescription": "在所有裝置上登出您的 ryOS 帳號",
       "logOutRowDescription": "在此裝置登出您的 ryOS 帳號",
@@ -2050,8 +2051,7 @@
         "objects": "物件",
         "plants": "植物",
         "structures": "建築"
-      },
-      "logOutButton": "登出⋯"
+      }
     },
     "dashboard": {
       "calendar": {
@@ -4692,6 +4692,7 @@
       "appVersion": "App",
       "average": "平均",
       "bufferedLogs": "{{count}} 已緩衝",
+      "cloudSync": "雲端同步",
       "copySnapshot": "拷貝環境快照",
       "current": "目前",
       "darkMode": "深色",
@@ -4723,6 +4724,14 @@
       "offline": "離線",
       "online": "連線",
       "performance": "效能",
+      "realtime": "即時",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} 個頻道",
+      "realtimeState": {
+        "connected": "已連線",
+        "connecting": "連線中",
+        "disconnected": "已斷線"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
       "reportTitle": "即時環境快照",
       "runtime": {
         "browser": "瀏覽器",
@@ -4732,7 +4741,17 @@
       "runtimeLabel": "執行環境",
       "sampling": "每秒取樣",
       "samplingPaused": "取樣已暫停",
+      "services": "服務",
+      "session": "工作階段",
+      "sessionAdmin": "{{username}} (管理者)",
+      "sessionGuest": "訪客",
+      "sessionSignedOut": "{{username}} (已登出)",
       "storage": "儲存空間",
+      "syncAuto": "自動",
+      "syncError": "錯誤",
+      "syncOff": "關閉",
+      "syncReport": "{{status}} · 上次檢查於 {{checkedAt}}",
+      "syncSyncing": "同步中…",
       "theme": "主題",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "記錄總數",
@@ -4742,6 +4761,14 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "警告"
     },
+    "network": {
+      "clear": "清除請求",
+      "copy": "拷貝請求",
+      "empty": "尚未擷取到任何請求。",
+      "failedCount": "{{count}} 個失敗",
+      "pending": "···",
+      "title": "要求"
+    },
     "noLogsForFilter": "沒有符合此篩選條件的記錄。",
     "noLogsYet": "尚未擷取到任何記錄。",
     "scrollToBottom": "捲動到底部",
@@ -4749,7 +4776,8 @@
     "tabs": {
       "label": "偵錯面板檢視",
       "live": "即時",
-      "logs": "記錄"
+      "logs": "記錄",
+      "network": "網路"
     },
     "toggleLabel": "除錯",
     "warnCount": "{{count}} 個警告"

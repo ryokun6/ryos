@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import {
   type Contact,
   type ContactDraft,
@@ -165,6 +165,7 @@ export const useContactsStore = create<ContactsStoreState>()(
     }),
     {
       name: "contacts-storage",
+      storage: createJSONStorage(() => localStorage),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<ContactsStoreState> | undefined;
         const contacts = seedDefaultContacts(

@@ -17,10 +17,13 @@ import {
   clearStaleReload,
 } from "./utils/reloadGuard";
 import { installConsoleCapture } from "./utils/consoleCapture";
+import { installNetworkCapture } from "./utils/networkCapture";
 
-// Patch console output as early as possible; buffering is enabled only when
-// Debug Mode is on so normal sessions do not retain an in-memory log history.
+// Patch console output and fetch as early as possible; buffering is enabled
+// only when Debug Mode is on so normal sessions do not retain in-memory
+// log/network history.
 installConsoleCapture();
+installNetworkCapture();
 
 // Prime React 19 resource hints before anything else runs
 primeReactResources();

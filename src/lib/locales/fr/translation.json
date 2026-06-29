@@ -1680,13 +1680,13 @@
         "deleting": "Suppression…",
         "description": "Ceci supprimera définitivement votre compte, votre mot de passe, votre e-mail de récupération, votre compte Telegram lié et vos données synchronisées. Cette action est irréversible.",
         "genericError": "Impossible de supprimer le compte. Veuillez réessayer.",
+        "openButton": "Supprimer le compte…",
         "passwordLabel": "Mot de passe actuel",
         "passwordRequired": "Saisissez votre mot de passe actuel",
         "submit": "Supprimer le compte",
         "successDescription": "Votre compte et vos données ont été supprimés.",
         "successTitle": "Compte supprimé",
-        "title": "Supprimer le compte",
-        "openButton": "Supprimer le compte…"
+        "title": "Supprimer le compte"
       },
       "deleteAccountMenu": "Supprimer le compte…",
       "deleteAccountRowDescription": "Supprimer définitivement votre compte et vos données synchronisées",
@@ -1768,6 +1768,7 @@
       "logIn": "Se connecter",
       "logOut": "Fermer la session",
       "logOutAll": "Tout déconnecter…",
+      "logOutButton": "Fermer la session…",
       "logOutOfAllDevices": "Se déconnecter de tous les appareils",
       "logOutOfAllDevicesRowDescription": "Se déconnecter de votre compte ryOS sur tous les appareils",
       "logOutRowDescription": "Se déconnecter de votre compte ryOS sur cet appareil",
@@ -2052,8 +2053,7 @@
         "objects": "Objets",
         "plants": "Plantes",
         "structures": "Structures"
-      },
-      "logOutButton": "Fermer la session…"
+      }
     },
     "dashboard": {
       "calendar": {
@@ -4696,6 +4696,7 @@
       "appVersion": "App",
       "average": "Moyenne",
       "bufferedLogs": "{{count}} mis en mémoire tampon",
+      "cloudSync": "Synchronisation Cloud",
       "copySnapshot": "Copier l'instantané de l'environnement",
       "current": "Actuel",
       "darkMode": "Sombre",
@@ -4727,6 +4728,14 @@
       "offline": "Hors ligne",
       "online": "En ligne",
       "performance": "Performance",
+      "realtime": "Temps réel",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} canaux",
+      "realtimeState": {
+        "connected": "Connecté",
+        "connecting": "Connexion…",
+        "disconnected": "Déconnecté"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
       "reportTitle": "Instantané de l’environnement en direct",
       "runtime": {
         "browser": "Navigateur",
@@ -4736,7 +4745,17 @@
       "runtimeLabel": "Runtime",
       "sampling": "Échantillonnage chaque seconde",
       "samplingPaused": "Échantillonnage en pause",
+      "services": "Services",
+      "session": "Session",
+      "sessionAdmin": "{{username}} (admin)",
+      "sessionGuest": "Invité",
+      "sessionSignedOut": "{{username}} (déconnecté)",
       "storage": "Stockage",
+      "syncAuto": "Auto",
+      "syncError": "Erreur",
+      "syncOff": "Désactivé",
+      "syncReport": "{{status}} · dernière vérification {{checkedAt}}",
+      "syncSyncing": "Synchronisation…",
       "theme": "Thème",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "Total des journaux",
@@ -4746,6 +4765,14 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "Avertissements"
     },
+    "network": {
+      "clear": "Effacer les requêtes",
+      "copy": "Copier les requêtes",
+      "empty": "Aucune requête capturée pour le moment.",
+      "failedCount": "{{count}} échecs",
+      "pending": "···",
+      "title": "Requêtes"
+    },
     "noLogsForFilter": "Aucun log ne correspond à ce filtre.",
     "noLogsYet": "Aucun log capturé pour le moment.",
     "scrollToBottom": "Faire défiler vers le bas",
@@ -4753,7 +4780,8 @@
     "tabs": {
       "label": "Vues du panneau de débogage",
       "live": "En direct",
-      "logs": "Journaux"
+      "logs": "Journaux",
+      "network": "Réseau"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} avert"

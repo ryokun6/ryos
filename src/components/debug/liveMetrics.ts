@@ -22,6 +22,11 @@ export interface LiveSnapshotMarkdownLabels {
   history: string;
   metric: string;
   value: string;
+  /** Optional "Services" section header — section is omitted when absent. */
+  services?: string;
+  realtimeConnection?: string;
+  cloudSync?: string;
+  session?: string;
   runtime: string;
   appVersion: string;
   locale: string;
@@ -57,6 +62,10 @@ export interface LiveSnapshotMarkdownData {
   domNodeCount: number;
   heap: string | null;
   storage: string | null;
+  /** Optional services snapshot (realtime / cloud sync / session). */
+  realtime?: string | null;
+  cloudSync?: string | null;
+  session?: string | null;
   totalLogs: number;
   logRate: number;
   errors: number;
@@ -190,6 +199,9 @@ export function formatLiveSnapshotMarkdown({
   domNodeCount,
   heap,
   storage,
+  realtime,
+  cloudSync,
+  session,
   totalLogs,
   logRate,
   errors,
@@ -232,6 +244,22 @@ export function formatLiveSnapshotMarkdown({
       summary ? formatNumber(summary.average, suffix) : labels.unavailable
     } |`;
 
+  const servicesSection =
+    labels.services &&
+    labels.realtimeConnection &&
+    labels.cloudSync &&
+    labels.session
+      ? [
+          "",
+          `## ${labels.services}`,
+          `| ${labels.metric} | ${labels.value} |`,
+          "| --- | --- |",
+          row(labels.realtimeConnection, realtime ?? labels.unavailable),
+          row(labels.cloudSync, cloudSync ?? labels.unavailable),
+          row(labels.session, session ?? labels.unavailable),
+        ]
+      : [];
+
   return [
     `# ${labels.title} (${timestamp})`,
     "",
@@ -244,6 +272,7 @@ export function formatLiveSnapshotMarkdown({
     row(labels.theme, theme),
     row(labels.viewport, viewport),
     row(labels.network, network),
+    ...servicesSection,
     "",
     `## ${labels.performance}`,
     `| ${labels.metric} | ${labels.value} |`,

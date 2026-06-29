@@ -1678,13 +1678,13 @@
         "deleting": "Löschen …",
         "description": "Dies löscht dauerhaft Ihr Konto, Ihr Passwort, Ihre E-Mail zur Wiederherstellung, das verknüpfte Telegram-Konto und synchronisierte Daten. Dies kann nicht rückgängig gemacht werden.",
         "genericError": "Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+        "openButton": "Konto löschen…",
         "passwordLabel": "Aktuelles Passwort",
         "passwordRequired": "Geben Sie Ihr aktuelles Passwort ein",
         "submit": "Konto löschen",
         "successDescription": "Ihr Konto und Ihre Daten wurden entfernt.",
         "successTitle": "Konto gelöscht",
-        "title": "Konto löschen",
-        "openButton": "Konto löschen…"
+        "title": "Konto löschen"
       },
       "deleteAccountMenu": "Konto löschen…",
       "deleteAccountRowDescription": "Dein Konto und die synchronisierten Daten dauerhaft löschen",
@@ -1766,6 +1766,7 @@
       "logIn": "Anmelden",
       "logOut": "Abmelden",
       "logOutAll": "Alle abmelden…",
+      "logOutButton": "Abmelden…",
       "logOutOfAllDevices": "Von allen Geräten abmelden",
       "logOutOfAllDevicesRowDescription": "Von deinem ryOS-Konto auf allen Geräten abmelden",
       "logOutRowDescription": "Melden Sie sich auf diesem Gerät von Ihrem ryOS-Konto ab",
@@ -2050,8 +2051,7 @@
         "objects": "Objekte",
         "plants": "Pflanzen",
         "structures": "Strukturen"
-      },
-      "logOutButton": "Abmelden…"
+      }
     },
     "dashboard": {
       "calendar": {
@@ -4692,6 +4692,7 @@
       "appVersion": "App",
       "average": "Durchschnitt",
       "bufferedLogs": "{{count}} gepuffert",
+      "cloudSync": "Cloud-Synchronisierung",
       "copySnapshot": "Umgebungs-Snapshot kopieren",
       "current": "Aktuell",
       "darkMode": "Dunkel",
@@ -4723,6 +4724,14 @@
       "offline": "Offline",
       "online": "Online",
       "performance": "Performance",
+      "realtime": "Echtzeit",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} Kanäle",
+      "realtimeState": {
+        "connected": "Verbunden",
+        "connecting": "Verbinden …",
+        "disconnected": "Getrennt"
+      },
+      "realtimeValue": "{{state}} · {{count}} Kanäle",
       "reportTitle": "Live-Umgebungs-Snapshot",
       "runtime": {
         "browser": "Browser",
@@ -4732,7 +4741,17 @@
       "runtimeLabel": "Runtime",
       "sampling": "Sampling jede Sekunde",
       "samplingPaused": "Sampling pausiert",
+      "services": "Dienste",
+      "session": "Sitzung",
+      "sessionAdmin": "{{username}} (Admin)",
+      "sessionGuest": "Gast",
+      "sessionSignedOut": "{{username}} (abgemeldet)",
       "storage": "Speicher",
+      "syncAuto": "Automatisch",
+      "syncError": "Fehler",
+      "syncOff": "Aus",
+      "syncReport": "{{status}} · zuletzt geprüft {{checkedAt}}",
+      "syncSyncing": "Synchronisieren …",
       "theme": "Design",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "Protokolle insgesamt",
@@ -4742,6 +4761,14 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "Warnungen"
     },
+    "network": {
+      "clear": "Anfragen löschen",
+      "copy": "Anfragen kopieren",
+      "empty": "Noch keine Anfragen erfasst.",
+      "failedCount": "{{count}} fehlgeschlagen",
+      "pending": "···",
+      "title": "Anfragen"
+    },
     "noLogsForFilter": "Keine Logs für diesen Filter.",
     "noLogsYet": "Noch keine Logs erfasst.",
     "scrollToBottom": "Nach unten scrollen",
@@ -4749,7 +4776,8 @@
     "tabs": {
       "label": "Debug-Panel-Ansichten",
       "live": "Live",
-      "logs": "Protokolle"
+      "logs": "Protokolle",
+      "network": "Netzwerk"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} Warn."

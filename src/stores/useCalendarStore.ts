@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   calendarEventOccursOnDate,
@@ -336,6 +336,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
     },
     {
       name: "calendar-storage",
+      storage: createJSONStorage(() => localStorage),
       // Do not persist viewport — opening Calendar should show today, not last session.
       partialize: (state) => ({
         events: state.events,

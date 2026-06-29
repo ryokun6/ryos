@@ -885,6 +885,17 @@ const getChannelRefCounts = (): Record<string, number> => {
   return globalWithPusher.__pusherChannelRefCounts;
 };
 
+/**
+ * Names of the realtime channels currently subscribed (refcount > 0). Read-only
+ * snapshot intended for diagnostics such as the in-app debug panel.
+ */
+export function getRealtimeChannelNames(): string[] {
+  return Object.entries(getChannelRefCounts())
+    .filter(([, count]) => count > 0)
+    .map(([name]) => name)
+    .sort();
+}
+
 const warnChannelRecoveryOnce = (key: string, message: string): void => {
   if (!globalWithPusher.__pusherChannelRecoveryWarnings) {
     globalWithPusher.__pusherChannelRecoveryWarnings = {};

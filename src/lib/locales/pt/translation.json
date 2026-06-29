@@ -1680,13 +1680,13 @@
         "deleting": "Apagando…",
         "description": "Isso exclui permanentemente sua conta, senha, e-mail de recuperação, Telegram vinculado e dados sincronizados. Esta ação não pode ser desfeita.",
         "genericError": "Não foi possível excluir a conta. Tente novamente.",
+        "openButton": "Apagar Conta…",
         "passwordLabel": "Senha atual",
         "passwordRequired": "Digite sua senha atual",
         "submit": "Apagar Conta",
         "successDescription": "Sua conta e seus dados foram removidos.",
         "successTitle": "Conta excluída",
-        "title": "Apagar Conta",
-        "openButton": "Apagar Conta…"
+        "title": "Apagar Conta"
       },
       "deleteAccountMenu": "Apagar Conta…",
       "deleteAccountRowDescription": "Remover permanentemente a sua conta e os dados sincronizados",
@@ -1768,6 +1768,7 @@
       "logIn": "Iniciar Sessão",
       "logOut": "Finalizar Sessão",
       "logOutAll": "Sair de Todos…",
+      "logOutButton": "Finalizar Sessão…",
       "logOutOfAllDevices": "Sair de Todos os Dispositivos",
       "logOutOfAllDevicesRowDescription": "Encerrar sessão da sua conta ryOS em todos os dispositivos",
       "logOutRowDescription": "Sair da sua conta ryOS neste dispositivo",
@@ -2052,8 +2053,7 @@
         "objects": "Objetos",
         "plants": "Plantas",
         "structures": "Estruturas"
-      },
-      "logOutButton": "Finalizar Sessão…"
+      }
     },
     "dashboard": {
       "calendar": {
@@ -4696,6 +4696,7 @@
       "appVersion": "App",
       "average": "Média",
       "bufferedLogs": "{{count}} em buffer",
+      "cloudSync": "Sincronização na nuvem",
       "copySnapshot": "Copiar instantâneo do ambiente",
       "current": "Atual",
       "darkMode": "Escuro",
@@ -4727,6 +4728,14 @@
       "offline": "Offline",
       "online": "Online",
       "performance": "Desempenho",
+      "realtime": "Tempo real",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} canais",
+      "realtimeState": {
+        "connected": "Conectado",
+        "connecting": "Conectando",
+        "disconnected": "Desconectado"
+      },
+      "realtimeValue": "{{state}} · {{count}} can.",
       "reportTitle": "Instantâneo do ambiente ao vivo",
       "runtime": {
         "browser": "Navegador",
@@ -4736,7 +4745,17 @@
       "runtimeLabel": "Runtime",
       "sampling": "Amostragem a cada segundo",
       "samplingPaused": "Amostragem pausada",
+      "services": "Serviços",
+      "session": "Sessão",
+      "sessionAdmin": "{{username}} (admin)",
+      "sessionGuest": "Convidado",
+      "sessionSignedOut": "{{username}} (sessão finalizada)",
       "storage": "Armazenamento",
+      "syncAuto": "Automático",
+      "syncError": "Erro",
+      "syncOff": "Desativado",
+      "syncReport": "{{status}} · última verificação {{checkedAt}}",
+      "syncSyncing": "Sincronizando…",
       "theme": "Tema",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "Total de logs",
@@ -4746,6 +4765,14 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "Avisos"
     },
+    "network": {
+      "clear": "Limpar solicitações",
+      "copy": "Copiar solicitações",
+      "empty": "Nenhuma solicitação capturada ainda.",
+      "failedCount": "{{count}} falharam",
+      "pending": "···",
+      "title": "Solicitações"
+    },
     "noLogsForFilter": "Nenhum log corresponde a este filtro.",
     "noLogsYet": "Nenhum log capturado ainda.",
     "scrollToBottom": "Rolar até o fim",
@@ -4753,7 +4780,8 @@
     "tabs": {
       "label": "Visualizações do painel de depuração",
       "live": "Ao vivo",
-      "logs": "Registros"
+      "logs": "Registros",
+      "network": "Rede"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} warn"
