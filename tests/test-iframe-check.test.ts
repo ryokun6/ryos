@@ -179,7 +179,7 @@ describe("iframe-check", () => {
       const headers = makeRateLimitBypassHeaders();
       const url = `${BASE_URL}/api/iframe-check?mode=live&url=https://example.com`;
 
-      for (let i = 0; i < 20; i += 1) {
+      for (let i = 0; i < 5; i += 1) {
         const res = await fetchWithOrigin(url, { headers });
         expect([200, 501]).toContain(res.status);
       }

@@ -467,8 +467,8 @@ export default apiHandler(
     const burstKeyBase = ["rl", "iframe", mode, "ip", ip];
 
     if (mode === "proxy" || mode === "check" || mode === "live") {
-      const globalLimit = mode === "live" ? 60 : 300;
-      const hostLimit = mode === "live" ? 20 : 100;
+      const globalLimit = mode === "live" ? 30 : 300;
+      const hostLimit = mode === "live" ? 5 : 100;
       // Global per-IP burst
       const globalKey = RateLimit.makeKey(burstKeyBase);
       const global = await RateLimit.checkCounterLimit({
