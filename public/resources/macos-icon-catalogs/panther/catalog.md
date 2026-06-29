@@ -2,7 +2,7 @@
 
 Source: [Mac OS X Panther 10.3 CD](https://archive.org/details/mac-os-x-10.3)
 
-Generated entries: 247 (45 applications, 27 System Preferences panes, 60 folders, 40 devices/displays, 75 file types).
+Generated entries: 302 (45 applications, 27 System Preferences panes, 60 folders, 60 devices/displays, 75 file types, 35 dialog/UI assets).
 
 ## Applications
 
@@ -86,6 +86,46 @@ Generated entries: 247 (45 applications, 27 System Preferences panes, 60 folders
 | Startup Disk | `/public/resources/macos-icon-catalogs/panther/system-preferences/startup-disk.png` | `/System/Library/PreferencePanes/StartupDisk.prefPane` | `/System/Library/PreferencePanes/StartupDisk.prefPane/Contents/Resources/StartupDisk.tiff` | 32x32 |
 | Universal Access | `/public/resources/macos-icon-catalogs/panther/system-preferences/universal-access.png` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.tiff` | 32x32 |
 
+## Dialog and UI Assets
+
+| Name | PNG | Source icon | Size |
+| --- | --- | --- | --- |
+| Alert Caution | `/public/resources/macos-icon-catalogs/panther/ui-assets/alert-caution.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AlertCautionIcon.icns` | 128x128 |
+| Alert Caution Badge | `/public/resources/macos-icon-catalogs/panther/ui-assets/alert-caution-badge.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AlertCautionBadgeIcon.icns` | 128x128 |
+| Alert Note | `/public/resources/macos-icon-catalogs/panther/ui-assets/alert-note.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AlertNoteIcon.icns` | 128x128 |
+| Alert Stop | `/public/resources/macos-icon-catalogs/panther/ui-assets/alert-stop.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AlertStopIcon.icns` | 128x128 |
+| Alias Badge | `/public/resources/macos-icon-catalogs/panther/ui-assets/alias-badge.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AliasBadgeIcon.icns` | 128x128 |
+| AppleScript Badge | `/public/resources/macos-icon-catalogs/panther/ui-assets/apple-script-badge.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleScriptBadgeIcon.icns` | 32x32 |
+| Bluetooth Caution | `/public/resources/macos-icon-catalogs/panther/ui-assets/bluetooth-caution.png` | `/Applications/Utilities/Bluetooth File Exchange.app/Contents/Resources/Caution.tiff` | 128x128 |
+| Bluetooth Setup Caution Sign | `/public/resources/macos-icon-catalogs/panther/ui-assets/bluetooth-setup-caution-sign.png` | `/Applications/Utilities/Bluetooth Setup Assistant.app/Contents/Resources/CautionSign.tif` | 128x128 |
+| Certificate | `/public/resources/macos-icon-catalogs/panther/ui-assets/certificate.png` | `/Applications/Utilities/Keychain Access.app/Contents/Resources/certificate.tiff` | 64x50 |
+| Delete Alias | `/public/resources/macos-icon-catalogs/panther/ui-assets/delete-alias.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/DeleteAliasIcon.icns` | 128x128 |
+| Finder Info | `/public/resources/macos-icon-catalogs/panther/ui-assets/finder-info.png` | `/System/Library/CoreServices/Finder.app/Contents/Resources/info.icns` | 128x128 |
+| Generic Question Mark | `/public/resources/macos-icon-catalogs/panther/ui-assets/generic-question-mark.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericQuestionMarkIcon.icns` | 128x128 |
+| iChat Large | `/public/resources/macos-icon-catalogs/panther/ui-assets/i-chat-large.png` | `/Applications/iChat.app/Contents/Resources/iChat_Large.tiff` | 301x386 |
+| iChat New Invite Badge 3 | `/public/resources/macos-icon-catalogs/panther/ui-assets/i-chat-new-invite-badge-3.png` | `/Applications/iChat.app/Contents/Resources/newInvitesBadge3.tiff` | 71x52 |
+| iChat New Invite Badge 5 | `/public/resources/macos-icon-catalogs/panther/ui-assets/i-chat-new-invite-badge-5.png` | `/Applications/iChat.app/Contents/Resources/newInvitesBadge5.tiff` | 91x52 |
+| iPhoto About Image | `/public/resources/macos-icon-catalogs/panther/ui-assets/i-photo-about-image.png` | `/Applications/iPhoto.app/Contents/Resources/English.lproj/AboutImage.tif` | 600x275 |
+| iPhoto Burn Icon | `/public/resources/macos-icon-catalogs/panther/ui-assets/i-photo-burn-icon.png` | `/Applications/iPhoto.app/Contents/Resources/BurnIcon.tif` | 128x128 |
+| Keychain Locked Large | `/public/resources/macos-icon-catalogs/panther/ui-assets/keychain-locked-large.png` | `/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain_Locked.tiff` | 128x128 |
+| Keychain Unlocked Large | `/public/resources/macos-icon-catalogs/panther/ui-assets/keychain-unlocked-large.png` | `/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain_Unlocked.tiff` | 128x128 |
+| Locked | `/public/resources/macos-icon-catalogs/panther/ui-assets/locked.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/LockedIcon.icns` | 16x16 |
+| Locked Badge | `/public/resources/macos-icon-catalogs/panther/ui-assets/locked-badge.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/LockedBadgeIcon.icns` | 128x128 |
+| Mac OS X Server Login | `/public/resources/macos-icon-catalogs/panther/ui-assets/mac-os-x-server-login.png` | `/System/Library/CoreServices/loginwindow.app/Contents/Resources/MacOSXServer.tif` | 214x124 |
+| Mail Account Large | `/public/resources/macos-icon-catalogs/panther/ui-assets/mail-account-large.png` | `/Applications/Mail.app/Contents/Resources/MacAccountLarge.tiff` | 32x32 |
+| Mail Inbox Large | `/public/resources/macos-icon-catalogs/panther/ui-assets/mail-inbox-large.png` | `/Applications/Mail.app/Contents/Resources/InMailboxLarge.tiff` | 32x32 |
+| Mail New Badge 3 | `/public/resources/macos-icon-catalogs/panther/ui-assets/mail-new-badge-3.png` | `/Applications/Mail.app/Contents/Resources/newMailBadge3.tiff` | 71x52 |
+| Mail New Badge 5 | `/public/resources/macos-icon-catalogs/panther/ui-assets/mail-new-badge-5.png` | `/Applications/Mail.app/Contents/Resources/newMailBadge5.tiff` | 91x52 |
+| Mounted Badge | `/public/resources/macos-icon-catalogs/panther/ui-assets/mounted-badge.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MountedBadgeIcon.icns` | 32x32 |
+| Preview Locked Document | `/public/resources/macos-icon-catalogs/panther/ui-assets/preview-locked-document.png` | `/Applications/Preview.app/Contents/Resources/Locked.tiff` | 128x128 |
+| QuickTime Apple About | `/public/resources/macos-icon-catalogs/panther/ui-assets/quick-time-apple-about.png` | `/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QT_APPLE_ABOUT.tiff` | 200x60 |
+| Safari Bookmark Drag Badge 3 | `/public/resources/macos-icon-catalogs/panther/ui-assets/safari-bookmark-drag-badge-3.png` | `/Applications/Safari.app/Contents/Resources/BookmarksDragBadge3.tif` | 36x26 |
+| Safari Bookmark Drag Badge 5 | `/public/resources/macos-icon-catalogs/panther/ui-assets/safari-bookmark-drag-badge-5.png` | `/Applications/Safari.app/Contents/Resources/BookmarksDragBadge5.tif` | 46x26 |
+| Shared Badge | `/public/resources/macos-icon-catalogs/panther/ui-assets/shared-badge.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SharedBadgeIcon.icns` | 32x32 |
+| Status Bar CD-ROM | `/public/resources/macos-icon-catalogs/panther/ui-assets/status-bar-cd-rom.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/StatusBarCDROMIcon.icns` | 16x16 |
+| Status Bar Trash | `/public/resources/macos-icon-catalogs/panther/ui-assets/status-bar-trash.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/StatusBarTrashIcon.icns` | 16x16 |
+| Unlocked | `/public/resources/macos-icon-catalogs/panther/ui-assets/unlocked.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/UnlockedIcon.icns` | 16x16 |
+
 ## Folders
 
 | Name | PNG | Source icon | Size |
@@ -156,8 +196,18 @@ Generated entries: 247 (45 applications, 27 System Preferences panes, 60 folders
 | Name | PNG | Source icon | Size |
 | --- | --- | --- | --- |
 | AFPServer | `/public/resources/macos-icon-catalogs/panther/devices/afpserver.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AFPServerIcon.icns` | 32x32 |
+| AirPort Base Station | `/public/resources/macos-icon-catalogs/panther/devices/air-port-base-station.png` | `/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort.tif` | 128x76 |
+| AirPort Dual Ethernet | `/public/resources/macos-icon-catalogs/panther/devices/air-port-dual-ethernet.png` | `/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort2.tif` | 128x82 |
+| AirPort Extreme Base Station | `/public/resources/macos-icon-catalogs/panther/devices/air-port-extreme-base-station.png` | `/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPortExtreme.tif` | 125x82 |
+| AirPort Status | `/public/resources/macos-icon-catalogs/panther/devices/air-port-status.png` | `/Applications/Internet Connect.app/Contents/Resources/AirPort.bundle/Contents/Resources/AirPort.tif` | 32x32 |
 | Apple Talk | `/public/resources/macos-icon-catalogs/panther/devices/apple-talk.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleTalkIcon.icns` | 32x32 |
 | Apple Talk Zone | `/public/resources/macos-icon-catalogs/panther/devices/apple-talk-zone.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/AppleTalkZoneIcon.icns` | 32x32 |
+| Bluetooth Modem | `/public/resources/macos-icon-catalogs/panther/devices/bluetooth-modem.png` | `/Applications/Internet Connect.app/Contents/Resources/Modem.bundle/Contents/Resources/Bluetooth.tif` | 32x32 |
+| Bluetooth Setup Keyboard | `/public/resources/macos-icon-catalogs/panther/devices/bluetooth-setup-keyboard.png` | `/Applications/Utilities/Bluetooth Setup Assistant.app/Contents/Resources/keyboard.tif` | 429x429 |
+| Bluetooth Setup Mouse | `/public/resources/macos-icon-catalogs/panther/devices/bluetooth-setup-mouse.png` | `/Applications/Utilities/Bluetooth Setup Assistant.app/Contents/Resources/mouse.tif` | 429x429 |
+| Camera | `/public/resources/macos-icon-catalogs/panther/devices/camera.png` | `/Applications/iPhoto.app/Contents/Resources/camera.tif` | 59x58 |
+| Camera Icon | `/public/resources/macos-icon-catalogs/panther/devices/camera-icon.png` | `/Applications/iPhoto.app/Contents/Resources/camera_icon.icns` | 128x128 |
+| Camera Splash | `/public/resources/macos-icon-catalogs/panther/devices/camera-splash.png` | `/Applications/iPhoto.app/Contents/Resources/splashicon_camera.tiff` | 70x55 |
 | CD | `/public/resources/macos-icon-catalogs/panther/devices/cd.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD.icns` | 128x128 |
 | CD Audio Volume | `/public/resources/macos-icon-catalogs/panther/devices/cd-audio-volume.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CDAudioVolumeIcon.icns` | 128x128 |
 | CD-R | `/public/resources/macos-icon-catalogs/panther/devices/cd-r.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/CD-R.icns` | 128x128 |
@@ -179,20 +229,30 @@ Generated entries: 247 (45 applications, 27 System Preferences panes, 60 folders
 | Generic File Server | `/public/resources/macos-icon-catalogs/panther/devices/generic-file-server.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericFileServerIcon.icns` | 128x128 |
 | Generic Network | `/public/resources/macos-icon-catalogs/panther/devices/generic-network.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericNetworkIcon.icns` | 128x128 |
 | Generic RAMDisk | `/public/resources/macos-icon-catalogs/panther/devices/generic-ramdisk.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/GenericRAMDiskIcon.icns` | 32x32 |
+| Grab Camera | `/public/resources/macos-icon-catalogs/panther/devices/grab-camera.png` | `/Applications/Utilities/Grab.app/Contents/Resources/CameraNormal.tiff` | 64x64 |
+| Grab Camera Flash | `/public/resources/macos-icon-catalogs/panther/devices/grab-camera-flash.png` | `/Applications/Utilities/Grab.app/Contents/Resources/CameraEyeFlash.tiff` | 64x64 |
 | HTTPServer | `/public/resources/macos-icon-catalogs/panther/devices/httpserver.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/HTTPServerIcon.icns` | 32x32 |
 | i Disk Generic | `/public/resources/macos-icon-catalogs/panther/devices/i-disk-generic.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iDiskGenericIcon.icns` | 128x128 |
 | i Disk User | `/public/resources/macos-icon-catalogs/panther/devices/i-disk-user.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iDiskUserIcon.icns` | 128x128 |
 | i Mac | `/public/resources/macos-icon-catalogs/panther/devices/i-mac.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/iMac.icns` | 32x32 |
+| iDisk 64 | `/public/resources/macos-icon-catalogs/panther/devices/i-disk-64.png` | `/System/Library/PreferencePanes/Mac.prefPane/Contents/Resources/iDisk-64x64.tiff` | 48x67 |
 | Internal | `/public/resources/macos-icon-catalogs/panther/devices/internal.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Internal.icns` | 128x128 |
 | IPFile Server | `/public/resources/macos-icon-catalogs/panther/devices/ipfile-server.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/IPFileServerIcon.icns` | 32x32 |
+| iPod Menu Extra | `/public/resources/macos-icon-catalogs/panther/devices/i-pod-menu-extra.png` | `/System/Library/CoreServices/SystemUIServer.app/Contents/Resources/ipod.icns` | 128x128 |
+| iSync iMac | `/public/resources/macos-icon-catalogs/panther/devices/i-sync-i-mac.png` | `/Applications/iSync.app/Contents/Resources/IS_ico_iMac.tiff` | 34x34 |
 | Magneto Optical | `/public/resources/macos-icon-catalogs/panther/devices/magneto-optical.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MagnetoOptical.icns` | 128x128 |
 | Memory Stick | `/public/resources/macos-icon-catalogs/panther/devices/memory-stick.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/MemoryStick.icns` | 128x128 |
+| Modem | `/public/resources/macos-icon-catalogs/panther/devices/modem.png` | `/Applications/Internet Connect.app/Contents/Resources/Modem.bundle/Contents/Resources/Modem.tif` | 32x32 |
 | Net Boot Volume | `/public/resources/macos-icon-catalogs/panther/devices/net-boot-volume.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/NetBootVolume.icns` | 128x128 |
 | PC Card | `/public/resources/macos-icon-catalogs/panther/devices/pc-card.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/PCCard.icns` | 128x128 |
+| Phone | `/public/resources/macos-icon-catalogs/panther/devices/phone.png` | `/Applications/Address Book.app/Contents/Resources/Telephony.bundle/Contents/Resources/bigPhone.tif` | 128x128 |
+| Photo CD | `/public/resources/macos-icon-catalogs/panther/devices/photo-cd.png` | `/Applications/iPhoto.app/Contents/Resources/photocd.tif` | 59x58 |
+| Printer Setup | `/public/resources/macos-icon-catalogs/panther/devices/printer-setup.png` | `/Applications/Utilities/Printer Setup Utility.app/Contents/Resources/Printer.tiff` | 32x32 |
 | Removable | `/public/resources/macos-icon-catalogs/panther/devices/removable.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/Removable.icns` | 128x128 |
 | Smart Media | `/public/resources/macos-icon-catalogs/panther/devices/smart-media.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SmartMedia.icns` | 128x128 |
 | Status Bar CDROM | `/public/resources/macos-icon-catalogs/panther/devices/status-bar-cdrom.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/StatusBarCDROMIcon.icns` | 16x16 |
 | Super Disk | `/public/resources/macos-icon-catalogs/panther/devices/super-disk.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/SuperDisk.icns` | 128x128 |
+| System Menu Camera | `/public/resources/macos-icon-catalogs/panther/devices/system-menu-camera.png` | `/System/Library/CoreServices/SystemUIServer.app/Contents/Resources/camera.icns` | 128x128 |
 | USB HD | `/public/resources/macos-icon-catalogs/panther/devices/usb-hd.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/USBHD.icns` | 128x128 |
 | Xserve RAID | `/public/resources/macos-icon-catalogs/panther/devices/xserve-raid.png` | `/System/Library/CoreServices/SystemIcons.bundle/Contents/Resources/XserveRAID.icns` | 128x128 |
 

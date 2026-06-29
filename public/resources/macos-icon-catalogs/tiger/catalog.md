@@ -2,7 +2,7 @@
 
 Source: [Mac OS X Tiger 10.4 Retail DVD](https://archive.org/details/macosx10.4tigerretaildvd)
 
-Generated entries: 252 (51 applications, 10 System Preferences panes, 61 folders, 49 devices/displays, 81 file types).
+Generated entries: 319 (51 applications, 10 System Preferences panes, 61 folders, 81 devices/displays, 81 file types, 35 dialog/UI assets).
 
 ## Applications
 
@@ -75,6 +75,46 @@ Generated entries: 252 (51 applications, 10 System Preferences panes, 61 folders
 | Spotlight | `/public/resources/macos-icon-catalogs/tiger/system-preferences/spotlight.png` | `/System/Library/PreferencePanes/Spotlight.prefPane` | `/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.tiff` | 32x32 |
 | Universal Access | `/public/resources/macos-icon-catalogs/tiger/system-preferences/universal-access.png` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane` | `/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.tiff` | 32x32 |
 
+## Dialog and UI Assets
+
+| Name | PNG | Source icon | Size |
+| --- | --- | --- | --- |
+| Alert Caution | `/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-caution.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertCautionIcon.icns` | 128x128 |
+| Alert Caution Badge | `/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-caution-badge.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertCautionBadgeIcon.icns` | 128x128 |
+| Alert Note | `/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-note.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns` | 128x128 |
+| Alert Printing | `/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-printing.png` | `/Applications/iCal.app/Contents/Resources/alert_printing.png` | 128x128 |
+| Alert Stop | `/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-stop.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns` | 128x128 |
+| Alias Badge | `/public/resources/macos-icon-catalogs/tiger/ui-assets/alias-badge.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AliasBadgeIcon.icns` | 128x128 |
+| AppleScript Badge | `/public/resources/macos-icon-catalogs/tiger/ui-assets/apple-script-badge.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleScriptBadgeIcon.icns` | 32x32 |
+| Certificate | `/public/resources/macos-icon-catalogs/tiger/ui-assets/certificate.png` | `/Applications/Mail.app/Contents/Resources/certificate.tiff` | 32x32 |
+| Delete Alias | `/public/resources/macos-icon-catalogs/tiger/ui-assets/delete-alias.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DeleteAliasIcon.icns` | 128x128 |
+| Font Book Validation Info | `/public/resources/macos-icon-catalogs/tiger/ui-assets/font-book-validation-info.png` | `/Applications/Font Book.app/Contents/Resources/FBValidationInfoIcon.tif` | 32x32 |
+| Generic Question Mark | `/public/resources/macos-icon-catalogs/tiger/ui-assets/generic-question-mark.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericQuestionMarkIcon.icns` | 128x128 |
+| iCal Notification Badge 3 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/i-cal-notification-badge-3.png` | `/Applications/iCal.app/Contents/Resources/notificationBadge3.tiff` | 71x52 |
+| iCal Notification Badge 5 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/i-cal-notification-badge-5.png` | `/Applications/iCal.app/Contents/Resources/notificationBadge5.tiff` | 91x52 |
+| iChat Large | `/public/resources/macos-icon-catalogs/tiger/ui-assets/i-chat-large.png` | `/Applications/iChat.app/Contents/Resources/iChat_Large.tiff` | 297x324 |
+| iChat New Invite Badge 3 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/i-chat-new-invite-badge-3.png` | `/Applications/iChat.app/Contents/Resources/newInvitesBadge3.tiff` | 71x52 |
+| iChat New Invite Badge 5 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/i-chat-new-invite-badge-5.png` | `/Applications/iChat.app/Contents/Resources/newInvitesBadge5.tiff` | 91x52 |
+| Internet Large | `/public/resources/macos-icon-catalogs/tiger/ui-assets/internet-large.png` | `/Applications/Utilities/Keychain Access.app/Contents/Resources/Internet_Large.tif` | 128x128 |
+| Key Large | `/public/resources/macos-icon-catalogs/tiger/ui-assets/key-large.png` | `/Applications/Utilities/Keychain Access.app/Contents/Resources/Key_Large.tif` | 128x128 |
+| Keychain Locked Large | `/public/resources/macos-icon-catalogs/tiger/ui-assets/keychain-locked-large.png` | `/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain_Locked.tiff` | 128x128 |
+| Keychain Unlocked Large | `/public/resources/macos-icon-catalogs/tiger/ui-assets/keychain-unlocked-large.png` | `/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain_Unlocked.tiff` | 128x128 |
+| Locked | `/public/resources/macos-icon-catalogs/tiger/ui-assets/locked.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LockedIcon.icns` | 16x16 |
+| Locked Badge | `/public/resources/macos-icon-catalogs/tiger/ui-assets/locked-badge.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LockedBadgeIcon.icns` | 128x128 |
+| Mail Large | `/public/resources/macos-icon-catalogs/tiger/ui-assets/mail-large.png` | `/Applications/Mail.app/Contents/Resources/Mail_Large.tiff` | 309x412 |
+| Mail New Badge 3 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/mail-new-badge-3.png` | `/Applications/Mail.app/Contents/Resources/newMailBadge3.tiff` | 71x52 |
+| Mail New Badge 5 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/mail-new-badge-5.png` | `/Applications/Mail.app/Contents/Resources/newMailBadge5.tiff` | 91x52 |
+| Mounted Badge | `/public/resources/macos-icon-catalogs/tiger/ui-assets/mounted-badge.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MountedBadgeIcon.icns` | 32x32 |
+| QuickTime Apple About | `/public/resources/macos-icon-catalogs/tiger/ui-assets/quick-time-apple-about.png` | `/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QTRegister.prefPane/Contents/Resources/QTAbout.bundle/Contents/Resources/QT_APPLE_ABOUT.tiff` | 200x60 |
+| Safari Bookmark Drag Badge 3 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/safari-bookmark-drag-badge-3.png` | `/Applications/Safari.app/Contents/Resources/BookmarksDragBadge3.tif` | 36x26 |
+| Safari Bookmark Drag Badge 5 | `/public/resources/macos-icon-catalogs/tiger/ui-assets/safari-bookmark-drag-badge-5.png` | `/Applications/Safari.app/Contents/Resources/BookmarksDragBadge5.tif` | 46x26 |
+| Safari Error Page | `/public/resources/macos-icon-catalogs/tiger/ui-assets/safari-error-page.png` | `/Applications/Safari.app/Contents/Resources/error-page-icon.tif` | 84x90 |
+| Shared Badge | `/public/resources/macos-icon-catalogs/tiger/ui-assets/shared-badge.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SharedBadgeIcon.icns` | 32x32 |
+| Status Bar CD-ROM | `/public/resources/macos-icon-catalogs/tiger/ui-assets/status-bar-cd-rom.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StatusBarCDROMIcon.icns` | 16x16 |
+| Status Bar Trash | `/public/resources/macos-icon-catalogs/tiger/ui-assets/status-bar-trash.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StatusBarTrashIcon.icns` | 16x16 |
+| System Preferences Circle Badge | `/public/resources/macos-icon-catalogs/tiger/ui-assets/system-preferences-circle-badge.png` | `/Applications/System Preferences.app/Contents/Resources/CircleBadge.png` | 54x58 |
+| Unlocked | `/public/resources/macos-icon-catalogs/tiger/ui-assets/unlocked.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UnlockedIcon.icns` | 16x16 |
+
 ## Folders
 
 | Name | PNG | Source icon | Size |
@@ -146,13 +186,24 @@ Generated entries: 252 (51 applications, 10 System Preferences panes, 61 folders
 | Name | PNG | Source icon | Size |
 | --- | --- | --- | --- |
 | AFPServer | `/public/resources/macos-icon-catalogs/tiger/devices/afpserver.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AFPServerIcon.icns` | 32x32 |
+| AirPort Base Station | `/public/resources/macos-icon-catalogs/tiger/devices/air-port-base-station.png` | `/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort.tif` | 128x76 |
+| AirPort Dual Ethernet | `/public/resources/macos-icon-catalogs/tiger/devices/air-port-dual-ethernet.png` | `/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort2.tif` | 128x82 |
+| AirPort Express | `/public/resources/macos-icon-catalogs/tiger/devices/air-port-express.png` | `/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort3.tiff` | 128x88 |
+| AirPort Extreme Base Station | `/public/resources/macos-icon-catalogs/tiger/devices/air-port-extreme-base-station.png` | `/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPortExtreme.tif` | 125x82 |
+| AirPort Status | `/public/resources/macos-icon-catalogs/tiger/devices/air-port-status.png` | `/Applications/Internet Connect.app/Contents/Resources/AirPort.bundle/Contents/Resources/AirPort.tif` | 32x32 |
 | Apple Talk | `/public/resources/macos-icon-catalogs/tiger/devices/apple-talk.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleTalkIcon.icns` | 32x32 |
 | Apple Talk Zone | `/public/resources/macos-icon-catalogs/tiger/devices/apple-talk-zone.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleTalkZoneIcon.icns` | 32x32 |
+| Bluetooth Device | `/public/resources/macos-icon-catalogs/tiger/devices/bluetooth-device.png` | `/Applications/iSync.app/Contents/Resources/bluetooth.tiff` | 48x48 |
+| Bluetooth Modem | `/public/resources/macos-icon-catalogs/tiger/devices/bluetooth-modem.png` | `/Applications/Internet Connect.app/Contents/Resources/Modem.bundle/Contents/Resources/BlueTooth.tif` | 32x32 |
+| Camera | `/public/resources/macos-icon-catalogs/tiger/devices/camera.png` | `/Applications/Utilities/Grab.app/Contents/Resources/CameraNormal.tiff` | 64x64 |
+| Camera Flash | `/public/resources/macos-icon-catalogs/tiger/devices/camera-flash.png` | `/Applications/Utilities/Grab.app/Contents/Resources/CameraEyeFlash.tiff` | 64x64 |
 | CD | `/public/resources/macos-icon-catalogs/tiger/devices/cd.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CD.icns` | 128x128 |
 | CD Audio Volume | `/public/resources/macos-icon-catalogs/tiger/devices/cd-audio-volume.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CDAudioVolumeIcon.icns` | 128x128 |
 | CD-R | `/public/resources/macos-icon-catalogs/tiger/devices/cd-r.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CD-R.icns` | 128x128 |
 | CD-RW | `/public/resources/macos-icon-catalogs/tiger/devices/cd-rw.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CD-RW.icns` | 128x128 |
 | Disconnected File Server | `/public/resources/macos-icon-catalogs/tiger/devices/disconnected-file-server.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DisconnectedFileServerIcon.icns` | 128x128 |
+| Disk Utility Disk | `/public/resources/macos-icon-catalogs/tiger/devices/disk-utility-disk.png` | `/Applications/Utilities/Disk Utility.app/Contents/Frameworks/DUSupport.framework/Versions/A/Resources/Disk.tiff` | 32x32 |
+| Disk Utility RAID | `/public/resources/macos-icon-catalogs/tiger/devices/disk-utility-raid.png` | `/Applications/Utilities/Disk Utility.app/Contents/Frameworks/DUSupport.framework/Versions/A/Resources/RAID.tiff` | 48x48 |
 | diskimage | `/public/resources/macos-icon-catalogs/tiger/devices/diskimage.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/diskimage.icns` | 128x128 |
 | Displays | `/public/resources/macos-icon-catalogs/tiger/devices/displays.png` | `/System/Library/PreferencePanes/Displays.prefPane/Contents/Resources/Displays.icns` | 128x128 |
 | dot Mac Neighbourhood | `/public/resources/macos-icon-catalogs/tiger/devices/dot-mac-neighbourhood.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/dotMacNeighbourhoodIcon.icns` | 128x128 |
@@ -166,22 +217,41 @@ Generated entries: 252 (51 applications, 10 System Preferences panes, 61 folders
 | External | `/public/resources/macos-icon-catalogs/tiger/devices/external.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/External.icns` | 128x128 |
 | Fibre Channel HD | `/public/resources/macos-icon-catalogs/tiger/devices/fibre-channel-hd.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FibreChannelHD.icns` | 128x128 |
 | Fire Wire HD | `/public/resources/macos-icon-catalogs/tiger/devices/fire-wire-hd.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FireWireHD.icns` | 128x128 |
+| FireWire Device | `/public/resources/macos-icon-catalogs/tiger/devices/fire-wire-device.png` | `/Applications/iSync.app/Contents/Resources/firewire.tiff` | 48x48 |
 | Floppy | `/public/resources/macos-icon-catalogs/tiger/devices/floppy.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Floppy.icns` | 128x128 |
 | FTPServer | `/public/resources/macos-icon-catalogs/tiger/devices/ftpserver.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FTPServerIcon.icns` | 32x32 |
 | Generic File Server | `/public/resources/macos-icon-catalogs/tiger/devices/generic-file-server.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFileServerIcon.icns` | 128x128 |
 | Generic Network | `/public/resources/macos-icon-catalogs/tiger/devices/generic-network.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns` | 128x128 |
+| Generic Phone | `/public/resources/macos-icon-catalogs/tiger/devices/generic-phone.png` | `/Applications/iSync.app/Contents/PlugIns/ApplePhoneConduit.syncdevice/Contents/Resources/English.lproj/SynchroPushAgent.nib/GenericPhone.tiff` | 42x63 |
 | Generic RAMDisk | `/public/resources/macos-icon-catalogs/tiger/devices/generic-ramdisk.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericRAMDiskIcon.icns` | 32x32 |
 | HTTPServer | `/public/resources/macos-icon-catalogs/tiger/devices/httpserver.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HTTPServerIcon.icns` | 32x32 |
 | i Disk Generic | `/public/resources/macos-icon-catalogs/tiger/devices/i-disk-generic.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/iDiskGenericIcon.icns` | 128x128 |
 | i Disk User | `/public/resources/macos-icon-catalogs/tiger/devices/i-disk-user.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/iDiskUserIcon.icns` | 128x128 |
 | i Mac | `/public/resources/macos-icon-catalogs/tiger/devices/i-mac.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/iMac.icns` | 32x32 |
+| Inkjet Printer | `/public/resources/macos-icon-catalogs/tiger/devices/inkjet-printer.png` | `/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/InkjetPrinter.icns` | 48x48 |
+| Installer CD Drive | `/public/resources/macos-icon-catalogs/tiger/devices/installer-cd-drive.png` | `/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-CD.tiff` | 64x64 |
+| Installer DVD Drive | `/public/resources/macos-icon-catalogs/tiger/devices/installer-dvd-drive.png` | `/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-DVD.tiff` | 64x64 |
+| Installer FireWire Drive | `/public/resources/macos-icon-catalogs/tiger/devices/installer-fire-wire-drive.png` | `/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-FireWire.tiff` | 64x64 |
+| Installer Internal Drive | `/public/resources/macos-icon-catalogs/tiger/devices/installer-internal-drive.png` | `/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-internal.tiff` | 64x64 |
+| Installer iPod Drive | `/public/resources/macos-icon-catalogs/tiger/devices/installer-i-pod-drive.png` | `/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-iPod.tiff` | 128x128 |
+| Installer USB Drive | `/public/resources/macos-icon-catalogs/tiger/devices/installer-usb-drive.png` | `/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-usb.tiff` | 64x64 |
 | Internal | `/public/resources/macos-icon-catalogs/tiger/devices/internal.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Internal.icns` | 128x128 |
 | IPFile Server | `/public/resources/macos-icon-catalogs/tiger/devices/ipfile-server.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/IPFileServerIcon.icns` | 32x32 |
+| iPod 4G | `/public/resources/macos-icon-catalogs/tiger/devices/i-pod-4g.png` | `/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/ipod_4g.tiff` | 60x60 |
+| iPod Mini Blue | `/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-blue.png` | `/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodBlue.tiff` | 60x60 |
+| iPod Mini Gold | `/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-gold.png` | `/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodGold.tiff` | 60x60 |
+| iPod Mini Green | `/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-green.png` | `/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodGreen.tiff` | 60x60 |
+| iPod Mini Pink | `/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-pink.png` | `/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodPink.tiff` | 60x60 |
+| iPod Mini Silver | `/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-silver.png` | `/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodSilver.tiff` | 60x60 |
 | Magneto Optical | `/public/resources/macos-icon-catalogs/tiger/devices/magneto-optical.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MagnetoOptical.icns` | 128x128 |
 | Memory Stick | `/public/resources/macos-icon-catalogs/tiger/devices/memory-stick.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MemoryStick.icns` | 128x128 |
+| Modem | `/public/resources/macos-icon-catalogs/tiger/devices/modem.png` | `/Applications/Internet Connect.app/Contents/Resources/Modem.bundle/Contents/Resources/Modem.tif` | 32x32 |
 | Net Boot Volume | `/public/resources/macos-icon-catalogs/tiger/devices/net-boot-volume.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NetBootVolume.icns` | 128x128 |
 | Non RAID | `/public/resources/macos-icon-catalogs/tiger/devices/non-raid.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NonRAID.icns` | 128x128 |
 | PC Card | `/public/resources/macos-icon-catalogs/tiger/devices/pc-card.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PCCard.icns` | 128x128 |
+| Phone | `/public/resources/macos-icon-catalogs/tiger/devices/phone.png` | `/Applications/Address Book.app/Contents/Resources/Telephony.bundle/Contents/Resources/bigPhone.tif` | 128x128 |
+| PostScript Printer | `/public/resources/macos-icon-catalogs/tiger/devices/post-script-printer.png` | `/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/PSPrinter.icns` | 128x128 |
+| Printer Setup | `/public/resources/macos-icon-catalogs/tiger/devices/printer-setup.png` | `/Applications/Utilities/Printer Setup Utility.app/Contents/Resources/Printer.tiff` | 32x32 |
 | RAID0 | `/public/resources/macos-icon-catalogs/tiger/devices/raid0.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RAID0.icns` | 128x128 |
 | RAID1 | `/public/resources/macos-icon-catalogs/tiger/devices/raid1.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RAID1.icns` | 128x128 |
 | RAID1_Locked | `/public/resources/macos-icon-catalogs/tiger/devices/raid1-locked.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RAID1_Locked.icns` | 128x128 |
@@ -189,7 +259,9 @@ Generated entries: 252 (51 applications, 10 System Preferences panes, 61 folders
 | Smart Media | `/public/resources/macos-icon-catalogs/tiger/devices/smart-media.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SmartMedia.icns` | 128x128 |
 | Status Bar CDROM | `/public/resources/macos-icon-catalogs/tiger/devices/status-bar-cdrom.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StatusBarCDROMIcon.icns` | 16x16 |
 | Super Disk | `/public/resources/macos-icon-catalogs/tiger/devices/super-disk.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SuperDisk.icns` | 128x128 |
+| USB Device | `/public/resources/macos-icon-catalogs/tiger/devices/usb-device.png` | `/Applications/iSync.app/Contents/Resources/usb.tiff` | 48x48 |
 | USB HD | `/public/resources/macos-icon-catalogs/tiger/devices/usb-hd.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/USBHD.icns` | 128x128 |
+| Video Chat Camera | `/public/resources/macos-icon-catalogs/tiger/devices/video-chat-camera.png` | `/Applications/iChat.app/Contents/Resources/vc-camera.png` | 33x32 |
 | Warning Non RAID | `/public/resources/macos-icon-catalogs/tiger/devices/warning-non-raid.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/WarningNonRAID.icns` | 128x128 |
 | Warning RAID0 | `/public/resources/macos-icon-catalogs/tiger/devices/warning-raid0.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/WarningRAID0.icns` | 128x128 |
 | Warning RAID1 | `/public/resources/macos-icon-catalogs/tiger/devices/warning-raid1.png` | `/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/WarningRAID1.icns` | 128x128 |

@@ -14,6 +14,7 @@ Each catalog contains:
 
 - `applications/` - converted PNGs for top-level application bundles.
 - `system-preferences/` - converted PNGs for System Preferences panes.
+- `ui-assets/` - converted PNGs for dialog, badge, status, and larger app UI artwork.
 - `folders/` - converted PNGs for CoreServices folder icons.
 - `devices/` - converted PNGs for CoreServices device, display, disk, and network icons.
 - `file-types/` - converted PNGs for key system and app document/file type icons.
