@@ -22,6 +22,7 @@ import {
   setRuntimeDebugEnabled,
 } from "@/utils/debug";
 import { setConsoleCaptureEnabled } from "@/utils/consoleCapture";
+import { setNetworkCaptureEnabled } from "@/utils/networkCapture";
 
 /** Default desktop wallpaper selection. */
 export const DEFAULT_WALLPAPER_PATH = buildShuffleDescriptor("nature");
@@ -350,6 +351,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       setDebugMode: (enabled) => {
         setRuntimeDebugEnabled(enabled);
         setConsoleCaptureEnabled(enabled);
+        setNetworkCaptureEnabled(enabled);
         set({ debugMode: enabled });
       },
 
@@ -385,6 +387,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         const debugEnabled = normalizeDebugMode(state?.debugMode);
         setRuntimeDebugEnabled(debugEnabled);
         setConsoleCaptureEnabled(debugEnabled);
+        setNetworkCaptureEnabled(debugEnabled);
       },
       merge: (persistedState, currentState) => {
         const persisted =
