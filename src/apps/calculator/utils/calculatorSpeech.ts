@@ -164,7 +164,6 @@ type SpeechSynthAdapter = {
 
 let queueState = createCalculatorSpeechQueue();
 let defaultRate = 1;
-let voicesReady = false;
 let voicesListenerAttached = false;
 
 function getSynth(): SpeechSynthesis | null {
@@ -187,37 +186,14 @@ function getAdapter(): SpeechSynthAdapter | null {
   };
 }
 
-function markVoicesReady(adapter: SpeechSynthAdapter) {
-  if (adapter.getVoices().length > 0) {
-    voicesReady = true;
-  }
-}
-
 function ensureVoicesListener(adapter: SpeechSynthAdapter) {
   if (voicesListenerAttached) return;
   voicesListenerAttached = true;
-  const onVoicesChanged = () => markVoicesReady(adapter);
+  // Warm the voice list so utterances can pick a language-matched voice as
+  // soon as the browser has loaded them. We never block on this — see below.
+  const onVoicesChanged = () => adapter.getVoices();
   adapter.addVoicesChangedListener(onVoicesChanged);
-  markVoicesReady(adapter);
-}
-
-function waitForVoices(adapter: SpeechSynthAdapter): Promise<void> {
-  markVoicesReady(adapter);
-  if (voicesReady) return Promise.resolve();
-  return new Promise((resolve) => {
-    const onVoicesChanged = () => {
-      markVoicesReady(adapter);
-      if (voicesReady) {
-        adapter.removeVoicesChangedListener(onVoicesChanged);
-        resolve();
-      }
-    };
-    adapter.addVoicesChangedListener(onVoicesChanged);
-    window.setTimeout(() => {
-      adapter.removeVoicesChangedListener(onVoicesChanged);
-      resolve();
-    }, 250);
-  });
+  adapter.getVoices();
 }
 
 function drainSpeechQueue(adapter: SpeechSynthAdapter) {
@@ -230,46 +206,43 @@ function drainSpeechQueue(adapter: SpeechSynthAdapter) {
   const { text, lang } = started.item;
   const rate = defaultRate;
 
-  void waitForVoices(adapter).then(() => {
-    if (!getAdapter()) {
-      queueState = finishCalculatorSpeechItem(queueState);
-      drainSpeechQueue(adapter);
-      return;
-    }
+  // iOS Safari only honors speechSynthesis.speak() when it is invoked
+  // synchronously inside the user gesture (button tap / key press) that
+  // triggered it. Deferring via Promise.then or setTimeout makes Safari treat
+  // the call as non-user-initiated and silently drop the utterance. Calculator
+  // speech always originates from a gesture, so we speak synchronously here.
+  // We intentionally do NOT wait for `voiceschanged`; the utterance `lang`
+  // already lets the engine select an appropriate voice, and the first
+  // in-gesture utterance "unlocks" synthesis for the rest of the session
+  // (subsequent queued items drain from onend handlers).
+  adapter.resume();
 
-    adapter.resume();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang;
+  utterance.rate = rate;
 
-    // Chrome/Safari can drop an utterance spoken in the same turn as cancel().
-    window.setTimeout(() => {
-      adapter.resume();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
-      utterance.rate = rate;
+  const voice = pickSpeechVoiceForLanguage(adapter.getVoices(), lang);
+  if (voice) {
+    utterance.voice = voice;
+  }
 
-      const voice = pickSpeechVoiceForLanguage(adapter.getVoices(), lang);
-      if (voice) {
-        utterance.voice = voice;
-      }
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    window.clearTimeout(timeoutId);
+    queueState = finishCalculatorSpeechItem(queueState);
+    drainSpeechQueue(adapter);
+  };
 
-      let finished = false;
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-        window.clearTimeout(timeoutId);
-        queueState = finishCalculatorSpeechItem(queueState);
-        drainSpeechQueue(adapter);
-      };
+  utterance.onend = finish;
+  utterance.onerror = finish;
+  const timeoutId = window.setTimeout(
+    finish,
+    CALCULATOR_SPEECH_UTTERANCE_TIMEOUT_MS
+  );
 
-      utterance.onend = finish;
-      utterance.onerror = finish;
-      const timeoutId = window.setTimeout(
-        finish,
-        CALCULATOR_SPEECH_UTTERANCE_TIMEOUT_MS
-      );
-
-      adapter.speak(utterance);
-    }, 0);
-  });
+  adapter.speak(utterance);
 }
 
 export function speakCalculatorText(
@@ -306,7 +279,6 @@ export function __getCalculatorSpeechQueueStateForTests(): CalculatorSpeechQueue
 export function __resetCalculatorSpeechStateForTests(): void {
   queueState = resetCalculatorSpeechQueue();
   defaultRate = 1;
-  voicesReady = false;
   voicesListenerAttached = false;
 }
 
