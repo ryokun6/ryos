@@ -155,6 +155,30 @@ import {
 
 Pass `isAquaGlass` when a primitive supports it. Use `windowsBevelClassName("raised" | "sunken")` instead of hand-writing Win98 bevel borders.
 
+## Icon and Asset Sourcing
+
+When choosing app icons, toolbar glyphs, file-type art, dialog icons, devices, folders, or other OS-flavored imagery, search the repo icon libraries before drawing new assets or using external sources.
+
+Active theme icons live under `public/icons/<theme>/...` and are resolved through `public/icons/manifest.json` by helpers such as `pickIconPath`, `resolveIconLegacyAware`, and `useIconPath`. Historical source libraries live outside active theme resolution:
+
+- Mac OS X Panther/Tiger catalogs: `public/resources/macos-icon-catalogs/{panther,tiger}/catalog.md`
+- Windows 98/XP catalogs: `public/resources/windows-icon-catalogs/{win98,xp}/catalog.md`
+
+Use this order:
+
+1. Prefer an existing logical icon in `public/icons/default`, then matching theme variants in `public/icons/macosx`, `public/icons/win98`, or `public/icons/xp`.
+2. If no active icon fits, search the resource catalogs by concept and source era-appropriate art from categories such as `applications`, `system-preferences`, `control-panels`, `dialog-ui-assets`, `folders`, `devices`, and `file-types`.
+3. Copy/adapt the chosen catalog asset into `public/icons/<theme>/...` only when it should participate in active UI rendering; keep `public/resources/...` as the source catalog, not as runtime app metadata.
+4. Run `bun run generate:icons` after changing active `public/icons` files.
+5. Preserve cross-theme fallback behavior: add `default` assets first, then theme-specific variants where they materially improve the UI.
+
+Useful searches:
+
+```bash
+rg -i "calculator|paint|printer|warning|folder" public/resources/*-icon-catalogs
+rg -i "\"themes\"|\"macosx\"|\"win98\"|\"xp\"" public/icons/manifest.json
+```
+
 ## Component Patterns
 
 ### Button
