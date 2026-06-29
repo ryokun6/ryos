@@ -67,6 +67,15 @@ const STICK_TO_BOTTOM_THRESHOLD = 24;
 const LOGGER_TAG_RE = /^\[([^\]]+)\]/;
 const ALL_LOGGERS_FILTER = "__all__";
 const OTHER_LOGGER_FILTER = "__other__";
+const ALL_NETWORK_FILTER = "all";
+const NETWORK_FILTER_VALUES = [
+  ALL_NETWORK_FILTER,
+  "error",
+  "warn",
+  "ok",
+  "pending",
+] as const;
+type NetworkFilter = (typeof NETWORK_FILTER_VALUES)[number];
 type DebugPanelTab = "logs" | "live" | "network";
 
 function extractLoggerTag(text: string): string | null {
@@ -158,6 +167,8 @@ export function DebugLogOverlay() {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DebugPanelTab>("logs");
   const [loggerFilter, setLoggerFilter] = useState(ALL_LOGGERS_FILTER);
+  const [networkFilter, setNetworkFilter] =
+    useState<NetworkFilter>(ALL_NETWORK_FILTER);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const liveReportRef = useRef("");
@@ -174,21 +185,55 @@ export function DebugLogOverlay() {
     getNetworkCaptureSnapshot
   );
 
+  const networkFilterOptions = useMemo(
+    () =>
+      NETWORK_FILTER_VALUES.map((value) => ({
+        value,
+        label:
+          value === ALL_NETWORK_FILTER
+            ? t("debug.network.filterAll")
+            : t(`debug.network.filters.${value}`),
+        count:
+          value === ALL_NETWORK_FILTER
+            ? networkEntries.length
+            : networkEntries.reduce(
+                (acc, entry) =>
+                  classifyNetworkStatus(entry.status, entry.outcome) === value
+                    ? acc + 1
+                    : acc,
+                0
+              ),
+      })),
+    [networkEntries, t]
+  );
+
+  const filteredNetworkEntries = useMemo(() => {
+    if (networkFilter === ALL_NETWORK_FILTER) return networkEntries;
+    return networkEntries.filter(
+      (entry) =>
+        classifyNetworkStatus(entry.status, entry.outcome) === networkFilter
+    );
+  }, [networkEntries, networkFilter]);
+
   const networkFailedCount = useMemo(
     () =>
-      networkEntries.reduce(
+      filteredNetworkEntries.reduce(
         (acc, entry) =>
           classifyNetworkStatus(entry.status, entry.outcome) === "error"
             ? acc + 1
             : acc,
         0
       ),
-    [networkEntries]
+    [filteredNetworkEntries]
   );
 
+  const networkFilterTriggerLabel =
+    networkFilterOptions.find((option) => option.value === networkFilter)
+      ?.label ?? t("debug.network.filterAll");
+
   const networkCopyText = useMemo(
-    () => formatNetworkEntriesForCopy(networkEntries),
-    [networkEntries]
+    () => formatNetworkEntriesForCopy(filteredNetworkEntries),
+    [filteredNetworkEntries]
   );
 
   const loggerStats = useMemo(() => {
@@ -617,12 +662,55 @@ export function DebugLogOverlay() {
               </>
             ) : activeTab === "network" ? (
               <>
-                <span className="shrink-0 font-os-ui text-[12px]">
-                  {t("debug.network.title")}
-                  <span className="ml-1 tabular-nums opacity-60">
-                    {networkEntries.length}
-                  </span>
-                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={t("debug.network.filterRequests")}
+                      title={t("debug.network.filterRequests")}
+                      className="flex min-w-0 items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                    >
+                      <span className="truncate">
+                        {networkFilterTriggerLabel}
+                      </span>
+                      <span className="shrink-0 tabular-nums opacity-60">
+                        {filteredNetworkEntries.length}
+                      </span>
+                      <CaretDown
+                        size={10}
+                        weight="bold"
+                        className="shrink-0 opacity-50"
+                        aria-hidden
+                      />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={4}
+                    container={overlayRootRef.current}
+                    className="min-w-[12rem]"
+                  >
+                    <DropdownMenuRadioGroup
+                      value={networkFilter}
+                      onValueChange={(value) =>
+                        setNetworkFilter(value as NetworkFilter)
+                      }
+                    >
+                      {networkFilterOptions.map((option) => (
+                        <DropdownMenuRadioItem
+                          key={option.value}
+                          value={option.value}
+                          className="font-os-ui text-[12px]"
+                        >
+                          <LoggerFilterMenuLabel
+                            label={option.label}
+                            count={option.count}
+                          />
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {networkFailedCount > 0 && (
                   <span className="shrink-0 font-os-ui text-[12px] text-red-500">
                     {t("debug.network.failedCount", {
@@ -811,7 +899,10 @@ export function DebugLogOverlay() {
               isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
             )}
           >
-            <DebugNetworkPanel entries={networkEntries} />
+            <DebugNetworkPanel
+              entries={filteredNetworkEntries}
+              totalEntryCount={networkEntries.length}
+            />
           </TabsContent>
           <div
             className={cn(

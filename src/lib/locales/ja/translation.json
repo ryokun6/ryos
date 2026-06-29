@@ -4765,7 +4765,16 @@
       "clear": "リクエストを消去",
       "copy": "リクエストをコピー",
       "empty": "キャプチャされたリクエストはまだありません。",
+      "emptyForFilter": "このフィルタに一致するリクエストはありません。",
       "failedCount": "{{count}}件失敗",
+      "filterAll": "すべてのリクエスト",
+      "filterRequests": "リクエストをフィルタ",
+      "filters": {
+        "error": "失敗",
+        "ok": "成功",
+        "pending": "保留中",
+        "warn": "警告"
+      },
       "pending": "···",
       "title": "リクエスト"
     },

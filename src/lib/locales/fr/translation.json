@@ -4769,7 +4769,16 @@
       "clear": "Effacer les requêtes",
       "copy": "Copier les requêtes",
       "empty": "Aucune requête capturée pour le moment.",
+      "emptyForFilter": "Aucune requête ne correspond à ce filtre.",
       "failedCount": "{{count}} échecs",
+      "filterAll": "Toutes les requêtes",
+      "filterRequests": "Filtrer les requêtes",
+      "filters": {
+        "error": "Échec",
+        "ok": "Réussies",
+        "pending": "En attente",
+        "warn": "Avertissements"
+      },
       "pending": "···",
       "title": "Requêtes"
     },

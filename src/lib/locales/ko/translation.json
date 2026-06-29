@@ -4765,7 +4765,16 @@
       "clear": "요청 지우기",
       "copy": "요청 복사하기",
       "empty": "아직 캡처된 요청이 없습니다.",
+      "emptyForFilter": "이 필터와 일치하는 요청이 없습니다.",
       "failedCount": "{{count}}개 실패",
+      "filterAll": "모든 요청",
+      "filterRequests": "요청 필터링",
+      "filters": {
+        "error": "실패함",
+        "ok": "성공함",
+        "pending": "대기 중",
+        "warn": "경고"
+      },
       "pending": "···",
       "title": "요청"
     },
