@@ -3,6 +3,12 @@ import { useTranslation } from "react-i18next";
 import packageInfo from "../../../package.json";
 import { getTheme } from "@/themes";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useRealtimeConnectionStatus } from "@/hooks/useRealtimeConnectionStatus";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
+import { getRealtimeChannelNames } from "@/lib/pusherClient";
+import { getRealtimeProvider } from "@/utils/runtimeConfig";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import type { ConsoleLogEntry } from "@/utils/consoleCapture";
 import { cn } from "@/lib/utils";
 import {
@@ -213,6 +219,75 @@ export function DebugLiveDashboard({
   const networkValue = snapshot.online
     ? t("debug.live.online")
     : t("debug.live.offline");
+
+  const realtimeState = useRealtimeConnectionStatus();
+  const isAdmin = useIsRyoAdmin();
+  const username = useChatsStore((s) => s.username);
+  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const autoSyncEnabled = useCloudSyncStore((s) => s.autoSyncEnabled);
+  const isCheckingRemote = useCloudSyncStore((s) => s.isCheckingRemote);
+  const lastCheckedAt = useCloudSyncStore((s) => s.lastCheckedAt);
+  const syncLastError = useCloudSyncStore((s) => s.lastError);
+  const categoryStatus = useCloudSyncStore((s) => s.categoryStatus);
+
+  // Channel names are not reactive; re-read each sample tick so the count stays
+  // roughly fresh without binding to the realtime internals.
+  const channelCount = useMemo(
+    () => getRealtimeChannelNames().length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [snapshot.sampledAt]
+  );
+  const realtimeProvider = useMemo(() => getRealtimeProvider(), []);
+  const realtimeStateLabel = t(`debug.live.realtimeState.${realtimeState}`);
+  const realtimeValue = t("debug.live.realtimeValue", {
+    state: realtimeStateLabel,
+    count: channelCount,
+  });
+  const realtimeReportValue = t("debug.live.realtimeReport", {
+    state: realtimeStateLabel,
+    provider: realtimeProvider,
+    count: channelCount,
+  });
+  const realtimeColorClass =
+    realtimeState === "connected"
+      ? "text-green-600"
+      : realtimeState === "connecting"
+        ? "text-amber-500"
+        : "text-red-500";
+
+  const isSyncingNow =
+    isCheckingRemote ||
+    Object.values(categoryStatus).some(
+      (status) => status.isUploading || status.isDownloading
+    );
+  const syncStatusLabel = isSyncingNow
+    ? t("debug.live.syncSyncing")
+    : syncLastError
+      ? t("debug.live.syncError")
+      : autoSyncEnabled
+        ? t("debug.live.syncAuto")
+        : t("debug.live.syncOff");
+  const cloudSyncValue = syncStatusLabel;
+  const cloudSyncReportValue = lastCheckedAt
+    ? t("debug.live.syncReport", {
+        status: syncStatusLabel,
+        checkedAt: new Date(lastCheckedAt).toLocaleString(locale),
+      })
+    : syncStatusLabel;
+  const cloudSyncColorClass = syncLastError
+    ? "text-red-500"
+    : isSyncingNow
+      ? "text-amber-500"
+      : undefined;
+
+  const sessionValue = username
+    ? isAuthenticated
+      ? isAdmin
+        ? t("debug.live.sessionAdmin", { username })
+        : username
+      : t("debug.live.sessionSignedOut", { username })
+    : t("debug.live.sessionGuest");
+
   const report = useMemo(
     () =>
       formatLiveSnapshotMarkdown({
@@ -228,6 +303,9 @@ export function DebugLiveDashboard({
         domNodeCount: snapshot.domNodeCount,
         heap: snapshot.heap.kind === "available" ? heapValue : null,
         storage: snapshot.storage.kind === "available" ? storageValue : null,
+        realtime: realtimeReportValue,
+        cloudSync: cloudSyncReportValue,
+        session: sessionValue,
         totalLogs: snapshot.bufferedLogCount,
         logRate: snapshot.logRate,
         errors: snapshot.errorCount,
@@ -241,6 +319,10 @@ export function DebugLiveDashboard({
           history: t("debug.live.historySummary"),
           metric: t("debug.live.metric"),
           value: t("debug.live.value"),
+          services: t("debug.live.services"),
+          realtimeConnection: t("debug.live.realtime"),
+          cloudSync: t("debug.live.cloudSync"),
+          session: t("debug.live.session"),
           runtime: t("debug.live.runtimeLabel"),
           appVersion: t("debug.live.appVersion"),
           locale: t("debug.live.locale"),
@@ -264,10 +346,13 @@ export function DebugLiveDashboard({
         },
       }),
     [
+      cloudSyncReportValue,
       heapValue,
       locale,
       networkValue,
+      realtimeReportValue,
       runtimeLabel,
+      sessionValue,
       snapshot,
       storageValue,
       t,
@@ -362,6 +447,17 @@ export function DebugLiveDashboard({
           }
         />
         <MetricRow label={t("debug.live.storage")} value={storageValue} />
+        <MetricRow
+          label={t("debug.live.realtime")}
+          value={realtimeValue}
+          valueClassName={realtimeColorClass}
+        />
+        <MetricRow
+          label={t("debug.live.cloudSync")}
+          value={cloudSyncValue}
+          valueClassName={cloudSyncColorClass}
+        />
+        <MetricRow label={t("debug.live.session")} value={sessionValue} />
         <MetricRow
           label={t("debug.live.logHealth")}
           value={t("debug.live.logHealthValue", {

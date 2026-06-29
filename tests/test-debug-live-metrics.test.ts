@@ -136,6 +136,68 @@ describe("debug live metrics", () => {
     expect(report).not.toContain("localStorage");
   });
 
+  test("includes a Services section when service labels are provided", () => {
+    const report = formatLiveSnapshotMarkdown({
+      sampledAt: Date.UTC(2026, 5, 27, 12, 0, 0),
+      locale: "en-US",
+      runtime: "Browser",
+      appVersion: "ryOS 1.0.8",
+      theme: "Aqua · Light",
+      viewport: "1440×900 @ 2x",
+      network: "Online",
+      fps: 60,
+      frameTimeMs: 16.7,
+      domNodeCount: 1_234,
+      heap: "40 MB / 2 GB",
+      storage: "5 MB / 10 GB",
+      realtime: "Connected · pusher · 2 channels",
+      cloudSync: "Auto · last checked Jun 27",
+      session: "ryo (admin)",
+      totalLogs: 42,
+      logRate: 4,
+      errors: 0,
+      warnings: 0,
+      history: [{ recordedAt: 1, fps: 60, logRate: 4 }],
+      labels: {
+        ...REPORT_LABELS,
+        services: "Services",
+        realtimeConnection: "Realtime",
+        cloudSync: "Cloud sync",
+        session: "Session",
+      },
+    });
+
+    expect(report).toContain("## Services");
+    expect(report).toContain("| Realtime | Connected · pusher · 2 channels |");
+    expect(report).toContain("| Cloud sync | Auto · last checked Jun 27 |");
+    expect(report).toContain("| Session | ryo (admin) |");
+  });
+
+  test("omits the Services section when labels are absent", () => {
+    const report = formatLiveSnapshotMarkdown({
+      sampledAt: Date.UTC(2026, 5, 27, 12, 0, 0),
+      locale: "en-US",
+      runtime: "Browser",
+      appVersion: "ryOS 1.0.8",
+      theme: "Aqua · Light",
+      viewport: "1440×900 @ 2x",
+      network: "Online",
+      fps: 60,
+      frameTimeMs: 16.7,
+      domNodeCount: 1_234,
+      heap: "40 MB / 2 GB",
+      storage: "5 MB / 10 GB",
+      totalLogs: 42,
+      logRate: 4,
+      errors: 0,
+      warnings: 0,
+      history: [{ recordedAt: 1, fps: 60, logRate: 4 }],
+      labels: REPORT_LABELS,
+    });
+
+    expect(report).not.toContain("## Services");
+  });
+
   test("marks unavailable snapshot values explicitly", () => {
     const report = formatLiveSnapshotMarkdown({
       sampledAt: Date.UTC(2026, 5, 27),
