@@ -42,7 +42,7 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "desktop-screen-saver",
     labelKey: "apps.control-panels.panes.desktopScreenSaver",
-    icon: "desktop.png",
+    icon: "control-panels/desktop-screen-saver.png",
   },
   {
     id: "international",
@@ -52,7 +52,7 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "security",
     labelKey: "apps.control-panels.panes.security",
-    icon: "control-panels/keychain.png",
+    icon: "control-panels/security.png",
   },
   {
     id: "displays",
@@ -62,17 +62,17 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "sound",
     labelKey: "apps.control-panels.panes.sound",
-    icon: "sound.png",
+    icon: "control-panels/sound.png",
   },
   {
     id: "dot-mac",
     labelKey: "apps.control-panels.panes.dotMac",
-    icon: "cloud-sync.png",
+    icon: "control-panels/dot-mac.png",
   },
   {
     id: "sharing",
     labelKey: "apps.control-panels.panes.sharing",
-    icon: "control-panels/backup-restore.png",
+    icon: "control-panels/sharing.png",
   },
   {
     id: "accounts",
@@ -82,7 +82,7 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "software-update",
     labelKey: "apps.control-panels.panes.softwareUpdate",
-    icon: "software-update.png",
+    icon: "control-panels/software-update.png",
   },
 ];
 
