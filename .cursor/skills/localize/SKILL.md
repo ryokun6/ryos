@@ -102,7 +102,7 @@ bun run i18n:audit
 bun run i18n:find-untranslated
 ```
 
-Use `bun run i18n:audit:fix` only for terminology drift the script can safely repair, then rerun `bun run i18n:audit`.
+Use `bun run i18n:audit:fix` only for terminology drift the script can safely repair, then rerun `bun run i18n:audit`. When audit reports glossary mismatches that are not auto-fixable, edit the affected locale JSON values by hand and rerun the audit.
 
 ## Component Guidelines
 
@@ -121,3 +121,4 @@ Use `bun run i18n:audit:fix` only for terminology drift the script can safely re
 - Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps with longer localized help rows can export their key list (for example `src/apps/maps/helpKeys.ts`, `src/apps/calculator/helpKeys.ts`, or `src/apps/internet-explorer/helpKeys.ts`) and spread it into `APP_HELP_I18N_KEYS`
 - `tests/test-help-i18n-alignment.test.ts` covers every registered app; update it only if the global help-key contract changes
 - Include `t` in dependency arrays when used in `useMemo`/`useCallback`
+- If Apple terminology changes upstream, refresh the glossary source with `bun run i18n:apple-glossary` before auditing locale copy
