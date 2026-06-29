@@ -841,7 +841,7 @@
       "title": "計算機"
     },
     "calendar": {
-      "description": "含有事件的日曆",
+      "description": "含有事件的行事曆",
       "event": {
         "allDay": "整日",
         "calendar": "行事曆",
@@ -1524,7 +1524,7 @@
         "importVCard": "匯入 vCard⋯",
         "markAsMine": "標記為我的",
         "newContact": "新增聯絡人",
-        "syncContacts": "同步聯絡資訊"
+        "syncContacts": "同步聯絡人"
       },
       "messages": {
         "deleted": "已刪除 {{name}}",
@@ -2736,7 +2736,7 @@
         "lyricsSearchHttpError": "搜尋失敗（狀態 {{status}}）",
         "lyricsSearchInvalidResponse": "伺服器回應無效",
         "lyricsSearchNoResults": "找不到結果",
-        "lyricsSearchPlaceholder": "輸入搜尋關鍵字（例如：歌曲名稱、歌手）",
+        "lyricsSearchPlaceholder": "輸入搜尋關鍵字（例如：歌曲名稱、藝人）",
         "lyricsSearchReset": "重設為自動",
         "lyricsSearchSearch": "搜尋",
         "lyricsSearchSearching": "搜尋中⋯",
