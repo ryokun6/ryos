@@ -20,7 +20,10 @@ import {
 import { hashPassword, setUserPasswordHash } from "../../_utils/auth/_password.js";
 import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
-import { consumeRecoveryCode } from "../../_utils/auth/_recovery.js";
+import {
+  deleteRecoveryCode,
+  verifyRecoveryCode,
+} from "../../_utils/auth/_recovery.js";
 import { resolveRecoveryUsername } from "../../_utils/auth/_recovery-channels.js";
 import { apiHandler } from "../../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../../_utils/_cookie.js";
@@ -99,9 +102,10 @@ export default apiHandler<ResetRequestBody>(
       return;
     }
 
-    const result = await consumeRecoveryCode(
+    const resetKey = redisKeys.auth.passwordReset(username);
+    const result = await verifyRecoveryCode(
       redis,
-      redisKeys.auth.passwordReset(username),
+      resetKey,
       username,
       code
     );
@@ -129,6 +133,7 @@ export default apiHandler<ResetRequestBody>(
       // Issue a fresh session so the user is logged in immediately.
       const token = generateAuthToken();
       await storeToken(redis, username, token);
+      await deleteRecoveryCode(redis, resetKey);
       res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
 
       logger.response(200, Date.now() - startTime);
