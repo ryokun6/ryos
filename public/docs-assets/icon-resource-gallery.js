@@ -20,17 +20,20 @@
     var parts = url.split("/");
     var family = parts[2] || "icons";
     var era = parts[3] || "catalog";
-    var prefix = family.indexOf("macos") === 0 ? "Mac OS X" : "Windows";
-    return (
-      prefix +
-      " " +
-      era
-        .split("-")
-        .map(function (part) {
-          return part.charAt(0).toUpperCase() + part.slice(1);
-        })
-        .join(" ")
-    );
+    var eraLabel = era
+      .split("-")
+      .map(function (part) {
+        if (part === "mac") return "Mac";
+        if (part === "os") return "OS";
+        if (part === "xp") return "XP";
+        if (part.indexOf("win") === 0 && part.length > 3) return part.slice(3);
+        return part.charAt(0).toUpperCase() + part.slice(1);
+      })
+      .join(" ");
+    if (family.indexOf("classic-mac") === 0) return eraLabel;
+    if (family.indexOf("macos") === 0) return "Mac OS X " + eraLabel;
+    if (family.indexOf("windows") === 0) return "Windows " + eraLabel;
+    return family + " " + eraLabel;
   }
 
   function stripMarkdown(value) {

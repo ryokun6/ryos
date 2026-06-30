@@ -23,7 +23,7 @@ afterEach(() => {
 describe("icon resource gallery", () => {
   test("loads catalog markdown, renders cards, and filters by search text", async () => {
     document.body.innerHTML = `
-      <div id="icon-resource-gallery" data-catalogs="/resources/macos-icon-catalogs/panther/catalog.md,/resources/windows-icon-catalogs/xp/catalog.md">
+      <div id="icon-resource-gallery" data-catalogs="/resources/classic-mac-icon-catalogs/system-7/catalog.md,/resources/macos-icon-catalogs/panther/catalog.md,/resources/windows-icon-catalogs/xp/catalog.md">
         <input id="icon-gallery-search">
         <select id="icon-gallery-family"><option value="">All catalogs</option></select>
         <select id="icon-gallery-category"><option value="">All categories</option></select>
@@ -34,6 +34,16 @@ describe("icon resource gallery", () => {
     `;
 
     const catalogs = new Map([
+      [
+        "/resources/classic-mac-icon-catalogs/system-7/catalog.md",
+        [
+          "# System 7.5.3 icon catalog",
+          "## System suitcase",
+          "| Name | PNG | Source file | Source resource | Source path | Size |",
+          "| --- | --- | --- | --- | --- | --- |",
+          "| Generic folder (System) | `/public/resources/classic-mac-icon-catalogs/system-7/system/generic-folder-system.png` | `System` | `ICN%23/-3999` | `system7-icons/system_resources/ICN%23/-3999.png` | 32x32 |",
+        ].join("\n"),
+      ],
       [
         "/resources/macos-icon-catalogs/panther/catalog.md",
         [
@@ -77,9 +87,10 @@ describe("icon resource gallery", () => {
       const family = document.getElementById("icon-gallery-family") as HTMLSelectElement;
       const firstImage = grid?.querySelector("img");
 
-      expect(grid?.querySelectorAll(".icon-card").length).toBe(3);
-      expect(count?.textContent).toContain("3 of 3 icons");
-      expect(family.options.length).toBe(3);
+      expect(grid?.querySelectorAll(".icon-card").length).toBe(4);
+      expect(count?.textContent).toContain("4 of 4 icons");
+      expect(family.options.length).toBe(4);
+      expect(Array.from(family.options).map((option) => option.value)).toContain("System 7");
       expect(firstImage?.getAttribute("src")).toMatch(/^\/resources\//);
 
       const search = document.getElementById("icon-gallery-search") as HTMLInputElement;
