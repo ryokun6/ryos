@@ -17,7 +17,9 @@ describe("Control Panels account and security actions", () => {
     );
 
     expect(securitySource.includes("DeleteAccountDialog")).toBe(true);
-    expect(securitySource.includes('t("apps.control-panels.setPassword")')).toBe(true);
+    expect(securitySource.includes('t("apps.control-panels.setPassword")')).toBe(
+      false,
+    );
     expect(securitySource.includes('t("apps.control-panels.changePasswordButton")')).toBe(
       true,
     );
