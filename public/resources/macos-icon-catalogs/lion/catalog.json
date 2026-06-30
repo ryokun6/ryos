@@ -1,0 +1,2152 @@
+{
+  "generatedAt": "2026-06-30T02:01:15.849812+00:00",
+  "source": {
+    "name": "Mac OS X Lion DP4 Icon Pack (Freesoft mirror of lordalpha1 pack)",
+    "url": "https://freesoft.ru/mac-os/mac_os_x_lion_icon_pack"
+  },
+  "counts": {
+    "applications": 28,
+    "systemPreferences": 0,
+    "folders": 32,
+    "devices": 70,
+    "fileTypes": 97,
+    "uiAssets": 10,
+    "total": 237
+  },
+  "entries": [
+    {
+      "type": "application",
+      "name": "Activity Monitor",
+      "sourceBundlePath": "/Applications/Activity Monitor.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ActivityMonitor.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/activity-monitor.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "AirPort Utility",
+      "sourceBundlePath": "/Applications/AirPort Utility.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/AirPortUtility.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/air-port-utility.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "App Store",
+      "sourceBundlePath": "/Applications/App Store.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/appStore.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/app-store.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Automator",
+      "sourceBundlePath": "/Applications/Automator.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Automator.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/automator.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Calculator",
+      "sourceBundlePath": "/Applications/Calculator.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Calculator.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/calculator.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Chess",
+      "sourceBundlePath": "/Applications/Chess.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/chess.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/chess.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Clock",
+      "sourceBundlePath": "/Applications/Clock.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Clock.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/clock.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Dashboard",
+      "sourceBundlePath": "/Applications/Dashboard.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Dashboard.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/dashboard.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Dictionary",
+      "sourceBundlePath": "/Applications/Dictionary.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Dictionary.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/dictionary.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "DVD Player",
+      "sourceBundlePath": "/Applications/DVD Player.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/DVD Player.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/dvd-player.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Expose",
+      "sourceBundlePath": "/Applications/Expose.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Expose.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/expose.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "FaceTime",
+      "sourceBundlePath": "/Applications/FaceTime.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/FaceTime.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/face-time.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Finder",
+      "sourceBundlePath": "/Applications/Finder.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/FinderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/finder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Image Capture",
+      "sourceBundlePath": "/Applications/Image Capture.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ImageCapture.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/image-capture.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "iMovie",
+      "sourceBundlePath": "/Applications/iMovie.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iMovie.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/i-movie.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "iTunes",
+      "sourceBundlePath": "/Applications/iTunes.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/i-tunes.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Launchpad",
+      "sourceBundlePath": "/Applications/Launchpad.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Launchpad.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/launchpad.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Mail",
+      "sourceBundlePath": "/Applications/Mail.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Mail.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/mail.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Photo Booth",
+      "sourceBundlePath": "/Applications/Photo Booth.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/PhotoBooth.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/photo-booth.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Preview",
+      "sourceBundlePath": "/Applications/Preview.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Preview.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/preview.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "QuickTime Player",
+      "sourceBundlePath": "/Applications/QuickTime Player.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/QuickTimePlayerX.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/quick-time-player-x.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Safari",
+      "sourceBundlePath": "/Applications/Safari.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Safari.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/safari.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Script Editor",
+      "sourceBundlePath": "/Applications/Script Editor.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/SEScriptEditorX.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/sescript-editor-x.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Stickies",
+      "sourceBundlePath": "/Applications/Stickies.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Stickies.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/stickies.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "System Preferences",
+      "sourceBundlePath": "/Applications/System Preferences.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/PrefApp.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/pref-app.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Terminal",
+      "sourceBundlePath": "/Applications/Terminal.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Terminal.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/terminal.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "TextEdit",
+      "sourceBundlePath": "/Applications/TextEdit.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Edit.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/edit.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Time Machine",
+      "sourceBundlePath": "/Applications/Time Machine.app",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Time Machine.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/applications/time-machine.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Applications",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ApplicationsFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/applications-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Burnable",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/BurnableFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/burnable-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Desktop",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/DesktopFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/desktop-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Developer",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/DeveloperFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/developer-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Documents",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/DocumentsFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/documents-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Downloads Folder",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/DownloadsFolder.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/downloads-folder.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Generic",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/generic-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Group Folder",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GroupFolder.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/group-folder.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Home",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/HomeFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/home-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Library",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/LibraryFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/library-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Movie",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MovieFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/movie-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Music",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MusicFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/music-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Open",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/OpenFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/open-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Pictures",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/PicturesFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/pictures-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Public",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/PublicFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/public-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Server Applications",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ServerApplicationsFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/server-applications-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Sites",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/SitesFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/sites-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Smart",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/SmartFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/smart-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "System",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/SystemFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/system-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Apps",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarAppsFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-apps-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Desktop",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarDesktopFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-desktop-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Documents",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarDocumentsFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-documents-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Downloads",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarDownloadsFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-downloads-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Library",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarLibraryFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-library-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Movie",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarMovieFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-movie-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Music",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarMusicFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-music-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Pictures",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarPicturesFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-pictures-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Public",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarPublicFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-public-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Sites",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarSitesFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-sites-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Utilities",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ToolbarUtilitiesFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/toolbar-utilities-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Users",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/UsersFolderIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/users-folder-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "folder",
+      "name": "Utilities Folder",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/UtilitiesFolder.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/folders/utilities-folder.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Air Disk",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/AirDisk.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/air-disk.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Air Drop",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/AirDrop.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/air-drop.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Airport Express",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.airport-express.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-airport-express.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Airport Extreme",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.airport-extreme.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-airport-extreme.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Apple Tv",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.apple-tv.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-apple-tv.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Cinema Display",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.cinema-display.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-cinema-display.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Emac",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.emac.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-emac.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Ibook G4 12",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.ibook-g4-12.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-ibook-g4-12.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Ibook G4 14",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.ibook-g4-14.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-ibook-g4-14.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac Aluminum 20",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-aluminum-20.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-aluminum-20.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac Aluminum 24",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-aluminum-24.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-aluminum-24.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac G4 15",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-g4-15.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-g4-15.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac G4 17",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-g4-17.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-g4-17.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac G4 20",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-g4-20.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-g4-20.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac G5 17",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-g5-17.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-g5-17.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac G5 20",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-g5-20.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-g5-20.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac Isight 17",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-iSight-17.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-i-sight-17.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac Isight 20",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-iSight-20.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-i-sight-20.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac Isight 24",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-iSight-24.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-i-sight-24.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac Unibody 21",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-unibody-21.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-unibody-21.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Imac Unibody 27",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.imac-unibody-27.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-imac-unibody-27.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Ipad",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.ipad.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-ipad.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Iphone",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.iphone.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-iphone.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Iphone 3g",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.iphone-3g.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-iphone-3g.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Iphone 4 Black",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.iphone-4-black.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-iphone-4-black.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Iphone 4 White",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.iphone-4-white.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-iphone-4-white.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Ipod Touch",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.ipod-touch.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-ipod-touch.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Ipod Touch 2",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.ipod-touch-2.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-ipod-touch-2.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Ipod Touch 4",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.ipod-touch-4.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-ipod-touch-4.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Led Cinema Display 24",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.led-cinema-display-24.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-led-cinema-display-24.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Led Cinema Display 27",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.led-cinema-display-27.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-led-cinema-display-27.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Mac",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.mac.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-mac.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbook Black",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbook-black.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbook-black.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbook Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbook-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbook-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbook Unibody Plastic",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbook-unibody-plastic.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbook-unibody-plastic.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbook White",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbook-white.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbook-white.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookair",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookair.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookair.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookair 11 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookair-11-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookair-11-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookair 13 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookair-13-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookair-13-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookpro 13 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookpro-13-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookpro-13-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookpro 15",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookpro-15.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookpro-15.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookpro 15 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookpro-15-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookpro-15-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookpro 17",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookpro-17.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookpro-17.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macbookpro 17 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macbookpro-17-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macbookpro-17-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macmini",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macmini.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macmini.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macmini Server",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macmini-server.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macmini-server.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macmini Server Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macmini-server-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macmini-server-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macmini Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macmini-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macmini-unibody.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Macpro",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.macpro.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-macpro.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powerbook G4 12",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powerbook-g4-12.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powerbook-g4-12.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powerbook G4 15",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powerbook-g4-15.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powerbook-g4-15.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powerbook G4 17",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powerbook-g4-17.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powerbook-g4-17.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powerbook G4 Titanium",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powerbook-g4-titanium.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powerbook-g4-titanium.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powermac G4 Graphite",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powermac-g4-graphite.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powermac-g4-graphite.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powermac G4 Mirrored Drive Doors",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powermac-g4-mirrored-drive-doors.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powermac-g4-mirrored-drive-doors.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powermac G4 Quicksilver",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powermac-g4-quicksilver.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powermac-g4-quicksilver.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Powermac G5",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.powermac-g5.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-powermac-g5.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Time Capsule",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.time-capsule.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-time-capsule.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Apple Xserve",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/com.apple.xserve.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/com-apple-xserve.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Bonjour",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Bonjour.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/bonjour.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "CDAudio Volume",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/CDAudioVolumeIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/cdaudio-volume-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Generic Air Disk",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericAirDiskIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/generic-air-disk-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Generic File Server",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericFileServerIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/generic-file-server-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Generic Network",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericNetworkIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/generic-network-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Generic Sharepoint",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericSharepoint.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/generic-sharepoint.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Generic Time Machine Disk",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericTimeMachineDiskIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/generic-time-machine-disk-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "i Disk Generic",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iDiskGenericIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/i-disk-generic-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "i Disk User",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iDiskUserIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/i-disk-user-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Mobile Me",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MobileMe.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/mobile-me.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "device",
+      "name": "Public.Generic Pc",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/public.generic-pc.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/devices/public-generic-pc.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "3GPP",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/3GPP.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/3-gpp.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "3GPP2",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/3GPP2.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/3-gpp2.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "AI",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ai.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/ai.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Appicon 3",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/appicon 3.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/appicon-3.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Audio",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Audio.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/audio.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "AVI",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/AVI.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/avi.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "BMP",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/bmp.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/bmp.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Picture",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ClippingPicture.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/clipping-picture.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Sound",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ClippingSound.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/clipping-sound.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Text",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ClippingText.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/clipping-text.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Unknown",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ClippingUnknown.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/clipping-unknown.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "DAE",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/dae.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/dae.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "DFONT",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/dfont.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/dfont.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Document",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/document.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/document.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Document Config",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Document-Config.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/document-config.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "DV",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/DV.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/dv.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "DVDMedia",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/DVDMedia.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/dvdmedia.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "EPS",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/eps.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/eps.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Executable Binary",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ExecutableBinaryIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/executable-binary-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "FAX",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/fax.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/fax.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "FFIL",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ffil.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/ffil.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "FLC",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/FLC.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/flc.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "FPX",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/fpx.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/fpx.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Generic",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Generic.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/generic.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Application",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericApplicationIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/generic-application-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Document",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericDocumentIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/generic-document-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Stationery",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/GenericStationeryIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/generic-stationery-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "GIF",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/gif.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/gif.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes aac",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-aac.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-aac.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes aacp",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-aacp.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-aacp.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes aiff",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-aiff.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-aiff.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes audible",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-audible.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-audible.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes cd",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-cd.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-cd.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes database",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-database.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-database.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes generic",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-generic.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-generic.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes ipa",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-ipa.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-ipa.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes ipg",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-ipg.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-ipg.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes ipsw",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-ipsw.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-ipsw.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes ite",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-ite.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-ite.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes itlp",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-itlp.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-itlp.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes itms",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-itms.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-itms.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes movie",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-movie.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-movie.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes mp2",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-mp2.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-mp2.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes mp3",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-mp3.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-mp3.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes mpeg4",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-mpeg4.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-mpeg4.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes mpeg4p",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-mpeg4p.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-mpeg4p.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes mpg",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-mpg.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-mpg.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes nvf",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-nvf.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-nvf.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes playlist",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-playlist.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-playlist.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes ringtone",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-ringtone.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-ringtone.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes sd2",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-sd2.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-sd2.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes visual",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-visual.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-visual.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "i Tunes wav",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/iTunes-wav.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/i-tunes-wav.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "ICNS",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/icns.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/icns.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "ICO",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ico.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/ico.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location AFP",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationAFP.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-afp.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location File",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationFile.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-file.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location FTP",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationFTP.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-ftp.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location Generic",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationGeneric.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-generic.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location HTTP",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationHTTP.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-http.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location MAILTO",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationMAILTO.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-mailto.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location NEWS",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationNEWS.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-news.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location VNC",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/InternetLocationVNC.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/internet-location-vnc.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "JP2",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/JP2.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/jp2.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "JPEG",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/jpeg.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/jpeg.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "KEXT",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/KEXT.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/kext.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "LWFN",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/lwfn.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/lwfn.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "MBOX",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/mbox.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/mbox.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Movie",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Movie.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/movie.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "MPEG",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MPEG.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/mpeg.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Mpeg 2",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MPEG-2.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/mpeg-2.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Mpeg 4",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MPEG-4.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/mpeg-4.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "MPO",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MPO.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/mpo.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Openexr",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/OPENEXR.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/openexr.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "OTF",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/otf.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/otf.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "PBLibrary",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/PBLibraryIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/pblibrary-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "PDF",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/pdf.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/pdf.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "PICT",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/pict.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/pict.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "PNG",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/png.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/png.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "PNTG",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/pntg.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/pntg.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "PS",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ps.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/ps.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "PSD",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/psd.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/psd.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "QTIF",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/qtif.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/qtif.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Quartz Composer Composition",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Quartz Composer Composition.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/quartz-composer-composition.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Quick Time Movie",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/QuickTime Movie.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/quick-time-movie.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Radiance",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/RADIANCE.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/radiance.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "RAW",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/RAW.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/raw.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Safariextz",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/safariextz.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/safariextz.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "Screen Saver",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ScreenSaverIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/screen-saver-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "SDP",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/SDP.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/sdp.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "SFNT",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/sfnt.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/sfnt.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "SGI",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/sgi.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/sgi.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "TGA",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/tga.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/tga.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "TIFF",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/tiff.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/tiff.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "TTC",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ttc.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/ttc.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "TTF",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/ttf.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/ttf.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "file-type",
+      "name": "XBM",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/XBM.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/file-types/xbm.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Bookmark",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/BookmarkIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/bookmark-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Command Icon",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/command_icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/command-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "File Vault",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/FileVaultIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/file-vault-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Full Trash",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/FullTrashIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/full-trash-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Multiple Items",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/MultipleItemsIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/multiple-items-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Sync",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Sync.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/sync.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Term Icon",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/term_icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/term-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Terminal Icon",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/terminal_icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/terminal-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Trash",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/TrashIcon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/trash-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "ui-asset",
+      "name": "Unsupported",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "Mac OS X Lion DP4 Icon Pack/png/Unsupported.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/lion/ui-assets/unsupported.png",
+      "width": 512,
+      "height": 512
+    }
+  ],
+  "note": "Macintosh Repository retro pack was not guest-downloadable because the 161.1 MB file exceeds its 100 MB guest limit; this catalog uses a verified public Lion icon pack mirror instead."
+}
