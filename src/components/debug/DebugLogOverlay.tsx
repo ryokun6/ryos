@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { OS_NATIVE_CHROME_SKIP_CLASS } from "@/lib/themeChrome";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -184,7 +185,7 @@ function ConsoleEntryContent({
     const partKey = `${entry.id}:${partIndex}`;
     const expanded = expandedJsonParts.has(partKey);
     return (
-      <div key={partKey} className="contents">
+      <div key={partKey} className={cn("contents", OS_NATIVE_CHROME_SKIP_CLASS)}>
         <button
           type="button"
           aria-expanded={expanded}
@@ -192,9 +193,14 @@ function ConsoleEntryContent({
           data-debug-json-toggle
           className={cn(
             "inline-flex max-w-full items-baseline gap-0.5 border-0 bg-transparent p-0 align-baseline",
-            "font-os-mono text-[10px] leading-[1.45] text-inherit",
+            "font-os-mono text-[10px] leading-[1.45] text-os-text-secondary",
             "opacity-75 hover:opacity-100 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-os-selection-bg"
           )}
+          style={{
+            fontFamily: "var(--os-font-mono)",
+            fontSize: "10px",
+            lineHeight: 1.45,
+          }}
         >
           <span className="shrink-0 no-underline" aria-hidden>
             {expanded ? "▾" : "▸"}
