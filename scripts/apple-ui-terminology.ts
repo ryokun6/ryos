@@ -1,13 +1,13 @@
 /**
- * Canonical standalone UI labels extracted from Apple's macOS localization
- * glossaries for every ryOS locale.
+ * Canonical standalone UI labels extracted from the macOS 26 corpus indexed by
+ * applelocalization-web for every ryOS locale.
  *
- * The English object keys are Apple's original base strings. Localized values
- * are the dominant exact-match translations in the downloaded Brazilian,
- * French, German, Italian, Japanese, Korean, Russian, Spanish, and Traditional
- * Chinese glossaries. Context-sensitive phrases stay outside this global map.
+ * The English object keys are exact source-string matches. Localized values are
+ * the dominant translations for Brazilian Portuguese, French, German, Italian,
+ * Japanese, Korean, Russian, Spanish, and Traditional Chinese (Taiwan).
+ * Context-sensitive phrases stay outside this global map.
  *
- * The `pt` locale intentionally follows Apple's Brazilian Portuguese glossary.
+ * The `pt` locale intentionally follows Apple's Brazilian Portuguese corpus.
  */
 
 import { RAW_APPLE_UI_TERMINOLOGY } from "./apple-ui-terminology-data";
