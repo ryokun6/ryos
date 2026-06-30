@@ -68,7 +68,7 @@ describe("icon resource gallery", () => {
     }) as typeof fetch;
 
     try {
-      const script = readFileSync("public/docs/icon-resource-gallery.js", "utf-8");
+      const script = readFileSync("public/docs-assets/icon-resource-gallery.js", "utf-8");
       new Function(script)();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
