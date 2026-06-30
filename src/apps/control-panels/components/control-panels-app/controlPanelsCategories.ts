@@ -37,52 +37,52 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "appearance",
     labelKey: "apps.control-panels.panes.appearance",
-    icon: "control-panels/appearance-pane.png",
+    icon: "control-panels/panes/appearance.png",
   },
   {
     id: "desktop-screen-saver",
     labelKey: "apps.control-panels.panes.desktopScreenSaver",
-    icon: "desktop.png",
+    icon: "control-panels/panes/desktop-screen-saver.png",
   },
   {
     id: "international",
     labelKey: "apps.control-panels.panes.international",
-    icon: "control-panels/international.png",
+    icon: "control-panels/panes/international.png",
   },
   {
     id: "security",
     labelKey: "apps.control-panels.panes.security",
-    icon: "control-panels/keychain.png",
+    icon: "control-panels/panes/security.png",
   },
   {
     id: "displays",
     labelKey: "apps.control-panels.panes.displays",
-    icon: "control-panels/displays.png",
+    icon: "control-panels/panes/displays.png",
   },
   {
     id: "sound",
     labelKey: "apps.control-panels.panes.sound",
-    icon: "sound.png",
+    icon: "control-panels/panes/sound.png",
   },
   {
     id: "dot-mac",
     labelKey: "apps.control-panels.panes.dotMac",
-    icon: "cloud-sync.png",
+    icon: "control-panels/panes/dot-mac.png",
   },
   {
     id: "sharing",
     labelKey: "apps.control-panels.panes.sharing",
-    icon: "control-panels/backup-restore.png",
+    icon: "control-panels/panes/sharing.png",
   },
   {
     id: "accounts",
     labelKey: "apps.control-panels.panes.accounts",
-    icon: "control-panels/users.png",
+    icon: "control-panels/panes/accounts.png",
   },
   {
     id: "software-update",
     labelKey: "apps.control-panels.panes.softwareUpdate",
-    icon: "software-update.png",
+    icon: "control-panels/panes/software-update.png",
   },
 ];
 
