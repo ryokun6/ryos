@@ -187,7 +187,7 @@ export async function processTranslationSSE(
         buffer = "";
         let totalLines = 0;
         let completedLines = 0;
-        let finalResult: TranslationResult | null = null;
+        const finalResult = { current: null as TranslationResult | null };
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -236,7 +236,7 @@ export async function processTranslationSSE(
               case "cached":
               {
                 const cachedTranslations = parseLrcToTranslations(eventData.translation);
-                finalResult = { 
+                finalResult.current = {
                   data: cachedTranslations,
                   success: true,
                 };
@@ -253,7 +253,7 @@ export async function processTranslationSSE(
               }
 
               case "complete":
-                finalResult = {
+                finalResult.current = {
                   data: eventData.translations,
                   success: eventData.success,
                 };
@@ -314,15 +314,15 @@ export async function processTranslationSSE(
           }
         }
 
-        if (finalResult) {
+        if (finalResult.current) {
           streamLog.debug("Translation stream completed", {
             songId,
             language,
             totalLines,
             completedLines,
-            success: finalResult.success,
+            success: finalResult.current.success,
           });
-          return finalResult;
+          return finalResult.current;
         } else {
           throw new Error("SSE stream ended without complete event");
         }
@@ -465,7 +465,7 @@ export async function processFuriganaSSE(
         buffer = "";
         let totalLines = 0;
         let completedLines = 0;
-        let finalResult: FuriganaResult | null = null;
+        const finalResult = { current: null as FuriganaResult | null };
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -511,7 +511,10 @@ export async function processFuriganaSSE(
                 break;
 
               case "cached":
-                finalResult = { data: eventData.furigana, success: true };
+                finalResult.current = {
+                  data: eventData.furigana,
+                  success: true,
+                };
                 try {
                   onProgress?.({ completedLines: eventData.furigana.length, totalLines: eventData.furigana.length, percentage: 100 });
                 } catch (callbackErr) {
@@ -520,7 +523,7 @@ export async function processFuriganaSSE(
                 break;
 
               case "complete":
-                finalResult = {
+                finalResult.current = {
                   data: eventData.furigana,
                   success: eventData.success,
                 };
@@ -581,14 +584,14 @@ export async function processFuriganaSSE(
           }
         }
 
-        if (finalResult) {
+        if (finalResult.current) {
           streamLog.debug("Furigana stream completed", {
             songId,
             totalLines,
             completedLines,
-            success: finalResult.success,
+            success: finalResult.current.success,
           });
-          return finalResult;
+          return finalResult.current;
         } else {
           throw new Error("SSE stream ended without complete event");
         }
@@ -789,7 +792,7 @@ export async function processSoramimiSSE(
         buffer = "";
         let totalLines = 0;
         let completedLines = 0;
-        let finalSoramimi: SoramimiResult | null = null;
+        const finalSoramimi = { current: null as SoramimiResult | null };
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -838,7 +841,10 @@ export async function processSoramimiSSE(
                 break;
 
               case "cached":
-                finalSoramimi = { data: eventData.soramimi, success: true };
+                finalSoramimi.current = {
+                  data: eventData.soramimi,
+                  success: true,
+                };
                 try {
                   onProgress?.({ completedLines: eventData.soramimi.length, totalLines: eventData.soramimi.length, percentage: 100 });
                 } catch (callbackErr) {
@@ -847,8 +853,8 @@ export async function processSoramimiSSE(
                 break;
 
               case "complete":
-                finalSoramimi = { 
-                  data: eventData.soramimi, 
+                finalSoramimi.current = {
+                  data: eventData.soramimi,
                   success: eventData.success,
                 };
                 try {
@@ -909,15 +915,15 @@ export async function processSoramimiSSE(
           }
         }
 
-        if (finalSoramimi) {
+        if (finalSoramimi.current) {
           streamLog.debug("Soramimi stream completed", {
             songId,
             targetLanguage,
             totalLines,
             completedLines,
-            success: finalSoramimi.success,
+            success: finalSoramimi.current.success,
           });
-          return finalSoramimi;
+          return finalSoramimi.current;
         } else {
           throw new Error("SSE stream ended without complete event");
         }
