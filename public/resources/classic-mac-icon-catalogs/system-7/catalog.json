@@ -1,0 +1,1150 @@
+{
+  "generatedAt": "2026-06-30T04:25:42.767545+00:00",
+  "source": {
+    "name": "Apple Macintosh System 7.5.3 HFS image from Internet Archive",
+    "url": "https://archive.org/details/AppleMacintoshSystem753"
+  },
+  "note": "Icons were extracted from the System 7.5.3 HFS image resource forks with hfsutils MacBinary export plus rsrcdump conversion. Coverage includes the System suitcase plus bundled applications, Apple menu items, control panels, extensions, and HyperCard stack resources when parseable.",
+  "counts": {
+    "applications": 4,
+    "control-panels": 35,
+    "system": 64,
+    "finder": 0,
+    "appearance": 0,
+    "documents": 10,
+    "resources": 0,
+    "total": 113
+  },
+  "entries": [
+    {
+      "type": "applications",
+      "name": "HyperCard resource 128 (Applications)",
+      "sourceFile": "HyperCard [APPL/WILD]",
+      "sourceResource": "icl8/128",
+      "sourcePath": "resources/applications/hypercard/dump.json_resources/icl8/128.WCAppl.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/applications/hypercard-resource-128-applications.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "applications",
+      "name": "HyperCard resource 129 (Applications)",
+      "sourceFile": "HyperCard [APPL/WILD]",
+      "sourceResource": "icl8/129",
+      "sourcePath": "resources/applications/hypercard/dump.json_resources/icl8/129.WCDoc.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/applications/hypercard-resource-129-applications.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "applications",
+      "name": "HyperCard resource 130 (Applications)",
+      "sourceFile": "HyperCard [APPL/WILD]",
+      "sourceResource": "icl8/130",
+      "sourcePath": "resources/applications/hypercard/dump.json_resources/icl8/130.Stacktranslator.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/applications/hypercard-resource-130-applications.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "applications",
+      "name": "HyperCard resource 131 (Applications)",
+      "sourceFile": "HyperCard [APPL/WILD]",
+      "sourceResource": "icl8/131",
+      "sourcePath": "resources/applications/hypercard/dump.json_resources/icl8/131.Buttontask.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/applications/hypercard-resource-131-applications.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Date & Time (Control Panels)",
+      "sourceFile": "Date & Time [cdev/time]",
+      "sourceResource": "icl8/-4046",
+      "sourcePath": "resources/control-panels/date-and-time/dump.json_resources/icl8/-4046.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/date-and-time-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Date & Time (Control Panels)",
+      "sourceFile": "Date & Time [cdev/time]",
+      "sourceResource": "icl8/-4047",
+      "sourcePath": "resources/control-panels/date-and-time/dump.json_resources/icl8/-4047.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/date-and-time-control-panels-2.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Date & Time (Control Panels)",
+      "sourceFile": "Date & Time [cdev/time]",
+      "sourceResource": "icl8/-4048",
+      "sourcePath": "resources/control-panels/date-and-time/dump.json_resources/icl8/-4048.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/date-and-time-control-panels-3.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Date & Time - Calendar (Control Panels)",
+      "sourceFile": "Date & Time [cdev/time]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/date-and-time/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/date-and-time-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Date & Time - Clock (Control Panels)",
+      "sourceFile": "Date & Time [cdev/time]",
+      "sourceResource": "icl8/-4049",
+      "sourcePath": "resources/control-panels/date-and-time/dump.json_resources/icl8/-4049.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/date-and-time-clock-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "General Controls - Calendar (Control Panels)",
+      "sourceFile": "General Controls [cdev/misc]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/general-controls/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/general-controls-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "General Controls - Date & Time (Control Panels)",
+      "sourceFile": "General Controls [cdev/misc]",
+      "sourceResource": "icl8/-4046",
+      "sourcePath": "resources/control-panels/general-controls/dump.json_resources/icl8/-4046.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/general-controls-date-and-time-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "General Controls - Date (Control Panels)",
+      "sourceFile": "General Controls [cdev/misc]",
+      "sourceResource": "icl8/-4048",
+      "sourcePath": "resources/control-panels/general-controls/dump.json_resources/icl8/-4048.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/general-controls-date-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "General Controls - Time (Control Panels)",
+      "sourceFile": "General Controls [cdev/misc]",
+      "sourceResource": "icl8/-4047",
+      "sourcePath": "resources/control-panels/general-controls/dump.json_resources/icl8/-4047.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/general-controls-time-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "General Controls resource -4043 (Control Panels)",
+      "sourceFile": "General Controls [cdev/misc]",
+      "sourceResource": "icl8/-4043",
+      "sourcePath": "resources/control-panels/general-controls/dump.json_resources/icl8/-4043.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/general-controls-resource-4043-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "General Controls resource -4044 (Control Panels)",
+      "sourceFile": "General Controls [cdev/misc]",
+      "sourceResource": "icl8/-4044",
+      "sourcePath": "resources/control-panels/general-controls/dump.json_resources/icl8/-4044.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/general-controls-resource-4044-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "General Controls resource -4045 (Control Panels)",
+      "sourceFile": "General Controls [cdev/misc]",
+      "sourceResource": "icl8/-4045",
+      "sourcePath": "resources/control-panels/general-controls/dump.json_resources/icl8/-4045.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/general-controls-resource-4045-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Keyboard - Calendar (Control Panels)",
+      "sourceFile": "Keyboard [cdev/keyb]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/keyboard/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/keyboard-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Map - Calendar (Control Panels)",
+      "sourceFile": "Map [cdev/wmap]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/map/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/map-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Memory - Calendar (Control Panels)",
+      "sourceFile": "Memory [cdev/mmry]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/memory/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/memory-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 128 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "icl8/128",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/icl8/128.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-128-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 129 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "icl8/129",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/icl8/129.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-129-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1500 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1500",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1500.GuideButton.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1500-control-panels.png",
+      "width": 15,
+      "height": 15
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1550 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1550",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1550.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1550-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1551 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1551",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1551.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1551-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1560 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1560",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1560.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1560-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1561 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1561",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1561.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1561-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1570 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1570",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1570.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1570-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1571 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1571",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1571.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1571-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1580 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1580",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1580.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1580-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1581 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1581",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1581.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1581-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1590 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1590",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1590.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1590-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1591 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1591",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1591.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1591-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1600 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1600",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1600.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1600-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1601 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1601",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1601.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1601-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1610 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1610",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1610.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1610-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors & Sound resource 1611 (Control Panels)",
+      "sourceFile": "Monitors & Sound [APPL/alav]",
+      "sourceResource": "cicn/1611",
+      "sourcePath": "resources/control-panels/monitors-and-sound/dump.json_resources/cicn/1611.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-and-sound-resource-1611-control-panels.png",
+      "width": 40,
+      "height": 40
+    },
+    {
+      "type": "control-panels",
+      "name": "Monitors - Calendar (Control Panels)",
+      "sourceFile": "Monitors [cdev/cdsc]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/monitors/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/monitors-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Sound - Calendar (Control Panels)",
+      "sourceFile": "Sound [cdev/soun]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/sound/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/sound-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "control-panels",
+      "name": "Text - Calendar (Control Panels)",
+      "sourceFile": "Text [cdev/tecd]",
+      "sourceResource": "icl8/-4064",
+      "sourcePath": "resources/control-panels/text/dump.json_resources/icl8/-4064.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/control-panels/text-calendar-control-panels.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8000 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8000",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8000.ButtonUp.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8000-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8001 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8001",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8001.FieldUp.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8001-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8002 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8002",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8002.PictUp.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8002-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8003 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8003",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8003.RectUp.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8003-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8004 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8004",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8004.PaintUp.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8004-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8010 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8010",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8010.ButtonDown.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8010-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8011 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8011",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8011.FieldDown.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8011-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8012 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8012",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8012.PictDown.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8012-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8013 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8013",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8013.RectDown.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8013-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "documents",
+      "name": "Color Tools resource 8014 (Documents)",
+      "sourceFile": "Color Tools [STAK/WILD]",
+      "sourceResource": "cicn/8014",
+      "sourcePath": "resources/applications/color-tools/dump.json_resources/cicn/8014.PaintDown.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/documents/color-tools-resource-8014-documents.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Apple menu (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics%23/-16386",
+      "sourcePath": "resources/system/system/dump.json_resources/ics%23/-16386.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-apple-menu-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Application alias (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics4/-3988",
+      "sourcePath": "resources/system/system/dump.json_resources/ics4/-3988.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-application-alias-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Balloon Help (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16490",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16490.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-balloon-help-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Clipboard (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "SICN/-3990",
+      "sourcePath": "resources/system/system/dump.json_resources/SICN/-3990.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-clipboard-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Desk accessory (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3991",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3991.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-desk-accessory-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Document alias (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "SICN/-3986",
+      "sourcePath": "resources/system/system/dump.json_resources/SICN/-3986.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-document-alias-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Folder alias (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics4/-3987",
+      "sourcePath": "resources/system/system/dump.json_resources/ics4/-3987.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-folder-alias-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Generic RAM disk (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics%23/-3992",
+      "sourcePath": "resources/system/system/dump.json_resources/ics%23/-3992.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-ram-disk-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Generic URL (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3984",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3984.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-url-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Generic application (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3996",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3996.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-application-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Generic control panel (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3994",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3994.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-control-panel-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Generic document (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-4000",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-4000.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-document-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Generic edition file (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3985",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3985.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-edition-file-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Generic extension (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics4/-3995",
+      "sourcePath": "resources/system/system/dump.json_resources/ics4/-3995.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-extension-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Generic folder (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3999",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3999.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-folder-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Generic preferences (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3993",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3993.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-preferences-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Generic stationer (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "SICN/-3997",
+      "sourcePath": "resources/system/system/dump.json_resources/SICN/-3997.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-generic-stationer-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System - Question document (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3989",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3989.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-question-document-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Trash (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3998",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3998.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-trash-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System - Unknown document (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3983",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3983.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-unknown-document-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16385 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "SICN/-16385",
+      "sourcePath": "resources/system/system/dump.json_resources/SICN/-16385.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16385-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16396 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "icl8/-16396",
+      "sourcePath": "resources/system/system/dump.json_resources/icl8/-16396.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16396-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16411 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16411",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16411.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16411-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16415 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16415",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16415.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16415-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16482 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16482",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16482.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16482-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16494 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16494",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16494.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16494-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16506 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16506",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16506.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16506-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16509 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16509",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16509.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16509-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16522 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16522",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16522.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16522-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16541 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16541",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16541.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16541-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16565 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-16565",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-16565.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16565-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -16569 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16569",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16569.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16569-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16570 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16570",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16570.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16570-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16571 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16571",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16571.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16571-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16572 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16572",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16572.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16572-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16573 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16573",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16573.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16573-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16574 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16574",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16574.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16574-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16575 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16575",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16575.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16575-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16580 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16580",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16580.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16580-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16581 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16581",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16581.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16581-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16582 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16582",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16582.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16582-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -16583 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-16583",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-16583.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-16583-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -32508 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "icl8/-32508",
+      "sourcePath": "resources/system/system/dump.json_resources/icl8/-32508.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-32508-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -32509 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "icl8/-32509",
+      "sourcePath": "resources/system/system/dump.json_resources/icl8/-32509.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-32509-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -32511 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-32511",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-32511.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-32511-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -32512 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-32512",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-32512.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-32512-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3968 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3968",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3968.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3968-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3969 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "SICN/-3969",
+      "sourcePath": "resources/system/system/dump.json_resources/SICN/-3969.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3969-system.png",
+      "width": 16,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3970 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "SICN/-3970",
+      "sourcePath": "resources/system/system/dump.json_resources/SICN/-3970.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3970-system.png",
+      "width": 16,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3971 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3971",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3971.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3971-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3972 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ics8/-3972",
+      "sourcePath": "resources/system/system/dump.json_resources/ics8/-3972.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3972-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource -3973 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3973",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3973.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3973-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3974 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3974",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3974.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3974-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3975 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3975",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3975.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3975-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3976 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3976",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3976.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3976-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3977 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3977",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3977.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3977-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3978 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3978",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3978.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3978-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3979 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3979",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3979.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3979-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3980 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3980",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3980.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3980-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3981 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3981",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3981.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3981-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -3982 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/-3982",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/-3982.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3982-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource -5696 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "icl4/-5696",
+      "sourcePath": "resources/system/system/dump.json_resources/icl4/-5696.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-5696-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "System resource 0 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "SICN/0",
+      "sourcePath": "resources/system/system/dump.json_resources/SICN/0.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-0-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "System resource 3 (System)",
+      "sourceFile": "System [zsys/MACS]",
+      "sourceResource": "ICN%23/3",
+      "sourcePath": "resources/system/system/dump.json_resources/ICN%23/3.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/system-resource-3-system.png",
+      "width": 32,
+      "height": 32
+    }
+  ]
+}
