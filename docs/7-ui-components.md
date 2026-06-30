@@ -98,3 +98,4 @@ All components are theme-aware, automatically adapting to the active system them
 
 - [Component Library](/docs/component-library) - UI primitives in `src/components/ui/` (~33 files) plus ~30 top-level shared components (≈65 files including nested subfolders) under `src/components/shared/`, and crash boundary components
 - [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 10 languages
+- [Icon Resources](/docs/icon-resources) - searchable gallery for the bundled Mac and Windows source icon catalogs in `public/resources/`
