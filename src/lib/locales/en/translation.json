@@ -4723,7 +4723,7 @@
       "emptyForFilter": "No requests match this filter.",
       "pending": "···",
       "filterRequests": "Filter requests",
-      "filterAll": "All requests",
+      "filterAll": "All Requests",
       "filters": {
         "error": "Failed",
         "warn": "Warnings",
@@ -4819,7 +4819,7 @@
     "scrollToBottom": "Scroll to bottom",
     "noLogsYet": "No logs captured yet.",
     "noLogsForFilter": "No logs match this filter.",
-    "filterAll": "All logs",
+    "filterAll": "All Logs",
     "filterOther": "Other",
     "filterByLogger": "Filter by logger",
     "toggleLabel": "Debug"
