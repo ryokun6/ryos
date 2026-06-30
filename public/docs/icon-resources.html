@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rooms API - ryOS Docs</title>
+  <title>Icon Resources - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <meta name="color-scheme" content="light dark">
   <script>
@@ -411,32 +411,32 @@
     <a href="/docs/audio-system" class="">6. Audio System</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/ui-components" class="">7. UI Components and Shared Systems</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
-    <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
-    <a href="/docs/icon-resources" class="nav-child ">7.3 Icon Resources</a>
-  </div>
-</div>
 <div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/api-reference" class="">8. API Reference</a>
+    <a href="/docs/ui-components" class="">7. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: block;">
+    <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
+    <a href="/docs/icon-resources" class="nav-child active">7.3 Icon Resources</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">8. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
     <a href="/docs/auth-api" class="nav-child ">8.4 Auth API</a>
-    <a href="/docs/rooms-api" class="nav-child active">8.5 Rooms API</a>
+    <a href="/docs/rooms-api" class="nav-child ">8.5 Rooms API</a>
     <a href="/docs/messages-api" class="nav-child ">8.6 Messages API</a>
     <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
@@ -466,281 +466,32 @@
     
     <main class="content">
       <article>
-        <h1>Rooms API</h1>
-<p>Endpoints for creating, listing, and managing chat rooms.</p>
-<h2>Overview</h2>
-<p>Chat rooms are either <strong>public</strong> (visible to all users) or <strong>private</strong> (visible only to members). Users can create, join, leave, and delete rooms.</p>
-<h2>Endpoint Summary</h2>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms</code></td><td>List rooms (public + private membership)</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms</code></td><td>Create room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}</code></td><td>Get room by ID</td><td>No</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}</code></td><td>Delete room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/join</code></td><td>Join room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/leave</code></td><td>Leave room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}/users</code></td><td>List active users</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/typing</code></td><td>Broadcast typing indicator</td><td>Yes</td></tr></tbody></table>
-<h2>Endpoints</h2>
-<h3>List Rooms</h3>
-<p>Get all public rooms and private rooms visible to the authenticated user (if provided).</p>
-<pre><code>GET /api/rooms?username=alice</code></pre>
-<strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>No</td><td>Legacy compatibility query param (visibility still comes from auth token when present)</td></tr></tbody></table>
-<strong>Response (200):</strong>
-<pre><code>{
-  "rooms": [
-    {
-      "id": "general",
-      "name": "General Chat",
-      "type": "public",
-      "createdAt": 1704067200000,
-      "userCount": 15
-    },
-    {
-      "id": "abc123",
-      "name": "Private Room",
-      "type": "private",
-      "members": ["alice", "bob"],
-      "createdAt": 1704153600000,
-      "userCount": 2
-    }
-  ]
-}</code></pre>
-<h3>Create Room</h3>
-<p>Create a new chat room. Requires authentication.</p>
-<p>Notes: <ul><li>Public room creation is admin-only (<code>ryo</code>).</li><li>Private room creation requires at least one member; creator is auto-included.</li></ul></p>
-<pre><code>POST /api/rooms
-Authorization: Bearer {token}
-X-Username: alice
-Content-Type: application/json
-
-{
-  "type": "private",
-  "members": ["alice", "bob"],
-  "name": "Project Discussion"  // optional
-}</code></pre>
-<strong>Request Body:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>type</code></td><td>string</td><td>Yes</td><td><code>"public"</code> or <code>"private"</code></td></tr><tr><td><code>members</code></td><td>string[]</td><td>For private</td><td>List of usernames</td></tr><tr><td><code>name</code></td><td>string</td><td>Public</td><td>Public room name (private names are generated)</td></tr></tbody></table>
-<strong>Response (200):</strong>
-<pre><code>{
-  "room": {
-    "id": "abc123def456",
-    "name": "@alice, @bob",
-    "type": "private",
-    "members": ["alice", "bob"],
-    "createdAt": 1704067200000,
-    "userCount": 2
-  }
-}</code></pre>
-<h3>Get Room</h3>
-<p>Get details for a specific room.</p>
-<pre><code>GET /api/rooms/{id}</code></pre>
-<strong>Response (200):</strong>
-<pre><code>{
-  "room": {
-    "id": "general",
-    "name": "General Chat",
-    "type": "public",
-    "createdAt": 1704067200000,
-    "userCount": 15
-  }
-}</code></pre>
-<h3>Delete Room</h3>
-<p>Delete a room. <ul><li>Public rooms: admin-only (<code>ryo</code>).</li></ul><ul><li>Private rooms: members can "delete" by leaving; room is removed automatically when <= 1 members remain.</li></ul></p>
-<pre><code>DELETE /api/rooms/{id}
-Authorization: Bearer {token}
-X-Username: alice</code></pre>
-<strong>Response (200):</strong>
-<pre><code>{
-  "success": true
-}</code></pre>
-<h3>Join Room</h3>
-<p>Join a room to participate in chat.</p>
-<pre><code>POST /api/rooms/{id}/join
-Authorization: Bearer {token}
-X-Username: alice
-Content-Type: application/json
-
-{
-  "username": "alice"
-}</code></pre>
-<strong>Response (200):</strong>
-<pre><code>{
-  "success": true
-}</code></pre>
-<h3>Leave Room</h3>
-<p>Leave a room.</p>
-<pre><code>POST /api/rooms/{id}/leave
-Authorization: Bearer {token}
-X-Username: alice
-Content-Type: application/json
-
-{
-  "username": "alice"
-}</code></pre>
-<strong>Response (200):</strong>
-<pre><code>{
-  "success": true
-}</code></pre>
-<h3>List Active Users</h3>
-<p>Get list of users currently active in a room.</p>
-<pre><code>GET /api/rooms/{id}/users</code></pre>
-<strong>Response (200):</strong>
-<pre><code>{
-  "users": [
-    {
-      "username": "alice",
-      "joinedAt": 1704067200000
-    },
-    {
-      "username": "bob",
-      "joinedAt": 1704153600000
-    }
-  ]
-}</code></pre>
-<h3>Typing Indicator</h3>
-<p>Broadcast a transient typing indicator to room members over the realtime channel. Requires authentication and write access to the room (members for private rooms).</p>
-<pre><code>POST /api/rooms/{id}/typing
-Authorization: Bearer {token}
-X-Username: alice
-Content-Type: application/json
-
-{
-  "isTyping": true
-}</code></pre>
-<strong>Request Body:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>isTyping</code></td><td>boolean</td><td>No</td><td>Whether the user is typing (defaults to <code>true</code>; only <code>false</code> clears it)</td></tr></tbody></table>
-<strong>Response (200):</strong>
-<pre><code>{
-  "success": true
-}</code></pre>
-<p>Nothing is persisted; the indicator is delivered as a realtime broadcast only.</p>
-<h2>Room Types</h2>
-<h3>Public Rooms</h3>
-<ul><li>Visible to all users in room listings</li></ul><ul><li>Anyone can join without invitation</li><li>Default room type for general discussions</li></ul>
-<h3>Private Rooms</h3>
-<ul><li>Only visible to members</li></ul><ul><li>Created with a specific member list</li><li>Ideal for direct messages or group chats</li></ul>
-<h2>Listen Together Sessions</h2>
-<p>"Listen Together" lets users share synchronized music/video playback. One member is the <strong>host</strong> (session owner) and one connection is the <strong>DJ</strong> (the playback device whose state everyone syncs to). Sessions support both authenticated members and anonymous listeners (joined via an <code>anonymousId</code>). Connections are disambiguated by an optional <code>clientInstanceId</code> so the same user can join from multiple devices. All mutations broadcast over the session's realtime channel.</p>
-<h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/listen/sessions</code></td><td>List active sessions</td><td>No</td></tr><tr><td>POST</td><td><code>/api/listen/sessions</code></td><td>Create a session</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/listen/sessions/{id}</code></td><td>Get session state</td><td>No</td></tr><tr><td>POST</td><td><code>/api/listen/sessions/{id}/join</code></td><td>Join a session</td><td>Yes<em></td></tr><tr><td>POST</td><td><code>/api/listen/sessions/{id}/leave</code></td><td>Leave a session</td><td>Yes</em></td></tr><tr><td>POST</td><td><code>/api/listen/sessions/{id}/sync</code></td><td>Sync playback state (DJ only)</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/listen/sessions/{id}/assign-dj</code></td><td>Assign the playback device (host only)</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/listen/sessions/{id}/transfer-host</code></td><td>Transfer session ownership (host only)</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/listen/sessions/{id}/remote-command</code></td><td>Send a playback intent to the DJ</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/listen/sessions/{id}/reaction</code></td><td>Send an emoji reaction</td><td>Yes</td></tr></tbody></table>
-<p>*<code>join</code>/<code>leave</code> accept either an authenticated user or an anonymous listener (<code>anonymousId</code> in the body, no auth). Providing both is a <code>400</code>.</p>
-<h3>Session Object</h3>
-<pre><code>interface ListenSession {
-  id: string;
-  hostUsername: string;
-  hostClientInstanceId?: string;
-  djUsername: string;
-  djClientInstanceId?: string;
-  createdAt: number;
-  currentTrackId: string | null;
-  currentTrackMeta: { title: string; artist?: string; cover?: string; coverColor?: string } | null;
-  isPlaying: boolean;
-  positionMs: number;
-  lastSyncAt: number;
-  users: Array&lt;{ username: string; joinedAt: number; isOnline: boolean; clientInstanceId?: string }&gt;;
-  anonymousListeners?: Array&lt;{ anonymousId: string; joinedAt: number }&gt;;
-}</code></pre>
-<h3>List / Create Sessions</h3>
-<pre><code>GET /api/listen/sessions</code></pre>
-<p>Returns lightweight summaries (stale sessions older than 30 minutes are filtered out), sorted by listener count then recency:</p>
-<pre><code>{
-  "sessions": [
-    {
-      "id": "abc123",
-      "hostUsername": "alice",
-      "djUsername": "alice",
-      "createdAt": 1704067200000,
-      "currentTrackMeta": { "title": "Song", "artist": "Artist" },
-      "isPlaying": true,
-      "listenerCount": 3
-    }
-  ]
-}</code></pre>
-<pre><code>POST /api/listen/sessions
-Authorization: Bearer {token}
-X-Username: alice
-Content-Type: application/json
-
-{ "clientInstanceId": "device-1" }</code></pre>
-<p>The creator becomes both host and DJ. <strong>Response (201):</strong> <code>{ "session": ListenSession }</code>.</p>
-<h3>Get Session</h3>
-<pre><code>GET /api/listen/sessions/{id}</code></pre>
-<strong>Response (200):</strong> <code>{ "session": ListenSession }</code>, or <code>404</code> if the session does not exist.
-<h3>Join / Leave</h3>
-<pre><code>POST /api/listen/sessions/{id}/join
-Authorization: Bearer {token}
-X-Username: bob
-Content-Type: application/json
-
-{ "clientInstanceId": "device-2" }</code></pre>
-<p>Anonymous variant (no auth): <code>{ "anonymousId": "anon-xyz" }</code>. <strong>Response (200):</strong> <code>{ "session": ListenSession }</code> for authenticated joins. <code>leave</code> returns <code>{ "success": true }</code> (with <code>session</code> when the user remains absent but the session lives on). When the host leaves or the last member leaves, the session ends and a session-ended broadcast is sent.</p>
-<h3>Sync Playback (DJ only)</h3>
-<pre><code>POST /api/listen/sessions/{id}/sync
-Authorization: Bearer {token}
-X-Username: alice
-Content-Type: application/json
-
-{
-  "clientInstanceId": "device-1",
-  "state": {
-    "currentTrackId": "dQw4w9WgXcQ",
-    "currentTrackMeta": { "title": "Song", "artist": "Artist" },
-    "isPlaying": true,
-    "positionMs": 42000,
-    "djUsername": "alice",
-    "djClientInstanceId": "device-1"
-  }
-}</code></pre>
-<p>Only the current DJ connection may sync. <code>state.isPlaying</code> (boolean) and <code>state.positionMs</code> (number) are required. The state may also hand off the DJ role to another active member. <strong>Response (200):</strong> <code>{ "success": true }</code>.</p>
-<h3>Assign DJ / Transfer Host (host only)</h3>
-<pre><code>POST /api/listen/sessions/{id}/assign-dj
-{ "nextDjUsername": "bob", "nextDjClientInstanceId": "device-2" }
-
-POST /api/listen/sessions/{id}/transfer-host
-{ "nextHostUsername": "bob", "nextHostClientInstanceId": "device-2" }</code></pre>
-<p>Both require the caller to be the current host connection and the target to be an active session member. <strong>Response (200):</strong> <code>{ "success": true, "session": ListenSession }</code>.</p>
-<h3>Remote Command</h3>
-<p>Non-DJ members submit playback intents; the DJ client applies them and re-syncs.</p>
-<pre><code>POST /api/listen/sessions/{id}/remote-command
-{ "action": "play" | "pause" | "seek" | "next" | "previous" | "playTrack", "positionMs": 1000, "trackId": "...", "trackMeta": { ... } }</code></pre>
-<code>seek</code> requires <code>positionMs</code>; <code>playTrack</code> requires <code>trackId</code>. The DJ connection itself may not send remote commands. <strong>Response (200):</strong> <code>{ "success": true }</code>.
-<h3>Reaction</h3>
-<pre><code>POST /api/listen/sessions/{id}/reaction
-{ "emoji": "🎉" }</code></pre>
-<p>Requires a logged-in member; <code>emoji</code> must be ≤ 8 characters. <strong>Response (200):</strong> <code>{ "success": true }</code>.</p>
-<h2>IRC Servers</h2>
-<p>ryOS can bridge chat rooms to public IRC networks. Admins register IRC server configs; any authenticated user can browse the channels a registered server advertises.</p>
-<h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/irc/servers</code></td><td>List registered IRC servers</td><td>No</td></tr><tr><td>POST</td><td><code>/api/irc/servers</code></td><td>Register an IRC server</td><td>Admin (<code>ryo</code>)</td></tr><tr><td>DELETE</td><td><code>/api/irc/servers/{id}</code></td><td>Remove an IRC server</td><td>Admin (<code>ryo</code>)</td></tr><tr><td>GET</td><td><code>/api/irc/servers/{id}/channels</code></td><td>List channels advertised by a server</td><td>Yes</td></tr></tbody></table>
-<h3>List / Create Servers</h3>
-<pre><code>GET /api/irc/servers</code></pre>
-<pre><code>{
-  "servers": [
-    { "id": "abc", "label": "Pieter", "host": "irc.pieter.com", "port": 6667, "tls": false, "createdAt": 1704067200000 }
-  ]
-}</code></pre>
-<pre><code>POST /api/irc/servers
-Authorization: Bearer {token}
-X-Username: ryo
-Content-Type: application/json
-
-{ "label": "Libera", "host": "irc.libera.chat", "port": 6697, "tls": true }</code></pre>
-<strong>Response (201):</strong> <code>{ "server": IrcServer }</code>.
-<h3>Delete Server</h3>
-<code>DELETE /api/irc/servers/{id}</code> (admin only). The built-in default <code>irc.pieter.com</code> server cannot be deleted (<code>400</code>). <strong>Response (200):</strong> <code>{ "success": true }</code>.
-<h3>List Channels</h3>
-<pre><code>GET /api/irc/servers/{id}/channels?limit=500&amp;timeoutMs=15000</code></pre>
-<p>Runs an IRC <code>LIST</code> against the configured server via the bridge. <code>limit</code> (1–2000, default 500) and <code>timeoutMs</code> (1000–30000, default 15000) are optional.</p>
-<pre><code>{
-  "server": { "id": "abc", "label": "Pieter", "host": "irc.pieter.com", "port": 6667, "tls": false },
-  "channels": [
-    { "channel": "#pieter", "numUsers": 42, "topic": "welcome" }
-  ],
-  "truncated": false
-}</code></pre>
-<p>Returns <code>503</code> when the IRC bridge is disabled in the current environment.</p>
-<h2>Error Responses</h2>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to perform action (admin/member checks)</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
-<h2>Related</h2>
-<ul><li><a href="/docs/auth-api">Auth API</a> - Authentication endpoints</li></ul><ul><li><a href="/docs/messages-api">Messages API</a> - Message endpoints</li><li><a href="/docs/presence-api">Presence API</a> - Presence tracking</li></ul>
+        <h1>Icon Resources</h1>
+<p>Search the bundled historical icon catalogs before adding new app icons, toolbar glyphs, folders, devices, file types, or dialog artwork. The gallery reads directly from the source catalogs in <code>public/resources/</code>, so it stays aligned with the repository assets.</p>
+<link rel="stylesheet" href="/docs-assets/icon-resource-gallery.css">
+<div id="icon-resource-gallery" class="icon-resource-gallery" data-catalogs="/resources/macos-icon-catalogs/panther/catalog.md,/resources/macos-icon-catalogs/tiger/catalog.md,/resources/macos-icon-catalogs/lion/catalog.md,/resources/macos-icon-catalogs/mountain-lion/catalog.md,/resources/windows-icon-catalogs/win98/catalog.md,/resources/windows-icon-catalogs/xp/catalog.md">
+  <div class="icon-gallery-controls" role="search" aria-label="Search icon resources">
+    <label class="icon-gallery-search-label" for="icon-gallery-search">Search icons</label>
+    <input id="icon-gallery-search" class="icon-gallery-search" type="search" placeholder="Search by name, category, era, source..." autocomplete="off">
+    <div class="icon-gallery-filters">
+      <label>Catalog <select id="icon-gallery-family"><option value="">All catalogs</option></select></label>
+      <label>Category <select id="icon-gallery-category"><option value="">All categories</option></select></label>
+    </div>
+  </div>
+  <div class="icon-gallery-meta"><span id="icon-gallery-count">Loading icon catalogs...</span><span id="icon-gallery-source">Mac OS X, Windows 98, and Windows XP resources</span></div>
+  <div id="icon-gallery-grid" class="icon-gallery-grid" aria-live="polite"></div>
+  <p id="icon-gallery-empty" class="icon-gallery-empty" hidden>No matching icons. Try a broader search term.</p>
+</div>
+<script defer src="/docs-assets/icon-resource-gallery.js"></script>
+<h2>Source Catalogs</h2>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/public/resources/macos-icon-catalogs/panther/catalog.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">public/resources/macos-icon-catalogs/panther/catalog.md</a></code></li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/public/resources/macos-icon-catalogs/tiger/catalog.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">public/resources/macos-icon-catalogs/tiger/catalog.md</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/public/resources/macos-icon-catalogs/lion/catalog.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">public/resources/macos-icon-catalogs/lion/catalog.md</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/public/resources/macos-icon-catalogs/mountain-lion/catalog.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">public/resources/macos-icon-catalogs/mountain-lion/catalog.md</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/public/resources/windows-icon-catalogs/win98/catalog.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">public/resources/windows-icon-catalogs/win98/catalog.md</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/public/resources/windows-icon-catalogs/xp/catalog.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">public/resources/windows-icon-catalogs/xp/catalog.md</a></code></li></ul>
+<h2>Usage</h2>
+<p>Use the gallery to locate source artwork, then copy the chosen asset into <code>public/icons/&lt;theme&gt;/...</code> only when it should participate in active UI icon resolution. After changing active icons, run <code>bun run generate:icons</code>.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/auth-api">← Auth API</a>
-        <a href="/docs/messages-api">Messages API →</a>
+        <a href="/docs/i18n">← i18n & Hooks</a>
+        <a href="/docs/api-reference">API Reference →</a>
       </nav>
       
     </main>
