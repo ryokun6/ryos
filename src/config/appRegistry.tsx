@@ -6,6 +6,7 @@ import type {
   InternetExplorerInitialData,
   IpodInitialData,
   PaintInitialData,
+  PreviewInitialData,
   VideosInitialData,
   BooksInitialData,
 } from "@/apps/base/types";
@@ -78,6 +79,11 @@ const LazySoundboardApp = createLazyComponent<unknown>(
 const LazyPaintApp = createLazyComponent<PaintInitialData>(
   () => import("@/apps/paint/components/PaintAppComponent").then(m => ({ default: m.PaintAppComponent })),
   "paint"
+);
+
+const LazyPreviewApp = createLazyComponent<PreviewInitialData>(
+  () => import("@/apps/preview/components/PreviewAppComponent").then(m => ({ default: m.PreviewAppComponent })),
+  "preview"
 );
 
 const LazyVideosApp = createLazyComponent<VideosInitialData>(
@@ -186,6 +192,7 @@ import { appMetadata as internetExplorerMetadata, helpItems as internetExplorerH
 import { appMetadata as chatsMetadata, helpItems as chatsHelpItems } from "@/apps/chats/metadata";
 import { appMetadata as texteditMetadata, helpItems as texteditHelpItems } from "@/apps/textedit/metadata";
 import { appMetadata as paintMetadata, helpItems as paintHelpItems } from "@/apps/paint";
+import { appMetadata as previewMetadata, helpItems as previewHelpItems } from "@/apps/preview/metadata";
 import { appMetadata as photoboothMetadata, helpItems as photoboothHelpItems } from "@/apps/photo-booth/metadata";
 import { appMetadata as minesweeperMetadata, helpItems as minesweeperHelpItems } from "@/apps/minesweeper";
 import { appMetadata as videosMetadata, helpItems as videosHelpItems } from "@/apps/videos/metadata";
@@ -287,6 +294,19 @@ export const appRegistry = {
       minSize: { width: 430, height: 200 },
     } as WindowConstraints,
   },
+  ["preview"]: {
+    id: "preview",
+    name: "Preview",
+    icon: { type: "image", src: previewMetadata.icon },
+    description: "View images, PDFs, and documents",
+    component: LazyPreviewApp,
+    helpItems: previewHelpItems,
+    metadata: previewMetadata,
+    windowConfig: {
+      defaultSize: { width: 760, height: 560 },
+      minSize: { width: 420, height: 320 },
+    } as WindowConstraints,
+  } as BaseApp<PreviewInitialData> & { windowConfig: WindowConstraints },
   ["paint"]: {
     id: "paint",
     name: "Paint",

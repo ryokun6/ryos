@@ -2263,6 +2263,7 @@
         "noAirDropUsersAvailable": "근처 사용자가 없습니다",
         "open": "열기",
         "openAirDrop": "AirDrop 열기",
+        "openWith": "다음으로 열기",
         "putBack": "되돌려 놓기",
         "rename": "이름 변경…",
         "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
@@ -2302,8 +2303,10 @@
         "internetShortcut": "인터넷 바로 가기",
         "jpegImage": "JPEG 이미지",
         "mp3Audio": "MP3 오디오",
+        "pdfDocument": "PDF 문서",
         "pngImage": "PNG 이미지",
         "quicktimeMovie": "QuickTime 동영상",
+        "svgImage": "SVG 이미지",
         "unknown": "알 수 없음",
         "webpImage": "WebP 이미지"
       },
@@ -3682,6 +3685,60 @@
         "photoBoothHelp": "포토 부스 도움말"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "이미지, PDF 및 문서 보기",
+      "empty": {
+        "hint": "파일을 선택하거나 여기에 드롭하십시오",
+        "title": "문서 열기"
+      },
+      "help": {
+        "images": {
+          "description": "원본 파일을 변경하지 않고 일반적인 이미지 포맷 열기",
+          "title": "이미지 미리보기"
+        },
+        "openFiles": {
+          "description": "파일 > 열기를 사용하여 기기의 파일 미리보기",
+          "title": "파일 열기"
+        },
+        "openWith": {
+          "description": "편집 가능한 파일을 그림판, 텍스트 편집기 또는 Applet 뷰어로 보내기",
+          "title": "다음으로 열기"
+        },
+        "pdfs": {
+          "description": "내장된 문서 뷰어를 사용하여 PDF 문서 보기",
+          "title": "PDF 읽기"
+        },
+        "safeHtml": {
+          "description": "스크립트를 실행하지 않고 샌드박스에서 HTML 문서 미리보기",
+          "title": "안전한 HTML"
+        },
+        "zoom": {
+          "description": "이미지를 확대 또는 축소하거나 윈도우 크기에 맞추기",
+          "title": "확대/축소"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Preview에 관하여",
+        "actualSize": "실제 크기",
+        "fitToWindow": "윈도우 크기에 맞게 조절",
+        "open": "열기…",
+        "openWith": "다음으로 열기",
+        "previewHelp": "미리보기 도움말",
+        "zoomIn": "확대",
+        "zoomOut": "축소"
+      },
+      "name": "미리보기",
+      "status": {
+        "loadFailed": "이 파일을 열 수 없습니다.",
+        "loading": "미리보기 로드 중…",
+        "notFound": "파일 콘텐츠를 찾을 수 없습니다.",
+        "unsupported": "미리보기를 사용할 수 없음",
+        "unsupportedDescription": "미리보기에서 이 파일 포맷을 지원하지 않습니다."
+      },
+      "supportedFiles": "미리보기 문서",
+      "title": "미리보기",
+      "untitled": "제목 없음"
     },
     "soundboard": {
       "description": "효과음 재생",

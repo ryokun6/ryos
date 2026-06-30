@@ -2263,6 +2263,7 @@
         "noAirDropUsersAvailable": "附近沒有使用者",
         "open": "打開",
         "openAirDrop": "開啟 AirDrop",
+        "openWith": "打開方式",
         "putBack": "還原",
         "rename": "重新命名⋯",
         "searchingForAirDropUsers": "正在尋找附近的使用者⋯",
@@ -2302,8 +2303,10 @@
         "internetShortcut": "網際網路捷徑",
         "jpegImage": "JPEG影像",
         "mp3Audio": "MP3 音訊",
+        "pdfDocument": "PDF文件",
         "pngImage": "PNG影像",
         "quicktimeMovie": "QuickTime影片",
+        "svgImage": "SVG影像",
         "unknown": "未知",
         "webpImage": "WebP 影像"
       },
@@ -3682,6 +3685,60 @@
         "photoBoothHelp": "Photo Booth輔助說明"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "檢視影像、PDF和文件",
+      "empty": {
+        "hint": "選擇檔案或將其拖移到此處",
+        "title": "打開文件"
+      },
+      "help": {
+        "images": {
+          "description": "打開常見的影像格式而不更改原始檔案",
+          "title": "預覽影像"
+        },
+        "openFiles": {
+          "description": "使用「檔案」>「打開」來預覽裝置上的檔案",
+          "title": "打開檔案"
+        },
+        "openWith": {
+          "description": "將可編輯的檔案傳送到「小畫家」、「文字編輯」或 Applet 檢視器",
+          "title": "打開方式"
+        },
+        "pdfs": {
+          "description": "使用內建的文件檢視器檢視 PDF 文件",
+          "title": "閱讀 PDF"
+        },
+        "safeHtml": {
+          "description": "在沙箱中預覽 HTML 文件而不執行工序指令",
+          "title": "安全 HTML"
+        },
+        "zoom": {
+          "description": "放大或縮小影像，或使其符合視窗大小",
+          "title": "縮放"
+        }
+      },
+      "menu": {
+        "aboutPreview": "關於預覽程式",
+        "actualSize": "實際大小",
+        "fitToWindow": "縮放以符合視窗",
+        "open": "打開⋯",
+        "openWith": "打開方式",
+        "previewHelp": "預覽程式輔助說明",
+        "zoomIn": "放大",
+        "zoomOut": "縮小"
+      },
+      "name": "預覽程式",
+      "status": {
+        "loadFailed": "無法打開此檔案。",
+        "loading": "正在載入預覽⋯",
+        "notFound": "找不到檔案內容。",
+        "unsupported": "無法預覽",
+        "unsupportedDescription": "「預覽程式」不支援此檔案格式。"
+      },
+      "supportedFiles": "預覽程式文件",
+      "title": "預覽程式",
+      "untitled": "未命名"
     },
     "soundboard": {
       "description": "播放音效",

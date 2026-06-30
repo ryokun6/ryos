@@ -25,3 +25,21 @@ describe("Finder EPUB file metadata", () => {
     ).toBe(BOOK_FILE_ICON_PATH);
   });
 });
+
+describe("Finder Preview file metadata", () => {
+  test("classifies PDF and SVG files for Preview", () => {
+    expect(getFileTypeFromExtension("Guide.pdf")).toBe("pdf");
+    expect(getFileTypeFromExtension("Diagram.svg")).toBe("svg");
+  });
+
+  test("uses a PDF document icon", () => {
+    expect(
+      getIconPath({
+        name: "Guide.pdf",
+        isDirectory: false,
+        path: "/Documents/Guide.pdf",
+        type: "pdf",
+      }),
+    ).toBe("/icons/default/file-pdf.png");
+  });
+});

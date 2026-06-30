@@ -3,6 +3,7 @@ import { getAppIconPath } from "@/config/appRegistry";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import type { FileSystemItem } from "@/stores/useFilesStore";
 import { getTranslatedAppName, getTranslatedFolderName } from "@/utils/i18n";
+import { getDefaultFileApp } from "@/utils/fileAssociations";
 
 export function prefetchDesktopShortcutIntent(
   shortcut: FileSystemItem,
@@ -24,17 +25,14 @@ export function prefetchDesktopShortcutIntent(
     else prefetchAppChunk("finder");
     return;
   }
-  if (target.startsWith("/Documents/")) {
-    prefetchAppChunk("textedit");
-    return;
-  }
-  if (target.startsWith("/Images/")) {
-    prefetchAppChunk("paint");
-    return;
-  }
-  if (target.startsWith("/Applets/")) {
-    prefetchAppChunk("applet-viewer");
-  }
+  const targetFile = getItem(target);
+  const appId = getDefaultFileApp({
+    path: target,
+    name: targetFile?.name,
+    type: targetFile?.type,
+    isDirectory: targetFile?.isDirectory,
+  });
+  if (appId) prefetchAppChunk(appId);
 }
 
 export function getDesktopShortcutDisplayName(

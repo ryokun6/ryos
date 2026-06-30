@@ -2263,6 +2263,7 @@
         "noAirDropUsersAvailable": "Keine Nutzer in der Nähe",
         "open": "Öffnen",
         "openAirDrop": "AirDrop öffnen",
+        "openWith": "Öffnen mit",
         "putBack": "Zurücklegen",
         "rename": "Umbenennen …",
         "searchingForAirDropUsers": "Suche nach Nutzern in der Nähe…",
@@ -2302,8 +2303,10 @@
         "internetShortcut": "Internetverknüpfung",
         "jpegImage": "JPEG-Bild",
         "mp3Audio": "MP3-Audio",
+        "pdfDocument": "PDF-Dokument",
         "pngImage": "PNG-Bild",
         "quicktimeMovie": "QuickTime-Film",
+        "svgImage": "SVG-Bild",
         "unknown": "Unbekannt",
         "webpImage": "WebP-Bild"
       },
@@ -3682,6 +3685,60 @@
         "photoBoothHelp": "Fotokabine-Hilfe"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "Bilder, PDFs und Dokumente anzeigen",
+      "empty": {
+        "hint": "Wähle eine Datei aus oder bewege sie hierher",
+        "title": "Ein Dokument öffnen"
+      },
+      "help": {
+        "images": {
+          "description": "Gängige Bildformate öffnen, ohne die Originaldatei zu ändern",
+          "title": "Bilder-Vorschau"
+        },
+        "openFiles": {
+          "description": "Verwende „Ablage“ > „Öffnen“, um eine Datei von deinem Gerät in der Vorschau anzuzeigen",
+          "title": "Dateien öffnen"
+        },
+        "openWith": {
+          "description": "Bearbeitbare Dateien an Paint, TextEdit oder den Applet Viewer senden",
+          "title": "Öffnen mit"
+        },
+        "pdfs": {
+          "description": "PDF-Dokumente mit dem integrierten Dokumenten-Viewer anzeigen",
+          "title": "PDFs lesen"
+        },
+        "safeHtml": {
+          "description": "HTML-Dokumente in einer Sandbox ohne Ausführung von Skripten in der Vorschau anzeigen",
+          "title": "Sicheres HTML"
+        },
+        "zoom": {
+          "description": "Bilder vergrößern, verkleinern oder an das Fenster anpassen",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Über Vorschau",
+        "actualSize": "Originalgröße",
+        "fitToWindow": "An Fenster anpassen",
+        "open": "Öffnen …",
+        "openWith": "Öffnen mit",
+        "previewHelp": "Vorschau-Hilfe",
+        "zoomIn": "Vergrößern",
+        "zoomOut": "Verkleinern"
+      },
+      "name": "Vorschau",
+      "status": {
+        "loadFailed": "Diese Datei konnte nicht geöffnet werden.",
+        "loading": "Vorschau laden …",
+        "notFound": "Der Dateiinhalt konnte nicht gefunden werden.",
+        "unsupported": "Keine Vorschau verfügbar",
+        "unsupportedDescription": "Dieses Dateiformat wird von Vorschau nicht unterstützt."
+      },
+      "supportedFiles": "Vorschau-Dokumente",
+      "title": "Vorschau",
+      "untitled": "Ohne Titel"
     },
     "soundboard": {
       "description": "Soundeffekte abspielen",

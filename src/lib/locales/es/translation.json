@@ -2265,6 +2265,7 @@
         "noAirDropUsersAvailable": "No hay usuarios cercanos",
         "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "openWith": "Abrir con",
         "putBack": "Volver a colocar",
         "rename": "Cambiar nombre…",
         "searchingForAirDropUsers": "Buscando usuarios cercanos…",
@@ -2304,8 +2305,10 @@
         "internetShortcut": "Acceso directo a Internet",
         "jpegImage": "Imagen JPEG",
         "mp3Audio": "Audio MP3",
+        "pdfDocument": "Documento PDF",
         "pngImage": "Imagen PNG",
         "quicktimeMovie": "Película QuickTime",
+        "svgImage": "Imagen SVG",
         "unknown": "Desconocido",
         "webpImage": "Imagen WebP"
       },
@@ -3685,6 +3688,60 @@
         "photoBoothHelp": "Ayuda de Cabina de fotos"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "Ver imágenes, PDF y documentos",
+      "empty": {
+        "hint": "Selecciona un archivo o arrástralo aquí",
+        "title": "Abrir un documento"
+      },
+      "help": {
+        "images": {
+          "description": "Abre formatos de imagen comunes sin cambiar el archivo original",
+          "title": "Previsualizar imágenes"
+        },
+        "openFiles": {
+          "description": "Usa Archivo > Abrir para previsualizar un archivo de tu dispositivo",
+          "title": "Abrir archivos"
+        },
+        "openWith": {
+          "description": "Envía archivos editables a Paint, TextEdit o al Visor de Applets",
+          "title": "Abrir con"
+        },
+        "pdfs": {
+          "description": "Visualiza documentos PDF con el visor de documentos integrado",
+          "title": "Leer PDF"
+        },
+        "safeHtml": {
+          "description": "Previsualiza documentos HTML en un entorno seguro sin ejecutar scripts",
+          "title": "HTML seguro"
+        },
+        "zoom": {
+          "description": "Amplía o reduce las imágenes, o ajústalas a la ventana",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Acerca de Vista Previa",
+        "actualSize": "Tamaño real",
+        "fitToWindow": "Ajustar a la ventana",
+        "open": "Abrir…",
+        "openWith": "Abrir con",
+        "previewHelp": "Ayuda de Vista Previa",
+        "zoomIn": "Acercar",
+        "zoomOut": "Alejar"
+      },
+      "name": "Vista Previa",
+      "status": {
+        "loadFailed": "No se ha podido abrir este archivo.",
+        "loading": "Cargando vista previa…",
+        "notFound": "No se ha podido encontrar el contenido del archivo.",
+        "unsupported": "No hay ninguna vista previa disponible",
+        "unsupportedDescription": "Vista Previa no admite este formato de archivo."
+      },
+      "supportedFiles": "Documentos de Vista Previa",
+      "title": "Vista Previa",
+      "untitled": "Sin título"
     },
     "soundboard": {
       "description": "Reproducir efectos de sonido",
