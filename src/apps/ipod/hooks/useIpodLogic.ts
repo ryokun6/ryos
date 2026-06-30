@@ -19,6 +19,7 @@ import { useIpodScale } from "./useIpodScale";
 import { useIpodStatusBacklight } from "./useIpodStatusBacklight";
 import {
   useAppleMusicLibrary,
+  bumpAppleMusicSyncGeneration,
   syncAppleMusicResource,
   searchAppleMusicTracks,
   fetchAppleMusicGeniusTrack,
@@ -875,8 +876,19 @@ export function useIpodLogic({
 
   const handleAppleMusicSignOut = useCallback(async () => {
     registerActivity();
+    bumpAppleMusicSyncGeneration();
     setIsPlaying(false);
     await musicKitUnauthorize();
+    useIpodStore.setState({
+      appleMusicCurrentSongId: null,
+      appleMusicPlaybackQueue: null,
+      appleMusicPlaybackHistory: [],
+      appleMusicLibraryLoadedAt: null,
+      appleMusicLibraryLoading: false,
+      appleMusicLibraryError: null,
+      appleMusicStorefrontId: null,
+      appleMusicKitNowPlaying: null,
+    });
     useIpodStore.getState().setAppleMusicTracks([]);
     useIpodStore.setState({
       appleMusicPlaylists: [],
@@ -891,11 +903,13 @@ export function useIpodLogic({
       appleMusicFavoriteTracks: [],
       appleMusicFavoriteTracksLoadedAt: null,
       appleMusicFavoritesLoading: false,
-      appleMusicPlaybackQueue: null,
+      appleMusicLibraryLoadedAt: null,
+      appleMusicLibraryLoading: false,
+      appleMusicLibraryError: null,
     });
     // Drop the IndexedDB-cached library so a different user signing
     // in next doesn't inherit the previous user's tracks.
-    void clearAppleMusicLibrary();
+    await clearAppleMusicLibrary();
     showStatus(t("apps.ipod.status.appleMusicSignedOut", "Signed Out"));
   }, [musicKitUnauthorize, registerActivity, setIsPlaying, showStatus, menuLocale]);
 
