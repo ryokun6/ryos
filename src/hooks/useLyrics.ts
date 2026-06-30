@@ -20,6 +20,7 @@ import {
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 import { shouldForceLyricsFetch } from "@/shared/media/lyricsFetchPolicy";
+import { canStartLyricsTranslation } from "@/shared/media/lyricsLifecycle";
 
 const lyricsLog = createClientLogger("Lyrics");
 
@@ -61,6 +62,16 @@ interface UseLyricsParams {
     isAuthenticated: boolean;
   };
 }
+
+interface UseLyricsDependencies {
+  fetchSongLyrics: typeof fetchSongLyrics;
+  processTranslationSSE: typeof processTranslationSSE;
+}
+
+const DEFAULT_LYRICS_DEPENDENCIES: UseLyricsDependencies = {
+  fetchSongLyrics,
+  processTranslationSSE,
+};
 
 interface LyricsState {
   lines: LyricLine[];
@@ -119,18 +130,23 @@ interface LyricsLogContext {
 // Hook
 // =============================================================================
 
-export function useLyrics({
-  songId,
-  title = "",
-  artist = "",
-  currentTime,
-  translateTo,
-  includeFurigana,
-  includeSoramimi,
-  soramimiTargetLanguage = "zh-TW",
-  selectedMatch,
-  auth,
-}: UseLyricsParams): LyricsState {
+export function useLyrics(
+  {
+    songId,
+    title = "",
+    artist = "",
+    currentTime,
+    translateTo,
+    includeFurigana,
+    includeSoramimi,
+    soramimiTargetLanguage = "zh-TW",
+    selectedMatch,
+    auth,
+  }: UseLyricsParams,
+  dependencies: UseLyricsDependencies = DEFAULT_LYRICS_DEPENDENCIES
+): LyricsState {
+  const fetchLyrics = dependencies.fetchSongLyrics;
+  const translateLyrics = dependencies.processTranslationSSE;
   interface LyricsLocalState {
     originalLines: LyricLine[];
     translatedLines: LyricLine[] | null;
@@ -456,7 +472,7 @@ export function useLyrics({
       isCacheBustRequest,
       hasAuthenticatedUser: Boolean(authCredentials),
     });
-    fetchSongLyrics(effectSongId, {
+    fetchLyrics(effectSongId, {
       force: Boolean(requestBody.force),
       title: typeof requestBody.title === "string" ? requestBody.title : undefined,
       artist: typeof requestBody.artist === "string" ? requestBody.artist : undefined,
@@ -577,7 +593,22 @@ export function useLyrics({
       // Reset loading state on cleanup to prevent stuck indicators
       setIsFetchingOriginal(false);
     };
-  }, [songId, title, artist, isRefetchRequest, isCacheBustRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage, authCredentials, logContext]);
+  }, [
+    songId,
+    title,
+    artist,
+    isRefetchRequest,
+    isCacheBustRequest,
+    markRefetchHandled,
+    selectedMatch,
+    translateTo,
+    includeFurigana,
+    includeSoramimi,
+    soramimiTargetLanguage,
+    authCredentials,
+    logContext,
+    fetchLyrics,
+  ]);
 
   // ==========================================================================
   // Effect: Translate lyrics
@@ -585,7 +616,7 @@ export function useLyrics({
   useEffect(() => {
     const effectSongId = songId;
 
-    if (!effectSongId || !translateTo || originalLines.length === 0) {
+    if (!effectSongId || !translateTo) {
       dispatch({
         type: "patch",
         payload: {
@@ -597,7 +628,14 @@ export function useLyrics({
       return;
     }
 
-    if (isFetchingOriginal) {
+    if (
+      !canStartLyricsTranslation({
+        songId: effectSongId,
+        loadedSongId,
+        originalLineCount: originalLines.length,
+        isFetchingOriginal,
+      })
+    ) {
       lyricsLog.debug("Waiting for original lyrics before translation", {
         ...logContext,
         targetLanguage: translateTo,
@@ -666,7 +704,7 @@ export function useLyrics({
       force: isCacheBustRequest,
       hasAuthenticatedUser: Boolean(authCredentials),
     });
-    processTranslationSSE(effectSongId, translateTo, {
+    translateLyrics(effectSongId, translateTo, {
       force: isCacheBustRequest,
       signal: controller.signal,
       prefetchedInfo: !isCacheBustRequest ? prefetchedInfo : undefined,
@@ -755,7 +793,18 @@ export function useLyrics({
         },
       });
     };
-  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials, logContext]);
+  }, [
+    songId,
+    loadedSongId,
+    originalLines,
+    translateTo,
+    isFetchingOriginal,
+    isCacheBustRequest,
+    markCacheBustHandled,
+    authCredentials,
+    logContext,
+    translateLyrics,
+  ]);
 
   // ==========================================================================
   // Current line tracking
@@ -805,12 +854,16 @@ export function useLyrics({
     (newTimeInSeconds: number) => {
       lastTimeRef.current = newTimeInSeconds;
       const nextLine = calculateCurrentLine(newTimeInSeconds);
-      lyricsLog.debug("Updated lyric time manually", {
-        songId,
-        nextLine,
-        timeMs: Math.round(newTimeInSeconds * 1000),
+      setCurrentLine((previousLine) => {
+        if (previousLine === nextLine) return previousLine;
+        lyricsLog.debug("Updated lyric time manually", {
+          songId,
+          previousLine,
+          nextLine,
+          timeMs: Math.round(newTimeInSeconds * 1000),
+        });
+        return nextLine;
       });
-      setCurrentLine(nextLine);
     },
     [calculateCurrentLine, songId]
   );

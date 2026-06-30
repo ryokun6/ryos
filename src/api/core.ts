@@ -1,4 +1,8 @@
-import { abortableFetch, type AbortableFetchOptions } from "@/utils/abortableFetch";
+import {
+  abortableFetch,
+  type AbortableFetchDependencies,
+  type AbortableFetchOptions,
+} from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import { getEffectiveTimezone } from "@/lib/timezoneConfig";
 
@@ -95,7 +99,8 @@ async function parseErrorPayload(response: Response): Promise<ApiErrorPayload> {
 }
 
 async function performApiRequest<TBody = unknown>(
-  options: ApiRequestOptions<TBody>
+  options: ApiRequestOptions<TBody>,
+  dependencies: AbortableFetchDependencies
 ): Promise<Response> {
   const {
     path,
@@ -116,27 +121,37 @@ async function performApiRequest<TBody = unknown>(
       ? { maxAttempts: 2, initialDelayMs: 500 }
       : { maxAttempts: 1, initialDelayMs: 250 });
 
-  return abortableFetch(buildUrl(path, query), {
-    method,
-    headers: buildHeaders(headers, hasBody),
-    body: hasBody ? JSON.stringify(body) : undefined,
-    signal,
-    timeout,
-    throwOnHttpError: false,
-    retry: retryConfig,
-  });
+  return abortableFetch(
+    buildUrl(path, query),
+    {
+      method,
+      headers: buildHeaders(headers, hasBody),
+      body: hasBody ? JSON.stringify(body) : undefined,
+      signal,
+      timeout,
+      throwOnHttpError: false,
+      retry: retryConfig,
+    },
+    dependencies
+  );
 }
 
+const DEFAULT_API_REQUEST_DEPENDENCIES: AbortableFetchDependencies = {
+  fetch: (input, init) => globalThis.fetch(input, init),
+};
+
 export async function apiRequestRaw<TBody = unknown>(
-  options: ApiRequestOptions<TBody>
+  options: ApiRequestOptions<TBody>,
+  dependencies: AbortableFetchDependencies = DEFAULT_API_REQUEST_DEPENDENCIES
 ): Promise<Response> {
-  return performApiRequest(options);
+  return performApiRequest(options, dependencies);
 }
 
 export async function apiRequest<TResponse, TBody = unknown>(
-  options: ApiRequestOptions<TBody>
+  options: ApiRequestOptions<TBody>,
+  dependencies: AbortableFetchDependencies = DEFAULT_API_REQUEST_DEPENDENCIES
 ): Promise<TResponse> {
-  const response = await performApiRequest(options);
+  const response = await performApiRequest(options, dependencies);
 
   if (!response.ok) {
     const payload = await parseErrorPayload(response);
