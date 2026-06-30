@@ -79,7 +79,7 @@ export function DialogManager({
       openCloseSaveDialog: () => setIsCloseSaveDialogOpen(true),
       closeCloseSaveDialog: () => setIsCloseSaveDialogOpen(false),
     }),
-    []
+    [setIsAboutDialogOpen, setIsHelpDialogOpen]
   );
 
   // Notify parent component when controls are ready
