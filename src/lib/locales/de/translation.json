@@ -3721,14 +3721,21 @@
       "menu": {
         "aboutPreview": "Über Vorschau",
         "actualSize": "Originalgröße",
+        "export": "Exportieren…",
         "fitToWindow": "An Fenster anpassen",
+        "importFromDevice": "Vom Gerät importieren…",
         "open": "Öffnen…",
         "openWith": "Öffnen mit",
         "previewHelp": "Vorschau-Hilfe",
+        "saveAs": "Sichern unter…",
         "zoomIn": "Vergrößern",
         "zoomOut": "Verkleinern"
       },
       "name": "Vorschau",
+      "saveAs": {
+        "description": "Gib einen Namen für diese Kopie ein",
+        "title": "Sichern unter"
+      },
       "status": {
         "loadFailed": "Diese Datei konnte nicht geöffnet werden.",
         "loading": "Vorschau laden …",
@@ -3738,6 +3745,13 @@
       },
       "supportedFiles": "Vorschau-Dokumente",
       "title": "Vorschau",
+      "toasts": {
+        "exportFailed": "Die Datei konnte nicht exportiert werden",
+        "importFailed": "Die Datei konnte nicht importiert werden",
+        "imported": "Datei importiert",
+        "saveFailed": "Die Datei konnte nicht gesichert werden",
+        "saved": "Datei gesichert"
+      },
       "untitled": "Ohne Titel"
     },
     "soundboard": {

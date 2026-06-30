@@ -3724,14 +3724,21 @@
       "menu": {
         "aboutPreview": "Acerca de Vista Previa",
         "actualSize": "Tamaño real",
+        "export": "Exportar…",
         "fitToWindow": "Ajustar a la ventana",
+        "importFromDevice": "Importar desde el dispositivo…",
         "open": "Abrir…",
         "openWith": "Abrir con",
         "previewHelp": "Ayuda de Vista Previa",
+        "saveAs": "Guardar como…",
         "zoomIn": "Acercar",
         "zoomOut": "Alejar"
       },
       "name": "Vista Previa",
+      "saveAs": {
+        "description": "Introduce un nombre para esta copia",
+        "title": "Guardar como"
+      },
       "status": {
         "loadFailed": "No se ha podido abrir este archivo.",
         "loading": "Cargando vista previa…",
@@ -3741,6 +3748,13 @@
       },
       "supportedFiles": "Documentos de Vista Previa",
       "title": "Vista Previa",
+      "toasts": {
+        "exportFailed": "No se ha podido exportar el archivo",
+        "importFailed": "No se ha podido importar el archivo",
+        "imported": "Archivo importado",
+        "saveFailed": "No se ha podido guardar el archivo",
+        "saved": "Archivo guardado"
+      },
       "untitled": "Sin título"
     },
     "soundboard": {

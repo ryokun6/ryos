@@ -3724,14 +3724,21 @@
       "menu": {
         "aboutPreview": "À propos d’Aperçu",
         "actualSize": "Taille réelle",
+        "export": "Exporter…",
         "fitToWindow": "Ajuster à la fenêtre",
+        "importFromDevice": "Importer depuis l’appareil…",
         "open": "Ouvrir…",
         "openWith": "Ouvrir avec",
         "previewHelp": "Aide Aperçu",
+        "saveAs": "Enregistrer sous…",
         "zoomIn": "Zoom avant",
         "zoomOut": "Zoom arrière"
       },
       "name": "Aperçu",
+      "saveAs": {
+        "description": "Saisissez un nom pour cette copie",
+        "title": "Enregistrer sous"
+      },
       "status": {
         "loadFailed": "Impossible d’ouvrir ce fichier.",
         "loading": "Chargement de l’aperçu…",
@@ -3741,6 +3748,13 @@
       },
       "supportedFiles": "Documents Aperçu",
       "title": "Aperçu",
+      "toasts": {
+        "exportFailed": "Impossible d’exporter le fichier",
+        "importFailed": "Impossible d’importer le fichier",
+        "imported": "Fichier importé",
+        "saveFailed": "Impossible d’enregistrer le fichier",
+        "saved": "Fichier enregistré"
+      },
       "untitled": "Sans titre"
     },
     "soundboard": {

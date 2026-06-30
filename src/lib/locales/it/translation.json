@@ -3705,7 +3705,7 @@
           "title": "Apri file"
         },
         "openWith": {
-          "description": "Invia i file modificabili a Paint, TextEdit o Applet Viewer",
+          "description": "Invia i file modificabili a Paint, TextEdit o Visualizzatore applet",
           "title": "Apri con"
         },
         "pdfs": {
@@ -3717,21 +3717,28 @@
           "title": "HTML sicuro"
         },
         "zoom": {
-          "description": "Ingrandisci o rimpicciolisci le immagini, oppure adattale alla finestra",
+          "description": "Ingrandisci o rimpicciolisci le immagini o adattale alla finestra",
           "title": "Zoom"
         }
       },
       "menu": {
         "aboutPreview": "Informazioni su Anteprima",
         "actualSize": "Dimensioni reali",
+        "export": "Esporta…",
         "fitToWindow": "Adatta alla finestra",
+        "importFromDevice": "Importa da dispositivo…",
         "open": "Apri…",
         "openWith": "Apri con",
         "previewHelp": "Aiuto Anteprima",
+        "saveAs": "Salva col nome…",
         "zoomIn": "Ingrandisci",
         "zoomOut": "Rimpicciolisci"
       },
       "name": "Anteprima",
+      "saveAs": {
+        "description": "Inserisci un nome per questa copia",
+        "title": "Salva col nome"
+      },
       "status": {
         "loadFailed": "Impossibile aprire questo file.",
         "loading": "Caricamento anteprima…",
@@ -3741,6 +3748,13 @@
       },
       "supportedFiles": "Documenti di Anteprima",
       "title": "Anteprima",
+      "toasts": {
+        "exportFailed": "Impossibile esportare il file",
+        "importFailed": "Impossibile importare il file",
+        "imported": "File importato",
+        "saveFailed": "Impossibile salvare il file",
+        "saved": "File salvato"
+      },
       "untitled": "Senza titolo"
     },
     "soundboard": {

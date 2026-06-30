@@ -1393,6 +1393,9 @@
       "menu": {
         "open": "Open…",
         "openWith": "Open With",
+        "saveAs": "Save As…",
+        "importFromDevice": "Import from Device…",
+        "export": "Export…",
         "zoomIn": "Zoom In",
         "zoomOut": "Zoom Out",
         "actualSize": "Actual Size",
@@ -1411,6 +1414,17 @@
         "unsupported": "No preview available",
         "unsupportedDescription": "This file format isn’t supported by Preview."
       },
+      "saveAs": {
+        "title": "Save As",
+        "description": "Enter a name for this copy"
+      },
+      "toasts": {
+        "imported": "File imported",
+        "importFailed": "Couldn’t import the file",
+        "saved": "File saved",
+        "saveFailed": "Couldn’t save the file",
+        "exportFailed": "Couldn’t export the file"
+      },
       "help": {
         "images": {
           "title": "Preview Images",
@@ -1426,7 +1440,7 @@
         },
         "openFiles": {
           "title": "Open Files",
-          "description": "Use File > Open to preview a file from your device"
+          "description": "Open files from Finder or import a copy from your device"
         },
         "openWith": {
           "title": "Open With",

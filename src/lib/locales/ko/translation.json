@@ -3721,14 +3721,21 @@
       "menu": {
         "aboutPreview": "Preview에 관하여",
         "actualSize": "실제 크기",
+        "export": "내보내기…",
         "fitToWindow": "윈도우 크기에 맞게 조절",
+        "importFromDevice": "기기에서 가져오기…",
         "open": "열기…",
         "openWith": "다음으로 열기",
         "previewHelp": "미리보기 도움말",
+        "saveAs": "별도 저장…",
         "zoomIn": "확대",
         "zoomOut": "축소"
       },
       "name": "미리보기",
+      "saveAs": {
+        "description": "이 복사본의 이름을 입력하십시오.",
+        "title": "별도 저장"
+      },
       "status": {
         "loadFailed": "이 파일을 열 수 없습니다.",
         "loading": "미리보기 로드 중…",
@@ -3738,6 +3745,13 @@
       },
       "supportedFiles": "미리보기 문서",
       "title": "미리보기",
+      "toasts": {
+        "exportFailed": "파일을 내보낼 수 없습니다.",
+        "importFailed": "파일을 가져올 수 없습니다.",
+        "imported": "파일을 가져왔습니다.",
+        "saveFailed": "파일을 저장할 수 없습니다.",
+        "saved": "파일이 저장되었습니다."
+      },
       "untitled": "제목 없음"
     },
     "soundboard": {

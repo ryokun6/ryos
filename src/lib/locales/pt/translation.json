@@ -3724,14 +3724,21 @@
       "menu": {
         "aboutPreview": "Sobre a Pré-Visualização",
         "actualSize": "Tamanho Real",
+        "export": "Exportar…",
         "fitToWindow": "Ajustar à Janela",
+        "importFromDevice": "Importar do Dispositivo…",
         "open": "Abrir…",
         "openWith": "Abrir Com",
         "previewHelp": "Ajuda da Pré-Visualização",
+        "saveAs": "Salvar Como…",
         "zoomIn": "Ampliar",
         "zoomOut": "Reduzir"
       },
       "name": "Pré-Visualização",
+      "saveAs": {
+        "description": "Digite um nome para esta cópia",
+        "title": "Salvar Como"
+      },
       "status": {
         "loadFailed": "Não foi possível abrir este arquivo.",
         "loading": "Carregando pré-visualização…",
@@ -3741,6 +3748,13 @@
       },
       "supportedFiles": "Documentos da Pré-Visualização",
       "title": "Pré-Visualização",
+      "toasts": {
+        "exportFailed": "Não foi possível exportar o arquivo",
+        "importFailed": "Não foi possível importar o arquivo",
+        "imported": "Arquivo importado",
+        "saveFailed": "Não foi possível salvar o arquivo",
+        "saved": "Arquivo salvo"
+      },
       "untitled": "Sem Título"
     },
     "soundboard": {

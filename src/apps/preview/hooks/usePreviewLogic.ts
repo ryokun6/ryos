@@ -8,20 +8,26 @@ import {
   type DragEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import type { AppId } from "@/config/appRegistry";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { readContentForPath } from "@/services/vfs/FileContentRepository";
+import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import { useAppStore } from "@/stores/useAppStore";
+import { emitFileSaved } from "@/utils/appEventBus";
 import {
   getFileExtension,
   getOpenWithApps,
   resolvePreviewKind,
   type PreviewKind,
 } from "@/utils/fileAssociations";
-import { openNativeFile } from "@/utils/nativeFileDialogs";
+import {
+  openNativeFile,
+  saveBlobToDevice,
+} from "@/utils/nativeFileDialogs";
 import type { PreviewInitialData } from "..";
 import { helpItems } from "../metadata";
 
@@ -74,6 +80,7 @@ export function usePreviewLogic({
     setIsAboutDialogOpen,
   } = useAppHelpAboutDialogs();
   const launchApp = useLaunchApp();
+  const { saveFile } = useVfsFileOperations("/");
   const clearInstanceInitialData = useAppStore(
     (state) => state.clearInstanceInitialData,
   );
@@ -86,6 +93,9 @@ export function usePreviewLogic({
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
   const [fitToWindow, setFitToWindow] = useState(true);
+  const [isSaveAsDialogOpen, setIsSaveAsDialogOpen] = useState(false);
+  const [saveAsFileName, setSaveAsFileName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadPreview = useCallback(
@@ -166,16 +176,50 @@ export function usePreviewLogic({
     return () => URL.revokeObjectURL(url);
   }, [content, kind]);
 
-  const openFile = useCallback(
+  const importFile = useCallback(
     async (file: File) => {
-      await loadPreview(file.name, file);
+      const importedKind = resolvePreviewKind(file.name, file);
+      if (importedKind === "unsupported") {
+        toast.error(t("apps.preview.status.unsupported"));
+        return;
+      }
+
+      try {
+        const importedContent =
+          importedKind === "image" || importedKind === "pdf"
+            ? new Blob([await file.arrayBuffer()], {
+                type: file.type || undefined,
+              })
+            : await file.text();
+        const directory = importedKind === "image" ? "/Images" : "/Documents";
+        const path = `${directory}/${file.name}`;
+
+        await saveFile({
+          name: file.name,
+          path,
+          content: importedContent,
+          type: getFileExtension(file.name),
+        });
+        emitFileSaved({ name: file.name, path, content: importedContent });
+        await loadPreview(path, importedContent);
+        toast.success(t("apps.preview.toasts.imported"), {
+          description: file.name,
+        });
+      } catch (importError) {
+        console.error("[Preview] Failed to import file:", importError);
+        toast.error(t("apps.preview.toasts.importFailed"));
+      }
     },
-    [loadPreview],
+    [loadPreview, saveFile, t],
   );
 
-  const handleOpen = useCallback(async () => {
+  const handleOpen = useCallback(() => {
+    launchApp("finder", { initialPath: "/" });
+  }, [launchApp]);
+
+  const handleImport = useCallback(async () => {
     const nativeFile = await openNativeFile({
-      title: t("apps.preview.menu.open"),
+      title: t("apps.preview.menu.importFromDevice"),
       filters: [
         {
           name: t("apps.preview.supportedFiles"),
@@ -200,29 +244,104 @@ export function usePreviewLogic({
       ],
     });
     if (nativeFile) {
-      await openFile(nativeFile);
+      await importFile(nativeFile);
       return;
     }
     fileInputRef.current?.click();
-  }, [openFile, t]);
+  }, [importFile, t]);
 
   const handleFileInputChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (file) void openFile(file);
+      if (file) void importFile(file);
       event.target.value = "";
     },
-    [openFile],
+    [importFile],
   );
 
   const handleDrop = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       const file = event.dataTransfer.files[0];
-      if (file) void openFile(file);
+      if (file) void importFile(file);
     },
-    [openFile],
+    [importFile],
   );
+
+  const handleSaveAs = useCallback(() => {
+    if (content === null) return;
+    const currentName =
+      currentPath.split("/").filter(Boolean).pop() || t("apps.preview.untitled");
+    setSaveAsFileName(currentName);
+    setIsSaveAsDialogOpen(true);
+  }, [content, currentPath, t]);
+
+  const handleSaveAsSubmit = useCallback(
+    async (requestedName: string) => {
+      if (content === null) return;
+      const trimmedName = requestedName.trim().replace(/[\\/]/g, "-");
+      if (!trimmedName) return;
+
+      const currentExtension = getFileExtension(currentPath);
+      const fileName =
+        currentExtension && !getFileExtension(trimmedName)
+          ? `${trimmedName}.${currentExtension}`
+          : trimmedName;
+      const directory = kind === "image" ? "/Images" : "/Documents";
+      const path = `${directory}/${fileName}`;
+
+      setIsSaving(true);
+      try {
+        await saveFile({
+          name: fileName,
+          path,
+          content,
+          type: getFileExtension(fileName),
+        });
+        emitFileSaved({ name: fileName, path, content });
+        setCurrentPath(path);
+        setIsSaveAsDialogOpen(false);
+        toast.success(t("apps.preview.toasts.saved"), {
+          description: path,
+        });
+      } catch (saveError) {
+        console.error("[Preview] Failed to save file:", saveError);
+        toast.error(t("apps.preview.toasts.saveFailed"));
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [content, currentPath, kind, saveFile, t],
+  );
+
+  const handleExport = useCallback(async () => {
+    if (content === null) return;
+
+    const fileName =
+      currentPath.split("/").filter(Boolean).pop() || t("apps.preview.untitled");
+    const extension = getFileExtension(fileName);
+    const mimeType =
+      kind === "html"
+        ? "text/html"
+        : kind === "markdown"
+          ? "text/markdown"
+          : kind === "text"
+            ? "text/plain"
+            : "application/octet-stream";
+    const blob =
+      content instanceof Blob ? content : new Blob([content], { type: mimeType });
+
+    try {
+      await saveBlobToDevice(blob, fileName, {
+        filters: extension
+          ? [{ name: extension.toUpperCase(), extensions: [extension] }]
+          : undefined,
+      });
+    } catch (exportError) {
+      console.error("[Preview] Failed to export file:", exportError);
+      toast.error(t("apps.preview.toasts.exportFailed"));
+    }
+  }, [content, currentPath, kind, t]);
 
   const openWithApps = useMemo(
     () =>
@@ -290,8 +409,17 @@ export function usePreviewLogic({
     setZoom,
     fitToWindow,
     setFitToWindow,
+    isSaveAsDialogOpen,
+    setIsSaveAsDialogOpen,
+    saveAsFileName,
+    setSaveAsFileName,
+    isSaving,
     fileInputRef,
     handleOpen,
+    handleImport,
+    handleSaveAs,
+    handleSaveAsSubmit,
+    handleExport,
     handleFileInputChange,
     handleDrop,
     openWithApps,

@@ -11,6 +11,10 @@ import { getTranslatedAppName } from "@/utils/i18n";
 interface PreviewMenuBarProps {
   onClose: () => void;
   onOpen: () => void;
+  onSaveAs: () => void;
+  onImport: () => void;
+  onExport: () => void;
+  hasDocument: boolean;
   onOpenWith: (appId: AppId) => void;
   openWithApps: AppId[];
   onShowHelp: () => void;
@@ -25,6 +29,10 @@ interface PreviewMenuBarProps {
 export function PreviewMenuBar({
   onClose,
   onOpen,
+  onSaveAs,
+  onImport,
+  onExport,
+  hasDocument,
   onOpenWith,
   openWithApps,
   onShowHelp,
@@ -63,6 +71,25 @@ export function PreviewMenuBar({
           label: getTranslatedAppName(targetAppId),
           onClick: () => onOpenWith(targetAppId),
         })),
+      },
+      { type: "separator" },
+      {
+        type: "action",
+        label: t("apps.preview.menu.saveAs"),
+        onClick: onSaveAs,
+        disabled: !hasDocument,
+      },
+      { type: "separator" },
+      {
+        type: "action",
+        label: t("apps.preview.menu.importFromDevice"),
+        onClick: onImport,
+      },
+      {
+        type: "action",
+        label: t("apps.preview.menu.export"),
+        onClick: onExport,
+        disabled: !hasDocument,
       },
       { type: "separator" },
       {

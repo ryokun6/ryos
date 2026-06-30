@@ -3,6 +3,7 @@ import type { AppProps } from "@/apps/base/types";
 import type { PreviewInitialData } from "..";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
+import { InputDialog } from "@/components/dialogs/InputDialog";
 import { PREVIEW_FILE_ACCEPT } from "@/utils/fileAssociations";
 import { appMetadata } from "../metadata";
 import { usePreviewLogic } from "../hooks/usePreviewLogic";
@@ -37,8 +38,17 @@ export function PreviewAppComponent({
     setZoom,
     fitToWindow,
     setFitToWindow,
+    isSaveAsDialogOpen,
+    setIsSaveAsDialogOpen,
+    saveAsFileName,
+    setSaveAsFileName,
+    isSaving,
     fileInputRef,
     handleOpen,
+    handleImport,
+    handleSaveAs,
+    handleSaveAsSubmit,
+    handleExport,
     handleFileInputChange,
     handleDrop,
     openWithApps,
@@ -49,7 +59,11 @@ export function PreviewAppComponent({
   const menuBar = (
     <PreviewMenuBar
       onClose={onClose}
-      onOpen={() => void handleOpen()}
+      onOpen={handleOpen}
+      onSaveAs={handleSaveAs}
+      onImport={() => void handleImport()}
+      onExport={() => void handleExport()}
+      hasDocument={Boolean(currentPath) && !isLoading && !error}
       onOpenWith={(appId) => void handleOpenWith(appId)}
       openWithApps={openWithApps}
       onShowHelp={() => setIsHelpDialogOpen(true)}
@@ -75,7 +89,7 @@ export function PreviewAppComponent({
       return (
         <button
           type="button"
-          onClick={() => void handleOpen()}
+          onClick={() => void handleImport()}
           className="flex h-full w-full flex-col items-center justify-center gap-3 text-os-text-secondary hover:text-os-text-primary"
         >
           <img
@@ -118,7 +132,10 @@ export function PreviewAppComponent({
             style={
               fitToWindow
                 ? undefined
-                : { width: `${zoom}%`, height: "auto" }
+                : {
+                    transform: `scale(${zoom / 100})`,
+                    transformOrigin: "center",
+                  }
             }
           />
         </div>
@@ -203,15 +220,27 @@ export function PreviewAppComponent({
         />
       }
       trailing={
-        <AppHelpAboutDialogs
-          appId="preview"
-          helpItems={translatedHelpItems}
-          metadata={appMetadata}
-          isHelpOpen={isHelpDialogOpen}
-          onHelpOpenChange={setIsHelpDialogOpen}
-          isAboutOpen={isAboutDialogOpen}
-          onAboutOpenChange={setIsAboutDialogOpen}
-        />
+        <>
+          <InputDialog
+            isOpen={isSaveAsDialogOpen}
+            onOpenChange={setIsSaveAsDialogOpen}
+            onSubmit={(value) => void handleSaveAsSubmit(value)}
+            title={t("apps.preview.saveAs.title")}
+            description={t("apps.preview.saveAs.description")}
+            value={saveAsFileName}
+            onChange={setSaveAsFileName}
+            isLoading={isSaving}
+          />
+          <AppHelpAboutDialogs
+            appId="preview"
+            helpItems={translatedHelpItems}
+            metadata={appMetadata}
+            isHelpOpen={isHelpDialogOpen}
+            onHelpOpenChange={setIsHelpDialogOpen}
+            isAboutOpen={isAboutDialogOpen}
+            onAboutOpenChange={setIsAboutDialogOpen}
+          />
+        </>
       }
     >
       <div

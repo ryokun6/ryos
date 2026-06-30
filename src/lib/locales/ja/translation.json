@@ -3721,14 +3721,21 @@
       "menu": {
         "aboutPreview": "プレビューについて",
         "actualSize": "実際のサイズ",
+        "export": "書き出す…",
         "fitToWindow": "ウインドウに合わせる",
+        "importFromDevice": "デバイスから読み込む…",
         "open": "開く…",
         "openWith": "このアプリケーションで開く",
         "previewHelp": "プレビューヘルプ",
+        "saveAs": "別名で保存…",
         "zoomIn": "拡大",
         "zoomOut": "縮小"
       },
       "name": "プレビュー",
+      "saveAs": {
+        "description": "このコピーの名前を入力してください",
+        "title": "別名で保存"
+      },
       "status": {
         "loadFailed": "このファイルを開けませんでした。",
         "loading": "プレビューを読み込み中…",
@@ -3738,6 +3745,13 @@
       },
       "supportedFiles": "プレビューの書類",
       "title": "プレビュー",
+      "toasts": {
+        "exportFailed": "ファイルを書き出せませんでした",
+        "importFailed": "ファイルを読み込めませんでした",
+        "imported": "ファイルを読み込みました",
+        "saveFailed": "ファイルを保存できませんでした",
+        "saved": "ファイルを保存しました"
+      },
       "untitled": "名称未設定"
     },
     "soundboard": {

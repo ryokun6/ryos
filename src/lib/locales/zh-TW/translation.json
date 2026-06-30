@@ -3721,14 +3721,21 @@
       "menu": {
         "aboutPreview": "關於預覽程式",
         "actualSize": "實際大小",
+        "export": "輸出…",
         "fitToWindow": "縮放以符合視窗",
+        "importFromDevice": "從裝置輸入…",
         "open": "打開⋯",
         "openWith": "打開方式",
         "previewHelp": "預覽程式輔助說明",
+        "saveAs": "另存新檔…",
         "zoomIn": "放大",
         "zoomOut": "縮小"
       },
       "name": "預覽程式",
+      "saveAs": {
+        "description": "輸入此拷貝的名稱",
+        "title": "另存新檔"
+      },
       "status": {
         "loadFailed": "無法打開此檔案。",
         "loading": "正在載入預覽⋯",
@@ -3738,6 +3745,13 @@
       },
       "supportedFiles": "預覽程式文件",
       "title": "預覽程式",
+      "toasts": {
+        "exportFailed": "無法輸出檔案",
+        "importFailed": "無法輸入檔案",
+        "imported": "檔案已輸入",
+        "saveFailed": "無法儲存檔案",
+        "saved": "檔案已儲存"
+      },
       "untitled": "未命名"
     },
     "soundboard": {
