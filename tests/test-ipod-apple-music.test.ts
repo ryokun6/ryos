@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { describe, expect, test, beforeEach } from "bun:test";
 
 // Browser globals must be installed before importing the iPod store, which

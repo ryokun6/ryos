@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
-import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import {
   type ChatRoom,
   type ChatMessage,
@@ -1162,10 +1162,11 @@ export const useChatsStore = create<ChatsStoreState>()(
     {
       name: STORE_NAME,
       version: STORE_VERSION,
-      // Write-behind storage: chat history (aiMessages + capped roomMessages)
-      // used to be JSON.stringify'd and written synchronously on every
-      // appended message. Serialization now happens once per quiet window.
-      storage: createDebouncedPersistStorage(),
+      // AI tool parts can inline multi-megabyte document/applet content and
+      // overflow localStorage's small per-origin quota. IndexedDB preserves the
+      // full conversation and transparently migrates the legacy localStorage
+      // slice on first hydration.
+      storage: createIndexedDBPersistStorage(),
       partialize: (state) => ({
         aiMessages: state.aiMessages,
         username: state.username,

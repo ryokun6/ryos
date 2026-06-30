@@ -200,8 +200,9 @@ let sharedAiChat: Chat<AIChatMessage> | null = null;
 function getSharedAiChat(): Chat<AIChatMessage> {
   if (!sharedAiChat) {
     sharedAiChat = new Chat<AIChatMessage>({
-      // Initialize from the persisted store (hydrated synchronously before
-      // first mount); useSyncedAiMessages reconciles afterwards.
+      // Initialize from the store's current snapshot. Chat persistence hydrates
+      // asynchronously from IndexedDB, and useSyncedAiMessages reconciles the
+      // restored conversation after hydration completes.
       messages: useChatsStore.getState().aiMessages,
 
       transport: new DefaultChatTransport({

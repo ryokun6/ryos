@@ -5,6 +5,7 @@
  * so frontend-only mode doesn't spam failing requests.
  */
 
+import "fake-indexeddb/auto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, test, expect, mock } from "bun:test";
