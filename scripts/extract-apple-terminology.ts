@@ -354,14 +354,14 @@ function selectDominantTranslation(
   term: string,
   locale: GlossaryLocale,
   counts: Map<string, number>
-): string {
+): string | null {
   const ranked = [...counts.entries()].sort(
     ([leftValue, leftCount], [rightValue, rightCount]) =>
       rightCount - leftCount ||
       (leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0)
   );
   if (!ranked.length) {
-    throw new Error(`No macOS 26.1 "${term}" entry for ${locale}`);
+    return null;
   }
 
   const [localized, topCount] = ranked[0];
@@ -387,17 +387,35 @@ export function buildTerminology(
   terms: string[],
   counts: TermCounts
 ): Terminology {
-  return Object.fromEntries(
-    terms.map((term) => [
-      term,
-      Object.fromEntries(
-        LOCALE_ORDER.map((locale) => [
-          locale,
-          selectDominantTranslation(term, locale, counts[term][locale]),
-        ])
-      ),
-    ])
-  ) as Terminology;
+  const missing: string[] = [];
+  const terminology = Object.fromEntries(
+    terms.map((term) => {
+      const translations = Object.fromEntries(
+        LOCALE_ORDER.flatMap((locale) => {
+          const translation = selectDominantTranslation(
+            term,
+            locale,
+            counts[term][locale]
+          );
+          if (translation === null) {
+            missing.push(`"${term}" (${locale})`);
+            return [];
+          }
+          return [[locale, translation]];
+        })
+      );
+      return [term, translations];
+    })
+  );
+
+  if (missing.length) {
+    throw new Error(
+      `No macOS 26.1 entries for ${missing.length} term/locale pairs:\n${missing.join(
+        "\n"
+      )}`
+    );
+  }
+  return terminology as Terminology;
 }
 
 export function extractTerminologyFromDocuments(

@@ -132,6 +132,14 @@ describe("macOS 26 Apple glossary extractor", () => {
     ]);
   });
 
+  test("reports every missing term and locale together", () => {
+    expect(() =>
+      extractTerminologyFromDocuments(["Missing"], [])
+    ).toThrow(
+      'No macOS 26.1 entries for 9 term/locale pairs:\n"Missing" (zh-TW)'
+    );
+  });
+
   test("renders pinned macOS 26.1 source provenance", () => {
     const output = renderTypescript({ Settings: expectedSettings });
 
