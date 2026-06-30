@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-28T19:11:51.827Z",
+  "generatedAt": "2026-06-30T05:31:28.654Z",
   "themes": {
     "default": [
       "admin.png",
@@ -240,6 +240,9 @@
       "videos.png",
       "warn.png",
       "winamp.png"
+    ],
+    "system7": [
+      "control-panels/appearance-manager/app.png"
     ],
     "win98": [
       "account-login.png",
