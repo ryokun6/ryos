@@ -445,11 +445,6 @@ export function useFurigana({
         
         const currentLines = linesRef.current;
         if (lineIndex < currentLines.length && segments) {
-          furiganaLog.debug("Received annotation line", {
-            songId: effectSongId,
-            lineIndex,
-            segmentCount: segments.length,
-          });
           progressiveMap.set(
             currentLines[lineIndex].startTimeMs,
             normalizeClientFuriganaSegments(segments)
@@ -734,12 +729,6 @@ export function useFurigana({
         
         const currentLines = linesRef.current;
         if (lineIndex < currentLines.length && segments) {
-          soramimiLog.debug("Received generated reading line", {
-            songId: effectSongId,
-            targetLanguage: soramimiTargetLanguage,
-            lineIndex,
-            segmentCount: segments.length,
-          });
           progressiveMap.set(currentLines[lineIndex].startTimeMs, segments);
           progressiveFlusher.schedule();
         }

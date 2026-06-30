@@ -19,6 +19,7 @@ import {
   type TranslationResult,
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
+import { shouldForceLyricsFetch } from "@/shared/media/lyricsFetchPolicy";
 
 const lyricsLog = createClientLogger("Lyrics");
 
@@ -421,11 +422,15 @@ export function useLyrics({
 
     const controller = new AbortController();
     let requestSettled = false;
+    const forceServerFetch = shouldForceLyricsFetch({
+      isCacheBustRequest,
+      isAuthenticated: Boolean(authCredentials),
+    });
 
     // Build request - include translateTo, includeFurigana, includeSoramimi to reduce round-trips
     const requestBody: Record<string, unknown> = {
       action: "fetch-lyrics",
-      force: isRefetchRequest,
+      force: forceServerFetch,
       title: title || undefined,
       artist: artist || undefined,
       translateTo: translateTo || undefined,
@@ -447,6 +452,8 @@ export function useLyrics({
     lyricsLog.debug("Fetching lyrics", {
       ...logContext,
       force: Boolean(requestBody.force),
+      isRefetchRequest,
+      isCacheBustRequest,
       hasAuthenticatedUser: Boolean(authCredentials),
     });
     fetchSongLyrics(effectSongId, {
@@ -570,7 +577,7 @@ export function useLyrics({
       // Reset loading state on cleanup to prevent stuck indicators
       setIsFetchingOriginal(false);
     };
-  }, [songId, title, artist, isRefetchRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage, authCredentials, logContext]);
+  }, [songId, title, artist, isRefetchRequest, isCacheBustRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage, authCredentials, logContext]);
 
   // ==========================================================================
   // Effect: Translate lyrics
