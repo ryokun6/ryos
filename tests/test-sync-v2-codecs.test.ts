@@ -184,6 +184,44 @@ describe("songs codec", () => {
     } as never);
   });
 
+  test("waits for async iPod persistence hydration", () => {
+    expect(SYNC_CODECS.songs.isReady).toBeDefined();
+    expect(SYNC_CODECS.settings.isReady).toBeDefined();
+  });
+
+  test("delays remote apply until the local store is hydrated", async () => {
+    const codec = SYNC_CODECS.songs;
+    const originalIsReady = codec.isReady;
+    const originalApply = codec.apply;
+    let ready = false;
+    let applied = false;
+    codec.isReady = () => ready;
+    codec.apply = async () => {
+      applied = true;
+    };
+    const engine = new CloudSyncEngine("hydration-test");
+
+    try {
+      const applying = engine.applyRemoteOps([
+        {
+          k: "songs/lib",
+          v: { libraryState: "loaded", lastKnownVersion: 1, order: [] },
+          t,
+        },
+      ]);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(applied).toBe(false);
+
+      ready = true;
+      await applying;
+      expect(applied).toBe(true);
+    } finally {
+      codec.isReady = originalIsReady;
+      codec.apply = originalApply;
+      engine.stop();
+    }
+  });
+
   test("apply orders tracks by the lib order doc", async () => {
     await SYNC_CODECS.songs.apply(
       [

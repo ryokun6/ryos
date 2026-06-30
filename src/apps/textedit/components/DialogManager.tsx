@@ -30,6 +30,7 @@ interface DialogManagerProps {
   onCloseSave: (fileName: string) => Promise<void>;
   onCloseDelete: () => void;
   onConfirmNew: () => void;
+  onCancelConfirmNew: () => void;
   onControlsReady?: (controls: DialogControls) => void;
   // When closing: is this for an untitled/new document?
   isUntitledForClose?: boolean;
@@ -44,6 +45,7 @@ export function DialogManager({
   onCloseSave,
   onCloseDelete,
   onConfirmNew,
+  onCancelConfirmNew,
   onControlsReady,
   isUntitledForClose = false,
 }: DialogManagerProps) {
@@ -99,7 +101,10 @@ export function DialogManager({
 
       <ConfirmDialog
         isOpen={isConfirmNewDialogOpen}
-        onOpenChange={setIsConfirmNewDialogOpen}
+        onOpenChange={(open) => {
+          setIsConfirmNewDialogOpen(open);
+          if (!open) onCancelConfirmNew();
+        }}
         onConfirm={() => {
           onConfirmNew();
           setIsConfirmNewDialogOpen(false);

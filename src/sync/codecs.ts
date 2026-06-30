@@ -679,6 +679,7 @@ const settingsCodec: SyncCodec = {
           state.theme !== prev.theme ||
           state.lcdFilterOn !== prev.lcdFilterOn
         ) {
+          if (!useIpodStore.persist.hasHydrated()) return;
           onChange();
         }
       }),
@@ -697,6 +698,9 @@ const settingsCodec: SyncCodec = {
       }),
     ];
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+  },
+  isReady() {
+    return useIpodStore.persist.hasHydrated();
   },
 };
 
@@ -940,6 +944,7 @@ const songsCodec: SyncCodec = {
         state.libraryState !== prev.libraryState ||
         state.lastKnownVersion !== prev.lastKnownVersion
       ) {
+        if (!useIpodStore.persist.hasHydrated()) return;
         // Track removals are corroborated by deletion markers so mass
         // local wipes (e.g. storage eviction) can't silently propagate.
         if (state.tracks !== prev.tracks) {
@@ -958,6 +963,9 @@ const songsCodec: SyncCodec = {
         onChange();
       }
     });
+  },
+  isReady() {
+    return useIpodStore.persist.hasHydrated();
   },
 };
 

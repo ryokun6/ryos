@@ -50,24 +50,25 @@ const {
   resolveLyricsOverrideTargetId,
 } = await import("../src/apps/ipod/utils/lyricsTrackMetadata");
 const { useIpodStore } = await import("../src/stores/useIpodStore");
-const { flushDebouncedPersistWrites } = await import(
-  "../src/utils/debouncedPersistStorage"
+const { settlePersistWrites } = await import(
+  "../src/utils/indexedDBPersistStorage"
 );
 type Track = import("../src/stores/useIpodStore").Track;
 
-function readPersistedIpodState(): unknown {
+async function readPersistedIpodState(): Promise<unknown> {
   const storeWithPersist = useIpodStore as typeof useIpodStore & {
     persist?: {
       getOptions?: () => {
         storage?: {
-          getItem: (name: string) => unknown;
+          getItem: (name: string) => unknown | Promise<unknown>;
         };
       };
     };
   };
-  const raw =
+  const raw = await (
     storeWithPersist.persist?.getOptions?.().storage?.getItem("ryos:ipod") ??
-    localStorage.getItem("ryos:ipod");
+    localStorage.getItem("ryos:ipod")
+  );
   return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
 
@@ -207,7 +208,7 @@ describe("resolveLyricsTrackMetadata", () => {
 });
 
 describe("setTrackCoverColor", () => {
-  test("updates cached cover color on local YouTube and Apple Music tracks", () => {
+  test("updates cached cover color on local YouTube and Apple Music tracks", async () => {
     useIpodStore.setState({
       tracks: [
         {
@@ -265,8 +266,8 @@ describe("setTrackCoverColor", () => {
       updated.appleMusicPlaylistTracks["pl.favorites-mix"]?.[0]?.coverColor
     ).toBe("#abcdef");
 
-    flushDebouncedPersistWrites();
-    const persisted = readPersistedIpodState() as {
+    await settlePersistWrites();
+    const persisted = (await readPersistedIpodState()) as {
       state?: { tracks?: Track[] };
     };
     expect(persisted.state?.tracks?.[0]?.coverColor).toBe("#123456");

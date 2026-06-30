@@ -1,12 +1,15 @@
 import { useCallback, useEffect } from "react";
 import { JSONContent } from "@tiptap/core";
 import { useTextEditStore } from "@/stores/useTextEditStore";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 interface UseTextEditStateProps {
   instanceId: string;
 }
 
 export function useTextEditState({ instanceId }: UseTextEditStateProps) {
+  const hasHydrated = usePersistHydrated(useTextEditStore.persist);
+
   // Store actions
   const createTextEditInstance = useTextEditStore(
     (state) => state.createInstance
@@ -24,17 +27,20 @@ export function useTextEditState({ instanceId }: UseTextEditStateProps) {
     (state) => state.instances[instanceId] || null
   );
 
-  // Create instance when component mounts
+  // IndexedDB hydrates asynchronously. Do not create or remove an instance
+  // until restoration finishes, or a default instance can overwrite its draft.
   useEffect(() => {
+    if (!hasHydrated) return;
     createTextEditInstance(instanceId);
-  }, [instanceId, createTextEditInstance]);
-
-  // Clean up instance when component unmounts
-  useEffect(() => {
     return () => {
       removeTextEditInstance(instanceId);
     };
-  }, [instanceId, removeTextEditInstance]);
+  }, [
+    hasHydrated,
+    instanceId,
+    createTextEditInstance,
+    removeTextEditInstance,
+  ]);
 
   // Instance state
   const currentFilePath = currentInstance?.filePath || null;

@@ -8,6 +8,7 @@ import {
   registerAdapterResetter,
   registerPendingFlush,
   resetPersistWritesForTests,
+  resumePersistWrites,
 } from "./persistWriteQueue";
 
 /**
@@ -16,12 +17,10 @@ import {
  *
  * `createJSONStorage(() => localStorage)` serializes the entire partialized
  * slice and writes it synchronously on EVERY persisted mutation. For large
- * slices (Files VFS, chat history, iPod library) that means multi-MB
- * `JSON.stringify` + sync disk writes on hot paths like appending a chat
- * message or renaming a file.
+ * slices that still fit comfortably within the Web Storage quota, that can
+ * mean avoidable `JSON.stringify` + sync disk writes on hot mutation paths.
  *
- * This adapter keeps localStorage as the authoritative storage (backup,
- * restore, and reset flows that read the raw keys keep working) but:
+ * This adapter keeps localStorage as the authoritative storage but:
  *   - `setItem` only records the latest snapshot and starts a debounce
  *     timer; serialization happens once per quiet window instead of once
  *     per mutation (zustand state is immutable, so the held reference is a
@@ -30,9 +29,6 @@ import {
  *     app never loses more than the current debounce window — the same
  *     guarantee browsers give localStorage itself on crash.
  *   - `getItem` serves a pending snapshot first (read-your-writes).
- *
- * Flows that read the raw localStorage keys directly (system reset, manual
- * backup) must call `flushDebouncedPersistWrites()` first.
  *
  * Write scheduling (debounce timer, lifecycle flush, and the halt switch) is
  * shared with the IndexedDB adapter via `persistWriteQueue`, so a single flush
@@ -53,6 +49,11 @@ export function flushDebouncedPersistWrites(): void {
  */
 export function haltDebouncedPersistWrites(): void {
   haltPersistWrites();
+}
+
+/** Resume writes when a restore/reset operation aborts before reload. */
+export function resumeDebouncedPersistWrites(): void {
+  resumePersistWrites();
 }
 
 /** @internal Test-only reset for Bun's shared-process test runner. */

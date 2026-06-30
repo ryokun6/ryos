@@ -4,7 +4,7 @@ Browser-based hierarchical virtual file system with metadata/content separation 
 
 ## Two-Layer Architecture
 
-- **Metadata Layer** (Zustand + localStorage): File paths, names, types, UUIDs, timestamps, and status
+- **Metadata Layer** (Zustand + IndexedDB): File paths, names, types, UUIDs, timestamps, and status
 - **Content Layer** (IndexedDB): Actual file content indexed by UUID for efficient storage
 - **VFS Service Layer** (`src/services/vfs/`): Metadata/content repositories, virtual trees, and cross-app file operations
 
@@ -19,6 +19,7 @@ graph TB
     subgraph Metadata["Metadata Layer"]
         FilesStore[(useFilesStore)]
         FinderStore[(useFinderStore)]
+        PersistedState[(IndexedDB persisted_state)]
         LocalStorage[(localStorage)]
     end
     
@@ -38,7 +39,7 @@ graph TB
     Hook --> Service
     Service --> FilesStore
     Hook --> FinderStore
-    FilesStore <--> LocalStorage
+    FilesStore <--> PersistedState
     FinderStore <--> LocalStorage
     Service -->|"UUID lookup"| IDB
     IDB --> Stores
@@ -48,7 +49,7 @@ graph TB
 
 | Store | Purpose | Persistence |
 |-------|---------|-------------|
-| `useFilesStore` | File/folder metadata, paths, UUIDs, status | localStorage |
+| `useFilesStore` | File/folder metadata, paths, UUIDs, status | IndexedDB (`persisted_state`) |
 | `useFinderStore` | Finder window instances, navigation history, view preferences | localStorage |
 | IndexedDB | File content (text, images, applets) | Browser storage |
 

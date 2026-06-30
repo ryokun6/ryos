@@ -11,6 +11,8 @@ import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
 import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
+import { useStickiesStore } from "@/stores/useStickiesStore";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 export function StickiesAppComponent({
   isWindowOpen,
@@ -75,12 +77,14 @@ export function StickiesAppComponent({
     newFile: () => handleCreateNote(),
   });
 
+  const hasHydrated = usePersistHydrated(useStickiesStore.persist);
+
   // Create a new note when app is opened and no notes exist
   useEffect(() => {
-    if (isWindowOpen && notes.length === 0) {
+    if (hasHydrated && isWindowOpen && notes.length === 0) {
       handleCreateNote();
     }
-  }, [isWindowOpen, notes.length, handleCreateNote]);
+  }, [hasHydrated, isWindowOpen, notes.length, handleCreateNote]);
 
   const menuBar = (
     <StickiesMenuBar

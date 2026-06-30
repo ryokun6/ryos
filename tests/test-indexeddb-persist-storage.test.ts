@@ -47,9 +47,11 @@ Object.defineProperty(globalThis, "localStorage", {
 const { createIndexedDBPersistStorage, settlePersistWrites } = await import(
   "../src/utils/indexedDBPersistStorage"
 );
-const { resetPersistWritesForTests, haltPersistWrites } = await import(
-  "../src/utils/persistWriteQueue"
-);
+const {
+  flushAllPersistWrites,
+  resetPersistWritesForTests,
+  haltPersistWrites,
+} = await import("../src/utils/persistWriteQueue");
 
 const resetDb = () =>
   new Promise<void>((resolve) => {
@@ -115,6 +117,22 @@ describe("createIndexedDBPersistStorage", () => {
       state: { a: number };
     };
     expect(value.state.a).toBe(3);
+  });
+
+  test("serializes consecutive in-flight snapshots in write order", async () => {
+    const storage = createIndexedDBPersistStorage<{ a: number }>({
+      delayMs: 60_000,
+    });
+    storage.setItem("ordered", { state: { a: 1 }, version: 1 });
+    flushAllPersistWrites();
+    storage.setItem("ordered", { state: { a: 2 }, version: 1 });
+
+    await settlePersistWrites();
+
+    const value = (await storage.getItem("ordered")) as {
+      state: { a: number };
+    };
+    expect(value.state.a).toBe(2);
   });
 
   test("migrates a legacy localStorage value into IndexedDB on first read", async () => {

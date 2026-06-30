@@ -156,12 +156,16 @@ export function createIndexedDBPersistStorage<S>(
     pendingName = null;
     pendingValue = null;
     clearPendingFlush(name);
-    inFlight = writeRecord(name, value).catch((error) => {
-      console.error(
-        `[indexedDBPersistStorage] Failed to write "${name}":`,
-        error
-      );
-    });
+    // Serialize commits for this adapter. Without chaining, a slower older
+    // transaction could finish after a newer snapshot and overwrite it.
+    inFlight = inFlight
+      .then(() => writeRecord(name, value))
+      .catch((error) => {
+        console.error(
+          `[indexedDBPersistStorage] Failed to write "${name}":`,
+          error
+        );
+      });
   };
 
   const settle = async () => {

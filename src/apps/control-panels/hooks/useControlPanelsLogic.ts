@@ -6,10 +6,10 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { clearAllAppStates } from "@/stores/useAppStore";
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import {
-  flushDebouncedPersistWrites,
   haltDebouncedPersistWrites,
+  resumeDebouncedPersistWrites,
 } from "@/utils/debouncedPersistStorage";
 import { settlePersistWrites } from "@/utils/indexedDBPersistStorage";
 import { useAppStoreShallow } from "@/stores/useAppStore";
@@ -48,11 +48,17 @@ import {
 } from "@/sync/manualRestoreIntent";
 import { SYNC_CATEGORIES } from "@/shared/sync2/namespaces";
 import {
+  createEmptyManualBackupIndexedDBData,
+  MANUAL_BACKUP_INDEXEDDB_STORES,
+  MANUAL_BACKUP_VERSION,
   readStoreItems,
+  readStoreItemByKey,
   restoreStoreItems,
   serializeStoreItems,
+  type ManualBackupIndexedDBData,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
+import { FILES_STORE_PERSIST_KEY } from "@/stores/useFilesStore";
 
 type PhotoCategory =
   | "3d_graphics"
@@ -157,17 +163,6 @@ Object.entries(PHOTO_WALLPAPERS).forEach(([category, photos]) => {
 // Use shared AI model metadata
 const AI_MODELS = AI_MODEL_METADATA;
 
-const BACKUP_INDEXEDDB_STORES = [
-  "documents",
-  "images",
-  "trash",
-  "custom_wallpapers",
-  "applets",
-  // zustand persist slices that live in IndexedDB instead of localStorage
-  // (e.g. Soundboard recordings). Captured so manual backups stay complete.
-  "persisted_state",
-] as const;
-
 function upgradeLegacyBackupStoreValue(
   backupVersion: number,
   storeName: string,
@@ -188,6 +183,109 @@ function upgradeLegacyBackupStoreValue(
     nextValue.contentUrl = URL.createObjectURL(nextValue.content);
   }
   return nextValue;
+}
+
+function normalizeRestoredStoreValue(
+  backupVersion: number,
+  storeName: string,
+  value: Record<string, unknown>,
+  item: StoreItemWithKey
+): Record<string, unknown> {
+  const upgraded = upgradeLegacyBackupStoreValue(
+    backupVersion,
+    storeName,
+    value
+  );
+  if (
+    storeName !== STORES.PERSISTED_STATE ||
+    item.key !== FILES_STORE_PERSIST_KEY
+  ) {
+    return upgraded;
+  }
+
+  const persistedState =
+    upgraded.state && typeof upgraded.state === "object"
+      ? (upgraded.state as Record<string, unknown>)
+      : null;
+  if (!persistedState) return upgraded;
+
+  const items =
+    persistedState.items && typeof persistedState.items === "object"
+      ? (persistedState.items as Record<string, unknown>)
+      : {};
+  return {
+    ...upgraded,
+    state: {
+      ...persistedState,
+      libraryState:
+        Object.keys(items).length > 0 ? "loaded" : "uninitialized",
+    },
+  };
+}
+
+interface ManualBackupPayload {
+  localStorage: Record<string, string | null>;
+  indexedDB?: Partial<ManualBackupIndexedDBData>;
+  timestamp: string;
+  version?: number;
+}
+
+function parseManualBackupPayload(data: string): ManualBackupPayload {
+  const parsed: unknown = JSON.parse(data);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Backup root must be an object.");
+  }
+  const candidate = parsed as Record<string, unknown>;
+  if (
+    !candidate.localStorage ||
+    typeof candidate.localStorage !== "object" ||
+    Array.isArray(candidate.localStorage) ||
+    typeof candidate.timestamp !== "string" ||
+    (candidate.version !== undefined &&
+      typeof candidate.version !== "number")
+  ) {
+    throw new Error("Backup is missing required metadata.");
+  }
+
+  for (const value of Object.values(
+    candidate.localStorage as Record<string, unknown>
+  )) {
+    if (value !== null && typeof value !== "string") {
+      throw new Error("Backup contains invalid localStorage data.");
+    }
+  }
+
+  if (
+    candidate.indexedDB !== undefined &&
+    (!candidate.indexedDB ||
+      typeof candidate.indexedDB !== "object" ||
+      Array.isArray(candidate.indexedDB))
+  ) {
+    throw new Error("Backup contains invalid IndexedDB data.");
+  }
+  const indexedDbData = candidate.indexedDB as
+    | Record<string, unknown>
+    | undefined;
+  for (const storeName of MANUAL_BACKUP_INDEXEDDB_STORES) {
+    const items = indexedDbData?.[storeName];
+    if (
+      items !== undefined &&
+      (!Array.isArray(items) ||
+        items.some(
+          (item) =>
+            !item ||
+            typeof item !== "object" ||
+            typeof (item as Record<string, unknown>).key !== "string" ||
+            !(item as Record<string, unknown>).value ||
+            typeof (item as Record<string, unknown>).value !== "object" ||
+            Array.isArray((item as Record<string, unknown>).value)
+        ))
+    ) {
+      throw new Error(`Backup contains invalid ${storeName} records.`);
+    }
+  }
+
+  return candidate as unknown as ManualBackupPayload;
 }
 
 export interface UseControlPanelsLogicProps {
@@ -676,23 +774,62 @@ export function useControlPanelsLogic({
       action: "reset_all",
     });
     setNextBootMessage(t("common.system.resettingSystem"));
-    performReset();
+    void performReset().catch((error) => {
+      console.error("[ControlPanels] Reset failed:", error);
+      resumeDebouncedPersistWrites();
+      clearNextBootMessage();
+      toast.error(t("common.system.resetAllSettings"), {
+        description:
+          error instanceof Error
+            ? error.message
+            : t("apps.control-panels.alerts.unknownError"),
+      });
+    });
   };
 
-  const performReset = () => {
-    // Flush write-behind persist queues so the preserved keys are current,
-    // then halt further writes until the reload.
-    flushDebouncedPersistWrites();
+  const performReset = async () => {
+    // Settle every localStorage and IndexedDB write before preserving files,
+    // then halt all adapters so pagehide cannot overwrite the reset.
+    await settlePersistWrites();
     haltDebouncedPersistWrites();
-    // Preserve critical recovery keys while clearing everything else
-    const fileMetadataStore = localStorage.getItem("ryos:files");
+    const legacyFileMetadataStore = localStorage.getItem(
+      FILES_STORE_PERSIST_KEY
+    );
     const usernameRecovery = localStorage.getItem("_usr_recovery_key_");
+
+    // Reset all IDB-backed Zustand slices while retaining the user's file
+    // metadata, matching the legacy localStorage reset behavior.
+    let preservedFilesRecord: StoreItemWithKey | null = null;
+    try {
+      const db = await ensureIndexedDBInitialized();
+      try {
+        preservedFilesRecord = await readStoreItemByKey(
+          db,
+          STORES.PERSISTED_STATE,
+          FILES_STORE_PERSIST_KEY
+        );
+        await restoreStoreItems(
+          db,
+          STORES.PERSISTED_STATE,
+          preservedFilesRecord ? [preservedFilesRecord] : []
+        );
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      throw new Error("Failed to reset persisted app state", { cause: error });
+    }
 
     clearAllAppStates();
     clearPrefetchFlag(); // Force re-prefetch on next boot
 
-    if (fileMetadataStore) {
-      localStorage.setItem("ryos:files", fileMetadataStore);
+    // Older installations may not have migrated files metadata to IndexedDB
+    // yet. Preserve that legacy value so the adapter can migrate it on boot.
+    if (!preservedFilesRecord && legacyFileMetadataStore) {
+      localStorage.setItem(
+        FILES_STORE_PERSIST_KEY,
+        legacyFileMetadataStore
+      );
     }
     if (usernameRecovery) {
       localStorage.setItem("_usr_recovery_key_", usernameRecovery);
@@ -704,28 +841,14 @@ export function useControlPanelsLogic({
   const handleBackup = async () => {
     const backup: {
       localStorage: Record<string, string | null>;
-      indexedDB: {
-        documents: StoreItemWithKey[];
-        images: StoreItemWithKey[];
-        trash: StoreItemWithKey[];
-        custom_wallpapers: StoreItemWithKey[];
-        applets: StoreItemWithKey[];
-        persisted_state: StoreItemWithKey[];
-      };
+      indexedDB: ManualBackupIndexedDBData;
       timestamp: string;
       version: number; // Add version to identify backup format
     } = {
       localStorage: {},
-      indexedDB: {
-        documents: [],
-        images: [],
-        trash: [],
-        custom_wallpapers: [],
-        applets: [],
-        persisted_state: [],
-      },
+      indexedDB: createEmptyManualBackupIndexedDBData(),
       timestamp: new Date().toISOString(),
-      version: 4, // Version 4 includes IndexedDB-persisted store slices
+      version: MANUAL_BACKUP_VERSION,
     };
 
     // Backup all localStorage data. Settle write-behind persist queues
@@ -740,21 +863,24 @@ export function useControlPanelsLogic({
     }
 
     // Backup IndexedDB data
+    let backupDb: IDBDatabase | null = null;
     try {
-      const db = await ensureIndexedDBInitialized();
+      backupDb = await ensureIndexedDBInitialized();
       const serializedStores = await Promise.all(
-        BACKUP_INDEXEDDB_STORES.map(async (storeName) => [
+        MANUAL_BACKUP_INDEXEDDB_STORES.map(async (storeName) => [
           storeName,
-          await serializeStoreItems(await readStoreItems(db, storeName)),
+          await serializeStoreItems(await readStoreItems(backupDb!, storeName)),
         ] as const)
       );
       for (const [storeName, items] of serializedStores) {
         backup.indexedDB[storeName] = items;
       }
-      db.close();
     } catch (error) {
       console.error("Error backing up IndexedDB:", error);
       alert(t("apps.control-panels.alerts.failedToBackupFileSystem"));
+      return;
+    } finally {
+      backupDb?.close();
     }
 
     // Convert to JSON string
@@ -867,20 +993,15 @@ export function useControlPanelsLogic({
         }
 
         // Try to parse the JSON
-        let backup;
+        let backup: ManualBackupPayload;
         try {
-          backup = JSON.parse(data);
+          backup = parseManualBackupPayload(data);
         } catch (parseError) {
           console.error("JSON parse error:", parseError);
           throw new Error(
-            "Invalid JSON format. The backup file may be corrupted."
-          );
-        }
-
-        // Validate backup structure
-        if (!backup || !backup.localStorage || !backup.timestamp) {
-          throw new Error(
-            "Invalid backup format. Missing required backup data."
+            parseError instanceof Error
+              ? `Invalid backup format: ${parseError.message}`
+              : "Invalid backup format. The backup file may be corrupted."
           );
         }
 
@@ -893,7 +1014,7 @@ export function useControlPanelsLogic({
         // Clear current state. Drain write-behind persist queues first so a
         // pending debounced write can't fire mid-restore and clobber a
         // freshly restored key before the reload.
-        flushDebouncedPersistWrites();
+        await settlePersistWrites();
         haltDebouncedPersistWrites();
         clearAllAppStates();
         clearPrefetchFlag(); // Force re-prefetch on next boot
@@ -908,28 +1029,41 @@ export function useControlPanelsLogic({
           }
         });
 
-        // Restore IndexedDB data if available
-        if (backup.indexedDB) {
+        // Restore every backed-up store, treating missing stores in older
+        // backups as empty so stale local IndexedDB records cannot win over the
+        // restored snapshot.
+        try {
+          const db = await ensureIndexedDBInitialized();
           try {
-            const db = await ensureIndexedDBInitialized();
-            const restorePromises = BACKUP_INDEXEDDB_STORES.flatMap((storeName) => {
-              const items = backup.indexedDB?.[storeName];
-              if (!items) {
-                return [];
-              }
-
-              return restoreStoreItems(db, storeName, items, {
-                mapValue: (value) =>
-                  upgradeLegacyBackupStoreValue(backup.version, storeName, value),
-              });
-            });
-
-            await Promise.all(restorePromises);
+            const backupVersion =
+              typeof backup.version === "number" ? backup.version : 1;
+            await Promise.all(
+              MANUAL_BACKUP_INDEXEDDB_STORES.map((storeName) =>
+                restoreStoreItems(
+                  db,
+                  storeName,
+                  backup.indexedDB?.[storeName] ?? [],
+                  {
+                    mapValue: (value, item) =>
+                      normalizeRestoredStoreValue(
+                        backupVersion,
+                        storeName,
+                        value,
+                        item
+                      ),
+                  }
+                )
+              )
+            );
+          } finally {
             db.close();
-          } catch (error) {
-            console.error("Error restoring IndexedDB:", error);
-            alert(t("apps.control-panels.alerts.failedToRestoreFileSystem"));
           }
+        } catch (error) {
+          console.error("Error restoring IndexedDB:", error);
+          throw new Error(
+            t("apps.control-panels.alerts.failedToRestoreFileSystem"),
+            { cause: error }
+          );
         }
 
         // Update wallpaper after restore
@@ -944,7 +1078,7 @@ export function useControlPanelsLogic({
           // Ensure the files store is in a safe state after restore.
           // Preserve the version from the backup so Zustand doesn't
           // re-run migrations on already-current data.
-          const persistedKey = "ryos:files";
+          const persistedKey = FILES_STORE_PERSIST_KEY;
           const persistedState = localStorage.getItem(persistedKey);
 
           if (persistedState) {
@@ -956,9 +1090,6 @@ export function useControlPanelsLogic({
               parsed.state.libraryState = hasItems
                 ? "loaded"
                 : "uninitialized";
-              if (!parsed.version || parsed.version < 5) {
-                parsed.version = 5;
-              }
               localStorage.setItem(persistedKey, JSON.stringify(parsed));
             }
           }
@@ -980,6 +1111,7 @@ export function useControlPanelsLogic({
         window.location.reload();
       } catch (err) {
         console.error("Restore failed:", err);
+        resumeDebouncedPersistWrites();
 
         const detail = err instanceof Error
           ? err.message

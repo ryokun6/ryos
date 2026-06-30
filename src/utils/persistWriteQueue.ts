@@ -83,9 +83,14 @@ export function haltPersistWrites(): void {
   pendingFlushes.clear();
 }
 
+/** Resume persistence after a destructive flow aborts before page reload. */
+export function resumePersistWrites(): void {
+  halted = false;
+}
+
 /** @internal Test-only reset for Bun's shared-process test runner. */
 export function resetPersistWritesForTests(): void {
-  halted = false;
+  resumePersistWrites();
   for (const reset of Array.from(adapterResetters)) {
     reset();
   }

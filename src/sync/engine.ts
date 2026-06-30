@@ -100,6 +100,9 @@ export interface RestoreLocalStateToCloudResult {
   deleted: number;
 }
 
+const CODEC_READY_TIMEOUT_MS = 10_000;
+const CODEC_READY_POLL_MS = 10;
+
 export class CloudSyncEngine {
   private readonly state: SyncClientState;
   private readonly callbacks: EngineStatusCallbacks;
@@ -135,6 +138,38 @@ export class CloudSyncEngine {
     return this.applyingNamespaces.has(namespace);
   }
 
+  private async waitForNamespacesReady(
+    namespaces: readonly SyncNamespace[]
+  ): Promise<void> {
+    const deadline = Date.now() + CODEC_READY_TIMEOUT_MS;
+    let pending = namespaces.filter((namespace) => {
+      const codec = SYNC_CODECS[namespace];
+      return codec.isReady && !codec.isReady();
+    });
+    if (pending.length === 0) return;
+
+    cloudSyncLog.debug("Waiting for local store hydration", {
+      namespaces: pending,
+    });
+    while (pending.length > 0) {
+      if (this.stopped || this.abortController.signal.aborted) {
+        throw new DOMException("Cloud sync stopped", "AbortError");
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `Timed out waiting for sync namespaces: ${pending.join(", ")}`
+        );
+      }
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, CODEC_READY_POLL_MS);
+      });
+      pending = pending.filter((namespace) => {
+        const codec = SYNC_CODECS[namespace];
+        return codec.isReady && !codec.isReady();
+      });
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Lifecycle
   // -------------------------------------------------------------------------
@@ -164,6 +199,11 @@ export class CloudSyncEngine {
 
     let initialSyncSucceeded = false;
     try {
+      await this.waitForNamespacesReady(
+        SYNC_NAMESPACES.filter((namespace) =>
+          this.isNamespaceEnabled(namespace)
+        )
+      );
       if (this.state.cursor === null) {
         await this.bootstrap();
       } else {
@@ -949,6 +989,11 @@ export class CloudSyncEngine {
     const orderedNamespaces = NAMESPACE_APPLY_ORDER.filter((ns) =>
       byNamespace.has(ns)
     );
+    await this.waitForNamespacesReady(
+      orderedNamespaces.filter((namespace) =>
+        this.isNamespaceEnabled(namespace)
+      )
+    );
     const needsDb = orderedNamespaces.some(
       (ns) => SYNC_CODECS[ns].usesIndexedDb
     );
@@ -1148,6 +1193,9 @@ export class CloudSyncEngine {
 
   async forceUpload(): Promise<void> {
     cloudSyncLog.debug("Force upload requested");
+    await this.waitForNamespacesReady(
+      SYNC_NAMESPACES.filter((namespace) => this.isNamespaceEnabled(namespace))
+    );
     await this.flush({ force: true, throwOnError: true });
   }
 
@@ -1184,12 +1232,7 @@ export class CloudSyncEngine {
       return { seq: this.state.cursor ?? 0, uploaded: 0, deleted: 0 };
     }
 
-    for (const namespace of namespaces) {
-      const codec = SYNC_CODECS[namespace];
-      if (codec.isReady && !codec.isReady()) {
-        throw new Error(`Sync namespace ${namespace} is not ready for restore`);
-      }
-    }
+    await this.waitForNamespacesReady(namespaces);
 
     const syncStore = useCloudSyncStore.getState();
     const categories = new Set(namespaces.map(getSyncNamespaceCategory));
