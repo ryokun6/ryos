@@ -12,7 +12,6 @@ import {
   ArrowDown,
   Bug,
   CaretDown,
-  CaretRight,
   Check,
   Copy,
   Trash,
@@ -192,29 +191,23 @@ function ConsoleEntryContent({
           onClick={() => onToggleJsonPart(partKey)}
           data-debug-json-toggle
           className={cn(
-            "inline-flex max-w-full items-center gap-0.5 rounded px-1 align-middle",
-            "border border-[color:var(--os-color-separator)] bg-os-panel-bg",
-            "font-os-mono text-[9px] leading-[1.45] text-os-text-secondary",
-            "hover:brightness-105 active:brightness-95"
+            "inline-flex max-w-full items-baseline gap-0.5 border-0 bg-transparent p-0 align-baseline",
+            "font-os-mono text-[10px] leading-[1.45] text-inherit",
+            "opacity-75 hover:opacity-100 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-os-selection-bg"
           )}
         >
-          <CaretRight
-            weight="bold"
-            className={cn(
-              "size-2.5 shrink-0 transition-transform",
-              expanded && "rotate-90"
-            )}
-            aria-hidden
-          />
+          <span className="shrink-0 no-underline" aria-hidden>
+            {expanded ? "▾" : "▸"}
+          </span>
           <span className="truncate">{part.summary}</span>
         </button>
         {expanded ? (
           <pre
             data-debug-json-content
             className={cn(
-              "my-0.5 max-w-full overflow-x-auto rounded p-1",
-              "border border-[color:var(--os-color-separator)] bg-os-panel-bg",
-              "whitespace-pre font-os-mono text-[9px] leading-[1.35] text-os-text-primary"
+              "my-0.5 max-w-full overflow-x-auto border-l pl-2",
+              "border-[color:var(--os-color-separator)]",
+              "whitespace-pre font-os-mono text-[10px] leading-[1.45] text-inherit"
             )}
           >
             {part.text}

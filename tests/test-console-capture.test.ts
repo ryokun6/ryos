@@ -54,7 +54,7 @@ describe("consoleCapture", () => {
       {
         type: "json",
         text: '{\n  "a": 1,\n  "self": "[Circular]"\n}',
-        summary: "Object(2) { a, self }",
+        summary: '{ a: 1, self: "[Circular]" }',
       },
     ]);
   });
@@ -81,11 +81,11 @@ describe("consoleCapture", () => {
     ]);
     expect(formatted.displayParts?.[2]).toMatchObject({
       type: "json",
-      summary: "Object(4) { status, items, metadata, … }",
+      summary: '{ status: "ok", items: […], metadata: {…}, … }',
     });
     expect(formatted.displayParts?.[4]).toMatchObject({
       type: "json",
-      summary: "Array(2)",
+      summary: '["alpha", "beta"]',
     });
   });
 
@@ -206,7 +206,7 @@ describe("consoleCapture", () => {
       {
         type: "json",
         text: '{\n  "method": "GET",\n  "status": 200\n}',
-        summary: "Object(2) { method, status }",
+        summary: '{ method: "GET", status: 200 }',
       },
     ]);
   });

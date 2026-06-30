@@ -113,21 +113,43 @@ interface FormattedConsoleArg {
   jsonSummary?: string;
 }
 
+function previewJsonValue(value: unknown): string {
+  if (typeof value === "string") {
+    return JSON.stringify(value.length > 22 ? `${value.slice(0, 21)}…` : value);
+  }
+  if (
+    value === null ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return String(value);
+  }
+  if (Array.isArray(value)) return value.length === 0 ? "[]" : "[…]";
+  return typeof value === "object" ? "{…}" : String(value);
+}
+
+function previewJsonKey(key: string): string {
+  const preview = key.length > 18 ? `${key.slice(0, 17)}…` : key;
+  return /^[A-Za-z_$][\w$]*$/.test(preview) ? preview : JSON.stringify(preview);
+}
+
 function summarizeJson(serialized: string): string | null {
   try {
     const value = JSON.parse(serialized) as unknown;
-    if (Array.isArray(value)) return `Array(${value.length})`;
+    if (Array.isArray(value)) {
+      const items = value.slice(0, 3).map(previewJsonValue);
+      return `[${items.join(", ")}${value.length > 3 ? ", …" : ""}]`;
+    }
     if (typeof value !== "object" || value === null) return null;
 
-    const keys = Object.keys(value);
-    const visibleKeys = keys
+    const entries = Object.entries(value);
+    const visibleEntries = entries
       .slice(0, 3)
-      .map((key) => (key.length > 18 ? `${key.slice(0, 17)}…` : key));
-    const keySummary =
-      visibleKeys.length > 0
-        ? ` { ${visibleKeys.join(", ")}${keys.length > 3 ? ", …" : ""} }`
-        : "";
-    return `Object(${keys.length})${keySummary}`;
+      .map(
+        ([key, entryValue]) =>
+          `${previewJsonKey(key)}: ${previewJsonValue(entryValue)}`
+      );
+    return `{ ${visibleEntries.join(", ")}${entries.length > 3 ? ", …" : ""} }`;
   } catch {
     return null;
   }
