@@ -2265,6 +2265,7 @@
         "noAirDropUsersAvailable": "Nessun utente nelle vicinanze",
         "open": "Apri",
         "openAirDrop": "Apri AirDrop",
+        "openWith": "Apri con",
         "putBack": "Ripristina",
         "rename": "Rinomina…",
         "searchingForAirDropUsers": "Ricerca utenti vicini…",
@@ -2304,8 +2305,10 @@
         "internetShortcut": "Collegamento Internet",
         "jpegImage": "Immagine JPEG",
         "mp3Audio": "Audio MP3",
+        "pdfDocument": "Documento PDF",
         "pngImage": "Immagine PNG",
         "quicktimeMovie": "Filmato QuickTime",
+        "svgImage": "Immagine SVG",
         "unknown": "Sconosciuto",
         "webpImage": "Immagine WebP"
       },
@@ -3685,6 +3688,74 @@
         "photoBoothHelp": "Aiuto Photo Booth"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "Visualizza immagini, PDF e documenti",
+      "empty": {
+        "hint": "Scegli un file o trascinalo qui",
+        "title": "Apri un documento"
+      },
+      "help": {
+        "images": {
+          "description": "Apri i formati di immagine comuni senza modificare il file originale",
+          "title": "Anteprima immagini"
+        },
+        "openFiles": {
+          "description": "Usa File > Apri per visualizzare l'anteprima di un file dal tuo dispositivo",
+          "title": "Apri file"
+        },
+        "openWith": {
+          "description": "Invia i file modificabili a Paint, TextEdit o Visualizzatore applet",
+          "title": "Apri con"
+        },
+        "pdfs": {
+          "description": "Visualizza documenti PDF utilizzando il visualizzatore di documenti integrato",
+          "title": "Leggi PDF"
+        },
+        "safeHtml": {
+          "description": "Visualizza l'anteprima di documenti HTML in una sandbox senza eseguire script",
+          "title": "HTML sicuro"
+        },
+        "zoom": {
+          "description": "Ingrandisci o rimpicciolisci le immagini o adattale alla finestra",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Informazioni su Anteprima",
+        "actualSize": "Dimensioni reali",
+        "export": "Esporta…",
+        "fitToWindow": "Adatta alla finestra",
+        "importFromDevice": "Importa da dispositivo…",
+        "open": "Apri…",
+        "openWith": "Apri con",
+        "previewHelp": "Aiuto Anteprima",
+        "saveAs": "Salva col nome…",
+        "zoomIn": "Ingrandisci",
+        "zoomOut": "Rimpicciolisci"
+      },
+      "name": "Anteprima",
+      "saveAs": {
+        "description": "Inserisci un nome per questa copia",
+        "title": "Salva col nome"
+      },
+      "status": {
+        "loadFailed": "Impossibile aprire questo file.",
+        "loading": "Caricamento anteprima…",
+        "notFound": "Impossibile trovare il contenuto del file.",
+        "unsupported": "Nessuna anteprima disponibile",
+        "unsupportedDescription": "Questo formato di file non è supportato da Anteprima."
+      },
+      "supportedFiles": "Documenti di Anteprima",
+      "title": "Anteprima",
+      "toasts": {
+        "exportFailed": "Impossibile esportare il file",
+        "importFailed": "Impossibile importare il file",
+        "imported": "File importato",
+        "saveFailed": "Impossibile salvare il file",
+        "saved": "File salvato"
+      },
+      "untitled": "Senza titolo"
     },
     "soundboard": {
       "description": "Riproduci effetti audio",

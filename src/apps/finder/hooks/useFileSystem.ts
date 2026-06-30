@@ -28,6 +28,7 @@ import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
 import { createClientLogger } from "@/utils/logger";
+import { getDefaultFileApp } from "@/utils/fileAssociations";
 import {
   ExtendedDisplayFileItem,
   getParentPath,
@@ -141,7 +142,10 @@ function getFileIcon(item: FileSystemItem): string {
     case "gif":
     case "webp":
     case "bmp":
+    case "svg":
       return "/icons/image.png";
+    case "pdf":
+      return "/icons/default/file-pdf.png";
     case "markdown":
     case "text":
       return "/icons/file-text.png";
@@ -734,7 +738,11 @@ export function useFileSystem(
 
   // Define handleFileOpen
   const handleFileOpen = useCallback(
-    async (file: ExtendedDisplayFileItem, launchOrigin?: LaunchOriginRect) => {
+    async (
+      file: ExtendedDisplayFileItem,
+      launchOrigin?: LaunchOriginRect,
+      requestedAppId?: AppId,
+    ) => {
       // 0. Handle Aliases/Shortcuts first - resolve to target before processing
       // Handle nested aliases by resolving until we get to the actual target
       let currentFile = file;
@@ -921,9 +929,26 @@ export function useFileSystem(
           contentLength: contentAsString?.length ?? 0,
           hasContentUrl: Boolean(contentUrlToUse),
         });
+        const associatedAppId =
+          requestedAppId ??
+          getDefaultFileApp({
+            path: file.path,
+            name: file.name,
+            type: file.type,
+            isDirectory: file.isDirectory,
+          });
+
         if (file.path.startsWith("/Applications/") && file.appId) {
           launchApp(file.appId as AppId, { launchOrigin });
-        } else if (storeName === STORES.DOCUMENTS) {
+        } else if (associatedAppId === "preview") {
+          launchApp("preview", {
+            initialData: {
+              path: file.path,
+              content: contentToUse,
+            },
+            launchOrigin,
+          });
+        } else if (associatedAppId === "textedit") {
           // Check if this file is already open in a TextEdit instance
           const textEditStore = useTextEditStore.getState();
           const existingInstanceId = textEditStore.getInstanceIdByPath(
@@ -961,7 +986,7 @@ export function useFileSystem(
               launchOrigin,
             });
           }
-        } else if (storeName === STORES.IMAGES) {
+        } else if (associatedAppId === "paint") {
           // Pass the Blob object itself to Paint via initialData
           launchApp("paint", {
             initialData: {
@@ -970,16 +995,13 @@ export function useFileSystem(
             },
             launchOrigin,
           }); // Pass contentToUse (Blob)
-        } else if (storeName === STORES.BOOKS) {
+        } else if (associatedAppId === "books") {
           // Books app loads the EPUB blob itself from the VFS path
           launchApp("books", {
             initialData: { path: file.path },
             launchOrigin,
           });
-        } else if (
-          storeName === STORES.APPLETS &&
-          (file.path.endsWith(".app") || file.path.endsWith(".html"))
-        ) {
+        } else if (associatedAppId === "applet-viewer") {
           // Open HTML applets with applet-viewer
           log.debug("Opening applet", {
             path: file.path,

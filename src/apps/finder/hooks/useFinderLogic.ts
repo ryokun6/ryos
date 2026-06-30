@@ -23,7 +23,15 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { getTranslatedFolderNameFromName } from "@/utils/i18n";
+import {
+  getTranslatedAppName,
+  getTranslatedFolderNameFromName,
+} from "@/utils/i18n";
+import { getAppIconPath, type AppId } from "@/config/appRegistry";
+import {
+  getOpenWithApps,
+  resolvePreviewKind,
+} from "@/utils/fileAssociations";
 import {
   compareFinderItemsByDisplayName,
   compareFinderSortText,
@@ -108,6 +116,10 @@ const getFileType = (
       return t("apps.finder.fileTypes.webpImage");
     case "bmp":
       return t("apps.finder.fileTypes.bmpImage");
+    case "svg":
+      return t("apps.finder.fileTypes.svgImage");
+    case "pdf":
+      return t("apps.finder.fileTypes.pdfDocument");
     case "md":
       return t("apps.finder.fileTypes.document");
     case "txt":
@@ -445,9 +457,13 @@ export function useFinderLogic({
   );
 
   // Wrap the original handleFileOpen - now only calls the original without TextEditStore updates
-  const handleFileOpen = async (file: FileItem, launchOrigin?: LaunchOriginRect) => {
+  const handleFileOpen = async (
+    file: FileItem,
+    launchOrigin?: LaunchOriginRect,
+    requestedAppId?: AppId,
+  ) => {
     // Call original file open handler from useFileSystem
-    originalHandleFileOpen(file, launchOrigin);
+    originalHandleFileOpen(file, launchOrigin, requestedAppId);
     // TextEditStore updates removed - TextEdit instances now manage their own state
   };
 
@@ -564,19 +580,24 @@ export function useFinderLogic({
 
     const file = e.dataTransfer.files[0];
     if (file) {
-      // Only accept text and markdown files
-      if (!file.type.startsWith("text/") && !file.name.endsWith(".md")) {
+      const previewKind = resolvePreviewKind(file.name, file);
+      if (previewKind === "unsupported") {
         return;
       }
 
       try {
-        const text = await file.text();
+        const content =
+          previewKind === "image" || previewKind === "pdf"
+            ? new Blob([await file.arrayBuffer()], {
+                type: file.type || undefined,
+              })
+            : await file.text();
         const filePath = `/Documents/${file.name}`;
 
         await saveFile({
           name: file.name,
           path: filePath,
-          content: text,
+          content,
         });
 
         // Notify file was added
@@ -780,8 +801,30 @@ export function useFinderLogic({
           return;
         }
       } else {
-        // In other directories: accept text and markdown files
-        if (!file.type.startsWith("text/") && !file.name.endsWith(".md")) {
+        const extension = file.name.split(".").pop()?.toLowerCase() || "";
+        const supportedExtensions = new Set([
+          "txt",
+          "md",
+          "pdf",
+          "png",
+          "jpg",
+          "jpeg",
+          "gif",
+          "webp",
+          "bmp",
+          "svg",
+          "html",
+          "htm",
+          "json",
+          "csv",
+          "xml",
+        ]);
+        if (
+          !file.type.startsWith("text/") &&
+          !file.type.startsWith("image/") &&
+          file.type !== "application/pdf" &&
+          !supportedExtensions.has(extension)
+        ) {
           e.target.value = "";
           return;
         }
@@ -847,8 +890,18 @@ export function useFinderLogic({
             }),
           });
         } else {
-          // Handle regular text files
-          const text = await file.text();
+          const extension = file.name.split(".").pop()?.toLowerCase() || "";
+          const isBinaryPreviewFile =
+            file.type.startsWith("image/") ||
+            file.type === "application/pdf" ||
+            ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "pdf"].includes(
+              extension,
+            );
+          const content = isBinaryPreviewFile
+            ? new Blob([await file.arrayBuffer()], {
+                type: file.type || undefined,
+              })
+            : await file.text();
           const fileName = file.name;
           const basePath = currentPath === "/" ? "" : currentPath;
           const filePath = `${basePath}/${fileName}`;
@@ -856,7 +909,7 @@ export function useFinderLogic({
           await saveFile({
             name: fileName,
             path: filePath,
-            content: text,
+            content,
           });
 
           // Notify file was added
@@ -1333,6 +1386,10 @@ export function useFinderLogic({
 
   const fileMenuItems = (file: FileItem): MenuItem[] => {
     const isTrashedItem = currentPath === "/Trash" || file.status === "trashed";
+    const openWithApps =
+      file.appId || file.type === "site-link" || file.type === "Music" || file.type === "Video"
+        ? []
+        : getOpenWithApps(file);
 
     return [
       {
@@ -1340,6 +1397,20 @@ export function useFinderLogic({
         label: t("apps.finder.contextMenu.open"),
         onSelect: () => handleFileOpen(file),
       },
+      ...(openWithApps.length > 1
+        ? [
+            {
+              type: "submenu" as const,
+              label: t("apps.finder.contextMenu.openWith"),
+              items: openWithApps.map((appId) => ({
+                type: "item" as const,
+                label: getTranslatedAppName(appId),
+                icon: getAppIconPath(appId),
+                onSelect: () => handleFileOpen(file, undefined, appId),
+              })),
+            },
+          ]
+        : []),
       { type: "separator" },
       {
         type: "submenu",

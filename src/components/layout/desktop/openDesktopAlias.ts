@@ -2,6 +2,8 @@ import type { AppId } from "@/config/appRegistry";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import type { FileSystemItem } from "@/stores/useFilesStore";
 import { STORES, dbOperations } from "@/utils/indexedDB";
+import { getDefaultFileApp } from "@/utils/fileAssociations";
+import { getStoreForFile } from "@/utils/indexedDBOperations";
 
 export async function openDesktopAlias(
   shortcut: FileSystemItem,
@@ -46,21 +48,29 @@ export async function openDesktopAlias(
   }
 
   try {
+    if (targetFile.path.startsWith("/Applications/") && targetFile.appId) {
+      launchApp(targetFile.appId as AppId, { launchOrigin });
+      return;
+    }
+
+    const associatedAppId = getDefaultFileApp(targetFile);
+    if (associatedAppId === "preview" || associatedAppId === "books") {
+      launchApp(associatedAppId, {
+        initialData: { path: targetFile.path },
+        launchOrigin,
+      });
+      return;
+    }
+
     let contentToUse: string | Blob | undefined = undefined;
     let contentAsString: string | undefined = undefined;
 
-    if (
-      targetFile.path.startsWith("/Documents/") ||
-      targetFile.path.startsWith("/Images/") ||
-      targetFile.path.startsWith("/Applets/")
-    ) {
+    const storeName = getStoreForFile(targetFile.path, {
+      name: targetFile.name,
+      type: targetFile.type,
+    });
+    if (storeName) {
       if (targetFile.uuid) {
-        const storeName = targetFile.path.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : targetFile.path.startsWith("/Images/")
-            ? STORES.IMAGES
-            : STORES.APPLETS;
-
         const contentData = await dbOperations.get<{
           name: string;
           content: string | Blob;
@@ -69,10 +79,7 @@ export async function openDesktopAlias(
         if (contentData) {
           contentToUse = contentData.content;
           if (contentToUse instanceof Blob) {
-            if (
-              targetFile.path.startsWith("/Documents/") ||
-              targetFile.path.startsWith("/Applets/")
-            ) {
+            if (storeName === STORES.DOCUMENTS || storeName === STORES.APPLETS) {
               contentAsString = await contentToUse.text();
             }
           } else if (typeof contentToUse === "string") {
@@ -82,22 +89,17 @@ export async function openDesktopAlias(
       }
     }
 
-    if (targetFile.path.startsWith("/Applications/") && targetFile.appId) {
-      launchApp(targetFile.appId as AppId, { launchOrigin });
-    } else if (targetFile.path.startsWith("/Documents/")) {
+    if (associatedAppId === "textedit") {
       launchApp("textedit", {
         initialData: { path: targetFile.path, content: contentAsString ?? "" },
         launchOrigin,
       });
-    } else if (targetFile.path.startsWith("/Images/")) {
+    } else if (associatedAppId === "paint") {
       launchApp("paint", {
         initialData: { path: targetFile.path, content: contentToUse },
         launchOrigin,
       });
-    } else if (
-      targetFile.path.startsWith("/Applets/") &&
-      (targetFile.path.endsWith(".app") || targetFile.path.endsWith(".html"))
-    ) {
+    } else if (associatedAppId === "applet-viewer") {
       launchApp("applet-viewer", {
         initialData: {
           path: targetFile.path,

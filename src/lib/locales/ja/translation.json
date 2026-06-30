@@ -2263,6 +2263,7 @@
         "noAirDropUsersAvailable": "近くのユーザーはいません",
         "open": "開く",
         "openAirDrop": "AirDropを開く",
+        "openWith": "このアプリケーションで開く",
         "putBack": "元に戻す",
         "rename": "名前の変更…",
         "searchingForAirDropUsers": "近くのユーザーを検索中…",
@@ -2302,8 +2303,10 @@
         "internetShortcut": "インターネットショートカット",
         "jpegImage": "JPEGイメージ",
         "mp3Audio": "MP3オーディオ",
+        "pdfDocument": "PDF書類",
         "pngImage": "PNGイメージ",
         "quicktimeMovie": "QuickTimeムービー",
+        "svgImage": "SVGイメージ",
         "unknown": "不明",
         "webpImage": "WebP 画像"
       },
@@ -3682,6 +3685,74 @@
         "photoBoothHelp": "フォトブースヘルプ"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "イメージ、PDF、および書類を表示します",
+      "empty": {
+        "hint": "ファイルを選択するか、ここにドロップしてください",
+        "title": "書類を開く"
+      },
+      "help": {
+        "images": {
+          "description": "元のファイルを変更せずに、一般的なイメージフォーマットを開きます",
+          "title": "イメージをプレビュー"
+        },
+        "openFiles": {
+          "description": "「ファイル」＞「開く」を使用して、デバイスからファイルをプレビューします",
+          "title": "ファイルを開く"
+        },
+        "openWith": {
+          "description": "編集可能なファイルをペイント、テキストエディット、またはAppletビューアに送信します",
+          "title": "このアプリケーションで開く"
+        },
+        "pdfs": {
+          "description": "内蔵の書類ビューアを使用してPDF書類を表示します",
+          "title": "PDFを読み取る"
+        },
+        "safeHtml": {
+          "description": "スクリプトを実行せずに、サンドボックス内でHTML書類をプレビューします",
+          "title": "セーフHTML"
+        },
+        "zoom": {
+          "description": "イメージを拡大/縮小、またはウインドウに合わせます",
+          "title": "拡大/縮小"
+        }
+      },
+      "menu": {
+        "aboutPreview": "プレビューについて",
+        "actualSize": "実際のサイズ",
+        "export": "書き出す…",
+        "fitToWindow": "ウインドウに合わせる",
+        "importFromDevice": "デバイスから読み込む…",
+        "open": "開く…",
+        "openWith": "このアプリケーションで開く",
+        "previewHelp": "プレビューヘルプ",
+        "saveAs": "別名で保存…",
+        "zoomIn": "拡大",
+        "zoomOut": "縮小"
+      },
+      "name": "プレビュー",
+      "saveAs": {
+        "description": "このコピーの名前を入力してください",
+        "title": "別名で保存"
+      },
+      "status": {
+        "loadFailed": "このファイルを開けませんでした。",
+        "loading": "プレビューを読み込み中…",
+        "notFound": "ファイルの内容が見つかりませんでした。",
+        "unsupported": "プレビューを利用できません",
+        "unsupportedDescription": "このファイルフォーマットはプレビューでサポートされていません。"
+      },
+      "supportedFiles": "プレビューの書類",
+      "title": "プレビュー",
+      "toasts": {
+        "exportFailed": "ファイルを書き出せませんでした",
+        "importFailed": "ファイルを読み込めませんでした",
+        "imported": "ファイルを読み込みました",
+        "saveFailed": "ファイルを保存できませんでした",
+        "saved": "ファイルを保存しました"
+      },
+      "untitled": "名称未設定"
     },
     "soundboard": {
       "description": "サウンドエフェクトを再生",

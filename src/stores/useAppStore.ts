@@ -751,6 +751,7 @@ const createUseAppStore = () =>
           multiWindow ||
           appId === "textedit" ||
           appId === "finder" ||
+          appId === "preview" ||
           appId === "applet-viewer";
         if (!supportsMultiWindow) {
           const existing = Object.values(state.instances).find(

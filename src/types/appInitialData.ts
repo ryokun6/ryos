@@ -19,6 +19,12 @@ export interface PaintInitialData {
   content: Blob;
 }
 
+/** Preview initial data - for viewing local or VFS-backed files */
+export interface PreviewInitialData {
+  path?: string;
+  content?: string | Blob | ArrayBuffer;
+}
+
 /** Internet Explorer initial data - for URL navigation or share codes */
 export interface InternetExplorerInitialData {
   url?: string;
@@ -62,6 +68,7 @@ export interface FinderInitialData {
 export interface AppInitialDataMap {
   textedit: TextEditInitialData;
   paint: PaintInitialData;
+  preview: PreviewInitialData;
   "internet-explorer": InternetExplorerInitialData;
   ipod: IpodInitialData;
   videos: VideosInitialData;
@@ -85,6 +92,7 @@ export type AppInitialData<T extends AppId> = T extends keyof AppInitialDataMap
 export type AnyAppInitialData =
   | TextEditInitialData
   | PaintInitialData
+  | PreviewInitialData
   | InternetExplorerInitialData
   | IpodInitialData
   | VideosInitialData

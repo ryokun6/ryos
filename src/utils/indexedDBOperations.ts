@@ -20,6 +20,7 @@ const IMAGE_FILE_EXTENSIONS = new Set([
   "gif",
   "webp",
   "bmp",
+  "svg",
 ]);
 
 const APPLET_FILE_EXTENSIONS = new Set(["app", "html", "htm"]);
@@ -40,6 +41,7 @@ const IMAGE_FILE_TYPES = new Set([
   "gif",
   "webp",
   "bmp",
+  "svg",
 ]);
 
 const APPLET_FILE_TYPES = new Set(["html", "htm", "app", "applet"]);

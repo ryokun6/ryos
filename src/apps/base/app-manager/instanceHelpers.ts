@@ -11,5 +11,10 @@ export function getZIndexForInstance(
 }
 
 export function supportsMultiWindowApp(appId: AppId): boolean {
-  return appId === "textedit" || appId === "finder" || appId === "applet-viewer";
+  return (
+    appId === "textedit" ||
+    appId === "finder" ||
+    appId === "preview" ||
+    appId === "applet-viewer"
+  );
 }

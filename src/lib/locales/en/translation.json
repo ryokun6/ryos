@@ -428,6 +428,8 @@
         "gifImage": "GIF Image",
         "webpImage": "WebP Image",
         "bmpImage": "BMP Image",
+        "svgImage": "SVG Image",
+        "pdfDocument": "PDF Document",
         "book": "Book",
         "document": "Document",
         "htmlApplet": "HTML Applet",
@@ -442,6 +444,7 @@
         "emptyTrash": "Empty Trash…",
         "newFolder": "New Folder…",
         "open": "Open",
+        "openWith": "Open With",
         "addToDesktop": "Add to Desktop",
         "rename": "Rename…",
         "duplicate": "Duplicate",
@@ -1378,6 +1381,74 @@
         "fileManagement": {
           "title": "Save as HTML, MD, or TXT",
           "description": "Export to Markdown, HTML, or plain text and drop files back in to import"
+        }
+      }
+    },
+    "preview": {
+      "name": "Preview",
+      "title": "Preview",
+      "description": "View images, PDFs, and documents",
+      "untitled": "Untitled",
+      "supportedFiles": "Preview documents",
+      "menu": {
+        "open": "Open…",
+        "openWith": "Open With",
+        "saveAs": "Save As…",
+        "importFromDevice": "Import from Device…",
+        "export": "Export…",
+        "zoomIn": "Zoom In",
+        "zoomOut": "Zoom Out",
+        "actualSize": "Actual Size",
+        "fitToWindow": "Fit to Window",
+        "previewHelp": "Preview Help",
+        "aboutPreview": "About Preview"
+      },
+      "empty": {
+        "title": "Open a document",
+        "hint": "Choose a file or drop it here"
+      },
+      "status": {
+        "loading": "Loading preview…",
+        "notFound": "The file content could not be found.",
+        "loadFailed": "Couldn’t open this file.",
+        "unsupported": "No preview available",
+        "unsupportedDescription": "This file format isn’t supported by Preview."
+      },
+      "saveAs": {
+        "title": "Save As",
+        "description": "Enter a name for this copy"
+      },
+      "toasts": {
+        "imported": "File imported",
+        "importFailed": "Couldn’t import the file",
+        "saved": "File saved",
+        "saveFailed": "Couldn’t save the file",
+        "exportFailed": "Couldn’t export the file"
+      },
+      "help": {
+        "images": {
+          "title": "Preview Images",
+          "description": "Open common image formats without changing the original file"
+        },
+        "pdfs": {
+          "title": "Read PDFs",
+          "description": "View PDF documents using the built-in document viewer"
+        },
+        "zoom": {
+          "title": "Zoom",
+          "description": "Zoom images in or out, or fit them to the window"
+        },
+        "openFiles": {
+          "title": "Open Files",
+          "description": "Open files from Finder or import a copy from your device"
+        },
+        "openWith": {
+          "title": "Open With",
+          "description": "Send editable files to Paint, TextEdit, or Applet Viewer"
+        },
+        "safeHtml": {
+          "title": "Safe HTML",
+          "description": "Preview HTML documents in a sandbox without running scripts"
         }
       }
     },
