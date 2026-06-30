@@ -199,6 +199,13 @@ describe("songs codec", () => {
     codec.apply = async () => {
       applied = true;
     };
+    const previousAutoSyncEnabled =
+      useCloudSyncStore.getState().autoSyncEnabled;
+    const previousSyncSongs = useCloudSyncStore.getState().syncSongs;
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncSongs: true,
+    });
     const engine = new CloudSyncEngine("hydration-test");
 
     try {
@@ -218,6 +225,10 @@ describe("songs codec", () => {
     } finally {
       codec.isReady = originalIsReady;
       codec.apply = originalApply;
+      useCloudSyncStore.setState({
+        autoSyncEnabled: previousAutoSyncEnabled,
+        syncSongs: previousSyncSongs,
+      });
       engine.stop();
     }
   });

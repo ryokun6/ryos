@@ -46,6 +46,15 @@ describe("large Zustand stores use one IndexedDB persistence path", () => {
       "return useIpodStore.persist.hasHydrated();"
     );
   });
+
+  test("full-state stores partialize away action functions", () => {
+    expect(readSource("src/stores/useStickiesStore.ts")).toContain(
+      "partialize: (state) => ({ notes: state.notes })"
+    );
+    expect(readSource("src/stores/useContactsStore.ts")).toContain(
+      "partialize: (state) => ({"
+    );
+  });
 });
 
 describe("TextEdit dropped-file staging", () => {

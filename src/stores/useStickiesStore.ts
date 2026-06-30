@@ -118,6 +118,7 @@ export const useStickiesStore = create<StickiesState>()(
     {
       name: "stickies-storage",
       storage: createIndexedDBPersistStorage(),
+      partialize: (state) => ({ notes: state.notes }),
     }
   )
 );
