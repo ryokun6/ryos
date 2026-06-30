@@ -90,6 +90,7 @@ import {
   resolveAppleMusicPlaylistMenu,
 } from "../utils/appleMusicPlaylistMenu";
 import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
+import { createClientLogger } from "@/utils/logger";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -100,6 +101,7 @@ const IS_IOS = /iP(hone|od|ad)/.test(UA);
 const IS_SAFARI =
   /Safari/.test(UA) && !/Chrome/.test(UA) && !/CriOS/.test(UA);
 const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
+const ipodLog = createClientLogger("iPod");
 
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
 const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];
@@ -295,6 +297,50 @@ export function useIpodLogic({
   const appleMusicLibrarySize = useIpodStore(
     (s) => s.appleMusicTracks.length
   );
+
+  const previousPlaybackDebugRef = useRef<{
+    isWindowOpen: boolean;
+    librarySource: typeof librarySource;
+    currentSongId: string | null;
+    currentIndex: number;
+    playbackRequested: boolean;
+    isPlaying: boolean;
+    isFullScreen: boolean;
+  } | null>(null);
+  useEffect(() => {
+    const snapshot = {
+      isWindowOpen,
+      librarySource,
+      currentSongId,
+      currentIndex,
+      playbackRequested,
+      isPlaying,
+      isFullScreen,
+    };
+    const previous = previousPlaybackDebugRef.current;
+    if (previous === null) {
+      ipodLog.debug("Initial playback state", snapshot);
+    } else if (
+      previous.isWindowOpen !== snapshot.isWindowOpen ||
+      previous.librarySource !== snapshot.librarySource ||
+      previous.currentSongId !== snapshot.currentSongId ||
+      previous.currentIndex !== snapshot.currentIndex ||
+      previous.playbackRequested !== snapshot.playbackRequested ||
+      previous.isPlaying !== snapshot.isPlaying ||
+      previous.isFullScreen !== snapshot.isFullScreen
+    ) {
+      ipodLog.debug("Playback state changed", { previous, next: snapshot });
+    }
+    previousPlaybackDebugRef.current = snapshot;
+  }, [
+    currentIndex,
+    currentSongId,
+    isFullScreen,
+    isPlaying,
+    isWindowOpen,
+    librarySource,
+    playbackRequested,
+  ]);
 
 
   // Derived from the active-library subscription instead of a store selector:
@@ -3564,6 +3610,16 @@ export function useIpodLogic({
 
   // Helper to mark track switch start and schedule end
   const startTrackSwitch = useCallback(() => {
+    const state = useIpodStore.getState();
+    ipodLog.debug("Started track-switch guard", {
+      librarySource: state.librarySource,
+      currentSongId:
+        state.librarySource === "appleMusic"
+          ? state.appleMusicCurrentSongId
+          : state.currentSongId,
+      playbackRequested: state.playbackRequested,
+      isPlaying: state.isPlaying,
+    });
     isTrackSwitchingRef.current = true;
     if (trackSwitchTimeoutRef.current) {
       clearTimeout(trackSwitchTimeoutRef.current);
@@ -3571,6 +3627,7 @@ export function useIpodLogic({
     // Allow 2 seconds for YouTube to load before accepting play/pause events
     trackSwitchTimeoutRef.current = setTimeout(() => {
       isTrackSwitchingRef.current = false;
+      ipodLog.debug("Ended track-switch guard");
     }, 2000);
   }, []);
 
@@ -3613,6 +3670,12 @@ export function useIpodLogic({
       }
 
       try {
+        ipodLog.debug("Skipping within Apple Music collection", {
+          requestedDirection: direction,
+          effectiveDirection: skipNext ? "next" : "previous",
+          trackId: shellTrack.id,
+          isStation,
+        });
         skipOperationRef.current = true;
         startTrackSwitch();
         useIpodStore.getState().setElapsedTime(0);
@@ -3624,9 +3687,19 @@ export function useIpodLogic({
         }
         setIsPlaying(true);
         showStatus(direction === "previous" ? "⏮" : "⏭");
+        ipodLog.debug("Skipped within Apple Music collection", {
+          requestedDirection: direction,
+          effectiveDirection: skipNext ? "next" : "previous",
+          trackId: shellTrack.id,
+        });
         return true;
       } catch (err) {
-        console.warn("[apple music] failed to skip collection queue item", err);
+        ipodLog.warn("Could not skip within Apple Music collection", {
+          error: err,
+          requestedDirection: direction,
+          effectiveDirection: skipNext ? "next" : "previous",
+          trackId: shellTrack.id,
+        });
         return false;
       }
     },
@@ -3640,7 +3713,13 @@ export function useIpodLogic({
   );
 
   const nextTrack = useCallback(() => {
-    if (getCurrentAppleMusicCollectionShellTrack()) {
+    const shellTrack = getCurrentAppleMusicCollectionShellTrack();
+    ipodLog.debug("Moving to next track", {
+      librarySource: useIpodStore.getState().librarySource,
+      currentTrackId: tracks[currentIndex]?.id ?? null,
+      collectionShellTrackId: shellTrack?.id ?? null,
+    });
+    if (shellTrack) {
       void skipAppleMusicCollectionShell("next");
       return;
     }
@@ -3649,6 +3728,8 @@ export function useIpodLogic({
     getCurrentAppleMusicCollectionShellTrack,
     rawNextTrack,
     skipAppleMusicCollectionShell,
+    tracks,
+    currentIndex,
   ]);
 
   // Classic click-wheel iPod behavior: restart the current track when the
@@ -3664,16 +3745,34 @@ export function useIpodLogic({
   }, [isFullScreen, fullScreenPlayerRef, playerRef]);
 
   const previousTrack = useCallback(() => {
-    if (getCurrentAppleMusicCollectionShellTrack()) {
+    const shellTrack = getCurrentAppleMusicCollectionShellTrack();
+    if (shellTrack) {
+      ipodLog.debug("Moving to previous Apple Music collection item", {
+        librarySource: "appleMusic",
+        currentTrackId: shellTrack.id,
+        behavior: "collectionSkip",
+      });
       void skipAppleMusicCollectionShell("previous");
       return;
     }
     const { elapsedTime } = useIpodStore.getState();
     const hasCurrentTrack = Boolean(tracks[currentIndex]);
     if (shouldRestartTrackOnPrevious(elapsedTime, hasCurrentTrack)) {
+      ipodLog.debug("Restarting current track", {
+        librarySource: useIpodStore.getState().librarySource,
+        currentTrackId: tracks[currentIndex]?.id ?? null,
+        elapsedTime,
+        behavior: "restart",
+      });
       restartCurrentTrack();
       return;
     }
+    ipodLog.debug("Moving to previous track", {
+      librarySource: useIpodStore.getState().librarySource,
+      currentTrackId: tracks[currentIndex]?.id ?? null,
+      elapsedTime,
+      behavior: "previousTrack",
+    });
     rawPreviousTrack();
   }, [
     getCurrentAppleMusicCollectionShellTrack,
@@ -3874,6 +3973,12 @@ export function useIpodLogic({
 
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
+    ipodLog.debug("Player reported track ended", {
+      trackId: tracks[currentIndex]?.id ?? null,
+      librarySource,
+      loopCurrent,
+      isFullScreen,
+    });
     if (loopCurrent) {
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       activePlayer?.seekTo(0);
@@ -3882,7 +3987,16 @@ export function useIpodLogic({
       startTrackSwitch();
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
+  }, [
+    currentIndex,
+    isFullScreen,
+    librarySource,
+    loopCurrent,
+    nextTrack,
+    setIsPlaying,
+    startTrackSwitch,
+    tracks,
+  ]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     // Single source of truth — zustand. This hook intentionally does NOT
@@ -3892,14 +4006,28 @@ export function useIpodLogic({
   }, []);
 
   const handleDuration = useCallback((duration: number) => {
+    ipodLog.debug("Player reported track duration", {
+      duration,
+      trackId:
+        useIpodStore.getState().librarySource === "appleMusic"
+          ? useIpodStore.getState().appleMusicCurrentSongId
+          : useIpodStore.getState().currentSongId,
+    });
     setTotalTime(duration);
     useIpodStore.getState().setTotalTime(duration);
   }, []);
 
   const handlePlay = useCallback(() => {
+    ipodLog.debug("Player started playback", {
+      trackId: tracks[currentIndex]?.id ?? null,
+      librarySource,
+      wasTrackSwitching: isTrackSwitchingRef.current,
+      skipOperationPending: skipOperationRef.current,
+    });
     confirmPlayback();
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
+      ipodLog.debug("Ignored play event during track switch");
       return;
     }
     if (!skipOperationRef.current) showStatus("▶");
@@ -3921,20 +4049,58 @@ export function useIpodLogic({
         lastTrackedSongRef.current = { trackId: currentTrack.id, elapsedTime };
       }
     }
-  }, [confirmPlayback, showStatus, tracks, currentIndex]);
+  }, [
+    confirmPlayback,
+    currentIndex,
+    librarySource,
+    showStatus,
+    tracks,
+  ]);
 
   const handlePause = useCallback(() => {
+    ipodLog.debug("Player paused playback", {
+      trackId: tracks[currentIndex]?.id ?? null,
+      librarySource,
+      wasTrackSwitching: isTrackSwitchingRef.current,
+    });
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
+      ipodLog.debug("Ignored pause event during track switch");
       return;
     }
     setIsPlaying(false);
     showStatus("⏸︎");
-  }, [setIsPlaying, showStatus]);
+  }, [
+    currentIndex,
+    librarySource,
+    setIsPlaying,
+    showStatus,
+    tracks,
+  ]);
 
-  const handleReady = useCallback(() => {}, []);
+  const handleReady = useCallback(() => {
+    const state = useIpodStore.getState();
+    ipodLog.debug("Player ready", {
+      librarySource: state.librarySource,
+      currentTrackId:
+        state.librarySource === "appleMusic"
+          ? state.appleMusicCurrentSongId
+          : state.currentSongId,
+      playbackRequested: state.playbackRequested,
+    });
+  }, []);
 
   const handlePlaybackAttemptFailed = useCallback(() => {
+    const state = useIpodStore.getState();
+    ipodLog.warn("Playback attempt failed", {
+      librarySource: state.librarySource,
+      currentTrackId:
+        state.librarySource === "appleMusic"
+          ? state.appleMusicCurrentSongId
+          : state.currentSongId,
+      playbackRequested: state.playbackRequested,
+      elapsedTime: state.elapsedTime,
+    });
     setIsPlaying(false);
   }, [setIsPlaying]);
 
@@ -3950,6 +4116,15 @@ export function useIpodLogic({
       const { playbackRequested: stillRequested, elapsedTime: nowElapsed } =
         useIpodStore.getState();
       if (stillRequested && nowElapsed === startElapsed) {
+        ipodLog.warn("Autoplay watchdog detected blocked playback", {
+          currentTrackId:
+            useIpodStore.getState().librarySource === "appleMusic"
+              ? useIpodStore.getState().appleMusicCurrentSongId
+              : useIpodStore.getState().currentSongId,
+          elapsedTime: nowElapsed,
+          isIOSSafari,
+          userHasInteracted: userHasInteractedRef.current,
+        });
         setIsPlaying(false);
         showStatus("⏸");
       }

@@ -58,11 +58,16 @@ const readyListeners = new Set<(instance: MusicKit.MusicKitInstance) => void>();
 
 function notifyReady(instance: MusicKit.MusicKitInstance) {
   configuredInstance = instance;
+  musicKitLog.debug("MusicKit instance ready", {
+    isAuthorized: instance.isAuthorized,
+    storefrontId: instance.storefrontId,
+    listenerCount: readyListeners.size,
+  });
   for (const listener of readyListeners) {
     try {
       listener(instance);
     } catch (err) {
-      musicKitLog.error("readyListener:threw", { error: err });
+      musicKitLog.error("MusicKit ready listener threw", { error: err });
     }
   }
 }
@@ -80,12 +85,22 @@ async function fetchDeveloperToken(): Promise<string> {
     cachedDeveloperToken &&
     cachedDeveloperToken.expiresAt - now > TOKEN_REFRESH_BUFFER_MS
   ) {
+    musicKitLog.debug("Using cached developer token", {
+      expiresInMs: cachedDeveloperToken.expiresAt - now,
+    });
     return cachedDeveloperToken.token;
   }
 
-  if (inFlightTokenFetch) return inFlightTokenFetch;
+  if (inFlightTokenFetch) {
+    musicKitLog.debug("Waiting for in-flight developer token request");
+    return inFlightTokenFetch;
+  }
 
   inFlightTokenFetch = (async () => {
+    musicKitLog.debug("Fetching developer token", {
+      endpoint: MUSICKIT_TOKEN_ENDPOINT,
+      hadCachedToken: cachedDeveloperToken !== null,
+    });
     const res = await fetch(MUSICKIT_TOKEN_ENDPOINT, {
       method: "GET",
       credentials: "same-origin",
@@ -104,6 +119,10 @@ async function fetchDeveloperToken(): Promise<string> {
       token: data.token,
       expiresAt: data.expiresAt,
     };
+    musicKitLog.debug("Developer token fetched", {
+      status: res.status,
+      expiresInMs: data.expiresAt - Date.now(),
+    });
     return data.token;
   })();
 
@@ -120,7 +139,10 @@ async function resolveDeveloperToken(): Promise<string> {
   } catch (err) {
     const fallback = getEnvFallbackToken();
     if (fallback) {
-      musicKitLog.warn("tokenFetch:failedUsingEnvFallback", { error: err });
+      musicKitLog.warn(
+        "Developer token request failed; using environment fallback",
+        { error: err }
+      );
       return fallback;
     }
     throw err;
@@ -131,9 +153,16 @@ function loadScript(): Promise<void> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("MusicKit JS requires a browser"));
   }
-  if (window.MusicKit) return Promise.resolve();
-  if (scriptPromise) return scriptPromise;
+  if (window.MusicKit) {
+    musicKitLog.debug("MusicKit script already available");
+    return Promise.resolve();
+  }
+  if (scriptPromise) {
+    musicKitLog.debug("Waiting for in-flight MusicKit script load");
+    return scriptPromise;
+  }
 
+  musicKitLog.debug("Loading MusicKit script", { src: MUSICKIT_SCRIPT_SRC });
   scriptPromise = new Promise<void>((resolve, reject) => {
     let settled = false;
     const settle = (err?: Error) => {
@@ -141,8 +170,12 @@ function loadScript(): Promise<void> {
       settled = true;
       if (err) {
         scriptPromise = null;
+        musicKitLog.error("MusicKit script failed to load", { error: err });
         reject(err);
       } else {
+        musicKitLog.debug("MusicKit script loaded", {
+          hasGlobal: Boolean(window.MusicKit),
+        });
         resolve();
       }
     };
@@ -152,6 +185,9 @@ function loadScript(): Promise<void> {
     // by the time the script's `load` event fires, so we listen for both.
     const handleMusicKitLoaded = () => {
       document.removeEventListener("musickitloaded", handleMusicKitLoaded);
+      musicKitLog.debug("Received MusicKit loaded event", {
+        hasGlobal: Boolean(window.MusicKit),
+      });
       if (window.MusicKit) {
         settle();
       } else {
@@ -163,6 +199,9 @@ function loadScript(): Promise<void> {
     });
 
     const handleScriptLoad = () => {
+      musicKitLog.debug("MusicKit script load event fired", {
+        hasGlobal: Boolean(window.MusicKit),
+      });
       // Give a microtask in case `musickitloaded` is dispatched right after
       // the script runs synchronously.
       queueMicrotask(() => {
@@ -184,6 +223,9 @@ function loadScript(): Promise<void> {
     ) as HTMLScriptElement | null;
 
     if (existing) {
+      musicKitLog.debug("Reusing existing MusicKit script tag", {
+        hasGlobal: Boolean(window.MusicKit),
+      });
       if (window.MusicKit) {
         settle();
         return;
@@ -201,6 +243,7 @@ function loadScript(): Promise<void> {
     script.addEventListener("load", handleScriptLoad, { once: true });
     script.addEventListener("error", handleScriptError, { once: true });
     document.head.appendChild(script);
+    musicKitLog.debug("Added MusicKit script tag");
   });
 
   return scriptPromise;
@@ -210,13 +253,24 @@ async function configureMusicKit(
   developerToken: string,
   app: MusicKit.AppMetadata
 ): Promise<MusicKit.MusicKitInstance> {
-  if (configuredInstance) return configuredInstance;
-  if (configurePromise) return configurePromise;
+  if (configuredInstance) {
+    musicKitLog.debug("Reusing configured MusicKit instance");
+    return configuredInstance;
+  }
+  if (configurePromise) {
+    musicKitLog.debug("Waiting for in-flight MusicKit configuration");
+    return configurePromise;
+  }
   if (!window.MusicKit?.configure) {
     throw new Error("MusicKit.configure is not available");
   }
 
   configurePromise = (async () => {
+    musicKitLog.debug("Configuring MusicKit", {
+      appName: app.name,
+      appBuild: app.build,
+      bitrate: APPLE_MUSIC_STREAMING_BITRATE_KBPS,
+    });
     // `configure()` returns a Promise in MusicKit JS v3. Awaiting also
     // forces script-side init to complete before we hand the instance back.
     const result = await Promise.resolve(
@@ -229,6 +283,10 @@ async function configureMusicKit(
       throw new Error("MusicKit.configure returned no instance");
     }
     notifyReady(instance);
+    musicKitLog.debug("MusicKit configured", {
+      isAuthorized: instance.isAuthorized,
+      storefrontId: instance.storefrontId,
+    });
     return instance;
   })();
 
@@ -236,6 +294,7 @@ async function configureMusicKit(
     return await configurePromise;
   } catch (err) {
     configurePromise = null;
+    musicKitLog.error("MusicKit configuration failed", { error: err });
     throw err;
   }
 }
@@ -263,6 +322,10 @@ export function onMusicKitReady(
  * inside `fetchDeveloperToken` handles routine refreshes automatically.
  */
 export function clearMusicKitTokenCache(): void {
+  musicKitLog.debug("Cleared developer token cache", {
+    hadCachedToken: cachedDeveloperToken !== null,
+    hadInFlightFetch: inFlightTokenFetch !== null,
+  });
   cachedDeveloperToken = null;
   inFlightTokenFetch = null;
 }
@@ -352,6 +415,10 @@ export function useMusicKit(
     const refresh = () => {
       const authorized = Boolean(instance.isAuthorized);
       if (authorized !== isAuthorizedRef.current) {
+        musicKitLog.debug("MusicKit authorization changed", {
+          wasAuthorized: isAuthorizedRef.current,
+          isAuthorized: authorized,
+        });
         dispatch({ type: "patch", payload: { isAuthorized: authorized } });
       }
     };
@@ -365,8 +432,15 @@ export function useMusicKit(
   }, [instance]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      musicKitLog.debug("MusicKit initialization disabled");
+      return;
+    }
     if (configuredInstance) {
+      musicKitLog.debug("Initialized from existing MusicKit instance", {
+        isAuthorized: configuredInstance.isAuthorized,
+        storefrontId: configuredInstance.storefrontId,
+      });
       dispatch({
         type: "patch",
         payload: {
@@ -380,20 +454,30 @@ export function useMusicKit(
     }
 
     let cancelled = false;
+    musicKitLog.debug("Starting MusicKit initialization", {
+      appName: app.name,
+      appBuild: app.build,
+    });
     dispatch({ type: "patch", payload: { status: "loading", error: null } });
 
     (async () => {
       try {
         const token = await resolveDeveloperToken();
         if (cancelled) return;
+        musicKitLog.debug("Developer token ready");
         dispatch({ type: "patch", payload: { hasToken: true } });
 
         await loadScript();
         if (cancelled) return;
+        musicKitLog.debug("MusicKit script ready");
 
         try {
           const inst = await configureMusicKit(token, app);
           if (cancelled) return;
+          musicKitLog.debug("MusicKit initialization complete", {
+            isAuthorized: inst.isAuthorized,
+            storefrontId: inst.storefrontId,
+          });
           dispatch({
             type: "patch",
             payload: {
@@ -403,6 +487,10 @@ export function useMusicKit(
             },
           });
         } catch (err) {
+          musicKitLog.error(
+            "MusicKit initialization could not configure an instance",
+            { error: err }
+          );
           dispatch({
             type: "patch",
             payload: {
@@ -415,12 +503,17 @@ export function useMusicKit(
         if (cancelled) return;
         const fallback = getEnvFallbackToken();
         if (!fallback) {
+          musicKitLog.debug(
+            "MusicKit initialization stopped because no developer token is available",
+            { error: err }
+          );
           dispatch({
             type: "patch",
             payload: { hasToken: false, status: "missing-token" },
           });
           return;
         }
+        musicKitLog.error("MusicKit initialization failed", { error: err });
         dispatch({
           type: "patch",
           payload: {
@@ -433,6 +526,7 @@ export function useMusicKit(
 
     return () => {
       cancelled = true;
+      musicKitLog.debug("Cancelled MusicKit initialization");
     };
   }, [enabled, app]);
 
@@ -442,16 +536,28 @@ export function useMusicKit(
   // configured instance changes, both callbacks get a fresh identity.
   const authorize = useCallback(async (): Promise<string | null> => {
     const inst = instance ?? configuredInstance;
-    if (!inst) return null;
+    if (!inst) {
+      musicKitLog.debug(
+        "Skipped Apple Music authorization because MusicKit is unavailable"
+      );
+      return null;
+    }
     try {
+      musicKitLog.debug("Requesting Apple Music authorization", {
+        wasAuthorized: inst.isAuthorized,
+      });
       const token = await inst.authorize();
+      musicKitLog.debug("Apple Music authorization completed", {
+        isAuthorized: inst.isAuthorized,
+        returnedToken: Boolean(token),
+      });
       dispatch({
         type: "patch",
         payload: { isAuthorized: Boolean(inst.isAuthorized) },
       });
       return token ?? null;
     } catch (err) {
-      musicKitLog.error("authorize:failed", { error: err });
+      musicKitLog.error("Apple Music authorization failed", { error: err });
       dispatch({
         type: "patch",
         payload: { error: err instanceof Error ? err.message : String(err) },
@@ -462,12 +568,23 @@ export function useMusicKit(
 
   const unauthorize = useCallback(async (): Promise<void> => {
     const inst = instance ?? configuredInstance;
-    if (!inst) return;
+    if (!inst) {
+      musicKitLog.debug(
+        "Skipped Apple Music sign-out because MusicKit is unavailable"
+      );
+      return;
+    }
     try {
+      musicKitLog.debug("Signing out of Apple Music", {
+        wasAuthorized: inst.isAuthorized,
+      });
       await inst.unauthorize();
+      musicKitLog.debug("Signed out of Apple Music", {
+        isAuthorized: inst.isAuthorized,
+      });
       dispatch({ type: "patch", payload: { isAuthorized: false } });
     } catch (err) {
-      musicKitLog.error("unauthorize:failed", { error: err });
+      musicKitLog.error("Apple Music sign-out failed", { error: err });
     }
   }, [instance]);
 

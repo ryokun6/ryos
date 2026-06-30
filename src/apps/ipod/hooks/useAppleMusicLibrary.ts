@@ -1299,36 +1299,66 @@ export function syncAppleMusicResource(resource: {
 export async function syncAppleMusicResource(
   resource: AppleMusicSyncResource
 ): Promise<number | AppleMusicPlaylist[] | Track[]> {
-  switch (resource.kind) {
-    case "library":
-      return fetchAppleMusicLibrary({
-        force: resource.force,
-      });
-    case "playlists":
-      return refreshAppleMusicPlaylists({
-        force: resource.force,
-        allowEmpty: resource.allowEmpty,
-      });
-    case "playlistTracks":
-      return fetchAppleMusicPlaylistTracks(resource.playlistId, {
-        force: resource.force,
-      });
-    case "recentlyAdded":
-      return refreshAppleMusicRecentlyAdded({
-        force: resource.force,
-      });
-    case "favorites":
-      return refreshAppleMusicFavorites({
-        force: resource.force,
-      });
-    case "radio":
-      return fetchAppleMusicRadioStations({
-        force: resource.force,
-      });
-    default: {
-      const _exhaustive: never = resource;
-      throw new Error(`Unknown Apple Music sync resource: ${String(_exhaustive)}`);
+  const startedAt = Date.now();
+  appleMusicLog.debug("Starting resource sync", {
+    kind: resource.kind,
+    force: resource.force ?? false,
+    playlistId: resource.kind === "playlistTracks" ? resource.playlistId : undefined,
+  });
+  try {
+    let result: number | AppleMusicPlaylist[] | Track[];
+    switch (resource.kind) {
+      case "library":
+        result = await fetchAppleMusicLibrary({
+          force: resource.force,
+        });
+        break;
+      case "playlists":
+        result = await refreshAppleMusicPlaylists({
+          force: resource.force,
+          allowEmpty: resource.allowEmpty,
+        });
+        break;
+      case "playlistTracks":
+        result = await fetchAppleMusicPlaylistTracks(resource.playlistId, {
+          force: resource.force,
+        });
+        break;
+      case "recentlyAdded":
+        result = await refreshAppleMusicRecentlyAdded({
+          force: resource.force,
+        });
+        break;
+      case "favorites":
+        result = await refreshAppleMusicFavorites({
+          force: resource.force,
+        });
+        break;
+      case "radio":
+        result = await fetchAppleMusicRadioStations({
+          force: resource.force,
+        });
+        break;
+      default: {
+        const _exhaustive: never = resource;
+        throw new Error(
+          `Unknown Apple Music sync resource: ${String(_exhaustive)}`
+        );
+      }
     }
+    appleMusicLog.debug("Resource sync completed", {
+      kind: resource.kind,
+      durationMs: Date.now() - startedAt,
+      resultCount: typeof result === "number" ? result : result.length,
+    });
+    return result;
+  } catch (error) {
+    appleMusicLog.error("Resource sync failed", {
+      error,
+      kind: resource.kind,
+      durationMs: Date.now() - startedAt,
+    });
+    throw error;
   }
 }
 
@@ -1348,8 +1378,17 @@ export async function fetchAppleMusicLibrary(
 
   const store = useIpodStore.getState();
   if (!options.force && store.appleMusicLibraryLoading) {
+    appleMusicLog.debug("Reusing active library fetch", {
+      cachedTrackCount: store.appleMusicTracks.length,
+    });
     return store.appleMusicTracks.length;
   }
+  const startedAt = Date.now();
+  appleMusicLog.debug("Fetching Apple Music library", {
+    force: options.force ?? false,
+    cachedTrackCount: store.appleMusicTracks.length,
+    storefrontId: instance.storefrontId,
+  });
 
   // Cache the storefront on every fetch — saves us another API hop later
   // when we need to render genre / explicit info.
@@ -1379,6 +1418,14 @@ export async function fetchAppleMusicLibrary(
       const items = data?.data ?? [];
       const albums = buildIncludedAlbumMap(data?.included);
       total = data?.meta?.total ?? total;
+      appleMusicLog.debug("Fetched Apple Music library page", {
+        page,
+        offset,
+        itemCount: items.length,
+        includedAlbumCount: data?.included?.length ?? 0,
+        reportedTotal: total,
+        aggregatedCountBeforePage: aggregated.length,
+      });
 
       for (const item of items) {
         const track = libraryResourceToTrack(
@@ -1422,9 +1469,22 @@ export async function fetchAppleMusicLibrary(
       warnAppleMusic("[apple music] playlist sync failed (songs kept)", err);
     }
 
+    appleMusicLog.debug("Apple Music library fetch completed", {
+      durationMs: Date.now() - startedAt,
+      fetchedTrackCount: aggregated.length,
+      retainedTrackCount: aggregated.length || existingTracks.length,
+      reportedTotal: total,
+      storefrontId: instance.storefrontId,
+    });
     return aggregated.length || existingTracks.length;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    appleMusicLog.error("Apple Music library fetch failed", {
+      error: err,
+      durationMs: Date.now() - startedAt,
+      fetchedTrackCount: aggregated.length,
+      force: options.force ?? false,
+    });
     store.setAppleMusicLibraryError(message);
     throw err;
   }
@@ -1446,12 +1506,24 @@ export async function fetchAppleMusicPlaylistTracks(
   }
 
   const store = useIpodStore.getState();
+  const startedAt = Date.now();
+  appleMusicLog.debug("Fetching playlist tracks", {
+    playlistId,
+    force: options.force ?? false,
+    inMemoryTrackCount:
+      store.appleMusicPlaylistTracks[playlistId]?.length ?? 0,
+  });
   let cachedTracks = store.appleMusicPlaylistTracks[playlistId];
   let loadedAt = store.appleMusicPlaylistTracksLoadedAt[playlistId];
 
   if (!cachedTracks || cachedTracks.length === 0) {
     const cached = await loadAppleMusicPlaylistTracks(playlistId);
     if (cached && cached.tracks.length > 0) {
+      appleMusicLog.debug("Restored playlist tracks from cache", {
+        playlistId,
+        trackCount: cached.tracks.length,
+        loadedAt: cached.loadedAt,
+      });
       useIpodStore.setState((state) => ({
         appleMusicPlaylistTracks: {
           ...state.appleMusicPlaylistTracks,
@@ -1470,10 +1542,19 @@ export async function fetchAppleMusicPlaylistTracks(
   const isFresh = isFreshByTtl(loadedAt, APPLE_MUSIC_SYNC_TTL_MS.playlistTracks);
 
   if (!options.force && isFresh && cachedTracks && cachedTracks.length > 0) {
+    appleMusicLog.debug("Using cached playlist tracks", {
+      playlistId,
+      trackCount: cachedTracks.length,
+      loadedAt,
+    });
     return cachedTracks;
   }
 
   if (store.appleMusicPlaylistTracksLoading[playlistId]) {
+    appleMusicLog.debug("Reusing active playlist-track fetch", {
+      playlistId,
+      cachedTrackCount: cachedTracks?.length ?? 0,
+    });
     return cachedTracks ?? [];
   }
 
@@ -1523,6 +1604,15 @@ export async function fetchAppleMusicPlaylistTracks(
       const items = data?.data ?? [];
       const albums = buildIncludedAlbumMap(data?.included);
       total = data?.meta?.total ?? total;
+      appleMusicLog.debug("Fetched playlist-track page", {
+        playlistId,
+        page,
+        offset,
+        itemCount: items.length,
+        reportedTotal: total,
+        retriedWithoutInclude: triedWithoutInclude,
+        aggregatedCountBeforePage: aggregated.length,
+      });
 
       for (const item of items) {
         const track = libraryResourceToTrack(
@@ -1543,8 +1633,21 @@ export async function fetchAppleMusicPlaylistTracks(
       tracks: aggregated,
       loadedAt: savedAt,
     });
+    appleMusicLog.debug("Playlist-track fetch completed", {
+      playlistId,
+      trackCount: aggregated.length,
+      durationMs: Date.now() - startedAt,
+      retriedWithoutInclude: triedWithoutInclude,
+    });
     return aggregated;
   } catch (err) {
+    appleMusicLog.error("Playlist-track fetch failed", {
+      error: err,
+      playlistId,
+      durationMs: Date.now() - startedAt,
+      fetchedTrackCount: aggregated.length,
+      retriedWithoutInclude: triedWithoutInclude,
+    });
     store.setAppleMusicPlaylistTracksLoading(playlistId, false);
     throw err;
   }
@@ -1817,6 +1920,15 @@ export function useAppleMusicLibrary({
         : Infinity;
       const isFresh =
         hasCachedLibrary && ageMs < APPLE_MUSIC_LIBRARY_STALE_AFTER_MS;
+      appleMusicLog.debug("Selected library load strategy", {
+        enabled,
+        isAuthorized,
+        hasCachedLibrary,
+        cachedTrackCount: appleMusicTracks.length,
+        loadedAt: appleMusicLibraryLoadedAt,
+        ageMs,
+        isFresh,
+      });
 
       if (isFresh) {
         // Cached library is recent enough — nothing to do. The user
@@ -1826,6 +1938,10 @@ export function useAppleMusicLibrary({
       }
 
       if (hasCachedLibrary) {
+        appleMusicLog.debug("Refreshing stale library in the background", {
+          cachedTrackCount: appleMusicTracks.length,
+          ageMs,
+        });
         // Stale-while-revalidate: keep showing the cached tracks, and
         // refresh quietly in the background. Don't show the progress
         // toast — the user already has a working library.
@@ -1841,8 +1957,9 @@ export function useAppleMusicLibrary({
       // First-ever load (or library was cleared on sign-out): show the
       // toast since the user has nothing to look at until this
       // finishes.
+      appleMusicLog.debug("Loading library without a cached copy");
       runWithProgressToast(false).catch((err) => {
-        appleMusicLog.error("[apple music] initial library load failed", {
+        appleMusicLog.error("Initial library load failed", {
           summary: describeAppleMusicError(err),
           error: err,
         });
@@ -1892,19 +2009,31 @@ export function useAppleMusicLibrary({
       const now = Date.now();
       if (now - lastRunAt < MIN_INTERVAL_MS) return;
       lastRunAt = now;
+      appleMusicLog.debug("Starting background collection refresh", {
+        playlistCount: useIpodStore.getState().appleMusicPlaylists.length,
+        cachedPlaylistTrackCollectionCount: Object.keys(
+          useIpodStore.getState().appleMusicPlaylistTracksLoadedAt
+        ).length,
+      });
       try {
-        await refreshAppleMusicPlaylists();
+        const playlists = await refreshAppleMusicPlaylists();
         if (cancelled) return;
         // Recently Added and Favorites have their own freshness windows
         // (handled inside each helper). Run them in parallel since they
         // hit separate Apple Music endpoints and don't share the same
         // in-flight guard.
         //
-        await Promise.allSettled([
+        const results = await Promise.allSettled([
           refreshAppleMusicRecentlyAdded(),
           refreshAppleMusicFavorites(),
           refreshStaleAppleMusicPlaylistTracks(),
         ]);
+        appleMusicLog.debug("Background collection refresh completed", {
+          playlistCount: playlists.length,
+          recentlyAddedStatus: results[0]?.status,
+          favoritesStatus: results[1]?.status,
+          playlistTracksStatus: results[2]?.status,
+        });
       } catch (err) {
         // Each helper handles its own per-call errors; a top-level
         // failure here would be unexpected (e.g. MusicKit instance went

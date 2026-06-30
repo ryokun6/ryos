@@ -1,6 +1,9 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type ReactPlayer from "react-player";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { createClientLogger } from "@/utils/logger";
+
+const ipodLog = createClientLogger("iPod");
 
 type MusicKitLike = {
   currentPlaybackTime?: number;
@@ -51,6 +54,19 @@ export function useIpodPlayback(options: {
       typeof playerTime === "number" && Number.isFinite(playerTime)
         ? playerTime
         : musicKitTime;
+    ipodLog.debug("Pausing playback before window closes", {
+      librarySource: store.librarySource,
+      currentTrackId:
+        store.librarySource === "appleMusic"
+          ? store.appleMusicCurrentSongId
+          : store.currentSongId,
+      playbackRequested: store.playbackRequested,
+      isPlaying: store.isPlaying,
+      playerTime,
+      musicKitTime,
+      resolvedTime: currentTime,
+      isFullScreen,
+    });
 
     if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
       store.setElapsedTime(Math.max(0, currentTime));
@@ -67,7 +83,9 @@ export function useIpodPlayback(options: {
       try {
         maybeMusicKit?.pause?.();
       } catch (err) {
-        console.warn("[apple music] pause before close failed", err);
+        ipodLog.warn("Could not pause Apple Music before window closed", {
+          error: err,
+        });
       }
     }
   }, [isFullScreen, musicKitInstanceRef]);
