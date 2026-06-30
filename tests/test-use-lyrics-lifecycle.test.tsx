@@ -1,9 +1,9 @@
 import {
   afterAll,
   afterEach,
+  beforeEach,
   describe,
   expect,
-  mock,
   test,
 } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
@@ -16,18 +16,21 @@ if (typeof document === "undefined") {
 }
 ensureTestLocalStorage();
 
-const actualSongs = await import("../src/api/songs");
-const actualChunkedStream = await import("../src/utils/chunkedStream");
-
 interface LyricsResponse {
   lyrics: {
     parsedLines: Array<{ startTimeMs: string; words: string }>;
   };
+  translation: {
+    totalLines: number;
+    cached: boolean;
+    lrc: string;
+  };
 }
 
+const originalFetch = globalThis.fetch;
 let resolveSecondSong: ((response: LyricsResponse) => void) | null = null;
 let secondSongPromise = createPendingSecondSong();
-const translationSongIds: string[] = [];
+const requests: Array<{ action: string; songId: string }> = [];
 
 function createPendingSecondSong(): Promise<LyricsResponse> {
   return new Promise((resolve) => {
@@ -35,33 +38,48 @@ function createPendingSecondSong(): Promise<LyricsResponse> {
   });
 }
 
-const fetchSongLyricsMock = mock(async (songId: string) => {
-  if (songId === "song-a") {
-    return {
-      lyrics: {
-        parsedLines: [{ startTimeMs: "0", words: "Song A" }],
-      },
-    };
-  }
-  if (songId === "song-b") return secondSongPromise;
-  throw new Error(`Unexpected song: ${songId}`);
-});
-
-const processTranslationSSEMock = mock(async (songId: string) => {
-  translationSongIds.push(songId);
-  return { data: [`Translated ${songId}`], success: true };
-});
-
-mock.module("@/api/songs", () => ({
-  ...actualSongs,
-  fetchSongLyrics: fetchSongLyricsMock,
-}));
-mock.module("@/utils/chunkedStream", () => ({
-  ...actualChunkedStream,
-  processTranslationSSE: processTranslationSSEMock,
-}));
-
 const { useLyrics } = await import("../src/hooks/useLyrics");
+const { __clearLyricsCachesForTests } = await import("../src/api/songs");
+
+function lyricsResponse(songId: string): LyricsResponse {
+  return {
+    lyrics: {
+      parsedLines: [{ startTimeMs: "0", words: songId }],
+    },
+    translation: {
+      totalLines: 1,
+      cached: true,
+      lrc: `[00:00.00]Translated ${songId}`,
+    },
+  };
+}
+
+function installFetchStub() {
+  globalThis.fetch = (async (
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ) => {
+    const body =
+      typeof init?.body === "string"
+        ? (JSON.parse(init.body) as { action?: string })
+        : {};
+    const action = body.action ?? "";
+    const pathname = new URL(String(input), "http://localhost").pathname;
+    const songId = decodeURIComponent(pathname.split("/").at(-1) ?? "");
+    requests.push({ action, songId });
+
+    if (action === "fetch-lyrics" && songId === "song-a") {
+      return Response.json(lyricsResponse(songId));
+    }
+    if (action === "fetch-lyrics" && songId === "song-b") {
+      return Response.json(await secondSongPromise);
+    }
+    if (action === "translate-stream") {
+      return Response.json({ error: "Unexpected premature translation" }, { status: 404 });
+    }
+    throw new Error(`Unexpected lyrics request: ${action} ${songId}`);
+  }) as typeof fetch;
+}
 
 let latestLyrics: ReturnType<typeof useLyrics> | null = null;
 
@@ -86,21 +104,24 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 
 let root: Root | null = null;
 
+beforeEach(() => {
+  __clearLyricsCachesForTests();
+  requests.length = 0;
+  secondSongPromise = createPendingSecondSong();
+  installFetchStub();
+});
+
 afterEach(async () => {
+  resolveSecondSong?.(lyricsResponse("song-b"));
   root?.unmount();
   root = null;
   latestLyrics = null;
-  translationSongIds.length = 0;
-  fetchSongLyricsMock.mockClear();
-  processTranslationSSEMock.mockClear();
-  secondSongPromise = createPendingSecondSong();
+  globalThis.fetch = originalFetch;
   document.body.replaceChildren();
   await new Promise((resolve) => setTimeout(resolve, 0));
 });
 
 afterAll(() => {
-  mock.module("@/api/songs", () => actualSongs);
-  mock.module("@/utils/chunkedStream", () => actualChunkedStream);
   if (GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }
@@ -117,24 +138,28 @@ describe("useLyrics track changes", () => {
     await waitFor(
       () =>
         latestLyrics?.loadedSongId === "song-a" &&
-        translationSongIds.includes("song-a")
+        latestLyrics.lines[0]?.words === "Translated song-a"
     );
 
     root.render(React.createElement(LyricsProbe, { songId: "song-b" }));
-    await waitFor(() => fetchSongLyricsMock.mock.calls.length >= 2);
+    await waitFor(() =>
+      requests.some(
+        (request) =>
+          request.action === "fetch-lyrics" && request.songId === "song-b"
+      )
+    );
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(translationSongIds).not.toContain("song-b");
-
-    resolveSecondSong?.({
-      lyrics: {
-        parsedLines: [{ startTimeMs: "0", words: "Song B" }],
-      },
+    expect(requests).not.toContainEqual({
+      action: "translate-stream",
+      songId: "song-b",
     });
+
+    resolveSecondSong?.(lyricsResponse("song-b"));
     await waitFor(
       () =>
         latestLyrics?.loadedSongId === "song-b" &&
-        translationSongIds.includes("song-b")
+        latestLyrics.lines[0]?.words === "Translated song-b"
     );
   });
 });
