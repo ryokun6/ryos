@@ -12,6 +12,7 @@ import {
   ArrowDown,
   Bug,
   CaretDown,
+  CaretRight,
   Check,
   Copy,
   Trash,
@@ -147,6 +148,83 @@ function findFirstVisibleIndex(
   return Math.min(result, Math.max(0, offsets.length - 1));
 }
 
+function ConsoleEntryContent({
+  entry,
+  expandedJsonParts,
+  onToggleJsonPart,
+}: {
+  entry: ConsoleLogEntry;
+  expandedJsonParts: ReadonlySet<string>;
+  onToggleJsonPart: (partKey: string) => void;
+}) {
+  if (!entry.displayParts) {
+    return entry.styledSegments
+      ? entry.styledSegments.map((segment, segmentIndex) => (
+          <span
+            key={`${entry.id}-${segmentIndex}`}
+            style={segment.style as CSSProperties | undefined}
+          >
+            {segment.text}
+          </span>
+        ))
+      : entry.text;
+  }
+
+  return entry.displayParts.map((part, partIndex) => {
+    if (part.type === "text") {
+      return (
+        <span
+          key={`${entry.id}-${partIndex}`}
+          style={part.style as CSSProperties | undefined}
+        >
+          {part.text}
+        </span>
+      );
+    }
+
+    const partKey = `${entry.id}:${partIndex}`;
+    const expanded = expandedJsonParts.has(partKey);
+    return (
+      <div key={partKey} className="contents">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => onToggleJsonPart(partKey)}
+          data-debug-json-toggle
+          className={cn(
+            "inline-flex max-w-full items-center gap-0.5 rounded px-1 align-middle",
+            "border border-[color:var(--os-color-separator)] bg-os-panel-bg",
+            "font-os-mono text-[9px] leading-[1.45] text-os-text-secondary",
+            "hover:brightness-105 active:brightness-95"
+          )}
+        >
+          <CaretRight
+            weight="bold"
+            className={cn(
+              "size-2.5 shrink-0 transition-transform",
+              expanded && "rotate-90"
+            )}
+            aria-hidden
+          />
+          <span className="truncate">{part.summary}</span>
+        </button>
+        {expanded ? (
+          <pre
+            data-debug-json-content
+            className={cn(
+              "my-0.5 max-w-full overflow-x-auto rounded p-1",
+              "border border-[color:var(--os-color-separator)] bg-os-panel-bg",
+              "whitespace-pre font-os-mono text-[9px] leading-[1.35] text-os-text-primary"
+            )}
+          >
+            {part.text}
+          </pre>
+        ) : null}
+      </div>
+    );
+  });
+}
+
 /**
  * Floating, togglable console overlay shown only while Debug Mode is enabled
  * (Control Panels → Accounts → Debug). Mirrors captured `console.*` output into an
@@ -169,6 +247,9 @@ export function DebugLogOverlay() {
   const [loggerFilter, setLoggerFilter] = useState(ALL_LOGGERS_FILTER);
   const [networkFilter, setNetworkFilter] =
     useState<NetworkFilter>(ALL_NETWORK_FILTER);
+  const [expandedJsonParts, setExpandedJsonParts] = useState<Set<string>>(
+    () => new Set()
+  );
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const liveReportRef = useRef("");
@@ -374,6 +455,7 @@ export function DebugLogOverlay() {
   const handleClear = useCallback(() => {
     clearConsoleCapture();
     rowHeightsRef.current.clear();
+    setExpandedJsonParts(new Set());
     stickToBottomRef.current = true;
     pendingStickToBottomRef.current = false;
     setIsAtBottom(true);
@@ -393,7 +475,22 @@ export function DebugLogOverlay() {
       scrollTopRef.current = 0;
       setScrollTop(0);
     }
+    setExpandedJsonParts((previous) => {
+      const next = new Set(
+        [...previous].filter((partKey) => ids.has(Number(partKey.split(":")[0])))
+      );
+      return next.size === previous.size ? previous : next;
+    });
   }, [entries]);
+
+  const toggleJsonPart = useCallback((partKey: string) => {
+    setExpandedJsonParts((previous) => {
+      const next = new Set(previous);
+      if (next.has(partKey)) next.delete(partKey);
+      else next.add(partKey);
+      return next;
+    });
+  }, []);
 
   useLayoutEffect(() => {
     if (!open || activeTab !== "logs") return;
@@ -838,23 +935,18 @@ export function DebugLogOverlay() {
                       <span className="shrink-0 tabular-nums opacity-40">
                         {formatTime(entry.timestamp)}
                       </span>
-                      <span
+                      <div
                         className={cn(
-                          "min-w-0 whitespace-pre-wrap break-words",
+                          "min-w-0 flex-1 whitespace-pre-wrap break-words",
                           LEVEL_TEXT_CLASS[entry.level]
                         )}
                       >
-                        {entry.styledSegments
-                          ? entry.styledSegments.map((segment, segmentIndex) => (
-                              <span
-                                key={`${entry.id}-${segmentIndex}`}
-                                style={segment.style as CSSProperties | undefined}
-                              >
-                                {segment.text}
-                              </span>
-                            ))
-                          : entry.text}
-                      </span>
+                        <ConsoleEntryContent
+                          entry={entry}
+                          expandedJsonParts={expandedJsonParts}
+                          onToggleJsonPart={toggleJsonPart}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

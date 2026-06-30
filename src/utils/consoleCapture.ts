@@ -45,6 +45,18 @@ export interface ConsoleStyledSegment {
   style?: ConsoleSegmentStyle;
 }
 
+export type ConsoleDisplayPart =
+  | {
+      type: "text";
+      text: string;
+      style?: ConsoleSegmentStyle;
+    }
+  | {
+      type: "json";
+      text: string;
+      summary: string;
+    };
+
 export interface ConsoleLogEntry {
   id: number;
   level: ConsoleLogLevel;
@@ -54,6 +66,8 @@ export interface ConsoleLogEntry {
   text: string;
   /** Optional safe representation of browser console `%c` segments. */
   styledSegments?: ConsoleStyledSegment[];
+  /** Optional structured representation used for compact, expandable JSON. */
+  displayParts?: ConsoleDisplayPart[];
 }
 
 const MAX_ENTRIES = 500;
@@ -94,17 +108,42 @@ function scheduleFlush(): void {
   }
 }
 
-function formatArg(arg: unknown): string {
-  if (typeof arg === "string") return arg;
-  if (arg instanceof Error) {
-    return arg.stack || `${arg.name}: ${arg.message}`;
+interface FormattedConsoleArg {
+  text: string;
+  jsonSummary?: string;
+}
+
+function summarizeJson(serialized: string): string | null {
+  try {
+    const value = JSON.parse(serialized) as unknown;
+    if (Array.isArray(value)) return `Array(${value.length})`;
+    if (typeof value !== "object" || value === null) return null;
+
+    const keys = Object.keys(value);
+    const visibleKeys = keys
+      .slice(0, 3)
+      .map((key) => (key.length > 18 ? `${key.slice(0, 17)}…` : key));
+    const keySummary =
+      visibleKeys.length > 0
+        ? ` { ${visibleKeys.join(", ")}${keys.length > 3 ? ", …" : ""} }`
+        : "";
+    return `Object(${keys.length})${keySummary}`;
+  } catch {
+    return null;
   }
-  if (arg === null) return "null";
-  if (arg === undefined) return "undefined";
+}
+
+function formatArg(arg: unknown): FormattedConsoleArg {
+  if (typeof arg === "string") return { text: arg };
+  if (arg instanceof Error) {
+    return { text: arg.stack || `${arg.name}: ${arg.message}` };
+  }
+  if (arg === null) return { text: "null" };
+  if (arg === undefined) return { text: "undefined" };
   if (typeof arg === "object") {
     try {
       const seen = new WeakSet<object>();
-      return JSON.stringify(
+      const serialized = JSON.stringify(
         arg,
         (_key, value) => {
           if (typeof value === "object" && value !== null) {
@@ -117,11 +156,31 @@ function formatArg(arg: unknown): string {
         },
         2
       );
+      if (typeof serialized !== "string") return { text: String(arg) };
+      return {
+        text: serialized,
+        jsonSummary: summarizeJson(serialized) ?? undefined,
+      };
     } catch {
-      return String(arg);
+      return { text: String(arg) };
     }
   }
-  return String(arg);
+  return { text: String(arg) };
+}
+
+function buildDisplayParts(
+  formattedArgs: readonly FormattedConsoleArg[]
+): ConsoleDisplayPart[] {
+  const parts: ConsoleDisplayPart[] = [];
+  formattedArgs.forEach((arg, index) => {
+    if (index > 0) parts.push({ type: "text", text: " " });
+    parts.push(
+      arg.jsonSummary
+        ? { type: "json", text: arg.text, summary: arg.jsonSummary }
+        : { type: "text", text: arg.text }
+    );
+  });
+  return parts;
 }
 
 const SAFE_NAMED_COLORS = new Set([
@@ -231,6 +290,7 @@ export function sanitizeConsoleStyle(cssText: string): ConsoleSegmentStyle {
 interface FormattedConsoleArguments {
   text: string;
   styledSegments?: ConsoleStyledSegment[];
+  displayParts?: ConsoleDisplayPart[];
 }
 
 function findStyleTokenIndexes(format: string): number[] | null {
@@ -259,10 +319,17 @@ function findStyleTokenIndexes(format: string): number[] | null {
 export function formatConsoleArguments(
   args: readonly unknown[]
 ): FormattedConsoleArguments {
-  const fallbackText = args.map(formatArg).join(" ");
+  const formattedArgs = args.map(formatArg);
+  const fallbackText = formattedArgs.map((arg) => arg.text).join(" ");
+  const fallbackDisplayParts = buildDisplayParts(formattedArgs);
+  const expandableFallbackParts = fallbackDisplayParts.some(
+    (part) => part.type === "json"
+  )
+    ? fallbackDisplayParts
+    : undefined;
   const format = args[0];
   if (typeof format !== "string" || !format.includes("%c")) {
-    return { text: fallbackText };
+    return { text: fallbackText, displayParts: expandableFallbackParts };
   }
 
   const tokenIndexes = findStyleTokenIndexes(format);
@@ -271,12 +338,12 @@ export function formatConsoleArguments(
     tokenIndexes.length === 0 ||
     args.length < tokenIndexes.length + 1
   ) {
-    return { text: fallbackText };
+    return { text: fallbackText, displayParts: expandableFallbackParts };
   }
 
   const styleArgs = args.slice(1, tokenIndexes.length + 1);
   if (!styleArgs.every((styleArg) => typeof styleArg === "string")) {
-    return { text: fallbackText };
+    return { text: fallbackText, displayParts: expandableFallbackParts };
   }
 
   const styledSegments: ConsoleStyledSegment[] = [];
@@ -305,17 +372,28 @@ export function formatConsoleArguments(
     });
   }
 
-  const trailingText = args
-    .slice(tokenIndexes.length + 1)
-    .map(formatArg)
-    .join(" ");
+  const trailingArgs = formattedArgs.slice(tokenIndexes.length + 1);
+  const trailingText = trailingArgs.map((arg) => arg.text).join(" ");
   if (trailingText) {
     styledSegments.push({ text: ` ${trailingText}` });
+  }
+
+  const displayParts: ConsoleDisplayPart[] = styledSegments
+    .slice(0, trailingText ? -1 : undefined)
+    .map((segment) => ({
+      type: "text",
+      text: segment.text,
+      style: segment.style,
+    }));
+  if (trailingText) {
+    displayParts.push({ type: "text", text: " " });
+    displayParts.push(...buildDisplayParts(trailingArgs));
   }
 
   return {
     text: styledSegments.map((segment) => segment.text).join(""),
     styledSegments,
+    displayParts,
   };
 }
 
@@ -328,6 +406,7 @@ function pushEntry(level: ConsoleLogLevel, args: unknown[]): void {
     timestamp: Date.now(),
     text: formatted.text,
     styledSegments: formatted.styledSegments,
+    displayParts: formatted.displayParts,
   });
   if (buffer.length > MAX_ENTRIES) {
     buffer = buffer.slice(buffer.length - MAX_ENTRIES);
