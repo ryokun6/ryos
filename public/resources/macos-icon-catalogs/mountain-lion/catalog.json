@@ -1,19 +1,271 @@
 {
-  "generatedAt": "2026-06-30T02:01:15.876653+00:00",
+  "generatedAt": "2026-06-30T02:50:08.829854+00:00",
   "source": {
-    "name": "OS X Mountain Lion 10.8 Base System DMG from Internet Archive macOS-X-images",
+    "name": "OS X Mountain Lion 10.8 installer image from Internet Archive macOS-X-images",
     "url": "https://archive.org/details/macOS-X-images"
   },
   "counts": {
-    "applications": 1,
-    "systemPreferences": 0,
+    "applications": 34,
+    "systemPreferences": 33,
     "folders": 38,
     "devices": 40,
     "fileTypes": 7,
     "uiAssets": 40,
-    "total": 126
+    "total": 192
   },
   "entries": [
+    {
+      "type": "application",
+      "name": "AirPort Utility",
+      "sourceBundlePath": "/Applications/Utilities/AirPort Utility.app",
+      "sourceIconPath": "/Applications/Utilities/AirPort Utility.app/Contents/Resources/AirPortUtility.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/air-port-utility.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "App Store",
+      "sourceBundlePath": "/Applications/App Store.app",
+      "sourceIconPath": "/Applications/App Store.app/Contents/Resources/appStore.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/app-store.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "AppleScript Editor",
+      "sourceBundlePath": "/Applications/Utilities/AppleScript Editor.app",
+      "sourceIconPath": "/Applications/Utilities/AppleScript Editor.app/Contents/Resources/SEScriptEditorX.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/apple-script-editor.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Automator",
+      "sourceBundlePath": "/Applications/Automator.app",
+      "sourceIconPath": "/Applications/Automator.app/Contents/Resources/Automator.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/automator.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Boot Camp Assistant",
+      "sourceBundlePath": "/Applications/Utilities/Boot Camp Assistant.app",
+      "sourceIconPath": "/Applications/Utilities/Boot Camp Assistant.app/Contents/Resources/DA.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/boot-camp-assistant.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Calculator",
+      "sourceBundlePath": "/Applications/Calculator.app",
+      "sourceIconPath": "/Applications/Calculator.app/Contents/Resources/Calculator.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/calculator.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Calendar",
+      "sourceBundlePath": "/Applications/Calendar.app",
+      "sourceIconPath": "/Applications/Calendar.app/Contents/Resources/App.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/calendar.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Chess",
+      "sourceBundlePath": "/Applications/Chess.app",
+      "sourceIconPath": "/Applications/Chess.app/Contents/Resources/Chess.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/chess.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Contacts",
+      "sourceBundlePath": "/Applications/Contacts.app",
+      "sourceIconPath": "/Applications/Contacts.app/Contents/Resources/Contacts.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/contacts.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Dictionary",
+      "sourceBundlePath": "/Applications/Dictionary.app",
+      "sourceIconPath": "/Applications/Dictionary.app/Contents/Resources/Dictionary.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/dictionary.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Disk Utility",
+      "sourceBundlePath": "/Applications/Utilities/Disk Utility.app",
+      "sourceIconPath": "/Applications/Utilities/Disk Utility.app/Contents/Resources/DFA.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/disk-utility.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "application",
+      "name": "DVD Player",
+      "sourceBundlePath": "/Applications/DVD Player.app",
+      "sourceIconPath": "/Applications/DVD Player.app/Contents/Resources/app.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/dvd-player.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "FaceTime",
+      "sourceBundlePath": "/Applications/FaceTime.app",
+      "sourceIconPath": "/Applications/FaceTime.app/Contents/Resources/FaceTime.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/face-time.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Font Book",
+      "sourceBundlePath": "/Applications/Font Book.app",
+      "sourceIconPath": "/Applications/Font Book.app/Contents/Resources/appicon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/font-book.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Game Center",
+      "sourceBundlePath": "/Applications/Game Center.app",
+      "sourceIconPath": "/Applications/Game Center.app/Contents/Resources/GameCenter.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/game-center.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Image Capture",
+      "sourceBundlePath": "/Applications/Image Capture.app",
+      "sourceIconPath": "/Applications/Image Capture.app/Contents/Resources/ImageCapture.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/image-capture.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "iTunes",
+      "sourceBundlePath": "/Applications/iTunes.app",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/i-tunes.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Launchpad",
+      "sourceBundlePath": "/Applications/Launchpad.app",
+      "sourceIconPath": "/Applications/Launchpad.app/Contents/Resources/Launchpad.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/launchpad.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Mail",
+      "sourceBundlePath": "/Applications/Mail.app",
+      "sourceIconPath": "/Applications/Mail.app/Contents/Resources/Mail.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/mail.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Messages",
+      "sourceBundlePath": "/Applications/Messages.app",
+      "sourceIconPath": "/Applications/Messages.app/Contents/Resources/Messages.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/messages.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Migration Assistant",
+      "sourceBundlePath": "/Applications/Utilities/Migration Assistant.app",
+      "sourceIconPath": "/Applications/Utilities/Migration Assistant.app/Contents/Resources/MigrateAsst.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/migration-assistant.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Mission Control",
+      "sourceBundlePath": "/Applications/Mission Control.app",
+      "sourceIconPath": "/Applications/Mission Control.app/Contents/Resources/Expose.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/mission-control.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Notes",
+      "sourceBundlePath": "/Applications/Notes.app",
+      "sourceIconPath": "/Applications/Notes.app/Contents/Resources/Notes.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/notes.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Photo Booth",
+      "sourceBundlePath": "/Applications/Photo Booth.app",
+      "sourceIconPath": "/Applications/Photo Booth.app/Contents/Resources/PhotoBooth.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/photo-booth.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Preview",
+      "sourceBundlePath": "/Applications/Preview.app",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/Preview.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/preview.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "QuickTime Player",
+      "sourceBundlePath": "/Applications/QuickTime Player.app",
+      "sourceIconPath": "/Applications/QuickTime Player.app/Contents/Resources/QuickTimePlayerX.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/quick-time-player.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "RAID Utility",
+      "sourceBundlePath": "/Applications/Utilities/RAID Utility.app",
+      "sourceIconPath": "/Applications/Utilities/RAID Utility.app/Contents/Resources/RAIDUtility.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/raid-utility.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "application",
+      "name": "Reminders",
+      "sourceBundlePath": "/Applications/Reminders.app",
+      "sourceIconPath": "/Applications/Reminders.app/Contents/Resources/Reminders.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/reminders.png",
+      "width": 1024,
+      "height": 1024
+    },
     {
       "type": "application",
       "name": "Safari",
@@ -24,11 +276,353 @@
       "height": 1024
     },
     {
+      "type": "application",
+      "name": "Stickies",
+      "sourceBundlePath": "/Applications/Stickies.app",
+      "sourceIconPath": "/Applications/Stickies.app/Contents/Resources/Stickies.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/stickies.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "System Information",
+      "sourceBundlePath": "/Applications/Utilities/System Information.app",
+      "sourceIconPath": "/Applications/Utilities/System Information.app/Contents/Resources/ASP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/system-information.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "System Preferences",
+      "sourceBundlePath": "/Applications/System Preferences.app",
+      "sourceIconPath": "/Applications/System Preferences.app/Contents/Resources/PrefApp.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/system-preferences.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "TextEdit",
+      "sourceBundlePath": "/Applications/TextEdit.app",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/Edit.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/text-edit.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "application",
+      "name": "Time Machine",
+      "sourceBundlePath": "/Applications/Time Machine.app",
+      "sourceIconPath": "/Applications/Time Machine.app/Contents/Resources/backup.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/applications/time-machine.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Accessibility",
+      "sourceBundlePath": "/System/Library/PreferencePanes/UniversalAccessPref.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/accessibility.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Bluetooth",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Bluetooth.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Bluetooth.prefPane/Contents/Resources/AppIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/bluetooth.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "CDs & DVDs",
+      "sourceBundlePath": "/System/Library/PreferencePanes/DigiHubDiscs.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/DigiHubDiscs.prefPane/Contents/Resources/cd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/cds-dvds.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Date And Time",
+      "sourceBundlePath": "/System/Library/PreferencePanes/DateAndTime.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/DateAndTime.prefPane/Contents/Resources/DateAndTime.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/date-and-time.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Desktop & Screen Saver",
+      "sourceBundlePath": "/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane/Contents/Resources/DesktopScreenEffectsPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/desktop-screen-saver.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Dictation & Speech",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Speech.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Speech.prefPane/Contents/Resources/Speech.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/dictation-speech.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Displays",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Displays.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Displays.prefPane/Contents/Resources/Displays.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/displays.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "system-preference",
+      "name": "Dock",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Dock.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Dock.prefPane/Contents/Resources/Dock.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/dock.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Energy Saver",
+      "sourceBundlePath": "/System/Library/PreferencePanes/EnergySaver.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/EnergySaver.prefPane/Contents/Resources/EnergySaver.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/energy-saver.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Fibre Channel",
+      "sourceBundlePath": "/System/Library/PreferencePanes/FibreChannel.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/FibreChannel.prefPane/Contents/Resources/FibreChannel.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/fibre-channel.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "system-preference",
+      "name": "General",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Appearance.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Appearance.prefPane/Contents/Resources/General.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/general.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "iCloud",
+      "sourceBundlePath": "/System/Library/PreferencePanes/iCloudPref.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/iCloudPref.prefPane/Contents/Resources/en.lproj/iCloud_32x32.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/i-cloud.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "system-preference",
+      "name": "Ink",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Ink.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Ink.prefPane/Contents/Resources/Ink.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/ink.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Keyboard",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Keyboard.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Keyboard.prefPane/Contents/Resources/Keyboard.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/keyboard.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "system-preference",
+      "name": "Language & Text",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Localization.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Localization.prefPane/Contents/Resources/Localization.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/language-text.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Mail, Contacts & Calendars",
+      "sourceBundlePath": "/System/Library/PreferencePanes/InternetAccounts.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/InternetAccounts.prefPane/Contents/Resources/InternetAccounts.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/mail-contacts-calendars.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Mission Control",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Expose.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Expose.prefPane/Contents/Resources/MissionControlPrefPane.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/mission-control.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "system-preference",
+      "name": "Mouse",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Mouse.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Mouse.prefPane/Contents/Resources/Mouse.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/mouse.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Network",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Network.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Network.prefPane/Contents/Resources/Network.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/network.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Notifications",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Notifications.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Notifications.prefPane/Contents/Resources/Notifications.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/notifications.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "system-preference",
+      "name": "Parental Controls",
+      "sourceBundlePath": "/System/Library/PreferencePanes/ParentalControls.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/ParentalControls.prefPane/Contents/Resources/Family.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/parental-controls.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Print & Scan",
+      "sourceBundlePath": "/System/Library/PreferencePanes/PrintAndScan.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/PrintAndScan.prefPane/Contents/Resources/PrintScanPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/print-scan.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Profiles",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Profiles.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Profiles.prefPane/Contents/Resources/Profiles.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/profiles.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "system-preference",
+      "name": "Security",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Security.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Security.prefPane/Contents/Resources/FileVault.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/security.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Sharing",
+      "sourceBundlePath": "/System/Library/PreferencePanes/SharingPref.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/SharingPref.prefPane/Contents/Resources/SharingPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/sharing.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Software Update",
+      "sourceBundlePath": "/System/Library/PreferencePanes/SoftwareUpdate.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/SoftwareUpdate.prefPane/Contents/Resources/SoftwareUpdatePref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/software-update.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Sound",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Sound.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Sound.prefPane/Contents/Resources/SoundPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/sound.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Spotlight",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Spotlight.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/spotlight.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Startup Disk",
+      "sourceBundlePath": "/System/Library/PreferencePanes/StartupDisk.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/StartupDisk.prefPane/Contents/Resources/StartupDiskPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/startup-disk.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "system-preference",
+      "name": "Time Machine",
+      "sourceBundlePath": "/System/Library/PreferencePanes/TimeMachine.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/TimeMachine.prefPane/Contents/Resources/TimeMachine.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/time-machine.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "system-preference",
+      "name": "Trackpad",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Trackpad.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Trackpad.prefPane/Contents/Resources/Trackpad.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/trackpad.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Users & Groups",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Accounts.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Accounts.prefPane/Contents/Resources/AccountsPref.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/users-groups.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "type": "system-preference",
+      "name": "Xsan",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Xsan.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Xsan.prefPane/Contents/Resources/XsanPref.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/system-preferences/xsan.png",
+      "width": 32,
+      "height": 32
+    },
+    {
       "type": "folder",
       "name": "Applications",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationsFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/applications-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/applications.png",
       "width": 256,
       "height": 256
     },
@@ -37,7 +631,7 @@
       "name": "Documents",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DocumentsFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/documents-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/documents.png",
       "width": 256,
       "height": 256
     },
@@ -55,7 +649,7 @@
       "name": "Drop",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DropFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/drop-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/drop.png",
       "width": 256,
       "height": 256
     },
@@ -64,7 +658,7 @@
       "name": "Drop Folder Badge",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DropFolderBadgeIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/drop-folder-badge-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/drop-folder-badge.png",
       "width": 256,
       "height": 256
     },
@@ -73,7 +667,7 @@
       "name": "Generic",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/generic-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/generic.png",
       "width": 256,
       "height": 256
     },
@@ -82,7 +676,7 @@
       "name": "Home",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HomeFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/home-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/home.png",
       "width": 256,
       "height": 256
     },
@@ -91,7 +685,7 @@
       "name": "Library",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LibraryFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/library-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/library.png",
       "width": 256,
       "height": 256
     },
@@ -100,7 +694,7 @@
       "name": "Movie",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MovieFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/movie-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/movie.png",
       "width": 256,
       "height": 256
     },
@@ -109,7 +703,7 @@
       "name": "Music",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MusicFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/music-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/music.png",
       "width": 256,
       "height": 256
     },
@@ -118,7 +712,7 @@
       "name": "Pictures",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PicturesFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/pictures-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/pictures.png",
       "width": 256,
       "height": 256
     },
@@ -127,7 +721,7 @@
       "name": "Public",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PublicFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/public-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/public.png",
       "width": 256,
       "height": 256
     },
@@ -253,7 +847,7 @@
       "name": "System",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SystemFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/system-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/system.png",
       "width": 256,
       "height": 256
     },
@@ -262,7 +856,7 @@
       "name": "Toolbar Apps",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarAppsFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-apps-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-apps.png",
       "width": 256,
       "height": 256
     },
@@ -271,7 +865,7 @@
       "name": "Toolbar Desktop",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarDesktopFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-desktop-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-desktop.png",
       "width": 256,
       "height": 256
     },
@@ -280,7 +874,7 @@
       "name": "Toolbar Documents",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarDocumentsFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-documents-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-documents.png",
       "width": 256,
       "height": 256
     },
@@ -289,7 +883,7 @@
       "name": "Toolbar Downloads",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarDownloadsFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-downloads-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-downloads.png",
       "width": 256,
       "height": 256
     },
@@ -298,7 +892,7 @@
       "name": "Toolbar Library",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarLibraryFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-library-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-library.png",
       "width": 256,
       "height": 256
     },
@@ -307,7 +901,7 @@
       "name": "Toolbar Movie",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMovieFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-movie-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-movie.png",
       "width": 256,
       "height": 256
     },
@@ -316,7 +910,7 @@
       "name": "Toolbar Music",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMusicFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-music-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-music.png",
       "width": 256,
       "height": 256
     },
@@ -325,7 +919,7 @@
       "name": "Toolbar Pictures",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPicturesFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-pictures-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-pictures.png",
       "width": 256,
       "height": 256
     },
@@ -334,7 +928,7 @@
       "name": "Toolbar Public",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPublicFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-public-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-public.png",
       "width": 256,
       "height": 256
     },
@@ -343,7 +937,7 @@
       "name": "Toolbar Sites",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarSitesFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-sites-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-sites.png",
       "width": 256,
       "height": 256
     },
@@ -352,7 +946,7 @@
       "name": "Toolbar Utilities",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarUtilitiesFolderIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-utilities-folder-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/folders/toolbar-utilities.png",
       "width": 256,
       "height": 256
     },
@@ -379,7 +973,7 @@
       "name": "Apple Airport Extreme",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.airport-extreme.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-airport-extreme.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-airport-extreme.png",
       "width": 256,
       "height": 256
     },
@@ -388,205 +982,205 @@
       "name": "Apple Cinema Display",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.cinema-display.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-cinema-display.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-cinema-display.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Imac Aluminum 20",
+      "name": "Apple iMac Aluminum 20",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.imac-aluminum-20.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-imac-aluminum-20.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-i-mac-aluminum-20.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Imac Aluminum 24",
+      "name": "Apple iMac Aluminum 24",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.imac-aluminum-24.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-imac-aluminum-24.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-i-mac-aluminum-24.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Imac Isight 17",
+      "name": "Apple iMac iSight 17",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.imac-iSight-17.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-imac-i-sight-17.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-i-mac-i-sight-17.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Imac Isight 24",
+      "name": "Apple iMac iSight 24",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.imac-iSight-24.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-imac-i-sight-24.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-i-mac-i-sight-24.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Imac Unibody 21",
+      "name": "Apple iMac Unibody 21",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.imac-unibody-21.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-imac-unibody-21.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-i-mac-unibody-21.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Imac Unibody 27",
+      "name": "Apple iMac Unibody 27",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.imac-unibody-27.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-imac-unibody-27.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-i-mac-unibody-27.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Macbook Black",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-black.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbook-black.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbook Unibody",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-unibody.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbook-unibody.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbook Unibody Plastic",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-unibody-plastic.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbook-unibody-plastic.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbook White",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-white.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbook-white.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookair",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookair.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookair.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookair 11 Unibody",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookair-11-unibody.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookair-11-unibody.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookair 13 Unibody",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookair-13-unibody.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookair-13-unibody.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookpro 13 Unibody",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-13-unibody.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookpro-13-unibody.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookpro 15",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-15.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookpro-15.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookpro 15 Unibody",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-15-unibody.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookpro-15-unibody.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookpro 17",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-17.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookpro-17.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macbookpro 17 Unibody",
-      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
-      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-17-unibody.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macbookpro-17-unibody.png",
-      "width": 256,
-      "height": 256
-    },
-    {
-      "type": "device",
-      "name": "Apple Macmini",
+      "name": "Apple Mac mini",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macmini.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macmini.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-mini.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Macmini Unibody",
+      "name": "Apple Mac mini Unibody",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macmini-unibody.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macmini-unibody.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-mini-unibody.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Macmini Unibody No Optical",
+      "name": "Apple Mac mini Unibody No Optical",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macmini-unibody-no-optical.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macmini-unibody-no-optical.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-mini-unibody-no-optical.png",
       "width": 256,
       "height": 256
     },
     {
       "type": "device",
-      "name": "Apple Macpro",
+      "name": "Apple Mac Pro",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macpro.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-macpro.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-pro.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Air",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookair.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-air.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Air 11 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookair-11-unibody.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-air-11-unibody.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Air 13 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookair-13-unibody.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-air-13-unibody.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Black",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-black.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-black.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Pro 13 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-13-unibody.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-pro-13-unibody.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Pro 15",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-15.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-pro-15.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Pro 15 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-15-unibody.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-pro-15-unibody.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Pro 17",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-17.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-pro-17.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Pro 17 Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbookpro-17-unibody.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-pro-17-unibody.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Unibody",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-unibody.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-unibody.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook Unibody Plastic",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-unibody-plastic.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-unibody-plastic.png",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "type": "device",
+      "name": "Apple MacBook White",
+      "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.macbook-white.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-mac-book-white.png",
       "width": 256,
       "height": 256
     },
@@ -595,7 +1189,7 @@
       "name": "Apple Time Capsule",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.time-capsule.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-time-capsule.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-time-capsule.png",
       "width": 256,
       "height": 256
     },
@@ -604,7 +1198,7 @@
       "name": "Apple Xserve",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.xserve.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/com-apple-xserve.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/apple-xserve.png",
       "width": 256,
       "height": 256
     },
@@ -613,7 +1207,7 @@
       "name": "Generic Air Disk",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericAirDiskIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-air-disk-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-air-disk.png",
       "width": 256,
       "height": 256
     },
@@ -622,7 +1216,7 @@
       "name": "Generic File Server",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFileServerIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-file-server-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-file-server.png",
       "width": 256,
       "height": 256
     },
@@ -631,7 +1225,7 @@
       "name": "Generic Network",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-network-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-network.png",
       "width": 256,
       "height": 256
     },
@@ -649,7 +1243,7 @@
       "name": "Generic Time Machine Disk",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericTimeMachineDiskIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-time-machine-disk-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/devices/generic-time-machine-disk.png",
       "width": 256,
       "height": 256
     },
@@ -730,7 +1324,7 @@
       "name": "Executable Binary",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ExecutableBinaryIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/executable-binary-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/executable-binary.png",
       "width": 256,
       "height": 256
     },
@@ -739,7 +1333,7 @@
       "name": "Generic Application",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-application-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-application.png",
       "width": 256,
       "height": 256
     },
@@ -748,7 +1342,7 @@
       "name": "Generic Document",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericDocumentIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-document-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-document.png",
       "width": 256,
       "height": 256
     },
@@ -757,7 +1351,7 @@
       "name": "Generic Font",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFontIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-font-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-font.png",
       "width": 256,
       "height": 256
     },
@@ -766,7 +1360,7 @@
       "name": "Generic Stationery",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericStationeryIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-stationery-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-stationery.png",
       "width": 256,
       "height": 256
     },
@@ -775,7 +1369,7 @@
       "name": "Generic URL",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericURLIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-urlicon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/generic-url.png",
       "width": 256,
       "height": 256
     },
@@ -784,7 +1378,7 @@
       "name": "Unknown FSObject",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UnknownFSObjectIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/unknown-fsobject-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/file-types/unknown-fsobject.png",
       "width": 256,
       "height": 256
     },
@@ -793,7 +1387,7 @@
       "name": "Alert Caution",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertCautionIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-caution-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-caution.png",
       "width": 256,
       "height": 256
     },
@@ -802,7 +1396,7 @@
       "name": "Alert Caution Badge",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertCautionBadgeIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-caution-badge-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-caution-badge.png",
       "width": 256,
       "height": 256
     },
@@ -811,7 +1405,7 @@
       "name": "Alert Note",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-note-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-note.png",
       "width": 256,
       "height": 256
     },
@@ -820,7 +1414,7 @@
       "name": "Alert Stop",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-stop-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alert-stop.png",
       "width": 256,
       "height": 256
     },
@@ -829,7 +1423,7 @@
       "name": "Alias Badge",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AliasBadgeIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alias-badge-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/alias-badge.png",
       "width": 256,
       "height": 256
     },
@@ -838,7 +1432,7 @@
       "name": "Bookmark",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/BookmarkIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/bookmark-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/bookmark.png",
       "width": 256,
       "height": 256
     },
@@ -847,7 +1441,7 @@
       "name": "Burning",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/BurningIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/burning-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/burning.png",
       "width": 256,
       "height": 256
     },
@@ -856,7 +1450,7 @@
       "name": "File Vault",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FileVaultIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/file-vault-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/file-vault.png",
       "width": 256,
       "height": 256
     },
@@ -874,7 +1468,7 @@
       "name": "Generic Question Mark",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericQuestionMarkIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/generic-question-mark-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/generic-question-mark.png",
       "width": 256,
       "height": 256
     },
@@ -883,7 +1477,7 @@
       "name": "Generic Window",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericWindowIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/generic-window-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/generic-window.png",
       "width": 32,
       "height": 32
     },
@@ -892,7 +1486,7 @@
       "name": "Locked Badge",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LockedBadgeIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/locked-badge-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/locked-badge.png",
       "width": 256,
       "height": 256
     },
@@ -1081,7 +1675,7 @@
       "name": "Toolbar Customize",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarCustomizeIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/toolbar-customize-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/toolbar-customize.png",
       "width": 64,
       "height": 64
     },
@@ -1090,7 +1684,7 @@
       "name": "Toolbar Delete",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarDeleteIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/toolbar-delete-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/toolbar-delete.png",
       "width": 256,
       "height": 256
     },
@@ -1099,7 +1693,7 @@
       "name": "Toolbar Favorites",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarFavoritesIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/toolbar-favorites-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/toolbar-favorites.png",
       "width": 256,
       "height": 256
     },
@@ -1126,7 +1720,7 @@
       "name": "Unlocked",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UnlockedIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/unlocked-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/unlocked.png",
       "width": 32,
       "height": 32
     },
@@ -1144,10 +1738,10 @@
       "name": "User",
       "sourceBundlePath": "/System/Library/CoreServices/CoreTypes.bundle",
       "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UserIcon.icns",
-      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/user-icon.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/mountain-lion/ui-assets/user.png",
       "width": 256,
       "height": 256
     }
   ],
-  "note": "The downloadable Internet Archive image contains the Base System, so this catalog covers CoreTypes system resources and Safari rather than the full application and System Preferences suite. The Macintosh Repository retro pack and DeviantArt 500+ Mountain Lion ZIP both require login for download in this environment."
+  "note": "Applications and System Preferences panes were extracted from Essentials.pkg in the OS X Mountain Lion 10.8 installer image. Pane entries prefer NSPrefPaneIconFile/declared pane artwork instead of generic .prefPane document icons; CoreTypes resources still come from the Base System image."
 }
