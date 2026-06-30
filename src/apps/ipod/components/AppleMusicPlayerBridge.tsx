@@ -682,7 +682,7 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
       return;
     }
 
-    const localQueueKey = queueKey;
+    const localQueueKey = currentTrack.id;
     const loadGeneration = ++queueGenerationRef.current;
     appleMusicLog.debug("Loading track into the MusicKit queue", {
       queueKey: localQueueKey,
