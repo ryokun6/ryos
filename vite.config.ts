@@ -16,6 +16,12 @@ const __dirname = path.dirname(__filename);
 const isBuildCommand = process.argv.includes("build");
 const isDev = !isBuildCommand && process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
 const standaloneApiProxyTarget = process.env.STANDALONE_API_PROXY_TARGET?.trim();
+const configuredRealtimeWebSocketPath = process.env.REALTIME_WS_PATH?.trim();
+const realtimeWebSocketPath = configuredRealtimeWebSocketPath
+  ? configuredRealtimeWebSocketPath.startsWith("/")
+    ? configuredRealtimeWebSocketPath
+    : `/${configuredRealtimeWebSocketPath}`
+  : "/ws";
 
 // Browserslist warns if caniuse-lite is stale; suppress when up-to-date
 process.env.BROWSERSLIST_IGNORE_OLD_DATA ??= "1";
@@ -189,6 +195,7 @@ export default defineConfig({
     'import.meta.env.VITE_PUSHER_KEY': JSON.stringify(process.env.PUSHER_KEY || ''),
     'import.meta.env.VITE_PUSHER_CLUSTER': JSON.stringify(process.env.PUSHER_CLUSTER || ''),
     'import.meta.env.VITE_REALTIME_PROVIDER': JSON.stringify(process.env.REALTIME_PROVIDER || ''),
+    'import.meta.env.VITE_REALTIME_WS_PATH': JSON.stringify(realtimeWebSocketPath),
   },
   // Optimize JSON imports for better performance
   json: {
@@ -210,7 +217,7 @@ export default defineConfig({
               target: standaloneApiProxyTarget,
               changeOrigin: true,
             },
-            "/ws": {
+            [realtimeWebSocketPath]: {
               target: standaloneApiProxyTarget,
               ws: true,
             },

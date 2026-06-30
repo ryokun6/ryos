@@ -21,6 +21,12 @@ const PASSWORD = "testpassword123";
 
 const origin = LOCAL_URL || "http://localhost:3001";
 const wsOrigin = origin.replace(/^http/, "ws");
+const configuredWsPath = process.env.REALTIME_WS_PATH?.trim();
+const wsPath = configuredWsPath
+  ? configuredWsPath.startsWith("/")
+    ? configuredWsPath
+    : `/${configuredWsPath}`
+  : "/ws";
 
 async function register(
   username: string
@@ -66,8 +72,8 @@ function subscribeOnce(
 ): Promise<SubscribeResult> {
   const { waitMs = 1500, triggerAfterSubscribe } = options;
   const url = ticket
-    ? `${wsOrigin}/ws?ticket=${encodeURIComponent(ticket)}`
-    : `${wsOrigin}/ws`;
+    ? `${wsOrigin}${wsPath}?ticket=${encodeURIComponent(ticket)}`
+    : `${wsOrigin}${wsPath}`;
 
   return new Promise<SubscribeResult>((resolve) => {
     const ws = new WebSocket(url);
