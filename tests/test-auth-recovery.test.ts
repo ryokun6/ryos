@@ -131,7 +131,7 @@ describe("Account Recovery API", () => {
 
       // The OLD token must now be invalid (all sessions were cleared).
       const oldTokenCheck = await fetchWithAuth(
-        `${BASE_URL}/api/auth/password/check`,
+        `${BASE_URL}/api/auth/tokens`,
         username,
         oldToken as string,
         { method: "GET" }
@@ -140,7 +140,7 @@ describe("Account Recovery API", () => {
 
       // The NEW token should work.
       const newTokenCheck = await fetchWithAuth(
-        `${BASE_URL}/api/auth/password/check`,
+        `${BASE_URL}/api/auth/tokens`,
         username,
         newAuth?.token as string,
         { method: "GET" }

@@ -69,16 +69,6 @@ interface ChatsDialogsProps {
   isLogoutConfirmDialogOpen: boolean;
   setIsLogoutConfirmDialogOpen: (open: boolean) => void;
   confirmLogout: () => void | Promise<void>;
-  hasPassword: boolean | null;
-  promptSetPassword: () => void;
-  isPasswordDialogOpen: boolean;
-  setIsPasswordDialogOpen: (open: boolean) => void;
-  handleSetPassword: (value: string) => Promise<void>;
-  passwordInput: string;
-  setPasswordInput: (value: string) => void;
-  isSettingPassword: boolean;
-  passwordError: string | null;
-  setPasswordError: (value: string | null) => void;
 }
 
 export const ChatsDialogs = memo(function ChatsDialogs({
@@ -126,16 +116,6 @@ export const ChatsDialogs = memo(function ChatsDialogs({
   isLogoutConfirmDialogOpen,
   setIsLogoutConfirmDialogOpen,
   confirmLogout,
-  hasPassword,
-  promptSetPassword,
-  isPasswordDialogOpen,
-  setIsPasswordDialogOpen,
-  handleSetPassword,
-  passwordInput,
-  setPasswordInput,
-  isSettingPassword,
-  passwordError,
-  setPasswordError,
 }: ChatsDialogsProps) {
   const { t } = useTranslation();
 
@@ -156,14 +136,6 @@ export const ChatsDialogs = memo(function ChatsDialogs({
       setIsNewRoomDialogOpen(open);
     },
     [setIsNewRoomDialogOpen, setPrefilledUser]
-  );
-
-  const handlePasswordInputChange = useCallback(
-    (value: string) => {
-      setPasswordInput(value);
-      setPasswordError(null);
-    },
-    [setPasswordError, setPasswordInput]
   );
 
   return (
@@ -243,20 +215,6 @@ export const ChatsDialogs = memo(function ChatsDialogs({
         isOpen={isLogoutConfirmDialogOpen}
         onOpenChange={setIsLogoutConfirmDialogOpen}
         onConfirm={confirmLogout}
-        hasPassword={!!hasPassword}
-        onSetPassword={promptSetPassword}
-      />
-      <InputDialog
-        isOpen={isPasswordDialogOpen}
-        onOpenChange={setIsPasswordDialogOpen}
-        onSubmit={handleSetPassword}
-        title={t("apps.chats.dialogs.setPasswordTitle")}
-        description={t("apps.chats.dialogs.setPasswordDescription")}
-        value={passwordInput}
-        onChange={handlePasswordInputChange}
-        isLoading={isSettingPassword}
-        errorMessage={passwordError}
-        submitLabel={t("apps.chats.dialogs.setPasswordButton")}
       />
     </>
   );

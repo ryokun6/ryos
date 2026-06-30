@@ -145,7 +145,6 @@ export function ControlPanelsAppComponent({
     setVerifyPasswordInput,
     verifyUsernameInput,
     setVerifyUsernameInput,
-    hasPassword,
     logout,
     confirmLogout,
     isLogoutConfirmDialogOpen,
@@ -353,7 +352,6 @@ export function ControlPanelsAppComponent({
       debugMode={debugMode}
       isAdmin={isAdmin}
       promptVerifyToken={promptVerifyToken}
-      hasPassword={hasPassword}
       setPasswordInput={setPasswordInput}
       setPasswordError={setPasswordError}
       setIsPasswordDialogOpen={setIsPasswordDialogOpen}
@@ -455,7 +453,6 @@ export function ControlPanelsAppComponent({
           setIsPasswordDialogOpen={setIsPasswordDialogOpen}
           setPasswordInput={setPasswordInput}
           setPasswordError={setPasswordError}
-          hasPassword={hasPassword}
           isSettingPassword={isSettingPassword}
           passwordError={passwordError}
           handleSetPassword={handleSetPassword}

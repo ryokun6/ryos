@@ -9,22 +9,18 @@ export function useAuth() {
   const {
     username,
     isAuthenticated,
-    hasPassword,
     setAuthenticated,
     setUsername,
     createUser,
     logout,
-    checkHasPassword: storeCheckHasPassword,
     setPassword: storeSetPassword,
   } = useChatsStoreShallow((state) => ({
     username: state.username,
     isAuthenticated: state.isAuthenticated,
-    hasPassword: state.hasPassword,
     setAuthenticated: state.setAuthenticated,
     setUsername: state.setUsername,
     createUser: state.createUser,
     logout: state.logout,
-    checkHasPassword: state.checkHasPassword,
     setPassword: state.setPassword,
   }));
 
@@ -185,12 +181,8 @@ export function useAuth() {
     [setAuthenticated, setUsername, username, verifyUsernameInput, isAuthenticated, logout]
   );
 
-  const checkHasPassword = useCallback(async () => {
-    return storeCheckHasPassword();
-  }, [storeCheckHasPassword]);
-
   const setPassword = useCallback(
-    async (password: string, currentPassword?: string) => {
+    async (password: string, currentPassword: string) => {
       return storeSetPassword(password, currentPassword);
     },
     [storeSetPassword]
@@ -227,7 +219,6 @@ export function useAuth() {
   return {
     username,
     isAuthenticated,
-    hasPassword,
 
     promptSetUsername,
     promptLogin,
@@ -256,7 +247,6 @@ export function useAuth() {
     verifyError,
     handleVerifyTokenSubmit,
 
-    checkHasPassword,
     setPassword,
 
     logout: promptLogout,

@@ -97,14 +97,7 @@ export default apiHandler(
       return;
     }
 
-    // Get and verify password
-    const passwordHash = await getUserPasswordHash(redis, username);
-    if (!passwordHash) {
-      // Account has no password set yet (legacy). Treat as invalid creds.
-      res.status(401).json({ error: "Invalid credentials" });
-      return;
-    }
-
+    const passwordHash = (await getUserPasswordHash(redis, username)) ?? "";
     const passwordValid = await verifyPassword(password, passwordHash);
     if (!passwordValid) {
       await recordLoginFailure(redis, username);

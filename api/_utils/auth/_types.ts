@@ -49,5 +49,4 @@ export type {
   AuthErrorResponse,
   TokenResponse,
   VerifyTokenResponse,
-  CheckPasswordResponse,
 } from "../../../src/shared/contracts/auth.js";

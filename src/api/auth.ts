@@ -1,6 +1,5 @@
 import { apiRequest, apiRequestRaw } from "@/api/core";
 import type {
-  CheckPasswordResponse,
   DeleteAccountResponse,
   EmailMutationResponse,
   EmailStatusResponse,
@@ -13,7 +12,6 @@ import type {
 } from "@/shared/contracts/auth";
 
 export type {
-  CheckPasswordResponse,
   DeleteAccountResponse,
   EmailMutationResponse,
   EmailStatusResponse,
@@ -82,13 +80,6 @@ export async function logoutUserSafe(): Promise<void> {
   }
 }
 
-export async function checkUserPassword(): Promise<CheckPasswordResponse> {
-  return apiRequest<CheckPasswordResponse>({
-    path: "/api/auth/password/check",
-    method: "GET",
-  });
-}
-
 export async function getAuthSession(): Promise<
   | { ok: true; data: SessionResponse }
   | { ok: false; status: number }
@@ -110,11 +101,8 @@ export async function getAuthSession(): Promise<
 export interface SetPasswordRequest {
   /** New password to store. */
   password: string;
-  /**
-   * Existing password. Required by the server when the user already has
-   * a password set; omitted only for first-time setup on legacy accounts.
-   */
-  currentPassword?: string;
+  /** Existing password. */
+  currentPassword: string;
 }
 
 export async function setUserPassword(
@@ -198,7 +186,7 @@ export async function removeRecoveryEmail(): Promise<{ success: boolean }> {
 export async function deleteAccount(params: {
   confirm: boolean;
   confirmUsername: string;
-  currentPassword?: string;
+  currentPassword: string;
 }): Promise<DeleteAccountResponse> {
   return apiRequest<DeleteAccountResponse, typeof params>({
     path: "/api/auth/account/delete",

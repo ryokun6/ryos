@@ -19,7 +19,6 @@ export type SecurityPaneContentProps = {
   realtimeStatus: RealtimeConnectionState;
   accountJoinedAt?: number | null;
   locale: LanguageCode;
-  hasPassword: boolean | null;
   promptSetUsername: () => void;
   promptLogin: () => void;
   logout: () => void;
@@ -41,7 +40,6 @@ export function SecurityPaneContent({
   realtimeStatus,
   accountJoinedAt,
   locale,
-  hasPassword,
   promptSetUsername,
   promptLogin,
   logout,
@@ -91,9 +89,7 @@ export function SecurityPaneContent({
             disabled={!username}
             className="h-7"
           >
-            {hasPassword
-              ? t("apps.control-panels.changePasswordButton")
-              : t("apps.control-panels.setPassword")}
+            {t("apps.control-panels.changePasswordButton")}
           </Button>
         </ControlPanelsPrefFormRow>
 
@@ -169,7 +165,6 @@ export function SecurityPaneContent({
       <DeleteAccountDialog
         isOpen={isDeleteAccountOpen}
         onOpenChange={setIsDeleteAccountOpen}
-        hasPassword={hasPassword}
       />
       <ConfirmDialog
         isOpen={isLogoutAllConfirmOpen}

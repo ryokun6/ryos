@@ -16,11 +16,6 @@ export interface VerifyTokenResponse {
   expiredAt?: number;
 }
 
-export interface CheckPasswordResponse {
-  hasPassword: boolean;
-  username: string;
-}
-
 export interface LoginResponse {
   username: string;
   timeZone?: string;
@@ -29,7 +24,6 @@ export interface LoginResponse {
 export interface RegisterResponse {
   user: {
     username: string;
-    hasPassword?: boolean;
     createdAt?: number;
     timeZone?: string;
   };

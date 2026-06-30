@@ -50,13 +50,3 @@ export async function deleteUserPasswordHash(
   await redis.del(getCanonicalPasswordKey(username));
 }
 
-/**
- * Check if a user has a password set
- */
-export async function userHasPassword(
-  redis: Redis,
-  username: string
-): Promise<boolean> {
-  const hash = await getUserPasswordHash(redis, username);
-  return !!hash;
-}

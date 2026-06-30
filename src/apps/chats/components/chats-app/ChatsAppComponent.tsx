@@ -99,16 +99,6 @@ export function ChatsAppComponent({
           isLogoutConfirmDialogOpen={c.isLogoutConfirmDialogOpen}
           setIsLogoutConfirmDialogOpen={c.setIsLogoutConfirmDialogOpen}
           confirmLogout={c.confirmLogout}
-          hasPassword={c.hasPassword}
-          promptSetPassword={c.promptSetPassword}
-          isPasswordDialogOpen={c.isPasswordDialogOpen}
-          setIsPasswordDialogOpen={c.setIsPasswordDialogOpen}
-          handleSetPassword={c.handleSetPassword}
-          passwordInput={c.passwordInput}
-          setPasswordInput={c.setPasswordInput}
-          isSettingPassword={c.isSettingPassword}
-          passwordError={c.passwordError}
-          setPasswordError={c.setPasswordError}
         />
     </AppWindowShell>
   );

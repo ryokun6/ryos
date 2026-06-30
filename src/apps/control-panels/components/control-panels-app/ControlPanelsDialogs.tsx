@@ -52,12 +52,11 @@ export type ControlPanelsDialogsProps = {
   setIsPasswordDialogOpen: (open: boolean) => void;
   setPasswordInput: (value: string) => void;
   setPasswordError: (error: string | null) => void;
-  hasPassword: boolean | null;
   isSettingPassword: boolean;
   passwordError: string | null;
   handleSetPassword: (
     newPassword: string,
-    currentPassword?: string
+    currentPassword: string
   ) => Promise<void>;
   isLogoutConfirmDialogOpen: boolean;
   setIsLogoutConfirmDialogOpen: (open: boolean) => void;
@@ -122,7 +121,6 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
     setIsPasswordDialogOpen,
     setPasswordInput,
     setPasswordError,
-    hasPassword,
     isSettingPassword,
     passwordError,
     handleSetPassword,
@@ -229,25 +227,18 @@ export function ControlPanelsDialogs(props: ControlPanelsDialogsProps) {
             setPasswordError(null);
           }
         }}
-        hasPassword={hasPassword === true}
         isLoading={isSettingPassword}
         errorMessage={passwordError}
         onAnyInputChange={() => setPasswordError(null)}
         onSubmit={async ({ currentPassword, newPassword }) => {
           setPasswordInput(newPassword);
-          await handleSetPassword(newPassword, currentPassword || undefined);
+          await handleSetPassword(newPassword, currentPassword);
         }}
       />
       <LogoutDialog
         isOpen={isLogoutConfirmDialogOpen}
         onOpenChange={setIsLogoutConfirmDialogOpen}
         onConfirm={confirmLogout}
-        hasPassword={hasPassword}
-        onSetPassword={() => {
-          setPasswordInput("");
-          setPasswordError(null);
-          setIsPasswordDialogOpen(true);
-        }}
       />
       <ConfirmDialog
         isOpen={isConfirmForceUploadOpen}

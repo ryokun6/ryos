@@ -58,7 +58,6 @@ export type AccountsPaneContentProps = {
   recoveryEmailStatus: EmailStatusResponse | null;
   isEmailStatusLoading: boolean;
   refreshRecoveryEmailStatus: () => Promise<EmailStatusResponse | null>;
-  hasPassword: boolean | null;
   logout: () => void;
   handleLogoutAllDevices: () => void;
   isLoggingOutAllDevices: boolean;
@@ -104,7 +103,6 @@ export function AccountsPaneContent({
   recoveryEmailStatus,
   isEmailStatusLoading,
   refreshRecoveryEmailStatus,
-  hasPassword,
   logout,
   handleLogoutAllDevices,
   isLoggingOutAllDevices,
@@ -371,7 +369,6 @@ export function AccountsPaneContent({
               realtimeStatus={realtimeStatus}
               accountJoinedAt={accountJoinedAt}
               locale={locale}
-              hasPassword={hasPassword}
               promptSetUsername={promptSetUsername}
               promptLogin={promptLogin}
               logout={logout}

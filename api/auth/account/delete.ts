@@ -8,7 +8,7 @@
  * - Requires a fresh (non-grace) token.
  * - Requires `confirm: true` plus the literal `confirmUsername` matching the
  *   account, so a misfired request can't wipe an account.
- * - Requires `currentPassword` when the account has a password set.
+ * - Requires `currentPassword`.
  * - The admin account (`ryo`) cannot self-delete.
  *
  * Node.js runtime (bcrypt for password verification).
@@ -26,7 +26,7 @@ export const maxDuration = 20;
 interface DeleteAccountRequest {
   confirm: boolean;
   confirmUsername: string;
-  currentPassword?: string;
+  currentPassword: string;
 }
 
 const DELETE_RL_LIMIT = 5;
@@ -94,23 +94,24 @@ export default apiHandler<DeleteAccountRequest>(
       logger.warn("Account delete rate limit check failed", rateLimitError);
     }
 
-    // Verify password when one is set.
+    // Verify the current password before destructive deletion.
+    const currentPassword =
+      typeof body?.currentPassword === "string" ? body.currentPassword : "";
+    if (!currentPassword) {
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "Current password is required" });
+      return;
+    }
+
     const existingHash = await getUserPasswordHash(redis, username);
-    if (existingHash) {
-      const currentPassword =
-        typeof body?.currentPassword === "string" ? body.currentPassword : "";
-      if (!currentPassword) {
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "Current password is required" });
-        return;
-      }
-      const valid = await verifyPassword(currentPassword, existingHash);
-      if (!valid) {
-        logger.warn("Invalid password during account deletion", { username });
-        logger.response(401, Date.now() - startTime);
-        res.status(401).json({ error: "Current password is incorrect" });
-        return;
-      }
+    const valid = existingHash
+      ? await verifyPassword(currentPassword, existingHash)
+      : false;
+    if (!valid) {
+      logger.warn("Invalid password during account deletion", { username });
+      logger.response(401, Date.now() - startTime);
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
     }
 
     try {

@@ -440,7 +440,7 @@ describe("Control Panels macOS 10.3 layout", () => {
       accountsSource.indexOf('hidden={accountsTab !== "debug"}')
     );
     expect(securityTabPanel.includes("SecurityPaneContent")).toBe(true);
-    expect(securityTabPanel.includes("hasPassword")).toBe(true);
+    expect(securityTabPanel.includes("hasPassword")).toBe(false);
     expect(securityTabPanel.includes("handleLogoutAllDevices")).toBe(true);
 
     const debugTabPanel = accountsSource.slice(
@@ -461,7 +461,7 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(accountsCase.includes("setTtsModel")).toBe(true);
     expect(accountsCase.includes("handleShowBootScreen")).toBe(true);
     expect(accountsCase.includes("recoveryEmailStatus")).toBe(true);
-    expect(accountsCase.includes("hasPassword")).toBe(true);
+    expect(accountsCase.includes("hasPassword")).toBe(false);
     expect(accountsCase.includes("logout")).toBe(true);
     expect(accountsCase.includes("handleLogoutAllDevices")).toBe(true);
     expect(accountsCase.includes("isAdmin")).toBe(true);
