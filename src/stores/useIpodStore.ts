@@ -29,7 +29,7 @@ import {
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
-import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import {
   hasFetchedTrackMetadataChanges,
   hasLibraryTrackMetadataChanges,
@@ -2538,12 +2538,9 @@ export const useIpodStore = create<IpodState>()(
       setIpodMenuMode: (menuMode) => set({ ipodMenuMode: menuMode }),
     }),
     {
-      name: "ryos:ipod", // Unique name for localStorage persistence
+      name: "ryos:ipod",
       version: CURRENT_IPOD_STORE_VERSION, // Set the current version
-      // Write-behind storage: the YouTube track library used to be
-      // JSON.stringify'd and written synchronously on every persisted
-      // mutation. Serialization now happens once per quiet window.
-      storage: createDebouncedPersistStorage(),
+      storage: createIndexedDBPersistStorage(),
       migrate: (persistedState) =>
         sanitizePersistedIpodStateForRehydrate(persistedState),
       merge: (persistedState, currentState) => ({

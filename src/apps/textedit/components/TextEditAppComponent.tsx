@@ -19,7 +19,6 @@ import {
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { markdownToSafeHtml } from "../utils/markdownPaste";
 import { useTranslation } from "react-i18next";
 import {
   onDocumentUpdated,
@@ -62,6 +61,7 @@ function TextEditContent({
   const editor = useEditorContext();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingImportRef = useRef<File | null>(null);
   const launchApp = useLaunchApp();
   const clearInstanceInitialData = useAppStore(
     (state) => state.clearInstanceInitialData
@@ -75,6 +75,16 @@ function TextEditContent({
   const [dialogControls, setDialogControls] = useState<DialogControls | null>(
     null
   );
+
+  useEffect(() => {
+    // Remove scratch payloads left by versions that staged full dropped files
+    // in localStorage while the overwrite dialog was open.
+    try {
+      localStorage.removeItem("ryos:pending-file-open");
+    } catch {
+      // Best-effort cleanup for browsers where Web Storage is unavailable.
+    }
+  }, []);
 
   // Register undo/redo with the universal system
   useRegisterUndoRedo(instanceId!, {
@@ -92,15 +102,15 @@ function TextEditContent({
     setCurrentFilePath,
     setContentJson,
     setHasUnsavedChanges,
+    currentInstance,
   } = useTextEditState({ instanceId: instanceId! });
+  const isInstanceReady = currentInstance !== null;
 
-  // The TextEdit store is `persist`-backed, so every `setContentJson` writes all
-  // open documents to localStorage synchronously. Writing on every keystroke
-  // caused typing jank, so the per-keystroke mirror is debounced (with a max
-  // wait so a long uninterrupted typing burst still snapshots periodically for
-  // crash recovery). `lastWrittenJsonRef` records the exact object we persist so
-  // the external-merge effect can tell our own writes apart from genuinely
-  // external updates (AI edits, cloud/file sync) and not fight the user's edits.
+  // Mirror editor content into the persisted store on a short debounce, with a
+  // max wait so a long uninterrupted typing burst still snapshots for crash
+  // recovery. `lastWrittenJsonRef` records the exact object we persist so the
+  // external-merge effect can tell our own writes apart from genuinely external
+  // updates (AI edits, cloud/file sync) and not fight the user's edits.
   const lastWrittenJsonRef = useRef<JSONContent | null>(null);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPersistAtRef = useRef(0);
@@ -184,7 +194,8 @@ function TextEditContent({
         console.error("Failed to handle dropped file:", error);
       }
     },
-    onConfirmOverwrite: () => {
+    onConfirmOverwrite: (file) => {
+      pendingImportRef.current = file;
       dialogControls?.openConfirmNewDialog();
     },
   });
@@ -201,10 +212,9 @@ function TextEditContent({
       // "external" meta. Ignore them here so merging cloud/sync/AI updates does
       // not mark the document dirty or fight the user's edits.
       if (transaction?.getMeta("external")) return;
-      // Mirror the latest content into the (persisted) store for recovery, but
-      // debounced so we don't serialize every open document to localStorage on
-      // every keystroke. The unsaved flag is still flipped immediately so the
-      // title indicator and close confirmation react without delay.
+      // Mirror the latest content into the persisted store for recovery. The
+      // unsaved flag is still flipped immediately so the title indicator and
+      // close confirmation react without delay.
       scheduleContentJsonPersist();
       if (!hasUnsavedChanges) {
         setHasUnsavedChanges(true);
@@ -231,7 +241,7 @@ function TextEditContent({
 
   // Initial load - use initialData if provided
   useEffect(() => {
-    if (!editor || !instanceId) return;
+    if (!editor || !instanceId || !isInstanceReady) return;
 
     const loadContent = async () => {
       // Prioritize initialData passed from launch event
@@ -268,6 +278,7 @@ function TextEditContent({
     editor,
     initialData,
     instanceId,
+    isInstanceReady,
     handleLoadFromPath,
     handleLoadFromDatabase,
     clearInstanceInitialData,
@@ -275,7 +286,7 @@ function TextEditContent({
 
   // Instance restore: if we have a file path but no content yet after reload, load from DB
   useEffect(() => {
-    if (!editor || !instanceId) return;
+    if (!editor || !instanceId || !isInstanceReady) return;
     if (!contentJson && currentFilePath) {
       log.debug("Restoring instance content from DB", {
         path: currentFilePath,
@@ -285,6 +296,7 @@ function TextEditContent({
   }, [
     editor,
     instanceId,
+    isInstanceReady,
     contentJson,
     currentFilePath,
     handleLoadFromDatabase,
@@ -431,36 +443,14 @@ function TextEditContent({
     log.debug("Created new TextEdit file", { instanceId: newInstanceId });
   };
 
-  const createNewFile = () => {
-    if (editor) {
-      editor.commands.clearContent(false);
-      setContentJson(null);
-      setCurrentFilePath(null);
-      setHasUnsavedChanges(false);
+  const applyPendingImport = () => {
+    const file = pendingImportRef.current;
+    pendingImportRef.current = null;
+    if (!file) return;
 
-      const pendingFileOpen = localStorage.getItem("ryos:pending-file-open");
-      if (pendingFileOpen) {
-        try {
-          const { path, content } = JSON.parse(pendingFileOpen);
-          if (
-            path.startsWith("/Documents/") ||
-            path.startsWith("/Downloads/")
-          ) {
-            const processedContent = path.endsWith(".md")
-              ? markdownToSafeHtml(content)
-              : content;
-            editor.commands.setContent(processedContent, false);
-            setCurrentFilePath(path);
-            setHasUnsavedChanges(false);
-            setContentJson(editor.getJSON());
-          }
-        } catch (e) {
-          console.error("Failed to parse pending file open data:", e);
-        } finally {
-          localStorage.removeItem("ryos:pending-file-open");
-        }
-      }
-    }
+    void handleImportFile(file).catch((error) => {
+      console.error("Failed to import dropped file:", error);
+    });
   };
 
   const handleSaveClick = async () => {
@@ -693,7 +683,10 @@ function TextEditContent({
             onSaveSubmit={handleSaveSubmit}
             onCloseSave={handleCloseSave}
             onCloseDelete={handleCloseDelete}
-            onConfirmNew={createNewFile}
+            onConfirmNew={applyPendingImport}
+            onCancelConfirmNew={() => {
+              pendingImportRef.current = null;
+            }}
             onControlsReady={setDialogControls}
             isUntitledForClose={!currentFilePath}
           />

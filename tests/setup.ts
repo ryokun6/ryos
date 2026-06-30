@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { afterEach, beforeEach } from "bun:test";
 import {
   flushDebouncedPersistWrites,

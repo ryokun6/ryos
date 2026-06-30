@@ -1,3 +1,5 @@
+import { STORES } from "@/utils/indexedDB";
+
 export interface IndexedDBStoreItem {
   [key: string]: unknown;
 }
@@ -6,6 +8,37 @@ export interface IndexedDBStoreItemWithKey {
   key: string;
   value: IndexedDBStoreItem;
 }
+
+export const MANUAL_BACKUP_VERSION = 5;
+
+/**
+ * User-owned IndexedDB data included in manual backups. Apple Music stores are
+ * intentionally excluded because they are provider caches that can be rebuilt.
+ */
+export const MANUAL_BACKUP_INDEXEDDB_STORES = [
+  STORES.DOCUMENTS,
+  STORES.IMAGES,
+  STORES.BOOKS,
+  STORES.BOOK_THUMBNAILS,
+  STORES.TRASH,
+  STORES.CUSTOM_WALLPAPERS,
+  STORES.APPLETS,
+  STORES.PERSISTED_STATE,
+] as const;
+
+export type ManualBackupIndexedDBStore =
+  (typeof MANUAL_BACKUP_INDEXEDDB_STORES)[number];
+
+export type ManualBackupIndexedDBData = Record<
+  ManualBackupIndexedDBStore,
+  IndexedDBStoreItemWithKey[]
+>;
+
+export const createEmptyManualBackupIndexedDBData =
+  (): ManualBackupIndexedDBData =>
+    Object.fromEntries(
+      MANUAL_BACKUP_INDEXEDDB_STORES.map((storeName) => [storeName, []])
+    ) as unknown as ManualBackupIndexedDBData;
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
@@ -34,6 +67,11 @@ export const base64ToBlob = (dataUrl: string): Blob => {
   const binary = atob(base64);
   const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   return new Blob([array], { type: mime });
+};
+
+const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+  const binary = atob(base64);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0)).buffer;
 };
 
 export async function readStoreItemByKey(
@@ -139,6 +177,11 @@ export async function serializeStoreItem(
     if (item.value[key] instanceof Blob) {
       serializedValue[key] = await blobToBase64(item.value[key] as Blob);
       serializedValue[`_isBlob_${key}`] = true;
+    } else if (item.value[key] instanceof ArrayBuffer) {
+      serializedValue[key] = arrayBufferToBase64(
+        item.value[key] as ArrayBuffer
+      );
+      serializedValue[`_isArrayBuffer_${key}`] = true;
     }
   }
 
@@ -167,48 +210,83 @@ export function deserializeStoreItem(
       restoredValue[key] = base64ToBlob(item.value[key] as string);
       delete restoredValue[isBlobKey];
     }
+    const isArrayBufferKey = `_isArrayBuffer_${key}`;
+    if (
+      item.value[isArrayBufferKey] === true &&
+      typeof item.value[key] === "string"
+    ) {
+      restoredValue[key] = base64ToArrayBuffer(item.value[key] as string);
+      delete restoredValue[isArrayBufferKey];
+    }
   }
 
   return restoredValue;
+}
+
+interface RestoreStoreOptions {
+  mapValue?: (
+    value: Record<string, unknown>,
+    item: IndexedDBStoreItemWithKey
+  ) => Record<string, unknown>;
+}
+
+export interface IndexedDBStoreRestore {
+  storeName: string;
+  items: IndexedDBStoreItemWithKey[];
+  options?: RestoreStoreOptions;
+}
+
+/** Atomically replace multiple object stores in one IndexedDB transaction. */
+export async function restoreStoreItemsAtomically(
+  db: IDBDatabase,
+  restores: readonly IndexedDBStoreRestore[]
+): Promise<void> {
+  if (restores.length === 0) return;
+
+  const prepared = restores.map(({ storeName, items, options }) => ({
+    storeName,
+    items: items.map((item) => {
+      const restoredValue = deserializeStoreItem(item);
+      return {
+        key: item.key,
+        value: options?.mapValue
+          ? options.mapValue(restoredValue, item)
+          : restoredValue,
+      };
+    }),
+  }));
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(
+      prepared.map(({ storeName }) => storeName),
+      "readwrite"
+    );
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () =>
+      reject(transaction.error || new Error("Restore transaction aborted"));
+
+    try {
+      for (const restore of prepared) {
+        const store = transaction.objectStore(restore.storeName);
+        store.clear();
+        for (const item of restore.items) {
+          store.put(item.value, item.key);
+        }
+      }
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+    }
+  });
 }
 
 export async function restoreStoreItems(
   db: IDBDatabase,
   storeName: string,
   items: IndexedDBStoreItemWithKey[],
-  options?: {
-    mapValue?: (
-      value: Record<string, unknown>,
-      item: IndexedDBStoreItemWithKey
-    ) => Record<string, unknown>;
-  }
+  options?: RestoreStoreOptions
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    const clearRequest = store.clear();
-
-    clearRequest.onsuccess = () => {
-      try {
-        for (const item of items) {
-          const restoredValue = deserializeStoreItem(item);
-          const finalValue = options?.mapValue
-            ? options.mapValue(restoredValue, item)
-            : restoredValue;
-          store.put(finalValue, item.key);
-        }
-      } catch (error) {
-        transaction.abort();
-        reject(error);
-      }
-    };
-
-    clearRequest.onerror = () => reject(clearRequest.error);
-  });
+  return restoreStoreItemsAtomically(db, [{ storeName, items, options }]);
 }

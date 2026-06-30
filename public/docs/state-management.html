@@ -512,9 +512,9 @@
     IPOD -.->|auth| CHAT
     
     APP --> LS
-    FILES --> LS
     FILES --> IDB
-    CHAT --> LS
+    CHAT --> IDB
+    IPOD --> IDB
     DISPLAY --> IDB
     
     IPOD --> API
@@ -522,9 +522,9 @@
     API --> REDIS</pre>
 <h2>Store Inventory</h2>
 <h3>Core System Stores</h3>
-<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td><code>ryos:app-store</code></td><td>Instance-based window management, boot state, AI model selection, recent apps/documents, expose mode</td></tr><tr><td><code>useFilesStore</code></td><td><code>ryos:files</code></td><td>Virtual filesystem metadata</td></tr><tr><td><code>useThemeStore</code></td><td><code>ryos:theme</code> (manual, with <code>os_theme</code> legacy fallback)</td><td>OS theme selection + legacy Windows CSS loading</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td><code>ryos:display-settings</code></td><td>Wallpaper, shaders, screen saver</td></tr><tr><td><code>useDockStore</code></td><td><code>dock-storage</code></td><td>Dock pinned items, scale, visibility</td></tr><tr><td><code>useAudioSettingsStore</code></td><td><code>ryos:audio-settings</code></td><td>Volume controls, audio feature toggles</td></tr><tr><td><code>useLanguageStore</code></td><td><code>ryos:language</code> + <code>ryos:language-initialized</code> (manual)</td><td>UI language preference and first-run detection</td></tr><tr><td><code>useSpotlightStore</code></td><td>None (ephemeral UI state)</td><td>Spotlight open/query/selection UI state</td></tr><tr><td><code>useCloudSyncStore</code></td><td><code>ryos:cloud-sync</code></td><td>Cloud sync preferences, per-category status, deletion markers</td></tr><tr><td><code>useUndoRedoStore</code></td><td>None (ephemeral)</td><td>Per-instance undo/redo handler registry for foreground dispatch</td></tr></tbody></table>
+<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td><code>ryos:app-store</code></td><td>Instance-based window management, boot state, AI model selection, recent apps/documents, expose mode</td></tr><tr><td><code>useFilesStore</code></td><td><code>ryos:files</code> (IndexedDB)</td><td>Virtual filesystem metadata</td></tr><tr><td><code>useThemeStore</code></td><td><code>ryos:theme</code> (manual, with <code>os_theme</code> legacy fallback)</td><td>OS theme selection + legacy Windows CSS loading</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td><code>ryos:display-settings</code></td><td>Wallpaper, shaders, screen saver</td></tr><tr><td><code>useDockStore</code></td><td><code>dock-storage</code></td><td>Dock pinned items, scale, visibility</td></tr><tr><td><code>useAudioSettingsStore</code></td><td><code>ryos:audio-settings</code></td><td>Volume controls, audio feature toggles</td></tr><tr><td><code>useLanguageStore</code></td><td><code>ryos:language</code> + <code>ryos:language-initialized</code> (manual)</td><td>UI language preference and first-run detection</td></tr><tr><td><code>useSpotlightStore</code></td><td>None (ephemeral UI state)</td><td>Spotlight open/query/selection UI state</td></tr><tr><td><code>useCloudSyncStore</code></td><td><code>ryos:cloud-sync</code></td><td>Cloud sync preferences, per-category status, deletion markers</td></tr><tr><td><code>useUndoRedoStore</code></td><td>None (ephemeral)</td><td>Per-instance undo/redo handler registry for foreground dispatch</td></tr></tbody></table>
 <h3>App-Specific Stores</h3>
-<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useChatsStore</code></td><td><code>ryos:chats</code></td><td>Chat rooms, messages, authentication</td></tr><tr><td><code>useIpodStore</code></td><td><code>ryos:ipod</code></td><td>Music library, playback state, lyrics</td></tr><tr><td><code>useVideoStore</code></td><td><code>ryos:videos</code></td><td>Video library, playback</td></tr><tr><td><code>useKaraokeStore</code></td><td><code>ryos:karaoke</code></td><td>Karaoke session state</td></tr><tr><td><code>useTerminalStore</code></td><td><code>ryos:terminal</code></td><td>Command history, vim state</td></tr><tr><td><code>useSynthStore</code></td><td><code>ryos:synth</code></td><td>Synthesizer presets</td></tr><tr><td><code>useSoundboardStore</code></td><td><code>ryos:soundboard</code> (IndexedDB)</td><td>Soundboard slots and recordings — persisted to IndexedDB (<code>persisted_state</code> store) instead of localStorage because base64 audio overflows the localStorage quota</td></tr><tr><td><code>useAppletStore</code></td><td><code>applet-storage</code></td><td>Applet window dimensions</td></tr><tr><td><code>useFinderStore</code></td><td><code>ryos:finder</code></td><td>Finder instances, view preferences</td></tr><tr><td><code>useTextEditStore</code></td><td><code>ryos:textedit</code></td><td>Recent documents</td></tr><tr><td><code>useInternetExplorerStore</code></td><td><code>ryos:internet-explorer</code></td><td>Favorites, history</td></tr><tr><td><code>usePaintStore</code></td><td><code>ryos:paint</code></td><td>Tool settings</td></tr><tr><td><code>usePhotoBoothStore</code></td><td><code>ryos:photobooth</code></td><td>Recent photos</td></tr><tr><td><code>usePcStore</code></td><td><code>ryos:pc</code></td><td>Virtual PC state</td></tr><tr><td><code>useInfinitePcStore</code></td><td><code>ryos:infinite-pc</code></td><td>v86 OS-browser presets and runtime state</td></tr><tr><td><code>useStickiesStore</code></td><td><code>stickies-storage</code></td><td>Sticky notes and note layout</td></tr><tr><td><code>useCalendarStore</code></td><td><code>calendar-storage</code></td><td>Calendar events, todo items, groups</td></tr><tr><td><code>useContactsStore</code></td><td><code>contacts-storage</code></td><td>Address book contacts, vCard import/export</td></tr><tr><td><code>useDashboardStore</code></td><td><code>dashboard-storage</code></td><td>Dashboard widget layout and configuration</td></tr><tr><td><code>useListenSessionStore</code></td><td>None (ephemeral)</td><td>Listen Together session state and Pusher sync</td></tr><tr><td><code>useInfiniteMacStore</code></td><td><code>ryos:infinite-mac</code></td><td>Infinite Mac runtime preferences</td></tr><tr><td><code>useBooksStore</code></td><td><code>ryos:books</code></td><td>EPUB book library, reading position, last-opened book</td></tr><tr><td><code>useMapsStore</code></td><td><code>ryos:maps:v1</code></td><td>Maps search results, selected place, map region</td></tr><tr><td><code>useTvStore</code></td><td><code>ryos:tv</code></td><td>TV channels and playback state</td></tr><tr><td><code>useWeatherStore</code></td><td><code>ryos:weather</code></td><td>Weather data and saved location</td></tr><tr><td><code>useTimezoneStore</code></td><td><code>ryos:timezone</code></td><td>World clock timezone selection</td></tr><tr><td><code>useMediaLibraryStore</code></td><td>(alias of <code>useIpodStore</code>)</td><td>Shared music-library/lyrics state for iPod, Karaoke, and Winamp</td></tr><tr><td><code>useAirDropStore</code></td><td>None (ephemeral)</td><td>AirDrop transfer session and channel subscription</td></tr><tr><td><code>useWeatherSimulationStore</code></td><td>None (ephemeral)</td><td>Desktop weather-effect simulation state</td></tr><tr><td><code>useAdminDashboardStore</code></td><td>None (ephemeral)</td><td>Admin dashboard UI/query state</td></tr></tbody></table>
+<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useChatsStore</code></td><td><code>ryos:chats</code> (IndexedDB)</td><td>Chat rooms, messages, authentication — persisted to IndexedDB (<code>persisted_state</code> store) because AI tool results can exceed the localStorage quota</td></tr><tr><td><code>useIpodStore</code></td><td><code>ryos:ipod</code> (IndexedDB)</td><td>Music library, playback state, lyrics</td></tr><tr><td><code>useVideoStore</code></td><td><code>ryos:videos</code></td><td>Video library, playback</td></tr><tr><td><code>useKaraokeStore</code></td><td><code>ryos:karaoke</code></td><td>Karaoke session state</td></tr><tr><td><code>useTerminalStore</code></td><td><code>ryos:terminal</code></td><td>Command history, vim state</td></tr><tr><td><code>useSynthStore</code></td><td><code>ryos:synth</code></td><td>Synthesizer presets</td></tr><tr><td><code>useSoundboardStore</code></td><td><code>ryos:soundboard</code> (IndexedDB)</td><td>Soundboard slots and recordings — persisted to IndexedDB (<code>persisted_state</code> store) instead of localStorage because base64 audio overflows the localStorage quota</td></tr><tr><td><code>useAppletStore</code></td><td><code>applet-storage</code></td><td>Applet window dimensions</td></tr><tr><td><code>useFinderStore</code></td><td><code>ryos:finder</code></td><td>Finder instances, view preferences</td></tr><tr><td><code>useTextEditStore</code></td><td><code>ryos:textedit</code> (IndexedDB)</td><td>Open documents and unsaved-draft recovery</td></tr><tr><td><code>useInternetExplorerStore</code></td><td><code>ryos:internet-explorer</code></td><td>Favorites, history</td></tr><tr><td><code>usePaintStore</code></td><td><code>ryos:paint</code></td><td>Tool settings</td></tr><tr><td><code>usePhotoBoothStore</code></td><td><code>ryos:photobooth</code></td><td>Recent photos</td></tr><tr><td><code>usePcStore</code></td><td><code>ryos:pc</code></td><td>Virtual PC state</td></tr><tr><td><code>useInfinitePcStore</code></td><td><code>ryos:infinite-pc</code></td><td>v86 OS-browser presets and runtime state</td></tr><tr><td><code>useStickiesStore</code></td><td><code>stickies-storage</code> (IndexedDB)</td><td>Sticky notes and note layout</td></tr><tr><td><code>useCalendarStore</code></td><td><code>calendar-storage</code></td><td>Calendar events, todo items, groups</td></tr><tr><td><code>useContactsStore</code></td><td><code>contacts-storage</code> (IndexedDB)</td><td>Address book contacts, vCard import/export</td></tr><tr><td><code>useDashboardStore</code></td><td><code>dashboard-storage</code></td><td>Dashboard widget layout and configuration</td></tr><tr><td><code>useListenSessionStore</code></td><td>None (ephemeral)</td><td>Listen Together session state and Pusher sync</td></tr><tr><td><code>useInfiniteMacStore</code></td><td><code>ryos:infinite-mac</code></td><td>Infinite Mac runtime preferences</td></tr><tr><td><code>useBooksStore</code></td><td><code>ryos:books</code></td><td>EPUB book library, reading position, last-opened book</td></tr><tr><td><code>useMapsStore</code></td><td><code>ryos:maps:v1</code></td><td>Maps search results, selected place, map region</td></tr><tr><td><code>useTvStore</code></td><td><code>ryos:tv</code></td><td>TV channels and playback state</td></tr><tr><td><code>useWeatherStore</code></td><td><code>ryos:weather</code></td><td>Weather data and saved location</td></tr><tr><td><code>useTimezoneStore</code></td><td><code>ryos:timezone</code></td><td>World clock timezone selection</td></tr><tr><td><code>useMediaLibraryStore</code></td><td>(alias of <code>useIpodStore</code>)</td><td>Shared music-library/lyrics state for iPod, Karaoke, and Winamp</td></tr><tr><td><code>useAirDropStore</code></td><td>None (ephemeral)</td><td>AirDrop transfer session and channel subscription</td></tr><tr><td><code>useWeatherSimulationStore</code></td><td>None (ephemeral)</td><td>Desktop weather-effect simulation state</td></tr><tr><td><code>useAdminDashboardStore</code></td><td>None (ephemeral)</td><td>Admin dashboard UI/query state</td></tr></tbody></table>
 <h3>Store Architecture Diagram</h3>
 <pre class="mermaid">graph TD
     subgraph Core["Core System"]
@@ -644,7 +644,7 @@ export const useExampleStore = create&lt;ExampleState&gt;()(
   }
 )</code></pre>
 <h3>IndexedDB Integration</h3>
-<p>Used for large binary data (images, documents, applets):</p>
+<p>Used for large binary data and quota-sensitive Zustand slices:</p>
 <pre><code>// IndexedDB stores
 const STORES = {
   DOCUMENTS: "documents",      // Text files
@@ -657,17 +657,19 @@ const STORES = {
   APPLE_MUSIC_LIBRARY: "apple_music_library",
   APPLE_MUSIC_PLAYLISTS: "apple_music_playlists",
   APPLE_MUSIC_PLAYLIST_TRACKS: "apple_music_playlist_tracks",
+  PERSISTED_STATE: "persisted_state", // Large Zustand slices
 };
 
-// Database: ryOS (version 12)
+// Database: ryOS (version 13)
 interface StoredContent {
   name: string;               // Original filename
   content: string | Blob;     // File content
 }</code></pre>
+<p>Quota-sensitive stores use <code>createIndexedDBPersistStorage()</code>. The shared adapter debounces and serializes writes, participates in backup flushing, and migrates the same-named legacy localStorage value on first hydration. Because IndexedDB hydration is asynchronous, default seeding and sync jobs wait for <code>persist.hasHydrated()</code> (or the shared <code>usePersistHydrated</code> hook).</p>
 <h3>Hybrid Persistence (Files Store)</h3>
 <p>The <code>useFilesStore</code> demonstrates a sophisticated two-layer architecture:</p>
 <pre class="mermaid">flowchart TB
-    subgraph "Metadata Layer (localStorage)"
+    subgraph "Metadata Layer (IndexedDB persisted_state)"
         FS[File System Items<br/>path, name, type, uuid, status]
     end
     
@@ -820,9 +822,13 @@ emitAppletUpdated({ path, content });</code></pre>
     end
 
     subgraph Persist["localStorage"]
-        P1[(ryos:ipod)]
-        P2[(ryos:chats)]
         P3[(ryos:app-store)]
+    end
+
+    subgraph LargePersist["IndexedDB persisted_state"]
+        P2[(ryos:chats)]
+        P1[(ryos:ipod)]
+        P4[(ryos:textedit)]
     end
 
     C1 <--> S1
@@ -834,6 +840,7 @@ emitAppletUpdated({ path, content });</code></pre>
     S1 -.-> |auth credentials| S4
 
     S1 --> P1
+    S3 --> P4
     S4 --> P2
     S5 --> P3</pre>
 <h2>State Flow Patterns</h2>
@@ -862,8 +869,8 @@ emitAppletUpdated({ path, content });</code></pre>
     participant IDB as IndexedDB
     participant API as External API
     
-    R->>LS: Load persisted state
-    LS-->>R: Return state (or empty)
+    R->>IDB: Load quota-sensitive persisted state
+    IDB-->>R: Return state (or migrate legacy localStorage)
     R->>S: Set initial state
     
     alt libraryState === "uninitialized"

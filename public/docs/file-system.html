@@ -469,7 +469,7 @@
         <h1>File System</h1>
 <p>Browser-based hierarchical virtual file system with metadata/content separation and a VFS service facade for cross-app access.</p>
 <h2>Two-Layer Architecture</h2>
-<ul><li><strong>Metadata Layer</strong> (Zustand + localStorage): File paths, names, types, UUIDs, timestamps, and status</li></ul><ul><li><strong>Content Layer</strong> (IndexedDB): Actual file content indexed by UUID for efficient storage</li><li><strong>VFS Service Layer</strong> (<code>src/services/vfs/</code>): Metadata/content repositories, virtual trees, and cross-app file operations</li></ul>
+<ul><li><strong>Metadata Layer</strong> (Zustand + IndexedDB): File paths, names, types, UUIDs, timestamps, and status</li></ul><ul><li><strong>Content Layer</strong> (IndexedDB): Actual file content indexed by UUID for efficient storage</li><li><strong>VFS Service Layer</strong> (<code>src/services/vfs/</code>): Metadata/content repositories, virtual trees, and cross-app file operations</li></ul>
 <pre class="mermaid">graph TB
     subgraph Application["Application Layer"]
         App[React Components]
@@ -480,6 +480,7 @@
     subgraph Metadata["Metadata Layer"]
         FilesStore[(useFilesStore)]
         FinderStore[(useFinderStore)]
+        PersistedState[(IndexedDB persisted_state)]
         LocalStorage[(localStorage)]
     end
     
@@ -499,12 +500,12 @@
     Hook --> Service
     Service --> FilesStore
     Hook --> FinderStore
-    FilesStore <--> LocalStorage
+    FilesStore <--> PersistedState
     FinderStore <--> LocalStorage
     Service -->|"UUID lookup"| IDB
     IDB --> Stores</pre>
 <h2>Key Stores</h2>
-<table><thead><tr><th>Store</th><th>Purpose</th><th>Persistence</th></tr></thead><tbody><tr><td><code>useFilesStore</code></td><td>File/folder metadata, paths, UUIDs, status</td><td>localStorage</td></tr><tr><td><code>useFinderStore</code></td><td>Finder window instances, navigation history, view preferences</td><td>localStorage</td></tr><tr><td>IndexedDB</td><td>File content (text, images, applets)</td><td>Browser storage</td></tr></tbody></table>
+<table><thead><tr><th>Store</th><th>Purpose</th><th>Persistence</th></tr></thead><tbody><tr><td><code>useFilesStore</code></td><td>File/folder metadata, paths, UUIDs, status</td><td>IndexedDB (<code>persisted_state</code>)</td></tr><tr><td><code>useFinderStore</code></td><td>Finder window instances, navigation history, view preferences</td><td>localStorage</td></tr><tr><td>IndexedDB</td><td>File content (text, images, applets)</td><td>Browser storage</td></tr></tbody></table>
 <h2>VFS Service Layer</h2>
 <code>src/services/vfs/</code> provides cross-app access to Finder-backed file data:
 <table><thead><tr><th>Module</th><th>Purpose</th></tr></thead><tbody><tr><td><code>FileMetadataService</code></td><td>Metadata lookups backed by <code>useFilesStore</code></td></tr><tr><td><code>FileContentRepository</code></td><td>IndexedDB read/write by path or UUID</td></tr><tr><td><code>virtualTrees</code></td><td>Virtual <code>/Music</code> and <code>/Videos</code> directory builders</td></tr><tr><td><code>useVfsFileOperations</code></td><td>Thin cross-app wrapper for file writes</td></tr></tbody></table>

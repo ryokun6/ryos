@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
-import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { StoredContent } from "@/utils/indexedDBOperations";
@@ -539,8 +539,8 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 14; // Add Meditations as a default Books EPUB
-const STORE_NAME = "ryos:files";
+export const FILES_STORE_VERSION = 14; // Add Meditations as a default Books EPUB
+export const FILES_STORE_PERSIST_KEY = "ryos:files";
 
 const DEFAULT_MEDITATIONS_BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
 const DEFAULT_MEDITATIONS_BOOK_NAME = "Meditations - Marcus Aurelius.epub";
@@ -1601,12 +1601,9 @@ export const useFilesStore = create<FilesStoreState>()(
         }),
     }),
     {
-      name: STORE_NAME,
-      version: STORE_VERSION,
-      // Write-behind storage: the whole VFS used to be JSON.stringify'd and
-      // written synchronously on every metadata mutation (rename, move,
-      // trash). Serialization now happens once per quiet window.
-      storage: createDebouncedPersistStorage(),
+      name: FILES_STORE_PERSIST_KEY,
+      version: FILES_STORE_VERSION,
+      storage: createIndexedDBPersistStorage(),
       partialize: (state) => ({
         items: state.items, // Persist the entire file structure
         libraryState: state.libraryState,

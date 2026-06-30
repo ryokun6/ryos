@@ -139,6 +139,7 @@ export function createIndexedDBPersistStorage<S>(
   let pendingValue: StorageValue<S> | null = null;
   // Resolves once the most recently kicked-off write commits.
   let inFlight: Promise<void> = Promise.resolve();
+  let writeError: unknown = null;
 
   const writeNow = () => {
     if (timer !== null) {
@@ -156,16 +157,25 @@ export function createIndexedDBPersistStorage<S>(
     pendingName = null;
     pendingValue = null;
     clearPendingFlush(name);
-    inFlight = writeRecord(name, value).catch((error) => {
-      console.error(
-        `[indexedDBPersistStorage] Failed to write "${name}":`,
-        error
-      );
-    });
+    // Serialize commits for this adapter. Without chaining, a slower older
+    // transaction could finish after a newer snapshot and overwrite it.
+    inFlight = inFlight
+      .then(() => writeRecord(name, value))
+      .then(() => {
+        writeError = null;
+      })
+      .catch((error) => {
+        writeError = error;
+        console.error(
+          `[indexedDBPersistStorage] Failed to write "${name}":`,
+          error
+        );
+      });
   };
 
   const settle = async () => {
     await inFlight;
+    if (writeError) throw writeError;
   };
 
   const resetForTests = () => {
@@ -179,6 +189,7 @@ export function createIndexedDBPersistStorage<S>(
     pendingName = null;
     pendingValue = null;
     inFlight = Promise.resolve();
+    writeError = null;
   };
 
   registerSettler(settle);

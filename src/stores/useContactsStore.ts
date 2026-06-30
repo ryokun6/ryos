@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import {
   type Contact,
   type ContactDraft,
@@ -14,6 +14,7 @@ import {
   updateContactFromDraft,
 } from "@/utils/contacts";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 
 export interface ImportContactsResult extends ContactImportResult {
   importedCount: number;
@@ -165,7 +166,13 @@ export const useContactsStore = create<ContactsStoreState>()(
     }),
     {
       name: "contacts-storage",
-      storage: createJSONStorage(() => localStorage),
+      storage: createIndexedDBPersistStorage(),
+      partialize: (state) => ({
+        contacts: state.contacts,
+        selectedContactId: state.selectedContactId,
+        myContactId: state.myContactId,
+        lastRemoteSyncAt: state.lastRemoteSyncAt,
+      }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<ContactsStoreState> | undefined;
         const contacts = seedDefaultContacts(

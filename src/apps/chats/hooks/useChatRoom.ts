@@ -111,6 +111,9 @@ export function useChatRoom(
   const roomChannelsRef = useRef<Record<string, PusherChannel>>({});
   const roomHandlersRef = useRef<Record<string, RoomHandlers>>({});
   const connectionStateUnsubscribeRef = useRef<(() => void) | null>(null);
+  const connectionErrorHandlerRef = useRef<
+    ((error?: unknown) => void) | null
+  >(null);
   const hasInitialized = useRef(false);
 
   // Typing indicator state: map of roomId → Set<username> currently typing
@@ -157,9 +160,14 @@ export function useChatRoom(
       }
     );
 
-    pusherRef.current.connection.bind("error", (error: Error) => {
-      console.error("[Pusher Hook] Connection error:", error);
-    });
+    const connectionErrorHandler = (error?: unknown) => {
+      // Browsers commonly tear down a sleeping tab's WebSocket before Pusher
+      // reconnects it. Recovery is automatic, so this is diagnostic rather
+      // than an application error.
+      log.debug("Transient Pusher connection error", error);
+    };
+    connectionErrorHandlerRef.current = connectionErrorHandler;
+    pusherRef.current.connection.bind("error", connectionErrorHandler);
   }, []);
 
   const unsubscribeGlobalChannel = useCallback(() => {
@@ -767,6 +775,16 @@ export function useChatRoom(
       // Stop observing connection-state changes
       connectionStateUnsubscribeRef.current?.();
       connectionStateUnsubscribeRef.current = null;
+
+      // The connection is a global singleton, so every Chats remount must
+      // remove its listener or reconnect errors are logged repeatedly.
+      if (pusherRef.current && connectionErrorHandlerRef.current) {
+        pusherRef.current.connection.unbind(
+          "error",
+          connectionErrorHandlerRef.current
+        );
+      }
+      connectionErrorHandlerRef.current = null;
 
       // NOTE: We intentionally do NOT disconnect the global Pusher singleton here.
       // We only unsubscribe from channels we've created. The underlying WebSocket

@@ -44,6 +44,14 @@ describe("manual backup Sync v2 metadata filtering", () => {
     expect(localRestoreBlock).toContain("shouldIncludeManualBackupLocalStorageKey");
     expect(localRestoreBlock).toContain("createManualRestoreIntent");
     expect(localRestoreBlock).toContain("setManualRestoreIntent");
+    expect(localRestoreBlock).toContain("MANUAL_BACKUP_INDEXEDDB_STORES.map");
+    expect(localRestoreBlock).toContain(
+      "backup.indexedDB?.[storeName] ?? []"
+    );
+    expect(localRestoreBlock).toContain("restoreStoreItemsAtomically");
+    expect(localRestoreBlock).toContain(
+      "replaceLocalStorage(previousLocalStorage)"
+    );
   });
 });
 
