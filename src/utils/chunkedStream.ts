@@ -5,6 +5,7 @@
 
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { createClientLogger } from "@/utils/logger";
 
 // =============================================================================
 // Constants
@@ -13,6 +14,29 @@ import { abortableFetch } from "@/utils/abortableFetch";
 const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
+const streamLog = createClientLogger("LyricsStream");
+
+type LyricsStreamKind = "translation" | "furigana" | "soramimi";
+
+function logCallbackError(
+  stream: LyricsStreamKind,
+  stage: string,
+  error: unknown
+): void {
+  streamLog.warn("Lyrics stream callback failed", { stream, stage, error });
+}
+
+function logParseError(
+  stream: LyricsStreamKind,
+  line: string,
+  error: unknown
+): void {
+  streamLog.warn("Could not parse lyrics stream event", {
+    stream,
+    lineLength: line.length,
+    error,
+  });
+}
 
 // =============================================================================
 // Types
@@ -86,15 +110,27 @@ export async function processTranslationSSE(
   language: string,
   options: ProcessTranslationOptions = {}
 ): Promise<TranslationResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo, auth } = options;
+  streamLog.debug("Preparing translation stream", {
+    songId,
+    language,
+    force: Boolean(force),
+    hasPrefetchedData: Boolean(prefetchedInfo),
+    hasAuthenticatedUser: Boolean(auth?.username && auth.isAuthenticated),
+  });
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.lrc) {
     try {
       onProgress?.({ completedLines: prefetchedInfo.totalLines, totalLines: prefetchedInfo.totalLines, percentage: 100 });
     } catch (callbackErr) {
-      console.warn("SSE: Callback error:", callbackErr);
+      logCallbackError("translation", "prefetched progress", callbackErr);
     }
+    streamLog.debug("Using prefetched translation", {
+      songId,
+      language,
+      totalLines: prefetchedInfo.totalLines,
+    });
     return {
       data: parseLrcToTranslations(prefetchedInfo.lrc),
       success: true,
@@ -110,6 +146,11 @@ export async function processTranslationSSE(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      streamLog.debug("Opening translation stream request", {
+        songId,
+        language,
+        attempt: attempt + 1,
+      });
       const headers: Record<string, string> = { "Content-Type": "application/json" };
 
       const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
@@ -166,7 +207,7 @@ export async function processTranslationSSE(
                 try {
                   onProgress?.({ completedLines: 0, totalLines, percentage: 0 });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("translation", "start progress", callbackErr);
                 }
                 break;
 
@@ -180,12 +221,16 @@ export async function processTranslationSSE(
                   });
                   onLine?.(eventData.lineIndex, eventData.translation);
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("translation", "line update", callbackErr);
                 }
                 break;
 
               case "error":
-                console.warn("SSE: Translation stream error:", eventData.error || rawData.error);
+                streamLog.warn("Translation stream reported an error", {
+                  songId,
+                  language,
+                  error: eventData.error || rawData.error,
+                });
                 break;
 
               case "cached":
@@ -198,7 +243,11 @@ export async function processTranslationSSE(
                 try {
                   onProgress?.({ completedLines: cachedTranslations.length, totalLines: cachedTranslations.length, percentage: 100 });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError(
+                    "translation",
+                    "cached progress",
+                    callbackErr
+                  );
                 }
                 break;
               }
@@ -215,7 +264,11 @@ export async function processTranslationSSE(
                     percentage: 100,
                   });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError(
+                    "translation",
+                    "completion progress",
+                    callbackErr
+                  );
                 }
                 break;
                 
@@ -229,7 +282,7 @@ export async function processTranslationSSE(
                 break;
             }
           } catch (e) {
-            console.warn("SSE: Failed to parse event:", line, e);
+            logParseError("translation", line, e);
           }
         };
 
@@ -262,6 +315,13 @@ export async function processTranslationSSE(
         }
 
         if (finalResult) {
+          streamLog.debug("Translation stream completed", {
+            songId,
+            language,
+            totalLines,
+            completedLines,
+            success: finalResult.success,
+          });
           return finalResult;
         } else {
           throw new Error("SSE stream ended without complete event");
@@ -276,11 +336,23 @@ export async function processTranslationSSE(
         throw err; // Don't retry on abort
       }
       if (attempt === MAX_RETRIES) {
-        console.error("Translation SSE error:", err);
+        streamLog.error("Translation stream failed", {
+          error: err,
+          songId,
+          language,
+          attempts: attempt + 1,
+        });
         throw err; // Final attempt failed
       }
       const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
-      console.warn(`SSE: Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+      streamLog.warn("Retrying translation stream", {
+        error: err,
+        songId,
+        language,
+        retryAttempt: attempt + 1,
+        maxRetries: MAX_RETRIES,
+        delayMs: delay,
+      });
       await new Promise(r => setTimeout(r, delay));
     }
   }
@@ -320,15 +392,25 @@ export async function processFuriganaSSE(
   songId: string,
   options: ProcessFuriganaOptions = {}
 ): Promise<FuriganaResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo, auth } = options;
+  streamLog.debug("Preparing furigana stream", {
+    songId,
+    force: Boolean(force),
+    hasPrefetchedData: Boolean(prefetchedInfo),
+    hasAuthenticatedUser: Boolean(auth?.username && auth.isAuthenticated),
+  });
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
     try {
       onProgress?.({ completedLines: prefetchedInfo.totalLines, totalLines: prefetchedInfo.totalLines, percentage: 100 });
     } catch (callbackErr) {
-      console.warn("SSE: Callback error:", callbackErr);
+      logCallbackError("furigana", "prefetched progress", callbackErr);
     }
+    streamLog.debug("Using prefetched furigana", {
+      songId,
+      totalLines: prefetchedInfo.totalLines,
+    });
     return {
       data: prefetchedInfo.data,
       success: true,
@@ -344,6 +426,10 @@ export async function processFuriganaSSE(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      streamLog.debug("Opening furigana stream request", {
+        songId,
+        attempt: attempt + 1,
+      });
       const furiganaHeaders: Record<string, string> = { "Content-Type": "application/json" };
 
       const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
@@ -399,7 +485,7 @@ export async function processFuriganaSSE(
                 try {
                   onProgress?.({ completedLines: 0, totalLines, percentage: 0 });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("furigana", "start progress", callbackErr);
                 }
                 break;
 
@@ -413,12 +499,15 @@ export async function processFuriganaSSE(
                   });
                   onLine?.(eventData.lineIndex, eventData.furigana);
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("furigana", "line update", callbackErr);
                 }
                 break;
 
               case "error":
-                console.warn("SSE: Furigana stream error:", eventData.error || rawData.error);
+                streamLog.warn("Furigana stream reported an error", {
+                  songId,
+                  error: eventData.error || rawData.error,
+                });
                 break;
 
               case "cached":
@@ -426,7 +515,7 @@ export async function processFuriganaSSE(
                 try {
                   onProgress?.({ completedLines: eventData.furigana.length, totalLines: eventData.furigana.length, percentage: 100 });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("furigana", "cached progress", callbackErr);
                 }
                 break;
 
@@ -442,7 +531,11 @@ export async function processFuriganaSSE(
                     percentage: 100,
                   });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError(
+                    "furigana",
+                    "completion progress",
+                    callbackErr
+                  );
                 }
                 break;
                 
@@ -456,7 +549,7 @@ export async function processFuriganaSSE(
                 break;
             }
           } catch (e) {
-            console.warn("SSE: Failed to parse event:", line, e);
+            logParseError("furigana", line, e);
           }
         };
 
@@ -489,6 +582,12 @@ export async function processFuriganaSSE(
         }
 
         if (finalResult) {
+          streamLog.debug("Furigana stream completed", {
+            songId,
+            totalLines,
+            completedLines,
+            success: finalResult.success,
+          });
           return finalResult;
         } else {
           throw new Error("SSE stream ended without complete event");
@@ -503,11 +602,21 @@ export async function processFuriganaSSE(
         throw err; // Don't retry on abort
       }
       if (attempt === MAX_RETRIES) {
-        console.error("Furigana SSE error:", err);
+        streamLog.error("Furigana stream failed", {
+          error: err,
+          songId,
+          attempts: attempt + 1,
+        });
         throw err; // Final attempt failed
       }
       const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
-      console.warn(`SSE: Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+      streamLog.warn("Retrying furigana stream", {
+        error: err,
+        songId,
+        retryAttempt: attempt + 1,
+        maxRetries: MAX_RETRIES,
+        delayMs: delay,
+      });
       await new Promise(r => setTimeout(r, delay));
     }
   }
@@ -561,15 +670,37 @@ export async function processSoramimiSSE(
   songId: string,
   options: ProcessSoramimiOptions = {}
 ): Promise<SoramimiResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo, furigana, targetLanguage = "zh-TW" } = options;
+  const {
+    force,
+    signal,
+    onProgress,
+    onLine,
+    prefetchedInfo,
+    furigana,
+    targetLanguage = "zh-TW",
+    auth,
+  } = options;
+  streamLog.debug("Preparing soramimi stream", {
+    songId,
+    targetLanguage,
+    force: Boolean(force),
+    hasPrefetchedData: Boolean(prefetchedInfo),
+    hasFurigana: Boolean(furigana?.length),
+    hasAuthenticatedUser: Boolean(auth?.username && auth.isAuthenticated),
+  });
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
     try {
       onProgress?.({ completedLines: prefetchedInfo.totalLines, totalLines: prefetchedInfo.totalLines, percentage: 100 });
     } catch (callbackErr) {
-      console.warn("SSE: Callback error:", callbackErr);
+      logCallbackError("soramimi", "prefetched progress", callbackErr);
     }
+    streamLog.debug("Using prefetched soramimi", {
+      songId,
+      targetLanguage,
+      totalLines: prefetchedInfo.totalLines,
+    });
     return {
       data: prefetchedInfo.data,
       success: true,
@@ -581,8 +712,13 @@ export async function processSoramimiSSE(
     try {
       onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
     } catch (callbackErr) {
-      console.warn("SSE: Callback error:", callbackErr);
+      logCallbackError("soramimi", "skipped progress", callbackErr);
     }
+    streamLog.debug("Soramimi generation was skipped", {
+      songId,
+      targetLanguage,
+      reason: prefetchedInfo.skipReason,
+    });
     return { data: [], success: true };
   }
 
@@ -595,6 +731,11 @@ export async function processSoramimiSSE(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      streamLog.debug("Opening soramimi stream request", {
+        songId,
+        targetLanguage,
+        attempt: attempt + 1,
+      });
       // Build request body - include furigana if provided (for Japanese songs)
       const requestBody: Record<string, unknown> = {
         action: "soramimi-stream",
@@ -631,7 +772,7 @@ export async function processSoramimiSSE(
         try {
           onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
         } catch (callbackErr) {
-          console.warn("SSE: Callback error:", callbackErr);
+          logCallbackError("soramimi", "server-skipped progress", callbackErr);
         }
         return { data: [], success: true };
       }
@@ -670,7 +811,7 @@ export async function processSoramimiSSE(
                 try {
                   onProgress?.({ completedLines: 0, totalLines, percentage: 0 });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("soramimi", "start progress", callbackErr);
                 }
                 break;
 
@@ -684,12 +825,16 @@ export async function processSoramimiSSE(
                   });
                   onLine?.(eventData.lineIndex, eventData.soramimi);
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("soramimi", "line update", callbackErr);
                 }
                 break;
 
               case "error":
-                console.warn("SSE: Soramimi stream error:", eventData.error || rawData.error);
+                streamLog.warn("Soramimi stream reported an error", {
+                  songId,
+                  targetLanguage,
+                  error: eventData.error || rawData.error,
+                });
                 break;
 
               case "cached":
@@ -697,7 +842,7 @@ export async function processSoramimiSSE(
                 try {
                   onProgress?.({ completedLines: eventData.soramimi.length, totalLines: eventData.soramimi.length, percentage: 100 });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError("soramimi", "cached progress", callbackErr);
                 }
                 break;
 
@@ -713,7 +858,11 @@ export async function processSoramimiSSE(
                     percentage: 100,
                   });
                 } catch (callbackErr) {
-                  console.warn("SSE: Callback error:", callbackErr);
+                  logCallbackError(
+                    "soramimi",
+                    "completion progress",
+                    callbackErr
+                  );
                 }
                 break;
                 
@@ -728,7 +877,7 @@ export async function processSoramimiSSE(
                 break;
             }
           } catch (e) {
-            console.warn("SSE: Failed to parse event:", line, e);
+            logParseError("soramimi", line, e);
           }
         };
 
@@ -761,6 +910,13 @@ export async function processSoramimiSSE(
         }
 
         if (finalSoramimi) {
+          streamLog.debug("Soramimi stream completed", {
+            songId,
+            targetLanguage,
+            totalLines,
+            completedLines,
+            success: finalSoramimi.success,
+          });
           return finalSoramimi;
         } else {
           throw new Error("SSE stream ended without complete event");
@@ -775,11 +931,23 @@ export async function processSoramimiSSE(
         throw err; // Don't retry on abort
       }
       if (attempt === MAX_RETRIES) {
-        console.error("Soramimi SSE error:", err);
+        streamLog.error("Soramimi stream failed", {
+          error: err,
+          songId,
+          targetLanguage,
+          attempts: attempt + 1,
+        });
         throw err; // Final attempt failed
       }
       const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
-      console.warn(`SSE: Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+      streamLog.warn("Retrying soramimi stream", {
+        error: err,
+        songId,
+        targetLanguage,
+        retryAttempt: attempt + 1,
+        maxRetries: MAX_RETRIES,
+        delayMs: delay,
+      });
       await new Promise(r => setTimeout(r, delay));
     }
   }

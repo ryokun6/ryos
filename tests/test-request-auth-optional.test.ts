@@ -47,6 +47,33 @@ describe("resolveRequestAuth", () => {
     expect(result.user).toBeNull();
   });
 
+  test("partial Authorization header on optional route resolves as anonymous", async () => {
+    const result = await resolveRequestAuth(
+      mockRequest({
+        authorization: "Bearer stale-session-token",
+      }),
+      redisStub,
+      { required: false }
+    );
+
+    expect(result.error).toBeNull();
+    expect(result.user).toBeNull();
+  });
+
+  test("partial credentials on required route return 400", async () => {
+    const result = await resolveRequestAuth(
+      mockRequest({
+        authorization: "Bearer stale-session-token",
+      }),
+      redisStub,
+      { required: true }
+    );
+
+    expect(result.error?.status).toBe(400);
+    expect(result.error?.error).toContain("Both Authorization and X-Username");
+    expect(result.user).toBeNull();
+  });
+
   test("invalid credentials on required route returns 401", async () => {
     const result = await resolveRequestAuth(
       mockRequest({

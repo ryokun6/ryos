@@ -468,7 +468,7 @@
       <article>
         <h1>Song API</h1>
 <p>The Song API provides endpoints for managing a music library in ryOS, including CRUD operations for songs, lyrics fetching from KuGou, AI-powered translations, Japanese furigana annotations, and "soramimi" (空耳) phonetic readings.</p>
-<p>Refactored song routes use the shared <code>apiHandler</code> pattern with optional auth plus action-specific permission checks.</p>
+<p>Refactored song routes use the shared <code>apiHandler</code> pattern with optional auth plus action-specific permission checks. Public metadata reads and first-time lyrics, translation, furigana, and soramimi generation do not require login. Optional routes treat partial, stale, or invalid credentials as anonymous; authenticated ownership checks still apply to metadata mutations and protected force-refresh operations.</p>
 <h2>Overview</h2>
 <p>Songs are identified by their YouTube video ID (11 characters). The API stores: <ul><li><strong>Metadata</strong> (lightweight ~300 bytes): title, artist, album, cover, timestamps</li><li><strong>Content</strong> (heavy ~5-50KB): lyrics, translations, furigana, soramimi annotations</li></ul></p>
 <p>Data is stored in Redis (Upstash) with split storage to avoid exceeding request size limits when listing songs.</p>
