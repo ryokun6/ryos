@@ -90,6 +90,7 @@ import {
   resolveAppleMusicPlaylistMenu,
 } from "../utils/appleMusicPlaylistMenu";
 import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
+import { shouldPlayIpodWheelSound } from "../utils/wheelSound";
 import { createClientLogger } from "@/utils/logger";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
@@ -123,7 +124,14 @@ export function useIpodLogic({
   // load. Menu factories only need to rebuild when the locale changes.
   const menuLocale = i18n.resolvedLanguage ?? i18n.language;
   const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
-  const { play: playScrollSound } = useSound(Sounds.IPOD_CLICK_WHEEL);
+  const { play: playScrollSoundSource } = useSound(Sounds.IPOD_CLICK_WHEEL);
+  const lastScrollSoundAtRef = useRef<number | null>(null);
+  const playScrollSound = useCallback(() => {
+    const now = Date.now();
+    if (!shouldPlayIpodWheelSound(lastScrollSoundAtRef.current, now)) return;
+    lastScrollSoundAtRef.current = now;
+    void playScrollSoundSource();
+  }, [playScrollSoundSource]);
   const vibrate = useVibration(100, 50);
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("ipod", helpItems);
@@ -4970,7 +4978,7 @@ export function useIpodLogic({
         syncLyricsTime(state.elapsedTime);
       }
     });
-  }, [fullScreenLyricsControls.lines, lyricsTimingOffsetMs]);
+  }, [fullScreenLyricsControls.loadedSongId, lyricsTimingOffsetMs]);
 
   // Show toast with Search button when lyrics fetch fails
   useLyricsErrorToast({

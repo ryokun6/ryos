@@ -20,6 +20,7 @@ import {
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 import { shouldForceLyricsFetch } from "@/shared/media/lyricsFetchPolicy";
+import { canStartLyricsTranslation } from "@/shared/media/lyricsLifecycle";
 
 const lyricsLog = createClientLogger("Lyrics");
 
@@ -585,7 +586,7 @@ export function useLyrics({
   useEffect(() => {
     const effectSongId = songId;
 
-    if (!effectSongId || !translateTo || originalLines.length === 0) {
+    if (!effectSongId || !translateTo) {
       dispatch({
         type: "patch",
         payload: {
@@ -597,7 +598,14 @@ export function useLyrics({
       return;
     }
 
-    if (isFetchingOriginal) {
+    if (
+      !canStartLyricsTranslation({
+        songId: effectSongId,
+        loadedSongId,
+        originalLineCount: originalLines.length,
+        isFetchingOriginal,
+      })
+    ) {
       lyricsLog.debug("Waiting for original lyrics before translation", {
         ...logContext,
         targetLanguage: translateTo,
@@ -755,7 +763,7 @@ export function useLyrics({
         },
       });
     };
-  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials, logContext]);
+  }, [songId, loadedSongId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials, logContext]);
 
   // ==========================================================================
   // Current line tracking
@@ -805,12 +813,16 @@ export function useLyrics({
     (newTimeInSeconds: number) => {
       lastTimeRef.current = newTimeInSeconds;
       const nextLine = calculateCurrentLine(newTimeInSeconds);
-      lyricsLog.debug("Updated lyric time manually", {
-        songId,
-        nextLine,
-        timeMs: Math.round(newTimeInSeconds * 1000),
+      setCurrentLine((previousLine) => {
+        if (previousLine === nextLine) return previousLine;
+        lyricsLog.debug("Updated lyric time manually", {
+          songId,
+          previousLine,
+          nextLine,
+          timeMs: Math.round(newTimeInSeconds * 1000),
+        });
+        return nextLine;
       });
-      setCurrentLine(nextLine);
     },
     [calculateCurrentLine, songId]
   );
