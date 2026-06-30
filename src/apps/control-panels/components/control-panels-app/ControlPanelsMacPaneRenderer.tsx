@@ -119,7 +119,6 @@ export type ControlPanelsMacPaneRendererProps = {
   debugMode: boolean;
   isAdmin: boolean;
   promptVerifyToken: () => void;
-  hasPassword: boolean | null;
   setPasswordInput: (value: string) => void;
   setPasswordError: (error: string | null) => void;
   setIsPasswordDialogOpen: (open: boolean) => void;
@@ -205,7 +204,6 @@ export function ControlPanelsMacPaneRenderer(
           realtimeStatus={props.realtimeStatus}
           accountJoinedAt={props.accountJoinedAt}
           locale={props.currentLanguage}
-          hasPassword={props.hasPassword}
           promptSetUsername={props.promptSetUsername}
           promptLogin={props.promptLogin}
           logout={props.logout}
@@ -332,7 +330,6 @@ export function ControlPanelsMacPaneRenderer(
           recoveryEmailStatus={props.recoveryEmailStatus}
           isEmailStatusLoading={props.isEmailStatusLoading}
           refreshRecoveryEmailStatus={props.refreshRecoveryEmailStatus}
-          hasPassword={props.hasPassword}
           logout={props.logout}
           handleLogoutAllDevices={props.handleLogoutAllDevices}
           isLoggingOutAllDevices={props.isLoggingOutAllDevices}

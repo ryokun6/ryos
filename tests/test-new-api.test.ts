@@ -139,14 +139,12 @@ describe("New API", () => {
       testToken = token;
     });
 
-    test("Password check", async () => {
+    test("Password check route removed", async () => {
       if (!testToken || !testUsername) throw new Error("setup failed: auth missing");
       const res = await fetchWithAuth(`${BASE_URL}/api/auth/password/check`, testUsername, testToken, {
         method: "GET",
       });
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.hasPassword).toBe(true);
+      expect(res.status).toBe(404);
     });
 
     test("List tokens", async () => {

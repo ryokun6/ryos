@@ -342,7 +342,6 @@ export function useControlPanelsLogic({
     setVerifyPasswordInput,
     verifyUsernameInput,
     setVerifyUsernameInput,
-    hasPassword,
     setPassword,
     logout,
     confirmLogout,
@@ -394,9 +393,6 @@ export function useControlPanelsLogic({
   );
 
   // Password dialog states
-  // `isPasswordDialogOpen` drives both the legacy "set password" and the new
-  // "change password" experience — the dialog itself decides which fields to
-  // show based on `hasPassword`.
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [isSettingPassword, setIsSettingPassword] = useState(false);
@@ -409,7 +405,7 @@ export function useControlPanelsLogic({
 
   const handleSetPassword = async (
     password: string,
-    currentPassword?: string
+    currentPassword: string
   ) => {
     setIsSettingPassword(true);
     setPasswordError(null);
@@ -423,17 +419,9 @@ export function useControlPanelsLogic({
     const result = await setPassword(password, currentPassword);
 
     if (result.ok) {
-      const wasChange = hasPassword === true;
-      toast.success(
-        wasChange
-          ? t("common.auth.changePassword.toastChangedTitle")
-          : t("common.auth.changePassword.toastSetTitle"),
-        {
-          description: wasChange
-            ? t("common.auth.changePassword.toastChangedDescription")
-            : t("common.auth.changePassword.toastSetDescription"),
-        }
-      );
+      toast.success(t("common.auth.changePassword.toastChangedTitle"), {
+        description: t("common.auth.changePassword.toastChangedDescription"),
+      });
       setIsPasswordDialogOpen(false);
       setPasswordInput("");
     } else {
@@ -1176,7 +1164,6 @@ export function useControlPanelsLogic({
     setVerifyPasswordInput,
     verifyUsernameInput,
     setVerifyUsernameInput,
-    hasPassword,
     logout,
     confirmLogout,
     isLogoutConfirmDialogOpen,

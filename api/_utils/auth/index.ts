@@ -21,7 +21,6 @@ export type {
   AuthErrorResponse,
   TokenResponse,
   VerifyTokenResponse,
-  CheckPasswordResponse,
 } from "./_types.js";
 
 // Constants
@@ -55,7 +54,6 @@ export {
   setUserPasswordHash,
   getUserPasswordHash,
   deleteUserPasswordHash,
-  userHasPassword,
 } from "./_password-storage.js";
 
 // NOTE: hashPassword and verifyPassword use bcrypt and are NOT exported here.
