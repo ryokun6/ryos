@@ -4720,7 +4720,16 @@
       "copy": "Copy requests",
       "clear": "Clear requests",
       "empty": "No requests captured yet.",
+      "emptyForFilter": "No requests match this filter.",
       "pending": "···",
+      "filterRequests": "Filter requests",
+      "filterAll": "All requests",
+      "filters": {
+        "error": "Failed",
+        "warn": "Warnings",
+        "ok": "Successful",
+        "pending": "Pending"
+      },
       "failedCount": "{{count}} failed"
     },
     "live": {

@@ -14,6 +14,7 @@ import {
 
 interface DebugNetworkPanelProps {
   entries: readonly NetworkRequestEntry[];
+  totalEntryCount: number;
 }
 
 const STATUS_TEXT_CLASS: Record<
@@ -48,7 +49,10 @@ function statusText(entry: NetworkRequestEntry, pendingLabel: string): string {
  * API failures (especially 429 rate limits and 5xx errors) are visible without
  * browser dev tools.
  */
-export function DebugNetworkPanel({ entries }: DebugNetworkPanelProps) {
+export function DebugNetworkPanel({
+  entries,
+  totalEntryCount,
+}: DebugNetworkPanelProps) {
   const { t } = useTranslation();
   const pendingLabel = t("debug.network.pending");
 
@@ -85,7 +89,9 @@ export function DebugNetworkPanel({ entries }: DebugNetworkPanelProps) {
     return (
       <div className="h-full overflow-auto px-2 py-1 font-os-mono text-[10px] leading-[1.45]">
         <div className="py-4 text-center text-[11px] opacity-50">
-          {t("debug.network.empty")}
+          {totalEntryCount === 0
+            ? t("debug.network.empty")
+            : t("debug.network.emptyForFilter")}
         </div>
       </div>
     );

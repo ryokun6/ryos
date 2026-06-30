@@ -158,6 +158,90 @@ export function buildSparklinePoints(
     .join(" ");
 }
 
+export interface SparklineGeometryPoint {
+  x: number;
+  y: number;
+  value: number;
+}
+
+export interface SparklineGeometry {
+  /** Plotted points in viewBox coordinates. */
+  points: SparklineGeometryPoint[];
+  /** `<polyline>` points string for the trend line. */
+  line: string;
+  /** `<polygon>` points string for the filled area beneath the line. */
+  area: string;
+  minimum: number;
+  maximum: number;
+  average: number;
+  /** Y coordinate of the average reference line in viewBox space. */
+  averageY: number;
+  /** Newest plotted point (right-most), used to anchor the live marker. */
+  last: SparklineGeometryPoint;
+}
+
+/**
+ * Builds the full geometry needed to render an area sparkline: the trend
+ * polyline, the filled polygon, the min/max/average summary, and the latest
+ * point. `padding` insets the line vertically so peaks and troughs (and the
+ * stroke width) are not clipped at the edges of the viewBox.
+ */
+export function buildSparklineGeometry(
+  values: readonly (number | null)[],
+  width: number,
+  height: number,
+  padding = 0
+): SparklineGeometry | null {
+  const usableWidth = Math.max(1, width);
+  const usableHeight = Math.max(1, height);
+  const pad = Math.max(0, Math.min(padding, usableHeight / 2 - 0.5));
+  const innerHeight = Math.max(1, usableHeight - pad * 2);
+
+  const collected = values.flatMap((value, index) =>
+    value === null || !Number.isFinite(value) ? [] : [{ index, value }]
+  );
+  if (collected.length === 0) return null;
+
+  const numericValues = collected.map((point) => point.value);
+  const minimum = Math.min(...numericValues);
+  const maximum = Math.max(...numericValues);
+  const range = maximum - minimum;
+  const average =
+    numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  const denominator = Math.max(1, values.length - 1);
+
+  const yFor = (value: number) =>
+    range === 0
+      ? pad + innerHeight / 2
+      : pad + innerHeight - ((value - minimum) / range) * innerHeight;
+
+  const points: SparklineGeometryPoint[] = collected.map(({ index, value }) => ({
+    x: (index / denominator) * usableWidth,
+    y: yFor(value),
+    value,
+  }));
+
+  const line = points
+    .map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(" ");
+  const first = points[0];
+  const last = points[points.length - 1];
+  const area = `${first.x.toFixed(1)},${usableHeight.toFixed(
+    1
+  )} ${line} ${last.x.toFixed(1)},${usableHeight.toFixed(1)}`;
+
+  return {
+    points,
+    line,
+    area,
+    minimum,
+    maximum,
+    average,
+    averageY: yFor(average),
+    last,
+  };
+}
+
 function summarizeMetric(
   values: readonly (number | null)[]
 ): MetricSummary | null {

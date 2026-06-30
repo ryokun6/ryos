@@ -4765,7 +4765,16 @@
       "clear": "清除請求",
       "copy": "拷貝請求",
       "empty": "尚未擷取到任何請求。",
+      "emptyForFilter": "沒有符合此過濾條件的要求。",
       "failedCount": "{{count}} 個失敗",
+      "filterAll": "所有要求",
+      "filterRequests": "過濾要求",
+      "filters": {
+        "error": "失敗",
+        "ok": "成功",
+        "pending": "擱置中",
+        "warn": "警告"
+      },
       "pending": "···",
       "title": "要求"
     },
