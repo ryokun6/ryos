@@ -14,6 +14,7 @@ import {
   stopAndReleaseOwnedSoundSources,
   trackSoundSource,
 } from "@/utils/activeSoundSources";
+import { runSingleFlight } from "@/utils/singleFlight";
 import { createClientLogger } from "@/utils/logger";
 
 const log = createClientLogger("Sound");
@@ -108,6 +109,9 @@ export function useSound(soundPath: string, volume: number = 0.3) {
   const gainNodeRef = useRef<GainNode | null>(null);
   // Track active sources for this specific hook instance so we can stop them
   const instanceSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  // Cold sounds can receive many play requests while their shared buffer is
+  // still loading. Coalesce those requests so they do not all start at once.
+  const pendingPlayRef = useRef<Promise<void> | null>(null);
   // Reactively track global UI volume from audio settings store
   const uiVolume = useAudioSettingsStore((s) => s.uiVolume);
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
@@ -226,8 +230,10 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     }, 15);
   }, []);
 
-  const play = useCallback(async () => {
-    await createAndPlaySource(false);
+  const play = useCallback(() => {
+    return runSingleFlight(pendingPlayRef, async () => {
+      await createAndPlaySource(false);
+    });
   }, [createAndPlaySource]);
 
   // Play sound in a loop (must call stop() to end)

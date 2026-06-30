@@ -4,6 +4,7 @@ import {
   IPOD_WHEEL_SOUND_MIN_INTERVAL_MS,
   shouldPlayIpodWheelSound,
 } from "../src/apps/ipod/utils/wheelSound";
+import { runSingleFlight } from "../src/utils/singleFlight";
 
 describe("lyrics track-change lifecycle", () => {
   test("does not translate lines left over from the previous song", () => {
@@ -70,5 +71,31 @@ describe("iPod wheel sound burst limiting", () => {
         1_000 + IPOD_WHEEL_SOUND_MIN_INTERVAL_MS
       )
     ).toBe(true);
+  });
+
+  test("coalesces requests while a cold sound is still loading", async () => {
+    let resolveLoad: (() => void) | undefined;
+    let operationCount = 0;
+    const load = new Promise<void>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const ref = { current: null as Promise<void> | null };
+    const operation = async () => {
+      operationCount += 1;
+      await load;
+    };
+
+    const first = runSingleFlight(ref, operation);
+    const second = runSingleFlight(ref, operation);
+
+    expect(second).toBe(first);
+    expect(operationCount).toBe(1);
+
+    resolveLoad?.();
+    await first;
+    await Promise.resolve();
+
+    await runSingleFlight(ref, operation);
+    expect(operationCount).toBe(2);
   });
 });
