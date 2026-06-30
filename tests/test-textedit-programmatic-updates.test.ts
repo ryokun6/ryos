@@ -46,15 +46,13 @@ describe("TextEdit programmatic editor updates", () => {
     expect(MERGE_EDITOR_CONTENT).toContain("findDiffEnd");
   });
 
-  test("new-file and pending-file loads are silent editor updates", () => {
+  test("pending dropped files reuse the normal import path", () => {
     expect(TEXTEDIT_APP_COMPONENT).not.toContain("editor.commands.clearContent();");
     expect(TEXTEDIT_APP_COMPONENT).not.toContain(
       "editor.commands.setContent(processedContent);"
     );
-    expect(TEXTEDIT_APP_COMPONENT).toContain("editor.commands.clearContent(false);");
-    expect(TEXTEDIT_APP_COMPONENT).toContain(
-      "editor.commands.setContent(processedContent, false);"
-    );
+    expect(TEXTEDIT_APP_COMPONENT).toContain("pendingImportRef");
+    expect(TEXTEDIT_APP_COMPONENT).toContain("handleImportFile(file)");
   });
 
   test("device imports load cleanly after saving", () => {
