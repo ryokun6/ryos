@@ -99,7 +99,7 @@ describe("icon resource gallery", () => {
 
       expect(grid?.querySelectorAll(".icon-card").length).toBe(1);
       expect(grid?.textContent).toContain("Search Magnifier");
-      expect(count?.textContent).toContain("1 of 3 icons");
+      expect(count?.textContent).toContain("1 of 4 icons");
     } finally {
       globalThis.fetch = originalFetch;
     }
