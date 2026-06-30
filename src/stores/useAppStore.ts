@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { useAppletStore } from "@/stores/useAppletStore";
@@ -9,6 +9,7 @@ import { AIModel } from "@/types/aiModels";
 import { APP_ANALYTICS, track } from "@/utils/analytics";
 import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { shouldRequestCloudSyncOnAppLaunch } from "@/utils/cloudSyncLaunch";
+import { createClientLogger } from "@/utils/logger";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -116,6 +117,30 @@ interface AppStoreState {
 }
 
 const CURRENT_APP_STORE_VERSION = 6; // store foreground as foregroundInstanceId, not per-instance flags
+const appStoreLog = createClientLogger("AppStore");
+
+function describeInitialData(initialData: unknown): Record<string, unknown> {
+  if (initialData === undefined) return { hasInitialData: false };
+  if (initialData === null) return { hasInitialData: true, kind: "null" };
+  if (Array.isArray(initialData)) {
+    return { hasInitialData: true, kind: "array", length: initialData.length };
+  }
+  if (typeof initialData === "object") {
+    return {
+      hasInitialData: true,
+      kind: "object",
+      keys: Object.keys(initialData as Record<string, unknown>).sort(),
+    };
+  }
+  if (typeof initialData === "string") {
+    return {
+      hasInitialData: true,
+      kind: "string",
+      length: initialData.length,
+    };
+  }
+  return { hasInitialData: true, kind: typeof initialData };
+}
 
 function getDerivedForegroundInstanceId(state: Pick<AppStoreState, "foregroundInstanceId" | "instanceOrder" | "instances">): string | null {
   if (
@@ -168,6 +193,10 @@ const createUseAppStore = () =>
         const previousModel = get().aiModel;
         set({ aiModel: m });
         if (previousModel !== m) {
+          appStoreLog.debug("AI model changed", {
+            model: m || "auto",
+            previousModel: previousModel || "auto",
+          });
           track(APP_ANALYTICS.AI_MODEL_CHANGE, {
             model: m || "auto",
             previousModel: previousModel || "auto",
@@ -187,6 +216,7 @@ const createUseAppStore = () =>
       exposeMode: false,
       setExposeMode: (v) => {
         if (get().exposeMode !== v) {
+          appStoreLog.debug("Expose mode changed", { isOpen: v });
           track(APP_ANALYTICS.APP_EXPOSE, { isOpen: v });
         }
         set({ exposeMode: v });
@@ -262,6 +292,8 @@ const createUseAppStore = () =>
 
       createAppInstance: (appId, initialData, title, launchOrigin) => {
         let createdId = "";
+        // All app components are chunk-loaded so the shell can paint first.
+        const isLazy = true;
         set((state) => {
           const nextNum = state.nextInstanceId + 1;
           createdId = nextNum.toString();
@@ -297,9 +329,6 @@ const createUseAppStore = () =>
             }
           }
 
-          // All app components are chunk-loaded so the shell can paint first.
-          const isLazy = true;
-
           const instances = {
             ...state.instances,
             [createdId]: {
@@ -328,6 +357,15 @@ const createUseAppStore = () =>
           };
         });
         if (createdId) {
+          appStoreLog.debug("Created app instance", {
+            appId,
+            instanceId: createdId,
+            openWindowCount: get().instanceOrder.length,
+            isLazy,
+            hasLaunchOrigin: !!launchOrigin,
+            hasTitle: !!title,
+            initialData: describeInitialData(initialData),
+          });
           // Track recent app
           get().addRecentApp(appId);
           
@@ -394,6 +432,12 @@ const createUseAppStore = () =>
               },
             })
           );
+          appStoreLog.debug("Marked app instance as loaded", {
+            appId: inst.appId,
+            instanceId,
+            openWindowCount: Object.keys(instances).length,
+            foregroundInstanceId: instanceId,
+          });
 
           return {
             instances,
@@ -435,6 +479,12 @@ const createUseAppStore = () =>
             appId: inst.appId,
             openWindowCount: Object.keys(instances).length,
           });
+          appStoreLog.debug("Closed app instance", {
+            appId: inst.appId,
+            instanceId,
+            nextForegroundInstanceId: nextForeground,
+            openWindowCount: Object.keys(instances).length,
+          });
           return {
             instances,
             instanceOrder: order,
@@ -470,6 +520,12 @@ const createUseAppStore = () =>
           if (foreground && state.instances[foreground]) {
             track(APP_ANALYTICS.APP_FOCUS, {
               appId: state.instances[foreground].appId,
+              openWindowCount: Object.keys(state.instances).length,
+            });
+            appStoreLog.debug("Focused app instance", {
+              appId: state.instances[foreground].appId,
+              instanceId: foreground,
+              previousForegroundInstanceId: state.foregroundInstanceId,
               openWindowCount: Object.keys(state.instances).length,
             });
           }
@@ -556,6 +612,12 @@ const createUseAppStore = () =>
             appId: inst.appId,
             openWindowCount: Object.keys(instances).length,
           });
+          appStoreLog.debug("Minimized app instance", {
+            appId: inst.appId,
+            instanceId,
+            nextForegroundInstanceId: nextForeground,
+            openWindowCount: Object.keys(instances).length,
+          });
 
           return {
             instances,
@@ -588,6 +650,11 @@ const createUseAppStore = () =>
             appId: inst.appId,
             openWindowCount: Object.keys(instances).length,
           });
+          appStoreLog.debug("Restored app instance", {
+            appId: inst.appId,
+            instanceId,
+            openWindowCount: Object.keys(instances).length,
+          });
 
           return {
             instances,
@@ -602,6 +669,11 @@ const createUseAppStore = () =>
           if (!inst) return state;
           // Only update if displayTitle actually changed
           if (inst.displayTitle === title) return state;
+          appStoreLog.debug("Updated app instance title", {
+            appId: inst.appId,
+            instanceId,
+            titleLength: title.length,
+          });
           return {
             instances: {
               ...state.instances,
@@ -611,6 +683,13 @@ const createUseAppStore = () =>
         });
       },
       launchApp: (appId, initialData, title, multiWindow = false, launchOrigin) => {
+        appStoreLog.debug("Launch requested", {
+          appId,
+          multiWindow,
+          hasTitle: !!title,
+          hasLaunchOrigin: !!launchOrigin,
+          initialData: describeInitialData(initialData),
+        });
         prefetchAppChunk(appId);
 
         const state = get();
@@ -657,6 +736,12 @@ const createUseAppStore = () =>
                 appId,
                 restoredFromMinimized: true,
               });
+              appStoreLog.debug("Reopened minimized app instances", {
+                appId,
+                instanceId: lastRestoredId,
+                restoredCount: appInstances.length,
+                updatedInitialData: initialData !== undefined,
+              });
               return lastRestoredId;
             }
           }
@@ -689,6 +774,12 @@ const createUseAppStore = () =>
               reusedExistingWindow: true,
               hasInitialData: initialData !== undefined,
             });
+            appStoreLog.debug("Reused existing app instance", {
+              appId,
+              instanceId: existing.instanceId,
+              supportsMultiWindow,
+              updatedInitialData: initialData !== undefined,
+            });
             return existing.instanceId;
           }
         }
@@ -716,6 +807,7 @@ const createUseAppStore = () =>
       {
         name: "ryos:app-store",
         version: CURRENT_APP_STORE_VERSION,
+        storage: createJSONStorage(() => localStorage),
         partialize: (state): Partial<AppStoreState> => ({
         version: state.version,
         

@@ -25,11 +25,14 @@ import {
 } from "@/config/lazyAppComponent";
 import { useAppStore } from "@/stores/useAppStore";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
+import { createClientLogger } from "@/utils/logger";
 import { resolveInitialRoute } from "../appRouteRegistry";
 import { switcherInitialState } from "./constants";
 import { switcherReducer } from "./switcherReducer";
 import type { AppManagerProps } from "./types";
 import { useAppManagerKeyboardShortcuts } from "./useAppManagerKeyboardShortcuts";
+
+const appManagerLog = createClientLogger("AppManager");
 
 export function useAppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
@@ -174,12 +177,31 @@ export function useAppManager({ apps }: AppManagerProps) {
   }, []);
 
   useEffect(() => {
+    appManagerLog.debug("Window manager state changed", {
+      openInstanceCount: openInstanceIds.length,
+      foregroundInstanceId,
+      exposeMode,
+      showDesktopMenuBar,
+      crashedInstanceCount: crashedInstanceIds.size,
+    });
+  }, [
+    crashedInstanceIds.size,
+    exposeMode,
+    foregroundInstanceId,
+    openInstanceIds.length,
+    showDesktopMenuBar,
+  ]);
+
+  useEffect(() => {
     const routeAction = resolveInitialRoute(
       window.location.pathname,
       window.location.search
     );
 
     if (!routeAction) {
+      appManagerLog.debug("No initial route action", {
+        pathname: window.location.pathname,
+      });
       return;
     }
 
@@ -188,10 +210,20 @@ export function useAppManager({ apps }: AppManagerProps) {
     };
 
     if (routeAction.kind === "cleanup") {
+      appManagerLog.debug("Cleaning up initial route", {
+        pathname: window.location.pathname,
+      });
       resetUrl();
       return;
     }
 
+    appManagerLog.debug("Scheduling initial route launch", {
+      appId: routeAction.request.appId,
+      initialPath: routeAction.request.initialPath,
+      hasInitialData: routeAction.request.initialData !== undefined,
+      delayMs: routeAction.delayMs,
+      urlCleanupTiming: routeAction.urlCleanupTiming,
+    });
     prefetchAppChunk(routeAction.request.appId);
 
     if (routeAction.toast) {
@@ -203,6 +235,10 @@ export function useAppManager({ apps }: AppManagerProps) {
     }
 
     const timer = window.setTimeout(() => {
+      appManagerLog.debug("Dispatching initial route launch", {
+        appId: routeAction.request.appId,
+        hasInitialData: routeAction.request.initialData !== undefined,
+      });
       requestAppLaunch(routeAction.request);
 
       if (routeAction.urlCleanupTiming === "after-dispatch") {
@@ -222,6 +258,9 @@ export function useAppManager({ apps }: AppManagerProps) {
   useEffect(() => {
     const run = () => {
       const recent = useAppStore.getState().recentApps;
+      appManagerLog.debug("Prefetching likely app chunks", {
+        recentApps: recent.map((r) => r.appId),
+      });
       prefetchLikelyAppChunks(recent.map((r) => r.appId));
     };
 
@@ -252,15 +291,29 @@ export function useAppManager({ apps }: AppManagerProps) {
       }>
     ) => {
       const { appId, initialPath, initialData } = event.detail;
+      appManagerLog.debug("Received app launch request", {
+        appId,
+        initialPath,
+        hasInitialData: initialData !== undefined,
+      });
 
       const existingInstance = Object.values(instancesRef.current).find(
         (instance) => instance.appId === appId && instance.isOpen
       );
 
       const instanceId = launchAppRef.current(appId, initialData);
+      appManagerLog.debug("Launch request resolved", {
+        appId,
+        instanceId,
+        reusedExistingInstance: existingInstance?.instanceId === instanceId,
+      });
 
       if (initialPath) {
         localStorage.setItem(`ryos:app:${appId}:initial-path`, initialPath);
+        appManagerLog.debug("Stored app initial path", {
+          appId,
+          initialPath,
+        });
       }
 
       if (
@@ -268,6 +321,10 @@ export function useAppManager({ apps }: AppManagerProps) {
         initialData &&
         instanceId === existingInstance.instanceId
       ) {
+        appManagerLog.debug("Emitting app update for existing instance", {
+          appId,
+          instanceId,
+        });
         emitAppUpdate({ appId, instanceId, initialData });
       }
     };
@@ -281,8 +338,12 @@ export function useAppManager({ apps }: AppManagerProps) {
       (inst) => inst.appId === "dashboard" && inst.isOpen
     );
     if (dashboardInstance) {
+      appManagerLog.debug("Closing dashboard from shell toggle", {
+        instanceId: dashboardInstance.instanceId,
+      });
       closeAppInstance(dashboardInstance.instanceId);
     } else {
+      appManagerLog.debug("Opening dashboard from shell toggle");
       launchAppRef.current("dashboard");
     }
   }, [closeAppInstance]);
@@ -293,6 +354,9 @@ export function useAppManager({ apps }: AppManagerProps) {
       (inst) => inst.appId === "dashboard" && inst.isOpen
     );
     if (dashboardInstance) {
+      appManagerLog.debug("Closing dashboard overlay", {
+        instanceId: dashboardInstance.instanceId,
+      });
       closeAppInstance(dashboardInstance.instanceId);
     }
   }, [closeAppInstance]);

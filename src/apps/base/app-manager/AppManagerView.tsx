@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect } from "react";
 import type { ComponentType } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
@@ -22,6 +22,9 @@ import { shouldMountInstance } from "../instanceMountPolicy";
 import { getZIndexForInstance, supportsMultiWindowApp } from "./instanceHelpers";
 import type { AppProps } from "../types";
 import type { AppManagerViewModel } from "./useAppManager";
+import { createClientLogger } from "@/utils/logger";
+
+const appManagerViewLog = createClientLogger("AppManagerView");
 
 export function AppManagerView({
   apps,
@@ -145,6 +148,26 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
     navigateToPreviousInstance(instanceId);
   }, [instanceId, navigateToPreviousInstance]);
 
+  useEffect(() => {
+    appManagerViewLog.debug("Managed app instance state changed", {
+      instanceId,
+      appId: instance?.appId,
+      isOpen: !!instance?.isOpen,
+      isLoading: !!instance?.isLoading,
+      isForeground,
+      exposeMode,
+      zIndex,
+    });
+  }, [
+    exposeMode,
+    instance?.appId,
+    instance?.isLoading,
+    instance?.isOpen,
+    instanceId,
+    isForeground,
+    zIndex,
+  ]);
+
   if (!instance?.isOpen) return null;
   if (exposeMode && instance.appId === "stickies") return null;
 
@@ -183,6 +206,10 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
         appName={crashDialogAppName}
         instanceId={instance.instanceId}
         onCrash={() => {
+          appManagerViewLog.debug("App instance crashed", {
+            appId,
+            instanceId: instance.instanceId,
+          });
           setCrashedInstanceIds((prev) => {
             if (prev.has(instance.instanceId)) {
               return prev;
@@ -194,6 +221,10 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
           bringInstanceToForeground(instance.instanceId);
         }}
         onQuit={() => {
+          appManagerViewLog.debug("Quitting crashed app instance", {
+            appId,
+            instanceId: instance.instanceId,
+          });
           setCrashedInstanceIds((prev) => {
             if (!prev.has(instance.instanceId)) {
               return prev;
@@ -205,6 +236,11 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
           closeAppInstance(instance.instanceId);
         }}
         onRelaunch={() => {
+          appManagerViewLog.debug("Relaunching crashed app instance", {
+            appId,
+            instanceId: instance.instanceId,
+            hasInitialData: instance.initialData !== undefined,
+          });
           setCrashedInstanceIds((prev) => {
             if (!prev.has(instance.instanceId)) {
               return prev;

@@ -305,4 +305,41 @@ describe("client logging guardrails", () => {
     );
     expect(readSource("src/lib/audioContext.ts")).not.toContain("console.debug");
   });
+
+  test("major app lifecycle debug logs stay in shared shell paths", () => {
+    const appStoreSource = readSource("src/stores/useAppStore.ts");
+    const appManagerSource = readSource(
+      "src/apps/base/app-manager/useAppManager.ts"
+    );
+    const appManagerViewSource = readSource(
+      "src/apps/base/app-manager/AppManagerView.tsx"
+    );
+    const appShellSource = readSource("src/App.tsx");
+    const bootstrapSource = readSource("src/main.tsx");
+
+    expect(appStoreSource).toContain('createClientLogger("AppStore")');
+    expect(appStoreSource).toContain("describeInitialData(initialData)");
+    expect(appStoreSource).toContain('"Launch requested"');
+    expect(appStoreSource).toContain('"Created app instance"');
+    expect(appStoreSource).toContain('"Focused app instance"');
+    expect(appStoreSource).toContain('"Closed app instance"');
+
+    expect(appManagerSource).toContain('createClientLogger("AppManager")');
+    expect(appManagerSource).toContain('"Received app launch request"');
+    expect(appManagerSource).toContain('"Window manager state changed"');
+
+    expect(appManagerViewSource).toContain(
+      'createClientLogger("AppManagerView")'
+    );
+    expect(appManagerViewSource).toContain(
+      '"Managed app instance state changed"'
+    );
+    expect(appManagerViewSource).toContain('"App instance crashed"');
+
+    expect(appShellSource).toContain('createClientLogger("AppShell")');
+    expect(appShellSource).toContain('"Applied display mode"');
+    expect(bootstrapSource).toContain('createClientLogger("Bootstrap")');
+    expect(bootstrapSource).toContain('"Starting client bootstrap"');
+  });
+
 });
