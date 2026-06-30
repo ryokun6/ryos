@@ -4,6 +4,8 @@
  */
 
 import { describe, test, expect } from "bun:test";
+import { createRedis } from "../api/_utils/redis";
+import { deleteSong, getSong, saveSong } from "../api/_utils/_song-service";
 import { BASE_URL, fetchWithOrigin } from "./test-utils";
 
 // Test song ID (a known YouTube video)
@@ -247,22 +249,110 @@ describe("POST /api/songs/{id} action: fetch-lyrics", () => {
     }
   });
 
-  test("Force refresh", async () => {
-    if (!cachedLyricsSource) return;
+  test("Anonymous force refresh requires auth when lyrics source exists", async () => {
+    const redis = createRedis();
+    const songId = "anonForce01";
+    const lyricsSource = {
+      hash: "original-hash",
+      albumId: "album-1",
+      title: "Cached Song",
+      artist: "Test Artist",
+      album: "Test Album",
+    };
 
-    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "fetch-lyrics",
-        lyricsSource: cachedLyricsSource,
-        force: true,
-      }),
-    });
-    expect(res.status === 200 || res.status === 404).toBe(true);
-    if (res.status === 200) {
-      const cacheHeader = res.headers.get("X-Lyrics-Cache");
-      expect(cacheHeader).not.toBe("HIT");
+    await deleteSong(redis, songId);
+    try {
+      await saveSong(redis, {
+        id: songId,
+        title: "Cached Song",
+        artist: "Test Artist",
+        lyricsSource,
+        lyrics: { lrc: "[00:00.00]original lyrics" },
+        translations: { es: "[00:00.00]letra original" },
+      });
+
+      const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${songId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "fetch-lyrics",
+          lyricsSource,
+          force: true,
+        }),
+      });
+
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.error).toContain("authentication required");
+
+      const saved = await getSong(redis, songId, {
+        includeMetadata: true,
+        includeLyrics: true,
+        includeTranslations: true,
+      });
+      expect(saved?.lyrics?.lrc).toBe("[00:00.00]original lyrics");
+      expect(saved?.translations?.es).toBe("[00:00.00]letra original");
+      expect(saved?.lyricsSource?.hash).toBe("original-hash");
+    } finally {
+      await deleteSong(redis, songId);
+    }
+  });
+});
+
+describe("POST /api/songs/{id} action: clear-cached-data", () => {
+  test("Anonymous requests cannot clear cached annotations", async () => {
+    const redis = createRedis();
+    const songId = "anonClear01";
+
+    await deleteSong(redis, songId);
+    try {
+      await saveSong(redis, {
+        id: songId,
+        title: "Annotated Song",
+        artist: "Test Artist",
+        lyrics: { lrc: "[00:00.00]annotated lyrics" },
+        translations: { es: "[00:00.00]letra anotada" },
+        furigana: [[{ text: "kanji", reading: "reading" }]],
+        soramimi: [[{ text: "test", reading: "tesuto" }]],
+        soramimiByLang: {
+          en: [[{ text: "sound", reading: "sound" }]],
+        },
+      });
+
+      const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${songId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear-cached-data",
+          clearTranslations: true,
+          clearFurigana: true,
+          clearSoramimi: true,
+        }),
+      });
+
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.error).toContain("authentication required");
+
+      const saved = await getSong(redis, songId, {
+        includeMetadata: true,
+        includeLyrics: true,
+        includeTranslations: true,
+        includeFurigana: true,
+        includeSoramimi: true,
+      });
+      expect(saved?.translations?.es).toBe("[00:00.00]letra anotada");
+      expect(saved?.furigana?.[0]?.[0]).toEqual({
+        text: "kanji",
+        reading: "reading",
+      });
+      expect(saved?.soramimi?.[0]?.[0]).toEqual({ text: "test", reading: "tesuto" });
+      expect(saved?.soramimiByLang?.en?.[0]?.[0]).toEqual({
+        text: "sound",
+        reading: "sound",
+      });
+    } finally {
+      await deleteSong(redis, songId);
     }
   });
 });

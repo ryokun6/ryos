@@ -18,6 +18,54 @@ const streamLog = createClientLogger("LyricsStream");
 
 type LyricsStreamKind = "translation" | "furigana" | "soramimi";
 
+class LyricsStreamTerminalError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LyricsStreamTerminalError";
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function readErrorMessage(payload: unknown, fallback: string): string {
+  if (!isRecord(payload)) return fallback;
+
+  const error = payload.error;
+  if (typeof error === "string" && error.trim()) return error;
+
+  const message = payload.message;
+  if (typeof message === "string" && message.trim()) return message;
+
+  return fallback;
+}
+
+async function throwForFailedStreamResponse(response: Response): Promise<void> {
+  const fallback = `SSE request failed: ${response.status}`;
+  const contentType = response.headers.get("content-type");
+  if (contentType?.includes("application/json")) {
+    try {
+      const json: unknown = await response.json();
+      throw new LyricsStreamTerminalError(readErrorMessage(json, fallback));
+    } catch (err) {
+      if (err instanceof LyricsStreamTerminalError) throw err;
+      throw new LyricsStreamTerminalError(fallback);
+    }
+  }
+
+  throw new Error(fallback);
+}
+
+function makeStreamEventError(
+  eventData: unknown,
+  rawData: unknown
+): LyricsStreamTerminalError {
+  return new LyricsStreamTerminalError(
+    readErrorMessage(eventData, readErrorMessage(rawData, "Lyrics stream failed"))
+  );
+}
+
 function logCallbackError(
   stream: LyricsStreamKind,
   stage: string,
@@ -167,14 +215,16 @@ export async function processTranslationSSE(
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
+      const contentType = response.headers.get("content-type");
       if (!response.ok) {
-        throw new Error(`SSE request failed: ${response.status}`);
+        await throwForFailedStreamResponse(response);
       }
 
-      const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
-        const json = await response.json();
-        throw new Error(json.error || "Unknown error");
+        const json: unknown = await response.json();
+        throw new LyricsStreamTerminalError(
+          readErrorMessage(json, "Unknown error")
+        );
       }
 
       const reader = response.body?.getReader();
@@ -188,6 +238,7 @@ export async function processTranslationSSE(
         let totalLines = 0;
         let completedLines = 0;
         const finalResult = { current: null as TranslationResult | null };
+        const streamError: { current: LyricsStreamTerminalError | null } = { current: null };
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -226,10 +277,11 @@ export async function processTranslationSSE(
                 break;
 
               case "error":
+                streamError.current = makeStreamEventError(eventData, rawData);
                 streamLog.warn("Translation stream reported an error", {
                   songId,
                   language,
-                  error: eventData.error || rawData.error,
+                  error: streamError.current.message,
                 });
                 break;
 
@@ -293,6 +345,7 @@ export async function processTranslationSSE(
             if (buffer.trim()) {
               for (const line of buffer.split("\n")) {
                 processLine(line.trim());
+                if (streamError.current) throw streamError.current;
               }
             }
             break;
@@ -311,6 +364,7 @@ export async function processTranslationSSE(
           
           for (const line of lines) {
             processLine(line.trim());
+            if (streamError.current) throw streamError.current;
           }
         }
 
@@ -334,6 +388,9 @@ export async function processTranslationSSE(
       
       if (err instanceof Error && err.name === "AbortError") {
         throw err; // Don't retry on abort
+      }
+      if (err instanceof LyricsStreamTerminalError) {
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Translation stream failed", {
@@ -445,14 +502,16 @@ export async function processFuriganaSSE(
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
+      const contentType = response.headers.get("content-type");
       if (!response.ok) {
-        throw new Error(`SSE request failed: ${response.status}`);
+        await throwForFailedStreamResponse(response);
       }
 
-      const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
-        const json = await response.json();
-        throw new Error(json.error || "Unknown error");
+        const json: unknown = await response.json();
+        throw new LyricsStreamTerminalError(
+          readErrorMessage(json, "Unknown error")
+        );
       }
 
       const reader = response.body?.getReader();
@@ -466,6 +525,7 @@ export async function processFuriganaSSE(
         let totalLines = 0;
         let completedLines = 0;
         const finalResult = { current: null as FuriganaResult | null };
+        const streamError: { current: LyricsStreamTerminalError | null } = { current: null };
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -504,9 +564,10 @@ export async function processFuriganaSSE(
                 break;
 
               case "error":
+                streamError.current = makeStreamEventError(eventData, rawData);
                 streamLog.warn("Furigana stream reported an error", {
                   songId,
-                  error: eventData.error || rawData.error,
+                  error: streamError.current.message,
                 });
                 break;
 
@@ -563,6 +624,7 @@ export async function processFuriganaSSE(
             if (buffer.trim()) {
               for (const line of buffer.split("\n")) {
                 processLine(line.trim());
+                if (streamError.current) throw streamError.current;
               }
             }
             break;
@@ -581,6 +643,7 @@ export async function processFuriganaSSE(
           
           for (const line of lines) {
             processLine(line.trim());
+            if (streamError.current) throw streamError.current;
           }
         }
 
@@ -603,6 +666,9 @@ export async function processFuriganaSSE(
       
       if (err instanceof Error && err.name === "AbortError") {
         throw err; // Don't retry on abort
+      }
+      if (err instanceof LyricsStreamTerminalError) {
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Furigana stream failed", {
@@ -764,22 +830,24 @@ export async function processSoramimiSSE(
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
+      const contentType = response.headers.get("content-type");
       if (!response.ok) {
-        throw new Error(`SSE request failed: ${response.status}`);
+        await throwForFailedStreamResponse(response);
       }
 
-      const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
-        const json = await response.json();
-        if (json.skipped) {
-        try {
-          onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
-        } catch (callbackErr) {
-          logCallbackError("soramimi", "server-skipped progress", callbackErr);
+        const json: unknown = await response.json();
+        if (isRecord(json) && json.skipped) {
+          try {
+            onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
+          } catch (callbackErr) {
+            logCallbackError("soramimi", "server-skipped progress", callbackErr);
+          }
+          return { data: [], success: true };
         }
-        return { data: [], success: true };
-      }
-        throw new Error(json.error || "Unknown error");
+        throw new LyricsStreamTerminalError(
+          readErrorMessage(json, "Unknown error")
+        );
       }
 
       const reader = response.body?.getReader();
@@ -793,6 +861,7 @@ export async function processSoramimiSSE(
         let totalLines = 0;
         let completedLines = 0;
         const finalSoramimi = { current: null as SoramimiResult | null };
+        const streamError: { current: LyricsStreamTerminalError | null } = { current: null };
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -833,10 +902,11 @@ export async function processSoramimiSSE(
                 break;
 
               case "error":
+                streamError.current = makeStreamEventError(eventData, rawData);
                 streamLog.warn("Soramimi stream reported an error", {
                   songId,
                   targetLanguage,
-                  error: eventData.error || rawData.error,
+                  error: streamError.current.message,
                 });
                 break;
 
@@ -894,6 +964,7 @@ export async function processSoramimiSSE(
             if (buffer.trim()) {
               for (const line of buffer.split("\n")) {
                 processLine(line.trim());
+                if (streamError.current) throw streamError.current;
               }
             }
             break;
@@ -912,6 +983,7 @@ export async function processSoramimiSSE(
           
           for (const line of lines) {
             processLine(line.trim());
+            if (streamError.current) throw streamError.current;
           }
         }
 
@@ -935,6 +1007,9 @@ export async function processSoramimiSSE(
       
       if (err instanceof Error && err.name === "AbortError") {
         throw err; // Don't retry on abort
+      }
+      if (err instanceof LyricsStreamTerminalError) {
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Soramimi stream failed", {
