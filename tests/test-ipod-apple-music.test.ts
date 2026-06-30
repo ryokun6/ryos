@@ -75,6 +75,7 @@ const {
   ENDED_FANOUT_DEDUP_WINDOW_MS,
   getMusicKitEventItemId,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
+  shouldConfirmPlaybackAfterQueueLoad,
   isStaleQueueLoad,
   isNewMusicKitInstance,
   isLikelyMusicKitUnhandledRejection,
@@ -1441,6 +1442,51 @@ describe("AppleMusicPlayerBridge queue-load playback-state fan-out", () => {
     ).toBe(false);
     expect(
       shouldSuppressPlaybackStateFanoutWhileQueueLoading(true, 10)
+    ).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge post-queue playback reconciliation", () => {
+  test("confirms playback when the current queue reached playing while events were suppressed", () => {
+    expect(
+      shouldConfirmPlaybackAfterQueueLoad({
+        loadIsStale: false,
+        queuedTrackId: "am:current",
+        expectedTrackId: "am:current",
+        playbackState: MUSICKIT_PLAYBACK_STATE_PLAYING,
+      })
+    ).toBe(true);
+  });
+
+  test("does not confirm paused or transitional provider states", () => {
+    for (const playbackState of [0, 1, 3, 4, 6, 8, undefined]) {
+      expect(
+        shouldConfirmPlaybackAfterQueueLoad({
+          loadIsStale: false,
+          queuedTrackId: "am:current",
+          expectedTrackId: "am:current",
+          playbackState,
+        })
+      ).toBe(false);
+    }
+  });
+
+  test("does not confirm a stale or replaced queue", () => {
+    expect(
+      shouldConfirmPlaybackAfterQueueLoad({
+        loadIsStale: true,
+        queuedTrackId: "am:current",
+        expectedTrackId: "am:current",
+        playbackState: MUSICKIT_PLAYBACK_STATE_PLAYING,
+      })
+    ).toBe(false);
+    expect(
+      shouldConfirmPlaybackAfterQueueLoad({
+        loadIsStale: false,
+        queuedTrackId: "am:previous",
+        expectedTrackId: "am:current",
+        playbackState: MUSICKIT_PLAYBACK_STATE_PLAYING,
+      })
     ).toBe(false);
   });
 });

@@ -164,6 +164,30 @@ export function isMusicKitPlaying(
 }
 
 /**
+ * Queue loading suppresses MusicKit state fan-out so transient paused states
+ * cannot cancel a requested play. If the provider reaches `playing` before
+ * the queue promise settles, that event is suppressed too. Reconcile only the
+ * active, successfully queued track after the load finishes.
+ */
+export function shouldConfirmPlaybackAfterQueueLoad({
+  loadIsStale,
+  queuedTrackId,
+  expectedTrackId,
+  playbackState,
+}: {
+  loadIsStale: boolean;
+  queuedTrackId: string | null;
+  expectedTrackId: string;
+  playbackState: number | undefined;
+}): boolean {
+  return (
+    !loadIsStale &&
+    queuedTrackId === expectedTrackId &&
+    isMusicKitPlaying(playbackState)
+  );
+}
+
+/**
  * MusicKit JS v3 rejects when `play()` is called while already playing:
  * "The play() method was called without a previous stop() or pause() call."
  * Detect that known rejection so callers can skip redundant play() calls or

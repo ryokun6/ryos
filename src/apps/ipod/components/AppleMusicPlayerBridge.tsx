@@ -17,6 +17,7 @@ import {
   isMusicKitRedundantPlayError,
   isStaleQueueLoad,
   isWithinEndedFanoutDedupWindow,
+  shouldConfirmPlaybackAfterQueueLoad,
   shouldFireEndedForPlaybackState,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
 } from "./appleMusicPlayerBridgeUtils";
@@ -848,7 +849,16 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         // with its own promise; nulling here would let play/pause sync
         // think there's no pending queue load and race the newer
         // `setQueue` mid-flight.
-        if (queueLoadingRef.current === thisLoad) {
+        const settledCurrentLoad = queueLoadingRef.current === thisLoad;
+        const shouldConfirmPlayback =
+          settledCurrentLoad &&
+          shouldConfirmPlaybackAfterQueueLoad({
+            loadIsStale: isStale(),
+            queuedTrackId: lastQueuedTrackIdRef.current,
+            expectedTrackId: localQueueKey,
+            playbackState: inst.playbackState,
+          });
+        if (settledCurrentLoad) {
           queueLoadingRef.current = null;
         }
         appleMusicLog.debug("Queue update settled", {
@@ -858,6 +868,21 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
           activeGeneration: queueGenerationRef.current,
           snapshot: getBridgeSnapshot(),
         });
+        if (shouldConfirmPlayback) {
+          appleMusicLog.debug(
+            "Confirming playback after suppressed queue-load event",
+            {
+              queueKey: localQueueKey,
+              loadGeneration,
+              playbackState: inst.playbackState,
+            }
+          );
+          callBridgeCallback(
+            "queue:onPlayAfterSettled",
+            onPlayRef.current,
+            { snapshot: getBridgeSnapshot() }
+          );
+        }
       }
     })();
     queueLoadingRef.current = thisLoad;
