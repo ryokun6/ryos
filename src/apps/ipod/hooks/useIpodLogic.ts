@@ -91,6 +91,7 @@ import {
 } from "../utils/appleMusicPlaylistMenu";
 import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
 import { shouldPlayIpodWheelSound } from "../utils/wheelSound";
+import { shouldEnableAppleMusicIntegration } from "../utils/appleMusicActivation";
 import { createClientLogger } from "@/utils/logger";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
@@ -142,7 +143,6 @@ export function useIpodLogic({
     appleMusicPlaylistTracks,
     appleMusicPlaylistTracksLoading,
     appleMusicPlaylistsLoading,
-    appleMusicCurrentSongId,
     librarySource,
     isAppleMusic,
     tracks,
@@ -274,12 +274,9 @@ export function useIpodLogic({
   // ---------------------------------------------------------------------
   // MusicKit (Apple Music) integration
   // ---------------------------------------------------------------------
-  // Lazily configure MusicKit only after the iPod window is open at least
-  // once OR the user has already opted into Apple Music. This avoids
-  // pulling the v3 script on first paint for users that never use the
-  // Apple Music mode.
-  const enableMusicKit =
-    isAppleMusic || isWindowOpen || appleMusicCurrentSongId !== null;
+  // Keep every Apple Music side effect dormant while the YouTube library is
+  // active. Switching sources enables MusicKit first, then library hydration.
+  const enableMusicKit = shouldEnableAppleMusicIntegration(librarySource);
   const {
     instance: musicKitInstance,
     isAuthorized: appleMusicAuthorized,
@@ -917,6 +914,14 @@ export function useIpodLogic({
       });
       return;
     }
+    if (musicKitStatus === "idle" || musicKitStatus === "loading") {
+      showStatus(t("apps.ipod.menuItems.loading"));
+      return;
+    }
+    if (musicKitStatus !== "ready") {
+      toast.error(t("apps.ipod.dialogs.appleMusicSignInFailed"));
+      return;
+    }
     try {
       await musicKitAuthorize();
       showStatus(t("apps.ipod.status.appleMusicSignedIn", "Apple Music ✓"));
@@ -1336,22 +1341,8 @@ export function useIpodLogic({
     showStatus(
       t("apps.ipod.status.libraryAppleMusic", "Library: Apple Music")
     );
-    if (musicKitStatus === "missing-token") {
-      toast.error(t("apps.ipod.dialogs.appleMusicNotConfigured"), {
-        description: t("apps.ipod.dialogs.appleMusicNotConfiguredDescriptionShort"),
-      });
-      return;
-    }
-    if (!appleMusicAuthorized) {
-      queueMicrotask(() => {
-        void handleAppleMusicSignIn();
-      });
-    }
   }, [
-    appleMusicAuthorized,
-    handleAppleMusicSignIn,
     librarySource,
-    musicKitStatus,
     pauseBeforeWindowClose,
     registerActivity,
     setLibrarySource,

@@ -103,8 +103,19 @@ const {
   APPLE_MUSIC_STREAMING_BITRATE_KBPS,
   buildMusicKitConfigureOptions,
 } = await import("../src/hooks/useMusicKit");
+const { shouldEnableAppleMusicIntegration } = await import(
+  "../src/apps/ipod/utils/appleMusicActivation"
+);
 
 describe("MusicKit configuration", () => {
+  test("stays disabled while the YouTube library is active", () => {
+    expect(shouldEnableAppleMusicIntegration("youtube")).toBe(false);
+  });
+
+  test("enables only after switching to the Apple Music library", () => {
+    expect(shouldEnableAppleMusicIntegration("appleMusic")).toBe(true);
+  });
+
   test("requests 256kbps Apple Music streaming quality", () => {
     const app = { name: "ryOS iPod", build: "1.0.0" };
 
