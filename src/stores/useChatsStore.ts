@@ -1209,10 +1209,8 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             ensureUsernameRecovery(state.username);
 
-            // Restore session from the httpOnly cookie.
-            if (state.username) {
-              restoreSessionFromCookie(state.username);
-            }
+            // Reconcile local auth state with the httpOnly cookie (restore or clear).
+            reconcileSessionFromCookie(state.username);
           }
         };
       },
@@ -1223,14 +1221,15 @@ export const useChatsStore = create<ChatsStoreState>()(
 /**
  * Verify the current session with the server.
  *
- * The httpOnly cookie authenticates the request automatically.
+ * The httpOnly cookie authenticates the request automatically. Also clears
+ * stale cookies when local state is logged out but the browser still has one.
  */
-async function restoreSessionFromCookie(expectedUsername: string) {
+async function reconcileSessionFromCookie(expectedUsername: string | null) {
   try {
     const session = await getAuthSession();
 
     if (!session.ok) {
-      debug("Session restore failed:", session.status);
+      debug("Session reconcile failed:", session.status);
       if (session.status === 401 || session.status === 403) {
         forceLogoutOnUnauthorized();
       }
@@ -1245,17 +1244,24 @@ async function restoreSessionFromCookie(expectedUsername: string) {
       });
       const store = useChatsStore.getState();
 
-      if (store.username === expectedUsername) {
+      if (
+        expectedUsername === null ||
+        store.username === expectedUsername ||
+        store.username === data.username
+      ) {
+        if (store.username !== data.username) {
+          store.setUsername(data.username);
+        }
         store.setAuthenticated(true);
       }
-    } else {
+    } else if (expectedUsername) {
       debug("No valid session — logging out.");
       forceLogoutOnUnauthorized();
     }
   } catch (err) {
     // Network error — keep state, don't force-logout.
     // The user may come back online and the cookie will still be valid.
-    chatsStoreLog.warn("Session restore request failed:", err);
+    chatsStoreLog.warn("Session reconcile request failed:", err);
   }
 }
 

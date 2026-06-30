@@ -44,7 +44,8 @@ function hasAnyAuthCredential(
  *
  * Behavior:
  * - required=true  -> missing/invalid auth returns { error: 401 }
- * - required=false -> anonymous allowed when no auth headers are provided
+ * - required=false -> anonymous allowed when no auth headers are provided, or
+ *                     when credentials are present but fail validation (stale cookie)
  * - partial auth   -> returns 400 (username/token must be provided together)
  */
 export async function resolveRequestAuth(
@@ -79,6 +80,12 @@ export async function resolveRequestAuth(
 
   const result = await validateAuth(redis, username, token, { allowExpired });
   if (!result.valid) {
+    // Optional routes (songs, lyrics, session probe) must stay public even when
+    // the browser still sends a stale httpOnly cookie from a prior login.
+    if (!required) {
+      return { user: null, error: null };
+    }
+
     return {
       user: null,
       error: { status: 401, error: "Unauthorized - invalid token" },

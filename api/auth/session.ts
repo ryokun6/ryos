@@ -4,7 +4,11 @@
  * Return the current session and refresh the httpOnly auth cookie.
  */
 
-import { buildSetAuthCookie } from "../_utils/_cookie.js";
+import {
+  buildClearAuthCookie,
+  buildSetAuthCookie,
+  parseAuthCookie,
+} from "../_utils/_cookie.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import {
   getStoredUserRecord,
@@ -20,8 +24,12 @@ export default apiHandler(
     auth: "optional",
     allowExpiredAuth: true,
   },
-  async ({ req: _req, res, logger, startTime, user, redis }) => {
+  async ({ req, res, logger, startTime, user, redis }) => {
     if (!user) {
+      // Drop stale cookies so anonymous clients stop sending invalid credentials.
+      if (parseAuthCookie(req.headers.cookie)) {
+        res.setHeader("Set-Cookie", buildClearAuthCookie());
+      }
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ authenticated: false });
       return;

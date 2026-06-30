@@ -39,6 +39,17 @@ describe("GET /api/songs/{id}", () => {
     const res = await fetchWithOrigin(`${BASE_URL}/api/songs`);
     expect(res.status === 200 || res.status === 405).toBe(true);
   });
+
+  test("GET list succeeds with stale auth cookie (anonymous)", async () => {
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs?include=version`, {
+      headers: {
+        Cookie: "ryos_auth=staleuser%3Anot-a-valid-session-token",
+      },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(typeof data.version).toBe("number");
+  });
 });
 
 describe("POST /api/songs/{id} action: search-lyrics", () => {
