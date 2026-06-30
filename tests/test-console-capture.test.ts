@@ -48,6 +48,45 @@ describe("consoleCapture", () => {
     const last = entries[entries.length - 1];
     expect(last.text).toContain('"a": 1');
     expect(last.text).toContain("[Circular]");
+    expect(last.displayParts).toEqual([
+      { type: "text", text: "obj:" },
+      { type: "text", text: " " },
+      {
+        type: "json",
+        text: '{\n  "a": 1,\n  "self": "[Circular]"\n}',
+        summary: '{ a: 1, self: "[Circular]" }',
+      },
+    ]);
+  });
+
+  test("represents JSON arguments as compact expandable display parts", () => {
+    const formatted = formatConsoleArguments([
+      "payload",
+      {
+        status: "ok",
+        items: [1, 2, 3],
+        metadata: { cached: true },
+        requestId: "abc",
+      },
+      ["alpha", "beta"],
+    ]);
+
+    expect(formatted.text).toContain('"status": "ok"');
+    expect(formatted.displayParts?.map((part) => part.type)).toEqual([
+      "text",
+      "text",
+      "json",
+      "text",
+      "json",
+    ]);
+    expect(formatted.displayParts?.[2]).toMatchObject({
+      type: "json",
+      summary: '{ status: "ok", items: […], metadata: {…}, … }',
+    });
+    expect(formatted.displayParts?.[4]).toMatchObject({
+      type: "json",
+      summary: '["alpha", "beta"]',
+    });
   });
 
   test("clearConsoleCapture empties the buffer", async () => {
@@ -145,6 +184,31 @@ describe("consoleCapture", () => {
     expect(copied).toContain("[LOG]  * Tone.js v15.1.22 *");
     expect(copied).not.toContain("%c");
     expect(copied).not.toContain("background:");
+  });
+
+  test("keeps styled text while making a trailing object expandable", () => {
+    const formatted = formatConsoleArguments([
+      "%cRequest",
+      "color: blue; font-weight: bold",
+      { method: "GET", status: 200 },
+    ]);
+
+    expect(formatted.text).toBe(
+      'Request {\n  "method": "GET",\n  "status": 200\n}'
+    );
+    expect(formatted.displayParts).toEqual([
+      {
+        type: "text",
+        text: "Request",
+        style: { color: "blue", fontWeight: "bold" },
+      },
+      { type: "text", text: " " },
+      {
+        type: "json",
+        text: '{\n  "method": "GET",\n  "status": 200\n}',
+        summary: '{ method: "GET", status: 200 }',
+      },
+    ]);
   });
 
   test("falls back to plain text for unmatched %c placeholders", () => {
