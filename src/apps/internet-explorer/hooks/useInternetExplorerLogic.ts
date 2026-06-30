@@ -53,6 +53,7 @@ import {
   getPastYears,
   getFutureYears,
 } from "../components/ie-menu-bar/yearLists";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 
 const log = createClientLogger("InternetExplorer");
 
@@ -217,15 +218,15 @@ export function useInternetExplorerLogic({
     helpItems ?? []
   );
   const appName = t("apps.internet-explorer.appName");
+  const isAdmin = useIsRyoAdmin();
 
-  // The IE Debug menu is only available when global debug mode is on. The
-  // advanced proxy toggles below opt into env-gated proxy features
-  // (cookie/session passthrough, forced headless) per browser.
-  const showDebugMenu = debugMode;
+  // The IE Debug menu is available to the admin user or while global debug
+  // mode is on. Server-gated proxy features still require first-party auth.
+  const showDebugMenu = debugMode || isAdmin;
 
   // Append the active debug toggles to a proxy (`/api/iframe-check`) URL so the
-  // server opts the request into the gated features. `dbg=1` signals the server
-  // that this is an admin/debug-mode caller permitted to use them.
+  // server sees the requested feature. `dbg=1` is only an intent signal; the
+  // server verifies first-party auth before enabling gated features.
   const appendIeDebugParams = useCallback(
     (proxyUrl: string): string => {
       if (!proxyUrl.startsWith("/api/iframe-check")) return proxyUrl;
@@ -534,21 +535,26 @@ export function useInternetExplorerLogic({
     setDisplayTitle(newTitle);
   }, [status, currentPageTitle, finalUrl, url, year, t, getLoadingTitle, appName]);
 
-  const getWaybackUrl = useCallback(async (targetUrl: string, year: string) => {
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const formattedUrl = targetUrl.startsWith("http")
-      ? targetUrl
-      : `https://${targetUrl}`;
-    log.debug("Using Wayback Machine URL", { url: formattedUrl, year });
-    const themeParam =
-      typeof currentTheme === "string"
-        ? `&theme=${encodeURIComponent(currentTheme)}`
-        : "";
-    return `/api/iframe-check?url=${encodeURIComponent(
-      formattedUrl
-    )}&year=${year}&month=${month}${themeParam}`;
-  }, [currentTheme]);
+  const getWaybackUrl = useCallback(
+    async (targetUrl: string, year: string) => {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const formattedUrl = targetUrl.startsWith("http")
+        ? targetUrl
+        : `https://${targetUrl}`;
+      log.debug("Using Wayback Machine URL", { url: formattedUrl, year });
+      const themeParam =
+        typeof currentTheme === "string"
+          ? `&theme=${encodeURIComponent(currentTheme)}`
+          : "";
+      return appendIeDebugParams(
+        `/api/iframe-check?url=${encodeURIComponent(
+          formattedUrl
+        )}&year=${year}&month=${month}${themeParam}`
+      );
+    },
+    [appendIeDebugParams, currentTheme]
+  );
 
   // Ref to keep the most recent navigation token in sync without waiting for a render
   const navTokenRef = useRef<number>(0);

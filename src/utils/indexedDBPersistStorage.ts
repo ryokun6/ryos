@@ -92,6 +92,21 @@ async function deleteRecord(name: string): Promise<void> {
   }
 }
 
+async function clearRecords(): Promise<void> {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
 /**
  * One-time migration of a slice that previously persisted to localStorage.
  * Returns the parsed value (now also written to IndexedDB) or null.
@@ -137,8 +152,10 @@ export function createIndexedDBPersistStorage<S>(
   let timer: ReturnType<typeof setTimeout> | null = null;
   let pendingName: string | null = null;
   let pendingValue: StorageValue<S> | null = null;
-  // Resolves once the most recently kicked-off write commits.
-  let inFlight: Promise<void> = Promise.resolve();
+  // Serializes async IndexedDB commits so an older transaction cannot finish
+  // after a newer one and restore stale state.
+  let writeChain: Promise<void> = Promise.resolve();
+  const inFlightValues = new Map<string, StorageValue<S>>();
 
   const writeNow = () => {
     if (timer !== null) {
@@ -156,16 +173,24 @@ export function createIndexedDBPersistStorage<S>(
     pendingName = null;
     pendingValue = null;
     clearPendingFlush(name);
-    inFlight = writeRecord(name, value).catch((error) => {
-      console.error(
-        `[indexedDBPersistStorage] Failed to write "${name}":`,
-        error
-      );
-    });
+    inFlightValues.set(name, value);
+    writeChain = writeChain
+      .then(() => writeRecord(name, value))
+      .catch((error) => {
+        console.error(
+          `[indexedDBPersistStorage] Failed to write "${name}":`,
+          error
+        );
+      })
+      .finally(() => {
+        if (inFlightValues.get(name) === value) {
+          inFlightValues.delete(name);
+        }
+      });
   };
 
   const settle = async () => {
-    await inFlight;
+    await writeChain;
   };
 
   const resetForTests = () => {
@@ -178,7 +203,8 @@ export function createIndexedDBPersistStorage<S>(
     }
     pendingName = null;
     pendingValue = null;
-    inFlight = Promise.resolve();
+    inFlightValues.clear();
+    writeChain = Promise.resolve();
   };
 
   registerSettler(settle);
@@ -189,6 +215,9 @@ export function createIndexedDBPersistStorage<S>(
       // Read-your-writes: a queued snapshot is newer than IndexedDB.
       if (pendingName === name && pendingValue !== null) {
         return pendingValue;
+      }
+      if (inFlightValues.has(name)) {
+        return inFlightValues.get(name) ?? null;
       }
       try {
         const record = await readRecord<S>(name);
@@ -248,4 +277,15 @@ export function createIndexedDBPersistStorage<S>(
  */
 export async function settlePersistWrites(): Promise<void> {
   await settleAllPersistWrites();
+}
+
+/**
+ * Clear every Zustand persist slice stored in IndexedDB.
+ *
+ * Used by system reset after write-behind queues have settled and been halted,
+ * so IndexedDB-backed app state follows the same reset semantics as
+ * localStorage-backed app state.
+ */
+export async function clearIndexedDBPersistedState(): Promise<void> {
+  await clearRecords();
 }

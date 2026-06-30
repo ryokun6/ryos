@@ -44,12 +44,16 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
-const { createIndexedDBPersistStorage, settlePersistWrites } = await import(
-  "../src/utils/indexedDBPersistStorage"
-);
-const { resetPersistWritesForTests, haltPersistWrites } = await import(
-  "../src/utils/persistWriteQueue"
-);
+const {
+  clearIndexedDBPersistedState,
+  createIndexedDBPersistStorage,
+  settlePersistWrites,
+} = await import("../src/utils/indexedDBPersistStorage");
+const {
+  flushAllPersistWrites,
+  resetPersistWritesForTests,
+  haltPersistWrites,
+} = await import("../src/utils/persistWriteQueue");
 
 const resetDb = () =>
   new Promise<void>((resolve) => {
@@ -99,6 +103,19 @@ describe("createIndexedDBPersistStorage", () => {
     // Nothing flushed yet, but read-your-writes returns the queued snapshot.
     const value = await storage.getItem("k");
     expect(value).toEqual({ state: { a: 7 }, version: 2 });
+  });
+
+  test("getItem serves a flushed snapshot while the commit is in flight", async () => {
+    const storage = createIndexedDBPersistStorage<{ a: number }>({
+      delayMs: 60_000,
+    });
+    storage.setItem("k", { state: { a: 8 }, version: 2 });
+
+    flushAllPersistWrites();
+
+    const value = await storage.getItem("k");
+    expect(value).toEqual({ state: { a: 8 }, version: 2 });
+    await settlePersistWrites();
   });
 
   test("only the latest snapshot in a burst is persisted", async () => {
@@ -154,6 +171,22 @@ describe("createIndexedDBPersistStorage", () => {
 
     expect(await storage.getItem("r")).toBeNull();
     expect(backing.has("r")).toBe(false);
+  });
+
+  test("clearIndexedDBPersistedState clears all persisted slice records", async () => {
+    const storage = createIndexedDBPersistStorage<{ a: number }>({
+      delayMs: 5,
+    });
+    storage.setItem("slice-a", { state: { a: 1 }, version: 1 });
+    await settlePersistWrites();
+    storage.setItem("slice-b", { state: { a: 2 }, version: 1 });
+    await settlePersistWrites();
+
+    await clearIndexedDBPersistedState();
+
+    const fresh = createIndexedDBPersistStorage<{ a: number }>();
+    expect(await fresh.getItem("slice-a")).toBeNull();
+    expect(await fresh.getItem("slice-b")).toBeNull();
   });
 
   test("halted writes are not committed to IndexedDB", async () => {

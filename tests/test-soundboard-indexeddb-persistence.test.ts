@@ -7,7 +7,7 @@
  */
 
 import "fake-indexeddb/auto";
-import { describe, test, expect, beforeEach } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { settleAllPersistWrites } from "../src/utils/persistWriteQueue";
 
 const SOUNDBOARD_KEY = "ryos:soundboard";
@@ -32,6 +32,12 @@ const makeBoard = (id: string, name: string) => ({
 
 beforeEach(async () => {
   await resetDb();
+});
+
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
 });
 
 describe("useSoundboardStore IndexedDB persistence", () => {
@@ -95,5 +101,40 @@ describe("useSoundboardStore IndexedDB persistence", () => {
     db.close();
 
     expect(record?.state?.boards?.[0]?.name).toBe("Recorded Board");
+  });
+
+  test("initializeBoards preserves boards populated while default fetch fails", async () => {
+    const { useSoundboardStore } = await import(
+      "../src/stores/useSoundboardStore"
+    );
+    useSoundboardStore.setState({
+      boards: [],
+      activeBoardId: null,
+      hasInitialized: false,
+    });
+
+    let resolveFetch: ((response: Response) => void) | null = null;
+    globalThis.fetch = (() =>
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })) as typeof fetch;
+
+    const initialize = useSoundboardStore.getState().initializeBoards();
+    useSoundboardStore.getState()._setBoards_internal([
+      makeBoard("in-flight", "In-flight Board"),
+    ]);
+    resolveFetch?.(
+      new Response("failed", {
+        status: 500,
+        statusText: "Internal Server Error",
+      })
+    );
+    await initialize;
+
+    const state = useSoundboardStore.getState();
+    expect(state.boards).toHaveLength(1);
+    expect(state.boards[0].name).toBe("In-flight Board");
+    expect(state.activeBoardId).toBe("in-flight");
+    expect(state.hasInitialized).toBe(true);
   });
 });
