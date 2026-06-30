@@ -7,6 +7,18 @@
 import { isAppleMusicCollectionTrack, type Track } from "@/stores/useIpodStore";
 
 /**
+ * `onMusicKitReady` immediately replays an already-configured singleton to new
+ * subscribers. A bridge that captured that same singleton during render must
+ * not treat the replay as a second readiness transition and restart its queue.
+ */
+export function isNewMusicKitInstance<T>(
+  currentInstance: T | null,
+  readyInstance: T
+): boolean {
+  return currentInstance !== readyInstance;
+}
+
+/**
  * Decide whether a `playbackStateDidChange` event should fan out to the
  * parent's `onEnded` callback (which triggers our own next-track handler).
  *

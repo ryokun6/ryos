@@ -76,6 +76,7 @@ const {
   getMusicKitEventItemId,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
   isStaleQueueLoad,
+  isNewMusicKitInstance,
   isLikelyMusicKitUnhandledRejection,
   isMusicKitPlaying,
   isMusicKitRedundantPlayError,
@@ -1455,6 +1456,18 @@ describe("AppleMusicPlayerBridge queue-load generation guard", () => {
 
   test("fresh when generation matches and effect is still active", () => {
     expect(isStaleQueueLoad(3, 3, false)).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge ready notification dedup", () => {
+  test("does not restart the queue when ready replays the captured singleton", () => {
+    const instance = {};
+    expect(isNewMusicKitInstance(instance, instance)).toBe(false);
+  });
+
+  test("refreshes the queue when a different singleton becomes ready", () => {
+    expect(isNewMusicKitInstance({}, {})).toBe(true);
+    expect(isNewMusicKitInstance(null, {})).toBe(true);
   });
 });
 

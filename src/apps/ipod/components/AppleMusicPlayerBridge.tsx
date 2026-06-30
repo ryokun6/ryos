@@ -11,6 +11,7 @@ import { getMusicKitInstance, onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
   getMusicKitEventItemId,
+  isNewMusicKitInstance,
   isLikelyMusicKitUnhandledRejection,
   isMusicKitPlaying,
   isMusicKitRedundantPlayError,
@@ -211,13 +212,16 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
     });
     const unsubscribe = onMusicKitReady((inst) => {
       if (cancelled) return;
+      const instanceChanged = isNewMusicKitInstance(instanceRef.current, inst);
       instanceRef.current = inst;
       appleMusicLog.debug("Player bridge received MusicKit instance", {
         isAuthorized: inst.isAuthorized,
         playbackState: inst.playbackState,
         storefrontId: inst.storefrontId,
       });
-      setInstanceReadyTick((tick) => tick + 1);
+      if (instanceChanged) {
+        setInstanceReadyTick((tick) => tick + 1);
+      }
       onReadyRef.current?.();
     });
     return () => {
