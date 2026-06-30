@@ -203,12 +203,12 @@ describe("Control Panels macOS 10.3 layout", () => {
       expect(macosxIcons.has(icon)).toBe(true);
     }
 
-    expect(categoriesSource.includes("desktop.png")).toBe(true);
+    expect(categoriesSource.includes('icon: "desktop.png"')).toBe(false);
     expect(categoriesSource.includes("control-panels/desktop-screen-saver.png")).toBe(
-      false
+      true
     );
     expect(getControlPanelCategory("desktop-screen-saver")?.icon).toBe(
-      "desktop.png"
+      "control-panels/desktop-screen-saver.png"
     );
     expect(categoriesSource.includes("sound.png")).toBe(true);
     expect(getControlPanelCategory("sound")?.icon).toBe("sound.png");

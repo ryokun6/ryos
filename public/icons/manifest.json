@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-30T19:59:55.952Z",
+  "generatedAt": "2026-06-30T20:10:13.417Z",
   "themes": {
     "default": [
       "admin.png",
@@ -31,6 +31,7 @@
       "control-panels/appearance-manager/preferences.png",
       "control-panels/appearance-pane.png",
       "control-panels/backup-restore.png",
+      "control-panels/desktop-screen-saver.png",
       "control-panels/displays.png",
       "control-panels/international.png",
       "control-panels/keyboard/app.png",
@@ -183,6 +184,7 @@
       "control-panels/appearance-manager/app.png",
       "control-panels/appearance-pane.png",
       "control-panels/backup-restore.png",
+      "control-panels/desktop-screen-saver.png",
       "control-panels/displays.png",
       "control-panels/energy-saver.png",
       "control-panels/international.png",
@@ -269,6 +271,7 @@
       "control-panels/appearance-manager/preferences.png",
       "control-panels/appearance-pane.png",
       "control-panels/backup-restore.png",
+      "control-panels/desktop-screen-saver.png",
       "control-panels/displays.png",
       "control-panels/international.png",
       "control-panels/keyboard/app.png",
@@ -422,6 +425,7 @@
       "control-panels/appearance-manager/preferences.png",
       "control-panels/appearance-pane.png",
       "control-panels/backup-restore.png",
+      "control-panels/desktop-screen-saver.png",
       "control-panels/displays.png",
       "control-panels/international.png",
       "control-panels/keyboard/app.png",

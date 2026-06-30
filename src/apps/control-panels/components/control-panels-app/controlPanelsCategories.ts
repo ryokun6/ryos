@@ -42,7 +42,7 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
   {
     id: "desktop-screen-saver",
     labelKey: "apps.control-panels.panes.desktopScreenSaver",
-    icon: "desktop.png",
+    icon: "control-panels/desktop-screen-saver.png",
   },
   {
     id: "international",
