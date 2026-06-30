@@ -1,7 +1,19 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
+import {
+  getAudioContext,
+  onContextChange,
+  resumeAudioContext,
+} from "@/lib/audioContext";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  canStartSoundSource,
+  getActiveSoundSourceCount,
+  releaseSoundSource,
+  resetActiveSoundSources,
+  stopAndReleaseOwnedSoundSources,
+  trackSoundSource,
+} from "@/utils/activeSoundSources";
 import { createClientLogger } from "@/utils/logger";
 
 const log = createClientLogger("Sound");
@@ -20,13 +32,24 @@ const MAX_CACHE_SIZE = isMobileDevice ? 15 : 30;
 
 // Global audio context and cache
 const audioBufferCache = new Map<string, AudioBuffer>();
-const activeSources = new Set<AudioBufferSourceNode>();
 // Pending load deduplication - prevent duplicate fetches for the same sound
 const pendingLoads = new Map<string, Promise<AudioBuffer>>();
 
 // Track the AudioContext instance we last saw so we can invalidate caches if a
 // new one is created by the shared helper.
 let lastCtx: AudioContext | null = null;
+
+const resetForAudioContext = (context: AudioContext): void => {
+  audioBufferCache.clear();
+  pendingLoads.clear();
+  resetActiveSoundSources();
+  lastCtx = context;
+};
+
+// A recreated context cannot deliver reliable `ended` events for sources from
+// the old context. Release them immediately so stale nodes cannot permanently
+// exhaust the global UI-sound concurrency budget.
+onContextChange(resetForAudioContext);
 
 // Preload a single sound and add it to cache
 const preloadSound = async (soundPath: string): Promise<AudioBuffer> => {
@@ -35,9 +58,7 @@ const preloadSound = async (soundPath: string): Promise<AudioBuffer> => {
   // that belong to a defunct context back into the pipeline.
   const currentCtx = getAudioContext();
   if (currentCtx !== lastCtx) {
-    audioBufferCache.clear();
-    pendingLoads.clear();
-    lastCtx = currentCtx;
+    resetForAudioContext(currentCtx);
   }
 
   if (audioBufferCache.has(soundPath)) {
@@ -106,15 +127,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
         gainNodeRef.current.disconnect();
       }
       // Stop all instance sources on cleanup
-      instanceSources.forEach((source) => {
-        try {
-          source.stop();
-          source.disconnect();
-        } catch {
-          // Source may have already ended
-        }
-      });
-      instanceSources.clear();
+      stopAndReleaseOwnedSoundSources(instanceSources);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only create gain node once on mount
@@ -160,6 +173,15 @@ export function useSound(soundPath: string, volume: number = 0.3) {
         gainNodeRef.current.connect(getAudioContext().destination);
       }
 
+      // If too many concurrent sources are active, skip to avoid audio congestion
+      if (!canStartSoundSource(MAX_CONCURRENT_SOURCES)) {
+        log.debug("Skipping sound; too many concurrent sources", {
+          activeSourceCount: getActiveSoundSourceCount(),
+          maxConcurrentSources: MAX_CONCURRENT_SOURCES,
+        });
+        return null;
+      }
+
       const source = getAudioContext().createBufferSource();
       source.buffer = audioBuffer;
       source.loop = loop;
@@ -171,31 +193,15 @@ export function useSound(soundPath: string, volume: number = 0.3) {
       const targetVolume = volume * uiVolume * masterVolume;
       gainNodeRef.current.gain.setValueAtTime(targetVolume, getAudioContext().currentTime);
 
-      // If too many concurrent sources are active, skip to avoid audio congestion
-      if (activeSources.size > MAX_CONCURRENT_SOURCES) {
-        log.debug("Skipping sound; too many concurrent sources", {
-          activeSourceCount: activeSources.size,
-          maxConcurrentSources: MAX_CONCURRENT_SOURCES,
-        });
-        return null;
-      }
-
       // Play the sound
       source.start(0);
 
       // Add to active sources (global and instance)
-      activeSources.add(source);
-      instanceSourcesRef.current.add(source);
+      trackSoundSource(source, instanceSourcesRef.current);
 
       // Clean up when done (only for non-looping sounds)
       source.onended = () => {
-        try {
-          source.disconnect();
-        } catch {
-          // Source may have already been disconnected
-        }
-        activeSources.delete(source);
-        instanceSourcesRef.current.delete(source);
+        releaseSoundSource(source);
       };
 
       return source;
@@ -216,15 +222,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     }
     // Stop sources after a short delay to allow the fade to complete
     setTimeout(() => {
-      instanceSourcesRef.current.forEach((source) => {
-        try {
-          source.stop();
-          source.disconnect();
-        } catch {
-          // Source may have already ended
-        }
-      });
-      instanceSourcesRef.current.clear();
+      stopAndReleaseOwnedSoundSources(instanceSourcesRef.current);
     }, 15);
   }, []);
 
