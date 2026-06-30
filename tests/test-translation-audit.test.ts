@@ -7,6 +7,7 @@ import {
   ENGLISH_STYLE_EXPECTATIONS,
   getExpectedAppleUiTerm,
 } from "../scripts/apple-ui-terminology";
+import { APPLE_GLOSSARY_SOURCE } from "../scripts/apple-ui-terminology-data";
 import { auditTranslations } from "../scripts/audit-translations";
 import de from "../src/lib/locales/de/translation.json";
 import en from "../src/lib/locales/en/translation.json";
@@ -105,8 +106,13 @@ describe("translation audit", () => {
     }
   });
 
-  test("uses the expanded terminology extracted from Apple glossaries", () => {
-    expect(Object.keys(APPLE_UI_TERMINOLOGY).length).toBeGreaterThanOrEqual(100);
+  test("uses terminology extracted from the macOS 26.1 corpus", () => {
+    expect(APPLE_GLOSSARY_SOURCE.platform).toBe("macOS");
+    expect(APPLE_GLOSSARY_SOURCE.version).toBe("26.1");
+    expect(APPLE_GLOSSARY_SOURCE.revision).toBe(
+      "95fff5dfcf53ed5b849756865e8e5c4c327f9bc7"
+    );
+    expect(Object.keys(APPLE_UI_TERMINOLOGY).length).toBeGreaterThanOrEqual(90);
     expect(APPLE_UI_TERMINOLOGY.Settings.pt).toBe("Ajustes");
     expect(APPLE_UI_TERMINOLOGY["Full Screen"].it).toBe("A tutto schermo");
     expect(APPLE_UI_TERMINOLOGY.Copy["zh-TW"]).toBe("拷貝");

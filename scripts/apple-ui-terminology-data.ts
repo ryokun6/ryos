@@ -1,22 +1,19 @@
 /**
- * Generated from Apple's downloaded macOS localization glossaries.
+ * Generated from applelocalization's raw macOS 26.1 localization corpus.
  *
- * Source packages: Brazilian, French, German, Italian, Japanese, Korean,
- * Russian, Spanish, and Traditional Chinese. English keys are Apple's base
- * strings; localized values are the dominant trimmed exact-match translations.
+ * English keys are exact source-string matches. Localized values are the
+ * dominant trimmed translations for ryOS's desktop locale variants.
  * Regenerate with `bun run i18n:apple-glossary`.
  */
 
-export const APPLE_GLOSSARY_SOURCE_SHA256 = {
-  "Traditional_Chinese.dmg": "67c1edf2bce3ef9036a425d8871b63efd04464516bda6a7da1590344663a7ab4",
-  "Japanese.dmg": "8af95f25ed1cd1fdf22acff9e9e703ba9879d29161403d0a04fe5b314c6b9f1d",
-  "Korean.dmg": "b598d6c4226da5df487e2b80a1e2ac340c360f50de71c294dc85242e14549ed3",
-  "French.dmg": "cf489725ff7c9403dadbc6f46a14a60af75a0b88e0684f0f7fd852d6c9b34a0c",
-  "German.dmg": "2824419eebc74ebed5f81a150df16f290fd64fe03f041200d31adcd361d62439",
-  "Spanish.dmg": "f6ccd762ad5d69c62f05cb2c9888176fca3a12ac15ac8d1258380a17b6210302",
-  "Brazilian.dmg": "04400ea7164d23b6583a8618669d4c9bccefe34ed416586ead86d17d93bce140",
-  "Italian.dmg": "4e21935d037882ce00d99ef3ba34da4b2ba7d7275a228070360502cdd3017722",
-  "Russian.dmg": "d6c4d758d002db6c37719ba4556b015baefd8664e5bea8633449726b01c38751"
+export const APPLE_GLOSSARY_SOURCE = {
+  "websiteRepository": "https://github.com/kishikawakatsumi/applelocalization-web",
+  "dataRepository": "https://github.com/kishikawakatsumi/applelocalization-tools",
+  "revision": "95fff5dfcf53ed5b849756865e8e5c4c327f9bc7",
+  "tree": "e03797c80f73806faeec8ff16b666b1b74ba48d3",
+  "path": "data/macos/26.1",
+  "platform": "macOS",
+  "version": "26.1"
 } as const;
 
 export const RAW_APPLE_UI_TERMINOLOGY = {
@@ -73,13 +70,13 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "es": "Iniciar sesión",
     "pt": "Iniciar Sessão",
     "it": "Accedi",
-    "ru": "Войти"
+    "ru": "Вход"
   },
   "Sign Out": {
     "zh-TW": "登出",
     "ja": "サインアウト",
     "ko": "로그아웃",
-    "fr": "Fermer la session",
+    "fr": "Déconnexion",
     "de": "Abmelden",
     "es": "Cerrar sesión",
     "pt": "Finalizar Sessão",
@@ -161,7 +158,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "es": "Pantalla completa",
     "pt": "Tela Cheia",
     "it": "A tutto schermo",
-    "ru": "Во весь экран"
+    "ru": "На весь экран"
   },
   "Help": {
     "zh-TW": "輔助說明",
@@ -211,8 +208,8 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "zh-TW": "設定密碼",
     "ja": "パスワードを設定",
     "ko": "암호 설정",
-    "fr": "Définir le mot de passe",
-    "de": "Passwort festlegen",
+    "fr": "Définir un mot de passe",
+    "de": "Festlegen",
     "es": "Definir contraseña",
     "pt": "Definir Senha",
     "it": "Imposta password",
@@ -256,22 +253,11 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ja": "アプリケーション",
     "ko": "응용 프로그램",
     "fr": "Applications",
-    "de": "Programme",
+    "de": "Apps",
     "es": "Aplicaciones",
     "pt": "Aplicativos",
     "it": "Applicazioni",
-    "ru": "Программы"
-  },
-  "Unknown Artist": {
-    "zh-TW": "未知的藝人",
-    "ja": "不明なアーティスト",
-    "ko": "알 수 없는 아티스트",
-    "fr": "Artiste inconnu",
-    "de": "Unbekannter Künstler",
-    "es": "Artista desconocido",
-    "pt": "Artista Desconhecido",
-    "it": "Artista sconosciuto",
-    "ru": "Неизвестный артист"
+    "ru": "Приложения"
   },
   "Status": {
     "zh-TW": "狀態",
@@ -350,17 +336,6 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "it": "Brani",
     "ru": "Песни"
   },
-  "Lyrics": {
-    "zh-TW": "歌詞",
-    "ja": "歌詞",
-    "ko": "가사",
-    "fr": "Paroles",
-    "de": "Liedtext",
-    "es": "Letra",
-    "pt": "Letra",
-    "it": "Testo",
-    "ru": "Текст"
-  },
   "Screen Saver": {
     "zh-TW": "螢幕保護程式",
     "ja": "スクリーンセーバ",
@@ -382,17 +357,6 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "pt": "Lista Numerada",
     "it": "Elenco numerato",
     "ru": "Нумерованный список"
-  },
-  "Stickies": {
-    "zh-TW": "便條紙",
-    "ja": "スティッキーズ",
-    "ko": "스티커",
-    "fr": "Aide-mémoire",
-    "de": "Notizzettel",
-    "es": "Notas Adhesivas",
-    "pt": "Anotações",
-    "it": "Memo",
-    "ru": "Записки"
   },
   "Copy": {
     "zh-TW": "拷貝",
@@ -484,7 +448,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
   },
   "Images": {
     "zh-TW": "影像",
-    "ja": "イメージ",
+    "ja": "画像",
     "ko": "이미지",
     "fr": "Images",
     "de": "Bilder",
@@ -520,7 +484,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ja": "ユーザ",
     "ko": "사용자",
     "fr": "Utilisateur",
-    "de": "Benutzer",
+    "de": "Benutzer:in",
     "es": "Usuario",
     "pt": "Usuário",
     "it": "Utente",
@@ -533,7 +497,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "fr": "Itinéraire",
     "de": "Route",
     "es": "Ruta",
-    "pt": "Itinerários",
+    "pt": "Trajeto",
     "it": "Indicazioni",
     "ru": "Маршруты"
   },
@@ -552,7 +516,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "zh-TW": "計算機",
     "ja": "計算機",
     "ko": "계산기",
-    "fr": "Calculette",
+    "fr": "Calculatrice",
     "de": "Rechner",
     "es": "Calculadora",
     "pt": "Calculadora",
@@ -562,24 +526,13 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
   "Save Changes": {
     "zh-TW": "儲存所作更動",
     "ja": "変更内容を保存",
-    "ko": "변경사항 저장",
+    "ko": "변경 사항 저장",
     "fr": "Enregistrer les modifications",
     "de": "Änderungen sichern",
     "es": "Guardar cambios",
     "pt": "Salvar Alterações",
     "it": "Salva modifiche",
     "ru": "Сохранить"
-  },
-  "Logs": {
-    "zh-TW": "記錄",
-    "ja": "ログ",
-    "ko": "로그",
-    "fr": "Historiques",
-    "de": "Protokolle",
-    "es": "Registros",
-    "pt": "Registros",
-    "it": "Log",
-    "ru": "Журналы"
   },
   "Services": {
     "zh-TW": "服務",
@@ -629,12 +582,12 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "zh-TW": "縮到最小",
     "ja": "しまう",
     "ko": "최소화",
-    "fr": "Placer dans le Dock",
-    "de": "Im Dock ablegen",
+    "fr": "Minimiser",
+    "de": "Minimieren",
     "es": "Minimizar",
     "pt": "Minimizar",
     "it": "Contrai",
-    "ru": "Убрать в Dock"
+    "ru": "Убрать в Dock"
   },
   "Show Colors": {
     "zh-TW": "顯示顏色",
@@ -663,7 +616,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ja": "アーティスト",
     "ko": "아티스트",
     "fr": "Artiste",
-    "de": "Künstler",
+    "de": "Künstler:in",
     "es": "Artista",
     "pt": "Artista",
     "it": "Artista",
@@ -729,7 +682,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ja": "アーティスト",
     "ko": "아티스트",
     "fr": "Artistes",
-    "de": "Künstler",
+    "de": "Künstler:innen",
     "es": "Artistas",
     "pt": "Artistas",
     "it": "Artisti",
@@ -741,7 +694,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ko": "플레이리스트",
     "fr": "Playlists",
     "de": "Playlists",
-    "es": "Listas de reproducción",
+    "es": "Playlists",
     "pt": "Playlists",
     "it": "Playlist",
     "ru": "Плейлисты"
@@ -809,7 +762,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "de": "Reiner Text",
     "es": "Texto sin formato",
     "pt": "Texto Simples",
-    "it": "Solo testo",
+    "it": "Testo semplice",
     "ru": "Простой текст"
   },
   "Sidebar": {
@@ -857,7 +810,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Очистить Корзину"
   },
   "Inches": {
-    "zh-TW": "英吋",
+    "zh-TW": "英寸",
     "ja": "インチ",
     "ko": "인치",
     "fr": "Pouces",
@@ -880,25 +833,14 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
   },
   "Speak": {
     "zh-TW": "朗讀",
-    "ja": "読み上げる",
+    "ja": "読み上げ",
     "ko": "말하기",
-    "fr": "Prononcer",
+    "fr": "Énoncer",
     "de": "Sprechen",
-    "es": "Hablar",
+    "es": "Leer",
     "pt": "Falar",
     "it": "Leggi",
     "ru": "Произнести"
-  },
-  "Metadata": {
-    "zh-TW": "後設資料",
-    "ja": "メタデータ",
-    "ko": "메타데이터",
-    "fr": "Métadonnées",
-    "de": "Metadaten",
-    "es": "Metadatos",
-    "pt": "Metadados",
-    "it": "Metadati",
-    "ru": "Метаданные"
   },
   "Time Zone": {
     "zh-TW": "時區",
@@ -910,17 +852,6 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "pt": "Fuso Horário",
     "it": "Fuso orario",
     "ru": "Часовой пояс"
-  },
-  "Genius": {
-    "zh-TW": "智選推薦",
-    "ja": "Genius",
-    "ko": "Genius",
-    "fr": "Genius",
-    "de": "Genius",
-    "es": "Genius",
-    "pt": "Genius",
-    "it": "Genius",
-    "ru": "Genius"
   },
   "Rain": {
     "zh-TW": "下雨",
@@ -937,11 +868,11 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "zh-TW": "已加入",
     "ja": "追加済み",
     "ko": "추가됨",
-    "fr": "Ajouté",
+    "fr": "Élément ajouté",
     "de": "Hinzugefügt",
     "es": "Añadido",
     "pt": "Adicionado",
-    "it": "Aggiunto",
+    "it": "Aggiunta",
     "ru": "Добавлено"
   },
   "Next Page": {
@@ -979,7 +910,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
   },
   "JPEG Image": {
     "zh-TW": "JPEG影像",
-    "ja": "JPEGイメージ",
+    "ja": "JPEG画像",
     "ko": "JPEG 이미지",
     "fr": "Image JPEG",
     "de": "JPEG-Bild",
@@ -988,20 +919,9 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "it": "Immagine JPEG",
     "ru": "Изображение JPEG"
   },
-  "GIF Image": {
-    "zh-TW": "GIF影像",
-    "ja": "GIFイメージ",
-    "ko": "GIF 이미지",
-    "fr": "Image GIF",
-    "de": "GIF-Bild",
-    "es": "Imagen GIF",
-    "pt": "Imagem GIF",
-    "it": "Immagine GIF",
-    "ru": "Изображение GIF"
-  },
   "PNG Image": {
     "zh-TW": "PNG影像",
-    "ja": "PNGイメージ",
+    "ja": "PNG画像",
     "ko": "PNG 이미지",
     "fr": "Image PNG",
     "de": "PNG-Bild",
@@ -1009,28 +929,6 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "pt": "Imagem PNG",
     "it": "Immagine PNG",
     "ru": "Изображение PNG"
-  },
-  "Next track": {
-    "zh-TW": "下一個音軌",
-    "ja": "次のトラック",
-    "ko": "다음 트랙",
-    "fr": "Piste suivante",
-    "de": "Nächster Titel",
-    "es": "Pista siguiente",
-    "pt": "Próxima faixa",
-    "it": "Traccia successiva",
-    "ru": "Следующая дорожка"
-  },
-  "Previous track": {
-    "zh-TW": "上一個音軌",
-    "ja": "前のトラック",
-    "ko": "이전 트랙",
-    "fr": "Piste précédente",
-    "de": "Vorheriger Titel",
-    "es": "Pista anterior",
-    "pt": "Faixa anterior",
-    "it": "Traccia precedente",
-    "ru": "Предыдущая дорожка"
   },
   "Photo Booth": {
     "zh-TW": "Photo Booth",
@@ -1045,7 +943,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
   },
   "Degrees": {
     "zh-TW": "度數",
-    "ja": "度",
+    "ja": "ど",
     "ko": "각도",
     "fr": "Degrés",
     "de": "Grad",
@@ -1078,7 +976,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
   },
   "Museum": {
     "zh-TW": "博物館",
-    "ja": "美術館",
+    "ja": "博物館/美術館",
     "ko": "박물관",
     "fr": "Musée",
     "de": "Museum",
@@ -1097,17 +995,6 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "pt": "Reproduzir Música",
     "it": "Riproduci musica",
     "ru": "Воспроизвести музыку"
-  },
-  "Shuffle Songs": {
-    "zh-TW": "隨機播放歌曲",
-    "ja": "曲をシャッフル",
-    "ko": "노래 임의 재생",
-    "fr": "Mix de morceaux",
-    "de": "Titel zufällig wiedergeben",
-    "es": "Canciones aleatorias",
-    "pt": "Músicas Aleatórias",
-    "it": "Riproduzione casuale",
-    "ru": "Перемешать песни"
   },
   "Zoo": {
     "zh-TW": "動物園",
@@ -1131,72 +1018,6 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "it": "Aggiungi al Dock",
     "ru": "Добавить в Dock"
   },
-  "Examples": {
-    "zh-TW": "範例",
-    "ja": "例",
-    "ko": "예제",
-    "fr": "Exemples",
-    "de": "Beispiele",
-    "es": "Ejemplos",
-    "pt": "Exemplos",
-    "it": "Esempi",
-    "ru": "Примеры"
-  },
-  "New Finder Window": {
-    "zh-TW": "新增Finder視窗",
-    "ja": "新規Finderウインドウ",
-    "ko": "새로운 Finder 윈도우",
-    "fr": "Nouvelle fenêtre Finder",
-    "de": "Neues Fenster",
-    "es": "Nueva ventana del Finder",
-    "pt": "Nova Janela do Finder",
-    "it": "Nuova finestra del Finder",
-    "ru": "Новое окно Finder"
-  },
-  "No Songs": {
-    "zh-TW": "沒有歌曲",
-    "ja": "曲なし",
-    "ko": "노래 없음",
-    "fr": "Aucun morceau",
-    "de": "Keine Musiktitel",
-    "es": "No hay canciones",
-    "pt": "Nenhuma Música",
-    "it": "Nessun brano",
-    "ru": "Нет песен"
-  },
-  "memory minus": {
-    "zh-TW": "記憶累減",
-    "ja": "メモリ減算",
-    "ko": "메모리에서 빼기",
-    "fr": "soustraire à la mémoire",
-    "de": "Speicher subtrahieren",
-    "es": "memoria menos",
-    "pt": "memória menos",
-    "it": "sottrai dalla memoria",
-    "ru": "минус в памяти"
-  },
-  "memory plus": {
-    "zh-TW": "記憶累加",
-    "ja": "メモリ加算",
-    "ko": "메모리에 더하기",
-    "fr": "ajouter à la mémoire",
-    "de": "Speicher addieren",
-    "es": "memoria más",
-    "pt": "memória mais",
-    "it": "somma alla memoria",
-    "ru": "плюс в памяти"
-  },
-  "memory recall": {
-    "zh-TW": "顯示記憶數值",
-    "ja": "メモリ読み出し",
-    "ko": "메모리 재호출",
-    "fr": "rappeler la mémoire",
-    "de": "Speicher zurückholen",
-    "es": "recuperar memoria",
-    "pt": "recuperação de memória",
-    "it": "richiama dalla memoria",
-    "ru": "вызвать из памяти"
-  },
   "Email address": {
     "zh-TW": "電子郵件地址",
     "ja": "メールアドレス",
@@ -1205,8 +1026,8 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "de": "E-Mail-Adresse",
     "es": "Dirección de correo electrónico",
     "pt": "Endereço de e‑mail",
-    "it": "Indirizzo e-mail",
-    "ru": "Адрес e-mail"
+    "it": "Indirizzo email",
+    "ru": "Адрес e‑mail"
   },
   "OK": {
     "zh-TW": "好",
@@ -1224,7 +1045,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ja": "アプリケーション",
     "ko": "응용 프로그램",
     "fr": "Application",
-    "de": "Programm",
+    "de": "App",
     "es": "Aplicación",
     "pt": "Aplicativo",
     "it": "Applicazione",
@@ -1232,7 +1053,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
   },
   "App": {
     "zh-TW": "App",
-    "ja": "App",
+    "ja": "アプリ",
     "ko": "앱",
     "fr": "App",
     "de": "App",
@@ -1240,27 +1061,5 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "pt": "App",
     "it": "App",
     "ru": "Приложение"
-  },
-  "Directory": {
-    "zh-TW": "目錄",
-    "ja": "ディレクトリ",
-    "ko": "디렉토리",
-    "fr": "Répertoire",
-    "de": "Verzeichnis",
-    "es": "Directorio",
-    "pt": "Diretório",
-    "it": "Directory",
-    "ru": "Каталог"
-  },
-  "About Terminal": {
-    "zh-TW": "關於終端機",
-    "ja": "ターミナルについて",
-    "ko": "터미널에 관하여",
-    "fr": "À propos de Terminal",
-    "de": "Über Terminal",
-    "es": "Acerca de Terminal",
-    "pt": "Sobre o Terminal",
-    "it": "Informazioni su Terminale",
-    "ru": "О приложении «Терминал»"
   }
 } as const;

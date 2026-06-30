@@ -49,6 +49,11 @@ const LOCALE_LANGUAGE_CODES: Record<GlossaryLocale, ReadonlySet<string>> = {
   ru: new Set(["ru", "ru-macos"]),
 };
 
+const TERM_FRAMEWORK_HINTS: Partial<Record<string, RegExp>> = {
+  Playlists: /^(?:MusicKitInternal|_MusicKitInternal_SwiftUI)\.framework$/u,
+};
+const ELLIPSIS_SUFFIX = /(?:\.\.\.|…|⋯)$/u;
+
 export interface RawLocalization {
   filename: string;
   language: string;
@@ -339,11 +344,19 @@ export function collectDocumentTranslations(
 ): void {
   for (const [term, localizations] of Object.entries(document.localizations)) {
     if (!terms.has(term)) continue;
+    const frameworkHint = TERM_FRAMEWORK_HINTS[term];
+    if (frameworkHint && !frameworkHint.test(document.framework)) continue;
 
     for (const localization of localizations) {
       const locale = localeForLanguage(localization.language);
       const localized = localization.target.trim();
-      if (!locale || !localized) continue;
+      if (
+        !locale ||
+        !localized ||
+        (!ELLIPSIS_SUFFIX.test(term) && ELLIPSIS_SUFFIX.test(localized))
+      ) {
+        continue;
+      }
       const localeCounts = counts[term][locale];
       localeCounts.set(localized, (localeCounts.get(localized) ?? 0) + 1);
     }

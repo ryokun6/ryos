@@ -21,6 +21,18 @@ const expectedSettings = {
   ru: "Настройки",
 } as const;
 
+const expectedPlaylists = {
+  "zh-TW": "播放列表",
+  ja: "プレイリスト",
+  ko: "플레이리스트",
+  fr: "Playlists",
+  de: "Playlists",
+  es: "Listas de reproducción",
+  pt: "Playlists",
+  it: "Playlist",
+  ru: "Плейлисты",
+} as const;
+
 const languageCodes = {
   "zh-TW": "zh_TW",
   ja: "Japanese",
@@ -42,11 +54,12 @@ function localization(language: string, target: string): RawLocalization {
 }
 
 function document(
-  localizations: Record<string, RawLocalization[]>
+  localizations: Record<string, RawLocalization[]>,
+  framework = "System Settings.app"
 ): RawLocalizationDocument {
   return {
     bundlePath: "/System/Applications/System Settings.app",
-    framework: "System Settings.app",
+    framework,
     localizations,
   };
 }
@@ -72,7 +85,8 @@ describe("macOS 26 Apple glossary extractor", () => {
       localization("fr", "Paramètres"),
       localization("fr_CA", "Paramètres"),
       localization("pt_PT", "Definições"),
-      localization("zh_HK", "設定")
+      localization("zh_HK", "設定"),
+      ...Array.from({ length: 10 }, () => localization("fr", "Réglages…"))
     );
 
     expect(
@@ -86,6 +100,34 @@ describe("macOS 26 Apple glossary extractor", () => {
         ]
       )
     ).toEqual({ Settings: expectedSettings });
+  });
+
+  test("uses a term-specific framework hint for ambiguous source text", () => {
+    const correct = Object.entries(expectedPlaylists).map(
+      ([locale, translation]) =>
+        localization(
+          languageCodes[locale as keyof typeof languageCodes],
+          translation
+        )
+    );
+    const unrelated = Object.keys(expectedPlaylists).flatMap((locale) =>
+      Array.from({ length: 10 }, () =>
+        localization(
+          languageCodes[locale as keyof typeof languageCodes],
+          "Wrong podcast meaning"
+        )
+      )
+    );
+
+    expect(
+      extractTerminologyFromDocuments(
+        ["Playlists"],
+        [
+          document({ Playlists: unrelated }, "Podcasts.app"),
+          document({ Playlists: correct }, "MusicKitInternal.framework"),
+        ]
+      )
+    ).toEqual({ Playlists: expectedPlaylists });
   });
 
   test("streams the pinned manifest and raw localization files", async () => {
