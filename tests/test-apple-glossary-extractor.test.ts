@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   APPLE_LOCALIZATION_SOURCE,
-  buildSearchUrl,
-  fetchTermTranslations,
+  buildRawFileUrl,
+  extractTerminology,
+  extractTerminologyFromDocuments,
   renderTypescript,
-  selectDominantTranslations,
-  type AppleLocalizationRow,
+  type RawLocalization,
+  type RawLocalizationDocument,
 } from "../scripts/extract-apple-terminology";
 
 const expectedSettings = {
@@ -32,100 +33,116 @@ const languageCodes = {
   ru: "ru",
 } as const;
 
-function row(
-  language: string,
-  target: string,
-  source = "Settings"
-): AppleLocalizationRow {
+function localization(language: string, target: string): RawLocalization {
   return {
-    source,
     target,
     language,
-    file_name: "Localizable.strings",
-    bundle_name: "SystemSettings.app",
+    filename: "Localizable.strings",
+  };
+}
+
+function document(
+  localizations: Record<string, RawLocalization[]>
+): RawLocalizationDocument {
+  return {
+    bundlePath: "/System/Applications/System Settings.app",
+    framework: "System Settings.app",
+    localizations,
   };
 }
 
 describe("macOS 26 Apple glossary extractor", () => {
-  test("builds an exact-source query for every supported language group", () => {
-    const url = new URL(buildSearchUrl("Save Changes", 2));
-
-    expect(`${url.origin}${url.pathname}`).toBe(
-      APPLE_LOCALIZATION_SOURCE.api
+  test("builds a pinned raw-data URL with an encoded filename", () => {
+    expect(buildRawFileUrl("System Settings #1.json")).toBe(
+      `https://raw.githubusercontent.com/kishikawakatsumi/applelocalization-tools/${APPLE_LOCALIZATION_SOURCE.revision}/data/macos/26.1/System%20Settings%20%231.json`
     );
-    expect(url.searchParams.get("c")).toBe("key");
-    expect(url.searchParams.get("o")).toBe("equal");
-    expect(url.searchParams.get("q")).toBe("Save Changes");
-    expect(url.searchParams.get("size")).toBe("200");
-    expect(url.searchParams.get("page")).toBe("2");
-    expect(url.searchParams.getAll("l")).toEqual([
-      "Traditional Chinese",
-      "Japanese",
-      "Korean",
-      "French",
-      "German",
-      "Spanish",
-      "Portuguese",
-      "Italian",
-      "Russian",
-    ]);
   });
 
   test("selects dominant desktop translations and excludes regional noise", () => {
-    const rows = Object.entries(expectedSettings).flatMap(
-      ([locale, translation]) => [
-        row(languageCodes[locale as keyof typeof languageCodes], translation),
-        row(languageCodes[locale as keyof typeof languageCodes], ` ${translation} `),
-      ]
+    const settings = Object.entries(expectedSettings).flatMap(
+      ([locale, translation]) =>
+        Array.from({ length: 4 }, () =>
+          localization(
+            languageCodes[locale as keyof typeof languageCodes],
+            ` ${translation} `
+          )
+        )
     );
-    rows.push(
-      row("fr", "Paramètres"),
-      row("fr_CA", "Paramètres"),
-      row("pt_PT", "Definições"),
-      row("zh_HK", "設定"),
-      row("fr", "Ignore me", "Different source")
+    settings.push(
+      localization("fr", "Paramètres"),
+      localization("fr_CA", "Paramètres"),
+      localization("pt_PT", "Definições"),
+      localization("zh_HK", "設定")
     );
 
-    expect(selectDominantTranslations("Settings", rows)).toEqual(
-      expectedSettings
-    );
+    expect(
+      extractTerminologyFromDocuments(
+        ["Settings"],
+        [
+          document({
+            Settings: settings,
+            "Different source": [localization("fr", "Ignore me")],
+          }),
+        ]
+      )
+    ).toEqual({ Settings: expectedSettings });
   });
 
-  test("fetches every result page before selecting translations", async () => {
-    const rows = Object.entries(expectedSettings).map(
+  test("streams the pinned manifest and raw localization files", async () => {
+    const settings = Object.entries(expectedSettings).map(
       ([locale, translation]) =>
-        row(languageCodes[locale as keyof typeof languageCodes], translation)
+        localization(
+          languageCodes[locale as keyof typeof languageCodes],
+          translation
+        )
     );
-    const requestedPages: string[] = [];
+    const requestedUrls: string[] = [];
     const fetchImpl = async (input: string | URL | Request) => {
       const url = new URL(String(input));
-      const page = url.searchParams.get("page") ?? "1";
-      requestedPages.push(page);
-      const data = page === "1" ? rows.slice(0, 4) : rows.slice(4);
-      return Response.json({
-        data,
-        last_page: 2,
-        total: rows.length,
-      });
+      requestedUrls.push(url.toString());
+      if (url.pathname === "/tree") {
+        return Response.json({
+          sha: "tree-sha",
+          tree: [
+            {
+              path: "System Settings.json",
+              mode: "100644",
+              type: "blob",
+              sha: "blob-sha",
+              size: 123,
+            },
+          ],
+          truncated: false,
+        });
+      }
+      return Response.json(document({ Settings: settings }));
     };
 
     await expect(
-      fetchTermTranslations("Settings", {
-        apiUrl: "https://example.test/search",
+      extractTerminology(["Settings"], {
+        manifestUrl: "https://example.test/tree",
+        rawBaseUrl: "https://example.test/raw",
         fetchImpl,
         retries: 1,
       })
-    ).resolves.toEqual(expectedSettings);
-    expect(requestedPages.sort()).toEqual(["1", "2"]);
+    ).resolves.toEqual({ Settings: expectedSettings });
+    expect(requestedUrls).toEqual([
+      "https://example.test/tree",
+      "https://example.test/raw/System%20Settings.json",
+    ]);
   });
 
-  test("renders macOS 26 source provenance with generated terminology", () => {
+  test("renders pinned macOS 26.1 source provenance", () => {
     const output = renderTypescript({ Settings: expectedSettings });
 
     expect(output).toContain(
       "https://github.com/kishikawakatsumi/applelocalization-web"
     );
-    expect(output).toContain('"version": "26"');
+    expect(output).toContain(
+      "https://github.com/kishikawakatsumi/applelocalization-tools"
+    );
+    expect(output).toContain('"version": "26.1"');
+    expect(output).toContain(APPLE_LOCALIZATION_SOURCE.revision);
     expect(output).toContain('"Settings": {');
     expect(output).toContain('"pt": "Ajustes"');
   });

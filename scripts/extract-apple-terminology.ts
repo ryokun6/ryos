@@ -1,17 +1,21 @@
 #!/usr/bin/env bun
 /**
- * Regenerate ryOS terminology from the macOS 26 corpus indexed by
- * applelocalization-web.
+ * Regenerate ryOS terminology from the raw macOS 26.1 localization corpus
+ * published by the applelocalization project.
  */
-import { createHash } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 
 export const APPLE_LOCALIZATION_SOURCE = {
-  repository: "https://github.com/kishikawakatsumi/applelocalization-web",
-  api: "https://applelocalization.com/api/macos/26/search/advanced",
+  websiteRepository:
+    "https://github.com/kishikawakatsumi/applelocalization-web",
+  dataRepository:
+    "https://github.com/kishikawakatsumi/applelocalization-tools",
+  revision: "95fff5dfcf53ed5b849756865e8e5c4c327f9bc7",
+  tree: "e03797c80f73806faeec8ff16b666b1b74ba48d3",
+  path: "data/macos/26.1",
   platform: "macOS",
-  version: "26",
+  version: "26.1",
 } as const;
 
 export const LOCALE_ORDER = [
@@ -29,21 +33,9 @@ export const LOCALE_ORDER = [
 export type GlossaryLocale = (typeof LOCALE_ORDER)[number];
 export type Terminology = Record<string, Record<GlossaryLocale, string>>;
 
-const LANGUAGE_GROUPS = [
-  "Traditional Chinese",
-  "Japanese",
-  "Korean",
-  "French",
-  "German",
-  "Spanish",
-  "Portuguese",
-  "Italian",
-  "Russian",
-] as const;
-
 /**
- * applelocalization-web language filters include regional and embedded-platform
- * variants. Keep only the desktop language codes that match ryOS's locales.
+ * The raw corpus contains regional and embedded-platform variants. Keep only
+ * the desktop language codes that match ryOS's locales.
  */
 const LOCALE_LANGUAGE_CODES: Record<GlossaryLocale, ReadonlySet<string>> = {
   "zh-TW": new Set(["zh_TW", "zh_TW-macos"]),
@@ -57,18 +49,31 @@ const LOCALE_LANGUAGE_CODES: Record<GlossaryLocale, ReadonlySet<string>> = {
   ru: new Set(["ru", "ru-macos"]),
 };
 
-export interface AppleLocalizationRow {
-  source: string;
-  target: string;
+export interface RawLocalization {
+  filename: string;
   language: string;
-  file_name: string;
-  bundle_name: string;
+  target: string;
 }
 
-interface SearchResponse {
-  data: AppleLocalizationRow[];
-  last_page: number;
-  total: number;
+export interface RawLocalizationDocument {
+  bundlePath: string;
+  framework: string;
+  localizations: Record<string, RawLocalization[]>;
+  loctablePath?: string;
+}
+
+interface GithubTreeEntry {
+  path: string;
+  mode: string;
+  type: "blob" | "tree";
+  sha: string;
+  size?: number;
+}
+
+interface GithubTreeResponse {
+  sha: string;
+  tree: GithubTreeEntry[];
+  truncated: boolean;
 }
 
 type FetchLike = (
@@ -76,22 +81,34 @@ type FetchLike = (
   init?: RequestInit
 ) => Promise<Response>;
 
-interface FetchOptions {
-  apiUrl?: string;
+interface ExtractionOptions {
   cacheDir?: string;
+  concurrency?: number;
   fetchImpl?: FetchLike;
+  manifestUrl?: string;
+  rawBaseUrl?: string;
   retries?: number;
+  sourceDir?: string;
 }
 
-interface CliOptions extends FetchOptions {
+interface CliOptions extends ExtractionOptions {
   concurrency: number;
   output: string;
+  retries: number;
 }
+
+type LocaleCounts = Record<GlossaryLocale, Map<string, number>>;
+type TermCounts = Record<string, LocaleCounts>;
 
 const SCRIPT_DIR = import.meta.dir;
 const TERMS_FILE = join(SCRIPT_DIR, "apple-ui-terminology-terms.json");
 const DEFAULT_OUTPUT_FILE = join(SCRIPT_DIR, "apple-ui-terminology-data.ts");
-const PAGE_SIZE = 200;
+const DEFAULT_CONCURRENCY = 16;
+const GITHUB_API_ROOT = "https://api.github.com/repos";
+const RAW_GITHUB_ROOT = "https://raw.githubusercontent.com";
+const REPOSITORY_PATH = "kishikawakatsumi/applelocalization-tools";
+const DEFAULT_MANIFEST_URL = `${GITHUB_API_ROOT}/${REPOSITORY_PATH}/git/trees/${APPLE_LOCALIZATION_SOURCE.tree}`;
+const DEFAULT_RAW_BASE_URL = `${RAW_GITHUB_ROOT}/${REPOSITORY_PATH}/${APPLE_LOCALIZATION_SOURCE.revision}/${APPLE_LOCALIZATION_SOURCE.path}`;
 
 function requireInteger(value: string, flag: string): number {
   const parsed = Number(value);
@@ -111,8 +128,7 @@ function readFlagValue(args: string[], index: number): string {
 
 export function parseCliOptions(args: string[]): CliOptions {
   const options: CliOptions = {
-    apiUrl: APPLE_LOCALIZATION_SOURCE.api,
-    concurrency: 4,
+    concurrency: DEFAULT_CONCURRENCY,
     output: DEFAULT_OUTPUT_FILE,
     retries: 3,
   };
@@ -120,10 +136,6 @@ export function parseCliOptions(args: string[]): CliOptions {
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index];
     switch (flag) {
-      case "--api-url":
-        options.apiUrl = readFlagValue(args, index);
-        index += 1;
-        break;
       case "--cache-dir":
         options.cacheDir = resolve(readFlagValue(args, index));
         index += 1;
@@ -135,12 +147,24 @@ export function parseCliOptions(args: string[]): CliOptions {
         );
         index += 1;
         break;
+      case "--manifest-url":
+        options.manifestUrl = readFlagValue(args, index);
+        index += 1;
+        break;
       case "--output":
         options.output = resolve(readFlagValue(args, index));
         index += 1;
         break;
+      case "--raw-base-url":
+        options.rawBaseUrl = readFlagValue(args, index);
+        index += 1;
+        break;
       case "--retries":
         options.retries = requireInteger(readFlagValue(args, index), flag);
+        index += 1;
+        break;
+      case "--source-dir":
+        options.sourceDir = resolve(readFlagValue(args, index));
         index += 1;
         break;
       default:
@@ -151,78 +175,90 @@ export function parseCliOptions(args: string[]): CliOptions {
   return options;
 }
 
-export function buildSearchUrl(
-  term: string,
-  page: number,
-  apiUrl = APPLE_LOCALIZATION_SOURCE.api
+export function buildRawFileUrl(
+  file: string,
+  rawBaseUrl = DEFAULT_RAW_BASE_URL
 ): string {
-  const url = new URL(apiUrl);
-  url.searchParams.set("c", "key");
-  url.searchParams.set("o", "equal");
-  url.searchParams.set("q", term);
-  url.searchParams.set("size", String(PAGE_SIZE));
-  url.searchParams.set("page", String(page));
-  for (const language of LANGUAGE_GROUPS) {
-    url.searchParams.append("l", language);
-  }
-  return url.toString();
+  const encodedFile = file.split("/").map(encodeURIComponent).join("/");
+  return `${rawBaseUrl.replace(/\/$/u, "")}/${encodedFile}`;
 }
 
-function parseSearchResponse(value: unknown, url: string): SearchResponse {
+function parseRawDocument(
+  value: unknown,
+  source: string
+): RawLocalizationDocument {
   if (!value || typeof value !== "object") {
-    throw new Error(`Invalid response from ${url}`);
+    throw new Error(`Invalid localization document from ${source}`);
   }
 
-  const response = value as Partial<SearchResponse>;
+  const document = value as Partial<RawLocalizationDocument>;
   if (
-    !Array.isArray(response.data) ||
-    !Number.isInteger(response.last_page) ||
-    !Number.isInteger(response.total) ||
-    response.last_page! < 0 ||
-    response.total! < 0
+    typeof document.bundlePath !== "string" ||
+    typeof document.framework !== "string" ||
+    !document.localizations ||
+    typeof document.localizations !== "object"
   ) {
-    throw new Error(`Invalid response shape from ${url}`);
+    throw new Error(`Invalid localization document shape from ${source}`);
   }
 
-  for (const row of response.data) {
+  for (const localizations of Object.values(document.localizations)) {
     if (
-      !row ||
-      typeof row.source !== "string" ||
-      typeof row.target !== "string" ||
-      typeof row.language !== "string" ||
-      typeof row.file_name !== "string" ||
-      typeof row.bundle_name !== "string"
+      !Array.isArray(localizations) ||
+      localizations.some(
+        (localization) =>
+          !localization ||
+          typeof localization.filename !== "string" ||
+          typeof localization.language !== "string" ||
+          typeof localization.target !== "string"
+      )
     ) {
-      throw new Error(`Invalid result row from ${url}`);
+      throw new Error(`Invalid localization rows from ${source}`);
     }
   }
 
-  return response as SearchResponse;
+  return document as RawLocalizationDocument;
 }
 
-function getCachePath(cacheDir: string, url: string): string {
-  const digest = createHash("sha256").update(url).digest("hex");
-  return join(cacheDir, `${digest}.json`);
+function parseManifest(value: unknown, source: string): GithubTreeEntry[] {
+  if (!value || typeof value !== "object") {
+    throw new Error(`Invalid GitHub tree response from ${source}`);
+  }
+
+  const response = value as Partial<GithubTreeResponse>;
+  if (
+    typeof response.sha !== "string" ||
+    !Array.isArray(response.tree) ||
+    typeof response.truncated !== "boolean"
+  ) {
+    throw new Error(`Invalid GitHub tree response shape from ${source}`);
+  }
+  if (response.truncated) {
+    throw new Error(`GitHub tree response is truncated: ${source}`);
+  }
+
+  const files = response.tree.filter(
+    (entry) => entry.type === "blob" && entry.path.endsWith(".json")
+  );
+  if (!files.length) {
+    throw new Error(`No localization JSON files found in ${source}`);
+  }
+  for (const file of files) {
+    if (
+      typeof file.path !== "string" ||
+      typeof file.sha !== "string" ||
+      (file.size !== undefined && !Number.isInteger(file.size))
+    ) {
+      throw new Error(`Invalid GitHub tree entry from ${source}`);
+    }
+  }
+  return files;
 }
 
-async function fetchSearchPage(
+async function fetchJson(
   url: string,
-  options: FetchOptions
-): Promise<SearchResponse> {
-  const cachePath = options.cacheDir
-    ? getCachePath(options.cacheDir, url)
-    : undefined;
-
-  if (cachePath) {
-    try {
-      return parseSearchResponse(JSON.parse(await readFile(cachePath, "utf8")), url);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-    }
-  }
-
+  options: ExtractionOptions,
+  parse: (value: unknown, source: string) => unknown
+): Promise<unknown> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const retries = options.retries ?? 3;
   let lastError: unknown;
@@ -236,13 +272,7 @@ async function fetchSearchPage(
       if (!response.ok) {
         throw new Error(`${response.status} ${response.statusText}`);
       }
-
-      const body = parseSearchResponse(await response.json(), url);
-      if (cachePath) {
-        await mkdir(dirname(cachePath), { recursive: true });
-        await writeFile(cachePath, `${JSON.stringify(body)}\n`);
-      }
-      return body;
+      return parse(await response.json(), url);
     } catch (error) {
       lastError = error;
       if (attempt < retries) {
@@ -257,116 +287,207 @@ async function fetchSearchPage(
   );
 }
 
+async function readRemoteDocument(
+  file: GithubTreeEntry,
+  options: ExtractionOptions
+): Promise<RawLocalizationDocument> {
+  const cachePath = options.cacheDir
+    ? join(options.cacheDir, `${file.sha}.json`)
+    : undefined;
+  if (cachePath) {
+    try {
+      return parseRawDocument(
+        JSON.parse(await readFile(cachePath, "utf8")),
+        cachePath
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+  }
+
+  const url = buildRawFileUrl(file.path, options.rawBaseUrl);
+  const document = (await fetchJson(
+    url,
+    options,
+    parseRawDocument
+  )) as RawLocalizationDocument;
+  if (cachePath) {
+    await mkdir(dirname(cachePath), { recursive: true });
+    await writeFile(cachePath, `${JSON.stringify(document)}\n`);
+  }
+  return document;
+}
+
+function createLocaleCounts(): LocaleCounts {
+  return Object.fromEntries(
+    LOCALE_ORDER.map((locale) => [locale, new Map<string, number>()])
+  ) as LocaleCounts;
+}
+
 function localeForLanguage(language: string): GlossaryLocale | undefined {
   return LOCALE_ORDER.find((locale) =>
     LOCALE_LANGUAGE_CODES[locale].has(language)
   );
 }
 
-export function selectDominantTranslations(
-  term: string,
-  rows: AppleLocalizationRow[]
-): Record<GlossaryLocale, string> {
-  const counts = Object.fromEntries(
-    LOCALE_ORDER.map((locale) => [locale, new Map<string, number>()])
-  ) as Record<GlossaryLocale, Map<string, number>>;
+export function collectDocumentTranslations(
+  document: RawLocalizationDocument,
+  terms: ReadonlySet<string>,
+  counts: TermCounts
+): void {
+  for (const [term, localizations] of Object.entries(document.localizations)) {
+    if (!terms.has(term)) continue;
 
-  for (const row of rows) {
-    if (row.source !== term) continue;
-    const locale = localeForLanguage(row.language);
-    const localized = row.target.trim();
-    if (!locale || !localized) continue;
-    counts[locale].set(localized, (counts[locale].get(localized) ?? 0) + 1);
+    for (const localization of localizations) {
+      const locale = localeForLanguage(localization.language);
+      const localized = localization.target.trim();
+      if (!locale || !localized) continue;
+      const localeCounts = counts[term][locale];
+      localeCounts.set(localized, (localeCounts.get(localized) ?? 0) + 1);
+    }
   }
-
-  return Object.fromEntries(
-    LOCALE_ORDER.map((locale) => {
-      const ranked = [...counts[locale].entries()].sort(
-        ([leftValue, leftCount], [rightValue, rightCount]) =>
-          rightCount - leftCount ||
-          (leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0)
-      );
-      if (!ranked.length) {
-        throw new Error(`No macOS 26 "${term}" entry for ${locale}`);
-      }
-
-      const [localized, topCount] = ranked[0];
-      const total = ranked.reduce((sum, [, count]) => sum + count, 0);
-      const confidence = topCount / total;
-      if (confidence < 0.8) {
-        console.warn(
-          `warning: "${term}" in ${locale} has ${(
-            confidence * 100
-          ).toFixed(0)}% dominant-term confidence`
-        );
-      }
-      return [locale, localized];
-    })
-  ) as Record<GlossaryLocale, string>;
 }
 
-export async function fetchTermTranslations(
+function selectDominantTranslation(
   term: string,
-  options: FetchOptions = {}
-): Promise<Record<GlossaryLocale, string>> {
-  const firstPage = await fetchSearchPage(
-    buildSearchUrl(term, 1, options.apiUrl),
-    options
+  locale: GlossaryLocale,
+  counts: Map<string, number>
+): string {
+  const ranked = [...counts.entries()].sort(
+    ([leftValue, leftCount], [rightValue, rightCount]) =>
+      rightCount - leftCount ||
+      (leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0)
   );
-  const remainingPages = await Promise.all(
-    Array.from({ length: Math.max(firstPage.last_page - 1, 0) }, (_, index) =>
-      fetchSearchPage(
-        buildSearchUrl(term, index + 2, options.apiUrl),
-        options
-      )
-    )
-  );
-  const pages = [firstPage, ...remainingPages];
-  const rows = pages.flatMap((page) => page.data);
+  if (!ranked.length) {
+    throw new Error(`No macOS 26.1 "${term}" entry for ${locale}`);
+  }
 
-  if (rows.length !== firstPage.total) {
-    throw new Error(
-      `Expected ${firstPage.total} macOS 26 rows for "${term}", received ${rows.length}`
+  const [localized, topCount] = ranked[0];
+  const total = ranked.reduce((sum, [, count]) => sum + count, 0);
+  const confidence = topCount / total;
+  if (confidence < 0.8) {
+    console.warn(
+      `warning: "${term}" in ${locale} has ${(
+        confidence * 100
+      ).toFixed(0)}% dominant-term confidence`
     );
   }
-  return selectDominantTranslations(term, rows);
+  return localized;
 }
 
-export async function extractTerminology(
+function createTermCounts(terms: string[]): TermCounts {
+  return Object.fromEntries(
+    terms.map((term) => [term, createLocaleCounts()])
+  ) as TermCounts;
+}
+
+export function buildTerminology(
   terms: string[],
-  options: FetchOptions & { concurrency?: number } = {}
-): Promise<Terminology> {
-  if (new Set(terms).size !== terms.length) {
+  counts: TermCounts
+): Terminology {
+  return Object.fromEntries(
+    terms.map((term) => [
+      term,
+      Object.fromEntries(
+        LOCALE_ORDER.map((locale) => [
+          locale,
+          selectDominantTranslation(term, locale, counts[term][locale]),
+        ])
+      ),
+    ])
+  ) as Terminology;
+}
+
+export function extractTerminologyFromDocuments(
+  terms: string[],
+  documents: RawLocalizationDocument[]
+): Terminology {
+  const termSet = new Set(terms);
+  if (termSet.size !== terms.length) {
     throw new Error(`${basename(TERMS_FILE)} contains duplicate terms`);
   }
+  const counts = createTermCounts(terms);
+  for (const document of documents) {
+    collectDocumentTranslations(document, termSet, counts);
+  }
+  return buildTerminology(terms, counts);
+}
 
-  const concurrency = options.concurrency ?? 4;
-  const terminology: Terminology = {};
+async function processWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  process: (item: T, index: number) => Promise<void>
+): Promise<void> {
   let nextIndex = 0;
 
   async function worker(): Promise<void> {
-    while (nextIndex < terms.length) {
+    while (nextIndex < items.length) {
       const index = nextIndex;
       nextIndex += 1;
-      const term = terms[index];
-      terminology[term] = await fetchTermTranslations(term, options);
-      console.log(`Fetched ${index + 1}/${terms.length}: ${term}`);
+      await process(items[index], index);
     }
   }
 
   await Promise.all(
-    Array.from({ length: Math.min(concurrency, terms.length) }, () => worker())
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
   );
+}
 
-  return Object.fromEntries(
-    terms.map((term) => [term, terminology[term]])
-  ) as Terminology;
+export async function extractTerminology(
+  terms: string[],
+  options: ExtractionOptions = {}
+): Promise<Terminology> {
+  const termSet = new Set(terms);
+  if (termSet.size !== terms.length) {
+    throw new Error(`${basename(TERMS_FILE)} contains duplicate terms`);
+  }
+  const counts = createTermCounts(terms);
+  const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
+  let processed = 0;
+
+  if (options.sourceDir) {
+    const files = (await readdir(options.sourceDir))
+      .filter((file) => file.endsWith(".json"))
+      .sort();
+    if (!files.length) {
+      throw new Error(`No localization JSON files found in ${options.sourceDir}`);
+    }
+    await processWithConcurrency(files, concurrency, async (file) => {
+      const path = join(options.sourceDir!, file);
+      const document = parseRawDocument(
+        JSON.parse(await readFile(path, "utf8")),
+        path
+      );
+      collectDocumentTranslations(document, termSet, counts);
+      processed += 1;
+      if (processed % 100 === 0 || processed === files.length) {
+        console.log(`Processed ${processed}/${files.length} raw files`);
+      }
+    });
+  } else {
+    const manifestUrl = options.manifestUrl ?? DEFAULT_MANIFEST_URL;
+    const files = parseManifest(
+      await fetchJson(manifestUrl, options, (value) => value),
+      manifestUrl
+    );
+    await processWithConcurrency(files, concurrency, async (file) => {
+      const document = await readRemoteDocument(file, options);
+      collectDocumentTranslations(document, termSet, counts);
+      processed += 1;
+      if (processed % 100 === 0 || processed === files.length) {
+        console.log(`Processed ${processed}/${files.length} raw files`);
+      }
+    });
+  }
+
+  return buildTerminology(terms, counts);
 }
 
 export function renderTypescript(terminology: Terminology): string {
   return `/**
- * Generated from the macOS 26 localization corpus indexed by
- * applelocalization-web.
+ * Generated from applelocalization's raw macOS 26.1 localization corpus.
  *
  * English keys are exact source-string matches. Localized values are the
  * dominant trimmed translations for ryOS's desktop locale variants.
@@ -402,7 +523,7 @@ async function main(): Promise<void> {
   const temporaryOutput = `${output}.tmp`;
   await writeFile(temporaryOutput, renderTypescript(terminology));
   await rename(temporaryOutput, output);
-  console.log(`Wrote ${terms.length} macOS 26 terms to ${output}`);
+  console.log(`Wrote ${terms.length} macOS 26.1 terms to ${output}`);
 }
 
 if (import.meta.main) {

@@ -1,6 +1,6 @@
 /**
- * Canonical standalone UI labels extracted from the macOS 26 corpus indexed by
- * applelocalization-web for every ryOS locale.
+ * Canonical standalone UI labels extracted from applelocalization's raw macOS
+ * 26.1 corpus for every ryOS locale.
  *
  * The English object keys are exact source-string matches. Localized values are
  * the dominant translations for Brazilian Portuguese, French, German, Italian,
