@@ -53,10 +53,6 @@ export function useDragAndDrop({
 
     const filePath = `/Documents/${file.name}`;
     const text = await file.text();
-    const pendingContent =
-      file.name.endsWith(".md") || file.name.endsWith(".html")
-        ? text
-        : `<p>${text}</p>`;
 
     // If there are unsaved changes, prompt the user
     if (hasUnsavedChanges) {
@@ -65,7 +61,7 @@ export function useDragAndDrop({
         "ryos:pending-file-open",
         JSON.stringify({
           path: filePath,
-          content: pendingContent,
+          content: text,
         })
       );
       onConfirmOverwrite();

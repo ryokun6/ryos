@@ -6,15 +6,12 @@ import {
   htmlToMarkdown,
   htmlToPlainText,
 } from "@/utils/markdown";
-import { markdownToSafeHtml } from "../utils/markdownPaste";
 import {
   removeFileExtension,
   generateSuggestedFilename,
 } from "../utils/textEditUtils";
-import {
-  parseRichMarkdown,
-  serializeRichMarkdown,
-} from "../utils/richMarkdown";
+import { serializeRichMarkdown } from "../utils/richMarkdown";
+import { persistedContentToEditorContent } from "../utils/documentContent";
 import { TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import { createClientLogger } from "@/utils/logger";
@@ -108,26 +105,8 @@ export function useFileOperations({
 
       const filePath = `/Documents/${file.name}`;
       const text = await file.text();
-
-      // Convert content based on file type
-      let editorContent: string;
-      if (file.name.endsWith(".html")) {
-        editorContent = text;
-      } else if (file.name.endsWith(".md")) {
-        const parsed = parseRichMarkdown(text);
-        if (parsed.editorJson) {
-          editor.commands.setContent(parsed.editorJson, false);
-          editorContent = "";
-        } else {
-          editorContent = markdownToSafeHtml(parsed.markdown);
-        }
-      } else {
-        editorContent = `<p>${text}</p>`;
-      }
-
-      if (editorContent) {
-        editor.commands.setContent(editorContent, false);
-      }
+      const editorContent = persistedContentToEditorContent(filePath, text);
+      editor.commands.setContent(editorContent, false);
 
       // Always save in markdown format with rich metadata
       const markdownContent = htmlToMarkdown(editor.getHTML());
@@ -206,23 +185,7 @@ export function useFileOperations({
       if (!editor) return;
 
       const contentToUse = typeof content === "string" ? content : "";
-      let editorContent: string | object;
-
-      if (path.endsWith(".md")) {
-        const parsed = parseRichMarkdown(contentToUse);
-        if (parsed.editorJson) {
-          editorContent = parsed.editorJson as object;
-        } else {
-          editorContent = markdownToSafeHtml(parsed.markdown);
-        }
-      } else {
-        try {
-          editorContent = JSON.parse(contentToUse);
-        } catch {
-          editorContent = `<p>${contentToUse}</p>`;
-        }
-      }
-
+      const editorContent = persistedContentToEditorContent(path, contentToUse);
       editor.commands.setContent(editorContent, false);
       onLoadSuccess?.(path);
     },
@@ -236,22 +199,10 @@ export function useFileOperations({
       try {
         const contentStr = await readDocumentTextContent(filePath);
         if (contentStr) {
-          let editorContent;
-
-          if (filePath.endsWith(".md")) {
-            const parsed = parseRichMarkdown(contentStr);
-            if (parsed.editorJson) {
-              editorContent = parsed.editorJson;
-            } else {
-              editorContent = markdownToSafeHtml(parsed.markdown);
-            }
-          } else {
-            try {
-              editorContent = JSON.parse(contentStr);
-            } catch {
-              editorContent = `<p>${contentStr}</p>`;
-            }
-          }
+          const editorContent = persistedContentToEditorContent(
+            filePath,
+            contentStr
+          );
 
           if (editorContent) {
             editor.commands.setContent(editorContent, false);
