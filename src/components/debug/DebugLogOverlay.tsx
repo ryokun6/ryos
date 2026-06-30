@@ -194,7 +194,7 @@ function ConsoleEntryContent({
           className={cn(
             "inline-flex max-w-full items-baseline gap-0.5 border-0 bg-transparent p-0 align-baseline",
             "font-os-mono text-[10px] leading-[1.45] text-os-text-secondary",
-            "opacity-75 hover:opacity-100 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-os-selection-bg"
+            "hover:text-os-text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-os-selection-bg"
           )}
           style={{
             fontFamily: "var(--os-font-mono)",
@@ -213,7 +213,7 @@ function ConsoleEntryContent({
             className={cn(
               "my-0.5 max-w-full overflow-x-auto border-l pl-2",
               "border-[color:var(--os-color-separator)]",
-              "whitespace-pre font-os-mono text-[10px] leading-[1.45] text-inherit"
+              "whitespace-pre font-os-mono text-[10px] leading-[1.45] text-os-text-primary"
             )}
           >
             {part.text}
