@@ -39,13 +39,13 @@ export type Terminology = Record<string, Record<GlossaryLocale, string>>;
  */
 const LOCALE_LANGUAGE_CODES: Record<GlossaryLocale, ReadonlySet<string>> = {
   "zh-TW": new Set(["zh_TW", "zh_TW-macos"]),
-  ja: new Set(["ja", "ja-macos"]),
+  ja: new Set(["Japanese", "ja", "ja-macos"]),
   ko: new Set(["ko", "ko-macos"]),
-  fr: new Set(["fr", "fr-macos"]),
-  de: new Set(["de", "de-macos"]),
-  es: new Set(["es", "es-macos"]),
-  pt: new Set(["pt_BR", "pt_BR-macos"]),
-  it: new Set(["it", "it-macos"]),
+  fr: new Set(["French", "fr", "fr-macos"]),
+  de: new Set(["German", "de", "de-macos"]),
+  es: new Set(["Spanish", "es", "es-macos"]),
+  pt: new Set(["pt", "pt_BR", "pt_BR-macos"]),
+  it: new Set(["Italian", "it", "it-macos"]),
   ru: new Set(["ru", "ru-macos"]),
 };
 

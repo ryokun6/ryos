@@ -23,13 +23,13 @@ const expectedSettings = {
 
 const languageCodes = {
   "zh-TW": "zh_TW",
-  ja: "ja",
+  ja: "Japanese",
   ko: "ko",
-  fr: "fr",
-  de: "de",
-  es: "es",
-  pt: "pt_BR",
-  it: "it",
+  fr: "French",
+  de: "German",
+  es: "Spanish",
+  pt: "pt",
+  it: "Italian",
   ru: "ru",
 } as const;
 
