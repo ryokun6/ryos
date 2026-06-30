@@ -32,7 +32,6 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
-import { OS_NATIVE_CHROME_SKIP_CLASS } from "@/lib/themeChrome";
 import type { AdminInitialData } from "@/apps/admin/types";
 import {
   clearConsoleCapture,
@@ -637,7 +636,6 @@ export function DebugLogOverlay() {
       ref={overlayRootRef}
       className={cn(
         "fixed select-none flex flex-col",
-        OS_NATIVE_CHROME_SKIP_CLASS,
         isWindowsTheme ? "right-2 items-end" : "left-2 items-start"
       )}
       style={{
@@ -1011,7 +1009,7 @@ export function DebugLogOverlay() {
               <TabsTrigger
                 value="logs"
                 className={cn(
-                  "h-5 rounded px-2.5 py-0 font-os-mono text-[10px] shadow-none transition-none",
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
                   "border border-transparent",
                   "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
                   "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
@@ -1023,7 +1021,7 @@ export function DebugLogOverlay() {
               <TabsTrigger
                 value="live"
                 className={cn(
-                  "h-5 rounded px-2.5 py-0 font-os-mono text-[10px] shadow-none transition-none",
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
                   "border border-transparent",
                   "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
                   "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
@@ -1035,7 +1033,7 @@ export function DebugLogOverlay() {
               <TabsTrigger
                 value="network"
                 className={cn(
-                  "h-5 rounded px-2.5 py-0 font-os-mono text-[10px] shadow-none transition-none",
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
                   "border border-transparent",
                   "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
                   "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
@@ -1059,7 +1057,7 @@ export function DebugLogOverlay() {
         className={cn(
           "flex items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-os-window",
           "border-[length:var(--os-metrics-border-width)] border-os-window",
-          "bg-os-window-bg text-os-text-secondary font-os-mono text-[10px]",
+          "bg-os-window-bg text-os-text-primary font-os-ui text-[11px] font-medium",
           "hover:brightness-105 active:brightness-95",
           open && "ring-1 ring-os-selection-bg"
         )}

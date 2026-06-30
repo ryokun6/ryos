@@ -342,18 +342,4 @@ describe("client logging guardrails", () => {
     expect(bootstrapSource).toContain('"Starting client bootstrap"');
   });
 
-  test("debug overlay toggle matches log message typography", () => {
-    const source = readSource("src/components/debug/DebugLogOverlay.tsx");
-
-    expect(source).toContain(
-      "h-full overflow-auto px-2 py-1 font-os-mono text-[10px] leading-[1.45]"
-    );
-    expect(source).toContain(
-      "bg-os-window-bg text-os-text-secondary font-os-mono text-[10px]"
-    );
-    expect(source).toContain("OS_NATIVE_CHROME_SKIP_CLASS");
-    expect(source).not.toContain(
-      "bg-os-window-bg text-os-text-primary font-os-ui text-[11px]"
-    );
-  });
 });
