@@ -41,6 +41,13 @@ const C = {
 // ============================================================================
 
 const COMPACT_JSON = true;
+const REDACTED = "[redacted]";
+const MAX_STRING_LENGTH = 240;
+const MAX_STACK_LENGTH = 4000;
+const MAX_ARRAY_ITEMS = 8;
+const MAX_DEPTH = 3;
+const SENSITIVE_KEY_RE =
+  /(password|token|secret|authorization|cookie|message|prompt|content|html|markdown|base64|blob|dataurl|transcript|body|text|lyrics|deviceid|useragent)$/i;
 
 // ============================================================================
 // Helper Functions
@@ -54,26 +61,124 @@ function getTimestamp(): string {
   return `${C.dim}${now.toTimeString().slice(0, 8)}${C.reset}`;
 }
 
+function truncateString(value: string, maxLength = MAX_STRING_LENGTH): string {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength)}... (truncated, length=${value.length})`;
+}
+
+function isSerializedErrorRecord(record: Record<string, unknown>): boolean {
+  if (record.kind === "Error" || record.kind === "DOMException") {
+    return true;
+  }
+  return (
+    typeof record.name === "string" &&
+    typeof record.message === "string" &&
+    typeof record.stack === "string"
+  );
+}
+
+function shouldRedactKey(
+  key: string,
+  record: Record<string, unknown>
+): boolean {
+  if (!SENSITIVE_KEY_RE.test(key)) return false;
+  if (isSerializedErrorRecord(record) && key === "message") return false;
+  return true;
+}
+
+export function summarizeForApiLog(
+  value: unknown,
+  depth = 0,
+  seen = new WeakSet<object>(),
+  key?: string
+): unknown {
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === "string") {
+    return truncateString(value, key === "stack" ? MAX_STACK_LENGTH : MAX_STRING_LENGTH);
+  }
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (typeof value === "bigint") return `${value}n`;
+  if (typeof value === "function") return `[Function ${value.name || "anonymous"}]`;
+
+  if (value instanceof Error) {
+    if (seen.has(value)) return "[Circular]";
+    seen.add(value);
+    return {
+      kind: "Error",
+      name: value.name,
+      message: truncateString(value.message),
+      stack: value.stack ? truncateString(value.stack, MAX_STACK_LENGTH) : undefined,
+      cause:
+        "cause" in value && value.cause !== undefined
+          ? summarizeForApiLog(value.cause, depth + 1, seen, "cause")
+          : undefined,
+    };
+  }
+
+  if (value instanceof ArrayBuffer) {
+    return `ArrayBuffer(byteLength=${value.byteLength})`;
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return `${value.constructor.name}(byteLength=${value.byteLength})`;
+  }
+
+  if (typeof value !== "object") return String(value);
+  if (seen.has(value)) return "[Circular]";
+  seen.add(value);
+
+  if (depth >= MAX_DEPTH) {
+    return Array.isArray(value)
+      ? `array(length=${value.length})`
+      : `object(keys=${Object.keys(value as Record<string, unknown>).join(",") || "none"})`;
+  }
+
+  if (Array.isArray(value)) {
+    const items = value
+      .slice(0, MAX_ARRAY_ITEMS)
+      .map((item) => summarizeForApiLog(item, depth + 1, seen));
+    if (value.length > MAX_ARRAY_ITEMS) {
+      items.push(`... (${value.length - MAX_ARRAY_ITEMS} more)`);
+    }
+    return items;
+  }
+
+  const record = value as Record<string, unknown>;
+  const safe: Record<string, unknown> = {};
+  for (const [recordKey, item] of Object.entries(record)) {
+    safe[recordKey] = shouldRedactKey(recordKey, record)
+      ? REDACTED
+      : summarizeForApiLog(item, depth + 1, seen, recordKey);
+  }
+  return safe;
+}
+
+export function isApiDebugLoggingEnabled(): boolean {
+  const explicit = process.env.RYOS_DEBUG || process.env.API_DEBUG_LOGS;
+  if (explicit === "1" || explicit === "true") return true;
+  if (explicit === "0" || explicit === "false") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
 /**
  * Format data for logging (handles objects, errors, etc.)
  */
 function formatData(data: unknown): string {
   if (data === undefined || data === null) return "";
-  if (data instanceof Error) {
-    return `${data.message}${data.stack ? `\n${C.dim}${data.stack}${C.reset}` : ""}`;
-  }
-  if (typeof data === "object") {
+  const safeData = summarizeForApiLog(data);
+  if (typeof safeData === "object") {
     try {
-      const json = COMPACT_JSON ? JSON.stringify(data) : JSON.stringify(data, null, 2);
-      if (json.length > 150) {
-        return `${C.dim}${json.substring(0, 150)}…${C.reset}`;
+      const json = COMPACT_JSON ? JSON.stringify(safeData) : JSON.stringify(safeData, null, 2);
+      if (json.length > 240) {
+        return `${C.dim}${json.substring(0, 240)}…${C.reset}`;
       }
       return `${C.dim}${json}${C.reset}`;
     } catch {
-      return String(data);
+      return String(safeData);
     }
   }
-  return String(data);
+  return String(safeData);
 }
 
 /**
@@ -186,7 +291,7 @@ export function logDebug(
   message: string,
   data?: unknown
 ): void {
-  if (process.env.NODE_ENV === "production") return;
+  if (!isApiDebugLoggingEnabled()) return;
   const ts = getTimestamp();
   const id = `${C.dim}${requestId}${C.reset}`;
   const d = data !== undefined ? ` ${formatData(data)}` : "";

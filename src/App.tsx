@@ -29,9 +29,11 @@ import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
 import { DebugLogOverlay } from "@/components/debug/DebugLogOverlay";
+import { createClientLogger } from "@/utils/logger";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
+const appShellLog = createClientLogger("AppShell");
 
 installNativeToastNotifications();
 
@@ -133,12 +135,17 @@ export function App() {
 
   useEffect(() => {
     applyDisplayMode(displayMode);
+    appShellLog.debug("Applied display mode", { displayMode });
   }, [displayMode]);
 
   useEffect(() => {
     // Only show boot screen for system operations (reset/restore/format/debug)
     const persistedMessage = getNextBootMessage();
     if (persistedMessage) {
+      appShellLog.debug("Showing boot screen from persisted operation", {
+        hasMessage: true,
+        bootDebugMode: isBootDebugMode(),
+      });
       setBootScreenMessage(persistedMessage);
       setBootDebugMode(isBootDebugMode());
       setShowBootScreen(true);
@@ -146,6 +153,7 @@ export function App() {
 
     // Set first boot flag without showing boot screen
     if (isFirstBoot) {
+      appShellLog.debug("Marking first boot complete");
       setHasBooted();
     }
   }, [
@@ -162,6 +170,10 @@ export function App() {
   useEffect(() => {
     const desktopDownloadTarget = getSupportedDesktopDownloadTarget();
     const isInDesktop = isDesktop();
+    appShellLog.debug("Evaluating desktop update prompt", {
+      hasDesktopDownloadTarget: !!desktopDownloadTarget,
+      isInDesktop,
+    });
 
     if (!desktopDownloadTarget) {
       return;
@@ -169,6 +181,11 @@ export function App() {
 
     // Handler for showing the desktop update toast
     const showDesktopUpdateToast = (result: DesktopUpdateResult) => {
+      appShellLog.debug("Desktop update check result", {
+        type: result.type,
+        hasVersion: !!result.version,
+        isInDesktop,
+      });
       if (result.type === 'update' && result.version) {
         const downloadUrl = getDesktopDownloadUrl(result.version, desktopDownloadTarget);
         if (!downloadUrl) {
@@ -223,6 +240,7 @@ export function App() {
 
     // Initial check on load (delayed to let app render first)
     const timer = setTimeout(async () => {
+      appShellLog.debug("Running initial desktop update check");
       const result = await checkDesktopUpdate();
       showDesktopUpdateToast(result);
     }, 2000);
@@ -239,6 +257,7 @@ export function App() {
           title={bootScreenMessage || t("common.system.systemRestoring")}
           debugMode={bootDebugMode}
           onBootComplete={() => {
+            appShellLog.debug("Boot screen completed");
             clearNextBootMessage();
             setShowBootScreen(false);
           }}

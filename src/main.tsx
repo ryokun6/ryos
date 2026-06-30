@@ -18,12 +18,16 @@ import {
 } from "./utils/reloadGuard";
 import { installConsoleCapture } from "./utils/consoleCapture";
 import { installNetworkCapture } from "./utils/networkCapture";
+import { createClientLogger } from "./utils/logger";
+
+const bootstrapLog = createClientLogger("Bootstrap");
 
 // Patch console output and fetch as early as possible; buffering is enabled
 // only when Debug Mode is on so normal sessions do not retain in-memory
 // log/network history.
 installConsoleCapture();
 installNetworkCapture();
+bootstrapLog.debug("Installed debug capture hooks");
 
 // Prime React 19 resource hints before anything else runs
 primeReactResources();
@@ -41,6 +45,7 @@ primeReactResources();
 try {
   if (new URL(window.location.href).searchParams.has("_cb")) {
     clearStaleReload();
+    bootstrapLog.debug("Cleared stale reload cooldown after cache-bust navigation");
   }
 } catch {
   // URL parsing or sessionStorage may throw in edge cases
@@ -132,13 +137,20 @@ if (import.meta.hot) {
 
 const scheduleIdleWork = (fn: () => void, timeoutMs = 2500) => {
   if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    bootstrapLog.debug("Scheduling idle bootstrap work with requestIdleCallback", {
+      timeoutMs,
+    });
     window.requestIdleCallback(() => fn(), { timeout: timeoutMs });
   } else {
+    bootstrapLog.debug("Scheduling idle bootstrap work with setTimeout fallback", {
+      timeoutMs,
+    });
     setTimeout(fn, 0);
   }
 };
 
 const renderApp = () => {
+  bootstrapLog.debug("Rendering React app");
   initializeAnalytics();
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
@@ -148,22 +160,30 @@ const renderApp = () => {
 };
 
 const bootstrap = async () => {
+  bootstrapLog.debug("Starting client bootstrap", {
+    development: import.meta.env.DEV === true,
+    mode: import.meta.env.MODE,
+  });
   // Theme attributes for first paint (before React)
   useThemeStore.getState().hydrate();
+  bootstrapLog.debug("Hydrated theme store for first paint");
 
   try {
     await initializeI18nForFirstPaint();
+    bootstrapLog.debug("Initialized i18n for first paint");
   } catch (error) {
     console.error("[ryOS] Failed to initialize i18n during bootstrap:", error);
   }
 
   useLanguageStore.getState().hydrate();
+  bootstrapLog.debug("Hydrated language store");
 
   renderApp();
 
   // Non-critical network work after first paint so it does not compete with
   // the initial JS/CSS/i18n critical path.
   scheduleIdleWork(() => {
+    bootstrapLog.debug("Running idle bootstrap work");
     preloadIpodData();
     initPrefetch();
   });
