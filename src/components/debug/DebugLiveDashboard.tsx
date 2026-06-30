@@ -15,6 +15,7 @@ import {
   buildSparklineGeometry,
   formatBytes,
   formatLiveSnapshotMarkdown,
+  LIVE_HISTORY_LIMIT,
 } from "./liveMetrics";
 import {
   useLiveEnvironmentSnapshot,
@@ -404,7 +405,7 @@ export function DebugLiveDashboard({
         frameTimeMs: snapshot.frameTimeMs,
         domNodeCount: snapshot.domNodeCount,
         heap: snapshot.heap.kind === "available" ? heapValue : null,
-        storage: snapshot.storage.kind === "available" ? storageValue : null,
+        storage: storageValue,
         realtime: realtimeReportValue,
         cloudSync: cloudSyncReportValue,
         session: sessionValue,
@@ -487,7 +488,7 @@ export function DebugLiveDashboard({
             ? t("debug.live.sampling")
             : t("debug.live.samplingPaused")}
         </span>
-        <span>{t("debug.live.historyWindow", { count: 45 })}</span>
+        <span>{t("debug.live.historyWindow", { count: LIVE_HISTORY_LIMIT })}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">

@@ -5,7 +5,11 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "./test-utils";
+import {
+  BASE_URL,
+  fetchWithOrigin,
+  makeRateLimitBypassHeaders,
+} from "./test-utils";
 
 describe("iframe-check", () => {
   describe("Input Validation", () => {
@@ -23,6 +27,28 @@ describe("iframe-check", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.allowed).toBe(true);
+    });
+
+    test("rejects private/reserved IP targets (SSRF guard)", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=http://127.0.0.1/&mode=check`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(typeof data.error).toBe("string");
+      expect(data.error).toContain("Private or reserved IPs");
+    });
+
+    test("rejects blocked hostnames (SSRF guard)", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=http://169.254.169.254/latest/meta-data/&mode=check`,
+        { headers: makeRateLimitBypassHeaders() }
+      );
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(typeof data.error).toBe("string");
+      expect(data.error).toContain("Blocked hostname");
     });
   });
 
@@ -145,6 +171,27 @@ describe("iframe-check", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(Array.isArray(data.years)).toBe(true);
+    });
+  });
+
+  describe("Live Mode", () => {
+    test("applies a mode-specific rate limit before opening live sessions", async () => {
+      const headers = makeRateLimitBypassHeaders();
+      const url = `${BASE_URL}/api/iframe-check?mode=live&url=https://example.com`;
+
+      for (let i = 0; i < 5; i += 1) {
+        const res = await fetchWithOrigin(url, { headers });
+        expect([200, 501]).toContain(res.status);
+      }
+
+      const limited = await fetchWithOrigin(url, { headers });
+      expect(limited.status).toBe(429);
+      const data = await limited.json();
+      expect(data).toMatchObject({
+        error: "rate_limit_exceeded",
+        scope: "host",
+        mode: "live",
+      });
     });
   });
 

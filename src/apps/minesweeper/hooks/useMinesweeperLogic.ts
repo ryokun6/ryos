@@ -7,6 +7,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { MINESWEEPER_ANALYTICS, track } from "@/utils/analytics";
+import type { PointerLongPressEvent } from "@/hooks/usePointerLongPress";
 
 const BOARD_SIZE = 9;
 const MINES_COUNT = 10;
@@ -296,8 +297,12 @@ export function useMinesweeperLogic() {
   );
 
   const handleCellRightClick = useCallback(
-    (e: React.MouseEvent | React.TouchEvent, row: number, col: number) => {
-      if (e instanceof MouseEvent || "button" in e) {
+    (
+      e: React.MouseEvent | React.TouchEvent | PointerLongPressEvent,
+      row: number,
+      col: number
+    ) => {
+      if ("preventDefault" in e && (e instanceof MouseEvent || "button" in e)) {
         e.preventDefault();
       }
       const gameBoard = gameBoardRef.current;
