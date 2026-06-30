@@ -1,0 +1,657 @@
+{
+  "generatedAt": "2026-06-30T04:02:47.195773+00:00",
+  "source": {
+    "name": "Apple Macintosh System 7.5.3 HFS image from Internet Archive",
+    "url": "https://archive.org/details/AppleMacintoshSystem753"
+  },
+  "note": "Icons were extracted from the System suitcase resource fork in the HFS image with hfsutils MacBinary export plus rsrcdump conversion. Finder resources on this image are compressed in a way rsrcdump cannot parse, so this catalog focuses on standard System suitcase icon resources.",
+  "counts": {
+    "system": 64,
+    "finder": 0,
+    "appearance": 0,
+    "resource": 0,
+    "total": 64
+  },
+  "entries": [
+    {
+      "type": "system",
+      "name": "Apple menu (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics%23/-16386",
+      "sourcePath": "system7-icons/system_resources/ics%23/-16386.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/apple-menu-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Balloon Help (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16490",
+      "sourcePath": "system7-icons/system_resources/ics8/-16490.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/balloon-help-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Desk accessory (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3991",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3991.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/desk-accessory-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic application (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3996",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3996.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/generic-application-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic document (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-4000",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-4000.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/generic-document-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic folder (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3999",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3999.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/generic-folder-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic preferences (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3985",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3985.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/generic-preferences-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic stationery (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3989",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3989.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/generic-stationery-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Macintosh system (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-16396",
+      "sourcePath": "system7-icons/system_resources/icl8/-16396.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/macintosh-system-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Open folder (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3998",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3998.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/open-folder-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16385 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-16385",
+      "sourcePath": "system7-icons/system_resources/SICN/-16385.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16385-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16411 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16411",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16411.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16411-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16415 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16415",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16415.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16415-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16482 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16482",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16482.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16482-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16494 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16494",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16494.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16494-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16506 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16506",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16506.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16506-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16509 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16509",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16509.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16509-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16522 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16522",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16522.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16522-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16541 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16541",
+      "sourcePath": "system7-icons/system_resources/ics8/-16541.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16541-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16565 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16565",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-16565.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16565-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16569 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16569",
+      "sourcePath": "system7-icons/system_resources/ics8/-16569.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16569-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16570 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16570",
+      "sourcePath": "system7-icons/system_resources/ics8/-16570.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16570-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16571 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16571",
+      "sourcePath": "system7-icons/system_resources/ics8/-16571.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16571-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16572 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16572",
+      "sourcePath": "system7-icons/system_resources/ics8/-16572.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16572-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16573 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16573",
+      "sourcePath": "system7-icons/system_resources/ics8/-16573.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16573-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16574 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16574",
+      "sourcePath": "system7-icons/system_resources/ics8/-16574.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16574-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16575 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16575",
+      "sourcePath": "system7-icons/system_resources/ics8/-16575.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16575-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16580 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16580",
+      "sourcePath": "system7-icons/system_resources/ics8/-16580.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16580-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16581 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16581",
+      "sourcePath": "system7-icons/system_resources/ics8/-16581.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16581-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16582 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16582",
+      "sourcePath": "system7-icons/system_resources/ics8/-16582.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16582-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16583 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16583",
+      "sourcePath": "system7-icons/system_resources/ics8/-16583.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-16583-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -32508 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-32508",
+      "sourcePath": "system7-icons/system_resources/icl8/-32508.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-32508-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -32509 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-32509",
+      "sourcePath": "system7-icons/system_resources/icl8/-32509.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-32509-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -32511 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-32511",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-32511.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-32511-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -32512 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-32512",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-32512.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-32512-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3968 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3968",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3968.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3968-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3969 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3969",
+      "sourcePath": "system7-icons/system_resources/SICN/-3969.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3969-system.png",
+      "width": 16,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3970 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3970",
+      "sourcePath": "system7-icons/system_resources/SICN/-3970.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3970-system.png",
+      "width": 16,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3971 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3971",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3971.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3971-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3972 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-3972",
+      "sourcePath": "system7-icons/system_resources/ics8/-3972.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3972-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3973 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3973",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3973.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3973-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3974 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3974",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3974.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3974-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3975 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3975",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3975.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3975-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3976 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3976",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3976.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3976-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3977 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3977",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3977.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3977-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3978 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3978",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3978.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3978-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3979 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3979",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3979.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3979-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3980 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3980",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3980.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3980-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3981 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3981",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3981.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3981-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3982 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3982",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3982.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3982-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3983 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3983",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3983.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3983-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3986 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3986",
+      "sourcePath": "system7-icons/system_resources/SICN/-3986.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3986-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3987 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics4/-3987",
+      "sourcePath": "system7-icons/system_resources/ics4/-3987.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3987-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3988 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics4/-3988",
+      "sourcePath": "system7-icons/system_resources/ics4/-3988.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3988-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3990 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3990",
+      "sourcePath": "system7-icons/system_resources/SICN/-3990.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3990-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3992 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics%23/-3992",
+      "sourcePath": "system7-icons/system_resources/ics%23/-3992.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3992-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3994 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3994",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3994.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3994-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3995 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics4/-3995",
+      "sourcePath": "system7-icons/system_resources/ics4/-3995.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3995-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3997 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3997",
+      "sourcePath": "system7-icons/system_resources/SICN/-3997.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3997-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -5696 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl4/-5696",
+      "sourcePath": "system7-icons/system_resources/icl4/-5696.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-5696-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource 0 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/0",
+      "sourcePath": "system7-icons/system_resources/SICN/0.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-0-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource 3 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/3",
+      "sourcePath": "system7-icons/system_resources/ICN%23/3.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/resource-3-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Trash (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3993",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3993.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/trash-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Trash full (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-3984",
+      "sourcePath": "system7-icons/system_resources/ICN%23/-3984.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/system-7/system/trash-full-system.png",
+      "width": 32,
+      "height": 32
+    }
+  ]
+}

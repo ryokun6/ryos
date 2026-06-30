@@ -1,0 +1,927 @@
+{
+  "generatedAt": "2026-06-30T04:02:47.276513+00:00",
+  "source": {
+    "name": "bearz314/MacOS9-icons resource-derived PNG set",
+    "url": "https://github.com/bearz314/MacOS9-icons"
+  },
+  "note": "PNG files come from the repository's converted Mac OS 9 .rsrc icon set. The source repository also includes the original .rsrc files and fixed .icns variants; this catalog uses the 512x512 PNG conversion for easy browsing.",
+  "counts": {
+    "system": 0,
+    "finder": 0,
+    "appearance": 0,
+    "resource": 91,
+    "total": 91
+  },
+  "entries": [
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 1",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/1.png",
+      "sourcePath": "MacOS9-icons/png/1.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-1.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 10",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/10.png",
+      "sourcePath": "MacOS9-icons/png/10.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-10.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 11",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/11.png",
+      "sourcePath": "MacOS9-icons/png/11.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-11.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 12",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/12.png",
+      "sourcePath": "MacOS9-icons/png/12.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-12.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 13",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/13.png",
+      "sourcePath": "MacOS9-icons/png/13.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-13.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 14",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/14.png",
+      "sourcePath": "MacOS9-icons/png/14.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-14.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 15",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/15.png",
+      "sourcePath": "MacOS9-icons/png/15.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-15.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 16",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/16.png",
+      "sourcePath": "MacOS9-icons/png/16.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-16.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 17",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/17.png",
+      "sourcePath": "MacOS9-icons/png/17.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-17.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 18",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/18.png",
+      "sourcePath": "MacOS9-icons/png/18.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-18.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 19",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/19.png",
+      "sourcePath": "MacOS9-icons/png/19.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-19.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 2",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/2.png",
+      "sourcePath": "MacOS9-icons/png/2.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-2.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 20",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/20.png",
+      "sourcePath": "MacOS9-icons/png/20.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-20.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 21",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/21.png",
+      "sourcePath": "MacOS9-icons/png/21.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-21.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 22",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/22.png",
+      "sourcePath": "MacOS9-icons/png/22.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-22.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 23",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/23.png",
+      "sourcePath": "MacOS9-icons/png/23.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-23.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 24",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/24.png",
+      "sourcePath": "MacOS9-icons/png/24.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-24.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 25",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/25.png",
+      "sourcePath": "MacOS9-icons/png/25.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-25.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 26",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/26.png",
+      "sourcePath": "MacOS9-icons/png/26.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-26.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 27",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/27.png",
+      "sourcePath": "MacOS9-icons/png/27.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-27.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 28",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/28.png",
+      "sourcePath": "MacOS9-icons/png/28.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-28.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 29",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/29.png",
+      "sourcePath": "MacOS9-icons/png/29.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-29.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 3",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/3.png",
+      "sourcePath": "MacOS9-icons/png/3.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-3.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 30",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/30.png",
+      "sourcePath": "MacOS9-icons/png/30.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-30.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 31",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/31.png",
+      "sourcePath": "MacOS9-icons/png/31.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-31.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 32",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/32.png",
+      "sourcePath": "MacOS9-icons/png/32.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-32.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 33",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/33.png",
+      "sourcePath": "MacOS9-icons/png/33.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-33.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 34",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/34.png",
+      "sourcePath": "MacOS9-icons/png/34.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-34.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 35",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/35.png",
+      "sourcePath": "MacOS9-icons/png/35.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-35.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 36",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/36.png",
+      "sourcePath": "MacOS9-icons/png/36.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-36.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 37",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/37.png",
+      "sourcePath": "MacOS9-icons/png/37.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-37.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 38",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/38.png",
+      "sourcePath": "MacOS9-icons/png/38.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-38.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 39",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/39.png",
+      "sourcePath": "MacOS9-icons/png/39.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-39.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 4",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/4.png",
+      "sourcePath": "MacOS9-icons/png/4.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-4.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 40",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/40.png",
+      "sourcePath": "MacOS9-icons/png/40.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-40.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 41",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/41.png",
+      "sourcePath": "MacOS9-icons/png/41.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-41.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 42",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/42.png",
+      "sourcePath": "MacOS9-icons/png/42.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-42.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 43",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/43.png",
+      "sourcePath": "MacOS9-icons/png/43.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-43.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 44",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/44.png",
+      "sourcePath": "MacOS9-icons/png/44.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-44.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 45",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/45.png",
+      "sourcePath": "MacOS9-icons/png/45.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-45.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 46",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/46.png",
+      "sourcePath": "MacOS9-icons/png/46.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-46.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 47",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/47.png",
+      "sourcePath": "MacOS9-icons/png/47.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-47.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 48",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/48.png",
+      "sourcePath": "MacOS9-icons/png/48.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-48.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 49",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/49.png",
+      "sourcePath": "MacOS9-icons/png/49.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-49.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 5",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/5.png",
+      "sourcePath": "MacOS9-icons/png/5.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-5.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 50",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/50.png",
+      "sourcePath": "MacOS9-icons/png/50.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-50.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 51",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/51.png",
+      "sourcePath": "MacOS9-icons/png/51.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-51.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 52",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/52.png",
+      "sourcePath": "MacOS9-icons/png/52.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-52.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 53",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/53.png",
+      "sourcePath": "MacOS9-icons/png/53.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-53.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 54",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/54.png",
+      "sourcePath": "MacOS9-icons/png/54.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-54.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 55",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/55.png",
+      "sourcePath": "MacOS9-icons/png/55.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-55.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 56",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/56.png",
+      "sourcePath": "MacOS9-icons/png/56.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-56.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 57",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/57.png",
+      "sourcePath": "MacOS9-icons/png/57.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-57.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 58",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/58.png",
+      "sourcePath": "MacOS9-icons/png/58.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-58.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 59",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/59.png",
+      "sourcePath": "MacOS9-icons/png/59.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-59.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 6",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/6.png",
+      "sourcePath": "MacOS9-icons/png/6.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-6.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 60",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/60.png",
+      "sourcePath": "MacOS9-icons/png/60.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-60.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 61",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/61.png",
+      "sourcePath": "MacOS9-icons/png/61.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-61.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 62",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/62.png",
+      "sourcePath": "MacOS9-icons/png/62.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-62.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 64",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/64.png",
+      "sourcePath": "MacOS9-icons/png/64.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-64.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 65",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/65.png",
+      "sourcePath": "MacOS9-icons/png/65.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-65.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 66",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/66.png",
+      "sourcePath": "MacOS9-icons/png/66.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-66.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 67",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/67.png",
+      "sourcePath": "MacOS9-icons/png/67.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-67.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 68",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/68.png",
+      "sourcePath": "MacOS9-icons/png/68.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-68.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 69",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/69.png",
+      "sourcePath": "MacOS9-icons/png/69.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-69.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 7",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/7.png",
+      "sourcePath": "MacOS9-icons/png/7.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-7.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 70",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/70.png",
+      "sourcePath": "MacOS9-icons/png/70.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-70.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 71",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/71.png",
+      "sourcePath": "MacOS9-icons/png/71.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-71.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 72",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/72.png",
+      "sourcePath": "MacOS9-icons/png/72.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-72.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 73",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/73.png",
+      "sourcePath": "MacOS9-icons/png/73.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-73.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 74",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/74.png",
+      "sourcePath": "MacOS9-icons/png/74.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-74.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 75",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/75.png",
+      "sourcePath": "MacOS9-icons/png/75.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-75.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 76",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/76.png",
+      "sourcePath": "MacOS9-icons/png/76.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-76.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 77",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/77.png",
+      "sourcePath": "MacOS9-icons/png/77.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-77.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 78",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/78.png",
+      "sourcePath": "MacOS9-icons/png/78.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-78.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 79",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/79.png",
+      "sourcePath": "MacOS9-icons/png/79.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-79.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 8",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/8.png",
+      "sourcePath": "MacOS9-icons/png/8.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-8.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 80",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/80.png",
+      "sourcePath": "MacOS9-icons/png/80.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-80.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 81",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/81.png",
+      "sourcePath": "MacOS9-icons/png/81.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-81.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 82",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/82.png",
+      "sourcePath": "MacOS9-icons/png/82.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-82.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 83",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/83.png",
+      "sourcePath": "MacOS9-icons/png/83.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-83.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 84",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/84.png",
+      "sourcePath": "MacOS9-icons/png/84.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-84.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 85",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/85.png",
+      "sourcePath": "MacOS9-icons/png/85.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-85.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 86",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/86.png",
+      "sourcePath": "MacOS9-icons/png/86.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-86.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 87",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/87.png",
+      "sourcePath": "MacOS9-icons/png/87.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-87.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 88",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/88.png",
+      "sourcePath": "MacOS9-icons/png/88.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-88.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 89",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/89.png",
+      "sourcePath": "MacOS9-icons/png/89.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-89.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 9",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/9.png",
+      "sourcePath": "MacOS9-icons/png/9.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-9.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 90",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/90.png",
+      "sourcePath": "MacOS9-icons/png/90.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-90.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 91",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/91.png",
+      "sourcePath": "MacOS9-icons/png/91.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-91.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "type": "resource",
+      "name": "Mac OS 9 resource icon 92",
+      "sourceFile": "MacOS9-icons/png",
+      "sourceResource": "png/92.png",
+      "sourcePath": "MacOS9-icons/png/92.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-9/resources/mac-os-9-resource-icon-92.png",
+      "width": 512,
+      "height": 512
+    }
+  ]
+}

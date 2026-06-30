@@ -1,0 +1,3077 @@
+{
+  "generatedAt": "2026-06-30T04:02:47.247886+00:00",
+  "source": {
+    "name": "Mac OS 8.1 retail CD image from Internet Archive",
+    "url": "https://archive.org/details/MacOS_8_Version_8.1_691-1912-A_Apple_Computer_Inc._1998"
+  },
+  "note": "Icons were extracted from the HFS CD image resource forks for System, Finder, and Appearance Extension with hfsutils MacBinary export plus rsrcdump conversion. Each resource family keeps the highest-fidelity extracted PNG, preferring icl8 over lower-depth or monochrome variants.",
+  "counts": {
+    "system": 82,
+    "finder": 97,
+    "appearance": 127,
+    "resource": 0,
+    "total": 306
+  },
+  "entries": [
+    {
+      "type": "system",
+      "name": "Apple menu (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16386",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16386.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/apple-menu-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Balloon Help (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16490",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16490.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/balloon-help-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Desk accessory (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3991",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3991.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/desk-accessory-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic application (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3996",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3996.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/generic-application-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic document (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-4000",
+      "sourcePath": "macos8-icons/System_resources/icl8/-4000.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/generic-document-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic folder (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3999",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3999.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/generic-folder-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic preferences (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3985",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3985.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/generic-preferences-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Generic stationery (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3989",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3989.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/generic-stationery-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Macintosh system (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-16396",
+      "sourcePath": "macos8-icons/System_resources/icl8/-16396.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/macintosh-system-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Open folder (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3998",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3998.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/open-folder-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16385 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-16385",
+      "sourcePath": "macos8-icons/System_resources/SICN/-16385.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16385-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16411 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16411",
+      "sourcePath": "macos8-icons/System_resources/ICN%23/-16411.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16411-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16415 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-16415",
+      "sourcePath": "macos8-icons/System_resources/icl8/-16415.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16415-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16480 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-16480",
+      "sourcePath": "macos8-icons/System_resources/cicn/-16480.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16480-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16482 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-16482",
+      "sourcePath": "macos8-icons/System_resources/icl8/-16482.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16482-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16494 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-16494",
+      "sourcePath": "macos8-icons/System_resources/icl8/-16494.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16494-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16506 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-16506",
+      "sourcePath": "macos8-icons/System_resources/icl8/-16506.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16506-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16509 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-16509",
+      "sourcePath": "macos8-icons/System_resources/icl8/-16509.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16509-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16522 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16522",
+      "sourcePath": "macos8-icons/System_resources/ICN%23/-16522.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16522-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16541 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16541",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16541.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16541-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16565 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-16565",
+      "sourcePath": "macos8-icons/System_resources/ICN%23/-16565.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16565-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -16569 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16569",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16569.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16569-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16570 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16570",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16570.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16570-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16571 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16571",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16571.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16571-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16572 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16572",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16572.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16572-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16573 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16573",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16573.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16573-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16574 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16574",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16574.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16574-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16575 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16575",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16575.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16575-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16580 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16580",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16580.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16580-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16581 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16581",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16581.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16581-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16582 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16582",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16582.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16582-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -16583 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-16583",
+      "sourcePath": "macos8-icons/System_resources/ics8/-16583.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-16583-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -20010 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20010",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20010.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20010-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20011 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20011",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20011.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20011-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20012 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20012",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20012.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20012-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20013 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20013",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20013.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20013-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20014 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20014",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20014.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20014-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20015 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20015",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20015.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20015-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20016 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20016",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20016.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20016-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20017 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20017",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20017.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20017-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20018 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20018",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20018.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20018-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20019 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20019",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20019.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20019-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20020 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ICN%23/-20020",
+      "sourcePath": "macos8-icons/System_resources/ICN%23/-20020.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20020-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20024 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-20024",
+      "sourcePath": "macos8-icons/System_resources/icl8/-20024.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20024-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20028 (System)",
+      "sourceFile": "System",
+      "sourceResource": "cicn/-20028",
+      "sourcePath": "macos8-icons/System_resources/cicn/-20028.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20028-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -20447 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics%23/-20447",
+      "sourcePath": "macos8-icons/System_resources/ics%23/-20447.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20447-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -20448 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-20448",
+      "sourcePath": "macos8-icons/System_resources/ics8/-20448.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-20448-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -32507 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-32507",
+      "sourcePath": "macos8-icons/System_resources/icl8/-32507.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-32507-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -32508 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-32508",
+      "sourcePath": "macos8-icons/System_resources/icl8/-32508.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-32508-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -32509 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-32509",
+      "sourcePath": "macos8-icons/System_resources/icl8/-32509.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-32509-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -32511 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-32511",
+      "sourcePath": "macos8-icons/System_resources/icl8/-32511.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-32511-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -32512 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-32512",
+      "sourcePath": "macos8-icons/System_resources/icl8/-32512.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-32512-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3967 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3967",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3967.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3967-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3968 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3968",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3968.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3968-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3969 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3969",
+      "sourcePath": "macos8-icons/System_resources/SICN/-3969.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3969-system.png",
+      "width": 16,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3970 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3970",
+      "sourcePath": "macos8-icons/System_resources/SICN/-3970.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3970-system.png",
+      "width": 16,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3971 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3971",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3971.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3971-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3972 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics8/-3972",
+      "sourcePath": "macos8-icons/System_resources/ics8/-3972.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3972-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3973 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3973",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3973.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3973-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3974 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3974",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3974.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3974-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3975 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3975",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3975.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3975-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3976 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3976",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3976.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3976-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3977 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3977",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3977.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3977-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3978 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3978",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3978.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3978-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3979 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3979",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3979.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3979-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3980 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3980",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3980.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3980-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3981 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3981",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3981.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3981-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3982 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3982",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3982.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3982-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3983 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3983",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3983.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3983-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3986 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3986",
+      "sourcePath": "macos8-icons/System_resources/SICN/-3986.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3986-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3987 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics4/-3987",
+      "sourcePath": "macos8-icons/System_resources/ics4/-3987.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3987-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3988 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics4/-3988",
+      "sourcePath": "macos8-icons/System_resources/ics4/-3988.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3988-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3990 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3990",
+      "sourcePath": "macos8-icons/System_resources/SICN/-3990.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3990-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3992 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics%23/-3992",
+      "sourcePath": "macos8-icons/System_resources/ics%23/-3992.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3992-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3994 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3994",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3994.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3994-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource -3995 (System)",
+      "sourceFile": "System",
+      "sourceResource": "ics4/-3995",
+      "sourcePath": "macos8-icons/System_resources/ics4/-3995.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3995-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -3997 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/-3997",
+      "sourcePath": "macos8-icons/System_resources/SICN/-3997.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3997-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource -5696 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl4/-5696",
+      "sourcePath": "macos8-icons/System_resources/icl4/-5696.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-5696-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Resource 0 (System)",
+      "sourceFile": "System",
+      "sourceResource": "SICN/0",
+      "sourcePath": "macos8-icons/System_resources/SICN/0.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-0-system.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "system",
+      "name": "Resource 3 (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/3",
+      "sourcePath": "macos8-icons/System_resources/icl8/3.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/resource-3-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Trash (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3993",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3993.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/trash-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system",
+      "name": "Trash full (System)",
+      "sourceFile": "System",
+      "sourceResource": "icl8/-3984",
+      "sourcePath": "macos8-icons/System_resources/icl8/-3984.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/system/trash-full-system.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 100 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/100",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/100.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-100-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1000 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1000",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1000.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1000-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1001 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1001",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1001.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1001-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1002 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1002",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1002.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1002-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 101 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/101",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/101.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-101-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 102 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/102",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/102.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-102-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1100 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1100",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1100.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1100-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1101 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1101",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1101.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1101-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1102 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1102",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1102.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1102-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1200 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1200",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1200.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1200-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1201 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1201",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1201.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1201-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1202 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1202",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1202.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1202-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 128 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/128",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/128.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-128-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 129 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/129",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/129.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-129-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 130 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/130",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/130.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-130-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1300 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1300",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1300.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1300-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1301 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1301",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1301.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1301-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1302 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1302",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1302.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1302-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1400 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1400",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1400.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1400-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1401 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1401",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1401.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1401-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 1402 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/1402",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/1402.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-1402-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 200 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/200",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/200.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-200-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 201 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/201",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/201.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-201-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 202 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/202",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/202.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-202-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 25010 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/25010",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/25010.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-25010-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 25011 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/25011",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/25011.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-25011-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 25012 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/25012",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/25012.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-25012-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 25013 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/25013",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/25013.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-25013-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 25014 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/25014",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/25014.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-25014-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 25015 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/25015",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/25015.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-25015-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29010 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29010",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29010.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29010-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29011 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29011",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29011.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29011-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29012 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29012",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29012.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29012-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29013 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29013",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29013.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29013-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29014 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29014",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29014.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29014-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29015 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29015",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29015.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29015-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29016 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29016",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29016.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29016-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29017 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29017",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29017.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29017-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29018 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29018",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29018.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29018-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29019 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29019",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29019.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29019-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29020 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29020",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29020.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29020-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 29021 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/29021",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/29021.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-29021-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 301 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/301",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/301.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-301-finder.png",
+      "width": 24,
+      "height": 12
+    },
+    {
+      "type": "finder",
+      "name": "Resource 302 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/302",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/302.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-302-finder.png",
+      "width": 24,
+      "height": 12
+    },
+    {
+      "type": "finder",
+      "name": "Resource 303 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/303",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/303.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-303-finder.png",
+      "width": 24,
+      "height": 12
+    },
+    {
+      "type": "finder",
+      "name": "Resource 304 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/304",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/304.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-304-finder.png",
+      "width": 24,
+      "height": 12
+    },
+    {
+      "type": "finder",
+      "name": "Resource 305 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/305",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/305.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-305-finder.png",
+      "width": 24,
+      "height": 12
+    },
+    {
+      "type": "finder",
+      "name": "Resource 306 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/306",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/306.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-306-finder.png",
+      "width": 24,
+      "height": 12
+    },
+    {
+      "type": "finder",
+      "name": "Resource 307 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/307",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/307.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-307-finder.png",
+      "width": 24,
+      "height": 12
+    },
+    {
+      "type": "finder",
+      "name": "Resource 400 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/400",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/400.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-400-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 401 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/401",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/401.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-401-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 402 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/402",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/402.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-402-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 4500 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/4500",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/4500.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-4500-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 4501 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "ics8/4501",
+      "sourcePath": "macos8-icons/Finder_resources/ics8/4501.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-4501-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 497 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/497",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/497.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-497-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 498 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/498",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/498.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-498-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 499 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "cicn/499",
+      "sourcePath": "macos8-icons/Finder_resources/cicn/499.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-499-finder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "finder",
+      "name": "Resource 500 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/500",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/500.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-500-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 501 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/501",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/501.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-501-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 502 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/502",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/502.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-502-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 600 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/600",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/600.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-600-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 601 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/601",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/601.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-601-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 602 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/602",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/602.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-602-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 700 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/700",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/700.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-700-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 701 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/701",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/701.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-701-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 702 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/702",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/702.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-702-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7201 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7201",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7201.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7201-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7202 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7202",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7202.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7202-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7203 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7203",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7203.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7203-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7204 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7204",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7204.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7204-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7205 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7205",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7205.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7205-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7206 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7206",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7206.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7206-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7207 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7207",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7207.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7207-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7208 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7208",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7208.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7208-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7209 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7209",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7209.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7209-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7210 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7210",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7210.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7210-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7211 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7211",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7211.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7211-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7212 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7212",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7212.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7212-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7213 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7213",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7213.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7213-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7214 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7214",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7214.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7214-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7215 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7215",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7215.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7215-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7216 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7216",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7216.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7216-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7217 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7217",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7217.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7217-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7218 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7218",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7218.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7218-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7219 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7219",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7219.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7219-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7220 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7220",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7220.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7220-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7221 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7221",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7221.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7221-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7222 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7222",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7222.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7222-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7223 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7223",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7223.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7223-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7224 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7224",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7224.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7224-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 7225 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/7225",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/7225.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-7225-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 800 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/800",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/800.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-800-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 801 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/801",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/801.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-801-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 802 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/802",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/802.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-802-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 900 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/900",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/900.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-900-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 901 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/901",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/901.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-901-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "finder",
+      "name": "Resource 902 (Finder)",
+      "sourceFile": "Finder",
+      "sourceResource": "icl8/902",
+      "sourcePath": "macos8-icons/Finder_resources/icl8/902.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/finder/resource-902-finder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Apple menu (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-16386",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-16386.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/apple-menu-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Desk accessory (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-3991",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-3991.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/desk-accessory-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Generic application (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3996",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3996.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/generic-application-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Generic document (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-4000",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-4000.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/generic-document-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Generic folder (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3999",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3999.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/generic-folder-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Generic preferences (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3985",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3985.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/generic-preferences-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Generic stationery (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3989",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3989.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/generic-stationery-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Macintosh system (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-16396",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-16396.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/macintosh-system-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Open folder (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3998",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3998.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/open-folder-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -16415 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-16415",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-16415.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-16415-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -16482 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-16482",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-16482.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-16482-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -16494 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-16494",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-16494.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-16494-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -16509 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-16509",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-16509.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-16509-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20233 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-20233",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-20233.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20233-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20270 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics%23/-20270",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics%23/-20270.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20270-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20271 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20271",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20271.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20271-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20274 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20274",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20274.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20274-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20275 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20275",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20275.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20275-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20276 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20276",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20276.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20276-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20277 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20277",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20277.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20277-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20278 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20278",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20278.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20278-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20279 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20279",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20279.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20279-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20280 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20280",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20280.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20280-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20281 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20281",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20281.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20281-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20282 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20282",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20282.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20282-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20283 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20283",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20283.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20283-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20284 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20284",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20284.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20284-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20285 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20285",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20285.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20285-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20286 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20286",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20286.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20286-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20287 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20287",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20287.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20287-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20288 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20288",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20288.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20288-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20289 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20289",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20289.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20289-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -20290 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-20290",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-20290.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-20290-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3773 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3773",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3773.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3773-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3774 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3774",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3774.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3774-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3781 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3781",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3781.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3781-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3782 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3782",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3782.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3782-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3783 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3783",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3783.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3783-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3784 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3784",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3784.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3784-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3785 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3785",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3785.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3785-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3786 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3786",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3786.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3786-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3787 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3787",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3787.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3787-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3788 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3788",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3788.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3788-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3789 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3789",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3789.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3789-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3790 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3790",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3790.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3790-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3800 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3800",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3800.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3800-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3801 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3801",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3801.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3801-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3802 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3802",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3802.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3802-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3803 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3803",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3803.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3803-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3804 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3804",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3804.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3804-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3805 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3805",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3805.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3805-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3806 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3806",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3806.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3806-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3807 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3807",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3807.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3807-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3808 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3808",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3808.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3808-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3809 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3809",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3809.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3809-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3810 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3810",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3810.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3810-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3811 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3811",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3811.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3811-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3812 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3812",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3812.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3812-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3813 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3813",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3813.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3813-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3814 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3814",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3814.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3814-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3815 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3815",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3815.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3815-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3816 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3816",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3816.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3816-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3817 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3817",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3817.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3817-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3820 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3820",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3820.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3820-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3821 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3821",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3821.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3821-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3822 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3822",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3822.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3822-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3823 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics8/-3823",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics8/-3823.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3823-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3824 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3824",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3824.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3824-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3827 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics4/-3827",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics4/-3827.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3827-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3828 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-3828",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-3828.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3828-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3831 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3831",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3831.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3831-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3832 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3832",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3832.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3832-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3850 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-3850",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-3850.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3850-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3851 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-3851",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-3851.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3851-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3942 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3942",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3942.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3942-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3944 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3944",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3944.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3944-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3945 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3945",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3945.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3945-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3946 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3946",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3946.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3946-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3947 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3947",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3947.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3947-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3948 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3948",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3948.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3948-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3949 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3949",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3949.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3949-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3950 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3950",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3950.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3950-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3952 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3952",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3952.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3952-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3953 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3953",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3953.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3953-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3954 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3954",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3954.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3954-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3955 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3955",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3955.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3955-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3956 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3956",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3956.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3956-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3957 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3957",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3957.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3957-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3958 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3958",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3958.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3958-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3959 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3959",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3959.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3959-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3960 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3960",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3960.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3960-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3961 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3961",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3961.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3961-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3962 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3962",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3962.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3962-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3963 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3963",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3963.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3963-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3964 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3964",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3964.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3964-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3965 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3965",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3965.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3965-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3966 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3966",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3966.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3966-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3967 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3967",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3967.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3967-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3968 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3968",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3968.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3968-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3969 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-3969",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-3969.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3969-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3970 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3970",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3970.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3970-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3971 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3971",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3971.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3971-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3973 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3973",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3973.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3973-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3974 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3974",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3974.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3974-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3975 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3975",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3975.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3975-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3976 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3976",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3976.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3976-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3977 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3977",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3977.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3977-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3978 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3978",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3978.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3978-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3979 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3979",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3979.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3979-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3980 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3980",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3980.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3980-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3981 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3981",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3981.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3981-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3982 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3982",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3982.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3982-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3983 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3983",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3983.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3983-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3987 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3987",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3987.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3987-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3988 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-3988",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-3988.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3988-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3992 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl8/-3992",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl8/-3992.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3992-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3994 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3994",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3994.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3994-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3995 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3995",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3995.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3995-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -3997 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3997",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3997.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-3997-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -4001 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ics%23/-4001",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ics%23/-4001.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-4001-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -6046 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "cicn/-6046",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/cicn/-6046.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-6046-appearance-extension.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "appearance",
+      "name": "Resource -8000 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "ICN%23/-8000",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/ICN%23/-8000.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-8000-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource 0 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "cicn/0",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/cicn/0.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-0-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource 1 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "cicn/1",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/cicn/1.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-1-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Resource 2 (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "cicn/2",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/cicn/2.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/resource-2-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Trash (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3993",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3993.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/trash-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "appearance",
+      "name": "Trash full (Appearance Extension)",
+      "sourceFile": "Appearance Extension",
+      "sourceResource": "icl4/-3984",
+      "sourcePath": "macos8-icons/Appearance-Extension_resources/icl4/-3984.png",
+      "catalogPath": "/public/resources/classic-mac-icon-catalogs/mac-os-8/appearance/trash-full-appearance-extension.png",
+      "width": 32,
+      "height": 32
+    }
+  ]
+}
