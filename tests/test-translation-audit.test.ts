@@ -8,7 +8,12 @@ import {
   getExpectedAppleUiTerm,
 } from "../scripts/apple-ui-terminology";
 import { auditTranslations } from "../scripts/audit-translations";
+import de from "../src/lib/locales/de/translation.json";
 import en from "../src/lib/locales/en/translation.json";
+import es from "../src/lib/locales/es/translation.json";
+import fr from "../src/lib/locales/fr/translation.json";
+import it from "../src/lib/locales/it/translation.json";
+import pt from "../src/lib/locales/pt/translation.json";
 import ru from "../src/lib/locales/ru/translation.json";
 
 function collectEnglishStringValues(
@@ -70,6 +75,19 @@ describe("translation audit", () => {
     expect(getNestedTranslationValue(en, "apps.control-panels.master")).not.toMatch(
       /\bMaster\b/u
     );
+  });
+
+  test("capitalizes standalone color labels in cased locales", () => {
+    const locales = { de, es, fr, it, pt, ru };
+
+    for (const [locale, translations] of Object.entries(locales)) {
+      for (const color of ["orange", "purple"] as const) {
+        const value = translations.common.colors[color];
+        const firstLetter = value.charAt(0);
+        expect(firstLetter).toBe(firstLetter.toLocaleUpperCase(locale));
+        expect(value).toBe(translations.apps.stickies.colors[color]);
+      }
+    }
   });
 
   test("avoids forbidden Apple English style patterns in catalog values", () => {

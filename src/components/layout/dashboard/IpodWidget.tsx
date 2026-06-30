@@ -521,7 +521,11 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
           <button
             type="button"
             onClick={handleToggleRepeat}
-            title={loopCurrent ? t("apps.dashboard.ipod.repeatOne", "repeat one") : t("apps.dashboard.ipod.repeatAll", "repeat all")}
+            title={
+              loopCurrent
+                ? t("apps.dashboard.ipod.repeatOne", "Repeat One")
+                : t("apps.dashboard.ipod.repeatAll", "Repeat All")
+            }
             style={{
               background: "transparent",
               border: "none",
