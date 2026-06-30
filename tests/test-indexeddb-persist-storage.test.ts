@@ -135,6 +135,23 @@ describe("createIndexedDBPersistStorage", () => {
     expect(value.state.a).toBe(2);
   });
 
+  test("settling rejects when an IndexedDB commit fails", async () => {
+    const storage = createIndexedDBPersistStorage<{
+      callback: () => void;
+    }>({ delayMs: 60_000 });
+    storage.setItem("uncloneable", {
+      state: { callback: () => undefined },
+      version: 1,
+    });
+    const originalConsoleError = console.error;
+    console.error = () => undefined;
+    try {
+      await expect(settlePersistWrites()).rejects.toBeInstanceOf(DOMException);
+    } finally {
+      console.error = originalConsoleError;
+    }
+  });
+
   test("migrates a legacy localStorage value into IndexedDB on first read", async () => {
     backing.set("legacy", JSON.stringify({ state: { a: 9 }, version: 3 }));
     const storage = createIndexedDBPersistStorage<{ a: number }>();

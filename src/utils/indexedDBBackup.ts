@@ -223,43 +223,70 @@ export function deserializeStoreItem(
   return restoredValue;
 }
 
-export async function restoreStoreItems(
+interface RestoreStoreOptions {
+  mapValue?: (
+    value: Record<string, unknown>,
+    item: IndexedDBStoreItemWithKey
+  ) => Record<string, unknown>;
+}
+
+export interface IndexedDBStoreRestore {
+  storeName: string;
+  items: IndexedDBStoreItemWithKey[];
+  options?: RestoreStoreOptions;
+}
+
+/** Atomically replace multiple object stores in one IndexedDB transaction. */
+export async function restoreStoreItemsAtomically(
   db: IDBDatabase,
-  storeName: string,
-  items: IndexedDBStoreItemWithKey[],
-  options?: {
-    mapValue?: (
-      value: Record<string, unknown>,
-      item: IndexedDBStoreItemWithKey
-    ) => Record<string, unknown>;
-  }
+  restores: readonly IndexedDBStoreRestore[]
 ): Promise<void> {
+  if (restores.length === 0) return;
+
+  const prepared = restores.map(({ storeName, items, options }) => ({
+    storeName,
+    items: items.map((item) => {
+      const restoredValue = deserializeStoreItem(item);
+      return {
+        key: item.key,
+        value: options?.mapValue
+          ? options.mapValue(restoredValue, item)
+          : restoredValue,
+      };
+    }),
+  }));
+
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
+    const transaction = db.transaction(
+      prepared.map(({ storeName }) => storeName),
+      "readwrite"
+    );
 
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
     transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
+      reject(transaction.error || new Error("Restore transaction aborted"));
 
-    const clearRequest = store.clear();
-
-    clearRequest.onsuccess = () => {
-      try {
-        for (const item of items) {
-          const restoredValue = deserializeStoreItem(item);
-          const finalValue = options?.mapValue
-            ? options.mapValue(restoredValue, item)
-            : restoredValue;
-          store.put(finalValue, item.key);
+    try {
+      for (const restore of prepared) {
+        const store = transaction.objectStore(restore.storeName);
+        store.clear();
+        for (const item of restore.items) {
+          store.put(item.value, item.key);
         }
-      } catch (error) {
-        transaction.abort();
-        reject(error);
       }
-    };
-
-    clearRequest.onerror = () => reject(clearRequest.error);
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+    }
   });
+}
+
+export async function restoreStoreItems(
+  db: IDBDatabase,
+  storeName: string,
+  items: IndexedDBStoreItemWithKey[],
+  options?: RestoreStoreOptions
+): Promise<void> {
+  return restoreStoreItemsAtomically(db, [{ storeName, items, options }]);
 }

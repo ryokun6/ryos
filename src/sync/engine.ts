@@ -100,7 +100,6 @@ export interface RestoreLocalStateToCloudResult {
   deleted: number;
 }
 
-const CODEC_READY_TIMEOUT_MS = 10_000;
 const CODEC_READY_POLL_MS = 10;
 
 export class CloudSyncEngine {
@@ -141,7 +140,6 @@ export class CloudSyncEngine {
   private async waitForNamespacesReady(
     namespaces: readonly SyncNamespace[]
   ): Promise<void> {
-    const deadline = Date.now() + CODEC_READY_TIMEOUT_MS;
     let pending = namespaces.filter((namespace) => {
       const codec = SYNC_CODECS[namespace];
       return codec.isReady && !codec.isReady();
@@ -154,11 +152,6 @@ export class CloudSyncEngine {
     while (pending.length > 0) {
       if (this.stopped || this.abortController.signal.aborted) {
         throw new DOMException("Cloud sync stopped", "AbortError");
-      }
-      if (Date.now() >= deadline) {
-        throw new Error(
-          `Timed out waiting for sync namespaces: ${pending.join(", ")}`
-        );
       }
       await new Promise<void>((resolve) => {
         setTimeout(resolve, CODEC_READY_POLL_MS);

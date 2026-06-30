@@ -54,6 +54,7 @@ import {
   readStoreItems,
   readStoreItemByKey,
   restoreStoreItems,
+  restoreStoreItemsAtomically,
   serializeStoreItems,
   type ManualBackupIndexedDBData,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
@@ -286,6 +287,24 @@ function parseManualBackupPayload(data: string): ManualBackupPayload {
   }
 
   return candidate as unknown as ManualBackupPayload;
+}
+
+function snapshotLocalStorage(): Record<string, string> {
+  const snapshot: Record<string, string> = {};
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (!key) continue;
+    const value = localStorage.getItem(key);
+    if (value !== null) snapshot[key] = value;
+  }
+  return snapshot;
+}
+
+function replaceLocalStorage(values: Record<string, string>): void {
+  localStorage.clear();
+  for (const [key, value] of Object.entries(values)) {
+    localStorage.setItem(key, value);
+  }
 }
 
 export interface UseControlPanelsLogicProps {
@@ -854,7 +873,13 @@ export function useControlPanelsLogic({
     // Backup all localStorage data. Settle write-behind persist queues
     // (localStorage + IndexedDB) so the snapshot includes the latest store
     // state, including IndexedDB-persisted slices read below.
-    await settlePersistWrites();
+    try {
+      await settlePersistWrites();
+    } catch (error) {
+      console.error("Error settling persisted state before backup:", error);
+      alert(t("apps.control-panels.alerts.failedToBackupFileSystem"));
+      return;
+    }
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && shouldIncludeManualBackupLocalStorageKey(key)) {
@@ -1011,39 +1036,36 @@ export function useControlPanelsLogic({
           compressed: file.name.endsWith(".gz"),
         });
 
-        // Clear current state. Drain write-behind persist queues first so a
-        // pending debounced write can't fire mid-restore and clobber a
-        // freshly restored key before the reload.
+        // Drain write-behind queues before replacing storage so an older
+        // snapshot cannot commit over the restored backup.
         await settlePersistWrites();
         haltDebouncedPersistWrites();
-        clearAllAppStates();
-        clearPrefetchFlag(); // Force re-prefetch on next boot
 
-        // Restore localStorage
-        Object.entries(backup.localStorage).forEach(([key, value]) => {
-          if (
-            value !== null &&
-            shouldIncludeManualBackupLocalStorageKey(key)
-          ) {
-            localStorage.setItem(key, value as string);
-          }
-        });
+        const previousLocalStorage = snapshotLocalStorage();
+        const restoredLocalStorage = Object.fromEntries(
+          Object.entries(backup.localStorage).filter(
+            (entry): entry is [string, string] =>
+              entry[1] !== null &&
+              shouldIncludeManualBackupLocalStorageKey(entry[0])
+          )
+        );
 
-        // Restore every backed-up store, treating missing stores in older
-        // backups as empty so stale local IndexedDB records cannot win over the
-        // restored snapshot.
+        // Replace localStorage with rollback protection, then atomically
+        // replace every IndexedDB store in one transaction. Missing stores in
+        // older backups are intentionally restored as empty.
         try {
+          replaceLocalStorage(restoredLocalStorage);
           const db = await ensureIndexedDBInitialized();
           try {
             const backupVersion =
               typeof backup.version === "number" ? backup.version : 1;
-            await Promise.all(
+            await restoreStoreItemsAtomically(
+              db,
               MANUAL_BACKUP_INDEXEDDB_STORES.map((storeName) =>
-                restoreStoreItems(
-                  db,
+                ({
                   storeName,
-                  backup.indexedDB?.[storeName] ?? [],
-                  {
+                  items: backup.indexedDB?.[storeName] ?? [],
+                  options: {
                     mapValue: (value, item) =>
                       normalizeRestoredStoreValue(
                         backupVersion,
@@ -1051,20 +1073,29 @@ export function useControlPanelsLogic({
                         value,
                         item
                       ),
-                  }
-                )
+                  },
+                })
               )
             );
           } finally {
             db.close();
           }
         } catch (error) {
-          console.error("Error restoring IndexedDB:", error);
+          try {
+            replaceLocalStorage(previousLocalStorage);
+          } catch (rollbackError) {
+            console.error(
+              "Error rolling back localStorage after restore failure:",
+              rollbackError
+            );
+          }
+          console.error("Error restoring backup storage:", error);
           throw new Error(
             t("apps.control-panels.alerts.failedToRestoreFileSystem"),
             { cause: error }
           );
         }
+        clearPrefetchFlag(); // Force re-prefetch on next boot
 
         // Update wallpaper after restore
         if (backup.localStorage["ryos:app:settings:wallpaper"]) {

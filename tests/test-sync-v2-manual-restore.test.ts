@@ -48,6 +48,10 @@ describe("manual backup Sync v2 metadata filtering", () => {
     expect(localRestoreBlock).toContain(
       "backup.indexedDB?.[storeName] ?? []"
     );
+    expect(localRestoreBlock).toContain("restoreStoreItemsAtomically");
+    expect(localRestoreBlock).toContain(
+      "replaceLocalStorage(previousLocalStorage)"
+    );
   });
 });
 

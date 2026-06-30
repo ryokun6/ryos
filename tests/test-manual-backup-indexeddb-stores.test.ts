@@ -9,6 +9,7 @@ import {
   MANUAL_BACKUP_VERSION,
   readStoreItems,
   restoreStoreItems,
+  restoreStoreItemsAtomically,
   serializeStoreItems,
 } from "../src/utils/indexedDBBackup";
 
@@ -74,6 +75,45 @@ describe("manual IndexedDB backup manifest", () => {
       expect(
         new TextDecoder().decode(restored?.value.content as ArrayBuffer)
       ).toBe("epub bytes");
+    } finally {
+      db.close();
+    }
+  });
+
+  test("rolls back every store when an atomic restore fails", async () => {
+    const db = await ensureIndexedDBInitialized();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(STORES.DOCUMENTS, "readwrite");
+        transaction
+          .objectStore(STORES.DOCUMENTS)
+          .put({ content: "original" }, "atomic-doc");
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+
+      await expect(
+        restoreStoreItemsAtomically(db, [
+          {
+            storeName: STORES.DOCUMENTS,
+            items: [{ key: "atomic-doc", value: { content: "replacement" } }],
+          },
+          {
+            storeName: STORES.BOOKS,
+            items: [
+              {
+                key: "uncloneable",
+                value: { callback: () => undefined },
+              },
+            ],
+          },
+        ])
+      ).rejects.toBeInstanceOf(DOMException);
+
+      const restored = (await readStoreItems(db, STORES.DOCUMENTS)).find(
+        (item) => item.key === "atomic-doc"
+      );
+      expect(restored?.value.content).toBe("original");
     } finally {
       db.close();
     }
