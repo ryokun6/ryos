@@ -29,13 +29,22 @@ export interface AbortableFetchOptions extends RequestInit {
   };
 }
 
+export interface AbortableFetchDependencies {
+  fetch: typeof globalThis.fetch;
+}
+
+const DEFAULT_ABORTABLE_FETCH_DEPENDENCIES: AbortableFetchDependencies = {
+  fetch: (input, init) => globalThis.fetch(input, init),
+};
+
 /**
  * Fetch with timeout and abort support
  * Optionally supports retry with exponential backoff
  */
 export async function abortableFetch(
   url: string,
-  options: AbortableFetchOptions = {}
+  options: AbortableFetchOptions = {},
+  dependencies: AbortableFetchDependencies = DEFAULT_ABORTABLE_FETCH_DEPENDENCIES
 ): Promise<Response> {
   const {
     timeout = 60000,
@@ -80,7 +89,7 @@ export async function abortableFetch(
     }
 
     try {
-      const response = await fetch(url, {
+      const response = await dependencies.fetch(url, {
         credentials: "include",
         ...fetchOptions,
         signal: controller.signal,

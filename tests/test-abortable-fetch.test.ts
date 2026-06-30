@@ -86,20 +86,24 @@ describe("abortableFetch", () => {
   test("does not retry mutating requests without explicit retry config", async () => {
     let attempts = 0;
 
-    globalThis.fetch = (async (_input, init) => {
+    const fetchMock: typeof fetch = async (_input, init) => {
       attempts += 1;
       return await new Promise<Response>((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => {
           reject(new DOMException("Aborted", "AbortError"));
         });
       });
-    }) as typeof fetch;
+    };
 
     await expect(
-      abortableFetch("/mutating-timeout", {
-        method: "POST",
-        timeout: 5,
-      })
+      abortableFetch(
+        "/mutating-timeout",
+        {
+          method: "POST",
+          timeout: 5,
+        },
+        { fetch: fetchMock }
+      )
     ).rejects.toThrow("Request timed out after 5ms");
     expect(attempts).toBe(1);
   });
