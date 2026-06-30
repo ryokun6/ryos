@@ -1790,7 +1790,7 @@
       "menu": {
         "aboutControlPanels": "コントロールパネルについて",
         "aboutControlPanelsForMacosX": "システム環境設定について",
-        "app": "App",
+        "app": "アプリ",
         "controlPanelsHelp": "コントロールパネルヘルプ",
         "controlPanelsHelpForMacosX": "システム環境設定ヘルプ"
       },
@@ -2300,9 +2300,9 @@
         "gifImage": "GIFイメージ",
         "htmlApplet": "HTMLアプレット",
         "internetShortcut": "インターネットショートカット",
-        "jpegImage": "JPEGイメージ",
+        "jpegImage": "JPEG画像",
         "mp3Audio": "MP3オーディオ",
-        "pngImage": "PNGイメージ",
+        "pngImage": "PNG画像",
         "quicktimeMovie": "QuickTimeムービー",
         "unknown": "不明",
         "webpImage": "WebP 画像"
@@ -2314,7 +2314,7 @@
         "desktop": "デスクトップ",
         "documents": "書類",
         "downloads": "ダウンロード",
-        "images": "イメージ",
+        "images": "画像",
         "music": "ミュージック",
         "sites": "サイト",
         "system": "システム",
@@ -4080,7 +4080,7 @@
           "title": "テキスト"
         }
       },
-      "speak": "読み上げる",
+      "speak": "読み上げ",
       "stopSpeech": "音声停止",
       "text": "テキスト",
       "underline": "アンダーライン",
@@ -4496,7 +4496,7 @@
         "from": "から",
         "generating": "生成中…",
         "itemTypes": {
-          "app": "App",
+          "app": "アプリ",
           "applet": "アプレット",
           "item": "項目",
           "page": "ページ",
@@ -4594,7 +4594,7 @@
       "file": "ファイル",
       "go": "移動",
       "help": "ヘルプ",
-      "images": "イメージ",
+      "images": "画像",
       "music": "ミュージック",
       "paste": "ペースト",
       "redo": "やり直す",
@@ -4689,7 +4689,7 @@
     "fixLogs": "ログを Cursor エージェントに送信",
     "hideConsole": "コンソールを非表示",
     "live": {
-      "appVersion": "App",
+      "appVersion": "アプリ",
       "average": "平均",
       "bufferedLogs": "{{count}}件バッファ済み",
       "cloudSync": "クラウド同期",

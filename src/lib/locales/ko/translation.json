@@ -3986,7 +3986,7 @@
         "enterANameForYourFile": "파일 이름을 입력하세요.",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "저장할 파일 이름을 입력하거나 닫기 전에 삭제하세요.",
         "keepNewDocument": "새 문서 유지",
-        "saveChanges": "변경사항 저장",
+        "saveChanges": "변경 사항 저장",
         "saveFile": "파일 저장",
         "saveYourChangesBeforeClosing": "닫기 전에 변경사항을 저장하세요."
       },
@@ -4485,7 +4485,7 @@
       "openInGitHub": "GitHub에서 열기",
       "save": "저장",
       "saveBeforeClosing": "닫기 전에 변경사항을 저장하세요.",
-      "saveChanges": "변경사항 저장",
+      "saveChanges": "변경 사항 저장",
       "saveFile": "파일 저장",
       "share": {
         "by": "작성자",

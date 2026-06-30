@@ -2928,7 +2928,7 @@
         "playlistTrackCount_many": "{{count}} canciones",
         "playlistTrackCount_one": "{{count}} canción",
         "playlistTrackCount_other": "{{count}} canciones",
-        "playlists": "Listas de reproducción",
+        "playlists": "Playlists",
         "radio": "Radio",
         "recentlyAdded": "Añadido recientemente",
         "repeat": "Repetir",
@@ -4083,7 +4083,7 @@
           "title": "Texto"
         }
       },
-      "speak": "Hablar",
+      "speak": "Leer",
       "stopSpeech": "Detener habla",
       "text": "Texto",
       "underline": "Subrayar",

@@ -1837,7 +1837,7 @@
         "codeSentTitle": "Код подтверждения отправлен",
         "currentLabel": "Текущий адрес для восстановления",
         "description": "Добавьте адрес электронной почты, чтобы иметь возможность сбросить пароль, если вы его забудете.",
-        "emailLabel": "Адрес e-mail",
+        "emailLabel": "Адрес e‑mail",
         "genericError": "Что-то пошло не так. Пожалуйста, попробуйте еще раз.",
         "invalidEmail": "Введите корректный адрес электронной почты",
         "notConfigured": "Восстановление через почту недоступно на этом сервере. Вы все еще можете восстановить доступ через привязанную учетную запись Telegram.",
@@ -2316,7 +2316,7 @@
       },
       "folders": {
         "applets": "Апплеты",
-        "applications": "Программы",
+        "applications": "Приложения",
         "books": "Книги",
         "desktop": "Рабочий стол",
         "documents": "Документы",
@@ -2851,7 +2851,7 @@
         "fontSansSerif": "Без засечек",
         "fontSerif": "С засечками",
         "fontSerifRed": "Serif (Контур)",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "furigana": "Фуригана",
         "goToAlbum": "Перейти к альбому",
         "goToArtist": "Перейти к исполнителю",
@@ -3440,7 +3440,7 @@
         "backToPresets": "Назад к системам",
         "captureScreenshot": "Сделать скриншот",
         "controls": "Управление",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "loadGame": "Загрузить игру",
         "loadState": "Загрузить состояние",
         "mouseSensitivity": "Чувствительность мыши",
@@ -4161,7 +4161,7 @@
         "controls": "Управление",
         "deleteChannel": "Удалить канал",
         "exportChannels": "Экспортировать каналы…",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "importChannels": "Импортировать каналы…",
         "lcdFilter": "ЖК-фильтр",
         "newChannel": "Новый канал…",
@@ -4259,7 +4259,7 @@
         "allVideos": "Все видео",
         "clearLibrary": "Очистить медиатеку…",
         "controls": "Элементы управления",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "library": "Медиатека",
         "next": "Следующий",
         "openVideo": "Открыть видео…",
@@ -4377,7 +4377,7 @@
     "appMenu": {
       "aboutApp": "О программе {{appName}}",
       "appHelp": "Справка {{appName}}",
-      "fullScreen": "Во весь экран",
+      "fullScreen": "На весь экран",
       "hideApp": "Скрыть {{appName}}",
       "hideOthers": "Скрыть другие",
       "quitApp": "Завершить {{appName}}",
@@ -4530,7 +4530,7 @@
     "dock": {
       "addToDock": "Добавить в Dock",
       "appletStore": "Магазин апплетов",
-      "applications": "Программы",
+      "applications": "Приложения",
       "folderContents": "Содержимое папки",
       "hide": "Скрыть",
       "minimized": "(свернуто)",
@@ -4595,7 +4595,7 @@
       "openingSharedVideo": "Открытие общего видео…"
     },
     "menu": {
-      "applications": "Программы",
+      "applications": "Приложения",
       "clear": "Очистить",
       "close": "Закрыть",
       "copy": "Скопировать",
@@ -4670,10 +4670,10 @@
     },
     "window": {
       "close": "Закрыть",
-      "fullscreen": "Во весь экран",
+      "fullscreen": "На весь экран",
       "maximize": "Развернуть",
       "maximizeDisabled": "Развернуть (отключено)",
-      "minimize": "Убрать в Dock",
+      "minimize": "Убрать в Dock",
       "minimizeDisabled": "Свернуть (отключено)"
     }
   },
@@ -4831,7 +4831,7 @@
     "placeholder": "Поиск в ryOS",
     "sections": {
       "applets": "Апплеты",
-      "apps": "Программы",
+      "apps": "Приложения",
       "calendar": "Календарь",
       "commands": "Команды",
       "contacts": "Контакты",

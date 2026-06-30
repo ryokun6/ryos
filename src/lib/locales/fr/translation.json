@@ -554,7 +554,7 @@
         "exportAs": "Exporter comme’…",
         "html": "HTML",
         "importFromDevice": "Importer depuis l’appareil…",
-        "logOut": "Fermer la session",
+        "logOut": "Déconnexion",
         "login": "Se connecter…",
         "noAppletsOpen": "Aucune applet ouverte",
         "open": "Ouvrir…",
@@ -797,7 +797,7 @@
         "speakResults": "Énoncer les résultats",
         "speechEnabled": "Parole"
       },
-      "name": "Calculette",
+      "name": "Calculatrice",
       "speech": {
         "error": "Erreur",
         "keys": {
@@ -840,7 +840,7 @@
       "status": {
         "memory": "M={{value}}"
       },
-      "title": "Calculette"
+      "title": "Calculatrice"
     },
     "calendar": {
       "description": "Calendrier avec événements",
@@ -984,9 +984,9 @@
         "saveTranscriptDescription": "Saisissez un nom pour le fichier de transcription de votre discussion",
         "saveTranscriptTitle": "Enregistrer la transcription",
         "searchUsernamePlaceholder": "Rechercher un nom d’utilisateur…",
-        "setPasswordButton": "Définir le mot de passe",
+        "setPasswordButton": "Définir un mot de passe",
         "setPasswordDescription": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez utiliser ce mot de passe pour obtenir un nouveau jeton si vous perdez l’accès.",
-        "setPasswordTitle": "Définir le mot de passe"
+        "setPasswordTitle": "Définir un mot de passe"
       },
       "help": {
         "chatWithRyo": {
@@ -1025,7 +1025,7 @@
         "increaseFontSize": "Augmenter la taille de police",
         "keepTalking": "Continuer à parler",
         "linkToTelegram": "Lien vers Telegram",
-        "logOut": "Fermer la session",
+        "logOut": "Déconnexion",
         "login": "Se connecter…",
         "newChat": "Nouvelle conversation’…",
         "resetFontSize": "Réinitialiser la taille de la police",
@@ -1766,9 +1766,9 @@
       "ipod": "iPod",
       "ipodVolume": "Volume de l’iPod",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
+      "logOut": "Déconnexion",
       "logOutAll": "Tout déconnecter…",
-      "logOutButton": "Fermer la session…",
+      "logOutButton": "Déconnexion…",
       "logOutOfAllDevices": "Se déconnecter de tous les appareils",
       "logOutOfAllDevicesRowDescription": "Se déconnecter de votre compte ryOS sur tous les appareils",
       "logOutRowDescription": "Se déconnecter de votre compte ryOS sur cet appareil",
@@ -1896,11 +1896,11 @@
       "selectAPreset": "Sélectionner un préréglage",
       "selectScreenSaver": "Sélectionner un économiseur d’écran",
       "sepia": "Sépia",
-      "setPassword": "Définir le mot de passe…",
+      "setPassword": "Définir un mot de passe…",
       "setPasswordDialog": {
         "description": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez l'utiliser pour obtenir un nouveau jeton si vous perdez l'accès.",
-        "submitLabel": "Définir le mot de passe",
-        "title": "Définir le mot de passe"
+        "submitLabel": "Définir un mot de passe",
+        "title": "Définir un mot de passe"
       },
       "setup": "Configurer",
       "shaderEffect": "Effet Shader",
@@ -4083,7 +4083,7 @@
           "title": "Texte"
         }
       },
-      "speak": "Prononcer",
+      "speak": "Énoncer",
       "stopSpeech": "Arrêter la parole",
       "text": "Texte",
       "underline": "Souligner",
@@ -4417,7 +4417,7 @@
       "dialogTitle": "Connexion ryOS",
       "forgotPassword": "Mot de passe oublié ?",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
+      "logOut": "Déconnexion",
       "logOutDescription": "Voulez-vous vraiment vous déconnecter ? Vous serez déconnecté de votre compte.",
       "loggingIn": "Connexion…",
       "loginDescription": "Connectez-vous à votre compte",
@@ -4666,7 +4666,7 @@
       "fullscreen": "Plein écran",
       "maximize": "Agrandir",
       "maximizeDisabled": "Agrandir (désactivé)",
-      "minimize": "Placer dans le Dock",
+      "minimize": "Minimiser",
       "minimizeDisabled": "Réduire (désactivé)"
     }
   },
