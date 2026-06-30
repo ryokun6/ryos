@@ -80,6 +80,12 @@ describe("canonical Redis key registry", () => {
     expect(redisKeys.cache.ieVersions("urlhash", 1999)).toBe(
       "cache:ie:urlhash:1999:versions"
     );
+    expect(redisKeys.cache.ieEmbedHost("hosthash")).toBe(
+      "cache:ie:embed:hosthash"
+    );
+    expect(redisKeys.cache.ieHeadlessFailure("urlhash")).toBe(
+      "cache:ie:headless:failure:urlhash"
+    );
     expect(redisKeys.integration.telegramPendingLink("Ryo")).toBe(
       "integration:telegram:link:user:ryo"
     );
