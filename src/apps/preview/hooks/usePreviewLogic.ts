@@ -72,7 +72,7 @@ export function usePreviewLogic({
 }: UsePreviewLogicOptions) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("preview", helpItems);
-  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const { isWindowsTheme, isMacOSTheme, isAquaGlass } = useThemeFlags();
   const {
     isHelpDialogOpen,
     setIsHelpDialogOpen,
@@ -394,6 +394,7 @@ export function usePreviewLogic({
     translatedHelpItems,
     isWindowsTheme,
     isMacOSTheme,
+    isAquaGlass,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

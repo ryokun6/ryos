@@ -4,6 +4,7 @@ import type { PreviewInitialData } from "..";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { InputDialog } from "@/components/dialogs/InputDialog";
+import { cn } from "@/lib/utils";
 import { PREVIEW_FILE_ACCEPT } from "@/utils/fileAssociations";
 import { appMetadata } from "../metadata";
 import { usePreviewLogic } from "../hooks/usePreviewLogic";
@@ -23,6 +24,7 @@ export function PreviewAppComponent({
     t,
     translatedHelpItems,
     isWindowsTheme,
+    isAquaGlass,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,
@@ -244,7 +246,10 @@ export function PreviewAppComponent({
       }
     >
       <div
-        className="relative h-full overflow-auto bg-os-panel-bg font-os-ui text-os-text-primary"
+        className={cn(
+          "relative h-full overflow-auto font-os-ui text-os-text-primary",
+          isAquaGlass ? "bg-transparent" : "bg-os-panel-bg",
+        )}
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleDrop}
       >
