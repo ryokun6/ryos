@@ -52,6 +52,12 @@ const LOCALE_LANGUAGE_CODES: Record<GlossaryLocale, ReadonlySet<string>> = {
 const TERM_FRAMEWORK_HINTS: Partial<Record<string, RegExp>> = {
   Playlists: /^(?:MusicKitInternal|_MusicKitInternal_SwiftUI)\.framework$/u,
 };
+const TERM_TRANSLATION_PREFERENCES: Partial<
+  Record<string, Partial<Record<GlossaryLocale, string>>>
+> = {
+  "Set Password": { de: "Passwort festlegen" },
+  "Sign In": { ru: "Войти" },
+};
 const ELLIPSIS_SUFFIX = /(?:\.\.\.|…|⋯)$/u;
 
 export interface RawLocalization {
@@ -368,6 +374,16 @@ function selectDominantTranslation(
   locale: GlossaryLocale,
   counts: Map<string, number>
 ): string | null {
+  const preferred = TERM_TRANSLATION_PREFERENCES[term]?.[locale];
+  if (preferred !== undefined) {
+    if (!counts.has(preferred)) {
+      throw new Error(
+        `Preferred macOS 26.1 translation is unavailable: "${term}" (${locale}) → "${preferred}"`
+      );
+    }
+    return preferred;
+  }
+
   const ranked = [...counts.entries()].sort(
     ([leftValue, leftCount], [rightValue, rightCount]) =>
       rightCount - leftCount ||

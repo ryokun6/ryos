@@ -70,7 +70,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "es": "Iniciar sesión",
     "pt": "Iniciar Sessão",
     "it": "Accedi",
-    "ru": "Вход"
+    "ru": "Войти"
   },
   "Sign Out": {
     "zh-TW": "登出",
@@ -209,7 +209,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ja": "パスワードを設定",
     "ko": "암호 설정",
     "fr": "Définir un mot de passe",
-    "de": "Festlegen",
+    "de": "Passwort festlegen",
     "es": "Definir contraseña",
     "pt": "Definir Senha",
     "it": "Imposta password",

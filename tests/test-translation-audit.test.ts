@@ -155,6 +155,20 @@ describe("translation audit", () => {
       )
     ).toBe("도");
     expect(
+      getExpectedAppleUiTerm(
+        "Degrees",
+        "ja",
+        "apps.calculator.angle.deg"
+      )
+    ).toBe("度");
+    expect(
+      getExpectedAppleUiTerm(
+        "Added",
+        "fr",
+        "apps.admin.tableHeaders.added"
+      )
+    ).toBe("Ajouté");
+    expect(
       getExpectedAppleUiTerm("Pink", "zh-TW", "common.colors.pink")
     ).toBe("粉色");
   });

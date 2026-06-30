@@ -33,6 +33,18 @@ const expectedPlaylists = {
   ru: "Плейлисты",
 } as const;
 
+const expectedSetPassword = {
+  "zh-TW": "設定密碼",
+  ja: "パスワードを設定",
+  ko: "암호 설정",
+  fr: "Définir un mot de passe",
+  de: "Passwort festlegen",
+  es: "Definir contraseña",
+  pt: "Definir Senha",
+  it: "Imposta password",
+  ru: "Задать пароль",
+} as const;
+
 const languageCodes = {
   "zh-TW": "zh_TW",
   ja: "Japanese",
@@ -128,6 +140,24 @@ describe("macOS 26 Apple glossary extractor", () => {
         ]
       )
     ).toEqual({ Playlists: expectedPlaylists });
+  });
+
+  test("uses a source-backed preference to resolve translation ties", () => {
+    const localizations = Object.entries(expectedSetPassword).map(
+      ([locale, translation]) =>
+        localization(
+          languageCodes[locale as keyof typeof languageCodes],
+          translation
+        )
+    );
+    localizations.push(localization("de", "Festlegen"));
+
+    expect(
+      extractTerminologyFromDocuments(
+        ["Set Password"],
+        [document({ "Set Password": localizations })]
+      )
+    ).toEqual({ "Set Password": expectedSetPassword });
   });
 
   test("streams the pinned manifest and raw localization files", async () => {

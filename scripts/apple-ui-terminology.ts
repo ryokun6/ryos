@@ -100,6 +100,7 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
     ko: "그라파이트",
   },
   "apps.calculator.angle.deg": {
+    ja: "度",
     ko: "도",
   },
   "apps.dashboard.weather.humidity": {
@@ -108,6 +109,10 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
   "apps.admin.auditLog.action": {
     "zh-TW": "操作",
     ko: "작업",
+  },
+  "apps.admin.tableHeaders.added": {
+    fr: "Ajouté",
+    it: "Aggiunto",
   },
   "debug.console": {
     fr: "Journaux",
@@ -170,6 +175,7 @@ const APPLE_UI_CONTEXTUAL_ENGLISH = {
   "apps.calculator.angle.deg": "Degrees",
   "apps.dashboard.weather.humidity": "Humidity",
   "apps.admin.auditLog.action": "Action",
+  "apps.admin.tableHeaders.added": "Added",
   "debug.console": "Logs",
   "debug.tabs.logs": "Logs",
   "apps.admin.song.lyricsSource": "Lyrics",
