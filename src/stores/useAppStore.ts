@@ -10,6 +10,7 @@ import { APP_ANALYTICS, track } from "@/utils/analytics";
 import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { shouldRequestCloudSyncOnAppLaunch } from "@/utils/cloudSyncLaunch";
 import { createClientLogger } from "@/utils/logger";
+import { getRestorablePreviewInitialData } from "@/types/appInitialData";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -850,6 +851,13 @@ const createUseAppStore = () =>
                     ...appletData,
                     content: "", // Exclude content - it should be loaded from IndexedDB
                   },
+                } as AppInstance]);
+                return acc;
+              }
+              if (inst.appId === "preview") {
+                acc.push([id, {
+                  ...instWithoutRuntimeState,
+                  initialData: getRestorablePreviewInitialData(inst.initialData),
                 } as AppInstance]);
                 return acc;
               }
