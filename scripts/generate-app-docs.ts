@@ -49,6 +49,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "tv": { sectionNum: "2.25", docName: "tv" },
   "maps": { sectionNum: "2.26", docName: "maps" },
   "calculator": { sectionNum: "2.27", docName: "calculator" },
+  "preview": { sectionNum: "2.28", docName: "preview" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -232,6 +233,10 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     textedit: {
       defaultSize: { width: 430, height: 475 },
       minSize: { width: 430, height: 200 },
+    },
+    preview: {
+      defaultSize: { width: 760, height: 560 },
+      minSize: { width: 420, height: 320 },
     },
     paint: {
       defaultSize: { width: 713, height: 480 },
@@ -576,6 +581,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     "internet-explorer": "Browse the web with AI-powered content generation and time machine view",
     chats: "Chat with Ryo AI (tool calling, voice, applet generation) and join public chat rooms",
     textedit: "Rich text editor with markdown support, slash commands, and speech-to-text integration",
+    preview: "View images, PDFs, text, markdown, and HTML documents with Finder file associations",
     paint: "Draw and edit images with canvas-based tools, filters, and pattern support",
     "photo-booth": "Take photos with your webcam and apply fun visual effects",
     minesweeper: "Classic puzzle game where you find mines without triggering them",

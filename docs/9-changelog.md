@@ -6,6 +6,15 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
+## July 2026
+
+<details>
+<summary>Minor changes (1)</summary>
+
+- Restore Preview windows with their last document paths so reopened sessions load documents without persisting file contents.
+
+</details>
+
 ## June 2026
 
 - **Aqua Glass theme**: a new macOS theme variant with frosted-glass chrome, backdrop blur, and squircle corners (progressive enhancement with rounded-rect fallback). A transparent menubar adapts text and pill highlights to the wallpaper, and frosted toolbars, menus, sidebars, and inputs carry across Chats, Admin, Finder, Soundboard, and Spotlight.
@@ -16,6 +25,7 @@ A summary of changes and updates to ryOS, organized by month.
 - **Performance sweep**: cut ~1MB of boot-critical JS, narrowed store/instance/clock subscriptions, debounced write-behind localStorage persistence, lazy Pusher runtime, transient drag/resize and dock scaling, visibility-gated polling, and content-visibility for long lists.
 - **Control Panels redesign**: a macOS System Preferences layout across all themes with a Preferences-style search field, a consolidated **Account** ⋯ menu (login, change password, logout, logout-all-devices), reliable Safari auto-height, and Aqua polish.
 - **Books**: a new EPUB reader app with a 3D wooden bookshelf, a page-turn reader (zoom-in/out transitions, reading fonts including EB Garamond, single/double-column layouts, and light/sepia/dark page themes), auto-saved reading progress synced across devices, Finder `.epub` import into a protected `/Books` root, and *Meditations* bundled as the default book.
+- **Preview**: a new document viewer for images, PDFs, HTML, Markdown, and structured text, with Finder file associations, Open With handoff, import, Save As, and export workflows.
 - **International preferences**: a new Control Panels area (Language and Date & Time tabs) for locale formats and an interactive Earth-map time zone picker; the selected time zone is honored across the menubar clock, Dashboard, and Calendar, with localized time-zone and weather city names.
 - **Dynamic wallpapers**: day/night gradient, now-playing cover, and shuffle options, plus animated **Weather** and **Lyrics** live wallpapers backed by unified weather data and per-user deterministic shuffle that stays in sync across devices.
 - **Selectable accent colors**: named swatches in Control Panels → Appearance for Aqua and System 7, a wallpaper-sampled default, a **System** option that restores each theme's classic selection color, and accent theming applied across menus, sliders, progress bars, links, toasts, and Ryo AI bubbles.
