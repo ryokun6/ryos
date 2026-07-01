@@ -588,6 +588,11 @@
       }
     },
     "books": {
+      "chineseScript": {
+        "original": "オリジナル",
+        "simplified": "簡体字中国語",
+        "traditional": "繁体字中国語"
+      },
       "columns": {
         "auto": "自動",
         "double": "見開き",
@@ -633,6 +638,7 @@
         "backToShelf": "本棚に戻る",
         "booksHelp": "Booksヘルプ",
         "chapters": "章",
+        "chineseScript": "中国語の字体",
         "columns": "段組み",
         "font": "フォント",
         "import": "EPUBを読み込む…",

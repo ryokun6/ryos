@@ -590,6 +590,11 @@
       }
     },
     "books": {
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "Chino simplificado",
+        "traditional": "Chino tradicional"
+      },
       "columns": {
         "auto": "Automático",
         "double": "Doble",
@@ -635,6 +640,7 @@
         "backToShelf": "Volver a la estantería",
         "booksHelp": "Ayuda de Libros",
         "chapters": "Capítulos",
+        "chineseScript": "Escritura china",
         "columns": "Columnas",
         "font": "Tipo de letra",
         "import": "Importar EPUB…",

@@ -4532,6 +4532,7 @@
         "textSizeDecrease": "Smaller",
         "textSizeReset": "Default Size",
         "columns": "Columns",
+        "chineseScript": "Chinese Script",
         "theme": "Theme",
         "booksHelp": "Books Help",
         "aboutBooks": "About Books"
@@ -4540,6 +4541,11 @@
         "auto": "Auto",
         "single": "Single",
         "double": "Double"
+      },
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "Simplified Chinese",
+        "traditional": "Traditional Chinese"
       },
       "theme": {
         "auto": "Auto",

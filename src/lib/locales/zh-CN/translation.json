@@ -588,6 +588,11 @@
       }
     },
     "books": {
+      "chineseScript": {
+        "original": "原文",
+        "simplified": "简体中文",
+        "traditional": "繁体中文"
+      },
       "columns": {
         "auto": "自动",
         "double": "双页",
@@ -633,6 +638,7 @@
         "backToShelf": "返回书架",
         "booksHelp": "书籍帮助",
         "chapters": "章节",
+        "chineseScript": "简繁转换",
         "columns": "分栏",
         "font": "字体",
         "import": "导入 EPUB…",

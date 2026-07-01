@@ -153,6 +153,35 @@ export function BooksMenuBar({
         },
         {
           type: "submenu",
+          label: t("apps.books.menu.chineseScript"),
+          items: [
+            {
+              type: "radioGroup",
+              value: settings.chineseScript,
+              onValueChange: (value) =>
+                updateSettings({
+                  chineseScript:
+                    value as BooksReaderSettings["chineseScript"],
+                }),
+              options: [
+                {
+                  label: t("apps.books.chineseScript.original"),
+                  value: "original",
+                },
+                {
+                  label: t("apps.books.chineseScript.simplified"),
+                  value: "simplified",
+                },
+                {
+                  label: t("apps.books.chineseScript.traditional"),
+                  value: "traditional",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "submenu",
           label: t("apps.books.menu.theme"),
           items: [
             {

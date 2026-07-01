@@ -592,6 +592,11 @@
       }
     },
     "books": {
+      "chineseScript": {
+        "original": "Оригинал",
+        "simplified": "Упрощенный китайский",
+        "traditional": "Традиционный китайский"
+      },
       "columns": {
         "auto": "Авто",
         "double": "Две страницы",
@@ -637,6 +642,7 @@
         "backToShelf": "На полку",
         "booksHelp": "Справка Книг",
         "chapters": "Главы",
+        "chineseScript": "Китайское письмо",
         "columns": "Колонки",
         "font": "Шрифт",
         "import": "Импортировать EPUB…",

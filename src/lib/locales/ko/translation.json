@@ -588,6 +588,11 @@
       }
     },
     "books": {
+      "chineseScript": {
+        "original": "원본",
+        "simplified": "중국어 간체",
+        "traditional": "중국어 번체"
+      },
       "columns": {
         "auto": "자동",
         "double": "두 페이지",
@@ -633,6 +638,7 @@
         "backToShelf": "서재로 돌아가기",
         "booksHelp": "Books 도움말",
         "chapters": "장",
+        "chineseScript": "중국어 문자",
         "columns": "단",
         "font": "서체",
         "import": "EPUB 가져오기…",

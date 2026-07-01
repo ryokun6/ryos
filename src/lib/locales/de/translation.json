@@ -588,6 +588,11 @@
       }
     },
     "books": {
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "Chinesisch (vereinfacht)",
+        "traditional": "Chinesisch (traditionell)"
+      },
       "columns": {
         "auto": "Automatisch",
         "double": "Zweiseitig",
@@ -633,6 +638,7 @@
         "backToShelf": "Zurück zum Regal",
         "booksHelp": "Books-Hilfe",
         "chapters": "Kapitel",
+        "chineseScript": "Chinesische Schrift",
         "columns": "Spalten",
         "font": "Schrift",
         "import": "Importieren …",
