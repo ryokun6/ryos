@@ -34,8 +34,8 @@ const OTHER_LANGUAGES: readonly TranslationLocale[] = TRANSLATION_LOCALES;
 
 // Language names for better context in prompts
 const LANGUAGE_NAMES: Record<string, string> = {
-  "zh-CN": "Simplified Chinese",
   "zh-TW": "Traditional Chinese",
+  "zh-CN": "Simplified Chinese",
   "ja": "Japanese",
   "ko": "Korean",
   "fr": "French",
@@ -311,7 +311,7 @@ async function main() {
 Usage: bun run scripts/machine-translate.ts [options]
 
 Options:
-  --lang=<lang>          Translate only specific language (zh-CN, zh-TW, ja, ko, fr, de)
+  --lang=<lang>          Translate only specific language (zh-TW, zh-CN, ja, ko, fr, de)
   --dry-run              Preview changes without translating
   --batch-size=<n>       Number of strings to translate per batch (default: 20)
   --help, -h             Show this help message

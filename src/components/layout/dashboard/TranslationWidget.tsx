@@ -13,8 +13,8 @@ const LANGUAGE_CODES = [
   "pt",
   "ja",
   "ko",
-  "zh-CN",
   "zh-TW",
+  "zh-CN",
   "ru",
 ] as const;
 

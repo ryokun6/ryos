@@ -39,8 +39,8 @@ export type ThemeId = typeof THEME_IDS[number];
 // Supported language codes
 export const LANGUAGE_CODES = [
   "en",
-  "zh-CN",
   "zh-TW",
+  "zh-CN",
   "ja",
   "ko",
   "fr",

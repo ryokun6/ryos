@@ -115,10 +115,10 @@ export function InternationalPaneContent({
   );
   const languageLabel = t(
     `settings.language.${
-      currentLanguage === "zh-CN"
-        ? "chineseSimplified"
-        : currentLanguage === "zh-TW"
-          ? "chineseTraditional"
+      currentLanguage === "zh-TW"
+        ? "chineseTraditional"
+        : currentLanguage === "zh-CN"
+          ? "chineseSimplified"
           : currentLanguage === "ja"
             ? "japanese"
             : currentLanguage === "ko"
@@ -194,11 +194,11 @@ export function InternationalPaneContent({
                     <SelectItem value="en">
                       {t("settings.language.english")}
                     </SelectItem>
-                    <SelectItem value="zh-CN">
-                      {t("settings.language.chineseSimplified")}
-                    </SelectItem>
                     <SelectItem value="zh-TW">
                       {t("settings.language.chineseTraditional")}
+                    </SelectItem>
+                    <SelectItem value="zh-CN">
+                      {t("settings.language.chineseSimplified")}
                     </SelectItem>
                     <SelectItem value="ja">
                       {t("settings.language.japanese")}

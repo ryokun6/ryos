@@ -56,8 +56,8 @@ export const ENGLISH_FORBIDDEN_VALUE_PATTERNS = [
 ] as const;
 
 export const TRANSLATION_LOCALES = [
-  "zh-CN",
   "zh-TW",
+  "zh-CN",
   "ja",
   "ko",
   "fr",

@@ -5,9 +5,10 @@ import {
 } from "../src/lib/languageConfig";
 
 describe("language configuration", () => {
-  test("lists Simplified and Traditional Chinese as separate locales", () => {
+  test("lists Traditional before Simplified Chinese", () => {
     expect(SUPPORTED_LANGUAGES).toContain("zh-CN");
     expect(SUPPORTED_LANGUAGES).toContain("zh-TW");
+    expect(SUPPORTED_LANGUAGES.slice(1, 3)).toEqual(["zh-TW", "zh-CN"]);
     expect(SUPPORTED_LANGUAGES).toHaveLength(11);
   });
 

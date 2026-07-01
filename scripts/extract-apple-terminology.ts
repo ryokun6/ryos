@@ -19,8 +19,8 @@ export const APPLE_LOCALIZATION_SOURCE = {
 } as const;
 
 export const LOCALE_ORDER = [
-  "zh-CN",
   "zh-TW",
+  "zh-CN",
   "ja",
   "ko",
   "fr",
@@ -39,8 +39,8 @@ export type Terminology = Record<string, Record<GlossaryLocale, string>>;
  * the desktop language codes that match ryOS's locales.
  */
 const LOCALE_LANGUAGE_CODES: Record<GlossaryLocale, ReadonlySet<string>> = {
-  "zh-CN": new Set(["zh_CN", "zh_CN-macos"]),
   "zh-TW": new Set(["zh_TW", "zh_TW-macos"]),
+  "zh-CN": new Set(["zh_CN", "zh_CN-macos"]),
   ja: new Set(["Japanese", "ja", "ja-macos"]),
   ko: new Set(["ko", "ko-macos"]),
   fr: new Set(["French", "fr", "fr-macos"]),

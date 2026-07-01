@@ -10,8 +10,8 @@ import {
 } from "../scripts/extract-apple-terminology";
 
 const expectedSettings = {
-  "zh-CN": "设置",
   "zh-TW": "設定",
+  "zh-CN": "设置",
   ja: "設定",
   ko: "설정",
   fr: "Réglages",
@@ -23,8 +23,8 @@ const expectedSettings = {
 } as const;
 
 const expectedPlaylists = {
-  "zh-CN": "播放列表",
   "zh-TW": "播放列表",
+  "zh-CN": "播放列表",
   ja: "プレイリスト",
   ko: "플레이리스트",
   fr: "Playlists",
@@ -36,8 +36,8 @@ const expectedPlaylists = {
 } as const;
 
 const expectedSetPassword = {
-  "zh-CN": "设定密码",
   "zh-TW": "設定密碼",
+  "zh-CN": "设定密码",
   ja: "パスワードを設定",
   ko: "암호 설정",
   fr: "Définir un mot de passe",
@@ -49,8 +49,8 @@ const expectedSetPassword = {
 } as const;
 
 const languageCodes = {
-  "zh-CN": "zh_CN",
   "zh-TW": "zh_TW",
+  "zh-CN": "zh_CN",
   ja: "Japanese",
   ko: "ko",
   fr: "French",
@@ -212,7 +212,7 @@ describe("macOS 26 Apple glossary extractor", () => {
     expect(() =>
       extractTerminologyFromDocuments(["Missing"], [])
     ).toThrow(
-      'No macOS 26.1 entries for 10 term/locale pairs:\n"Missing" (zh-CN)'
+      'No macOS 26.1 entries for 10 term/locale pairs:\n"Missing" (zh-TW)'
     );
   });
 

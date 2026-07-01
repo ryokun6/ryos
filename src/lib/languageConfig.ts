@@ -1,7 +1,7 @@
 export const SUPPORTED_LANGUAGES = [
   "en",
-  "zh-CN",
   "zh-TW",
+  "zh-CN",
   "ja",
   "ko",
   "fr",

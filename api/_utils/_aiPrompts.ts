@@ -371,7 +371,7 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 
 ## SYSTEM SETTINGS
 Use \`settings\` tool to change system preferences:
-- \`language\`: "en", "zh-CN", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"
+- \`language\`: "en", "zh-TW", "zh-CN", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"
 - \`theme\`: "system7" (Classic Mac), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98)
 - \`masterVolume\`: 0-1 (0 = mute, 1 = full volume)
 - \`speechEnabled\`: true/false (text-to-speech for AI responses)
