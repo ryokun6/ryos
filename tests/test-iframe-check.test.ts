@@ -4,8 +4,37 @@
  * Tests: check mode, proxy mode, AI cache mode, list-cache mode
  */
 
-import { describe, test, expect } from "bun:test";
+import { afterAll, beforeAll, describe, test, expect } from "bun:test";
 import { BASE_URL, fetchWithOrigin } from "./test-utils";
+
+const HEADLESS_RENDER_TEST_PORT = Number(
+  process.env.HEADLESS_RENDER_TEST_PORT || 3898
+);
+const headlessRenderTemplate = process.env.HEADLESS_RENDER_URL_TEMPLATE || "";
+const runHeadlessCacheTest = headlessRenderTemplate.includes(
+  `localhost:${HEADLESS_RENDER_TEST_PORT}`
+);
+
+let headlessRenderServer: ReturnType<typeof Bun.serve> | null = null;
+let headlessRenderRequests = 0;
+
+beforeAll(() => {
+  if (!runHeadlessCacheTest) return;
+
+  headlessRenderRequests = 0;
+  headlessRenderServer = Bun.serve({
+    port: HEADLESS_RENDER_TEST_PORT,
+    fetch: () => {
+      headlessRenderRequests += 1;
+      return new Response("render service unavailable", { status: 503 });
+    },
+  });
+});
+
+afterAll(() => {
+  headlessRenderServer?.stop(true);
+  headlessRenderServer = null;
+});
 
 describe("iframe-check", () => {
   describe("Input Validation", () => {
@@ -201,6 +230,41 @@ describe("iframe-check", () => {
       // Same host → embeddability verdict is served from cache.
       expect(second.headers.get("x-embed-cache")).toBe("HIT");
     });
+  });
+
+  describe("Headless fallback cache", () => {
+    test.skipIf(!runHeadlessCacheTest)(
+      "caches failed automatic headless fallback attempts",
+      async () => {
+        const blockedUrl = `https://httpbin.org/status/403?ryos_headless_cache=${Date.now()}`;
+
+        const first = await fetchWithOrigin(
+          `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+            blockedUrl
+          )}&mode=proxy`
+        );
+        expect(first.status).toBe(403);
+        expect(first.headers.get("x-ie-headless-cache")).toBe("MISS");
+        expect(first.headers.get("x-ie-proxy")).toContain("headless=0");
+        expect(headlessRenderRequests).toBe(1);
+
+        const firstBody = await first.json();
+        expect(firstBody.type).toBe("access_blocked");
+
+        const second = await fetchWithOrigin(
+          `${BASE_URL}/api/iframe-check?url=${encodeURIComponent(
+            blockedUrl
+          )}&mode=proxy`
+        );
+        expect(second.status).toBe(403);
+        expect(second.headers.get("x-ie-headless-cache")).toBe("HIT");
+        expect(second.headers.get("x-ie-proxy")).toContain("headless=0");
+        expect(headlessRenderRequests).toBe(1);
+
+        const secondBody = await second.json();
+        expect(secondBody.type).toBe("access_blocked");
+      }
+    );
   });
 
   describe("Proxy diagnostics + session gating", () => {

@@ -5,7 +5,7 @@ import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
-import { redisKey, redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
+import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
 import {
   isHeadlessRenderConfigured,
   renderUrlToHtml,
@@ -40,6 +40,7 @@ const FORWARDABLE_SUBRESOURCE_HEADERS = [
 
 /** Methods whose body must be forwarded to the upstream origin. */
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const HEADLESS_FAILURE_CACHE_TTL_SECONDS = 60 * 10;
 
 /**
  * Whether the caller is permitted to opt into the IE Debug proxy features
@@ -346,6 +347,13 @@ async function getWaybackCacheKey(
   return redisKeys.cache.wayback(
     await sha256RedisIdentifier(normalizedUrlForKey),
     yearMonth
+  );
+}
+
+async function getIeHeadlessFailureCacheKey(url: string): Promise<string> {
+  const normalizedUrlForKey = normalizeUrlForCacheKey(url) || url;
+  return redisKeys.cache.ieHeadlessFailure(
+    await sha256RedisIdentifier(normalizedUrlForKey)
   );
 }
 
@@ -926,10 +934,7 @@ export default apiHandler(
       let embedCacheKey: string | null = null;
       try {
         const host = new URL(normalizedUrl).hostname.toLowerCase();
-        embedCacheKey = redisKey(
-          "cache",
-          "ie",
-          "embed",
+        embedCacheKey = redisKeys.cache.ieEmbedHost(
           await sha256RedisIdentifier(host)
         );
         // The Redis client may auto-deserialize JSON (Upstash REST) or return
@@ -1078,27 +1083,56 @@ export default apiHandler(
         !upstreamRes.ok &&
         [401, 403, 405, 406, 429, 451].includes(upstreamRes.status);
       if (headlessEligible && (forceHeadless || upstreamBlocked)) {
-        logger.info(
-          `Attempting headless render fallback for ${targetUrl} (status ${upstreamRes.status}, forced=${forceHeadless})`
-        );
-        const rendered = await renderUrlToHtml(finalUrl || targetUrl, {
-          logger,
-        });
-        if (rendered) {
-          proxyDebug.headless = true;
-          logger.info(
-            `Headless render succeeded via ${rendered.provider}; serving rendered HTML`
-          );
+        const renderTargetUrl = finalUrl || targetUrl;
+        let failureCacheKey: string | null = null;
+        let failureCacheHit = false;
+
+        if (!forceHeadless) {
           try {
-            upstreamRes.body?.cancel();
-          } catch {
-            /* ignore */
+            failureCacheKey = await getIeHeadlessFailureCacheKey(renderTargetUrl);
+            failureCacheHit = Boolean(await redis.get(failureCacheKey));
+          } catch (cacheErr) {
+            logger.warn("Headless failure cache read failed", cacheErr);
           }
-          upstreamRes = new Response(rendered.html, {
-            status: 200,
-            headers: { "content-type": "text/html; charset=utf-8" },
+        }
+
+        if (failureCacheHit) {
+          res.setHeader("X-IE-Headless-Cache", "HIT");
+          logger.info(
+            `Skipping headless render fallback for ${renderTargetUrl}; recent failure is cached`
+          );
+        } else {
+          res.setHeader("X-IE-Headless-Cache", forceHeadless ? "BYPASS" : "MISS");
+          logger.info(
+            `Attempting headless render fallback for ${targetUrl} (status ${upstreamRes.status}, forced=${forceHeadless})`
+          );
+          const rendered = await renderUrlToHtml(renderTargetUrl, {
+            logger,
           });
-          finalUrl = rendered.finalUrl || finalUrl;
+          if (rendered) {
+            proxyDebug.headless = true;
+            logger.info(
+              `Headless render succeeded via ${rendered.provider}; serving rendered HTML`
+            );
+            try {
+              upstreamRes.body?.cancel();
+            } catch {
+              /* ignore */
+            }
+            upstreamRes = new Response(rendered.html, {
+              status: 200,
+              headers: { "content-type": "text/html; charset=utf-8" },
+            });
+            finalUrl = rendered.finalUrl || finalUrl;
+          } else if (failureCacheKey) {
+            try {
+              await redis.set(failureCacheKey, "1", {
+                ex: HEADLESS_FAILURE_CACHE_TTL_SECONDS,
+              });
+            } catch (cacheErr) {
+              logger.warn("Headless failure cache write failed", cacheErr);
+            }
+          }
         }
       }
 

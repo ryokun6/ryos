@@ -187,6 +187,10 @@ export const redisKeys = {
     appleArtwork: (catalogId: string) =>
       redisKey("cache", "apple-music", "artwork", catalogId),
     geoip: (ipHash: string) => redisKey("cache", "geoip", ipHash),
+    ieEmbedHost: (hostHash: string) =>
+      redisKey("cache", "ie", "embed", hostHash),
+    ieHeadlessFailure: (urlHash: string) =>
+      redisKey("cache", "ie", "headless", "failure", urlHash),
     ieVersions: (urlHash: string, year: string | number) =>
       redisKey("cache", "ie", urlHash, year, "versions"),
     wayback: (urlHash: string, year: string | number) =>
