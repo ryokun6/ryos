@@ -16,9 +16,9 @@ import {
   isMusicKitPlaying,
   isMusicKitRedundantPlayError,
   isStaleQueueLoad,
-  isWithinEndedFanoutDedupWindow,
   shouldConfirmPlaybackAfterQueueLoad,
   shouldFireEndedForPlaybackState,
+  shouldSuppressEndedFanout,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
 } from "./appleMusicPlayerBridgeUtils";
 import { createClientLogger } from "@/utils/logger";
@@ -384,19 +384,17 @@ export const AppleMusicPlayerBridge = function AppleMusicPlayerBridge(
         // MusicKit, leaving the audio on a different song than the
         // display.
         const now = Date.now();
-        const itemIdMatches =
-          eventItemId !== null &&
-          lastEndedFiredForItemIdRef.current === eventItemId;
-        const withinTimeWindow = isWithinEndedFanoutDedupWindow(
+        const suppressEndedFanout = shouldSuppressEndedFanout({
+          eventItemId,
+          lastFiredItemId: lastEndedFiredForItemIdRef.current,
+          lastFiredAt: lastEndedFiredAtRef.current,
           now,
-          lastEndedFiredAtRef.current
-        );
-        if (itemIdMatches || withinTimeWindow) {
+        });
+        if (suppressEndedFanout) {
           appleMusicLog.debug("Ignored duplicate track-ended event", {
             state,
             eventItemId,
-            itemIdMatches,
-            withinTimeWindow,
+            lastEndedFiredForItemId: lastEndedFiredForItemIdRef.current,
             elapsedSinceLastEndedMs: now - lastEndedFiredAtRef.current,
           });
           return;

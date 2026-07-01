@@ -81,12 +81,39 @@ export function isWithinEndedFanoutDedupWindow(
   return now - lastFiredAt < windowMs;
 }
 
+export interface EndedFanoutDedupState {
+  eventItemId: string | null;
+  lastFiredItemId: string | null;
+  lastFiredAt: number;
+  now: number;
+  windowMs?: number;
+}
+
+/**
+ * MusicKit can emit both state=5 and state=10 for the same finished item.
+ * Suppress only events in the short fan-out window; repeat-one can finish the
+ * same item id again later and must still loop.
+ */
+export function shouldSuppressEndedFanout({
+  eventItemId,
+  lastFiredItemId,
+  lastFiredAt,
+  now,
+  windowMs,
+}: EndedFanoutDedupState): boolean {
+  if (!isWithinEndedFanoutDedupWindow(now, lastFiredAt, windowMs)) {
+    return false;
+  }
+  if (eventItemId === null || lastFiredItemId === null) {
+    return true;
+  }
+  return eventItemId === lastFiredItemId;
+}
+
 /**
  * Pull a stable identifier out of a MusicKit `playbackStateDidChange` /
- * `mediaItemDidChange` event payload. Used as the *primary* dedup key for
- * `onEnded` fan-out: when state=5 and state=10 reference the same item
- * (the just-ended song), the second event's id matches the first and we
- * suppress regardless of timing.
+ * `mediaItemDidChange` event payload. Used with the short fan-out window to
+ * collapse MusicKit's state 5 -> state 10 pair for the same just-ended song.
  *
  * Falls back through the multiple shapes MusicKit JS uses across versions
  * (`item.id`, `item.attributes.playParams.id`,

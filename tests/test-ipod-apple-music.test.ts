@@ -82,6 +82,7 @@ const {
   isMusicKitPlaying,
   isMusicKitRedundantPlayError,
   MUSICKIT_PLAYBACK_STATE_PLAYING,
+  shouldSuppressEndedFanout,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -1425,6 +1426,50 @@ describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
   test("custom window override works (used by tests + future hardening)", () => {
     expect(isWithinEndedFanoutDedupWindow(100, 50, 100)).toBe(true);
     expect(isWithinEndedFanoutDedupWindow(150, 50, 100)).toBe(false);
+  });
+
+  test("same item outside the window fans out again for repeat-one", () => {
+    expect(
+      shouldSuppressEndedFanout({
+        eventItemId: "song.repeat",
+        lastFiredItemId: "song.repeat",
+        lastFiredAt: 1_000,
+        now: 1_000 + ENDED_FANOUT_DEDUP_WINDOW_MS + 1,
+      })
+    ).toBe(false);
+  });
+
+  test("same item inside the window is suppressed as the state 5 -> state 10 pair", () => {
+    expect(
+      shouldSuppressEndedFanout({
+        eventItemId: "song.once",
+        lastFiredItemId: "song.once",
+        lastFiredAt: 1_000,
+        now: 1_100,
+      })
+    ).toBe(true);
+  });
+
+  test("missing item ids inside the window still collapse duplicate terminal events", () => {
+    expect(
+      shouldSuppressEndedFanout({
+        eventItemId: null,
+        lastFiredItemId: "song.once",
+        lastFiredAt: 1_000,
+        now: 1_100,
+      })
+    ).toBe(true);
+  });
+
+  test("different item ids inside the window are not treated as duplicates", () => {
+    expect(
+      shouldSuppressEndedFanout({
+        eventItemId: "song.next",
+        lastFiredItemId: "song.previous",
+        lastFiredAt: 1_000,
+        now: 1_100,
+      })
+    ).toBe(false);
   });
 });
 
