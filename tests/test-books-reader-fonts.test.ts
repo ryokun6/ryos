@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   BOOK_FONTS,
   buildEpubTheme,
@@ -6,6 +8,11 @@ import {
   getBookFontCssStack,
   resolveBookCjkSerifStack,
 } from "../src/apps/books/utils/booksReader";
+
+const appFontsCss = readFileSync(
+  join(import.meta.dir, "../public/fonts/fonts.css"),
+  "utf8"
+);
 
 const settings = {
   fontId: "serif",
@@ -38,12 +45,24 @@ describe("Books reader font choices", () => {
     );
   });
 
-  test("loads rounded, CJK, and emoji faces inside isolated EPUB iframes", () => {
+  test("loads every rounded weight inside the app and EPUB iframes", () => {
     const css = buildFontFaceCss("https://os.example");
 
-    expect(css).toContain(
-      'url("https://os.example/fonts/VAGRoundedStd-Bold.woff2")'
-    );
+    for (const weight of [100, 400, 700, 900]) {
+      expect(css).toContain(
+        `url("https://os.example/fonts/vag-rounded-${weight}.woff2")`
+      );
+      expect(appFontsCss).toContain(
+        `url("/fonts/vag-rounded-${weight}.woff2")`
+      );
+    }
+    expect(css).not.toContain("VAGRoundedStd-Bold");
+    expect(appFontsCss).not.toContain("VAGRoundedStd-Bold");
+  });
+
+  test("loads bundled CJK and emoji fallbacks inside EPUB iframes", () => {
+    const css = buildFontFaceCss("https://os.example");
+
     expect(css).toContain(
       'url("https://os.example/fonts/fusion-pixel-12px-proportional-ja.woff2")'
     );

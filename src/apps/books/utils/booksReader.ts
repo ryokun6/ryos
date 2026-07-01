@@ -311,8 +311,29 @@ export function buildFontFaceCss(origin: string): string {
 }
 @font-face {
   font-family: "VAGRounded";
-  src: url("${origin}/fonts/VAGRoundedStd-Bold.woff2") format("woff2");
-  font-weight: normal;
+  src: url("${origin}/fonts/vag-rounded-100.woff2") format("woff2");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VAGRounded";
+  src: url("${origin}/fonts/vag-rounded-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VAGRounded";
+  src: url("${origin}/fonts/vag-rounded-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VAGRounded";
+  src: url("${origin}/fonts/vag-rounded-900.woff2") format("woff2");
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
