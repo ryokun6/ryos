@@ -23,6 +23,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { getDefaultFileApp } from "@/utils/fileAssociations";
 import {
   useFileSystem,
   type DocumentContent,
@@ -754,6 +755,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 if (!fileItem || fileItem.status !== "active") {
                   throw new Error(`Document not found: ${path}`);
+                }
+
+                if (getDefaultFileApp(fileItem) === "preview") {
+                  launchApp("preview", {
+                    initialData: { path },
+                  });
+                  addToolOutput({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: i18n.t("apps.chats.toolCalls.openedDocument", {
+                      fileName: fileItem.name,
+                    }),
+                  });
+                  result = "";
+                  break;
                 }
 
                 const existingInstanceId = textEditStore.getInstanceIdByPath(path);

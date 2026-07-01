@@ -6,7 +6,7 @@ import {
 
 export function isImageFile(file: FileItem): boolean {
   const ext = file.name.split(".").pop()?.toLowerCase();
-  if (["png", "jpg", "jpeg", "gif", "webp", "bmp"].includes(ext || "")) {
+  if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext || "")) {
     return true;
   }
 
@@ -17,7 +17,8 @@ export function isImageFile(file: FileItem): boolean {
     file.type === "jpeg" ||
     file.type === "gif" ||
     file.type === "webp" ||
-    file.type === "bmp"
+    file.type === "bmp" ||
+    file.type === "svg"
   ) {
     return true;
   }
@@ -48,6 +49,8 @@ export function getIconPath(file: FileItem): string {
   }
   if (file.icon) return file.icon;
   if (file.isDirectory) return "/icons/directory.png";
+  if (file.name.toLowerCase().endsWith(".pdf"))
+    return "/icons/default/file-pdf.png";
   if (file.name.endsWith(".txt") || file.name.endsWith(".md"))
     return "/icons/file-text.png";
   return "/icons/file.png";

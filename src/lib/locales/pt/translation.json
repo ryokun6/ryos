@@ -2265,6 +2265,7 @@
         "noAirDropUsersAvailable": "Nenhum usuário próximo",
         "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "openWith": "Abrir Com",
         "putBack": "Colocar de Volta",
         "rename": "Renomear…",
         "searchingForAirDropUsers": "Buscando usuários próximos…",
@@ -2304,8 +2305,10 @@
         "internetShortcut": "Atalho da Internet",
         "jpegImage": "Imagem JPEG",
         "mp3Audio": "Áudio MP3",
+        "pdfDocument": "Documento PDF",
         "pngImage": "Imagem PNG",
         "quicktimeMovie": "Filme QuickTime",
+        "svgImage": "Imagem SVG",
         "unknown": "Desconhecido",
         "webpImage": "Imagem WebP"
       },
@@ -3685,6 +3688,74 @@
         "photoBoothHelp": "Ajuda da Cabine de Fotos"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "Visualize imagens, PDFs e documentos",
+      "empty": {
+        "hint": "Escolha um arquivo ou arraste-o para cá",
+        "title": "Abrir um documento"
+      },
+      "help": {
+        "images": {
+          "description": "Abra formatos de imagem comuns sem alterar o arquivo original",
+          "title": "Visualizar Imagens"
+        },
+        "openFiles": {
+          "description": "Use Arquivo > Abrir para visualizar um arquivo do seu dispositivo",
+          "title": "Abrir Arquivos"
+        },
+        "openWith": {
+          "description": "Envie arquivos editáveis para o Paint, Editor de Texto ou Applet Viewer",
+          "title": "Abrir Com"
+        },
+        "pdfs": {
+          "description": "Visualize documentos PDF usando o visualizador de documentos integrado",
+          "title": "Ler PDFs"
+        },
+        "safeHtml": {
+          "description": "Visualize documentos HTML em um sandbox sem executar scripts",
+          "title": "HTML Seguro"
+        },
+        "zoom": {
+          "description": "Aumente ou reduza o zoom de imagens ou ajuste-as à janela",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Sobre a Pré-Visualização",
+        "actualSize": "Tamanho Real",
+        "export": "Exportar…",
+        "fitToWindow": "Ajustar à Janela",
+        "importFromDevice": "Importar do Dispositivo…",
+        "open": "Abrir…",
+        "openWith": "Abrir Com",
+        "previewHelp": "Ajuda da Pré-Visualização",
+        "saveAs": "Salvar Como…",
+        "zoomIn": "Ampliar",
+        "zoomOut": "Reduzir"
+      },
+      "name": "Pré-Visualização",
+      "saveAs": {
+        "description": "Digite um nome para esta cópia",
+        "title": "Salvar Como"
+      },
+      "status": {
+        "loadFailed": "Não foi possível abrir este arquivo.",
+        "loading": "Carregando pré-visualização…",
+        "notFound": "O conteúdo do arquivo não pôde ser encontrado.",
+        "unsupported": "Nenhuma pré-visualização disponível",
+        "unsupportedDescription": "Este formato de arquivo não é compatível com a Pré-Visualização."
+      },
+      "supportedFiles": "Documentos da Pré-Visualização",
+      "title": "Pré-Visualização",
+      "toasts": {
+        "exportFailed": "Não foi possível exportar o arquivo",
+        "importFailed": "Não foi possível importar o arquivo",
+        "imported": "Arquivo importado",
+        "saveFailed": "Não foi possível salvar o arquivo",
+        "saved": "Arquivo salvo"
+      },
+      "untitled": "Sem Título"
     },
     "soundboard": {
       "description": "Reproduzir efeitos sonoros",

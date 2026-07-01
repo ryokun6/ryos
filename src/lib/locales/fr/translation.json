@@ -2265,6 +2265,7 @@
         "noAirDropUsersAvailable": "Aucun utilisateur a proximité",
         "open": "Ouvrir",
         "openAirDrop": "Ouvrir AirDrop",
+        "openWith": "Ouvrir avec",
         "putBack": "Remettre à sa place",
         "rename": "Renommer…",
         "searchingForAirDropUsers": "Recherche d’utilisateurs a proximité…",
@@ -2304,8 +2305,10 @@
         "internetShortcut": "Raccourci Internet",
         "jpegImage": "Image JPEG",
         "mp3Audio": "Audio MP3",
+        "pdfDocument": "Document PDF",
         "pngImage": "Image PNG",
         "quicktimeMovie": "Séquence QuickTime",
+        "svgImage": "Image SVG",
         "unknown": "Inconnu",
         "webpImage": "Image WebP"
       },
@@ -3685,6 +3688,74 @@
         "photoBoothHelp": "Aide Photomaton"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "Affichez des images, des PDF et des documents",
+      "empty": {
+        "hint": "Choisissez un fichier ou déposez-le ici",
+        "title": "Ouvrir un document"
+      },
+      "help": {
+        "images": {
+          "description": "Ouvrez des formats d’image courants sans modifier le fichier d’origine",
+          "title": "Aperçu des images"
+        },
+        "openFiles": {
+          "description": "Utilisez Fichier > Ouvrir pour afficher l’aperçu d’un fichier de votre appareil",
+          "title": "Ouvrir des fichiers"
+        },
+        "openWith": {
+          "description": "Envoyez des fichiers modifiables vers Paint, TextEdit ou Applet Viewer",
+          "title": "Ouvrir avec"
+        },
+        "pdfs": {
+          "description": "Affichez des documents PDF à l’aide du visualiseur de documents intégré",
+          "title": "Lire les PDF"
+        },
+        "safeHtml": {
+          "description": "Affichez l’aperçu de documents HTML dans un bac à sable sans exécuter de scripts",
+          "title": "HTML sécurisé"
+        },
+        "zoom": {
+          "description": "Effectuez un zoom avant ou arrière sur les images, ou adaptez-les à la fenêtre",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "À propos d’Aperçu",
+        "actualSize": "Taille réelle",
+        "export": "Exporter…",
+        "fitToWindow": "Ajuster à la fenêtre",
+        "importFromDevice": "Importer depuis l’appareil…",
+        "open": "Ouvrir…",
+        "openWith": "Ouvrir avec",
+        "previewHelp": "Aide Aperçu",
+        "saveAs": "Enregistrer sous…",
+        "zoomIn": "Zoom avant",
+        "zoomOut": "Zoom arrière"
+      },
+      "name": "Aperçu",
+      "saveAs": {
+        "description": "Saisissez un nom pour cette copie",
+        "title": "Enregistrer sous"
+      },
+      "status": {
+        "loadFailed": "Impossible d’ouvrir ce fichier.",
+        "loading": "Chargement de l’aperçu…",
+        "notFound": "Le contenu du fichier est introuvable.",
+        "unsupported": "Aucun aperçu disponible",
+        "unsupportedDescription": "Ce format de fichier n’est pas pris en charge par Aperçu."
+      },
+      "supportedFiles": "Documents Aperçu",
+      "title": "Aperçu",
+      "toasts": {
+        "exportFailed": "Impossible d’exporter le fichier",
+        "importFailed": "Impossible d’importer le fichier",
+        "imported": "Fichier importé",
+        "saveFailed": "Impossible d’enregistrer le fichier",
+        "saved": "Fichier enregistré"
+      },
+      "untitled": "Sans titre"
     },
     "soundboard": {
       "description": "Émettre des effets sonores",

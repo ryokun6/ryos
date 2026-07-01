@@ -136,6 +136,10 @@ export function getFileTypeFromExtension(fileName: string): string {
       return ext;
     case "bmp":
       return ext;
+    case "svg":
+      return ext;
+    case "pdf":
+      return ext;
     case "html":
     case "htm":
       return "html";

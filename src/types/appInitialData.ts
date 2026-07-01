@@ -19,6 +19,32 @@ export interface PaintInitialData {
   content: Blob;
 }
 
+/** Preview initial data - for viewing local or VFS-backed files */
+export interface PreviewInitialData {
+  path?: string;
+  content?: string | Blob | ArrayBuffer;
+}
+
+/**
+ * Keep only the VFS path needed to restore a Preview window.
+ * Inline content can be large and is not reliably JSON-serializable.
+ */
+export function getRestorablePreviewInitialData(
+  data: unknown,
+): PreviewInitialData | undefined {
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    !("path" in data) ||
+    typeof data.path !== "string" ||
+    data.path.length === 0
+  ) {
+    return undefined;
+  }
+
+  return { path: data.path };
+}
+
 /** Internet Explorer initial data - for URL navigation or share codes */
 export interface InternetExplorerInitialData {
   url?: string;
@@ -62,6 +88,7 @@ export interface FinderInitialData {
 export interface AppInitialDataMap {
   textedit: TextEditInitialData;
   paint: PaintInitialData;
+  preview: PreviewInitialData;
   "internet-explorer": InternetExplorerInitialData;
   ipod: IpodInitialData;
   videos: VideosInitialData;
@@ -85,6 +112,7 @@ export type AppInitialData<T extends AppId> = T extends keyof AppInitialDataMap
 export type AnyAppInitialData =
   | TextEditInitialData
   | PaintInitialData
+  | PreviewInitialData
   | InternetExplorerInitialData
   | IpodInitialData
   | VideosInitialData
