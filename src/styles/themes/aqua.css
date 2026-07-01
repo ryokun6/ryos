@@ -823,9 +823,7 @@
 }
 
 :root[data-os-theme="macosx"] .synth-force-font {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   font-size: 11px !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -843,9 +841,7 @@
   button:not(.aqua-button):not(.aqua-tab)
   span {
   font-size: 11px !important;
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
 }
 
 /* Internet Explorer favorites bar: compact bookmark labels (below url bar 12px) */
@@ -927,9 +923,7 @@
 /* Preserve LCD display styling in Videos app - keep original pixel fonts */
 /* But use Aqua Kana for player control buttons */
 :root[data-os-theme="macosx"] .videos-player-controls button.font-geneva-12 {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   font-size: 9px !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -1575,9 +1569,7 @@
 }
 
 :root[data-os-theme="macosx"] .synth-force-font .font-geneva-12 {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
   font-size: 12px !important;
@@ -1686,6 +1678,39 @@
   line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
+}
+
+/* Aqua/Aqua Glass Simplified Chinese: use mainland glyph families without
+   changing Traditional Chinese, Japanese, or the pixel-font themes. */
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .ipod-force-font
+  :is(.font-lyrics-rounded, .font-lyrics-gold-glow),
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .karaoke-force-font
+  :is(.font-lyrics-rounded, .font-lyrics-gold-glow) {
+  font-family: "VAGRounded", "PingFang SC", "Yuanti SC", "Microsoft YaHei",
+    "Noto Sans CJK SC", ui-rounded, sans-serif !important;
+}
+
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .ipod-force-font
+  :is(.font-lyrics-serif, .font-lyrics-serif-red),
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .karaoke-force-font
+  :is(.font-lyrics-serif, .font-lyrics-serif-red) {
+  font-family: Charter, "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
+    STSong, SimSun, "Noto Serif SC", serif !important;
+}
+
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .ipod-force-font
+  :is(.font-lyrics-sans, .font-lyrics-gradient),
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .karaoke-force-font
+  :is(.font-lyrics-sans, .font-lyrics-gradient) {
+  font-family: "LucidaGrande", "Lucida Grande", "PingFang SC", "Heiti SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui,
+    -apple-system, sans-serif !important;
 }
 
 /* Bold furigana for serif and sans-serif lyrics fonts on macOS theme */
@@ -1968,9 +1993,7 @@
   ):not(.synth-force-font .font-geneva-12):not(.videos-status .font-geneva-12):not(
     .tv-cc-force-font .font-geneva-12
   ) {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
@@ -2375,6 +2398,12 @@
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
+
+:root[data-os-theme="macosx"]:lang(zh-CN) .os-status-bar,
+:root[data-os-theme="macosx"]:lang(zh-CN) .os-status-bar-text {
+  font-family: var(--os-font-ui) !important;
+}
+
 :root[data-os-theme="macosx"] .os-status-bar * {
   font-size: inherit !important;
   -webkit-font-smoothing: inherit !important;
