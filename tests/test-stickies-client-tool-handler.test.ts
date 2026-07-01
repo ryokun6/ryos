@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import type { ToolContext, ToolOutputPayload } from "../src/apps/chats/tools/types";
 import { handleStickiesControl } from "../src/apps/chats/tools/stickiesHandler";
+import { initializeI18n } from "../src/lib/i18n";
 import { useAppStore } from "../src/stores/useAppStore";
 import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
 import { useStickiesStore } from "../src/stores/useStickiesStore";
@@ -31,7 +32,8 @@ function getStickiesOutput(payload: ToolOutputPayload): StickiesControlOutput {
   return output as StickiesControlOutput;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  await initializeI18n();
   useStickiesStore.setState({ notes: [] });
   useAppStore.setState({
     instances: {},
