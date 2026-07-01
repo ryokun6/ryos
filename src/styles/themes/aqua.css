@@ -1601,8 +1601,7 @@
 
 /* Preserve serif lyrics font inside iPod fullscreen on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif {
-  font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
+  font-family: Charter, var(--font-cjk-serif-jp), serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1611,8 +1610,7 @@
 
 /* Preserve serif lyrics font inside Karaoke app on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif {
-  font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
+  font-family: Charter, var(--font-cjk-serif-jp), serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1646,9 +1644,7 @@
 /* Preserve serif-red lyrics font on macOS theme (Japanese classic style) */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif-red,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif-red {
-  font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN",
-    "Hiragino Mincho Pro", "Yu Mincho", "Songti TC", "Songti SC", "SimSun",
-    "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
+  font-family: Charter, var(--font-cjk-serif-jp), serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
@@ -2176,7 +2172,7 @@
 
 /* Use Apple Garamond for ryOS branding in macOSX dialogs */
 :root[data-os-theme="macosx"] .macosx-dialog .font-mondwest {
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", serif !important;
+  font-family: var(--font-apple-garamond) !important;
 }
 
 :root[data-os-theme="macosx"] .macosx-dialog-header {
@@ -2344,14 +2340,14 @@
 
 /* AboutDialog title styling for macOS theme */
 :root[data-os-theme="macosx"] .font-apple-garamond {
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
+  font-family: var(--font-apple-garamond) !important;
   font-size: 1.5rem !important;
 }
 
 /* Ensure AboutDialog title doesn't get overridden by general div styles */
 :root[data-os-theme="macosx"] .font-apple-garamond.text-2xl {
   font-size: 1.5rem !important;
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
+  font-family: var(--font-apple-garamond) !important;
 }
 
 /* AboutDialog body text styling for macOS theme */

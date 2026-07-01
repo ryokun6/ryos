@@ -6,6 +6,10 @@ const tokensCss = readFileSync(
   join(import.meta.dir, "../src/styles/themes/tokens.css"),
   "utf8"
 );
+const appCss = readFileSync(
+  join(import.meta.dir, "../src/index.css"),
+  "utf8"
+);
 const aquaCss = readFileSync(
   join(import.meta.dir, "../src/styles/themes/aqua.css"),
   "utf8"
@@ -61,7 +65,7 @@ describe("Simplified Chinese Aqua fonts", () => {
     expect(aquaCss).toContain(
       'font-family: Charter, "Noto Serif SC", "Source Han Serif SC"'
     );
-    expect(indexHtml).toContain("family=Noto+Serif+SC:wght@700");
+    expect(indexHtml).toContain("family=Noto+Serif+SC:wght@400;700");
     expect(aquaCss).toContain(
       ':is(.font-lyrics-rounded, .font-lyrics-gold-glow)'
     );
@@ -82,5 +86,24 @@ describe("Simplified Chinese Aqua fonts", () => {
 
     expect(synthBlock).toContain("font-family: var(--os-font-ui)");
     expect(videosBlock).toContain("font-family: var(--os-font-ui)");
+  });
+
+  test("uses a JP-first broad CJK serif stack for app headers by default", () => {
+    const stackStart = appCss.indexOf("--font-cjk-serif-jp:");
+    const stackEnd = appCss.indexOf(";", stackStart);
+    const stack = appCss.slice(stackStart, stackEnd);
+
+    expect(stack).toContain('"Noto Serif JP"');
+    expect(stack).toContain('"Source Han Serif"');
+    expect(stack).toContain('"Noto Serif SC"');
+    expect(stack.indexOf('"Noto Serif JP"')).toBeLessThan(
+      stack.indexOf('"Noto Serif SC"')
+    );
+    expect(appCss).toContain(
+      '--font-apple-garamond: "AppleGaramond", var(--font-cjk-serif-jp)'
+    );
+    expect(aquaCss).toContain(
+      "font-family: var(--font-apple-garamond) !important"
+    );
   });
 });

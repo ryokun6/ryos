@@ -54,8 +54,14 @@
     --radius: 0px;
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-apple-garamond: "AppleGaramond", "Hiragino Mincho ProN", "SerenityOS-Emoji",
-      serif;
+    --font-cjk-serif-jp: "Noto Serif JP", "Source Han Serif JP",
+      "Noto Serif CJK JP", "Source Han Serif", "Noto Serif KR",
+      "Source Han Serif KR", "Noto Serif SC", "Source Han Serif SC",
+      "Noto Serif CJK SC", "Hiragino Mincho ProN", "Hiragino Mincho Pro",
+      "Yu Mincho", "Songti TC", "Songti SC", SimSun, "Nanum Myeongjo",
+      "AppleMyungjo", Batang;
+    --font-apple-garamond: "AppleGaramond", var(--font-cjk-serif-jp),
+      "SerenityOS-Emoji", "Times New Roman", serif;
     --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
@@ -520,10 +526,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  /* Serif lyrics font utility (Noto Serif JP/KR) */
+  /* Serif lyrics font utility (JP-first Source Han/Noto CJK fallback) */
   .font-lyrics-serif {
-    font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-      "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
+    font-family: Charter, var(--font-cjk-serif-jp), "Times New Roman", serif;
     font-weight: 700;
     line-height: 1.1;
     -webkit-font-smoothing: antialiased;
@@ -543,8 +548,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Serif Red - Japanese classic style (same font as serif but with outline styling) */
   .font-lyrics-serif-red {
-    font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-      "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
+    font-family: Charter, var(--font-cjk-serif-jp), "Times New Roman", serif;
     font-weight: 700;
     line-height: 1.1;
     -webkit-font-smoothing: antialiased;
