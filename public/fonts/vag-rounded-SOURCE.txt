@@ -1,0 +1,10 @@
+VAG Rounded Light and Bold source fonts
+
+Source: https://github.com/beautyjoy/llab/tree/master/fonts/vagrounded
+Files:
+- VAGRoundedStd-Light.otf -> vag-rounded-light.woff2
+- VAGRoundedStd-Bold.otf -> vag-rounded-bold.woff2
+
+Converted to WOFF2 with fonttools 4.63.0.
+
+The source repository declares "license": "BSD" in bower.json.

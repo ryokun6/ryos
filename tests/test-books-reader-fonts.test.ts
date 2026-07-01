@@ -48,20 +48,32 @@ describe("Books reader font choices", () => {
     );
   });
 
-  test("loads every rounded weight inside the app and EPUB iframes", () => {
+  test("loads llab light and bold rounded faces inside the app and EPUB iframes", () => {
     const css = buildFontFaceCss("https://os.example");
 
-    for (const weight of [100, 400, 700, 900]) {
+    for (const { file, weight } of [
+      { file: "vag-rounded-light.woff2", weight: 400 },
+      { file: "vag-rounded-bold.woff2", weight: 700 },
+    ]) {
       expect(css).toContain(
         `font-family: "ryOS VAG Rounded";
-  src: url("https://os.example/fonts/vag-rounded-${weight}.woff2") format("woff2");
+  src: url("https://os.example/fonts/${file}") format("woff2");
   font-weight: ${weight};`
       );
       expect(appFontsCss).toContain(
         `font-family: "ryOS VAG Rounded";
-  src: url("/fonts/vag-rounded-${weight}.woff2") format("woff2");
+  src: url("/fonts/${file}") format("woff2");
   font-weight: ${weight};`
       );
+    }
+    for (const oldFile of [
+      "vag-rounded-100.woff2",
+      "vag-rounded-400.woff2",
+      "vag-rounded-700.woff2",
+      "vag-rounded-900.woff2",
+    ]) {
+      expect(css).not.toContain(oldFile);
+      expect(appFontsCss).not.toContain(oldFile);
     }
     expect(css).not.toContain("VAGRoundedStd-Bold");
     expect(appFontsCss).not.toContain("VAGRoundedStd-Bold");
