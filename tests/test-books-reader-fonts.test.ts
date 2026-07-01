@@ -50,10 +50,12 @@ describe("Books reader font choices", () => {
 
     for (const weight of [100, 400, 700, 900]) {
       expect(css).toContain(
-        `url("https://os.example/fonts/vag-rounded-${weight}.woff2")`
+        `src: url("https://os.example/fonts/vag-rounded-${weight}.woff2") format("woff2");
+  font-weight: ${weight};`
       );
       expect(appFontsCss).toContain(
-        `url("/fonts/vag-rounded-${weight}.woff2")`
+        `src: url("/fonts/vag-rounded-${weight}.woff2") format("woff2");
+  font-weight: ${weight};`
       );
     }
     expect(css).not.toContain("VAGRoundedStd-Bold");
