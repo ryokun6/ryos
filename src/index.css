@@ -520,7 +520,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-family: "VAGRounded", "Chiron GoRound TC WS",
       "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
       sans-serif;
-    font-weight: normal;
+    font-weight: 700;
     line-height: 1.1;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
@@ -561,7 +561,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-family: "VAGRounded", "Chiron GoRound TC WS",
       "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
       sans-serif;
-    font-weight: normal;
+    font-weight: 700;
     line-height: 1.1;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;

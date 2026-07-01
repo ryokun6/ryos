@@ -95,6 +95,35 @@ describe("Simplified Chinese Aqua fonts", () => {
     );
   });
 
+  test("uses weight 700 for rounded karaoke lyrics", () => {
+    const baseRoundedBlock = extractRuleBlock(
+      appCss,
+      "\n  .font-lyrics-rounded {"
+    );
+    const baseGoldGlowBlock = extractRuleBlock(
+      appCss,
+      "\n  .font-lyrics-gold-glow {"
+    );
+    const aquaIpodRoundedBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded'
+    );
+    const aquaKaraokeRoundedBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded'
+    );
+    const aquaGoldGlowBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow'
+    );
+
+    expect(baseRoundedBlock).toContain("font-weight: 700;");
+    expect(baseGoldGlowBlock).toContain("font-weight: 700;");
+    expect(aquaIpodRoundedBlock).toContain("font-weight: 700 !important;");
+    expect(aquaKaraokeRoundedBlock).toContain("font-weight: 700 !important;");
+    expect(aquaGoldGlowBlock).toContain("font-weight: 700 !important;");
+  });
+
   test("routes Aqua UI overrides through the locale-aware font token", () => {
     const synthBlock = extractRuleBlock(
       aquaCss,
