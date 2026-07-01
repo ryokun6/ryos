@@ -515,9 +515,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   /* Rounded lyrics font utility */
-  /* Chiron provides rounded CJK glyphs after bundled VAGRounded. */
+  /* Chiron provides rounded CJK glyphs after bundled VAG Rounded. */
   .font-lyrics-rounded {
-    font-family: "VAGRounded", "Chiron GoRound TC WS",
+    font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
       "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
       sans-serif;
     font-weight: 700;
@@ -558,7 +558,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Glow - Album art primary color glow style (uses rounded font) */
   .font-lyrics-gold-glow {
-    font-family: "VAGRounded", "Chiron GoRound TC WS",
+    font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
       "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
       sans-serif;
     font-weight: 700;
@@ -1038,7 +1038,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 }
 
 /*
- * U+25CF is much larger in rounded/serif faces (VAGRounded, Charter, etc.) than in sans/gradient
+ * U+25CF is much larger in rounded/serif faces (VAG Rounded, Charter, etc.) than in sans/gradient
  * at the same font-size — scale down so interlude dots match sans/gradient visually.
  */
 .karaoke-force-font

@@ -57,7 +57,7 @@ describe("Simplified Chinese Aqua fonts", () => {
     expect(aquaCss).toContain('"Noto Serif CJK SC"');
     expect(aquaCss).toContain('"Songti SC"');
     expect(aquaCss).toContain(
-      'font-family: "VAGRounded", "Chiron GoRound TC WS", "Yuanti SC"'
+      'font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS", "Yuanti SC"'
     );
     expect(aquaCss).toContain(
       'font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans GB"'

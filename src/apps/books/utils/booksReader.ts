@@ -11,7 +11,7 @@ const BOOK_GENEVA_STACK =
   '"Geneva-12", Geneva, "ArkPixel", "SerenityOS-Emoji", system-ui, -apple-system, sans-serif';
 
 const BOOK_ROUNDED_STACK =
-  '"VAGRounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", "SerenityOS-Emoji", ui-rounded, sans-serif';
+  '"ryOS VAG Rounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", "SerenityOS-Emoji", ui-rounded, sans-serif';
 
 const BOOK_CJK_SERIF_STACKS = {
   "zh-CN":
@@ -348,28 +348,28 @@ export function buildFontFaceCss(origin: string): string {
   font-display: swap;
 }
 @font-face {
-  font-family: "VAGRounded";
+  font-family: "ryOS VAG Rounded";
   src: url("${origin}/fonts/vag-rounded-100.woff2") format("woff2");
   font-weight: 100;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "VAGRounded";
+  font-family: "ryOS VAG Rounded";
   src: url("${origin}/fonts/vag-rounded-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "VAGRounded";
+  font-family: "ryOS VAG Rounded";
   src: url("${origin}/fonts/vag-rounded-700.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "VAGRounded";
+  font-family: "ryOS VAG Rounded";
   src: url("${origin}/fonts/vag-rounded-900.woff2") format("woff2");
   font-weight: 900;
   font-style: normal;

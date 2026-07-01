@@ -1576,9 +1576,9 @@
 }
 
 /* Preserve rounded lyrics font inside iPod fullscreen on macOS theme */
-/* Chiron provides rounded CJK glyphs after bundled VAGRounded. */
+/* Chiron provides rounded CJK glyphs after bundled VAG Rounded. */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
-  font-family: "VAGRounded", "Chiron GoRound TC WS",
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
     "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
     sans-serif !important;
   font-weight: 700 !important;
@@ -1589,9 +1589,9 @@
 }
 
 /* Preserve rounded lyrics font inside Karaoke app on macOS theme */
-/* Chiron provides rounded CJK glyphs after bundled VAGRounded. */
+/* Chiron provides rounded CJK glyphs after bundled VAG Rounded. */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
-  font-family: "VAGRounded", "Chiron GoRound TC WS",
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
     "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
     sans-serif !important;
   font-weight: 700 !important;
@@ -1656,7 +1656,7 @@
 /* Preserve glow lyrics font on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gold-glow {
-  font-family: "VAGRounded", "Chiron GoRound TC WS",
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
     "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
     sans-serif !important;
   font-weight: 700 !important;
@@ -1687,7 +1687,7 @@
 :root[data-os-theme="macosx"]:lang(zh-CN)
   .karaoke-force-font
   :is(.font-lyrics-rounded, .font-lyrics-gold-glow) {
-  font-family: "VAGRounded", "Chiron GoRound TC WS", "Yuanti SC",
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS", "Yuanti SC",
     "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", ui-rounded,
     sans-serif !important;
 }

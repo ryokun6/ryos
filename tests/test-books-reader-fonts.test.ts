@@ -33,7 +33,9 @@ const palette = {
 describe("Books reader font choices", () => {
   test("offers the bundled rounded face in the font menu", () => {
     expect(BOOK_FONTS.map((font) => font.id)).toContain("rounded");
-    expect(getBookFontCssStack("rounded")).toStartWith('"VAGRounded"');
+    expect(getBookFontCssStack("rounded")).toStartWith(
+      '"ryOS VAG Rounded"'
+    );
   });
 
   test("gives Geneva bundled CJK and emoji fallbacks", () => {
@@ -51,11 +53,13 @@ describe("Books reader font choices", () => {
 
     for (const weight of [100, 400, 700, 900]) {
       expect(css).toContain(
-        `src: url("https://os.example/fonts/vag-rounded-${weight}.woff2") format("woff2");
+        `font-family: "ryOS VAG Rounded";
+  src: url("https://os.example/fonts/vag-rounded-${weight}.woff2") format("woff2");
   font-weight: ${weight};`
       );
       expect(appFontsCss).toContain(
-        `src: url("/fonts/vag-rounded-${weight}.woff2") format("woff2");
+        `font-family: "ryOS VAG Rounded";
+  src: url("/fonts/vag-rounded-${weight}.woff2") format("woff2");
   font-weight: ${weight};`
       );
     }
