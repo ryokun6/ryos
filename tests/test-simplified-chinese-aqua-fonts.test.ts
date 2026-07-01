@@ -10,6 +10,10 @@ const aquaCss = readFileSync(
   join(import.meta.dir, "../src/styles/themes/aqua.css"),
   "utf8"
 );
+const indexHtml = readFileSync(
+  join(import.meta.dir, "../index.html"),
+  "utf8"
+);
 
 function extractRuleBlock(css: string, selector: string): string {
   const start = css.indexOf(selector);
@@ -29,8 +33,8 @@ describe("Simplified Chinese Aqua fonts", () => {
 
     expect(simplifiedBlock).toContain('"PingFang SC"');
     expect(simplifiedBlock).toContain('"Microsoft YaHei"');
-    expect(simplifiedBlock.indexOf('"PingFang SC"')).toBeLessThan(
-      simplifiedBlock.indexOf('"Hiragino Sans GB"')
+    expect(simplifiedBlock.indexOf('"Hiragino Sans GB"')).toBeLessThan(
+      simplifiedBlock.indexOf('"PingFang SC"')
     );
     expect(tokensCss).not.toContain(
       ':root[data-os-theme="system7"]:lang(zh-CN)'
@@ -48,6 +52,13 @@ describe("Simplified Chinese Aqua fonts", () => {
     expect(aquaCss).toContain('"Source Han Serif SC"');
     expect(aquaCss).toContain('"Noto Serif CJK SC"');
     expect(aquaCss).toContain('"Songti SC"');
+    expect(aquaCss).toContain(
+      'font-family: "Yuanti SC", "PingFang SC", "VAGRounded"'
+    );
+    expect(aquaCss).toContain(
+      'font-family: "Hiragino Sans GB", "PingFang SC"'
+    );
+    expect(indexHtml).toContain("family=Noto+Serif+SC:wght@700");
     expect(aquaCss).toContain(
       ':is(.font-lyrics-rounded, .font-lyrics-gold-glow)'
     );

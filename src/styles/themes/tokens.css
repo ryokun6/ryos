@@ -246,8 +246,8 @@
 
 /* Aqua/Aqua Glass: prefer mainland Chinese glyph forms only for zh-CN. */
 :root[data-os-theme="macosx"]:lang(zh-CN) {
-  --os-font-ui: "LucidaGrande", "Lucida Grande", "PingFang SC", "Heiti SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "SimSun",
+  --os-font-ui: "LucidaGrande", "Lucida Grande", "Hiragino Sans GB",
+    "PingFang SC", "Heiti SC", "Microsoft YaHei", "Noto Sans CJK SC", "SimSun",
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 

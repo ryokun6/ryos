@@ -1688,7 +1688,7 @@
 :root[data-os-theme="macosx"]:lang(zh-CN)
   .karaoke-force-font
   :is(.font-lyrics-rounded, .font-lyrics-gold-glow) {
-  font-family: "VAGRounded", "PingFang SC", "Yuanti SC", "Microsoft YaHei",
+  font-family: "Yuanti SC", "PingFang SC", "VAGRounded", "Microsoft YaHei",
     "Noto Sans CJK SC", ui-rounded, sans-serif !important;
 }
 
@@ -1698,8 +1698,8 @@
 :root[data-os-theme="macosx"]:lang(zh-CN)
   .karaoke-force-font
   :is(.font-lyrics-serif, .font-lyrics-serif-red) {
-  font-family: Charter, "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
-    STSong, SimSun, "Noto Serif SC", serif !important;
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC",
+    "Songti SC", STSong, SimSun, Charter, serif !important;
 }
 
 :root[data-os-theme="macosx"]:lang(zh-CN)
@@ -1708,9 +1708,9 @@
 :root[data-os-theme="macosx"]:lang(zh-CN)
   .karaoke-force-font
   :is(.font-lyrics-sans, .font-lyrics-gradient) {
-  font-family: "LucidaGrande", "Lucida Grande", "PingFang SC", "Heiti SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui,
-    -apple-system, sans-serif !important;
+  font-family: "Hiragino Sans GB", "PingFang SC", "LucidaGrande",
+    "Lucida Grande", "Heiti SC", "Microsoft YaHei", "Noto Sans CJK SC",
+    system-ui, -apple-system, sans-serif !important;
 }
 
 /* Bold furigana for serif and sans-serif lyrics fonts on macOS theme */
