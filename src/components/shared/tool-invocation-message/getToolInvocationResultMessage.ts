@@ -317,8 +317,15 @@ export function getToolInvocationResultMessage(
         // Extract just the first line (the summary) for display
         const firstLine = output.split("\n")[0];
         displayResultMessage = firstLine;
-      } else {
-        displayResultMessage = t("apps.chats.toolCalls.stickies.updated");
+      } else if (output && typeof output === "object") {
+        const out = output as {
+          success?: boolean;
+          message?: string;
+        };
+        displayResultMessage =
+          out.success && out.message
+            ? out.message
+            : t("apps.chats.toolCalls.stickies.updated");
       }
     } else if (toolName === "contactsControl") {
       const out = output as {

@@ -22,12 +22,13 @@ interface StickiesState {
   deleteNote: (id: string) => void;
   bringToFront: (id: string) => void;
   clearAllNotes: () => void;
+  replaceNotes: (notes: StickyNote[]) => void;
 }
 
-const DEFAULT_NOTE_SIZE = { width: 220, height: 240 };
+export const DEFAULT_NOTE_SIZE = { width: 220, height: 240 };
 
 // Stack new notes with slight offset from existing notes
-const getNextPosition = (existingNotes: StickyNote[]) => {
+export const getNextPosition = (existingNotes: StickyNote[]) => {
   const baseX = 100;
   const baseY = 60; // Account for menu bar
   const offset = 25; // Offset for each new note
@@ -114,6 +115,8 @@ export const useStickiesStore = create<StickiesState>()(
           );
         set({ notes: [] });
       },
+
+      replaceNotes: (notes) => set({ notes }),
     }),
     {
       name: "stickies-storage",
