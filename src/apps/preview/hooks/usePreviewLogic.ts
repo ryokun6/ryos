@@ -81,8 +81,8 @@ export function usePreviewLogic({
   } = useAppHelpAboutDialogs();
   const launchApp = useLaunchApp();
   const { saveFile } = useVfsFileOperations("/");
-  const clearInstanceInitialData = useAppStore(
-    (state) => state.clearInstanceInitialData,
+  const updateInstanceInitialData = useAppStore(
+    (state) => state.updateInstanceInitialData,
   );
 
   const [currentPath, setCurrentPath] = useState("");
@@ -97,11 +97,13 @@ export function usePreviewLogic({
   const [saveAsFileName, setSaveAsFileName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadedPathRef = useRef("");
 
   const loadPreview = useCallback(
     async (
       path: string,
       suppliedContent?: string | Blob | ArrayBuffer,
+      rememberPath = true,
     ): Promise<void> => {
       setIsLoading(true);
       setError(null);
@@ -134,6 +136,10 @@ export function usePreviewLogic({
         setCurrentPath(path);
         setKind(nextKind);
         setContent(nextContent);
+        loadedPathRef.current = path;
+        if (rememberPath) {
+          updateInstanceInitialData(instanceId, { path });
+        }
       } catch (loadError) {
         console.error("[Preview] Failed to load file:", loadError);
         setCurrentPath(path);
@@ -148,18 +154,18 @@ export function usePreviewLogic({
         setIsLoading(false);
       }
     },
-    [t],
+    [instanceId, t, updateInstanceInitialData],
   );
 
   useEffect(() => {
     if (!isWindowOpen || (!initialData?.path && !initialData?.content)) return;
     const path = initialData.path || t("apps.preview.untitled");
-    void loadPreview(path, initialData.content);
-    clearInstanceInitialData(instanceId);
+    if (initialData.content === undefined && loadedPathRef.current === path) {
+      return;
+    }
+    void loadPreview(path, initialData.content, Boolean(initialData.path));
   }, [
-    clearInstanceInitialData,
     initialData,
-    instanceId,
     isWindowOpen,
     loadPreview,
     t,
@@ -300,6 +306,8 @@ export function usePreviewLogic({
         });
         emitFileSaved({ name: fileName, path, content });
         setCurrentPath(path);
+        loadedPathRef.current = path;
+        updateInstanceInitialData(instanceId, { path });
         setIsSaveAsDialogOpen(false);
         toast.success(t("apps.preview.toasts.saved"), {
           description: path,
@@ -311,7 +319,15 @@ export function usePreviewLogic({
         setIsSaving(false);
       }
     },
-    [content, currentPath, kind, saveFile, t],
+    [
+      content,
+      currentPath,
+      instanceId,
+      kind,
+      saveFile,
+      t,
+      updateInstanceInitialData,
+    ],
   );
 
   const handleExport = useCallback(async () => {
