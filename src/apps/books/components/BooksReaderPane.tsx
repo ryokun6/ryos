@@ -281,13 +281,17 @@ export const BooksReaderPane = forwardRef<
   const renderHostRef = useRef<HTMLDivElement>(null);
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
+  const bookLanguageRef = useRef<string | null>(null);
   const flipLockRef = useRef(false);
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
   const initialCfiRef = useRef(initialCfi);
   const activeSectionHrefRef = useRef<string | undefined>(undefined);
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
+  const uiLanguageRef = useRef(uiLanguage);
+  uiLanguageRef.current = uiLanguage;
   const [isReady, setIsReady] = useState(false);
   const [coverVisible, setCoverVisible] = useState(true);
   // Set when the EPUB can't be opened (missing blob or display failure) so the
@@ -446,6 +450,7 @@ export const BooksReaderPane = forwardRef<
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
+    bookLanguageRef.current = null;
     activeSectionHrefRef.current = undefined;
     setNavigationState(createInitialBooksNavigationState());
     appendDebugEvent("open:start", {
@@ -663,8 +668,12 @@ export const BooksReaderPane = forwardRef<
         await watch("epubjs:bookReady", book.ready);
         const readyBook = book as unknown as {
           container?: { packagePath?: string };
-          package?: { metadata?: unknown };
+          package?: { metadata?: { language?: string } };
         };
+        const bookLanguage =
+          readyBook.package?.metadata?.language?.trim() || null;
+        bookLanguageRef.current = bookLanguage;
+        const readingLanguage = bookLanguage ?? uiLanguage;
         appendDebugEvent("epubjs:bookReady:success", {
           packagePath: readyBook.container?.packagePath,
           metadata: readyBook.package?.metadata,
@@ -751,12 +760,15 @@ export const BooksReaderPane = forwardRef<
             } catch {
               appendDebugEvent("epubjs:contentHook:fonts:failed", undefined, "warn");
             }
-            // `hyphens: auto` only kicks in when the content language is known.
-            // Many EPUBs omit it, so default to English when absent.
+            // `hyphens: auto` and locale-specific CJK glyph forms depend on the
+            // content language. Prefer EPUB metadata, then the ryOS UI locale.
             try {
               const docEl = contents.document?.documentElement;
               if (docEl && !docEl.getAttribute("lang")) {
-                docEl.setAttribute("lang", "en");
+                docEl.setAttribute(
+                  "lang",
+                  bookLanguageRef.current ?? uiLanguageRef.current
+                );
               }
             } catch {
               // ignore
@@ -782,7 +794,9 @@ export const BooksReaderPane = forwardRef<
           }
         );
 
-        rendition.themes.default(buildEpubTheme(settings, palette));
+        rendition.themes.default(
+          buildEpubTheme(settings, palette, readingLanguage)
+        );
         rendition.themes.fontSize(`${settings.fontSizePct}%`);
         appendDebugEvent("epubjs:theme:applied");
 
@@ -910,7 +924,9 @@ export const BooksReaderPane = forwardRef<
   // Apply theme (colors, font family, line height) live.
   useEffect(() => {
     if (!isReady || !renditionRef.current) return;
-    renditionRef.current.themes.default(buildEpubTheme(settings, palette));
+    renditionRef.current.themes.default(
+      buildEpubTheme(settings, palette, bookLanguageRef.current ?? uiLanguage)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isReady,
@@ -918,6 +934,7 @@ export const BooksReaderPane = forwardRef<
     settings.themeOverride,
     settings.lineHeight,
     osIsDark,
+    uiLanguage,
   ]);
 
   // Apply font size live.
