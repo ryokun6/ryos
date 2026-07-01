@@ -74,6 +74,27 @@ describe("Simplified Chinese Aqua fonts", () => {
     );
   });
 
+  test("uses Chiron before the Simplified Chinese rounded fallbacks", () => {
+    const simplifiedRoundedBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"]:lang(zh-CN)'
+    );
+
+    expect(indexHtml).toContain(
+      "chiron-go-round-tc-webfont@1.0.11/css/vf.css"
+    );
+    expect(appCss).toContain('"Chiron GoRound TC WS"');
+    expect(aquaCss).toContain('"Chiron GoRound TC WS"');
+    expect(indexHtml).not.toContain("Kosugi+Maru");
+    expect(appCss).not.toContain('"Kosugi Maru"');
+    expect(aquaCss).not.toContain('"Kosugi Maru"');
+    expect(simplifiedRoundedBlock).toContain('"Chiron GoRound TC WS"');
+    expect(simplifiedRoundedBlock).toContain('"Yuanti SC"');
+    expect(simplifiedRoundedBlock.indexOf('"Chiron GoRound TC WS"')).toBeLessThan(
+      simplifiedRoundedBlock.indexOf('"Yuanti SC"')
+    );
+  });
+
   test("routes Aqua UI overrides through the locale-aware font token", () => {
     const synthBlock = extractRuleBlock(
       aquaCss,

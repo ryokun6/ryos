@@ -515,10 +515,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   /* Rounded lyrics font utility */
-  /* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
+  /* Chiron provides rounded CJK glyphs after bundled VAGRounded. */
   .font-lyrics-rounded {
-    font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-      "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;
+    font-family: "VAGRounded", "Chiron GoRound TC WS",
+      "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+      sans-serif;
     font-weight: normal;
     line-height: 1.1;
     font-synthesis: none;
@@ -557,8 +558,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Glow - Album art primary color glow style (uses rounded font) */
   .font-lyrics-gold-glow {
-    font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-      "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;
+    font-family: "VAGRounded", "Chiron GoRound TC WS",
+      "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+      sans-serif;
     font-weight: normal;
     line-height: 1.1;
     font-synthesis: none;
