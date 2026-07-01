@@ -21,6 +21,7 @@ import {
   type LyricsFont,
   type RomanizationSettings,
 } from "@/types/lyrics";
+import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 
 export interface KaraokeLyricsPlaybackContextValue {
   lyricsControls: ReturnType<typeof useLyrics>;
@@ -94,6 +95,14 @@ export function KaraokeLyricsPlaybackProvider({
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
     [lyricsTranslationLanguage, appLanguage]
   );
+  const effectiveChineseLyricsLanguage = useMemo(
+    () =>
+      resolveChineseLyricsLanguage(
+        romanization.chineseLyricsLanguage,
+        appLanguage
+      ),
+    [romanization.chineseLyricsLanguage, appLanguage]
+  );
 
   const lyricsControls = useLyrics({
     songId: currentTrack?.id ?? "",
@@ -101,6 +110,7 @@ export function KaraokeLyricsPlaybackProvider({
     artist: currentTrack?.artist ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: effectiveTranslationLanguage,
+    lyricsLanguage: effectiveChineseLyricsLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true,
     includeSoramimi: true,

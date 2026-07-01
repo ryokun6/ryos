@@ -3139,7 +3139,7 @@
       "help": {
         "directions": {
           "description": "No cartão do local, abra indicações de condução no Apple Mapas — abre num novo separador para manter o ryOS aberto (rotas no mapa ainda não disponíveis).",
-          "title": "Itinerários"
+          "title": "Trajeto"
         },
         "dropPins": {
           "description": "Escolha um resultado da lista para fixar um marcador e centralizar o mapa nele",
@@ -3178,7 +3178,7 @@
       "placeCard": {
         "addFavorite": "Adicionar aos Favoritos",
         "close": "Fechar cartão do local",
-        "directions": "Itinerários",
+        "directions": "Trajeto",
         "favorite": "Favorito",
         "favorited": "Favoritado",
         "home": "Casa",
@@ -4868,7 +4868,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Selecione seu idioma preferido para a interface do ryOS",
       "english": "Inglês",
       "french": "Français",

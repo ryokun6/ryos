@@ -1,13 +1,14 @@
 /**
- * Canonical standalone UI labels extracted from Apple's macOS localization
- * glossaries for every ryOS locale.
+ * Canonical standalone UI labels extracted from applelocalization's raw macOS
+ * 26.1 corpus for every ryOS locale.
  *
- * The English object keys are Apple's original base strings. Localized values
- * are the dominant exact-match translations in the downloaded Brazilian,
- * French, German, Italian, Japanese, Korean, Russian, Spanish, and Traditional
- * Chinese glossaries. Context-sensitive phrases stay outside this global map.
+ * The English object keys are exact source-string matches. Localized values are
+ * the dominant translations for Brazilian Portuguese, French, German, Italian,
+ * Japanese, Korean, Russian, Spanish, Simplified Chinese (China), and
+ * Traditional Chinese (Taiwan).
+ * Context-sensitive phrases stay outside this global map.
  *
- * The `pt` locale intentionally follows Apple's Brazilian Portuguese glossary.
+ * The `pt` locale intentionally follows Apple's Brazilian Portuguese corpus.
  */
 
 import { RAW_APPLE_UI_TERMINOLOGY } from "./apple-ui-terminology-data";
@@ -56,6 +57,7 @@ export const ENGLISH_FORBIDDEN_VALUE_PATTERNS = [
 
 export const TRANSLATION_LOCALES = [
   "zh-TW",
+  "zh-CN",
   "ja",
   "ko",
   "fr",
@@ -80,6 +82,7 @@ export const APPLE_UI_TERMINOLOGY =
  */
 export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
   "apps.admin.server.ok": {
+    "zh-CN": "确定",
     "zh-TW": "確定",
     ja: "OK",
     ko: "확인",
@@ -100,14 +103,21 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
     ko: "그라파이트",
   },
   "apps.calculator.angle.deg": {
+    "zh-CN": "度",
+    ja: "度",
     ko: "도",
   },
   "apps.dashboard.weather.humidity": {
     de: "Luftfeuchtigkeit",
   },
   "apps.admin.auditLog.action": {
+    "zh-CN": "操作",
     "zh-TW": "操作",
     ko: "작업",
+  },
+  "apps.admin.tableHeaders.added": {
+    fr: "Ajouté",
+    it: "Aggiunto",
   },
   "debug.console": {
     fr: "Journaux",
@@ -158,6 +168,7 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
     pt: "recuperar memória",
   },
   "common.colors.pink": {
+    "zh-CN": "粉色",
     "zh-TW": "粉色",
   },
 } as const satisfies Record<string, Partial<LocalizedTerm>>;
@@ -170,6 +181,7 @@ const APPLE_UI_CONTEXTUAL_ENGLISH = {
   "apps.calculator.angle.deg": "Degrees",
   "apps.dashboard.weather.humidity": "Humidity",
   "apps.admin.auditLog.action": "Action",
+  "apps.admin.tableHeaders.added": "Added",
   "debug.console": "Logs",
   "debug.tabs.logs": "Logs",
   "apps.admin.song.lyricsSource": "Lyrics",

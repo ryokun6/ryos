@@ -394,6 +394,7 @@ const initialIpodData: IpodData = {
     japaneseRomaji: false,
     korean: true,
     chinese: false,
+    chineseLyricsLanguage: "auto",
     soramimi: false,
     soramamiTargetLanguage: "zh-TW",
     pronunciationOnly: false,
@@ -796,7 +797,7 @@ export function navigateActiveIpodTrack(
   }
 }
 
-const CURRENT_IPOD_STORE_VERSION = 41; // Drop legacy Apple Music cache payloads from localStorage
+const CURRENT_IPOD_STORE_VERSION = 42; // Add locale-aware Chinese lyric script preference
 
 type PersistedIpodData = Partial<IpodData> & Record<string, unknown>;
 
@@ -930,7 +931,25 @@ export function sanitizePersistedIpodStateForRehydrate(
     );
   }
 
+  state.romanization = sanitizeRomanizationSettings(state.romanization);
+
   return state;
+}
+
+export function sanitizeRomanizationSettings(
+  value: unknown
+): RomanizationSettings {
+  const persistedRomanization = isRecord(value) ? value : {};
+  const chineseLyricsLanguage =
+    persistedRomanization.chineseLyricsLanguage === "zh-TW" ||
+    persistedRomanization.chineseLyricsLanguage === "zh-CN"
+      ? persistedRomanization.chineseLyricsLanguage
+      : "auto";
+  return {
+    ...initialIpodData.romanization,
+    ...persistedRomanization,
+    chineseLyricsLanguage,
+  } as RomanizationSettings;
 }
 
 // Helper function to get unplayed track IDs from history

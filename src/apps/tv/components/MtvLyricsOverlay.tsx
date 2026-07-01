@@ -6,6 +6,8 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useTvPlayedSeconds } from "@/apps/tv/hooks/useTvPlayedSeconds";
 import { cn } from "@/lib/utils";
 import type { LyricLine } from "@/types/lyrics";
+import { useTranslation } from "react-i18next";
+import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 
 const WORD_WITH_TRAILING_SPACE_RE = /\S+\s*/g;
 
@@ -111,6 +113,7 @@ export function MtvLyricsOverlay({
   visible,
   variant = "windowed",
 }: MtvLyricsOverlayProps) {
+  const { i18n } = useTranslation();
   // Subscribe to the playback clock directly here (the lone leaf that needs
   // it) so the ~1Hz tick re-renders only this overlay, never the TV tree.
   // Gating on `visible` opts out of tick re-renders while the caption is
@@ -119,10 +122,13 @@ export function MtvLyricsOverlay({
   // Pull the matching iPod track so we can apply its `lyricOffset`. Using
   // a shallow selector keeps this overlay from re-rendering on unrelated
   // ipod store changes.
-  const track = useIpodStore(
-    useShallow((s) =>
-      songId ? s.tracks.find((t) => t.id === songId) ?? null : null
-    )
+  const { track, chineseLyricsLanguage } = useIpodStore(
+    useShallow((s) => ({
+      track: songId
+        ? s.tracks.find((candidate) => candidate.id === songId) ?? null
+        : null,
+      chineseLyricsLanguage: s.romanization.chineseLyricsLanguage,
+    }))
   );
   const lyricOffsetMs = track?.lyricOffset ?? 0;
   const currentTimeMs = playedSeconds * 1000 + lyricOffsetMs;
@@ -134,6 +140,10 @@ export function MtvLyricsOverlay({
     // useLyrics expects seconds; lyricOffset is folded back in here so
     // currentLine matches what we'll render.
     currentTime: currentTimeMs / 1000,
+    lyricsLanguage: resolveChineseLyricsLanguage(
+      chineseLyricsLanguage,
+      i18n.resolvedLanguage ?? i18n.language
+    ),
   });
 
   const activeLine: LyricLine | null = useMemo(() => {

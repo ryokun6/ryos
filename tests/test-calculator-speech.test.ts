@@ -36,6 +36,7 @@ function t(key: string, options?: Record<string, string>): string {
 describe("calculatorSpeechLocale", () => {
   test("ryOSLocaleToSpeechLanguage maps supported ryOS locales", () => {
     expect(ryOSLocaleToSpeechLanguage("en")).toBe("en-US");
+    expect(ryOSLocaleToSpeechLanguage("zh-CN")).toBe("zh-CN");
     expect(ryOSLocaleToSpeechLanguage("zh-TW")).toBe("zh-TW");
     expect(ryOSLocaleToSpeechLanguage("ja")).toBe("ja-JP");
     expect(ryOSLocaleToSpeechLanguage("pt")).toBe("pt-PT");

@@ -470,7 +470,7 @@
 <p>The Song API provides endpoints for managing a music library in ryOS, including CRUD operations for songs, lyrics fetching from KuGou, AI-powered translations, Japanese furigana annotations, and "soramimi" (空耳) phonetic readings.</p>
 <p>Refactored song routes use the shared <code>apiHandler</code> pattern with optional auth plus action-specific permission checks. Public metadata reads and first-time lyrics, translation, furigana, and soramimi generation do not require login. Optional routes treat partial, stale, or invalid credentials as anonymous; authenticated ownership checks still apply to metadata mutations and protected force-refresh operations.</p>
 <h2>Overview</h2>
-<p>Songs are identified by their YouTube video ID (11 characters). The API stores: <ul><li><strong>Metadata</strong> (lightweight ~300 bytes): title, artist, album, cover, timestamps</li><li><strong>Content</strong> (heavy ~5-50KB): lyrics, translations, furigana, soramimi annotations</li></ul></p>
+<p>Songs are identified by their YouTube video ID (11 characters). The API stores: <ul><li><strong>Metadata</strong> (lightweight ~300 bytes): title, artist, album, cover, timestamps</li><li><strong>Content</strong> (heavy ~5-50KB): raw KuGou lyrics, processed <code>zh-TW</code>/<code>zh-CN</code> lyric variants, translations, furigana, and soramimi annotations</li></ul></p>
 <p>Data is stored in Redis (Upstash) with split storage to avoid exceeding request size limits when listing songs.</p>
 <h2>Endpoints</h2>
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/songs</code></td><td>List songs with optional filtering</td></tr><tr><td>POST</td><td><code>/api/songs</code></td><td>Create song or bulk import</td></tr><tr><td>DELETE</td><td><code>/api/songs</code></td><td>Delete all songs (admin only)</td></tr><tr><td>GET</td><td><code>/api/songs/{id}</code></td><td>Get song by ID</td></tr><tr><td>POST</td><td><code>/api/songs/{id}</code></td><td>Update song or perform action</td></tr><tr><td>DELETE</td><td><code>/api/songs/{id}</code></td><td>Delete song (admin only)</td></tr></tbody></table>
@@ -538,8 +538,15 @@ X-Username: &lt;username&gt;</code></pre>
       "album": "Album Name",
       "lyricOffset": 0,
       "lyricsSource": { ... },
-      "lyrics": { "lrc": "...", "krc": "..." },
-      "translations": { "zh-TW": "..." },
+      "lyrics": {
+        "lrc": "...",
+        "krc": "...",
+        "parsedLinesByLanguage": {
+          "zh-TW": [{ "startTimeMs": "0", "words": "頭髮" }],
+          "zh-CN": [{ "startTimeMs": "0", "words": "头发" }]
+        }
+      },
+      "translations": { "zh-TW": "...", "zh-CN": "..." },
       "furigana": [[{ "text": "歌詞", "reading": "かし" }]],
       "soramimi": [[{ "text": "歌詞", "reading": "割詞" }]],
       "createdBy": "ryo",
@@ -577,7 +584,7 @@ X-Username: &lt;username&gt;</code></pre>
 <h3>GET /api/songs/{id}</h3>
 <p>Retrieve a song by its YouTube video ID.</p>
 <h4>Query Parameters</h4>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>include</code></td><td>string</td><td>Comma-separated: <code>metadata</code>, <code>lyrics</code>, <code>translations</code>, <code>furigana</code>, <code>soramimi</code> (default: <code>metadata</code>)</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>include</code></td><td>string</td><td>Comma-separated: <code>metadata</code>, <code>lyrics</code>, <code>translations</code>, <code>furigana</code>, <code>soramimi</code> (default: <code>metadata</code>)</td></tr><tr><td><code>lyricsLanguage</code></td><td>string</td><td>Processed primary lyric script: <code>zh-TW</code> or <code>zh-CN</code> (default: <code>zh-TW</code>)</td></tr></tbody></table>
 <h4>Response</h4>
 <pre><code>{
   "id": "dQw4w9WgXcQ",
@@ -598,7 +605,8 @@ X-Username: &lt;username&gt;</code></pre>
     ]
   },
   "translations": {
-    "zh-TW": "[00:00.00]第一行..."
+    "zh-TW": "[00:00.00]頭髮...",
+    "zh-CN": "[00:00.00]头发..."
   },
   "furigana": [
     [{ "text": "歌詞", "reading": "かし" }, { "text": "です" }]
@@ -654,11 +662,12 @@ X-Username: &lt;username&gt;</code></pre>
   "artist": "Artist Name",
   "returnMetadata": true,
   "translateTo": "en",
+  "lyricsLanguage": "zh-CN",
   "includeFurigana": true,
   "includeSoramimi": true,
   "soramimiTargetLanguage": "zh-TW"
 }</code></pre>
-<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>lyricsSource</code></td><td>object</td><td>KuGou source (from search results)</td></tr><tr><td><code>force</code></td><td>boolean</td><td>Force refresh even if cached</td></tr><tr><td><code>title</code></td><td>string</td><td>Optional title for auto-search</td></tr><tr><td><code>artist</code></td><td>string</td><td>Optional artist for auto-search</td></tr><tr><td><code>returnMetadata</code></td><td>boolean</td><td>Include metadata in response</td></tr><tr><td><code>translateTo</code></td><td>string</td><td>Language code to check translation status</td></tr><tr><td><code>includeFurigana</code></td><td>boolean</td><td>Include furigana status in response</td></tr><tr><td><code>includeSoramimi</code></td><td>boolean</td><td>Include soramimi status in response</td></tr><tr><td><code>soramimiTargetLanguage</code></td><td>string</td><td><code>zh-TW</code> or <code>en</code> (default: <code>zh-TW</code>)</td></tr></tbody></table>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>lyricsSource</code></td><td>object</td><td>KuGou source (from search results)</td></tr><tr><td><code>force</code></td><td>boolean</td><td>Force refresh even if cached</td></tr><tr><td><code>title</code></td><td>string</td><td>Optional title for auto-search</td></tr><tr><td><code>artist</code></td><td>string</td><td>Optional artist for auto-search</td></tr><tr><td><code>returnMetadata</code></td><td>boolean</td><td>Include metadata in response</td></tr><tr><td><code>translateTo</code></td><td>string</td><td>Language code to check translation status</td></tr><tr><td><code>lyricsLanguage</code></td><td>string</td><td>Primary lyric script: <code>zh-TW</code> or <code>zh-CN</code> (default: <code>zh-TW</code>)</td></tr><tr><td><code>includeFurigana</code></td><td>boolean</td><td>Include furigana status in response</td></tr><tr><td><code>includeSoramimi</code></td><td>boolean</td><td>Include soramimi status in response</td></tr><tr><td><code>soramimiTargetLanguage</code></td><td>string</td><td><code>zh-TW</code> or <code>en</code> (default: <code>zh-TW</code>)</td></tr></tbody></table>
 <h4>Response</h4>
 <pre><code>{
   "lyrics": {
@@ -807,9 +816,9 @@ X-Username: &lt;username&gt;</code></pre>
 <h3>Line Filtering</h3>
 <p>Lines are automatically filtered to remove: <ul><li>Credit/metadata lines (作词, 作曲, Produced by, etc.)</li><li>Title/artist header lines</li><li>Empty parenthetical content</li></ul></p>
 <h3>Chinese Conversion</h3>
-<ul><li>Lyrics from KuGou are in Simplified Chinese</li></ul><ul><li>Automatically converted to Traditional Chinese for display</li><li>Japanese lyrics are detected and preserved without conversion</li></ul>
+<ul><li>Raw LRC/KRC from KuGou remains stored in Simplified Chinese</li></ul><ul><li>Both processed <code>zh-CN</code> and OpenCC-converted <code>zh-TW</code> lines (including KRC word timings) are stored with the song</li><li><code>lyricsLanguage</code> selects which processed script is returned as <code>parsedLines</code></li><li>iPod and Karaoke expose Automatic, Traditional, and Simplified choices in the Pronunciation menu; Automatic follows the current Chinese ryOS locale and otherwise preserves the Traditional default</li><li>Japanese lyrics are detected and preserved without conversion</li></ul>
 <h3>Embedded Translations</h3>
-<p>KRC files may contain embedded Chinese translations in a base64-encoded <code>[language:]</code> tag. These are automatically extracted for Traditional Chinese translation requests, bypassing AI generation.</p>
+<p>KRC files may contain embedded Chinese translations in a base64-encoded <code>[language:]</code> tag. The API extracts the Simplified source, stores both <code>translations["zh-CN"]</code> and its Traditional <code>translations["zh-TW"]</code> conversion, and bypasses AI generation for either Chinese target. AI-generated Chinese translations are also saved under both script keys.</p>
 <hr>
 <h2>Furigana Generation</h2>
 <p>Furigana (振り仮名) are reading annotations for Japanese kanji.</p>

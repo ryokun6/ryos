@@ -3,7 +3,10 @@
  */
 
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useLanguageStore } from "@/stores/useLanguageStore";
+import {
+  useLanguageStore,
+  type LanguageCode,
+} from "@/stores/useLanguageStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
@@ -28,7 +31,8 @@ export interface SettingsInput {
 const getLanguageDisplayName = (langCode: string): string => {
   const langMap: Record<string, string> = {
     en: "apps.ipod.translationLanguages.english",
-    "zh-TW": "apps.ipod.translationLanguages.chinese",
+    "zh-CN": "settings.language.chineseSimplified",
+    "zh-TW": "settings.language.chineseTraditional",
     ja: "apps.ipod.translationLanguages.japanese",
     ko: "apps.ipod.translationLanguages.korean",
     fr: "apps.ipod.translationLanguages.french",
@@ -64,9 +68,7 @@ export const handleSettings = (
 
   // Language change
   if (language !== undefined) {
-    langStore.setLanguage(
-      language as "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru"
-    );
+    langStore.setLanguage(language as LanguageCode);
     changes.push(
       i18n.t("apps.chats.toolCalls.settingsLanguageChanged", {
         language: getLanguageDisplayName(language),

@@ -2931,7 +2931,7 @@
         "playlistTrackCount_many": "{{count}} canciones",
         "playlistTrackCount_one": "{{count}} canción",
         "playlistTrackCount_other": "{{count}} canciones",
-        "playlists": "Listas de reproducción",
+        "playlists": "Playlists",
         "radio": "Radio",
         "recentlyAdded": "Añadido recientemente",
         "repeat": "Repetir",
@@ -4154,7 +4154,7 @@
           "title": "Texto"
         }
       },
-      "speak": "Hablar",
+      "speak": "Leer",
       "stopSpeech": "Detener habla",
       "text": "Texto",
       "underline": "Subrayar",
@@ -4868,7 +4868,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Selecciona tu idioma preferido para la interfaz de ryOS",
       "english": "Inglés",
       "french": "Français",

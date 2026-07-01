@@ -609,6 +609,23 @@ describe("useIpodStore Apple Music slice", () => {
     ]);
   });
 
+  test("rehydrate sanitizer adds the automatic Chinese lyric script preference", () => {
+    const sanitized = sanitizePersistedIpodStateForRehydrate({
+      romanization: {
+        enabled: false,
+        chinese: true,
+      },
+    });
+
+    expect(sanitized.romanization).toMatchObject({
+      enabled: false,
+      chinese: true,
+      chineseLyricsLanguage: "auto",
+      japaneseFurigana: true,
+      soramamiTargetLanguage: "zh-TW",
+    });
+  });
+
   test("appleMusicNextTrack walks the library forward without touching the YouTube slice", () => {
     useIpodStore.getState().setAppleMusicTracks([
       { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },

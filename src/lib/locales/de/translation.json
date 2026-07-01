@@ -425,14 +425,14 @@
       "tableHeaders": {
         "added": "Hinzugefügt",
         "addedBy": "Von",
-        "artist": "Künstler",
+        "artist": "Künstler:in",
         "lastActive": "Zuletzt aktiv",
         "message": "Nachricht",
         "role": "Rolle",
         "status": "Status",
         "time": "Zeit",
         "title": "Titel",
-        "user": "Benutzer",
+        "user": "Benutzer:in",
         "username": "Benutzername"
       },
       "time": {
@@ -446,7 +446,7 @@
         "active": "Aktiv",
         "admin": "Admin",
         "banned": "Gesperrt",
-        "user": "Benutzer"
+        "user": "Benutzer:in"
       }
     },
     "applet-viewer": {
@@ -2291,7 +2291,7 @@
         }
       },
       "fileTypes": {
-        "application": "Programm",
+        "application": "App",
         "bmpImage": "BMP-Bild",
         "book": "Buch",
         "directory": "Verzeichnis",
@@ -2312,7 +2312,7 @@
       },
       "folders": {
         "applets": "Applets",
-        "applications": "Programme",
+        "applications": "Apps",
         "books": "Bücher",
         "desktop": "Schreibtisch",
         "documents": "Dokumente",
@@ -2907,7 +2907,7 @@
         "alwaysOn": "Eingeschaltet lassen",
         "appleMusicSignIn": "Apple Music",
         "appleMusicSignOut": "Apple Music",
-        "artists": "Künstler",
+        "artists": "Künstler:innen",
         "backlight": "Hintergrundbeleuchtung",
         "brickGame": "Brick",
         "extras": "Extras",
@@ -4590,7 +4590,7 @@
     "dock": {
       "addToDock": "Zum Dock hinzufügen",
       "appletStore": "Applet Store",
-      "applications": "Programme",
+      "applications": "Apps",
       "folderContents": "Ordnerinhalt",
       "hide": "Ausblenden",
       "minimized": "(minimiert)",
@@ -4655,7 +4655,7 @@
       "openingSharedVideo": "Öffnen …"
     },
     "menu": {
-      "applications": "Programme",
+      "applications": "Apps",
       "clear": "Löschen",
       "close": "Schließen",
       "copy": "Kopieren",
@@ -4733,7 +4733,7 @@
       "fullscreen": "Vollbild",
       "maximize": "Maximieren",
       "maximizeDisabled": "Maximieren (deaktiviert)",
-      "minimize": "Im Dock ablegen",
+      "minimize": "Minimieren",
       "minimizeDisabled": "Minimieren (deaktiviert)"
     }
   },
@@ -4864,7 +4864,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Wählen Sie Ihre bevorzugte Sprache für die ryOS-Oberfläche",
       "english": "English",
       "french": "Français",
@@ -4891,7 +4892,7 @@
     "placeholder": "ryOS durchsuchen",
     "sections": {
       "applets": "Applets",
-      "apps": "Programme",
+      "apps": "Apps",
       "calendar": "Kalender",
       "commands": "Befehle",
       "contacts": "Kontakte",

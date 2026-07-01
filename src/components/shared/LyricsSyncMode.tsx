@@ -331,8 +331,7 @@ export function LyricsSyncMode({
     return map;
   }, [lines, romanization, furiganaMap]);
 
-  // Note: Chinese Simplified→Traditional conversion is now handled by the API in parseLyricsContent
-  // No frontend conversion needed
+  // Chinese script conversion is handled by the API's selected lyric variant.
 
   return (
     <div

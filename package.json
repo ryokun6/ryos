@@ -38,7 +38,7 @@
     "i18n:find-untranslated": "bun run scripts/find-untranslated-strings.ts",
     "i18n:audit": "bun run scripts/audit-translations.ts",
     "i18n:audit:fix": "bun run scripts/audit-translations.ts --fix",
-    "i18n:apple-glossary": "python3 scripts/extract-apple-terminology.py",
+    "i18n:apple-glossary": "bun run scripts/extract-apple-terminology.ts",
     "i18n:translate": "bun run scripts/machine-translate.ts",
     "i18n:translate:dry-run": "bun run scripts/machine-translate.ts --dry-run",
     "electron:bundle": "bun run scripts/bundle-electron.ts",

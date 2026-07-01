@@ -37,7 +37,19 @@ export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
 export type ThemeId = typeof THEME_IDS[number];
 
 // Supported language codes
-export const LANGUAGE_CODES = ["en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"] as const;
+export const LANGUAGE_CODES = [
+  "en",
+  "zh-TW",
+  "zh-CN",
+  "ja",
+  "ko",
+  "fr",
+  "de",
+  "es",
+  "pt",
+  "it",
+  "ru",
+] as const;
 export type LanguageCode = typeof LANGUAGE_CODES[number];
 
 // Media control actions

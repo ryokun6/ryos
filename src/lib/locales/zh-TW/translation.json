@@ -719,7 +719,7 @@
           "gal": "加侖（美制）",
           "ha": "公頃",
           "hr": "小時",
-          "in": "英吋",
+          "in": "英寸",
           "j": "焦耳",
           "k": "開爾文",
           "kcal": "千卡路里",
@@ -4864,7 +4864,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "選擇您的 ryOS 介面偏好語言",
       "english": "英文",
       "french": "Français",

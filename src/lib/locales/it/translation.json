@@ -1832,7 +1832,7 @@
         "codeSentTitle": "Verifica inviata",
         "currentLabel": "Email di recupero attuale",
         "description": "Aggiungi un'email per poter reimpostare la password se la dimentichi.",
-        "emailLabel": "Indirizzo e-mail",
+        "emailLabel": "Indirizzo email",
         "genericError": "Qualcosa è andato storto. Riprova.",
         "invalidEmail": "Inserisci un indirizzo email valido",
         "notConfigured": "Il recupero tramite email non è disponibile su questo server. Puoi ancora effettuare il recupero tramite un account Telegram collegato.",
@@ -4114,7 +4114,7 @@
         "newFile": "Nuovo file",
         "numberedList": "Elenco numerato",
         "open": "Apri…",
-        "plainText": "Solo testo",
+        "plainText": "Testo semplice",
         "save": "Salva",
         "saveEllipsis": "Salva…",
         "taskList": "Elenco attività",
@@ -4868,7 +4868,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Seleziona la tua lingua preferita per l'interfaccia di ryOS",
       "english": "Inglese",
       "french": "Français",

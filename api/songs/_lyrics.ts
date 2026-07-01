@@ -7,12 +7,36 @@
 import { openai } from "@ai-sdk/openai";
 import { Converter } from "opencc-js";
 import { SKIP_PREFIXES } from "./_constants.js";
-import { logInfo, logError, type LyricLine } from "./_utils.js";
+import {
+  base64ToUtf8,
+  logInfo,
+  logError,
+  type LyricLine,
+} from "./_utils.js";
 import type { LyricsContent, ParsedLyricLine, WordTiming } from "../_utils/_song-service.js";
+import type { ChineseLyricsLanguage } from "../../src/shared/media/chineseLyrics.js";
 
 // Chinese character converters
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
 const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
+
+export function convertChineseLyricsText(
+  text: string,
+  language: ChineseLyricsLanguage
+): string {
+  return language === "zh-CN"
+    ? traditionalToSimplified(text)
+    : simplifiedToTraditional(text);
+}
+
+export function buildChineseTextVariants(
+  text: string
+): Record<ChineseLyricsLanguage, string> {
+  return {
+    "zh-TW": convertChineseLyricsText(text, "zh-TW"),
+    "zh-CN": convertChineseLyricsText(text, "zh-CN"),
+  };
+}
 
 // Unicode ranges for script detection
 const HIRAGANA_REGEX = /[\u3040-\u309F]/;
@@ -80,6 +104,28 @@ export function isChineseTraditional(language: string): boolean {
 }
 
 /**
+ * Check if a language code represents Chinese (Simplified)
+ */
+export function isChineseSimplified(language: string): boolean {
+  const lower = language.toLowerCase();
+  return (
+    lower === "zh-cn" ||
+    lower === "zh-hans" ||
+    lower === "chinese simplified" ||
+    lower === "simplified chinese" ||
+    lower === "简体中文"
+  );
+}
+
+export function getChineseLyricsLanguage(
+  language: string
+): ChineseLyricsLanguage | null {
+  if (isChineseTraditional(language)) return "zh-TW";
+  if (isChineseSimplified(language)) return "zh-CN";
+  return null;
+}
+
+/**
  * Extract Chinese translation from KRC language field
  */
 export function extractChineseFromKrcLanguage(krc: string): string[] | null {
@@ -87,8 +133,9 @@ export function extractChineseFromKrcLanguage(krc: string): string[] | null {
   if (!languageMatch) return null;
 
   try {
-    const decoded = atob(languageMatch[1]);
-    const langData: KrcLanguageContent = JSON.parse(decoded);
+    const langData: KrcLanguageContent = JSON.parse(
+      base64ToUtf8(languageMatch[1])
+    );
     const chineseContent = langData.content.find((c) => c.type === 1);
     if (!chineseContent?.lyricContent) return null;
     return chineseContent.lyricContent.map((segments) => segments.join("").trim());
@@ -270,13 +317,14 @@ export function isKrcFormat(text: string): boolean {
 }
 
 /**
- * Unified parsing function - parses KRC or LRC with consistent filtering
- * Converts Chinese lyrics to Traditional Chinese (Kugou uses Simplified)
+ * Unified parsing function - parses KRC or LRC with consistent filtering.
+ * KuGou uses Simplified Chinese; callers choose the processed script variant.
  */
 export function parseLyricsContent(
   lyrics: { lrc?: string; krc?: string },
   title?: string,
-  artist?: string
+  artist?: string,
+  chineseLanguage: ChineseLyricsLanguage = "zh-TW"
 ): ParsedLyricLine[] {
   let lines: ParsedLyricLine[] = [];
   
@@ -295,27 +343,36 @@ export function parseLyricsContent(
     }));
   }
   
-  // Convert Chinese lyrics from Simplified to Traditional Chinese
-  // Kugou lyrics are in Simplified Chinese - convert to Traditional for display
-  // IMPORTANT: Skip this for Japanese lyrics to avoid corrupting Japanese Kanji
+  // IMPORTANT: Skip Chinese conversion for Japanese lyrics to avoid corrupting Kanji
   // (e.g., Japanese 気→氣, 国→國 would be wrong)
   if (lyricsAreJapanese(lines)) {
     // Japanese lyrics - return as-is without Chinese conversion
     return lines;
   }
 
-  // Chinese lyrics - convert from Simplified to Traditional
+  // Chinese lyrics - normalize to the requested script.
   return lines.map(line => ({
     ...line,
-    words: simplifiedToTraditional(line.words),
+    words: convertChineseLyricsText(line.words, chineseLanguage),
     // Also convert wordTimings text if present
     ...(line.wordTimings && {
       wordTimings: line.wordTimings.map(wt => ({
         ...wt,
-        text: simplifiedToTraditional(wt.text),
+        text: convertChineseLyricsText(wt.text, chineseLanguage),
       })),
     }),
   }));
+}
+
+export function buildChineseLyricsVariants(
+  lyrics: { lrc?: string; krc?: string },
+  title?: string,
+  artist?: string
+): Record<ChineseLyricsLanguage, ParsedLyricLine[]> {
+  return {
+    "zh-TW": parseLyricsContent(lyrics, title, artist, "zh-TW"),
+    "zh-CN": parseLyricsContent(lyrics, title, artist, "zh-CN"),
+  };
 }
 
 // =============================================================================
@@ -383,12 +440,13 @@ function parseRawKrcLines(krc: string, title?: string, artist?: string): RawKrcL
 }
 
 /**
- * Build a Traditional Chinese LRC from KRC embedded translation
+ * Build a Chinese LRC from KRC embedded translation in the requested script.
  */
 export function buildChineseTranslationFromKrc(
   lyrics: LyricsContent,
   title?: string,
-  artist?: string
+  artist?: string,
+  chineseLanguage: ChineseLyricsLanguage = "zh-TW"
 ): string | null {
   if (!lyrics.krc) return null;
 
@@ -399,20 +457,43 @@ export function buildChineseTranslationFromKrc(
   if (rawLines.length === 0) return null;
 
   const resultLines: string[] = [];
-
   for (const rawLine of rawLines) {
     if (rawLine.shouldSkip) continue;
 
     const chineseLine = embeddedChinese[rawLine.rawIndex] || "";
     const chineseIsMetadata = !chineseLine || shouldSkipLine(chineseLine, title, artist);
-    // Always convert to Traditional Chinese - both the translation and the fallback (original lyrics)
-    // since KRC files from Kugou are in Simplified Chinese
-    const textToUse = simplifiedToTraditional(chineseIsMetadata ? rawLine.words : chineseLine);
+    const sourceText = chineseIsMetadata ? rawLine.words : chineseLine;
+    const textToUse = hasKanaText(sourceText)
+      ? sourceText
+      : convertChineseLyricsText(sourceText, chineseLanguage);
 
     resultLines.push(`${msToLrcTimeInternal(rawLine.startTimeMs)}${textToUse}`);
   }
 
   return resultLines.join("\n");
+}
+
+export function buildChineseTranslationVariantsFromKrc(
+  lyrics: LyricsContent,
+  title?: string,
+  artist?: string
+): Partial<Record<ChineseLyricsLanguage, string>> {
+  const traditional = buildChineseTranslationFromKrc(
+    lyrics,
+    title,
+    artist,
+    "zh-TW"
+  );
+  const simplified = buildChineseTranslationFromKrc(
+    lyrics,
+    title,
+    artist,
+    "zh-CN"
+  );
+  return {
+    ...(traditional ? { "zh-TW": traditional } : {}),
+    ...(simplified ? { "zh-CN": simplified } : {}),
+  };
 }
 
 function msToLrcTimeInternal(msStr: string): string {

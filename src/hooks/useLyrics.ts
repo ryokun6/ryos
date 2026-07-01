@@ -21,6 +21,7 @@ import {
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 import { shouldForceLyricsFetch } from "@/shared/media/lyricsFetchPolicy";
 import { canStartLyricsTranslation } from "@/shared/media/lyricsLifecycle";
+import type { ChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 
 const lyricsLog = createClientLogger("Lyrics");
 
@@ -43,6 +44,8 @@ interface UseLyricsParams {
   artist?: string;
   currentTime: number;
   translateTo?: string | null;
+  /** Script used for the primary KuGou lyric lines. */
+  lyricsLanguage?: ChineseLyricsLanguage;
   /** Include furigana info in initial fetch (for Japanese romanization) */
   includeFurigana?: boolean;
   /** Include soramimi info in initial fetch (for misheard lyrics) */
@@ -114,6 +117,7 @@ interface LyricsLogContext {
   title?: string;
   artist?: string;
   translateTo?: string | null;
+  lyricsLanguage?: ChineseLyricsLanguage;
   includeFurigana?: boolean;
   includeSoramimi?: boolean;
   soramimiTargetLanguage?: "zh-TW" | "en";
@@ -137,6 +141,7 @@ export function useLyrics(
     artist = "",
     currentTime,
     translateTo,
+    lyricsLanguage = "zh-TW",
     includeFurigana,
     includeSoramimi,
     soramimiTargetLanguage = "zh-TW",
@@ -312,6 +317,7 @@ export function useLyrics(
       title: title || undefined,
       artist: artist || undefined,
       translateTo,
+      lyricsLanguage,
       includeFurigana: Boolean(includeFurigana),
       includeSoramimi: Boolean(includeSoramimi),
       soramimiTargetLanguage,
@@ -330,6 +336,7 @@ export function useLyrics(
       title,
       artist,
       translateTo,
+      lyricsLanguage,
       includeFurigana,
       includeSoramimi,
       soramimiTargetLanguage,
@@ -410,7 +417,7 @@ export function useLyrics(
     }
 
     const selectedMatchKey = selectedMatch?.hash || "";
-    const cacheKey = `song:${effectSongId}:${selectedMatchKey}`;
+    const cacheKey = `song:${effectSongId}:${selectedMatchKey}:${lyricsLanguage}`;
 
     if (!isRefetchRequest && cacheKey === cachedKeyRef.current) {
       lyricsLog.debug("Reusing lyrics already loaded in memory", logContext);
@@ -450,6 +457,7 @@ export function useLyrics(
       title: title || undefined,
       artist: artist || undefined,
       translateTo: translateTo || undefined,
+      lyricsLanguage,
       includeFurigana: includeFurigana || undefined,
       includeSoramimi: includeSoramimi || undefined,
       soramimiTargetLanguage: includeSoramimi ? soramimiTargetLanguage : undefined,
@@ -480,6 +488,7 @@ export function useLyrics(
         typeof requestBody.translateTo === "string"
           ? requestBody.translateTo
           : undefined,
+      lyricsLanguage,
       includeFurigana: Boolean(requestBody.includeFurigana),
       includeSoramimi: Boolean(requestBody.includeSoramimi),
       soramimiTargetLanguage:
@@ -602,6 +611,7 @@ export function useLyrics(
     markRefetchHandled,
     selectedMatch,
     translateTo,
+    lyricsLanguage,
     includeFurigana,
     includeSoramimi,
     soramimiTargetLanguage,
