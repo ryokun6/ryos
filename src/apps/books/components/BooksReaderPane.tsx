@@ -20,6 +20,7 @@ import {
   buildFontFaceCss,
   columnModeToSpread,
   isLikelyEpubBuffer,
+  reflowEpubAfterFontsSettle,
   resolveReadingPalette,
 } from "../utils/booksReader";
 import { useBookCover } from "../utils/useBookCover";
@@ -447,6 +448,7 @@ export const BooksReaderPane = forwardRef<
     let cancelled = false;
     let book: Book | null = null;
     let rendition: Rendition | null = null;
+    let displayedContentFontsReady: Promise<FontFaceSet> | undefined;
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
@@ -791,6 +793,9 @@ export const BooksReaderPane = forwardRef<
             } catch {
               // ignore
             }
+            if (contents.document?.fonts) {
+              displayedContentFontsReady = contents.document.fonts.ready;
+            }
           }
         );
 
@@ -859,6 +864,19 @@ export const BooksReaderPane = forwardRef<
             rendition.display(initialCfiRef.current || undefined)
           );
           appendDebugEvent("epubjs:display:success");
+          const displayedRendition = rendition;
+          const reflowedAfterFonts = await reflowEpubAfterFontsSettle({
+            fontsReady: displayedContentFontsReady,
+            rendition: displayedRendition,
+            spread: columnModeToSpread(settings.columnMode),
+            minSpreadWidth: SPREAD_MIN_WIDTH,
+            target: initialCfiRef.current || undefined,
+            isActive: () =>
+              !cancelled && renditionRef.current === displayedRendition,
+          });
+          if (reflowedAfterFonts) {
+            appendDebugEvent("epubjs:fonts:reflowed");
+          }
         } catch (err) {
           // Corrupt / incompatible EPUB — show an error instead of revealing an
           // empty reader shell. Do not proceed to setIsReady / cover hide.

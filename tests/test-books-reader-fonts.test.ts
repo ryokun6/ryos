@@ -6,6 +6,7 @@ import {
   buildEpubTheme,
   buildFontFaceCss,
   getBookFontCssStack,
+  reflowEpubAfterFontsSettle,
   resolveBookCjkSerifStack,
 } from "../src/apps/books/utils/booksReader";
 
@@ -71,6 +72,82 @@ describe("Books reader font choices", () => {
     expect(css).toContain(
       'url("https://os.example/fonts/SerenityOS-Emoji.woff2")'
     );
+  });
+});
+
+describe("Books reader settled-font pagination", () => {
+  test("reflows only after fonts settle and restores the requested CFI", async () => {
+    const calls: string[] = [];
+    let releaseFonts = () => {};
+    const fontsReady = new Promise<void>((resolve) => {
+      releaseFonts = resolve;
+    });
+    const reflow = reflowEpubAfterFontsSettle({
+      fontsReady,
+      rendition: {
+        spread: (spread, min) => calls.push(`spread:${spread}:${min}`),
+        display: (target) => {
+          calls.push(`display:${target}`);
+        },
+      },
+      spread: "auto",
+      minSpreadWidth: 560,
+      target: "epubcfi(/6/8!/4/2/1:0)",
+      isActive: () => true,
+    });
+
+    await Promise.resolve();
+    expect(calls).toEqual([]);
+
+    releaseFonts();
+    expect(await reflow).toBe(true);
+    expect(calls).toEqual([
+      "spread:auto:560",
+      "display:epubcfi(/6/8!/4/2/1:0)",
+    ]);
+  });
+
+  test("does not touch a rendition that unmounted while fonts loaded", async () => {
+    const calls: string[] = [];
+    let releaseFonts = () => {};
+    const fontsReady = new Promise<void>((resolve) => {
+      releaseFonts = resolve;
+    });
+    let active = true;
+    const reflow = reflowEpubAfterFontsSettle({
+      fontsReady,
+      rendition: {
+        spread: () => calls.push("spread"),
+        display: () => calls.push("display"),
+      },
+      spread: "auto",
+      minSpreadWidth: 560,
+      isActive: () => active,
+    });
+
+    active = false;
+    releaseFonts();
+
+    expect(await reflow).toBe(false);
+    expect(calls).toEqual([]);
+  });
+
+  test("leaves browsers without a document font set on the initial layout", async () => {
+    const calls: string[] = [];
+
+    const reflowed = await reflowEpubAfterFontsSettle({
+      fontsReady: undefined,
+      rendition: {
+        spread: () => calls.push("spread"),
+        display: () => calls.push("display"),
+      },
+      spread: "none",
+      minSpreadWidth: 560,
+      isActive: () => true,
+    });
+
+    expect(reflowed).toBe(false);
+    expect(calls).toEqual([]);
   });
 });
 

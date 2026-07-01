@@ -181,6 +181,44 @@ export function isLikelyEpubBuffer(buffer: ArrayBuffer): boolean {
   );
 }
 
+interface EpubLayoutRendition {
+  spread: (spread: "none" | "auto" | "always", min?: number) => void;
+  display: (target?: string) => Promise<unknown> | unknown;
+}
+
+interface ReflowEpubAfterFontsSettleOptions {
+  fontsReady: Promise<unknown> | undefined;
+  rendition: EpubLayoutRendition;
+  spread: "none" | "auto" | "always";
+  minSpreadWidth: number;
+  target?: string;
+  isActive: () => boolean;
+}
+
+/**
+ * epub.js performs its first paginated layout before rendition content hooks
+ * inject ryOS fonts. Recalculate the existing view after those fonts settle,
+ * then restore the requested CFI against the settled column geometry.
+ */
+export async function reflowEpubAfterFontsSettle({
+  fontsReady,
+  rendition,
+  spread,
+  minSpreadWidth,
+  target,
+  isActive,
+}: ReflowEpubAfterFontsSettleOptions): Promise<boolean> {
+  if (!fontsReady) return false;
+  await fontsReady;
+  if (!isActive()) return false;
+
+  rendition.spread(spread, minSpreadWidth);
+  if (!isActive()) return false;
+
+  await rendition.display(target);
+  return isActive();
+}
+
 /**
  * Build the epub.js theme object applied to the book body. Returns a nested
  * CSS-in-JS object understood by epub.js Themes.
