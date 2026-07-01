@@ -2263,6 +2263,7 @@
         "noAirDropUsersAvailable": "附近没有用户",
         "open": "打开",
         "openAirDrop": "打开 AirDrop",
+        "openWith": "打开方式",
         "putBack": "放回原处",
         "rename": "重命名…",
         "searchingForAirDropUsers": "正在寻找附近的用户…",
@@ -2302,8 +2303,10 @@
         "internetShortcut": "Internet 快捷方式",
         "jpegImage": "JPEG图像",
         "mp3Audio": "MP3 音频",
+        "pdfDocument": "PDF 文稿",
         "pngImage": "PNG图像",
         "quicktimeMovie": "QuickTime 视频",
+        "svgImage": "SVG 图像",
         "unknown": "未知",
         "webpImage": "WebP 图像"
       },
@@ -3682,6 +3685,74 @@
         "photoBoothHelp": "Photo Booth 帮助"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "查看图像、PDF 和文稿",
+      "empty": {
+        "hint": "选择文件或将它拖到此处",
+        "title": "打开文稿"
+      },
+      "help": {
+        "images": {
+          "description": "打开常见的图像格式，且不会更改原始文件",
+          "title": "预览图像"
+        },
+        "openFiles": {
+          "description": "从 Finder 打开文件，或从设备导入副本",
+          "title": "打开文件"
+        },
+        "openWith": {
+          "description": "将可编辑文件发送到“画图”“文本编辑”或小程序查看器",
+          "title": "打开方式"
+        },
+        "pdfs": {
+          "description": "使用内置文稿查看器查看 PDF 文稿",
+          "title": "阅读 PDF"
+        },
+        "safeHtml": {
+          "description": "在沙盒中预览 HTML 文稿，且不运行脚本",
+          "title": "安全 HTML"
+        },
+        "zoom": {
+          "description": "放大或缩小图像，或缩放以适合窗口",
+          "title": "缩放"
+        }
+      },
+      "menu": {
+        "aboutPreview": "关于预览",
+        "actualSize": "实际大小",
+        "export": "导出…",
+        "fitToWindow": "缩放以适合窗口",
+        "importFromDevice": "从设备导入…",
+        "open": "打开…",
+        "openWith": "打开方式",
+        "previewHelp": "预览帮助",
+        "saveAs": "另存为…",
+        "zoomIn": "放大",
+        "zoomOut": "缩小"
+      },
+      "name": "预览",
+      "saveAs": {
+        "description": "输入此副本的名称",
+        "title": "另存为"
+      },
+      "status": {
+        "loadFailed": "无法打开此文件。",
+        "loading": "正在加载预览…",
+        "notFound": "找不到文件内容。",
+        "unsupported": "无可用预览",
+        "unsupportedDescription": "“预览”不支持此文件格式。"
+      },
+      "supportedFiles": "预览文稿",
+      "title": "预览",
+      "toasts": {
+        "exportFailed": "无法导出文件",
+        "importFailed": "无法导入文件",
+        "imported": "文件已导入",
+        "saveFailed": "无法保存文件",
+        "saved": "文件已保存"
+      },
+      "untitled": "未命名"
     },
     "soundboard": {
       "description": "播放音效",
