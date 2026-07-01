@@ -22,7 +22,11 @@ import {
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import {
+  sanitizeRomanizationSettings,
+  useIpodStore,
+  type Track,
+} from "@/stores/useIpodStore";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
@@ -503,7 +507,10 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
       {
         field: "romanization",
         read: () => useIpodStore.getState().romanization,
-        write: (v) => useIpodStore.setState({ romanization: v as never }),
+        write: (v) =>
+          useIpodStore.setState({
+            romanization: sanitizeRomanizationSettings(v),
+          }),
       },
       {
         field: "lyricsTranslationLanguage",

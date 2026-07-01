@@ -37,4 +37,34 @@ describe("getActivityLabel", () => {
       label: "99% pl",
     });
   });
+
+  test("distinguishes Simplified and Traditional Chinese translation progress", () => {
+    const translations: Record<string, string> = {
+      "settings.language.chineseTraditional": "繁體中文",
+      "settings.language.chineseSimplified": "简体中文",
+    };
+    const t = (key: string, options?: Record<string, unknown>) =>
+      translations[key] ?? String(options?.defaultValue ?? key);
+
+    expect(
+      getActivityLabel(
+        {
+          isTranslating: true,
+          translationLanguage: "zh-TW",
+          translationProgress: 10,
+        },
+        t
+      ).label
+    ).toBe("10% 繁體中文");
+    expect(
+      getActivityLabel(
+        {
+          isTranslating: true,
+          translationLanguage: "zh-CN",
+          translationProgress: 20,
+        },
+        t
+      ).label
+    ).toBe("20% 简体中文");
+  });
 });

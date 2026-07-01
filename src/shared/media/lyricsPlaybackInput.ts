@@ -1,4 +1,8 @@
 import type { RomanizationSettings } from "@/types/lyrics";
+import {
+  resolveChineseLyricsLanguage,
+  type ChineseLyricsLanguage,
+} from "@/shared/media/chineseLyrics";
 
 export interface LyricsPlaybackTrackInput {
   id: string;
@@ -19,6 +23,7 @@ export interface LyricsPlaybackInput {
   artist: string;
   currentTimeSec: number;
   translateTo: string | null;
+  lyricsLanguage: ChineseLyricsLanguage;
   selectedMatch?: LyricsPlaybackTrackInput["lyricsSource"];
   includeFurigana: boolean;
   includeSoramimi: boolean;
@@ -28,6 +33,7 @@ export function buildLyricsPlaybackInput(args: {
   track: LyricsPlaybackTrackInput;
   elapsedTimeSec: number;
   effectiveTranslationLanguage: string | null;
+  uiLanguage: string;
   romanization: RomanizationSettings;
 }): LyricsPlaybackInput {
   const lyricOffsetSec = (args.track.lyricOffset ?? 0) / 1000;
@@ -37,6 +43,10 @@ export function buildLyricsPlaybackInput(args: {
     artist: args.track.artist || "",
     currentTimeSec: args.elapsedTimeSec + lyricOffsetSec,
     translateTo: args.effectiveTranslationLanguage,
+    lyricsLanguage: resolveChineseLyricsLanguage(
+      args.romanization.chineseLyricsLanguage,
+      args.uiLanguage
+    ),
     selectedMatch: args.track.lyricsSource,
     includeFurigana:
       args.romanization.enabled &&

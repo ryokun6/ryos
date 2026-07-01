@@ -10,6 +10,7 @@
 
 import type { Redis } from "./redis.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
+import type { ChineseLyricsLanguage } from "../../src/shared/media/chineseLyrics.js";
 
 const REDIS_MGET_BATCH_SIZE = 100;
 
@@ -48,12 +49,16 @@ export interface ParsedLyricLine {
 
 /**
  * Stored lyrics content (what we save in Redis)
- * NOTE: parsedLines is NOT stored - it's derived from lrc/krc on-demand
+ * KuGou's raw lrc/krc stays intact while both processed Chinese script
+ * variants are cached for script switching without reparsing.
  * NOTE: cover is now stored in SongMetadata, not here
  */
 export interface LyricsContent {
   lrc: string; // LRC format lyrics (raw)
   krc?: string; // KRC format if available (raw)
+  parsedLinesByLanguage?: Partial<
+    Record<ChineseLyricsLanguage, ParsedLyricLine[]>
+  >;
 }
 
 /**
@@ -676,6 +681,18 @@ export async function saveTranslation(
   language: string,
   translatedLrc: string
 ): Promise<SongDocument | null> {
+  return saveTranslations(redis, id, { [language]: translatedLrc });
+}
+
+/**
+ * Save multiple translations atomically (updates content key only).
+ * Requires the song to exist (call after saveLyrics).
+ */
+export async function saveTranslations(
+  redis: Redis,
+  id: string,
+  translations: Record<string, string>
+): Promise<SongDocument | null> {
   const contentKey = getSongContentKey(id);
 
   // Verify song exists
@@ -688,7 +705,7 @@ export async function saveTranslation(
   // Update translations
   const content: SongContent = {
     ...existingContent,
-    translations: { ...existingContent.translations, [language]: translatedLrc },
+    translations: { ...existingContent.translations, ...translations },
   };
 
   // Save content key only

@@ -37,6 +37,7 @@ import {
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
 } from "@/stores/useIpodStore";
+import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
   resolveLyricsTrackMetadata,
@@ -4899,6 +4900,14 @@ export function useIpodLogic({
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
     [lyricsTranslationLanguage, appLanguage]
   );
+  const effectiveChineseLyricsLanguage = useMemo(
+    () =>
+      resolveChineseLyricsLanguage(
+        romanization.chineseLyricsLanguage,
+        appLanguage
+      ),
+    [romanization.chineseLyricsLanguage, appLanguage]
+  );
   // For Apple Music stations / playlists the iPod's `currentTrack` is
   // a *shell* — its title / artist describe the station or playlist
   // itself ("Today's Hits" / "Apple Music"), NOT the song that's
@@ -4931,6 +4940,7 @@ export function useIpodLogic({
     // subscription effect below via `updateCurrentTimeManually`.
     currentTime: 0,
     translateTo: effectiveTranslationLanguage,
+    lyricsLanguage: effectiveChineseLyricsLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
     // Always include soramimi in request to avoid hydration timing issues
