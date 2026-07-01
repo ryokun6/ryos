@@ -19,6 +19,17 @@ function createToolContext(outputs: ToolOutputPayload[], launches: string[]): To
   };
 }
 
+function installNavigatorLanguage(): void {
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: {
+      ...globalThis.navigator,
+      language: "en-US",
+      languages: ["en-US"],
+    },
+  });
+}
+
 function getStickiesOutput(payload: ToolOutputPayload): StickiesControlOutput {
   expect(payload.state).not.toBe("output-error");
   const output = payload.output;
@@ -33,6 +44,7 @@ function getStickiesOutput(payload: ToolOutputPayload): StickiesControlOutput {
 }
 
 beforeEach(async () => {
+  installNavigatorLanguage();
   await initializeI18n();
   useStickiesStore.setState({ notes: [] });
   useAppStore.setState({
