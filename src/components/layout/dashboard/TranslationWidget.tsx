@@ -4,7 +4,19 @@ import { useTranslation } from "react-i18next";
 import { ArrowsLeftRight, ArrowsDownUp } from "@phosphor-icons/react";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
-const LANGUAGE_CODES = ["en", "fr", "es", "de", "it", "pt", "ja", "ko", "zh-TW", "ru"] as const;
+const LANGUAGE_CODES = [
+  "en",
+  "fr",
+  "es",
+  "de",
+  "it",
+  "pt",
+  "ja",
+  "ko",
+  "zh-CN",
+  "zh-TW",
+  "ru",
+] as const;
 
 function useLocalizedLanguages(locale: string) {
   return useMemo(() => {

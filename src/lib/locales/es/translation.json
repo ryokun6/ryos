@@ -4797,7 +4797,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Selecciona tu idioma preferido para la interfaz de ryOS",
       "english": "Inglés",
       "french": "Français",

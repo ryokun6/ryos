@@ -1,5 +1,6 @@
 export const SUPPORTED_LANGUAGES = [
   "en",
+  "zh-CN",
   "zh-TW",
   "ja",
   "ko",
@@ -27,7 +28,8 @@ export const isSupportedLanguage = (
 /**
  * Maps a browser locale to our supported languages with fuzzy matching.
  * Examples:
- * - zh, zh-Hans, zh-CN, zh-Hans-CN, zh-Hant, zh-Hant-TW -> zh-TW
+ * - zh, zh-Hans, zh-CN, zh-SG -> zh-CN
+ * - zh-Hant, zh-TW, zh-HK, zh-MO -> zh-TW
  * - ja, ja-JP -> ja
  * - ko, ko-KR -> ko
  * - fr, fr-FR, fr-CA -> fr
@@ -41,7 +43,7 @@ export const isSupportedLanguage = (
 export const detectLanguageFromLocale = (
   locale: string
 ): SupportedLanguage | null => {
-  const normalizedLocale = locale.toLowerCase();
+  const normalizedLocale = locale.replaceAll("_", "-").toLowerCase();
 
   // Exact match first (case-insensitive)
   const exactMatch = SUPPORTED_LANGUAGES.find(
@@ -49,12 +51,18 @@ export const detectLanguageFromLocale = (
   );
   if (exactMatch) return exactMatch;
 
-  // Extract language code (first part before hyphen)
-  const langCode = normalizedLocale.split("-")[0];
+  const subtags = normalizedLocale.split("-");
+  const langCode = subtags[0];
 
-  // Special case: all Chinese variants map to zh-TW
+  // Resolve Chinese script and region variants before fuzzy language matching.
   if (langCode === "zh") {
-    return "zh-TW";
+    if (
+      subtags.includes("hant") ||
+      subtags.some((subtag) => ["tw", "hk", "mo"].includes(subtag))
+    ) {
+      return "zh-TW";
+    }
+    return "zh-CN";
   }
 
   // Check if language code matches any supported language

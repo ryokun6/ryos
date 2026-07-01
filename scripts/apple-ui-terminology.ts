@@ -4,7 +4,8 @@
  *
  * The English object keys are exact source-string matches. Localized values are
  * the dominant translations for Brazilian Portuguese, French, German, Italian,
- * Japanese, Korean, Russian, Spanish, and Traditional Chinese (Taiwan).
+ * Japanese, Korean, Russian, Spanish, Simplified Chinese (China), and
+ * Traditional Chinese (Taiwan).
  * Context-sensitive phrases stay outside this global map.
  *
  * The `pt` locale intentionally follows Apple's Brazilian Portuguese corpus.
@@ -55,6 +56,7 @@ export const ENGLISH_FORBIDDEN_VALUE_PATTERNS = [
 ] as const;
 
 export const TRANSLATION_LOCALES = [
+  "zh-CN",
   "zh-TW",
   "ja",
   "ko",
@@ -80,6 +82,7 @@ export const APPLE_UI_TERMINOLOGY =
  */
 export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
   "apps.admin.server.ok": {
+    "zh-CN": "确定",
     "zh-TW": "確定",
     ja: "OK",
     ko: "확인",
@@ -100,6 +103,7 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
     ko: "그라파이트",
   },
   "apps.calculator.angle.deg": {
+    "zh-CN": "度",
     ja: "度",
     ko: "도",
   },
@@ -107,6 +111,7 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
     de: "Luftfeuchtigkeit",
   },
   "apps.admin.auditLog.action": {
+    "zh-CN": "操作",
     "zh-TW": "操作",
     ko: "작업",
   },
@@ -163,6 +168,7 @@ export const APPLE_UI_CONTEXTUAL_TERMINOLOGY = {
     pt: "recuperar memória",
   },
   "common.colors.pink": {
+    "zh-CN": "粉色",
     "zh-TW": "粉色",
   },
 } as const satisfies Record<string, Partial<LocalizedTerm>>;

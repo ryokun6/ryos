@@ -115,6 +115,7 @@ describe("translation audit", () => {
     expect(Object.keys(APPLE_UI_TERMINOLOGY).length).toBeGreaterThanOrEqual(90);
     expect(APPLE_UI_TERMINOLOGY.Settings.pt).toBe("Ajustes");
     expect(APPLE_UI_TERMINOLOGY["Full Screen"].it).toBe("A tutto schermo");
+    expect(APPLE_UI_TERMINOLOGY.Copy["zh-CN"]).toBe("拷贝");
     expect(APPLE_UI_TERMINOLOGY.Copy["zh-TW"]).toBe("拷貝");
     expect(en.apps.terminal.commands.about).toBe("About Terminal");
 
@@ -168,6 +169,9 @@ describe("translation audit", () => {
         "apps.admin.tableHeaders.added"
       )
     ).toBe("Ajouté");
+    expect(
+      getExpectedAppleUiTerm("Pink", "zh-CN", "common.colors.pink")
+    ).toBe("粉色");
     expect(
       getExpectedAppleUiTerm("Pink", "zh-TW", "common.colors.pink")
     ).toBe("粉色");

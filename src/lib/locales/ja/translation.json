@@ -4793,7 +4793,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "ryOSインターフェースの優先言語を選択",
       "english": "English",
       "french": "Français",

@@ -129,7 +129,7 @@ export const createMediaControlSchema = (options: { hasEnableVideo?: boolean } =
     enableTranslation: z
       .preprocess(normalizeOptionalString, z.string().optional())
       .describe(
-        "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
+        "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
       ),
     enableFullscreen: z
       .boolean()
@@ -452,7 +452,7 @@ export const settingsSchema = z.object({
     .enum(LANGUAGE_CODES)
     .optional()
     .describe(
-      "Change the system language. Supported: 'en' (English), 'zh-TW' (Traditional Chinese), 'ja' (Japanese), 'ko' (Korean), 'fr' (French), 'de' (German), 'es' (Spanish), 'pt' (Portuguese), 'it' (Italian), 'ru' (Russian)."
+      "Change the system language. Supported: 'en' (English), 'zh-CN' (Simplified Chinese), 'zh-TW' (Traditional Chinese), 'ja' (Japanese), 'ko' (Korean), 'fr' (French), 'de' (German), 'es' (Spanish), 'pt' (Portuguese), 'it' (Italian), 'ru' (Russian)."
     ),
   theme: z
     .enum(THEME_IDS)

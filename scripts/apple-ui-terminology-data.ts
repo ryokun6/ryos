@@ -18,6 +18,7 @@ export const APPLE_GLOSSARY_SOURCE = {
 
 export const RAW_APPLE_UI_TERMINOLOGY = {
   "Settings": {
+    "zh-CN": "设置",
     "zh-TW": "設定",
     "ja": "設定",
     "ko": "설정",
@@ -29,6 +30,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Настройки"
   },
   "Trash": {
+    "zh-CN": "废纸篓",
     "zh-TW": "垃圾桶",
     "ja": "ゴミ箱",
     "ko": "휴지통",
@@ -40,6 +42,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Корзина"
   },
   "Account": {
+    "zh-CN": "账户",
     "zh-TW": "帳號",
     "ja": "アカウント",
     "ko": "계정",
@@ -51,6 +54,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Учетная запись"
   },
   "Log Out": {
+    "zh-CN": "退出登录",
     "zh-TW": "登出",
     "ja": "ログアウト",
     "ko": "로그아웃",
@@ -62,6 +66,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Завершить сеанс"
   },
   "Sign In": {
+    "zh-CN": "登录",
     "zh-TW": "登入",
     "ja": "サインイン",
     "ko": "로그인",
@@ -73,6 +78,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Войти"
   },
   "Sign Out": {
+    "zh-CN": "退出登录",
     "zh-TW": "登出",
     "ja": "サインアウト",
     "ko": "로그아웃",
@@ -84,6 +90,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Выйти"
   },
   "Cancel": {
+    "zh-CN": "取消",
     "zh-TW": "取消",
     "ja": "キャンセル",
     "ko": "취소",
@@ -95,6 +102,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Отменить"
   },
   "Save": {
+    "zh-CN": "保存",
     "zh-TW": "儲存",
     "ja": "保存",
     "ko": "저장",
@@ -106,6 +114,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Сохранить"
   },
   "Delete": {
+    "zh-CN": "删除",
     "zh-TW": "刪除",
     "ja": "削除",
     "ko": "삭제",
@@ -117,6 +126,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Удалить"
   },
   "Open": {
+    "zh-CN": "打开",
     "zh-TW": "打開",
     "ja": "開く",
     "ko": "열기",
@@ -128,6 +138,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Открыть"
   },
   "Close": {
+    "zh-CN": "关闭",
     "zh-TW": "關閉",
     "ja": "閉じる",
     "ko": "닫기",
@@ -139,6 +150,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Закрыть"
   },
   "New Window": {
+    "zh-CN": "新建窗口",
     "zh-TW": "新增視窗",
     "ja": "新規ウインドウ",
     "ko": "새로운 윈도우",
@@ -150,6 +162,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Новое окно"
   },
   "Full Screen": {
+    "zh-CN": "全屏幕",
     "zh-TW": "全螢幕",
     "ja": "フルスクリーン",
     "ko": "전체 화면",
@@ -161,6 +174,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "На весь экран"
   },
   "Help": {
+    "zh-CN": "帮助",
     "zh-TW": "輔助說明",
     "ja": "ヘルプ",
     "ko": "도움말",
@@ -172,6 +186,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Справка"
   },
   "Calendar": {
+    "zh-CN": "日历",
     "zh-TW": "行事曆",
     "ja": "カレンダー",
     "ko": "캘린더",
@@ -183,6 +198,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Календарь"
   },
   "Refresh": {
+    "zh-CN": "刷新",
     "zh-TW": "重新整理",
     "ja": "更新",
     "ko": "새로 고침",
@@ -194,6 +210,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Обновить"
   },
   "Videos": {
+    "zh-CN": "视频",
     "zh-TW": "影片",
     "ja": "ビデオ",
     "ko": "비디오",
@@ -205,6 +222,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Видео"
   },
   "Set Password": {
+    "zh-CN": "设定密码",
     "zh-TW": "設定密碼",
     "ja": "パスワードを設定",
     "ko": "암호 설정",
@@ -216,6 +234,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Задать пароль"
   },
   "Contacts": {
+    "zh-CN": "通讯录",
     "zh-TW": "聯絡人",
     "ja": "連絡先",
     "ko": "연락처",
@@ -227,6 +246,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Контакты"
   },
   "Green": {
+    "zh-CN": "绿色",
     "zh-TW": "綠色",
     "ja": "グリーン",
     "ko": "초록색",
@@ -238,6 +258,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Зеленый"
   },
   "Blue": {
+    "zh-CN": "蓝色",
     "zh-TW": "藍色",
     "ja": "ブルー",
     "ko": "파란색",
@@ -249,6 +270,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Синий"
   },
   "Applications": {
+    "zh-CN": "应用程序",
     "zh-TW": "應用程式",
     "ja": "アプリケーション",
     "ko": "응용 프로그램",
@@ -260,6 +282,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Приложения"
   },
   "Status": {
+    "zh-CN": "状态",
     "zh-TW": "狀態",
     "ja": "状況",
     "ko": "상태",
@@ -271,6 +294,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Статус"
   },
   "Yellow": {
+    "zh-CN": "黄色",
     "zh-TW": "黃色",
     "ja": "イエロー",
     "ko": "노란색",
@@ -282,6 +306,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Желтый"
   },
   "Folder": {
+    "zh-CN": "文件夹",
     "zh-TW": "檔案夾",
     "ja": "フォルダ",
     "ko": "폴더",
@@ -293,6 +318,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Папка"
   },
   "Document": {
+    "zh-CN": "文稿",
     "zh-TW": "文件",
     "ja": "書類",
     "ko": "문서",
@@ -304,6 +330,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Документ"
   },
   "Documents": {
+    "zh-CN": "文稿",
     "zh-TW": "文件",
     "ja": "書類",
     "ko": "문서",
@@ -315,6 +342,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Документы"
   },
   "Pink": {
+    "zh-CN": "粉色",
     "zh-TW": "粉紅色",
     "ja": "ピンク",
     "ko": "분홍색",
@@ -326,6 +354,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Розовый"
   },
   "Songs": {
+    "zh-CN": "歌曲",
     "zh-TW": "歌曲",
     "ja": "曲",
     "ko": "노래",
@@ -337,6 +366,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Песни"
   },
   "Screen Saver": {
+    "zh-CN": "屏幕保护程序",
     "zh-TW": "螢幕保護程式",
     "ja": "スクリーンセーバ",
     "ko": "화면 보호기",
@@ -348,6 +378,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Заставка"
   },
   "Numbered List": {
+    "zh-CN": "编号列表",
     "zh-TW": "編號列表",
     "ja": "番号付きリスト",
     "ko": "번호 목록",
@@ -359,6 +390,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Нумерованный список"
   },
   "Copy": {
+    "zh-CN": "拷贝",
     "zh-TW": "拷貝",
     "ja": "コピー",
     "ko": "복사하기",
@@ -370,6 +402,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Скопировать"
   },
   "Speech": {
+    "zh-CN": "语音",
     "zh-TW": "語音",
     "ja": "スピーチ",
     "ko": "말하기",
@@ -381,6 +414,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Проговаривание текста"
   },
   "Add": {
+    "zh-CN": "添加",
     "zh-TW": "加入",
     "ja": "追加",
     "ko": "추가",
@@ -392,6 +426,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Добавить"
   },
   "Password": {
+    "zh-CN": "密码",
     "zh-TW": "密碼",
     "ja": "パスワード",
     "ko": "암호",
@@ -403,6 +438,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Пароль"
   },
   "Bold": {
+    "zh-CN": "粗体",
     "zh-TW": "粗體",
     "ja": "ボールド",
     "ko": "볼드체",
@@ -414,6 +450,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Жирный"
   },
   "Italic": {
+    "zh-CN": "斜体",
     "zh-TW": "斜體",
     "ja": "イタリック",
     "ko": "이탤릭체",
@@ -425,6 +462,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Курсив"
   },
   "Today": {
+    "zh-CN": "今天",
     "zh-TW": "今天",
     "ja": "今日",
     "ko": "오늘",
@@ -436,6 +474,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Сегодня"
   },
   "Red": {
+    "zh-CN": "红色",
     "zh-TW": "紅色",
     "ja": "レッド",
     "ko": "빨간색",
@@ -447,6 +486,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Красный"
   },
   "Images": {
+    "zh-CN": "图像",
     "zh-TW": "影像",
     "ja": "画像",
     "ko": "이미지",
@@ -458,6 +498,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Изображения"
   },
   "Desktop": {
+    "zh-CN": "桌面",
     "zh-TW": "桌面",
     "ja": "デスクトップ",
     "ko": "데스크탑",
@@ -469,6 +510,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Рабочий стол"
   },
   "Move to Trash": {
+    "zh-CN": "移到废纸篓",
     "zh-TW": "丟到垃圾桶",
     "ja": "ゴミ箱に入れる",
     "ko": "휴지통으로 이동",
@@ -480,6 +522,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Переместить в Корзину"
   },
   "User": {
+    "zh-CN": "用户",
     "zh-TW": "使用者",
     "ja": "ユーザ",
     "ko": "사용자",
@@ -491,6 +534,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Пользователь"
   },
   "Directions": {
+    "zh-CN": "路线",
     "zh-TW": "路線",
     "ja": "経路",
     "ko": "경로",
@@ -502,6 +546,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Маршруты"
   },
   "Server": {
+    "zh-CN": "服务器",
     "zh-TW": "伺服器",
     "ja": "サーバ",
     "ko": "서버",
@@ -513,6 +558,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Сервер"
   },
   "Calculator": {
+    "zh-CN": "计算器",
     "zh-TW": "計算機",
     "ja": "計算機",
     "ko": "계산기",
@@ -524,6 +570,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Калькулятор"
   },
   "Save Changes": {
+    "zh-CN": "保存更改",
     "zh-TW": "儲存所作更動",
     "ja": "変更内容を保存",
     "ko": "변경 사항 저장",
@@ -535,6 +582,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Сохранить"
   },
   "Services": {
+    "zh-CN": "服务",
     "zh-TW": "服務",
     "ja": "サービス",
     "ko": "서비스",
@@ -546,6 +594,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Службы"
   },
   "Cut": {
+    "zh-CN": "剪切",
     "zh-TW": "剪下",
     "ja": "カット",
     "ko": "오려두기",
@@ -557,6 +606,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Вырезать"
   },
   "Font": {
+    "zh-CN": "字体",
     "zh-TW": "字體",
     "ja": "フォント",
     "ko": "서체",
@@ -568,6 +618,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Шрифт"
   },
   "Undo": {
+    "zh-CN": "撤销",
     "zh-TW": "還原",
     "ja": "取り消す",
     "ko": "실행 취소",
@@ -579,6 +630,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Отменить"
   },
   "Minimize": {
+    "zh-CN": "最小化",
     "zh-TW": "縮到最小",
     "ja": "しまう",
     "ko": "최소화",
@@ -590,6 +642,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Убрать в Dock"
   },
   "Show Colors": {
+    "zh-CN": "显示颜色",
     "zh-TW": "顯示顏色",
     "ja": "カラーパネルを表示",
     "ko": "색상 보기",
@@ -601,6 +654,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Показать цвета"
   },
   "Quit": {
+    "zh-CN": "退出",
     "zh-TW": "結束",
     "ja": "終了",
     "ko": "종료",
@@ -612,6 +666,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Завершить"
   },
   "Artist": {
+    "zh-CN": "艺人",
     "zh-TW": "藝人",
     "ja": "アーティスト",
     "ko": "아티스트",
@@ -623,6 +678,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Артист"
   },
   "Action": {
+    "zh-CN": "操作",
     "zh-TW": "動作",
     "ja": "アクション",
     "ko": "동작",
@@ -634,6 +690,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Действие"
   },
   "New Folder": {
+    "zh-CN": "新建文件夹",
     "zh-TW": "新增檔案夾",
     "ja": "新規フォルダ",
     "ko": "새로운 폴더",
@@ -645,6 +702,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Новая папка"
   },
   "Files": {
+    "zh-CN": "文件",
     "zh-TW": "檔案",
     "ja": "ファイル",
     "ko": "파일",
@@ -656,6 +714,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Файлы"
   },
   "Show Sidebar": {
+    "zh-CN": "显示边栏",
     "zh-TW": "顯示側邊欄",
     "ja": "サイドバーを表示",
     "ko": "사이드바 보기",
@@ -667,6 +726,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Показать боковое меню"
   },
   "Downloads": {
+    "zh-CN": "下载",
     "zh-TW": "下載項目",
     "ja": "ダウンロード",
     "ko": "다운로드",
@@ -678,6 +738,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Загрузки"
   },
   "Artists": {
+    "zh-CN": "艺人",
     "zh-TW": "藝人",
     "ja": "アーティスト",
     "ko": "아티스트",
@@ -689,6 +750,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Артисты"
   },
   "Playlists": {
+    "zh-CN": "播放列表",
     "zh-TW": "播放列表",
     "ja": "プレイリスト",
     "ko": "플레이리스트",
@@ -700,6 +762,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Плейлисты"
   },
   "Calendars": {
+    "zh-CN": "日历",
     "zh-TW": "行事曆",
     "ja": "カレンダー",
     "ko": "캘린더",
@@ -711,6 +774,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Календари"
   },
   "Song": {
+    "zh-CN": "歌曲",
     "zh-TW": "歌曲",
     "ja": "曲",
     "ko": "노래",
@@ -722,6 +786,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Песня"
   },
   "Exit Full Screen": {
+    "zh-CN": "退出全屏幕",
     "zh-TW": "離開全螢幕",
     "ja": "フルスクリーンを解除",
     "ko": "전체 화면 종료",
@@ -733,6 +798,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Выйти из полноэкранного режима"
   },
   "Actions": {
+    "zh-CN": "操作",
     "zh-TW": "動作",
     "ja": "アクション",
     "ko": "동작",
@@ -744,6 +810,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Действия"
   },
   "TextEdit": {
+    "zh-CN": "文本编辑",
     "zh-TW": "文字編輯",
     "ja": "テキストエディット",
     "ko": "텍스트 편집기",
@@ -755,6 +822,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "TextEdit"
   },
   "Plain Text": {
+    "zh-CN": "纯文本",
     "zh-TW": "純文字",
     "ja": "標準テキスト",
     "ko": "일반 텍스트",
@@ -766,6 +834,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Простой текст"
   },
   "Sidebar": {
+    "zh-CN": "边栏",
     "zh-TW": "側邊欄",
     "ja": "サイドバー",
     "ko": "사이드바",
@@ -777,6 +846,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Боковое меню"
   },
   "Restore": {
+    "zh-CN": "恢复",
     "zh-TW": "回復",
     "ja": "復元",
     "ko": "복원",
@@ -788,6 +858,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Восстановить"
   },
   "Stocks": {
+    "zh-CN": "股市",
     "zh-TW": "股市",
     "ja": "株価",
     "ko": "주식",
@@ -799,6 +870,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Акции"
   },
   "Empty Trash": {
+    "zh-CN": "清倒废纸篓",
     "zh-TW": "清空垃圾桶",
     "ja": "ゴミ箱を空にする",
     "ko": "휴지통 비우기",
@@ -810,6 +882,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Очистить Корзину"
   },
   "Inches": {
+    "zh-CN": "英寸",
     "zh-TW": "英寸",
     "ja": "インチ",
     "ko": "인치",
@@ -821,6 +894,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Дюймы"
   },
   "Centimeters": {
+    "zh-CN": "厘米",
     "zh-TW": "公分",
     "ja": "センチメートル",
     "ko": "센티미터",
@@ -832,6 +906,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Сантиметры"
   },
   "Speak": {
+    "zh-CN": "朗读",
     "zh-TW": "朗讀",
     "ja": "読み上げ",
     "ko": "말하기",
@@ -843,6 +918,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Произнести"
   },
   "Time Zone": {
+    "zh-CN": "时区",
     "zh-TW": "時區",
     "ja": "時間帯",
     "ko": "시간대",
@@ -854,6 +930,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Часовой пояс"
   },
   "Rain": {
+    "zh-CN": "下雨",
     "zh-TW": "下雨",
     "ja": "雨",
     "ko": "비",
@@ -865,6 +942,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Дождь"
   },
   "Added": {
+    "zh-CN": "已添加",
     "zh-TW": "已加入",
     "ja": "追加済み",
     "ko": "추가됨",
@@ -876,6 +954,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Добавлено"
   },
   "Next Page": {
+    "zh-CN": "下一页",
     "zh-TW": "下一頁",
     "ja": "次のページ",
     "ko": "다음 페이지",
@@ -887,6 +966,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Следующая страница"
   },
   "Delete Song": {
+    "zh-CN": "删除歌曲",
     "zh-TW": "刪除歌曲",
     "ja": "曲を削除",
     "ko": "노래 삭제",
@@ -898,6 +978,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Удалить песню"
   },
   "Markdown": {
+    "zh-CN": "Markdown",
     "zh-TW": "Markdown",
     "ja": "マークダウン",
     "ko": "Markdown",
@@ -909,6 +990,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Markdown"
   },
   "JPEG Image": {
+    "zh-CN": "JPEG图像",
     "zh-TW": "JPEG影像",
     "ja": "JPEG画像",
     "ko": "JPEG 이미지",
@@ -920,6 +1002,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Изображение JPEG"
   },
   "PNG Image": {
+    "zh-CN": "PNG图像",
     "zh-TW": "PNG影像",
     "ja": "PNG画像",
     "ko": "PNG 이미지",
@@ -931,6 +1014,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Изображение PNG"
   },
   "Photo Booth": {
+    "zh-CN": "Photo Booth",
     "zh-TW": "Photo Booth",
     "ja": "Photo Booth",
     "ko": "Photo Booth",
@@ -942,6 +1026,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Photo Booth"
   },
   "Degrees": {
+    "zh-CN": "度数",
     "zh-TW": "度數",
     "ja": "ど",
     "ko": "각도",
@@ -953,6 +1038,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Градусы"
   },
   "Graphite": {
+    "zh-CN": "石墨色",
     "zh-TW": "石墨色",
     "ja": "グラファイト",
     "ko": "흑색",
@@ -964,6 +1050,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Графит"
   },
   "Humidity": {
+    "zh-CN": "湿度",
     "zh-TW": "濕度",
     "ja": "湿度",
     "ko": "습도",
@@ -975,6 +1062,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Влажность"
   },
   "Museum": {
+    "zh-CN": "博物馆",
     "zh-TW": "博物館",
     "ja": "博物館/美術館",
     "ko": "박물관",
@@ -986,6 +1074,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Музей"
   },
   "Play Music": {
+    "zh-CN": "播放音乐",
     "zh-TW": "播放音樂",
     "ja": "ミュージックを再生",
     "ko": "음악 재생",
@@ -997,6 +1086,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Воспроизвести музыку"
   },
   "Zoo": {
+    "zh-CN": "动物园",
     "zh-TW": "動物園",
     "ja": "動物園",
     "ko": "동물원",
@@ -1008,6 +1098,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Зоопарк"
   },
   "Add to Dock": {
+    "zh-CN": "添加到程序坞",
     "zh-TW": "加入Dock中",
     "ja": "Dockに追加",
     "ko": "Dock에 추가",
@@ -1019,6 +1110,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Добавить в Dock"
   },
   "Email address": {
+    "zh-CN": "电子邮件地址",
     "zh-TW": "電子郵件地址",
     "ja": "メールアドレス",
     "ko": "이메일 주소",
@@ -1030,6 +1122,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Адрес e‑mail"
   },
   "OK": {
+    "zh-CN": "好",
     "zh-TW": "好",
     "ja": "OK",
     "ko": "확인",
@@ -1041,6 +1134,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "ОК"
   },
   "Application": {
+    "zh-CN": "应用程序",
     "zh-TW": "應用程式",
     "ja": "アプリケーション",
     "ko": "응용 프로그램",
@@ -1052,6 +1146,7 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "ru": "Программа"
   },
   "App": {
+    "zh-CN": "App",
     "zh-TW": "App",
     "ja": "アプリ",
     "ko": "앱",

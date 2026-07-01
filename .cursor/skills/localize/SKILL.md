@@ -84,7 +84,7 @@ Do not rely on `defaultValue` as the only copy of a new key. `t("some.key", { de
 bun run i18n:sync:mark-todo
 ```
 
-Adds missing keys to all 10 language files, marked with `[TODO]`.
+Adds missing keys to all 11 language files, marked with `[TODO]`.
 
 ## Step 5: Machine Translate
 

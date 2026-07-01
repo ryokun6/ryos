@@ -56,6 +56,7 @@ type RequiredKeyTranslations = Record<
  */
 export const REQUIRED_KEY_TRANSLATIONS = {
   "apps.chats.toolCalls.listCursorCloudAgentRuns.listed": {
+    "zh-CN": "已列出最近的 {{count}} 次运行。",
     "zh-TW": "已列出最近的 {{count}} 次執行。",
     ja: "最近の実行を {{count}} 件表示しました。",
     ko: "최근 실행 {{count}}개를 표시했습니다.",
@@ -67,6 +68,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "Показано недавних запусков: {{count}}.",
   },
   "apps.chats.toolCalls.listCursorCloudAgentRuns.loading": {
+    "zh-CN": "正在列出 Cursor Cloud 代理运行…",
     "zh-TW": "正在列出 Cursor Cloud 代理執行⋯",
     ja: "Cursor Cloud エージェントの実行を一覧表示中…",
     ko: "Cursor Cloud 에이전트 실행 목록을 불러오는 중…",
@@ -78,6 +80,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "Загрузка запусков агента Cursor Cloud…",
   },
   "apps.chats.toolCalls.listCursorCloudAgentRuns.openDashboard": {
+    "zh-CN": "在 Cursor 中打开代理",
     "zh-TW": "在 Cursor 中打開代理",
     ja: "Cursor でエージェントを開く",
     ko: "Cursor에서 에이전트 열기",
@@ -89,6 +92,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "Открыть агента в Cursor",
   },
   "apps.chats.toolCalls.listCursorCloudAgentRuns.truncatedHint": {
+    "zh-CN": "（列表可能已截断）",
     "zh-TW": "（列表可能已截斷）",
     ja: "（一覧は省略されている場合があります）",
     ko: "(목록이 일부 생략되었을 수 있음)",
@@ -100,6 +104,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "(список может быть неполным)",
   },
   "apps.ipod.menuItems.playlistTrackCount_one": {
+    "zh-CN": "{{count}} 首歌曲",
     "zh-TW": "{{count}} 首歌曲",
     ja: "{{count}}曲",
     ko: "{{count}}곡",
@@ -111,6 +116,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "{{count}} песня",
   },
   "apps.ipod.menuItems.playlistTrackCount_other": {
+    "zh-CN": "{{count}} 首歌曲",
     "zh-TW": "{{count}} 首歌曲",
     ja: "{{count}}曲",
     ko: "{{count}}곡",
@@ -122,6 +128,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "{{count}} песен",
   },
   "common.startMenu.ryosProfessional": {
+    "zh-CN": "专业版",
     "zh-TW": "專業版",
     ja: "プロフェッショナル",
     ko: "프로페셔널",
@@ -132,7 +139,32 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     it: "Professionale",
     ru: "Профессиональная",
   },
+  "settings.language.chineseSimplified": {
+    "zh-CN": "简体中文",
+    "zh-TW": "简体中文",
+    ja: "简体中文",
+    ko: "简体中文",
+    fr: "简体中文",
+    de: "简体中文",
+    es: "简体中文",
+    pt: "简体中文",
+    it: "简体中文",
+    ru: "简体中文",
+  },
+  "settings.language.chineseTraditional": {
+    "zh-CN": "繁體中文",
+    "zh-TW": "繁體中文",
+    ja: "繁體中文",
+    ko: "繁體中文",
+    fr: "繁體中文",
+    de: "繁體中文",
+    es: "繁體中文",
+    pt: "繁體中文",
+    it: "繁體中文",
+    ru: "繁體中文",
+  },
   "settings.language.portuguese": {
+    "zh-CN": "Português (Brasil)",
     "zh-TW": "Português (Brasil)",
     ja: "Português (Brasil)",
     ko: "Português (Brasil)",
@@ -144,6 +176,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "Português (Brasil)",
   },
   "apps.ipod.dialogs.autoUpdatedTrackMetadata": {
+    "zh-CN": "已自动更新 {{count}} 首曲目的元数据",
     "zh-TW": "已自動更新 {{count}} 首曲目的中繼資料",
     ja: "{{count}}曲のメタデータを自動更新しました",
     ko: "트랙 메타데이터 {{count}}개 자동 업데이트됨",
@@ -155,6 +188,7 @@ export const REQUIRED_KEY_TRANSLATIONS = {
     ru: "Метаданные треков обновлены: {{count}}",
   },
   "apps.ipod.dialogs.libraryUpToDateWithSongs": {
+    "zh-CN": "资料库已是最新版本，共 {{count}} 首歌曲",
     "zh-TW": "資料庫已是最新版本，共 {{count}} 首歌曲",
     ja: "ライブラリは{{count}}曲で最新です",
     ko: "라이브러리가 총 {{count}}곡으로 최신 상태입니다",

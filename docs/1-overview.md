@@ -100,7 +100,7 @@ graph TB
 │   ├── config/       # App registry
 │   ├── hooks/        # ~75 custom hooks
 │   ├── lib/          # Libraries (including locales/)
-│   ├── lib/locales/  # i18n translation files (10 languages)
+│   ├── lib/locales/  # i18n translation files (11 languages)
 │   ├── services/     # VFS and realtime service facades
 │   ├── shared/       # Contracts, sync helpers, domain types
 │   ├── stores/       # 40 Zustand store modules

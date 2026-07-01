@@ -20,6 +20,7 @@ const resources = {
 };
 
 const localeJsonPaths: Partial<Record<SupportedLanguage, string>> = {
+  "zh-CN": "./locales/zh-CN/translation.json",
   "zh-TW": "./locales/zh-TW/translation.json",
   ja: "./locales/ja/translation.json",
   ko: "./locales/ko/translation.json",
@@ -32,6 +33,7 @@ const localeJsonPaths: Partial<Record<SupportedLanguage, string>> = {
 };
 
 const localeLoaders: Partial<Record<SupportedLanguage, LocaleLoader>> = {
+  "zh-CN": () => import("./locales/zh-CN/translation.json"),
   "zh-TW": () => import("./locales/zh-TW/translation.json"),
   ja: () => import("./locales/ja/translation.json"),
   ko: () => import("./locales/ko/translation.json"),
