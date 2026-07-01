@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  BOOK_FONTS,
   buildEpubTheme,
   buildFontFaceCss,
   getBookFontCssStack,
@@ -20,6 +21,37 @@ const palette = {
   link: "#00f",
   isDark: false,
 };
+
+describe("Books reader font choices", () => {
+  test("offers the bundled rounded face in the font menu", () => {
+    expect(BOOK_FONTS.map((font) => font.id)).toContain("rounded");
+    expect(getBookFontCssStack("rounded")).toStartWith('"VAGRounded"');
+  });
+
+  test("gives Geneva bundled CJK and emoji fallbacks", () => {
+    const stack = getBookFontCssStack("geneva");
+
+    expect(stack).toContain('"Geneva-12", Geneva, "ArkPixel"');
+    expect(stack).toContain('"SerenityOS-Emoji"');
+    expect(stack?.indexOf('"ArkPixel"')).toBeLessThan(
+      stack?.indexOf('"SerenityOS-Emoji"') ?? -1
+    );
+  });
+
+  test("loads rounded, CJK, and emoji faces inside isolated EPUB iframes", () => {
+    const css = buildFontFaceCss("https://os.example");
+
+    expect(css).toContain(
+      'url("https://os.example/fonts/VAGRoundedStd-Bold.woff2")'
+    );
+    expect(css).toContain(
+      'url("https://os.example/fonts/fusion-pixel-12px-proportional-ja.woff2")'
+    );
+    expect(css).toContain(
+      'url("https://os.example/fonts/SerenityOS-Emoji.woff2")'
+    );
+  });
+});
 
 describe("Books reader CJK serif fonts", () => {
   test("prefers Simplified Chinese faces for zh-CN and Hans locales", () => {

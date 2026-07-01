@@ -7,6 +7,12 @@ import { detectLanguageFromLocale } from "@/lib/languageConfig";
 const BOOK_SERIF_LATIN_FALLBACKS =
   '"Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif';
 
+const BOOK_GENEVA_STACK =
+  '"Geneva-12", Geneva, "ArkPixel", "SerenityOS-Emoji", system-ui, -apple-system, sans-serif';
+
+const BOOK_ROUNDED_STACK =
+  '"VAGRounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", "SerenityOS-Emoji", ui-rounded, sans-serif';
+
 const BOOK_CJK_SERIF_STACKS = {
   "zh-CN":
     '"Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun, "Noto Serif JP", "Source Han Serif JP", "Noto Serif KR", "Source Han Serif KR"',
@@ -83,9 +89,18 @@ export const BOOK_FONTS: BookFontOption[] = [
   {
     id: "geneva",
     label: "Geneva",
-    cssStack: '"Geneva-12", Geneva, Helvetica, sans-serif',
+    cssStack: BOOK_GENEVA_STACK,
   },
-  { id: "mono", label: "Monospace", cssStack: '"Monaco", "Courier New", monospace' },
+  {
+    id: "rounded",
+    label: "Rounded",
+    cssStack: BOOK_ROUNDED_STACK,
+  },
+  {
+    id: "mono",
+    label: "Monospace",
+    cssStack: '"Monaco", "Courier New", monospace',
+  },
 ];
 
 export function getBookFont(fontId: string): BookFontOption {
@@ -276,6 +291,27 @@ export function buildFontFaceCss(origin: string): string {
 @font-face {
   font-family: "Geneva-12";
   src: url("${origin}/fonts/geneva-12.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ArkPixel";
+  src: url("${origin}/fonts/fusion-pixel-12px-proportional-ja.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SerenityOS-Emoji";
+  src: url("${origin}/fonts/SerenityOS-Emoji.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "VAGRounded";
+  src: url("${origin}/fonts/VAGRoundedStd-Bold.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
