@@ -2,6 +2,54 @@ import type {
   BooksReaderSettings,
   BooksThemeOverride,
 } from "@/stores/useBooksStore";
+import { detectLanguageFromLocale } from "@/lib/languageConfig";
+
+const BOOK_SERIF_LATIN_FALLBACKS =
+  '"Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif';
+
+const BOOK_CJK_SERIF_STACKS = {
+  "zh-CN":
+    '"Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun, "Noto Serif JP", "Source Han Serif JP", "Noto Serif KR", "Source Han Serif KR"',
+  "zh-TW":
+    '"Noto Serif TC", "Source Han Serif TC", "Noto Serif CJK TC", "Songti TC", PMingLiU, MingLiU, "Noto Serif JP", "Source Han Serif JP", "Noto Serif SC", "Source Han Serif SC"',
+  ja: '"Noto Serif JP", "Source Han Serif JP", "Noto Serif CJK JP", "Source Han Serif", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", "Noto Serif SC", "Source Han Serif SC", "Noto Serif KR", "Source Han Serif KR"',
+  ko: '"Noto Serif KR", "Source Han Serif KR", "Noto Serif CJK KR", "Nanum Myeongjo", "AppleMyungjo", Batang, "Noto Serif JP", "Source Han Serif JP", "Noto Serif SC", "Source Han Serif SC"',
+} as const;
+
+const DEFAULT_BOOK_CJK_SERIF_STACK = `${BOOK_CJK_SERIF_STACKS.ja}, "Noto Serif TC", "Source Han Serif TC", "Noto Serif CJK SC", "Songti TC", "Songti SC", SimSun`;
+
+/**
+ * Resolve locale-specific CJK serif fallbacks. Simplified Chinese must prefer
+ * SC glyph families; otherwise a JP-first stack can render mainland forms with
+ * Japanese glyph variants.
+ */
+export function resolveBookCjkSerifStack(
+  language?: string | null
+): string {
+  const resolvedLanguage = language
+    ? detectLanguageFromLocale(language)
+    : null;
+
+  switch (resolvedLanguage) {
+    case "zh-CN":
+      return BOOK_CJK_SERIF_STACKS["zh-CN"];
+    case "zh-TW":
+      return BOOK_CJK_SERIF_STACKS["zh-TW"];
+    case "ko":
+      return BOOK_CJK_SERIF_STACKS.ko;
+    case "ja":
+      return BOOK_CJK_SERIF_STACKS.ja;
+    default:
+      return DEFAULT_BOOK_CJK_SERIF_STACK;
+  }
+}
+
+function buildBookSerifStack(
+  primaryFonts: string,
+  language?: string | null
+): string {
+  return `${primaryFonts}, ${resolveBookCjkSerifStack(language)}, ${BOOK_SERIF_LATIN_FALLBACKS}`;
+}
 
 export interface BookFontOption {
   id: string;
@@ -19,14 +67,12 @@ export const BOOK_FONTS: BookFontOption[] = [
   {
     id: "eb-garamond",
     label: "EB Garamond",
-    cssStack:
-      '"EB Garamond", "Charter", "Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif',
+    cssStack: buildBookSerifStack('"EB Garamond", "Charter"'),
   },
   {
     id: "serif",
     label: "Serif",
-    cssStack:
-      '"Charter", "Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif',
+    cssStack: buildBookSerifStack('"Charter"'),
   },
   {
     id: "sans",
@@ -44,6 +90,21 @@ export const BOOK_FONTS: BookFontOption[] = [
 
 export function getBookFont(fontId: string): BookFontOption {
   return BOOK_FONTS.find((f) => f.id === fontId) ?? BOOK_FONTS[0];
+}
+
+/** Resolve a reading font stack, including locale-specific CJK serif faces. */
+export function getBookFontCssStack(
+  fontId: string,
+  language?: string | null
+): string | null {
+  const font = getBookFont(fontId);
+  if (font.id === "eb-garamond") {
+    return buildBookSerifStack('"EB Garamond", "Charter"', language);
+  }
+  if (font.id === "serif") {
+    return buildBookSerifStack('"Charter"', language);
+  }
+  return font.cssStack;
 }
 
 export interface ReadingPalette {
@@ -111,10 +172,11 @@ export function isLikelyEpubBuffer(buffer: ArrayBuffer): boolean {
  */
 export function buildEpubTheme(
   settings: BooksReaderSettings,
-  palette: ReadingPalette
+  palette: ReadingPalette,
+  language?: string | null
 ): Record<string, Record<string, string>> {
-  const font = getBookFont(settings.fontId);
-  const fontFamily = font.cssStack ? `${font.cssStack} !important` : null;
+  const fontStack = getBookFontCssStack(settings.fontId, language);
+  const fontFamily = fontStack ? `${fontStack} !important` : null;
 
   // Left-align with automatic hyphenation reads far better than justified text
   // in a narrow column (justify opens up ugly rivers of whitespace). Applied
@@ -190,11 +252,13 @@ export function buildEpubTheme(
 }
 
 /**
- * @font-face CSS injected into every section iframe so custom reading fonts
- * (EB Garamond is loaded from the app origin) resolve inside the book.
+ * Font CSS injected into every section iframe so custom reading fonts resolve
+ * inside the book. EPUB sections cannot inherit fonts loaded by the app shell,
+ * so Noto's CJK serif families are imported again here.
  */
 export function buildFontFaceCss(origin: string): string {
   return `
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap");
 @font-face {
   font-family: "EB Garamond";
   src: url("${origin}/fonts/EBGaramond-Latin.woff2") format("woff2");

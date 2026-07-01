@@ -57,7 +57,7 @@ describe("Simplified Chinese Aqua fonts", () => {
     expect(aquaCss).toContain('"Noto Serif CJK SC"');
     expect(aquaCss).toContain('"Songti SC"');
     expect(aquaCss).toContain(
-      'font-family: "VAGRounded", "Yuanti SC", "PingFang SC"'
+      'font-family: "VAGRounded", "Chiron GoRound TC WS", "Yuanti SC"'
     );
     expect(aquaCss).toContain(
       'font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans GB"'
@@ -71,6 +71,27 @@ describe("Simplified Chinese Aqua fonts", () => {
     );
     expect(aquaCss).toContain(
       ':is(.font-lyrics-sans, .font-lyrics-gradient)'
+    );
+  });
+
+  test("uses Chiron before the Simplified Chinese rounded fallbacks", () => {
+    const simplifiedRoundedBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"]:lang(zh-CN)'
+    );
+
+    expect(indexHtml).toContain(
+      "chiron-go-round-tc-webfont@1.0.11/css/vf.css"
+    );
+    expect(appCss).toContain('"Chiron GoRound TC WS"');
+    expect(aquaCss).toContain('"Chiron GoRound TC WS"');
+    expect(indexHtml).not.toContain("Kosugi+Maru");
+    expect(appCss).not.toContain('"Kosugi Maru"');
+    expect(aquaCss).not.toContain('"Kosugi Maru"');
+    expect(simplifiedRoundedBlock).toContain('"Chiron GoRound TC WS"');
+    expect(simplifiedRoundedBlock).toContain('"Yuanti SC"');
+    expect(simplifiedRoundedBlock.indexOf('"Chiron GoRound TC WS"')).toBeLessThan(
+      simplifiedRoundedBlock.indexOf('"Yuanti SC"')
     );
   });
 

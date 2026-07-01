@@ -1576,10 +1576,11 @@
 }
 
 /* Preserve rounded lyrics font inside iPod fullscreen on macOS theme */
-/* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
+/* Chiron provides rounded CJK glyphs after bundled VAGRounded. */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
-  font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
+  font-family: "VAGRounded", "Chiron GoRound TC WS",
+    "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+    sans-serif !important;
   font-weight: normal !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;
@@ -1588,10 +1589,11 @@
 }
 
 /* Preserve rounded lyrics font inside Karaoke app on macOS theme */
-/* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
+/* Chiron provides rounded CJK glyphs after bundled VAGRounded. */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
-  font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
+  font-family: "VAGRounded", "Chiron GoRound TC WS",
+    "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+    sans-serif !important;
   font-weight: normal !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;
@@ -1654,8 +1656,9 @@
 /* Preserve glow lyrics font on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gold-glow {
-  font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
+  font-family: "VAGRounded", "Chiron GoRound TC WS",
+    "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+    sans-serif !important;
   font-weight: normal !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;
@@ -1676,16 +1679,17 @@
   font-smooth: auto !important;
 }
 
-/* Aqua/Aqua Glass Simplified Chinese: use mainland glyph families without
-   changing Traditional Chinese, Japanese, or the pixel-font themes. */
+/* Aqua/Aqua Glass Simplified Chinese: keep Chiron first for rounded lyrics,
+   followed by mainland fallbacks; use mainland serif/sans stacks. */
 :root[data-os-theme="macosx"]:lang(zh-CN)
   .ipod-force-font
   :is(.font-lyrics-rounded, .font-lyrics-gold-glow),
 :root[data-os-theme="macosx"]:lang(zh-CN)
   .karaoke-force-font
   :is(.font-lyrics-rounded, .font-lyrics-gold-glow) {
-  font-family: "VAGRounded", "Yuanti SC", "PingFang SC", "Microsoft YaHei",
-    "Noto Sans CJK SC", ui-rounded, sans-serif !important;
+  font-family: "VAGRounded", "Chiron GoRound TC WS", "Yuanti SC",
+    "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", ui-rounded,
+    sans-serif !important;
 }
 
 :root[data-os-theme="macosx"]:lang(zh-CN)
