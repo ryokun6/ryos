@@ -53,10 +53,13 @@ describe("Simplified Chinese Aqua fonts", () => {
     expect(aquaCss).toContain('"Noto Serif CJK SC"');
     expect(aquaCss).toContain('"Songti SC"');
     expect(aquaCss).toContain(
-      'font-family: "Yuanti SC", "PingFang SC", "VAGRounded"'
+      'font-family: "VAGRounded", "Yuanti SC", "PingFang SC"'
     );
     expect(aquaCss).toContain(
-      'font-family: "Hiragino Sans GB", "PingFang SC"'
+      'font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans GB"'
+    );
+    expect(aquaCss).toContain(
+      'font-family: Charter, "Noto Serif SC", "Source Han Serif SC"'
     );
     expect(indexHtml).toContain("family=Noto+Serif+SC:wght@700");
     expect(aquaCss).toContain(
