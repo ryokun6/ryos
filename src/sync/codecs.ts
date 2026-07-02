@@ -43,6 +43,7 @@ import {
   BOOKS_GUTTER_MIN,
   BOOKS_SPEECH_RATE_MAX,
   BOOKS_SPEECH_RATE_MIN,
+  clampBooksLineHeight,
   isBooksThemeOverride,
   useBooksStore,
   type BookProgress,
@@ -1627,12 +1628,10 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
         }
         break;
       case BOOKS_SETTINGS_KEYS.lineHeight:
-        if (
-          typeof op.v === "number" &&
-          Number.isFinite(op.v) &&
-          op.v > 0
-        ) {
-          updates = { ...updates, lineHeight: op.v };
+        // Clamp instead of reject: devices on older app versions may still
+        // sync values below the raised 1.5 floor.
+        if (typeof op.v === "number" && Number.isFinite(op.v) && op.v > 0) {
+          updates = { ...updates, lineHeight: clampBooksLineHeight(op.v) };
         }
         break;
       case BOOKS_SETTINGS_KEYS.gutterPx:

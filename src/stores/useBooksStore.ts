@@ -81,9 +81,17 @@ export const BOOKS_FONT_SIZE_MIN = 70;
 export const BOOKS_FONT_SIZE_MAX = 180;
 export const BOOKS_FONT_SIZE_STEP = 10;
 
-export const BOOKS_LINE_HEIGHT_MIN = 1.1;
+export const BOOKS_LINE_HEIGHT_MIN = 1.5;
 export const BOOKS_LINE_HEIGHT_MAX = 2.4;
 export const BOOKS_LINE_HEIGHT_STEP = 0.05;
+
+export function clampBooksLineHeight(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_BOOKS_SETTINGS.lineHeight;
+  return Math.min(
+    BOOKS_LINE_HEIGHT_MAX,
+    Math.max(BOOKS_LINE_HEIGHT_MIN, value)
+  );
+}
 
 export const BOOKS_GUTTER_MIN = 0;
 export const BOOKS_GUTTER_MAX = 96;
@@ -210,15 +218,18 @@ export const useBooksStore = create<BooksStoreState>()(
     {
       name: "ryos:books",
       storage: createJSONStorage(() => localStorage),
-      version: 5,
+      version: 6,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
+        const settings = {
+          ...DEFAULT_BOOKS_SETTINGS,
+          ...(state.settings ?? {}),
+        };
+        // v6 raised the line-height floor from 1.1 to 1.5.
+        settings.lineHeight = clampBooksLineHeight(settings.lineHeight);
         return {
           ...state,
-          settings: {
-            ...DEFAULT_BOOKS_SETTINGS,
-            ...(state.settings ?? {}),
-          },
+          settings,
         } as BooksStoreState;
       },
       partialize: (state) => ({
