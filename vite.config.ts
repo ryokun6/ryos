@@ -6,7 +6,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { shouldExcludePrecacheChunk } from "./vite/precachePolicy";
+import {
+  collectStaticPrecacheChunkClosure,
+  shouldExcludePrecacheChunk,
+} from "./vite/precachePolicy";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -79,20 +82,48 @@ function collectPrecacheExclusionsPlugin() {
     name: "ryos-collect-precache-exclusions",
     apply: "build" as const,
     generateBundle(_options: unknown, bundle: Record<string, unknown>) {
-      for (const [fileName, output] of Object.entries(bundle)) {
-        const chunk = output as {
-          type?: string;
-          moduleIds?: string[];
-          modules?: Record<string, unknown>;
-          facadeModuleId?: string | null;
-          viteMetadata?: {
-            importedCss?: Set<string>;
-          };
+      type EmittedChunk = {
+        type?: string;
+        moduleIds?: string[];
+        modules?: Record<string, unknown>;
+        facadeModuleId?: string | null;
+        imports?: string[];
+        isEntry?: boolean;
+        viteMetadata?: {
+          importedCss?: Set<string>;
         };
-        if (chunk.type !== "chunk" || !fileName.endsWith(".js")) continue;
+      };
+      const chunks = Object.entries(bundle)
+        .filter(
+          ([fileName, output]) =>
+            (output as EmittedChunk).type === "chunk" &&
+            fileName.endsWith(".js")
+        )
+        .map(([fileName, output]) => ({
+          fileName,
+          chunk: output as EmittedChunk,
+        }));
+      const shellClosure = collectStaticPrecacheChunkClosure(
+        chunks.map(({ fileName, chunk }) => ({
+          fileName,
+          imports: chunk.imports ?? [],
+          isEntry: chunk.isEntry,
+          facadeModuleId: chunk.facadeModuleId,
+        }))
+      );
+      const shellCss = new Set(
+        chunks
+          .filter(({ fileName }) => shellClosure.has(fileName))
+          .flatMap(({ chunk }) => [
+            ...(chunk.viteMetadata?.importedCss ?? []),
+          ])
+      );
+
+      for (const { fileName, chunk } of chunks) {
         const moduleIds =
           chunk.moduleIds ?? Object.keys(chunk.modules ?? {});
         if (
+          !shellClosure.has(fileName) ||
           shouldExcludePrecacheChunk({
             fileName,
             moduleIds,
@@ -101,7 +132,9 @@ function collectPrecacheExclusionsPlugin() {
         ) {
           precacheExclusions.add(fileName.split("/").pop() as string);
           for (const cssFile of chunk.viteMetadata?.importedCss ?? []) {
-            precacheExclusions.add(cssFile.split("/").pop() as string);
+            if (!shellCss.has(cssFile)) {
+              precacheExclusions.add(cssFile.split("/").pop() as string);
+            }
           }
         }
       }

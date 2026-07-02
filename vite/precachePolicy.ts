@@ -20,6 +20,42 @@ type PrecacheChunk = {
   facadeModuleId?: string | null;
 };
 
+export type PrecacheGraphChunk = {
+  fileName: string;
+  imports: readonly string[];
+  isEntry?: boolean;
+  facadeModuleId?: string | null;
+};
+
+export function collectStaticPrecacheChunkClosure(
+  chunks: readonly PrecacheGraphChunk[]
+): Set<string> {
+  const byFileName = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+  const mainEntries = chunks.filter((chunk) =>
+    /[/\\]src[/\\]main\.tsx$/.test(chunk.facadeModuleId ?? "")
+  );
+  const roots =
+    mainEntries.length > 0
+      ? mainEntries
+      : chunks.filter((chunk) => chunk.isEntry);
+  const closure = new Set<string>();
+  const queue = roots.map((chunk) => chunk.fileName);
+
+  while (queue.length > 0) {
+    const fileName = queue.shift()!;
+    if (closure.has(fileName)) continue;
+    closure.add(fileName);
+    const chunk = byFileName.get(fileName);
+    if (!chunk) continue;
+    for (const dependency of chunk.imports) {
+      if (!closure.has(dependency)) {
+        queue.push(dependency);
+      }
+    }
+  }
+  return closure;
+}
+
 export function isOptionalPrecacheChunkName(fileName: string): boolean {
   const baseName = fileName.split("/").pop() ?? fileName;
   return OPTIONAL_PRECACHE_CHUNK_PREFIXES.some(

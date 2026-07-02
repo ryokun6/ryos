@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  collectStaticPrecacheChunkClosure,
   isOptionalPrecacheChunkName,
   shouldExcludePrecacheChunk,
 } from "../vite/precachePolicy";
@@ -52,5 +53,38 @@ describe("Workbox precache policy", () => {
           "/workspace/node_modules/@streamdown/code/dist/index.js",
       })
     ).toBe(true);
+  });
+
+  test("keeps only the main entry's static dependency closure", () => {
+    const closure = collectStaticPrecacheChunkClosure([
+      {
+        fileName: "assets/index.js",
+        imports: ["assets/react.js", "assets/ui-core.js"],
+        isEntry: true,
+        facadeModuleId: "/workspace/src/main.tsx",
+      },
+      {
+        fileName: "assets/react.js",
+        imports: [],
+      },
+      {
+        fileName: "assets/ui-core.js",
+        imports: ["assets/react.js"],
+      },
+      {
+        fileName: "assets/IpodAppComponent.js",
+        imports: ["assets/react.js", "assets/media-player.js"],
+      },
+      {
+        fileName: "assets/media-player.js",
+        imports: [],
+      },
+    ]);
+
+    expect([...closure].sort()).toEqual([
+      "assets/index.js",
+      "assets/react.js",
+      "assets/ui-core.js",
+    ]);
   });
 });
