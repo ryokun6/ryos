@@ -31,6 +31,10 @@ export interface BooksSpeechCarryOver {
   spokenText: string;
   /** Offset into `spokenText` where the visible page ended, when known. */
   pageEndCutIndex?: number;
+  /** `performance.now()` when the originating utterance started speaking. */
+  speechStartedAt?: number;
+  /** Spoken char count into `spokenText` at the moment of the page flip. */
+  spokenCharsAtFlip?: number;
 }
 
 export interface SpeechTextSegment {
@@ -396,6 +400,15 @@ export function filterChunksAfterCarryOver(
       if (remainder) {
         if (chunk.text === remainder || remainder.startsWith(chunk.text)) {
           remainder = remainder.slice(chunk.text.length).replace(/^\s+/, "");
+          continue;
+        }
+        // Layout can repunctuate/trim the page-lead fragment; still skip when
+        // it is exactly the spoken remainder as a suffix of the full sentence.
+        if (
+          chunk.text.length > 0 &&
+          (remainder.endsWith(chunk.text) || spokenText.endsWith(chunk.text))
+        ) {
+          remainder = "";
           continue;
         }
       }
@@ -1148,6 +1161,43 @@ export function rangeForSpokenPrefix(
 }
 
 /**
+ * Build a Range covering normalized characters `[startCharIndex, endCharIndex)`
+ * within `chunkRange` (matching `chunk.text` offsets).
+ */
+export function rangeForSpokenSlice(
+  chunkRange: Range,
+  startCharIndex: number,
+  endCharIndex: number,
+  chunkTextLength?: number
+): Range | null {
+  if (endCharIndex <= startCharIndex) return null;
+  if (startCharIndex <= 0) {
+    return rangeForSpokenPrefix(chunkRange, endCharIndex, chunkTextLength);
+  }
+  const prefix = rangeForSpokenPrefix(
+    chunkRange,
+    startCharIndex,
+    chunkTextLength
+  );
+  const through = rangeForSpokenPrefix(
+    chunkRange,
+    endCharIndex,
+    chunkTextLength
+  );
+  if (!prefix || !through) return null;
+  const doc = chunkRange.startContainer.ownerDocument;
+  if (!doc) return null;
+  try {
+    const slice = doc.createRange();
+    slice.setStart(prefix.endContainer, prefix.endOffset);
+    slice.setEnd(through.endContainer, through.endOffset);
+    return slice.collapsed ? null : slice;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Dim unspoken page text and paint spoken ranges at full ink. Updates the
  * highlight registry in place (never deletes-then-sets) so progress ticks
  * don't flash spoken text back to the dim color.
@@ -1216,21 +1266,94 @@ export function applySpeechSpokenHighlight(
 }
 
 /**
- * Collect ranges for already-spoken carry-over text on the new page, then
- * return the remaining speakable chunks and those prelit ranges.
+ * Split page-leading chunks after a mid-sentence flip.
+ *
+ * `kept` always comes from `filterChunksAfterCarryOver` so the second half is
+ * never re-uttered. Skipped text is either already finished (`prelit`) or still
+ * being spoken by the in-flight utterance (`carryTails`, highlight only).
  */
 export function applyCarryOverSpokenHits(
   chunks: BooksSpeechChunk[],
   carryOver: BooksSpeechCarryOver
-): { kept: BooksSpeechChunk[]; prelit: Range[] } {
+): {
+  kept: BooksSpeechChunk[];
+  prelit: Range[];
+  carryTails: BooksSpeechChunk[];
+} {
   const kept = filterChunksAfterCarryOver(chunks, carryOver);
   const keptSet = new Set(kept);
-  const prelit: Range[] = [];
-  for (const chunk of chunks) {
-    if (!keptSet.has(chunk)) pushRange(prelit, chunk.range);
+
+  const spokenText = carryOver.spokenText.replace(/\s+/g, " ").trim();
+  const cut = carryOver.pageEndCutIndex;
+  let pendingRemainder = "";
+  if (spokenText && cut !== undefined && cut > 0 && cut < spokenText.length) {
+    pendingRemainder = spokenText.slice(cut).replace(/^\s+/, "").trim();
   }
-  return { kept, prelit };
+
+  const prelit: Range[] = [];
+  const carryTails: BooksSpeechChunk[] = [];
+
+  for (const chunk of chunks) {
+    if (keptSet.has(chunk)) continue;
+
+    // Full cut sentence still visible: light the spoken prefix, animate the
+    // trailing half only.
+    if (
+      spokenText &&
+      chunk.text === spokenText &&
+      cut !== undefined &&
+      cut > 0 &&
+      cut < chunk.text.length
+    ) {
+      const prefix = rangeForSpokenPrefix(chunk.range, cut, chunk.text.length);
+      if (prefix) pushRange(prelit, prefix);
+      const tailRange = rangeForSpokenSlice(
+        chunk.range,
+        cut,
+        chunk.text.length,
+        chunk.text.length
+      );
+      const tailText =
+        chunk.text.slice(cut).replace(/^\s+/, "").trim() || pendingRemainder;
+      if (tailRange && tailText) {
+        carryTails.push({ text: tailText, range: tailRange });
+      } else {
+        // Slice failed — light the whole sentence rather than leave it dim.
+        pushRange(prelit, chunk.range);
+      }
+      pendingRemainder = "";
+      continue;
+    }
+
+    if (pendingRemainder) {
+      if (
+        chunk.text === pendingRemainder ||
+        pendingRemainder.startsWith(chunk.text) ||
+        pendingRemainder.endsWith(chunk.text) ||
+        spokenText.endsWith(chunk.text)
+      ) {
+        carryTails.push(chunk);
+        if (
+          chunk.text === pendingRemainder ||
+          pendingRemainder.startsWith(chunk.text)
+        ) {
+          pendingRemainder = pendingRemainder
+            .slice(chunk.text.length)
+            .replace(/^\s+/, "");
+        } else {
+          pendingRemainder = "";
+        }
+        continue;
+      }
+    }
+
+    // Fully finished before the flip (or unmatched skip — still don't speak).
+    pushRange(prelit, chunk.range);
+  }
+
+  return { kept, prelit, carryTails };
 }
+
 
 export function clearSpeechHighlight(doc: Document | null | undefined): void {
   if (!doc) return;

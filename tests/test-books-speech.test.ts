@@ -17,8 +17,10 @@ import {
   isRangeOnVisiblePage,
   estimateMsUntilCharIndex,
   filterChunksAfterCarryOver,
+  applyCarryOverSpokenHits,
   rangeEndsAtOrBefore,
   rangeForSpokenPrefix,
+  rangeForSpokenSlice,
   splitTextIntoSentences,
   splitTextIntoSpeechSegments,
   type SpeechRenditionLike,
@@ -437,6 +439,70 @@ describe("filterChunksAfterCarryOver", () => {
       pageEndCutIndex: "丁戊己".length,
     });
     expect(filtered.map((chunk) => chunk.text)).toEqual(["子丑寅。"]);
+  });
+});
+
+describe("applyCarryOverSpokenHits", () => {
+  test("keeps later sentences only and carries the page-lead remainder for highlight", () => {
+    const doc = createBookDocument(
+      "<p>Alpha beta. Gamma delta epsilon zeta. Eta theta.</p>"
+    );
+    const node = doc.querySelector("p")!.firstChild as Text;
+    const cut = "Alpha beta. Gamma delta".length;
+    const pageTwoRange = doc.createRange();
+    pageTwoRange.setStart(node, cut);
+    pageTwoRange.setEnd(node, node.data.length);
+    const pageTwo = collectSpeechChunksFromRange(pageTwoRange);
+    const spokenText = "Gamma delta epsilon zeta.";
+    const detached = doc.implementation.createHTMLDocument("prev");
+    detached.body.innerHTML = `<p>${spokenText}</p>`;
+    const spokenNode = detached.querySelector("p")!.firstChild as Text;
+    const { kept, prelit, carryTails } = applyCarryOverSpokenHits(pageTwo, {
+      endContainer: spokenNode,
+      endOffset: spokenNode.data.length,
+      spokenText,
+      pageEndCutIndex: "Gamma delta".length,
+    });
+    expect(kept.map((chunk) => chunk.text)).toEqual(["Eta theta."]);
+    expect(carryTails.map((chunk) => chunk.text)).toEqual(["epsilon zeta."]);
+    expect(prelit).toHaveLength(0);
+    // Remainder is highlight-only — never in the speak list.
+    expect(kept.some((chunk) => chunk.text.includes("epsilon"))).toBe(false);
+  });
+
+  test("splits a full cut sentence into prelit prefix and carry-tail suffix", () => {
+    const doc = createBookDocument(
+      "<p>Gamma delta epsilon zeta. Eta theta.</p>"
+    );
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    const spoken = chunks[0];
+    const cutIndex = "Gamma delta".length;
+    const { kept, prelit, carryTails } = applyCarryOverSpokenHits(chunks, {
+      endContainer: spoken.range.endContainer,
+      endOffset: spoken.range.endOffset,
+      spokenText: spoken.text,
+      pageEndCutIndex: cutIndex,
+    });
+    expect(kept.map((chunk) => chunk.text)).toEqual(["Eta theta."]);
+    expect(carryTails).toHaveLength(1);
+    expect(carryTails[0].text).toBe("epsilon zeta.");
+    expect(prelit).toHaveLength(1);
+    expect(prelit[0].toString().replace(/\s+/g, " ").trim()).toBe("Gamma delta");
+  });
+});
+
+describe("rangeForSpokenSlice", () => {
+  test("builds a DOM range for a mid-chunk slice", () => {
+    const doc = createBookDocument("<p>Gamma delta epsilon zeta.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    const slice = rangeForSpokenSlice(
+      chunks[0].range,
+      "Gamma delta".length,
+      chunks[0].text.length,
+      chunks[0].text.length
+    );
+    expect(slice).not.toBeNull();
+    expect(slice!.toString().replace(/\s+/g, " ").trim()).toBe("epsilon zeta.");
   });
 });
 
