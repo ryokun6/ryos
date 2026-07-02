@@ -249,7 +249,6 @@ export function DesktopStaticWallpaper() {
       FULL_FADE_MS + PRUNE_BUFFER_MS
     );
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topLoaded, topId, layers.length]);
 
   return (
