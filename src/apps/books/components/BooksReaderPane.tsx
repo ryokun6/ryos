@@ -461,7 +461,15 @@ export const BooksReaderPane = forwardRef<
     if (!fallbackAssetUrl) return null;
 
     appendDebugEvent("content:fallbackFetch:start", { fallbackAssetUrl });
-    const response = await fetch(fallbackAssetUrl, { credentials: "same-origin" });
+    let response: Response;
+    try {
+      response = await fetch(fallbackAssetUrl, { credentials: "same-origin" });
+    } catch (error) {
+      // Offline / server unreachable — surface the regular "missing book"
+      // error instead of an unhandled open failure.
+      appendDebugEvent("content:fallbackFetch:failed", error, "error");
+      return null;
+    }
     appendDebugEvent("content:fallbackFetch:response", {
       ok: response.ok,
       status: response.status,

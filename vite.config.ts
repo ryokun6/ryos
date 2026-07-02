@@ -681,6 +681,20 @@ export default defineConfig({
             },
           },
           {
+            // Bundled EPUBs (Books app defaults) — cache-first so the lazy
+            // asset load / reader fallback fetch still resolves offline once
+            // the book has been fetched at least once.
+            urlPattern: /\/assets\/books\/.+\.epub(?:\?.*)?$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "books-assets",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
             // Cache JSON data files with network-first for freshness
             urlPattern: /\/data\/.*\.json$/i,
             handler: "NetworkFirst",

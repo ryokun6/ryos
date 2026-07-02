@@ -125,8 +125,36 @@
 
         // ---- recovery flow ----
 
+        // navigator.onLine can be true while the network is unusable (Wi-Fi
+        // without internet, server down). Confirm the server is reachable
+        // before nuking caches + the service worker — doing so while
+        // disconnected would permanently break offline use.
+        function probeServerReachable(callback) {
+          var settled = false;
+          function finish(result) {
+            if (settled) return;
+            settled = true;
+            callback(result);
+          }
+          setTimeout(function() { finish(false); }, 5000);
+          try {
+            // Any response (even an error status) proves reachability. The
+            // unique query param stops the service worker's cached
+            // version.json from answering the probe while offline.
+            fetch('/version.json?_probe=' + Date.now(), { cache: 'no-store' })
+              .then(function() { finish(true); }, function() { finish(false); });
+          } catch (e) {
+            finish(false);
+          }
+        }
+
         function triggerStaleReload(reason) {
           if (isReloading) return;
+
+          if (navigator.onLine === false) {
+            console.warn('[ryOS] Offline - skipping stale-bundle recovery');
+            return;
+          }
 
           // Counter-based loop guard (shared with prefetch.ts and main.tsx)
           var countKey = 'ryos:reload-count';
@@ -155,23 +183,33 @@
           }
 
           isReloading = true;
-          console.warn('[ryOS] Stale bundle detected, clearing caches and reloading...', reason);
-          sessionStorage.setItem(reloadKey, String(Date.now()));
+          probeServerReachable(function(reachable) {
+            if (!reachable) {
+              isReloading = false;
+              console.warn('[ryOS] Server unreachable - skipping stale-bundle recovery');
+              return;
+            }
 
-          if (window.caches) {
-            caches.keys().then(function(names) {
-              return Promise.all(names.map(function(name) {
-                return caches.delete(name);
-              }));
-            }).then(function() {
-              console.log('[ryOS] Caches cleared');
+            console.warn('[ryOS] Stale bundle detected, clearing caches and reloading...', reason);
+            try {
+              sessionStorage.setItem(reloadKey, String(Date.now()));
+            } catch (e) { /* sessionStorage may throw */ }
+
+            if (window.caches) {
+              caches.keys().then(function(names) {
+                return Promise.all(names.map(function(name) {
+                  return caches.delete(name);
+                }));
+              }).then(function() {
+                console.log('[ryOS] Caches cleared');
+                doReload();
+              }).catch(function() {
+                doReload();
+              });
+            } else {
               doReload();
-            }).catch(function() {
-              doReload();
-            });
-          } else {
-            doReload();
-          }
+            }
+          });
         }
 
         function doReload() {
