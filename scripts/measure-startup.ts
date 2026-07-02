@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { chromium, type Page } from "playwright";
 
 type StartupSample = {
@@ -59,7 +60,11 @@ async function readSample(page: Page, theme: string): Promise<StartupSample> {
   }, theme);
 }
 
-const browser = await chromium.launch({ headless: true });
+const installedChromium = chromium.executablePath();
+const executablePath = existsSync(installedChromium)
+  ? undefined
+  : ["/usr/local/bin/google-chrome", "/usr/bin/google-chrome"].find(existsSync);
+const browser = await chromium.launch({ headless: true, executablePath });
 const samples: StartupSample[] = [];
 
 try {
