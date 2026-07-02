@@ -9,9 +9,10 @@ import {
   clearSpeechHighlight,
   collectSpeechChunksFromRange,
   getVisiblePageRange,
-  isRangeEndOnVisiblePage,
   isRangeOnVisiblePage,
-  rangeEndsAtOrBefore,
+  applyGeometricPageEndCut,
+  estimateMsUntilCharIndex,
+  filterChunksAfterCarryOver,
   type BooksSpeechCarryOver,
   type BooksSpeechChunk,
   type SpeechRenditionLike,
@@ -241,6 +242,8 @@ export function useBooksSpeech({
         carryOver: {
           endContainer: chunk.range.endContainer,
           endOffset: chunk.range.endOffset,
+          spokenText: chunk.text,
+          pageEndCutIndex: chunk.pageEndCutIndex,
         },
         beforeCfi: getCurrentStartCfi(),
       };
@@ -287,11 +290,13 @@ export function useBooksSpeech({
       let settled = false;
       let started = false;
       let idlePolls = 0;
+      let cutTimerId: number | undefined;
       const settle = (ok: boolean, viaTimeout = false) => {
         if (settled) return;
         settled = true;
         window.clearTimeout(timeoutId);
         window.clearInterval(watchdogId);
+        if (cutTimerId !== undefined) window.clearTimeout(cutTimerId);
         if (activeUtteranceRef.current === utterance) {
           activeUtteranceRef.current = null;
         }
@@ -332,21 +337,42 @@ export function useBooksSpeech({
         speakChunk(session, chunks, index + 1);
       };
 
+      const cutIndex = chunk.pageEndCutIndex;
+      let cutTimerArmed = false;
+      const tryAdvanceAtCut = () => {
+        if (settled || session !== sessionRef.current) return;
+        if (cutIndex === undefined) return;
+        advanceAtCut(session, chunk);
+      };
+      const armCutTimer = () => {
+        if (
+          cutTimerArmed ||
+          cutIndex === undefined ||
+          cutIndex >= chunk.text.length
+        ) {
+          return;
+        }
+        cutTimerArmed = true;
+        // Arm from onstart (or the watchdog noticing speech) so engines that
+        // delay playback don't fire early, and CJK voices — which rarely emit
+        // word-boundary events — still flip at the cutoff.
+        cutTimerId = window.setTimeout(
+          tryAdvanceAtCut,
+          estimateMsUntilCharIndex(cutIndex, chunk.text, rate)
+        );
+        timersRef.current.push(cutTimerId);
+      };
       utterance.onstart = () => {
         started = true;
+        armCutTimer();
       };
       utterance.onend = () => settle(true);
       utterance.onerror = () => settle(false);
-      const cutIndex = chunk.pageEndCutIndex;
       if (cutIndex !== undefined && cutIndex < chunk.text.length) {
-        // The sentence continues past the visible page end. Flip the page as
-        // the spoken word crosses the cut so the text being read stays on
-        // screen; the utterance keeps playing through the flip.
+        // Word-boundary events cover Latin engines; the onstart timer covers
+        // CJK voices that rarely emit boundaries (no spaces between words).
         utterance.onboundary = (event) => {
-          if (settled || session !== sessionRef.current) return;
-          if (event.charIndex >= cutIndex) {
-            advanceAtCut(session, chunk);
-          }
+          if (event.charIndex >= cutIndex) tryAdvanceAtCut();
         };
       }
 
@@ -360,7 +386,12 @@ export function useBooksSpeech({
         }
         const busy = synth.speaking || synth.pending;
         if (!started) {
-          if (synth.speaking) started = true;
+          if (synth.speaking) {
+            started = true;
+            // Some CJK engines go busy without firing onstart — arm the
+            // page-cut timer from the moment audio is actually running.
+            armCutTimer();
+          }
           return;
         }
         if (busy) {
@@ -411,24 +442,19 @@ export function useBooksSpeech({
         chunks = chunks.filter((chunk) => isRangeOnVisiblePage(chunk.range));
         // After an auto page turn at a cut-off sentence, skip everything
         // that was already spoken on the previous page (the cut sentence was
-        // spoken whole across the flip) instead of repeating it.
+        // spoken whole across the flip) instead of repeating it. Prefer the
+        // carried spoken text: epub.js often re-renders the next view and
+        // detaches the previous page's nodes, which makes range comparison
+        // fail open and would otherwise re-speak the cut sentence.
         if (carryOver) {
-          chunks = chunks.filter(
-            (chunk) => !rangeEndsAtOrBefore(chunk.range, carryOver)
-          );
+          chunks = filterChunksAfterCarryOver(chunks, carryOver);
         }
         // When the cut wasn't detectable from the page range itself (an
         // unresolvable end boundary falls back to the section end), detect it
-        // geometrically: a final chunk whose end is off-screen crosses onto
-        // the next page — flip once it finishes and carry over its end.
+        // geometrically and mark where the page actually ends *inside* the
+        // chunk (not at text.length — that only flipped after the utterance).
         const lastChunk = chunks[chunks.length - 1];
-        if (
-          lastChunk &&
-          lastChunk.pageEndCutIndex === undefined &&
-          !isRangeEndOnVisiblePage(lastChunk.range)
-        ) {
-          lastChunk.pageEndCutIndex = lastChunk.text.length;
-        }
+        if (lastChunk) applyGeometricPageEndCut(lastChunk);
       } catch {
         chunks = [];
       }

@@ -20,11 +20,17 @@ export interface BooksSpeechChunk {
   pageEndCutIndex?: number;
 }
 
-/** Document position where the last spoken chunk ended, carried across an
- * auto page turn so speech on the new page skips already-spoken text. */
+/** Identity of a sentence spoken across an auto page turn, so speech on the
+ * new page can skip already-spoken text. DOM endpoints help when live nodes
+ * survive the flip; `spokenText` covers epub.js view re-renders that detach
+ * the previous page's nodes (where range comparison alone fails open). */
 export interface BooksSpeechCarryOver {
   endContainer: Node;
   endOffset: number;
+  /** Normalized text of the sentence spoken across the page boundary. */
+  spokenText: string;
+  /** Offset into `spokenText` where the visible page ended, when known. */
+  pageEndCutIndex?: number;
 }
 
 export interface SpeechTextSegment {
@@ -325,6 +331,81 @@ export function rangeEndsAtOrBefore(
   } catch {
     return false;
   }
+}
+
+/**
+ * Estimate how long speech synthesis takes to reach `charIndex` in `text` at
+ * the given rate. Used to auto-turn the page at a mid-sentence cut when the
+ * engine does not deliver word-boundary events (typical for CJK voices, which
+ * have no spaces between words).
+ *
+ * Tuned to sit near the spoken cutoff rather than leading it: flipping early
+ * is jarring, and settle still advances at utterance end if we lag a little.
+ */
+export function estimateMsUntilCharIndex(
+  charIndex: number,
+  text: string,
+  rate: number
+): number {
+  const limit = Math.max(0, Math.min(charIndex, text.length));
+  let costMs = 0;
+  for (let i = 0; i < limit; i++) {
+    const code = text.charCodeAt(i);
+    // CJK ideographs / punctuation speak slower per character than Latin
+    // (~4–5 chars/s vs ~12–15 for Latin TTS at rate 1). Prefer lagging a
+    // little over flipping early; settle still advances at utterance end.
+    const isCjk =
+      (code >= 0x2e80 && code <= 0x9fff) ||
+      (code >= 0xf900 && code <= 0xfaff) ||
+      (code >= 0xff00 && code <= 0xffef) ||
+      (code >= 0x3000 && code <= 0x303f);
+    costMs += isCjk ? 220 : 70;
+  }
+  return Math.max(0, costMs / Math.max(rate, 0.5));
+}
+
+/**
+ * Drop page-leading chunks already covered by a sentence spoken across a page
+ * flip. Uses carried text (and the page-cut offset when known) so a view
+ * re-render that detaches the previous page's nodes still can't re-speak the
+ * same sentence; DOM endpoints refine the filter when they survive the flip.
+ */
+export function filterChunksAfterCarryOver(
+  chunks: BooksSpeechChunk[],
+  carryOver: BooksSpeechCarryOver
+): BooksSpeechChunk[] {
+  const spokenText = carryOver.spokenText.replace(/\s+/g, " ").trim();
+  let remainder = "";
+  if (spokenText) {
+    const cut = carryOver.pageEndCutIndex;
+    if (cut !== undefined && cut > 0 && cut < spokenText.length) {
+      remainder = spokenText.slice(cut).replace(/^\s+/, "").trim();
+    }
+  }
+
+  const kept: BooksSpeechChunk[] = [];
+  let skippingLeading = Boolean(spokenText);
+  for (const chunk of chunks) {
+    if (skippingLeading) {
+      if (rangeEndsAtOrBefore(chunk.range, carryOver)) {
+        continue;
+      }
+      if (spokenText && chunk.text === spokenText) {
+        continue;
+      }
+      if (remainder) {
+        if (chunk.text === remainder || remainder.startsWith(chunk.text)) {
+          remainder = remainder.slice(chunk.text.length).replace(/^\s+/, "");
+          continue;
+        }
+      }
+      skippingLeading = false;
+    } else if (rangeEndsAtOrBefore(chunk.range, carryOver)) {
+      continue;
+    }
+    kept.push(chunk);
+  }
+  return kept;
 }
 
 function getBlockAncestorOfNode(node: Node): Element | null {
@@ -783,6 +864,123 @@ export function isRangeEndOnVisiblePage(range: Range): boolean {
     return isRangeOnVisiblePage(probe);
   } catch {
     return true;
+  }
+}
+
+/** One character's end-boundary within a range (for geometric page-cut search). */
+interface CharProbe {
+  node: Text;
+  /** Exclusive end offset of this character in `node`. */
+  endOffset: number;
+  char: string;
+}
+
+function listCharProbesInRange(range: Range): CharProbe[] {
+  const probes: CharProbe[] = [];
+  const root =
+    range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+      ? range.commonAncestorContainer.parentNode
+      : range.commonAncestorContainer;
+  if (!root) return probes;
+  const doc =
+    root.nodeType === Node.DOCUMENT_NODE
+      ? (root as Document)
+      : root.ownerDocument;
+  if (!doc) return probes;
+
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const textNode = node as Text;
+    if (!isSpokenTextNode(textNode)) continue;
+    const length = textNode.data.length;
+    if (
+      compareBoundaryPoints(textNode, length, range.startContainer, range.startOffset) <= 0
+    ) {
+      continue;
+    }
+    if (
+      compareBoundaryPoints(textNode, 0, range.endContainer, range.endOffset) >= 0
+    ) {
+      break;
+    }
+    let start = 0;
+    if (range.startContainer === textNode) start = range.startOffset;
+    let end = length;
+    if (range.endContainer === textNode) end = range.endOffset;
+    for (let offset = start; offset < end; offset++) {
+      probes.push({
+        node: textNode,
+        endOffset: offset + 1,
+        char: textNode.data.charAt(offset),
+      });
+    }
+  }
+  return probes;
+}
+
+/**
+ * When layout shows a chunk ending past the page but the page range didn't
+ * clip it, find the offset into `chunk.text` where the visible page ends.
+ * Returns undefined when every (or no) character appears on-screen.
+ */
+export function findPageEndCutIndexInChunk(
+  chunk: BooksSpeechChunk
+): number | undefined {
+  if (isRangeEndOnVisiblePage(chunk.range)) return undefined;
+
+  const probes = listCharProbesInRange(chunk.range);
+  if (probes.length === 0) return undefined;
+
+  // Binary-search the last character still on the visible page.
+  let lo = 0;
+  let hi = probes.length;
+  const doc = chunk.range.startContainer.ownerDocument;
+  if (!doc) return undefined;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    const probe = probes[mid - 1];
+    try {
+      const charRange = doc.createRange();
+      charRange.setStart(probe.node, probe.endOffset - 1);
+      charRange.setEnd(probe.node, probe.endOffset);
+      if (isRangeOnVisiblePage(charRange)) lo = mid;
+      else hi = mid - 1;
+    } catch {
+      hi = mid - 1;
+    }
+  }
+  if (lo <= 0 || lo >= probes.length) return undefined;
+
+  // Map the visible raw prefix onto the normalized chunk text (same rules as
+  // collectSpeechChunksFromRange's pageEndCutIndex mapping).
+  const visibleRaw = probes
+    .slice(0, lo)
+    .map((probe) => probe.char)
+    .join("");
+  const visibleNorm = visibleRaw
+    .replace(/\s+/g, " ")
+    .replace(/^\s+/, "")
+    .replace(/\s+$/, "");
+  if (!visibleNorm) return undefined;
+  if (chunk.text.startsWith(visibleNorm)) {
+    return visibleNorm.length < chunk.text.length ? visibleNorm.length : undefined;
+  }
+  // Whitespace / ruby drift — take the shared prefix length.
+  let shared = 0;
+  const limit = Math.min(visibleNorm.length, chunk.text.length);
+  while (shared < limit && visibleNorm[shared] === chunk.text[shared]) {
+    shared += 1;
+  }
+  return shared > 0 && shared < chunk.text.length ? shared : undefined;
+}
+
+/** Apply a geometric page-cut marker when CFI range collection missed it. */
+export function applyGeometricPageEndCut(chunk: BooksSpeechChunk): void {
+  if (chunk.pageEndCutIndex !== undefined) return;
+  if (isRangeEndOnVisiblePage(chunk.range)) return;
+  const cutIndex = findPageEndCutIndexInChunk(chunk);
+  if (cutIndex !== undefined) {
+    chunk.pageEndCutIndex = cutIndex;
   }
 }
 

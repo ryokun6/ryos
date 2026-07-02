@@ -14,6 +14,8 @@ import {
   clearSpeechHighlight,
   isRangeEndOnVisiblePage,
   isRangeOnVisiblePage,
+  estimateMsUntilCharIndex,
+  filterChunksAfterCarryOver,
   rangeEndsAtOrBefore,
   splitTextIntoSentences,
   splitTextIntoSpeechSegments,
@@ -267,6 +269,25 @@ describe("sentences cut off by the page boundary", () => {
     expect(chunks[0].pageEndCutIndex).toBe("Line one".length);
   });
 
+
+  test("extends a cut Chinese sentence and marks the page cut index", () => {
+    const doc = createBookDocument(
+      "<p>甲乙丙。丁戊己庚辛壬癸。子丑寅。</p>"
+    );
+    const textNode = doc.querySelector("p")!.firstChild as Text;
+    const range = doc.createRange();
+    range.setStart(textNode, 0);
+    // Page ends mid-way through the second sentence (no spaces in CJK).
+    range.setEnd(textNode, "甲乙丙。丁戊己".length);
+    const chunks = collectSpeechChunksFromRange(range);
+    expect(chunks.map((c) => c.text)).toEqual([
+      "甲乙丙。",
+      "丁戊己庚辛壬癸。",
+    ]);
+    expect(chunks[0].pageEndCutIndex).toBeUndefined();
+    expect(chunks[1].pageEndCutIndex).toBe("丁戊己".length);
+  });
+
   test("mid-paragraph page start plus cut sentence keeps offsets aligned", () => {
     const doc = createBookDocument(
       "<p>Alpha beta. Gamma delta epsilon. Eta theta.</p>"
@@ -291,6 +312,7 @@ describe("rangeEndsAtOrBefore", () => {
     const carryOver = {
       endContainer: chunks[0].range.endContainer,
       endOffset: chunks[0].range.endOffset,
+      spokenText: chunks[0].text,
     };
     expect(rangeEndsAtOrBefore(chunks[0].range, carryOver)).toBe(true);
     expect(rangeEndsAtOrBefore(chunks[1].range, carryOver)).toBe(false);
@@ -304,8 +326,130 @@ describe("rangeEndsAtOrBefore", () => {
     const carryOver = {
       endContainer: detached.querySelector("p")!.firstChild as Node,
       endOffset: 5,
+      spokenText: "Other doc.",
     };
     expect(rangeEndsAtOrBefore(chunks[0].range, carryOver)).toBe(false);
+  });
+});
+
+describe("filterChunksAfterCarryOver", () => {
+  test("skips the spoken sentence and its page-tail by text identity", () => {
+    const doc = createBookDocument(
+      "<p>Alpha beta. Gamma delta epsilon zeta. Eta theta.</p>"
+    );
+    const full = collectSpeechChunksFromRange(rangeOver(doc));
+    expect(full.map((chunk) => chunk.text)).toEqual([
+      "Alpha beta.",
+      "Gamma delta epsilon zeta.",
+      "Eta theta.",
+    ]);
+    const spoken = full[1];
+    const cutIndex = "Gamma delta".length;
+    // Page 2 would still see the cut sentence (range overshoot / re-render)
+    // plus the next sentence.
+    const pageTwo = full.slice(1);
+    const filtered = filterChunksAfterCarryOver(pageTwo, {
+      endContainer: spoken.range.endContainer,
+      endOffset: spoken.range.endOffset,
+      spokenText: spoken.text,
+      pageEndCutIndex: cutIndex,
+    });
+    expect(filtered.map((chunk) => chunk.text)).toEqual(["Eta theta."]);
+  });
+
+  test("still skips already-spoken text when carry-over nodes are detached", () => {
+    const doc = createBookDocument(
+      "<p>Alpha beta. Gamma delta epsilon zeta. Eta theta.</p>"
+    );
+    const full = collectSpeechChunksFromRange(rangeOver(doc));
+    const spoken = full[1];
+    const carryOver = {
+      endContainer: spoken.range.endContainer,
+      endOffset: spoken.range.endOffset,
+      spokenText: spoken.text,
+      pageEndCutIndex: "Gamma delta".length,
+    };
+    // Simulate epub.js replacing the section DOM on the page turn.
+    doc.body.innerHTML =
+      "<p>Alpha beta. Gamma delta epsilon zeta. Eta theta.</p>";
+    expect(carryOver.endContainer.isConnected).toBe(false);
+    const pageTwo = collectSpeechChunksFromRange(rangeOver(doc)).slice(1);
+    // DOM comparison alone fails open on detached nodes.
+    expect(
+      pageTwo.some((chunk) => rangeEndsAtOrBefore(chunk.range, carryOver))
+    ).toBe(false);
+    const filtered = filterChunksAfterCarryOver(pageTwo, carryOver);
+    expect(filtered.map((chunk) => chunk.text)).toEqual(["Eta theta."]);
+  });
+
+  test("skips a page-lead fragment that matches the spoken remainder", () => {
+    const doc = createBookDocument(
+      "<p>Alpha beta. Gamma delta epsilon zeta. Eta theta.</p>"
+    );
+    const node = doc.querySelector("p")!.firstChild as Text;
+    const cut = "Alpha beta. Gamma delta".length;
+    const pageTwoRange = doc.createRange();
+    pageTwoRange.setStart(node, cut);
+    pageTwoRange.setEnd(node, node.data.length);
+    const pageTwo = collectSpeechChunksFromRange(pageTwoRange);
+    expect(pageTwo.map((chunk) => chunk.text)).toEqual([
+      "epsilon zeta.",
+      "Eta theta.",
+    ]);
+    const spokenText = "Gamma delta epsilon zeta.";
+    // Detached endpoints from the previous view.
+    const detached = doc.implementation.createHTMLDocument("prev");
+    detached.body.innerHTML = `<p>${spokenText}</p>`;
+    const spokenNode = detached.querySelector("p")!.firstChild as Text;
+    const filtered = filterChunksAfterCarryOver(pageTwo, {
+      endContainer: spokenNode,
+      endOffset: spokenNode.data.length,
+      spokenText,
+      pageEndCutIndex: "Gamma delta".length,
+    });
+    expect(filtered.map((chunk) => chunk.text)).toEqual(["Eta theta."]);
+  });
+
+  test("skips a Chinese page-lead fragment without relying on spaces", () => {
+    const doc = createBookDocument(
+      "<p>甲乙丙。丁戊己庚辛壬癸。子丑寅。</p>"
+    );
+    const node = doc.querySelector("p")!.firstChild as Text;
+    const cut = "甲乙丙。丁戊己".length;
+    const pageTwoRange = doc.createRange();
+    pageTwoRange.setStart(node, cut);
+    pageTwoRange.setEnd(node, node.data.length);
+    const pageTwo = collectSpeechChunksFromRange(pageTwoRange);
+    expect(pageTwo.map((chunk) => chunk.text)).toEqual([
+      "庚辛壬癸。",
+      "子丑寅。",
+    ]);
+    const spokenText = "丁戊己庚辛壬癸。";
+    const detached = doc.implementation.createHTMLDocument("prev");
+    detached.body.innerHTML = `<p>${spokenText}</p>`;
+    const spokenNode = detached.querySelector("p")!.firstChild as Text;
+    const filtered = filterChunksAfterCarryOver(pageTwo, {
+      endContainer: spokenNode,
+      endOffset: spokenNode.data.length,
+      spokenText,
+      pageEndCutIndex: "丁戊己".length,
+    });
+    expect(filtered.map((chunk) => chunk.text)).toEqual(["子丑寅。"]);
+  });
+});
+
+describe("estimateMsUntilCharIndex", () => {
+  test("estimates longer delays for CJK than for Latin at the same length", () => {
+    const latin = estimateMsUntilCharIndex(6, "abcdef", 1);
+    const cjk = estimateMsUntilCharIndex(6, "甲乙丙丁戊己", 1);
+    expect(cjk).toBeGreaterThan(latin);
+    expect(latin).toBeGreaterThan(0);
+  });
+
+  test("scales inversely with speech rate", () => {
+    const slow = estimateMsUntilCharIndex(4, "丁戊己庚", 0.5);
+    const normal = estimateMsUntilCharIndex(4, "丁戊己庚", 1);
+    expect(slow).toBeGreaterThan(normal);
   });
 });
 
