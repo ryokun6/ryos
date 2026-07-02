@@ -302,6 +302,34 @@
   background-color: transparent;
 }
 
+/* The floating Customize card / bottom sheet gets the frosted popover
+   treatment (same recipe as the dropdown/menu surfaces above): swap the
+   0.8-alpha `bg-os-window-bg` fill — opaque enough to bury the blur — for a
+   lighter wash, and add the blur + specular rim on the same element. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .books-customize-panel {
+  -webkit-backdrop-filter: blur(36px) saturate(200%);
+  backdrop-filter: blur(36px) saturate(200%);
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 6%,
+    rgba(248, 250, 253, 0.62)
+  );
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .books-customize-panel {
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 7%,
+    rgba(36, 38, 44, 0.62)
+  );
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
 /* --- Frosted sidebar / list panes ------------------------------------------ */
 /* `AppSidebarPanel` (Finder sidebar, file list) pins a near-opaque
    `bg-white/90`, and the Calendar app's inset panes (`.os-inset-pane`) pin

@@ -281,7 +281,7 @@ export function BooksCustomizePanel({
       role="dialog"
       aria-label={t("apps.books.customize.title")}
       className={cn(
-        "absolute z-[60] flex flex-col gap-2 overflow-y-auto overscroll-contain p-3",
+        "books-customize-panel absolute z-[60] flex flex-col gap-2 overflow-y-auto overscroll-contain p-3",
         "bg-os-window-bg font-os-ui text-os-text-primary",
         compact
           ? "inset-x-0 bottom-0 max-h-[75%] rounded-t-[10px] border-t border-os-window pb-4 shadow-[0_-6px_24px_rgba(0,0,0,0.25)]"
