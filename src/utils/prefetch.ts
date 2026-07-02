@@ -29,6 +29,10 @@ import { shouldPrefetchNow } from "@/utils/network";
 import { track, SYSTEM_ANALYTICS } from "@/utils/analytics";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 import { getSupportedDesktopDownloadTarget } from "@/utils/desktopDownload";
+import {
+  notifyDesktopUpdate,
+  type DesktopUpdateResult,
+} from "@/utils/desktopUpdateBridge";
 import { createClientLogger } from "@/utils/logger";
 
 const log = createClientLogger("Prefetch");
@@ -200,11 +204,6 @@ async function fetchServerVersion(forceRemote: boolean = false): Promise<ServerV
   }
 }
 
-export interface DesktopUpdateResult {
-  type: 'first-time' | 'update' | 'none';
-  version: string | null;
-}
-
 /**
  * Check for desktop app updates
  * Returns info about whether this is a first time visit, update available, or no changes
@@ -230,17 +229,6 @@ export async function checkDesktopUpdate(): Promise<DesktopUpdateResult> {
   return { type: 'none', version: null };
 }
 
-// Callback for desktop update notifications (set by App.tsx)
-let desktopUpdateCallback: ((result: DesktopUpdateResult) => void) | null = null;
-
-/**
- * Register a callback to be called when a desktop update is found
- * Used by App.tsx to show the download toast
- */
-export function onDesktopUpdate(callback: (result: DesktopUpdateResult) => void): void {
-  desktopUpdateCallback = callback;
-}
-
 /**
  * Check for desktop updates and notify via callback
  * Called during periodic checks and manual "Check for Updates"
@@ -253,8 +241,8 @@ async function checkAndNotifyDesktopUpdate(): Promise<void> {
   
   const result = await checkDesktopUpdate();
   
-  if (result.type !== 'none' && desktopUpdateCallback) {
-    desktopUpdateCallback(result);
+  if (result.type !== 'none') {
+    notifyDesktopUpdate(result);
   }
 }
 

@@ -14,7 +14,10 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isDesktop } from "./utils/platform";
-import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
+import {
+  onDesktopUpdate,
+  type DesktopUpdateResult,
+} from "./utils/desktopUpdateBridge";
 import {
   getDesktopDownloadUrl,
   getSupportedDesktopDownloadTarget,
@@ -249,13 +252,21 @@ export function App() {
     onDesktopUpdate(showDesktopUpdateToast);
 
     // Initial check on load (delayed to let app render first)
-    const timer = setTimeout(async () => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
       appShellLog.debug("Running initial desktop update check");
-      const result = await checkDesktopUpdate();
-      showDesktopUpdateToast(result);
+      void import("./utils/prefetch").then(async ({ checkDesktopUpdate }) => {
+        const result = await checkDesktopUpdate();
+        if (!cancelled) {
+          showDesktopUpdateToast(result);
+        }
+      });
     }, 2000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [setLastSeenDesktopVersion, t]);
 
   if (showBootScreen) {
