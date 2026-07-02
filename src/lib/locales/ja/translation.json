@@ -605,9 +605,12 @@
       },
       "customize": {
         "background": "背景",
+        "chinese": "中国語",
         "colors": "カラー",
+        "direction": "方向",
         "lineSpacing": "行間",
         "margins": "余白",
+        "spacing": "間隔",
         "textColor": "テキスト",
         "title": "カスタマイズ",
         "transparent": "透明"

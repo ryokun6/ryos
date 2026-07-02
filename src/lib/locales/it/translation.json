@@ -607,9 +607,12 @@
       },
       "customize": {
         "background": "Sfondo",
+        "chinese": "Cinese",
         "colors": "Colori",
+        "direction": "Direzione",
         "lineSpacing": "Interlinea",
         "margins": "Margini",
+        "spacing": "Spaziatura",
         "textColor": "Testo",
         "title": "Personalizza",
         "transparent": "Trasparente"

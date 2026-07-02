@@ -337,6 +337,19 @@ export default defineConfig({
               });
             },
           },
+          {
+            name: "serve-dev-pwa-register-stub",
+            resolveId(id: string) {
+              return id === "virtual:pwa-register"
+                ? "\0virtual:pwa-register"
+                : undefined;
+            },
+            load(id: string) {
+              return id === "\0virtual:pwa-register"
+                ? "export const registerSW = () => undefined;"
+                : undefined;
+            },
+          },
         ]
       : []),
     // Serve static docs HTML files (before SPA fallback kicks in)

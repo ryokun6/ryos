@@ -4546,6 +4546,9 @@
       "customize": {
         "title": "Customize",
         "lineSpacing": "Line Spacing",
+        "spacing": "Spacing",
+        "direction": "Direction",
+        "chinese": "Chinese",
         "margins": "Margins",
         "colors": "Colors",
         "background": "Background",

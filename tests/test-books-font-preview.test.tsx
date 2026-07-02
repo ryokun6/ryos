@@ -46,7 +46,10 @@ beforeAll(async () => {
   await i18n.use(initReactI18next).init({
     lng: "en",
     fallbackLng: "en",
-    resources: { en: { translation: {} } },
+    resources: {
+      en: { translation: {} },
+      "zh-TW": { translation: {} },
+    },
     interpolation: { escapeValue: false },
   });
 });
@@ -58,6 +61,7 @@ afterEach(async () => {
   root = null;
   container?.remove();
   container = null;
+  await i18n.changeLanguage("en");
 });
 
 afterAll(() => {
@@ -150,5 +154,61 @@ describe("BooksCustomizePanel font chips", () => {
         );
       }
     }
+  });
+});
+
+describe("BooksCustomizePanel theme swatches", () => {
+  test("uses consistently sized, softly rounded Latin previews", async () => {
+    const host = await renderPanel();
+    const swatches = Array.from(
+      host.querySelectorAll<HTMLButtonElement>(
+        'button[title^="apps.books.theme."]'
+      )
+    );
+
+    expect(swatches.length).toBeGreaterThan(0);
+    for (const swatch of swatches) {
+      expect(swatch.textContent).toBe("Aa");
+      expect(swatch.classList.contains("!rounded-[5px]")).toBe(true);
+      expect(swatch.classList.contains("rounded-full")).toBe(false);
+      expect(swatch.querySelector("span")?.classList.contains("!text-[11px]")).toBe(
+        true
+      );
+    }
+
+    const accent = swatches.find(
+      (swatch) => swatch.title === "apps.books.theme.accent"
+    );
+    const custom = swatches.find(
+      (swatch) => swatch.title === "apps.books.theme.custom"
+    );
+    const normal = swatches.find(
+      (swatch) => swatch.title === "apps.books.theme.light"
+    );
+    expect(custom?.classList.contains("!p-[2.5px]")).toBe(true);
+    expect(
+      custom?.querySelector("span")?.classList.contains("border-0")
+    ).toBe(true);
+    expect(accent?.classList.contains("!p-0")).toBe(true);
+    expect(accent?.querySelector("span")?.classList.contains("border")).toBe(
+      true
+    );
+    expect(normal?.classList.contains("!p-0")).toBe(true);
+    expect(normal?.querySelector("span")?.classList.contains("border")).toBe(
+      true
+    );
+  });
+
+  test("uses the localized character preview for CJK UI locales", async () => {
+    await i18n.changeLanguage("zh-TW");
+    const host = await renderPanel();
+    const swatches = Array.from(
+      host.querySelectorAll<HTMLButtonElement>(
+        'button[title^="apps.books.theme."]'
+      )
+    );
+
+    expect(swatches.length).toBeGreaterThan(0);
+    expect(swatches.every((swatch) => swatch.textContent === "字")).toBe(true);
   });
 });

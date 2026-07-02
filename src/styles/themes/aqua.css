@@ -2501,7 +2501,7 @@
   height: 14px;
   width: 14px;
   border-radius: 9999px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   border: none;
@@ -2559,6 +2559,13 @@
   pointer-events: none;
   width: 50%;
   margin: 0 auto;
+}
+
+/* The 14px slider thumb needs a tighter highlight than the switch thumb:
+   keep it compact and oval instead of stretching to half the ball. */
+:root[data-os-theme="macosx"] .os-slider-thumb:before {
+  width: 6px;
+  height: 4px;
 }
 
 /* Bottom glow */

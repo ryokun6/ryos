@@ -605,9 +605,12 @@
       },
       "customize": {
         "background": "배경",
+        "chinese": "중국어",
         "colors": "색상",
+        "direction": "방향",
         "lineSpacing": "줄 간격",
         "margins": "여백",
+        "spacing": "간격",
         "textColor": "텍스트",
         "title": "사용자화",
         "transparent": "투명"

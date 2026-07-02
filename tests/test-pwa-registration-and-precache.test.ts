@@ -11,6 +11,9 @@ describe("PWA startup policy", () => {
       "utf8"
     );
     expect(mainSource).toContain('import("./utils/pwaRegistration")');
+    expect(mainSource).toMatch(
+      /if \(import\.meta\.env\.PROD\) \{[\s\S]*import\("\.\/utils\/pwaRegistration"\)/
+    );
     expect(mainSource).not.toMatch(
       /^import .* from ["'].+pwaRegistration["'];?$/m
     );
@@ -20,6 +23,7 @@ describe("PWA startup policy", () => {
       "utf8"
     );
     expect(config).toContain("injectRegister: false");
+    expect(config).toContain('name: "serve-dev-pwa-register-stub"');
   });
 
   test("does not precache every font file twice", () => {

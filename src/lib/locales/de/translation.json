@@ -605,9 +605,12 @@
       },
       "customize": {
         "background": "Hintergrund",
+        "chinese": "Chinesisch",
         "colors": "Farben",
+        "direction": "Richtung",
         "lineSpacing": "Zeilenabstand",
         "margins": "Seitenränder",
+        "spacing": "Abstand",
         "textColor": "Text",
         "title": "Anpassen",
         "transparent": "Transparent"

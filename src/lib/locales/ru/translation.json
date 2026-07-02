@@ -609,9 +609,12 @@
       },
       "customize": {
         "background": "Фон",
+        "chinese": "Китайский",
         "colors": "Цвета",
+        "direction": "Направление",
         "lineSpacing": "Межстрочный интервал",
         "margins": "Поля",
+        "spacing": "Интервал",
         "textColor": "Текст",
         "title": "Настройка",
         "transparent": "Прозрачный"

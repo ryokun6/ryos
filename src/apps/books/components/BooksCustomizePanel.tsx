@@ -191,7 +191,7 @@ function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className="flex w-full rounded-[6px] bg-black/[0.07] p-0.5 os-dark:bg-white/10"
+      className="flex w-full rounded-full bg-black/[0.07] p-0.5 os-dark:bg-white/10"
     >
       {options.map((option) => (
         <button
@@ -201,7 +201,7 @@ function Segmented<T extends string>({
           aria-checked={value === option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            "min-w-0 flex-1 truncate rounded-[5px] px-2 py-1 text-[11px] transition-colors",
+            "min-w-0 flex-1 truncate !rounded-full px-2 py-1 text-[11px] transition-colors",
             value === option.value
               ? "bg-os-selection-bg text-os-selection-text"
               : "hover:bg-black/5 os-dark:hover:bg-white/10"
@@ -230,6 +230,7 @@ export function BooksCustomizePanel({
 }: BooksCustomizePanelProps) {
   const { t, i18n } = useTranslation();
   const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
+  const themeSwatchGlyph = isCjkBookLanguage(uiLanguage) ? "字" : "Aa";
   const supportsVerticalText = isCjkBookLanguage(bookLanguage);
   const supportsChineseScript = isChineseBookLanguage(bookLanguage);
   const isVerticalText =
@@ -329,7 +330,7 @@ export function BooksCustomizePanel({
           type="button"
           aria-label={t("common.menu.close")}
           onClick={onClose}
-          className="flex h-5 w-5 items-center justify-center rounded text-os-text-secondary transition-colors hover:bg-black/10 hover:text-os-text-primary os-dark:hover:bg-white/15"
+          className="flex h-5 w-5 items-center justify-center rounded-full text-os-text-secondary transition-colors hover:bg-black/10 hover:text-os-text-primary os-dark:hover:bg-white/15"
         >
           <X size={12} weight="bold" />
         </button>
@@ -350,7 +351,7 @@ export function BooksCustomizePanel({
       </Row>
 
       <Row
-        label={t("apps.books.customize.lineSpacing")}
+        label={t("apps.books.customize.spacing")}
         value={settings.lineHeight.toFixed(2)}
       >
         <Slider
@@ -380,7 +381,7 @@ export function BooksCustomizePanel({
       </Row>
 
       {supportsVerticalText ? (
-        <Row label={t("apps.books.menu.textLayout")}>
+        <Row label={t("apps.books.customize.direction")}>
           <Segmented
             ariaLabel={t("apps.books.menu.textLayout")}
             value={settings.textLayout}
@@ -400,7 +401,7 @@ export function BooksCustomizePanel({
       ) : null}
 
       {supportsChineseScript ? (
-        <Row label={t("apps.books.menu.chineseScript")}>
+        <Row label={t("apps.books.customize.chinese")}>
           <Segmented
             ariaLabel={t("apps.books.menu.chineseScript")}
             value={settings.chineseScript}
@@ -481,40 +482,6 @@ export function BooksCustomizePanel({
         <ScrollFadeRow className="-m-1 gap-1.5 p-1">
           {themeSwatches.map((swatch) => {
             const selected = settings.themeOverride === swatch.id;
-            if (swatch.custom || swatch.accent) {
-              // Custom: rainbow ring. Accent: live OS accent ring.
-              return (
-                <button
-                  key={swatch.id}
-                  type="button"
-                  title={swatch.label}
-                  aria-label={swatch.label}
-                  aria-pressed={selected}
-                  onClick={() => updateSettings({ themeOverride: swatch.id })}
-                  className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full p-[2.5px] transition-shadow",
-                    selected &&
-                      "ring-2 ring-[color:var(--os-color-selection-bg)] ring-offset-1 ring-offset-[color:var(--os-color-window-bg)]"
-                  )}
-                  style={{
-                    background: swatch.accent
-                      ? accentBaseHex
-                      : "conic-gradient(#f43f5e, #f59e0b, #84cc16, #22d3ee, #6366f1, #d946ef, #f43f5e)",
-                  }}
-                >
-                  <span
-                    className="flex h-full w-full items-center justify-center rounded-full text-[11px] font-medium"
-                    style={
-                      swatch.transparent
-                        ? { ...TRANSPARENT_SWATCH_STYLE, color: swatch.text }
-                        : { background: swatch.background, color: swatch.text }
-                    }
-                  >
-                    A
-                  </span>
-                </button>
-              );
-            }
             return (
               <button
                 key={swatch.id}
@@ -524,13 +491,32 @@ export function BooksCustomizePanel({
                 aria-pressed={selected}
                 onClick={() => updateSettings({ themeOverride: swatch.id })}
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-black/20 text-[12px] font-medium transition-shadow os-dark:border-white/25",
+                  "flex h-7 w-7 shrink-0 items-center justify-center !rounded-[5px] transition-shadow",
+                  swatch.custom ? "!p-[2.5px]" : "!p-0",
                   selected &&
                     "ring-2 ring-[color:var(--os-color-selection-bg)] ring-offset-1 ring-offset-[color:var(--os-color-window-bg)]"
                 )}
-                style={{ background: swatch.background, color: swatch.text }}
+                style={{
+                  background: swatch.custom
+                      ? "conic-gradient(#f43f5e, #f59e0b, #84cc16, #22d3ee, #6366f1, #d946ef, #f43f5e)"
+                      : "transparent",
+                }}
               >
-                {swatch.showGlyph ? "A" : null}
+                <span
+                  className={cn(
+                    "flex h-full w-full items-center justify-center rounded-[4px] !text-[11px] font-medium !leading-none",
+                    swatch.custom
+                      ? "border-0"
+                      : "border border-black/20 os-dark:border-white/25"
+                  )}
+                  style={
+                    swatch.transparent
+                      ? { ...TRANSPARENT_SWATCH_STYLE, color: swatch.text }
+                      : { background: swatch.background, color: swatch.text }
+                  }
+                >
+                  {swatch.showGlyph ? themeSwatchGlyph : null}
+                </span>
               </button>
             );
           })}
