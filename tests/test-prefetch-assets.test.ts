@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   collectActiveThemeIconUrls,
+  getAllThemeStaticAssetUrls,
   getCoreSoundUrls,
   getThemeStaticAssetUrls,
 } from "../src/utils/prefetchAssets";
@@ -17,7 +18,7 @@ const manifest: IconManifest = {
 };
 
 describe("idle shell asset warming", () => {
-  test("resolves only requested icons for the active theme", () => {
+  test("resolves active-theme icons with cached default fallbacks", () => {
     const urls = collectActiveThemeIconUrls({
       theme: "macosx",
       manifest,
@@ -31,6 +32,7 @@ describe("idle shell asset warming", () => {
     });
     expect(urls).toEqual([
       "/icons/macosx/finder.png",
+      "/icons/default/finder.png",
       "/icons/default/settings.png",
       "/icons/default/file.png",
     ]);
@@ -48,6 +50,14 @@ describe("idle shell asset warming", () => {
     expect(getThemeStaticAssetUrls("macosx")).toContain(
       "/assets/brushed-metal.jpg"
     );
+  });
+
+  test("collects each theme's chrome for offline switching", () => {
+    const assets = getAllThemeStaticAssetUrls();
+    expect(assets).toContain("/assets/brushed-metal.jpg");
+    expect(assets).toContain("/assets/splash/xp-boot.gif");
+    expect(assets).toContain("/assets/splash/win98.gif");
+    expect(new Set(assets).size).toBe(assets.length);
   });
 
   test("limits sound warmup to common shell feedback", () => {

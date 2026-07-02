@@ -16,10 +16,36 @@ export interface IconManifest {
 
 let manifestCache: IconManifest | null = null;
 let manifestPromise: Promise<IconManifest> | null = null;
+let manifestGeneration = 0;
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isIconManifest(value: unknown): value is IconManifest {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  if (
+    !("version" in value) ||
+    typeof value.version !== "number" ||
+    !("generatedAt" in value) ||
+    typeof value.generatedAt !== "string" ||
+    !("themes" in value) ||
+    typeof value.themes !== "object" ||
+    value.themes === null ||
+    Array.isArray(value.themes)
+  ) {
+    return false;
+  }
+
+  return Object.values(value.themes).every(isStringArray);
+}
 
 export async function fetchIconManifest(): Promise<IconManifest> {
   if (manifestCache) return manifestCache;
   if (!manifestPromise) {
+    const requestGeneration = manifestGeneration;
     manifestPromise = abortableFetch("/icons/manifest.json", {
       cache: "no-store",
       timeout: 15000,
@@ -29,19 +55,33 @@ export async function fetchIconManifest(): Promise<IconManifest> {
         if (!r.ok) throw new Error(`Failed to load icon manifest: ${r.status}`);
         return r.json();
       })
-      .then((data) => {
-        manifestCache = data;
+      .then((data: unknown) => {
+        if (!isIconManifest(data)) {
+          throw new Error("Invalid icon manifest");
+        }
+        if (requestGeneration === manifestGeneration) {
+          manifestCache = data;
+        }
         return data;
       });
   }
-  return manifestPromise;
+
+  const currentPromise = manifestPromise;
+  try {
+    return await currentPromise;
+  } finally {
+    if (manifestPromise === currentPromise) {
+      manifestPromise = null;
+    }
+  }
 }
 
 /**
  * Clear the cached manifest to force a reload on next access.
  * Useful when themes or icons may have changed.
  */
-export function invalidateIconCache() {
+export function invalidateIconCache(): void {
+  manifestGeneration += 1;
   manifestCache = null;
   manifestPromise = null;
 }

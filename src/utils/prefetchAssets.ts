@@ -68,6 +68,12 @@ export function collectActiveThemeIconUrls({
         manifest,
       })
     );
+    urls.add(
+      pickIconPath(logicalName, {
+        theme: "default",
+        manifest,
+      })
+    );
   }
   return [...urls];
 }
@@ -90,6 +96,16 @@ export function getThemeStaticAssetUrls(theme: string): string[] {
         "/assets/splash/macos.svg",
       ];
   }
+}
+
+export function getAllThemeStaticAssetUrls(): string[] {
+  return [
+    ...new Set(
+      ["macosx", "system7", "xp", "win98"].flatMap((theme) =>
+        getThemeStaticAssetUrls(theme)
+      )
+    ),
+  ];
 }
 
 export function getCoreSoundUrls(): string[] {
