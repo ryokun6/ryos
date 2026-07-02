@@ -2176,9 +2176,14 @@ ruby.lyrics-furigana rp {
   display: none;
 }
 
-/* Bold furigana for serif and sans-serif lyrics fonts */
+/* Bold pronunciation ruby (furigana, pinyin, romaji, etc.) for serif, sans-serif, and rounded lyrics fonts */
+/* :root[data-os-theme] variants outrank the theme-prefixed "normal" rule above in every theme */
 .font-lyrics-serif rt.lyrics-furigana-rt,
-.font-lyrics-sans rt.lyrics-furigana-rt {
+.font-lyrics-sans rt.lyrics-furigana-rt,
+.font-lyrics-rounded rt.lyrics-furigana-rt,
+.font-lyrics-gold-glow rt.lyrics-furigana-rt,
+:root[data-os-theme] .font-lyrics-rounded rt.lyrics-furigana-rt,
+:root[data-os-theme] .font-lyrics-gold-glow rt.lyrics-furigana-rt {
   font-weight: 700 !important;
 }
 

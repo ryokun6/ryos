@@ -1713,7 +1713,7 @@
     system-ui, -apple-system, sans-serif !important;
 }
 
-/* Bold furigana for serif and sans-serif lyrics fonts on macOS theme */
+/* Bold pronunciation ruby (furigana, pinyin, romaji, etc.) for lyrics fonts on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
@@ -1721,7 +1721,11 @@
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gradient rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient rt.lyrics-furigana-rt {
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gold-glow rt.lyrics-furigana-rt {
   font-weight: 700 !important;
 }
 
