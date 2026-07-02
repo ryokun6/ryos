@@ -211,6 +211,7 @@ export function BooksAppComponent({
             onNavigationStateChange={handleReaderNavigationStateChange}
             onSpeechStateChange={handleSpeechStateChange}
             onBookLanguageChange={handleBookLanguageChange}
+            onShowCustomize={() => setIsCustomizeOpen(true)}
           />
         ) : (
           <BooksShelfView
