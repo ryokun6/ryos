@@ -660,6 +660,25 @@ export function serializeEpubThemeRules(rules: EpubThemeRules): string {
     .join("\n");
 }
 
+interface EpubThemeContent {
+  addStylesheetCss: (css: string, key: string) => unknown;
+}
+
+/**
+ * Create a rendition content hook that injects the current serialized theme.
+ *
+ * epub.js updates mounted contents from `registerCss`, but its content hook
+ * does not inject serialized themes into replacement iframe contents. Resolve
+ * the rules for every mount so live reader settings cannot become stale.
+ */
+export function createEpubThemeContentHook(
+  getRules: () => EpubThemeRules
+): (contents: EpubThemeContent) => void {
+  return (contents) => {
+    contents.addStylesheetCss(serializeEpubThemeRules(getRules()), "default");
+  };
+}
+
 /**
  * Apply a reading theme by fully replacing the injected default stylesheet.
  *

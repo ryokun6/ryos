@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import Themes from "epubjs/src/themes.js";
 import {
   applyEpubTheme,
   BOOK_FONTS,
   buildEpubTheme,
   buildFontFaceCss,
+  createEpubThemeContentHook,
   displayEpubTargetWithFallback,
   getBookFontCssStack,
   reflowEpubAfterFontsSettle,
@@ -526,6 +528,67 @@ describe("Books reader CJK serif fonts", () => {
     );
     expect(originalCss).toContain("body{");
     expect(originalCss).not.toMatch(/font-family\s*:/);
+  });
+
+  test("reinjects the latest serialized theme when epub.js remounts content", async () => {
+    class FakeContents {
+      readonly styles = new Map<string, string>();
+
+      addStylesheetCss(css: string, key: string): void {
+        this.styles.set(key, css);
+      }
+    }
+
+    type ContentHook = (contents: FakeContents) => unknown;
+    const contentHooks: ContentHook[] = [];
+    let activeContents: FakeContents[] = [];
+    const rendition = {
+      hooks: {
+        content: {
+          register: (...hooks: ContentHook[]) => contentHooks.push(...hooks),
+        },
+      },
+      getContents: () => activeContents,
+    };
+    const themes = new Themes(rendition);
+    let liveRules = buildEpubTheme(settings, palette, "zh-CN");
+
+    rendition.hooks.content.register(
+      createEpubThemeContentHook(() => liveRules),
+      (contents) => {
+        contents.addStylesheetCss(
+          "html.ryos-books-speech-active{}",
+          "ryos-books-speech"
+        );
+      }
+    );
+
+    const initialContents = new FakeContents();
+    activeContents = [initialContents];
+    applyEpubTheme(themes, liveRules);
+    expect(initialContents.styles.get("default")).toBe(
+      serializeEpubThemeRules(liveRules)
+    );
+
+    liveRules = buildEpubTheme(
+      { ...settings, fontId: "original", lineHeight: 2.1 },
+      { ...palette, background: "#1b1b1b", text: "#f2f2f2" },
+      "zh-CN"
+    );
+    applyEpubTheme(themes, liveRules);
+    expect(initialContents.styles.get("default")).toBe(
+      serializeEpubThemeRules(liveRules)
+    );
+
+    activeContents = [];
+    const replacementContents = new FakeContents();
+    await Promise.all(contentHooks.map((hook) => hook(replacementContents)));
+
+    const replacementTheme = replacementContents.styles.get("default");
+    expect(replacementTheme).toBe(serializeEpubThemeRules(liveRules));
+    expect(replacementTheme).toContain("line-height:2.1 !important;");
+    expect(replacementTheme).not.toContain("font-family:");
+    expect(replacementContents.styles.has("ryos-books-speech")).toBe(true);
   });
 
   test("does not force horizontal alignment or hyphenation in vertical text", () => {
