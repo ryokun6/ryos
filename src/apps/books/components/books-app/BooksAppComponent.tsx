@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { SquaresFour } from "@phosphor-icons/react";
 import type { AppProps, BooksInitialData } from "@/apps/base/types";
+import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "../../metadata";
@@ -64,6 +65,12 @@ export function BooksAppComponent({
   const contentRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<BooksReaderPaneHandle>(null);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  // Narrow windows (mobile / small desktop windows) get a bottom-sheet
+  // Customize panel instead of the floating top-right card.
+  const [isCompactPanel, setIsCompactPanel] = useState(false);
+  useResizeObserverWithRef(contentRef, (entry) => {
+    setIsCompactPanel(entry.contentRect.width < 500);
+  });
   const [readerNavigationState, setReaderNavigationState] =
     useState<BooksNavigationState>(createInitialBooksNavigationState);
   const handleReaderNavigationStateChange = useCallback(
@@ -208,6 +215,7 @@ export function BooksAppComponent({
               settings={settings}
               updateSettings={updateSettings}
               osIsDark={isDarkMode}
+              compact={isCompactPanel}
               onClose={() => setIsCustomizeOpen(false)}
             />
           )}

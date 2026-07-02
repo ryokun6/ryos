@@ -27,18 +27,40 @@ interface BooksCustomizePanelProps {
   settings: BooksReaderSettings;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
   osIsDark: boolean;
+  /** Bottom-sheet layout for narrow windows / mobile. */
+  compact: boolean;
   onClose: () => void;
 }
 
-function SectionLabel({ children }: { children: ReactNode }) {
+/** Uniform "label — control — value" row so every setting reads the same. */
+function Row({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children: ReactNode;
+}) {
   return (
-    <span className="text-[11px] font-medium text-os-text-secondary">
-      {children}
-    </span>
+    <div className="flex min-h-7 items-center gap-2">
+      <span
+        title={label}
+        className="w-20 shrink-0 truncate text-[11px] text-os-text-secondary"
+      >
+        {label}
+      </span>
+      <div className="flex min-w-0 flex-1 items-center">{children}</div>
+      {value !== undefined && (
+        <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-os-text-secondary">
+          {value}
+        </span>
+      )}
+    </div>
   );
 }
 
-function SegmentedControl<T extends string>({
+function Segmented<T extends string>({
   value,
   options,
   onChange,
@@ -53,9 +75,9 @@ function SegmentedControl<T extends string>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className="flex w-full overflow-hidden rounded-[6px] border border-os-input-border"
+      className="flex w-full rounded-[6px] bg-black/[0.07] p-0.5 os-dark:bg-white/10"
     >
-      {options.map((option, index) => (
+      {options.map((option) => (
         <button
           key={option.value}
           type="button"
@@ -63,8 +85,7 @@ function SegmentedControl<T extends string>({
           aria-checked={value === option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            "min-w-0 flex-1 truncate px-2 py-1 text-[11px] transition-colors",
-            index > 0 && "border-l border-os-input-border",
+            "min-w-0 flex-1 truncate rounded-[5px] px-2 py-1 text-[11px] transition-colors",
             value === option.value
               ? "bg-os-selection-bg text-os-selection-text"
               : "hover:bg-black/5 os-dark:hover:bg-white/10"
@@ -77,52 +98,17 @@ function SegmentedControl<T extends string>({
   );
 }
 
-function SliderRow({
-  label,
-  valueText,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-}: {
-  label: string;
-  valueText: string;
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <section className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between">
-        <SectionLabel>{label}</SectionLabel>
-        <span className="text-[11px] tabular-nums text-os-text-secondary">
-          {valueText}
-        </span>
-      </div>
-      <Slider
-        aria-label={label}
-        min={min}
-        max={max}
-        step={step}
-        value={[value]}
-        onValueChange={([next]) => onChange(next)}
-      />
-    </section>
-  );
-}
-
 /**
  * Floating reading-appearance panel (View ▸ Theme ▸ Customize…): sliders for
  * text size / line spacing / margins, quick toggles for text direction and
- * columns, font chips, and the full set of reading color presets.
+ * columns, font chips, and the full set of reading color presets. Renders as
+ * a top-right card on wide windows and a bottom sheet on narrow ones.
  */
 export function BooksCustomizePanel({
   settings,
   updateSettings,
   osIsDark,
+  compact,
   onClose,
 }: BooksCustomizePanelProps) {
   const { t, i18n } = useTranslation();
@@ -158,21 +144,26 @@ export function BooksCustomizePanel({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -6, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -6, scale: 0.98 }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
+      initial={compact ? { y: "100%" } : { opacity: 0, y: -6, scale: 0.98 }}
+      animate={compact ? { y: 0 } : { opacity: 1, y: 0, scale: 1 }}
+      exit={compact ? { y: "100%" } : { opacity: 0, y: -6, scale: 0.98 }}
+      transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
       role="dialog"
       aria-label={t("apps.books.customize.title")}
       className={cn(
-        "absolute right-3 top-10 z-[60] flex w-[276px] max-w-[calc(100%-1.5rem)] flex-col gap-3",
-        "max-h-[calc(100%-3.5rem)] overflow-y-auto overscroll-contain p-3",
-        "rounded-os bg-os-window-bg font-os-ui text-os-text-primary shadow-os-window",
-        "border-[length:var(--os-metrics-border-width)] border-os-window",
-        "os-theme-win98:shadow-none"
+        "absolute z-[60] flex flex-col gap-2 overflow-y-auto overscroll-contain p-3",
+        "bg-os-window-bg font-os-ui text-os-text-primary",
+        compact
+          ? "inset-x-0 bottom-0 max-h-[75%] rounded-t-[10px] border-t border-os-window pb-4 shadow-[0_-6px_24px_rgba(0,0,0,0.25)]"
+          : cn(
+              "right-3 top-10 w-[300px] max-w-[calc(100%-1.5rem)]",
+              "max-h-[calc(100%-3.5rem)] rounded-os shadow-os-window",
+              "border-[length:var(--os-metrics-border-width)] border-os-window",
+              "os-theme-win98:shadow-none"
+            )
       )}
     >
-      <div className="flex items-center justify-between">
+      <div className="mb-0.5 flex items-center justify-between">
         <span className="text-[12px] font-semibold">
           {t("apps.books.customize.title")}
         </span>
@@ -186,41 +177,52 @@ export function BooksCustomizePanel({
         </button>
       </div>
 
-      <SliderRow
+      <Row
         label={t("apps.books.menu.textSize")}
-        valueText={`${settings.fontSizePct}%`}
-        min={BOOKS_FONT_SIZE_MIN}
-        max={BOOKS_FONT_SIZE_MAX}
-        step={5}
-        value={settings.fontSizePct}
-        onChange={(value) => updateSettings({ fontSizePct: value })}
-      />
+        value={`${settings.fontSizePct}%`}
+      >
+        <Slider
+          aria-label={t("apps.books.menu.textSize")}
+          min={BOOKS_FONT_SIZE_MIN}
+          max={BOOKS_FONT_SIZE_MAX}
+          step={5}
+          value={[settings.fontSizePct]}
+          onValueChange={([next]) => updateSettings({ fontSizePct: next })}
+        />
+      </Row>
 
-      <SliderRow
+      <Row
         label={t("apps.books.customize.lineSpacing")}
-        valueText={`${settings.lineHeight.toFixed(2)}×`}
-        min={BOOKS_LINE_HEIGHT_MIN}
-        max={BOOKS_LINE_HEIGHT_MAX}
-        step={BOOKS_LINE_HEIGHT_STEP}
-        value={settings.lineHeight}
-        onChange={(value) =>
-          updateSettings({ lineHeight: Math.round(value * 100) / 100 })
-        }
-      />
+        value={settings.lineHeight.toFixed(2)}
+      >
+        <Slider
+          aria-label={t("apps.books.customize.lineSpacing")}
+          min={BOOKS_LINE_HEIGHT_MIN}
+          max={BOOKS_LINE_HEIGHT_MAX}
+          step={BOOKS_LINE_HEIGHT_STEP}
+          value={[settings.lineHeight]}
+          onValueChange={([next]) =>
+            updateSettings({ lineHeight: Math.round(next * 100) / 100 })
+          }
+        />
+      </Row>
 
-      <SliderRow
+      <Row
         label={t("apps.books.customize.margins")}
-        valueText={`${settings.gutterPx}px`}
-        min={BOOKS_GUTTER_MIN}
-        max={BOOKS_GUTTER_MAX}
-        step={BOOKS_GUTTER_STEP}
-        value={settings.gutterPx}
-        onChange={(value) => updateSettings({ gutterPx: value })}
-      />
+        value={`${settings.gutterPx}px`}
+      >
+        <Slider
+          aria-label={t("apps.books.customize.margins")}
+          min={BOOKS_GUTTER_MIN}
+          max={BOOKS_GUTTER_MAX}
+          step={BOOKS_GUTTER_STEP}
+          value={[settings.gutterPx]}
+          onValueChange={([next]) => updateSettings({ gutterPx: next })}
+        />
+      </Row>
 
-      <section className="flex flex-col gap-1.5">
-        <SectionLabel>{t("apps.books.menu.textLayout")}</SectionLabel>
-        <SegmentedControl
+      <Row label={t("apps.books.menu.textLayout")}>
+        <Segmented
           ariaLabel={t("apps.books.menu.textLayout")}
           value={settings.textLayout}
           options={[
@@ -235,11 +237,10 @@ export function BooksCustomizePanel({
           ]}
           onChange={(value) => updateSettings({ textLayout: value })}
         />
-      </section>
+      </Row>
 
-      <section className="flex flex-col gap-1.5">
-        <SectionLabel>{t("apps.books.menu.columns")}</SectionLabel>
-        <SegmentedControl
+      <Row label={t("apps.books.menu.columns")}>
+        <Segmented
           ariaLabel={t("apps.books.menu.columns")}
           value={settings.columnMode}
           options={[
@@ -255,11 +256,10 @@ export function BooksCustomizePanel({
           ]}
           onChange={(value) => updateSettings({ columnMode: value })}
         />
-      </section>
+      </Row>
 
-      <section className="flex flex-col gap-1.5">
-        <SectionLabel>{t("apps.books.menu.font")}</SectionLabel>
-        <div className="grid grid-cols-2 gap-1.5">
+      <Row label={t("apps.books.menu.font")}>
+        <div className="flex w-full gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {BOOK_FONTS.map((font) => {
             const stack = getBookFontCssStack(font.id, uiLanguage);
             const selected = settings.fontId === font.id;
@@ -270,10 +270,10 @@ export function BooksCustomizePanel({
                 aria-pressed={selected}
                 onClick={() => updateSettings({ fontId: font.id })}
                 className={cn(
-                  "truncate rounded-[6px] border px-2 py-1.5 text-[12px] transition-colors",
+                  "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] transition-colors",
                   selected
-                    ? "border-transparent bg-os-selection-bg text-os-selection-text"
-                    : "border-os-input-border hover:bg-black/5 os-dark:hover:bg-white/10"
+                    ? "bg-os-selection-bg text-os-selection-text"
+                    : "bg-black/[0.07] hover:bg-black/15 os-dark:bg-white/10 os-dark:hover:bg-white/20"
                 )}
                 style={{ fontFamily: stack ?? undefined }}
               >
@@ -282,11 +282,10 @@ export function BooksCustomizePanel({
             );
           })}
         </div>
-      </section>
+      </Row>
 
-      <section className="flex flex-col gap-1.5">
-        <SectionLabel>{t("apps.books.customize.colors")}</SectionLabel>
-        <div className="grid grid-cols-5 gap-1.5">
+      <Row label={t("apps.books.customize.colors")}>
+        <div className="flex w-full flex-wrap gap-1.5">
           {themeSwatches.map((swatch) => {
             const selected = settings.themeOverride === swatch.id;
             return (
@@ -298,7 +297,7 @@ export function BooksCustomizePanel({
                 aria-pressed={selected}
                 onClick={() => updateSettings({ themeOverride: swatch.id })}
                 className={cn(
-                  "flex aspect-square w-full items-center justify-center rounded-full border border-black/20 text-[13px] font-medium transition-shadow os-dark:border-white/25",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-black/20 text-[12px] font-medium transition-shadow os-dark:border-white/25",
                   selected &&
                     "ring-2 ring-[color:var(--os-color-selection-bg)] ring-offset-1 ring-offset-[color:var(--os-color-window-bg)]"
                 )}
@@ -309,7 +308,7 @@ export function BooksCustomizePanel({
             );
           })}
         </div>
-      </section>
+      </Row>
     </motion.div>
   );
 }
