@@ -1,6 +1,7 @@
-import type {
-  BooksReaderSettings,
-  BooksThemeOverride,
+import {
+  clampBooksLineHeight,
+  type BooksReaderSettings,
+  type BooksThemeOverride,
 } from "@/stores/useBooksStore";
 import { detectLanguageFromLocale } from "@/lib/languageConfig";
 
@@ -133,11 +134,19 @@ export interface ReadingPalette {
   isDark: boolean;
 }
 
-const PALETTES: Record<Exclude<BooksThemeOverride, "auto">, ReadingPalette> = {
+export type BooksThemePresetId = Exclude<BooksThemeOverride, "auto">;
+
+const PALETTES: Record<BooksThemePresetId, ReadingPalette> = {
   light: {
     background: "#fdfdfb",
     text: "#1c1c1c",
     link: "#1d4ed8",
+    isDark: false,
+  },
+  paper: {
+    background: "#f9f4e9",
+    text: "#33302a",
+    link: "#2456c4",
     isDark: false,
   },
   sepia: {
@@ -146,13 +155,57 @@ const PALETTES: Record<Exclude<BooksThemeOverride, "auto">, ReadingPalette> = {
     link: "#8a5a2b",
     isDark: false,
   },
+  gray: {
+    background: "#e4e4e4",
+    text: "#262626",
+    link: "#1d4ed8",
+    isDark: false,
+  },
+  green: {
+    background: "#dcead9",
+    text: "#243428",
+    link: "#1e6b46",
+    isDark: false,
+  },
   dark: {
     background: "#1b1b1d",
     text: "#d6d6d6",
     link: "#7fabff",
     isDark: true,
   },
+  night: {
+    background: "#141e2e",
+    text: "#c2cbdb",
+    link: "#8ab4ff",
+    isDark: true,
+  },
+  black: {
+    background: "#000000",
+    text: "#b3b3b3",
+    link: "#7fabff",
+    isDark: true,
+  },
 };
+
+/**
+ * Reading color presets in display order (light pages first, then dark), used
+ * by the Customize panel's color swatches.
+ */
+export const BOOK_THEME_PRESET_IDS: readonly BooksThemePresetId[] = [
+  "light",
+  "paper",
+  "sepia",
+  "gray",
+  "green",
+  "dark",
+  "night",
+  "black",
+];
+
+/** Palette for a specific (non-auto) reading theme preset. */
+export function getReadingPalette(preset: BooksThemePresetId): ReadingPalette {
+  return PALETTES[preset];
+}
 
 /** Resolve the active reading palette from settings + OS dark mode. */
 export function resolveReadingPalette(
@@ -162,7 +215,7 @@ export function resolveReadingPalette(
   if (themeOverride === "auto") {
     return osIsDark ? PALETTES.dark : PALETTES.light;
   }
-  return PALETTES[themeOverride];
+  return PALETTES[themeOverride] ?? (osIsDark ? PALETTES.dark : PALETTES.light);
 }
 
 /**
@@ -379,10 +432,10 @@ export function buildEpubTheme(
   const fontStack = getBookFontCssStack(settings.fontId, language);
   const fontFamily = fontStack ? `${fontStack} !important` : null;
   const isVerticalText = settings.textLayout === "vertical";
-  const lineHeight =
-    isVerticalText
-      ? Math.max(settings.lineHeight, VERTICAL_BOOK_LINE_HEIGHT_MIN)
-      : settings.lineHeight;
+  const baseLineHeight = clampBooksLineHeight(settings.lineHeight);
+  const lineHeight = isVerticalText
+    ? Math.max(baseLineHeight, VERTICAL_BOOK_LINE_HEIGHT_MIN)
+    : baseLineHeight;
   const lineHeightRule = {
     "line-height": `${lineHeight} !important`,
   };
@@ -391,6 +444,10 @@ export function buildEpubTheme(
   // In vertical mode they fight the top-to-bottom inline flow and CJK line
   // breaking, so preserve only the column-break controls. Vertical columns
   // also need a wider line-height floor than horizontal prose.
+  //
+  // The line-height rule is part of the reading flow in BOTH modes: applying
+  // it only on `body` is not enough, because publisher rules on `p`/`li`/`div`
+  // beat inherited values, leaving the Line Spacing setting without effect.
   const readingFlow: Record<string, string> =
     isVerticalText
       ? {
@@ -399,6 +456,7 @@ export function buildEpubTheme(
           widows: "2",
         }
       : {
+          ...lineHeightRule,
           "text-align": "left !important",
           "-webkit-hyphens": "auto !important",
           hyphens: "auto !important",
@@ -445,7 +503,7 @@ export function buildEpubTheme(
     "*:not(a)": { color: `${palette.text} !important` },
     // Force colors so dark/sepia modes are legible regardless of publisher CSS.
     p: withFont(flowText),
-    div: withFont(isVerticalText ? lineHeightRule : {}),
+    div: withFont(lineHeightRule),
     span: withFont({}),
     li: withFont(flowText),
     // Headings keep their original alignment (often intentionally centered) but

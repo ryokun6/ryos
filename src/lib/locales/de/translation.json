@@ -603,6 +603,12 @@
         "moveToBottom": "Nach ganz unten",
         "moveToTop": "Nach ganz oben"
       },
+      "customize": {
+        "colors": "Farben",
+        "lineSpacing": "Zeilenabstand",
+        "margins": "Seitenränder",
+        "title": "Anpassen"
+      },
       "description": "EPUB-Bücher lesen",
       "help": {
         "bookshelf": {
@@ -640,6 +646,7 @@
         "chapters": "Kapitel",
         "chineseScript": "Chinesische Schrift",
         "columns": "Spalten",
+        "customizeTheme": "Anpassen…",
         "font": "Schrift",
         "import": "Importieren …",
         "nextPage": "Nächste Seite",
@@ -677,12 +684,18 @@
       },
       "textLayout": {
         "book": "Buchstandard",
+        "horizontal": "Horizontal",
         "vertical": "Vertikal"
       },
       "theme": {
         "auto": "Automatisch",
+        "black": "Schwarz",
         "dark": "Dunkel",
+        "gray": "Grau",
+        "green": "Grün",
         "light": "Hell",
+        "night": "Nacht",
+        "paper": "Papier",
         "sepia": "Sepia"
       },
       "title": "Bücher",

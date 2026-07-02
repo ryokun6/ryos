@@ -39,8 +39,12 @@ import { useMapsStore } from "@/stores/useMapsStore";
 import {
   BOOKS_FONT_SIZE_MAX,
   BOOKS_FONT_SIZE_MIN,
+  BOOKS_GUTTER_MAX,
+  BOOKS_GUTTER_MIN,
   BOOKS_SPEECH_RATE_MAX,
   BOOKS_SPEECH_RATE_MIN,
+  clampBooksLineHeight,
+  isBooksThemeOverride,
   useBooksStore,
   type BookProgress,
   type BooksReaderSettings,
@@ -1552,6 +1556,7 @@ const BOOKS_SETTINGS_KEYS = {
   chineseScript: "books-settings/chineseScript",
   textLayout: "books-settings/textLayout",
   lineHeight: "books-settings/lineHeight",
+  gutterPx: "books-settings/gutterPx",
   speechRate: "books-settings/speechRate",
 } as const satisfies Record<keyof BooksReaderSettings, string>;
 
@@ -1571,6 +1576,7 @@ function collectBooksSettings(
   add(BOOKS_SETTINGS_KEYS.chineseScript, settings.chineseScript);
   add(BOOKS_SETTINGS_KEYS.textLayout, settings.textLayout);
   add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
+  add(BOOKS_SETTINGS_KEYS.gutterPx, settings.gutterPx);
   add(BOOKS_SETTINGS_KEYS.speechRate, settings.speechRate);
   return docs;
 }
@@ -1603,12 +1609,7 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
         }
         break;
       case BOOKS_SETTINGS_KEYS.themeOverride:
-        if (
-          op.v === "auto" ||
-          op.v === "light" ||
-          op.v === "sepia" ||
-          op.v === "dark"
-        ) {
+        if (isBooksThemeOverride(op.v)) {
           updates = { ...updates, themeOverride: op.v };
         }
         break;
@@ -1627,12 +1628,20 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
         }
         break;
       case BOOKS_SETTINGS_KEYS.lineHeight:
+        // Clamp instead of reject: devices on older app versions may still
+        // sync values below the raised 1.5 floor.
+        if (typeof op.v === "number" && Number.isFinite(op.v) && op.v > 0) {
+          updates = { ...updates, lineHeight: clampBooksLineHeight(op.v) };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.gutterPx:
         if (
           typeof op.v === "number" &&
           Number.isFinite(op.v) &&
-          op.v > 0
+          op.v >= BOOKS_GUTTER_MIN &&
+          op.v <= BOOKS_GUTTER_MAX
         ) {
-          updates = { ...updates, lineHeight: op.v };
+          updates = { ...updates, gutterPx: op.v };
         }
         break;
       case BOOKS_SETTINGS_KEYS.speechRate:
@@ -1684,6 +1693,9 @@ const booksSettingsCodec: SyncCodec = {
       }
       if (state.settings.lineHeight !== prev.settings.lineHeight) {
         keys.push(BOOKS_SETTINGS_KEYS.lineHeight);
+      }
+      if (state.settings.gutterPx !== prev.settings.gutterPx) {
+        keys.push(BOOKS_SETTINGS_KEYS.gutterPx);
       }
       if (state.settings.speechRate !== prev.settings.speechRate) {
         keys.push(BOOKS_SETTINGS_KEYS.speechRate);

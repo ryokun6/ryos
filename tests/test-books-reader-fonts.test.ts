@@ -384,6 +384,29 @@ describe("Books reader CJK serif fonts", () => {
     expect(verticalTheme.body.orphans).toBe("2");
   });
 
+  test("applies line spacing to paragraph-level elements in horizontal reading", () => {
+    const spaciousTheme = buildEpubTheme(
+      { ...settings, lineHeight: 2.2 },
+      palette
+    );
+
+    // Publisher CSS on p/div/li beats values inherited from body, so the
+    // Line Spacing setting must be applied directly at paragraph level too.
+    expect(spaciousTheme.body["line-height"]).toBe("2.2 !important");
+    expect(spaciousTheme.p["line-height"]).toBe("2.2 !important");
+    expect(spaciousTheme.div["line-height"]).toBe("2.2 !important");
+    expect(spaciousTheme.li["line-height"]).toBe("2.2 !important");
+  });
+
+  test("clamps line spacing to the supported range", () => {
+    const tooTight = buildEpubTheme({ ...settings, lineHeight: 1.1 }, palette);
+    const tooLoose = buildEpubTheme({ ...settings, lineHeight: 9 }, palette);
+
+    expect(tooTight.body["line-height"]).toBe("1.5 !important");
+    expect(tooTight.p["line-height"]).toBe("1.5 !important");
+    expect(tooLoose.body["line-height"]).toBe("2.4 !important");
+  });
+
   test("gives vertical columns a readable minimum line height", () => {
     const verticalTheme = buildEpubTheme(
       { ...settings, textLayout: "vertical" },
