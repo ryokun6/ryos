@@ -1418,7 +1418,7 @@ export const BooksReaderPane = forwardRef<
         tiltDeg: gesture?.tiltDeg ?? 0,
         dragProgress: gesture?.progress ?? 0,
         viewportWidth:
-          gesture?.viewportWidth ?? viewportRef.current?.clientWidth ?? 0,
+          viewportRef.current?.clientWidth ?? gesture?.viewportWidth ?? 0,
       });
 
       let action: Promise<unknown> | unknown;
