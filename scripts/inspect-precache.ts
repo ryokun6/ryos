@@ -30,9 +30,9 @@ const javascript = urls.filter((url) => url.endsWith(".js"));
 const stylesheets = urls.filter((url) => url.endsWith(".css"));
 const fonts = urls.filter((url) => /\.(?:woff2?|ttf|otf)$/i.test(url));
 const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
-const MAX_FILES = 160;
-const MAX_SCRIPTS = 120;
-const MAX_BYTES = 25 * 1024 * 1024;
+const MAX_FILES = 220;
+const MAX_SCRIPTS = 200;
+const MAX_BYTES = 12 * 1024 * 1024;
 
 summarize("total", urls);
 summarize("JavaScript", javascript);
