@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 27 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 28 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-viewer`, and Virtual PC is registered as `pc`.
 
@@ -10,6 +10,7 @@ Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-
 |-----|-------------|----------|
 | [Finder](/docs/finder) | Browse and manage files in a virtual file system | File Management |
 | [TextEdit](/docs/textedit) | Rich text editor with markdown support | Productivity |
+| [Preview](/docs/preview) | View images, PDFs, text, markdown, and HTML documents | Productivity |
 | [Paint](/docs/paint) | Image drawing and editing tool | Creativity |
 | [Photo Booth](/docs/photo-booth) | Take photos with fun effects | Creativity |
 | [iPod](/docs/ipod) | Music player with YouTube, Apple Music, and synced lyrics | Media |

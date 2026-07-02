@@ -25,6 +25,11 @@ import {
   resolveEpubDisplayFallbackTarget,
   resolveReadingPalette,
 } from "../utils/booksReader";
+import {
+  applyChineseScriptToDocument,
+  createChineseScriptConversionSession,
+  resolveChineseScriptReadingLanguage,
+} from "../utils/chineseScriptConverter";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
 import type {
@@ -287,6 +292,11 @@ export const BooksReaderPane = forwardRef<
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const bookLanguageRef = useRef<string | null>(null);
+  const chineseScriptRef = useRef(settings.chineseScript);
+  chineseScriptRef.current = settings.chineseScript;
+  const chineseScriptSessionRef = useRef(
+    createChineseScriptConversionSession()
+  );
   const flipLockRef = useRef(false);
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
@@ -679,7 +689,10 @@ export const BooksReaderPane = forwardRef<
         const bookLanguage =
           readyBook.package?.metadata?.language?.trim() || null;
         bookLanguageRef.current = bookLanguage;
-        const readingLanguage = bookLanguage ?? uiLanguage;
+        const readingLanguage = resolveChineseScriptReadingLanguage(
+          chineseScriptRef.current,
+          bookLanguage ?? uiLanguage
+        );
         appendDebugEvent("epubjs:bookReady:success", {
           packagePath: readyBook.container?.packagePath,
           metadata: readyBook.package?.metadata,
@@ -767,7 +780,7 @@ export const BooksReaderPane = forwardRef<
           );
 
           nextRendition.hooks.content.register(
-            (contents: {
+            async (contents: {
               addStylesheetCss: (css: string, key: string) => void;
               document?: Document;
             }) => {
@@ -781,10 +794,14 @@ export const BooksReaderPane = forwardRef<
                   "warn"
                 );
               }
+
+              const document = contents.document;
+              if (!document) return;
+
               // `hyphens: auto` and locale-specific CJK glyph forms depend on the
               // content language. Prefer EPUB metadata, then the ryOS UI locale.
               try {
-                const docEl = contents.document?.documentElement;
+                const docEl = document.documentElement;
                 if (docEl && !docEl.getAttribute("lang")) {
                   docEl.setAttribute(
                     "lang",
@@ -794,29 +811,46 @@ export const BooksReaderPane = forwardRef<
               } catch {
                 // ignore
               }
+
               // Strip publisher inline `color` styles so the themed reading color
               // always wins. A stylesheet (even `!important`) can't beat an inline
               // `color: … !important`, so removing the inline declaration is the
               // only reliable way to guarantee legibility (e.g. dark-on-dark).
               try {
-                const doc = contents.document;
-                if (doc) {
-                  doc
-                    .querySelectorAll<HTMLElement>("[style]")
-                    .forEach((el) => {
-                      if (el.style?.color) {
-                        el.style.removeProperty("color");
-                      }
-                    });
-                }
+                document.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+                  if (el.style?.color) {
+                    el.style.removeProperty("color");
+                  }
+                });
               } catch {
                 // ignore
               }
-              if (
-                contents.document?.fonts &&
-                renditionRef.current === nextRendition
-              ) {
-                displayedContentFontsReady = contents.document.fonts.ready;
+
+              if (document.fonts && renditionRef.current === nextRendition) {
+                displayedContentFontsReady = document.fonts.ready;
+              }
+
+              const target = chineseScriptRef.current;
+              try {
+                const changedNodeCount = await applyChineseScriptToDocument(
+                  document,
+                  target,
+                  chineseScriptSessionRef.current,
+                  () =>
+                    !cancelled &&
+                    chineseScriptRef.current === target &&
+                    renditionRef.current === nextRendition
+                );
+                appendDebugEvent("epubjs:contentHook:chineseScript:success", {
+                  target,
+                  changedNodeCount,
+                });
+              } catch (error) {
+                appendDebugEvent(
+                  "epubjs:contentHook:chineseScript:failed",
+                  error,
+                  "warn"
+                );
               }
             }
           );
@@ -1013,17 +1047,62 @@ export const BooksReaderPane = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry.path]);
 
+  // Convert the already-rendered section immediately when the reader setting
+  // changes. Each section retains its original text so switching directions or
+  // returning to Original never requires reloading the chapter.
+  useEffect(() => {
+    const rendition = renditionRef.current;
+    if (!isReady || !rendition) return;
+    let cancelled = false;
+    const target = settings.chineseScript;
+    const renditionContents = rendition.getContents() as unknown;
+    const contentsList = (
+      Array.isArray(renditionContents)
+        ? renditionContents
+        : renditionContents
+          ? [renditionContents]
+          : []
+    ) as Array<{ document?: Document }>;
+
+    void Promise.all(
+      contentsList.map(async (contents) => {
+        if (!contents.document) return;
+        const changedNodeCount = await applyChineseScriptToDocument(
+          contents.document,
+          target,
+          chineseScriptSessionRef.current,
+          () => !cancelled && chineseScriptRef.current === target
+        );
+        appendDebugEvent("reader:chineseScript:applied", {
+          target,
+          changedNodeCount,
+        });
+      })
+    ).catch((error) =>
+      appendDebugEvent("reader:chineseScript:failed", error, "warn")
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appendDebugEvent, isReady, settings.chineseScript]);
+
   // Apply theme (colors, font family, line height) live.
   useEffect(() => {
     if (!isReady || !renditionRef.current) return;
+    const readingLanguage = resolveChineseScriptReadingLanguage(
+      settings.chineseScript,
+      bookLanguageRef.current ?? uiLanguage
+    );
     renditionRef.current.themes.default(
-      buildEpubTheme(settings, palette, bookLanguageRef.current ?? uiLanguage)
+      buildEpubTheme(settings, palette, readingLanguage)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isReady,
     settings.fontId,
     settings.themeOverride,
+    settings.chineseScript,
     settings.lineHeight,
     osIsDark,
     uiLanguage,

@@ -22,6 +22,7 @@ const settings = {
   fontSizePct: 100,
   columnMode: "auto" as const,
   themeOverride: "light" as const,
+  chineseScript: "original" as const,
   lineHeight: 1.5,
 };
 

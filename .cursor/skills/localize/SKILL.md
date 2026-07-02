@@ -36,6 +36,8 @@ For each component:
 apps.[appName].menu.*        # Menu labels
 apps.[appName].dialogs.*     # Dialog titles/descriptions
 apps.[appName].status.*      # Status messages
+apps.[appName].toasts.*      # Toast titles/descriptions
+apps.[appName].empty.*       # Empty-state titles/hints
 apps.[appName].ariaLabels.*  # Accessibility labels
 apps.[appName].help.*        # Help items (auto-translated)
 apps.[appName].speech.*      # Spoken feedback / speech labels
@@ -110,7 +112,8 @@ Use `bun run i18n:audit:fix` only for terminology drift the script can safely re
 |-----------|-------------------|
 | Menu bars | All labels, items, submenus |
 | Dialogs | Titles, descriptions, button labels |
-| Status | `showStatus()` calls, toasts |
+| Status | `showStatus()` calls and inline state labels |
+| Toasts / empty states | Sonner toast copy, empty-state titles, empty-state hints |
 | Help items | Auto-translated via `useTranslatedHelpItems` |
 | Shared auth dialogs | `common.auth.*`, for login/signup/password recovery copy |
 
