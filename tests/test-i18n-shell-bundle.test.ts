@@ -28,9 +28,6 @@ describe("English shell translation bundle", () => {
     expect(shellTranslation.apps.finder.dialogs).toBeDefined();
     expect(shellTranslation.apps.finder.fileTypes).toBeDefined();
     expect(shellTranslation.apps.chats.messages.greeting).toBeDefined();
-    expect(shellTranslation.common.errorBoundaries.offlineHeading).toBe(
-      fullTranslation.common.errorBoundaries.offlineHeading
-    );
     expect(shellTranslation.apps.textedit.name).toBe(
       fullTranslation.apps.textedit.name
     );

@@ -705,8 +705,8 @@
         "vertical": "縦書き"
       },
       "theme": {
-        "accent": "アクセント",
         "auto": "自動",
+        "accent": "アクセント",
         "black": "ブラック",
         "custom": "カスタム",
         "dark": "ダーク",
@@ -4666,11 +4666,8 @@
       "appHeading": "{{appName}}は予期せず終了しました",
       "desktopDescription": "Dock、デスクトップ、メニューバーを復元するには、ryOSをリロードしてください。",
       "desktopHeading": "デスクトップは予期せず終了しました",
-      "offlineDescription": "一度接続してこのアプリをダウンロードすれば、オフラインで開くことができます。",
-      "offlineHeading": "{{appName}}はまだオフラインで利用できません",
       "relaunch": "再起動",
-      "reloadDesktop": "デスクトップを再読み込み",
-      "retry": "再試行"
+      "reloadDesktop": "デスクトップを再読み込み"
     },
     "errors": {
       "failedToAccessCamera": "カメラにアクセスできませんでした",

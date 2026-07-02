@@ -44,9 +44,10 @@ describe("build performance configuration", () => {
       "utf8"
     );
 
-    expect(inspector).toContain("Shell budget exceeded");
-    expect(inspector).toContain("streamdown");
-    expect(inspector).toContain("v86");
+    expect(inspector).toContain("Offline app budget exceeded");
+    expect(inspector).toContain("MAX_FILES");
+    expect(inspector).toContain("MAX_SCRIPTS");
+    expect(inspector).toContain("MAX_BYTES");
     expect(workflow).toContain("Type check, build, and inspect precache");
     expect(workflow).toContain("run: bun run build");
   });

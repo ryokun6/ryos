@@ -6,10 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import {
-  collectStaticPrecacheChunkClosure,
-  shouldExcludePrecacheChunk,
-} from "./vite/precachePolicy";
+import { collectOfflinePrecacheChunkClosure } from "./vite/precachePolicy";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -60,18 +57,11 @@ self.addEventListener("activate", (event) => {
 `;
 
 // ---------------------------------------------------------------------------
-// Curated Workbox precache
+// Offline app Workbox precache
 //
-// We precache the app shell and its shared JS/CSS closure. Lazy apps, full
-// locale catalogs, and heavy optional vendors stay available on demand via the
-// runtime CacheFirst rules, keeping service-worker installation small:
-//   - shiki syntax grammars + themes  (chat code highlighting; falls back to
-//     plain text offline)
-//   - mermaid                         (chat diagrams)
-//   - webamp                          (Winamp app)
-//   - v86                             (Virtual PC emulator)
-//   - pusher-js                       (realtime chat; needs network anyway)
-//   - react-player                    (YouTube playback; needs network anyway)
+// We precache the shell, every app and every locale catalog with their static
+// dependencies. Features reached only through nested dynamic imports remain
+// available on demand through the runtime CacheFirst rules.
 // The exclusion set is populated at build time by inspecting emitted chunks
 // and consumed by the Workbox `manifestTransforms` hook below.
 // ---------------------------------------------------------------------------
@@ -84,8 +74,6 @@ function collectPrecacheExclusionsPlugin() {
     generateBundle(_options: unknown, bundle: Record<string, unknown>) {
       type EmittedChunk = {
         type?: string;
-        moduleIds?: string[];
-        modules?: Record<string, unknown>;
         facadeModuleId?: string | null;
         imports?: string[];
         isEntry?: boolean;
@@ -103,7 +91,7 @@ function collectPrecacheExclusionsPlugin() {
           fileName,
           chunk: output as EmittedChunk,
         }));
-      const shellClosure = collectStaticPrecacheChunkClosure(
+      const offlineClosure = collectOfflinePrecacheChunkClosure(
         chunks.map(({ fileName, chunk }) => ({
           fileName,
           imports: chunk.imports ?? [],
@@ -111,28 +99,19 @@ function collectPrecacheExclusionsPlugin() {
           facadeModuleId: chunk.facadeModuleId,
         }))
       );
-      const shellCss = new Set(
+      const offlineCss = new Set(
         chunks
-          .filter(({ fileName }) => shellClosure.has(fileName))
+          .filter(({ fileName }) => offlineClosure.has(fileName))
           .flatMap(({ chunk }) => [
             ...(chunk.viteMetadata?.importedCss ?? []),
           ])
       );
 
       for (const { fileName, chunk } of chunks) {
-        const moduleIds =
-          chunk.moduleIds ?? Object.keys(chunk.modules ?? {});
-        if (
-          !shellClosure.has(fileName) ||
-          shouldExcludePrecacheChunk({
-            fileName,
-            moduleIds,
-            facadeModuleId: chunk.facadeModuleId,
-          })
-        ) {
+        if (!offlineClosure.has(fileName)) {
           precacheExclusions.add(fileName.split("/").pop() as string);
           for (const cssFile of chunk.viteMetadata?.importedCss ?? []) {
-            if (!shellCss.has(cssFile)) {
+            if (!offlineCss.has(cssFile)) {
               precacheExclusions.add(cssFile.split("/").pop() as string);
             }
           }
@@ -729,11 +708,9 @@ export default defineConfig({
             },
           },
         ],
-        // Precache the app shell + JS chunks for reliable offline support and
-        // efficient, revision-aware updates (only changed hashed chunks are
-        // re-fetched). Heavy/optional chunks are filtered out below via
-        // manifestTransforms so the install stays small; they load on-demand
-        // through the runtime CacheFirst /assets/*.js rule instead.
+        // Precache the shell, app chunks, locale catalogs, and their static
+        // dependencies. Nested optional imports still load on demand through
+        // the runtime CacheFirst /assets/*.js rule.
         globPatterns: [
           "index.html",
           "assets/*.js",
@@ -746,9 +723,7 @@ export default defineConfig({
           "**/data/all-sounds.json", // 4.7MB - too large
           "**/node_modules/**",
         ],
-        // Drop heavy / rarely-needed-offline chunk families from the precache
-        // manifest (see heavyPrecacheExclusions above). They remain runtime
-        // cacheable on first use, and chat code/diagrams degrade gracefully.
+        // Keep only the offline app closure collected from the Rollup graph.
         manifestTransforms: [
           (
             entries: Array<{

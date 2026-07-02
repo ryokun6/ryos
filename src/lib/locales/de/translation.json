@@ -705,8 +705,8 @@
         "vertical": "Vertikal"
       },
       "theme": {
-        "accent": "Akzent",
         "auto": "Automatisch",
+        "accent": "Akzent",
         "black": "Schwarz",
         "custom": "Eigene",
         "dark": "Dunkel",
@@ -4666,11 +4666,8 @@
       "appHeading": "{{appName}} wurde unerwartet beendet",
       "desktopDescription": "ryOS neu laden, um das Dock, den Schreibtisch und die Menüleiste wiederherzustellen.",
       "desktopHeading": "Der Schreibtisch wurde unerwartet beendet",
-      "offlineDescription": "Stelle einmal eine Verbindung her, um diese App zu laden. Danach kannst du sie offline öffnen.",
-      "offlineHeading": "{{appName}} ist noch nicht offline verfügbar",
       "relaunch": "Neu starten",
-      "reloadDesktop": "Schreibtisch neu laden",
-      "retry": "Erneut versuchen"
+      "reloadDesktop": "Schreibtisch neu laden"
     },
     "errors": {
       "failedToAccessCamera": "Fehler beim Zugriff auf die Kamera",

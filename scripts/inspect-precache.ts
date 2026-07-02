@@ -30,11 +30,9 @@ const javascript = urls.filter((url) => url.endsWith(".js"));
 const stylesheets = urls.filter((url) => url.endsWith(".css"));
 const fonts = urls.filter((url) => /\.(?:woff2?|ttf|otf)$/i.test(url));
 const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
-const forbidden = urls.filter((url) =>
-  /(?:^|\/)(?:ai-sdk|audio|hangul|media-player|mermaid|pusher|shiki|streamdown|three|tiptap|v86|webamp|translation)(?:[-.])/i.test(
-    url
-  )
-);
+const MAX_FILES = 160;
+const MAX_SCRIPTS = 120;
+const MAX_BYTES = 25 * 1024 * 1024;
 
 summarize("total", urls);
 summarize("JavaScript", javascript);
@@ -52,22 +50,19 @@ if (urls.length === 0) {
   process.exit(1);
 }
 
-if (forbidden.length > 0) {
-  console.error("[precache] Optional chunks leaked into the install manifest:");
-  for (const url of forbidden) {
-    console.error(`  - ${url}`);
-  }
-  process.exit(1);
-}
-
 if (fonts.length > 0) {
   console.error("[precache] Font binaries must load by active theme, not install");
   process.exit(1);
 }
 
-if (urls.length > 25 || javascript.length > 10 || totalBytes > 3 * 1024 * 1024) {
+if (
+  urls.length > MAX_FILES ||
+  javascript.length > MAX_SCRIPTS ||
+  totalBytes > MAX_BYTES
+) {
   console.error(
-    "[precache] Shell budget exceeded (max 25 files, 10 scripts, 3 MiB)"
+    "[precache] Offline app budget exceeded " +
+      `(max ${MAX_FILES} files, ${MAX_SCRIPTS} scripts, ${MAX_BYTES / 1024 / 1024} MiB)`
   );
   process.exit(1);
 }
