@@ -68,144 +68,166 @@ export function BooksMenuBar({
   };
 
   const fileMenu: MenuDescriptor = {
-    label: t("common.menu.file"),
-    items: [
-      {
-        type: "action",
-        label: t("apps.books.menu.import"),
-        onClick: onImport,
-      },
-      {
-        type: "action",
-        label: t("apps.books.menu.backToShelf"),
-        onClick: onBackToShelf,
-        disabled: !isReading,
-      },
-      { type: "separator" },
-      {
-        type: "action",
-        label: t("common.menu.close"),
-        onClick: onClose,
-        shortcutId: "close",
-      },
-    ],
-  };
+      label: t("common.menu.file"),
+      items: [
+        {
+          type: "action",
+          label: t("apps.books.menu.import"),
+          onClick: onImport,
+        },
+        {
+          type: "action",
+          label: t("apps.books.menu.backToShelf"),
+          onClick: onBackToShelf,
+          disabled: !isReading,
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("common.menu.close"),
+          onClick: onClose,
+          shortcutId: "close",
+        },
+      ],
+    };
 
   const viewMenu: MenuDescriptor = {
-    label: t("common.menu.view"),
-    items: [
-      {
-        type: "submenu",
-        label: t("apps.books.menu.font"),
-        items: [
-          {
-            type: "radioGroup",
-            value: settings.fontId,
-            onValueChange: (value) => updateSettings({ fontId: value }),
-            options: BOOK_FONTS.map((font: BookFontOption) => ({
-              label: font.label,
-              value: font.id,
-            })),
-          },
-        ],
-      },
-      {
-        type: "submenu",
-        label: t("apps.books.menu.textSize"),
-        items: [
-          {
-            type: "action",
-            label: t("apps.books.menu.textSizeIncrease"),
-            onClick: () => changeFontSize(BOOKS_FONT_SIZE_STEP),
-            shortcut: "+",
-            disabled: settings.fontSizePct >= BOOKS_FONT_SIZE_MAX,
-          },
-          {
-            type: "action",
-            label: t("apps.books.menu.textSizeDecrease"),
-            onClick: () => changeFontSize(-BOOKS_FONT_SIZE_STEP),
-            shortcut: "−",
-            disabled: settings.fontSizePct <= BOOKS_FONT_SIZE_MIN,
-          },
-          {
-            type: "action",
-            label: t("apps.books.menu.textSizeReset"),
-            onClick: () => updateSettings({ fontSizePct: 100 }),
-            disabled: settings.fontSizePct === 100,
-          },
-        ],
-      },
-      {
-        type: "submenu",
-        label: t("apps.books.menu.columns"),
-        items: [
-          {
-            type: "radioGroup",
-            value: settings.columnMode,
-            onValueChange: (value) =>
-              updateSettings({
-                columnMode: value as BooksReaderSettings["columnMode"],
-              }),
-            options: [
-              { label: t("apps.books.columns.auto"), value: "auto" },
-              { label: t("apps.books.columns.single"), value: "single" },
-              { label: t("apps.books.columns.double"), value: "double" },
-            ],
-          },
-        ],
-      },
-      {
-        type: "submenu",
-        label: t("apps.books.menu.chineseScript"),
-        items: [
-          {
-            type: "radioGroup",
-            value: settings.chineseScript,
-            onValueChange: (value) =>
-              updateSettings({
-                chineseScript:
-                  value as BooksReaderSettings["chineseScript"],
-              }),
-            options: [
-              {
-                label: t("apps.books.chineseScript.original"),
-                value: "original",
+      label: t("common.menu.view"),
+      items: [
+        {
+          type: "submenu",
+          label: t("apps.books.menu.font"),
+          items: [
+            {
+              type: "radioGroup",
+              value: settings.fontId,
+              onValueChange: (value) => updateSettings({ fontId: value }),
+              options: BOOK_FONTS.map((font: BookFontOption) => ({
+                label: font.label,
+                value: font.id,
+              })),
+            },
+          ],
+        },
+        {
+          type: "submenu",
+          label: t("apps.books.menu.textSize"),
+          items: [
+            {
+              type: "action",
+              label: t("apps.books.menu.textSizeIncrease"),
+              onClick: () => changeFontSize(BOOKS_FONT_SIZE_STEP),
+              shortcut: "+",
+              disabled: settings.fontSizePct >= BOOKS_FONT_SIZE_MAX,
+            },
+            {
+              type: "action",
+              label: t("apps.books.menu.textSizeDecrease"),
+              onClick: () => changeFontSize(-BOOKS_FONT_SIZE_STEP),
+              shortcut: "−",
+              disabled: settings.fontSizePct <= BOOKS_FONT_SIZE_MIN,
+            },
+            {
+              type: "action",
+              label: t("apps.books.menu.textSizeReset"),
+              onClick: () => updateSettings({ fontSizePct: 100 }),
+              disabled: settings.fontSizePct === 100,
+            },
+          ],
+        },
+        {
+          type: "submenu",
+          label: t("apps.books.menu.columns"),
+          items: [
+            {
+              type: "radioGroup",
+              value: settings.columnMode,
+              onValueChange: (value) =>
+                updateSettings({
+                  columnMode: value as BooksReaderSettings["columnMode"],
+                }),
+              options: [
+                { label: t("apps.books.columns.auto"), value: "auto" },
+                { label: t("apps.books.columns.single"), value: "single" },
+                { label: t("apps.books.columns.double"), value: "double" },
+              ],
+            },
+          ],
+        },
+        {
+          type: "submenu",
+          label: t("apps.books.menu.textLayout"),
+          items: [
+            {
+              type: "radioGroup",
+              value: settings.textLayout,
+              onValueChange: (value) => {
+                if (value === "book" || value === "vertical") {
+                  updateSettings({ textLayout: value });
+                }
               },
-              {
-                label: t("apps.books.chineseScript.simplified"),
-                value: "simplified",
-              },
-              {
-                label: t("apps.books.chineseScript.traditional"),
-                value: "traditional",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        type: "submenu",
-        label: t("apps.books.menu.theme"),
-        items: [
-          {
-            type: "radioGroup",
-            value: settings.themeOverride,
-            onValueChange: (value) =>
-              updateSettings({
-                themeOverride:
-                  value as BooksReaderSettings["themeOverride"],
-              }),
-            options: [
-              { label: t("apps.books.theme.auto"), value: "auto" },
-              { label: t("apps.books.theme.light"), value: "light" },
-              { label: t("apps.books.theme.sepia"), value: "sepia" },
-              { label: t("apps.books.theme.dark"), value: "dark" },
-            ],
-          },
-        ],
-      },
-    ],
-  };
+              options: [
+                { label: t("apps.books.textLayout.book"), value: "book" },
+                {
+                  label: t("apps.books.textLayout.vertical"),
+                  value: "vertical",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "submenu",
+          label: t("apps.books.menu.chineseScript"),
+          items: [
+            {
+              type: "radioGroup",
+              value: settings.chineseScript,
+              onValueChange: (value) =>
+                updateSettings({
+                  chineseScript:
+                    value as BooksReaderSettings["chineseScript"],
+                }),
+              options: [
+                {
+                  label: t("apps.books.chineseScript.original"),
+                  value: "original",
+                },
+                {
+                  label: t("apps.books.chineseScript.simplified"),
+                  value: "simplified",
+                },
+                {
+                  label: t("apps.books.chineseScript.traditional"),
+                  value: "traditional",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "submenu",
+          label: t("apps.books.menu.theme"),
+          items: [
+            {
+              type: "radioGroup",
+              value: settings.themeOverride,
+              onValueChange: (value) =>
+                updateSettings({
+                  themeOverride:
+                    value as BooksReaderSettings["themeOverride"],
+                }),
+              options: [
+                { label: t("apps.books.theme.auto"), value: "auto" },
+                { label: t("apps.books.theme.light"), value: "light" },
+                { label: t("apps.books.theme.sepia"), value: "sepia" },
+                { label: t("apps.books.theme.dark"), value: "dark" },
+              ],
+            },
+          ],
+        },
+      ],
+    };
 
   const chapters = navigationState.chapters;
   const canNavigateReader = isReading && navigationState.isReady;

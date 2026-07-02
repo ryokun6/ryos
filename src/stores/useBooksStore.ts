@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 export type BooksColumnMode = "auto" | "single" | "double";
 export type BooksThemeOverride = "auto" | "light" | "sepia" | "dark";
 export type BooksChineseScript = "original" | "simplified" | "traditional";
+export type BooksTextLayout = "book" | "vertical";
 export type BooksShelfView = "grid" | "list";
 
 export interface BookProgress {
@@ -25,6 +26,8 @@ export interface BooksReaderSettings {
   themeOverride: BooksThemeOverride;
   /** Optional live conversion for Chinese text in the rendered EPUB. */
   chineseScript: BooksChineseScript;
+  /** Text flow override. "book" preserves the EPUB's own writing mode. */
+  textLayout: BooksTextLayout;
   /** Line height multiplier. */
   lineHeight: number;
 }
@@ -35,6 +38,7 @@ export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
   columnMode: "auto",
   themeOverride: "auto",
   chineseScript: "original",
+  textLayout: "book",
   lineHeight: 1.5,
 };
 
@@ -158,7 +162,7 @@ export const useBooksStore = create<BooksStoreState>()(
     {
       name: "ryos:books",
       storage: createJSONStorage(() => localStorage),
-      version: 3,
+      version: 4,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         return {

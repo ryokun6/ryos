@@ -600,6 +600,10 @@
         "double": "Doppia",
         "single": "Singola"
       },
+      "textLayout": {
+        "book": "Predefinito del libro",
+        "vertical": "Verticale"
+      },
       "contextMenu": {
         "delete": "Elimina",
         "moveToBottom": "Sposta in fondo",
@@ -650,6 +654,7 @@
         "textSizeDecrease": "Più piccolo",
         "textSizeIncrease": "Più grande",
         "textSizeReset": "Dimensioni predefinite",
+        "textLayout": "Direzione del testo",
         "theme": "Tema"
       },
       "name": "Libri",

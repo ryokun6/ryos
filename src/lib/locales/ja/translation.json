@@ -598,6 +598,10 @@
         "double": "見開き",
         "single": "1ページ"
       },
+      "textLayout": {
+        "book": "本の設定",
+        "vertical": "縦書き"
+      },
       "contextMenu": {
         "delete": "削除",
         "moveToBottom": "最下部へ移動",
@@ -648,6 +652,7 @@
         "textSizeDecrease": "小さく",
         "textSizeIncrease": "大きく",
         "textSizeReset": "デフォルトサイズ",
+        "textLayout": "文字方向",
         "theme": "テーマ"
       },
       "name": "ブック",
