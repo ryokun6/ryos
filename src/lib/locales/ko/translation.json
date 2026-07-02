@@ -598,10 +598,6 @@
         "double": "두 페이지",
         "single": "한 페이지"
       },
-      "textLayout": {
-        "book": "책 기본값",
-        "vertical": "세로쓰기"
-      },
       "contextMenu": {
         "delete": "삭제",
         "moveToBottom": "맨 아래로 이동",
@@ -648,11 +644,15 @@
         "import": "EPUB 가져오기…",
         "nextPage": "다음 페이지",
         "previousPage": "이전 페이지",
+        "speech": "말하기",
+        "speechRate": "말하기 속도",
+        "startSpeaking": "말하기 시작",
+        "stopSpeaking": "말하기 중단",
+        "textLayout": "글자 방향",
         "textSize": "텍스트 크기",
         "textSizeDecrease": "작게",
         "textSizeIncrease": "크게",
         "textSizeReset": "기본 크기",
-        "textLayout": "글자 방향",
         "theme": "테마"
       },
       "name": "도서",
@@ -668,6 +668,16 @@
         "import": "도서 추가",
         "listView": "목록 보기",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "빠름",
+        "normal": "보통",
+        "slow": "느림",
+        "veryFast": "매우 빠름"
+      },
+      "textLayout": {
+        "book": "책 기본값",
+        "vertical": "세로쓰기"
       },
       "theme": {
         "auto": "자동",

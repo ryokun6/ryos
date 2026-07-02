@@ -39,6 +39,8 @@ import { useMapsStore } from "@/stores/useMapsStore";
 import {
   BOOKS_FONT_SIZE_MAX,
   BOOKS_FONT_SIZE_MIN,
+  BOOKS_SPEECH_RATE_MAX,
+  BOOKS_SPEECH_RATE_MIN,
   useBooksStore,
   type BookProgress,
   type BooksReaderSettings,
@@ -1550,6 +1552,7 @@ const BOOKS_SETTINGS_KEYS = {
   chineseScript: "books-settings/chineseScript",
   textLayout: "books-settings/textLayout",
   lineHeight: "books-settings/lineHeight",
+  speechRate: "books-settings/speechRate",
 } as const satisfies Record<keyof BooksReaderSettings, string>;
 
 function collectBooksSettings(
@@ -1568,6 +1571,7 @@ function collectBooksSettings(
   add(BOOKS_SETTINGS_KEYS.chineseScript, settings.chineseScript);
   add(BOOKS_SETTINGS_KEYS.textLayout, settings.textLayout);
   add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
+  add(BOOKS_SETTINGS_KEYS.speechRate, settings.speechRate);
   return docs;
 }
 
@@ -1631,6 +1635,16 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
           updates = { ...updates, lineHeight: op.v };
         }
         break;
+      case BOOKS_SETTINGS_KEYS.speechRate:
+        if (
+          typeof op.v === "number" &&
+          Number.isFinite(op.v) &&
+          op.v >= BOOKS_SPEECH_RATE_MIN &&
+          op.v <= BOOKS_SPEECH_RATE_MAX
+        ) {
+          updates = { ...updates, speechRate: op.v };
+        }
+        break;
     }
   }
 
@@ -1670,6 +1684,9 @@ const booksSettingsCodec: SyncCodec = {
       }
       if (state.settings.lineHeight !== prev.settings.lineHeight) {
         keys.push(BOOKS_SETTINGS_KEYS.lineHeight);
+      }
+      if (state.settings.speechRate !== prev.settings.speechRate) {
+        keys.push(BOOKS_SETTINGS_KEYS.speechRate);
       }
       if (keys.length === 0 || !useBooksStore.persist.hasHydrated()) return;
       onChange(keys);

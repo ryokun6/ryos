@@ -34,6 +34,9 @@ import {
   applyEpubTextLayout,
   resolveEpubPageDirection,
 } from "../utils/booksTextLayout";
+import { BOOKS_SPEECH_HIGHLIGHT_CSS } from "../utils/booksSpeech";
+import { useBooksSpeech } from "../hooks/useBooksSpeech";
+import { ryOSLocaleToSpeechLanguage } from "@/utils/browserSpeech";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
 import type {
@@ -55,6 +58,7 @@ interface BooksReaderPaneProps {
   initialPercentage?: number;
   onProgress: (cfi: string, percentage: number) => void;
   onNavigationStateChange?: (state: BooksNavigationState) => void;
+  onSpeechStateChange?: (isSpeaking: boolean) => void;
 }
 
 const clamp01 = (value: number): number =>
@@ -79,6 +83,8 @@ export interface BooksReaderPaneHandle {
   goToPreviousPage: () => void;
   goToNextPage: () => void;
   goToChapter: (href: string) => void;
+  startSpeaking: () => void;
+  stopSpeaking: () => void;
 }
 
 interface ZoomRect {
@@ -288,6 +294,7 @@ export const BooksReaderPane = forwardRef<
     initialPercentage,
     onProgress,
     onNavigationStateChange,
+    onSpeechStateChange,
   },
   ref
 ) {
@@ -304,6 +311,11 @@ export const BooksReaderPane = forwardRef<
   );
   const chineseScriptRef = useRef(settings.chineseScript);
   chineseScriptRef.current = settings.chineseScript;
+  const speechRateRef = useRef(settings.speechRate);
+  speechRateRef.current = settings.speechRate;
+  // Lets the rendition's `relocated` handler (created once per book) notify
+  // the speech controller declared further down.
+  const speechRelocatedRef = useRef<() => void>(() => {});
   const chineseScriptSessionRef = useRef(
     createChineseScriptConversionSession()
   );
@@ -831,6 +843,19 @@ export const BooksReaderPane = forwardRef<
                 );
               }
 
+              try {
+                contents.addStylesheetCss(
+                  BOOKS_SPEECH_HIGHLIGHT_CSS,
+                  "ryos-books-speech"
+                );
+              } catch {
+                appendDebugEvent(
+                  "epubjs:contentHook:speechCss:failed",
+                  undefined,
+                  "warn"
+                );
+              }
+
               const document = contents.document;
               if (!document) return;
               const textLayout = textLayoutRef.current;
@@ -944,6 +969,7 @@ export const BooksReaderPane = forwardRef<
               } else {
                 onProgressRef.current(cfi, progressPctRef.current);
               }
+              speechRelocatedRef.current();
             }
           );
 
@@ -1243,6 +1269,40 @@ export const BooksReaderPane = forwardRef<
     });
   }, []);
 
+  // Read-aloud (browser TTS). Utterances use the book's language (falling
+  // back to the UI locale), honoring the Chinese-script conversion setting.
+  const getSpeechLanguage = useCallback(
+    () =>
+      ryOSLocaleToSpeechLanguage(
+        resolveChineseScriptReadingLanguage(
+          chineseScriptRef.current,
+          bookLanguageRef.current ?? uiLanguageRef.current
+        )
+      ),
+    []
+  );
+  const {
+    isSpeaking,
+    startSpeaking,
+    stopSpeaking,
+    handleRelocated: handleSpeechRelocated,
+  } = useBooksSpeech({
+    getRendition: () => renditionRef.current,
+    getSpeechLanguage,
+    getSpeechRate: () => speechRateRef.current,
+    canAdvancePage: () => navigationStateRef.current.canGoNextPage,
+    advancePage: () => turnPage("next"),
+  });
+  speechRelocatedRef.current = handleSpeechRelocated;
+
+  useEffect(() => {
+    onSpeechStateChange?.(isSpeaking);
+  }, [isSpeaking, onSpeechStateChange]);
+  useEffect(
+    () => () => onSpeechStateChange?.(false),
+    [onSpeechStateChange]
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -1257,8 +1317,10 @@ export const BooksReaderPane = forwardRef<
           appendDebugEvent("epubjs:chapterDisplay:failed", error, "error")
         );
       },
+      startSpeaking,
+      stopSpeaking,
     }),
-    [appendDebugEvent, turnPage]
+    [appendDebugEvent, startSpeaking, stopSpeaking, turnPage]
   );
 
   const handleKey = useCallback(

@@ -4535,8 +4535,18 @@
         "textLayout": "Text Direction",
         "chineseScript": "Chinese Script",
         "theme": "Theme",
+        "speech": "Speech",
+        "startSpeaking": "Start Speaking",
+        "stopSpeaking": "Stop Speaking",
+        "speechRate": "Speech Rate",
         "booksHelp": "Books Help",
         "aboutBooks": "About Books"
+      },
+      "speechRate": {
+        "slow": "Slow",
+        "normal": "Normal",
+        "fast": "Fast",
+        "veryFast": "Very Fast"
       },
       "columns": {
         "auto": "Auto",

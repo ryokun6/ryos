@@ -602,10 +602,6 @@
         "double": "Две страницы",
         "single": "Одна страница"
       },
-      "textLayout": {
-        "book": "Как в книге",
-        "vertical": "Вертикально"
-      },
       "contextMenu": {
         "delete": "Удалить",
         "moveToBottom": "Переместить в конец",
@@ -652,11 +648,15 @@
         "import": "Импортировать EPUB…",
         "nextPage": "Следующая страница",
         "previousPage": "Предыдущая страница",
+        "speech": "Проговаривание текста",
+        "speechRate": "Скорость проговаривания",
+        "startSpeaking": "Начать проговаривание",
+        "stopSpeaking": "Остановить проговаривание",
+        "textLayout": "Направление текста",
         "textSize": "Размер текста",
         "textSizeDecrease": "Меньше",
         "textSizeIncrease": "Больше",
         "textSizeReset": "Размер по умолчанию",
-        "textLayout": "Направление текста",
         "theme": "Тема"
       },
       "name": "Книги",
@@ -672,6 +672,16 @@
         "import": "Добавить книгу",
         "listView": "Список",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "Быстро",
+        "normal": "Обычная",
+        "slow": "Медленно",
+        "veryFast": "Очень быстро"
+      },
+      "textLayout": {
+        "book": "Как в книге",
+        "vertical": "Вертикально"
       },
       "theme": {
         "auto": "Авто",
