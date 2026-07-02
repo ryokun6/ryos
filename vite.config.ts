@@ -282,11 +282,6 @@ export default defineConfig({
       // Motion (motion/react) is used on initial load for animations
       "motion/react",
       "motion",
-      // Pre-bundle so CJS→ESM works (avoids "exports is not defined" / "no export named default" in dev)
-      "react-player",
-      "pinyin-pro",
-      "wanakana",
-      "hangul-romanization",
     ],
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened
@@ -303,7 +298,6 @@ export default defineConfig({
       "@tiptap/react",
       "@tiptap/starter-kit",
       "@tiptap/pm",
-      // pinyin-pro, wanakana, hangul-romanization are in include for CJS→ESM pre-bundle
       // Realtime chat - only needed when Chats opens
       "pusher-js",
       // QR codes - only needed for specific features
