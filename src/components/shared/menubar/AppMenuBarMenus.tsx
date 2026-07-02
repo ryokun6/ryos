@@ -5,6 +5,7 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarCheckboxItem,
+  MenubarLabel,
   MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
@@ -60,6 +61,13 @@ export type MenuItemDescriptor =
       options: MenuRadioOptionDescriptor[];
     }
   | {
+      type: "label";
+      label: ReactNode;
+      disabled?: boolean;
+      /** Extra classes merged onto the shared label class. */
+      className?: string;
+    }
+  | {
       type: "submenu";
       label: ReactNode;
       items: MenuItemDescriptor[];
@@ -73,6 +81,8 @@ export type MenuItemDescriptor =
 export type MenuDescriptor = {
   label: ReactNode;
   items: MenuItemDescriptor[];
+  /** Extra classes merged onto the menu content container. */
+  contentClassName?: string;
 };
 
 function renderItems(items: MenuItemDescriptor[]) {
@@ -129,6 +139,20 @@ function renderItems(items: MenuItemDescriptor[]) {
             ))}
           </MenubarRadioGroup>
         );
+      case "label":
+        return (
+          <MenubarLabel
+            key={index}
+            aria-disabled={item.disabled}
+            className={cn(
+              "flex h-6 items-center px-3 text-md font-semibold opacity-70",
+              item.disabled && "opacity-40",
+              item.className
+            )}
+          >
+            {item.label}
+          </MenubarLabel>
+        );
       case "submenu":
         return (
           <MenubarSub key={index}>
@@ -165,7 +189,11 @@ export function AppMenuBarMenus({ menus }: { menus: MenuDescriptor[] }) {
           <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
             {menu.label}
           </MenubarTrigger>
-          <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarContent
+            align="start"
+            sideOffset={1}
+            className={cn("px-0", menu.contentClassName)}
+          >
             {renderItems(menu.items)}
           </MenubarContent>
         </MenubarMenu>
