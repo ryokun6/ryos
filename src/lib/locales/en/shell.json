@@ -166,6 +166,9 @@
       "appHeading": "{{appName}} quit unexpectedly",
       "appDescription": "Relaunch it to open a fresh window, or quit this crashed window. Other open apps will keep running.",
       "relaunch": "Relaunch",
+      "offlineHeading": "{{appName}} isn't available offline yet",
+      "offlineDescription": "Connect once to download this app, then you can open it offline.",
+      "retry": "Try Again",
       "desktopHeading": "Desktop quit unexpectedly",
       "desktopDescription": "Reload ryOS to restore the Dock, Desktop, and menu bar.",
       "reloadDesktop": "Reload Desktop"
@@ -558,6 +561,65 @@
         "incomingFile": "@{{sender}} wants to send you \"{{fileName}}\"",
         "accept": "Accept",
         "decline": "Decline"
+      },
+      "menu": {
+        "newFinderWindow": "New Finder Window",
+        "newFolder": "New Folder…",
+        "importFromDevice": "Import from Device…",
+        "rename": "Rename…",
+        "duplicate": "Duplicate",
+        "putBack": "Put Back",
+        "moveToTrash": "Move to Trash",
+        "emptyTrash": "Empty Trash…",
+        "bySmallIcon": "by Small Icon",
+        "byIcon": "by Icon",
+        "byList": "by List",
+        "byName": "by Name",
+        "byDate": "by Date",
+        "bySize": "by Size",
+        "byKind": "by Kind",
+        "back": "Back",
+        "forward": "Forward",
+        "sidebar": "Sidebar",
+        "import": "Import File…",
+        "goUp": "Go Up",
+        "newWindow": "New Window",
+        "finderHelp": "Finder Help",
+        "aboutFinder": "About Finder"
+      },
+      "dialogs": {
+        "emptyTrash": {
+          "title": "Empty Trash",
+          "description": "Are you sure you want to empty the Trash? This action can't be undone."
+        },
+        "renameItem": {
+          "title": "Rename Item",
+          "description": "Enter a new name for \"{{name}}\""
+        },
+        "newFolder": {
+          "title": "New Folder",
+          "description": "Enter a name for the new folder:"
+        }
+      },
+      "fileTypes": {
+        "directory": "Directory",
+        "file": "File",
+        "folder": "Folder",
+        "mp3Audio": "MP3 Audio",
+        "quicktimeMovie": "QuickTime Movie",
+        "internetShortcut": "Internet Shortcut",
+        "application": "Application",
+        "pngImage": "PNG Image",
+        "jpegImage": "JPEG Image",
+        "gifImage": "GIF Image",
+        "webpImage": "WebP Image",
+        "bmpImage": "BMP Image",
+        "svgImage": "SVG Image",
+        "pdfDocument": "PDF Document",
+        "book": "Book",
+        "document": "Document",
+        "htmlApplet": "HTML Applet",
+        "unknown": "Unknown"
       }
     },
     "soundboard": {

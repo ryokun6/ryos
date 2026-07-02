@@ -24,7 +24,13 @@ describe("English shell translation bundle", () => {
     const shellTranslation = readCatalog("shell.json");
     expect(shellTranslation.common).toBeDefined();
     expect(shellTranslation.apps.finder.folders).toBeDefined();
+    expect(shellTranslation.apps.finder.menu).toBeDefined();
+    expect(shellTranslation.apps.finder.dialogs).toBeDefined();
+    expect(shellTranslation.apps.finder.fileTypes).toBeDefined();
     expect(shellTranslation.apps.chats.messages.greeting).toBeDefined();
+    expect(shellTranslation.common.errorBoundaries.offlineHeading).toBe(
+      fullTranslation.common.errorBoundaries.offlineHeading
+    );
     expect(shellTranslation.apps.textedit.name).toBe(
       fullTranslation.apps.textedit.name
     );
