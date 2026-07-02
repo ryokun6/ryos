@@ -1,7 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
-import enTranslation from "./locales/en/translation.json";
+import enShell from "./locales/en/shell.json";
 import { ensureCjkFontsForLanguage } from "./cjkFonts";
 import {
   DEFAULT_LANGUAGE,
@@ -16,11 +16,12 @@ type LocaleLoader = () => Promise<TranslationModule>;
 
 const resources = {
   [DEFAULT_LANGUAGE]: {
-    translation: enTranslation,
+    translation: enShell,
   },
 };
 
 const localeJsonPaths: Partial<Record<SupportedLanguage, string>> = {
+  en: "./locales/en/translation.json",
   "zh-TW": "./locales/zh-TW/translation.json",
   "zh-CN": "./locales/zh-CN/translation.json",
   ja: "./locales/ja/translation.json",
@@ -34,6 +35,7 @@ const localeJsonPaths: Partial<Record<SupportedLanguage, string>> = {
 };
 
 const localeLoaders: Partial<Record<SupportedLanguage, LocaleLoader>> = {
+  en: () => import("./locales/en/translation.json"),
   "zh-TW": () => import("./locales/zh-TW/translation.json"),
   "zh-CN": () => import("./locales/zh-CN/translation.json"),
   ja: () => import("./locales/ja/translation.json"),
@@ -47,6 +49,7 @@ const localeLoaders: Partial<Record<SupportedLanguage, LocaleLoader>> = {
 };
 
 const loadingLanguages = new Map<SupportedLanguage, Promise<void>>();
+const loadedFullLanguages = new Set<SupportedLanguage>();
 
 let initializePromise: Promise<void> | null = null;
 let defaultInitPromise: Promise<void> | null = null;
@@ -122,7 +125,9 @@ const applyInitialLanguage = async (): Promise<void> => {
 
   initialLanguagePromise = (async () => {
     const initialLanguage = resolveInitialLanguage();
-    await ensureLanguageResources(initialLanguage);
+    if (initialLanguage !== DEFAULT_LANGUAGE) {
+      await ensureLanguageResources(initialLanguage);
+    }
     await setLanguageOnI18n(initialLanguage);
   })();
 
@@ -132,11 +137,7 @@ const applyInitialLanguage = async (): Promise<void> => {
 export async function ensureLanguageResources(
   language: SupportedLanguage
 ): Promise<void> {
-  if (language === DEFAULT_LANGUAGE) {
-    return;
-  }
-
-  if (i18n.hasResourceBundle(language, "translation")) {
+  if (loadedFullLanguages.has(language)) {
     return;
   }
 
@@ -153,15 +154,14 @@ export async function ensureLanguageResources(
 
   const loadPromise = loader()
     .then((module) => {
-      if (!i18n.hasResourceBundle(language, "translation")) {
-        i18n.addResourceBundle(
-          language,
-          "translation",
-          module.default,
-          true,
-          true
-        );
-      }
+      i18n.addResourceBundle(
+        language,
+        "translation",
+        module.default,
+        true,
+        true
+      );
+      loadedFullLanguages.add(language);
     })
     .finally(() => {
       loadingLanguages.delete(language);
@@ -169,6 +169,10 @@ export async function ensureLanguageResources(
 
   loadingLanguages.set(language, loadPromise);
   await loadPromise;
+}
+
+export async function ensureCurrentLanguageResources(): Promise<void> {
+  await ensureLanguageResources(getCurrentLanguage());
 }
 
 export async function initializeI18n(): Promise<void> {
@@ -227,10 +231,12 @@ const reloadTranslationBundle = (
 if (import.meta.hot) {
   const hot = import.meta.hot;
 
-  hot.accept("./locales/en/translation.json", (mod) => {
+  hot.accept("./locales/en/shell.json", (mod) => {
     const messages = mod?.default as TranslationMessages | undefined;
     if (messages) {
       reloadTranslationBundle(DEFAULT_LANGUAGE, messages);
+      loadedFullLanguages.delete(DEFAULT_LANGUAGE);
+      void ensureLanguageResources(DEFAULT_LANGUAGE);
     }
   });
 
@@ -241,6 +247,7 @@ if (import.meta.hot) {
       const messages = mod?.default as TranslationMessages | undefined;
       if (messages) {
         reloadTranslationBundle(language, messages);
+        loadedFullLanguages.add(language);
       }
     });
   }
