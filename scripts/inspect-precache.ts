@@ -40,6 +40,12 @@ summarize("JavaScript", javascript);
 summarize("CSS", stylesheets);
 summarize("font binaries", fonts);
 
+if (process.argv.includes("--list")) {
+  for (const url of javascript) {
+    console.log(url);
+  }
+}
+
 if (forbidden.length > 0) {
   console.error("[precache] Optional chunks leaked into the install manifest:");
   for (const url of forbidden) {
