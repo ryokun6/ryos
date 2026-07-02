@@ -651,6 +651,10 @@
         "import": "EPUBを読み込む…",
         "nextPage": "次のページ",
         "previousPage": "前のページ",
+        "speech": "スピーチ",
+        "speechRate": "読み上げ速度",
+        "startSpeaking": "読み上げを開始",
+        "stopSpeaking": "読み上げを停止",
         "textLayout": "文字方向",
         "textSize": "テキストサイズ",
         "textSizeDecrease": "小さく",
@@ -671,6 +675,12 @@
         "import": "本を追加",
         "listView": "リスト表示",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "速い",
+        "normal": "標準",
+        "slow": "遅い",
+        "veryFast": "非常に速い"
       },
       "textLayout": {
         "book": "本の設定",

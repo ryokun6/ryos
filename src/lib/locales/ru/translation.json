@@ -655,6 +655,10 @@
         "import": "Импортировать EPUB…",
         "nextPage": "Следующая страница",
         "previousPage": "Предыдущая страница",
+        "speech": "Проговаривание текста",
+        "speechRate": "Скорость проговаривания",
+        "startSpeaking": "Начать проговаривание",
+        "stopSpeaking": "Остановить проговаривание",
         "textLayout": "Направление текста",
         "textSize": "Размер текста",
         "textSizeDecrease": "Меньше",
@@ -675,6 +679,12 @@
         "import": "Добавить книгу",
         "listView": "Список",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "Быстро",
+        "normal": "Обычная",
+        "slow": "Медленно",
+        "veryFast": "Очень быстро"
       },
       "textLayout": {
         "book": "Как в книге",

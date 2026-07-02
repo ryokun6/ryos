@@ -80,17 +80,25 @@ export function flattenBooksMenuSubmenus(
 export function buildBooksMenuLayout({
   fileMenu,
   viewMenu,
+  speechMenu,
   goMenu,
   isCompact,
 }: {
   fileMenu: MenuDescriptor;
   viewMenu: MenuDescriptor;
+  speechMenu: MenuDescriptor;
   goMenu: MenuDescriptor;
   isCompact: boolean;
 }): MenuDescriptor[] {
   return [
     fileMenu,
     viewMenu,
+    isCompact
+      ? {
+          ...speechMenu,
+          items: flattenBooksMenuSubmenus(speechMenu.items),
+        }
+      : speechMenu,
     isCompact
       ? {
           ...goMenu,

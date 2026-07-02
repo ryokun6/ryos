@@ -10,7 +10,7 @@ import {
 import {
   pickSpeechVoiceForLanguage,
   ryOSLocaleToSpeechLanguage,
-} from "../src/apps/calculator/utils/calculatorSpeechLocale";
+} from "../src/utils/browserSpeech";
 
 const enSpeech: Record<string, string> = {
   "apps.calculator.speech.error": "Error",

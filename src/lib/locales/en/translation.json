@@ -4536,6 +4536,10 @@
         "chineseScript": "Chinese Script",
         "theme": "Theme",
         "customizeTheme": "Customize…",
+        "speech": "Speech",
+        "startSpeaking": "Start Speaking",
+        "stopSpeaking": "Stop Speaking",
+        "speechRate": "Speech Rate",
         "booksHelp": "Books Help",
         "aboutBooks": "About Books"
       },
@@ -4544,6 +4548,12 @@
         "lineSpacing": "Line Spacing",
         "margins": "Margins",
         "colors": "Colors"
+      },
+      "speechRate": {
+        "slow": "Slow",
+        "normal": "Normal",
+        "fast": "Fast",
+        "veryFast": "Very Fast"
       },
       "columns": {
         "auto": "Auto",

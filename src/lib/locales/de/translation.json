@@ -651,6 +651,10 @@
         "import": "Importieren …",
         "nextPage": "Nächste Seite",
         "previousPage": "Vorherige Seite",
+        "speech": "Sprachausgabe",
+        "speechRate": "Sprechgeschwindigkeit",
+        "startSpeaking": "Sprachausgabe starten",
+        "stopSpeaking": "Sprachausgabe stoppen",
         "textLayout": "Textrichtung",
         "textSize": "Textgröße",
         "textSizeDecrease": "Kleiner",
@@ -671,6 +675,12 @@
         "import": "Buch hinzufügen",
         "listView": "Listendarstellung",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "Schnell",
+        "normal": "Normal",
+        "slow": "Langsam",
+        "veryFast": "Sehr schnell"
       },
       "textLayout": {
         "book": "Buchstandard",

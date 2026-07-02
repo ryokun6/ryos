@@ -651,6 +651,10 @@
         "import": "匯入 EPUB⋯",
         "nextPage": "下一頁",
         "previousPage": "上一頁",
+        "speech": "語音",
+        "speechRate": "語音速率",
+        "startSpeaking": "開始朗讀",
+        "stopSpeaking": "停止朗讀",
         "textLayout": "文字方向",
         "textSize": "文字大小",
         "textSizeDecrease": "縮小",
@@ -671,6 +675,12 @@
         "import": "新增書籍",
         "listView": "列表顯示方式",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "快",
+        "normal": "正常",
+        "slow": "慢",
+        "veryFast": "非常快"
       },
       "textLayout": {
         "book": "書籍預設",

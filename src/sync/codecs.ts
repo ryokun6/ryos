@@ -41,6 +41,8 @@ import {
   BOOKS_FONT_SIZE_MIN,
   BOOKS_GUTTER_MAX,
   BOOKS_GUTTER_MIN,
+  BOOKS_SPEECH_RATE_MAX,
+  BOOKS_SPEECH_RATE_MIN,
   isBooksThemeOverride,
   useBooksStore,
   type BookProgress,
@@ -1554,6 +1556,7 @@ const BOOKS_SETTINGS_KEYS = {
   textLayout: "books-settings/textLayout",
   lineHeight: "books-settings/lineHeight",
   gutterPx: "books-settings/gutterPx",
+  speechRate: "books-settings/speechRate",
 } as const satisfies Record<keyof BooksReaderSettings, string>;
 
 function collectBooksSettings(
@@ -1573,6 +1576,7 @@ function collectBooksSettings(
   add(BOOKS_SETTINGS_KEYS.textLayout, settings.textLayout);
   add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
   add(BOOKS_SETTINGS_KEYS.gutterPx, settings.gutterPx);
+  add(BOOKS_SETTINGS_KEYS.speechRate, settings.speechRate);
   return docs;
 }
 
@@ -1641,6 +1645,16 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
           updates = { ...updates, gutterPx: op.v };
         }
         break;
+      case BOOKS_SETTINGS_KEYS.speechRate:
+        if (
+          typeof op.v === "number" &&
+          Number.isFinite(op.v) &&
+          op.v >= BOOKS_SPEECH_RATE_MIN &&
+          op.v <= BOOKS_SPEECH_RATE_MAX
+        ) {
+          updates = { ...updates, speechRate: op.v };
+        }
+        break;
     }
   }
 
@@ -1683,6 +1697,9 @@ const booksSettingsCodec: SyncCodec = {
       }
       if (state.settings.gutterPx !== prev.settings.gutterPx) {
         keys.push(BOOKS_SETTINGS_KEYS.gutterPx);
+      }
+      if (state.settings.speechRate !== prev.settings.speechRate) {
+        keys.push(BOOKS_SETTINGS_KEYS.speechRate);
       }
       if (keys.length === 0 || !useBooksStore.persist.hasHydrated()) return;
       onChange(keys);

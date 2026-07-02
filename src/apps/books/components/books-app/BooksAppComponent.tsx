@@ -77,6 +77,11 @@ export function BooksAppComponent({
     (state: BooksNavigationState) => setReaderNavigationState(state),
     []
   );
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const handleSpeechStateChange = useCallback(
+    (speaking: boolean) => setIsSpeaking(speaking),
+    []
+  );
 
   const menuBar = (
     <BooksMenuBar
@@ -93,6 +98,9 @@ export function BooksAppComponent({
       onGoToPreviousPage={() => readerRef.current?.goToPreviousPage()}
       onGoToNextPage={() => readerRef.current?.goToNextPage()}
       onGoToChapter={(href) => readerRef.current?.goToChapter(href)}
+      isSpeaking={isSpeaking}
+      onStartSpeaking={() => readerRef.current?.startSpeaking()}
+      onStopSpeaking={() => readerRef.current?.stopSpeaking()}
     />
   );
 
@@ -192,6 +200,7 @@ export function BooksAppComponent({
               saveProgress(activeBook.path, cfi, percentage)
             }
             onNavigationStateChange={handleReaderNavigationStateChange}
+            onSpeechStateChange={handleSpeechStateChange}
           />
         ) : (
           <BooksShelfView

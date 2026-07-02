@@ -57,6 +57,8 @@ export interface BooksReaderSettings {
   lineHeight: number;
   /** Horizontal gutter (px) around the text column. */
   gutterPx: number;
+  /** Read-aloud (browser TTS) speaking rate multiplier. */
+  speechRate: number;
 }
 
 export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
@@ -68,7 +70,12 @@ export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
   textLayout: "book",
   lineHeight: 1.5,
   gutterPx: 24,
+  speechRate: 1,
 };
+
+export const BOOKS_SPEECH_RATE_MIN = 0.5;
+export const BOOKS_SPEECH_RATE_MAX = 2;
+export const BOOKS_SPEECH_RATE_OPTIONS = [0.8, 1, 1.2, 1.5] as const;
 
 export const BOOKS_FONT_SIZE_MIN = 70;
 export const BOOKS_FONT_SIZE_MAX = 180;

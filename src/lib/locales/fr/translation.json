@@ -653,6 +653,10 @@
         "import": "Importer un EPUB…",
         "nextPage": "Page suivante",
         "previousPage": "Page précédente",
+        "speech": "Parole",
+        "speechRate": "Vitesse d’élocution",
+        "startSpeaking": "Commencer à parler",
+        "stopSpeaking": "Arrêter de parler",
         "textLayout": "Sens du texte",
         "textSize": "Taille du texte",
         "textSizeDecrease": "Plus petite",
@@ -673,6 +677,12 @@
         "import": "Ajouter un livre",
         "listView": "Présentation par liste",
         "percentRead": "{{percent}} %"
+      },
+      "speechRate": {
+        "fast": "Rapide",
+        "normal": "Normale",
+        "slow": "Lente",
+        "veryFast": "Très rapide"
       },
       "textLayout": {
         "book": "Réglage du livre",

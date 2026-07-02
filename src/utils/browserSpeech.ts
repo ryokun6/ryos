@@ -1,3 +1,9 @@
+/**
+ * Shared helpers for the browser's native SpeechSynthesis API (browser TTS).
+ * Used by apps that speak locally without the AI `/api/speech` endpoint
+ * (Calculator key/result speech, Books read-aloud).
+ */
+
 /** Map ryOS i18n codes to BCP 47 tags for SpeechSynthesisUtterance.lang */
 export function ryOSLocaleToSpeechLanguage(locale: string | undefined): string {
   if (!locale) return "en-US";
@@ -52,4 +58,9 @@ export function pickSpeechVoiceForLanguage(
     (voice) => voice.lang.toLowerCase().split("-")[0] === targetPrimary
   );
   return primaryMatch ?? null;
+}
+
+export function getBrowserSpeechSynthesis(): SpeechSynthesis | null {
+  if (typeof window === "undefined") return null;
+  return window.speechSynthesis ?? null;
 }
