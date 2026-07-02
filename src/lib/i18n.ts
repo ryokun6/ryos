@@ -2,7 +2,6 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import enShell from "./locales/en/shell.json";
-import { ensureCjkFontsForLanguage } from "./cjkFonts";
 import {
   DEFAULT_LANGUAGE,
   isSupportedLanguage,
@@ -82,13 +81,11 @@ const getCurrentLanguage = (): SupportedLanguage => {
 const setLanguageOnI18n = async (language: SupportedLanguage): Promise<void> => {
   if (getCurrentLanguage() === language) {
     syncDocumentLanguage(language);
-    ensureCjkFontsForLanguage(language);
     return;
   }
 
   await i18n.changeLanguage(language);
   syncDocumentLanguage(language);
-  ensureCjkFontsForLanguage(language);
 };
 
 const initializeDefaultI18n = async (): Promise<void> => {

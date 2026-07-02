@@ -26,9 +26,13 @@
     <!-- Cache control -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 
-    <!-- CJK webfonts are loaded after locale resolution. English sessions do
-         not need to fetch their stylesheets or establish third-party font
-         connections during startup. -->
+    <!-- CJK content can appear independently of the UI locale (lyrics, files,
+         documents), so start its non-blocking font stylesheets at boot. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <link href="https://cdn.jsdelivr.net/npm/chiron-go-round-tc-webfont@1.0.11/css/vf.css" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@700&display=swap" rel="stylesheet" />
       <link href="https://cdn.jsdelivr.net/npm/chiron-go-round-tc-webfont@1.0.11/css/vf.css" rel="stylesheet" />
@@ -284,18 +288,24 @@
       (function () {
         var theme = document.documentElement.dataset.osTheme || "macosx";
         var fontsByTheme = {
-          macosx: ["/fonts/LucidaGrande.woff2"],
+          macosx: [
+            "/fonts/LucidaGrande.woff2",
+            "/fonts/AquaKana.woff2",
+          ],
           system7: [
             "/fonts/ChicagoKare-Regular.woff2",
             "/fonts/geneva-12.woff2",
+            "/fonts/fusion-pixel-12px-proportional-ja.woff2",
           ],
           xp: [
             "/fonts/ms_sans_serif.woff2",
             "/fonts/ms_sans_serif_bold.woff2",
+            "/fonts/fusion-pixel-12px-proportional-ja.woff2",
           ],
           win98: [
             "/fonts/ms_sans_serif.woff2",
             "/fonts/ms_sans_serif_bold.woff2",
+            "/fonts/fusion-pixel-12px-proportional-ja.woff2",
           ],
         };
         (fontsByTheme[theme] || fontsByTheme.macosx).forEach(function (href) {
