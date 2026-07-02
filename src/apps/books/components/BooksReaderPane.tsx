@@ -13,7 +13,10 @@ import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
-import type { BooksReaderSettings } from "@/stores/useBooksStore";
+import {
+  clampBooksGutter,
+  type BooksReaderSettings,
+} from "@/stores/useBooksStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import {
   buildEpubTheme,
@@ -101,10 +104,11 @@ type BooksDebugSnapshot = Record<string, unknown>;
 const TOP_CLEARANCE = 36;
 // Footer that holds the reading-progress bar.
 const FOOTER_HEIGHT = 30;
-// Horizontal gutter around the text column. Applied as a left/right inset on the
-// epub.js render host (rather than body padding) so epub.js's paginated column
-// math stays correct — it computes columns from the host width.
-const SIDE_CLEARANCE = 24;
+// The horizontal gutter around the text column comes from
+// `settings.gutterPx` (user-adjustable in the Customize panel). It is applied
+// as a left/right inset on the epub.js render host (rather than body padding)
+// so epub.js's paginated column math stays correct — it computes columns from
+// the host width.
 // Width at which auto column mode switches to a two-page spread. epub.js
 // defaults to 800; a lower value shows two columns on narrower windows.
 const SPREAD_MIN_WIDTH = 560;
@@ -409,6 +413,7 @@ export const BooksReaderPane = forwardRef<
 
   const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
   const isVerticalText = settings.textLayout === "vertical";
+  const sideClearance = clampBooksGutter(settings.gutterPx);
 
   // Measure the zoom-in geometry before first paint so the cover overlay starts
   // exactly on top of the clicked shelf book and grows to full-bleed. Runs once
@@ -1310,8 +1315,8 @@ export const BooksReaderPane = forwardRef<
         style={{
           top: TOP_CLEARANCE,
           bottom: FOOTER_HEIGHT,
-          left: SIDE_CLEARANCE,
-          right: SIDE_CLEARANCE,
+          left: sideClearance,
+          right: sideClearance,
         }}
       />
 

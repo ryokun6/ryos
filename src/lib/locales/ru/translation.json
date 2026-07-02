@@ -602,14 +602,16 @@
         "double": "Две страницы",
         "single": "Одна страница"
       },
-      "textLayout": {
-        "book": "Как в книге",
-        "vertical": "Вертикально"
-      },
       "contextMenu": {
         "delete": "Удалить",
         "moveToBottom": "Переместить в конец",
         "moveToTop": "Переместить в начало"
+      },
+      "customize": {
+        "colors": "Цвета",
+        "lineSpacing": "Межстрочный интервал",
+        "margins": "Поля",
+        "title": "Настройка"
       },
       "description": "Читайте книги EPUB",
       "help": {
@@ -648,15 +650,16 @@
         "chapters": "Главы",
         "chineseScript": "Китайское письмо",
         "columns": "Колонки",
+        "customizeTheme": "Настроить…",
         "font": "Шрифт",
         "import": "Импортировать EPUB…",
         "nextPage": "Следующая страница",
         "previousPage": "Предыдущая страница",
+        "textLayout": "Направление текста",
         "textSize": "Размер текста",
         "textSizeDecrease": "Меньше",
         "textSizeIncrease": "Больше",
         "textSizeReset": "Размер по умолчанию",
-        "textLayout": "Направление текста",
         "theme": "Тема"
       },
       "name": "Книги",
@@ -673,10 +676,20 @@
         "listView": "Список",
         "percentRead": "{{percent}}%"
       },
+      "textLayout": {
+        "book": "Как в книге",
+        "horizontal": "Горизонтально",
+        "vertical": "Вертикально"
+      },
       "theme": {
         "auto": "Авто",
+        "black": "Черный",
         "dark": "Темная",
+        "gray": "Серый",
+        "green": "Зеленый",
         "light": "Светлая",
+        "night": "Ночь",
+        "paper": "Бумага",
         "sepia": "Сепия"
       },
       "title": "Книги",

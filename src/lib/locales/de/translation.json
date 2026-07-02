@@ -598,14 +598,16 @@
         "double": "Zweiseitig",
         "single": "Einseitig"
       },
-      "textLayout": {
-        "book": "Buchstandard",
-        "vertical": "Vertikal"
-      },
       "contextMenu": {
         "delete": "Löschen",
         "moveToBottom": "Nach ganz unten",
         "moveToTop": "Nach ganz oben"
+      },
+      "customize": {
+        "colors": "Farben",
+        "lineSpacing": "Zeilenabstand",
+        "margins": "Seitenränder",
+        "title": "Anpassen"
       },
       "description": "EPUB-Bücher lesen",
       "help": {
@@ -644,15 +646,16 @@
         "chapters": "Kapitel",
         "chineseScript": "Chinesische Schrift",
         "columns": "Spalten",
+        "customizeTheme": "Anpassen…",
         "font": "Schrift",
         "import": "Importieren …",
         "nextPage": "Nächste Seite",
         "previousPage": "Vorherige Seite",
+        "textLayout": "Textrichtung",
         "textSize": "Textgröße",
         "textSizeDecrease": "Kleiner",
         "textSizeIncrease": "Größer",
         "textSizeReset": "Standardgröße",
-        "textLayout": "Textrichtung",
         "theme": "Design"
       },
       "name": "Bücher",
@@ -669,10 +672,20 @@
         "listView": "Listendarstellung",
         "percentRead": "{{percent}}%"
       },
+      "textLayout": {
+        "book": "Buchstandard",
+        "horizontal": "Horizontal",
+        "vertical": "Vertikal"
+      },
       "theme": {
         "auto": "Automatisch",
+        "black": "Schwarz",
         "dark": "Dunkel",
+        "gray": "Grau",
+        "green": "Grün",
         "light": "Hell",
+        "night": "Nacht",
+        "paper": "Papier",
         "sepia": "Sepia"
       },
       "title": "Bücher",

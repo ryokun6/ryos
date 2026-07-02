@@ -431,6 +431,7 @@ describe("books settings codec", () => {
       chineseScript: "traditional",
       textLayout: "vertical",
       lineHeight: 1.8,
+      gutterPx: 32,
     });
 
     const docs = SYNC_CODECS["books-settings"].collect(ctx) as Map<
@@ -445,6 +446,7 @@ describe("books settings codec", () => {
       "books-settings/chineseScript": "traditional",
       "books-settings/textLayout": "vertical",
       "books-settings/lineHeight": 1.8,
+      "books-settings/gutterPx": 32,
     });
   });
 
@@ -454,10 +456,11 @@ describe("books settings codec", () => {
         { k: "books-settings/fontId", v: "sans", t },
         { k: "books-settings/fontSizePct", v: 140, t },
         { k: "books-settings/columnMode", v: "single", t },
-        { k: "books-settings/themeOverride", v: "dark", t },
+        { k: "books-settings/themeOverride", v: "night", t },
         { k: "books-settings/chineseScript", v: "simplified", t },
         { k: "books-settings/textLayout", v: "vertical", t },
         { k: "books-settings/lineHeight", v: 1.7, t },
+        { k: "books-settings/gutterPx", v: 48, t },
       ],
       ctx
     );
@@ -466,10 +469,11 @@ describe("books settings codec", () => {
       fontId: "sans",
       fontSizePct: 140,
       columnMode: "single",
-      themeOverride: "dark",
+      themeOverride: "night",
       chineseScript: "simplified",
       textLayout: "vertical",
       lineHeight: 1.7,
+      gutterPx: 48,
     });
   });
 
@@ -479,10 +483,11 @@ describe("books settings codec", () => {
         { k: "books-settings/fontId", v: "", t },
         { k: "books-settings/fontSizePct", v: 1_000, t },
         { k: "books-settings/columnMode", v: "triple", t },
-        { k: "books-settings/themeOverride", v: "blue", t },
+        { k: "books-settings/themeOverride", v: "neon", t },
         { k: "books-settings/chineseScript", v: "translated", t },
         { k: "books-settings/textLayout", v: "diagonal", t },
         { k: "books-settings/lineHeight", v: -1, t },
+        { k: "books-settings/gutterPx", v: 1_000, t },
         { k: "books-settings/fontId", del: true, t },
       ],
       ctx
@@ -502,12 +507,14 @@ describe("books settings codec", () => {
         fontSizePct: 120,
         themeOverride: "sepia",
         textLayout: "vertical",
+        gutterPx: 40,
       });
       expect(changes).toEqual([
         [
           "books-settings/fontSizePct",
           "books-settings/themeOverride",
           "books-settings/textLayout",
+          "books-settings/gutterPx",
         ],
       ]);
     } finally {

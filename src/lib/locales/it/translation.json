@@ -600,14 +600,16 @@
         "double": "Doppia",
         "single": "Singola"
       },
-      "textLayout": {
-        "book": "Predefinito del libro",
-        "vertical": "Verticale"
-      },
       "contextMenu": {
         "delete": "Elimina",
         "moveToBottom": "Sposta in fondo",
         "moveToTop": "Sposta in cima"
+      },
+      "customize": {
+        "colors": "Colori",
+        "lineSpacing": "Interlinea",
+        "margins": "Margini",
+        "title": "Personalizza"
       },
       "description": "Leggi libri EPUB",
       "help": {
@@ -646,15 +648,16 @@
         "chapters": "Capitoli",
         "chineseScript": "Scrittura cinese",
         "columns": "Colonne",
+        "customizeTheme": "Personalizza…",
         "font": "Font",
         "import": "Importa EPUB…",
         "nextPage": "Pagina successiva",
         "previousPage": "Pagina precedente",
+        "textLayout": "Direzione del testo",
         "textSize": "Dimensione testo",
         "textSizeDecrease": "Più piccolo",
         "textSizeIncrease": "Più grande",
         "textSizeReset": "Dimensioni predefinite",
-        "textLayout": "Direzione del testo",
         "theme": "Tema"
       },
       "name": "Libri",
@@ -671,10 +674,20 @@
         "listView": "Vista a elenco",
         "percentRead": "{{percent}}%"
       },
+      "textLayout": {
+        "book": "Predefinito del libro",
+        "horizontal": "Orizzontale",
+        "vertical": "Verticale"
+      },
       "theme": {
         "auto": "Automatico",
+        "black": "Nero",
         "dark": "Scuro",
+        "gray": "Grigio",
+        "green": "Verde",
         "light": "Chiaro",
+        "night": "Notte",
+        "paper": "Carta",
         "sepia": "Seppia"
       },
       "title": "Libri",

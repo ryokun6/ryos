@@ -598,14 +598,16 @@
         "double": "見開き",
         "single": "1ページ"
       },
-      "textLayout": {
-        "book": "本の設定",
-        "vertical": "縦書き"
-      },
       "contextMenu": {
         "delete": "削除",
         "moveToBottom": "最下部へ移動",
         "moveToTop": "最上部へ移動"
+      },
+      "customize": {
+        "colors": "カラー",
+        "lineSpacing": "行間",
+        "margins": "余白",
+        "title": "カスタマイズ"
       },
       "description": "EPUB形式の本を読む",
       "help": {
@@ -644,15 +646,16 @@
         "chapters": "章",
         "chineseScript": "中国語の字体",
         "columns": "段組み",
+        "customizeTheme": "カスタマイズ…",
         "font": "フォント",
         "import": "EPUBを読み込む…",
         "nextPage": "次のページ",
         "previousPage": "前のページ",
+        "textLayout": "文字方向",
         "textSize": "テキストサイズ",
         "textSizeDecrease": "小さく",
         "textSizeIncrease": "大きく",
         "textSizeReset": "デフォルトサイズ",
-        "textLayout": "文字方向",
         "theme": "テーマ"
       },
       "name": "ブック",
@@ -669,10 +672,20 @@
         "listView": "リスト表示",
         "percentRead": "{{percent}}%"
       },
+      "textLayout": {
+        "book": "本の設定",
+        "horizontal": "横書き",
+        "vertical": "縦書き"
+      },
       "theme": {
         "auto": "自動",
+        "black": "ブラック",
         "dark": "ダーク",
+        "gray": "グレー",
+        "green": "グリーン",
         "light": "ライト",
+        "night": "ナイト",
+        "paper": "ペーパー",
         "sepia": "セピア"
       },
       "title": "ブック",

@@ -598,14 +598,16 @@
         "double": "雙頁",
         "single": "單頁"
       },
-      "textLayout": {
-        "book": "書籍預設",
-        "vertical": "直排"
-      },
       "contextMenu": {
         "delete": "刪除",
         "moveToBottom": "移至底端",
         "moveToTop": "移至頂端"
+      },
+      "customize": {
+        "colors": "顏色",
+        "lineSpacing": "行距",
+        "margins": "邊界",
+        "title": "自訂"
       },
       "description": "閱讀 EPUB 書籍",
       "help": {
@@ -644,15 +646,16 @@
         "chapters": "章節",
         "chineseScript": "簡繁轉換",
         "columns": "直欄",
+        "customizeTheme": "自訂…",
         "font": "字體",
         "import": "匯入 EPUB⋯",
         "nextPage": "下一頁",
         "previousPage": "上一頁",
+        "textLayout": "文字方向",
         "textSize": "文字大小",
         "textSizeDecrease": "縮小",
         "textSizeIncrease": "放大",
         "textSizeReset": "預設大小",
-        "textLayout": "文字方向",
         "theme": "主題"
       },
       "name": "書籍",
@@ -669,10 +672,20 @@
         "listView": "列表顯示方式",
         "percentRead": "{{percent}}%"
       },
+      "textLayout": {
+        "book": "書籍預設",
+        "horizontal": "橫排",
+        "vertical": "直排"
+      },
       "theme": {
         "auto": "自動",
+        "black": "黑色",
         "dark": "深色",
+        "gray": "灰色",
+        "green": "綠色",
         "light": "淺色",
+        "night": "夜間",
+        "paper": "紙張",
         "sepia": "深褐色"
       },
       "title": "書籍",

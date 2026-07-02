@@ -598,14 +598,16 @@
         "double": "双页",
         "single": "单页"
       },
-      "textLayout": {
-        "book": "书籍默认",
-        "vertical": "竖排"
-      },
       "contextMenu": {
         "delete": "删除",
         "moveToBottom": "移至底端",
         "moveToTop": "移至顶端"
+      },
+      "customize": {
+        "colors": "颜色",
+        "lineSpacing": "行间距",
+        "margins": "页边距",
+        "title": "自定"
       },
       "description": "阅读 EPUB 书籍",
       "help": {
@@ -644,15 +646,16 @@
         "chapters": "章节",
         "chineseScript": "简繁转换",
         "columns": "分栏",
+        "customizeTheme": "自定…",
         "font": "字体",
         "import": "导入 EPUB…",
         "nextPage": "下一页",
         "previousPage": "上一页",
+        "textLayout": "文字方向",
         "textSize": "文字大小",
         "textSizeDecrease": "缩小",
         "textSizeIncrease": "放大",
         "textSizeReset": "默认大小",
-        "textLayout": "文字方向",
         "theme": "主题"
       },
       "name": "书籍",
@@ -669,10 +672,20 @@
         "listView": "列表视图",
         "percentRead": "{{percent}}%"
       },
+      "textLayout": {
+        "book": "书籍默认",
+        "horizontal": "水平",
+        "vertical": "竖排"
+      },
       "theme": {
         "auto": "自动",
+        "black": "黑色",
         "dark": "深色",
+        "gray": "灰色",
+        "green": "绿色",
         "light": "浅色",
+        "night": "夜间",
+        "paper": "纸张",
         "sepia": "棕褐色"
       },
       "title": "书籍",
@@ -699,7 +712,7 @@
           "currency": "货币",
           "energy": "能量",
           "length": "长度",
-        "mass": "重量与质量",
+          "mass": "重量与质量",
           "pressure": "压力",
           "speed": "速度",
           "temperature": "温度",
