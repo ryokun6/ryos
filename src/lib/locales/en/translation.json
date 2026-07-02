@@ -4559,6 +4559,7 @@
         "veryFast": "Very Fast"
       },
       "speech": {
+        "controls": "Read-aloud controls",
         "rewind": "Rewind",
         "pause": "Pause",
         "resume": "Resume",

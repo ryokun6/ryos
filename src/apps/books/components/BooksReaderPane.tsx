@@ -23,6 +23,7 @@ import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
+  applyEpubTheme,
   buildEpubTheme,
   buildFontFaceCss,
   columnModeToSpread,
@@ -133,7 +134,11 @@ const SPREAD_MIN_WIDTH = 560;
 
 // Shared style for the read-aloud overlay control buttons.
 const SPEECH_OVERLAY_BUTTON_CLASS =
-  "flex h-7 w-7 items-center justify-center rounded-full transition-colors disabled:opacity-40 disabled:hover:bg-transparent";
+  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40 disabled:hover:bg-transparent";
+/** Idle delay before the read-aloud bar shrinks back to the home-indicator pill. */
+const SPEECH_BAR_COLLAPSE_MS = 1800;
+const SPEECH_BAR_COLLAPSED = { width: 72, height: 5 } as const;
+const SPEECH_BAR_EXPANDED = { width: 130, height: 36 } as const;
 
 // Open transition timings. Keep the page reveal slightly after the cover zoom
 // settles so the two never fight (which reads as a "pop"). Shared with the
@@ -1005,7 +1010,8 @@ export const BooksReaderPane = forwardRef<
             }
           );
 
-          nextRendition.themes.default(
+          applyEpubTheme(
+            nextRendition.themes,
             buildEpubTheme(
               settings,
               palette,
@@ -1328,7 +1334,8 @@ export const BooksReaderPane = forwardRef<
       effectiveChineseScript,
       bookLanguageRef.current ?? uiLanguage
     );
-    renditionRef.current.themes.default(
+    applyEpubTheme(
+      renditionRef.current.themes,
       buildEpubTheme(
         settings,
         palette,
@@ -1442,6 +1449,60 @@ export const BooksReaderPane = forwardRef<
   useEffect(
     () => () => onSpeechStateChange?.(false),
     [onSpeechStateChange]
+  );
+
+  // Read-aloud bar: stays expanded while playing; idle / paused collapses to
+  // the home-indicator pill (hover or tap grows it again).
+  const isSpeechPlaying = isSpeaking && !isPaused;
+  const isSpeechPlayingRef = useRef(isSpeechPlaying);
+  isSpeechPlayingRef.current = isSpeechPlaying;
+  const [speechBarExpanded, setSpeechBarExpanded] = useState(false);
+  const speechBarOpen = isSpeechPlaying || speechBarExpanded;
+  const speechBarPointerInsideRef = useRef(false);
+  const speechBarCollapseTimerRef = useRef<number | null>(null);
+  const clearSpeechBarCollapseTimer = useCallback(() => {
+    if (speechBarCollapseTimerRef.current !== null) {
+      window.clearTimeout(speechBarCollapseTimerRef.current);
+      speechBarCollapseTimerRef.current = null;
+    }
+  }, []);
+  const collapseSpeechBar = useCallback(() => {
+    clearSpeechBarCollapseTimer();
+    setSpeechBarExpanded(false);
+  }, [clearSpeechBarCollapseTimer]);
+  const expandSpeechBar = useCallback(() => {
+    clearSpeechBarCollapseTimer();
+    setSpeechBarExpanded(true);
+  }, [clearSpeechBarCollapseTimer]);
+  const scheduleSpeechBarCollapse = useCallback(
+    (delayMs = SPEECH_BAR_COLLAPSE_MS) => {
+      // Keep the full bar up for the entire playing session.
+      if (isSpeechPlayingRef.current) return;
+      clearSpeechBarCollapseTimer();
+      speechBarCollapseTimerRef.current = window.setTimeout(() => {
+        speechBarCollapseTimerRef.current = null;
+        if (speechBarPointerInsideRef.current || isSpeechPlayingRef.current) {
+          return;
+        }
+        setSpeechBarExpanded(false);
+      }, delayMs);
+    },
+    [clearSpeechBarCollapseTimer]
+  );
+  useEffect(() => {
+    if (isSpeechPlaying) {
+      expandSpeechBar();
+      return;
+    }
+    // Idle or paused: drop to the indicator unless the pointer is still over
+    // the bar (so resume / play stays one click away).
+    if (!speechBarPointerInsideRef.current) {
+      collapseSpeechBar();
+    }
+  }, [isSpeechPlaying, expandSpeechBar, collapseSpeechBar]);
+  useEffect(
+    () => () => clearSpeechBarCollapseTimer(),
+    [clearSpeechBarCollapseTimer]
   );
 
   useImperativeHandle(
@@ -1576,57 +1637,128 @@ export const BooksReaderPane = forwardRef<
         </span>
       </div>
 
-      {/* Read-aloud overlay: simple floating controls shown while speech is
-          active. Rewind/skip move by sentence; pause/resume keeps the
-          current sentence. */}
-      <AnimatePresence>
-        {isSpeaking && (
+      {/* Read-aloud overlay: home-indicator pill when idle/paused; stays
+          expanded while playing. Hover or tap grows it otherwise. */}
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 z-30 flex justify-center"
+        style={{ bottom: 6 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+      >
+        <div
+          className="pointer-events-auto flex items-end justify-center"
+          style={{ minWidth: 72, minHeight: 28 }}
+          onPointerEnter={() => {
+            speechBarPointerInsideRef.current = true;
+            expandSpeechBar();
+          }}
+          onPointerLeave={() => {
+            speechBarPointerInsideRef.current = false;
+            scheduleSpeechBarCollapse(160);
+          }}
+          onFocusCapture={expandSpeechBar}
+          onBlurCapture={(event) => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && event.currentTarget.contains(next)) {
+              return;
+            }
+            speechBarPointerInsideRef.current = false;
+            scheduleSpeechBarCollapse(160);
+          }}
+        >
           <motion.div
-            className="pointer-events-none absolute inset-x-0 z-30 flex justify-center"
-            style={{ bottom: 8 }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            role="toolbar"
+            aria-label={t("apps.books.speech.controls", {
+              defaultValue: "Read-aloud controls",
+            })}
+            aria-expanded={speechBarOpen}
+            className={cn(
+              "books-speech-overlay flex items-center justify-center overflow-hidden rounded-full",
+              speechBarOpen ? "gap-0.5 px-1.5 py-1" : "cursor-pointer",
+              isAquaGlass
+                ? null
+                : cn(
+                    "border shadow-lg backdrop-blur-md",
+                    palette.isDark
+                      ? "border-white/15 bg-white/10 text-white"
+                      : "border-black/10 bg-black/60 text-white"
+                  )
+            )}
+            initial={false}
+            animate={
+              speechBarOpen
+                ? {
+                    width: SPEECH_BAR_EXPANDED.width,
+                    height: SPEECH_BAR_EXPANDED.height,
+                  }
+                : {
+                    width: SPEECH_BAR_COLLAPSED.width,
+                    height: SPEECH_BAR_COLLAPSED.height,
+                  }
+            }
+            transition={{
+              type: "spring",
+              stiffness: 520,
+              damping: 34,
+              mass: 0.7,
+            }}
+            onClick={() => {
+              if (speechBarOpen) return;
+              expandSpeechBar();
+              // Touch has no sustained hover; auto-shrink after idle.
+              scheduleSpeechBarCollapse();
+            }}
           >
-            <div
-              className={cn(
-                "books-speech-overlay pointer-events-auto flex items-center gap-0.5 rounded-full px-1.5 py-1",
-                isAquaGlass
-                  ? null
-                  : cn(
-                      "border shadow-lg backdrop-blur-md",
-                      palette.isDark
-                        ? "border-white/15 bg-white/10 text-white"
-                        : "border-black/10 bg-black/60 text-white"
-                    )
-              )}
+            <motion.div
+              className="flex items-center gap-0.5"
+              initial={false}
+              animate={{
+                opacity: speechBarOpen ? 1 : 0,
+                scale: speechBarOpen ? 1 : 0.85,
+              }}
+              transition={{ duration: 0.14, ease: "easeOut" }}
+              style={{
+                pointerEvents: speechBarOpen ? "auto" : "none",
+              }}
             >
               <button
                 type="button"
                 aria-label={t("apps.books.speech.rewind")}
                 title={t("apps.books.speech.rewind")}
                 onClick={skipToPreviousSentence}
+                disabled={!isSpeaking}
                 className={speechOverlayButtonClass}
+                tabIndex={speechBarOpen ? 0 : -1}
               >
                 <Rewind weight="fill" size={16} />
               </button>
               <button
                 type="button"
                 aria-label={
-                  isPaused
-                    ? t("apps.books.speech.resume")
-                    : t("apps.books.speech.pause")
+                  !isSpeaking
+                    ? t("apps.books.menu.startSpeaking")
+                    : isPaused
+                      ? t("apps.books.speech.resume")
+                      : t("apps.books.speech.pause")
                 }
                 title={
-                  isPaused
-                    ? t("apps.books.speech.resume")
-                    : t("apps.books.speech.pause")
+                  !isSpeaking
+                    ? t("apps.books.menu.startSpeaking")
+                    : isPaused
+                      ? t("apps.books.speech.resume")
+                      : t("apps.books.speech.pause")
                 }
-                onClick={isPaused ? resumeSpeaking : pauseSpeaking}
+                onClick={() => {
+                  if (!isSpeaking) startSpeaking();
+                  else if (isPaused) resumeSpeaking();
+                  else pauseSpeaking();
+                }}
+                disabled={!isSpeaking && !isReady}
                 className={speechOverlayButtonClass}
+                tabIndex={speechBarOpen ? 0 : -1}
               >
-                {isPaused ? (
+                {!isSpeaking || isPaused ? (
                   <Play weight="fill" size={16} />
                 ) : (
                   <Pause weight="fill" size={16} />
@@ -1637,7 +1769,9 @@ export const BooksReaderPane = forwardRef<
                 aria-label={t("apps.books.speech.skip")}
                 title={t("apps.books.speech.skip")}
                 onClick={skipToNextSentence}
+                disabled={!isSpeaking}
                 className={speechOverlayButtonClass}
+                tabIndex={speechBarOpen ? 0 : -1}
               >
                 <FastForward weight="fill" size={16} />
               </button>
@@ -1646,14 +1780,16 @@ export const BooksReaderPane = forwardRef<
                 aria-label={t("apps.books.speech.stop")}
                 title={t("apps.books.speech.stop")}
                 onClick={stopSpeaking}
+                disabled={!isSpeaking}
                 className={speechOverlayButtonClass}
+                tabIndex={speechBarOpen ? 0 : -1}
               >
                 <Stop weight="fill" size={16} />
               </button>
-            </div>
+            </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      </motion.div>
 
       {/* Page-turn animation. epub.js only ever has the single current page
           rendered, so a true two-page slide (or a curl showing the outgoing
