@@ -4,9 +4,10 @@ import { App } from "./App";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useLanguageStore } from "./stores/useLanguageStore";
-import { preloadIpodData } from "./stores/ipodPreload";
-import { initPrefetch } from "./utils/prefetch";
-import { initializeI18nForFirstPaint } from "./lib/i18n";
+import {
+  ensureCurrentLanguageResources,
+  initializeI18nForFirstPaint,
+} from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
 import { initializeAnalytics, track, SYSTEM_ANALYTICS } from "./utils/analytics";
 import {
@@ -184,8 +185,14 @@ const bootstrap = async () => {
   // the initial JS/CSS/i18n critical path.
   scheduleIdleWork(() => {
     bootstrapLog.debug("Running idle bootstrap work");
-    preloadIpodData();
-    initPrefetch();
+    void import("./stores/ipodPreload").then((module) =>
+      module.preloadIpodData()
+    );
+    void ensureCurrentLanguageResources();
+    void import("./utils/pwaRegistration").then((module) =>
+      module.initPwaRegistration()
+    );
+    void import("./utils/prefetch").then((module) => module.initPrefetch());
   });
 };
 

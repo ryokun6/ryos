@@ -1,4 +1,6 @@
 import React from "react";
+import "@/styles/themes/control-panels-mac.css";
+import "@/styles/themes/control-panels-themed.css";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { ControlPanelsMenuBar } from "../ControlPanelsMenuBar";
 import { AppProps, ControlPanelsInitialData } from "@/apps/base/types";

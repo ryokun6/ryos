@@ -14,14 +14,17 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isDesktop } from "./utils/platform";
-import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
+import {
+  onDesktopUpdate,
+  type DesktopUpdateResult,
+} from "./utils/desktopUpdateBridge";
 import {
   getDesktopDownloadUrl,
   getSupportedDesktopDownloadTarget,
 } from "./utils/desktopDownload";
 import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
-import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotifications";
+import { DeferredBackgroundChatNotifications } from "./hooks/DeferredBackgroundChatNotifications";
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
 import { DeferredAirDropListener } from "@/components/DeferredAirDropListener";
@@ -93,7 +96,6 @@ export function App() {
   const isMobile = useIsMobile();
   // Initialize offline detection
   useOffline();
-  useBackgroundChatNotifications();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
@@ -250,13 +252,21 @@ export function App() {
     onDesktopUpdate(showDesktopUpdateToast);
 
     // Initial check on load (delayed to let app render first)
-    const timer = setTimeout(async () => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
       appShellLog.debug("Running initial desktop update check");
-      const result = await checkDesktopUpdate();
-      showDesktopUpdateToast(result);
+      void import("./utils/prefetch").then(async ({ checkDesktopUpdate }) => {
+        const result = await checkDesktopUpdate();
+        if (!cancelled) {
+          showDesktopUpdateToast(result);
+        }
+      });
     }, 2000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [setLastSeenDesktopVersion, t]);
 
   if (showBootScreen) {
@@ -286,6 +296,7 @@ export function App() {
       <Toaster position={toastConfig.position} offset={toastConfig.offset} />
       <DeferredAirDropListener />
       <DeferredAutoCloudSync />
+      <DeferredBackgroundChatNotifications />
       <WallpaperAccentRunner />
       <ScreenSaverOverlay />
       {debugMode && (

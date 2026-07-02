@@ -4,6 +4,7 @@ import { isDynamicWallpaper } from "@/utils/dynamicWallpaper";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useWallpaperPlaceholders } from "@/hooks/useWallpaperPlaceholders";
 import { getWallpaperPlaceholder } from "@/utils/wallpapers";
+import { resolveStaticWallpaperRenderUrl } from "@/utils/staticWallpaperUrl";
 
 /** Crossfade duration (ms) when swapping between static wallpaper layers. */
 const CROSSFADE_MS = 500;
@@ -15,7 +16,10 @@ const PRUNE_BUFFER_MS = 80;
 interface StaticWallpaperLayer {
   /** Stable key so React keeps each layer's DOM node across re-renders. */
   id: number;
-  src: string;
+  /** Stable persisted identity used for placeholders and shuffle equality. */
+  canonicalSrc: string;
+  /** Full-fidelity asset painted by this layer. */
+  renderSrc: string;
   isTiled: boolean;
   /** Average color, painted instantly as a solid base (blur-up). */
   color?: string;
@@ -43,6 +47,22 @@ function isStaticImageWallpaper(source: string, isVideo: boolean): boolean {
 /** A layer "covers" what's beneath it once its opaque placeholder or full image is visible. */
 function layerCovers(layer: StaticWallpaperLayer): boolean {
   return Boolean(layer.color || layer.blur || layer.loaded);
+}
+
+function loadDecodedImage(source: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      if (typeof image.decode !== "function") {
+        resolve();
+        return;
+      }
+      void image.decode().then(resolve).catch(() => resolve());
+    };
+    image.onerror = () => reject(new Error(`Unable to load ${source}`));
+    image.src = source;
+  });
 }
 
 /**
@@ -85,8 +105,15 @@ export function DesktopStaticWallpaper() {
       return;
     }
 
+    const renderSource = resolveStaticWallpaperRenderUrl(wallpaperSource);
     const top = layersRef.current[layersRef.current.length - 1];
-    if (top && top.src === wallpaperSource) return;
+    if (
+      top &&
+      top.canonicalSrc === wallpaperSource &&
+      top.renderSrc === renderSource
+    ) {
+      return;
+    }
 
     const isTiled = wallpaperSource.includes("/wallpapers/tiles/");
     const placeholder = getWallpaperPlaceholder(
@@ -101,7 +128,8 @@ export function DesktopStaticWallpaper() {
       ...prev,
       {
         id,
-        src: wallpaperSource,
+        canonicalSrc: wallpaperSource,
+        renderSrc: renderSource,
         isTiled,
         color: placeholder?.color,
         // Tiles repeat at 64px, so a blurred LQIP is meaningless for them.
@@ -111,31 +139,21 @@ export function DesktopStaticWallpaper() {
     ]);
 
     let cancelled = false;
-    const markLoaded = () => {
+    const markLoaded = (loadedSource: string) => {
       if (cancelled) return;
       setLayers((prev) =>
         prev.map((layer) =>
-          layer.id === id ? { ...layer, loaded: true } : layer
+          layer.id === id
+            ? { ...layer, renderSrc: loadedSource, loaded: true }
+            : layer
         )
       );
     };
 
-    const img = new Image();
-    img.decoding = "async";
-    img.src = wallpaperSource;
-
-    // Prefer decode() so the bitmap is ready before we reveal it, avoiding jank.
-    // decode() can reject (e.g. cross-origin without CORS) — fall back to load.
-    img
-      .decode()
-      .then(markLoaded)
+    void loadDecodedImage(renderSource)
+      .then(() => markLoaded(renderSource))
       .catch(() => {
-        if (cancelled) return;
-        if (img.complete && img.naturalWidth > 0) {
-          markLoaded();
-        } else {
-          img.onload = markLoaded;
-        }
+        // Keep the placeholder visible when the canonical source is unavailable.
       });
 
     return () => {
@@ -151,7 +169,7 @@ export function DesktopStaticWallpaper() {
       let changed = false;
       const next = prev.map((layer) => {
         if (layer.color || layer.blur) return layer;
-        const ph = getWallpaperPlaceholder(layer.src, placeholders);
+        const ph = getWallpaperPlaceholder(layer.canonicalSrc, placeholders);
         if (!ph) return layer;
         changed = true;
         return {
@@ -192,7 +210,6 @@ export function DesktopStaticWallpaper() {
       FULL_FADE_MS + PRUNE_BUFFER_MS
     );
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topLoaded, topId, layers.length]);
 
   return (
@@ -235,7 +252,7 @@ export function DesktopStaticWallpaper() {
             <div
               className="absolute inset-0 w-full h-full"
               style={{
-                backgroundImage: `url(${layer.src})`,
+                backgroundImage: `url(${layer.renderSrc})`,
                 backgroundSize: bgSize,
                 backgroundRepeat: bgRepeat,
                 backgroundPosition: "center",

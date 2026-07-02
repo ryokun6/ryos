@@ -566,9 +566,12 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(cssSource.includes(':root[data-os-theme="system7"]')).toBe(true);
     expect(cssSource.includes(':root[data-os-theme="xp"]')).toBe(true);
     expect(cssSource.includes(':root[data-os-theme="win98"]')).toBe(true);
-    // The themed stylesheet is wired into the global theme bundle.
-    const themesSource = readSource("src/styles/themes.css");
-    expect(themesSource.includes("control-panels-themed.css")).toBe(true);
+    // App-specific styles load with the lazy Control Panels chunk rather than
+    // inflating the global first-paint theme stylesheet.
+    const appSource = readSource(
+      "src/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent.tsx"
+    );
+    expect(appSource.includes("control-panels-themed.css")).toBe(true);
   });
 
   test("category and pinned pane icons resolve on macosx theme", () => {

@@ -56,6 +56,22 @@ const FORBIDDEN_BOOT_MODULES: Array<{ target: string; reason: string }> = [
     target: "hooks/useAutoCloudSync",
     reason: "cloud sync engine — deferred via DeferredAutoCloudSync",
   },
+  {
+    target: "hooks/useBackgroundChatNotifications",
+    reason: "authenticated realtime notifications — deferred until idle",
+  },
+  {
+    target: "stores/ipodPreload",
+    reason: "idle-only iPod catalog warming",
+  },
+  {
+    target: "utils/prefetch",
+    reason: "idle-only offline asset warming",
+  },
+  {
+    target: "utils/pwaRegistration",
+    reason: "service-worker registration is deferred until idle",
+  },
 ];
 
 describe("boot import graph", () => {
