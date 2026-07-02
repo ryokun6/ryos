@@ -189,6 +189,9 @@ const bootstrap = async () => {
       module.preloadIpodData()
     );
     void ensureCurrentLanguageResources();
+    void import("./utils/pwaRegistration").then((module) =>
+      module.initPwaRegistration()
+    );
     void import("./utils/prefetch").then((module) => module.initPrefetch());
   });
 };

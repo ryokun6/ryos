@@ -68,6 +68,10 @@ const FORBIDDEN_BOOT_MODULES: Array<{ target: string; reason: string }> = [
     target: "utils/prefetch",
     reason: "idle-only offline asset warming",
   },
+  {
+    target: "utils/pwaRegistration",
+    reason: "service-worker registration is deferred until idle",
+  },
 ];
 
 describe("boot import graph", () => {

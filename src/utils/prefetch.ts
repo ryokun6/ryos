@@ -16,8 +16,21 @@ import { toast } from "sonner";
 import { createElement } from "react";
 import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
 import { useAppStore } from "@/stores/useAppStore";
+import { computeDockPinnedItems, useDockStore } from "@/stores/useDockStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
+import { appIds } from "@/config/appRegistryData";
+import { getAppIconPath } from "@/config/appRegistry";
+import {
+  fetchIconManifest,
+  type IconManifest,
+} from "@/utils/icons";
+import {
+  collectActiveThemeIconUrls,
+  getCoreSoundUrls,
+  getThemeStaticAssetUrls,
+} from "@/utils/prefetchAssets";
 import { getApiUrl, isDesktop } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
@@ -433,17 +446,44 @@ async function runPrefetchWithToast(
   }
 
   // Fetch manifest first
-  const manifest = await fetchIconManifest();
+  const manifest = await fetchIconManifest().catch((error) => {
+    console.warn('[Prefetch] Failed to load icon manifest:', error);
+    return null;
+  });
   if (!manifest) {
     toast.error(i18n.t("common.toast.failedToLoadAssetManifest"));
     log.debug("Could not fetch manifest");
     return;
   }
   
-  // Gather all URLs
-  const iconUrls = getIconUrlsFromManifest(manifest);
-  const soundUrls = getSoundUrls();
-  const assetUrls = getStaticAssetUrls();
+  // Warm only assets that can render in the current shell. The icon manifest
+  // contains every theme and historical app icon, most of which a session
+  // never requests.
+  const theme = useThemeStore.getState().current;
+  const pinnedIconPaths = computeDockPinnedItems(
+    useDockStore.getState().pinnedItems
+  )
+    .map((item) => item.icon)
+    .filter((icon): icon is string => Boolean(icon));
+  const iconUrls = collectActiveThemeIconUrls({
+    theme,
+    manifest,
+    iconPaths: [
+      ...appIds.map((appId) => getAppIconPath(appId)),
+      ...pinnedIconPaths,
+      "/icons/default/application.png",
+      "/icons/default/applications.png",
+      "/icons/default/directory.png",
+      "/icons/default/disk.png",
+      "/icons/default/file.png",
+      "/icons/default/file-text.png",
+      "/icons/default/pc.png",
+      "/icons/default/trash-empty.png",
+      "/icons/default/trash-full.png",
+    ],
+  });
+  const soundUrls = getCoreSoundUrls();
+  const assetUrls = getThemeStaticAssetUrls(theme);
   
   const totalItems = iconUrls.length + soundUrls.length + assetUrls.length;
   
@@ -569,76 +609,6 @@ function finalizePrefetch(
   }
 }
 
-// Static assets that should be prefetched for UI theming
-const STATIC_ASSETS = [
-  // Theme textures
-  '/assets/brushed-metal.jpg',
-  '/assets/button.svg',
-  '/assets/button-default.svg',
-  // Splash screens
-  '/assets/splash/hello.svg',
-  '/assets/splash/macos.svg',
-  '/assets/splash/win98.png',
-  '/assets/splash/win98.gif',
-  '/assets/splash/xp.png',
-  '/assets/splash/xp-boot.gif',
-  // Video player controls
-  '/assets/videos/play.png',
-  '/assets/videos/pause.png',
-  '/assets/videos/stop.png',
-  '/assets/videos/prev.png',
-  '/assets/videos/next.png',
-  '/assets/videos/clear.png',
-  '/assets/videos/switch.png',
-];
-
-// UI sound files in /sounds/ directory
-const UI_SOUNDS = [
-  'AlertBonk.mp3',
-  'AlertGrowl.mp3',
-  'AlertIndigo.mp3',
-  'AlertQuack.mp3',
-  'AlertSosumi.mp3',
-  'AlertTabitha.mp3',
-  'AlertWildEep.mp3',
-  'Beep.mp3',
-  'Boot.mp3',
-  'ButtonClickDown.mp3',
-  'ButtonClickUp.mp3',
-  'Click.mp3',
-  'EmailMailError.mp3',
-  'EmailMailSent.mp3',
-  'EmailNewMail.mp3',
-  'EmailNoMail.mp3',
-  'InputRadioClickDown.mp3',
-  'InputRadioClickUp.mp3',
-  'MSNNudge.mp3',
-  'MenuClose.mp3',
-  'MenuItemClick.mp3',
-  'MenuItemHover.mp3',
-  'MenuOpen.mp3',
-  'PhotoShutter.mp3',
-  'Thump.mp3',
-  'VideoTapeIn.mp3',
-  'Volume.mp3',
-  'WheelsOfTime.m4a',
-  'WindowClose.mp3',
-  'WindowCollapse.mp3',
-  'WindowControlClickDown.mp3',
-  'WindowControlClickUp.mp3',
-  'WindowExpand.mp3',
-  'WindowFocus.mp3',
-  'WindowMoveIdle.mp3',
-  'WindowMoveMoving.mp3',
-  'WindowMoveStop.mp3',
-  'WindowOpen.mp3',
-  'WindowResizeIdle.mp3',
-  'WindowResizeResizing.mp3',
-  'WindowResizeStop.mp3',
-  'WindowZoomMaximize.mp3',
-  'WindowZoomMinimize.mp3',
-];
-
 // Max simultaneous prefetch requests. Bounded so the background warmup doesn't
 // saturate the connection or contend with foreground app/network traffic.
 const PREFETCH_CONCURRENCY = 8;
@@ -705,49 +675,6 @@ async function prefetchUrlsWithProgress(
   return succeeded;
 }
 
-interface IconManifest {
-  version: number;
-  generatedAt: string;
-  themes: Record<string, string[]>;
-}
-
-/**
- * Fetch and parse the icon manifest
- */
-async function fetchIconManifest(): Promise<IconManifest | null> {
-  try {
-    const response = await abortableFetch('/icons/manifest.json', {
-      method: 'GET',
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch (error) {
-    console.warn('[Prefetch] Failed to load icon manifest:', error);
-    return null;
-  }
-}
-
-/**
- * Get all icon URLs from the icon manifest
- */
-function getIconUrlsFromManifest(manifest: IconManifest): string[] {
-  const urls: string[] = [];
-  
-  if (manifest.themes && typeof manifest.themes === 'object') {
-    for (const [themeName, icons] of Object.entries(manifest.themes)) {
-      if (Array.isArray(icons)) {
-        const prefix = themeName === 'default' ? '/icons/default/' : `/icons/${themeName}/`;
-        urls.push(...icons.map((icon: string) => `${prefix}${icon}`));
-      }
-    }
-  }
-  
-  return urls;
-}
-
 /**
  * Store the manifest timestamp after successful prefetch
  */
@@ -757,20 +684,6 @@ function storeManifestTimestamp(manifest: IconManifest): void {
   } catch {
     // localStorage might not be available
   }
-}
-
-/**
- * Get all UI sound URLs
- */
-function getSoundUrls(): string[] {
-  return UI_SOUNDS.map(sound => `/sounds/${sound}`);
-}
-
-/**
- * Get all static asset URLs (textures, splash screens, etc.)
- */
-function getStaticAssetUrls(): string[] {
-  return STATIC_ASSETS;
 }
 
 /**

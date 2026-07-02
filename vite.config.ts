@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { shouldExcludePrecacheChunk } from "./vite/precachePolicy";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -58,11 +59,9 @@ self.addEventListener("activate", (event) => {
 // ---------------------------------------------------------------------------
 // Curated Workbox precache
 //
-// We precache the app shell + every "normal" JS chunk so apps load offline and
-// updates only re-download content-hashed chunks that actually changed. But we
-// EXCLUDE a handful of heavy / rarely-needed-offline families from the precache
-// to keep the service-worker install small: they stay available on-demand via
-// the runtime CacheFirst /assets/*.js rule (and degrade gracefully offline):
+// We precache the app shell and its shared JS/CSS closure. Lazy apps, full
+// locale catalogs, and heavy optional vendors stay available on demand via the
+// runtime CacheFirst rules, keeping service-worker installation small:
 //   - shiki syntax grammars + themes  (chat code highlighting; falls back to
 //     plain text offline)
 //   - mermaid                         (chat diagrams)
@@ -70,20 +69,14 @@ self.addEventListener("activate", (event) => {
 //   - v86                             (Virtual PC emulator)
 //   - pusher-js                       (realtime chat; needs network anyway)
 //   - react-player                    (YouTube playback; needs network anyway)
-// `three` (3D wallpapers / Synth) and `audio` (Synth/Soundboard/iPod) are NOT
-// excluded so those keep working offline.
-//
-// The set is populated at build time by `collectHeavyChunksPlugin` (which
-// inspects each emitted chunk's modules) and consumed by the Workbox
-// `manifestTransforms` hook below.
+// The exclusion set is populated at build time by inspecting emitted chunks
+// and consumed by the Workbox `manifestTransforms` hook below.
 // ---------------------------------------------------------------------------
-const HEAVY_PRECACHE_PACKAGES =
-  /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?(?:shiki|@shikijs|mermaid|webamp|v86|pusher-js|react-player)[/\\]/;
-const heavyPrecacheExclusions = new Set<string>();
+const precacheExclusions = new Set<string>();
 
-function collectHeavyChunksPlugin() {
+function collectPrecacheExclusionsPlugin() {
   return {
-    name: "ryos-collect-heavy-chunks",
+    name: "ryos-collect-precache-exclusions",
     apply: "build" as const,
     generateBundle(_options: unknown, bundle: Record<string, unknown>) {
       for (const [fileName, output] of Object.entries(bundle)) {
@@ -92,25 +85,24 @@ function collectHeavyChunksPlugin() {
           moduleIds?: string[];
           modules?: Record<string, unknown>;
           facadeModuleId?: string | null;
+          viteMetadata?: {
+            importedCss?: Set<string>;
+          };
         };
         if (chunk.type !== "chunk" || !fileName.endsWith(".js")) continue;
         const moduleIds =
           chunk.moduleIds ?? Object.keys(chunk.modules ?? {});
-        if (moduleIds.length === 0) continue;
-        // Exclude a chunk when it is ENTIRELY composed of heavy packages
-        // (catches shiki language/theme grammars and manual heavy chunks), OR
-        // when its facade module is a heavy package (catches dynamic-import
-        // entry chunks like mermaid that also bundle non-heavy transitive deps
-        // such as d3/dagre). Requiring all-heavy or a heavy facade avoids ever
-        // dropping a shared chunk that also contains app code.
-        const allHeavy = moduleIds.every((id) =>
-          HEAVY_PRECACHE_PACKAGES.test(id)
-        );
-        const heavyFacade =
-          typeof chunk.facadeModuleId === "string" &&
-          HEAVY_PRECACHE_PACKAGES.test(chunk.facadeModuleId);
-        if (allHeavy || heavyFacade) {
-          heavyPrecacheExclusions.add(fileName.split("/").pop() as string);
+        if (
+          shouldExcludePrecacheChunk({
+            fileName,
+            moduleIds,
+            facadeModuleId: chunk.facadeModuleId,
+          })
+        ) {
+          precacheExclusions.add(fileName.split("/").pop() as string);
+          for (const cssFile of chunk.viteMetadata?.importedCss ?? []) {
+            precacheExclusions.add(cssFile.split("/").pop() as string);
+          }
         }
       }
     },
@@ -430,15 +422,15 @@ export default defineConfig({
     // Only include PWA plugin in production builds (not dev)
     // Skip PWA plugin entirely in dev mode to save ~50MB memory (Workbox config is heavy)
     ...(isDev ? [] : [
-      collectHeavyChunksPlugin(),
+      collectPrecacheExclusionsPlugin(),
       VitePWA({
       registerType: "autoUpdate",
+      injectRegister: false,
       manifestFilename: "manifest.json",
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
         "icons/*.png",
-        "fonts/*.woff2",
       ],
       manifest: {
         name: "ryOS",
@@ -713,7 +705,7 @@ export default defineConfig({
           "index.html",
           "assets/*.js",
           "**/*.css",
-          "fonts/*.woff2",
+          "fonts/fonts.css",
           "icons/manifest.json",
         ],
         // Exclude large data files from precaching (they'll be cached at runtime)
@@ -734,7 +726,7 @@ export default defineConfig({
           ) => {
             const manifest = entries.filter((entry) => {
               const base = entry.url.split("/").pop() ?? entry.url;
-              return !heavyPrecacheExclusions.has(base);
+              return !precacheExclusions.has(base);
             });
             return { manifest, warnings: [] };
           },

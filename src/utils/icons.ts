@@ -17,7 +17,7 @@ export interface IconManifest {
 let manifestCache: IconManifest | null = null;
 let manifestPromise: Promise<IconManifest> | null = null;
 
-async function loadManifest(): Promise<IconManifest> {
+export async function fetchIconManifest(): Promise<IconManifest> {
   if (manifestCache) return manifestCache;
   if (!manifestPromise) {
     manifestPromise = abortableFetch("/icons/manifest.json", {
@@ -187,7 +187,7 @@ export function useIconPath(name: string, theme?: string | null) {
     let cancelled = false;
     (async () => {
       try {
-        const m = await loadManifest();
+        const m = await fetchIconManifest();
         if (cancelled) return;
         // Re-evaluate with manifest; may fallback if icon not present.
         setPath(pickIconPath(name, { theme, manifest: m }));
