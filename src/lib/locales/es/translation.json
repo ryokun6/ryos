@@ -678,6 +678,13 @@
         "listView": "Visualización como lista",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "Pausa",
+        "resume": "Reanudar",
+        "rewind": "Retroceder",
+        "skip": "Omitir",
+        "stop": "Detener"
+      },
       "speechRate": {
         "fast": "Rápida",
         "normal": "Normal",
