@@ -289,6 +289,64 @@ function registerFilesForLazyLoad(
       pendingLazyLoadFiles.set(file.path, file);
     }
   }
+  scheduleDefaultBookWarmup();
+}
+
+// ---------------------------------------------------------------------------
+// Default book offline warmup
+//
+// Bundled books (e.g. Meditations) are lazy-loaded on first open, which means
+// a user who goes offline before ever opening them sees "Couldn't open this
+// book" even though the book sits on their shelf. Warm the EPUB bytes into
+// IndexedDB in the background so every shelved book stays readable offline.
+// Other lazy assets stay strictly on-demand — books are the only bundled
+// content users expect to work offline by default.
+// ---------------------------------------------------------------------------
+let bookWarmupScheduled = false;
+
+/** Load every pending default /Books EPUB into IndexedDB (no-op when cached). */
+export async function warmPendingBookContent(): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  const bookPaths = [...pendingLazyLoadFiles.keys()].filter((path) =>
+    path.startsWith("/Books/")
+  );
+  for (const path of bookPaths) {
+    const uuid = useFilesStore.getState().items[path]?.uuid;
+    if (!uuid) continue;
+    try {
+      await ensureFileContentLoaded(path, uuid);
+    } catch (err) {
+      console.warn(`[FilesStore] Book warmup failed for ${path}:`, err);
+    }
+  }
+}
+
+function scheduleDefaultBookWarmup(): void {
+  if (bookWarmupScheduled) return;
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (![...pendingLazyLoadFiles.keys()].some((p) => p.startsWith("/Books/"))) {
+    return;
+  }
+  bookWarmupScheduled = true;
+  const run = () => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // Offline right now — warm as soon as connectivity returns instead.
+      window.addEventListener(
+        "online",
+        () => void warmPendingBookContent(),
+        { once: true }
+      );
+      return;
+    }
+    void warmPendingBookContent();
+  };
+  // Idle-schedule so the (potentially ~MB-sized) fetch never competes with
+  // the boot critical path.
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 15000 });
+  } else {
+    window.setTimeout(run, 5000);
+  }
 }
 
 /**
@@ -380,6 +438,15 @@ export async function ensureFileContentLoaded(
       }
     }
     if (!pendingFile?.assetPath) {
+      return false;
+    }
+
+    // Offline: the asset fetch below cannot succeed — fail fast instead of
+    // burning through fetch retries so callers fall back immediately.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      console.warn(
+        `[FilesStore] Offline — cannot load content for ${filePath}`
+      );
       return false;
     }
 
