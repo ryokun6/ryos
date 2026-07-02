@@ -193,6 +193,7 @@ export const FileIcon = memo(function FileIcon({
   };
 
   const sizes = sizeClasses[size];
+  const imagePixelSize = size === "large" ? 48 : 32;
 
   const handleImageError = useCallback(() => {
     console.error(
@@ -244,6 +245,11 @@ export const FileIcon = memo(function FileIcon({
           <img
             src={imgSrc}
             alt={name}
+            width={imagePixelSize}
+            height={imagePixelSize}
+            decoding="async"
+            loading={isFinderContext ? "lazy" : "eager"}
+            fetchPriority={isFinderContext ? "auto" : "low"}
             className={`no-touch-callout object-cover ${sizes.image} rounded`}
             onError={handleImageError}
             onContextMenu={(e) => e.preventDefault()}
@@ -279,6 +285,11 @@ export const FileIcon = memo(function FileIcon({
       <ThemedIcon
         name={iconPath}
         alt={isDirectory ? t("apps.finder.fileTypes.directory") : t("apps.finder.fileTypes.file")}
+        width={imagePixelSize}
+        height={imagePixelSize}
+        decoding="async"
+        loading={isFinderContext ? "lazy" : "eager"}
+        fetchPriority={isFinderContext ? "auto" : "low"}
         className={`no-touch-callout object-contain ${sizes.image} ${
           isDirectory && isDropTarget ? "invert" : ""
         }`}
