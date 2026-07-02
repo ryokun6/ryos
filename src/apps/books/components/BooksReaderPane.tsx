@@ -19,7 +19,10 @@ import {
   buildEpubTheme,
   buildFontFaceCss,
   columnModeToSpread,
+  displayEpubTargetWithFallback,
   isLikelyEpubBuffer,
+  reflowEpubAfterFontsSettle,
+  resolveEpubDisplayFallbackTarget,
   resolveReadingPalette,
 } from "../utils/booksReader";
 import {
@@ -108,6 +111,8 @@ const SPREAD_MIN_WIDTH = 560;
 export const ZOOM_DURATION = 0.45;
 export const ZOOM_EASE = [0.32, 0.72, 0, 1] as const;
 const REVEAL_DELAY_MS = 480;
+const INITIAL_DISPLAY_TIMEOUT_MS = 6500;
+const FALLBACK_DISPLAY_TIMEOUT_MS = 6500;
 const DEFAULT_BOOK_ASSET_BY_PATH: Record<string, string> = {
   "/Books/Meditations - Marcus Aurelius.epub":
     "/assets/books/meditations-marcus-aurelius.epub",
@@ -457,6 +462,7 @@ export const BooksReaderPane = forwardRef<
     let cancelled = false;
     let book: Book | null = null;
     let rendition: Rendition | null = null;
+    let displayedContentFontsReady: Promise<FontFaceSet> | undefined;
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
@@ -708,111 +714,132 @@ export const BooksReaderPane = forwardRef<
           return;
         }
 
-        appendDebugEvent("epubjs:renderTo:start", {
-          width: host.clientWidth,
-          height: host.clientHeight,
-          spread: columnModeToSpread(settings.columnMode),
-        });
-        rendition = book.renderTo(host, {
-          width: host.clientWidth || "100%",
-          height: host.clientHeight || "100%",
-          flow: "paginated",
-          spread: columnModeToSpread(settings.columnMode),
-          minSpreadWidth: SPREAD_MIN_WIDTH,
-          manager: "default",
-        });
-        renditionRef.current = rendition;
-        appendDebugEvent("epubjs:renderTo:success");
-
-        rendition.on("started", () =>
-          appendDebugEvent("epubjs:rendition:started")
-        );
-        rendition.on("attached", () =>
-          appendDebugEvent("epubjs:rendition:attached")
-        );
-        rendition.on("rendered", (section: { href?: string; idref?: string }) =>
-          appendDebugEvent("epubjs:rendition:rendered", {
-            href: section?.href,
-            idref: section?.idref,
-          })
-        );
-        rendition.on("displayed", (section: { href?: string; idref?: string }) =>
-          appendDebugEvent("epubjs:rendition:displayed", {
-            href: section?.href,
-            idref: section?.idref,
-          })
-        );
-        rendition.on("displayError", (error: unknown) =>
-          appendDebugEvent(
-            "epubjs:rendition:displayError",
-            {
-              error,
-              snapshot: getReaderDebugSnapshot("epubjs:rendition:displayError"),
-            },
-            "error"
-          )
-        );
-        rendition.on(
-          "layout",
-          (props: unknown, changed: unknown) =>
-            appendDebugEvent("epubjs:rendition:layout", { props, changed })
-        );
-        rendition.on("resized", (size: unknown) =>
-          appendDebugEvent("epubjs:rendition:resized", size)
-        );
-
         const fontFaceCss = buildFontFaceCss(window.location.origin);
-        rendition.hooks.content.register(
-          async (contents: {
-            addStylesheetCss: (css: string, key: string) => void;
-            document?: Document;
-          }) => {
-            try {
-              contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
-              appendDebugEvent("epubjs:contentHook:fonts:success");
-            } catch {
-              appendDebugEvent("epubjs:contentHook:fonts:failed", undefined, "warn");
-            }
-            // `hyphens: auto` and locale-specific CJK glyph forms depend on the
-            // content language. Prefer EPUB metadata, then the ryOS UI locale.
-            try {
-              const docEl = contents.document?.documentElement;
-              if (docEl && !docEl.getAttribute("lang")) {
-                docEl.setAttribute(
-                  "lang",
-                  bookLanguageRef.current ?? uiLanguageRef.current
+        const activeBook = book;
+
+        const createRendition = (reason: "initial" | "fallback"): Rendition => {
+          const renderStep =
+            reason === "initial" ? "epubjs:renderTo" : "epubjs:renderToFallback";
+          displayedContentFontsReady = undefined;
+          appendDebugEvent(`${renderStep}:start`, {
+            width: host.clientWidth,
+            height: host.clientHeight,
+            spread: columnModeToSpread(settings.columnMode),
+          });
+          const nextRendition = activeBook.renderTo(host, {
+            width: host.clientWidth || "100%",
+            height: host.clientHeight || "100%",
+            flow: "paginated",
+            spread: columnModeToSpread(settings.columnMode),
+            minSpreadWidth: SPREAD_MIN_WIDTH,
+            manager: "default",
+          });
+          rendition = nextRendition;
+          renditionRef.current = nextRendition;
+          appendDebugEvent(`${renderStep}:success`);
+
+          nextRendition.on("started", () =>
+            appendDebugEvent("epubjs:rendition:started")
+          );
+          nextRendition.on("attached", () =>
+            appendDebugEvent("epubjs:rendition:attached")
+          );
+          nextRendition.on(
+            "rendered",
+            (section: { href?: string; idref?: string }) =>
+              appendDebugEvent("epubjs:rendition:rendered", {
+                href: section?.href,
+                idref: section?.idref,
+              })
+          );
+          nextRendition.on(
+            "displayed",
+            (section: { href?: string; idref?: string }) =>
+              appendDebugEvent("epubjs:rendition:displayed", {
+                href: section?.href,
+                idref: section?.idref,
+              })
+          );
+          nextRendition.on("displayError", (error: unknown) =>
+            appendDebugEvent(
+              "epubjs:rendition:displayError",
+              {
+                error,
+                snapshot: getReaderDebugSnapshot("epubjs:rendition:displayError"),
+              },
+              "error"
+            )
+          );
+          nextRendition.on(
+            "layout",
+            (props: unknown, changed: unknown) =>
+              appendDebugEvent("epubjs:rendition:layout", { props, changed })
+          );
+          nextRendition.on("resized", (size: unknown) =>
+            appendDebugEvent("epubjs:rendition:resized", size)
+          );
+
+          nextRendition.hooks.content.register(
+            async (contents: {
+              addStylesheetCss: (css: string, key: string) => void;
+              document?: Document;
+            }) => {
+              try {
+                contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
+                appendDebugEvent("epubjs:contentHook:fonts:success");
+              } catch {
+                appendDebugEvent(
+                  "epubjs:contentHook:fonts:failed",
+                  undefined,
+                  "warn"
                 );
               }
-            } catch {
-              // ignore
-            }
-            // Strip publisher inline `color` styles so the themed reading color
-            // always wins. A stylesheet (even `!important`) can't beat an inline
-            // `color: … !important`, so removing the inline declaration is the
-            // only reliable way to guarantee legibility (e.g. dark-on-dark).
-            try {
-              const doc = contents.document;
-              if (doc) {
-                doc
-                  .querySelectorAll<HTMLElement>("[style]")
-                  .forEach((el) => {
-                    if (el.style?.color) {
-                      el.style.removeProperty("color");
-                    }
-                  });
+
+              const document = contents.document;
+              if (!document) return;
+
+              // `hyphens: auto` and locale-specific CJK glyph forms depend on the
+              // content language. Prefer EPUB metadata, then the ryOS UI locale.
+              try {
+                const docEl = document.documentElement;
+                if (docEl && !docEl.getAttribute("lang")) {
+                  docEl.setAttribute(
+                    "lang",
+                    bookLanguageRef.current ?? uiLanguageRef.current
+                  );
+                }
+              } catch {
+                // ignore
               }
-            } catch {
-              // ignore
-            }
-            const document = contents.document;
-            if (document) {
+
+              // Strip publisher inline `color` styles so the themed reading color
+              // always wins. A stylesheet (even `!important`) can't beat an inline
+              // `color: … !important`, so removing the inline declaration is the
+              // only reliable way to guarantee legibility (e.g. dark-on-dark).
+              try {
+                document.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+                  if (el.style?.color) {
+                    el.style.removeProperty("color");
+                  }
+                });
+              } catch {
+                // ignore
+              }
+
+              if (document.fonts && renditionRef.current === nextRendition) {
+                displayedContentFontsReady = document.fonts.ready;
+              }
+
               const target = chineseScriptRef.current;
               try {
                 const changedNodeCount = await applyChineseScriptToDocument(
                   document,
                   target,
                   chineseScriptSessionRef.current,
-                  () => !cancelled && chineseScriptRef.current === target
+                  () =>
+                    !cancelled &&
+                    chineseScriptRef.current === target &&
+                    renditionRef.current === nextRendition
                 );
                 appendDebugEvent("epubjs:contentHook:chineseScript:success", {
                   target,
@@ -826,74 +853,138 @@ export const BooksReaderPane = forwardRef<
                 );
               }
             }
-          }
-        );
+          );
 
-        rendition.themes.default(
-          buildEpubTheme(settings, palette, readingLanguage)
-        );
-        rendition.themes.fontSize(`${settings.fontSizePct}%`);
-        appendDebugEvent("epubjs:theme:applied");
+          nextRendition.themes.default(
+            buildEpubTheme(settings, palette, readingLanguage)
+          );
+          nextRendition.themes.fontSize(`${settings.fontSizePct}%`);
+          appendDebugEvent("epubjs:theme:applied");
 
-        const activeBook = book;
-        rendition.on(
-          "relocated",
-          (location: {
-            start?: { cfi?: string; href?: string; percentage?: number };
-            atStart?: boolean;
-            atEnd?: boolean;
-          }) => {
-            const cfi = location?.start?.cfi;
-            const atStartNow = !!location?.atStart;
-            const atEndNow = !!location?.atEnd;
-            const activeHref = location?.start?.href;
-            activeSectionHrefRef.current = activeHref;
-            setAtStart(atStartNow);
-            setAtEnd(atEndNow);
-            setNavigationState((state) => ({
-              ...state,
-              canGoPreviousPage: !atStartNow,
-              canGoNextPage: !atEndNow,
-              currentChapterIndex: findCurrentChapterIndex(
-                state.chapters,
-                activeHref
-              ),
-            }));
-            if (!cfi) return;
-            let pct = location?.start?.percentage ?? 0;
-            try {
-              const total = activeBook.locations?.length?.() ?? 0;
-              if ((!pct || pct === 0) && total > 0) {
-                pct = activeBook.locations.percentageFromCfi(cfi);
+          nextRendition.on(
+            "relocated",
+            (location: {
+              start?: { cfi?: string; href?: string; percentage?: number };
+              atStart?: boolean;
+              atEnd?: boolean;
+            }) => {
+              const cfi = location?.start?.cfi;
+              const atStartNow = !!location?.atStart;
+              const atEndNow = !!location?.atEnd;
+              const activeHref = location?.start?.href;
+              activeSectionHrefRef.current = activeHref;
+              setAtStart(atStartNow);
+              setAtEnd(atEndNow);
+              setNavigationState((state) => ({
+                ...state,
+                canGoPreviousPage: !atStartNow,
+                canGoNextPage: !atEndNow,
+                currentChapterIndex: findCurrentChapterIndex(
+                  state.chapters,
+                  activeHref
+                ),
+              }));
+              if (!cfi) return;
+              let pct = location?.start?.percentage ?? 0;
+              try {
+                const total = activeBook.locations?.length?.() ?? 0;
+                if ((!pct || pct === 0) && total > 0) {
+                  pct = activeBook.locations.percentageFromCfi(cfi);
+                }
+              } catch {
+                // ignore
               }
-            } catch {
-              // ignore
+              const computed = clamp01(pct || 0);
+              // A 0 that isn't genuinely the start of the book means epub.js
+              // hasn't generated locations yet — don't drop the seeded/known value
+              // to 0. Keep showing it and persist the cfi with the known percentage
+              // so the cache isn't clobbered either.
+              if (computed > 0 || atStartNow) {
+                setProgressPct(computed);
+                onProgressRef.current(cfi, computed);
+              } else {
+                onProgressRef.current(cfi, progressPctRef.current);
+              }
             }
-            const computed = clamp01(pct || 0);
-            // A 0 that isn't genuinely the start of the book means epub.js
-            // hasn't generated locations yet — don't drop the seeded/known value
-            // to 0. Keep showing it and persist the cfi with the known percentage
-            // so the cache isn't clobbered either.
-            if (computed > 0 || atStartNow) {
-              setProgressPct(computed);
-              onProgressRef.current(cfi, computed);
-            } else {
-              onProgressRef.current(cfi, progressPctRef.current);
-            }
-          }
-        );
+          );
 
-        rendition.on("keyup", (event: KeyboardEvent) => handleKey(event));
+          nextRendition.on("keyup", (event: KeyboardEvent) => handleKey(event));
+          return nextRendition;
+        };
+
+        rendition = createRendition("initial");
 
         try {
-          appendDebugEvent("epubjs:display:start", {
-            initialCfi: initialCfiRef.current,
-          });
-          await watch(
-            "epubjs:display",
-            rendition.display(initialCfiRef.current || undefined)
+          const initialDisplayTarget = initialCfiRef.current || undefined;
+          const fallbackDisplayTarget = resolveEpubDisplayFallbackTarget(
+            activeBook,
+            initialDisplayTarget
           );
-          appendDebugEvent("epubjs:display:success");
+          appendDebugEvent("epubjs:display:start", {
+            initialCfi: initialDisplayTarget,
+            fallbackTarget: fallbackDisplayTarget,
+          });
+          const displayResult = await watch(
+            "epubjs:display",
+            displayEpubTargetWithFallback({
+              rendition,
+              target: initialDisplayTarget,
+              fallbackTarget: fallbackDisplayTarget,
+              initialTimeoutMs: INITIAL_DISPLAY_TIMEOUT_MS,
+              fallbackTimeoutMs: FALLBACK_DISPLAY_TIMEOUT_MS,
+              isActive: () =>
+                !cancelled &&
+                bookRef.current === activeBook &&
+                renditionRef.current !== null,
+              onTimeout: () =>
+                appendDebugEvent(
+                  "epubjs:display:timeout",
+                  {
+                    initialCfi: initialDisplayTarget,
+                    fallbackTarget: fallbackDisplayTarget,
+                    timeoutMs: INITIAL_DISPLAY_TIMEOUT_MS,
+                    snapshot: getReaderDebugSnapshot("epubjs:display:timeout"),
+                  },
+                  "warn"
+                ),
+              resetAfterTimeout: () => {
+                if (cancelled || bookRef.current !== activeBook) return null;
+                const timedOutRendition = rendition;
+                appendDebugEvent("epubjs:display:fallback:resetRendition", {
+                  fallbackTarget: fallbackDisplayTarget,
+                });
+                try {
+                  timedOutRendition?.destroy();
+                } catch {
+                  // ignore
+                }
+                if (renditionRef.current === timedOutRendition) {
+                  renditionRef.current = null;
+                }
+                rendition = null;
+                return createRendition("fallback");
+              },
+            })
+          );
+          if (displayResult.status === "inactive") return;
+          appendDebugEvent("epubjs:display:success", {
+            recovered: displayResult.status === "fallback-displayed",
+            target: displayResult.target,
+          });
+          const displayedRendition = displayResult.rendition;
+          const reflowedAfterFonts = await reflowEpubAfterFontsSettle({
+            fontsReady: displayedContentFontsReady,
+            rendition: displayedRendition,
+            spread: columnModeToSpread(settings.columnMode),
+            minSpreadWidth: SPREAD_MIN_WIDTH,
+            target: displayResult.target,
+            displayTimeoutMs: FALLBACK_DISPLAY_TIMEOUT_MS,
+            isActive: () =>
+              !cancelled && renditionRef.current === displayedRendition,
+          });
+          if (reflowedAfterFonts) {
+            appendDebugEvent("epubjs:fonts:reflowed");
+          }
         } catch (err) {
           // Corrupt / incompatible EPUB — show an error instead of revealing an
           // empty reader shell. Do not proceed to setIsReady / cover hide.

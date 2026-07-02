@@ -7,6 +7,12 @@ import { detectLanguageFromLocale } from "@/lib/languageConfig";
 const BOOK_SERIF_LATIN_FALLBACKS =
   '"Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif';
 
+const BOOK_GENEVA_STACK =
+  '"Geneva-12", Geneva, "ArkPixel", "SerenityOS-Emoji", system-ui, -apple-system, sans-serif';
+
+const BOOK_ROUNDED_STACK =
+  '"ryOS VAG Rounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", "SerenityOS-Emoji", ui-rounded, sans-serif';
+
 const BOOK_CJK_SERIF_STACKS = {
   "zh-CN":
     '"Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun, "Noto Serif JP", "Source Han Serif JP", "Noto Serif KR", "Source Han Serif KR"',
@@ -83,9 +89,18 @@ export const BOOK_FONTS: BookFontOption[] = [
   {
     id: "geneva",
     label: "Geneva",
-    cssStack: '"Geneva-12", Geneva, Helvetica, sans-serif',
+    cssStack: BOOK_GENEVA_STACK,
   },
-  { id: "mono", label: "Monospace", cssStack: '"Monaco", "Courier New", monospace' },
+  {
+    id: "rounded",
+    label: "Rounded",
+    cssStack: BOOK_ROUNDED_STACK,
+  },
+  {
+    id: "mono",
+    label: "Monospace",
+    cssStack: '"Monaco", "Courier New", monospace',
+  },
 ];
 
 export function getBookFont(fontId: string): BookFontOption {
@@ -164,6 +179,190 @@ export function isLikelyEpubBuffer(buffer: ArrayBuffer): boolean {
     (b[2] === 0x05 && b[3] === 0x06) || // empty archive
     (b[2] === 0x07 && b[3] === 0x08) // spanned archive
   );
+}
+
+interface EpubLayoutRendition {
+  spread: (spread: "none" | "auto" | "always", min?: number) => void;
+  display(target?: string): Promise<unknown> | unknown;
+  display(target?: number): Promise<unknown> | unknown;
+}
+
+interface EpubSpineSectionLike {
+  href?: string;
+  index?: number;
+}
+
+interface EpubDisplaySpineLike {
+  get: (target?: string | number) => EpubSpineSectionLike | null | undefined;
+}
+
+interface EpubDisplayBookLike {
+  spine?: EpubDisplaySpineLike;
+}
+
+export interface DisplayEpubTargetWithFallbackOptions<
+  T extends EpubLayoutRendition,
+> {
+  rendition: T;
+  target?: string | number;
+  fallbackTarget?: string | number;
+  initialTimeoutMs: number;
+  fallbackTimeoutMs?: number;
+  isActive: () => boolean;
+  resetAfterTimeout?: () => T | null | Promise<T | null>;
+  onTimeout?: () => void;
+}
+
+export type DisplayEpubTargetWithFallbackResult<
+  T extends EpubLayoutRendition,
+> =
+  | { status: "displayed"; rendition: T; target?: string | number }
+  | { status: "fallback-displayed"; rendition: T; target?: string | number }
+  | { status: "inactive"; rendition: T; target?: string | number };
+
+async function displayEpubTargetWithTimeout<T extends EpubLayoutRendition>(
+  rendition: T,
+  target: string | number | undefined,
+  timeoutMs: number
+): Promise<"displayed" | "timeout"> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<"timeout">((resolve) => {
+    timeoutId = globalThis.setTimeout(() => resolve("timeout"), timeoutMs);
+  });
+  try {
+    return await Promise.race([
+      Promise.resolve()
+        .then(() => callEpubDisplay(rendition, target))
+        .then(() => "displayed" as const),
+      timeout,
+    ]);
+  } finally {
+    if (timeoutId !== undefined) {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
+}
+
+function callEpubDisplay(
+  rendition: EpubLayoutRendition,
+  target?: string | number
+): Promise<unknown> | unknown {
+  return typeof target === "number"
+    ? rendition.display(target)
+    : rendition.display(target);
+}
+
+export function resolveEpubDisplayFallbackTarget(
+  book: EpubDisplayBookLike,
+  target?: string | number
+): string | number | undefined {
+  if (target === undefined) return undefined;
+  const section = book.spine?.get(target);
+  if (!section) return undefined;
+  return section.href || section.index;
+}
+
+export async function displayEpubTargetWithFallback<
+  T extends EpubLayoutRendition,
+>({
+  rendition,
+  target,
+  fallbackTarget,
+  initialTimeoutMs,
+  fallbackTimeoutMs = initialTimeoutMs,
+  isActive,
+  resetAfterTimeout,
+  onTimeout,
+}: DisplayEpubTargetWithFallbackOptions<T>): Promise<
+  DisplayEpubTargetWithFallbackResult<T>
+> {
+  const initialResult = await displayEpubTargetWithTimeout(
+    rendition,
+    target,
+    initialTimeoutMs
+  );
+  if (initialResult === "displayed") {
+    return { status: "displayed", rendition, target };
+  }
+  if (!isActive()) return { status: "inactive", rendition, target };
+
+  onTimeout?.();
+  const fallbackRendition = (await resetAfterTimeout?.()) ?? rendition;
+  if (!fallbackRendition) {
+    throw new Error("EPUB display timed out and no fallback rendition exists");
+  }
+  if (!isActive()) {
+    return {
+      status: "inactive",
+      rendition: fallbackRendition,
+      target: fallbackTarget,
+    };
+  }
+
+  const fallbackResult = await displayEpubTargetWithTimeout(
+    fallbackRendition,
+    fallbackTarget,
+    fallbackTimeoutMs
+  );
+  if (fallbackResult === "timeout") {
+    throw new Error("EPUB fallback display timed out");
+  }
+  if (!isActive()) {
+    return {
+      status: "inactive",
+      rendition: fallbackRendition,
+      target: fallbackTarget,
+    };
+  }
+  return {
+    status: "fallback-displayed",
+    rendition: fallbackRendition,
+    target: fallbackTarget,
+  };
+}
+
+interface ReflowEpubAfterFontsSettleOptions {
+  fontsReady: Promise<unknown> | undefined;
+  rendition: EpubLayoutRendition;
+  spread: "none" | "auto" | "always";
+  minSpreadWidth: number;
+  target?: string | number;
+  displayTimeoutMs?: number;
+  isActive: () => boolean;
+}
+
+/**
+ * epub.js performs its first paginated layout before rendition content hooks
+ * inject ryOS fonts. Recalculate the existing view after those fonts settle,
+ * then restore the requested CFI against the settled column geometry.
+ */
+export async function reflowEpubAfterFontsSettle({
+  fontsReady,
+  rendition,
+  spread,
+  minSpreadWidth,
+  target,
+  displayTimeoutMs,
+  isActive,
+}: ReflowEpubAfterFontsSettleOptions): Promise<boolean> {
+  if (!fontsReady) return false;
+  await fontsReady;
+  if (!isActive()) return false;
+
+  rendition.spread(spread, minSpreadWidth);
+  if (!isActive()) return false;
+
+  if (displayTimeoutMs !== undefined) {
+    const displayResult = await displayEpubTargetWithTimeout(
+      rendition,
+      target,
+      displayTimeoutMs
+    );
+    return displayResult === "displayed" && isActive();
+  }
+
+  await callEpubDisplay(rendition, target);
+  return isActive();
 }
 
 /**
@@ -277,6 +476,34 @@ export function buildFontFaceCss(origin: string): string {
   font-family: "Geneva-12";
   src: url("${origin}/fonts/geneva-12.woff2") format("woff2");
   font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ArkPixel";
+  src: url("${origin}/fonts/fusion-pixel-12px-proportional-ja.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SerenityOS-Emoji";
+  src: url("${origin}/fonts/SerenityOS-Emoji.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ryOS VAG Rounded";
+  src: url("${origin}/fonts/vag-rounded-light.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ryOS VAG Rounded";
+  src: url("${origin}/fonts/vag-rounded-bold.woff2") format("woff2");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }

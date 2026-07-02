@@ -57,7 +57,7 @@ describe("Simplified Chinese Aqua fonts", () => {
     expect(aquaCss).toContain('"Noto Serif CJK SC"');
     expect(aquaCss).toContain('"Songti SC"');
     expect(aquaCss).toContain(
-      'font-family: "VAGRounded", "Chiron GoRound TC WS", "Yuanti SC"'
+      'font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS", "Yuanti SC"'
     );
     expect(aquaCss).toContain(
       'font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans GB"'
@@ -93,6 +93,35 @@ describe("Simplified Chinese Aqua fonts", () => {
     expect(simplifiedRoundedBlock.indexOf('"Chiron GoRound TC WS"')).toBeLessThan(
       simplifiedRoundedBlock.indexOf('"Yuanti SC"')
     );
+  });
+
+  test("uses weight 700 for rounded karaoke lyrics", () => {
+    const baseRoundedBlock = extractRuleBlock(
+      appCss,
+      "\n  .font-lyrics-rounded {"
+    );
+    const baseGoldGlowBlock = extractRuleBlock(
+      appCss,
+      "\n  .font-lyrics-gold-glow {"
+    );
+    const aquaIpodRoundedBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded'
+    );
+    const aquaKaraokeRoundedBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded'
+    );
+    const aquaGoldGlowBlock = extractRuleBlock(
+      aquaCss,
+      ':root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow'
+    );
+
+    expect(baseRoundedBlock).toContain("font-weight: 700;");
+    expect(baseGoldGlowBlock).toContain("font-weight: 700;");
+    expect(aquaIpodRoundedBlock).toContain("font-weight: 700 !important;");
+    expect(aquaKaraokeRoundedBlock).toContain("font-weight: 700 !important;");
+    expect(aquaGoldGlowBlock).toContain("font-weight: 700 !important;");
   });
 
   test("routes Aqua UI overrides through the locale-aware font token", () => {
