@@ -5,6 +5,10 @@ import { formatHlc } from "../src/shared/sync2/hlc";
 import { CloudSyncEngine } from "../src/sync/engine";
 import { useStickiesStore } from "../src/stores/useStickiesStore";
 import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
+import {
+  DEFAULT_BOOKS_SETTINGS,
+  useBooksStore,
+} from "../src/stores/useBooksStore";
 
 /**
  * End-to-end test of the v2 client engine against the live API server
@@ -12,7 +16,8 @@ import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
  *
  * Drives the real engine: store change → shadow diff → ops POST, then a
  * foreign client's write → pull → codec apply, then local delete →
- * tombstone upload. Uses the stickies namespace (no IndexedDB required).
+ * tombstone upload. Uses the stickies and Books settings namespaces, which
+ * do not require IndexedDB.
  */
 
 const USERNAME = `sync2eng${Date.now().toString(36)}`;
@@ -66,8 +71,10 @@ beforeAll(async () => {
   syncStore.setCategoryEnabled("files", false);
   syncStore.setCategoryEnabled("songs", true);
   syncStore.setCategoryEnabled("stickies", true);
+  syncStore.setCategoryEnabled("books", true);
 
   useStickiesStore.setState({ notes: [] });
+  useBooksStore.setState({ settings: { ...DEFAULT_BOOKS_SETTINGS } });
 
   engine = new CloudSyncEngine(USERNAME);
   await engine.start();
@@ -102,6 +109,52 @@ describe("sync v2 engine end-to-end", () => {
     expect(snapshot.entries["stickies/note:e2e-1"]?.v).toMatchObject({
       id: "e2e-1",
       content: "from engine",
+    });
+  });
+
+  test("book reader settings upload and remote fields apply independently", async () => {
+    useBooksStore.getState().updateSettings({
+      fontId: "sans",
+      fontSizePct: 130,
+    });
+    engine.markDirty("books-settings", [
+      "books-settings/fontId",
+      "books-settings/fontSizePct",
+    ]);
+    await engine.flush();
+
+    const uploaded = await readServerSnapshot();
+    expect(uploaded.entries["books-settings/fontId"]?.v).toBe("sans");
+    expect(uploaded.entries["books-settings/fontSizePct"]?.v).toBe(130);
+
+    const foreignT = formatHlc(Date.now() + 1000, 0, "book-device");
+    const response = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/ops`,
+      USERNAME,
+      token,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: "book-device",
+          ops: [
+            {
+              k: "books-settings/themeOverride",
+              v: "sepia",
+              t: foreignT,
+            },
+          ],
+        }),
+      }
+    );
+    expect(response.status).toBe(200);
+
+    await engine.pull();
+
+    expect(useBooksStore.getState().settings).toMatchObject({
+      fontId: "sans",
+      fontSizePct: 130,
+      themeOverride: "sepia",
     });
   });
 

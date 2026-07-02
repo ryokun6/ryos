@@ -36,7 +36,13 @@ import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
-import { useBooksStore, type BookProgress } from "@/stores/useBooksStore";
+import {
+  BOOKS_FONT_SIZE_MAX,
+  BOOKS_FONT_SIZE_MIN,
+  useBooksStore,
+  type BookProgress,
+  type BooksReaderSettings,
+} from "@/stores/useBooksStore";
 import {
   useCloudSyncStore,
   type CloudSyncDeletionBucket,
@@ -1406,9 +1412,8 @@ const mapsCodec: SyncCodec = {
 //
 // Reading progress reconciles per book with `updatedAt`-aware last-writer-wins
 // on apply (a stale remote op never clobbers newer local progress), layered on
-// top of the engine's per-key timestamp LWW. Reader font/theme `settings` and
-// `shelfView` are intentionally NOT synced — they are device-local display
-// preferences.
+// top of the engine's per-key timestamp LWW. Reader preferences sync through
+// the separate `books-settings` namespace. `shelfView` remains device-local.
 //
 // Deleting a book: `useBooksLogic.deleteBook` calls `useBooksStore.removeBook`,
 // which drops the book's `progress` entry and prunes it from the order. On the
@@ -1529,6 +1534,143 @@ const bookshelfCodec: SyncCodec = {
 };
 
 // ---------------------------------------------------------------------------
+// Books settings codec
+//
+// Each reader preference gets its own key so unrelated changes on different
+// devices merge independently. This intentionally uses a namespace separate
+// from `bookshelf`: older clients collect that namespace without these keys
+// and would otherwise infer deletions when reading progress changes.
+// ---------------------------------------------------------------------------
+
+const BOOKS_SETTINGS_KEYS = {
+  fontId: "books-settings/fontId",
+  fontSizePct: "books-settings/fontSizePct",
+  columnMode: "books-settings/columnMode",
+  themeOverride: "books-settings/themeOverride",
+  chineseScript: "books-settings/chineseScript",
+  lineHeight: "books-settings/lineHeight",
+} as const satisfies Record<keyof BooksReaderSettings, string>;
+
+function collectBooksSettings(
+  keys?: ReadonlySet<string>
+): Map<string, unknown> {
+  const docs = new Map<string, unknown>();
+  const settings = useBooksStore.getState().settings;
+  const add = (key: string, value: unknown) => {
+    if (!keys || keys.has(key)) docs.set(key, value);
+  };
+
+  add(BOOKS_SETTINGS_KEYS.fontId, settings.fontId);
+  add(BOOKS_SETTINGS_KEYS.fontSizePct, settings.fontSizePct);
+  add(BOOKS_SETTINGS_KEYS.columnMode, settings.columnMode);
+  add(BOOKS_SETTINGS_KEYS.themeOverride, settings.themeOverride);
+  add(BOOKS_SETTINGS_KEYS.chineseScript, settings.chineseScript);
+  add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
+  return docs;
+}
+
+function applyBooksSettings(ops: AppliedSyncOp[]): void {
+  let updates: Partial<BooksReaderSettings> = {};
+
+  for (const op of ops) {
+    if (op.del) continue;
+
+    switch (op.k) {
+      case BOOKS_SETTINGS_KEYS.fontId:
+        if (typeof op.v === "string" && op.v.length > 0) {
+          updates = { ...updates, fontId: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.fontSizePct:
+        if (
+          typeof op.v === "number" &&
+          Number.isFinite(op.v) &&
+          op.v >= BOOKS_FONT_SIZE_MIN &&
+          op.v <= BOOKS_FONT_SIZE_MAX
+        ) {
+          updates = { ...updates, fontSizePct: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.columnMode:
+        if (op.v === "auto" || op.v === "single" || op.v === "double") {
+          updates = { ...updates, columnMode: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.themeOverride:
+        if (
+          op.v === "auto" ||
+          op.v === "light" ||
+          op.v === "sepia" ||
+          op.v === "dark"
+        ) {
+          updates = { ...updates, themeOverride: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.chineseScript:
+        if (
+          op.v === "original" ||
+          op.v === "simplified" ||
+          op.v === "traditional"
+        ) {
+          updates = { ...updates, chineseScript: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.lineHeight:
+        if (
+          typeof op.v === "number" &&
+          Number.isFinite(op.v) &&
+          op.v > 0
+        ) {
+          updates = { ...updates, lineHeight: op.v };
+        }
+        break;
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    useBooksStore.getState().updateSettings(updates);
+  }
+}
+
+const booksSettingsCodec: SyncCodec = {
+  namespace: "books-settings",
+  collect(_ctx, keys) {
+    return collectBooksSettings(keys);
+  },
+  apply(ops) {
+    applyBooksSettings(ops);
+  },
+  subscribe(onChange) {
+    return useBooksStore.subscribe((state, prev) => {
+      const keys: string[] = [];
+      if (state.settings.fontId !== prev.settings.fontId) {
+        keys.push(BOOKS_SETTINGS_KEYS.fontId);
+      }
+      if (state.settings.fontSizePct !== prev.settings.fontSizePct) {
+        keys.push(BOOKS_SETTINGS_KEYS.fontSizePct);
+      }
+      if (state.settings.columnMode !== prev.settings.columnMode) {
+        keys.push(BOOKS_SETTINGS_KEYS.columnMode);
+      }
+      if (state.settings.themeOverride !== prev.settings.themeOverride) {
+        keys.push(BOOKS_SETTINGS_KEYS.themeOverride);
+      }
+      if (state.settings.chineseScript !== prev.settings.chineseScript) {
+        keys.push(BOOKS_SETTINGS_KEYS.chineseScript);
+      }
+      if (state.settings.lineHeight !== prev.settings.lineHeight) {
+        keys.push(BOOKS_SETTINGS_KEYS.lineHeight);
+      }
+      if (keys.length === 0 || !useBooksStore.persist.hasHydrated()) return;
+      onChange(keys);
+    });
+  },
+  isReady() {
+    return useBooksStore.persist.hasHydrated();
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Blob codecs (images / trash / applets / wallpapers)
 // ---------------------------------------------------------------------------
 
@@ -1636,6 +1778,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   images: imagesCodec,
   books: booksCodec,
   bookshelf: bookshelfCodec,
+  "books-settings": booksSettingsCodec,
   trash: trashCodec,
   applets: appletsCodec,
   wallpapers: wallpapersCodec,
@@ -1658,6 +1801,7 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "settings",
   "files",
   "bookshelf",
+  "books-settings",
   "songs",
   "videos",
   "tv",
