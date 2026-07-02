@@ -680,6 +680,13 @@
         "listView": "Список",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "Пауза",
+        "resume": "Продолжить",
+        "rewind": "Перемотать назад",
+        "skip": "Пропустить",
+        "stop": "Остановить"
+      },
       "speechRate": {
         "fast": "Быстро",
         "normal": "Обычная",

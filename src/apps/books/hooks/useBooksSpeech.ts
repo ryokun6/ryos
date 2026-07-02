@@ -55,8 +55,12 @@ interface UseBooksSpeechOptions {
 
 export interface UseBooksSpeechResult {
   isSpeaking: boolean;
+  /** True while read-aloud is active but paused (resumable). */
+  isPaused: boolean;
   startSpeaking: () => void;
   stopSpeaking: () => void;
+  pauseSpeaking: () => void;
+  resumeSpeaking: () => void;
   /** Call from the rendition's `relocated` handler. */
   handleRelocated: () => void;
 }
@@ -77,10 +81,16 @@ export function useBooksSpeech({
   advancePage,
 }: UseBooksSpeechOptions): UseBooksSpeechResult {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   // Bumping the session invalidates every pending utterance callback/timer.
   const sessionRef = useRef(0);
   // True while the user wants read-aloud (also across auto page turns).
   const wantsSpeechRef = useRef(false);
+  // Mirrors isPaused for callbacks that must not depend on render state.
+  const isPausedRef = useRef(false);
+  // Chunks (and index) of the in-flight page so pause can resume mid-page.
+  const currentChunksRef = useRef<BooksSpeechChunk[] | null>(null);
+  const currentChunkIndexRef = useRef(0);
   // Consecutive auto-skipped pages with no speakable text.
   const emptyPageStreakRef = useRef(0);
   // Consecutive chunks that ended only via the hard timeout (no engine event).
@@ -120,11 +130,15 @@ export function useBooksSpeech({
   const stopSpeaking = useCallback(() => {
     sessionRef.current += 1;
     wantsSpeechRef.current = false;
+    isPausedRef.current = false;
     activeUtteranceRef.current = null;
+    currentChunksRef.current = null;
+    currentChunkIndexRef.current = 0;
     clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
     setIsSpeaking(false);
+    setIsPaused(false);
   }, [clearHighlight, clearTimers]);
 
   const getCurrentStartCfi = useCallback((): string | null => {
@@ -149,6 +163,10 @@ export function useBooksSpeech({
   const finishPage = useCallback(
     (session: number, attempt = 0) => {
       if (session !== sessionRef.current) return;
+      // Off the chunked page now — a pause during the turn resumes from the
+      // freshly visible page instead of stale ranges.
+      currentChunksRef.current = null;
+      currentChunkIndexRef.current = 0;
       clearHighlight();
       if (
         !optionsRef.current.canAdvancePage() ||
@@ -193,6 +211,9 @@ export function useBooksSpeech({
         stopSpeaking();
         return;
       }
+
+      currentChunksRef.current = chunks;
+      currentChunkIndexRef.current = index;
 
       clearHighlight();
       highlightedDocRef.current =
@@ -323,11 +344,11 @@ export function useBooksSpeech({
     [finishPage, speakChunk, stopSpeaking]
   );
 
-  // Restart speech once the engine has actually gone idle. Speaking while a
+  // Run `speak` once the engine has actually gone idle. Speaking while a
   // cancelled utterance is still winding down queues the new chunk behind
   // stale audio on some engines (Safari), drifting speech behind the screen.
-  const speakVisiblePageWhenIdle = useCallback(
-    (session: number, polls = 0) => {
+  const speakWhenSynthIdle = useCallback(
+    (session: number, speak: () => void, polls = 0) => {
       if (session !== sessionRef.current) return;
       const synth = getBrowserSpeechSynthesis();
       if (!synth) {
@@ -337,20 +358,27 @@ export function useBooksSpeech({
       if ((synth.speaking || synth.pending) && polls < MAX_ENSURE_IDLE_POLLS) {
         synth.cancel();
         const timeoutId = window.setTimeout(
-          () => speakVisiblePageWhenIdle(session, polls + 1),
+          () => speakWhenSynthIdle(session, speak, polls + 1),
           ENSURE_IDLE_POLL_MS
         );
         timersRef.current.push(timeoutId);
         return;
       }
-      speakVisiblePage(session);
+      speak();
     },
-    [speakVisiblePage, stopSpeaking]
+    [stopSpeaking]
+  );
+
+  const speakVisiblePageWhenIdle = useCallback(
+    (session: number) =>
+      speakWhenSynthIdle(session, () => speakVisiblePage(session)),
+    [speakVisiblePage, speakWhenSynthIdle]
   );
 
   const startSpeaking = useCallback(() => {
     const session = ++sessionRef.current;
     wantsSpeechRef.current = true;
+    isPausedRef.current = false;
     emptyPageStreakRef.current = 0;
     timeoutEndingStreakRef.current = 0;
     clearTimers();
@@ -359,21 +387,62 @@ export function useBooksSpeech({
     if (!synth) return;
     synth.cancel();
     setIsSpeaking(true);
+    setIsPaused(false);
     // Warm the voice list (async on some engines); utterance.lang still lets
     // the engine pick a fallback voice before the list loads.
     synth.getVoices();
     speakVisiblePage(session);
   }, [clearHighlight, clearTimers, speakVisiblePage]);
 
+  // Pause is implemented as cancel + remember-the-chunk rather than
+  // synth.pause(): pause() is unreliable on several engines (Chrome can stall
+  // permanently, some backends ignore it), and a paused engine would also trip
+  // the utterance watchdog/timeout machinery. Resuming re-speaks the current
+  // sentence from its start, which reads naturally.
+  const pauseSpeaking = useCallback(() => {
+    if (!wantsSpeechRef.current || isPausedRef.current) return;
+    // Invalidate pending utterance callbacks/timers without dropping the
+    // remembered chunk position.
+    sessionRef.current += 1;
+    isPausedRef.current = true;
+    activeUtteranceRef.current = null;
+    clearTimers();
+    getBrowserSpeechSynthesis()?.cancel();
+    // Keep the highlight so the reader can see where speech will resume.
+    setIsPaused(true);
+  }, [clearTimers]);
+
+  const resumeSpeaking = useCallback(() => {
+    if (!wantsSpeechRef.current || !isPausedRef.current) return;
+    const session = ++sessionRef.current;
+    isPausedRef.current = false;
+    timeoutEndingStreakRef.current = 0;
+    setIsPaused(false);
+    const chunks = currentChunksRef.current;
+    const index = currentChunkIndexRef.current;
+    speakWhenSynthIdle(session, () => {
+      if (chunks && chunks[index]) {
+        speakChunk(session, chunks, index);
+      } else {
+        speakVisiblePage(session);
+      }
+    });
+  }, [speakChunk, speakVisiblePage, speakWhenSynthIdle]);
+
   const handleRelocated = useCallback(() => {
     if (!wantsSpeechRef.current) return;
     // Invalidate in-flight utterances (manual page turns / chapter jumps /
-    // reflows) and restart from the freshly visible page.
+    // reflows) and restart from the freshly visible page. A page change while
+    // paused (e.g. overlay rewind/skip) resumes playback on the new page.
     const session = ++sessionRef.current;
+    isPausedRef.current = false;
     activeUtteranceRef.current = null;
+    currentChunksRef.current = null;
+    currentChunkIndexRef.current = 0;
     clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
+    setIsPaused(false);
     const timeoutId = window.setTimeout(() => {
       speakVisiblePageWhenIdle(session);
     }, RESUME_AFTER_RELOCATE_MS);
@@ -383,5 +452,13 @@ export function useBooksSpeech({
   // Stop speech (and drop highlights) when the reader unmounts / book closes.
   useEffect(() => () => stopSpeaking(), [stopSpeaking]);
 
-  return { isSpeaking, startSpeaking, stopSpeaking, handleRelocated };
+  return {
+    isSpeaking,
+    isPaused,
+    startSpeaking,
+    stopSpeaking,
+    pauseSpeaking,
+    resumeSpeaking,
+    handleRelocated,
+  };
 }

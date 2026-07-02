@@ -676,6 +676,13 @@
         "listView": "목록 보기",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "일시 정지",
+        "resume": "재개",
+        "rewind": "되감기",
+        "skip": "건너뛰기",
+        "stop": "중단"
+      },
       "speechRate": {
         "fast": "빠름",
         "normal": "보통",

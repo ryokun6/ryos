@@ -676,6 +676,13 @@
         "listView": "Listendarstellung",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "Pause",
+        "resume": "Fortsetzen",
+        "rewind": "Zurückspulen",
+        "skip": "Überspringen",
+        "stop": "Stopp"
+      },
       "speechRate": {
         "fast": "Schnell",
         "normal": "Normal",

@@ -4555,6 +4555,13 @@
         "fast": "Fast",
         "veryFast": "Very Fast"
       },
+      "speech": {
+        "rewind": "Rewind",
+        "pause": "Pause",
+        "resume": "Resume",
+        "skip": "Skip",
+        "stop": "Stop"
+      },
       "columns": {
         "auto": "Auto",
         "single": "Single",

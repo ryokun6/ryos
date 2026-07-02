@@ -676,6 +676,13 @@
         "listView": "列表视图",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "暂停",
+        "resume": "继续",
+        "rewind": "倒回",
+        "skip": "跳过",
+        "stop": "停止"
+      },
       "speechRate": {
         "fast": "快",
         "normal": "正常",

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { FastForward, Pause, Play, Rewind, Stop } from "@phosphor-icons/react";
 import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
@@ -119,6 +120,10 @@ const FOOTER_HEIGHT = 30;
 // Width at which auto column mode switches to a two-page spread. epub.js
 // defaults to 800; a lower value shows two columns on narrower windows.
 const SPREAD_MIN_WIDTH = 560;
+
+// Shared style for the read-aloud overlay control buttons.
+const SPEECH_OVERLAY_BUTTON_CLASS =
+  "flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent";
 
 // Open transition timings. Keep the page reveal slightly after the cover zoom
 // settles so the two never fight (which reads as a "pop"). Shared with the
@@ -1289,8 +1294,11 @@ export const BooksReaderPane = forwardRef<
   );
   const {
     isSpeaking,
+    isPaused,
     startSpeaking,
     stopSpeaking,
+    pauseSpeaking,
+    resumeSpeaking,
     handleRelocated: handleSpeechRelocated,
   } = useBooksSpeech({
     getRendition: () => renditionRef.current,
@@ -1421,6 +1429,82 @@ export const BooksReaderPane = forwardRef<
           {Math.round(progressPct * 100)}%
         </span>
       </div>
+
+      {/* Read-aloud overlay: simple floating controls shown while speech is
+          active. Rewind/skip turn pages (speech restarts on the new page via
+          the relocated handler); pause/resume keeps the current sentence. */}
+      <AnimatePresence>
+        {isSpeaking && (
+          <motion.div
+            className="pointer-events-none absolute inset-x-0 z-30 flex justify-center"
+            style={{ bottom: FOOTER_HEIGHT + 8 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div
+              className={cn(
+                "pointer-events-auto flex items-center gap-0.5 rounded-full border px-1.5 py-1 shadow-lg backdrop-blur-md",
+                palette.isDark
+                  ? "border-white/15 bg-white/10 text-white"
+                  : "border-black/10 bg-black/60 text-white"
+              )}
+            >
+              <button
+                type="button"
+                aria-label={t("apps.books.speech.rewind")}
+                title={t("apps.books.speech.rewind")}
+                onClick={() => turnPage("prev")}
+                disabled={!navigationState.canGoPreviousPage}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                <Rewind weight="fill" size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label={
+                  isPaused
+                    ? t("apps.books.speech.resume")
+                    : t("apps.books.speech.pause")
+                }
+                title={
+                  isPaused
+                    ? t("apps.books.speech.resume")
+                    : t("apps.books.speech.pause")
+                }
+                onClick={isPaused ? resumeSpeaking : pauseSpeaking}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                {isPaused ? (
+                  <Play weight="fill" size={16} />
+                ) : (
+                  <Pause weight="fill" size={16} />
+                )}
+              </button>
+              <button
+                type="button"
+                aria-label={t("apps.books.speech.skip")}
+                title={t("apps.books.speech.skip")}
+                onClick={() => turnPage("next")}
+                disabled={!navigationState.canGoNextPage}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                <FastForward weight="fill" size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label={t("apps.books.speech.stop")}
+                title={t("apps.books.speech.stop")}
+                onClick={stopSpeaking}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                <Stop weight="fill" size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Page-turn animation. epub.js only ever has the single current page
           rendered, so a true two-page slide (or a curl showing the outgoing
