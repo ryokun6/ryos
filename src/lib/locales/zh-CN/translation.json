@@ -590,8 +590,8 @@
     "books": {
       "chineseScript": {
         "original": "原文",
-        "simplified": "简体中文",
-        "traditional": "繁体中文"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "自动",
@@ -613,6 +613,15 @@
         "transparent": "透明"
       },
       "description": "阅读 EPUB 书籍",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "等宽",
+        "original": "原始",
+        "rounded": "圆体",
+        "sans": "无衬线体",
+        "serif": "衬线体"
+      },
       "help": {
         "bookshelf": {
           "description": "导入的 EPUB 书籍排列在木制书架上。点按书籍即可打开并开始阅读。",
@@ -623,7 +632,7 @@
           "title": "深色模式"
         },
         "fonts": {
-          "description": "从“视图”菜单中选择阅读字体（包括 EB Garamond）、文字大小以及单栏或双栏布局。",
+          "description": "从“视图”菜单中选择阅读字体（包括 Garamond）、文字大小以及单栏或双栏布局。",
           "title": "字体与版面"
         },
         "import": {
@@ -696,6 +705,7 @@
       },
       "theme": {
         "auto": "自动",
+        "accent": "强调色",
         "black": "黑色",
         "custom": "自定",
         "dark": "深色",

@@ -10,6 +10,10 @@ import {
   BOOK_FONTS,
   type BookFontOption,
 } from "../utils/booksReader";
+import {
+  isChineseBookLanguage,
+  isCjkBookLanguage,
+} from "../utils/booksLanguage";
 import { buildBooksMenuLayout } from "../utils/booksMenuLayout";
 import {
   BOOKS_SPEECH_RATE_OPTIONS,
@@ -26,6 +30,8 @@ interface BooksMenuBarProps {
   onBackToShelf: () => void;
   onShowCustomize: () => void;
   isReading: boolean;
+  /** EPUB package language; gates CJK-only reader options. */
+  bookLanguage?: string | null;
   settings: BooksReaderSettings;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
   navigationState: BooksNavigationState;
@@ -45,6 +51,7 @@ export function BooksMenuBar({
   onBackToShelf,
   onShowCustomize,
   isReading,
+  bookLanguage = null,
   settings,
   updateSettings,
   navigationState,
@@ -90,6 +97,12 @@ export function BooksMenuBar({
       ],
     };
 
+  // Vertical writing mode is CJK-only; simp/trad conversion is Chinese-only.
+  const supportsVerticalText =
+    isReading && isCjkBookLanguage(bookLanguage);
+  const supportsChineseScript =
+    isReading && isChineseBookLanguage(bookLanguage);
+
   const viewMenu: MenuDescriptor = {
       label: t("common.menu.view"),
       items: [
@@ -102,63 +115,74 @@ export function BooksMenuBar({
               value: settings.fontId,
               onValueChange: (value) => updateSettings({ fontId: value }),
               options: BOOK_FONTS.map((font: BookFontOption) => ({
-                label: font.label,
+                label: t(`apps.books.fonts.${font.id}`),
                 value: font.id,
               })),
             },
           ],
         },
-        {
-          type: "submenu",
-          label: t("apps.books.menu.textLayout"),
-          items: [
-            {
-              type: "radioGroup",
-              value: settings.textLayout,
-              onValueChange: (value) => {
-                if (value === "book" || value === "vertical") {
-                  updateSettings({ textLayout: value });
-                }
+        ...(supportsVerticalText
+          ? ([
+              {
+                type: "submenu",
+                label: t("apps.books.menu.textLayout"),
+                items: [
+                  {
+                    type: "radioGroup",
+                    value: settings.textLayout,
+                    onValueChange: (value) => {
+                      if (value === "book" || value === "vertical") {
+                        updateSettings({ textLayout: value });
+                      }
+                    },
+                    options: [
+                      {
+                        label: t("apps.books.textLayout.book"),
+                        value: "book",
+                      },
+                      {
+                        label: t("apps.books.textLayout.vertical"),
+                        value: "vertical",
+                      },
+                    ],
+                  },
+                ],
               },
-              options: [
-                { label: t("apps.books.textLayout.book"), value: "book" },
-                {
-                  label: t("apps.books.textLayout.vertical"),
-                  value: "vertical",
-                },
-              ],
-            },
-          ],
-        },
-        {
-          type: "submenu",
-          label: t("apps.books.menu.chineseScript"),
-          items: [
-            {
-              type: "radioGroup",
-              value: settings.chineseScript,
-              onValueChange: (value) =>
-                updateSettings({
-                  chineseScript:
-                    value as BooksReaderSettings["chineseScript"],
-                }),
-              options: [
-                {
-                  label: t("apps.books.chineseScript.original"),
-                  value: "original",
-                },
-                {
-                  label: t("apps.books.chineseScript.simplified"),
-                  value: "simplified",
-                },
-                {
-                  label: t("apps.books.chineseScript.traditional"),
-                  value: "traditional",
-                },
-              ],
-            },
-          ],
-        },
+            ] as MenuDescriptor["items"])
+          : []),
+        ...(supportsChineseScript
+          ? ([
+              {
+                type: "submenu",
+                label: t("apps.books.menu.chineseScript"),
+                items: [
+                  {
+                    type: "radioGroup",
+                    value: settings.chineseScript,
+                    onValueChange: (value) =>
+                      updateSettings({
+                        chineseScript:
+                          value as BooksReaderSettings["chineseScript"],
+                      }),
+                    options: [
+                      {
+                        label: t("apps.books.chineseScript.original"),
+                        value: "original",
+                      },
+                      {
+                        label: t("apps.books.chineseScript.simplified"),
+                        value: "simplified",
+                      },
+                      {
+                        label: t("apps.books.chineseScript.traditional"),
+                        value: "traditional",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ] as MenuDescriptor["items"])
+          : []),
         {
           type: "submenu",
           label: t("apps.books.menu.theme"),
@@ -173,6 +197,7 @@ export function BooksMenuBar({
                 }),
               options: [
                 { label: t("apps.books.theme.auto"), value: "auto" },
+                { label: t("apps.books.theme.accent"), value: "accent" },
                 { label: t("apps.books.theme.light"), value: "light" },
                 { label: t("apps.books.theme.sepia"), value: "sepia" },
                 { label: t("apps.books.theme.dark"), value: "dark" },

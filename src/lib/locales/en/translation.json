@@ -4570,6 +4570,15 @@
         "single": "Single",
         "double": "Double"
       },
+      "fonts": {
+        "original": "Original",
+        "eb-garamond": "Garamond",
+        "serif": "Serif",
+        "sans": "Sans Serif",
+        "geneva": "Geneva",
+        "rounded": "Rounded",
+        "mono": "Monospace"
+      },
       "textLayout": {
         "book": "Book Default",
         "horizontal": "Horizontal",
@@ -4577,11 +4586,12 @@
       },
       "chineseScript": {
         "original": "Original",
-        "simplified": "Simplified Chinese",
-        "traditional": "Traditional Chinese"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "theme": {
         "auto": "Auto",
+        "accent": "Accent",
         "light": "Light",
         "paper": "Paper",
         "sepia": "Sepia",
@@ -4636,11 +4646,11 @@
         },
         "progress": {
           "title": "Reading Progress",
-          "description": "Your place is saved automatically and restored the next time you open the book."
+          "description": "Your place is saved automatically. Reopening Books resumes the book and page you left on, or the shelf if you closed it."
         },
         "fonts": {
           "title": "Fonts & Layout",
-          "description": "Pick a reading font (including EB Garamond), text size, and single or double columns from the View menu."
+          "description": "Pick a reading font (including Garamond), text size, and single or double columns from the View menu."
         },
         "darkMode": {
           "title": "Dark Mode",

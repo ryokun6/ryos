@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 export type BooksColumnMode = "auto" | "single" | "double";
 export type BooksThemeOverride =
   | "auto"
+  | "accent"
   | "light"
   | "paper"
   | "sepia"
@@ -15,6 +16,7 @@ export type BooksThemeOverride =
   | "custom";
 export const BOOKS_THEME_OVERRIDES: readonly BooksThemeOverride[] = [
   "auto",
+  "accent",
   "light",
   "paper",
   "sepia",
@@ -49,7 +51,10 @@ export interface BooksReaderSettings {
   fontSizePct: number;
   /** Column layout mode. "auto" follows the reader width. */
   columnMode: BooksColumnMode;
-  /** Reading theme override. "auto" follows the OS dark-mode setting. */
+  /**
+   * Reading theme override. "auto" follows the OS dark-mode setting; "accent"
+   * derives page colors from the OS accent color.
+   */
   themeOverride: BooksThemeOverride;
   /** Custom theme: page background color (hex). */
   customThemeBackground: string;
@@ -162,6 +167,12 @@ interface BooksStoreState {
   settings: BooksReaderSettings;
   shelfView: BooksShelfView;
   lastOpenedPath: string | null;
+  /**
+   * Book left open in the reader (`null` = shelf). Device-local: reopening
+   * Books restores this path (and its saved CFI) or the shelf, without
+   * syncing the in-app view across devices.
+   */
+  openPath: string | null;
   /** Paths explicitly pinned to the top of the shelf (first = highest). */
   pinnedTop: string[];
   /** Paths explicitly pinned to the bottom of the shelf (last = lowest). */
@@ -171,14 +182,17 @@ interface BooksStoreState {
   clearProgress: (path: string) => void;
   /**
    * Forget all synced reading state for a removed book: progress, shelf
-   * ordering, and last-opened. Used when a book is deleted so the bookshelf
-   * codec stops emitting stale docs (and the engine tombstones the dropped
-   * progress key cross-device via shadow diff).
+   * ordering, last-opened, and the device-local open session path. Used when
+   * a book is deleted so the bookshelf codec stops emitting stale docs (and
+   * the engine tombstones the dropped progress key cross-device via shadow
+   * diff).
    */
   removeBook: (path: string) => void;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
   setShelfView: (view: BooksShelfView) => void;
   setLastOpenedPath: (path: string | null) => void;
+  /** Set/clear the book currently open in the reader (null = shelf). */
+  setOpenPath: (path: string | null) => void;
   /** Move progress when a file is renamed/moved in the VFS. */
   renameProgressPath: (oldPath: string, newPath: string) => void;
   /** Pin a book to the top of the shelf (removes it from the bottom). */
@@ -197,6 +211,7 @@ export const useBooksStore = create<BooksStoreState>()(
       settings: { ...DEFAULT_BOOKS_SETTINGS },
       shelfView: "grid",
       lastOpenedPath: null,
+      openPath: null,
       pinnedTop: [],
       pinnedBottom: [],
       setProgress: (path, progress) =>
@@ -217,7 +232,14 @@ export const useBooksStore = create<BooksStoreState>()(
           const inTop = state.pinnedTop.includes(path);
           const inBottom = state.pinnedBottom.includes(path);
           const wasLastOpened = state.lastOpenedPath === path;
-          if (!hadProgress && !inTop && !inBottom && !wasLastOpened) {
+          const wasOpen = state.openPath === path;
+          if (
+            !hadProgress &&
+            !inTop &&
+            !inBottom &&
+            !wasLastOpened &&
+            !wasOpen
+          ) {
             return state;
           }
           let progressByPath = state.progressByPath;
@@ -232,18 +254,30 @@ export const useBooksStore = create<BooksStoreState>()(
               ? without(state.pinnedBottom, path)
               : state.pinnedBottom,
             lastOpenedPath: wasLastOpened ? null : state.lastOpenedPath,
+            openPath: wasOpen ? null : state.openPath,
           };
         }),
       updateSettings: (partial) =>
         set((state) => ({ settings: { ...state.settings, ...partial } })),
       setShelfView: (view) => set({ shelfView: view }),
       setLastOpenedPath: (path) => set({ lastOpenedPath: path }),
+      setOpenPath: (path) => set({ openPath: path }),
       renameProgressPath: (oldPath, newPath) =>
         set((state) => {
           const existing = state.progressByPath[oldPath];
           const inTop = state.pinnedTop.includes(oldPath);
           const inBottom = state.pinnedBottom.includes(oldPath);
-          if (!existing && !inTop && !inBottom) return state;
+          const wasLastOpened = state.lastOpenedPath === oldPath;
+          const wasOpen = state.openPath === oldPath;
+          if (
+            !existing &&
+            !inTop &&
+            !inBottom &&
+            !wasLastOpened &&
+            !wasOpen
+          ) {
+            return state;
+          }
           const next = { ...state.progressByPath };
           if (existing) {
             delete next[oldPath];
@@ -257,6 +291,8 @@ export const useBooksStore = create<BooksStoreState>()(
             pinnedBottom: inBottom
               ? state.pinnedBottom.map((p) => (p === oldPath ? newPath : p))
               : state.pinnedBottom,
+            lastOpenedPath: wasLastOpened ? newPath : state.lastOpenedPath,
+            openPath: wasOpen ? newPath : state.openPath,
           };
         }),
       moveBookToTop: (path) =>
@@ -278,7 +314,8 @@ export const useBooksStore = create<BooksStoreState>()(
       // v6: raised line-height floor.
       // v7: backfill custom theme fields (customThemeBackground / -Text /
       // -Transparent) via the DEFAULT_BOOKS_SETTINGS spread below.
-      version: 7,
+      // v8: device-local `openPath` for reader/shelf session restore.
+      version: 8,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         const settings = {
@@ -290,6 +327,8 @@ export const useBooksStore = create<BooksStoreState>()(
         return {
           ...state,
           settings,
+          openPath:
+            typeof state.openPath === "string" ? state.openPath : null,
         } as BooksStoreState;
       },
       partialize: (state) => ({
@@ -297,6 +336,7 @@ export const useBooksStore = create<BooksStoreState>()(
         settings: state.settings,
         shelfView: state.shelfView,
         lastOpenedPath: state.lastOpenedPath,
+        openPath: state.openPath,
         pinnedTop: state.pinnedTop,
         pinnedBottom: state.pinnedBottom,
       }),

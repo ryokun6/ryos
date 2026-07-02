@@ -1,8 +1,10 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { motion } from "motion/react";
 import type { BooksReaderSettings } from "@/stores/useBooksStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import {
   getReadingOverlayBackground,
+  resolveOsAccentBaseHex,
   resolveReadingPalette,
 } from "../utils/booksReader";
 import { useBookCover } from "../utils/useBookCover";
@@ -40,7 +42,8 @@ export function BookCloseZoom({
   osIsDark,
   onDone,
 }: BookCloseZoomProps) {
-  const palette = resolveReadingPalette(settings, osIsDark);
+  const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
+  const palette = resolveReadingPalette(settings, osIsDark, accentBaseHex);
   const { info: coverInfo, loading: coverLoading } = useBookCover(
     entry.path,
     entry.modifiedAt

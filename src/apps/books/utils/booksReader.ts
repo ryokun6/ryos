@@ -4,13 +4,25 @@ import {
   type BooksReaderSettings,
   type BooksThemeOverride,
 } from "@/stores/useBooksStore";
+import {
+  DEFAULT_ACCENT,
+  deriveAccentPagePalette,
+  getAccentChrome,
+  resolveAccentBaseHex,
+  type AccentId,
+} from "@/themes/accents";
+import type { OsThemeId } from "@/themes/types";
 import { detectLanguageFromLocale } from "@/lib/languageConfig";
+import { resolveEffectiveTextLayout } from "./booksLanguage";
 
 const BOOK_SERIF_LATIN_FALLBACKS =
   '"Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif';
 
-const BOOK_GENEVA_STACK =
-  '"Geneva-12", Geneva, "ArkPixel", "SerenityOS-Emoji", system-ui, -apple-system, sans-serif';
+const BOOK_SANS_LATIN_STACK = '"Helvetica Neue", Helvetica, Arial';
+
+/** Prefer system monospaces for body reading; classic Monaco is a later fallback. */
+const BOOK_MONO_LATIN_STACK =
+  'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono"';
 
 const BOOK_ROUNDED_STACK =
   '"ryOS VAG Rounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif';
@@ -29,6 +41,58 @@ const BOOK_CJK_SERIF_STACKS = {
 const DEFAULT_BOOK_CJK_SERIF_STACK = `${BOOK_CJK_SERIF_STACKS.ja}, "Noto Serif TC", "Source Han Serif TC", "Noto Serif CJK SC", "Songti TC", "Songti SC", SimSun`;
 
 /**
+ * CJK sans stacks mirror the macOS Aqua UI stack: Hiragino Sans / Hiragino
+ * Sans GB before PingFang. Simplified Chinese deliberately omits Hiragino
+ * Sans (JP glyph forms) and starts at Hiragino Sans GB.
+ */
+const BOOK_CJK_SANS_STACKS = {
+  "zh-CN":
+    '"Hiragino Sans GB", "PingFang SC", "Heiti SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", SimSun, "Apple SD Gothic Neo", "Malgun Gothic"',
+  "zh-TW":
+    '"Hiragino Sans", "Hiragino Sans GB", "PingFang TC", "Heiti TC", "LiHei Pro", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", PMingLiU, "PingFang SC"',
+  ja: '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Hiragino Kaku Gothic Pro", "Yu Gothic", "Hiragino Sans GB", "PingFang SC", "Noto Sans CJK JP", "Noto Sans JP"',
+  ko: '"Apple SD Gothic Neo", "AppleGothic", "Malgun Gothic", "Nanum Gothic", "Hiragino Sans", "Hiragino Sans GB", "PingFang SC", "Noto Sans CJK KR", "Noto Sans KR"',
+} as const;
+
+const DEFAULT_BOOK_CJK_SANS_STACK =
+  '"Hiragino Sans", "Hiragino Sans GB", "Hiragino Kaku Gothic ProN", "PingFang SC", "PingFang TC", "Heiti SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK SC", "Noto Sans SC"';
+
+/**
+ * True monospaced CJK faces when installed. Most machines lack these, so
+ * `buildBookMonoStack` also appends the OS CJK sans stack (Hiragino / PingFang)
+ * rather than ending on Courier.
+ */
+const BOOK_CJK_MONO_STACKS = {
+  "zh-CN":
+    '"Noto Sans Mono CJK SC", "Source Han Mono SC", "Sarasa Mono SC"',
+  "zh-TW":
+    '"Noto Sans Mono CJK TC", "Source Han Mono TC", "Sarasa Mono TC"',
+  ja: '"Osaka-Mono", "MS Gothic", "Noto Sans Mono CJK JP", "Source Han Mono JP"',
+  ko: '"Noto Sans Mono CJK KR", "Source Han Mono KR", "D2Coding"',
+} as const;
+
+const DEFAULT_BOOK_CJK_MONO_STACK =
+  '"Osaka-Mono", "MS Gothic", "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK KR", "Source Han Mono"';
+
+type BookCjkLanguage = keyof typeof BOOK_CJK_SERIF_STACKS;
+
+function resolveBookCjkLanguage(
+  language?: string | null
+): BookCjkLanguage | null {
+  if (!language) return null;
+  const resolvedLanguage = detectLanguageFromLocale(language);
+  switch (resolvedLanguage) {
+    case "zh-CN":
+    case "zh-TW":
+    case "ko":
+    case "ja":
+      return resolvedLanguage;
+    default:
+      return null;
+  }
+}
+
+/**
  * Resolve locale-specific CJK serif fallbacks. Simplified Chinese must prefer
  * SC glyph families; otherwise a JP-first stack can render mainland forms with
  * Japanese glyph variants.
@@ -36,22 +100,33 @@ const DEFAULT_BOOK_CJK_SERIF_STACK = `${BOOK_CJK_SERIF_STACKS.ja}, "Noto Serif T
 export function resolveBookCjkSerifStack(
   language?: string | null
 ): string {
-  const resolvedLanguage = language
-    ? detectLanguageFromLocale(language)
-    : null;
+  const resolvedLanguage = resolveBookCjkLanguage(language);
+  return resolvedLanguage
+    ? BOOK_CJK_SERIF_STACKS[resolvedLanguage]
+    : DEFAULT_BOOK_CJK_SERIF_STACK;
+}
 
-  switch (resolvedLanguage) {
-    case "zh-CN":
-      return BOOK_CJK_SERIF_STACKS["zh-CN"];
-    case "zh-TW":
-      return BOOK_CJK_SERIF_STACKS["zh-TW"];
-    case "ko":
-      return BOOK_CJK_SERIF_STACKS.ko;
-    case "ja":
-      return BOOK_CJK_SERIF_STACKS.ja;
-    default:
-      return DEFAULT_BOOK_CJK_SERIF_STACK;
-  }
+/**
+ * Resolve locale-specific CJK sans fallbacks (Hiragino before PingFang; no
+ * Hiragino Sans for Simplified Chinese).
+ */
+export function resolveBookCjkSansStack(
+  language?: string | null
+): string {
+  const resolvedLanguage = resolveBookCjkLanguage(language);
+  return resolvedLanguage
+    ? BOOK_CJK_SANS_STACKS[resolvedLanguage]
+    : DEFAULT_BOOK_CJK_SANS_STACK;
+}
+
+/** Resolve locale-specific monospaced CJK fallbacks. */
+export function resolveBookCjkMonoStack(
+  language?: string | null
+): string {
+  const resolvedLanguage = resolveBookCjkLanguage(language);
+  return resolvedLanguage
+    ? BOOK_CJK_MONO_STACKS[resolvedLanguage]
+    : DEFAULT_BOOK_CJK_MONO_STACK;
 }
 
 function buildBookSerifStack(
@@ -61,9 +136,31 @@ function buildBookSerifStack(
   return `${primaryFonts}, ${resolveBookCjkSerifStack(language)}, ${BOOK_SERIF_LATIN_FALLBACKS}`;
 }
 
+function buildBookSansStack(language?: string | null): string {
+  return `${BOOK_SANS_LATIN_STACK}, ${resolveBookCjkSansStack(language)}, sans-serif`;
+}
+
+function buildBookGenevaStack(language?: string | null): string {
+  return `"Geneva-12", Geneva, "ArkPixel", ${resolveBookCjkSansStack(language)}, "SerenityOS-Emoji", system-ui, -apple-system, sans-serif`;
+}
+
+function buildBookMonoStack(language?: string | null): string {
+  // Latin mono → optional monospaced CJK → OS CJK sans (region-correct
+  // glyphs when no CJK mono is installed) → ubiquitous mono fallbacks.
+  return `${BOOK_MONO_LATIN_STACK}, ${resolveBookCjkMonoStack(language)}, ${resolveBookCjkSansStack(language)}, "Courier New", monospace`;
+}
+
+export type BookFontId =
+  | "original"
+  | "eb-garamond"
+  | "serif"
+  | "sans"
+  | "geneva"
+  | "rounded"
+  | "mono";
+
 export interface BookFontOption {
-  id: string;
-  label: string;
+  id: BookFontId;
   /**
    * CSS font-family stack to force on the book body, or null to keep the
    * publisher's original fonts.
@@ -71,39 +168,32 @@ export interface BookFontOption {
   cssStack: string | null;
 }
 
-/** Reading fonts offered in the View menu. */
+/** Reading fonts offered in the View menu / Customize panel. */
 export const BOOK_FONTS: BookFontOption[] = [
-  { id: "original", label: "Original", cssStack: null },
-  {
-    id: "eb-garamond",
-    label: "EB Garamond",
-    cssStack: buildBookSerifStack('"EB Garamond", "Charter"'),
-  },
+  { id: "original", cssStack: null },
   {
     id: "serif",
-    label: "Serif",
     cssStack: buildBookSerifStack('"Charter"'),
   },
   {
     id: "sans",
-    label: "Sans Serif",
-    cssStack:
-      '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, "Lucida Grande", Arial, sans-serif',
-  },
-  {
-    id: "geneva",
-    label: "Geneva",
-    cssStack: BOOK_GENEVA_STACK,
+    cssStack: buildBookSansStack(),
   },
   {
     id: "rounded",
-    label: "Rounded",
     cssStack: BOOK_ROUNDED_STACK,
   },
   {
     id: "mono",
-    label: "Monospace",
-    cssStack: '"Monaco", "Courier New", monospace',
+    cssStack: buildBookMonoStack(),
+  },
+  {
+    id: "eb-garamond",
+    cssStack: buildBookSerifStack('"EB Garamond", "Charter"'),
+  },
+  {
+    id: "geneva",
+    cssStack: buildBookGenevaStack(),
   },
 ];
 
@@ -111,19 +201,26 @@ export function getBookFont(fontId: string): BookFontOption {
   return BOOK_FONTS.find((f) => f.id === fontId) ?? BOOK_FONTS[0];
 }
 
-/** Resolve a reading font stack, including locale-specific CJK serif faces. */
+/** Resolve a reading font stack, including locale-specific CJK faces. */
 export function getBookFontCssStack(
   fontId: string,
   language?: string | null
 ): string | null {
   const font = getBookFont(fontId);
-  if (font.id === "eb-garamond") {
-    return buildBookSerifStack('"EB Garamond", "Charter"', language);
+  switch (font.id) {
+    case "eb-garamond":
+      return buildBookSerifStack('"EB Garamond", "Charter"', language);
+    case "serif":
+      return buildBookSerifStack('"Charter"', language);
+    case "sans":
+      return buildBookSansStack(language);
+    case "geneva":
+      return buildBookGenevaStack(language);
+    case "mono":
+      return buildBookMonoStack(language);
+    default:
+      return font.cssStack;
   }
-  if (font.id === "serif") {
-    return buildBookSerifStack('"Charter"', language);
-  }
-  return font.cssStack;
 }
 
 export interface ReadingPalette {
@@ -135,7 +232,10 @@ export interface ReadingPalette {
   isDark: boolean;
 }
 
-export type BooksThemePresetId = Exclude<BooksThemeOverride, "auto" | "custom">;
+export type BooksThemePresetId = Exclude<
+  BooksThemeOverride,
+  "auto" | "accent" | "custom"
+>;
 
 const PALETTES: Record<BooksThemePresetId, ReadingPalette> = {
   light: {
@@ -269,14 +369,47 @@ export function getReadingOverlayBackground(palette: ReadingPalette): string {
     : palette.background;
 }
 
+/**
+ * Soft page colors derived from the OS accent. Falls back to the classic Aqua
+ * blue seed when no accent base is available (themes without accent chrome).
+ */
+export function buildAccentReadingPalette(
+  accentBaseHex: string | null | undefined,
+  osIsDark: boolean
+): ReadingPalette {
+  const colors = deriveAccentPagePalette(accentBaseHex ?? "#2765ca", osIsDark);
+  return {
+    ...colors,
+    isDark: osIsDark,
+  };
+}
+
+/** Resolve the live OS accent base hex from theme-store state. */
+export function resolveOsAccentBaseHex(state: {
+  current: OsThemeId;
+  accentByTheme: Partial<Record<OsThemeId, AccentId>>;
+  wallpaperAccentColor: string | null;
+}): string {
+  return resolveAccentBaseHex(
+    getAccentChrome(state.current),
+    state.accentByTheme[state.current] ?? DEFAULT_ACCENT,
+    state.wallpaperAccentColor
+  );
+}
+
 /** Resolve the active reading palette from settings + OS dark mode. */
 export function resolveReadingPalette(
   settings: BooksPaletteSettings,
-  osIsDark: boolean
+  osIsDark: boolean,
+  /** Solid OS accent base, required for the `"accent"` theme override. */
+  accentBaseHex?: string | null
 ): ReadingPalette {
   const { themeOverride } = settings;
   if (themeOverride === "auto") {
     return osIsDark ? PALETTES.dark : PALETTES.light;
+  }
+  if (themeOverride === "accent") {
+    return buildAccentReadingPalette(accentBaseHex, osIsDark);
   }
   if (themeOverride === "custom") {
     return buildCustomReadingPalette(settings, osIsDark);
@@ -517,11 +650,19 @@ export async function reflowEpubAfterFontsSettle({
 export function buildEpubTheme(
   settings: BooksReaderSettings,
   palette: ReadingPalette,
-  language?: string | null
+  language?: string | null,
+  /**
+   * EPUB package language used to gate vertical layout. Defaults to `language`
+   * so callers that already pass the book language keep working. Do not pass the
+   * UI locale here — unknown/Latin books must not activate vertical styles.
+   */
+  bookLanguage: string | null | undefined = language
 ): Record<string, Record<string, string>> {
   const fontStack = getBookFontCssStack(settings.fontId, language);
   const fontFamily = fontStack ? `${fontStack} !important` : null;
-  const isVerticalText = settings.textLayout === "vertical";
+  const isVerticalText =
+    resolveEffectiveTextLayout(settings.textLayout, bookLanguage) ===
+    "vertical";
   const baseLineHeight = clampBooksLineHeight(settings.lineHeight);
   const lineHeight = isVerticalText
     ? Math.max(baseLineHeight, VERTICAL_BOOK_LINE_HEIGHT_MIN)

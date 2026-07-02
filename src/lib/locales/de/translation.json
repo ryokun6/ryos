@@ -590,8 +590,8 @@
     "books": {
       "chineseScript": {
         "original": "Original",
-        "simplified": "Chinesisch (vereinfacht)",
-        "traditional": "Chinesisch (traditionell)"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "Automatisch",
@@ -613,6 +613,15 @@
         "transparent": "Transparent"
       },
       "description": "EPUB-Bücher lesen",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monospace",
+        "original": "Original",
+        "rounded": "Abgerundet",
+        "sans": "Sans Serif",
+        "serif": "Serif"
+      },
       "help": {
         "bookshelf": {
           "description": "Importierte EPUBs stehen im Holzregal. Klicken Sie auf ein Buch, um es zu öffnen und mit dem Lesen zu beginnen.",
@@ -623,7 +632,7 @@
           "title": "Dunkelmodus"
         },
         "fonts": {
-          "description": "Wähle eine Leseschrift (einschließlich EB Garamond), die Textgröße sowie ein- oder zweispaltiges Layout im Menü „Darstellung“.",
+          "description": "Wähle eine Leseschrift (einschließlich Garamond), die Textgröße sowie ein- oder zweispaltiges Layout im Menü „Darstellung“.",
           "title": "Schriften & Layout"
         },
         "import": {
@@ -696,6 +705,7 @@
       },
       "theme": {
         "auto": "Automatisch",
+        "accent": "Akzent",
         "black": "Schwarz",
         "custom": "Eigene",
         "dark": "Dunkel",

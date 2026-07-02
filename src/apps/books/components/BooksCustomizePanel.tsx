@@ -25,13 +25,20 @@ import {
   type BooksReaderSettings,
   type BooksThemeOverride,
 } from "@/stores/useBooksStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import {
   BOOK_FONTS,
   BOOK_THEME_PRESET_IDS,
+  buildAccentReadingPalette,
   buildCustomReadingPalette,
   getBookFontCssStack,
   getReadingPalette,
+  resolveOsAccentBaseHex,
 } from "../utils/booksReader";
+import {
+  isChineseBookLanguage,
+  isCjkBookLanguage,
+} from "../utils/booksLanguage";
 
 interface BooksCustomizePanelProps {
   settings: BooksReaderSettings;
@@ -39,6 +46,8 @@ interface BooksCustomizePanelProps {
   osIsDark: boolean;
   /** Bottom-sheet layout for narrow windows / mobile. */
   compact: boolean;
+  /** EPUB package language; gates CJK-only layout controls. */
+  bookLanguage?: string | null;
   onClose: () => void;
 }
 
@@ -215,12 +224,21 @@ export function BooksCustomizePanel({
   updateSettings,
   osIsDark,
   compact,
+  bookLanguage = null,
   onClose,
 }: BooksCustomizePanelProps) {
   const { t, i18n } = useTranslation();
   const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
+  const supportsVerticalText = isCjkBookLanguage(bookLanguage);
+  const supportsChineseScript = isChineseBookLanguage(bookLanguage);
+  const isVerticalText =
+    supportsVerticalText && settings.textLayout === "vertical";
+  // Facing-page columns don't apply on narrow (mobile) layouts or vertical text.
+  const showColumns = !compact && !isVerticalText;
+  const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
 
   const autoPalette = getReadingPalette(osIsDark ? "dark" : "light");
+  const accentPalette = buildAccentReadingPalette(accentBaseHex, osIsDark);
   const customPalette = buildCustomReadingPalette(settings, osIsDark);
   const customBackground = normalizeBooksCustomColor(
     settings.customThemeBackground,
@@ -241,6 +259,8 @@ export function BooksCustomizePanel({
     transparent?: boolean;
     /** Rainbow ring marking the editable custom swatch. */
     custom?: boolean;
+    /** Outer ring tinted with the live OS accent color. */
+    accent?: boolean;
   }[] = [
     {
       id: "auto" as const,
@@ -249,6 +269,14 @@ export function BooksCustomizePanel({
       background: autoPalette.background,
       text: autoPalette.text,
       showGlyph: true,
+    },
+    {
+      id: "accent" as const,
+      label: t("apps.books.theme.accent"),
+      background: accentPalette.background,
+      text: accentPalette.text,
+      showGlyph: true,
+      accent: true,
     },
     ...BOOK_THEME_PRESET_IDS.map((id) => {
       const palette = getReadingPalette(id);
@@ -350,42 +378,70 @@ export function BooksCustomizePanel({
         />
       </Row>
 
-      <Row label={t("apps.books.menu.textLayout")}>
-        <Segmented
-          ariaLabel={t("apps.books.menu.textLayout")}
-          value={settings.textLayout}
-          options={[
-            {
-              value: "book" as const,
-              label: t("apps.books.textLayout.horizontal"),
-            },
-            {
-              value: "vertical" as const,
-              label: t("apps.books.textLayout.vertical"),
-            },
-          ]}
-          onChange={(value) => updateSettings({ textLayout: value })}
-        />
-      </Row>
+      {supportsVerticalText ? (
+        <Row label={t("apps.books.menu.textLayout")}>
+          <Segmented
+            ariaLabel={t("apps.books.menu.textLayout")}
+            value={settings.textLayout}
+            options={[
+              {
+                value: "book" as const,
+                label: t("apps.books.textLayout.horizontal"),
+              },
+              {
+                value: "vertical" as const,
+                label: t("apps.books.textLayout.vertical"),
+              },
+            ]}
+            onChange={(value) => updateSettings({ textLayout: value })}
+          />
+        </Row>
+      ) : null}
 
-      <Row label={t("apps.books.menu.columns")}>
-        <Segmented
-          ariaLabel={t("apps.books.menu.columns")}
-          value={settings.columnMode}
-          options={[
-            { value: "auto" as const, label: t("apps.books.columns.auto") },
-            {
-              value: "single" as const,
-              label: t("apps.books.columns.single"),
-            },
-            {
-              value: "double" as const,
-              label: t("apps.books.columns.double"),
-            },
-          ]}
-          onChange={(value) => updateSettings({ columnMode: value })}
-        />
-      </Row>
+      {supportsChineseScript ? (
+        <Row label={t("apps.books.menu.chineseScript")}>
+          <Segmented
+            ariaLabel={t("apps.books.menu.chineseScript")}
+            value={settings.chineseScript}
+            options={[
+              {
+                value: "original" as const,
+                label: t("apps.books.chineseScript.original"),
+              },
+              {
+                value: "simplified" as const,
+                label: t("apps.books.chineseScript.simplified"),
+              },
+              {
+                value: "traditional" as const,
+                label: t("apps.books.chineseScript.traditional"),
+              },
+            ]}
+            onChange={(value) => updateSettings({ chineseScript: value })}
+          />
+        </Row>
+      ) : null}
+
+      {showColumns ? (
+        <Row label={t("apps.books.menu.columns")}>
+          <Segmented
+            ariaLabel={t("apps.books.menu.columns")}
+            value={settings.columnMode}
+            options={[
+              { value: "auto" as const, label: t("apps.books.columns.auto") },
+              {
+                value: "single" as const,
+                label: t("apps.books.columns.single"),
+              },
+              {
+                value: "double" as const,
+                label: t("apps.books.columns.double"),
+              },
+            ]}
+            onChange={(value) => updateSettings({ columnMode: value })}
+          />
+        </Row>
+      ) : null}
 
       <Row label={t("apps.books.menu.font")}>
         <ScrollFadeRow className="gap-1 pb-0.5">
@@ -406,7 +462,7 @@ export function BooksCustomizePanel({
                 )}
                 style={{ fontFamily: stack ?? undefined }}
               >
-                {font.label}
+                {t(`apps.books.fonts.${font.id}`)}
               </button>
             );
           })}
@@ -420,8 +476,8 @@ export function BooksCustomizePanel({
         <ScrollFadeRow className="-m-1 gap-1.5 p-1">
           {themeSwatches.map((swatch) => {
             const selected = settings.themeOverride === swatch.id;
-            if (swatch.custom) {
-              // Custom swatch: rainbow ring around the current custom colors.
+            if (swatch.custom || swatch.accent) {
+              // Custom: rainbow ring. Accent: live OS accent ring.
               return (
                 <button
                   key={swatch.id}
@@ -436,8 +492,9 @@ export function BooksCustomizePanel({
                       "ring-2 ring-[color:var(--os-color-selection-bg)] ring-offset-1 ring-offset-[color:var(--os-color-window-bg)]"
                   )}
                   style={{
-                    background:
-                      "conic-gradient(#f43f5e, #f59e0b, #84cc16, #22d3ee, #6366f1, #d946ef, #f43f5e)",
+                    background: swatch.accent
+                      ? accentBaseHex
+                      : "conic-gradient(#f43f5e, #f59e0b, #84cc16, #22d3ee, #6366f1, #d946ef, #f43f5e)",
                   }}
                 >
                   <span

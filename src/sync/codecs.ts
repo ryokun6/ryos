@@ -1421,7 +1421,8 @@ const mapsCodec: SyncCodec = {
 // Reading progress reconciles per book with `updatedAt`-aware last-writer-wins
 // on apply (a stale remote op never clobbers newer local progress), layered on
 // top of the engine's per-key timestamp LWW. Reader preferences sync through
-// the separate `books-settings` namespace. `shelfView` remains device-local.
+// the separate `books-settings` namespace. `shelfView` and `openPath` remain
+// device-local (reopen this device's last reader/shelf session).
 //
 // Deleting a book: `useBooksLogic.deleteBook` calls `useBooksStore.removeBook`,
 // which drops the book's `progress` entry and prunes it from the order. On the

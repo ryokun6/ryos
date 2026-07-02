@@ -20,6 +20,7 @@ import {
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import {
   buildEpubTheme,
   buildFontFaceCss,
@@ -29,8 +30,13 @@ import {
   isLikelyEpubBuffer,
   reflowEpubAfterFontsSettle,
   resolveEpubDisplayFallbackTarget,
+  resolveOsAccentBaseHex,
   resolveReadingPalette,
 } from "../utils/booksReader";
+import {
+  resolveEffectiveChineseScript,
+  resolveEffectiveTextLayout,
+} from "../utils/booksLanguage";
 import {
   applyChineseScriptToDocument,
   createChineseScriptConversionSession,
@@ -65,6 +71,8 @@ interface BooksReaderPaneProps {
   onProgress: (cfi: string, percentage: number) => void;
   onNavigationStateChange?: (state: BooksNavigationState) => void;
   onSpeechStateChange?: (isSpeaking: boolean) => void;
+  /** EPUB metadata language once known (drives CJK-only menus / features). */
+  onBookLanguageChange?: (language: string | null) => void;
 }
 
 const clamp01 = (value: number): number =>
@@ -306,6 +314,7 @@ export const BooksReaderPane = forwardRef<
     onProgress,
     onNavigationStateChange,
     onSpeechStateChange,
+    onBookLanguageChange,
   },
   ref
 ) {
@@ -314,14 +323,25 @@ export const BooksReaderPane = forwardRef<
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const bookLanguageRef = useRef<string | null>(null);
+  const [bookLanguage, setBookLanguage] = useState<string | null>(null);
   const publisherPageDirectionRef = useRef<"ltr" | "rtl">("ltr");
-  const textLayoutRef = useRef(settings.textLayout);
-  textLayoutRef.current = settings.textLayout;
+  // Raw preferences; application uses resolved (language-gated) values below.
+  const textLayoutSettingRef = useRef(settings.textLayout);
+  textLayoutSettingRef.current = settings.textLayout;
+  const chineseScriptSettingRef = useRef(settings.chineseScript);
+  chineseScriptSettingRef.current = settings.chineseScript;
+  // Vertical / simp-trad only apply for qualifying book languages.
+  const effectiveTextLayout = resolveEffectiveTextLayout(
+    settings.textLayout,
+    bookLanguage
+  );
+  const effectiveChineseScript = resolveEffectiveChineseScript(
+    settings.chineseScript,
+    bookLanguage
+  );
   const appliedTextLayoutRef = useRef<BooksReaderSettings["textLayout"] | null>(
     null
   );
-  const chineseScriptRef = useRef(settings.chineseScript);
-  chineseScriptRef.current = settings.chineseScript;
   const speechRateRef = useRef(settings.speechRate);
   speechRateRef.current = settings.speechRate;
   // Lets the rendition's `relocated` handler (created once per book) notify
@@ -430,9 +450,10 @@ export const BooksReaderPane = forwardRef<
     return blob;
   }, [appendDebugEvent, entry.path]);
 
-  const palette = resolveReadingPalette(settings, osIsDark);
+  const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
+  const palette = resolveReadingPalette(settings, osIsDark, accentBaseHex);
   const overlayBackground = getReadingOverlayBackground(palette);
-  const isVerticalText = settings.textLayout === "vertical";
+  const isVerticalText = effectiveTextLayout === "vertical";
   const sideClearance = clampBooksGutter(settings.gutterPx);
 
   // Measure the zoom-in geometry before first paint so the cover overlay starts
@@ -507,6 +528,8 @@ export const BooksReaderPane = forwardRef<
     setCoverVisible(true);
     setLoadError(null);
     bookLanguageRef.current = null;
+    setBookLanguage(null);
+    onBookLanguageChange?.(null);
     publisherPageDirectionRef.current = "ltr";
     appliedTextLayoutRef.current = null;
     activeSectionHrefRef.current = undefined;
@@ -728,19 +751,27 @@ export const BooksReaderPane = forwardRef<
           container?: { packagePath?: string };
           package?: { metadata?: { direction?: unknown; language?: string } };
         };
-        const bookLanguage =
+        const nextBookLanguage =
           readyBook.package?.metadata?.language?.trim() || null;
-        bookLanguageRef.current = bookLanguage;
+        bookLanguageRef.current = nextBookLanguage;
+        setBookLanguage(nextBookLanguage);
+        onBookLanguageChange?.(nextBookLanguage);
         publisherPageDirectionRef.current = resolveEpubPageDirection(
           "book",
           readyBook.package?.metadata?.direction
         );
         const readingLanguage = resolveChineseScriptReadingLanguage(
-          chineseScriptRef.current,
-          bookLanguage ?? uiLanguage
+          resolveEffectiveChineseScript(
+            chineseScriptSettingRef.current,
+            nextBookLanguage
+          ),
+          nextBookLanguage ?? uiLanguage
         );
         book.spine.hooks.content.register((document: Document) => {
-          const textLayout = textLayoutRef.current;
+          const textLayout = resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          );
           applyEpubTextLayout(document, textLayout);
           appliedTextLayoutRef.current = textLayout;
         });
@@ -775,14 +806,18 @@ export const BooksReaderPane = forwardRef<
           contentHooksReady = new Promise<void>((resolve) => {
             resolveContentHooksReady = resolve;
           });
+          const textLayout = resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          );
           appendDebugEvent(`${renderStep}:start`, {
             width: host.clientWidth,
             height: host.clientHeight,
             spread: columnModeToSpread(settings.columnMode),
-            textLayout: textLayoutRef.current,
+            textLayout,
           });
           const pageDirection = resolveEpubPageDirection(
-            textLayoutRef.current,
+            textLayout,
             publisherPageDirectionRef.current
           );
           const nextRendition = activeBook.renderTo(host, {
@@ -799,14 +834,18 @@ export const BooksReaderPane = forwardRef<
           appendDebugEvent(`${renderStep}:success`);
 
           nextRendition.on("started", () => {
+            const layout = resolveEffectiveTextLayout(
+              textLayoutSettingRef.current,
+              bookLanguageRef.current
+            );
             const direction = resolveEpubPageDirection(
-              textLayoutRef.current,
+              layout,
               publisherPageDirectionRef.current
             );
             nextRendition.direction(direction);
             appendDebugEvent("epubjs:rendition:started", {
               direction,
-              textLayout: textLayoutRef.current,
+              textLayout: layout,
             });
           });
           nextRendition.on("attached", () =>
@@ -879,7 +918,10 @@ export const BooksReaderPane = forwardRef<
 
                 const document = contents.document;
                 if (!document) return;
-                const textLayout = textLayoutRef.current;
+                const textLayout = resolveEffectiveTextLayout(
+                  textLayoutSettingRef.current,
+                  bookLanguageRef.current
+                );
                 applyEpubTextLayout(document, textLayout);
                 appliedTextLayoutRef.current = textLayout;
 
@@ -920,7 +962,10 @@ export const BooksReaderPane = forwardRef<
                     document.fonts?.ready ?? Promise.resolve();
                 }
 
-                const target = chineseScriptRef.current;
+                const target = resolveEffectiveChineseScript(
+                  chineseScriptSettingRef.current,
+                  bookLanguageRef.current
+                );
                 try {
                   const changedNodeCount = await applyChineseScriptToDocument(
                     document,
@@ -928,7 +973,10 @@ export const BooksReaderPane = forwardRef<
                     chineseScriptSessionRef.current,
                     () =>
                       !cancelled &&
-                      chineseScriptRef.current === target &&
+                      resolveEffectiveChineseScript(
+                        chineseScriptSettingRef.current,
+                        bookLanguageRef.current
+                      ) === target &&
                       renditionRef.current === nextRendition
                   );
                   appendDebugEvent("epubjs:contentHook:chineseScript:success", {
@@ -952,7 +1000,12 @@ export const BooksReaderPane = forwardRef<
           );
 
           nextRendition.themes.default(
-            buildEpubTheme(settings, palette, readingLanguage)
+            buildEpubTheme(
+              settings,
+              palette,
+              readingLanguage,
+              bookLanguageRef.current
+            )
           );
           nextRendition.themes.fontSize(`${settings.fontSizePct}%`);
           appendDebugEvent("epubjs:theme:applied");
@@ -1078,7 +1131,11 @@ export const BooksReaderPane = forwardRef<
             }),
           ]);
           if (cancelled || renditionRef.current !== displayedRendition) return;
-          const isVerticalTextLayout = textLayoutRef.current === "vertical";
+          const textLayout = resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          );
+          const isVerticalTextLayout = textLayout === "vertical";
           const reflowedAfterFonts = await reflowEpubAfterFontsSettle({
             fontsReady: displayedContentFontsReady ?? Promise.resolve(),
             rendition: displayedRendition,
@@ -1099,7 +1156,7 @@ export const BooksReaderPane = forwardRef<
           });
           if (reflowedAfterFonts) {
             appendDebugEvent("epubjs:fonts:reflowed", {
-              textLayout: textLayoutRef.current,
+              textLayout,
               rebuilt: isVerticalTextLayout,
             });
           }
@@ -1166,13 +1223,14 @@ export const BooksReaderPane = forwardRef<
   }, [entry.path]);
 
   // Convert the already-rendered section immediately when the reader setting
-  // changes. Each section retains its original text so switching directions or
-  // returning to Original never requires reloading the chapter.
+  // (or book language) changes. Non-Chinese books always stay on original text.
+  // Each section retains its original text so switching directions or returning
+  // to Original never requires reloading the chapter.
   useEffect(() => {
     const rendition = renditionRef.current;
     if (!isReady || !rendition) return;
     let cancelled = false;
-    const target = settings.chineseScript;
+    const target = effectiveChineseScript;
     const renditionContents = rendition.getContents() as unknown;
     const contentsList = (
       Array.isArray(renditionContents)
@@ -1189,7 +1247,12 @@ export const BooksReaderPane = forwardRef<
           contents.document,
           target,
           chineseScriptSessionRef.current,
-          () => !cancelled && chineseScriptRef.current === target
+          () =>
+            !cancelled &&
+            resolveEffectiveChineseScript(
+              chineseScriptSettingRef.current,
+              bookLanguageRef.current
+            ) === target
         );
         appendDebugEvent("reader:chineseScript:applied", {
           target,
@@ -1203,10 +1266,11 @@ export const BooksReaderPane = forwardRef<
     return () => {
       cancelled = true;
     };
-  }, [appendDebugEvent, isReady, settings.chineseScript]);
+  }, [appendDebugEvent, isReady, effectiveChineseScript]);
 
   // Apply vertical text to source and rendered section documents, then let
   // epub.js clear and redisplay the current CFI with the matching page axis.
+  // Vertical writing mode is only allowed for CJK books.
   useEffect(() => {
     const rendition = renditionRef.current;
     const book = bookRef.current;
@@ -1214,14 +1278,14 @@ export const BooksReaderPane = forwardRef<
       !isReady ||
       !rendition ||
       !book ||
-      appliedTextLayoutRef.current === settings.textLayout
+      appliedTextLayoutRef.current === effectiveTextLayout
     ) {
       return;
     }
 
     book.spine.each((section: { document?: Document }) => {
       if (section.document) {
-        applyEpubTextLayout(section.document, settings.textLayout);
+        applyEpubTextLayout(section.document, effectiveTextLayout);
       }
     });
 
@@ -1235,31 +1299,36 @@ export const BooksReaderPane = forwardRef<
     ) as Array<{ document?: Document }>;
     for (const contents of contentsList) {
       if (contents.document) {
-        applyEpubTextLayout(contents.document, settings.textLayout);
+        applyEpubTextLayout(contents.document, effectiveTextLayout);
       }
     }
 
-    appliedTextLayoutRef.current = settings.textLayout;
+    appliedTextLayoutRef.current = effectiveTextLayout;
     const direction = resolveEpubPageDirection(
-      settings.textLayout,
+      effectiveTextLayout,
       publisherPageDirectionRef.current
     );
     rendition.direction(direction);
     appendDebugEvent("reader:textLayout:applied", {
       direction,
-      textLayout: settings.textLayout,
+      textLayout: effectiveTextLayout,
     });
-  }, [appendDebugEvent, isReady, settings.textLayout]);
+  }, [appendDebugEvent, isReady, effectiveTextLayout]);
 
   // Apply theme (colors, font family, line height) live.
   useEffect(() => {
     if (!isReady || !renditionRef.current) return;
     const readingLanguage = resolveChineseScriptReadingLanguage(
-      settings.chineseScript,
+      effectiveChineseScript,
       bookLanguageRef.current ?? uiLanguage
     );
     renditionRef.current.themes.default(
-      buildEpubTheme(settings, palette, readingLanguage)
+      buildEpubTheme(
+        settings,
+        palette,
+        readingLanguage,
+        bookLanguageRef.current
+      )
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -1268,10 +1337,12 @@ export const BooksReaderPane = forwardRef<
     settings.themeOverride,
     settings.customThemeBackground,
     settings.customThemeText,
+    effectiveChineseScript,
+    bookLanguage,
     settings.customThemeTransparent,
-    settings.chineseScript,
-    settings.textLayout,
     settings.lineHeight,
+    // Live OS accent seed — page colors track wallpaper/Control Panels changes.
+    accentBaseHex,
     osIsDark,
     uiLanguage,
   ]);
@@ -1331,7 +1402,10 @@ export const BooksReaderPane = forwardRef<
     () =>
       ryOSLocaleToSpeechLanguage(
         resolveChineseScriptReadingLanguage(
-          chineseScriptRef.current,
+          resolveEffectiveChineseScript(
+            chineseScriptSettingRef.current,
+            bookLanguageRef.current
+          ),
           bookLanguageRef.current ?? uiLanguageRef.current
         )
       ),
@@ -1389,9 +1463,23 @@ export const BooksReaderPane = forwardRef<
       } else if (event.key === "PageUp") {
         turnPage("prev");
       } else if (event.key === "ArrowRight") {
-        turnPage(textLayoutRef.current === "vertical" ? "prev" : "next");
+        turnPage(
+          resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          ) === "vertical"
+            ? "prev"
+            : "next"
+        );
       } else if (event.key === "ArrowLeft") {
-        turnPage(textLayoutRef.current === "vertical" ? "next" : "prev");
+        turnPage(
+          resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          ) === "vertical"
+            ? "next"
+            : "prev"
+        );
       }
     },
     [turnPage]

@@ -590,8 +590,8 @@
     "books": {
       "chineseScript": {
         "original": "원본",
-        "simplified": "중국어 간체",
-        "traditional": "중국어 번체"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "자동",
@@ -613,6 +613,15 @@
         "transparent": "투명"
       },
       "description": "EPUB 도서 읽기",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "고정폭",
+        "original": "원본",
+        "rounded": "둥근",
+        "sans": "산세리프",
+        "serif": "세리프"
+      },
       "help": {
         "bookshelf": {
           "description": "가져온 EPUB 도서들이 나무 책장에 나열됩니다. 책을 클릭하여 열고 읽기 시작하세요.",
@@ -623,7 +632,7 @@
           "title": "다크 모드"
         },
         "fonts": {
-          "description": "보기 메뉴에서 독서용 서체(EB Garamond 포함), 텍스트 크기, 단일 또는 이중 단 설정을 선택하십시오.",
+          "description": "보기 메뉴에서 독서용 서체(Garamond 포함), 텍스트 크기, 단일 또는 이중 단 설정을 선택하십시오.",
           "title": "서체 및 레이아웃"
         },
         "import": {
@@ -696,6 +705,7 @@
       },
       "theme": {
         "auto": "자동",
+        "accent": "액센트",
         "black": "검은색",
         "custom": "사용자화",
         "dark": "다크",

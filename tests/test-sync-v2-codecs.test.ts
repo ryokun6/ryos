@@ -387,7 +387,7 @@ describe("bookshelf codec", () => {
     expect(result).toBeUndefined();
   });
 
-  test("removeBook clears progress, ordering, and last-opened", () => {
+  test("removeBook clears progress, ordering, last-opened, and openPath", () => {
     useBooksStore.setState({
       progressByPath: {
         "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
@@ -396,6 +396,7 @@ describe("bookshelf codec", () => {
       pinnedTop: ["/Books/a.epub"],
       pinnedBottom: ["/Books/a.epub"],
       lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
     } as never);
 
     useBooksStore.getState().removeBook("/Books/a.epub");
@@ -406,12 +407,55 @@ describe("bookshelf codec", () => {
     expect(state.pinnedTop).toEqual([]);
     expect(state.pinnedBottom).toEqual([]);
     expect(state.lastOpenedPath).toBeNull();
+    expect(state.openPath).toBeNull();
 
     // collect must stop emitting the removed book's progress doc so the engine
     // shadow-diff can tombstone it cross-device.
     const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
     expect(docs.has("bookshelf/progress:/Books/a.epub")).toBe(false);
     expect(docs.has("bookshelf/progress:/Books/b.epub")).toBe(true);
+  });
+
+  test("renameProgressPath migrates openPath and last-opened with the book", () => {
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
+      },
+      pinnedTop: ["/Books/a.epub"],
+      pinnedBottom: [],
+      lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
+    } as never);
+
+    useBooksStore.getState().renameProgressPath("/Books/a.epub", "/Books/b.epub");
+
+    const state = useBooksStore.getState();
+    expect(state.progressByPath["/Books/a.epub"]).toBeUndefined();
+    expect(state.progressByPath["/Books/b.epub"]).toMatchObject({
+      percentage: 0.3,
+    });
+    expect(state.pinnedTop).toEqual(["/Books/b.epub"]);
+    expect(state.lastOpenedPath).toBe("/Books/b.epub");
+    expect(state.openPath).toBe("/Books/b.epub");
+  });
+
+  test("bookshelf collect does not sync device-local openPath", () => {
+    useBooksStore.setState({
+      progressByPath: {},
+      pinnedTop: [],
+      pinnedBottom: [],
+      lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
+    } as never);
+
+    const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
+    expect(docs.get("bookshelf/last-opened")).toMatchObject({
+      path: "/Books/a.epub",
+    });
+    for (const key of docs.keys()) {
+      expect(key).not.toContain("openPath");
+      expect(key).not.toContain("open-path");
+    }
   });
 });
 

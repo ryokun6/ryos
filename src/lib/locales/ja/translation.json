@@ -590,8 +590,8 @@
     "books": {
       "chineseScript": {
         "original": "オリジナル",
-        "simplified": "簡体字中国語",
-        "traditional": "繁体字中国語"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "自動",
@@ -613,6 +613,15 @@
         "transparent": "透明"
       },
       "description": "EPUB形式の本を読む",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "等幅",
+        "original": "オリジナル",
+        "rounded": "丸ゴシック",
+        "sans": "ゴシック",
+        "serif": "明朝"
+      },
       "help": {
         "bookshelf": {
           "description": "インポートされたEPUBが木製の棚に並んでいます。本をクリックして開き、読書を始めましょう。",
@@ -623,7 +632,7 @@
           "title": "ダークモード"
         },
         "fonts": {
-          "description": "「表示」メニューから、読書用のフォント（EB Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
+          "description": "「表示」メニューから、読書用のフォント（Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
           "title": "フォントとレイアウト"
         },
         "import": {
@@ -696,6 +705,7 @@
       },
       "theme": {
         "auto": "自動",
+        "accent": "アクセント",
         "black": "ブラック",
         "custom": "カスタム",
         "dark": "ダーク",

@@ -9,6 +9,8 @@ import {
   getBookFontCssStack,
   reflowEpubAfterFontsSettle,
   resolveEpubDisplayFallbackTarget,
+  resolveBookCjkMonoStack,
+  resolveBookCjkSansStack,
   resolveBookCjkSerifStack,
 } from "../src/apps/books/utils/booksReader";
 
@@ -356,6 +358,80 @@ describe("Books reader display recovery", () => {
 
     expect(result.status).toBe("inactive");
     expect(calls).toEqual([]);
+  });
+});
+
+function fontFamilies(stack: string): string[] {
+  return stack.split(",").map((entry) => entry.trim().replace(/^"|"$/g, ""));
+}
+
+describe("Books reader CJK sans and mono fonts", () => {
+  test("prefers Hiragino before PingFang and omits Hiragino Sans for zh-CN", () => {
+    const simplified = resolveBookCjkSansStack("zh-CN");
+    const traditional = resolveBookCjkSansStack("zh-TW");
+    const japanese = resolveBookCjkSansStack("ja");
+
+    expect(fontFamilies(simplified)).not.toContain("Hiragino Sans");
+    expect(fontFamilies(simplified)).toContain("Hiragino Sans GB");
+    expect(simplified.indexOf('"Hiragino Sans GB"')).toBeLessThan(
+      simplified.indexOf('"PingFang SC"')
+    );
+    expect(traditional.indexOf('"Hiragino Sans"')).toBeLessThan(
+      traditional.indexOf('"PingFang TC"')
+    );
+    expect(traditional.indexOf('"Hiragino Sans GB"')).toBeLessThan(
+      traditional.indexOf('"PingFang TC"')
+    );
+    expect(japanese.indexOf('"Hiragino Sans"')).toBeLessThan(
+      japanese.indexOf('"PingFang SC"')
+    );
+  });
+
+  test("sans reading choice uses Helvetica then locale-aware CJK fallbacks", () => {
+    const stack = getBookFontCssStack("sans", "zh-CN") ?? "";
+    const families = fontFamilies(stack);
+
+    expect(stack).toStartWith('"Helvetica Neue", Helvetica, Arial');
+    expect(stack).toEndWith("sans-serif");
+    expect(families).toContain("Hiragino Sans GB");
+    expect(families).not.toContain("Hiragino Sans");
+    expect(stack.indexOf("Arial")).toBeLessThan(
+      stack.indexOf('"Hiragino Sans GB"')
+    );
+    expect(stack.indexOf('"Hiragino Sans GB"')).toBeLessThan(
+      stack.indexOf('"PingFang SC"')
+    );
+  });
+
+  test("mono prefers system monospaces and falls through to OS CJK sans", () => {
+    const stack = getBookFontCssStack("mono", "zh-CN") ?? "";
+    const families = fontFamilies(stack);
+
+    expect(stack).toStartWith("ui-monospace");
+    expect(stack.indexOf("ui-monospace")).toBeLessThan(stack.indexOf("Monaco"));
+    expect(stack.indexOf('"SF Mono"')).toBeLessThan(stack.indexOf("Monaco"));
+    expect(families).toContain("Noto Sans Mono CJK SC");
+    expect(families).toContain("Hiragino Sans GB");
+    expect(families).not.toContain("Hiragino Sans");
+    expect(stack.indexOf('"Noto Sans Mono CJK SC"')).toBeLessThan(
+      stack.indexOf('"Hiragino Sans GB"')
+    );
+    expect(stack.indexOf('"Hiragino Sans GB"')).toBeLessThan(
+      stack.indexOf('"PingFang SC"')
+    );
+    expect(stack.indexOf('"PingFang SC"')).toBeLessThan(
+      stack.indexOf('"Courier New"')
+    );
+  });
+
+  test("japanese mono offers Osaka-Mono before Hiragino sans fallbacks", () => {
+    const pureMono = resolveBookCjkMonoStack("ja");
+    const stack = getBookFontCssStack("mono", "ja") ?? "";
+
+    expect(pureMono).toStartWith('"Osaka-Mono"');
+    expect(stack.indexOf('"Osaka-Mono"')).toBeLessThan(
+      stack.indexOf('"Hiragino Sans"')
+    );
   });
 });
 

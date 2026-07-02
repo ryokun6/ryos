@@ -5,11 +5,16 @@ import {
   normalizeBooksCustomColor,
 } from "../src/stores/useBooksStore";
 import {
+  buildAccentReadingPalette,
   buildCustomReadingPalette,
   buildEpubTheme,
   getReadingOverlayBackground,
   resolveReadingPalette,
 } from "../src/apps/books/utils/booksReader";
+import {
+  deriveAccentPagePalette,
+  resolveAccentBaseHex,
+} from "../src/themes/accents";
 
 describe("Books custom color normalization", () => {
   test("accepts #rgb and #rrggbb hex colors only", () => {
@@ -124,5 +129,43 @@ describe("Books custom reading palette", () => {
     expect(theme.html.background).toBe("transparent !important");
     expect(theme.body.background).toBe("transparent !important");
     expect(theme.body.color).toBe("#1c1c1c !important");
+  });
+});
+
+describe("Books accent reading palette", () => {
+  test("derives a light tinted page from the accent base", () => {
+    const palette = buildAccentReadingPalette("#2765ca", false);
+    const expected = deriveAccentPagePalette("#2765ca", false);
+
+    expect(palette.background).toBe(expected.background);
+    expect(palette.text).toBe(expected.text);
+    expect(palette.link).toBe(expected.link);
+    expect(palette.isDark).toBe(false);
+    // Page wash is lighter than the accent seed.
+    expect(palette.background).not.toBe("#2765ca");
+  });
+
+  test("derives a dark tinted page when the OS is dark", () => {
+    const palette = buildAccentReadingPalette("#d23b30", true);
+    expect(palette.isDark).toBe(true);
+    expect(palette.background).toBe(deriveAccentPagePalette("#d23b30", true).background);
+  });
+
+  test("resolveReadingPalette routes the accent override through the seed", () => {
+    const seed = resolveAccentBaseHex("aqua", "purple");
+    const palette = resolveReadingPalette(
+      { ...DEFAULT_BOOKS_SETTINGS, themeOverride: "accent" },
+      false,
+      seed
+    );
+    expect(palette).toEqual(buildAccentReadingPalette(seed, false));
+  });
+
+  test("falls back to classic Aqua blue when no seed is provided", () => {
+    const palette = resolveReadingPalette(
+      { ...DEFAULT_BOOKS_SETTINGS, themeOverride: "accent" },
+      false
+    );
+    expect(palette).toEqual(buildAccentReadingPalette("#2765ca", false));
   });
 });

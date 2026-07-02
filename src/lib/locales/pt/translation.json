@@ -592,8 +592,8 @@
     "books": {
       "chineseScript": {
         "original": "Original",
-        "simplified": "Chinês Simplificado",
-        "traditional": "Chinês Tradicional"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "Automático",
@@ -615,6 +615,15 @@
         "transparent": "Transparente"
       },
       "description": "Ler livros EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monoespaçada",
+        "original": "Original",
+        "rounded": "Arredondada",
+        "sans": "Sem serifa",
+        "serif": "Serifa"
+      },
       "help": {
         "bookshelf": {
           "description": "EPUBs importados preenchem a prateleira de madeira. Clique em um livro para abrir e começar a ler.",
@@ -625,7 +634,7 @@
           "title": "Modo Escuro"
         },
         "fonts": {
-          "description": "Escolha uma fonte de leitura (incluindo EB Garamond), o tamanho do texto e colunas simples ou duplas no menu Visualizar.",
+          "description": "Escolha uma fonte de leitura (incluindo Garamond), o tamanho do texto e colunas simples ou duplas no menu Visualizar.",
           "title": "Fontes e Layout"
         },
         "import": {
@@ -698,6 +707,7 @@
       },
       "theme": {
         "auto": "Automático",
+        "accent": "Destaque",
         "black": "Preto",
         "custom": "Personalizado",
         "dark": "Escuro",
