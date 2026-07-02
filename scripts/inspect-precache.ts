@@ -29,6 +29,7 @@ function summarize(label: string, entries: string[]) {
 const javascript = urls.filter((url) => url.endsWith(".js"));
 const stylesheets = urls.filter((url) => url.endsWith(".css"));
 const fonts = urls.filter((url) => /\.(?:woff2?|ttf|otf)$/i.test(url));
+const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 const forbidden = urls.filter((url) =>
   /(?:^|\/)(?:ai-sdk|audio|hangul|media-player|mermaid|pusher|shiki|three|tiptap|webamp|translation)(?:[-.])/i.test(
     url
@@ -56,5 +57,12 @@ if (forbidden.length > 0) {
 
 if (fonts.length > 0) {
   console.error("[precache] Font binaries must load by active theme, not install");
+  process.exit(1);
+}
+
+if (urls.length > 25 || javascript.length > 10 || totalBytes > 3 * 1024 * 1024) {
+  console.error(
+    "[precache] Shell budget exceeded (max 25 files, 10 scripts, 3 MiB)"
+  );
   process.exit(1);
 }
