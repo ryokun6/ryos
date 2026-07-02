@@ -4,25 +4,7 @@
 @source "../node_modules/@streamdown/code/dist/*.js";
 @config "../tailwind.config.js";
 
-/* Additional fonts not in fonts.css */
-@font-face {
-  font-family: "ArkPixel";
-  src: url("/fonts/fusion-pixel-12px-proportional-ja.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@supports not (font: -apple-system-body) {
-  @font-face {
-    font-family: "SerenityOS-Emoji";
-    src: url("/fonts/SerenityOS-Emoji.woff2") format("woff2");
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-  }
-}
-
+/* Additional font not declared in fonts.css */
 @font-face {
   font-family: "Geneva-9";
   src: url("/fonts/geneva-9.woff2") format("woff2");

@@ -26,30 +26,13 @@
     <!-- Cache control -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 
-    <!-- Preconnect to external domains for faster resource loading -->
-    <link rel="preconnect" href="https://www.youtube.com" />
-    <link rel="preconnect" href="https://i.ytimg.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link rel="dns-prefetch" href="https://www.youtube.com" />
-    <link rel="dns-prefetch" href="https://i.ytimg.com" />
-    
-    <!-- CJK fonts: Noto/Source Han Serif, Nanum Gothic, and Chiron GoRound TC.
-         Loaded async (print→all swap) so these external stylesheets never block
-         first paint; they only style CJK lyrics/reader content, which tolerates
-         a brief fallback-font swap. -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <link href="https://cdn.jsdelivr.net/npm/chiron-go-round-tc-webfont@1.0.11/css/vf.css" rel="stylesheet" media="print" onload="this.media='all'" />
+    <!-- CJK webfonts are loaded after locale resolution. English sessions do
+         not need to fetch their stylesheets or establish third-party font
+         connections during startup. -->
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@700&display=swap" rel="stylesheet" />
       <link href="https://cdn.jsdelivr.net/npm/chiron-go-round-tc-webfont@1.0.11/css/vf.css" rel="stylesheet" />
     </noscript>
-
-    <!-- Preload critical fonts (used immediately on page load) -->
-    <link rel="preload" href="/fonts/ChicagoKare-Regular.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/geneva-12.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/LucidaGrande.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Preload critical JSON data -->
     <link rel="preload" href="/data/filesystem.json" as="fetch" type="application/json" crossorigin="use-credentials" />
@@ -295,6 +278,35 @@
             }
           }
         } catch (e) {}
+      })();
+    </script>
+    <script>
+      (function () {
+        var theme = document.documentElement.dataset.osTheme || "macosx";
+        var fontsByTheme = {
+          macosx: ["/fonts/LucidaGrande.woff2"],
+          system7: [
+            "/fonts/ChicagoKare-Regular.woff2",
+            "/fonts/geneva-12.woff2",
+          ],
+          xp: [
+            "/fonts/ms_sans_serif.woff2",
+            "/fonts/ms_sans_serif_bold.woff2",
+          ],
+          win98: [
+            "/fonts/ms_sans_serif.woff2",
+            "/fonts/ms_sans_serif_bold.woff2",
+          ],
+        };
+        (fontsByTheme[theme] || fontsByTheme.macosx).forEach(function (href) {
+          var link = document.createElement("link");
+          link.rel = "preload";
+          link.as = "font";
+          link.type = "font/woff2";
+          link.crossOrigin = "anonymous";
+          link.href = href;
+          document.head.appendChild(link);
+        });
       })();
     </script>
     <div id="root"></div>
