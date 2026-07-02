@@ -184,7 +184,7 @@ export function BooksAppComponent({
     >
       <div
         ref={contentRef}
-        className="relative flex h-full w-full flex-col overflow-hidden bg-os-window-bg font-os-ui"
+        className="books-app-shell relative flex h-full w-full flex-col overflow-hidden bg-os-window-bg font-os-ui"
       >
         {viewMode === "reader" && activeBook ? (
           <BooksReaderPane

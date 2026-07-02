@@ -1372,7 +1372,12 @@ export const BooksReaderPane = forwardRef<
     <div
       ref={viewportRef}
       tabIndex={0}
-      className="relative h-full w-full overflow-hidden outline-none"
+      className={cn(
+        "relative h-full w-full overflow-hidden outline-none",
+        // Transparent custom background: the reader becomes the frosted pane
+        // under Aqua Glass (see books-reader-glass in aqua-glass.css).
+        palette.background === "transparent" && "books-reader-glass"
+      )}
       style={{ backgroundColor: palette.background }}
     >
       {/* The epub.js render target, inset below the top clearance, above the

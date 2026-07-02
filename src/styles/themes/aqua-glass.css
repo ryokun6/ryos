@@ -273,6 +273,35 @@
   filter: saturate(0.9) brightness(0.98) !important;
 }
 
+/* --- Frosted Books reader (transparent custom reading background) ---------- */
+/* The Books window uses the `notitlebar` material, so it never becomes a
+   `window-material-glass` pane and carries no backdrop blur of its own. When
+   the reader's custom theme opts into a transparent page background, the
+   reader surface itself becomes the frosted pane, with the same paint order
+   as `.window.window-material-glass`: the backdrop blur samples the wallpaper
+   behind the (transparent) window, and the translucent tint gradient paints
+   on top of the blur on the same element. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .books-reader-glass {
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--os-color-window-bg) 78%, transparent),
+    var(--os-color-window-bg)
+  );
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
+}
+
+/* The app shell behind the reader paints the regular `bg-os-window-bg` wash
+   (it is the window surface for the `notitlebar` material). Clear it while
+   the frosted reader is up, or the two translucent tints stack back to
+   near-opaque and bury the blur. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .books-app-shell:has(> .books-reader-glass) {
+  background-color: transparent;
+}
+
 /* --- Frosted sidebar / list panes ------------------------------------------ */
 /* `AppSidebarPanel` (Finder sidebar, file list) pins a near-opaque
    `bg-white/90`, and the Calendar app's inset panes (`.os-inset-pane`) pin

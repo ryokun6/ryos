@@ -1,5 +1,13 @@
-import type { CSSProperties, ReactNode } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { motion } from "motion/react";
+import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { Slider } from "@/components/ui/slider";
@@ -58,6 +66,64 @@ function Row({
           {value}
         </span>
       )}
+    </div>
+  );
+}
+
+/** Width (px) of the fade masking overflowing content on scrollable rows. */
+const SCROLL_FADE_PX = 20;
+
+/**
+ * Horizontally scrollable chip/swatch row that fades out its clipped edges:
+ * the fade only shows on a side that has more content scrolled out of view,
+ * so the ends of the row stay crisp.
+ */
+function ScrollFadeRow({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState({ left: false, right: false });
+
+  const updateFade = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const left = el.scrollLeft > 1;
+    const right = el.scrollLeft < maxScroll - 1;
+    setFade((prev) =>
+      prev.left === left && prev.right === right ? prev : { left, right }
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    updateFade();
+  }, [updateFade]);
+  useResizeObserverWithRef(scrollRef, updateFade);
+
+  const maskImage =
+    fade.left && fade.right
+      ? `linear-gradient(to right, transparent, black ${SCROLL_FADE_PX}px, black calc(100% - ${SCROLL_FADE_PX}px), transparent)`
+      : fade.left
+        ? `linear-gradient(to right, transparent, black ${SCROLL_FADE_PX}px)`
+        : fade.right
+          ? `linear-gradient(to right, black calc(100% - ${SCROLL_FADE_PX}px), transparent)`
+          : undefined;
+
+  return (
+    <div
+      ref={scrollRef}
+      onScroll={updateFade}
+      className={cn(
+        "flex w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className
+      )}
+      style={{ maskImage, WebkitMaskImage: maskImage }}
+    >
+      {children}
     </div>
   );
 }
@@ -323,7 +389,7 @@ export function BooksCustomizePanel({
       </Row>
 
       <Row label={t("apps.books.menu.font")}>
-        <div className="flex w-full gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ScrollFadeRow className="gap-1 pb-0.5">
           {BOOK_FONTS.map((font) => {
             const stack = getBookFontCssStack(font.id, uiLanguage);
             const selected = settings.fontId === font.id;
@@ -345,11 +411,14 @@ export function BooksCustomizePanel({
               </button>
             );
           })}
-        </div>
+        </ScrollFadeRow>
       </Row>
 
       <Row label={t("apps.books.customize.colors")}>
-        <div className="flex w-full gap-1.5 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Scroll container clips at its padding edge, so pad it (and pull the
+            padding back out with negative margins) to keep the selection ring
+            from being cut off at the row edges. */}
+        <ScrollFadeRow className="-m-1 gap-1.5 p-1">
           {themeSwatches.map((swatch) => {
             const selected = settings.themeOverride === swatch.id;
             if (swatch.custom) {
@@ -404,7 +473,7 @@ export function BooksCustomizePanel({
               </button>
             );
           })}
-        </div>
+        </ScrollFadeRow>
       </Row>
 
       {/* Custom color editor: pick foreground/background, or go transparent
