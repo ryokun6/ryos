@@ -58,6 +58,7 @@ const synth = {
 Object.defineProperty(globalThis.window, "speechSynthesis", {
   value: synth,
   configurable: true,
+  writable: true,
 });
 
 function finishCurrentUtterance() {

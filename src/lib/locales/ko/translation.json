@@ -686,6 +686,7 @@
         "percentRead": "{{percent}}%"
       },
       "speech": {
+        "controls": "말하기 제어기",
         "pause": "일시 정지",
         "resume": "재개",
         "rewind": "되감기",
