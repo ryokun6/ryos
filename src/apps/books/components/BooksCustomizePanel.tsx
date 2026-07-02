@@ -46,7 +46,7 @@ function Row({
     <div className="flex min-h-7 items-center gap-2">
       <span
         title={label}
-        className="w-20 shrink-0 truncate text-[11px] text-os-text-secondary"
+        className="w-[72px] shrink-0 truncate text-[11px] text-os-text-secondary"
       >
         {label}
       </span>
@@ -156,7 +156,7 @@ export function BooksCustomizePanel({
         compact
           ? "inset-x-0 bottom-0 max-h-[75%] rounded-t-[10px] border-t border-os-window pb-4 shadow-[0_-6px_24px_rgba(0,0,0,0.25)]"
           : cn(
-              "right-3 top-10 w-[300px] max-w-[calc(100%-1.5rem)]",
+              "right-3 top-10 w-[320px] max-w-[calc(100%-1.5rem)]",
               "max-h-[calc(100%-3.5rem)] rounded-os shadow-os-window",
               "border-[length:var(--os-metrics-border-width)] border-os-window",
               "os-theme-win98:shadow-none"
