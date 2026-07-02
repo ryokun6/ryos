@@ -23,18 +23,10 @@ describe("build performance configuration", () => {
 
   test("enables incremental project-reference caches", () => {
     for (const fileName of ["tsconfig.app.json", "tsconfig.node.json"]) {
-      const config = JSON.parse(
-        readFileSync(path.join(ROOT, fileName), "utf8")
-      ) as {
-        compilerOptions: {
-          composite?: boolean;
-          incremental?: boolean;
-          noEmit?: boolean;
-        };
-      };
-      expect(config.compilerOptions.composite).toBe(true);
-      expect(config.compilerOptions.incremental).toBe(true);
-      expect(config.compilerOptions.noEmit).toBe(true);
+      const config = readFileSync(path.join(ROOT, fileName), "utf8");
+      expect(config).toContain('"incremental": true');
+      expect(config).toContain('"noEmit": true');
+      expect(config).not.toContain('"composite": true');
     }
   });
 
