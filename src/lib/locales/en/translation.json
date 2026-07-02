@@ -4535,12 +4535,19 @@
         "textLayout": "Text Direction",
         "chineseScript": "Chinese Script",
         "theme": "Theme",
+        "customizeTheme": "Customize…",
         "speech": "Speech",
         "startSpeaking": "Start Speaking",
         "stopSpeaking": "Stop Speaking",
         "speechRate": "Speech Rate",
         "booksHelp": "Books Help",
         "aboutBooks": "About Books"
+      },
+      "customize": {
+        "title": "Customize",
+        "lineSpacing": "Line Spacing",
+        "margins": "Margins",
+        "colors": "Colors"
       },
       "speechRate": {
         "slow": "Slow",
@@ -4555,6 +4562,7 @@
       },
       "textLayout": {
         "book": "Book Default",
+        "horizontal": "Horizontal",
         "vertical": "Vertical"
       },
       "chineseScript": {
@@ -4565,8 +4573,13 @@
       "theme": {
         "auto": "Auto",
         "light": "Light",
+        "paper": "Paper",
         "sepia": "Sepia",
-        "dark": "Dark"
+        "gray": "Gray",
+        "green": "Green",
+        "dark": "Dark",
+        "night": "Night",
+        "black": "Black"
       },
       "shelf": {
         "import": "Add Book",

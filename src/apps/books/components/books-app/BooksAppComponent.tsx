@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from "react";
+import { AnimatePresence } from "motion/react";
 import { SquaresFour } from "@phosphor-icons/react";
 import type { AppProps, BooksInitialData } from "@/apps/base/types";
+import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "../../metadata";
@@ -14,6 +16,7 @@ import {
   type BooksReaderPaneHandle,
 } from "../BooksReaderPane";
 import { BookCloseZoom } from "../BookCloseZoom";
+import { BooksCustomizePanel } from "../BooksCustomizePanel";
 
 export function BooksAppComponent({
   isWindowOpen,
@@ -61,6 +64,13 @@ export function BooksAppComponent({
   // Positioning box for the transient closing-zoom overlay.
   const contentRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<BooksReaderPaneHandle>(null);
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  // Narrow windows (mobile / small desktop windows) get a bottom-sheet
+  // Customize panel instead of the floating top-right card.
+  const [isCompactPanel, setIsCompactPanel] = useState(false);
+  useResizeObserverWithRef(contentRef, (entry) => {
+    setIsCompactPanel(entry.contentRect.width < 500);
+  });
   const [readerNavigationState, setReaderNavigationState] =
     useState<BooksNavigationState>(createInitialBooksNavigationState);
   const handleReaderNavigationStateChange = useCallback(
@@ -80,6 +90,7 @@ export function BooksAppComponent({
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onImport={handleImport}
       onBackToShelf={closeBook}
+      onShowCustomize={() => setIsCustomizeOpen(true)}
       isReading={viewMode === "reader"}
       settings={settings}
       updateSettings={updateSettings}
@@ -206,6 +217,18 @@ export function BooksAppComponent({
             onMoveToBottom={moveBookToBottom}
           />
         )}
+        {/* Floating reading-appearance customization panel (View ▸ Theme ▸ Customize…). */}
+        <AnimatePresence>
+          {isCustomizeOpen && (
+            <BooksCustomizePanel
+              settings={settings}
+              updateSettings={updateSettings}
+              osIsDark={isDarkMode}
+              compact={isCompactPanel}
+              onClose={() => setIsCustomizeOpen(false)}
+            />
+          )}
+        </AnimatePresence>
         {/* Reverse zoom: full-bleed cover shrinks back onto the shelf book. */}
         {viewMode === "shelf" && closingBook && (
           <BookCloseZoom

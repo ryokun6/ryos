@@ -603,6 +603,12 @@
         "moveToBottom": "맨 아래로 이동",
         "moveToTop": "맨 위로 이동"
       },
+      "customize": {
+        "colors": "색상",
+        "lineSpacing": "줄 간격",
+        "margins": "여백",
+        "title": "사용자화"
+      },
       "description": "EPUB 도서 읽기",
       "help": {
         "bookshelf": {
@@ -640,6 +646,7 @@
         "chapters": "장",
         "chineseScript": "중국어 문자",
         "columns": "단",
+        "customizeTheme": "사용자화…",
         "font": "서체",
         "import": "EPUB 가져오기…",
         "nextPage": "다음 페이지",
@@ -677,12 +684,18 @@
       },
       "textLayout": {
         "book": "책 기본값",
+        "horizontal": "가로",
         "vertical": "세로쓰기"
       },
       "theme": {
         "auto": "자동",
+        "black": "검은색",
         "dark": "다크",
+        "gray": "회색",
+        "green": "초록색",
         "light": "라이트",
+        "night": "야간",
+        "paper": "종이",
         "sepia": "세피아"
       },
       "title": "도서",

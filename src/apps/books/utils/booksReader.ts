@@ -133,11 +133,19 @@ export interface ReadingPalette {
   isDark: boolean;
 }
 
-const PALETTES: Record<Exclude<BooksThemeOverride, "auto">, ReadingPalette> = {
+export type BooksThemePresetId = Exclude<BooksThemeOverride, "auto">;
+
+const PALETTES: Record<BooksThemePresetId, ReadingPalette> = {
   light: {
     background: "#fdfdfb",
     text: "#1c1c1c",
     link: "#1d4ed8",
+    isDark: false,
+  },
+  paper: {
+    background: "#f9f4e9",
+    text: "#33302a",
+    link: "#2456c4",
     isDark: false,
   },
   sepia: {
@@ -146,13 +154,57 @@ const PALETTES: Record<Exclude<BooksThemeOverride, "auto">, ReadingPalette> = {
     link: "#8a5a2b",
     isDark: false,
   },
+  gray: {
+    background: "#e4e4e4",
+    text: "#262626",
+    link: "#1d4ed8",
+    isDark: false,
+  },
+  green: {
+    background: "#dcead9",
+    text: "#243428",
+    link: "#1e6b46",
+    isDark: false,
+  },
   dark: {
     background: "#1b1b1d",
     text: "#d6d6d6",
     link: "#7fabff",
     isDark: true,
   },
+  night: {
+    background: "#141e2e",
+    text: "#c2cbdb",
+    link: "#8ab4ff",
+    isDark: true,
+  },
+  black: {
+    background: "#000000",
+    text: "#b3b3b3",
+    link: "#7fabff",
+    isDark: true,
+  },
 };
+
+/**
+ * Reading color presets in display order (light pages first, then dark), used
+ * by the Customize panel's color swatches.
+ */
+export const BOOK_THEME_PRESET_IDS: readonly BooksThemePresetId[] = [
+  "light",
+  "paper",
+  "sepia",
+  "gray",
+  "green",
+  "dark",
+  "night",
+  "black",
+];
+
+/** Palette for a specific (non-auto) reading theme preset. */
+export function getReadingPalette(preset: BooksThemePresetId): ReadingPalette {
+  return PALETTES[preset];
+}
 
 /** Resolve the active reading palette from settings + OS dark mode. */
 export function resolveReadingPalette(
@@ -162,7 +214,7 @@ export function resolveReadingPalette(
   if (themeOverride === "auto") {
     return osIsDark ? PALETTES.dark : PALETTES.light;
   }
-  return PALETTES[themeOverride];
+  return PALETTES[themeOverride] ?? (osIsDark ? PALETTES.dark : PALETTES.light);
 }
 
 /**

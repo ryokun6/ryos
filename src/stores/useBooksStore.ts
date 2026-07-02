@@ -2,7 +2,32 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export type BooksColumnMode = "auto" | "single" | "double";
-export type BooksThemeOverride = "auto" | "light" | "sepia" | "dark";
+export type BooksThemeOverride =
+  | "auto"
+  | "light"
+  | "paper"
+  | "sepia"
+  | "gray"
+  | "green"
+  | "dark"
+  | "night"
+  | "black";
+export const BOOKS_THEME_OVERRIDES: readonly BooksThemeOverride[] = [
+  "auto",
+  "light",
+  "paper",
+  "sepia",
+  "gray",
+  "green",
+  "dark",
+  "night",
+  "black",
+];
+export function isBooksThemeOverride(
+  value: unknown
+): value is BooksThemeOverride {
+  return (BOOKS_THEME_OVERRIDES as readonly unknown[]).includes(value);
+}
 export type BooksChineseScript = "original" | "simplified" | "traditional";
 export type BooksTextLayout = "book" | "vertical";
 export type BooksShelfView = "grid" | "list";
@@ -30,6 +55,8 @@ export interface BooksReaderSettings {
   textLayout: BooksTextLayout;
   /** Line height multiplier. */
   lineHeight: number;
+  /** Horizontal gutter (px) around the text column. */
+  gutterPx: number;
   /** Read-aloud (browser TTS) speaking rate multiplier. */
   speechRate: number;
 }
@@ -42,6 +69,7 @@ export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
   chineseScript: "original",
   textLayout: "book",
   lineHeight: 1.5,
+  gutterPx: 24,
   speechRate: 1,
 };
 
@@ -52,6 +80,19 @@ export const BOOKS_SPEECH_RATE_OPTIONS = [0.8, 1, 1.2, 1.5] as const;
 export const BOOKS_FONT_SIZE_MIN = 70;
 export const BOOKS_FONT_SIZE_MAX = 180;
 export const BOOKS_FONT_SIZE_STEP = 10;
+
+export const BOOKS_LINE_HEIGHT_MIN = 1.1;
+export const BOOKS_LINE_HEIGHT_MAX = 2.4;
+export const BOOKS_LINE_HEIGHT_STEP = 0.05;
+
+export const BOOKS_GUTTER_MIN = 0;
+export const BOOKS_GUTTER_MAX = 96;
+export const BOOKS_GUTTER_STEP = 4;
+
+export function clampBooksGutter(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_BOOKS_SETTINGS.gutterPx;
+  return Math.min(BOOKS_GUTTER_MAX, Math.max(BOOKS_GUTTER_MIN, value));
+}
 
 interface BooksStoreState {
   progressByPath: Record<string, BookProgress>;
@@ -169,7 +210,7 @@ export const useBooksStore = create<BooksStoreState>()(
     {
       name: "ryos:books",
       storage: createJSONStorage(() => localStorage),
-      version: 4,
+      version: 5,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         return {

@@ -603,6 +603,12 @@
         "moveToBottom": "移至底端",
         "moveToTop": "移至顶端"
       },
+      "customize": {
+        "colors": "颜色",
+        "lineSpacing": "行间距",
+        "margins": "页边距",
+        "title": "自定"
+      },
       "description": "阅读 EPUB 书籍",
       "help": {
         "bookshelf": {
@@ -640,6 +646,7 @@
         "chapters": "章节",
         "chineseScript": "简繁转换",
         "columns": "分栏",
+        "customizeTheme": "自定…",
         "font": "字体",
         "import": "导入 EPUB…",
         "nextPage": "下一页",
@@ -677,12 +684,18 @@
       },
       "textLayout": {
         "book": "书籍默认",
+        "horizontal": "水平",
         "vertical": "竖排"
       },
       "theme": {
         "auto": "自动",
+        "black": "黑色",
         "dark": "深色",
+        "gray": "灰色",
+        "green": "绿色",
         "light": "浅色",
+        "night": "夜间",
+        "paper": "纸张",
         "sepia": "棕褐色"
       },
       "title": "书籍",

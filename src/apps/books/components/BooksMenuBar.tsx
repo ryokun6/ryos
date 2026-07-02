@@ -26,6 +26,7 @@ interface BooksMenuBarProps {
   onShowAbout: () => void;
   onImport: () => void;
   onBackToShelf: () => void;
+  onShowCustomize: () => void;
   isReading: boolean;
   settings: BooksReaderSettings;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
@@ -44,6 +45,7 @@ export function BooksMenuBar({
   onShowAbout,
   onImport,
   onBackToShelf,
+  onShowCustomize,
   isReading,
   settings,
   updateSettings,
@@ -230,6 +232,12 @@ export function BooksMenuBar({
                 { label: t("apps.books.theme.sepia"), value: "sepia" },
                 { label: t("apps.books.theme.dark"), value: "dark" },
               ],
+            },
+            { type: "separator" },
+            {
+              type: "action",
+              label: t("apps.books.menu.customizeTheme"),
+              onClick: onShowCustomize,
             },
           ],
         },

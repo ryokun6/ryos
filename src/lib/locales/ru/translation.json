@@ -607,6 +607,12 @@
         "moveToBottom": "Переместить в конец",
         "moveToTop": "Переместить в начало"
       },
+      "customize": {
+        "colors": "Цвета",
+        "lineSpacing": "Межстрочный интервал",
+        "margins": "Поля",
+        "title": "Настройка"
+      },
       "description": "Читайте книги EPUB",
       "help": {
         "bookshelf": {
@@ -644,6 +650,7 @@
         "chapters": "Главы",
         "chineseScript": "Китайское письмо",
         "columns": "Колонки",
+        "customizeTheme": "Настроить…",
         "font": "Шрифт",
         "import": "Импортировать EPUB…",
         "nextPage": "Следующая страница",
@@ -681,12 +688,18 @@
       },
       "textLayout": {
         "book": "Как в книге",
+        "horizontal": "Горизонтально",
         "vertical": "Вертикально"
       },
       "theme": {
         "auto": "Авто",
+        "black": "Черный",
         "dark": "Темная",
+        "gray": "Серый",
+        "green": "Зеленый",
         "light": "Светлая",
+        "night": "Ночь",
+        "paper": "Бумага",
         "sepia": "Сепия"
       },
       "title": "Книги",

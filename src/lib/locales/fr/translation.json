@@ -605,6 +605,12 @@
         "moveToBottom": "Placer tout en bas",
         "moveToTop": "Placer tout en haut"
       },
+      "customize": {
+        "colors": "Couleurs",
+        "lineSpacing": "Interligne",
+        "margins": "Marges",
+        "title": "Personnaliser"
+      },
       "description": "Lire des livres EPUB",
       "help": {
         "bookshelf": {
@@ -642,6 +648,7 @@
         "chapters": "Chapitres",
         "chineseScript": "Écriture chinoise",
         "columns": "Colonnes",
+        "customizeTheme": "Personnaliser…",
         "font": "Police",
         "import": "Importer un EPUB…",
         "nextPage": "Page suivante",
@@ -679,12 +686,18 @@
       },
       "textLayout": {
         "book": "Réglage du livre",
+        "horizontal": "Horizontal",
         "vertical": "Vertical"
       },
       "theme": {
         "auto": "Auto",
+        "black": "Noir",
         "dark": "Sombre",
+        "gray": "Gris",
+        "green": "Vert",
         "light": "Clair",
+        "night": "Nuit",
+        "paper": "Papier",
         "sepia": "Sépia"
       },
       "title": "Livres",
