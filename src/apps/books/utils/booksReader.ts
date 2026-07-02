@@ -643,6 +643,39 @@ export async function reflowEpubAfterFontsSettle({
   return isActive();
 }
 
+export type EpubThemeRules = Record<string, Record<string, string>>;
+
+/**
+ * Serialize theme rules for epub.js `registerCss`. Unlike `themes.default(rules)`,
+ * `registerCss` replaces the injected stylesheet instead of appending rules.
+ */
+export function serializeEpubThemeRules(rules: EpubThemeRules): string {
+  return Object.entries(rules)
+    .map(([selector, declarations]) => {
+      const body = Object.entries(declarations)
+        .map(([property, value]) => `${property}:${value};`)
+        .join("");
+      return `${selector}{${body}}`;
+    })
+    .join("\n");
+}
+
+/**
+ * Apply a reading theme by fully replacing the injected default stylesheet.
+ *
+ * epub.js's `themes.default(rules)` uses `addStylesheetRules`, which only
+ * appends `insertRule` entries. After a custom reading font is applied,
+ * switching back to Original omits `font-family` from the new rules — but the
+ * previous `font-family: … !important` declarations stay in the stylesheet and
+ * keep winning. `registerCss` wipes that style element via `innerHTML`.
+ */
+export function applyEpubTheme(
+  themes: { registerCss: (name: string, css: string) => void },
+  rules: EpubThemeRules
+): void {
+  themes.registerCss("default", serializeEpubThemeRules(rules));
+}
+
 /**
  * Build the epub.js theme object applied to the book body. Returns a nested
  * CSS-in-JS object understood by epub.js Themes.
@@ -657,7 +690,7 @@ export function buildEpubTheme(
    * UI locale here — unknown/Latin books must not activate vertical styles.
    */
   bookLanguage: string | null | undefined = language
-): Record<string, Record<string, string>> {
+): EpubThemeRules {
   const fontStack = getBookFontCssStack(settings.fontId, language);
   const fontFamily = fontStack ? `${fontStack} !important` : null;
   const isVerticalText =

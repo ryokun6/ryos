@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  applyEpubTheme,
   BOOK_FONTS,
   buildEpubTheme,
   buildFontFaceCss,
@@ -12,6 +13,7 @@ import {
   resolveBookCjkMonoStack,
   resolveBookCjkSansStack,
   resolveBookCjkSerifStack,
+  serializeEpubThemeRules,
 } from "../src/apps/books/utils/booksReader";
 
 const appFontsCss = readFileSync(
@@ -493,6 +495,37 @@ describe("Books reader CJK serif fonts", () => {
       "zh-CN"
     );
     expect(originalTheme.body["font-family"]).toBeUndefined();
+  });
+
+  test("replaces the theme stylesheet so Original can clear a prior font", () => {
+    // epub.js themes.default(rules) appends insertRule entries. After applying
+    // a custom font, switching back to Original would leave the old
+    // font-family !important declarations in the stylesheet. registerCss
+    // replaces the whole style element, so the second apply wins completely.
+    const applied: string[] = [];
+    const themes = {
+      registerCss: (name: string, css: string) => {
+        applied.push(`${name}:${css}`);
+      },
+    };
+
+    applyEpubTheme(themes, buildEpubTheme(settings, palette, "zh-CN"));
+    applyEpubTheme(
+      themes,
+      buildEpubTheme({ ...settings, fontId: "original" }, palette, "zh-CN")
+    );
+
+    expect(applied).toHaveLength(2);
+    expect(applied[0]).toStartWith("default:");
+    expect(applied[0]).toContain("font-family:");
+    expect(applied[1]).toStartWith("default:");
+    expect(applied[1]).not.toContain("font-family:");
+
+    const originalCss = serializeEpubThemeRules(
+      buildEpubTheme({ ...settings, fontId: "original" }, palette)
+    );
+    expect(originalCss).toContain("body{");
+    expect(originalCss).not.toMatch(/font-family\s*:/);
   });
 
   test("does not force horizontal alignment or hyphenation in vertical text", () => {
