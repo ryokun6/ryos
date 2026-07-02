@@ -29,8 +29,9 @@ describe("deterministic shuffle wallpaper", () => {
 
   test("same user + descriptor + bucket resolves the same wallpaper (cross-device match)", () => {
     const seed = "alice|shuffle://photos/nature";
-    const now = Date.now();
-    // Simulate two devices resolving independently for the same instant.
+    const bucketStart = 1_700_000 * SHUFFLE_INTERVAL_MS;
+    const now = bucketStart + Math.floor(SHUFFLE_INTERVAL_MS / 2);
+    // Simulate two devices resolving independently well inside one bucket.
     const deviceA = pickDeterministicCandidate(CANDIDATES, seed, now);
     const deviceB = pickDeterministicCandidate(CANDIDATES, seed, now + 1234);
     expect(deviceA).toBe(deviceB);
