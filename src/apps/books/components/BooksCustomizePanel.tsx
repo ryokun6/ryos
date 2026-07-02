@@ -114,22 +114,22 @@ export function BooksCustomizePanel({
   const { t, i18n } = useTranslation();
   const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
 
+  const autoPalette = getReadingPalette(osIsDark ? "dark" : "light");
   const themeSwatches: {
     id: BooksThemeOverride;
     label: string;
     background: string;
     text: string;
+    /** The Auto swatch is a plain solid dot; presets preview their text color. */
+    showGlyph: boolean;
   }[] = [
     {
       id: "auto" as const,
       label: t("apps.books.theme.auto"),
-      // Split swatch: follows the OS light/dark setting.
-      background: `linear-gradient(135deg, ${
-        getReadingPalette("light").background
-      } 50%, ${getReadingPalette("dark").background} 50%)`,
-      text: osIsDark
-        ? getReadingPalette("dark").text
-        : getReadingPalette("light").text,
+      // Solid swatch that follows the OS light/dark setting.
+      background: autoPalette.background,
+      text: autoPalette.text,
+      showGlyph: false,
     },
     ...BOOK_THEME_PRESET_IDS.map((id) => {
       const palette = getReadingPalette(id);
@@ -138,6 +138,7 @@ export function BooksCustomizePanel({
         label: t(`apps.books.theme.${id}`),
         background: palette.background,
         text: palette.text,
+        showGlyph: true,
       };
     }),
   ];
@@ -303,7 +304,7 @@ export function BooksCustomizePanel({
                 )}
                 style={{ background: swatch.background, color: swatch.text }}
               >
-                A
+                {swatch.showGlyph ? "A" : null}
               </button>
             );
           })}
