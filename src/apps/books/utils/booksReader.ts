@@ -377,20 +377,25 @@ export function buildEpubTheme(
   const fontStack = getBookFontCssStack(settings.fontId, language);
   const fontFamily = fontStack ? `${fontStack} !important` : null;
 
-  // Left-align with automatic hyphenation reads far better than justified text
-  // in a narrow column (justify opens up ugly rivers of whitespace). Applied
-  // with !important so it overrides publisher `text-align: justify`. orphans/
-  // widows reduce stranded single lines at column breaks.
-  const readingFlow: Record<string, string> = {
-    "text-align": "left !important",
-    "-webkit-hyphens": "auto !important",
-    hyphens: "auto !important",
-    "-webkit-hyphenate-limit-before": "3",
-    "-webkit-hyphenate-limit-after": "3",
-    "hyphenate-limit-chars": "6 3 3 !important",
-    orphans: "2",
-    widows: "2",
-  };
+  // Physical left alignment and hyphenation are horizontal-reading choices.
+  // In vertical mode they fight the top-to-bottom inline flow and CJK line
+  // breaking, so preserve only the column-break controls.
+  const readingFlow: Record<string, string> =
+    settings.textLayout === "vertical"
+      ? {
+          orphans: "2",
+          widows: "2",
+        }
+      : {
+          "text-align": "left !important",
+          "-webkit-hyphens": "auto !important",
+          hyphens: "auto !important",
+          "-webkit-hyphenate-limit-before": "3",
+          "-webkit-hyphenate-limit-after": "3",
+          "hyphenate-limit-chars": "6 3 3 !important",
+          orphans: "2",
+          widows: "2",
+        };
 
   const bodyRules: Record<string, string> = {
     background: `${palette.background} !important`,
@@ -415,8 +420,8 @@ export function buildEpubTheme(
     color: `${palette.text} !important`,
   };
 
-  // Paragraph/list rules also force left-align + hyphenation so publisher CSS
-  // on `p`/`li` (commonly `text-align: justify`) can't win the cascade.
+  // Paragraph/list rules also apply the active reading-flow policy so
+  // publisher CSS on `p`/`li` cannot reintroduce horizontal-only formatting.
   const flowText: Record<string, string> = { ...textColor, ...readingFlow };
 
   return {

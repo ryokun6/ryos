@@ -598,6 +598,10 @@
         "double": "Zweiseitig",
         "single": "Einseitig"
       },
+      "textLayout": {
+        "book": "Buchstandard",
+        "vertical": "Vertikal"
+      },
       "contextMenu": {
         "delete": "Löschen",
         "moveToBottom": "Nach ganz unten",
@@ -648,6 +652,7 @@
         "textSizeDecrease": "Kleiner",
         "textSizeIncrease": "Größer",
         "textSizeReset": "Standardgröße",
+        "textLayout": "Textrichtung",
         "theme": "Design"
       },
       "name": "Bücher",

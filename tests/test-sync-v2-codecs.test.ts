@@ -429,6 +429,7 @@ describe("books settings codec", () => {
       columnMode: "double",
       themeOverride: "sepia",
       chineseScript: "traditional",
+      textLayout: "vertical",
       lineHeight: 1.8,
     });
 
@@ -442,6 +443,7 @@ describe("books settings codec", () => {
       "books-settings/columnMode": "double",
       "books-settings/themeOverride": "sepia",
       "books-settings/chineseScript": "traditional",
+      "books-settings/textLayout": "vertical",
       "books-settings/lineHeight": 1.8,
     });
   });
@@ -454,6 +456,7 @@ describe("books settings codec", () => {
         { k: "books-settings/columnMode", v: "single", t },
         { k: "books-settings/themeOverride", v: "dark", t },
         { k: "books-settings/chineseScript", v: "simplified", t },
+        { k: "books-settings/textLayout", v: "vertical", t },
         { k: "books-settings/lineHeight", v: 1.7, t },
       ],
       ctx
@@ -465,6 +468,7 @@ describe("books settings codec", () => {
       columnMode: "single",
       themeOverride: "dark",
       chineseScript: "simplified",
+      textLayout: "vertical",
       lineHeight: 1.7,
     });
   });
@@ -477,6 +481,7 @@ describe("books settings codec", () => {
         { k: "books-settings/columnMode", v: "triple", t },
         { k: "books-settings/themeOverride", v: "blue", t },
         { k: "books-settings/chineseScript", v: "translated", t },
+        { k: "books-settings/textLayout", v: "diagonal", t },
         { k: "books-settings/lineHeight", v: -1, t },
         { k: "books-settings/fontId", del: true, t },
       ],
@@ -496,11 +501,13 @@ describe("books settings codec", () => {
       useBooksStore.getState().updateSettings({
         fontSizePct: 120,
         themeOverride: "sepia",
+        textLayout: "vertical",
       });
       expect(changes).toEqual([
         [
           "books-settings/fontSizePct",
           "books-settings/themeOverride",
+          "books-settings/textLayout",
         ],
       ]);
     } finally {

@@ -4532,6 +4532,7 @@
         "textSizeDecrease": "Smaller",
         "textSizeReset": "Default Size",
         "columns": "Columns",
+        "textLayout": "Text Direction",
         "chineseScript": "Chinese Script",
         "theme": "Theme",
         "booksHelp": "Books Help",
@@ -4541,6 +4542,10 @@
         "auto": "Auto",
         "single": "Single",
         "double": "Double"
+      },
+      "textLayout": {
+        "book": "Book Default",
+        "vertical": "Vertical"
       },
       "chineseScript": {
         "original": "Original",

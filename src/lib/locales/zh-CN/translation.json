@@ -598,6 +598,10 @@
         "double": "双页",
         "single": "单页"
       },
+      "textLayout": {
+        "book": "书籍默认",
+        "vertical": "竖排"
+      },
       "contextMenu": {
         "delete": "删除",
         "moveToBottom": "移至底端",
@@ -648,6 +652,7 @@
         "textSizeDecrease": "缩小",
         "textSizeIncrease": "放大",
         "textSizeReset": "默认大小",
+        "textLayout": "文字方向",
         "theme": "主题"
       },
       "name": "书籍",
