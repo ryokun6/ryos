@@ -384,6 +384,25 @@ describe("Books reader CJK serif fonts", () => {
     expect(verticalTheme.body.orphans).toBe("2");
   });
 
+  test("gives vertical columns a readable minimum line height", () => {
+    const verticalTheme = buildEpubTheme(
+      { ...settings, textLayout: "vertical" },
+      palette,
+      "zh-TW"
+    );
+    const spaciousVerticalTheme = buildEpubTheme(
+      { ...settings, textLayout: "vertical", lineHeight: 2 },
+      palette,
+      "zh-TW"
+    );
+
+    expect(verticalTheme.body["line-height"]).toBe("1.8 !important");
+    expect(verticalTheme.p["line-height"]).toBe("1.8 !important");
+    expect(verticalTheme.div["line-height"]).toBe("1.8 !important");
+    expect(verticalTheme.li["line-height"]).toBe("1.8 !important");
+    expect(spaciousVerticalTheme.body["line-height"]).toBe("2 !important");
+  });
+
   test("loads Noto CJK serif families inside isolated EPUB iframes", () => {
     const css = buildFontFaceCss("https://os.example");
 

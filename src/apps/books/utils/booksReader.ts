@@ -13,6 +13,8 @@ const BOOK_GENEVA_STACK =
 const BOOK_ROUNDED_STACK =
   '"ryOS VAG Rounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif';
 
+const VERTICAL_BOOK_LINE_HEIGHT_MIN = 1.8;
+
 const BOOK_CJK_SERIF_STACKS = {
   "zh-CN":
     '"Noto Serif SC", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun, "Noto Serif JP", "Source Han Serif JP", "Noto Serif KR", "Source Han Serif KR"',
@@ -376,13 +378,23 @@ export function buildEpubTheme(
 ): Record<string, Record<string, string>> {
   const fontStack = getBookFontCssStack(settings.fontId, language);
   const fontFamily = fontStack ? `${fontStack} !important` : null;
+  const isVerticalText = settings.textLayout === "vertical";
+  const lineHeight =
+    isVerticalText
+      ? Math.max(settings.lineHeight, VERTICAL_BOOK_LINE_HEIGHT_MIN)
+      : settings.lineHeight;
+  const lineHeightRule = {
+    "line-height": `${lineHeight} !important`,
+  };
 
   // Physical left alignment and hyphenation are horizontal-reading choices.
   // In vertical mode they fight the top-to-bottom inline flow and CJK line
-  // breaking, so preserve only the column-break controls.
+  // breaking, so preserve only the column-break controls. Vertical columns
+  // also need a wider line-height floor than horizontal prose.
   const readingFlow: Record<string, string> =
-    settings.textLayout === "vertical"
+    isVerticalText
       ? {
+          ...lineHeightRule,
           orphans: "2",
           widows: "2",
         }
@@ -400,7 +412,7 @@ export function buildEpubTheme(
   const bodyRules: Record<string, string> = {
     background: `${palette.background} !important`,
     color: `${palette.text} !important`,
-    "line-height": `${settings.lineHeight} !important`,
+    ...lineHeightRule,
     "padding-top": "0 !important",
     "padding-bottom": "0 !important",
     ...readingFlow,
@@ -433,7 +445,7 @@ export function buildEpubTheme(
     "*:not(a)": { color: `${palette.text} !important` },
     // Force colors so dark/sepia modes are legible regardless of publisher CSS.
     p: withFont(flowText),
-    div: withFont({}),
+    div: withFont(isVerticalText ? lineHeightRule : {}),
     span: withFont({}),
     li: withFont(flowText),
     // Headings keep their original alignment (often intentionally centered) but
