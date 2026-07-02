@@ -604,10 +604,13 @@
         "moveToTop": "Nach ganz oben"
       },
       "customize": {
+        "background": "Hintergrund",
         "colors": "Farben",
         "lineSpacing": "Zeilenabstand",
         "margins": "Seitenränder",
-        "title": "Anpassen"
+        "textColor": "Text",
+        "title": "Anpassen",
+        "transparent": "Transparent"
       },
       "description": "EPUB-Bücher lesen",
       "help": {
@@ -657,9 +660,6 @@
         "stopSpeaking": "Sprachausgabe stoppen",
         "textLayout": "Textrichtung",
         "textSize": "Textgröße",
-        "textSizeDecrease": "Kleiner",
-        "textSizeIncrease": "Größer",
-        "textSizeReset": "Standardgröße",
         "theme": "Design"
       },
       "name": "Bücher",
@@ -690,6 +690,7 @@
       "theme": {
         "auto": "Automatisch",
         "black": "Schwarz",
+        "custom": "Eigene",
         "dark": "Dunkel",
         "gray": "Grau",
         "green": "Grün",

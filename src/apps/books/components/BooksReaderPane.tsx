@@ -24,6 +24,7 @@ import {
   buildFontFaceCss,
   columnModeToSpread,
   displayEpubTargetWithFallback,
+  getReadingOverlayBackground,
   isLikelyEpubBuffer,
   reflowEpubAfterFontsSettle,
   resolveEpubDisplayFallbackTarget,
@@ -424,7 +425,8 @@ export const BooksReaderPane = forwardRef<
     return blob;
   }, [appendDebugEvent, entry.path]);
 
-  const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
+  const palette = resolveReadingPalette(settings, osIsDark);
+  const overlayBackground = getReadingOverlayBackground(palette);
   const isVerticalText = settings.textLayout === "vertical";
   const sideClearance = clampBooksGutter(settings.gutterPx);
 
@@ -1219,6 +1221,9 @@ export const BooksReaderPane = forwardRef<
     isReady,
     settings.fontId,
     settings.themeOverride,
+    settings.customThemeBackground,
+    settings.customThemeText,
+    settings.customThemeTransparent,
     settings.chineseScript,
     settings.textLayout,
     settings.lineHeight,
@@ -1441,7 +1446,7 @@ export const BooksReaderPane = forwardRef<
             <motion.div
               className="absolute inset-0"
               style={{
-                backgroundColor: palette.background,
+                backgroundColor: overlayBackground,
                 // Subtle fold shading along the sheet's leading edge.
                 backgroundImage:
                   flip.dir === (isVerticalText ? "prev" : "next")
@@ -1480,7 +1485,7 @@ export const BooksReaderPane = forwardRef<
             "absolute inset-0 z-30 flex items-center justify-center",
             palette.isDark ? "text-white/70" : "text-black/50"
           )}
-          style={{ backgroundColor: palette.background }}
+          style={{ backgroundColor: overlayBackground }}
         >
           <span className="font-os-ui text-sm">…</span>
         </div>
@@ -1490,7 +1495,7 @@ export const BooksReaderPane = forwardRef<
       {loadError && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center px-6 text-center"
-          style={{ backgroundColor: palette.background }}
+          style={{ backgroundColor: overlayBackground }}
         >
           <span
             className={cn(
@@ -1510,7 +1515,7 @@ export const BooksReaderPane = forwardRef<
         {coverVisible && zoom && (
           <motion.div
             className="pointer-events-none absolute z-40 overflow-hidden"
-            style={{ backgroundColor: palette.background }}
+            style={{ backgroundColor: overlayBackground }}
             initial={{
               top: zoom.from.top,
               left: zoom.from.left,

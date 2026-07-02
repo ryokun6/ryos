@@ -1,7 +1,10 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { motion } from "motion/react";
 import type { BooksReaderSettings } from "@/stores/useBooksStore";
-import { resolveReadingPalette } from "../utils/booksReader";
+import {
+  getReadingOverlayBackground,
+  resolveReadingPalette,
+} from "../utils/booksReader";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
 import { ZOOM_DURATION, ZOOM_EASE } from "./BooksReaderPane";
@@ -37,7 +40,7 @@ export function BookCloseZoom({
   osIsDark,
   onDone,
 }: BookCloseZoomProps) {
-  const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
+  const palette = resolveReadingPalette(settings, osIsDark);
   const { info: coverInfo, loading: coverLoading } = useBookCover(
     entry.path,
     entry.modifiedAt
@@ -228,7 +231,7 @@ export function BookCloseZoom({
   return (
     <motion.div
       className="pointer-events-none absolute z-50 overflow-hidden"
-      style={{ backgroundColor: palette.background }}
+      style={{ backgroundColor: getReadingOverlayBackground(palette) }}
       initial={false}
       animate={animateVals}
       transition={

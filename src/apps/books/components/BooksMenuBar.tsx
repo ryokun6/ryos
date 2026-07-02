@@ -12,9 +12,6 @@ import {
 } from "../utils/booksReader";
 import { buildBooksMenuLayout } from "../utils/booksMenuLayout";
 import {
-  BOOKS_FONT_SIZE_MAX,
-  BOOKS_FONT_SIZE_MIN,
-  BOOKS_FONT_SIZE_STEP,
   BOOKS_SPEECH_RATE_OPTIONS,
   normalizeBooksSpeechRate,
   type BooksReaderSettings,
@@ -69,14 +66,6 @@ export function BooksMenuBar({
     appName,
   } = useAppMenuBarChrome("books");
 
-  const changeFontSize = (delta: number) => {
-    const next = Math.min(
-      BOOKS_FONT_SIZE_MAX,
-      Math.max(BOOKS_FONT_SIZE_MIN, settings.fontSizePct + delta)
-    );
-    updateSettings({ fontSizePct: next });
-  };
-
   const fileMenu: MenuDescriptor = {
       label: t("common.menu.file"),
       items: [
@@ -116,51 +105,6 @@ export function BooksMenuBar({
                 label: font.label,
                 value: font.id,
               })),
-            },
-          ],
-        },
-        {
-          type: "submenu",
-          label: t("apps.books.menu.textSize"),
-          items: [
-            {
-              type: "action",
-              label: t("apps.books.menu.textSizeIncrease"),
-              onClick: () => changeFontSize(BOOKS_FONT_SIZE_STEP),
-              shortcut: "+",
-              disabled: settings.fontSizePct >= BOOKS_FONT_SIZE_MAX,
-            },
-            {
-              type: "action",
-              label: t("apps.books.menu.textSizeDecrease"),
-              onClick: () => changeFontSize(-BOOKS_FONT_SIZE_STEP),
-              shortcut: "−",
-              disabled: settings.fontSizePct <= BOOKS_FONT_SIZE_MIN,
-            },
-            {
-              type: "action",
-              label: t("apps.books.menu.textSizeReset"),
-              onClick: () => updateSettings({ fontSizePct: 100 }),
-              disabled: settings.fontSizePct === 100,
-            },
-          ],
-        },
-        {
-          type: "submenu",
-          label: t("apps.books.menu.columns"),
-          items: [
-            {
-              type: "radioGroup",
-              value: settings.columnMode,
-              onValueChange: (value) =>
-                updateSettings({
-                  columnMode: value as BooksReaderSettings["columnMode"],
-                }),
-              options: [
-                { label: t("apps.books.columns.auto"), value: "auto" },
-                { label: t("apps.books.columns.single"), value: "single" },
-                { label: t("apps.books.columns.double"), value: "double" },
-              ],
             },
           ],
         },
@@ -232,15 +176,16 @@ export function BooksMenuBar({
                 { label: t("apps.books.theme.light"), value: "light" },
                 { label: t("apps.books.theme.sepia"), value: "sepia" },
                 { label: t("apps.books.theme.dark"), value: "dark" },
+                { label: t("apps.books.theme.custom"), value: "custom" },
               ],
             },
-            { type: "separator" },
-            {
-              type: "action",
-              label: t("apps.books.menu.customizeTheme"),
-              onClick: onShowCustomize,
-            },
           ],
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.books.menu.customizeTheme"),
+          onClick: onShowCustomize,
         },
       ],
     };

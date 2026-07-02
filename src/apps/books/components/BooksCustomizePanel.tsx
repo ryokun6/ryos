@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
@@ -13,12 +13,14 @@ import {
   BOOKS_LINE_HEIGHT_MAX,
   BOOKS_LINE_HEIGHT_MIN,
   BOOKS_LINE_HEIGHT_STEP,
+  normalizeBooksCustomColor,
   type BooksReaderSettings,
   type BooksThemeOverride,
 } from "@/stores/useBooksStore";
 import {
   BOOK_FONTS,
   BOOK_THEME_PRESET_IDS,
+  buildCustomReadingPalette,
   getBookFontCssStack,
   getReadingPalette,
 } from "../utils/booksReader";
@@ -57,6 +59,44 @@ function Row({
         </span>
       )}
     </div>
+  );
+}
+
+/** Checkerboard used to preview a transparent (glassy) background. */
+const TRANSPARENT_SWATCH_STYLE: CSSProperties = {
+  backgroundColor: "#ffffff",
+  backgroundImage:
+    "repeating-conic-gradient(rgba(0,0,0,0.16) 0% 25%, transparent 0% 50%)",
+  backgroundSize: "8px 8px",
+};
+
+/** Circular color well backed by a native color picker. */
+function ColorWell({
+  color,
+  transparent = false,
+  onChange,
+  ariaLabel,
+}: {
+  color: string;
+  /** Render a checkerboard instead of the (kept) color. */
+  transparent?: boolean;
+  onChange: (hex: string) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <span
+      title={ariaLabel}
+      className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-black/20 os-dark:border-white/25"
+      style={transparent ? TRANSPARENT_SWATCH_STYLE : { background: color }}
+    >
+      <input
+        type="color"
+        value={color}
+        aria-label={ariaLabel}
+        onChange={(event) => onChange(event.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+    </span>
   );
 }
 
@@ -115,6 +155,16 @@ export function BooksCustomizePanel({
   const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
 
   const autoPalette = getReadingPalette(osIsDark ? "dark" : "light");
+  const customPalette = buildCustomReadingPalette(settings, osIsDark);
+  const customBackground = normalizeBooksCustomColor(
+    settings.customThemeBackground,
+    "#fdfdfb"
+  );
+  const customText = normalizeBooksCustomColor(
+    settings.customThemeText,
+    "#1c1c1c"
+  );
+  const isCustomTheme = settings.themeOverride === "custom";
   const themeSwatches: {
     id: BooksThemeOverride;
     label: string;
@@ -122,6 +172,10 @@ export function BooksCustomizePanel({
     text: string;
     /** The Auto swatch is a plain solid dot; presets preview their text color. */
     showGlyph: boolean;
+    /** Checkerboard preview for a transparent (glassy) custom background. */
+    transparent?: boolean;
+    /** Rainbow ring marking the editable custom swatch. */
+    custom?: boolean;
   }[] = [
     {
       id: "auto" as const,
@@ -141,6 +195,15 @@ export function BooksCustomizePanel({
         showGlyph: true,
       };
     }),
+    {
+      id: "custom" as const,
+      label: t("apps.books.theme.custom"),
+      background: customBackground,
+      text: customPalette.text,
+      showGlyph: true,
+      transparent: settings.customThemeTransparent,
+      custom: true,
+    },
   ];
 
   return (
@@ -286,9 +349,42 @@ export function BooksCustomizePanel({
       </Row>
 
       <Row label={t("apps.books.customize.colors")}>
-        <div className="flex w-full flex-wrap gap-1.5">
+        <div className="flex w-full gap-1.5 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {themeSwatches.map((swatch) => {
             const selected = settings.themeOverride === swatch.id;
+            if (swatch.custom) {
+              // Custom swatch: rainbow ring around the current custom colors.
+              return (
+                <button
+                  key={swatch.id}
+                  type="button"
+                  title={swatch.label}
+                  aria-label={swatch.label}
+                  aria-pressed={selected}
+                  onClick={() => updateSettings({ themeOverride: swatch.id })}
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full p-[2.5px] transition-shadow",
+                    selected &&
+                      "ring-2 ring-[color:var(--os-color-selection-bg)] ring-offset-1 ring-offset-[color:var(--os-color-window-bg)]"
+                  )}
+                  style={{
+                    background:
+                      "conic-gradient(#f43f5e, #f59e0b, #84cc16, #22d3ee, #6366f1, #d946ef, #f43f5e)",
+                  }}
+                >
+                  <span
+                    className="flex h-full w-full items-center justify-center rounded-full text-[11px] font-medium"
+                    style={
+                      swatch.transparent
+                        ? { ...TRANSPARENT_SWATCH_STYLE, color: swatch.text }
+                        : { background: swatch.background, color: swatch.text }
+                    }
+                  >
+                    A
+                  </span>
+                </button>
+              );
+            }
             return (
               <button
                 key={swatch.id}
@@ -310,6 +406,60 @@ export function BooksCustomizePanel({
           })}
         </div>
       </Row>
+
+      {/* Custom color editor: pick foreground/background, or go transparent
+          so the window material (glass) shows through. */}
+      {isCustomTheme && (
+        <>
+          <Row label={t("apps.books.customize.background")}>
+            <div className="flex w-full items-center gap-1.5">
+              <ColorWell
+                color={customBackground}
+                transparent={settings.customThemeTransparent}
+                ariaLabel={t("apps.books.customize.background")}
+                onChange={(hex) =>
+                  updateSettings({
+                    customThemeBackground: normalizeBooksCustomColor(
+                      hex,
+                      customBackground
+                    ),
+                    // Picking a color implies an opaque page again.
+                    customThemeTransparent: false,
+                  })
+                }
+              />
+              <button
+                type="button"
+                aria-pressed={settings.customThemeTransparent}
+                onClick={() =>
+                  updateSettings({
+                    customThemeTransparent: !settings.customThemeTransparent,
+                  })
+                }
+                className={cn(
+                  "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] transition-colors",
+                  settings.customThemeTransparent
+                    ? "bg-os-selection-bg text-os-selection-text"
+                    : "bg-black/[0.07] hover:bg-black/15 os-dark:bg-white/10 os-dark:hover:bg-white/20"
+                )}
+              >
+                {t("apps.books.customize.transparent")}
+              </button>
+            </div>
+          </Row>
+          <Row label={t("apps.books.customize.textColor")}>
+            <ColorWell
+              color={customText}
+              ariaLabel={t("apps.books.customize.textColor")}
+              onChange={(hex) =>
+                updateSettings({
+                  customThemeText: normalizeBooksCustomColor(hex, customText),
+                })
+              }
+            />
+          </Row>
+        </>
+      )}
     </motion.div>
   );
 }

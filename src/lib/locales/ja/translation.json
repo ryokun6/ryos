@@ -604,10 +604,13 @@
         "moveToTop": "最上部へ移動"
       },
       "customize": {
+        "background": "背景",
         "colors": "カラー",
         "lineSpacing": "行間",
         "margins": "余白",
-        "title": "カスタマイズ"
+        "textColor": "テキスト",
+        "title": "カスタマイズ",
+        "transparent": "透明"
       },
       "description": "EPUB形式の本を読む",
       "help": {
@@ -657,9 +660,6 @@
         "stopSpeaking": "読み上げを停止",
         "textLayout": "文字方向",
         "textSize": "テキストサイズ",
-        "textSizeDecrease": "小さく",
-        "textSizeIncrease": "大きく",
-        "textSizeReset": "デフォルトサイズ",
         "theme": "テーマ"
       },
       "name": "ブック",
@@ -690,6 +690,7 @@
       "theme": {
         "auto": "自動",
         "black": "ブラック",
+        "custom": "カスタム",
         "dark": "ダーク",
         "gray": "グレー",
         "green": "グリーン",

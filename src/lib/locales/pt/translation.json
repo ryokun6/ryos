@@ -606,10 +606,13 @@
         "moveToTop": "Mover para o topo"
       },
       "customize": {
+        "background": "Fundo",
         "colors": "Cores",
         "lineSpacing": "Espaçamento entre Linhas",
         "margins": "Margens",
-        "title": "Personalizar"
+        "textColor": "Texto",
+        "title": "Personalizar",
+        "transparent": "Transparente"
       },
       "description": "Ler livros EPUB",
       "help": {
@@ -659,9 +662,6 @@
         "stopSpeaking": "Parar de Falar",
         "textLayout": "Direção do texto",
         "textSize": "Tamanho do Texto",
-        "textSizeDecrease": "Menor",
-        "textSizeIncrease": "Maior",
-        "textSizeReset": "Tamanho Padrão",
         "theme": "Tema"
       },
       "name": "Livros",
@@ -692,6 +692,7 @@
       "theme": {
         "auto": "Automático",
         "black": "Preto",
+        "custom": "Personalizado",
         "dark": "Escuro",
         "gray": "Cinza",
         "green": "Verde",

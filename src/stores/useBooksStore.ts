@@ -11,7 +11,8 @@ export type BooksThemeOverride =
   | "green"
   | "dark"
   | "night"
-  | "black";
+  | "black"
+  | "custom";
 export const BOOKS_THEME_OVERRIDES: readonly BooksThemeOverride[] = [
   "auto",
   "light",
@@ -22,6 +23,7 @@ export const BOOKS_THEME_OVERRIDES: readonly BooksThemeOverride[] = [
   "dark",
   "night",
   "black",
+  "custom",
 ];
 export function isBooksThemeOverride(
   value: unknown
@@ -49,6 +51,16 @@ export interface BooksReaderSettings {
   columnMode: BooksColumnMode;
   /** Reading theme override. "auto" follows the OS dark-mode setting. */
   themeOverride: BooksThemeOverride;
+  /** Custom theme: page background color (hex). */
+  customThemeBackground: string;
+  /** Custom theme: text (foreground) color (hex). */
+  customThemeText: string;
+  /**
+   * Custom theme: render the page background transparent so the window
+   * material (e.g. Aqua Glass) shows through. The picked background color is
+   * kept so toggling transparency off restores it.
+   */
+  customThemeTransparent: boolean;
   /** Optional live conversion for Chinese text in the rendered EPUB. */
   chineseScript: BooksChineseScript;
   /** Text flow override. "book" preserves the EPUB's own writing mode. */
@@ -66,12 +78,38 @@ export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
   fontSizePct: 100,
   columnMode: "auto",
   themeOverride: "auto",
+  customThemeBackground: "#fdfdfb",
+  customThemeText: "#1c1c1c",
+  customThemeTransparent: false,
   chineseScript: "original",
   textLayout: "book",
   lineHeight: 1.5,
   gutterPx: 24,
   speechRate: 1,
 };
+
+const HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/** Whether a value is a #rgb / #rrggbb hex color string. */
+export function isBooksCustomHexColor(value: unknown): value is string {
+  return typeof value === "string" && HEX_COLOR_RE.test(value.trim());
+}
+
+/**
+ * Coerce a persisted/synced custom theme color to a safe lowercase #rrggbb
+ * value, falling back when the input is not a valid hex color.
+ */
+export function normalizeBooksCustomColor(
+  value: unknown,
+  fallback: string
+): string {
+  if (!isBooksCustomHexColor(value)) return fallback;
+  let hex = value.trim().toLowerCase();
+  if (hex.length === 4) {
+    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  }
+  return hex;
+}
 
 export const BOOKS_SPEECH_RATE_MIN = 0.5;
 export const BOOKS_SPEECH_RATE_MAX = 2;
@@ -238,7 +276,9 @@ export const useBooksStore = create<BooksStoreState>()(
       // v5+: backfill `settings.speechRate` (added in v4 without a version
       // bump, so persisted settings were missing it after the shallow merge).
       // v6: raised line-height floor.
-      version: 6,
+      // v7: backfill custom theme fields (customThemeBackground / -Text /
+      // -Transparent) via the DEFAULT_BOOKS_SETTINGS spread below.
+      version: 7,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         const settings = {

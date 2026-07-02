@@ -608,10 +608,13 @@
         "moveToTop": "Переместить в начало"
       },
       "customize": {
+        "background": "Фон",
         "colors": "Цвета",
         "lineSpacing": "Межстрочный интервал",
         "margins": "Поля",
-        "title": "Настройка"
+        "textColor": "Текст",
+        "title": "Настройка",
+        "transparent": "Прозрачный"
       },
       "description": "Читайте книги EPUB",
       "help": {
@@ -661,9 +664,6 @@
         "stopSpeaking": "Остановить проговаривание",
         "textLayout": "Направление текста",
         "textSize": "Размер текста",
-        "textSizeDecrease": "Меньше",
-        "textSizeIncrease": "Больше",
-        "textSizeReset": "Размер по умолчанию",
         "theme": "Тема"
       },
       "name": "Книги",
@@ -694,6 +694,7 @@
       "theme": {
         "auto": "Авто",
         "black": "Черный",
+        "custom": "Настроенная",
         "dark": "Темная",
         "gray": "Серый",
         "green": "Зеленый",
