@@ -1,16 +1,24 @@
 import { useEffect, useState, type ComponentType } from "react";
+import { useChatsStoreShallow } from "@/stores/useChatsStore";
 
 /**
- * Schedules dynamic import of the AirDrop listener after first paint (idle,
- * max 3s wait), so `useFileSystem` (the full finder VFS stack) and the chats /
- * files / textedit store graph it drags in are not in the App static graph.
- * AirDrop transfers arrive over a realtime channel that is only subscribed for
- * authenticated users, so a few seconds of deferral is unobservable.
+ * Schedules dynamic import of the AirDrop listener for authenticated users
+ * after first paint (idle, max 3s wait), so anonymous sessions never download
+ * `useFileSystem` and the full Finder VFS dependency graph.
  */
 export function DeferredAirDropListener() {
+  const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
+    username: state.username,
+    isAuthenticated: state.isAuthenticated,
+  }));
   const [Listener, setListener] = useState<ComponentType | null>(null);
+  const shouldLoad = Boolean(username && isAuthenticated);
 
   useEffect(() => {
+    if (!shouldLoad) {
+      return;
+    }
+
     let cancelled = false;
     let idleId: number | undefined;
     let timeoutId: number | undefined;
@@ -38,8 +46,8 @@ export function DeferredAirDropListener() {
         w.clearTimeout(timeoutId);
       }
     };
-  }, []);
+  }, [shouldLoad]);
 
-  if (!Listener) return null;
+  if (!shouldLoad || !Listener) return null;
   return <Listener />;
 }
