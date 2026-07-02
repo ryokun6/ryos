@@ -10,6 +10,21 @@ export interface BooksSpeechChunk {
   text: string;
   /** Range covering the chunk inside the EPUB section document. */
   range: Range;
+  /**
+   * Set when the sentence is cut off by the end of the visible page and its
+   * text was extended past the page boundary so it can be spoken whole:
+   * offset into `text` where the visible page ends (the rest of the sentence
+   * flows onto the next page). Used to auto-turn the page as speech crosses
+   * the boundary.
+   */
+  pageEndCutIndex?: number;
+}
+
+/** Document position where the last spoken chunk ended, carried across an
+ * auto page turn so speech on the new page skips already-spoken text. */
+export interface BooksSpeechCarryOver {
+  endContainer: Node;
+  endOffset: number;
 }
 
 export interface SpeechTextSegment {
@@ -22,6 +37,10 @@ export interface SpeechTextSegment {
 /** Chunks longer than this are split at word boundaries. Keeping utterances
  * short avoids the long-standing Chrome bug where long utterances stall. */
 export const BOOKS_SPEECH_MAX_CHUNK_LENGTH = 240;
+
+/** How far past the visible page end a cut-off sentence may be extended.
+ * Generous enough to finish any sentence the chunker would speak whole. */
+const MAX_PAGE_CUT_EXTENSION = BOOKS_SPEECH_MAX_CHUNK_LENGTH * 2;
 
 const LATIN_TERMINATORS = new Set([".", "!", "?", "…"]);
 const CJK_TERMINATORS = new Set(["。", "！", "？", "；"]);
@@ -43,12 +62,8 @@ const SOFT_BREAK_CHARS = new Set([",", ";", ":", "，", "、", "：", " "]);
 
 const isWhitespace = (ch: string): boolean => /\s/.test(ch);
 
-/**
- * Split text into sentence boundaries (offsets into the input). Latin
- * terminators only break when followed by whitespace (so "3.14" stays whole);
- * CJK terminators break immediately.
- */
-export function splitTextIntoSentences(text: string): SpeechTextSegment[] {
+/** Sentence-boundary offsets into the input (see splitTextIntoSentences). */
+function findSentenceBoundaries(text: string): number[] {
   const boundaries: number[] = [];
   let i = 0;
   while (i < text.length) {
@@ -75,6 +90,16 @@ export function splitTextIntoSentences(text: string): SpeechTextSegment[] {
     }
     i++;
   }
+  return boundaries;
+}
+
+/**
+ * Split text into sentence boundaries (offsets into the input). Latin
+ * terminators only break when followed by whitespace (so "3.14" stays whole);
+ * CJK terminators break immediately.
+ */
+export function splitTextIntoSentences(text: string): SpeechTextSegment[] {
+  const boundaries = findSentenceBoundaries(text);
 
   const segments: SpeechTextSegment[] = [];
   let start = 0;
@@ -223,6 +248,11 @@ interface TextPiece {
 interface Paragraph {
   text: string;
   pieces: TextPiece[];
+  /**
+   * Offset into `text` where the visible page ends, when the paragraph was
+   * extended past the page boundary to finish a cut-off sentence.
+   */
+  pageCutOffset?: number;
 }
 
 /**
@@ -266,22 +296,62 @@ function compareBoundaryPoints(
   return 0;
 }
 
-function nodeOverlapsRange(node: Text, range: Range): boolean {
-  const length = node.data.length;
-  return (
-    // Node end after range start…
-    compareBoundaryPoints(
-      node,
-      length,
-      range.startContainer,
-      range.startOffset
-    ) > 0 &&
-    // …and node start before range end.
-    compareBoundaryPoints(node, 0, range.endContainer, range.endOffset) < 0
-  );
+/**
+ * Whether `range` ends at or before the carried-over end position of the last
+ * chunk spoken on the previous page (i.e. its text was already spoken).
+ * Lenient (returns false) across documents or for detached nodes, so a
+ * section change or re-render never skips fresh content.
+ */
+export function rangeEndsAtOrBefore(
+  range: Range,
+  carryOver: BooksSpeechCarryOver
+): boolean {
+  const { endContainer, endOffset } = carryOver;
+  if (range.endContainer.ownerDocument !== endContainer.ownerDocument) {
+    return false;
+  }
+  if (!endContainer.isConnected || !range.endContainer.isConnected) {
+    return false;
+  }
+  try {
+    return (
+      compareBoundaryPoints(
+        range.endContainer,
+        range.endOffset,
+        endContainer,
+        endOffset
+      ) <= 0
+    );
+  } catch {
+    return false;
+  }
 }
 
-/** Collect visible text grouped into paragraphs (block-level runs). */
+function getBlockAncestorOfNode(node: Node): Element | null {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return getBlockAncestor(node as Text);
+  }
+  for (
+    let el: Element | null =
+      node.nodeType === Node.ELEMENT_NODE ? (node as Element) : null;
+    el;
+    el = el.parentElement
+  ) {
+    if (BLOCK_TAGS.has(el.tagName)) return el;
+  }
+  return null;
+}
+
+/**
+ * Collect visible text grouped into paragraphs (block-level runs).
+ *
+ * When the range ends mid-sentence (a page boundary cutting a sentence in
+ * half), the final paragraph is extended past the range end — within the
+ * same block, up to the end of the cut sentence or a safety budget — and
+ * `pageCutOffset` records where the visible page actually ends. Read-aloud
+ * uses this to speak the sentence whole and turn the page at the cut instead
+ * of stopping mid-sentence.
+ */
 function collectParagraphs(range: Range): Paragraph[] {
   const container = range.commonAncestorContainer;
   const doc =
@@ -292,10 +362,17 @@ function collectParagraphs(range: Range): Paragraph[] {
 
   // TreeWalker never yields its root, so when the whole range sits inside a
   // single text node, walk from the parent element instead.
-  const walkRoot =
+  let walkRoot =
     container.nodeType === Node.TEXT_NODE
       ? container.parentNode ?? container
       : container;
+  // The remainder of a sentence cut at the range end may live outside the
+  // range's common ancestor (e.g. the range ends inside an inline element);
+  // widen the walk to the cut paragraph's block so the extension can see it.
+  const endBlock = getBlockAncestorOfNode(range.endContainer);
+  if (endBlock && endBlock !== walkRoot && endBlock.contains(walkRoot)) {
+    walkRoot = endBlock;
+  }
   const walker = doc.createTreeWalker(
     walkRoot,
     NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT
@@ -305,52 +382,182 @@ function collectParagraphs(range: Range): Paragraph[] {
   let currentPieces: TextPiece[] = [];
   let currentText = "";
   let currentBlock: Element | null = null;
+  // Offset in the current paragraph where the visible page ends; non-null
+  // while collecting past the range end to finish a cut-off sentence.
+  let cutOffset: number | null = null;
+  let done = false;
 
   const closeParagraph = () => {
     if (currentText.length > 0) {
-      paragraphs.push({ text: currentText, pieces: currentPieces });
+      const paragraph: Paragraph = { text: currentText, pieces: currentPieces };
+      if (cutOffset !== null && cutOffset < currentText.length) {
+        paragraph.pageCutOffset = cutOffset;
+      }
+      paragraphs.push(paragraph);
     }
     currentPieces = [];
     currentText = "";
+    cutOffset = null;
   };
 
-  for (
-    let node = walker.nextNode();
-    node !== null;
-    node = walker.nextNode()
-  ) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      // Explicit line breaks split poetry/verse into speakable lines.
-      if ((node as Element).tagName === "BR") closeParagraph();
-      continue;
-    }
-    const textNode = node as Text;
-    if (!nodeOverlapsRange(textNode, range)) continue;
-    if (!isSpokenTextNode(textNode)) continue;
-
-    let start = 0;
-    let end = textNode.data.length;
-    if (range.startContainer === textNode) {
-      start = Math.max(start, range.startOffset);
-    }
-    if (range.endContainer === textNode) {
-      end = Math.min(end, range.endOffset);
-    }
-    if (end <= start) continue;
-
-    const block = getBlockAncestor(textNode);
-    if (block !== currentBlock) {
-      closeParagraph();
-      currentBlock = block;
-    }
-
+  const appendPiece = (node: Text, start: number, end: number) => {
+    if (end <= start) return;
     currentPieces.push({
-      node: textNode,
+      node,
       start,
       end,
       paragraphStart: currentText.length,
     });
-    currentText += textNode.data.slice(start, end);
+    currentText += node.data.slice(start, end);
+  };
+
+  const truncateTo = (offset: number) => {
+    if (currentText.length <= offset) return;
+    currentText = currentText.slice(0, offset);
+    const kept: TextPiece[] = [];
+    for (const piece of currentPieces) {
+      if (piece.paragraphStart >= offset) break;
+      const maxLength = offset - piece.paragraphStart;
+      const length = Math.min(piece.end - piece.start, maxLength);
+      kept.push(
+        length === piece.end - piece.start
+          ? piece
+          : { ...piece, end: piece.start + length }
+      );
+    }
+    currentPieces = kept;
+  };
+
+  // Whether the open paragraph ends mid-sentence at the cut point (real
+  // content after its last sentence boundary).
+  const paragraphCutMidSentence = (): boolean => {
+    if (currentText.length === 0) return false;
+    const boundaries = findSentenceBoundaries(currentText);
+    const lastBoundary =
+      boundaries.length > 0 ? boundaries[boundaries.length - 1] : 0;
+    return trimSegment(currentText, lastBoundary, currentText.length) !== null;
+  };
+
+  // While extending past the cut, stop once the sentence is finished (or the
+  // extension budget is exhausted). Nothing beyond the cut paragraph is
+  // collected.
+  const checkExtensionDone = () => {
+    if (cutOffset === null) return;
+    const cut = cutOffset;
+    const boundary = findSentenceBoundaries(currentText).find((b) => b >= cut);
+    if (boundary !== undefined) {
+      truncateTo(boundary);
+      done = true;
+      closeParagraph();
+      return;
+    }
+    if (currentText.length - cut > MAX_PAGE_CUT_EXTENSION) {
+      truncateTo(cut + MAX_PAGE_CUT_EXTENSION);
+      done = true;
+      closeParagraph();
+    }
+  };
+
+  for (
+    let node = walker.nextNode();
+    node !== null && !done;
+    node = walker.nextNode()
+  ) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      // Explicit line breaks split poetry/verse into speakable lines (and
+      // end any cut-sentence extension — the line is the sentence).
+      if ((node as Element).tagName === "BR") {
+        if (cutOffset !== null) done = true;
+        closeParagraph();
+      }
+      continue;
+    }
+    const textNode = node as Text;
+    if (!isSpokenTextNode(textNode)) continue;
+    const length = textNode.data.length;
+
+    // Entirely before the range start.
+    if (
+      compareBoundaryPoints(
+        textNode,
+        length,
+        range.startContainer,
+        range.startOffset
+      ) <= 0
+    ) {
+      continue;
+    }
+
+    let start = 0;
+    if (range.startContainer === textNode) {
+      start = Math.max(start, range.startOffset);
+    }
+
+    // Visible portion of the node, clipped at the range end. A boundary
+    // point in another container never falls inside a text node, so the
+    // node is either fully before or fully after it.
+    let visibleEnd: number;
+    if (range.endContainer === textNode) {
+      visibleEnd = Math.min(length, range.endOffset);
+    } else if (
+      compareBoundaryPoints(
+        textNode,
+        0,
+        range.endContainer,
+        range.endOffset
+      ) >= 0
+    ) {
+      visibleEnd = 0;
+    } else {
+      visibleEnd = length;
+    }
+
+    const block = getBlockAncestor(textNode);
+
+    if (cutOffset !== null) {
+      // Extending a cut sentence: only within the same block.
+      if (block !== currentBlock) {
+        done = true;
+        closeParagraph();
+        continue;
+      }
+      appendPiece(textNode, 0, length);
+      checkExtensionDone();
+      continue;
+    }
+
+    if (visibleEnd <= start) {
+      // The visible range ended before this node. Extend if the open
+      // paragraph was cut mid-sentence and this node continues its block;
+      // otherwise the collection is complete.
+      if (block === currentBlock && paragraphCutMidSentence()) {
+        cutOffset = currentText.length;
+        appendPiece(textNode, 0, length);
+        checkExtensionDone();
+      } else {
+        done = true;
+        closeParagraph();
+      }
+      continue;
+    }
+
+    if (block !== currentBlock) {
+      closeParagraph();
+      currentBlock = block;
+    }
+    appendPiece(textNode, start, visibleEnd);
+
+    if (visibleEnd < length) {
+      // The visible range ends inside this node — the page cuts here.
+      if (paragraphCutMidSentence()) {
+        cutOffset = currentText.length;
+        appendPiece(textNode, visibleEnd, length);
+        checkExtensionDone();
+      } else {
+        done = true;
+        closeParagraph();
+      }
+    }
   }
   closeParagraph();
   return paragraphs;
@@ -377,15 +584,18 @@ function paragraphOffsetToPosition(
 /**
  * Split the given page range into speakable sentence chunks, each with a
  * Range for highlighting.
+ *
+ * A sentence cut in half by the end of the page is extended past the page
+ * boundary and emitted as one whole chunk with `pageEndCutIndex` marking
+ * where the visible page ends inside its text (so read-aloud can turn the
+ * page mid-utterance instead of stopping at the fragment).
  */
 export function collectSpeechChunksFromRange(range: Range): BooksSpeechChunk[] {
   const chunks: BooksSpeechChunk[] = [];
   for (const paragraph of collectParagraphs(range)) {
     for (const segment of splitTextIntoSpeechSegments(paragraph.text)) {
-      const text = paragraph.text
-        .slice(segment.start, segment.end)
-        .replace(/\s+/g, " ")
-        .trim();
+      const raw = paragraph.text.slice(segment.start, segment.end);
+      const text = raw.replace(/\s+/g, " ").trim();
       if (!text) continue;
       const startPos = paragraphOffsetToPosition(
         paragraph.pieces,
@@ -404,7 +614,21 @@ export function collectSpeechChunksFromRange(range: Range): BooksSpeechChunk[] {
         const chunkRange = doc.createRange();
         chunkRange.setStart(startPos.node, startPos.offset);
         chunkRange.setEnd(endPos.node, endPos.offset);
-        chunks.push({ text, range: chunkRange });
+        const chunk: BooksSpeechChunk = { text, range: chunkRange };
+        const cut = paragraph.pageCutOffset;
+        if (cut !== undefined && cut > segment.start && cut < segment.end) {
+          // Map the paragraph cut offset into the normalized chunk text:
+          // count the normalized length of the visible part.
+          const visible = paragraph.text
+            .slice(segment.start, cut)
+            .replace(/\s+/g, " ")
+            .replace(/^\s+/, "");
+          const cutIndex = Math.min(visible.replace(/\s+$/, "").length, text.length);
+          if (cutIndex > 0 && cutIndex < text.length) {
+            chunk.pageEndCutIndex = cutIndex;
+          }
+        }
+        chunks.push(chunk);
       } catch {
         // Skip chunks whose boundaries can't form a valid range.
       }
@@ -537,6 +761,29 @@ export function isRangeOnVisiblePage(range: Range): boolean {
   left = Math.max(left, 0);
   top = Math.max(top, 0);
   return right - left > 1 && bottom - top > 1;
+}
+
+/**
+ * Whether the end of the range (its last character) is on the visible page.
+ * Used to detect a chunk whose sentence flows past the page boundary when
+ * the page range itself couldn't be clipped (unresolvable end CFI). Lenient
+ * (returns true) when the endpoint can't be probed.
+ */
+export function isRangeEndOnVisiblePage(range: Range): boolean {
+  const { endContainer, endOffset } = range;
+  if (endContainer.nodeType !== Node.TEXT_NODE || endOffset < 1) {
+    return true;
+  }
+  const doc = endContainer.ownerDocument;
+  if (!doc) return true;
+  try {
+    const probe = doc.createRange();
+    probe.setStart(endContainer, endOffset - 1);
+    probe.setEnd(endContainer, endOffset);
+    return isRangeOnVisiblePage(probe);
+  } catch {
+    return true;
+  }
 }
 
 // ---------------------------------------------------------------------------

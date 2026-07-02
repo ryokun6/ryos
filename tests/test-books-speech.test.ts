@@ -12,7 +12,9 @@ import {
   getVisiblePageRange,
   applySpeechHighlight,
   clearSpeechHighlight,
+  isRangeEndOnVisiblePage,
   isRangeOnVisiblePage,
+  rangeEndsAtOrBefore,
   splitTextIntoSentences,
   splitTextIntoSpeechSegments,
   type SpeechRenditionLike,
@@ -191,6 +193,127 @@ describe("collectSpeechChunksFromRange", () => {
     const doc = createBookDocument("<p>Spaced   \n   out. </p>");
     const chunks = collectSpeechChunksFromRange(rangeOver(doc));
     expect(chunks.map((c) => c.text)).toEqual(["Spaced out."]);
+  });
+});
+
+describe("sentences cut off by the page boundary", () => {
+  test("extends a cut sentence to its end and marks the page cut index", () => {
+    const doc = createBookDocument(
+      "<p>Alpha beta. Gamma delta epsilon zeta. Eta theta.</p>"
+    );
+    const textNode = doc.querySelector("p")!.firstChild as Text;
+    const range = doc.createRange();
+    range.setStart(textNode, 0);
+    // Page ends mid-way through the second sentence.
+    range.setEnd(textNode, "Alpha beta. Gamma delta".length);
+    const chunks = collectSpeechChunksFromRange(range);
+    expect(chunks.map((c) => c.text)).toEqual([
+      "Alpha beta.",
+      "Gamma delta epsilon zeta.",
+    ]);
+    expect(chunks[0].pageEndCutIndex).toBeUndefined();
+    // The cut falls right after "Gamma delta" within the extended sentence.
+    expect(chunks[1].pageEndCutIndex).toBe("Gamma delta".length);
+    expect(chunks[1].range.toString()).toBe("Gamma delta epsilon zeta.");
+  });
+
+  test("does not extend when the page ends at a sentence boundary", () => {
+    const doc = createBookDocument("<p>Alpha beta. Gamma delta.</p>");
+    const textNode = doc.querySelector("p")!.firstChild as Text;
+    const range = doc.createRange();
+    range.setStart(textNode, 0);
+    range.setEnd(textNode, "Alpha beta. ".length);
+    const chunks = collectSpeechChunksFromRange(range);
+    expect(chunks.map((c) => c.text)).toEqual(["Alpha beta."]);
+    expect(chunks[0].pageEndCutIndex).toBeUndefined();
+  });
+
+  test("extends a cut sentence across inline elements", () => {
+    const doc = createBookDocument(
+      "<p>He said <em>hello there</em> to me. Done.</p>"
+    );
+    const firstText = doc.querySelector("p")!.firstChild as Text;
+    const range = doc.createRange();
+    range.setStart(firstText, 0);
+    // Page ends inside the first word run, mid-sentence.
+    range.setEnd(firstText, "He sa".length);
+    const chunks = collectSpeechChunksFromRange(range);
+    expect(chunks.map((c) => c.text)).toEqual(["He said hello there to me."]);
+    expect(chunks[0].pageEndCutIndex).toBe("He sa".length);
+  });
+
+  test("does not extend past the cut paragraph into the next block", () => {
+    const doc = createBookDocument(
+      "<p>An unterminated fragment</p><p>Next paragraph.</p>"
+    );
+    const firstText = doc.querySelector("p")!.firstChild as Text;
+    const range = doc.createRange();
+    range.setStart(firstText, 0);
+    range.setEnd(firstText, "An untermi".length);
+    const chunks = collectSpeechChunksFromRange(range);
+    // The fragment finishes its own block but never leaks into the next <p>.
+    expect(chunks.map((c) => c.text)).toEqual(["An unterminated fragment"]);
+    expect(chunks[0].pageEndCutIndex).toBe("An untermi".length);
+  });
+
+  test("stops the extension at a <br> line break", () => {
+    const doc = createBookDocument("<p>Line one more<br>Line two</p>");
+    const firstText = doc.querySelector("p")!.firstChild as Text;
+    const range = doc.createRange();
+    range.setStart(firstText, 0);
+    range.setEnd(firstText, "Line one".length);
+    const chunks = collectSpeechChunksFromRange(range);
+    expect(chunks.map((c) => c.text)).toEqual(["Line one more"]);
+    expect(chunks[0].pageEndCutIndex).toBe("Line one".length);
+  });
+
+  test("mid-paragraph page start plus cut sentence keeps offsets aligned", () => {
+    const doc = createBookDocument(
+      "<p>Alpha beta. Gamma delta epsilon. Eta theta.</p>"
+    );
+    const textNode = doc.querySelector("p")!.firstChild as Text;
+    const range = doc.createRange();
+    // Page starts mid-paragraph and ends mid-sentence.
+    range.setStart(textNode, "Alpha beta. ".length);
+    range.setEnd(textNode, "Alpha beta. Gamma delta".length);
+    const chunks = collectSpeechChunksFromRange(range);
+    expect(chunks.map((c) => c.text)).toEqual(["Gamma delta epsilon."]);
+    expect(chunks[0].pageEndCutIndex).toBe("Gamma delta".length);
+    expect(chunks[0].range.toString()).toBe("Gamma delta epsilon.");
+  });
+});
+
+describe("rangeEndsAtOrBefore", () => {
+  test("identifies chunks already spoken before the carry-over point", () => {
+    const doc = createBookDocument("<p>Alpha beta. Gamma delta.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    expect(chunks.length).toBe(2);
+    const carryOver = {
+      endContainer: chunks[0].range.endContainer,
+      endOffset: chunks[0].range.endOffset,
+    };
+    expect(rangeEndsAtOrBefore(chunks[0].range, carryOver)).toBe(true);
+    expect(rangeEndsAtOrBefore(chunks[1].range, carryOver)).toBe(false);
+  });
+
+  test("is lenient across documents", () => {
+    const doc = createBookDocument("<p>Alpha beta.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    const detached = doc.implementation.createHTMLDocument("other");
+    detached.body.innerHTML = "<p>Other doc.</p>";
+    const carryOver = {
+      endContainer: detached.querySelector("p")!.firstChild as Node,
+      endOffset: 5,
+    };
+    expect(rangeEndsAtOrBefore(chunks[0].range, carryOver)).toBe(false);
+  });
+});
+
+describe("isRangeEndOnVisiblePage", () => {
+  test("is lenient outside an iframe (no layout geometry)", () => {
+    const doc = createBookDocument("<p>Alpha beta.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    expect(isRangeEndOnVisiblePage(chunks[0].range)).toBe(true);
   });
 });
 

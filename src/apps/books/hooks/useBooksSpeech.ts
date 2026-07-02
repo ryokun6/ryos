@@ -8,7 +8,10 @@ import {
   clearSpeechHighlight,
   collectSpeechChunksFromRange,
   getVisiblePageRange,
+  isRangeEndOnVisiblePage,
   isRangeOnVisiblePage,
+  rangeEndsAtOrBefore,
+  type BooksSpeechCarryOver,
   type BooksSpeechChunk,
   type SpeechRenditionLike,
 } from "../utils/booksSpeech";
@@ -43,6 +46,10 @@ const RESUME_AFTER_RELOCATE_MS = 120;
  * behind stale audio and read-aloud drifts pages behind the screen. */
 const ENSURE_IDLE_POLL_MS = 150;
 const MAX_ENSURE_IDLE_POLLS = 40;
+/** When the page auto-turns mid-utterance (a sentence cut by the page end),
+ * the tail of that sentence keeps playing across the flip — wait for its
+ * natural end rather than cancelling it. Generous cap for slow voices. */
+const MAX_NATURAL_FINISH_POLLS = 300;
 
 interface UseBooksSpeechOptions {
   getRendition: () => SpeechRenditionLike | null;
@@ -91,6 +98,16 @@ export function useBooksSpeech({
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const highlightedDocRef = useRef<Document | null>(null);
   const timersRef = useRef<number[]>([]);
+  // Set when the page was auto-turned at a mid-sentence cut while the cut
+  // sentence is still being spoken. `relocated` consumes it to resume speech
+  // on the new page without cancelling the in-flight utterance.
+  const cutAdvanceRef = useRef<{
+    carryOver: BooksSpeechCarryOver;
+    beforeCfi: string | null;
+  } | null>(null);
+  // End position of the last chunk spoken before an auto page turn at a
+  // sentence cut, so the new page skips text that was already spoken.
+  const pendingCarryOverRef = useRef<BooksSpeechCarryOver | null>(null);
 
   const optionsRef = useRef({
     getRendition,
@@ -121,6 +138,8 @@ export function useBooksSpeech({
     sessionRef.current += 1;
     wantsSpeechRef.current = false;
     activeUtteranceRef.current = null;
+    cutAdvanceRef.current = null;
+    pendingCarryOverRef.current = null;
     clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
@@ -157,8 +176,14 @@ export function useBooksSpeech({
         stopSpeaking();
         return;
       }
-      const beforeCfi = getCurrentStartCfi();
-      optionsRef.current.advancePage();
+      // A mid-utterance cut advance already turned this page — don't turn
+      // again; just wait for its `relocated` event (which resumes speech).
+      // If that turn was swallowed, the retry below re-advances.
+      const cutAdvance = cutAdvanceRef.current;
+      const beforeCfi = cutAdvance ? cutAdvance.beforeCfi : getCurrentStartCfi();
+      if (!cutAdvance || attempt > 0) {
+        optionsRef.current.advancePage();
+      }
       const waitForRelocate = (checksLeft: number) => {
         const timeoutId = window.setTimeout(() => {
           // A `relocated` event would have bumped the session and resumed.
@@ -178,6 +203,27 @@ export function useBooksSpeech({
       waitForRelocate(MAX_RELOCATE_WAIT_CHECKS);
     },
     [clearHighlight, getCurrentStartCfi, stopSpeaking]
+  );
+
+  // Turn the page at a sentence that is cut off by the page end, while (or
+  // right after) speaking it — the sentence audio continues uninterrupted
+  // across the flip, and the recorded carry-over lets the new page skip the
+  // text that was already spoken (instead of repeating the sentence).
+  const advanceAtCut = useCallback(
+    (session: number, chunk: BooksSpeechChunk) => {
+      if (session !== sessionRef.current) return;
+      if (cutAdvanceRef.current) return;
+      if (!optionsRef.current.canAdvancePage()) return;
+      cutAdvanceRef.current = {
+        carryOver: {
+          endContainer: chunk.range.endContainer,
+          endOffset: chunk.range.endOffset,
+        },
+        beforeCfi: getCurrentStartCfi(),
+      };
+      optionsRef.current.advancePage();
+    },
+    [getCurrentStartCfi]
   );
 
   const speakChunk = useCallback(
@@ -237,6 +283,22 @@ export function useBooksSpeech({
           stopSpeaking();
           return;
         }
+        // Sentence cut off by the page end but no word boundary crossed the
+        // cut while speaking (engine without boundary events, or the cut sat
+        // at the very end): turn the page now so the next page resumes with
+        // the carry-over instead of repeating this sentence.
+        if (chunk.pageEndCutIndex !== undefined) {
+          advanceAtCut(session, chunk);
+        }
+        if (cutAdvanceRef.current) {
+          // A page turn at the cut is in flight. Anything after this chunk
+          // lives past the page boundary — the resumed speech on the new
+          // page picks it up (after the carry-over skip); finishPage just
+          // waits for `relocated` (re-advancing only if the turn was
+          // swallowed).
+          finishPage(session);
+          return;
+        }
         speakChunk(session, chunks, index + 1);
       };
 
@@ -245,6 +307,18 @@ export function useBooksSpeech({
       };
       utterance.onend = () => settle(true);
       utterance.onerror = () => settle(false);
+      const cutIndex = chunk.pageEndCutIndex;
+      if (cutIndex !== undefined && cutIndex < chunk.text.length) {
+        // The sentence continues past the visible page end. Flip the page as
+        // the spoken word crosses the cut so the text being read stays on
+        // screen; the utterance keeps playing through the flip.
+        utterance.onboundary = (event) => {
+          if (settled || session !== sessionRef.current) return;
+          if (event.charIndex >= cutIndex) {
+            advanceAtCut(session, chunk);
+          }
+        };
+      }
 
       // Some engines never deliver end events (and Chrome can GC-drop them
       // even with the utterance referenced), so poll the engine: once speech
@@ -284,7 +358,7 @@ export function useBooksSpeech({
       synth.resume();
       synth.speak(utterance);
     },
-    [clearHighlight, finishPage, stopSpeaking]
+    [advanceAtCut, clearHighlight, finishPage, stopSpeaking]
   );
 
   const speakVisiblePage = useCallback(
@@ -295,6 +369,8 @@ export function useBooksSpeech({
         stopSpeaking();
         return;
       }
+      const carryOver = pendingCarryOverRef.current;
+      pendingCarryOverRef.current = null;
       let chunks: BooksSpeechChunk[] = [];
       try {
         const range = getVisiblePageRange(rendition);
@@ -303,6 +379,26 @@ export function useBooksSpeech({
         // boundary is unresolvable and the range extends to the section end).
         // Trust layout geometry: only speak chunks actually on screen.
         chunks = chunks.filter((chunk) => isRangeOnVisiblePage(chunk.range));
+        // After an auto page turn at a cut-off sentence, skip everything
+        // that was already spoken on the previous page (the cut sentence was
+        // spoken whole across the flip) instead of repeating it.
+        if (carryOver) {
+          chunks = chunks.filter(
+            (chunk) => !rangeEndsAtOrBefore(chunk.range, carryOver)
+          );
+        }
+        // When the cut wasn't detectable from the page range itself (an
+        // unresolvable end boundary falls back to the section end), detect it
+        // geometrically: a final chunk whose end is off-screen crosses onto
+        // the next page — flip once it finishes and carry over its end.
+        const lastChunk = chunks[chunks.length - 1];
+        if (
+          lastChunk &&
+          lastChunk.pageEndCutIndex === undefined &&
+          !isRangeEndOnVisiblePage(lastChunk.range)
+        ) {
+          lastChunk.pageEndCutIndex = lastChunk.text.length;
+        }
       } catch {
         chunks = [];
       }
@@ -326,18 +422,24 @@ export function useBooksSpeech({
   // Restart speech once the engine has actually gone idle. Speaking while a
   // cancelled utterance is still winding down queues the new chunk behind
   // stale audio on some engines (Safari), drifting speech behind the screen.
+  // With `cancelWhileWaiting` false (auto page turn at a cut-off sentence),
+  // the in-flight utterance is left to finish naturally — the tail of the
+  // cut sentence plays across the flip — before speaking the new page.
   const speakVisiblePageWhenIdle = useCallback(
-    (session: number, polls = 0) => {
+    (session: number, polls = 0, cancelWhileWaiting = true) => {
       if (session !== sessionRef.current) return;
       const synth = getBrowserSpeechSynthesis();
       if (!synth) {
         stopSpeaking();
         return;
       }
-      if ((synth.speaking || synth.pending) && polls < MAX_ENSURE_IDLE_POLLS) {
-        synth.cancel();
+      const maxPolls = cancelWhileWaiting
+        ? MAX_ENSURE_IDLE_POLLS
+        : MAX_NATURAL_FINISH_POLLS;
+      if ((synth.speaking || synth.pending) && polls < maxPolls) {
+        if (cancelWhileWaiting) synth.cancel();
         const timeoutId = window.setTimeout(
-          () => speakVisiblePageWhenIdle(session, polls + 1),
+          () => speakVisiblePageWhenIdle(session, polls + 1, cancelWhileWaiting),
           ENSURE_IDLE_POLL_MS
         );
         timersRef.current.push(timeoutId);
@@ -353,6 +455,8 @@ export function useBooksSpeech({
     wantsSpeechRef.current = true;
     emptyPageStreakRef.current = 0;
     timeoutEndingStreakRef.current = 0;
+    cutAdvanceRef.current = null;
+    pendingCarryOverRef.current = null;
     clearTimers();
     clearHighlight();
     const synth = getBrowserSpeechSynthesis();
@@ -367,11 +471,25 @@ export function useBooksSpeech({
 
   const handleRelocated = useCallback(() => {
     if (!wantsSpeechRef.current) return;
+    const cutAdvance = cutAdvanceRef.current;
+    cutAdvanceRef.current = null;
+    const session = ++sessionRef.current;
+    clearTimers();
+    if (cutAdvance) {
+      // Auto page turn at a mid-sentence cut: the tail of the cut sentence
+      // is (possibly) still being spoken — keep the utterance and highlight
+      // alive across the flip, then resume past the already-spoken text.
+      pendingCarryOverRef.current = cutAdvance.carryOver;
+      const timeoutId = window.setTimeout(() => {
+        speakVisiblePageWhenIdle(session, 0, false);
+      }, RESUME_AFTER_RELOCATE_MS);
+      timersRef.current.push(timeoutId);
+      return;
+    }
     // Invalidate in-flight utterances (manual page turns / chapter jumps /
     // reflows) and restart from the freshly visible page.
-    const session = ++sessionRef.current;
+    pendingCarryOverRef.current = null;
     activeUtteranceRef.current = null;
-    clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
     const timeoutId = window.setTimeout(() => {
