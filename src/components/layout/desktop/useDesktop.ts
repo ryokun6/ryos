@@ -8,7 +8,7 @@ import {
   useEffect,
 } from "react";
 import type { DragEvent, MouseEvent as ReactMouseEvent } from "react";
-import { SortType } from "@/apps/finder/components/FinderMenuBar";
+import type { SortType } from "@/apps/finder/components/FinderMenuBar";
 import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
