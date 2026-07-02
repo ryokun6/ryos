@@ -1045,32 +1045,29 @@
   box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.4);
 }
 
-/* Slider track (dark) — match the dark switch track so the recessed channel
-   reads dark in dark mode instead of falling back to the light Aqua track. */
+/* Slider track (dark) — quiet neutral recess matching the light-mode track
+   treatment: no top shine layer, black/white rgba only (no gray rgb tints) so
+   the underlying dark surface shows through. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-slider-track {
   background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.12),
-        rgba(255, 255, 255, 0.03)
-      )
-      top / 100% 50% no-repeat,
-    linear-gradient(to bottom, rgba(34, 34, 38, 0.42), rgba(72, 72, 78, 0.42)) !important;
+    to bottom,
+    rgba(0, 0, 0, 0.4),
+    rgba(0, 0, 0, 0.2)
+  ) !important;
   border-color: rgba(255, 255, 255, 0.14);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5),
     inset 0 -1px 1px rgba(255, 255, 255, 0.06),
     0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Vertical slider track (dark) — rotate the shine + bevel to the short axis. */
+/* Vertical slider track (dark) — rotate the recess + bevel to the short axis. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .os-slider-track[data-orientation="vertical"] {
   background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.12),
-        rgba(255, 255, 255, 0.03)
-      )
-      left / 50% 100% no-repeat,
-    linear-gradient(to right, rgba(34, 34, 38, 0.42), rgba(72, 72, 78, 0.42)) !important;
+    to right,
+    rgba(0, 0, 0, 0.4),
+    rgba(0, 0, 0, 0.2)
+  ) !important;
   box-shadow: inset 1px 0 2px rgba(0, 0, 0, 0.5),
     inset -1px 0 1px rgba(255, 255, 255, 0.06),
     1px 0 0 rgba(255, 255, 255, 0.05);

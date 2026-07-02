@@ -2576,41 +2576,36 @@
   margin: 0 auto;
 }
 
-/* Slider track — same recessed glossy channel as the switch track so sliders
-   and switches read as one cohesive set. The top white shine highlight + base
-   gradient mirror `.os-switch` (unchecked). The shine runs across the track's
-   short axis: top→down for a horizontal track. */
+/* Slider track — a quiet recessed channel. Unlike the taller switch track, the
+   thin slider channel gets no top shine layer (it reads as glare at 6px) —
+   just a neutral translucent recess (black/white rgba only, no gray tints so
+   the underlying surface shows through) with a soft inner shadow and a faint
+   bottom lip. */
 :root[data-os-theme="macosx"] .os-slider-track {
   background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3)) !important;
+    to bottom,
+    rgba(0, 0, 0, 0.12),
+    rgba(0, 0, 0, 0.04)
+  ) !important;
   border: 1px solid rgba(0, 0, 0, 0.22);
   border-radius: 9999px;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
-    inset 0 -1px 1px rgba(255, 255, 255, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.5);
+    inset 0 -1px 1px rgba(255, 255, 255, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.25);
   position: relative;
 }
 
-/* Vertical track — rotate the shine + bevel to the short (horizontal) axis so
-   the highlight sits on the leading (left) edge and reads correctly. */
+/* Vertical track — rotate the recess + bevel to the short (horizontal) axis so
+   the shadow sits on the leading (left) edge and reads correctly. */
 :root[data-os-theme="macosx"] .os-slider-track[data-orientation="vertical"] {
   background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      left / 50% 100% no-repeat,
-    linear-gradient(to right, rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3)) !important;
+    to right,
+    rgba(0, 0, 0, 0.12),
+    rgba(0, 0, 0, 0.04)
+  ) !important;
   box-shadow: inset 1px 0 2px rgba(0, 0, 0, 0.2),
-    inset -1px 0 1px rgba(255, 255, 255, 0.35),
-    1px 0 0 rgba(255, 255, 255, 0.5);
+    inset -1px 0 1px rgba(255, 255, 255, 0.2),
+    1px 0 0 rgba(255, 255, 255, 0.25);
 }
 
 /* Filled portion of the track uses the same glossy accent gradient as the
@@ -2620,8 +2615,8 @@
 :root[data-os-theme="macosx"] .os-slider-range {
   background: linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.1) 60%,
         rgba(255, 255, 255, 0) 100%
       )
       top / 100% 50% no-repeat,
@@ -2633,8 +2628,7 @@
         rgba(33, 160, 196, 0.625)
       )
     ) !important;
-  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.18),
-    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.4));
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.18);
 }
 
 /* Vertical filled range — the shine + bevel run across the short (horizontal)
@@ -2642,8 +2636,8 @@
 :root[data-os-theme="macosx"] .os-slider-range[data-orientation="vertical"] {
   background: linear-gradient(
         to right,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.1) 60%,
         rgba(255, 255, 255, 0) 100%
       )
       left / 50% 100% no-repeat,
@@ -2656,8 +2650,7 @@
         rgba(33, 160, 196, 0.625)
       )
     ) !important;
-  box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.18),
-    1px 0 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.4));
+  box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.18);
 }
 
 /* Slider tick/label text - preserve explicit sizes */
