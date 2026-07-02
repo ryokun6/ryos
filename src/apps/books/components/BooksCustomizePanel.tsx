@@ -236,7 +236,6 @@ export function BooksCustomizePanel({
     label: string;
     background: string;
     text: string;
-    /** The Auto swatch is a plain solid dot; presets preview their text color. */
     showGlyph: boolean;
     /** Checkerboard preview for a transparent (glassy) custom background. */
     transparent?: boolean;
@@ -246,10 +245,10 @@ export function BooksCustomizePanel({
     {
       id: "auto" as const,
       label: t("apps.books.theme.auto"),
-      // Solid swatch that follows the OS light/dark setting.
+      // Follows the OS light/dark setting.
       background: autoPalette.background,
       text: autoPalette.text,
-      showGlyph: false,
+      showGlyph: true,
     },
     ...BOOK_THEME_PRESET_IDS.map((id) => {
       const palette = getReadingPalette(id);
