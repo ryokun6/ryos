@@ -21,7 +21,7 @@ import {
   isLyricsWallpaper,
   isWeatherWallpaper,
 } from "@/utils/dynamicWallpaper";
-import { resolveStaticWallpaperForCurrentViewport } from "@/utils/staticWallpaperUrl";
+import { resolveStaticWallpaperRenderUrl } from "@/utils/staticWallpaperUrl";
 
 export interface WallpaperMenubarText {
   textColor: string;
@@ -137,8 +137,7 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
   if (!isGradient && !isWeather) {
     if (isCoverBased) sampleSource = nowPlayingCoverUrl;
     else if (!isVideoWallpaper && isConcreteWallpaperSource(wallpaperSource)) {
-      sampleSource =
-        resolveStaticWallpaperForCurrentViewport(wallpaperSource);
+      sampleSource = resolveStaticWallpaperRenderUrl(wallpaperSource);
     }
   }
 

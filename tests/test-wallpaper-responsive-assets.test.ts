@@ -1,43 +1,27 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dir, "..");
 
-describe("responsive wallpaper assets", () => {
-  test("has a generated WebP variant for every built-in photo and width", () => {
+describe("wallpaper quality safeguards", () => {
+  test("does not generate or advertise lossy responsive variants", () => {
     const manifest = JSON.parse(
       readFileSync(
         path.join(ROOT, "public/wallpapers/manifest.json"),
         "utf8"
       )
-    ) as {
-      version: number;
-      photoRender: {
-        widths: number[];
-        formats: string[];
-      };
-      photos: Record<string, string[]>;
-    };
+    ) as Record<string, unknown>;
+    const packageJson = readFileSync(path.join(ROOT, "package.json"), "utf8");
+    const vercelConfig = readFileSync(path.join(ROOT, "vercel.json"), "utf8");
 
-    expect(manifest.version).toBe(2);
-    expect(manifest.photoRender.formats).toEqual(["webp"]);
-    const photos = Object.values(manifest.photos).flat();
-    expect(photos.length).toBeGreaterThan(100);
-
-    for (const photo of photos) {
-      const base = photo.replace(/\.[^.]+$/, "");
-      for (const width of manifest.photoRender.widths) {
-        const variantPath = path.join(
-          ROOT,
-          "public/wallpapers/variants",
-          `${width}w`,
-          `${base}.webp`
-        );
-        expect(existsSync(variantPath)).toBe(true);
-        expect(statSync(variantPath).size).toBeGreaterThan(0);
-      }
-    }
+    expect(manifest.version).toBe(1);
+    expect(manifest).not.toHaveProperty("photoRender");
+    expect(packageJson).not.toContain("generate:wallpaper-variants");
+    expect(vercelConfig).not.toContain("/wallpapers/variants/");
+    expect(
+      existsSync(path.join(ROOT, "public/wallpapers/variants"))
+    ).toBe(false);
   });
 
   test("resolves shuffle wallpapers without waiting for idle time", () => {

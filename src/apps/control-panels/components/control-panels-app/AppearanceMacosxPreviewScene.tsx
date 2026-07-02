@@ -81,11 +81,7 @@ export function AppearanceMacosxPreviewScene({
   const wallpaperStyle = useMemo((): CSSProperties => {
     if (isStaticImageWallpaper(wallpaperSource, isVideoWallpaper)) {
       const isTiled = wallpaperSource.includes("/wallpapers/tiles/");
-      const renderSource = resolveStaticWallpaperRenderUrl(
-        wallpaperSource,
-        Math.max(hostWidth, 512),
-        1
-      );
+      const renderSource = resolveStaticWallpaperRenderUrl(wallpaperSource);
       return {
         backgroundImage: `url("${renderSource}")`,
         backgroundSize: isTiled ? "64px 64px" : "cover",
@@ -100,7 +96,7 @@ export function AppearanceMacosxPreviewScene({
       backgroundColor: "var(--os-color-window-bg)",
       backgroundImage: "var(--os-pinstripe-window)",
     };
-  }, [wallpaperSource, isVideoWallpaper, hostWidth]);
+  }, [wallpaperSource, isVideoWallpaper]);
 
   const titleBarStyle: CSSProperties = isGlass
     ? { background: "transparent" }

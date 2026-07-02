@@ -608,7 +608,7 @@ export default defineConfig({
             // Videos need range request support which CacheFirst doesn't handle well.
             // Keep this before the generic image route so wallpapers use their
             // larger, dedicated cache instead of consuming the shared image cache.
-            urlPattern: /\/wallpapers\/(?:photos|tiles|thumbs|variants)\/.+\.(?:jpg|jpeg|png|webp|avif)(?:\?.*)?$/i,
+            urlPattern: /\/wallpapers\/(?:photos|tiles|thumbs)\/.+\.(?:jpg|jpeg|png|webp|avif)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "wallpapers",

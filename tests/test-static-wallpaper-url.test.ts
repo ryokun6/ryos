@@ -1,53 +1,27 @@
 import { describe, expect, test } from "bun:test";
-import {
-  pickWallpaperRenderWidth,
-  resolveStaticWallpaperRenderUrl,
-} from "../src/utils/staticWallpaperUrl";
+import { resolveStaticWallpaperRenderUrl } from "../src/utils/staticWallpaperUrl";
 
-describe("responsive static wallpaper URLs", () => {
-  test("chooses a viewport and DPR appropriate width", () => {
-    expect(pickWallpaperRenderWidth(390, 3)).toBe(1280);
-    expect(pickWallpaperRenderWidth(1280, 1)).toBe(1280);
-    expect(pickWallpaperRenderWidth(1440, 1)).toBe(1920);
-    expect(pickWallpaperRenderWidth(1366, 2)).toBe(2560);
-    expect(pickWallpaperRenderWidth(1920, 2)).toBeNull();
+describe("full-fidelity static wallpaper URLs", () => {
+  test("keeps the canonical photo for full-fidelity cover rendering", () => {
+    const source = "/wallpapers/photos/nature/zen_garden.jpg";
+    expect(resolveStaticWallpaperRenderUrl(source)).toBe(source);
   });
 
-  test("maps built-in photos to deterministic WebP variants", () => {
-    expect(
-      resolveStaticWallpaperRenderUrl(
-        "/wallpapers/photos/nature/aurora.jpg",
-        1440,
-        1
-      )
-    ).toBe("/wallpapers/variants/1920w/photos/nature/aurora.webp");
-    expect(
-      resolveStaticWallpaperRenderUrl(
-        "https://example.com/wallpapers/photos/nature/aurora.jpg",
-        800,
-        1
-      )
-    ).toBe(
-      "https://example.com/wallpapers/variants/1280w/photos/nature/aurora.webp"
-    );
+  test("does not substitute a nominal variant for a smaller source", () => {
+    const source = "/wallpapers/photos/aqua/0-aqua-blue.jpg";
+    expect(resolveStaticWallpaperRenderUrl(source)).toBe(source);
   });
 
-  test("preserves non-photo and ultra-wide sources", () => {
+  test("preserves absolute URLs, query strings, and non-photo sources", () => {
     for (const source of [
+      "https://example.com/wallpapers/photos/nature/aurora.jpg?v=7",
       "/wallpapers/tiles/azul_dark.png",
       "/wallpapers/videos/bliss.mp4",
       "blob:test",
       "indexeddb://wallpaper",
       "dynamic://weather",
     ]) {
-      expect(resolveStaticWallpaperRenderUrl(source, 1440, 2)).toBe(source);
+      expect(resolveStaticWallpaperRenderUrl(source)).toBe(source);
     }
-    expect(
-      resolveStaticWallpaperRenderUrl(
-        "/wallpapers/photos/nature/aurora.jpg",
-        1920,
-        2
-      )
-    ).toBe("/wallpapers/photos/nature/aurora.jpg");
   });
 });

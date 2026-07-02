@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useWallpaper } from "@/hooks/useWallpaper";
-import { resolveStaticWallpaperForCurrentViewport } from "@/utils/staticWallpaperUrl";
+import { resolveStaticWallpaperRenderUrl } from "@/utils/staticWallpaperUrl";
 import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
 import { useWeatherWallpaper } from "@/hooks/useWeatherWallpaper";
 import { useWeatherSimulationStore } from "@/stores/useWeatherSimulationStore";
@@ -90,7 +90,7 @@ export function useWallpaperAccent(): {
     !isVideoWallpaper &&
     isConcreteWallpaperSource(wallpaperSource)
   ) {
-    sampleUrl = resolveStaticWallpaperForCurrentViewport(wallpaperSource);
+    sampleUrl = resolveStaticWallpaperRenderUrl(wallpaperSource);
   }
 
   const { palette, source, coverUrl } = useCoverPaletteResult(sampleUrl);
