@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { JSONContent } from "@tiptap/core";
+import type { JSONContent } from "@tiptap/core";
 import { useAppStore } from "@/stores/useAppStore";
 import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 
