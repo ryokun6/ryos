@@ -39,6 +39,7 @@ const settings = {
   columnMode: "auto" as const,
   themeOverride: "light" as const,
   chineseScript: "original" as const,
+  textLayout: "book" as const,
   lineHeight: 1.5,
 };
 
@@ -367,6 +368,20 @@ describe("Books reader CJK serif fonts", () => {
       "zh-CN"
     );
     expect(originalTheme.body["font-family"]).toBeUndefined();
+  });
+
+  test("does not force horizontal alignment or hyphenation in vertical text", () => {
+    const verticalTheme = buildEpubTheme(
+      { ...settings, textLayout: "vertical" },
+      palette,
+      "ja"
+    );
+
+    expect(verticalTheme.body["text-align"]).toBeUndefined();
+    expect(verticalTheme.body.hyphens).toBeUndefined();
+    expect(verticalTheme.p["text-align"]).toBeUndefined();
+    expect(verticalTheme.p.hyphens).toBeUndefined();
+    expect(verticalTheme.body.orphans).toBe("2");
   });
 
   test("loads Noto CJK serif families inside isolated EPUB iframes", () => {

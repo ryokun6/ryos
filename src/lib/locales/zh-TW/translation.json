@@ -598,6 +598,10 @@
         "double": "雙頁",
         "single": "單頁"
       },
+      "textLayout": {
+        "book": "書籍預設",
+        "vertical": "直排"
+      },
       "contextMenu": {
         "delete": "刪除",
         "moveToBottom": "移至底端",
@@ -648,6 +652,7 @@
         "textSizeDecrease": "縮小",
         "textSizeIncrease": "放大",
         "textSizeReset": "預設大小",
+        "textLayout": "文字方向",
         "theme": "主題"
       },
       "name": "書籍",

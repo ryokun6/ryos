@@ -598,6 +598,10 @@
         "double": "두 페이지",
         "single": "한 페이지"
       },
+      "textLayout": {
+        "book": "책 기본값",
+        "vertical": "세로쓰기"
+      },
       "contextMenu": {
         "delete": "삭제",
         "moveToBottom": "맨 아래로 이동",
@@ -648,6 +652,7 @@
         "textSizeDecrease": "작게",
         "textSizeIncrease": "크게",
         "textSizeReset": "기본 크기",
+        "textLayout": "글자 방향",
         "theme": "테마"
       },
       "name": "도서",

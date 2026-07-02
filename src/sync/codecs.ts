@@ -1548,6 +1548,7 @@ const BOOKS_SETTINGS_KEYS = {
   columnMode: "books-settings/columnMode",
   themeOverride: "books-settings/themeOverride",
   chineseScript: "books-settings/chineseScript",
+  textLayout: "books-settings/textLayout",
   lineHeight: "books-settings/lineHeight",
 } as const satisfies Record<keyof BooksReaderSettings, string>;
 
@@ -1565,6 +1566,7 @@ function collectBooksSettings(
   add(BOOKS_SETTINGS_KEYS.columnMode, settings.columnMode);
   add(BOOKS_SETTINGS_KEYS.themeOverride, settings.themeOverride);
   add(BOOKS_SETTINGS_KEYS.chineseScript, settings.chineseScript);
+  add(BOOKS_SETTINGS_KEYS.textLayout, settings.textLayout);
   add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
   return docs;
 }
@@ -1615,6 +1617,11 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
           updates = { ...updates, chineseScript: op.v };
         }
         break;
+      case BOOKS_SETTINGS_KEYS.textLayout:
+        if (op.v === "book" || op.v === "vertical") {
+          updates = { ...updates, textLayout: op.v };
+        }
+        break;
       case BOOKS_SETTINGS_KEYS.lineHeight:
         if (
           typeof op.v === "number" &&
@@ -1657,6 +1664,9 @@ const booksSettingsCodec: SyncCodec = {
       }
       if (state.settings.chineseScript !== prev.settings.chineseScript) {
         keys.push(BOOKS_SETTINGS_KEYS.chineseScript);
+      }
+      if (state.settings.textLayout !== prev.settings.textLayout) {
+        keys.push(BOOKS_SETTINGS_KEYS.textLayout);
       }
       if (state.settings.lineHeight !== prev.settings.lineHeight) {
         keys.push(BOOKS_SETTINGS_KEYS.lineHeight);

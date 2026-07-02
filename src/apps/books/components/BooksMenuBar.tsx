@@ -153,6 +153,28 @@ export function BooksMenuBar({
         },
         {
           type: "submenu",
+          label: t("apps.books.menu.textLayout"),
+          items: [
+            {
+              type: "radioGroup",
+              value: settings.textLayout,
+              onValueChange: (value) => {
+                if (value === "book" || value === "vertical") {
+                  updateSettings({ textLayout: value });
+                }
+              },
+              options: [
+                { label: t("apps.books.textLayout.book"), value: "book" },
+                {
+                  label: t("apps.books.textLayout.vertical"),
+                  value: "vertical",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "submenu",
           label: t("apps.books.menu.chineseScript"),
           items: [
             {

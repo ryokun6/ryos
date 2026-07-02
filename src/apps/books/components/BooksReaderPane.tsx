@@ -30,6 +30,10 @@ import {
   createChineseScriptConversionSession,
   resolveChineseScriptReadingLanguage,
 } from "../utils/chineseScriptConverter";
+import {
+  applyEpubTextLayout,
+  resolveEpubPageDirection,
+} from "../utils/booksTextLayout";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
 import type {
@@ -292,6 +296,12 @@ export const BooksReaderPane = forwardRef<
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const bookLanguageRef = useRef<string | null>(null);
+  const publisherPageDirectionRef = useRef<"ltr" | "rtl">("ltr");
+  const textLayoutRef = useRef(settings.textLayout);
+  textLayoutRef.current = settings.textLayout;
+  const appliedTextLayoutRef = useRef<BooksReaderSettings["textLayout"] | null>(
+    null
+  );
   const chineseScriptRef = useRef(settings.chineseScript);
   chineseScriptRef.current = settings.chineseScript;
   const chineseScriptSessionRef = useRef(
@@ -398,6 +408,7 @@ export const BooksReaderPane = forwardRef<
   }, [appendDebugEvent, entry.path]);
 
   const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
+  const isVerticalText = settings.textLayout === "vertical";
 
   // Measure the zoom-in geometry before first paint so the cover overlay starts
   // exactly on top of the clicked shelf book and grows to full-bleed. Runs once
@@ -467,6 +478,8 @@ export const BooksReaderPane = forwardRef<
     setCoverVisible(true);
     setLoadError(null);
     bookLanguageRef.current = null;
+    publisherPageDirectionRef.current = "ltr";
+    appliedTextLayoutRef.current = null;
     activeSectionHrefRef.current = undefined;
     setNavigationState(createInitialBooksNavigationState());
     appendDebugEvent("open:start", {
@@ -684,15 +697,24 @@ export const BooksReaderPane = forwardRef<
         await watch("epubjs:bookReady", book.ready);
         const readyBook = book as unknown as {
           container?: { packagePath?: string };
-          package?: { metadata?: { language?: string } };
+          package?: { metadata?: { direction?: unknown; language?: string } };
         };
         const bookLanguage =
           readyBook.package?.metadata?.language?.trim() || null;
         bookLanguageRef.current = bookLanguage;
+        publisherPageDirectionRef.current = resolveEpubPageDirection(
+          "book",
+          readyBook.package?.metadata?.direction
+        );
         const readingLanguage = resolveChineseScriptReadingLanguage(
           chineseScriptRef.current,
           bookLanguage ?? uiLanguage
         );
+        book.spine.hooks.content.register((document: Document) => {
+          const textLayout = textLayoutRef.current;
+          applyEpubTextLayout(document, textLayout);
+          appliedTextLayoutRef.current = textLayout;
+        });
         appendDebugEvent("epubjs:bookReady:success", {
           packagePath: readyBook.container?.packagePath,
           metadata: readyBook.package?.metadata,
@@ -725,7 +747,12 @@ export const BooksReaderPane = forwardRef<
             width: host.clientWidth,
             height: host.clientHeight,
             spread: columnModeToSpread(settings.columnMode),
+            textLayout: textLayoutRef.current,
           });
+          const pageDirection = resolveEpubPageDirection(
+            textLayoutRef.current,
+            publisherPageDirectionRef.current
+          );
           const nextRendition = activeBook.renderTo(host, {
             width: host.clientWidth || "100%",
             height: host.clientHeight || "100%",
@@ -733,14 +760,23 @@ export const BooksReaderPane = forwardRef<
             spread: columnModeToSpread(settings.columnMode),
             minSpreadWidth: SPREAD_MIN_WIDTH,
             manager: "default",
+            defaultDirection: pageDirection,
           });
           rendition = nextRendition;
           renditionRef.current = nextRendition;
           appendDebugEvent(`${renderStep}:success`);
 
-          nextRendition.on("started", () =>
-            appendDebugEvent("epubjs:rendition:started")
-          );
+          nextRendition.on("started", () => {
+            const direction = resolveEpubPageDirection(
+              textLayoutRef.current,
+              publisherPageDirectionRef.current
+            );
+            nextRendition.direction(direction);
+            appendDebugEvent("epubjs:rendition:started", {
+              direction,
+              textLayout: textLayoutRef.current,
+            });
+          });
           nextRendition.on("attached", () =>
             appendDebugEvent("epubjs:rendition:attached")
           );
@@ -797,6 +833,9 @@ export const BooksReaderPane = forwardRef<
 
               const document = contents.document;
               if (!document) return;
+              const textLayout = textLayoutRef.current;
+              applyEpubTextLayout(document, textLayout);
+              appliedTextLayoutRef.current = textLayout;
 
               // `hyphens: auto` and locale-specific CJK glyph forms depend on the
               // content language. Prefer EPUB metadata, then the ryOS UI locale.
@@ -1087,6 +1126,52 @@ export const BooksReaderPane = forwardRef<
     };
   }, [appendDebugEvent, isReady, settings.chineseScript]);
 
+  // Apply vertical text to source and rendered section documents, then let
+  // epub.js clear and redisplay the current CFI with the matching page axis.
+  useEffect(() => {
+    const rendition = renditionRef.current;
+    const book = bookRef.current;
+    if (
+      !isReady ||
+      !rendition ||
+      !book ||
+      appliedTextLayoutRef.current === settings.textLayout
+    ) {
+      return;
+    }
+
+    book.spine.each((section: { document?: Document }) => {
+      if (section.document) {
+        applyEpubTextLayout(section.document, settings.textLayout);
+      }
+    });
+
+    const renditionContents = rendition.getContents() as unknown;
+    const contentsList = (
+      Array.isArray(renditionContents)
+        ? renditionContents
+        : renditionContents
+          ? [renditionContents]
+          : []
+    ) as Array<{ document?: Document }>;
+    for (const contents of contentsList) {
+      if (contents.document) {
+        applyEpubTextLayout(contents.document, settings.textLayout);
+      }
+    }
+
+    appliedTextLayoutRef.current = settings.textLayout;
+    const direction = resolveEpubPageDirection(
+      settings.textLayout,
+      publisherPageDirectionRef.current
+    );
+    rendition.direction(direction);
+    appendDebugEvent("reader:textLayout:applied", {
+      direction,
+      textLayout: settings.textLayout,
+    });
+  }, [appendDebugEvent, isReady, settings.textLayout]);
+
   // Apply theme (colors, font family, line height) live.
   useEffect(() => {
     if (!isReady || !renditionRef.current) return;
@@ -1103,6 +1188,7 @@ export const BooksReaderPane = forwardRef<
     settings.fontId,
     settings.themeOverride,
     settings.chineseScript,
+    settings.textLayout,
     settings.lineHeight,
     osIsDark,
     uiLanguage,
@@ -1177,10 +1263,14 @@ export const BooksReaderPane = forwardRef<
 
   const handleKey = useCallback(
     (event: KeyboardEvent) => {
-      if (event.key === "ArrowRight" || event.key === "PageDown") {
+      if (event.key === "PageDown") {
         turnPage("next");
-      } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+      } else if (event.key === "PageUp") {
         turnPage("prev");
+      } else if (event.key === "ArrowRight") {
+        turnPage(textLayoutRef.current === "vertical" ? "prev" : "next");
+      } else if (event.key === "ArrowLeft") {
+        turnPage(textLayoutRef.current === "vertical" ? "next" : "prev");
       }
     },
     [turnPage]
@@ -1228,19 +1318,25 @@ export const BooksReaderPane = forwardRef<
       {/* Click zones for page turning (aligned with the render host) */}
       <button
         type="button"
-        aria-label="Previous page"
-        onClick={() => turnPage("prev")}
-        disabled={atStart}
+        aria-label={isVerticalText ? "Next page" : "Previous page"}
+        onClick={() => turnPage(isVerticalText ? "next" : "prev")}
+        disabled={isVerticalText ? atEnd : atStart}
         style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
-        className="absolute left-0 z-10 w-[22%] cursor-w-resize disabled:cursor-default"
+        className={cn(
+          "absolute left-0 z-10 w-[22%] disabled:cursor-default",
+          isVerticalText ? "cursor-e-resize" : "cursor-w-resize"
+        )}
       />
       <button
         type="button"
-        aria-label="Next page"
-        onClick={() => turnPage("next")}
-        disabled={atEnd}
+        aria-label={isVerticalText ? "Previous page" : "Next page"}
+        onClick={() => turnPage(isVerticalText ? "prev" : "next")}
+        disabled={isVerticalText ? atStart : atEnd}
         style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
-        className="absolute right-0 z-10 w-[22%] cursor-e-resize disabled:cursor-default"
+        className={cn(
+          "absolute right-0 z-10 w-[22%] disabled:cursor-default",
+          isVerticalText ? "cursor-w-resize" : "cursor-e-resize"
+        )}
       />
 
       {/* Reading-progress footer — right-aligned percentage, no bar. */}
@@ -1280,17 +1376,22 @@ export const BooksReaderPane = forwardRef<
                 backgroundColor: palette.background,
                 // Subtle fold shading along the sheet's leading edge.
                 backgroundImage:
-                  flip.dir === "next"
+                  flip.dir === (isVerticalText ? "prev" : "next")
                     ? "linear-gradient(to right, rgba(0,0,0,0) 86%, rgba(0,0,0,0.08))"
                     : "linear-gradient(to left, rgba(0,0,0,0) 86%, rgba(0,0,0,0.08))",
                 // Drop shadow cast onto the page being revealed.
                 boxShadow:
-                  flip.dir === "next"
+                  flip.dir === (isVerticalText ? "prev" : "next")
                     ? "10px 0 26px rgba(0,0,0,0.28)"
                     : "-10px 0 26px rgba(0,0,0,0.28)",
               }}
               initial={{ x: "0%" }}
-              animate={{ x: flip.dir === "next" ? "-100%" : "100%" }}
+              animate={{
+                x:
+                  flip.dir === (isVerticalText ? "prev" : "next")
+                    ? "-100%"
+                    : "100%",
+              }}
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
               transition={{ duration: 0.42, ease: [0.4, 0, 0.2, 1] }}
               onAnimationComplete={() => {

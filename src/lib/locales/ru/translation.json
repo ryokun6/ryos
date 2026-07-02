@@ -602,6 +602,10 @@
         "double": "Две страницы",
         "single": "Одна страница"
       },
+      "textLayout": {
+        "book": "Как в книге",
+        "vertical": "Вертикально"
+      },
       "contextMenu": {
         "delete": "Удалить",
         "moveToBottom": "Переместить в конец",
@@ -652,6 +656,7 @@
         "textSizeDecrease": "Меньше",
         "textSizeIncrease": "Больше",
         "textSizeReset": "Размер по умолчанию",
+        "textLayout": "Направление текста",
         "theme": "Тема"
       },
       "name": "Книги",

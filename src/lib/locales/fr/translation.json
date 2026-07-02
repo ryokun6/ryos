@@ -600,6 +600,10 @@
         "double": "Double",
         "single": "Simple"
       },
+      "textLayout": {
+        "book": "Réglage du livre",
+        "vertical": "Vertical"
+      },
       "contextMenu": {
         "delete": "Supprimer",
         "moveToBottom": "Placer tout en bas",
@@ -650,6 +654,7 @@
         "textSizeDecrease": "Plus petite",
         "textSizeIncrease": "Plus grande",
         "textSizeReset": "Taille par défaut",
+        "textLayout": "Sens du texte",
         "theme": "Thème"
       },
       "name": "Livres",
