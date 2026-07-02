@@ -16,8 +16,11 @@ import { darkAquaThemeCss } from "./theme-css-fixtures";
 import type { OsThemeId } from "../src/themes/types";
 import { ensureTestLocalStorage } from "./setup";
 
-const actualSound = await import("../src/hooks/useSound");
-const actualReactI18next = await import("react-i18next");
+// Snapshot the real exports BEFORE mock.module runs: bun mutates the live
+// module namespace in place, so restoring from the namespace object itself
+// would re-install the mocks for every later test file in this process.
+const actualSound = { ...(await import("../src/hooks/useSound")) };
+const actualReactI18next = { ...(await import("react-i18next")) };
 
 beforeAll(() => {
   if (typeof document === "undefined") {

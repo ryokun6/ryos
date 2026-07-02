@@ -27,6 +27,7 @@ import {
 } from "@/stores/useBooksStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
+  applyFontPreviewStack,
   BOOK_FONTS,
   BOOK_THEME_PRESET_IDS,
   buildAccentReadingPalette,
@@ -454,13 +455,17 @@ export function BooksCustomizePanel({
                 type="button"
                 aria-pressed={selected}
                 onClick={() => updateSettings({ fontId: font.id })}
+                // Recreated every render, so React re-runs it whenever the
+                // resolved stack changes (e.g. UI language switch).
+                ref={(el) => {
+                  applyFontPreviewStack(el, stack);
+                }}
                 className={cn(
                   "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] transition-colors",
                   selected
                     ? "bg-os-selection-bg text-os-selection-text"
                     : "bg-black/[0.07] hover:bg-black/15 os-dark:bg-white/10 os-dark:hover:bg-white/20"
                 )}
-                style={{ fontFamily: stack ?? undefined }}
               >
                 {t(`apps.books.fonts.${font.id}`)}
               </button>

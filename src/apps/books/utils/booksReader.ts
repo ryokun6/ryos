@@ -223,6 +223,26 @@ export function getBookFontCssStack(
   }
 }
 
+/**
+ * Render a font-picker control in the font it selects. Theme stylesheets
+ * force `font-family: var(--os-font-ui) !important` on every `button` (macOS
+ * Aqua, Windows platform rules), which beats a plain inline style — so the
+ * preview stack must be set as an inline declaration with `important`
+ * priority. Pass `null` (the "Original" choice) to fall back to the theme UI
+ * font.
+ */
+export function applyFontPreviewStack(
+  el: HTMLElement | null,
+  stack: string | null
+): void {
+  if (!el) return;
+  if (stack) {
+    el.style.setProperty("font-family", stack, "important");
+  } else {
+    el.style.removeProperty("font-family");
+  }
+}
+
 export interface ReadingPalette {
   background: string;
   text: string;

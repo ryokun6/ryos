@@ -44,6 +44,7 @@ import {
   resolveReadingPalette,
 } from "../utils/booksReader";
 import {
+  normalizeBookLanguage,
   resolveEffectiveChineseScript,
   resolveEffectiveTextLayout,
 } from "../utils/booksLanguage";
@@ -776,8 +777,11 @@ export const BooksReaderPane = forwardRef<
           container?: { packagePath?: string };
           package?: { metadata?: { direction?: unknown; language?: string } };
         };
-        const nextBookLanguage =
-          readyBook.package?.metadata?.language?.trim() || null;
+        // Normalize legacy tags ("jpn", "zho", …) so downstream consumers
+        // (layout gates, font stacks, TTS, lang attributes) all agree.
+        const nextBookLanguage = normalizeBookLanguage(
+          readyBook.package?.metadata?.language
+        );
         bookLanguageRef.current = nextBookLanguage;
         setBookLanguage(nextBookLanguage);
         onBookLanguageChange?.(nextBookLanguage);
