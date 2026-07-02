@@ -9,6 +9,7 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import {
   BOOKS_SPEECH_ACTIVE_CLASS,
   BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS,
+  BOOKS_SPEECH_HIGHLIGHT_NAME,
   collectSpeechChunksFromRange,
   getVisiblePageRange,
   applySpeechSpokenHighlight,
@@ -129,6 +130,73 @@ function rangeOver(doc: Document): Range {
   range.setStart(doc.body, 0);
   range.setEnd(doc.body, doc.body.childNodes.length);
   return range;
+}
+
+class FakeHighlight extends Set<AbstractRange> implements Highlight {
+  priority = 0;
+  type: HighlightType = "highlight";
+  addCalls = 0;
+  deleteCalls = 0;
+
+  constructor(...ranges: AbstractRange[]) {
+    super();
+    for (const range of ranges) super.add(range);
+  }
+
+  override add(range: AbstractRange): this {
+    this.addCalls += 1;
+    return super.add(range);
+  }
+
+  override delete(range: AbstractRange): boolean {
+    this.deleteCalls += 1;
+    return super.delete(range);
+  }
+}
+
+class TrackingHighlightRegistry extends Map<string, Highlight> {
+  setCalls = 0;
+
+  override set(name: string, highlight: Highlight): this {
+    this.setCalls += 1;
+    return super.set(name, highlight);
+  }
+}
+
+function installFakeHighlightApi(): {
+  registry: TrackingHighlightRegistry;
+  restore: () => void;
+} {
+  const win = document.defaultView;
+  if (!win) throw new Error("Book test document has no window");
+
+  const originalHighlight = Object.getOwnPropertyDescriptor(win, "Highlight");
+  const originalCss = Object.getOwnPropertyDescriptor(win, "CSS");
+  const registry = new TrackingHighlightRegistry();
+  Object.defineProperty(win, "Highlight", {
+    configurable: true,
+    value: FakeHighlight,
+  });
+  Object.defineProperty(win, "CSS", {
+    configurable: true,
+    value: { highlights: registry },
+  });
+
+  return {
+    registry,
+    restore: () => {
+      if (originalHighlight) {
+        Object.defineProperty(win, "Highlight", originalHighlight);
+      } else {
+        Reflect.deleteProperty(win, "Highlight");
+      }
+      if (originalCss) {
+        Object.defineProperty(win, "CSS", originalCss);
+      } else {
+        Reflect.deleteProperty(win, "CSS");
+      }
+    },
+  };
 }
 
 describe("collectSpeechChunksFromRange", () => {
@@ -665,6 +733,36 @@ describe("rangeForSpokenPrefix", () => {
 });
 
 describe("speech highlight", () => {
+  test("mutates the registered Highlight so WebKit repaints progress", () => {
+    const { registry, restore } = installFakeHighlightApi();
+    const doc = createBookDocument("<p>Hello world.</p>");
+    try {
+      const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+      applySpeechSpokenHighlight(chunks, 0, 5);
+
+      const highlight = registry.get(BOOKS_SPEECH_HIGHLIGHT_NAME);
+      expect(highlight).toBeInstanceOf(FakeHighlight);
+      if (!(highlight instanceof FakeHighlight)) {
+        throw new Error("Expected the fake Highlight instance");
+      }
+      expect(registry.setCalls).toBe(1);
+      expect(Array.from(highlight)).toHaveLength(1);
+      expect(Array.from(highlight)[0]?.endOffset).toBe(5);
+
+      applySpeechSpokenHighlight(chunks, 0, 11);
+
+      expect(registry.setCalls).toBe(1);
+      expect(registry.get(BOOKS_SPEECH_HIGHLIGHT_NAME)).toBe(highlight);
+      expect(Array.from(highlight)).toHaveLength(1);
+      expect(Array.from(highlight)[0]?.endOffset).toBe(11);
+      expect(highlight.addCalls).toBe(1);
+      expect(highlight.deleteCalls).toBe(1);
+    } finally {
+      clearSpeechHighlight(doc);
+      restore();
+    }
+  });
+
   test("dims the page and lights spoken blocks without the Highlight API", () => {
     const doc = createBookDocument("<p>First sentence. Second sentence.</p>");
     const chunks = collectSpeechChunksFromRange(rangeOver(doc));

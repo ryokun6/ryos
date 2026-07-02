@@ -1101,6 +1101,38 @@ function pushRange(target: Range[], range: Range): void {
   }
 }
 
+function updateSpeechHighlightRanges(
+  win: HighlightCapableWindow & {
+    Highlight: new (...ranges: Range[]) => Highlight;
+    CSS: typeof CSS & { highlights: HighlightRegistry };
+  },
+  ranges: Range[]
+): void {
+  const registry = win.CSS.highlights;
+  if (ranges.length === 0) {
+    registry.delete(BOOKS_SPEECH_HIGHLIGHT_NAME);
+    return;
+  }
+
+  const highlight = registry.get(BOOKS_SPEECH_HIGHLIGHT_NAME);
+  if (!highlight) {
+    registry.set(
+      BOOKS_SPEECH_HIGHLIGHT_NAME,
+      new win.Highlight(...ranges)
+    );
+    return;
+  }
+
+  // WebKit can skip repainting when `set` replaces an existing registry
+  // entry, leaving mobile Safari stale until the next user interaction.
+  // Mutating a registered Highlight uses WebKit's explicit repaint path.
+  // Add replacements before removing old ranges so the spoken ink never has
+  // an empty paint state between updates.
+  const previousRanges = Array.from(highlight);
+  for (const range of ranges) highlight.add(range);
+  for (const range of previousRanges) highlight.delete(range);
+}
+
 /**
  * Build a Range covering the first `charIndex` characters of the
  * whitespace-normalized text within `chunkRange` (matching `chunk.text`).
@@ -1238,16 +1270,7 @@ export function applySpeechSpokenHighlight(
   const win = getHighlightWindow(doc);
   if (win) {
     try {
-      // `set` replaces the previous Highlight atomically — deleting first
-      // made spoken text fall back to the dim body color for a frame.
-      if (spokenRanges.length > 0) {
-        win.CSS.highlights.set(
-          BOOKS_SPEECH_HIGHLIGHT_NAME,
-          new win.Highlight(...spokenRanges)
-        );
-      } else {
-        win.CSS.highlights.delete(BOOKS_SPEECH_HIGHLIGHT_NAME);
-      }
+      updateSpeechHighlightRanges(win, spokenRanges);
       win.CSS.highlights.delete(BOOKS_SPEECH_EDGE_HIGHLIGHT_NAME);
       return;
     } catch {
