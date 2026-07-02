@@ -209,6 +209,55 @@ describe("Books reader settled-font pagination", () => {
     expect(reflowed).toBe(false);
     expect(calls).toEqual(["spread", "display:epubcfi(/6/8!/4/2/1:0)"]);
   });
+
+  test("clears views for vertical writing mode so display rebuilds them", async () => {
+    const calls: string[] = [];
+
+    const reflowed = await reflowEpubAfterFontsSettle({
+      fontsReady: Promise.resolve(),
+      rendition: {
+        spread: (spread, min) => calls.push(`spread:${spread}:${min}`),
+        clear: () => calls.push("clear"),
+        display: (target) => {
+          calls.push(`display:${target}`);
+        },
+      },
+      spread: "auto",
+      minSpreadWidth: 560,
+      target: "epubcfi(/6/8!/4/2/1:0)",
+      rebuildViews: true,
+      isActive: () => true,
+    });
+
+    expect(reflowed).toBe(true);
+    expect(calls).toEqual([
+      // Vertical rebuild always forces no-spread columns, regardless of the
+      // horizontal column-mode preference passed as `spread`.
+      "spread:none:560",
+      "clear",
+      "display:epubcfi(/6/8!/4/2/1:0)",
+    ]);
+  });
+
+  test("does not clear views for horizontal settled-font reflow", async () => {
+    const calls: string[] = [];
+
+    const reflowed = await reflowEpubAfterFontsSettle({
+      fontsReady: Promise.resolve(),
+      rendition: {
+        spread: (spread) => calls.push(`spread:${spread}`),
+        clear: () => calls.push("clear"),
+        display: () => calls.push("display"),
+      },
+      spread: "auto",
+      minSpreadWidth: 560,
+      rebuildViews: false,
+      isActive: () => true,
+    });
+
+    expect(reflowed).toBe(true);
+    expect(calls).toEqual(["spread:auto", "display"]);
+  });
 });
 
 describe("Books reader display recovery", () => {

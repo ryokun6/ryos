@@ -493,7 +493,11 @@ export const BooksReaderPane = forwardRef<
     let cancelled = false;
     let book: Book | null = null;
     let rendition: Rendition | null = null;
-    let displayedContentFontsReady: Promise<FontFaceSet> | undefined;
+    let displayedContentFontsReady: Promise<unknown> | undefined;
+    // epub.js resolves display() before rendition content hooks run, so the
+    // post-display font/axis reflow must wait for this signal from the hook.
+    let resolveContentHooksReady: (() => void) | null = null;
+    let contentHooksReady: Promise<void> = Promise.resolve();
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
@@ -763,6 +767,9 @@ export const BooksReaderPane = forwardRef<
           const renderStep =
             reason === "initial" ? "epubjs:renderTo" : "epubjs:renderToFallback";
           displayedContentFontsReady = undefined;
+          contentHooksReady = new Promise<void>((resolve) => {
+            resolveContentHooksReady = resolve;
+          });
           appendDebugEvent(`${renderStep}:start`, {
             width: host.clientWidth,
             height: host.clientHeight,
@@ -841,88 +848,100 @@ export const BooksReaderPane = forwardRef<
               document?: Document;
             }) => {
               try {
-                contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
-                appendDebugEvent("epubjs:contentHook:fonts:success");
-              } catch {
-                appendDebugEvent(
-                  "epubjs:contentHook:fonts:failed",
-                  undefined,
-                  "warn"
-                );
-              }
-
-              try {
-                contents.addStylesheetCss(
-                  BOOKS_SPEECH_HIGHLIGHT_CSS,
-                  "ryos-books-speech"
-                );
-              } catch {
-                appendDebugEvent(
-                  "epubjs:contentHook:speechCss:failed",
-                  undefined,
-                  "warn"
-                );
-              }
-
-              const document = contents.document;
-              if (!document) return;
-              const textLayout = textLayoutRef.current;
-              applyEpubTextLayout(document, textLayout);
-              appliedTextLayoutRef.current = textLayout;
-
-              // `hyphens: auto` and locale-specific CJK glyph forms depend on the
-              // content language. Prefer EPUB metadata, then the ryOS UI locale.
-              try {
-                const docEl = document.documentElement;
-                if (docEl && !docEl.getAttribute("lang")) {
-                  docEl.setAttribute(
-                    "lang",
-                    bookLanguageRef.current ?? uiLanguageRef.current
+                try {
+                  contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
+                  appendDebugEvent("epubjs:contentHook:fonts:success");
+                } catch {
+                  appendDebugEvent(
+                    "epubjs:contentHook:fonts:failed",
+                    undefined,
+                    "warn"
                   );
                 }
-              } catch {
-                // ignore
-              }
 
-              // Strip publisher inline `color` styles so the themed reading color
-              // always wins. A stylesheet (even `!important`) can't beat an inline
-              // `color: … !important`, so removing the inline declaration is the
-              // only reliable way to guarantee legibility (e.g. dark-on-dark).
-              try {
-                document.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
-                  if (el.style?.color) {
-                    el.style.removeProperty("color");
+                try {
+                  contents.addStylesheetCss(
+                    BOOKS_SPEECH_HIGHLIGHT_CSS,
+                    "ryos-books-speech"
+                  );
+                } catch {
+                  appendDebugEvent(
+                    "epubjs:contentHook:speechCss:failed",
+                    undefined,
+                    "warn"
+                  );
+                }
+
+                const document = contents.document;
+                if (!document) return;
+                const textLayout = textLayoutRef.current;
+                applyEpubTextLayout(document, textLayout);
+                appliedTextLayoutRef.current = textLayout;
+
+                // `hyphens: auto` and locale-specific CJK glyph forms depend on the
+                // content language. Prefer EPUB metadata, then the ryOS UI locale.
+                try {
+                  const docEl = document.documentElement;
+                  if (docEl && !docEl.getAttribute("lang")) {
+                    docEl.setAttribute(
+                      "lang",
+                      bookLanguageRef.current ?? uiLanguageRef.current
+                    );
                   }
-                });
-              } catch {
-                // ignore
-              }
+                } catch {
+                  // ignore
+                }
 
-              if (document.fonts && renditionRef.current === nextRendition) {
-                displayedContentFontsReady = document.fonts.ready;
-              }
+                // Strip publisher inline `color` styles so the themed reading color
+                // always wins. A stylesheet (even `!important`) can't beat an inline
+                // `color: … !important`, so removing the inline declaration is the
+                // only reliable way to guarantee legibility (e.g. dark-on-dark).
+                try {
+                  document
+                    .querySelectorAll<HTMLElement>("[style]")
+                    .forEach((el) => {
+                      if (el.style?.color) {
+                        el.style.removeProperty("color");
+                      }
+                    });
+                } catch {
+                  // ignore
+                }
 
-              const target = chineseScriptRef.current;
-              try {
-                const changedNodeCount = await applyChineseScriptToDocument(
-                  document,
-                  target,
-                  chineseScriptSessionRef.current,
-                  () =>
-                    !cancelled &&
-                    chineseScriptRef.current === target &&
-                    renditionRef.current === nextRendition
-                );
-                appendDebugEvent("epubjs:contentHook:chineseScript:success", {
-                  target,
-                  changedNodeCount,
-                });
-              } catch (error) {
-                appendDebugEvent(
-                  "epubjs:contentHook:chineseScript:failed",
-                  error,
-                  "warn"
-                );
+                // Capture fonts.ready before Chinese-script work so the settle
+                // reflow can start waiting even while conversion continues.
+                if (renditionRef.current === nextRendition) {
+                  displayedContentFontsReady =
+                    document.fonts?.ready ?? Promise.resolve();
+                }
+
+                const target = chineseScriptRef.current;
+                try {
+                  const changedNodeCount = await applyChineseScriptToDocument(
+                    document,
+                    target,
+                    chineseScriptSessionRef.current,
+                    () =>
+                      !cancelled &&
+                      chineseScriptRef.current === target &&
+                      renditionRef.current === nextRendition
+                  );
+                  appendDebugEvent("epubjs:contentHook:chineseScript:success", {
+                    target,
+                    changedNodeCount,
+                  });
+                } catch (error) {
+                  appendDebugEvent(
+                    "epubjs:contentHook:chineseScript:failed",
+                    error,
+                    "warn"
+                  );
+                }
+              } finally {
+                // Unblock the settle reflow even when the section document is
+                // missing or Chinese-script conversion throws.
+                resolveContentHooksReady?.();
+                resolveContentHooksReady = null;
               }
             }
           );
@@ -1045,18 +1064,39 @@ export const BooksReaderPane = forwardRef<
             target: displayResult.target,
           });
           const displayedRendition = displayResult.rendition;
+          // display() resolves before content hooks assign fontsReady. Wait for
+          // the hook (with a timeout so a stuck hook can't pin the cover open).
+          await Promise.race([
+            contentHooksReady,
+            new Promise<void>((resolve) => {
+              window.setTimeout(resolve, FALLBACK_DISPLAY_TIMEOUT_MS);
+            }),
+          ]);
+          if (cancelled || renditionRef.current !== displayedRendition) return;
+          const isVerticalTextLayout = textLayoutRef.current === "vertical";
           const reflowedAfterFonts = await reflowEpubAfterFontsSettle({
-            fontsReady: displayedContentFontsReady,
+            fontsReady: displayedContentFontsReady ?? Promise.resolve(),
             rendition: displayedRendition,
-            spread: columnModeToSpread(settings.columnMode),
+            // Vertical writing mode never uses facing-page spreads; forcing
+            // `auto`/`always` after the axis is already vertical sizes columns
+            // against half-width and produces the stacked "tiers" layout.
+            spread: isVerticalTextLayout
+              ? "none"
+              : columnModeToSpread(settings.columnMode),
             minSpreadWidth: SPREAD_MIN_WIDTH,
             target: displayResult.target,
             displayTimeoutMs: FALLBACK_DISPLAY_TIMEOUT_MS,
+            // Must clear+rebuild — resize() no-ops when the host size is
+            // unchanged, which is exactly the first-load case.
+            rebuildViews: isVerticalTextLayout,
             isActive: () =>
               !cancelled && renditionRef.current === displayedRendition,
           });
           if (reflowedAfterFonts) {
-            appendDebugEvent("epubjs:fonts:reflowed");
+            appendDebugEvent("epubjs:fonts:reflowed", {
+              textLayout: textLayoutRef.current,
+              rebuilt: isVerticalTextLayout,
+            });
           }
         } catch (err) {
           // Corrupt / incompatible EPUB — show an error instead of revealing an

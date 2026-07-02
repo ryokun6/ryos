@@ -306,6 +306,11 @@ interface EpubLayoutRendition {
   spread: (spread: "none" | "auto" | "always", min?: number) => void;
   display(target?: string): Promise<unknown> | unknown;
   display(target?: number): Promise<unknown> | unknown;
+  /**
+   * Destroy current views so the next `display()` rebuilds them. Needed for
+   * vertical writing mode, which wires its page axis only during construction.
+   */
+  clear?: () => void;
 }
 
 interface EpubSpineSectionLike {
@@ -450,12 +455,20 @@ interface ReflowEpubAfterFontsSettleOptions {
   target?: string | number;
   displayTimeoutMs?: number;
   isActive: () => boolean;
+  /**
+   * Destroy and recreate views after fonts settle. Vertical writing mode wires
+   * its page axis only during view construction; an in-place `spread`/`format`
+   * pass (and `resize` at the same host size, which epub.js no-ops) leaves the
+   * broken first layout in place. A manual window resize recovers only because
+   * the size change forces that clear+rebuild path.
+   */
+  rebuildViews?: boolean;
 }
 
 /**
  * epub.js performs its first paginated layout before rendition content hooks
- * inject ryOS fonts. Recalculate the existing view after those fonts settle,
- * then restore the requested CFI against the settled column geometry.
+ * inject ryOS fonts (and before vertical writing-mode can influence the page
+ * axis). Recalculate after those settle, then restore the requested CFI.
  */
 export async function reflowEpubAfterFontsSettle({
   fontsReady,
@@ -465,13 +478,24 @@ export async function reflowEpubAfterFontsSettle({
   target,
   displayTimeoutMs,
   isActive,
+  rebuildViews = false,
 }: ReflowEpubAfterFontsSettleOptions): Promise<boolean> {
   if (!fontsReady) return false;
   await fontsReady;
   if (!isActive()) return false;
 
-  rendition.spread(spread, minSpreadWidth);
+  // Vertical pagination disables facing-page spreads; force that before a
+  // rebuild so updateLayout does not size half-width columns.
+  rendition.spread(rebuildViews ? "none" : spread, minSpreadWidth);
   if (!isActive()) return false;
+
+  if (rebuildViews) {
+    // `resize(w, h)` early-returns when the stage size is unchanged, so it
+    // cannot be used to recover a broken first layout at the same host size.
+    // Clearing forces the next `display()` to construct views from scratch.
+    rendition.clear?.();
+    if (!isActive()) return false;
+  }
 
   if (displayTimeoutMs !== undefined) {
     const displayResult = await displayEpubTargetWithTimeout(
