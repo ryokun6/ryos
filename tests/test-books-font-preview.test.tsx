@@ -179,6 +179,16 @@ describe("BooksCustomizePanel segmented controls", () => {
       selected?.parentElement?.classList.contains("metal-inset-btn-group")
     ).toBe(true);
     expect(selected?.parentElement?.classList.contains("h-6")).toBe(true);
+
+    const panel = host.querySelector(".books-customize-panel");
+    const children = Array.from(panel?.children ?? []);
+    const colorRow = host
+      .querySelector('button[title^="apps.books.theme."]')
+      ?.closest(".shrink-0");
+    const segmentedRow = selected?.closest(".shrink-0");
+    expect(children.indexOf(segmentedRow!)).toBeGreaterThan(
+      children.indexOf(colorRow!)
+    );
   });
 });
 
@@ -254,6 +264,11 @@ describe("BooksCustomizePanel setting rows", () => {
         row.querySelector('[title]')?.classList.contains("text-[12px]")
       )
     ).toBe(true);
+    expect(
+      rows.every((row) =>
+        row.querySelector('[title]')?.classList.contains("line-clamp-2")
+      )
+    ).toBe(true);
     const valueLabels = rows
       .map((row) => row.lastElementChild)
       .filter((child) => child?.tagName === "SPAN");
@@ -292,5 +307,9 @@ describe("BooksCustomizePanel setting rows", () => {
     expect(
       compactHost.querySelector('button[aria-label="common.dialog.done"]')
     ).not.toBeNull();
+    const compactPanel = compactHost.querySelector(".books-customize-panel");
+    expect(compactPanel?.classList.contains("inset-x-1")).toBe(true);
+    expect(compactPanel?.classList.contains("bottom-1")).toBe(true);
+    expect(compactPanel?.classList.contains("rounded-[10px]")).toBe(true);
   });
 });

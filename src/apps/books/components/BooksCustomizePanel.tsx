@@ -65,7 +65,7 @@ function Row({
     <div className="flex h-8 shrink-0 items-center gap-2">
       <span
         title={label}
-        className="w-[72px] shrink-0 truncate text-[12px] text-os-text-secondary"
+        className="line-clamp-2 w-[72px] shrink-0 text-[12px] leading-[14px] text-os-text-secondary"
       >
         {label}
       </span>
@@ -327,7 +327,7 @@ export function BooksCustomizePanel({
         "books-customize-panel absolute z-[60] flex flex-col gap-2 overflow-y-auto overscroll-contain",
         "bg-os-window-bg font-os-ui text-os-text-primary",
         compact
-          ? "inset-x-0 bottom-0 max-h-[75%] rounded-t-[10px] border-t border-os-window p-3 pb-4 shadow-[0_-6px_24px_rgba(0,0,0,0.25)]"
+          ? "inset-x-1 bottom-1 max-h-[75%] rounded-[10px] border border-os-window p-3 pb-4 shadow-[0_-6px_24px_rgba(0,0,0,0.25)]"
           : cn(
               "bottom-[50px] left-1/2 w-[328px] max-w-[calc(100%-1.5rem)] -translate-x-1/2 px-4 py-3",
               "max-h-[calc(100%-4rem)] rounded-os shadow-os-window os-mac-aqua:!rounded-[14px]",
@@ -396,71 +396,6 @@ export function BooksCustomizePanel({
           onValueChange={([next]) => updateSettings({ gutterPx: next })}
         />
       </Row>
-
-      {supportsVerticalText ? (
-        <Row label={t("apps.books.customize.direction")}>
-          <Segmented
-            ariaLabel={t("apps.books.menu.textLayout")}
-            value={settings.textLayout}
-            options={[
-              {
-                value: "book" as const,
-                label: t("apps.books.textLayout.horizontal"),
-              },
-              {
-                value: "vertical" as const,
-                label: t("apps.books.textLayout.vertical"),
-              },
-            ]}
-            onChange={(value) => updateSettings({ textLayout: value })}
-          />
-        </Row>
-      ) : null}
-
-      {supportsChineseScript ? (
-        <Row label={t("apps.books.customize.chinese")}>
-          <Segmented
-            ariaLabel={t("apps.books.menu.chineseScript")}
-            value={settings.chineseScript}
-            options={[
-              {
-                value: "original" as const,
-                label: t("apps.books.chineseScript.original"),
-              },
-              {
-                value: "simplified" as const,
-                label: t("apps.books.chineseScript.simplified"),
-              },
-              {
-                value: "traditional" as const,
-                label: t("apps.books.chineseScript.traditional"),
-              },
-            ]}
-            onChange={(value) => updateSettings({ chineseScript: value })}
-          />
-        </Row>
-      ) : null}
-
-      {showColumns ? (
-        <Row label={t("apps.books.menu.columns")}>
-          <Segmented
-            ariaLabel={t("apps.books.menu.columns")}
-            value={settings.columnMode}
-            options={[
-              { value: "auto" as const, label: t("apps.books.columns.auto") },
-              {
-                value: "single" as const,
-                label: t("apps.books.columns.single"),
-              },
-              {
-                value: "double" as const,
-                label: t("apps.books.columns.double"),
-              },
-            ]}
-            onChange={(value) => updateSettings({ columnMode: value })}
-          />
-        </Row>
-      ) : null}
 
       <Row label={t("apps.books.menu.font")}>
         <ScrollFadeRow className="gap-1">
@@ -542,6 +477,71 @@ export function BooksCustomizePanel({
           })}
         </ScrollFadeRow>
       </Row>
+
+      {supportsVerticalText ? (
+        <Row label={t("apps.books.customize.direction")}>
+          <Segmented
+            ariaLabel={t("apps.books.menu.textLayout")}
+            value={settings.textLayout}
+            options={[
+              {
+                value: "book" as const,
+                label: t("apps.books.textLayout.horizontal"),
+              },
+              {
+                value: "vertical" as const,
+                label: t("apps.books.textLayout.vertical"),
+              },
+            ]}
+            onChange={(value) => updateSettings({ textLayout: value })}
+          />
+        </Row>
+      ) : null}
+
+      {supportsChineseScript ? (
+        <Row label={t("apps.books.customize.chinese")}>
+          <Segmented
+            ariaLabel={t("apps.books.menu.chineseScript")}
+            value={settings.chineseScript}
+            options={[
+              {
+                value: "original" as const,
+                label: t("apps.books.chineseScript.original"),
+              },
+              {
+                value: "simplified" as const,
+                label: t("apps.books.chineseScript.simplified"),
+              },
+              {
+                value: "traditional" as const,
+                label: t("apps.books.chineseScript.traditional"),
+              },
+            ]}
+            onChange={(value) => updateSettings({ chineseScript: value })}
+          />
+        </Row>
+      ) : null}
+
+      {showColumns ? (
+        <Row label={t("apps.books.menu.columns")}>
+          <Segmented
+            ariaLabel={t("apps.books.menu.columns")}
+            value={settings.columnMode}
+            options={[
+              { value: "auto" as const, label: t("apps.books.columns.auto") },
+              {
+                value: "single" as const,
+                label: t("apps.books.columns.single"),
+              },
+              {
+                value: "double" as const,
+                label: t("apps.books.columns.double"),
+              },
+            ]}
+            onChange={(value) => updateSettings({ columnMode: value })}
+          />
+        </Row>
+      ) : null}
 
       {/* Custom color editor: pick foreground/background, or go transparent
           so the window material (glass) shows through. */}
