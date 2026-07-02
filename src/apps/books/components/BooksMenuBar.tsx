@@ -16,6 +16,7 @@ import {
   BOOKS_FONT_SIZE_MIN,
   BOOKS_FONT_SIZE_STEP,
   BOOKS_SPEECH_RATE_OPTIONS,
+  normalizeBooksSpeechRate,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import type { BooksNavigationState } from "./BooksReaderPane";
@@ -267,7 +268,7 @@ export function BooksMenuBar({
         items: [
           {
             type: "radioGroup",
-            value: String(settings.speechRate),
+            value: String(normalizeBooksSpeechRate(settings.speechRate)),
             onValueChange: (value) => {
               const rate = Number(value);
               if (Number.isFinite(rate) && rate > 0) {

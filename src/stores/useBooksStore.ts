@@ -49,6 +49,23 @@ export const BOOKS_SPEECH_RATE_MIN = 0.5;
 export const BOOKS_SPEECH_RATE_MAX = 2;
 export const BOOKS_SPEECH_RATE_OPTIONS = [0.8, 1, 1.2, 1.5] as const;
 
+/**
+ * Coerce a persisted/synced speech rate to a safe utterance rate. Guards
+ * against `undefined`/NaN (e.g. pre-v5 persisted settings that predate the
+ * field): assigning a non-finite rate to SpeechSynthesisUtterance throws.
+ */
+export function normalizeBooksSpeechRate(rate: unknown): number {
+  if (
+    typeof rate !== "number" ||
+    !Number.isFinite(rate) ||
+    rate < BOOKS_SPEECH_RATE_MIN ||
+    rate > BOOKS_SPEECH_RATE_MAX
+  ) {
+    return DEFAULT_BOOKS_SETTINGS.speechRate;
+  }
+  return rate;
+}
+
 export const BOOKS_FONT_SIZE_MIN = 70;
 export const BOOKS_FONT_SIZE_MAX = 180;
 export const BOOKS_FONT_SIZE_STEP = 10;
@@ -169,7 +186,9 @@ export const useBooksStore = create<BooksStoreState>()(
     {
       name: "ryos:books",
       storage: createJSONStorage(() => localStorage),
-      version: 4,
+      // v5: backfill `settings.speechRate` (added in v4 without a version
+      // bump, so persisted settings were missing it after the shallow merge).
+      version: 5,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         return {

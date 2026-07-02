@@ -12,10 +12,17 @@ import {
   getVisiblePageRange,
   applySpeechHighlight,
   clearSpeechHighlight,
+  isRangeOnVisiblePage,
   splitTextIntoSentences,
   splitTextIntoSpeechSegments,
   type SpeechRenditionLike,
 } from "../src/apps/books/utils/booksSpeech";
+import {
+  BOOKS_SPEECH_RATE_MAX,
+  BOOKS_SPEECH_RATE_MIN,
+  DEFAULT_BOOKS_SETTINGS,
+  normalizeBooksSpeechRate,
+} from "../src/stores/useBooksStore";
 
 beforeAll(() => {
   if (typeof document === "undefined") {
@@ -235,6 +242,45 @@ describe("getVisiblePageRange", () => {
       getRange: () => null,
     };
     expect(getVisiblePageRange(rendition)).toBeNull();
+  });
+});
+
+describe("normalizeBooksSpeechRate", () => {
+  test("defaults to normal speed", () => {
+    expect(DEFAULT_BOOKS_SETTINGS.speechRate).toBe(1);
+  });
+
+  test("passes through valid rates", () => {
+    expect(normalizeBooksSpeechRate(0.8)).toBe(0.8);
+    expect(normalizeBooksSpeechRate(1)).toBe(1);
+    expect(normalizeBooksSpeechRate(1.5)).toBe(1.5);
+    expect(normalizeBooksSpeechRate(BOOKS_SPEECH_RATE_MIN)).toBe(
+      BOOKS_SPEECH_RATE_MIN
+    );
+    expect(normalizeBooksSpeechRate(BOOKS_SPEECH_RATE_MAX)).toBe(
+      BOOKS_SPEECH_RATE_MAX
+    );
+  });
+
+  test("coerces missing/invalid rates to the default (normal)", () => {
+    // Pre-v5 persisted settings lack speechRate entirely; assigning a
+    // non-finite rate to SpeechSynthesisUtterance throws in Chrome.
+    expect(normalizeBooksSpeechRate(undefined)).toBe(1);
+    expect(normalizeBooksSpeechRate(null)).toBe(1);
+    expect(normalizeBooksSpeechRate(Number.NaN)).toBe(1);
+    expect(normalizeBooksSpeechRate("1.2")).toBe(1);
+    expect(normalizeBooksSpeechRate(0)).toBe(1);
+    expect(normalizeBooksSpeechRate(99)).toBe(1);
+  });
+});
+
+describe("isRangeOnVisiblePage", () => {
+  test("is lenient outside an iframe (no layout geometry)", () => {
+    const doc = createBookDocument("<p>Alpha beta.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    expect(chunks.length).toBeGreaterThan(0);
+    // happy-dom documents aren't framed; the filter must not drop chunks.
+    expect(isRangeOnVisiblePage(chunks[0].range)).toBe(true);
   });
 });
 

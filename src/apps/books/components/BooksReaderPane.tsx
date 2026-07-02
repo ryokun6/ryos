@@ -13,7 +13,10 @@ import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
-import type { BooksReaderSettings } from "@/stores/useBooksStore";
+import {
+  normalizeBooksSpeechRate,
+  type BooksReaderSettings,
+} from "@/stores/useBooksStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import {
   buildEpubTheme,
@@ -1289,7 +1292,7 @@ export const BooksReaderPane = forwardRef<
   } = useBooksSpeech({
     getRendition: () => renditionRef.current,
     getSpeechLanguage,
-    getSpeechRate: () => speechRateRef.current,
+    getSpeechRate: () => normalizeBooksSpeechRate(speechRateRef.current),
     canAdvancePage: () => navigationStateRef.current.canGoNextPage,
     advancePage: () => turnPage("next"),
   });

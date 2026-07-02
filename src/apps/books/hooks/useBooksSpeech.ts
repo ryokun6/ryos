@@ -8,6 +8,7 @@ import {
   clearSpeechHighlight,
   collectSpeechChunksFromRange,
   getVisiblePageRange,
+  isRangeOnVisiblePage,
   type BooksSpeechChunk,
   type SpeechRenditionLike,
 } from "../utils/booksSpeech";
@@ -15,14 +16,33 @@ import {
 /** Safety net for stuck utterances (broken/voiceless synth engines). */
 const UTTERANCE_TIMEOUT_BASE_MS = 10_000;
 const UTTERANCE_TIMEOUT_PER_CHAR_MS = 150;
+/** Poll the engine state to detect utterances whose end event never fires
+ * (Chrome GC bug, speech-dispatcher backends, some mobile engines). */
+const WATCHDOG_INTERVAL_MS = 250;
+/** Consecutive idle polls (after speech started) that count as "finished". */
+const WATCHDOG_IDLE_POLLS = 2;
+/** Stop if this many chunks in a row only "finish" via the hard timeout —
+ * the engine is claiming to speak forever without delivering audio events. */
+const MAX_TIMEOUT_ENDINGS = 3;
 /** Re-attempt an auto page turn swallowed by the flip-animation lock. */
 const ADVANCE_RETRY_MS = 700;
 const MAX_ADVANCE_ATTEMPTS = 6;
+/** epub.js reports locations asynchronously (queue + rAF + DOM mapping), so a
+ * completed page turn can surface its `relocated` event well after the turn.
+ * How many extra retry windows to keep waiting when the location has already
+ * changed before advancing again (which would skip pages). */
+const MAX_RELOCATE_WAIT_CHECKS = 10;
 /** Stop after this many consecutive pages with nothing to speak
  * (e.g. an image-only book) instead of silently paging to the end. */
 const MAX_EMPTY_PAGE_STREAK = 10;
 /** Let epub.js settle the new page before re-extracting visible text. */
 const RESUME_AFTER_RELOCATE_MS = 120;
+/** Cancel-and-wait polling until the engine goes idle before restarting
+ * speech after a relocation. Some engines (notably Safari) keep playing a
+ * cancelled utterance for a moment; speaking over it queues the new chunk
+ * behind stale audio and read-aloud drifts pages behind the screen. */
+const ENSURE_IDLE_POLL_MS = 150;
+const MAX_ENSURE_IDLE_POLLS = 40;
 
 interface UseBooksSpeechOptions {
   getRendition: () => SpeechRenditionLike | null;
@@ -63,6 +83,12 @@ export function useBooksSpeech({
   const wantsSpeechRef = useRef(false);
   // Consecutive auto-skipped pages with no speakable text.
   const emptyPageStreakRef = useRef(0);
+  // Consecutive chunks that ended only via the hard timeout (no engine event).
+  const timeoutEndingStreakRef = useRef(0);
+  // Strong reference to the in-flight utterance. Chrome garbage-collects
+  // otherwise-unreferenced utterances mid-speech, silently dropping their
+  // end/error events — which used to strand read-aloud at the page end.
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const highlightedDocRef = useRef<Document | null>(null);
   const timersRef = useRef<number[]>([]);
 
@@ -94,16 +120,32 @@ export function useBooksSpeech({
   const stopSpeaking = useCallback(() => {
     sessionRef.current += 1;
     wantsSpeechRef.current = false;
+    activeUtteranceRef.current = null;
     clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
     setIsSpeaking(false);
   }, [clearHighlight, clearTimers]);
 
+  const getCurrentStartCfi = useCallback((): string | null => {
+    try {
+      const rendition = optionsRef.current.getRendition();
+      const location = rendition?.currentLocation() as {
+        start?: { cfi?: string };
+      } | null;
+      return location?.start?.cfi ?? null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   // Reached the end of the visible page: auto-turn to the next page (the
   // resulting `relocated` event resumes speech there) or stop at book end.
   // Retries because rapid successive turns (several unspeakable pages in a
-  // row) can be swallowed by the reader's flip-animation lock.
+  // row) can be swallowed by the reader's flip-animation lock — but only
+  // re-advances when the location genuinely didn't change, because epub.js
+  // may deliver `relocated` for a completed turn later than the retry timer
+  // (advancing again then would skip pages).
   const finishPage = useCallback(
     (session: number, attempt = 0) => {
       if (session !== sessionRef.current) return;
@@ -115,14 +157,27 @@ export function useBooksSpeech({
         stopSpeaking();
         return;
       }
+      const beforeCfi = getCurrentStartCfi();
       optionsRef.current.advancePage();
-      const timeoutId = window.setTimeout(() => {
-        // Still the same session means no `relocated` arrived — retry.
-        if (session === sessionRef.current) finishPage(session, attempt + 1);
-      }, ADVANCE_RETRY_MS);
-      timersRef.current.push(timeoutId);
+      const waitForRelocate = (checksLeft: number) => {
+        const timeoutId = window.setTimeout(() => {
+          // A `relocated` event would have bumped the session and resumed.
+          if (session !== sessionRef.current) return;
+          const nowCfi = getCurrentStartCfi();
+          if (beforeCfi && nowCfi && nowCfi !== beforeCfi) {
+            // The page did turn; epub.js just hasn't emitted `relocated`
+            // yet. Keep waiting instead of turning again.
+            if (checksLeft > 0) waitForRelocate(checksLeft - 1);
+            else stopSpeaking();
+            return;
+          }
+          finishPage(session, attempt + 1);
+        }, ADVANCE_RETRY_MS);
+        timersRef.current.push(timeoutId);
+      };
+      waitForRelocate(MAX_RELOCATE_WAIT_CHECKS);
     },
-    [clearHighlight, stopSpeaking]
+    [clearHighlight, getCurrentStartCfi, stopSpeaking]
   );
 
   const speakChunk = useCallback(
@@ -151,13 +206,31 @@ export function useBooksSpeech({
       utterance.rate = rate;
       const voice = pickSpeechVoiceForLanguage(synth.getVoices(), lang);
       if (voice) utterance.voice = voice;
+      activeUtteranceRef.current = utterance;
 
       let settled = false;
-      const settle = (ok: boolean) => {
+      let started = false;
+      let idlePolls = 0;
+      const settle = (ok: boolean, viaTimeout = false) => {
         if (settled) return;
         settled = true;
         window.clearTimeout(timeoutId);
+        window.clearInterval(watchdogId);
+        if (activeUtteranceRef.current === utterance) {
+          activeUtteranceRef.current = null;
+        }
         if (session !== sessionRef.current) return;
+        if (viaTimeout) {
+          timeoutEndingStreakRef.current += 1;
+          if (timeoutEndingStreakRef.current >= MAX_TIMEOUT_ENDINGS) {
+            // The engine repeatedly claims to speak but never reports any
+            // progress — stop instead of silently paging through the book.
+            stopSpeaking();
+            return;
+          }
+        } else {
+          timeoutEndingStreakRef.current = 0;
+        }
         if (!ok) {
           // Engine failure (no voices, synthesis error) — stop cleanly rather
           // than racing through highlights and page turns with no audio.
@@ -167,13 +240,41 @@ export function useBooksSpeech({
         speakChunk(session, chunks, index + 1);
       };
 
+      utterance.onstart = () => {
+        started = true;
+      };
       utterance.onend = () => settle(true);
       utterance.onerror = () => settle(false);
-      // Scale with text length and rate so slow voices never get cut off.
+
+      // Some engines never deliver end events (and Chrome can GC-drop them
+      // even with the utterance referenced), so poll the engine: once speech
+      // has started, an idle engine means the utterance finished.
+      const watchdogId = window.setInterval(() => {
+        if (settled || session !== sessionRef.current) {
+          window.clearInterval(watchdogId);
+          return;
+        }
+        const busy = synth.speaking || synth.pending;
+        if (!started) {
+          if (synth.speaking) started = true;
+          return;
+        }
+        if (busy) {
+          idlePolls = 0;
+          return;
+        }
+        idlePolls += 1;
+        if (idlePolls >= WATCHDOG_IDLE_POLLS) settle(true);
+      }, WATCHDOG_INTERVAL_MS);
+
+      // Hard cap, scaled with text length and rate so slow voices never get
+      // cut off. If speech had started, a missing end event is treated as
+      // completion (keep reading) rather than a failure.
       const timeoutId = window.setTimeout(
-        () => settle(false),
+        () => settle(started, true),
         UTTERANCE_TIMEOUT_BASE_MS +
-          (chunk.text.length * UTTERANCE_TIMEOUT_PER_CHAR_MS) / Math.max(rate, 0.5)
+          (chunk.text.length * UTTERANCE_TIMEOUT_PER_CHAR_MS) /
+            Math.max(rate, 0.5)
       );
       timersRef.current.push(timeoutId);
 
@@ -198,6 +299,10 @@ export function useBooksSpeech({
       try {
         const range = getVisiblePageRange(rendition);
         chunks = range ? collectSpeechChunksFromRange(range) : [];
+        // The CFI-derived range can overshoot the page (e.g. when the end
+        // boundary is unresolvable and the range extends to the section end).
+        // Trust layout geometry: only speak chunks actually on screen.
+        chunks = chunks.filter((chunk) => isRangeOnVisiblePage(chunk.range));
       } catch {
         chunks = [];
       }
@@ -218,10 +323,36 @@ export function useBooksSpeech({
     [finishPage, speakChunk, stopSpeaking]
   );
 
+  // Restart speech once the engine has actually gone idle. Speaking while a
+  // cancelled utterance is still winding down queues the new chunk behind
+  // stale audio on some engines (Safari), drifting speech behind the screen.
+  const speakVisiblePageWhenIdle = useCallback(
+    (session: number, polls = 0) => {
+      if (session !== sessionRef.current) return;
+      const synth = getBrowserSpeechSynthesis();
+      if (!synth) {
+        stopSpeaking();
+        return;
+      }
+      if ((synth.speaking || synth.pending) && polls < MAX_ENSURE_IDLE_POLLS) {
+        synth.cancel();
+        const timeoutId = window.setTimeout(
+          () => speakVisiblePageWhenIdle(session, polls + 1),
+          ENSURE_IDLE_POLL_MS
+        );
+        timersRef.current.push(timeoutId);
+        return;
+      }
+      speakVisiblePage(session);
+    },
+    [speakVisiblePage, stopSpeaking]
+  );
+
   const startSpeaking = useCallback(() => {
     const session = ++sessionRef.current;
     wantsSpeechRef.current = true;
     emptyPageStreakRef.current = 0;
+    timeoutEndingStreakRef.current = 0;
     clearTimers();
     clearHighlight();
     const synth = getBrowserSpeechSynthesis();
@@ -239,14 +370,15 @@ export function useBooksSpeech({
     // Invalidate in-flight utterances (manual page turns / chapter jumps /
     // reflows) and restart from the freshly visible page.
     const session = ++sessionRef.current;
+    activeUtteranceRef.current = null;
     clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
     const timeoutId = window.setTimeout(() => {
-      speakVisiblePage(session);
+      speakVisiblePageWhenIdle(session);
     }, RESUME_AFTER_RELOCATE_MS);
     timersRef.current.push(timeoutId);
-  }, [clearHighlight, clearTimers, speakVisiblePage]);
+  }, [clearHighlight, clearTimers, speakVisiblePageWhenIdle]);
 
   // Stop speech (and drop highlights) when the reader unmounts / book closes.
   useEffect(() => () => stopSpeaking(), [stopSpeaking]);
