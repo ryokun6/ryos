@@ -73,6 +73,8 @@ export type MenuItemDescriptor =
 export type MenuDescriptor = {
   label: ReactNode;
   items: MenuItemDescriptor[];
+  /** Extra classes merged onto the menu content container. */
+  contentClassName?: string;
 };
 
 function renderItems(items: MenuItemDescriptor[]) {
@@ -165,7 +167,11 @@ export function AppMenuBarMenus({ menus }: { menus: MenuDescriptor[] }) {
           <MenubarTrigger className={MENUBAR_TRIGGER_CLASS}>
             {menu.label}
           </MenubarTrigger>
-          <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarContent
+            align="start"
+            sideOffset={1}
+            className={cn("px-0", menu.contentClassName)}
+          >
             {renderItems(menu.items)}
           </MenubarContent>
         </MenubarMenu>

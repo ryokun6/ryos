@@ -5,10 +5,12 @@ import {
   type MenuDescriptor,
 } from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   BOOK_FONTS,
   type BookFontOption,
 } from "../utils/booksReader";
+import { buildBooksMenuLayout } from "../utils/booksMenuLayout";
 import {
   BOOKS_FONT_SIZE_MAX,
   BOOKS_FONT_SIZE_MIN,
@@ -47,6 +49,7 @@ export function BooksMenuBar({
   onGoToChapter,
 }: BooksMenuBarProps) {
   const { t } = useTranslation();
+  const isCompactMenu = useMediaQuery("(max-width: 768px)");
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
@@ -282,6 +285,12 @@ export function BooksMenuBar({
       },
     ],
   };
+  const menus = buildBooksMenuLayout({
+    fileMenu,
+    viewMenu,
+    goMenu,
+    isCompact: isCompactMenu,
+  });
 
   return (
     <AppMenuBarShell
@@ -296,7 +305,7 @@ export function BooksMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <AppMenuBarMenus menus={[fileMenu, viewMenu, goMenu]} />
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }
