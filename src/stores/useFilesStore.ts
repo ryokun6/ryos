@@ -304,17 +304,64 @@ function registerFilesForLazyLoad(
 // ---------------------------------------------------------------------------
 let bookWarmupScheduled = false;
 
-/** Load every pending default /Books EPUB into IndexedDB (no-op when cached). */
+// Persisted set of already-warmed book paths so the warmup runs once per
+// book, not on every boot. Books whose bytes later vanish from IndexedDB
+// still self-heal through the regular on-open lazy load.
+const BOOK_WARMUP_STORAGE_KEY = "ryos:books:warmed-defaults";
+
+function readWarmedBookPaths(): Set<string> {
+  try {
+    const raw = localStorage.getItem(BOOK_WARMUP_STORAGE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.filter((p): p is string => typeof p === "string")
+        : []
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function markBookPathWarmed(path: string): void {
+  try {
+    const warmed = readWarmedBookPaths();
+    warmed.add(path);
+    localStorage.setItem(BOOK_WARMUP_STORAGE_KEY, JSON.stringify([...warmed]));
+  } catch {
+    // localStorage unavailable — worst case the warmup re-checks next boot.
+  }
+}
+
+/** Forget which books were warmed (call when default contents are rebuilt). */
+export function clearWarmedBookPaths(): void {
+  // Allow the next registerFilesForLazyLoad to schedule a fresh warmup even
+  // if one already ran this session.
+  bookWarmupScheduled = false;
+  try {
+    localStorage.removeItem(BOOK_WARMUP_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function listPendingUnwarmedBookPaths(): string[] {
+  const warmed = readWarmedBookPaths();
+  return [...pendingLazyLoadFiles.keys()].filter(
+    (path) => path.startsWith("/Books/") && !warmed.has(path)
+  );
+}
+
+/** Load not-yet-warmed default /Books EPUBs into IndexedDB, once per book. */
 export async function warmPendingBookContent(): Promise<void> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-  const bookPaths = [...pendingLazyLoadFiles.keys()].filter((path) =>
-    path.startsWith("/Books/")
-  );
-  for (const path of bookPaths) {
+  for (const path of listPendingUnwarmedBookPaths()) {
     const uuid = useFilesStore.getState().items[path]?.uuid;
     if (!uuid) continue;
     try {
-      await ensureFileContentLoaded(path, uuid);
+      if (await ensureFileContentLoaded(path, uuid)) {
+        markBookPathWarmed(path);
+      }
     } catch (err) {
       console.warn(`[FilesStore] Book warmup failed for ${path}:`, err);
     }
@@ -324,7 +371,7 @@ export async function warmPendingBookContent(): Promise<void> {
 function scheduleDefaultBookWarmup(): void {
   if (bookWarmupScheduled) return;
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  if (![...pendingLazyLoadFiles.keys()].some((p) => p.startsWith("/Books/"))) {
+  if (listPendingUnwarmedBookPaths().length === 0) {
     return;
   }
   bookWarmupScheduled = true;
@@ -1289,6 +1336,10 @@ export const useFilesStore = create<FilesStoreState>()(
           items: newItems,
           libraryState: "loaded",
         });
+
+        // File UUIDs were regenerated, so previously warmed book bytes are
+        // orphaned — let the warmup re-cache the defaults once more.
+        clearWarmedBookPaths();
 
         await saveDefaultContents(data.files, newItems);
       },

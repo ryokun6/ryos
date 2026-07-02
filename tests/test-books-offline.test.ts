@@ -26,8 +26,12 @@ Object.defineProperty(globalThis, "localStorage", {
 const { readBookBlobContent } = await import(
   "../src/services/vfs/FileContentRepository"
 );
-const { useFilesStore, ensureFileContentLoaded, warmPendingBookContent } =
-  await import("../src/stores/useFilesStore");
+const {
+  useFilesStore,
+  ensureFileContentLoaded,
+  warmPendingBookContent,
+  clearWarmedBookPaths,
+} = await import("../src/stores/useFilesStore");
 const { dbOperations, STORES } = await import("../src/utils/indexedDB");
 
 const BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
@@ -63,6 +67,7 @@ beforeEach(async () => {
   bookAssetFetchCount = 0;
   networkAvailable = true;
   setNavigatorOnLine(true);
+  clearWarmedBookPaths();
   await deleteRyOsDatabase();
   useFilesStore.setState({
     items: {},
@@ -172,6 +177,42 @@ describe("Books offline behavior", () => {
     setNavigatorOnLine(false);
     await warmPendingBookContent();
     expect(bookAssetFetchCount).toBe(0);
+  });
+
+  test("warmup runs once per book, not on every boot", async () => {
+    await useFilesStore.getState().resetLibrary();
+    const item = useFilesStore.getState().getItem(BOOK_PATH);
+    expect(item?.uuid).toBeTruthy();
+
+    await warmPendingBookContent();
+    expect(bookAssetFetchCount).toBe(1);
+
+    // Repeated warmups (e.g. later boots) must not re-download the book,
+    // even if the stored bytes were dropped in the meantime.
+    await warmPendingBookContent();
+    await dbOperations.delete(STORES.BOOKS, item!.uuid!);
+    await warmPendingBookContent();
+    expect(bookAssetFetchCount).toBe(1);
+
+    // The reader's recovery path (forceReload) still restores the bytes.
+    const recovered = await ensureFileContentLoaded(BOOK_PATH, item!.uuid!, {
+      forceReload: true,
+    });
+    expect(recovered).toBe(true);
+    expect(bookAssetFetchCount).toBe(2);
+    const blob = await readBookBlobContent(BOOK_PATH);
+    expect(blob?.size).toBe(meditationsEpub.byteLength);
+  });
+
+  test("resetLibrary clears the warmed marker so defaults re-warm", async () => {
+    await useFilesStore.getState().resetLibrary();
+    await warmPendingBookContent();
+    expect(bookAssetFetchCount).toBe(1);
+
+    // Reset regenerates file UUIDs, orphaning the warmed bytes.
+    await useFilesStore.getState().resetLibrary();
+    await warmPendingBookContent();
+    expect(bookAssetFetchCount).toBe(2);
   });
 });
 
