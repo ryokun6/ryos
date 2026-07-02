@@ -11,6 +11,20 @@ export interface ChineseScriptConversionSession {
 let simplifiedConverterPromise: Promise<ConverterFunction> | null = null;
 let traditionalConverterPromise: Promise<ConverterFunction> | null = null;
 
+const SIMPLIFIED_PUNCTUATION = [
+  ["「", "“"],
+  ["」", "”"],
+  ["『", "‘"],
+  ["』", "’"],
+] as const;
+
+const TRADITIONAL_PUNCTUATION = [
+  ["“", "「"],
+  ["”", "」"],
+  ["‘", "『"],
+  ["’", "』"],
+] as const;
+
 export function createChineseScriptConversionSession(): ChineseScriptConversionSession {
   return {
     originalTextByNode: new WeakMap(),
@@ -31,19 +45,34 @@ async function loadChineseConverter(
   target: ConverterTarget
 ): Promise<ConverterFunction> {
   if (target === "simplified") {
-    simplifiedConverterPromise ??= import("opencc-js/t2cn").then(({ Converter }) =>
-      Converter({ from: "tw", to: "cn" })
+    simplifiedConverterPromise ??= import("opencc-js/t2cn").then(
+      ({ Converter, CustomConverter }) => {
+        const convertScriptAndTerms = Converter({
+          from: "twp",
+          to: "cn",
+        });
+        const convertPunctuation = CustomConverter(SIMPLIFIED_PUNCTUATION);
+        return (text) => convertPunctuation(convertScriptAndTerms(text));
+      }
     );
     return simplifiedConverterPromise;
   }
 
-  traditionalConverterPromise ??= import("opencc-js/cn2t").then(({ Converter }) =>
-    Converter({ from: "cn", to: "tw" })
+  traditionalConverterPromise ??= import("opencc-js/cn2t").then(
+    ({ Converter, CustomConverter }) => {
+      const convertScriptAndTerms = Converter({
+        from: "cn",
+        to: "twp",
+      });
+      const convertPunctuation = CustomConverter(TRADITIONAL_PUNCTUATION);
+      return (text) => convertPunctuation(convertScriptAndTerms(text));
+    }
   );
   return traditionalConverterPromise;
 }
 
-const HAN_CHARACTER_REGEX = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+const CONVERTIBLE_TEXT_REGEX =
+  /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff“”‘’「」『』]/;
 const SKIPPED_TEXT_CONTAINERS = new Set([
   "SCRIPT",
   "STYLE",
@@ -128,7 +157,7 @@ export async function applyChineseScriptToDocument(
   for (const node of textNodesIn(document)) {
     if (!node.isConnected) continue;
     const original = session.originalTextByNode.get(node) ?? node.data;
-    if (!HAN_CHARACTER_REGEX.test(original)) continue;
+    if (!CONVERTIBLE_TEXT_REGEX.test(original)) continue;
     session.originalTextByNode.set(node, original);
     const converted = convert(original);
     if (node.data !== converted) {
