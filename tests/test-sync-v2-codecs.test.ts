@@ -13,7 +13,10 @@ import { useVideoStore } from "../src/stores/useVideoStore";
 import { useTvStore } from "../src/stores/useTvStore";
 import { useIpodStore } from "../src/stores/useIpodStore";
 import { useMapsStore } from "../src/stores/useMapsStore";
-import { useBooksStore } from "../src/stores/useBooksStore";
+import {
+  DEFAULT_BOOKS_SETTINGS,
+  useBooksStore,
+} from "../src/stores/useBooksStore";
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 import {
   mergePersistedCloudSyncCategoryStatus,
@@ -409,6 +412,100 @@ describe("bookshelf codec", () => {
     const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
     expect(docs.has("bookshelf/progress:/Books/a.epub")).toBe(false);
     expect(docs.has("bookshelf/progress:/Books/b.epub")).toBe(true);
+  });
+});
+
+describe("books settings codec", () => {
+  beforeEach(() => {
+    useBooksStore.setState({
+      settings: { ...DEFAULT_BOOKS_SETTINGS },
+    });
+  });
+
+  test("collect emits one document per reader preference", () => {
+    useBooksStore.getState().updateSettings({
+      fontId: "eb-garamond",
+      fontSizePct: 130,
+      columnMode: "double",
+      themeOverride: "sepia",
+      chineseScript: "traditional",
+      lineHeight: 1.8,
+    });
+
+    const docs = SYNC_CODECS["books-settings"].collect(ctx) as Map<
+      string,
+      unknown
+    >;
+    expect(Object.fromEntries(docs)).toEqual({
+      "books-settings/fontId": "eb-garamond",
+      "books-settings/fontSizePct": 130,
+      "books-settings/columnMode": "double",
+      "books-settings/themeOverride": "sepia",
+      "books-settings/chineseScript": "traditional",
+      "books-settings/lineHeight": 1.8,
+    });
+  });
+
+  test("apply updates every reader preference", async () => {
+    await SYNC_CODECS["books-settings"].apply(
+      [
+        { k: "books-settings/fontId", v: "sans", t },
+        { k: "books-settings/fontSizePct", v: 140, t },
+        { k: "books-settings/columnMode", v: "single", t },
+        { k: "books-settings/themeOverride", v: "dark", t },
+        { k: "books-settings/chineseScript", v: "simplified", t },
+        { k: "books-settings/lineHeight", v: 1.7, t },
+      ],
+      ctx
+    );
+
+    expect(useBooksStore.getState().settings).toEqual({
+      fontId: "sans",
+      fontSizePct: 140,
+      columnMode: "single",
+      themeOverride: "dark",
+      chineseScript: "simplified",
+      lineHeight: 1.7,
+    });
+  });
+
+  test("apply ignores malformed values and tombstones", async () => {
+    await SYNC_CODECS["books-settings"].apply(
+      [
+        { k: "books-settings/fontId", v: "", t },
+        { k: "books-settings/fontSizePct", v: 1_000, t },
+        { k: "books-settings/columnMode", v: "triple", t },
+        { k: "books-settings/themeOverride", v: "blue", t },
+        { k: "books-settings/chineseScript", v: "translated", t },
+        { k: "books-settings/lineHeight", v: -1, t },
+        { k: "books-settings/fontId", del: true, t },
+      ],
+      ctx
+    );
+
+    expect(useBooksStore.getState().settings).toEqual(DEFAULT_BOOKS_SETTINGS);
+  });
+
+  test("subscription scopes dirty work to changed settings", () => {
+    const changes: string[][] = [];
+    const unsubscribe = SYNC_CODECS["books-settings"].subscribe((keys) => {
+      changes.push(keys ? [...keys] : []);
+    });
+
+    try {
+      useBooksStore.getState().updateSettings({
+        fontSizePct: 120,
+        themeOverride: "sepia",
+      });
+      expect(changes).toEqual([
+        [
+          "books-settings/fontSizePct",
+          "books-settings/themeOverride",
+        ],
+      ]);
+    } finally {
+      unsubscribe();
+    }
   });
 });
 

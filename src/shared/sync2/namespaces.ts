@@ -19,11 +19,14 @@ export const SYNC_NAMESPACES = [
   "maps",
   "images",
   // `books` owns the EPUB *files* (blob namespace, lives under the "files"
-  // category). `bookshelf` owns the Books app's per-book reading state
-  // (progress, shelf ordering, last-opened) and lives under its own "books"
-  // category so it syncs independently of the (large) file blobs.
+  // category). `bookshelf` owns the Books app's per-book reading state, while
+  // `books-settings` owns reader preferences. Both live under the "books"
+  // category so they sync independently of the large file blobs. Keeping
+  // preferences separate also prevents older bookshelf codecs from
+  // tombstoning settings keys they do not recognize.
   "books",
   "bookshelf",
+  "books-settings",
   "trash",
   "applets",
   "wallpapers",
@@ -74,6 +77,7 @@ const NAMESPACE_TO_CATEGORY: Record<SyncNamespace, SyncCategory> = {
   // differs from the `books` category — the former is the blob namespace).
   books: "files",
   bookshelf: "books",
+  "books-settings": "books",
   trash: "files",
   applets: "files",
   wallpapers: "files",
