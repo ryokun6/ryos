@@ -9,7 +9,14 @@ import {
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
-import { FastForward, Pause, Play, Rewind, Stop } from "@phosphor-icons/react";
+import {
+  FastForward,
+  Pause,
+  Play,
+  Rewind,
+  Stop,
+  TextAa,
+} from "@phosphor-icons/react";
 import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
@@ -77,6 +84,8 @@ interface BooksReaderPaneProps {
   onSpeechStateChange?: (isSpeaking: boolean) => void;
   /** EPUB metadata language once known (drives CJK-only menus / features). */
   onBookLanguageChange?: (language: string | null) => void;
+  /** Opens the reading-appearance Customize panel (playback bar shortcut). */
+  onShowCustomize?: () => void;
 }
 
 const clamp01 = (value: number): number =>
@@ -321,6 +330,7 @@ export const BooksReaderPane = forwardRef<
     onNavigationStateChange,
     onSpeechStateChange,
     onBookLanguageChange,
+    onShowCustomize,
   },
   ref
 ) {
@@ -1755,17 +1765,30 @@ export const BooksReaderPane = forwardRef<
               >
                 <FastForward weight="fill" size={16} />
               </button>
-              <button
-                type="button"
-                aria-label={t("apps.books.speech.stop")}
-                title={t("apps.books.speech.stop")}
-                onClick={stopSpeaking}
-                disabled={!isSpeaking}
-                className={speechOverlayButtonClass}
-                tabIndex={speechBarOpen ? 0 : -1}
-              >
-                <Stop weight="fill" size={16} />
-              </button>
+              {/* Playback off → the stop slot becomes a Customize shortcut. */}
+              {isSpeaking ? (
+                <button
+                  type="button"
+                  aria-label={t("apps.books.speech.stop")}
+                  title={t("apps.books.speech.stop")}
+                  onClick={stopSpeaking}
+                  className={speechOverlayButtonClass}
+                  tabIndex={speechBarOpen ? 0 : -1}
+                >
+                  <Stop weight="fill" size={16} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-label={t("apps.books.customize.title")}
+                  title={t("apps.books.customize.title")}
+                  onClick={onShowCustomize}
+                  className={speechOverlayButtonClass}
+                  tabIndex={speechBarOpen ? 0 : -1}
+                >
+                  <TextAa weight="bold" size={16} />
+                </button>
+              )}
             </motion.div>
           </motion.div>
         </div>
