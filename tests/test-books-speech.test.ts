@@ -7,16 +7,18 @@ import {
 } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import {
+  BOOKS_SPEECH_ACTIVE_CLASS,
   BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS,
   collectSpeechChunksFromRange,
   getVisiblePageRange,
-  applySpeechHighlight,
+  applySpeechSpokenHighlight,
   clearSpeechHighlight,
   isRangeEndOnVisiblePage,
   isRangeOnVisiblePage,
   estimateMsUntilCharIndex,
   filterChunksAfterCarryOver,
   rangeEndsAtOrBefore,
+  rangeForSpokenPrefix,
   splitTextIntoSentences,
   splitTextIntoSpeechSegments,
   type SpeechRenditionLike,
@@ -551,11 +553,59 @@ describe("isRangeOnVisiblePage", () => {
   });
 });
 
+describe("rangeForSpokenPrefix", () => {
+  test("maps a normalized char index to a DOM prefix range", () => {
+    const doc = createBookDocument("<p>Hello world. Next.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    const prefix = rangeForSpokenPrefix(
+      chunks[0].range,
+      5,
+      chunks[0].text.length
+    );
+    expect(prefix).not.toBeNull();
+    expect(prefix!.toString()).toBe("Hello");
+  });
+
+  test("collapses whitespace the same way as chunk text", () => {
+    const doc = createBookDocument("<p>Spaced   out.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    expect(chunks[0].text).toBe("Spaced out.");
+    const prefix = rangeForSpokenPrefix(
+      chunks[0].range,
+      "Spaced out".length,
+      chunks[0].text.length
+    );
+    expect(prefix).not.toBeNull();
+    expect(prefix!.toString().replace(/\s+/g, " ").trim()).toBe("Spaced out");
+  });
+
+  test("returns the full chunk range at text length", () => {
+    const doc = createBookDocument("<p>Hello world.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    const prefix = rangeForSpokenPrefix(
+      chunks[0].range,
+      chunks[0].text.length,
+      chunks[0].text.length
+    );
+    expect(prefix).not.toBeNull();
+    expect(prefix!.toString()).toBe(chunks[0].range.toString());
+  });
+
+  test("returns null before any character is spoken", () => {
+    const doc = createBookDocument("<p>Hello world.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    expect(rangeForSpokenPrefix(chunks[0].range, 0)).toBeNull();
+  });
+});
+
 describe("speech highlight", () => {
-  test("falls back to block-class highlight without the Highlight API", () => {
+  test("dims the page and lights spoken blocks without the Highlight API", () => {
     const doc = createBookDocument("<p>First sentence. Second sentence.</p>");
     const chunks = collectSpeechChunksFromRange(rangeOver(doc));
-    applySpeechHighlight(chunks[0].range);
+    applySpeechSpokenHighlight(chunks, 0, chunks[0].text.length);
+    expect(
+      doc.documentElement.classList.contains(BOOKS_SPEECH_ACTIVE_CLASS)
+    ).toBe(true);
     const paragraph = doc.querySelector("p")!;
     expect(
       paragraph.classList.contains(BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS)
@@ -563,7 +613,37 @@ describe("speech highlight", () => {
 
     clearSpeechHighlight(doc);
     expect(
+      doc.documentElement.classList.contains(BOOKS_SPEECH_ACTIVE_CLASS)
+    ).toBe(false);
+    expect(
       paragraph.classList.contains(BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS)
     ).toBe(false);
+  });
+
+  test("does not light the current sentence before any chars are spoken", () => {
+    const doc = createBookDocument("<p>First sentence. Second sentence.</p>");
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    applySpeechSpokenHighlight(chunks, 0, 0);
+    expect(
+      doc.documentElement.classList.contains(BOOKS_SPEECH_ACTIVE_CLASS)
+    ).toBe(true);
+    expect(
+      doc.querySelector("p")!.classList.contains(BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS)
+    ).toBe(false);
+  });
+
+  test("lights prior sentences fully when progressive speak advances", () => {
+    const doc = createBookDocument(
+      "<p>First sentence.</p><p>Second sentence.</p>"
+    );
+    const chunks = collectSpeechChunksFromRange(rangeOver(doc));
+    applySpeechSpokenHighlight(chunks, 1, 3);
+    const paragraphs = doc.querySelectorAll("p");
+    expect(
+      paragraphs[0].classList.contains(BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS)
+    ).toBe(true);
+    expect(
+      paragraphs[1].classList.contains(BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS)
+    ).toBe(true);
   });
 });

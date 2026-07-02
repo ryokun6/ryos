@@ -261,6 +261,9 @@ describe("read-aloud across a mid-sentence page boundary", () => {
 
     await waitFor(() => advanceCalls === 1, 2000);
     expect(page).toBe(2);
+    // Let `relocated` resume speech before finishing the cut utterance, same
+    // as a real epub.js page turn (cut audio continues across the flip).
+    await new Promise((resolve) => setTimeout(resolve, 60));
 
     finishUtterance(spoken[1]);
     await waitFor(() => spoken.length === 3);

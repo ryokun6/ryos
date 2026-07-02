@@ -5,14 +5,14 @@ import {
 } from "@/utils/browserSpeech";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import {
-  applySpeechHighlight,
+  applySpeechSpokenHighlight,
+  applyCarryOverSpokenHits,
   clearSpeechHighlight,
   collectSpeechChunksFromRange,
   getVisiblePageRange,
   isRangeOnVisiblePage,
   applyGeometricPageEndCut,
   estimateMsUntilCharIndex,
-  filterChunksAfterCarryOver,
   type BooksSpeechCarryOver,
   type BooksSpeechChunk,
   type SpeechRenditionLike,
@@ -81,8 +81,8 @@ export interface UseBooksSpeechResult {
 /**
  * Read-aloud controller for the Books reader using browser speech synthesis.
  *
- * Speaks the visible page sentence by sentence (highlighting the active
- * sentence), then automatically turns to the next page and continues. Any
+ * Speaks the visible page sentence by sentence (dimming unspoken text and
+ * revealing spoken characters at full ink), then auto-turns pages. Any
  * relocation while speaking (auto advance, manual page turn, chapter jump,
  * resize) restarts speech from the newly visible page.
  */
@@ -124,6 +124,9 @@ export function useBooksSpeech({
   // End position of the last chunk spoken before an auto page turn at a
   // sentence cut, so the new page skips text that was already spoken.
   const pendingCarryOverRef = useRef<BooksSpeechCarryOver | null>(null);
+  // Ranges on the current page already spoken via a carry-over (kept at full
+  // ink while the rest of the page is dimmed).
+  const prelitRangesRef = useRef<Range[]>([]);
 
   const optionsRef = useRef({
     getRendition,
@@ -159,6 +162,7 @@ export function useBooksSpeech({
     currentChunkIndexRef.current = 0;
     cutAdvanceRef.current = null;
     pendingCarryOverRef.current = null;
+    prelitRangesRef.current = [];
     clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
@@ -192,18 +196,23 @@ export function useBooksSpeech({
       // freshly visible page instead of stale ranges.
       currentChunksRef.current = null;
       currentChunkIndexRef.current = 0;
-      clearHighlight();
+      // A mid-utterance cut advance already turned this page — don't turn
+      // again; just wait for its `relocated` event (which resumes speech).
+      // If that turn was swallowed, the retry below re-advances.
+      // When the cut already moved us onto the last page, canAdvancePage() is
+      // false, but we must still wait for `relocated` rather than stop here
+      // (stopping would cancel wantsSpeech before resume can run).
+      const cutAdvance = cutAdvanceRef.current;
+      // Keep spoken hits on the departing page while the cut utterance is
+      // still playing; the new page rebuilds its own tokens after relocate.
+      if (!cutAdvance) clearHighlight();
       if (
-        !optionsRef.current.canAdvancePage() ||
-        attempt >= MAX_ADVANCE_ATTEMPTS
+        attempt >= MAX_ADVANCE_ATTEMPTS ||
+        (!cutAdvance && !optionsRef.current.canAdvancePage())
       ) {
         stopSpeaking();
         return;
       }
-      // A mid-utterance cut advance already turned this page — don't turn
-      // again; just wait for its `relocated` event (which resumes speech).
-      // If that turn was swallowed, the retry below re-advances.
-      const cutAdvance = cutAdvanceRef.current;
       const beforeCfi = cutAdvance ? cutAdvance.beforeCfi : getCurrentStartCfi();
       if (!cutAdvance || attempt > 0) {
         optionsRef.current.advancePage();
@@ -269,10 +278,10 @@ export function useBooksSpeech({
       currentChunksRef.current = chunks;
       currentChunkIndexRef.current = index;
 
-      clearHighlight();
       highlightedDocRef.current =
         chunk.range.startContainer.ownerDocument ?? null;
-      applySpeechHighlight(chunk.range);
+      // Dim the page immediately; spoken ink catches up as speech progresses.
+      applySpeechSpokenHighlight(chunks, index, 0, prelitRangesRef.current);
 
       const lang = optionsRef.current.getSpeechLanguage();
       const rate = optionsRef.current.getSpeechRate();
@@ -291,12 +300,14 @@ export function useBooksSpeech({
       let started = false;
       let idlePolls = 0;
       let cutTimerId: number | undefined;
+      let progressTimerId: number | undefined;
       const settle = (ok: boolean, viaTimeout = false) => {
         if (settled) return;
         settled = true;
         window.clearTimeout(timeoutId);
         window.clearInterval(watchdogId);
         if (cutTimerId !== undefined) window.clearTimeout(cutTimerId);
+        if (progressTimerId !== undefined) window.clearInterval(progressTimerId);
         if (activeUtteranceRef.current === utterance) {
           activeUtteranceRef.current = null;
         }
@@ -318,6 +329,14 @@ export function useBooksSpeech({
           stopSpeaking();
           return;
         }
+        // Finish the spoken ink for this sentence before advancing (covers
+        // engines that settle via the watchdog without an onend event).
+        applySpeechSpokenHighlight(
+          chunks,
+          index,
+          chunk.text.length,
+          prelitRangesRef.current
+        );
         // Sentence cut off by the page end but no word boundary crossed the
         // cut while speaking (engine without boundary events, or the cut sat
         // at the very end): turn the page now so the next page resumes with
@@ -337,8 +356,24 @@ export function useBooksSpeech({
         speakChunk(session, chunks, index + 1);
       };
 
+      let spokenChars = 0;
+      const revealSpoken = (charIndex: number) => {
+        if (settled || session !== sessionRef.current) return;
+        const next = Math.max(0, Math.min(charIndex, chunk.text.length));
+        if (next <= spokenChars) return;
+        spokenChars = next;
+        applySpeechSpokenHighlight(
+          chunks,
+          index,
+          spokenChars,
+          prelitRangesRef.current
+        );
+      };
+
       const cutIndex = chunk.pageEndCutIndex;
       let cutTimerArmed = false;
+      let progressArmed = false;
+      let speechStartedAt = 0;
       const tryAdvanceAtCut = () => {
         if (settled || session !== sessionRef.current) return;
         if (cutIndex === undefined) return;
@@ -362,19 +397,55 @@ export function useBooksSpeech({
         );
         timersRef.current.push(cutTimerId);
       };
+      // Character progress for the spoken-ink highlight. Boundary events are
+      // precise when present; a timer estimate covers CJK voices that rarely
+      // emit them. Take the max of both.
+      const armProgress = () => {
+        if (progressArmed) return;
+        progressArmed = true;
+        speechStartedAt = performance.now();
+        armCutTimer();
+        const totalMs = estimateMsUntilCharIndex(
+          chunk.text.length,
+          chunk.text,
+          rate
+        );
+        progressTimerId = window.setInterval(() => {
+          if (settled || session !== sessionRef.current) return;
+          if (totalMs <= 0) {
+            revealSpoken(chunk.text.length);
+            return;
+          }
+          const elapsed = performance.now() - speechStartedAt;
+          const idx = Math.min(
+            chunk.text.length,
+            Math.floor((elapsed / totalMs) * chunk.text.length)
+          );
+          revealSpoken(idx);
+        }, 40);
+        timersRef.current.push(progressTimerId);
+      };
       utterance.onstart = () => {
         started = true;
-        armCutTimer();
+        armProgress();
       };
-      utterance.onend = () => settle(true);
+      utterance.onend = () => {
+        revealSpoken(chunk.text.length);
+        settle(true);
+      };
       utterance.onerror = () => settle(false);
-      if (cutIndex !== undefined && cutIndex < chunk.text.length) {
-        // Word-boundary events cover Latin engines; the onstart timer covers
-        // CJK voices that rarely emit boundaries (no spaces between words).
-        utterance.onboundary = (event) => {
-          if (event.charIndex >= cutIndex) tryAdvanceAtCut();
-        };
-      }
+      // Word-boundary events cover Latin engines; the progress timer covers
+      // CJK voices that rarely emit boundaries (no spaces between words).
+      utterance.onboundary = (event) => {
+        const length =
+          typeof event.charLength === "number" && event.charLength > 0
+            ? event.charLength
+            : 1;
+        revealSpoken(event.charIndex + length);
+        if (cutIndex !== undefined && event.charIndex >= cutIndex) {
+          tryAdvanceAtCut();
+        }
+      };
 
       // Some engines never deliver end events (and Chrome can GC-drop them
       // even with the utterance referenced), so poll the engine: once speech
@@ -389,8 +460,8 @@ export function useBooksSpeech({
           if (synth.speaking) {
             started = true;
             // Some CJK engines go busy without firing onstart — arm the
-            // page-cut timer from the moment audio is actually running.
-            armCutTimer();
+            // progress / page-cut timers from the moment audio is running.
+            armProgress();
           }
           return;
         }
@@ -419,7 +490,7 @@ export function useBooksSpeech({
       synth.resume();
       synth.speak(utterance);
     },
-    [advanceAtCut, clearHighlight, finishPage, stopSpeaking]
+    [advanceAtCut, finishPage, stopSpeaking]
   );
 
   const speakVisiblePage = useCallback(
@@ -440,14 +511,18 @@ export function useBooksSpeech({
         // boundary is unresolvable and the range extends to the section end).
         // Trust layout geometry: only speak chunks actually on screen.
         chunks = chunks.filter((chunk) => isRangeOnVisiblePage(chunk.range));
-        // After an auto page turn at a cut-off sentence, skip everything
-        // that was already spoken on the previous page (the cut sentence was
-        // spoken whole across the flip) instead of repeating it. Prefer the
-        // carried spoken text: epub.js often re-renders the next view and
-        // detaches the previous page's nodes, which makes range comparison
-        // fail open and would otherwise re-speak the cut sentence.
+        // After an auto page turn at a cut-off sentence, keep the already-
+        // spoken carry-over half-sentence lit at full ink (so it isn't left
+        // dim) and skip it for speech. Prefer the carried spoken text: epub.js
+        // often re-renders the next view and detaches the previous page's
+        // nodes, which makes range comparison fail open and would otherwise
+        // re-speak the cut sentence.
         if (carryOver) {
-          chunks = filterChunksAfterCarryOver(chunks, carryOver);
+          const { kept, prelit } = applyCarryOverSpokenHits(chunks, carryOver);
+          chunks = kept;
+          prelitRangesRef.current = prelit;
+        } else {
+          prelitRangesRef.current = [];
         }
         // When the cut wasn't detectable from the page range itself (an
         // unresolvable end boundary falls back to the section end), detect it
@@ -531,6 +606,7 @@ export function useBooksSpeech({
     timeoutEndingStreakRef.current = 0;
     cutAdvanceRef.current = null;
     pendingCarryOverRef.current = null;
+    prelitRangesRef.current = [];
     clearTimers();
     clearHighlight();
     const synth = getBrowserSpeechSynthesis();
@@ -584,13 +660,21 @@ export function useBooksSpeech({
   }, [speakChunk, speakVisiblePage, speakWhenSynthIdle]);
 
   const applyChunkHighlight = useCallback(
-    (chunk: BooksSpeechChunk) => {
-      clearHighlight();
+    (chunks: BooksSpeechChunk[], index: number) => {
+      const chunk = chunks[index];
+      if (!chunk) return;
       highlightedDocRef.current =
         chunk.range.startContainer.ownerDocument ?? null;
-      applySpeechHighlight(chunk.range);
+      // Seek/pause: light through the end of the selected sentence so the
+      // resume point is visible against the dimmed page.
+      applySpeechSpokenHighlight(
+        chunks,
+        index,
+        chunk.text.length,
+        prelitRangesRef.current
+      );
     },
-    [clearHighlight]
+    []
   );
 
   // Jump to a sentence on the current page. Rewinding the first sentence
@@ -616,7 +700,7 @@ export function useBooksSpeech({
         // Past the page — keep going if speech is live; stay put if paused.
         if (isPausedRef.current) {
           currentChunkIndexRef.current = chunks.length - 1;
-          applyChunkHighlight(chunks[chunks.length - 1]!);
+          applyChunkHighlight(chunks, chunks.length - 1);
           return;
         }
         timeoutEndingStreakRef.current = 0;
@@ -628,7 +712,7 @@ export function useBooksSpeech({
       currentChunkIndexRef.current = clamped;
 
       if (isPausedRef.current) {
-        applyChunkHighlight(chunks[clamped]!);
+        applyChunkHighlight(chunks, clamped);
         return;
       }
 
@@ -677,6 +761,7 @@ export function useBooksSpeech({
     // reflows) and restart from the freshly visible page. A page change while
     // paused (e.g. a manual page turn) resumes playback on the new page.
     pendingCarryOverRef.current = null;
+    prelitRangesRef.current = [];
     isPausedRef.current = false;
     activeUtteranceRef.current = null;
     currentChunksRef.current = null;

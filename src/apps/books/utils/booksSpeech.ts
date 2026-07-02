@@ -1,8 +1,8 @@
 /**
  * Read-aloud helpers for the Books reader, built on the browser's native
  * SpeechSynthesis API (no AI TTS). The visible epub.js page is split into
- * sentence-sized chunks, each paired with a DOM Range so the active sentence
- * can be highlighted while it is spoken.
+ * sentence-sized chunks, each paired with a DOM Range so spoken text can be
+ * revealed (full ink) against dimmed unspoken text.
  */
 
 export interface BooksSpeechChunk {
@@ -985,20 +985,34 @@ export function applyGeometricPageEndCut(chunk: BooksSpeechChunk): void {
 }
 
 // ---------------------------------------------------------------------------
-// Highlighting
+// Highlighting — dim unspoken text, reveal spoken text at full ink
 // ---------------------------------------------------------------------------
 
-export const BOOKS_SPEECH_HIGHLIGHT_NAME = "ryos-books-speech";
-export const BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS = "ryos-books-speech-block";
+/** Class on the section `<html>` while read-aloud is active (dims page text). */
+export const BOOKS_SPEECH_ACTIVE_CLASS = "ryos-books-speech-active";
+/** Spoken characters painted at full ink (CSS Custom Highlight API). */
+export const BOOKS_SPEECH_HIGHLIGHT_NAME = "ryos-books-speech-spoken";
+/** @deprecated No longer used (edge fade caused flicker). */
+export const BOOKS_SPEECH_EDGE_HIGHLIGHT_NAME = "ryos-books-speech-edge";
+/** Fallback class when the CSS Highlight API is unavailable. */
+export const BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS = "ryos-books-speech-spoken-block";
 
 /** Injected into each EPUB section document alongside the reader fonts. */
 export const BOOKS_SPEECH_HIGHLIGHT_CSS = `
+html.${BOOKS_SPEECH_ACTIVE_CLASS},
+html.${BOOKS_SPEECH_ACTIVE_CLASS} body,
+html.${BOOKS_SPEECH_ACTIVE_CLASS} body :where(
+  p, div, span, li, h1, h2, h3, h4, h5, h6, a, em, i, b, strong,
+  blockquote, td, th, pre, code, section, article, aside, figcaption,
+  dt, dd, label, small, sub, sup, u, s, cite, q
+) {
+  color: color-mix(in srgb, var(--ryos-books-speech-ink, CanvasText) 32%, transparent) !important;
+}
 ::highlight(${BOOKS_SPEECH_HIGHLIGHT_NAME}) {
-  background-color: rgba(255, 193, 47, 0.45);
-  color: inherit;
+  color: var(--ryos-books-speech-ink, CanvasText);
 }
 .${BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS} {
-  background-color: rgba(255, 193, 47, 0.3);
+  color: var(--ryos-books-speech-ink, CanvasText) !important;
 }
 `;
 
@@ -1017,29 +1031,46 @@ function getHighlightWindow(doc: Document | null | undefined) {
   };
 }
 
-/**
- * Highlight the chunk being spoken. Uses the CSS Custom Highlight API when
- * available (sentence-precise, no DOM mutation); otherwise falls back to
- * tinting the containing block element(s).
- */
-export function applySpeechHighlight(range: Range): void {
-  const doc = range.startContainer.ownerDocument;
-  if (!doc) return;
-  clearSpeechHighlight(doc);
-
-  const win = getHighlightWindow(doc);
-  if (win) {
-    try {
-      win.CSS.highlights.set(
-        BOOKS_SPEECH_HIGHLIGHT_NAME,
-        new win.Highlight(range)
-      );
-      return;
-    } catch {
-      // Fall through to the block-class fallback.
+function resolveSpeechInk(doc: Document): string {
+  const win = doc.defaultView;
+  const sample =
+    doc.body?.querySelector("p, div, span, li, h1, h2, h3, blockquote") ??
+    doc.body;
+  if (!win || !sample) return "CanvasText";
+  try {
+    const color = win.getComputedStyle(sample).color;
+    if (!color || color === "transparent" || color === "rgba(0, 0, 0, 0)") {
+      return "CanvasText";
     }
+    return color;
+  } catch {
+    return "CanvasText";
   }
+}
 
+/** Dim unspoken page text (no DOM mutation — safe for epub.js CFIs). */
+export function beginSpeechPresentation(doc: Document): void {
+  const root = doc.documentElement;
+  if (!root) return;
+  if (root.classList.contains(BOOKS_SPEECH_ACTIVE_CLASS)) return;
+  root.style.setProperty("--ryos-books-speech-ink", resolveSpeechInk(doc));
+  root.classList.add(BOOKS_SPEECH_ACTIVE_CLASS);
+}
+
+function clearSpeechSpokenRanges(doc: Document): void {
+  const win = getHighlightWindow(doc);
+  try {
+    win?.CSS.highlights.delete(BOOKS_SPEECH_HIGHLIGHT_NAME);
+    win?.CSS.highlights.delete(BOOKS_SPEECH_EDGE_HIGHLIGHT_NAME);
+  } catch {
+    // ignore
+  }
+  doc
+    .querySelectorAll(`.${BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS}`)
+    .forEach((el) => el.classList.remove(BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS));
+}
+
+function addSpokenBlockClass(range: Range): void {
   for (const container of [range.startContainer, range.endContainer]) {
     const element =
       container.nodeType === Node.TEXT_NODE
@@ -1049,15 +1080,163 @@ export function applySpeechHighlight(range: Range): void {
   }
 }
 
+function pushRange(target: Range[], range: Range): void {
+  try {
+    target.push(range.cloneRange());
+  } catch {
+    target.push(range);
+  }
+}
+
+/**
+ * Build a Range covering the first `charIndex` characters of the
+ * whitespace-normalized text within `chunkRange` (matching `chunk.text`).
+ * Returns null when nothing has been spoken yet.
+ */
+export function rangeForSpokenPrefix(
+  chunkRange: Range,
+  charIndex: number,
+  chunkTextLength?: number
+): Range | null {
+  if (charIndex <= 0) return null;
+  const doc = chunkRange.startContainer.ownerDocument;
+  if (!doc) return null;
+
+  if (chunkTextLength !== undefined && charIndex >= chunkTextLength) {
+    try {
+      return chunkRange.cloneRange();
+    } catch {
+      return null;
+    }
+  }
+
+  const probes = listCharProbesInRange(chunkRange);
+  if (probes.length === 0) return null;
+
+  let normLen = 0;
+  let started = false;
+  let pendingSpace = false;
+  let endProbeIndex = -1;
+
+  for (let i = 0; i < probes.length; i++) {
+    const ch = probes[i].char;
+    if (isWhitespace(ch)) {
+      if (started) pendingSpace = true;
+      continue;
+    }
+    if (pendingSpace) {
+      normLen += 1;
+      pendingSpace = false;
+      if (normLen >= charIndex) break;
+    }
+    started = true;
+    normLen += 1;
+    endProbeIndex = i;
+    if (normLen >= charIndex) break;
+  }
+
+  if (endProbeIndex < 0) return null;
+  const probe = probes[endProbeIndex];
+  try {
+    const spoken = doc.createRange();
+    spoken.setStart(chunkRange.startContainer, chunkRange.startOffset);
+    spoken.setEnd(probe.node, probe.endOffset);
+    return spoken;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Dim unspoken page text and paint spoken ranges at full ink. Updates the
+ * highlight registry in place (never deletes-then-sets) so progress ticks
+ * don't flash spoken text back to the dim color.
+ *
+ * `prelitRanges` covers text already spoken on a prior page (carry-over) that
+ * still appears at the start of the current page.
+ */
+export function applySpeechSpokenHighlight(
+  chunks: BooksSpeechChunk[],
+  chunkIndex: number,
+  spokenCharCount: number,
+  prelitRanges: Range[] = []
+): void {
+  const chunk = chunks[chunkIndex];
+  if (!chunk) return;
+  const doc = chunk.range.startContainer.ownerDocument;
+  if (!doc) return;
+
+  beginSpeechPresentation(doc);
+
+  const spokenRanges: Range[] = [];
+
+  for (const prelit of prelitRanges) {
+    if (prelit.startContainer.isConnected) pushRange(spokenRanges, prelit);
+  }
+
+  for (let i = 0; i < chunkIndex; i++) {
+    pushRange(spokenRanges, chunks[i].range);
+  }
+
+  const textLen = chunk.text.length;
+  const spokenCount = Math.max(0, Math.min(spokenCharCount, textLen));
+  if (spokenCount > 0) {
+    const prefix = rangeForSpokenPrefix(chunk.range, spokenCount, textLen);
+    if (prefix) spokenRanges.push(prefix);
+  }
+
+  const win = getHighlightWindow(doc);
+  if (win) {
+    try {
+      // `set` replaces the previous Highlight atomically — deleting first
+      // made spoken text fall back to the dim body color for a frame.
+      if (spokenRanges.length > 0) {
+        win.CSS.highlights.set(
+          BOOKS_SPEECH_HIGHLIGHT_NAME,
+          new win.Highlight(...spokenRanges)
+        );
+      } else {
+        win.CSS.highlights.delete(BOOKS_SPEECH_HIGHLIGHT_NAME);
+      }
+      win.CSS.highlights.delete(BOOKS_SPEECH_EDGE_HIGHLIGHT_NAME);
+      return;
+    } catch {
+      // Fall through to the block-class fallback.
+    }
+  }
+
+  // Additive only: removing classes on each tick also flashes to dim.
+  for (const prelit of prelitRanges) {
+    if (prelit.startContainer.isConnected) addSpokenBlockClass(prelit);
+  }
+  for (let i = 0; i < chunkIndex; i++) {
+    addSpokenBlockClass(chunks[i].range);
+  }
+  if (spokenCount > 0) addSpokenBlockClass(chunk.range);
+}
+
+/**
+ * Collect ranges for already-spoken carry-over text on the new page, then
+ * return the remaining speakable chunks and those prelit ranges.
+ */
+export function applyCarryOverSpokenHits(
+  chunks: BooksSpeechChunk[],
+  carryOver: BooksSpeechCarryOver
+): { kept: BooksSpeechChunk[]; prelit: Range[] } {
+  const kept = filterChunksAfterCarryOver(chunks, carryOver);
+  const keptSet = new Set(kept);
+  const prelit: Range[] = [];
+  for (const chunk of chunks) {
+    if (!keptSet.has(chunk)) pushRange(prelit, chunk.range);
+  }
+  return { kept, prelit };
+}
+
 export function clearSpeechHighlight(doc: Document | null | undefined): void {
   if (!doc) return;
-  const win = getHighlightWindow(doc);
-  try {
-    win?.CSS.highlights.delete(BOOKS_SPEECH_HIGHLIGHT_NAME);
-  } catch {
-    // ignore
-  }
-  doc
-    .querySelectorAll(`.${BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS}`)
-    .forEach((el) => el.classList.remove(BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS));
+  clearSpeechSpokenRanges(doc);
+  const root = doc.documentElement;
+  root?.classList.remove(BOOKS_SPEECH_ACTIVE_CLASS);
+  root?.style.removeProperty("--ryos-books-speech-ink");
+  root?.style.removeProperty("--ryos-books-speech-fade");
 }
