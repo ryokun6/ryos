@@ -431,6 +431,7 @@ describe("books settings codec", () => {
       chineseScript: "traditional",
       textLayout: "vertical",
       lineHeight: 1.8,
+      speechRate: 1.2,
     });
 
     const docs = SYNC_CODECS["books-settings"].collect(ctx) as Map<
@@ -445,6 +446,7 @@ describe("books settings codec", () => {
       "books-settings/chineseScript": "traditional",
       "books-settings/textLayout": "vertical",
       "books-settings/lineHeight": 1.8,
+      "books-settings/speechRate": 1.2,
     });
   });
 
@@ -458,6 +460,7 @@ describe("books settings codec", () => {
         { k: "books-settings/chineseScript", v: "simplified", t },
         { k: "books-settings/textLayout", v: "vertical", t },
         { k: "books-settings/lineHeight", v: 1.7, t },
+        { k: "books-settings/speechRate", v: 1.5, t },
       ],
       ctx
     );
@@ -470,6 +473,7 @@ describe("books settings codec", () => {
       chineseScript: "simplified",
       textLayout: "vertical",
       lineHeight: 1.7,
+      speechRate: 1.5,
     });
   });
 
@@ -483,6 +487,7 @@ describe("books settings codec", () => {
         { k: "books-settings/chineseScript", v: "translated", t },
         { k: "books-settings/textLayout", v: "diagonal", t },
         { k: "books-settings/lineHeight", v: -1, t },
+        { k: "books-settings/speechRate", v: 99, t },
         { k: "books-settings/fontId", del: true, t },
       ],
       ctx

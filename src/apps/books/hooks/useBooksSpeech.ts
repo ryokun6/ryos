@@ -15,8 +15,12 @@ import {
 /** Safety net for stuck utterances (broken/voiceless synth engines). */
 const UTTERANCE_TIMEOUT_BASE_MS = 10_000;
 const UTTERANCE_TIMEOUT_PER_CHAR_MS = 150;
-/** Give up if an auto page turn never produces a `relocated` event. */
-const ADVANCE_TIMEOUT_MS = 4_000;
+/** Re-attempt an auto page turn swallowed by the flip-animation lock. */
+const ADVANCE_RETRY_MS = 700;
+const MAX_ADVANCE_ATTEMPTS = 6;
+/** Stop after this many consecutive pages with nothing to speak
+ * (e.g. an image-only book) instead of silently paging to the end. */
+const MAX_EMPTY_PAGE_STREAK = 10;
 /** Let epub.js settle the new page before re-extracting visible text. */
 const RESUME_AFTER_RELOCATE_MS = 120;
 
@@ -57,6 +61,8 @@ export function useBooksSpeech({
   const sessionRef = useRef(0);
   // True while the user wants read-aloud (also across auto page turns).
   const wantsSpeechRef = useRef(false);
+  // Consecutive auto-skipped pages with no speakable text.
+  const emptyPageStreakRef = useRef(0);
   const highlightedDocRef = useRef<Document | null>(null);
   const timersRef = useRef<number[]>([]);
 
@@ -96,20 +102,24 @@ export function useBooksSpeech({
 
   // Reached the end of the visible page: auto-turn to the next page (the
   // resulting `relocated` event resumes speech there) or stop at book end.
+  // Retries because rapid successive turns (several unspeakable pages in a
+  // row) can be swallowed by the reader's flip-animation lock.
   const finishPage = useCallback(
-    (session: number) => {
+    (session: number, attempt = 0) => {
       if (session !== sessionRef.current) return;
       clearHighlight();
-      if (!optionsRef.current.canAdvancePage()) {
+      if (
+        !optionsRef.current.canAdvancePage() ||
+        attempt >= MAX_ADVANCE_ATTEMPTS
+      ) {
         stopSpeaking();
         return;
       }
       optionsRef.current.advancePage();
       const timeoutId = window.setTimeout(() => {
-        // The page turn never relocated (e.g. flip lock) — stop instead of
-        // stalling silently with the speaking state stuck on.
-        if (session === sessionRef.current) stopSpeaking();
-      }, ADVANCE_TIMEOUT_MS);
+        // Still the same session means no `relocated` arrived — retry.
+        if (session === sessionRef.current) finishPage(session, attempt + 1);
+      }, ADVANCE_RETRY_MS);
       timersRef.current.push(timeoutId);
     },
     [clearHighlight, stopSpeaking]
@@ -192,10 +202,17 @@ export function useBooksSpeech({
         chunks = [];
       }
       if (chunks.length === 0) {
-        // Nothing speakable on this page (e.g. full-page image) — skip ahead.
+        // Nothing speakable on this page (e.g. a cover or full-page image) —
+        // skip ahead, but give up after a long run of empty pages.
+        emptyPageStreakRef.current += 1;
+        if (emptyPageStreakRef.current > MAX_EMPTY_PAGE_STREAK) {
+          stopSpeaking();
+          return;
+        }
         finishPage(session);
         return;
       }
+      emptyPageStreakRef.current = 0;
       speakChunk(session, chunks, 0);
     },
     [finishPage, speakChunk, stopSpeaking]
@@ -204,6 +221,7 @@ export function useBooksSpeech({
   const startSpeaking = useCallback(() => {
     const session = ++sessionRef.current;
     wantsSpeechRef.current = true;
+    emptyPageStreakRef.current = 0;
     clearTimers();
     clearHighlight();
     const synth = getBrowserSpeechSynthesis();
