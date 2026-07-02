@@ -76,6 +76,36 @@ describe("Books live Chinese script conversion", () => {
     expect(bookDocument.querySelector("p")?.textContent).toBe("汉字发型");
   });
 
+  test("converts regional terms and quotation punctuation in both directions", async () => {
+    const simplifiedBook = createBookDocument("");
+    simplifiedBook.body.innerHTML =
+      "<p>鼠标和自行车。悟空道：<span>“</span>怎么叫做<span>‘</span>水中捞月<span>’</span>？<span>”</span></p>";
+
+    await applyChineseScriptToDocument(
+      simplifiedBook,
+      "traditional",
+      createChineseScriptConversionSession()
+    );
+
+    expect(simplifiedBook.querySelector("p")?.textContent).toBe(
+      "滑鼠和腳踏車。悟空道：「怎麼叫做『水中撈月』？」"
+    );
+
+    const traditionalBook = createBookDocument("", "zh-Hant");
+    traditionalBook.body.innerHTML =
+      "<p>滑鼠和腳踏車。悟空道：<span>「</span>怎麼叫做<span>『</span>水中撈月<span>』</span>？<span>」</span></p>";
+
+    await applyChineseScriptToDocument(
+      traditionalBook,
+      "simplified",
+      createChineseScriptConversionSession()
+    );
+
+    expect(traditionalBook.querySelector("p")?.textContent).toBe(
+      "鼠标和自行车。悟空道：“怎么叫做‘水中捞月’？”"
+    );
+  });
+
   test("ignores a stale async selection", async () => {
     const bookDocument = createBookDocument("汉字");
 
@@ -111,5 +141,8 @@ describe("Books live Chinese script conversion", () => {
     expect(source).toContain('import("opencc-js/t2cn")');
     expect(source).toContain('import("opencc-js/cn2t")');
     expect(source).not.toContain('from "opencc-js"');
+    expect(source).toContain('from: "twp"');
+    expect(source).toContain('to: "twp"');
+    expect(source).toContain("CustomConverter");
   });
 });

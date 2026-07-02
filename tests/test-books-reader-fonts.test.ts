@@ -16,6 +16,22 @@ const appFontsCss = readFileSync(
   join(import.meta.dir, "../public/fonts/fonts.css"),
   "utf8"
 );
+const appCss = readFileSync(
+  join(import.meta.dir, "../src/index.css"),
+  "utf8"
+);
+
+function extractFontFamily(css: string, selector: string): string | null {
+  const selectorStart = css.indexOf(selector);
+  const blockStart = css.indexOf("{", selectorStart);
+  const blockEnd = css.indexOf("}", blockStart);
+  if (selectorStart === -1 || blockStart === -1 || blockEnd === -1) return null;
+
+  const declaration = css
+    .slice(blockStart, blockEnd)
+    .match(/font-family:\s*([^;]+);/);
+  return declaration?.[1].replace(/\s+/g, " ").trim() ?? null;
+}
 
 const settings = {
   fontId: "serif",
@@ -34,11 +50,12 @@ const palette = {
 };
 
 describe("Books reader font choices", () => {
-  test("offers the bundled rounded face in the font menu", () => {
+  test("uses the same rounded stack as Karaoke", () => {
     expect(BOOK_FONTS.map((font) => font.id)).toContain("rounded");
-    expect(getBookFontCssStack("rounded")).toStartWith(
-      '"ryOS VAG Rounded"'
+    expect(getBookFontCssStack("rounded")).toBe(
+      extractFontFamily(appCss, ".font-lyrics-rounded")
     );
+    expect(getBookFontCssStack("rounded")).not.toContain("SerenityOS-Emoji");
   });
 
   test("gives Geneva bundled CJK and emoji fallbacks", () => {
