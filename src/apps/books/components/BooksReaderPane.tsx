@@ -15,6 +15,7 @@ import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
 import {
   clampBooksGutter,
+  normalizeBooksSpeechRate,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -1294,7 +1295,7 @@ export const BooksReaderPane = forwardRef<
   } = useBooksSpeech({
     getRendition: () => renditionRef.current,
     getSpeechLanguage,
-    getSpeechRate: () => speechRateRef.current,
+    getSpeechRate: () => normalizeBooksSpeechRate(speechRateRef.current),
     canAdvancePage: () => navigationStateRef.current.canGoNextPage,
     advancePage: () => turnPage("next"),
   });

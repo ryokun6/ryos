@@ -474,6 +474,71 @@ export function getVisiblePageRange(
   return range.collapsed ? null : range;
 }
 
+const OVERFLOW_CLIP_RE = /hidden|clip|auto|scroll/;
+
+/**
+ * Whether any part of the range is actually visible in the paginated reader.
+ *
+ * The CFI-derived page range can overshoot what is on screen (epub.js maps
+ * locations asynchronously, and an unresolvable end boundary falls back to
+ * the end of the section), which made read-aloud drift ahead of the visible
+ * page. Layout geometry is authoritative: project the range's rect into the
+ * embedding document and clip it against the scroll container that hides
+ * off-page columns. Lenient (returns true) when geometry is unavailable,
+ * e.g. outside an iframe or in non-layout DOM environments.
+ */
+export function isRangeOnVisiblePage(range: Range): boolean {
+  const doc = range.startContainer.ownerDocument;
+  const win = doc?.defaultView;
+  const frame = win?.frameElement as HTMLElement | null | undefined;
+  if (!doc || !win || !frame) return true;
+
+  let rect: DOMRect;
+  try {
+    rect = range.getBoundingClientRect();
+  } catch {
+    return true;
+  }
+  // Zero-size rects carry no layout information — don't skip the chunk.
+  if (rect.width === 0 && rect.height === 0) return true;
+
+  const parentWin = frame.ownerDocument.defaultView;
+  if (!parentWin || typeof parentWin.getComputedStyle !== "function") {
+    return true;
+  }
+
+  // Range rect in the embedding document's coordinate space. (The epub.js
+  // iframe spans the whole section; its container scrolls/clips per page.)
+  const frameRect = frame.getBoundingClientRect();
+  let left = frameRect.left + rect.left;
+  let top = frameRect.top + rect.top;
+  let right = left + rect.width;
+  let bottom = top + rect.height;
+
+  for (let el = frame.parentElement; el; el = el.parentElement) {
+    let clips = false;
+    try {
+      const style = parentWin.getComputedStyle(el);
+      clips = OVERFLOW_CLIP_RE.test(
+        `${style.overflow} ${style.overflowX} ${style.overflowY}`
+      );
+    } catch {
+      clips = false;
+    }
+    if (!clips) continue;
+    const clipRect = el.getBoundingClientRect();
+    left = Math.max(left, clipRect.left);
+    top = Math.max(top, clipRect.top);
+    right = Math.min(right, clipRect.right);
+    bottom = Math.min(bottom, clipRect.bottom);
+  }
+  right = Math.min(right, parentWin.innerWidth);
+  bottom = Math.min(bottom, parentWin.innerHeight);
+  left = Math.max(left, 0);
+  top = Math.max(top, 0);
+  return right - left > 1 && bottom - top > 1;
+}
+
 // ---------------------------------------------------------------------------
 // Highlighting
 // ---------------------------------------------------------------------------
