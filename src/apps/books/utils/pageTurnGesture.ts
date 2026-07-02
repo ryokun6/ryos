@@ -24,6 +24,7 @@ export interface PageTurnGestureMetrics {
   effectiveDistance: number;
   horizontalVelocity: number;
   angleFromHorizontalDeg: number;
+  viewportWidth: number;
 }
 
 export interface PageTurnAvailability {
@@ -98,6 +99,7 @@ export function measurePageTurnGesture({
     effectiveDistance,
     horizontalVelocity: absDx / elapsedMs,
     angleFromHorizontalDeg,
+    viewportWidth: Math.max(0, viewportWidth),
   };
 }
 

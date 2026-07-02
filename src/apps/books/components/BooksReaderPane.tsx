@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -99,6 +100,7 @@ interface FlipState {
   originY: number;
   tiltDeg: number;
   dragProgress: number;
+  viewportWidth: number;
 }
 
 interface ActivePageTurnGesture {
@@ -1415,6 +1417,8 @@ export const BooksReaderPane = forwardRef<
         originY: gesture?.originY ?? 0.5,
         tiltDeg: gesture?.tiltDeg ?? 0,
         dragProgress: gesture?.progress ?? 0,
+        viewportWidth:
+          gesture?.viewportWidth ?? viewportRef.current?.clientWidth ?? 0,
       });
 
       let action: Promise<unknown> | unknown;
@@ -1619,6 +1623,24 @@ export const BooksReaderPane = forwardRef<
     [cancelPageTurnGesture]
   );
 
+  const handleReaderPointerLeave = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+        cancelPageTurnGesture(event.pointerId);
+      }
+    },
+    [cancelPageTurnGesture]
+  );
+
+  const handleReaderClickCapture = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (!consumeGestureClick("reader")) return;
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    [consumeGestureClick]
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -1685,6 +1707,8 @@ export const BooksReaderPane = forwardRef<
       onPointerMove={handleReaderPointerMove}
       onPointerUp={handleReaderPointerUp}
       onPointerCancel={handleReaderPointerCancel}
+      onPointerLeave={handleReaderPointerLeave}
+      onClickCapture={handleReaderClickCapture}
     >
       {/* The epub.js render target, inset below the top clearance, above the
           progress footer, and with side gutters for a comfortable measure. */}
@@ -1931,7 +1955,10 @@ export const BooksReaderPane = forwardRef<
                 transformPerspective: 1400,
               }}
               initial={{
-                x: "0%",
+                x: prefersReducedMotion
+                  ? 0
+                  : (flip.dir === "next" ? -1 : 1) *
+                    Math.min(14, flip.dragProgress * 14),
                 rotateY: prefersReducedMotion
                   ? 0
                   : (flip.dir === "next" ? -1 : 1) *
@@ -1940,10 +1967,10 @@ export const BooksReaderPane = forwardRef<
               }}
               animate={{
                 x: prefersReducedMotion
-                  ? "0%"
-                  : flip.dir === "next"
-                    ? "-104%"
-                    : "104%",
+                  ? 0
+                  : (flip.dir === "next" ? -1 : 1) *
+                    Math.max(320, flip.viewportWidth) *
+                    1.04,
                 opacity: prefersReducedMotion ? 0 : 1,
                 rotateY: prefersReducedMotion
                   ? 0
