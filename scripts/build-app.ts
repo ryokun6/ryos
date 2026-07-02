@@ -38,3 +38,17 @@ if (failedJobs.length > 0) {
   }
   process.exit(1);
 }
+
+const precacheInspection = Bun.spawn(["bun", "run", "inspect:precache"], {
+  cwd: process.cwd(),
+  env: buildEnvironment,
+  stdout: "inherit",
+  stderr: "inherit",
+});
+const precacheExitCode = await precacheInspection.exited;
+if (precacheExitCode !== 0) {
+  console.error(
+    `[build] precache inspection failed with exit code ${precacheExitCode}`
+  );
+  process.exit(1);
+}

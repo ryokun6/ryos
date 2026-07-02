@@ -31,7 +31,7 @@ const stylesheets = urls.filter((url) => url.endsWith(".css"));
 const fonts = urls.filter((url) => /\.(?:woff2?|ttf|otf)$/i.test(url));
 const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 const forbidden = urls.filter((url) =>
-  /(?:^|\/)(?:ai-sdk|audio|hangul|media-player|mermaid|pusher|shiki|three|tiptap|webamp|translation)(?:[-.])/i.test(
+  /(?:^|\/)(?:ai-sdk|audio|hangul|media-player|mermaid|pusher|shiki|streamdown|three|tiptap|v86|webamp|translation)(?:[-.])/i.test(
     url
   )
 );
@@ -45,6 +45,11 @@ if (process.argv.includes("--list")) {
   for (const url of javascript) {
     console.log(url);
   }
+}
+
+if (urls.length === 0) {
+  console.error("[precache] No entries found in the service worker manifest");
+  process.exit(1);
 }
 
 if (forbidden.length > 0) {

@@ -19,6 +19,10 @@ describe("build performance configuration", () => {
     );
     expect(runner).toContain('NODE_ENV: "production"');
     expect(runner).toContain("Promise.all");
+    expect(runner).toContain('["bun", "run", "inspect:precache"]');
+    expect(runner.indexOf("failedJobs.length")).toBeLessThan(
+      runner.indexOf('["bun", "run", "inspect:precache"]')
+    );
   });
 
   test("enables incremental project-reference caches", () => {
@@ -28,6 +32,23 @@ describe("build performance configuration", () => {
       expect(config).toContain('"noEmit": true');
       expect(config).not.toContain('"composite": true');
     }
+  });
+
+  test("enforces the shell precache budget in the CI build", () => {
+    const inspector = readFileSync(
+      path.join(ROOT, "scripts/inspect-precache.ts"),
+      "utf8"
+    );
+    const workflow = readFileSync(
+      path.join(ROOT, ".github/workflows/build-and-deploy.yml"),
+      "utf8"
+    );
+
+    expect(inspector).toContain("Shell budget exceeded");
+    expect(inspector).toContain("streamdown");
+    expect(inspector).toContain("v86");
+    expect(workflow).toContain("Type check, build, and inspect precache");
+    expect(workflow).toContain("run: bun run build");
   });
 
   test("does not eagerly prebundle lazy wallpaper dependencies", () => {
