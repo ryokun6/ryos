@@ -686,6 +686,7 @@
         "percentRead": "{{percent}}%"
       },
       "speech": {
+        "controls": "朗讀控制項",
         "pause": "暫停",
         "resume": "繼續",
         "rewind": "倒轉",

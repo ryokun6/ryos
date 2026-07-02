@@ -52,7 +52,11 @@ const synth = {
   },
 };
 
-(window as unknown as { speechSynthesis: unknown }).speechSynthesis = synth;
+Object.defineProperty(window, "speechSynthesis", {
+  configurable: true,
+  value: synth,
+  writable: true,
+});
 (
   globalThis as unknown as { SpeechSynthesisUtterance: unknown }
 ).SpeechSynthesisUtterance = FakeUtterance;

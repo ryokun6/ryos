@@ -688,6 +688,7 @@
         "percentRead": "{{percent}}%"
       },
       "speech": {
+        "controls": "Controles de leitura em voz alta",
         "pause": "Pausar",
         "resume": "Retomar",
         "rewind": "Retroceder",

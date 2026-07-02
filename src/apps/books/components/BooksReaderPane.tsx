@@ -27,6 +27,7 @@ import {
   buildEpubTheme,
   buildFontFaceCss,
   columnModeToSpread,
+  createEpubThemeContentHook,
   displayEpubTargetWithFallback,
   getReadingOverlayBackground,
   isLikelyEpubBuffer,
@@ -331,6 +332,8 @@ export const BooksReaderPane = forwardRef<
   const bookLanguageRef = useRef<string | null>(null);
   const [bookLanguage, setBookLanguage] = useState<string | null>(null);
   const publisherPageDirectionRef = useRef<"ltr" | "rtl">("ltr");
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   // Raw preferences; application uses resolved (language-gated) values below.
   const textLayoutSettingRef = useRef(settings.textLayout);
   textLayoutSettingRef.current = settings.textLayout;
@@ -458,6 +461,8 @@ export const BooksReaderPane = forwardRef<
 
   const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
   const palette = resolveReadingPalette(settings, osIsDark, accentBaseHex);
+  const paletteRef = useRef(palette);
+  paletteRef.current = palette;
   const { isAquaGlass } = useThemeFlags();
   const speechOverlayButtonClass = cn(
     SPEECH_OVERLAY_BUTTON_CLASS,
@@ -895,6 +900,25 @@ export const BooksReaderPane = forwardRef<
           );
           nextRendition.on("resized", (size: unknown) =>
             appendDebugEvent("epubjs:rendition:resized", size)
+          );
+
+          nextRendition.hooks.content.register(
+            createEpubThemeContentHook(() => {
+              const currentBookLanguage = bookLanguageRef.current;
+              const readingLanguage = resolveChineseScriptReadingLanguage(
+                resolveEffectiveChineseScript(
+                  chineseScriptSettingRef.current,
+                  currentBookLanguage
+                ),
+                currentBookLanguage ?? uiLanguageRef.current
+              );
+              return buildEpubTheme(
+                settingsRef.current,
+                paletteRef.current,
+                readingLanguage,
+                currentBookLanguage
+              );
+            })
           );
 
           nextRendition.hooks.content.register(

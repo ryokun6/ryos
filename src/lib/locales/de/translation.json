@@ -686,6 +686,7 @@
         "percentRead": "{{percent}}%"
       },
       "speech": {
+        "controls": "Steuerelemente zum Vorlesen",
         "pause": "Pause",
         "resume": "Fortsetzen",
         "rewind": "Zurückspulen",
