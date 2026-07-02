@@ -11,7 +11,7 @@ const BOOK_GENEVA_STACK =
   '"Geneva-12", Geneva, "ArkPixel", "SerenityOS-Emoji", system-ui, -apple-system, sans-serif';
 
 const BOOK_ROUNDED_STACK =
-  '"ryOS VAG Rounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", "SerenityOS-Emoji", ui-rounded, sans-serif';
+  '"ryOS VAG Rounded", "Chiron GoRound TC WS", "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif';
 
 const BOOK_CJK_SERIF_STACKS = {
   "zh-CN":
