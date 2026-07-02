@@ -69,6 +69,10 @@ export interface UseBooksSpeechResult {
   stopSpeaking: () => void;
   pauseSpeaking: () => void;
   resumeSpeaking: () => void;
+  /** Restart the previous sentence (or the current one when already first). */
+  skipToPreviousSentence: () => void;
+  /** Jump to the next sentence (auto-turns at page end while playing). */
+  skipToNextSentence: () => void;
   /** Call from the rendition's `relocated` handler. */
   handleRelocated: () => void;
 }
@@ -553,6 +557,77 @@ export function useBooksSpeech({
     });
   }, [speakChunk, speakVisiblePage, speakWhenSynthIdle]);
 
+  const applyChunkHighlight = useCallback(
+    (chunk: BooksSpeechChunk) => {
+      clearHighlight();
+      highlightedDocRef.current =
+        chunk.range.startContainer.ownerDocument ?? null;
+      applySpeechHighlight(chunk.range);
+    },
+    [clearHighlight]
+  );
+
+  // Jump to a sentence on the current page. Rewinding the first sentence
+  // restarts it; advancing past the last sentence auto-turns while playing
+  // so continuous read-aloud isn't stranded at the page end.
+  const seekToSentence = useCallback(
+    (targetIndex: number) => {
+      if (!wantsSpeechRef.current) return;
+      const chunks = currentChunksRef.current;
+      if (!chunks || chunks.length === 0) return;
+
+      const pastEnd = targetIndex >= chunks.length;
+      const clamped = pastEnd ? chunks.length : Math.max(0, targetIndex);
+
+      cutAdvanceRef.current = null;
+      pendingCarryOverRef.current = null;
+      activeUtteranceRef.current = null;
+      const session = ++sessionRef.current;
+      clearTimers();
+      getBrowserSpeechSynthesis()?.cancel();
+
+      if (pastEnd) {
+        // Past the page — keep going if speech is live; stay put if paused.
+        if (isPausedRef.current) {
+          currentChunkIndexRef.current = chunks.length - 1;
+          applyChunkHighlight(chunks[chunks.length - 1]!);
+          return;
+        }
+        timeoutEndingStreakRef.current = 0;
+        finishPage(session);
+        return;
+      }
+
+      currentChunksRef.current = chunks;
+      currentChunkIndexRef.current = clamped;
+
+      if (isPausedRef.current) {
+        applyChunkHighlight(chunks[clamped]!);
+        return;
+      }
+
+      timeoutEndingStreakRef.current = 0;
+      speakWhenSynthIdle(session, () => {
+        speakChunk(session, chunks, clamped);
+      });
+    },
+    [
+      applyChunkHighlight,
+      clearTimers,
+      finishPage,
+      speakChunk,
+      speakWhenSynthIdle,
+    ]
+  );
+
+  const skipToPreviousSentence = useCallback(() => {
+    seekToSentence(currentChunkIndexRef.current - 1);
+  }, [seekToSentence]);
+
+  const skipToNextSentence = useCallback(() => {
+    seekToSentence(currentChunkIndexRef.current + 1);
+  }, [seekToSentence]);
+
   const handleRelocated = useCallback(() => {
     if (!wantsSpeechRef.current) return;
     const cutAdvance = cutAdvanceRef.current;
@@ -574,7 +649,7 @@ export function useBooksSpeech({
     }
     // Invalidate in-flight utterances (manual page turns / chapter jumps /
     // reflows) and restart from the freshly visible page. A page change while
-    // paused (e.g. overlay rewind/skip) resumes playback on the new page.
+    // paused (e.g. a manual page turn) resumes playback on the new page.
     pendingCarryOverRef.current = null;
     isPausedRef.current = false;
     activeUtteranceRef.current = null;
@@ -599,6 +674,8 @@ export function useBooksSpeech({
     stopSpeaking,
     pauseSpeaking,
     resumeSpeaking,
+    skipToPreviousSentence,
+    skipToNextSentence,
     handleRelocated,
   };
 }

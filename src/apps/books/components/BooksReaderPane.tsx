@@ -1418,6 +1418,8 @@ export const BooksReaderPane = forwardRef<
     stopSpeaking,
     pauseSpeaking,
     resumeSpeaking,
+    skipToPreviousSentence,
+    skipToNextSentence,
     handleRelocated: handleSpeechRelocated,
   } = useBooksSpeech({
     getRendition: () => renditionRef.current,
@@ -1569,13 +1571,13 @@ export const BooksReaderPane = forwardRef<
       </div>
 
       {/* Read-aloud overlay: simple floating controls shown while speech is
-          active. Rewind/skip turn pages (speech restarts on the new page via
-          the relocated handler); pause/resume keeps the current sentence. */}
+          active. Rewind/skip move by sentence; pause/resume keeps the
+          current sentence. */}
       <AnimatePresence>
         {isSpeaking && (
           <motion.div
             className="pointer-events-none absolute inset-x-0 z-30 flex justify-center"
-            style={{ bottom: FOOTER_HEIGHT + 8 }}
+            style={{ bottom: 8 }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -1593,8 +1595,7 @@ export const BooksReaderPane = forwardRef<
                 type="button"
                 aria-label={t("apps.books.speech.rewind")}
                 title={t("apps.books.speech.rewind")}
-                onClick={() => turnPage("prev")}
-                disabled={!navigationState.canGoPreviousPage}
+                onClick={skipToPreviousSentence}
                 className={SPEECH_OVERLAY_BUTTON_CLASS}
               >
                 <Rewind weight="fill" size={16} />
@@ -1624,8 +1625,7 @@ export const BooksReaderPane = forwardRef<
                 type="button"
                 aria-label={t("apps.books.speech.skip")}
                 title={t("apps.books.speech.skip")}
-                onClick={() => turnPage("next")}
-                disabled={!navigationState.canGoNextPage}
+                onClick={skipToNextSentence}
                 className={SPEECH_OVERLAY_BUTTON_CLASS}
               >
                 <FastForward weight="fill" size={16} />

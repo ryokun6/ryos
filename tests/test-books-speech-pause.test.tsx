@@ -1,8 +1,8 @@
 /**
- * Wiring tests for the Books read-aloud pause/resume controls
+ * Wiring tests for the Books read-aloud pause/resume/skip controls
  * (useBooksSpeech): pausing cancels the engine but keeps the position,
- * resuming re-speaks the interrupted sentence, and page relocation while
- * paused resumes playback on the new page.
+ * resuming re-speaks the interrupted sentence, sentence skip moves within
+ * the page, and page relocation while paused resumes playback on the new page.
  */
 import {
   afterAll,
@@ -181,7 +181,7 @@ describe("useBooksSpeech pause/resume", () => {
     latest!.pauseSpeaking();
     await waitFor(() => latest!.isPaused);
 
-    // Simulate a page turn (e.g. overlay rewind/skip) while paused.
+    // Simulate a manual page turn while paused.
     latest!.handleRelocated();
     await waitFor(() => !latest!.isPaused);
     // Speech restarts from the freshly visible page after the settle delay.
@@ -203,6 +203,61 @@ describe("useBooksSpeech pause/resume", () => {
     latest!.resumeSpeaking();
     await waitFor(() => spoken.length === 2);
     expect(spoken[1].text).toBe("First sentence.");
+
+    latest!.stopSpeaking();
+    await waitFor(() => !latest!.isSpeaking);
+  });
+
+  test("skip next moves to the following sentence", async () => {
+    latest!.startSpeaking();
+    await waitFor(() => spoken.length === 1 && latest!.isSpeaking);
+    expect(spoken[0].text).toBe("First sentence.");
+
+    latest!.skipToNextSentence();
+    await waitFor(() => spoken.length === 2);
+    expect(spoken[1].text).toBe("Second sentence.");
+    await waitFor(() => latest!.isSpeaking);
+
+    latest!.stopSpeaking();
+    await waitFor(() => !latest!.isSpeaking);
+  });
+
+  test("skip previous moves to the prior sentence, restarting at the first", async () => {
+    latest!.startSpeaking();
+    await waitFor(() => spoken.length === 1);
+    finishCurrentUtterance();
+    await waitFor(() => spoken.length === 2);
+    expect(spoken[1].text).toBe("Second sentence.");
+
+    latest!.skipToPreviousSentence();
+    await waitFor(() => spoken.length === 3);
+    expect(spoken[2].text).toBe("First sentence.");
+
+    // At the first sentence, further rewind just restarts it.
+    latest!.skipToPreviousSentence();
+    await waitFor(() => spoken.length === 4);
+    expect(spoken[3].text).toBe("First sentence.");
+
+    latest!.stopSpeaking();
+    await waitFor(() => !latest!.isSpeaking);
+  });
+
+  test("skip while paused updates the highlight target without speaking", async () => {
+    latest!.startSpeaking();
+    await waitFor(() => spoken.length === 1);
+
+    latest!.pauseSpeaking();
+    await waitFor(() => latest!.isPaused);
+    const spokenBeforeSkip = spoken.length;
+
+    latest!.skipToNextSentence();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(spoken.length).toBe(spokenBeforeSkip);
+    expect(latest!.isPaused).toBe(true);
+
+    latest!.resumeSpeaking();
+    await waitFor(() => spoken.length === spokenBeforeSkip + 1);
+    expect(spoken[spokenBeforeSkip].text).toBe("Second sentence.");
 
     latest!.stopSpeaking();
     await waitFor(() => !latest!.isSpeaking);
