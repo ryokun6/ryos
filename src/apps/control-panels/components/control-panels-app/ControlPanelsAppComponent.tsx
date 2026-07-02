@@ -96,6 +96,8 @@ export function ControlPanelsAppComponent({
     handleUISoundsChange,
     speechEnabled,
     handleSpeechChange,
+    browserTtsVoiceURI,
+    handleBrowserTtsVoiceChange,
     terminalSoundsEnabled,
     setTerminalSoundsEnabled,
     synthPreset,
@@ -284,6 +286,8 @@ export function ControlPanelsAppComponent({
       handleUISoundsChange={handleUISoundsChange}
       speechEnabled={speechEnabled}
       handleSpeechChange={handleSpeechChange}
+      browserTtsVoiceURI={browserTtsVoiceURI}
+      handleBrowserTtsVoiceChange={handleBrowserTtsVoiceChange}
       terminalSoundsEnabled={terminalSoundsEnabled}
       setTerminalSoundsEnabled={setTerminalSoundsEnabled}
       synthPreset={synthPreset}
