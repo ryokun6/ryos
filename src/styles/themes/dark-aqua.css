@@ -979,6 +979,18 @@
   border-right-color: rgba(0, 0, 0, 0.45);
 }
 
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .books-font-pill {
+  outline-color: rgba(255, 255, 255, 0.16);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .books-font-pill[data-state="off"] {
+  color: var(--os-color-text-primary);
+  background: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: none !important;
+  text-shadow: none;
+}
+
 /* macOS Aqua switch — the thumb's "checked" gradient comes from
    `.aqua-button.primary` which is a vivid blue intentional for light mode.
    In dark mode, dim it to match the rest of the toggled-on chrome above. */

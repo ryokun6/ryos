@@ -16,6 +16,7 @@ import {
   Rewind,
   Stop,
   TextAa,
+  X,
 } from "@phosphor-icons/react";
 import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,10 @@ interface BooksReaderPaneProps {
   onBookLanguageChange?: (language: string | null) => void;
   /** Opens the reading-appearance Customize panel (playback bar shortcut). */
   onShowCustomize?: () => void;
+  /** Closes the reading-appearance Customize panel. */
+  onHideCustomize?: () => void;
+  /** Keeps the read-aloud toolbar expanded while Customize is open. */
+  isCustomizeOpen?: boolean;
 }
 
 const clamp01 = (value: number): number =>
@@ -332,6 +337,8 @@ export const BooksReaderPane = forwardRef<
     onSpeechStateChange,
     onBookLanguageChange,
     onShowCustomize,
+    onHideCustomize,
+    isCustomizeOpen = false,
   },
   ref
 ) {
@@ -1492,7 +1499,7 @@ export const BooksReaderPane = forwardRef<
   // the home-indicator pill (hover or tap grows it again).
   const isSpeechPlaying = isSpeaking && !isPaused;
   const {
-    isOpen: speechBarOpen,
+    isOpen: speechBarVisibilityOpen,
     handlePointerEnter: handleSpeechBarPointerEnter,
     handlePointerLeave: handleSpeechBarPointerLeave,
     handlePointerDown: handleSpeechBarPointerDown,
@@ -1500,6 +1507,7 @@ export const BooksReaderPane = forwardRef<
     handleBlur: handleSpeechBarBlur,
     revealTemporarily: revealSpeechBarTemporarily,
   } = useBooksSpeechBarVisibility({ isPlaying: isSpeechPlaying });
+  const speechBarOpen = isCustomizeOpen || speechBarVisibilityOpen;
 
   useImperativeHandle(
     ref,
@@ -1784,13 +1792,27 @@ export const BooksReaderPane = forwardRef<
               ) : (
                 <button
                   type="button"
-                  aria-label={t("apps.books.customize.title")}
-                  title={t("apps.books.customize.title")}
-                  onClick={onShowCustomize}
+                  aria-label={
+                    isCustomizeOpen
+                      ? t("common.menu.close")
+                      : t("apps.books.customize.title")
+                  }
+                  title={
+                    isCustomizeOpen
+                      ? t("common.menu.close")
+                      : t("apps.books.customize.title")
+                  }
+                  onClick={
+                    isCustomizeOpen ? onHideCustomize : onShowCustomize
+                  }
                   className={speechOverlayButtonClass}
                   tabIndex={speechBarOpen ? 0 : -1}
                 >
-                  <TextAa weight="bold" size={16} />
+                  {isCustomizeOpen ? (
+                    <X weight="bold" size={14} />
+                  ) : (
+                    <TextAa weight="bold" size={16} />
+                  )}
                 </button>
               )}
             </motion.div>

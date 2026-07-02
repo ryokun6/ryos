@@ -70,7 +70,7 @@ afterAll(() => {
   }
 });
 
-async function renderPanel(): Promise<HTMLDivElement> {
+async function renderPanel(compact = false): Promise<HTMLDivElement> {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -83,7 +83,7 @@ async function renderPanel(): Promise<HTMLDivElement> {
           settings: { ...DEFAULT_BOOKS_SETTINGS },
           updateSettings: () => {},
           osIsDark: false,
-          compact: false,
+          compact,
           bookLanguage: null,
           onClose: () => {},
         })
@@ -138,6 +138,13 @@ describe("BooksCustomizePanel font chips", () => {
         (candidate) => candidate.textContent === `apps.books.fonts.${font.id}`
       );
       expect(chip).toBeDefined();
+      expect(chip!.classList.contains("h-7")).toBe(true);
+      expect(chip!.classList.contains("!text-[12px]")).toBe(true);
+      expect(chip!.classList.contains("books-font-pill")).toBe(true);
+      expect(chip!.classList.contains("metal-inset-btn")).toBe(true);
+      expect(chip!.dataset.state).toBe(
+        DEFAULT_BOOKS_SETTINGS.fontId === font.id ? "on" : "off"
+      );
 
       const expectedStack = getBookFontCssStack(font.id, "en");
       if (expectedStack === null) {
@@ -158,14 +165,20 @@ describe("BooksCustomizePanel font chips", () => {
 });
 
 describe("BooksCustomizePanel segmented controls", () => {
-  test("uses a simple selection highlight", async () => {
+  test("uses the Aqua inset toolbar treatment", async () => {
     const host = await renderPanel();
     const selected = host.querySelector<HTMLButtonElement>(
       'button[role="radio"][aria-checked="true"]'
     );
 
-    expect(selected?.classList.contains("bg-os-selection-bg")).toBe(true);
-    expect(selected?.classList.contains("books-segment-selected")).toBe(false);
+    expect(selected?.dataset.state).toBe("on");
+    expect(selected?.classList.contains("h-full")).toBe(true);
+    expect(selected?.classList.contains("!text-[12px]")).toBe(true);
+    expect(selected?.classList.contains("metal-inset-btn")).toBe(true);
+    expect(
+      selected?.parentElement?.classList.contains("metal-inset-btn-group")
+    ).toBe(true);
+    expect(selected?.parentElement?.classList.contains("h-6")).toBe(true);
   });
 });
 
@@ -181,6 +194,7 @@ describe("BooksCustomizePanel theme swatches", () => {
     expect(swatches.length).toBeGreaterThan(0);
     for (const swatch of swatches) {
       expect(swatch.textContent).toBe("Aa");
+      expect(swatch.classList.contains("h-7")).toBe(true);
       expect(swatch.classList.contains("!rounded-[5px]")).toBe(true);
       expect(swatch.classList.contains("rounded-full")).toBe(false);
       expect(swatch.querySelector("span")?.classList.contains("!text-[11px]")).toBe(
@@ -222,5 +236,61 @@ describe("BooksCustomizePanel theme swatches", () => {
 
     expect(swatches.length).toBeGreaterThan(0);
     expect(swatches.every((swatch) => swatch.textContent === "字")).toBe(true);
+  });
+});
+
+describe("BooksCustomizePanel setting rows", () => {
+  test("keeps every setting row at the same 32px height", async () => {
+    const host = await renderPanel();
+    const panel = host.querySelector(".books-customize-panel");
+    const rows = Array.from(panel?.children ?? []).filter((child) =>
+      child.classList.contains("shrink-0")
+    );
+
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((row) => row.classList.contains("h-8"))).toBe(true);
+    expect(
+      rows.every((row) =>
+        row.querySelector('[title]')?.classList.contains("text-[12px]")
+      )
+    ).toBe(true);
+    const valueLabels = rows
+      .map((row) => row.lastElementChild)
+      .filter((child) => child?.tagName === "SPAN");
+    expect(
+      valueLabels.every((label) => label?.classList.contains("w-9"))
+    ).toBe(true);
+  });
+
+  test("centers the wide panel above the reader toolbar", async () => {
+    const host = await renderPanel();
+    const panel = host.querySelector(".books-customize-panel");
+
+    expect(panel?.classList.contains("bottom-[50px]")).toBe(true);
+    expect(panel?.classList.contains("left-1/2")).toBe(true);
+    expect(panel?.classList.contains("-translate-x-1/2")).toBe(true);
+    expect(panel?.classList.contains("w-[328px]")).toBe(true);
+    expect(panel?.classList.contains("px-4")).toBe(true);
+    expect(panel?.classList.contains("os-mac-aqua:!rounded-[14px]")).toBe(true);
+    expect(panel?.classList.contains("top-10")).toBe(false);
+  });
+
+  test("always shows the pill-shaped Done button", async () => {
+    const wideHost = await renderPanel();
+    expect(
+      wideHost.querySelector('button[aria-label="common.dialog.done"]')
+    ).not.toBeNull();
+
+    await act(async () => {
+      root?.unmount();
+    });
+    root = null;
+    container?.remove();
+    container = null;
+
+    const compactHost = await renderPanel(true);
+    expect(
+      compactHost.querySelector('button[aria-label="common.dialog.done"]')
+    ).not.toBeNull();
   });
 });

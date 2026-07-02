@@ -287,6 +287,23 @@
   min-width: 24px;
 }
 
+/* Standalone Books font pills borrow the toolbar toggle material but keep a
+   capsule outline. Unselected pills stay flatter so the active font leads. */
+:root[data-os-theme="macosx"] .books-font-pill {
+  min-height: 22px;
+  border-right: none;
+  border-radius: 9999px !important;
+  outline: 1px solid rgba(0, 0, 0, 0.2);
+  outline-offset: -1px;
+}
+
+:root[data-os-theme="macosx"] .books-font-pill[data-state="off"] {
+  color: var(--os-color-text-primary);
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+  text-shadow: none;
+}
+
 /* Mac OS X Aqua Button Styles */
 .aqua-button {
   line-height: 1;

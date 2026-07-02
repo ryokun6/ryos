@@ -120,4 +120,25 @@ describe("Books speech bar visibility", () => {
       /className="pointer-events-auto flex w-full items-end justify-center"\s+style=\{\{ height: SPEECH_BAR_EXPANDED\.height \}\}/
     );
   });
+
+  test("keeps the toolbar expanded while Customize is open", async () => {
+    const readerSource = await Bun.file(
+      "src/apps/books/components/BooksReaderPane.tsx"
+    ).text();
+    const appSource = await Bun.file(
+      "src/apps/books/components/books-app/BooksAppComponent.tsx"
+    ).text();
+
+    expect(readerSource).toContain(
+      "const speechBarOpen = isCustomizeOpen || speechBarVisibilityOpen;"
+    );
+    expect(readerSource).toContain(
+      "isCustomizeOpen ? onHideCustomize : onShowCustomize"
+    );
+    expect(readerSource).toContain('<X weight="bold" size={14} />');
+    expect(appSource).toContain("isCustomizeOpen={isCustomizeOpen}");
+    expect(appSource).toContain(
+      "onHideCustomize={() => setIsCustomizeOpen(false)}"
+    );
+  });
 });

@@ -212,6 +212,8 @@ export function BooksAppComponent({
             onSpeechStateChange={handleSpeechStateChange}
             onBookLanguageChange={handleBookLanguageChange}
             onShowCustomize={() => setIsCustomizeOpen(true)}
+            onHideCustomize={() => setIsCustomizeOpen(false)}
+            isCustomizeOpen={isCustomizeOpen}
           />
         ) : (
           <BooksShelfView

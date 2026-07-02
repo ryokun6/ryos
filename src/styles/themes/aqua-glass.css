@@ -847,6 +847,17 @@
   box-shadow: none;
 }
 
+/* Font pills are standalone rather than sharing the toolbar's recessed group.
+   Keep inactive choices flatter and clearer than the selected accent capsule. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn.books-font-pill[data-state="off"] {
+  background: rgba(255, 255, 255, 0.13) !important;
+  box-shadow: none !important;
+  text-shadow: none;
+}
+
 /* Dark glass: graphite translucent stack, same as the dark dropdown toggle. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .metal-inset-btn-group {
@@ -901,6 +912,13 @@
     );
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
   box-shadow: none;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn.books-font-pill[data-state="off"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+  text-shadow: none;
 }
 
 /* --- Frosted search field ------------------------------------------------- */
