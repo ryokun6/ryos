@@ -1001,48 +1001,42 @@
     inset 0 2px 3px 1px var(--os-accent-button-inner, rgba(0, 50, 130, 0.7));
 }
 
-/* Filled track range in dark mode — match the dark toggle thumb gradient
-   (`--os-accent-button-bg`) with a dimmer blue fallback so the default accent
-   doesn't glow against the dark window. */
+/* Horizontal fill mirrors the dark under-tab seam: a bright narrow highlight
+   over a restrained blue body, compressed into the slider channel. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-slider-range {
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0.04) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    var(
-      --os-accent-button-bg,
-      linear-gradient(
-        rgba(0, 50, 130, 0.7),
-        rgba(40, 95, 165, 0.7),
-        rgba(70, 135, 195, 0.7)
-      )
-    ) !important;
-  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.4);
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #16345c 0%,
+      #cfe4f8 8%,
+      #5a82b0 25%,
+      #426591 40%,
+      #4f76a3 60%,
+      #4f73a0 80%,
+      #436690 100%
+    )
+  ) !important;
+  box-shadow: none;
 }
 
-/* Vertical filled range (dark) — shine + bevel on the short (horizontal) axis. */
+/* Vertical fill uses the dark under-tab seam rotated across its short axis. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
   .os-slider-range[data-orientation="vertical"] {
-  background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0.04) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      left / 50% 100% no-repeat,
-    var(
-      --os-accent-button-bg,
-      linear-gradient(
-        to right,
-        rgba(0, 50, 130, 0.7),
-        rgba(40, 95, 165, 0.7),
-        rgba(70, 135, 195, 0.7)
-      )
-    ) !important;
-  box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.4);
+  background: var(
+    --os-accent-tab-bar-line-horizontal,
+    linear-gradient(
+      to right,
+      #16345c 0%,
+      #cfe4f8 8%,
+      #5a82b0 25%,
+      #426591 40%,
+      #4f76a3 60%,
+      #4f73a0 80%,
+      #436690 100%
+    )
+  ) !important;
+  box-shadow: none;
 }
 
 /* Slider track (dark) — quiet neutral recess matching the light-mode track

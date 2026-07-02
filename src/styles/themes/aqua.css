@@ -2619,49 +2619,42 @@
     1px 0 0 rgba(255, 255, 255, 0.25);
 }
 
-/* Filled portion of the track uses the same glossy accent gradient as the
-   toggle thumbs / primary Aqua button (`--os-accent-button-bg`) so sliders and
-   switches read as one cohesive accent-driven set. Falls back to the classic
-   Aqua blue gloss when no accent override is set. */
+/* Horizontal fill borrows the under-tab seam's compact seven-stop shine. At
+   this 4px visible height, its bright 8% peak reads more crisply than the
+   larger Aqua button gradient. */
 :root[data-os-theme="macosx"] .os-slider-range {
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.35) 0%,
-        rgba(255, 255, 255, 0.1) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    var(
-      --os-accent-button-bg,
-      linear-gradient(
-        rgba(0, 65, 184, 0.625),
-        rgba(45, 115, 199, 0.625),
-        rgba(33, 160, 196, 0.625)
-      )
-    ) !important;
-  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.18);
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #2260a4 0%,
+      #e2fbfd 8%,
+      #aecef3 25%,
+      #7aafee 40%,
+      #98ceff 60%,
+      #9dcfff 80%,
+      #74deff 100%
+    )
+  ) !important;
+  box-shadow: none;
 }
 
-/* Vertical filled range — the shine + bevel run across the short (horizontal)
-   axis, so the highlight sits on the leading (left) edge. */
+/* Vertical fill uses the same under-tab seam rotated across its short axis. */
 :root[data-os-theme="macosx"] .os-slider-range[data-orientation="vertical"] {
-  background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.35) 0%,
-        rgba(255, 255, 255, 0.1) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      left / 50% 100% no-repeat,
-    var(
-      --os-accent-button-bg,
-      linear-gradient(
-        to right,
-        rgba(0, 65, 184, 0.625),
-        rgba(45, 115, 199, 0.625),
-        rgba(33, 160, 196, 0.625)
-      )
-    ) !important;
-  box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.18);
+  background: var(
+    --os-accent-tab-bar-line-horizontal,
+    linear-gradient(
+      to right,
+      #2260a4 0%,
+      #e2fbfd 8%,
+      #aecef3 25%,
+      #7aafee 40%,
+      #98ceff 60%,
+      #9dcfff 80%,
+      #74deff 100%
+    )
+  ) !important;
+  box-shadow: none;
 }
 
 /* Slider tick/label text - preserve explicit sizes */

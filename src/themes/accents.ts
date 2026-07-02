@@ -452,17 +452,19 @@ export function getAccentCssVars(
   // peak at 8% (a glossy highlight, well above the active tab's darken(0.22)
   // bottom) → descend → dip at 40% → gentle recover (60–80%) → settle. The
   // body stays dimmer than the peak so the strip reads glossy, not flat.
-  const tabBarLine = isDark
-    ? `linear-gradient(to bottom, ${rgb(darken(base, 0.55))} 0%, ${rgb(
+  const tabBarLineStops = isDark
+    ? `${rgb(darken(base, 0.55))} 0%, ${rgb(
         lighten(base, 0.55)
       )} 8%, ${rgb(darken(base, 0.34))} 25%, ${rgb(
         darken(base, 0.48)
       )} 40%, ${rgb(darken(base, 0.38))} 60%, ${rgb(
         darken(base, 0.4)
-      )} 80%, ${rgb(darken(base, 0.46))} 100%)`
-    : `linear-gradient(to bottom, ${rgb(darken(base, 0.1))} 0%, ${rgb(
+      )} 80%, ${rgb(darken(base, 0.46))} 100%`
+    : `${rgb(darken(base, 0.1))} 0%, ${rgb(
         lighten(base, 0.85)
-      )} 8%, ${rgb(lighten(base, 0.35))} 40%, ${rgb(lighten(base, 0.5))} 100%)`;
+      )} 8%, ${rgb(lighten(base, 0.35))} 40%, ${rgb(lighten(base, 0.5))} 100%`;
+  const tabBarLine = `linear-gradient(to bottom, ${tabBarLineStops})`;
+  const tabBarLineHorizontal = `linear-gradient(to right, ${tabBarLineStops})`;
 
   // Tab edge shadows + label shadow tinted to the accent (replace blue defaults).
   const tabShadowDeep = darken(base, 0.7);
@@ -510,6 +512,7 @@ export function getAccentCssVars(
     // Aqua tabs (consumed via `var(--os-accent-tab-*, …)`).
     "--os-accent-tab-active-bg": tabActive,
     "--os-accent-tab-bar-line": tabBarLine,
+    "--os-accent-tab-bar-line-horizontal": tabBarLineHorizontal,
     "--os-accent-tab-shadow-deep": rgba(tabShadowDeep, 0.8),
     "--os-accent-tab-shadow-edge-strong": rgba(base, 0.75),
     "--os-accent-tab-shadow-edge-soft": rgba(base, 0.5),
@@ -597,6 +600,7 @@ export const ACCENT_CSS_VAR_NAMES = [
   "--os-accent-button-inner",
   "--os-accent-tab-active-bg",
   "--os-accent-tab-bar-line",
+  "--os-accent-tab-bar-line-horizontal",
   "--os-accent-tab-shadow-deep",
   "--os-accent-tab-shadow-edge-strong",
   "--os-accent-tab-shadow-edge-soft",

@@ -157,6 +157,18 @@ describe("BooksCustomizePanel font chips", () => {
   });
 });
 
+describe("BooksCustomizePanel segmented controls", () => {
+  test("uses a simple selection highlight", async () => {
+    const host = await renderPanel();
+    const selected = host.querySelector<HTMLButtonElement>(
+      'button[role="radio"][aria-checked="true"]'
+    );
+
+    expect(selected?.classList.contains("bg-os-selection-bg")).toBe(true);
+    expect(selected?.classList.contains("books-segment-selected")).toBe(false);
+  });
+});
+
 describe("BooksCustomizePanel theme swatches", () => {
   test("uses consistently sized, softly rounded Latin previews", async () => {
     const host = await renderPanel();
