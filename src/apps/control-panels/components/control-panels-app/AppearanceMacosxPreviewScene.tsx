@@ -3,6 +3,7 @@ import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { resolveStaticWallpaperRenderUrl } from "@/utils/staticWallpaperUrl";
 import { INDEXEDDB_PREFIX } from "@/stores/useDisplaySettingsStore";
 import {
   getDayNightGradientCss,
@@ -80,8 +81,13 @@ export function AppearanceMacosxPreviewScene({
   const wallpaperStyle = useMemo((): CSSProperties => {
     if (isStaticImageWallpaper(wallpaperSource, isVideoWallpaper)) {
       const isTiled = wallpaperSource.includes("/wallpapers/tiles/");
+      const renderSource = resolveStaticWallpaperRenderUrl(
+        wallpaperSource,
+        Math.max(hostWidth, 512),
+        1
+      );
       return {
-        backgroundImage: `url("${wallpaperSource}")`,
+        backgroundImage: `url("${renderSource}")`,
         backgroundSize: isTiled ? "64px 64px" : "cover",
         backgroundRepeat: isTiled ? "repeat" : "no-repeat",
         backgroundPosition: "center",
@@ -94,7 +100,7 @@ export function AppearanceMacosxPreviewScene({
       backgroundColor: "var(--os-color-window-bg)",
       backgroundImage: "var(--os-pinstripe-window)",
     };
-  }, [wallpaperSource, isVideoWallpaper]);
+  }, [wallpaperSource, isVideoWallpaper, hostWidth]);
 
   const titleBarStyle: CSSProperties = isGlass
     ? { background: "transparent" }

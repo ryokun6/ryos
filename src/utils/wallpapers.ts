@@ -5,6 +5,11 @@ import { abortableFetch } from "./abortableFetch";
 export interface WallpaperManifest {
   version: number;
   generatedAt: string;
+  photoRender?: {
+    widths: number[];
+    formats: string[];
+    pathTemplate: string;
+  };
   tiles: string[];
   photos: Record<string, string[]>; // category -> relative paths (e.g. photos/foliage/rose.jpg)
   videos: string[]; // relative paths

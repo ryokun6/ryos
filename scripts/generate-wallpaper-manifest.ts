@@ -11,6 +11,11 @@ const WALLPAPERS_ROOT = "public/wallpapers";
 interface WallpaperManifest {
   version: number;
   generatedAt: string;
+  photoRender: {
+    widths: number[];
+    formats: string[];
+    pathTemplate: string;
+  };
   tiles: string[]; // e.g. ["tiles/azul_dark.png"]
   photos: Record<string, string[]>; // category -> ["photos/category/file.jpg"]
   videos: string[]; // e.g. ["videos/blue_flowers_loop.mp4"]
@@ -99,8 +104,13 @@ async function collectPhotos(): Promise<Record<string, string[]>> {
 
 async function build() {
   const manifest: WallpaperManifest = {
-    version: 1,
+    version: 2,
     generatedAt: new Date().toISOString(),
+    photoRender: {
+      widths: [1280, 1920, 2560],
+      formats: ["webp"],
+      pathTemplate: "variants/{width}w/{base}.{format}",
+    },
     tiles: await collectTiles(),
     photos: await collectPhotos(),
     videos: await collectVideos(),
