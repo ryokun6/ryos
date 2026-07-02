@@ -2,9 +2,9 @@ import { useEffect, useState, type ComponentType } from "react";
 import { useChatsStoreShallow } from "@/stores/useChatsStore";
 
 /**
- * Schedules dynamic import of the AirDrop listener for authenticated users
- * after first paint (idle, max 3s wait), so anonymous sessions never download
- * `useFileSystem` and the full Finder VFS dependency graph.
+ * Loads the AirDrop listener as soon as authentication is restored. Anonymous
+ * sessions never download `useFileSystem` and the full Finder VFS dependency
+ * graph.
  */
 export function DeferredAirDropListener() {
   const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
@@ -20,31 +20,18 @@ export function DeferredAirDropListener() {
     }
 
     let cancelled = false;
-    let idleId: number | undefined;
-    let timeoutId: number | undefined;
-
-    const load = () => {
-      if (cancelled) return;
-      void import("./AirDropListener").then((mod) => {
-        if (!cancelled) setListener(() => mod.AirDropListener);
+    void import("./AirDropListener")
+      .then((module) => {
+        if (!cancelled) setListener(() => module.AirDropListener);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          console.error("[AirDrop] Failed to load listener", error);
+        }
       });
-    };
-
-    const w = window;
-    if (typeof w.requestIdleCallback === "function") {
-      idleId = w.requestIdleCallback(load, { timeout: 3000 });
-    } else {
-      timeoutId = w.setTimeout(load, 0);
-    }
 
     return () => {
       cancelled = true;
-      if (idleId !== undefined && typeof w.cancelIdleCallback === "function") {
-        w.cancelIdleCallback(idleId);
-      }
-      if (timeoutId !== undefined) {
-        w.clearTimeout(timeoutId);
-      }
     };
   }, [shouldLoad]);
 

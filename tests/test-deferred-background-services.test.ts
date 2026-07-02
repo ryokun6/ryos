@@ -18,6 +18,8 @@ describe("deferred authenticated background services", () => {
     expect(wrapper).toContain(
       'import("./BackgroundChatNotificationsRunner")'
     );
+    expect(wrapper).not.toContain("requestIdleCallback");
+    expect(wrapper).not.toContain("setTimeout");
   });
 
   test("does not download the AirDrop listener for anonymous sessions", () => {
@@ -30,6 +32,8 @@ describe("deferred authenticated background services", () => {
     expect(wrapper.indexOf("if (!shouldLoad)")).toBeLessThan(
       wrapper.indexOf('import("./AirDropListener")')
     );
+    expect(wrapper).not.toContain("requestIdleCallback");
+    expect(wrapper).not.toContain("setTimeout");
   });
 
   test("loads idle-only warmers through dynamic imports", () => {
