@@ -51,6 +51,7 @@ import {
 } from "../utils/booksTextLayout";
 import { BOOKS_SPEECH_HIGHLIGHT_CSS } from "../utils/booksSpeech";
 import { useBooksSpeech } from "../hooks/useBooksSpeech";
+import { useBooksSpeechBarVisibility } from "../hooks/useBooksSpeechBarVisibility";
 import { ryOSLocaleToSpeechLanguage } from "@/utils/browserSpeech";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
@@ -136,8 +137,6 @@ const SPREAD_MIN_WIDTH = 560;
 // Shared style for the read-aloud overlay control buttons.
 const SPEECH_OVERLAY_BUTTON_CLASS =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40 disabled:hover:bg-transparent";
-/** Idle delay before the read-aloud bar shrinks back to the home-indicator pill. */
-const SPEECH_BAR_COLLAPSE_MS = 1800;
 const SPEECH_BAR_COLLAPSED = { width: 72, height: 5 } as const;
 const SPEECH_BAR_EXPANDED = { width: 130, height: 36 } as const;
 
@@ -1478,56 +1477,15 @@ export const BooksReaderPane = forwardRef<
   // Read-aloud bar: stays expanded while playing; idle / paused collapses to
   // the home-indicator pill (hover or tap grows it again).
   const isSpeechPlaying = isSpeaking && !isPaused;
-  const isSpeechPlayingRef = useRef(isSpeechPlaying);
-  isSpeechPlayingRef.current = isSpeechPlaying;
-  const [speechBarExpanded, setSpeechBarExpanded] = useState(false);
-  const speechBarOpen = isSpeechPlaying || speechBarExpanded;
-  const speechBarPointerInsideRef = useRef(false);
-  const speechBarCollapseTimerRef = useRef<number | null>(null);
-  const clearSpeechBarCollapseTimer = useCallback(() => {
-    if (speechBarCollapseTimerRef.current !== null) {
-      window.clearTimeout(speechBarCollapseTimerRef.current);
-      speechBarCollapseTimerRef.current = null;
-    }
-  }, []);
-  const collapseSpeechBar = useCallback(() => {
-    clearSpeechBarCollapseTimer();
-    setSpeechBarExpanded(false);
-  }, [clearSpeechBarCollapseTimer]);
-  const expandSpeechBar = useCallback(() => {
-    clearSpeechBarCollapseTimer();
-    setSpeechBarExpanded(true);
-  }, [clearSpeechBarCollapseTimer]);
-  const scheduleSpeechBarCollapse = useCallback(
-    (delayMs = SPEECH_BAR_COLLAPSE_MS) => {
-      // Keep the full bar up for the entire playing session.
-      if (isSpeechPlayingRef.current) return;
-      clearSpeechBarCollapseTimer();
-      speechBarCollapseTimerRef.current = window.setTimeout(() => {
-        speechBarCollapseTimerRef.current = null;
-        if (speechBarPointerInsideRef.current || isSpeechPlayingRef.current) {
-          return;
-        }
-        setSpeechBarExpanded(false);
-      }, delayMs);
-    },
-    [clearSpeechBarCollapseTimer]
-  );
-  useEffect(() => {
-    if (isSpeechPlaying) {
-      expandSpeechBar();
-      return;
-    }
-    // Idle or paused: drop to the indicator unless the pointer is still over
-    // the bar (so resume / play stays one click away).
-    if (!speechBarPointerInsideRef.current) {
-      collapseSpeechBar();
-    }
-  }, [isSpeechPlaying, expandSpeechBar, collapseSpeechBar]);
-  useEffect(
-    () => () => clearSpeechBarCollapseTimer(),
-    [clearSpeechBarCollapseTimer]
-  );
+  const {
+    isOpen: speechBarOpen,
+    handlePointerEnter: handleSpeechBarPointerEnter,
+    handlePointerLeave: handleSpeechBarPointerLeave,
+    handlePointerDown: handleSpeechBarPointerDown,
+    handleFocus: handleSpeechBarFocus,
+    handleBlur: handleSpeechBarBlur,
+    revealTemporarily: revealSpeechBarTemporarily,
+  } = useBooksSpeechBarVisibility({ isPlaying: isSpeechPlaying });
 
   useImperativeHandle(
     ref,
@@ -1673,22 +1631,22 @@ export const BooksReaderPane = forwardRef<
         <div
           className="pointer-events-auto flex items-end justify-center"
           style={{ minWidth: 72, minHeight: 28 }}
-          onPointerEnter={() => {
-            speechBarPointerInsideRef.current = true;
-            expandSpeechBar();
-          }}
-          onPointerLeave={() => {
-            speechBarPointerInsideRef.current = false;
-            scheduleSpeechBarCollapse(160);
-          }}
-          onFocusCapture={expandSpeechBar}
+          onPointerEnter={(event) =>
+            handleSpeechBarPointerEnter(event.pointerType)
+          }
+          onPointerLeave={(event) =>
+            handleSpeechBarPointerLeave(event.pointerType)
+          }
+          onPointerDown={(event) =>
+            handleSpeechBarPointerDown(event.pointerType)
+          }
+          onFocusCapture={handleSpeechBarFocus}
           onBlurCapture={(event) => {
             const next = event.relatedTarget;
             if (next instanceof Node && event.currentTarget.contains(next)) {
               return;
             }
-            speechBarPointerInsideRef.current = false;
-            scheduleSpeechBarCollapse(160);
+            handleSpeechBarBlur();
           }}
         >
           <motion.div
@@ -1729,9 +1687,7 @@ export const BooksReaderPane = forwardRef<
             }}
             onClick={() => {
               if (speechBarOpen) return;
-              expandSpeechBar();
-              // Touch has no sustained hover; auto-shrink after idle.
-              scheduleSpeechBarCollapse();
+              revealSpeechBarTemporarily();
             }}
           >
             <motion.div
