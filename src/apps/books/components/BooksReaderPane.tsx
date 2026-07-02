@@ -1639,8 +1639,8 @@ export const BooksReaderPane = forwardRef<
         transition={{ duration: 0.22, ease: "easeOut" }}
       >
         <div
-          className="pointer-events-auto flex items-end justify-center"
-          style={{ minWidth: 72, minHeight: 28 }}
+          className="pointer-events-auto flex w-full items-end justify-center"
+          style={{ height: SPEECH_BAR_EXPANDED.height }}
           onPointerEnter={(event) =>
             handleSpeechBarPointerEnter(event.pointerType)
           }

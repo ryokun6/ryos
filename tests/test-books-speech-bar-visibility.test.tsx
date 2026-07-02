@@ -110,4 +110,14 @@ describe("Books speech bar visibility", () => {
     });
     expect(getVisibility().isOpen).toBe(false);
   });
+
+  test("wires the full-width bottom strip at the expanded bar height", async () => {
+    const readerSource = await Bun.file(
+      "src/apps/books/components/BooksReaderPane.tsx"
+    ).text();
+
+    expect(readerSource).toMatch(
+      /className="pointer-events-auto flex w-full items-end justify-center"\s+style=\{\{ height: SPEECH_BAR_EXPANDED\.height \}\}/
+    );
+  });
 });
