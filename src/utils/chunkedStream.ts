@@ -18,6 +18,57 @@ const streamLog = createClientLogger("LyricsStream");
 
 type LyricsStreamKind = "translation" | "furigana" | "soramimi";
 
+class NonRetryableStreamError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number
+  ) {
+    super(message);
+    this.name = "NonRetryableStreamError";
+  }
+}
+
+function isNonRetryableHttpStatus(status: number): boolean {
+  return status >= 400 && status < 500;
+}
+
+function getObjectProperty(value: unknown, key: string): unknown {
+  if (!value || typeof value !== "object") return undefined;
+  return (value as Record<string, unknown>)[key];
+}
+
+function getJsonErrorMessage(value: unknown): string | null {
+  const error = getObjectProperty(value, "error");
+  return typeof error === "string" && error.trim() ? error : null;
+}
+
+function isSkippedJsonResponse(value: unknown): boolean {
+  return getObjectProperty(value, "skipped") === true;
+}
+
+async function createStreamHttpError(response: Response): Promise<Error> {
+  let message = `SSE request failed: ${response.status}`;
+  const contentType = response.headers.get("content-type");
+  if (contentType?.includes("application/json")) {
+    try {
+      const json = await response.json();
+      message = getJsonErrorMessage(json) ?? message;
+    } catch {
+      // Keep the status-based message if the error body is malformed.
+    }
+  }
+  if (isNonRetryableHttpStatus(response.status)) {
+    return new NonRetryableStreamError(message, response.status);
+  }
+  return new Error(message);
+}
+
+function createTerminalJsonStreamError(value: unknown): NonRetryableStreamError {
+  return new NonRetryableStreamError(
+    getJsonErrorMessage(value) ?? "Unknown error"
+  );
+}
+
 function logCallbackError(
   stream: LyricsStreamKind,
   stage: string,
@@ -168,13 +219,13 @@ export async function processTranslationSSE(
       });
 
       if (!response.ok) {
-        throw new Error(`SSE request failed: ${response.status}`);
+        throw await createStreamHttpError(response);
       }
 
       const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
         const json = await response.json();
-        throw new Error(json.error || "Unknown error");
+        throw createTerminalJsonStreamError(json);
       }
 
       const reader = response.body?.getReader();
@@ -335,6 +386,15 @@ export async function processTranslationSSE(
       if (err instanceof Error && err.name === "AbortError") {
         throw err; // Don't retry on abort
       }
+      if (err instanceof NonRetryableStreamError) {
+        streamLog.warn("Translation stream failed without retry", {
+          error: err,
+          songId,
+          language,
+          status: err.status,
+        });
+        throw err;
+      }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Translation stream failed", {
           error: err,
@@ -446,13 +506,13 @@ export async function processFuriganaSSE(
       });
 
       if (!response.ok) {
-        throw new Error(`SSE request failed: ${response.status}`);
+        throw await createStreamHttpError(response);
       }
 
       const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
         const json = await response.json();
-        throw new Error(json.error || "Unknown error");
+        throw createTerminalJsonStreamError(json);
       }
 
       const reader = response.body?.getReader();
@@ -603,6 +663,14 @@ export async function processFuriganaSSE(
       
       if (err instanceof Error && err.name === "AbortError") {
         throw err; // Don't retry on abort
+      }
+      if (err instanceof NonRetryableStreamError) {
+        streamLog.warn("Furigana stream failed without retry", {
+          error: err,
+          songId,
+          status: err.status,
+        });
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Furigana stream failed", {
@@ -765,21 +833,21 @@ export async function processSoramimiSSE(
       });
 
       if (!response.ok) {
-        throw new Error(`SSE request failed: ${response.status}`);
+        throw await createStreamHttpError(response);
       }
 
       const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
         const json = await response.json();
-        if (json.skipped) {
-        try {
-          onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
-        } catch (callbackErr) {
-          logCallbackError("soramimi", "server-skipped progress", callbackErr);
+        if (isSkippedJsonResponse(json)) {
+          try {
+            onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
+          } catch (callbackErr) {
+            logCallbackError("soramimi", "server-skipped progress", callbackErr);
+          }
+          return { data: [], success: true };
         }
-        return { data: [], success: true };
-      }
-        throw new Error(json.error || "Unknown error");
+        throw createTerminalJsonStreamError(json);
       }
 
       const reader = response.body?.getReader();
@@ -935,6 +1003,15 @@ export async function processSoramimiSSE(
       
       if (err instanceof Error && err.name === "AbortError") {
         throw err; // Don't retry on abort
+      }
+      if (err instanceof NonRetryableStreamError) {
+        streamLog.warn("Soramimi stream failed without retry", {
+          error: err,
+          songId,
+          targetLanguage,
+          status: err.status,
+        });
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Soramimi stream failed", {
