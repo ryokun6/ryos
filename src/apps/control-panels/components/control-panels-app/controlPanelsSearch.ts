@@ -230,6 +230,20 @@ export const CONTROL_PANEL_SEARCH_ENTRIES: ControlPanelSearchEntry[] = [
   },
   {
     paneId: "sound",
+    labelKey: `${CP}.browserTtsVoice`,
+    keywords: [
+      "tts",
+      "voice",
+      "tts voice",
+      "text to speech",
+      "read aloud",
+      "speech voice",
+      "books",
+      "calculator",
+    ],
+  },
+  {
+    paneId: "sound",
     labelKey: `${CP}.terminalIeAmbientSynth`,
     keywords: [
       "synth",

@@ -373,6 +373,8 @@ export function useControlPanelsLogic({
     setTtsModel,
     ttsVoice,
     setTtsVoice,
+    browserTtsVoiceURI,
+    setBrowserTtsVoiceURI,
     synthPreset,
     setSynthPreset,
     ipodVolume,
@@ -396,6 +398,8 @@ export function useControlPanelsLogic({
     setTtsModel: s.setTtsModel,
     ttsVoice: s.ttsVoice,
     setTtsVoice: s.setTtsVoice,
+    browserTtsVoiceURI: s.browserTtsVoiceURI,
+    setBrowserTtsVoiceURI: s.setBrowserTtsVoiceURI,
     synthPreset: s.synthPreset,
     setSynthPreset: s.setSynthPreset,
     ipodVolume: s.ipodVolume,
@@ -729,6 +733,10 @@ export function useControlPanelsLogic({
 
   const handleSpeechChange = (enabled: boolean) => {
     setSpeechEnabled(enabled);
+  };
+
+  const handleBrowserTtsVoiceChange = (voiceURI: string | null) => {
+    setBrowserTtsVoiceURI(voiceURI);
   };
 
   const handleSynthPresetChange = (value: string) => {
@@ -1278,6 +1286,8 @@ export function useControlPanelsLogic({
     handleUISoundsChange,
     speechEnabled,
     handleSpeechChange,
+    browserTtsVoiceURI,
+    handleBrowserTtsVoiceChange,
     terminalSoundsEnabled,
     setTerminalSoundsEnabled,
     synthPreset,

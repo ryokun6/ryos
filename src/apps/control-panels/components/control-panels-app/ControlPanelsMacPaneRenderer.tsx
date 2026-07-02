@@ -51,6 +51,8 @@ export type ControlPanelsMacPaneRendererProps = {
   handleUISoundsChange: (enabled: boolean) => void;
   speechEnabled: boolean;
   handleSpeechChange: (enabled: boolean) => void;
+  browserTtsVoiceURI: string | null;
+  handleBrowserTtsVoiceChange: (voiceURI: string | null) => void;
   terminalSoundsEnabled: boolean;
   setTerminalSoundsEnabled: (enabled: boolean) => void;
   synthPreset: string;
@@ -222,6 +224,8 @@ export function ControlPanelsMacPaneRenderer(
           handleUISoundsChange={props.handleUISoundsChange}
           speechEnabled={props.speechEnabled}
           handleSpeechChange={props.handleSpeechChange}
+          browserTtsVoiceURI={props.browserTtsVoiceURI}
+          handleBrowserTtsVoiceChange={props.handleBrowserTtsVoiceChange}
           terminalSoundsEnabled={props.terminalSoundsEnabled}
           setTerminalSoundsEnabled={props.setTerminalSoundsEnabled}
           synthPreset={props.synthPreset}

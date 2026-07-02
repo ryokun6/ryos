@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getBrowserSpeechSynthesis,
-  pickSpeechVoiceForLanguage,
+  resolveSpeechVoice,
 } from "@/utils/browserSpeech";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import {
   applySpeechHighlight,
   clearSpeechHighlight,
@@ -204,7 +205,11 @@ export function useBooksSpeech({
       const utterance = new SpeechSynthesisUtterance(chunk.text);
       utterance.lang = lang;
       utterance.rate = rate;
-      const voice = pickSpeechVoiceForLanguage(synth.getVoices(), lang);
+      const voice = resolveSpeechVoice(
+        synth.getVoices(),
+        lang,
+        useAudioSettingsStore.getState().browserTtsVoiceURI
+      );
       if (voice) utterance.voice = voice;
       activeUtteranceRef.current = utterance;
 

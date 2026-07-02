@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SYNTH_PRESETS } from "@/hooks/chatSynthPresets";
+import { useSpeechSynthesisVoices } from "@/hooks/useSpeechSynthesisVoices";
 import { VolumeMixer } from "../VolumeMixer";
 import { ControlPanelsPrefFormRow } from "./ControlPanelsPrefFormRow";
 import type { SoundTabContentProps } from "./SoundTabContent";
@@ -21,12 +22,17 @@ export type SoundPaneContentProps = Omit<
 
 type SoundPaneTab = "effects" | "output";
 
+/** Sentinel Select value for the automatic (per-language) voice pick. */
+const AUTO_TTS_VOICE = "auto";
+
 export function SoundPaneContent({
   t,
   uiSoundsEnabled,
   handleUISoundsChange,
   speechEnabled,
   handleSpeechChange,
+  browserTtsVoiceURI,
+  handleBrowserTtsVoiceChange,
   terminalSoundsEnabled,
   setTerminalSoundsEnabled,
   synthPreset,
@@ -56,6 +62,14 @@ export function SoundPaneContent({
   const [soundTab, setSoundTab] = useState<SoundPaneTab>("effects");
   const { barClassName, triggerClassName, triggerStyle } =
     useControlPanelsTabClasses();
+  const speechVoices = useSpeechSynthesisVoices();
+  // Show "Automatic" when the stored voice isn't available on this device
+  // (voice lists differ per browser/OS) — that is the effective behavior.
+  const selectedTtsVoice =
+    browserTtsVoiceURI &&
+    speechVoices.some((voice) => voice.voiceURI === browserTtsVoiceURI)
+      ? browserTtsVoiceURI
+      : AUTO_TTS_VOICE;
 
   return (
     <div className="control-panels-pref-form control-panels-pref-form-tabbed">
@@ -116,6 +130,36 @@ export function SoundPaneContent({
                   onCheckedChange={handleSpeechChange}
                   className="data-[state=checked]:bg-[#000000]"
                 />
+              </ControlPanelsPrefFormRow>
+
+              <ControlPanelsPrefFormRow
+                label={t("apps.control-panels.browserTtsVoice")}
+                description={t("apps.control-panels.browserTtsVoiceDescription")}
+              >
+                <Select
+                  value={selectedTtsVoice}
+                  onValueChange={(value) =>
+                    handleBrowserTtsVoiceChange(
+                      value === AUTO_TTS_VOICE ? null : value
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue
+                      placeholder={t("apps.control-panels.browserTtsVoiceAutomatic")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AUTO_TTS_VOICE}>
+                      {t("apps.control-panels.browserTtsVoiceAutomatic")}
+                    </SelectItem>
+                    {speechVoices.map((voice) => (
+                      <SelectItem key={voice.voiceURI} value={voice.voiceURI}>
+                        {`${voice.name} (${voice.lang})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </ControlPanelsPrefFormRow>
 
               <ControlPanelsPrefFormRow
