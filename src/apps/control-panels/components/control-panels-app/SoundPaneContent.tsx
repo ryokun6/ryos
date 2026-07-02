@@ -133,6 +133,17 @@ export function SoundPaneContent({
               </ControlPanelsPrefFormRow>
 
               <ControlPanelsPrefFormRow
+                label={t("apps.control-panels.terminalIeAmbientSynth")}
+                description={t("apps.control-panels.terminalIeAmbientSynthDescription")}
+              >
+                <Switch
+                  checked={terminalSoundsEnabled}
+                  onCheckedChange={setTerminalSoundsEnabled}
+                  className="data-[state=checked]:bg-[#000000]"
+                />
+              </ControlPanelsPrefFormRow>
+
+              <ControlPanelsPrefFormRow
                 label={t("apps.control-panels.browserTtsVoice")}
                 description={t("apps.control-panels.browserTtsVoiceDescription")}
               >
@@ -144,7 +155,7 @@ export function SoundPaneContent({
                     )
                   }
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue
                       placeholder={t("apps.control-panels.browserTtsVoiceAutomatic")}
                     />
@@ -160,17 +171,6 @@ export function SoundPaneContent({
                     ))}
                   </SelectContent>
                 </Select>
-              </ControlPanelsPrefFormRow>
-
-              <ControlPanelsPrefFormRow
-                label={t("apps.control-panels.terminalIeAmbientSynth")}
-                description={t("apps.control-panels.terminalIeAmbientSynthDescription")}
-              >
-                <Switch
-                  checked={terminalSoundsEnabled}
-                  onCheckedChange={setTerminalSoundsEnabled}
-                  className="data-[state=checked]:bg-[#000000]"
-                />
               </ControlPanelsPrefFormRow>
 
               <ControlPanelsPrefFormRow
