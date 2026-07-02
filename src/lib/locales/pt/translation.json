@@ -600,10 +600,6 @@
         "double": "Duplo",
         "single": "Simples"
       },
-      "textLayout": {
-        "book": "Padrão do livro",
-        "vertical": "Vertical"
-      },
       "contextMenu": {
         "delete": "Apagar",
         "moveToBottom": "Mover para o final",
@@ -650,11 +646,15 @@
         "import": "Importar EPUB…",
         "nextPage": "Página Seguinte",
         "previousPage": "Página Anterior",
+        "speech": "Fala",
+        "speechRate": "Velocidade da Fala",
+        "startSpeaking": "Começar a Falar",
+        "stopSpeaking": "Parar de Falar",
+        "textLayout": "Direção do texto",
         "textSize": "Tamanho do Texto",
         "textSizeDecrease": "Menor",
         "textSizeIncrease": "Maior",
         "textSizeReset": "Tamanho Padrão",
-        "textLayout": "Direção do texto",
         "theme": "Tema"
       },
       "name": "Livros",
@@ -670,6 +670,16 @@
         "import": "Adicionar Livro",
         "listView": "Visualização por Lista",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "Rápida",
+        "normal": "Normal",
+        "slow": "Lenta",
+        "veryFast": "Muito Rápida"
+      },
+      "textLayout": {
+        "book": "Padrão do livro",
+        "vertical": "Vertical"
       },
       "theme": {
         "auto": "Automático",

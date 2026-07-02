@@ -26,6 +26,26 @@ describe("Books compact menu layout", () => {
         },
       ],
     };
+    const speechMenu: MenuDescriptor = {
+      label: "Speech",
+      items: [
+        { type: "action", label: "Start Speaking", onClick: noop },
+        { type: "action", label: "Stop Speaking", onClick: noop },
+        { type: "separator" },
+        {
+          type: "submenu",
+          label: "Speech Rate",
+          items: [
+            {
+              type: "radioGroup",
+              value: "1",
+              onValueChange: noop,
+              options: [{ label: "Normal", value: "1" }],
+            },
+          ],
+        },
+      ],
+    };
     const goMenu: MenuDescriptor = {
       label: "Go",
       items: [
@@ -49,12 +69,14 @@ describe("Books compact menu layout", () => {
     const compactMenus = buildBooksMenuLayout({
       fileMenu,
       viewMenu,
+      speechMenu,
       goMenu,
       isCompact: true,
     });
     const desktopMenus = buildBooksMenuLayout({
       fileMenu,
       viewMenu,
+      speechMenu,
       goMenu,
       isCompact: false,
     });
@@ -62,8 +84,9 @@ describe("Books compact menu layout", () => {
     expect(compactMenus[0]).toBe(fileMenu);
     expect(compactMenus[1]).toBe(viewMenu);
     expect(compactMenus[1].items[0].type).toBe("submenu");
-    expect(compactMenus[2]).not.toBe(goMenu);
+    expect(compactMenus[2]).not.toBe(speechMenu);
     expect(compactMenus[2].items.map((item) => item.type)).toEqual([
+      "action",
       "action",
       "separator",
       "radioGroup",
@@ -71,8 +94,18 @@ describe("Books compact menu layout", () => {
     expect(
       compactMenus[2].items.some((item) => item.type === "submenu")
     ).toBe(false);
-    expect(compactMenus[2].contentClassName).toContain("overflow-y-auto");
-    expect(desktopMenus[2]).toBe(goMenu);
+    expect(compactMenus[3]).not.toBe(goMenu);
+    expect(compactMenus[3].items.map((item) => item.type)).toEqual([
+      "action",
+      "separator",
+      "radioGroup",
+    ]);
+    expect(
+      compactMenus[3].items.some((item) => item.type === "submenu")
+    ).toBe(false);
+    expect(compactMenus[3].contentClassName).toContain("overflow-y-auto");
+    expect(desktopMenus[2]).toBe(speechMenu);
+    expect(desktopMenus[3]).toBe(goMenu);
   });
 
   test("flattens multiple flyouts without their headers", () => {

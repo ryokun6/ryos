@@ -15,6 +15,7 @@ import {
   BOOKS_FONT_SIZE_MAX,
   BOOKS_FONT_SIZE_MIN,
   BOOKS_FONT_SIZE_STEP,
+  BOOKS_SPEECH_RATE_OPTIONS,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import type { BooksNavigationState } from "./BooksReaderPane";
@@ -32,6 +33,9 @@ interface BooksMenuBarProps {
   onGoToPreviousPage: () => void;
   onGoToNextPage: () => void;
   onGoToChapter: (href: string) => void;
+  isSpeaking: boolean;
+  onStartSpeaking: () => void;
+  onStopSpeaking: () => void;
 }
 
 export function BooksMenuBar({
@@ -47,6 +51,9 @@ export function BooksMenuBar({
   onGoToPreviousPage,
   onGoToNextPage,
   onGoToChapter,
+  isSpeaking,
+  onStartSpeaking,
+  onStopSpeaking,
 }: BooksMenuBarProps) {
   const { t } = useTranslation();
   const isCompactMenu = useMediaQuery("(max-width: 768px)");
@@ -231,6 +238,52 @@ export function BooksMenuBar({
 
   const chapters = navigationState.chapters;
   const canNavigateReader = isReading && navigationState.isReady;
+
+  const speechRateLabels: Record<string, string> = {
+    "0.8": t("apps.books.speechRate.slow"),
+    "1": t("apps.books.speechRate.normal"),
+    "1.2": t("apps.books.speechRate.fast"),
+    "1.5": t("apps.books.speechRate.veryFast"),
+  };
+  const speechMenu: MenuDescriptor = {
+    label: t("apps.books.menu.speech"),
+    items: [
+      {
+        type: "action",
+        label: t("apps.books.menu.startSpeaking"),
+        onClick: onStartSpeaking,
+        disabled: !canNavigateReader || isSpeaking,
+      },
+      {
+        type: "action",
+        label: t("apps.books.menu.stopSpeaking"),
+        onClick: onStopSpeaking,
+        disabled: !isSpeaking,
+      },
+      { type: "separator" },
+      {
+        type: "submenu",
+        label: t("apps.books.menu.speechRate"),
+        items: [
+          {
+            type: "radioGroup",
+            value: String(settings.speechRate),
+            onValueChange: (value) => {
+              const rate = Number(value);
+              if (Number.isFinite(rate) && rate > 0) {
+                updateSettings({ speechRate: rate });
+              }
+            },
+            options: BOOKS_SPEECH_RATE_OPTIONS.map((rate) => ({
+              label: speechRateLabels[String(rate)] ?? `${rate}×`,
+              value: String(rate),
+            })),
+          },
+        ],
+      },
+    ],
+  };
+
   const goMenu: MenuDescriptor = {
     label: t("common.menu.go"),
     items: [
@@ -288,6 +341,7 @@ export function BooksMenuBar({
   const menus = buildBooksMenuLayout({
     fileMenu,
     viewMenu,
+    speechMenu,
     goMenu,
     isCompact: isCompactMenu,
   });

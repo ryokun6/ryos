@@ -598,10 +598,6 @@
         "double": "雙頁",
         "single": "單頁"
       },
-      "textLayout": {
-        "book": "書籍預設",
-        "vertical": "直排"
-      },
       "contextMenu": {
         "delete": "刪除",
         "moveToBottom": "移至底端",
@@ -648,11 +644,15 @@
         "import": "匯入 EPUB⋯",
         "nextPage": "下一頁",
         "previousPage": "上一頁",
+        "speech": "語音",
+        "speechRate": "語音速率",
+        "startSpeaking": "開始朗讀",
+        "stopSpeaking": "停止朗讀",
+        "textLayout": "文字方向",
         "textSize": "文字大小",
         "textSizeDecrease": "縮小",
         "textSizeIncrease": "放大",
         "textSizeReset": "預設大小",
-        "textLayout": "文字方向",
         "theme": "主題"
       },
       "name": "書籍",
@@ -668,6 +668,16 @@
         "import": "新增書籍",
         "listView": "列表顯示方式",
         "percentRead": "{{percent}}%"
+      },
+      "speechRate": {
+        "fast": "快",
+        "normal": "正常",
+        "slow": "慢",
+        "veryFast": "非常快"
+      },
+      "textLayout": {
+        "book": "書籍預設",
+        "vertical": "直排"
       },
       "theme": {
         "auto": "自動",
