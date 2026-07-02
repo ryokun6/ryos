@@ -604,10 +604,13 @@
         "moveToTop": "맨 위로 이동"
       },
       "customize": {
+        "background": "배경",
         "colors": "색상",
         "lineSpacing": "줄 간격",
         "margins": "여백",
-        "title": "사용자화"
+        "textColor": "텍스트",
+        "title": "사용자화",
+        "transparent": "투명"
       },
       "description": "EPUB 도서 읽기",
       "help": {
@@ -657,9 +660,6 @@
         "stopSpeaking": "말하기 중단",
         "textLayout": "글자 방향",
         "textSize": "텍스트 크기",
-        "textSizeDecrease": "작게",
-        "textSizeIncrease": "크게",
-        "textSizeReset": "기본 크기",
         "theme": "테마"
       },
       "name": "도서",
@@ -690,6 +690,7 @@
       "theme": {
         "auto": "자동",
         "black": "검은색",
+        "custom": "사용자화",
         "dark": "다크",
         "gray": "회색",
         "green": "초록색",

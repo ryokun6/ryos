@@ -1,5 +1,6 @@
 import {
   clampBooksLineHeight,
+  normalizeBooksCustomColor,
   type BooksReaderSettings,
   type BooksThemeOverride,
 } from "@/stores/useBooksStore";
@@ -134,7 +135,7 @@ export interface ReadingPalette {
   isDark: boolean;
 }
 
-export type BooksThemePresetId = Exclude<BooksThemeOverride, "auto">;
+export type BooksThemePresetId = Exclude<BooksThemeOverride, "auto" | "custom">;
 
 const PALETTES: Record<BooksThemePresetId, ReadingPalette> = {
   light: {
@@ -207,13 +208,78 @@ export function getReadingPalette(preset: BooksThemePresetId): ReadingPalette {
   return PALETTES[preset];
 }
 
-/** Resolve the active reading palette from settings + OS dark mode. */
-export function resolveReadingPalette(
-  themeOverride: BooksThemeOverride,
+/** Perceived brightness (0..1) of a #rgb / #rrggbb hex color. */
+function hexBrightness(hex: string): number {
+  const normalized = normalizeBooksCustomColor(hex, "#ffffff");
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+/** Settings slice needed to resolve the active reading palette. */
+export type BooksPaletteSettings = Pick<
+  BooksReaderSettings,
+  | "themeOverride"
+  | "customThemeBackground"
+  | "customThemeText"
+  | "customThemeTransparent"
+>;
+
+/**
+ * Palette for the user's custom theme. A transparent background lets the
+ * window material (e.g. Aqua Glass) show through, so the surrounding chrome
+ * follows the OS dark-mode setting instead of the (hidden) background color.
+ */
+export function buildCustomReadingPalette(
+  settings: Pick<
+    BooksPaletteSettings,
+    "customThemeBackground" | "customThemeText" | "customThemeTransparent"
+  >,
   osIsDark: boolean
 ): ReadingPalette {
+  const background = normalizeBooksCustomColor(
+    settings.customThemeBackground,
+    PALETTES.light.background
+  );
+  const text = normalizeBooksCustomColor(
+    settings.customThemeText,
+    PALETTES.light.text
+  );
+  const isDark = settings.customThemeTransparent
+    ? osIsDark
+    : hexBrightness(background) < 0.5;
+  return {
+    background: settings.customThemeTransparent ? "transparent" : background,
+    text,
+    link: isDark ? PALETTES.dark.link : PALETTES.light.link,
+    isDark,
+  };
+}
+
+/**
+ * Background for overlays that must visually cover the page (page-flip sheet,
+ * loading shim, cover zoom). A transparent reading background can't hide the
+ * content behind those overlays, so fall back to the window surface color
+ * (which is itself translucent under Aqua Glass, keeping the glassy look).
+ */
+export function getReadingOverlayBackground(palette: ReadingPalette): string {
+  return palette.background === "transparent"
+    ? "var(--os-color-window-bg)"
+    : palette.background;
+}
+
+/** Resolve the active reading palette from settings + OS dark mode. */
+export function resolveReadingPalette(
+  settings: BooksPaletteSettings,
+  osIsDark: boolean
+): ReadingPalette {
+  const { themeOverride } = settings;
   if (themeOverride === "auto") {
     return osIsDark ? PALETTES.dark : PALETTES.light;
+  }
+  if (themeOverride === "custom") {
+    return buildCustomReadingPalette(settings, osIsDark);
   }
   return PALETTES[themeOverride] ?? (osIsDark ? PALETTES.dark : PALETTES.light);
 }
@@ -495,6 +561,10 @@ export function buildEpubTheme(
   const flowText: Record<string, string> = { ...textColor, ...readingFlow };
 
   return {
+    // A transparent reading background only works when the publisher's own
+    // root background can't paint over it (iframes are transparent by
+    // default, but EPUB CSS often sets `html { background: … }`).
+    html: { background: `${palette.background} !important` },
     body: bodyRules,
     // Catch-all: force the reading color on EVERY element except links, so no
     // publisher rule (incl. colors on span/div/blockquote/table cells, etc.)

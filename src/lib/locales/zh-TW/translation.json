@@ -604,10 +604,13 @@
         "moveToTop": "移至頂端"
       },
       "customize": {
+        "background": "背景",
         "colors": "顏色",
         "lineSpacing": "行距",
         "margins": "邊界",
-        "title": "自訂"
+        "textColor": "文字",
+        "title": "自訂",
+        "transparent": "透明"
       },
       "description": "閱讀 EPUB 書籍",
       "help": {
@@ -657,9 +660,6 @@
         "stopSpeaking": "停止朗讀",
         "textLayout": "文字方向",
         "textSize": "文字大小",
-        "textSizeDecrease": "縮小",
-        "textSizeIncrease": "放大",
-        "textSizeReset": "預設大小",
         "theme": "主題"
       },
       "name": "書籍",
@@ -690,6 +690,7 @@
       "theme": {
         "auto": "自動",
         "black": "黑色",
+        "custom": "自訂",
         "dark": "深色",
         "gray": "灰色",
         "green": "綠色",

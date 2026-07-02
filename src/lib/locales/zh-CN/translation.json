@@ -604,10 +604,13 @@
         "moveToTop": "移至顶端"
       },
       "customize": {
+        "background": "背景",
         "colors": "颜色",
         "lineSpacing": "行间距",
         "margins": "页边距",
-        "title": "自定"
+        "textColor": "文本",
+        "title": "自定",
+        "transparent": "透明"
       },
       "description": "阅读 EPUB 书籍",
       "help": {
@@ -657,9 +660,6 @@
         "stopSpeaking": "停止朗读",
         "textLayout": "文字方向",
         "textSize": "文字大小",
-        "textSizeDecrease": "缩小",
-        "textSizeIncrease": "放大",
-        "textSizeReset": "默认大小",
         "theme": "主题"
       },
       "name": "书籍",
@@ -690,6 +690,7 @@
       "theme": {
         "auto": "自动",
         "black": "黑色",
+        "custom": "自定",
         "dark": "深色",
         "gray": "灰色",
         "green": "绿色",

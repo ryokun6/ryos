@@ -44,7 +44,9 @@ import {
   BOOKS_SPEECH_RATE_MAX,
   BOOKS_SPEECH_RATE_MIN,
   clampBooksLineHeight,
+  isBooksCustomHexColor,
   isBooksThemeOverride,
+  normalizeBooksCustomColor,
   useBooksStore,
   type BookProgress,
   type BooksReaderSettings,
@@ -1553,6 +1555,9 @@ const BOOKS_SETTINGS_KEYS = {
   fontSizePct: "books-settings/fontSizePct",
   columnMode: "books-settings/columnMode",
   themeOverride: "books-settings/themeOverride",
+  customThemeBackground: "books-settings/customThemeBackground",
+  customThemeText: "books-settings/customThemeText",
+  customThemeTransparent: "books-settings/customThemeTransparent",
   chineseScript: "books-settings/chineseScript",
   textLayout: "books-settings/textLayout",
   lineHeight: "books-settings/lineHeight",
@@ -1573,6 +1578,9 @@ function collectBooksSettings(
   add(BOOKS_SETTINGS_KEYS.fontSizePct, settings.fontSizePct);
   add(BOOKS_SETTINGS_KEYS.columnMode, settings.columnMode);
   add(BOOKS_SETTINGS_KEYS.themeOverride, settings.themeOverride);
+  add(BOOKS_SETTINGS_KEYS.customThemeBackground, settings.customThemeBackground);
+  add(BOOKS_SETTINGS_KEYS.customThemeText, settings.customThemeText);
+  add(BOOKS_SETTINGS_KEYS.customThemeTransparent, settings.customThemeTransparent);
   add(BOOKS_SETTINGS_KEYS.chineseScript, settings.chineseScript);
   add(BOOKS_SETTINGS_KEYS.textLayout, settings.textLayout);
   add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
@@ -1611,6 +1619,27 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
       case BOOKS_SETTINGS_KEYS.themeOverride:
         if (isBooksThemeOverride(op.v)) {
           updates = { ...updates, themeOverride: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.customThemeBackground:
+        if (isBooksCustomHexColor(op.v)) {
+          updates = {
+            ...updates,
+            customThemeBackground: normalizeBooksCustomColor(op.v, "#fdfdfb"),
+          };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.customThemeText:
+        if (isBooksCustomHexColor(op.v)) {
+          updates = {
+            ...updates,
+            customThemeText: normalizeBooksCustomColor(op.v, "#1c1c1c"),
+          };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.customThemeTransparent:
+        if (typeof op.v === "boolean") {
+          updates = { ...updates, customThemeTransparent: op.v };
         }
         break;
       case BOOKS_SETTINGS_KEYS.chineseScript:
@@ -1684,6 +1713,21 @@ const booksSettingsCodec: SyncCodec = {
       }
       if (state.settings.themeOverride !== prev.settings.themeOverride) {
         keys.push(BOOKS_SETTINGS_KEYS.themeOverride);
+      }
+      if (
+        state.settings.customThemeBackground !==
+        prev.settings.customThemeBackground
+      ) {
+        keys.push(BOOKS_SETTINGS_KEYS.customThemeBackground);
+      }
+      if (state.settings.customThemeText !== prev.settings.customThemeText) {
+        keys.push(BOOKS_SETTINGS_KEYS.customThemeText);
+      }
+      if (
+        state.settings.customThemeTransparent !==
+        prev.settings.customThemeTransparent
+      ) {
+        keys.push(BOOKS_SETTINGS_KEYS.customThemeTransparent);
       }
       if (state.settings.chineseScript !== prev.settings.chineseScript) {
         keys.push(BOOKS_SETTINGS_KEYS.chineseScript);

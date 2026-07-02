@@ -4531,9 +4531,6 @@
         "chapters": "Chapters",
         "font": "Font",
         "textSize": "Text Size",
-        "textSizeIncrease": "Bigger",
-        "textSizeDecrease": "Smaller",
-        "textSizeReset": "Default Size",
         "columns": "Columns",
         "textLayout": "Text Direction",
         "chineseScript": "Chinese Script",
@@ -4550,7 +4547,10 @@
         "title": "Customize",
         "lineSpacing": "Line Spacing",
         "margins": "Margins",
-        "colors": "Colors"
+        "colors": "Colors",
+        "background": "Background",
+        "textColor": "Text",
+        "transparent": "Transparent"
       },
       "speechRate": {
         "slow": "Slow",
@@ -4582,7 +4582,8 @@
         "green": "Green",
         "dark": "Dark",
         "night": "Night",
-        "black": "Black"
+        "black": "Black",
+        "custom": "Custom"
       },
       "shelf": {
         "import": "Add Book",

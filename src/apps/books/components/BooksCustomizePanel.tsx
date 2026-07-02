@@ -1,5 +1,13 @@
-import type { ReactNode } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { motion } from "motion/react";
+import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { Slider } from "@/components/ui/slider";
@@ -13,12 +21,14 @@ import {
   BOOKS_LINE_HEIGHT_MAX,
   BOOKS_LINE_HEIGHT_MIN,
   BOOKS_LINE_HEIGHT_STEP,
+  normalizeBooksCustomColor,
   type BooksReaderSettings,
   type BooksThemeOverride,
 } from "@/stores/useBooksStore";
 import {
   BOOK_FONTS,
   BOOK_THEME_PRESET_IDS,
+  buildCustomReadingPalette,
   getBookFontCssStack,
   getReadingPalette,
 } from "../utils/booksReader";
@@ -57,6 +67,102 @@ function Row({
         </span>
       )}
     </div>
+  );
+}
+
+/** Width (px) of the fade masking overflowing content on scrollable rows. */
+const SCROLL_FADE_PX = 20;
+
+/**
+ * Horizontally scrollable chip/swatch row that fades out its clipped edges:
+ * the fade only shows on a side that has more content scrolled out of view,
+ * so the ends of the row stay crisp.
+ */
+function ScrollFadeRow({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState({ left: false, right: false });
+
+  const updateFade = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const left = el.scrollLeft > 1;
+    const right = el.scrollLeft < maxScroll - 1;
+    setFade((prev) =>
+      prev.left === left && prev.right === right ? prev : { left, right }
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    updateFade();
+  }, [updateFade]);
+  useResizeObserverWithRef(scrollRef, updateFade);
+
+  const maskImage =
+    fade.left && fade.right
+      ? `linear-gradient(to right, transparent, black ${SCROLL_FADE_PX}px, black calc(100% - ${SCROLL_FADE_PX}px), transparent)`
+      : fade.left
+        ? `linear-gradient(to right, transparent, black ${SCROLL_FADE_PX}px)`
+        : fade.right
+          ? `linear-gradient(to right, black calc(100% - ${SCROLL_FADE_PX}px), transparent)`
+          : undefined;
+
+  return (
+    <div
+      ref={scrollRef}
+      onScroll={updateFade}
+      className={cn(
+        "flex w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className
+      )}
+      style={{ maskImage, WebkitMaskImage: maskImage }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Checkerboard used to preview a transparent (glassy) background. */
+const TRANSPARENT_SWATCH_STYLE: CSSProperties = {
+  backgroundColor: "#ffffff",
+  backgroundImage:
+    "repeating-conic-gradient(rgba(0,0,0,0.16) 0% 25%, transparent 0% 50%)",
+  backgroundSize: "8px 8px",
+};
+
+/** Circular color well backed by a native color picker. */
+function ColorWell({
+  color,
+  transparent = false,
+  onChange,
+  ariaLabel,
+}: {
+  color: string;
+  /** Render a checkerboard instead of the (kept) color. */
+  transparent?: boolean;
+  onChange: (hex: string) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <span
+      title={ariaLabel}
+      className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-black/20 os-dark:border-white/25"
+      style={transparent ? TRANSPARENT_SWATCH_STYLE : { background: color }}
+    >
+      <input
+        type="color"
+        value={color}
+        aria-label={ariaLabel}
+        onChange={(event) => onChange(event.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+    </span>
   );
 }
 
@@ -115,21 +221,34 @@ export function BooksCustomizePanel({
   const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
 
   const autoPalette = getReadingPalette(osIsDark ? "dark" : "light");
+  const customPalette = buildCustomReadingPalette(settings, osIsDark);
+  const customBackground = normalizeBooksCustomColor(
+    settings.customThemeBackground,
+    "#fdfdfb"
+  );
+  const customText = normalizeBooksCustomColor(
+    settings.customThemeText,
+    "#1c1c1c"
+  );
+  const isCustomTheme = settings.themeOverride === "custom";
   const themeSwatches: {
     id: BooksThemeOverride;
     label: string;
     background: string;
     text: string;
-    /** The Auto swatch is a plain solid dot; presets preview their text color. */
     showGlyph: boolean;
+    /** Checkerboard preview for a transparent (glassy) custom background. */
+    transparent?: boolean;
+    /** Rainbow ring marking the editable custom swatch. */
+    custom?: boolean;
   }[] = [
     {
       id: "auto" as const,
       label: t("apps.books.theme.auto"),
-      // Solid swatch that follows the OS light/dark setting.
+      // Follows the OS light/dark setting.
       background: autoPalette.background,
       text: autoPalette.text,
-      showGlyph: false,
+      showGlyph: true,
     },
     ...BOOK_THEME_PRESET_IDS.map((id) => {
       const palette = getReadingPalette(id);
@@ -141,6 +260,15 @@ export function BooksCustomizePanel({
         showGlyph: true,
       };
     }),
+    {
+      id: "custom" as const,
+      label: t("apps.books.theme.custom"),
+      background: customBackground,
+      text: customPalette.text,
+      showGlyph: true,
+      transparent: settings.customThemeTransparent,
+      custom: true,
+    },
   ];
 
   return (
@@ -152,7 +280,7 @@ export function BooksCustomizePanel({
       role="dialog"
       aria-label={t("apps.books.customize.title")}
       className={cn(
-        "absolute z-[60] flex flex-col gap-2 overflow-y-auto overscroll-contain p-3",
+        "books-customize-panel absolute z-[60] flex flex-col gap-2 overflow-y-auto overscroll-contain p-3",
         "bg-os-window-bg font-os-ui text-os-text-primary",
         compact
           ? "inset-x-0 bottom-0 max-h-[75%] rounded-t-[10px] border-t border-os-window pb-4 shadow-[0_-6px_24px_rgba(0,0,0,0.25)]"
@@ -260,7 +388,7 @@ export function BooksCustomizePanel({
       </Row>
 
       <Row label={t("apps.books.menu.font")}>
-        <div className="flex w-full gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ScrollFadeRow className="gap-1 pb-0.5">
           {BOOK_FONTS.map((font) => {
             const stack = getBookFontCssStack(font.id, uiLanguage);
             const selected = settings.fontId === font.id;
@@ -282,13 +410,49 @@ export function BooksCustomizePanel({
               </button>
             );
           })}
-        </div>
+        </ScrollFadeRow>
       </Row>
 
       <Row label={t("apps.books.customize.colors")}>
-        <div className="flex w-full flex-wrap gap-1.5">
+        {/* Scroll container clips at its padding edge, so pad it (and pull the
+            padding back out with negative margins) to keep the selection ring
+            from being cut off at the row edges. */}
+        <ScrollFadeRow className="-m-1 gap-1.5 p-1">
           {themeSwatches.map((swatch) => {
             const selected = settings.themeOverride === swatch.id;
+            if (swatch.custom) {
+              // Custom swatch: rainbow ring around the current custom colors.
+              return (
+                <button
+                  key={swatch.id}
+                  type="button"
+                  title={swatch.label}
+                  aria-label={swatch.label}
+                  aria-pressed={selected}
+                  onClick={() => updateSettings({ themeOverride: swatch.id })}
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full p-[2.5px] transition-shadow",
+                    selected &&
+                      "ring-2 ring-[color:var(--os-color-selection-bg)] ring-offset-1 ring-offset-[color:var(--os-color-window-bg)]"
+                  )}
+                  style={{
+                    background:
+                      "conic-gradient(#f43f5e, #f59e0b, #84cc16, #22d3ee, #6366f1, #d946ef, #f43f5e)",
+                  }}
+                >
+                  <span
+                    className="flex h-full w-full items-center justify-center rounded-full text-[11px] font-medium"
+                    style={
+                      swatch.transparent
+                        ? { ...TRANSPARENT_SWATCH_STYLE, color: swatch.text }
+                        : { background: swatch.background, color: swatch.text }
+                    }
+                  >
+                    A
+                  </span>
+                </button>
+              );
+            }
             return (
               <button
                 key={swatch.id}
@@ -308,8 +472,62 @@ export function BooksCustomizePanel({
               </button>
             );
           })}
-        </div>
+        </ScrollFadeRow>
       </Row>
+
+      {/* Custom color editor: pick foreground/background, or go transparent
+          so the window material (glass) shows through. */}
+      {isCustomTheme && (
+        <>
+          <Row label={t("apps.books.customize.background")}>
+            <div className="flex w-full items-center gap-1.5">
+              <ColorWell
+                color={customBackground}
+                transparent={settings.customThemeTransparent}
+                ariaLabel={t("apps.books.customize.background")}
+                onChange={(hex) =>
+                  updateSettings({
+                    customThemeBackground: normalizeBooksCustomColor(
+                      hex,
+                      customBackground
+                    ),
+                    // Picking a color implies an opaque page again.
+                    customThemeTransparent: false,
+                  })
+                }
+              />
+              <button
+                type="button"
+                aria-pressed={settings.customThemeTransparent}
+                onClick={() =>
+                  updateSettings({
+                    customThemeTransparent: !settings.customThemeTransparent,
+                  })
+                }
+                className={cn(
+                  "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] transition-colors",
+                  settings.customThemeTransparent
+                    ? "bg-os-selection-bg text-os-selection-text"
+                    : "bg-black/[0.07] hover:bg-black/15 os-dark:bg-white/10 os-dark:hover:bg-white/20"
+                )}
+              >
+                {t("apps.books.customize.transparent")}
+              </button>
+            </div>
+          </Row>
+          <Row label={t("apps.books.customize.textColor")}>
+            <ColorWell
+              color={customText}
+              ariaLabel={t("apps.books.customize.textColor")}
+              onChange={(hex) =>
+                updateSettings({
+                  customThemeText: normalizeBooksCustomColor(hex, customText),
+                })
+              }
+            />
+          </Row>
+        </>
+      )}
     </motion.div>
   );
 }
