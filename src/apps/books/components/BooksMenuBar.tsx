@@ -10,7 +10,7 @@ import {
   BOOK_FONTS,
   type BookFontOption,
 } from "../utils/booksReader";
-import { flattenBooksMenuSubmenus } from "../utils/booksMenuLayout";
+import { buildBooksMenuLayout } from "../utils/booksMenuLayout";
 import {
   BOOKS_FONT_SIZE_MAX,
   BOOKS_FONT_SIZE_MIN,
@@ -263,16 +263,12 @@ export function BooksMenuBar({
       },
     ],
   };
-  const menus = [fileMenu, viewMenu, goMenu].map<MenuDescriptor>((menu) =>
-    isCompactMenu
-      ? {
-          ...menu,
-          items: flattenBooksMenuSubmenus(menu.items),
-          contentClassName:
-            "w-72 max-w-[calc(100vw-1rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain touch-pan-y",
-        }
-      : menu
-  );
+  const menus = buildBooksMenuLayout({
+    fileMenu,
+    viewMenu,
+    goMenu,
+    isCompact: isCompactMenu,
+  });
 
   return (
     <AppMenuBarShell

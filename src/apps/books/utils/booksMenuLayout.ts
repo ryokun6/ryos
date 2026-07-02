@@ -1,4 +1,10 @@
-import type { MenuItemDescriptor } from "@/components/shared/menubar/AppMenuBarMenus";
+import type {
+  MenuDescriptor,
+  MenuItemDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
+
+const COMPACT_GO_MENU_CLASS =
+  "w-72 max-w-[calc(100vw-1rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain touch-pan-y";
 
 function disableMenuItem(item: MenuItemDescriptor): MenuItemDescriptor {
   switch (item.type) {
@@ -75,4 +81,28 @@ export function flattenBooksMenuSubmenus(
   }
 
   return result;
+}
+
+export function buildBooksMenuLayout({
+  fileMenu,
+  viewMenu,
+  goMenu,
+  isCompact,
+}: {
+  fileMenu: MenuDescriptor;
+  viewMenu: MenuDescriptor;
+  goMenu: MenuDescriptor;
+  isCompact: boolean;
+}): MenuDescriptor[] {
+  return [
+    fileMenu,
+    viewMenu,
+    isCompact
+      ? {
+          ...goMenu,
+          items: flattenBooksMenuSubmenus(goMenu.items),
+          contentClassName: COMPACT_GO_MENU_CLASS,
+        }
+      : goMenu,
+  ];
 }
