@@ -302,6 +302,62 @@
   background-color: transparent;
 }
 
+/* Read-aloud floating controls — same glass island recipe as Chats' @ryo
+   toolbar pill: top gloss over a translucent gray→white (light) / graphite
+   (dark) base, frosted backdrop, raised hairline ring. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .books-speech-overlay {
+  border: none;
+  color: rgba(0, 0, 0, 0.78);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .books-speech-overlay
+  button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .books-speech-overlay {
+  border: none;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(to bottom, rgba(72, 72, 78, 0.42), rgba(34, 34, 38, 0.42));
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .books-speech-overlay
+  button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
 /* The floating Customize card / bottom sheet gets the frosted popover
    treatment (same recipe as the dropdown/menu surfaces above): swap the
    0.8-alpha `bg-os-window-bg` fill — opaque enough to bury the blur — for a

@@ -20,6 +20,7 @@ import {
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
   buildEpubTheme,
@@ -132,7 +133,7 @@ const SPREAD_MIN_WIDTH = 560;
 
 // Shared style for the read-aloud overlay control buttons.
 const SPEECH_OVERLAY_BUTTON_CLASS =
-  "flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent";
+  "flex h-7 w-7 items-center justify-center rounded-full transition-colors disabled:opacity-40 disabled:hover:bg-transparent";
 
 // Open transition timings. Keep the page reveal slightly after the cover zoom
 // settles so the two never fight (which reads as a "pop"). Shared with the
@@ -452,6 +453,11 @@ export const BooksReaderPane = forwardRef<
 
   const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
   const palette = resolveReadingPalette(settings, osIsDark, accentBaseHex);
+  const { isAquaGlass } = useThemeFlags();
+  const speechOverlayButtonClass = cn(
+    SPEECH_OVERLAY_BUTTON_CLASS,
+    isAquaGlass ? null : "hover:bg-white/20"
+  );
   const overlayBackground = getReadingOverlayBackground(palette);
   const isVerticalText = effectiveTextLayout === "vertical";
   const sideClearance = clampBooksGutter(settings.gutterPx);
@@ -1585,10 +1591,15 @@ export const BooksReaderPane = forwardRef<
           >
             <div
               className={cn(
-                "pointer-events-auto flex items-center gap-0.5 rounded-full border px-1.5 py-1 shadow-lg backdrop-blur-md",
-                palette.isDark
-                  ? "border-white/15 bg-white/10 text-white"
-                  : "border-black/10 bg-black/60 text-white"
+                "books-speech-overlay pointer-events-auto flex items-center gap-0.5 rounded-full px-1.5 py-1",
+                isAquaGlass
+                  ? null
+                  : cn(
+                      "border shadow-lg backdrop-blur-md",
+                      palette.isDark
+                        ? "border-white/15 bg-white/10 text-white"
+                        : "border-black/10 bg-black/60 text-white"
+                    )
               )}
             >
               <button
@@ -1596,7 +1607,7 @@ export const BooksReaderPane = forwardRef<
                 aria-label={t("apps.books.speech.rewind")}
                 title={t("apps.books.speech.rewind")}
                 onClick={skipToPreviousSentence}
-                className={SPEECH_OVERLAY_BUTTON_CLASS}
+                className={speechOverlayButtonClass}
               >
                 <Rewind weight="fill" size={16} />
               </button>
@@ -1613,7 +1624,7 @@ export const BooksReaderPane = forwardRef<
                     : t("apps.books.speech.pause")
                 }
                 onClick={isPaused ? resumeSpeaking : pauseSpeaking}
-                className={SPEECH_OVERLAY_BUTTON_CLASS}
+                className={speechOverlayButtonClass}
               >
                 {isPaused ? (
                   <Play weight="fill" size={16} />
@@ -1626,7 +1637,7 @@ export const BooksReaderPane = forwardRef<
                 aria-label={t("apps.books.speech.skip")}
                 title={t("apps.books.speech.skip")}
                 onClick={skipToNextSentence}
-                className={SPEECH_OVERLAY_BUTTON_CLASS}
+                className={speechOverlayButtonClass}
               >
                 <FastForward weight="fill" size={16} />
               </button>
@@ -1635,7 +1646,7 @@ export const BooksReaderPane = forwardRef<
                 aria-label={t("apps.books.speech.stop")}
                 title={t("apps.books.speech.stop")}
                 onClick={stopSpeaking}
-                className={SPEECH_OVERLAY_BUTTON_CLASS}
+                className={speechOverlayButtonClass}
               >
                 <Stop weight="fill" size={16} />
               </button>
