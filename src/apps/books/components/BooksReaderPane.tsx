@@ -103,7 +103,7 @@ interface FlipState {
 
 interface ActivePageTurnGesture {
   pointerId: number;
-  pointerType: string;
+  source: "reader" | "content";
   start: PageTurnGesturePoint;
   viewportWidth: number;
   viewportHeight: number;
@@ -112,6 +112,7 @@ interface ActivePageTurnGesture {
 interface PageTurnPointerSample extends PageTurnGesturePoint {
   pointerId: number;
   pointerType: string;
+  source: "reader" | "content";
   viewportWidth: number;
   viewportHeight: number;
 }
@@ -121,7 +122,12 @@ interface PageTurnGestureHandlers {
   move: (sample: PageTurnPointerSample) => boolean;
   end: (sample: PageTurnPointerSample) => boolean;
   cancel: (pointerId: number) => void;
-  consumeClick: () => boolean;
+  consumeClick: (source: PageTurnPointerSample["source"]) => boolean;
+}
+
+interface PointerCaptureTarget extends EventTarget {
+  setPointerCapture: (pointerId: number) => void;
+  releasePointerCapture: (pointerId: number) => void;
 }
 
 type BooksDebugLevel = "info" | "warn" | "error";
@@ -163,6 +169,16 @@ function measureActivePageTurnGesture(
     viewportWidth: active.viewportWidth,
     viewportHeight: active.viewportHeight,
   });
+}
+
+function canCapturePointer(
+  target: EventTarget | null
+): target is PointerCaptureTarget {
+  return (
+    target !== null &&
+    typeof Reflect.get(target, "setPointerCapture") === "function" &&
+    typeof Reflect.get(target, "releasePointerCapture") === "function"
+  );
 }
 
 export function createInitialBooksNavigationState(): BooksNavigationState {
@@ -345,11 +361,15 @@ export const BooksReaderPane = forwardRef<
     createChineseScriptConversionSession()
   );
   const flipLockRef = useRef(false);
+  const flipOperationIdRef = useRef(0);
   const flipNavigationCompleteRef = useRef(true);
   const flipAnimationCompleteRef = useRef(true);
   const activePageTurnGestureRef = useRef<ActivePageTurnGesture | null>(null);
   const pageTurnGestureHandlersRef = useRef<PageTurnGestureHandlers | null>(null);
-  const suppressGestureClickUntilRef = useRef(0);
+  const suppressedGestureClickRef = useRef<{
+    source: PageTurnPointerSample["source"];
+    until: number;
+  } | null>(null);
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
   const initialCfiRef = useRef(initialCfi);
@@ -518,6 +538,7 @@ export const BooksReaderPane = forwardRef<
     let book: Book | null = null;
     let rendition: Rendition | null = null;
     let displayedContentFontsReady: Promise<FontFaceSet> | undefined;
+    const pageTurnCleanupByDocument = new WeakMap<Document, () => void>();
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
@@ -863,6 +884,7 @@ export const BooksReaderPane = forwardRef<
               ): PageTurnPointerSample => ({
                 pointerId: event.pointerId,
                 pointerType: event.pointerType,
+                source: "content",
                 x: event.clientX,
                 y: event.clientY,
                 time: event.timeStamp,
@@ -873,6 +895,8 @@ export const BooksReaderPane = forwardRef<
                   contentWindow?.innerHeight ??
                   document.documentElement.clientHeight,
               });
+              let capturedPointerId: number | null = null;
+              let pointerCaptureTarget: PointerCaptureTarget | null = null;
               const onContentPointerDown = (event: PointerEvent) => {
                 if (
                   !event.isPrimary ||
@@ -880,9 +904,20 @@ export const BooksReaderPane = forwardRef<
                 ) {
                   return;
                 }
-                pageTurnGestureHandlersRef.current?.start(
-                  getPointerSample(event)
-                );
+                if (
+                  pageTurnGestureHandlersRef.current?.start(
+                    getPointerSample(event)
+                  ) &&
+                  canCapturePointer(event.target)
+                ) {
+                  try {
+                    event.target.setPointerCapture(event.pointerId);
+                    capturedPointerId = event.pointerId;
+                    pointerCaptureTarget = event.target;
+                  } catch {
+                    // Pointer capture is optional in older embedded WebViews.
+                  }
+                }
               };
               const onContentPointerMove = (event: PointerEvent) => {
                 if (
@@ -901,17 +936,46 @@ export const BooksReaderPane = forwardRef<
                 ) {
                   event.preventDefault();
                 }
+                if (
+                  capturedPointerId === event.pointerId &&
+                  pointerCaptureTarget
+                ) {
+                  try {
+                    pointerCaptureTarget.releasePointerCapture(event.pointerId);
+                  } catch {
+                    // Ignore when the browser already released capture.
+                  }
+                  capturedPointerId = null;
+                  pointerCaptureTarget = null;
+                }
               };
               const onContentPointerCancel = (event: PointerEvent) => {
                 pageTurnGestureHandlersRef.current?.cancel(event.pointerId);
+                capturedPointerId = null;
+                pointerCaptureTarget = null;
+              };
+              const onContentLostPointerCapture = (event: PointerEvent) => {
+                if (capturedPointerId !== event.pointerId) return;
+                pageTurnGestureHandlersRef.current?.cancel(event.pointerId);
+                capturedPointerId = null;
+                pointerCaptureTarget = null;
+              };
+              const onContentBlur = () => {
+                if (capturedPointerId === null) return;
+                pageTurnGestureHandlersRef.current?.cancel(capturedPointerId);
+                capturedPointerId = null;
+                pointerCaptureTarget = null;
               };
               const onContentClick = (event: MouseEvent) => {
-                if (pageTurnGestureHandlersRef.current?.consumeClick()) {
+                if (
+                  pageTurnGestureHandlersRef.current?.consumeClick("content")
+                ) {
                   event.preventDefault();
                   event.stopImmediatePropagation();
                 }
               };
               const removePageTurnListeners = () => {
+                onContentBlur();
                 document.removeEventListener(
                   "pointerdown",
                   onContentPointerDown
@@ -925,7 +989,21 @@ export const BooksReaderPane = forwardRef<
                   "pointercancel",
                   onContentPointerCancel
                 );
+                document.removeEventListener(
+                  "lostpointercapture",
+                  onContentLostPointerCapture
+                );
                 document.removeEventListener("click", onContentClick, true);
+                contentWindow?.removeEventListener("blur", onContentBlur);
+                contentWindow?.removeEventListener(
+                  "pagehide",
+                  removePageTurnListeners
+                );
+                contentWindow?.removeEventListener(
+                  "unload",
+                  removePageTurnListeners
+                );
+                pageTurnCleanupByDocument.delete(document);
               };
               document.documentElement.style.touchAction = "pinch-zoom";
               if (document.body) document.body.style.touchAction = "pinch-zoom";
@@ -938,12 +1016,23 @@ export const BooksReaderPane = forwardRef<
                 "pointercancel",
                 onContentPointerCancel
               );
+              document.addEventListener(
+                "lostpointercapture",
+                onContentLostPointerCapture
+              );
               document.addEventListener("click", onContentClick, true);
+              contentWindow?.addEventListener("blur", onContentBlur);
+              contentWindow?.addEventListener(
+                "pagehide",
+                removePageTurnListeners,
+                { once: true }
+              );
               contentWindow?.addEventListener(
                 "unload",
                 removePageTurnListeners,
                 { once: true }
               );
+              pageTurnCleanupByDocument.set(document, removePageTurnListeners);
 
               // `hyphens: auto` and locale-specific CJK glyph forms depend on the
               // content language. Prefer EPUB metadata, then the ryOS UI locale.
@@ -999,6 +1088,13 @@ export const BooksReaderPane = forwardRef<
                   "warn"
                 );
               }
+            }
+          );
+          nextRendition.hooks.unloaded.register(
+            (view: { contents?: { document?: Document } }) => {
+              const contentDocument = view.contents?.document;
+              if (!contentDocument) return;
+              pageTurnCleanupByDocument.get(contentDocument)?.();
             }
           );
 
@@ -1290,8 +1386,9 @@ export const BooksReaderPane = forwardRef<
     { debounce: 80 }
   );
 
-  const completeFlipWhenReady = useCallback(() => {
+  const completeFlipWhenReady = useCallback((operationId: number) => {
     if (
+      flipOperationIdRef.current !== operationId ||
       !flipNavigationCompleteRef.current ||
       !flipAnimationCompleteRef.current
     ) {
@@ -1309,11 +1406,12 @@ export const BooksReaderPane = forwardRef<
       if (!canTurnPage(dir, state)) return;
 
       flipLockRef.current = true;
+      const operationId = ++flipOperationIdRef.current;
       flipNavigationCompleteRef.current = false;
       flipAnimationCompleteRef.current = false;
       setFlip({
         dir,
-        id: Date.now(),
+        id: operationId,
         originY: gesture?.originY ?? 0.5,
         tiltDeg: gesture?.tiltDeg ?? 0,
         dragProgress: gesture?.progress ?? 0,
@@ -1323,9 +1421,10 @@ export const BooksReaderPane = forwardRef<
       try {
         action = dir === "next" ? rendition.next() : rendition.prev();
       } catch (error) {
+        if (flipOperationIdRef.current !== operationId) return;
         flipNavigationCompleteRef.current = true;
         flipAnimationCompleteRef.current = true;
-        completeFlipWhenReady();
+        completeFlipWhenReady(operationId);
         appendDebugEvent("epubjs:pageTurn:failed", error, "error");
         return;
       }
@@ -1335,8 +1434,9 @@ export const BooksReaderPane = forwardRef<
           appendDebugEvent("epubjs:pageTurn:failed", error, "error")
         )
         .finally(() => {
+          if (flipOperationIdRef.current !== operationId) return;
           flipNavigationCompleteRef.current = true;
-          completeFlipWhenReady();
+          completeFlipWhenReady(operationId);
         });
     },
     [appendDebugEvent, completeFlipWhenReady]
@@ -1360,7 +1460,7 @@ export const BooksReaderPane = forwardRef<
 
       activePageTurnGestureRef.current = {
         pointerId: sample.pointerId,
-        pointerType: sample.pointerType,
+        source: sample.source,
         start: { x: sample.x, y: sample.y, time: sample.time },
         viewportWidth: sample.viewportWidth,
         viewportHeight: sample.viewportHeight,
@@ -1402,7 +1502,10 @@ export const BooksReaderPane = forwardRef<
       setPageTurnGesture(null);
 
       if (consumed) {
-        suppressGestureClickUntilRef.current = Date.now() + 500;
+        suppressedGestureClickRef.current = {
+          source: active.source,
+          until: Date.now() + 120,
+        };
       }
 
       if (
@@ -1423,11 +1526,21 @@ export const BooksReaderPane = forwardRef<
     setPageTurnGesture(null);
   }, []);
 
-  const consumeGestureClick = useCallback((): boolean => {
-    if (Date.now() > suppressGestureClickUntilRef.current) return false;
-    suppressGestureClickUntilRef.current = 0;
-    return true;
-  }, []);
+  const consumeGestureClick = useCallback(
+    (source: PageTurnPointerSample["source"]): boolean => {
+      const suppressedClick = suppressedGestureClickRef.current;
+      if (
+        !suppressedClick ||
+        suppressedClick.source !== source ||
+        Date.now() > suppressedClick.until
+      ) {
+        return false;
+      }
+      suppressedGestureClickRef.current = null;
+      return true;
+    },
+    []
+  );
 
   pageTurnGestureHandlersRef.current = {
     start: beginPageTurnGesture,
@@ -1445,6 +1558,7 @@ export const BooksReaderPane = forwardRef<
       return {
         pointerId: event.pointerId,
         pointerType: event.pointerType,
+        source: "reader",
         x: event.clientX - rect.left,
         y: event.clientY - rect.top,
         time: event.timeStamp,
@@ -1463,13 +1577,7 @@ export const BooksReaderPane = forwardRef<
       ) {
         return;
       }
-      if (beginPageTurnGesture(getReaderPointerSample(event))) {
-        try {
-          event.currentTarget.setPointerCapture(event.pointerId);
-        } catch {
-          // Pointer capture is best-effort (some embedded WebViews omit it).
-        }
-      }
+      beginPageTurnGesture(getReaderPointerSample(event));
     },
     [beginPageTurnGesture, getReaderPointerSample]
   );
@@ -1478,6 +1586,13 @@ export const BooksReaderPane = forwardRef<
     (event: ReactPointerEvent<HTMLDivElement>) => {
       if (movePageTurnGesture(getReaderPointerSample(event))) {
         event.preventDefault();
+        try {
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }
+        } catch {
+          // Pointer capture is best-effort (some embedded WebViews omit it).
+        }
       }
     },
     [getReaderPointerSample, movePageTurnGesture]
@@ -1512,6 +1627,7 @@ export const BooksReaderPane = forwardRef<
       goToChapter: (href: string) => {
         const rendition = renditionRef.current;
         if (!rendition || !href) return;
+        flipOperationIdRef.current += 1;
         flipLockRef.current = false;
         flipNavigationCompleteRef.current = true;
         flipAnimationCompleteRef.current = true;
@@ -1607,7 +1723,7 @@ export const BooksReaderPane = forwardRef<
         aria-label="Previous page"
         aria-disabled={atStart}
         onClick={() => {
-          if (!consumeGestureClick()) turnPage("prev");
+          if (!consumeGestureClick("reader")) turnPage("prev");
         }}
         style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
         className={cn(
@@ -1620,7 +1736,7 @@ export const BooksReaderPane = forwardRef<
         aria-label="Next page"
         aria-disabled={atEnd}
         onClick={() => {
-          if (!consumeGestureClick()) turnPage("next");
+          if (!consumeGestureClick("reader")) turnPage("next");
         }}
         style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
         className={cn(
@@ -1680,12 +1796,16 @@ export const BooksReaderPane = forwardRef<
                 opacity: 0.12 + pageTurnGesture.progress * 0.58,
                 scaleX: 0.2 + pageTurnGesture.progress * 0.8,
               }}
-              transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 42,
-                mass: 0.25,
-              }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : {
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 42,
+                      mass: 0.25,
+                    }
+              }
             />
             <motion.div
               className={cn(
@@ -1745,12 +1865,16 @@ export const BooksReaderPane = forwardRef<
                 scaleX: 0.45,
                 transition: { duration: prefersReducedMotion ? 0 : 0.14 },
               }}
-              transition={{
-                type: "spring",
-                stiffness: 520,
-                damping: 40,
-                mass: 0.28,
-              }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : {
+                      type: "spring",
+                      stiffness: 520,
+                      damping: 40,
+                      mass: 0.28,
+                    }
+              }
             >
               <div
                 className={cn(
@@ -1807,10 +1931,7 @@ export const BooksReaderPane = forwardRef<
                 transformPerspective: 1400,
               }}
               initial={{
-                x: `${
-                  (flip.dir === "next" ? -1 : 1) *
-                  Math.min(14, flip.dragProgress * 18)
-                }%`,
+                x: "0%",
                 rotateY: prefersReducedMotion
                   ? 0
                   : (flip.dir === "next" ? -1 : 1) *
@@ -1818,7 +1939,12 @@ export const BooksReaderPane = forwardRef<
                 rotateZ: prefersReducedMotion ? 0 : flip.tiltDeg * 0.28,
               }}
               animate={{
-                x: flip.dir === "next" ? "-104%" : "104%",
+                x: prefersReducedMotion
+                  ? "0%"
+                  : flip.dir === "next"
+                    ? "-104%"
+                    : "104%",
+                opacity: prefersReducedMotion ? 0 : 1,
                 rotateY: prefersReducedMotion
                   ? 0
                   : flip.dir === "next"
@@ -1833,15 +1959,16 @@ export const BooksReaderPane = forwardRef<
               }}
               transition={{
                 duration: prefersReducedMotion
-                  ? 0.12
+                  ? 0.08
                   : flip.dragProgress > 0
                     ? 0.34
                     : 0.42,
                 ease: [0.32, 0.72, 0, 1],
               }}
               onAnimationComplete={() => {
+                if (flipOperationIdRef.current !== flip.id) return;
                 flipAnimationCompleteRef.current = true;
-                completeFlipWhenReady();
+                completeFlipWhenReady(flip.id);
               }}
             >
               <div
