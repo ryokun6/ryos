@@ -592,8 +592,8 @@
     "books": {
       "chineseScript": {
         "original": "Original",
-        "simplified": "Chinois simplifié",
-        "traditional": "Chinois traditionnel"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "Auto",
@@ -606,12 +606,24 @@
         "moveToTop": "Placer tout en haut"
       },
       "customize": {
+        "background": "Arrière-plan",
         "colors": "Couleurs",
         "lineSpacing": "Interligne",
         "margins": "Marges",
-        "title": "Personnaliser"
+        "textColor": "Texte",
+        "title": "Personnaliser",
+        "transparent": "Transparent"
       },
       "description": "Lire des livres EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monospace",
+        "original": "Original",
+        "rounded": "Arrondi",
+        "sans": "Sans empattement",
+        "serif": "Avec empattement"
+      },
       "help": {
         "bookshelf": {
           "description": "Les EPUB importés sont alignés sur l'étagère en bois. Cliquez sur un livre pour l'ouvrir et commencer la lecture.",
@@ -622,7 +634,7 @@
           "title": "Mode sombre"
         },
         "fonts": {
-          "description": "Choisissez une police de lecture (dont EB Garamond), la taille du texte et l’affichage sur une ou deux colonnes dans le menu Présentation.",
+          "description": "Choisissez une police de lecture (dont Garamond), la taille du texte et l’affichage sur une ou deux colonnes dans le menu Présentation.",
           "title": "Polices et mise en page"
         },
         "import": {
@@ -659,9 +671,6 @@
         "stopSpeaking": "Arrêter de parler",
         "textLayout": "Sens du texte",
         "textSize": "Taille du texte",
-        "textSizeDecrease": "Plus petite",
-        "textSizeIncrease": "Plus grande",
-        "textSizeReset": "Taille par défaut",
         "theme": "Thème"
       },
       "name": "Livres",
@@ -678,6 +687,13 @@
         "listView": "Présentation par liste",
         "percentRead": "{{percent}} %"
       },
+      "speech": {
+        "pause": "Pause",
+        "resume": "Reprendre",
+        "rewind": "Retour arrière",
+        "skip": "Passer",
+        "stop": "Arrêter"
+      },
       "speechRate": {
         "fast": "Rapide",
         "normal": "Normale",
@@ -691,7 +707,9 @@
       },
       "theme": {
         "auto": "Auto",
+        "accent": "Accent",
         "black": "Noir",
+        "custom": "Personnalisé",
         "dark": "Sombre",
         "gray": "Gris",
         "green": "Vert",
@@ -1661,6 +1679,9 @@
       "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l’application",
       "bootScreen": "Écran de démarrage",
       "bootScreenDescription": "Tester l'animation de l'écran de démarrage",
+      "browserTtsVoice": "Voix de synthèse",
+      "browserTtsVoiceAutomatic": "Automatique",
+      "browserTtsVoiceDescription": "Voix système pour la lecture à voix haute dans Livres et la Calculatrice",
       "changePassword": "Changer le mot de passe",
       "changePasswordButton": "Modifier",
       "chatSynth": "Synthétiseur de discussion",

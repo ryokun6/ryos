@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useBooksStore } from "@/stores/useBooksStore";
@@ -91,6 +92,8 @@ export function useBooksLogic({
   );
 
   const items = useFilesStore((s) => s.items);
+  const hasFilesHydrated = usePersistHydrated(useFilesStore.persist);
+  const hasBooksHydrated = usePersistHydrated(useBooksStore.persist);
   const clearInstanceInitialData = useAppStore(
     (s) => s.clearInstanceInitialData
   );
@@ -101,6 +104,7 @@ export function useBooksLogic({
   const setShelfView = useBooksStore((s) => s.setShelfView);
   const progressByPath = useBooksStore((s) => s.progressByPath);
   const setLastOpenedPath = useBooksStore((s) => s.setLastOpenedPath);
+  const setOpenPath = useBooksStore((s) => s.setOpenPath);
   const setProgressAction = useBooksStore((s) => s.setProgress);
   const renameProgressPath = useBooksStore((s) => s.renameProgressPath);
   const pinnedTop = useBooksStore((s) => s.pinnedTop);
@@ -163,6 +167,11 @@ export function useBooksLogic({
   const activeBookPathRef = useRef<string | null>(null);
   activeBookPathRef.current = activeBookPath;
   const recentlyDroppedRef = useRef<{ path: string; at: number } | null>(null);
+  // Deferred openPath clear after an involuntary drop, kept outside the drop
+  // effect's cleanup so setting activeBookPath to null doesn't cancel it.
+  const clearOpenPathTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const openBook = useCallback(
     (path: string, originRect?: BookOriginRect | null) => {
@@ -171,17 +180,23 @@ export function useBooksLogic({
       setOpenOriginRect(originRect ?? null);
       setActiveBookPath(path);
       setLastOpenedPath(path);
+      // Persist the in-reader session so reopening Books restores this book
+      // (and its CFI via progressByPath) instead of always landing on the shelf.
+      setOpenPath(path);
     },
-    [setLastOpenedPath]
+    [setLastOpenedPath, setOpenPath]
   );
 
   const closeBook = useCallback(() => {
     const current = activeBookRef.current;
     setActiveBookPath(null);
     setOpenOriginRect(null);
+    // Returning to the shelf clears the session book so app reopen stays on
+    // the shelf rather than auto-resuming the last reader.
+    setOpenPath(null);
     // Hand the book off to the closing-zoom overlay (cleared when it finishes).
     setClosingBook(current);
-  }, []);
+  }, [setOpenPath]);
 
   const finishClosing = useCallback(() => {
     setClosingBook(null);
@@ -214,14 +229,48 @@ export function useBooksLogic({
     [moveToTrash, removeBook, t]
   );
 
-  // Handle being launched / re-targeted with a specific book path.
+  // Explicit launch / re-target (Finder, open-with) always wins over session restore.
   useEffect(() => {
     if (!isWindowOpen) return;
-    if (initialData?.path) {
-      openBook(initialData.path);
-      clearInstanceInitialData(instanceId);
-    }
+    if (!initialData?.path) return;
+    openBook(initialData.path);
+    clearInstanceInitialData(instanceId);
   }, [isWindowOpen, initialData, instanceId, openBook, clearInstanceInitialData]);
+
+  // Restore the prior reader/shelf session once stores have hydrated. Null
+  // openPath means the shelf; a path resumes that book at its saved CFI.
+  const didRestoreSessionRef = useRef(false);
+  useEffect(() => {
+    if (!isWindowOpen) return;
+    if (!hasBooksHydrated || !hasFilesHydrated) return;
+    if (didRestoreSessionRef.current) return;
+    // A launch path is being applied by the effect above; skip session resume.
+    if (initialData?.path) {
+      didRestoreSessionRef.current = true;
+      return;
+    }
+    didRestoreSessionRef.current = true;
+
+    const path = useBooksStore.getState().openPath;
+    if (!path) return;
+
+    const item = items[path];
+    if (!item || item.status !== "active" || !isBooksEpubPath(path)) {
+      // Book is gone — fall back to the shelf and forget the stale session.
+      setOpenPath(null);
+      return;
+    }
+
+    // Resume without a shelf-zoom origin (there is no cover click to animate from).
+    setActiveBookPath(path);
+  }, [
+    isWindowOpen,
+    hasBooksHydrated,
+    hasFilesHydrated,
+    initialData,
+    items,
+    setOpenPath,
+  ]);
 
   const importEpubFile = useCallback(
     async (file: File) => {
@@ -299,16 +348,35 @@ export function useBooksLogic({
   // Covers hard delete (missing from items), move-to-Trash and move-away (item
   // present but status !== "active", or path no longer under /Books) — all of
   // which the `library` memo already excludes, leaving a null activeBook while
-  // viewMode would otherwise stay "reader".
+  // viewMode would otherwise stay "reader". Wait for files hydration so a restore
+  // isn't misread as a vanished book before `/Books` items are available.
   useEffect(() => {
     if (!activeBookPath) return;
+    if (!hasFilesHydrated) return;
     const item = items[activeBookPath];
     if (!item || item.status !== "active") {
-      recentlyDroppedRef.current = { path: activeBookPath, at: Date.now() };
+      const droppedPath = activeBookPath;
+      recentlyDroppedRef.current = { path: droppedPath, at: Date.now() };
       setActiveBookPath(null);
       setOpenOriginRect(null);
+      // Keep openPath during the rename grace window so a fileRenamed recovery
+      // can still treat this as the session book; clear only once rename loses.
+      if (useBooksStore.getState().openPath === droppedPath) {
+        if (clearOpenPathTimerRef.current != null) {
+          clearTimeout(clearOpenPathTimerRef.current);
+        }
+        clearOpenPathTimerRef.current = setTimeout(() => {
+          clearOpenPathTimerRef.current = null;
+          if (
+            useBooksStore.getState().openPath === droppedPath &&
+            activeBookPathRef.current !== droppedPath
+          ) {
+            setOpenPath(null);
+          }
+        }, 3000);
+      }
     }
-  }, [activeBookPath, items]);
+  }, [activeBookPath, items, hasFilesHydrated, setOpenPath]);
 
   // Migrate cached reading progress when an EPUB under /Books is renamed (the
   // VFS rename emits `fileRenamed`; moves don't emit it, so only renames are
@@ -319,21 +387,24 @@ export function useBooksLogic({
     return onFileRenamed((event) => {
       const { oldPath, newPath } = event.detail;
       if (!isBooksEpubPath(oldPath)) return;
+      // Updates progress, pin order, lastOpenedPath, and openPath in one write.
       renameProgressPath(oldPath, newPath);
-      if (useBooksStore.getState().lastOpenedPath === oldPath) {
-        setLastOpenedPath(newPath);
-      }
       const wasActive = activeBookPathRef.current === oldPath;
       const dropped = recentlyDroppedRef.current;
       const wasJustReading =
         !!dropped && dropped.path === oldPath && Date.now() - dropped.at < 3000;
       if ((wasActive || wasJustReading) && isBooksEpubPath(newPath)) {
         recentlyDroppedRef.current = null;
+        if (clearOpenPathTimerRef.current != null) {
+          clearTimeout(clearOpenPathTimerRef.current);
+          clearOpenPathTimerRef.current = null;
+        }
         setActiveBookPath(newPath);
         setLastOpenedPath(newPath);
+        setOpenPath(newPath);
       }
     });
-  }, [renameProgressPath, setLastOpenedPath]);
+  }, [renameProgressPath, setLastOpenedPath, setOpenPath]);
 
   const viewMode: "shelf" | "reader" = activeBookPath ? "reader" : "shelf";
 

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getBrowserSpeechSynthesis,
-  pickSpeechVoiceForLanguage,
+  resolveSpeechVoice,
 } from "@/utils/browserSpeech";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import {
   applySpeechHighlight,
   clearSpeechHighlight,
@@ -62,8 +63,12 @@ interface UseBooksSpeechOptions {
 
 export interface UseBooksSpeechResult {
   isSpeaking: boolean;
+  /** True while read-aloud is active but paused (resumable). */
+  isPaused: boolean;
   startSpeaking: () => void;
   stopSpeaking: () => void;
+  pauseSpeaking: () => void;
+  resumeSpeaking: () => void;
   /** Call from the rendition's `relocated` handler. */
   handleRelocated: () => void;
 }
@@ -84,10 +89,16 @@ export function useBooksSpeech({
   advancePage,
 }: UseBooksSpeechOptions): UseBooksSpeechResult {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   // Bumping the session invalidates every pending utterance callback/timer.
   const sessionRef = useRef(0);
   // True while the user wants read-aloud (also across auto page turns).
   const wantsSpeechRef = useRef(false);
+  // Mirrors isPaused for callbacks that must not depend on render state.
+  const isPausedRef = useRef(false);
+  // Chunks (and index) of the in-flight page so pause can resume mid-page.
+  const currentChunksRef = useRef<BooksSpeechChunk[] | null>(null);
+  const currentChunkIndexRef = useRef(0);
   // Consecutive auto-skipped pages with no speakable text.
   const emptyPageStreakRef = useRef(0);
   // Consecutive chunks that ended only via the hard timeout (no engine event).
@@ -137,13 +148,17 @@ export function useBooksSpeech({
   const stopSpeaking = useCallback(() => {
     sessionRef.current += 1;
     wantsSpeechRef.current = false;
+    isPausedRef.current = false;
     activeUtteranceRef.current = null;
+    currentChunksRef.current = null;
+    currentChunkIndexRef.current = 0;
     cutAdvanceRef.current = null;
     pendingCarryOverRef.current = null;
     clearTimers();
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
     setIsSpeaking(false);
+    setIsPaused(false);
   }, [clearHighlight, clearTimers]);
 
   const getCurrentStartCfi = useCallback((): string | null => {
@@ -168,6 +183,10 @@ export function useBooksSpeech({
   const finishPage = useCallback(
     (session: number, attempt = 0) => {
       if (session !== sessionRef.current) return;
+      // Off the chunked page now — a pause during the turn resumes from the
+      // freshly visible page instead of stale ranges.
+      currentChunksRef.current = null;
+      currentChunkIndexRef.current = 0;
       clearHighlight();
       if (
         !optionsRef.current.canAdvancePage() ||
@@ -240,6 +259,9 @@ export function useBooksSpeech({
         return;
       }
 
+      currentChunksRef.current = chunks;
+      currentChunkIndexRef.current = index;
+
       clearHighlight();
       highlightedDocRef.current =
         chunk.range.startContainer.ownerDocument ?? null;
@@ -250,7 +272,11 @@ export function useBooksSpeech({
       const utterance = new SpeechSynthesisUtterance(chunk.text);
       utterance.lang = lang;
       utterance.rate = rate;
-      const voice = pickSpeechVoiceForLanguage(synth.getVoices(), lang);
+      const voice = resolveSpeechVoice(
+        synth.getVoices(),
+        lang,
+        useAudioSettingsStore.getState().browserTtsVoiceURI
+      );
       if (voice) utterance.voice = voice;
       activeUtteranceRef.current = utterance;
 
@@ -419,14 +445,19 @@ export function useBooksSpeech({
     [finishPage, speakChunk, stopSpeaking]
   );
 
-  // Restart speech once the engine has actually gone idle. Speaking while a
+  // Run `speak` once the engine has actually gone idle. Speaking while a
   // cancelled utterance is still winding down queues the new chunk behind
   // stale audio on some engines (Safari), drifting speech behind the screen.
   // With `cancelWhileWaiting` false (auto page turn at a cut-off sentence),
   // the in-flight utterance is left to finish naturally — the tail of the
   // cut sentence plays across the flip — before speaking the new page.
-  const speakVisiblePageWhenIdle = useCallback(
-    (session: number, polls = 0, cancelWhileWaiting = true) => {
+  const speakWhenSynthIdle = useCallback(
+    (
+      session: number,
+      speak: () => void,
+      polls = 0,
+      cancelWhileWaiting = true
+    ) => {
       if (session !== sessionRef.current) return;
       const synth = getBrowserSpeechSynthesis();
       if (!synth) {
@@ -439,20 +470,33 @@ export function useBooksSpeech({
       if ((synth.speaking || synth.pending) && polls < maxPolls) {
         if (cancelWhileWaiting) synth.cancel();
         const timeoutId = window.setTimeout(
-          () => speakVisiblePageWhenIdle(session, polls + 1, cancelWhileWaiting),
+          () =>
+            speakWhenSynthIdle(session, speak, polls + 1, cancelWhileWaiting),
           ENSURE_IDLE_POLL_MS
         );
         timersRef.current.push(timeoutId);
         return;
       }
-      speakVisiblePage(session);
+      speak();
     },
-    [speakVisiblePage, stopSpeaking]
+    [stopSpeaking]
+  );
+
+  const speakVisiblePageWhenIdle = useCallback(
+    (session: number, polls = 0, cancelWhileWaiting = true) =>
+      speakWhenSynthIdle(
+        session,
+        () => speakVisiblePage(session),
+        polls,
+        cancelWhileWaiting
+      ),
+    [speakVisiblePage, speakWhenSynthIdle]
   );
 
   const startSpeaking = useCallback(() => {
     const session = ++sessionRef.current;
     wantsSpeechRef.current = true;
+    isPausedRef.current = false;
     emptyPageStreakRef.current = 0;
     timeoutEndingStreakRef.current = 0;
     cutAdvanceRef.current = null;
@@ -463,11 +507,51 @@ export function useBooksSpeech({
     if (!synth) return;
     synth.cancel();
     setIsSpeaking(true);
+    setIsPaused(false);
     // Warm the voice list (async on some engines); utterance.lang still lets
     // the engine pick a fallback voice before the list loads.
     synth.getVoices();
     speakVisiblePage(session);
   }, [clearHighlight, clearTimers, speakVisiblePage]);
+
+  // Pause is implemented as cancel + remember-the-chunk rather than
+  // synth.pause(): pause() is unreliable on several engines (Chrome can stall
+  // permanently, some backends ignore it), and a paused engine would also trip
+  // the utterance watchdog/timeout machinery. Resuming re-speaks the current
+  // sentence from its start, which reads naturally.
+  const pauseSpeaking = useCallback(() => {
+    if (!wantsSpeechRef.current || isPausedRef.current) return;
+    // Invalidate pending utterance callbacks/timers without dropping the
+    // remembered chunk position.
+    sessionRef.current += 1;
+    isPausedRef.current = true;
+    activeUtteranceRef.current = null;
+    // A paused mid-cut turn shouldn't resume as a natural-finish carry-over
+    // once the user relocates or resumes later.
+    cutAdvanceRef.current = null;
+    pendingCarryOverRef.current = null;
+    clearTimers();
+    getBrowserSpeechSynthesis()?.cancel();
+    // Keep the highlight so the reader can see where speech will resume.
+    setIsPaused(true);
+  }, [clearTimers]);
+
+  const resumeSpeaking = useCallback(() => {
+    if (!wantsSpeechRef.current || !isPausedRef.current) return;
+    const session = ++sessionRef.current;
+    isPausedRef.current = false;
+    timeoutEndingStreakRef.current = 0;
+    setIsPaused(false);
+    const chunks = currentChunksRef.current;
+    const index = currentChunkIndexRef.current;
+    speakWhenSynthIdle(session, () => {
+      if (chunks && chunks[index]) {
+        speakChunk(session, chunks, index);
+      } else {
+        speakVisiblePage(session);
+      }
+    });
+  }, [speakChunk, speakVisiblePage, speakWhenSynthIdle]);
 
   const handleRelocated = useCallback(() => {
     if (!wantsSpeechRef.current) return;
@@ -480,6 +564,8 @@ export function useBooksSpeech({
       // is (possibly) still being spoken — keep the utterance and highlight
       // alive across the flip, then resume past the already-spoken text.
       pendingCarryOverRef.current = cutAdvance.carryOver;
+      isPausedRef.current = false;
+      setIsPaused(false);
       const timeoutId = window.setTimeout(() => {
         speakVisiblePageWhenIdle(session, 0, false);
       }, RESUME_AFTER_RELOCATE_MS);
@@ -487,11 +573,16 @@ export function useBooksSpeech({
       return;
     }
     // Invalidate in-flight utterances (manual page turns / chapter jumps /
-    // reflows) and restart from the freshly visible page.
+    // reflows) and restart from the freshly visible page. A page change while
+    // paused (e.g. overlay rewind/skip) resumes playback on the new page.
     pendingCarryOverRef.current = null;
+    isPausedRef.current = false;
     activeUtteranceRef.current = null;
+    currentChunksRef.current = null;
+    currentChunkIndexRef.current = 0;
     clearHighlight();
     getBrowserSpeechSynthesis()?.cancel();
+    setIsPaused(false);
     const timeoutId = window.setTimeout(() => {
       speakVisiblePageWhenIdle(session);
     }, RESUME_AFTER_RELOCATE_MS);
@@ -501,5 +592,13 @@ export function useBooksSpeech({
   // Stop speech (and drop highlights) when the reader unmounts / book closes.
   useEffect(() => () => stopSpeaking(), [stopSpeaking]);
 
-  return { isSpeaking, startSpeaking, stopSpeaking, handleRelocated };
+  return {
+    isSpeaking,
+    isPaused,
+    startSpeaking,
+    stopSpeaking,
+    pauseSpeaking,
+    resumeSpeaking,
+    handleRelocated,
+  };
 }

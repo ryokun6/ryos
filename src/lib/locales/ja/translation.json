@@ -590,8 +590,8 @@
     "books": {
       "chineseScript": {
         "original": "オリジナル",
-        "simplified": "簡体字中国語",
-        "traditional": "繁体字中国語"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "自動",
@@ -604,12 +604,24 @@
         "moveToTop": "最上部へ移動"
       },
       "customize": {
+        "background": "背景",
         "colors": "カラー",
         "lineSpacing": "行間",
         "margins": "余白",
-        "title": "カスタマイズ"
+        "textColor": "テキスト",
+        "title": "カスタマイズ",
+        "transparent": "透明"
       },
       "description": "EPUB形式の本を読む",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "等幅",
+        "original": "オリジナル",
+        "rounded": "丸ゴシック",
+        "sans": "ゴシック",
+        "serif": "明朝"
+      },
       "help": {
         "bookshelf": {
           "description": "インポートされたEPUBが木製の棚に並んでいます。本をクリックして開き、読書を始めましょう。",
@@ -620,7 +632,7 @@
           "title": "ダークモード"
         },
         "fonts": {
-          "description": "「表示」メニューから、読書用のフォント（EB Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
+          "description": "「表示」メニューから、読書用のフォント（Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
           "title": "フォントとレイアウト"
         },
         "import": {
@@ -657,9 +669,6 @@
         "stopSpeaking": "読み上げを停止",
         "textLayout": "文字方向",
         "textSize": "テキストサイズ",
-        "textSizeDecrease": "小さく",
-        "textSizeIncrease": "大きく",
-        "textSizeReset": "デフォルトサイズ",
         "theme": "テーマ"
       },
       "name": "ブック",
@@ -676,6 +685,13 @@
         "listView": "リスト表示",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "一時停止",
+        "resume": "再開",
+        "rewind": "早戻し",
+        "skip": "スキップ",
+        "stop": "停止"
+      },
       "speechRate": {
         "fast": "速い",
         "normal": "標準",
@@ -689,7 +705,9 @@
       },
       "theme": {
         "auto": "自動",
+        "accent": "アクセント",
         "black": "ブラック",
+        "custom": "カスタム",
         "dark": "ダーク",
         "gray": "グレー",
         "green": "グリーン",
@@ -1659,6 +1677,9 @@
       "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します",
       "bootScreen": "起動画面",
       "bootScreenDescription": "起動画面のアニメーションをテストします",
+      "browserTtsVoice": "読み上げ音声",
+      "browserTtsVoiceAutomatic": "自動",
+      "browserTtsVoiceDescription": "「ブック」の読み上げと「計算機」用のシステム音声",
       "changePassword": "パスワードを変更",
       "changePasswordButton": "変更",
       "chatSynth": "チャットシンセ",

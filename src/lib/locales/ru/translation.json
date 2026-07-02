@@ -594,8 +594,8 @@
     "books": {
       "chineseScript": {
         "original": "Оригинал",
-        "simplified": "Упрощенный китайский",
-        "traditional": "Традиционный китайский"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "Авто",
@@ -608,12 +608,24 @@
         "moveToTop": "Переместить в начало"
       },
       "customize": {
+        "background": "Фон",
         "colors": "Цвета",
         "lineSpacing": "Межстрочный интервал",
         "margins": "Поля",
-        "title": "Настройка"
+        "textColor": "Текст",
+        "title": "Настройка",
+        "transparent": "Прозрачный"
       },
       "description": "Читайте книги EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Моноширинный",
+        "original": "Оригинал",
+        "rounded": "Скругленный",
+        "sans": "Без засечек",
+        "serif": "С засечками"
+      },
       "help": {
         "bookshelf": {
           "description": "Импортированные книги EPUB расставлены на деревянной полке. Нажмите на книгу, чтобы открыть её и начать чтение.",
@@ -624,7 +636,7 @@
           "title": "Тёмный режим"
         },
         "fonts": {
-          "description": "Выберите шрифт для чтения (включая EB Garamond), размер текста, а также одну или две колонки в меню «Вид».",
+          "description": "Выберите шрифт для чтения (включая Garamond), размер текста, а также одну или две колонки в меню «Вид».",
           "title": "Шрифты и макет"
         },
         "import": {
@@ -661,9 +673,6 @@
         "stopSpeaking": "Остановить проговаривание",
         "textLayout": "Направление текста",
         "textSize": "Размер текста",
-        "textSizeDecrease": "Меньше",
-        "textSizeIncrease": "Больше",
-        "textSizeReset": "Размер по умолчанию",
         "theme": "Тема"
       },
       "name": "Книги",
@@ -680,6 +689,13 @@
         "listView": "Список",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "Пауза",
+        "resume": "Продолжить",
+        "rewind": "Перемотать назад",
+        "skip": "Пропустить",
+        "stop": "Остановить"
+      },
       "speechRate": {
         "fast": "Быстро",
         "normal": "Обычная",
@@ -693,7 +709,9 @@
       },
       "theme": {
         "auto": "Авто",
+        "accent": "Акцент",
         "black": "Черный",
+        "custom": "Настроенная",
         "dark": "Темная",
         "gray": "Серый",
         "green": "Зеленый",
@@ -1666,6 +1684,9 @@
       "backupRestoreDescription": "Резервное копирование или восстановление всех настроек и файлов приложения",
       "bootScreen": "Экран загрузки",
       "bootScreenDescription": "Проверить анимацию экрана загрузки",
+      "browserTtsVoice": "Голос проговаривания текста",
+      "browserTtsVoiceAutomatic": "Автоматически",
+      "browserTtsVoiceDescription": "Системный голос для чтения вслух в Книгах и Калькуляторе",
       "changePassword": "Изменить пароль",
       "changePasswordButton": "Изменить",
       "chatSynth": "Чат-синтезатор",

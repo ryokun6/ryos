@@ -387,7 +387,7 @@ describe("bookshelf codec", () => {
     expect(result).toBeUndefined();
   });
 
-  test("removeBook clears progress, ordering, and last-opened", () => {
+  test("removeBook clears progress, ordering, last-opened, and openPath", () => {
     useBooksStore.setState({
       progressByPath: {
         "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
@@ -396,6 +396,7 @@ describe("bookshelf codec", () => {
       pinnedTop: ["/Books/a.epub"],
       pinnedBottom: ["/Books/a.epub"],
       lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
     } as never);
 
     useBooksStore.getState().removeBook("/Books/a.epub");
@@ -406,12 +407,55 @@ describe("bookshelf codec", () => {
     expect(state.pinnedTop).toEqual([]);
     expect(state.pinnedBottom).toEqual([]);
     expect(state.lastOpenedPath).toBeNull();
+    expect(state.openPath).toBeNull();
 
     // collect must stop emitting the removed book's progress doc so the engine
     // shadow-diff can tombstone it cross-device.
     const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
     expect(docs.has("bookshelf/progress:/Books/a.epub")).toBe(false);
     expect(docs.has("bookshelf/progress:/Books/b.epub")).toBe(true);
+  });
+
+  test("renameProgressPath migrates openPath and last-opened with the book", () => {
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
+      },
+      pinnedTop: ["/Books/a.epub"],
+      pinnedBottom: [],
+      lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
+    } as never);
+
+    useBooksStore.getState().renameProgressPath("/Books/a.epub", "/Books/b.epub");
+
+    const state = useBooksStore.getState();
+    expect(state.progressByPath["/Books/a.epub"]).toBeUndefined();
+    expect(state.progressByPath["/Books/b.epub"]).toMatchObject({
+      percentage: 0.3,
+    });
+    expect(state.pinnedTop).toEqual(["/Books/b.epub"]);
+    expect(state.lastOpenedPath).toBe("/Books/b.epub");
+    expect(state.openPath).toBe("/Books/b.epub");
+  });
+
+  test("bookshelf collect does not sync device-local openPath", () => {
+    useBooksStore.setState({
+      progressByPath: {},
+      pinnedTop: [],
+      pinnedBottom: [],
+      lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
+    } as never);
+
+    const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
+    expect(docs.get("bookshelf/last-opened")).toMatchObject({
+      path: "/Books/a.epub",
+    });
+    for (const key of docs.keys()) {
+      expect(key).not.toContain("openPath");
+      expect(key).not.toContain("open-path");
+    }
   });
 });
 
@@ -428,6 +472,9 @@ describe("books settings codec", () => {
       fontSizePct: 130,
       columnMode: "double",
       themeOverride: "sepia",
+      customThemeBackground: "#112233",
+      customThemeText: "#ddeeff",
+      customThemeTransparent: true,
       chineseScript: "traditional",
       textLayout: "vertical",
       lineHeight: 1.8,
@@ -444,6 +491,9 @@ describe("books settings codec", () => {
       "books-settings/fontSizePct": 130,
       "books-settings/columnMode": "double",
       "books-settings/themeOverride": "sepia",
+      "books-settings/customThemeBackground": "#112233",
+      "books-settings/customThemeText": "#ddeeff",
+      "books-settings/customThemeTransparent": true,
       "books-settings/chineseScript": "traditional",
       "books-settings/textLayout": "vertical",
       "books-settings/lineHeight": 1.8,
@@ -458,7 +508,10 @@ describe("books settings codec", () => {
         { k: "books-settings/fontId", v: "sans", t },
         { k: "books-settings/fontSizePct", v: 140, t },
         { k: "books-settings/columnMode", v: "single", t },
-        { k: "books-settings/themeOverride", v: "night", t },
+        { k: "books-settings/themeOverride", v: "custom", t },
+        { k: "books-settings/customThemeBackground", v: "#123", t },
+        { k: "books-settings/customThemeText", v: "#ABCDEF", t },
+        { k: "books-settings/customThemeTransparent", v: true, t },
         { k: "books-settings/chineseScript", v: "simplified", t },
         { k: "books-settings/textLayout", v: "vertical", t },
         { k: "books-settings/lineHeight", v: 1.7, t },
@@ -472,7 +525,11 @@ describe("books settings codec", () => {
       fontId: "sans",
       fontSizePct: 140,
       columnMode: "single",
-      themeOverride: "night",
+      themeOverride: "custom",
+      // Synced colors are normalized to lowercase #rrggbb.
+      customThemeBackground: "#112233",
+      customThemeText: "#abcdef",
+      customThemeTransparent: true,
       chineseScript: "simplified",
       textLayout: "vertical",
       lineHeight: 1.7,
@@ -497,6 +554,9 @@ describe("books settings codec", () => {
         { k: "books-settings/fontSizePct", v: 1_000, t },
         { k: "books-settings/columnMode", v: "triple", t },
         { k: "books-settings/themeOverride", v: "neon", t },
+        { k: "books-settings/customThemeBackground", v: "papayawhip", t },
+        { k: "books-settings/customThemeText", v: 0x112233, t },
+        { k: "books-settings/customThemeTransparent", v: "yes", t },
         { k: "books-settings/chineseScript", v: "translated", t },
         { k: "books-settings/textLayout", v: "diagonal", t },
         { k: "books-settings/lineHeight", v: -1, t },
@@ -519,7 +579,8 @@ describe("books settings codec", () => {
     try {
       useBooksStore.getState().updateSettings({
         fontSizePct: 120,
-        themeOverride: "sepia",
+        themeOverride: "custom",
+        customThemeBackground: "#101820",
         textLayout: "vertical",
         gutterPx: 40,
       });
@@ -527,6 +588,7 @@ describe("books settings codec", () => {
         [
           "books-settings/fontSizePct",
           "books-settings/themeOverride",
+          "books-settings/customThemeBackground",
           "books-settings/textLayout",
           "books-settings/gutterPx",
         ],

@@ -3074,6 +3074,9 @@
       "uiSounds": "UI Sounds",
       "uiSoundsDescription": "Clicks and feedback for windows and menus",
       "speechDescription": "Speaks assistant messages and selected text",
+      "browserTtsVoice": "TTS Voice",
+      "browserTtsVoiceDescription": "System voice for Books read-aloud and Calculator",
+      "browserTtsVoiceAutomatic": "Automatic",
       "terminalIeAmbientSynth": "Synth",
       "terminalIeAmbientSynthDescription": "Effects and synth for Terminal and IE",
       "chatSynth": "Chat Synth",
@@ -4528,9 +4531,6 @@
         "chapters": "Chapters",
         "font": "Font",
         "textSize": "Text Size",
-        "textSizeIncrease": "Bigger",
-        "textSizeDecrease": "Smaller",
-        "textSizeReset": "Default Size",
         "columns": "Columns",
         "textLayout": "Text Direction",
         "chineseScript": "Chinese Script",
@@ -4547,7 +4547,10 @@
         "title": "Customize",
         "lineSpacing": "Line Spacing",
         "margins": "Margins",
-        "colors": "Colors"
+        "colors": "Colors",
+        "background": "Background",
+        "textColor": "Text",
+        "transparent": "Transparent"
       },
       "speechRate": {
         "slow": "Slow",
@@ -4555,10 +4558,26 @@
         "fast": "Fast",
         "veryFast": "Very Fast"
       },
+      "speech": {
+        "rewind": "Rewind",
+        "pause": "Pause",
+        "resume": "Resume",
+        "skip": "Skip",
+        "stop": "Stop"
+      },
       "columns": {
         "auto": "Auto",
         "single": "Single",
         "double": "Double"
+      },
+      "fonts": {
+        "original": "Original",
+        "eb-garamond": "Garamond",
+        "serif": "Serif",
+        "sans": "Sans Serif",
+        "geneva": "Geneva",
+        "rounded": "Rounded",
+        "mono": "Monospace"
       },
       "textLayout": {
         "book": "Book Default",
@@ -4567,11 +4586,12 @@
       },
       "chineseScript": {
         "original": "Original",
-        "simplified": "Simplified Chinese",
-        "traditional": "Traditional Chinese"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "theme": {
         "auto": "Auto",
+        "accent": "Accent",
         "light": "Light",
         "paper": "Paper",
         "sepia": "Sepia",
@@ -4579,7 +4599,8 @@
         "green": "Green",
         "dark": "Dark",
         "night": "Night",
-        "black": "Black"
+        "black": "Black",
+        "custom": "Custom"
       },
       "shelf": {
         "import": "Add Book",
@@ -4625,11 +4646,11 @@
         },
         "progress": {
           "title": "Reading Progress",
-          "description": "Your place is saved automatically and restored the next time you open the book."
+          "description": "Your place is saved automatically. Reopening Books resumes the book and page you left on, or the shelf if you closed it."
         },
         "fonts": {
           "title": "Fonts & Layout",
-          "description": "Pick a reading font (including EB Garamond), text size, and single or double columns from the View menu."
+          "description": "Pick a reading font (including Garamond), text size, and single or double columns from the View menu."
         },
         "darkMode": {
           "title": "Dark Mode",

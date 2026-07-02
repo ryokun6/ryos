@@ -9,6 +9,7 @@ import {
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { FastForward, Pause, Play, Rewind, Stop } from "@phosphor-icons/react";
 import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
@@ -19,16 +20,23 @@ import {
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import {
   buildEpubTheme,
   buildFontFaceCss,
   columnModeToSpread,
   displayEpubTargetWithFallback,
+  getReadingOverlayBackground,
   isLikelyEpubBuffer,
   reflowEpubAfterFontsSettle,
   resolveEpubDisplayFallbackTarget,
+  resolveOsAccentBaseHex,
   resolveReadingPalette,
 } from "../utils/booksReader";
+import {
+  resolveEffectiveChineseScript,
+  resolveEffectiveTextLayout,
+} from "../utils/booksLanguage";
 import {
   applyChineseScriptToDocument,
   createChineseScriptConversionSession,
@@ -63,6 +71,8 @@ interface BooksReaderPaneProps {
   onProgress: (cfi: string, percentage: number) => void;
   onNavigationStateChange?: (state: BooksNavigationState) => void;
   onSpeechStateChange?: (isSpeaking: boolean) => void;
+  /** EPUB metadata language once known (drives CJK-only menus / features). */
+  onBookLanguageChange?: (language: string | null) => void;
 }
 
 const clamp01 = (value: number): number =>
@@ -119,6 +129,10 @@ const FOOTER_HEIGHT = 30;
 // Width at which auto column mode switches to a two-page spread. epub.js
 // defaults to 800; a lower value shows two columns on narrower windows.
 const SPREAD_MIN_WIDTH = 560;
+
+// Shared style for the read-aloud overlay control buttons.
+const SPEECH_OVERLAY_BUTTON_CLASS =
+  "flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent";
 
 // Open transition timings. Keep the page reveal slightly after the cover zoom
 // settles so the two never fight (which reads as a "pop"). Shared with the
@@ -300,6 +314,7 @@ export const BooksReaderPane = forwardRef<
     onProgress,
     onNavigationStateChange,
     onSpeechStateChange,
+    onBookLanguageChange,
   },
   ref
 ) {
@@ -308,14 +323,25 @@ export const BooksReaderPane = forwardRef<
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const bookLanguageRef = useRef<string | null>(null);
+  const [bookLanguage, setBookLanguage] = useState<string | null>(null);
   const publisherPageDirectionRef = useRef<"ltr" | "rtl">("ltr");
-  const textLayoutRef = useRef(settings.textLayout);
-  textLayoutRef.current = settings.textLayout;
+  // Raw preferences; application uses resolved (language-gated) values below.
+  const textLayoutSettingRef = useRef(settings.textLayout);
+  textLayoutSettingRef.current = settings.textLayout;
+  const chineseScriptSettingRef = useRef(settings.chineseScript);
+  chineseScriptSettingRef.current = settings.chineseScript;
+  // Vertical / simp-trad only apply for qualifying book languages.
+  const effectiveTextLayout = resolveEffectiveTextLayout(
+    settings.textLayout,
+    bookLanguage
+  );
+  const effectiveChineseScript = resolveEffectiveChineseScript(
+    settings.chineseScript,
+    bookLanguage
+  );
   const appliedTextLayoutRef = useRef<BooksReaderSettings["textLayout"] | null>(
     null
   );
-  const chineseScriptRef = useRef(settings.chineseScript);
-  chineseScriptRef.current = settings.chineseScript;
   const speechRateRef = useRef(settings.speechRate);
   speechRateRef.current = settings.speechRate;
   // Lets the rendition's `relocated` handler (created once per book) notify
@@ -424,8 +450,10 @@ export const BooksReaderPane = forwardRef<
     return blob;
   }, [appendDebugEvent, entry.path]);
 
-  const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
-  const isVerticalText = settings.textLayout === "vertical";
+  const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
+  const palette = resolveReadingPalette(settings, osIsDark, accentBaseHex);
+  const overlayBackground = getReadingOverlayBackground(palette);
+  const isVerticalText = effectiveTextLayout === "vertical";
   const sideClearance = clampBooksGutter(settings.gutterPx);
 
   // Measure the zoom-in geometry before first paint so the cover overlay starts
@@ -491,11 +519,17 @@ export const BooksReaderPane = forwardRef<
     let cancelled = false;
     let book: Book | null = null;
     let rendition: Rendition | null = null;
-    let displayedContentFontsReady: Promise<FontFaceSet> | undefined;
+    let displayedContentFontsReady: Promise<unknown> | undefined;
+    // epub.js resolves display() before rendition content hooks run, so the
+    // post-display font/axis reflow must wait for this signal from the hook.
+    let resolveContentHooksReady: (() => void) | null = null;
+    let contentHooksReady: Promise<void> = Promise.resolve();
     setIsReady(false);
     setCoverVisible(true);
     setLoadError(null);
     bookLanguageRef.current = null;
+    setBookLanguage(null);
+    onBookLanguageChange?.(null);
     publisherPageDirectionRef.current = "ltr";
     appliedTextLayoutRef.current = null;
     activeSectionHrefRef.current = undefined;
@@ -717,19 +751,27 @@ export const BooksReaderPane = forwardRef<
           container?: { packagePath?: string };
           package?: { metadata?: { direction?: unknown; language?: string } };
         };
-        const bookLanguage =
+        const nextBookLanguage =
           readyBook.package?.metadata?.language?.trim() || null;
-        bookLanguageRef.current = bookLanguage;
+        bookLanguageRef.current = nextBookLanguage;
+        setBookLanguage(nextBookLanguage);
+        onBookLanguageChange?.(nextBookLanguage);
         publisherPageDirectionRef.current = resolveEpubPageDirection(
           "book",
           readyBook.package?.metadata?.direction
         );
         const readingLanguage = resolveChineseScriptReadingLanguage(
-          chineseScriptRef.current,
-          bookLanguage ?? uiLanguage
+          resolveEffectiveChineseScript(
+            chineseScriptSettingRef.current,
+            nextBookLanguage
+          ),
+          nextBookLanguage ?? uiLanguage
         );
         book.spine.hooks.content.register((document: Document) => {
-          const textLayout = textLayoutRef.current;
+          const textLayout = resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          );
           applyEpubTextLayout(document, textLayout);
           appliedTextLayoutRef.current = textLayout;
         });
@@ -761,14 +803,21 @@ export const BooksReaderPane = forwardRef<
           const renderStep =
             reason === "initial" ? "epubjs:renderTo" : "epubjs:renderToFallback";
           displayedContentFontsReady = undefined;
+          contentHooksReady = new Promise<void>((resolve) => {
+            resolveContentHooksReady = resolve;
+          });
+          const textLayout = resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          );
           appendDebugEvent(`${renderStep}:start`, {
             width: host.clientWidth,
             height: host.clientHeight,
             spread: columnModeToSpread(settings.columnMode),
-            textLayout: textLayoutRef.current,
+            textLayout,
           });
           const pageDirection = resolveEpubPageDirection(
-            textLayoutRef.current,
+            textLayout,
             publisherPageDirectionRef.current
           );
           const nextRendition = activeBook.renderTo(host, {
@@ -785,14 +834,18 @@ export const BooksReaderPane = forwardRef<
           appendDebugEvent(`${renderStep}:success`);
 
           nextRendition.on("started", () => {
+            const layout = resolveEffectiveTextLayout(
+              textLayoutSettingRef.current,
+              bookLanguageRef.current
+            );
             const direction = resolveEpubPageDirection(
-              textLayoutRef.current,
+              layout,
               publisherPageDirectionRef.current
             );
             nextRendition.direction(direction);
             appendDebugEvent("epubjs:rendition:started", {
               direction,
-              textLayout: textLayoutRef.current,
+              textLayout: layout,
             });
           });
           nextRendition.on("attached", () =>
@@ -839,94 +892,120 @@ export const BooksReaderPane = forwardRef<
               document?: Document;
             }) => {
               try {
-                contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
-                appendDebugEvent("epubjs:contentHook:fonts:success");
-              } catch {
-                appendDebugEvent(
-                  "epubjs:contentHook:fonts:failed",
-                  undefined,
-                  "warn"
-                );
-              }
-
-              try {
-                contents.addStylesheetCss(
-                  BOOKS_SPEECH_HIGHLIGHT_CSS,
-                  "ryos-books-speech"
-                );
-              } catch {
-                appendDebugEvent(
-                  "epubjs:contentHook:speechCss:failed",
-                  undefined,
-                  "warn"
-                );
-              }
-
-              const document = contents.document;
-              if (!document) return;
-              const textLayout = textLayoutRef.current;
-              applyEpubTextLayout(document, textLayout);
-              appliedTextLayoutRef.current = textLayout;
-
-              // `hyphens: auto` and locale-specific CJK glyph forms depend on the
-              // content language. Prefer EPUB metadata, then the ryOS UI locale.
-              try {
-                const docEl = document.documentElement;
-                if (docEl && !docEl.getAttribute("lang")) {
-                  docEl.setAttribute(
-                    "lang",
-                    bookLanguageRef.current ?? uiLanguageRef.current
+                try {
+                  contents.addStylesheetCss(fontFaceCss, "ryos-book-fonts");
+                  appendDebugEvent("epubjs:contentHook:fonts:success");
+                } catch {
+                  appendDebugEvent(
+                    "epubjs:contentHook:fonts:failed",
+                    undefined,
+                    "warn"
                   );
                 }
-              } catch {
-                // ignore
-              }
 
-              // Strip publisher inline `color` styles so the themed reading color
-              // always wins. A stylesheet (even `!important`) can't beat an inline
-              // `color: … !important`, so removing the inline declaration is the
-              // only reliable way to guarantee legibility (e.g. dark-on-dark).
-              try {
-                document.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
-                  if (el.style?.color) {
-                    el.style.removeProperty("color");
+                try {
+                  contents.addStylesheetCss(
+                    BOOKS_SPEECH_HIGHLIGHT_CSS,
+                    "ryos-books-speech"
+                  );
+                } catch {
+                  appendDebugEvent(
+                    "epubjs:contentHook:speechCss:failed",
+                    undefined,
+                    "warn"
+                  );
+                }
+
+                const document = contents.document;
+                if (!document) return;
+                const textLayout = resolveEffectiveTextLayout(
+                  textLayoutSettingRef.current,
+                  bookLanguageRef.current
+                );
+                applyEpubTextLayout(document, textLayout);
+                appliedTextLayoutRef.current = textLayout;
+
+                // `hyphens: auto` and locale-specific CJK glyph forms depend on the
+                // content language. Prefer EPUB metadata, then the ryOS UI locale.
+                try {
+                  const docEl = document.documentElement;
+                  if (docEl && !docEl.getAttribute("lang")) {
+                    docEl.setAttribute(
+                      "lang",
+                      bookLanguageRef.current ?? uiLanguageRef.current
+                    );
                   }
-                });
-              } catch {
-                // ignore
-              }
+                } catch {
+                  // ignore
+                }
 
-              if (document.fonts && renditionRef.current === nextRendition) {
-                displayedContentFontsReady = document.fonts.ready;
-              }
+                // Strip publisher inline `color` styles so the themed reading color
+                // always wins. A stylesheet (even `!important`) can't beat an inline
+                // `color: … !important`, so removing the inline declaration is the
+                // only reliable way to guarantee legibility (e.g. dark-on-dark).
+                try {
+                  document
+                    .querySelectorAll<HTMLElement>("[style]")
+                    .forEach((el) => {
+                      if (el.style?.color) {
+                        el.style.removeProperty("color");
+                      }
+                    });
+                } catch {
+                  // ignore
+                }
 
-              const target = chineseScriptRef.current;
-              try {
-                const changedNodeCount = await applyChineseScriptToDocument(
-                  document,
-                  target,
-                  chineseScriptSessionRef.current,
-                  () =>
-                    !cancelled &&
-                    chineseScriptRef.current === target &&
-                    renditionRef.current === nextRendition
+                // Capture fonts.ready before Chinese-script work so the settle
+                // reflow can start waiting even while conversion continues.
+                if (renditionRef.current === nextRendition) {
+                  displayedContentFontsReady =
+                    document.fonts?.ready ?? Promise.resolve();
+                }
+
+                const target = resolveEffectiveChineseScript(
+                  chineseScriptSettingRef.current,
+                  bookLanguageRef.current
                 );
-                appendDebugEvent("epubjs:contentHook:chineseScript:success", {
-                  target,
-                  changedNodeCount,
-                });
-              } catch (error) {
-                appendDebugEvent(
-                  "epubjs:contentHook:chineseScript:failed",
-                  error,
-                  "warn"
-                );
+                try {
+                  const changedNodeCount = await applyChineseScriptToDocument(
+                    document,
+                    target,
+                    chineseScriptSessionRef.current,
+                    () =>
+                      !cancelled &&
+                      resolveEffectiveChineseScript(
+                        chineseScriptSettingRef.current,
+                        bookLanguageRef.current
+                      ) === target &&
+                      renditionRef.current === nextRendition
+                  );
+                  appendDebugEvent("epubjs:contentHook:chineseScript:success", {
+                    target,
+                    changedNodeCount,
+                  });
+                } catch (error) {
+                  appendDebugEvent(
+                    "epubjs:contentHook:chineseScript:failed",
+                    error,
+                    "warn"
+                  );
+                }
+              } finally {
+                // Unblock the settle reflow even when the section document is
+                // missing or Chinese-script conversion throws.
+                resolveContentHooksReady?.();
+                resolveContentHooksReady = null;
               }
             }
           );
 
           nextRendition.themes.default(
-            buildEpubTheme(settings, palette, readingLanguage)
+            buildEpubTheme(
+              settings,
+              palette,
+              readingLanguage,
+              bookLanguageRef.current
+            )
           );
           nextRendition.themes.fontSize(`${settings.fontSizePct}%`);
           appendDebugEvent("epubjs:theme:applied");
@@ -1043,18 +1122,43 @@ export const BooksReaderPane = forwardRef<
             target: displayResult.target,
           });
           const displayedRendition = displayResult.rendition;
+          // display() resolves before content hooks assign fontsReady. Wait for
+          // the hook (with a timeout so a stuck hook can't pin the cover open).
+          await Promise.race([
+            contentHooksReady,
+            new Promise<void>((resolve) => {
+              window.setTimeout(resolve, FALLBACK_DISPLAY_TIMEOUT_MS);
+            }),
+          ]);
+          if (cancelled || renditionRef.current !== displayedRendition) return;
+          const textLayout = resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          );
+          const isVerticalTextLayout = textLayout === "vertical";
           const reflowedAfterFonts = await reflowEpubAfterFontsSettle({
-            fontsReady: displayedContentFontsReady,
+            fontsReady: displayedContentFontsReady ?? Promise.resolve(),
             rendition: displayedRendition,
-            spread: columnModeToSpread(settings.columnMode),
+            // Vertical writing mode never uses facing-page spreads; forcing
+            // `auto`/`always` after the axis is already vertical sizes columns
+            // against half-width and produces the stacked "tiers" layout.
+            spread: isVerticalTextLayout
+              ? "none"
+              : columnModeToSpread(settings.columnMode),
             minSpreadWidth: SPREAD_MIN_WIDTH,
             target: displayResult.target,
             displayTimeoutMs: FALLBACK_DISPLAY_TIMEOUT_MS,
+            // Must clear+rebuild — resize() no-ops when the host size is
+            // unchanged, which is exactly the first-load case.
+            rebuildViews: isVerticalTextLayout,
             isActive: () =>
               !cancelled && renditionRef.current === displayedRendition,
           });
           if (reflowedAfterFonts) {
-            appendDebugEvent("epubjs:fonts:reflowed");
+            appendDebugEvent("epubjs:fonts:reflowed", {
+              textLayout,
+              rebuilt: isVerticalTextLayout,
+            });
           }
         } catch (err) {
           // Corrupt / incompatible EPUB — show an error instead of revealing an
@@ -1119,13 +1223,14 @@ export const BooksReaderPane = forwardRef<
   }, [entry.path]);
 
   // Convert the already-rendered section immediately when the reader setting
-  // changes. Each section retains its original text so switching directions or
-  // returning to Original never requires reloading the chapter.
+  // (or book language) changes. Non-Chinese books always stay on original text.
+  // Each section retains its original text so switching directions or returning
+  // to Original never requires reloading the chapter.
   useEffect(() => {
     const rendition = renditionRef.current;
     if (!isReady || !rendition) return;
     let cancelled = false;
-    const target = settings.chineseScript;
+    const target = effectiveChineseScript;
     const renditionContents = rendition.getContents() as unknown;
     const contentsList = (
       Array.isArray(renditionContents)
@@ -1142,7 +1247,12 @@ export const BooksReaderPane = forwardRef<
           contents.document,
           target,
           chineseScriptSessionRef.current,
-          () => !cancelled && chineseScriptRef.current === target
+          () =>
+            !cancelled &&
+            resolveEffectiveChineseScript(
+              chineseScriptSettingRef.current,
+              bookLanguageRef.current
+            ) === target
         );
         appendDebugEvent("reader:chineseScript:applied", {
           target,
@@ -1156,10 +1266,11 @@ export const BooksReaderPane = forwardRef<
     return () => {
       cancelled = true;
     };
-  }, [appendDebugEvent, isReady, settings.chineseScript]);
+  }, [appendDebugEvent, isReady, effectiveChineseScript]);
 
   // Apply vertical text to source and rendered section documents, then let
   // epub.js clear and redisplay the current CFI with the matching page axis.
+  // Vertical writing mode is only allowed for CJK books.
   useEffect(() => {
     const rendition = renditionRef.current;
     const book = bookRef.current;
@@ -1167,14 +1278,14 @@ export const BooksReaderPane = forwardRef<
       !isReady ||
       !rendition ||
       !book ||
-      appliedTextLayoutRef.current === settings.textLayout
+      appliedTextLayoutRef.current === effectiveTextLayout
     ) {
       return;
     }
 
     book.spine.each((section: { document?: Document }) => {
       if (section.document) {
-        applyEpubTextLayout(section.document, settings.textLayout);
+        applyEpubTextLayout(section.document, effectiveTextLayout);
       }
     });
 
@@ -1188,40 +1299,50 @@ export const BooksReaderPane = forwardRef<
     ) as Array<{ document?: Document }>;
     for (const contents of contentsList) {
       if (contents.document) {
-        applyEpubTextLayout(contents.document, settings.textLayout);
+        applyEpubTextLayout(contents.document, effectiveTextLayout);
       }
     }
 
-    appliedTextLayoutRef.current = settings.textLayout;
+    appliedTextLayoutRef.current = effectiveTextLayout;
     const direction = resolveEpubPageDirection(
-      settings.textLayout,
+      effectiveTextLayout,
       publisherPageDirectionRef.current
     );
     rendition.direction(direction);
     appendDebugEvent("reader:textLayout:applied", {
       direction,
-      textLayout: settings.textLayout,
+      textLayout: effectiveTextLayout,
     });
-  }, [appendDebugEvent, isReady, settings.textLayout]);
+  }, [appendDebugEvent, isReady, effectiveTextLayout]);
 
   // Apply theme (colors, font family, line height) live.
   useEffect(() => {
     if (!isReady || !renditionRef.current) return;
     const readingLanguage = resolveChineseScriptReadingLanguage(
-      settings.chineseScript,
+      effectiveChineseScript,
       bookLanguageRef.current ?? uiLanguage
     );
     renditionRef.current.themes.default(
-      buildEpubTheme(settings, palette, readingLanguage)
+      buildEpubTheme(
+        settings,
+        palette,
+        readingLanguage,
+        bookLanguageRef.current
+      )
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isReady,
     settings.fontId,
     settings.themeOverride,
-    settings.chineseScript,
-    settings.textLayout,
+    settings.customThemeBackground,
+    settings.customThemeText,
+    effectiveChineseScript,
+    bookLanguage,
+    settings.customThemeTransparent,
     settings.lineHeight,
+    // Live OS accent seed — page colors track wallpaper/Control Panels changes.
+    accentBaseHex,
     osIsDark,
     uiLanguage,
   ]);
@@ -1281,7 +1402,10 @@ export const BooksReaderPane = forwardRef<
     () =>
       ryOSLocaleToSpeechLanguage(
         resolveChineseScriptReadingLanguage(
-          chineseScriptRef.current,
+          resolveEffectiveChineseScript(
+            chineseScriptSettingRef.current,
+            bookLanguageRef.current
+          ),
           bookLanguageRef.current ?? uiLanguageRef.current
         )
       ),
@@ -1289,8 +1413,11 @@ export const BooksReaderPane = forwardRef<
   );
   const {
     isSpeaking,
+    isPaused,
     startSpeaking,
     stopSpeaking,
+    pauseSpeaking,
+    resumeSpeaking,
     handleRelocated: handleSpeechRelocated,
   } = useBooksSpeech({
     getRendition: () => renditionRef.current,
@@ -1336,9 +1463,23 @@ export const BooksReaderPane = forwardRef<
       } else if (event.key === "PageUp") {
         turnPage("prev");
       } else if (event.key === "ArrowRight") {
-        turnPage(textLayoutRef.current === "vertical" ? "prev" : "next");
+        turnPage(
+          resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          ) === "vertical"
+            ? "prev"
+            : "next"
+        );
       } else if (event.key === "ArrowLeft") {
-        turnPage(textLayoutRef.current === "vertical" ? "next" : "prev");
+        turnPage(
+          resolveEffectiveTextLayout(
+            textLayoutSettingRef.current,
+            bookLanguageRef.current
+          ) === "vertical"
+            ? "next"
+            : "prev"
+        );
       }
     },
     [turnPage]
@@ -1367,7 +1508,12 @@ export const BooksReaderPane = forwardRef<
     <div
       ref={viewportRef}
       tabIndex={0}
-      className="relative h-full w-full overflow-hidden outline-none"
+      className={cn(
+        "relative h-full w-full overflow-hidden outline-none",
+        // Transparent custom background: the reader becomes the frosted pane
+        // under Aqua Glass (see books-reader-glass in aqua-glass.css).
+        palette.background === "transparent" && "books-reader-glass"
+      )}
       style={{ backgroundColor: palette.background }}
     >
       {/* The epub.js render target, inset below the top clearance, above the
@@ -1422,6 +1568,82 @@ export const BooksReaderPane = forwardRef<
         </span>
       </div>
 
+      {/* Read-aloud overlay: simple floating controls shown while speech is
+          active. Rewind/skip turn pages (speech restarts on the new page via
+          the relocated handler); pause/resume keeps the current sentence. */}
+      <AnimatePresence>
+        {isSpeaking && (
+          <motion.div
+            className="pointer-events-none absolute inset-x-0 z-30 flex justify-center"
+            style={{ bottom: FOOTER_HEIGHT + 8 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div
+              className={cn(
+                "pointer-events-auto flex items-center gap-0.5 rounded-full border px-1.5 py-1 shadow-lg backdrop-blur-md",
+                palette.isDark
+                  ? "border-white/15 bg-white/10 text-white"
+                  : "border-black/10 bg-black/60 text-white"
+              )}
+            >
+              <button
+                type="button"
+                aria-label={t("apps.books.speech.rewind")}
+                title={t("apps.books.speech.rewind")}
+                onClick={() => turnPage("prev")}
+                disabled={!navigationState.canGoPreviousPage}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                <Rewind weight="fill" size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label={
+                  isPaused
+                    ? t("apps.books.speech.resume")
+                    : t("apps.books.speech.pause")
+                }
+                title={
+                  isPaused
+                    ? t("apps.books.speech.resume")
+                    : t("apps.books.speech.pause")
+                }
+                onClick={isPaused ? resumeSpeaking : pauseSpeaking}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                {isPaused ? (
+                  <Play weight="fill" size={16} />
+                ) : (
+                  <Pause weight="fill" size={16} />
+                )}
+              </button>
+              <button
+                type="button"
+                aria-label={t("apps.books.speech.skip")}
+                title={t("apps.books.speech.skip")}
+                onClick={() => turnPage("next")}
+                disabled={!navigationState.canGoNextPage}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                <FastForward weight="fill" size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label={t("apps.books.speech.stop")}
+                title={t("apps.books.speech.stop")}
+                onClick={stopSpeaking}
+                className={SPEECH_OVERLAY_BUTTON_CLASS}
+              >
+                <Stop weight="fill" size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Page-turn animation. epub.js only ever has the single current page
           rendered, so a true two-page slide (or a curl showing the outgoing
           page) would require expensive DOM snapshotting (html2canvas), which is
@@ -1441,7 +1663,7 @@ export const BooksReaderPane = forwardRef<
             <motion.div
               className="absolute inset-0"
               style={{
-                backgroundColor: palette.background,
+                backgroundColor: overlayBackground,
                 // Subtle fold shading along the sheet's leading edge.
                 backgroundImage:
                   flip.dir === (isVerticalText ? "prev" : "next")
@@ -1480,7 +1702,7 @@ export const BooksReaderPane = forwardRef<
             "absolute inset-0 z-30 flex items-center justify-center",
             palette.isDark ? "text-white/70" : "text-black/50"
           )}
-          style={{ backgroundColor: palette.background }}
+          style={{ backgroundColor: overlayBackground }}
         >
           <span className="font-os-ui text-sm">…</span>
         </div>
@@ -1490,7 +1712,7 @@ export const BooksReaderPane = forwardRef<
       {loadError && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center px-6 text-center"
-          style={{ backgroundColor: palette.background }}
+          style={{ backgroundColor: overlayBackground }}
         >
           <span
             className={cn(
@@ -1510,7 +1732,7 @@ export const BooksReaderPane = forwardRef<
         {coverVisible && zoom && (
           <motion.div
             className="pointer-events-none absolute z-40 overflow-hidden"
-            style={{ backgroundColor: palette.background }}
+            style={{ backgroundColor: overlayBackground }}
             initial={{
               top: zoom.from.top,
               left: zoom.from.left,

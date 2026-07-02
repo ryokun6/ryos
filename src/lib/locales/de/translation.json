@@ -590,8 +590,8 @@
     "books": {
       "chineseScript": {
         "original": "Original",
-        "simplified": "Chinesisch (vereinfacht)",
-        "traditional": "Chinesisch (traditionell)"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "Automatisch",
@@ -604,12 +604,24 @@
         "moveToTop": "Nach ganz oben"
       },
       "customize": {
+        "background": "Hintergrund",
         "colors": "Farben",
         "lineSpacing": "Zeilenabstand",
         "margins": "Seitenränder",
-        "title": "Anpassen"
+        "textColor": "Text",
+        "title": "Anpassen",
+        "transparent": "Transparent"
       },
       "description": "EPUB-Bücher lesen",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monospace",
+        "original": "Original",
+        "rounded": "Abgerundet",
+        "sans": "Sans Serif",
+        "serif": "Serif"
+      },
       "help": {
         "bookshelf": {
           "description": "Importierte EPUBs stehen im Holzregal. Klicken Sie auf ein Buch, um es zu öffnen und mit dem Lesen zu beginnen.",
@@ -620,7 +632,7 @@
           "title": "Dunkelmodus"
         },
         "fonts": {
-          "description": "Wähle eine Leseschrift (einschließlich EB Garamond), die Textgröße sowie ein- oder zweispaltiges Layout im Menü „Darstellung“.",
+          "description": "Wähle eine Leseschrift (einschließlich Garamond), die Textgröße sowie ein- oder zweispaltiges Layout im Menü „Darstellung“.",
           "title": "Schriften & Layout"
         },
         "import": {
@@ -657,9 +669,6 @@
         "stopSpeaking": "Sprachausgabe stoppen",
         "textLayout": "Textrichtung",
         "textSize": "Textgröße",
-        "textSizeDecrease": "Kleiner",
-        "textSizeIncrease": "Größer",
-        "textSizeReset": "Standardgröße",
         "theme": "Design"
       },
       "name": "Bücher",
@@ -676,6 +685,13 @@
         "listView": "Listendarstellung",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "Pause",
+        "resume": "Fortsetzen",
+        "rewind": "Zurückspulen",
+        "skip": "Überspringen",
+        "stop": "Stopp"
+      },
       "speechRate": {
         "fast": "Schnell",
         "normal": "Normal",
@@ -689,7 +705,9 @@
       },
       "theme": {
         "auto": "Automatisch",
+        "accent": "Akzent",
         "black": "Schwarz",
+        "custom": "Eigene",
         "dark": "Dunkel",
         "gray": "Grau",
         "green": "Grün",
@@ -1659,6 +1677,9 @@
       "backupRestoreDescription": "Alle App-Einstellungen und Dateien sichern oder wiederherstellen",
       "bootScreen": "Startbildschirm",
       "bootScreenDescription": "Startbildschirm-Animation testen",
+      "browserTtsVoice": "TTS-Stimme",
+      "browserTtsVoiceAutomatic": "Automatisch",
+      "browserTtsVoiceDescription": "Systemstimme für das Vorlesen in „Bücher“ und den Rechner",
       "changePassword": "Passwort ändern",
       "changePasswordButton": "Ändern",
       "chatSynth": "Chat-Synth",

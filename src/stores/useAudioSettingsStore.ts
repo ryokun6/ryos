@@ -27,6 +27,13 @@ interface AudioSettingsState {
   // TTS settings
   ttsModel: "openai" | "elevenlabs" | null;
   ttsVoice: string | null;
+  /**
+   * Preferred browser speechSynthesis voice (voiceURI) used by all
+   * browser-based TTS (Calculator speech, Books read-aloud). `null` picks a
+   * voice automatically from the utterance language. Device-local: voice
+   * lists differ per browser/OS, so this is intentionally not cloud-synced.
+   */
+  browserTtsVoiceURI: string | null;
   synthPreset: string;
 
   // Actions
@@ -46,6 +53,7 @@ interface AudioSettingsState {
   setKeepTalkingEnabled: (v: boolean) => void;
   setTtsModel: (m: "openai" | "elevenlabs" | null) => void;
   setTtsVoice: (v: string | null) => void;
+  setBrowserTtsVoiceURI: (v: string | null) => void;
   setSynthPreset: (v: string) => void;
 }
 
@@ -71,6 +79,7 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
 
       ttsModel: null,
       ttsVoice: null,
+      browserTtsVoiceURI: null,
       synthPreset: "classic",
 
       // Actions
@@ -91,6 +100,7 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       setKeepTalkingEnabled: (v) => set({ keepTalkingEnabled: v }),
       setTtsModel: (m) => set({ ttsModel: m }),
       setTtsVoice: (v) => set({ ttsVoice: v }),
+      setBrowserTtsVoiceURI: (v) => set({ browserTtsVoiceURI: v }),
       setSynthPreset: (v) => set({ synthPreset: v }),
     }),
     {
@@ -109,6 +119,7 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
         keepTalkingEnabled: state.keepTalkingEnabled,
         ttsModel: state.ttsModel,
         ttsVoice: state.ttsVoice,
+        browserTtsVoiceURI: state.browserTtsVoiceURI,
         synthPreset: state.synthPreset,
       }),
     }

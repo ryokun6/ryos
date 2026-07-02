@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { SquaresFour } from "@phosphor-icons/react";
 import type { AppProps, BooksInitialData } from "@/apps/base/types";
@@ -82,6 +82,14 @@ export function BooksAppComponent({
     (speaking: boolean) => setIsSpeaking(speaking),
     []
   );
+  const [bookLanguage, setBookLanguage] = useState<string | null>(null);
+  const handleBookLanguageChange = useCallback((language: string | null) => {
+    setBookLanguage(language);
+  }, []);
+  // Drop language capability flags when returning to the shelf.
+  useEffect(() => {
+    if (viewMode !== "reader") setBookLanguage(null);
+  }, [viewMode]);
 
   const menuBar = (
     <BooksMenuBar
@@ -92,6 +100,7 @@ export function BooksAppComponent({
       onBackToShelf={closeBook}
       onShowCustomize={() => setIsCustomizeOpen(true)}
       isReading={viewMode === "reader"}
+      bookLanguage={bookLanguage}
       settings={settings}
       updateSettings={updateSettings}
       navigationState={readerNavigationState}
@@ -184,7 +193,7 @@ export function BooksAppComponent({
     >
       <div
         ref={contentRef}
-        className="relative flex h-full w-full flex-col overflow-hidden bg-os-window-bg font-os-ui"
+        className="books-app-shell relative flex h-full w-full flex-col overflow-hidden bg-os-window-bg font-os-ui"
       >
         {viewMode === "reader" && activeBook ? (
           <BooksReaderPane
@@ -201,6 +210,7 @@ export function BooksAppComponent({
             }
             onNavigationStateChange={handleReaderNavigationStateChange}
             onSpeechStateChange={handleSpeechStateChange}
+            onBookLanguageChange={handleBookLanguageChange}
           />
         ) : (
           <BooksShelfView
@@ -225,6 +235,7 @@ export function BooksAppComponent({
               updateSettings={updateSettings}
               osIsDark={isDarkMode}
               compact={isCompactPanel}
+              bookLanguage={bookLanguage}
               onClose={() => setIsCustomizeOpen(false)}
             />
           )}

@@ -527,6 +527,59 @@ export function getAccentCssVars(
   };
 }
 
+function toHex({ r, g, b }: RGB): string {
+  return `#${[r, g, b]
+    .map((n) => n.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/**
+ * Solid base hex for the active accent — the picker swatch color, used as the
+ * seed for surfaces like Books' accent reading theme.
+ */
+export function resolveAccentBaseHex(
+  chrome: AccentChrome | null,
+  accent: AccentId,
+  wallpaperColor?: string | null
+): string {
+  const fallbackChrome = chrome ?? "aqua";
+  if (accent === "wallpaper") {
+    return (
+      normalizeAccentHex(wallpaperColor) ?? DEFAULT_SWATCH[fallbackChrome]
+    );
+  }
+  if (accent === "default") {
+    return DEFAULT_SWATCH[fallbackChrome];
+  }
+  return ACCENT_BASE[accent];
+}
+
+/**
+ * Pastel reading-page colors derived from an OS accent base. Light pages get a
+ * clear pastel wash with tinted ink; dark pages get a deep tinted wash with
+ * softly tinted light text. Links stay on the accent family.
+ */
+export function deriveAccentPagePalette(
+  accentHex: string,
+  isDark: boolean
+): { background: string; text: string; link: string } {
+  const base = parseHex(
+    normalizeAccentHex(accentHex) ?? DEFAULT_SWATCH.aqua
+  );
+  if (isDark) {
+    return {
+      background: toHex(mix(base, BLACK, 0.72)),
+      text: toHex(mix(base, WHITE, 0.72)),
+      link: toHex(lighten(base, 0.32)),
+    };
+  }
+  return {
+    background: toHex(mix(base, WHITE, 0.72)),
+    text: toHex(mix(base, BLACK, 0.68)),
+    link: toHex(darken(base, 0.06)),
+  };
+}
+
 /** CSS custom properties that this module may set, so callers can clear them. */
 export const ACCENT_CSS_VAR_NAMES = [
   "--os-accent-color",

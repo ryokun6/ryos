@@ -592,8 +592,8 @@
     "books": {
       "chineseScript": {
         "original": "Original",
-        "simplified": "Chinês Simplificado",
-        "traditional": "Chinês Tradicional"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "Automático",
@@ -606,12 +606,24 @@
         "moveToTop": "Mover para o topo"
       },
       "customize": {
+        "background": "Fundo",
         "colors": "Cores",
         "lineSpacing": "Espaçamento entre Linhas",
         "margins": "Margens",
-        "title": "Personalizar"
+        "textColor": "Texto",
+        "title": "Personalizar",
+        "transparent": "Transparente"
       },
       "description": "Ler livros EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monoespaçada",
+        "original": "Original",
+        "rounded": "Arredondada",
+        "sans": "Sem serifa",
+        "serif": "Serifa"
+      },
       "help": {
         "bookshelf": {
           "description": "EPUBs importados preenchem a prateleira de madeira. Clique em um livro para abrir e começar a ler.",
@@ -622,7 +634,7 @@
           "title": "Modo Escuro"
         },
         "fonts": {
-          "description": "Escolha uma fonte de leitura (incluindo EB Garamond), o tamanho do texto e colunas simples ou duplas no menu Visualizar.",
+          "description": "Escolha uma fonte de leitura (incluindo Garamond), o tamanho do texto e colunas simples ou duplas no menu Visualizar.",
           "title": "Fontes e Layout"
         },
         "import": {
@@ -659,9 +671,6 @@
         "stopSpeaking": "Parar de Falar",
         "textLayout": "Direção do texto",
         "textSize": "Tamanho do Texto",
-        "textSizeDecrease": "Menor",
-        "textSizeIncrease": "Maior",
-        "textSizeReset": "Tamanho Padrão",
         "theme": "Tema"
       },
       "name": "Livros",
@@ -678,6 +687,13 @@
         "listView": "Visualização por Lista",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "Pausar",
+        "resume": "Retomar",
+        "rewind": "Retroceder",
+        "skip": "Pular",
+        "stop": "Parar"
+      },
       "speechRate": {
         "fast": "Rápida",
         "normal": "Normal",
@@ -691,7 +707,9 @@
       },
       "theme": {
         "auto": "Automático",
+        "accent": "Destaque",
         "black": "Preto",
+        "custom": "Personalizado",
         "dark": "Escuro",
         "gray": "Cinza",
         "green": "Verde",
@@ -1661,6 +1679,9 @@
       "backupRestoreDescription": "Fazer backup ou restaurar todos os ajustes e arquivos do aplicativo",
       "bootScreen": "Tela de Inicialização",
       "bootScreenDescription": "Testar a animação da tela de inicialização",
+      "browserTtsVoice": "Voz de Texto para Fala",
+      "browserTtsVoiceAutomatic": "Automática",
+      "browserTtsVoiceDescription": "Voz do sistema para a leitura em voz alta do Livros e para a Calculadora",
       "changePassword": "Alterar Senha",
       "changePasswordButton": "Alterar",
       "chatSynth": "Synth de Chat",

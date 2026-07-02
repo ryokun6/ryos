@@ -590,8 +590,8 @@
     "books": {
       "chineseScript": {
         "original": "原文",
-        "simplified": "简体中文",
-        "traditional": "繁体中文"
+        "simplified": "簡體",
+        "traditional": "繁體"
       },
       "columns": {
         "auto": "自动",
@@ -604,12 +604,24 @@
         "moveToTop": "移至顶端"
       },
       "customize": {
+        "background": "背景",
         "colors": "颜色",
         "lineSpacing": "行间距",
         "margins": "页边距",
-        "title": "自定"
+        "textColor": "文本",
+        "title": "自定",
+        "transparent": "透明"
       },
       "description": "阅读 EPUB 书籍",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "等宽",
+        "original": "原始",
+        "rounded": "圆体",
+        "sans": "无衬线体",
+        "serif": "衬线体"
+      },
       "help": {
         "bookshelf": {
           "description": "导入的 EPUB 书籍排列在木制书架上。点按书籍即可打开并开始阅读。",
@@ -620,7 +632,7 @@
           "title": "深色模式"
         },
         "fonts": {
-          "description": "从“视图”菜单中选择阅读字体（包括 EB Garamond）、文字大小以及单栏或双栏布局。",
+          "description": "从“视图”菜单中选择阅读字体（包括 Garamond）、文字大小以及单栏或双栏布局。",
           "title": "字体与版面"
         },
         "import": {
@@ -657,9 +669,6 @@
         "stopSpeaking": "停止朗读",
         "textLayout": "文字方向",
         "textSize": "文字大小",
-        "textSizeDecrease": "缩小",
-        "textSizeIncrease": "放大",
-        "textSizeReset": "默认大小",
         "theme": "主题"
       },
       "name": "书籍",
@@ -676,6 +685,13 @@
         "listView": "列表视图",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "pause": "暂停",
+        "resume": "继续",
+        "rewind": "倒回",
+        "skip": "跳过",
+        "stop": "停止"
+      },
       "speechRate": {
         "fast": "快",
         "normal": "正常",
@@ -689,7 +705,9 @@
       },
       "theme": {
         "auto": "自动",
+        "accent": "强调色",
         "black": "黑色",
+        "custom": "自定",
         "dark": "深色",
         "gray": "灰色",
         "green": "绿色",
@@ -1659,6 +1677,9 @@
       "backupRestoreDescription": "将所有应用程序设置和文件备份到本地文件，或从中恢复",
       "bootScreen": "开机画面",
       "bootScreenDescription": "测试开机画面动画",
+      "browserTtsVoice": "TTS 语音",
+      "browserTtsVoiceAutomatic": "自动",
+      "browserTtsVoiceDescription": "用于“图书”朗读和“计算器”的系统语音",
       "changePassword": "更改密码",
       "changePasswordButton": "更改",
       "chatSynth": "聊天合成器",

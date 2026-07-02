@@ -1,8 +1,9 @@
 import {
   getBrowserSpeechSynthesis,
-  pickSpeechVoiceForLanguage,
+  resolveSpeechVoice,
   ryOSLocaleToSpeechLanguage,
 } from "@/utils/browserSpeech";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 
 const KEY_TRANSLATION_KEYS: Record<string, string> = {
   "+": "apps.calculator.speech.keys.plus",
@@ -217,7 +218,11 @@ function drainSpeechQueue(adapter: SpeechSynthAdapter) {
   utterance.lang = lang;
   utterance.rate = rate;
 
-  const voice = pickSpeechVoiceForLanguage(adapter.getVoices(), lang);
+  const voice = resolveSpeechVoice(
+    adapter.getVoices(),
+    lang,
+    useAudioSettingsStore.getState().browserTtsVoiceURI
+  );
   if (voice) {
     utterance.voice = voice;
   }
