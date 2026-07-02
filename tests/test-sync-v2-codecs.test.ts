@@ -481,6 +481,15 @@ describe("books settings codec", () => {
     });
   });
 
+  test("apply clamps line spacing from older app versions into range", async () => {
+    await SYNC_CODECS["books-settings"].apply(
+      [{ k: "books-settings/lineHeight", v: 1.1, t }],
+      ctx
+    );
+
+    expect(useBooksStore.getState().settings.lineHeight).toBe(1.5);
+  });
+
   test("apply ignores malformed values and tombstones", async () => {
     await SYNC_CODECS["books-settings"].apply(
       [

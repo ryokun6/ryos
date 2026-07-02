@@ -1,6 +1,7 @@
-import type {
-  BooksReaderSettings,
-  BooksThemeOverride,
+import {
+  clampBooksLineHeight,
+  type BooksReaderSettings,
+  type BooksThemeOverride,
 } from "@/stores/useBooksStore";
 import { detectLanguageFromLocale } from "@/lib/languageConfig";
 
@@ -431,10 +432,10 @@ export function buildEpubTheme(
   const fontStack = getBookFontCssStack(settings.fontId, language);
   const fontFamily = fontStack ? `${fontStack} !important` : null;
   const isVerticalText = settings.textLayout === "vertical";
-  const lineHeight =
-    isVerticalText
-      ? Math.max(settings.lineHeight, VERTICAL_BOOK_LINE_HEIGHT_MIN)
-      : settings.lineHeight;
+  const baseLineHeight = clampBooksLineHeight(settings.lineHeight);
+  const lineHeight = isVerticalText
+    ? Math.max(baseLineHeight, VERTICAL_BOOK_LINE_HEIGHT_MIN)
+    : baseLineHeight;
   const lineHeightRule = {
     "line-height": `${lineHeight} !important`,
   };
@@ -443,6 +444,10 @@ export function buildEpubTheme(
   // In vertical mode they fight the top-to-bottom inline flow and CJK line
   // breaking, so preserve only the column-break controls. Vertical columns
   // also need a wider line-height floor than horizontal prose.
+  //
+  // The line-height rule is part of the reading flow in BOTH modes: applying
+  // it only on `body` is not enough, because publisher rules on `p`/`li`/`div`
+  // beat inherited values, leaving the Line Spacing setting without effect.
   const readingFlow: Record<string, string> =
     isVerticalText
       ? {
@@ -451,6 +456,7 @@ export function buildEpubTheme(
           widows: "2",
         }
       : {
+          ...lineHeightRule,
           "text-align": "left !important",
           "-webkit-hyphens": "auto !important",
           hyphens: "auto !important",
@@ -497,7 +503,7 @@ export function buildEpubTheme(
     "*:not(a)": { color: `${palette.text} !important` },
     // Force colors so dark/sepia modes are legible regardless of publisher CSS.
     p: withFont(flowText),
-    div: withFont(isVerticalText ? lineHeightRule : {}),
+    div: withFont(lineHeightRule),
     span: withFont({}),
     li: withFont(flowText),
     // Headings keep their original alignment (often intentionally centered) but
