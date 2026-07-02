@@ -5,7 +5,6 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarCheckboxItem,
-  MenubarLabel,
   MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
@@ -59,13 +58,6 @@ export type MenuItemDescriptor =
       value: string;
       onValueChange: (value: string) => void;
       options: MenuRadioOptionDescriptor[];
-    }
-  | {
-      type: "label";
-      label: ReactNode;
-      disabled?: boolean;
-      /** Extra classes merged onto the shared label class. */
-      className?: string;
     }
   | {
       type: "submenu";
@@ -138,20 +130,6 @@ function renderItems(items: MenuItemDescriptor[]) {
               </MenubarRadioItem>
             ))}
           </MenubarRadioGroup>
-        );
-      case "label":
-        return (
-          <MenubarLabel
-            key={index}
-            aria-disabled={item.disabled}
-            className={cn(
-              "flex h-6 items-center px-3 text-md font-semibold opacity-70",
-              item.disabled && "opacity-40",
-              item.className
-            )}
-          >
-            {item.label}
-          </MenubarLabel>
         );
       case "submenu":
         return (

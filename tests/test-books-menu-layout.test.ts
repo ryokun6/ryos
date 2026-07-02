@@ -66,7 +66,6 @@ describe("Books compact menu layout", () => {
     expect(compactMenus[2].items.map((item) => item.type)).toEqual([
       "action",
       "separator",
-      "label",
       "radioGroup",
     ]);
     expect(
@@ -76,7 +75,7 @@ describe("Books compact menu layout", () => {
     expect(desktopMenus[2]).toBe(goMenu);
   });
 
-  test("flattens multiple flyouts into separated, labeled sections", () => {
+  test("flattens multiple flyouts without their headers", () => {
     const items: MenuItemDescriptor[] = [
       {
         type: "submenu",
@@ -109,10 +108,8 @@ describe("Books compact menu layout", () => {
     const flattened = flattenBooksMenuSubmenus(items);
 
     expect(flattened.map((item) => item.type)).toEqual([
-      "label",
       "radioGroup",
       "separator",
-      "label",
       "action",
     ]);
     expect(flattened.some((item) => item.type === "submenu")).toBe(false);
@@ -132,7 +129,6 @@ describe("Books compact menu layout", () => {
     expect(flattened.map((item) => item.type)).toEqual([
       "action",
       "separator",
-      "label",
       "action",
     ]);
   });
@@ -161,11 +157,9 @@ describe("Books compact menu layout", () => {
     ];
 
     const flattened = flattenBooksMenuSubmenus(items);
-    const label = flattened.find((item) => item.type === "label");
     const radioGroup = flattened.find((item) => item.type === "radioGroup");
     const checkbox = flattened.find((item) => item.type === "checkbox");
 
-    expect(label?.disabled).toBe(true);
     expect(radioGroup?.options.every((option) => option.disabled)).toBe(true);
     expect(checkbox?.disabled).toBe(true);
 

@@ -26,7 +26,6 @@ function disableMenuItem(item: MenuItemDescriptor): MenuItemDescriptor {
       };
     case "action":
     case "checkbox":
-    case "label":
       return { ...item, disabled: true };
   }
 }
@@ -45,7 +44,7 @@ function appendWithoutDuplicateSeparators(
 }
 
 /**
- * Turn flyout submenus into labeled sections for compact viewports.
+ * Inline flyout contents for compact viewports.
  * Disabled submenu state is copied to every child so flattening never enables
  * an action that the nested desktop menu would block.
  */
@@ -61,11 +60,6 @@ export function flattenBooksMenuSubmenus(
     }
 
     appendWithoutDuplicateSeparators(result, { type: "separator" });
-    appendWithoutDuplicateSeparators(result, {
-      type: "label",
-      label: item.label,
-      disabled: item.disabled,
-    });
 
     const children = flattenBooksMenuSubmenus(item.items);
     for (const child of children) {
