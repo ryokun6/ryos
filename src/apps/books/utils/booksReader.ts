@@ -183,7 +183,142 @@ export function isLikelyEpubBuffer(buffer: ArrayBuffer): boolean {
 
 interface EpubLayoutRendition {
   spread: (spread: "none" | "auto" | "always", min?: number) => void;
-  display: (target?: string) => Promise<unknown> | unknown;
+  display(target?: string): Promise<unknown> | unknown;
+  display(target?: number): Promise<unknown> | unknown;
+}
+
+interface EpubSpineSectionLike {
+  href?: string;
+  index?: number;
+}
+
+interface EpubDisplaySpineLike {
+  get: (target?: string | number) => EpubSpineSectionLike | null | undefined;
+}
+
+interface EpubDisplayBookLike {
+  spine?: EpubDisplaySpineLike;
+}
+
+export interface DisplayEpubTargetWithFallbackOptions<
+  T extends EpubLayoutRendition,
+> {
+  rendition: T;
+  target?: string | number;
+  fallbackTarget?: string | number;
+  initialTimeoutMs: number;
+  fallbackTimeoutMs?: number;
+  isActive: () => boolean;
+  resetAfterTimeout?: () => T | null | Promise<T | null>;
+  onTimeout?: () => void;
+}
+
+export type DisplayEpubTargetWithFallbackResult<
+  T extends EpubLayoutRendition,
+> =
+  | { status: "displayed"; rendition: T; target?: string | number }
+  | { status: "fallback-displayed"; rendition: T; target?: string | number }
+  | { status: "inactive"; rendition: T; target?: string | number };
+
+async function displayEpubTargetWithTimeout<T extends EpubLayoutRendition>(
+  rendition: T,
+  target: string | number | undefined,
+  timeoutMs: number
+): Promise<"displayed" | "timeout"> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<"timeout">((resolve) => {
+    timeoutId = globalThis.setTimeout(() => resolve("timeout"), timeoutMs);
+  });
+  try {
+    return await Promise.race([
+      Promise.resolve()
+        .then(() => callEpubDisplay(rendition, target))
+        .then(() => "displayed" as const),
+      timeout,
+    ]);
+  } finally {
+    if (timeoutId !== undefined) {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
+}
+
+function callEpubDisplay(
+  rendition: EpubLayoutRendition,
+  target?: string | number
+): Promise<unknown> | unknown {
+  return typeof target === "number"
+    ? rendition.display(target)
+    : rendition.display(target);
+}
+
+export function resolveEpubDisplayFallbackTarget(
+  book: EpubDisplayBookLike,
+  target?: string | number
+): string | number | undefined {
+  if (target === undefined) return undefined;
+  const section = book.spine?.get(target);
+  if (!section) return undefined;
+  return section.href || section.index;
+}
+
+export async function displayEpubTargetWithFallback<
+  T extends EpubLayoutRendition,
+>({
+  rendition,
+  target,
+  fallbackTarget,
+  initialTimeoutMs,
+  fallbackTimeoutMs = initialTimeoutMs,
+  isActive,
+  resetAfterTimeout,
+  onTimeout,
+}: DisplayEpubTargetWithFallbackOptions<T>): Promise<
+  DisplayEpubTargetWithFallbackResult<T>
+> {
+  const initialResult = await displayEpubTargetWithTimeout(
+    rendition,
+    target,
+    initialTimeoutMs
+  );
+  if (initialResult === "displayed") {
+    return { status: "displayed", rendition, target };
+  }
+  if (!isActive()) return { status: "inactive", rendition, target };
+
+  onTimeout?.();
+  const fallbackRendition = (await resetAfterTimeout?.()) ?? rendition;
+  if (!fallbackRendition) {
+    throw new Error("EPUB display timed out and no fallback rendition exists");
+  }
+  if (!isActive()) {
+    return {
+      status: "inactive",
+      rendition: fallbackRendition,
+      target: fallbackTarget,
+    };
+  }
+
+  const fallbackResult = await displayEpubTargetWithTimeout(
+    fallbackRendition,
+    fallbackTarget,
+    fallbackTimeoutMs
+  );
+  if (fallbackResult === "timeout") {
+    throw new Error("EPUB fallback display timed out");
+  }
+  if (!isActive()) {
+    return {
+      status: "inactive",
+      rendition: fallbackRendition,
+      target: fallbackTarget,
+    };
+  }
+  return {
+    status: "fallback-displayed",
+    rendition: fallbackRendition,
+    target: fallbackTarget,
+  };
 }
 
 interface ReflowEpubAfterFontsSettleOptions {
@@ -191,7 +326,8 @@ interface ReflowEpubAfterFontsSettleOptions {
   rendition: EpubLayoutRendition;
   spread: "none" | "auto" | "always";
   minSpreadWidth: number;
-  target?: string;
+  target?: string | number;
+  displayTimeoutMs?: number;
   isActive: () => boolean;
 }
 
@@ -206,6 +342,7 @@ export async function reflowEpubAfterFontsSettle({
   spread,
   minSpreadWidth,
   target,
+  displayTimeoutMs,
   isActive,
 }: ReflowEpubAfterFontsSettleOptions): Promise<boolean> {
   if (!fontsReady) return false;
@@ -215,7 +352,16 @@ export async function reflowEpubAfterFontsSettle({
   rendition.spread(spread, minSpreadWidth);
   if (!isActive()) return false;
 
-  await rendition.display(target);
+  if (displayTimeoutMs !== undefined) {
+    const displayResult = await displayEpubTargetWithTimeout(
+      rendition,
+      target,
+      displayTimeoutMs
+    );
+    return displayResult === "displayed" && isActive();
+  }
+
+  await callEpubDisplay(rendition, target);
   return isActive();
 }
 
