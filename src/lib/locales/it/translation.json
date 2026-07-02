@@ -707,8 +707,8 @@
         "vertical": "Verticale"
       },
       "theme": {
-        "auto": "Automatico",
         "accent": "Accento",
+        "auto": "Automatico",
         "black": "Nero",
         "custom": "Personalizzato",
         "dark": "Scuro",
@@ -4670,8 +4670,11 @@
       "appHeading": "{{appName}} si è chiusa inaspettatamente",
       "desktopDescription": "Ricarica ryOS per ripristinare il Dock, il Desktop e la barra dei menu.",
       "desktopHeading": "Desktop si è chiuso inaspettatamente",
+      "offlineDescription": "Connettiti una volta per scaricare questa app, poi potrai aprirla offline.",
+      "offlineHeading": "{{appName}} non è ancora disponibile offline",
       "relaunch": "Riapri",
-      "reloadDesktop": "Ricarica Desktop"
+      "reloadDesktop": "Ricarica Desktop",
+      "retry": "Riprova"
     },
     "errors": {
       "failedToAccessCamera": "Impossibile accedere alla fotocamera",

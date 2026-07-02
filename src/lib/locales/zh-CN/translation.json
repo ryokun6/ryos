@@ -705,8 +705,8 @@
         "vertical": "竖排"
       },
       "theme": {
-        "auto": "自动",
         "accent": "强调色",
+        "auto": "自动",
         "black": "黑色",
         "custom": "自定",
         "dark": "深色",
@@ -4666,8 +4666,11 @@
       "appHeading": "「{{appName}}」意外退出",
       "desktopDescription": "重新加载 ryOS 以恢复 Dock、桌面和菜单栏。",
       "desktopHeading": "桌面意外退出",
+      "offlineDescription": "连接一次以下载此 App，之后即可离线打开。",
+      "offlineHeading": "{{appName}} 尚无法离线使用",
       "relaunch": "重新打开",
-      "reloadDesktop": "重新加载桌面"
+      "reloadDesktop": "重新加载桌面",
+      "retry": "再试一次"
     },
     "errors": {
       "failedToAccessCamera": "无法访问相机",

@@ -707,8 +707,8 @@
         "vertical": "Vertical"
       },
       "theme": {
-        "auto": "Auto",
         "accent": "Accent",
+        "auto": "Auto",
         "black": "Noir",
         "custom": "Personnalisé",
         "dark": "Sombre",
@@ -4670,8 +4670,11 @@
       "appHeading": "{{appName}} a quitté de manière inattendue",
       "desktopDescription": "Recharger ryOS pour restaurer le Dock, le Bureau et la barre des menus.",
       "desktopHeading": "Le Bureau a quitté de manière inattendue",
+      "offlineDescription": "Connectez-vous une fois pour télécharger cette app, vous pourrez ensuite l’ouvrir hors ligne.",
+      "offlineHeading": "{{appName}} n’est pas encore disponible hors ligne",
       "relaunch": "Relancer",
-      "reloadDesktop": "Recharger le Bureau"
+      "reloadDesktop": "Recharger le Bureau",
+      "retry": "Réessayer"
     },
     "errors": {
       "failedToAccessCamera": "Impossible d’accéder à la caméra",

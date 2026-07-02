@@ -707,8 +707,8 @@
         "vertical": "Vertical"
       },
       "theme": {
-        "auto": "Automático",
         "accent": "Acento",
+        "auto": "Automático",
         "black": "Negro",
         "custom": "Personalizado",
         "dark": "Oscuro",
@@ -4670,8 +4670,11 @@
       "appHeading": "{{appName}} se cerró inesperadamente",
       "desktopDescription": "Recarga ryOS para restaurar el Dock, el Escritorio y la barra de menú.",
       "desktopHeading": "El Escritorio se cerró inesperadamente",
+      "offlineDescription": "Conéctate una vez para descargar esta app y después podrás abrirla sin conexión.",
+      "offlineHeading": "{{appName}} aún no está disponible sin conexión",
       "relaunch": "Reiniciar",
-      "reloadDesktop": "Recargar Escritorio"
+      "reloadDesktop": "Recargar Escritorio",
+      "retry": "Reintentar"
     },
     "errors": {
       "failedToAccessCamera": "No se pudo acceder a la cámara",

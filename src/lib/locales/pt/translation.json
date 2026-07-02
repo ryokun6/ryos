@@ -707,8 +707,8 @@
         "vertical": "Vertical"
       },
       "theme": {
-        "auto": "Automático",
         "accent": "Destaque",
+        "auto": "Automático",
         "black": "Preto",
         "custom": "Personalizado",
         "dark": "Escuro",
@@ -4670,8 +4670,11 @@
       "appHeading": "{{appName}} encerrou inesperadamente",
       "desktopDescription": "Recarregar o ryOS para restaurar o Dock, a Mesa e a barra de menus.",
       "desktopHeading": "A Mesa encerrou inesperadamente",
+      "offlineDescription": "Conecte-se uma vez para baixar este app, depois você poderá abri-lo offline.",
+      "offlineHeading": "{{appName}} ainda não está disponível offline",
       "relaunch": "Reiniciar",
-      "reloadDesktop": "Recarregar Mesa"
+      "reloadDesktop": "Recarregar Mesa",
+      "retry": "Tentar Novamente"
     },
     "errors": {
       "failedToAccessCamera": "Falha ao acessar a câmera",
