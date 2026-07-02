@@ -7,6 +7,7 @@ import {
 import {
   buildAccentReadingPalette,
   buildCustomReadingPalette,
+  buildEpubImageRules,
   buildEpubTheme,
   getReadingOverlayBackground,
   resolveReadingPalette,
@@ -129,6 +130,62 @@ describe("Books custom reading palette", () => {
     expect(theme.html.background).toBe("transparent !important");
     expect(theme.body.background).toBe("transparent !important");
     expect(theme.body.color).toBe("#1c1c1c !important");
+  });
+});
+
+describe("Books image blending", () => {
+  const IMAGE_SELECTOR = "img, svg, image";
+
+  test("light palettes multiply-blend white image backgrounds into the page", () => {
+    const palette = resolveReadingPalette(
+      { ...DEFAULT_BOOKS_SETTINGS, themeOverride: "sepia" },
+      false
+    );
+    const rules = buildEpubImageRules(palette);
+    expect(rules[IMAGE_SELECTOR]["mix-blend-mode"]).toBe(
+      "multiply !important"
+    );
+    expect(rules[IMAGE_SELECTOR].filter).toBe("none !important");
+  });
+
+  test("dark palettes dim images instead of multiplying them to black", () => {
+    const palette = resolveReadingPalette(
+      { ...DEFAULT_BOOKS_SETTINGS, themeOverride: "dark" },
+      false
+    );
+    const rules = buildEpubImageRules(palette);
+    expect(rules[IMAGE_SELECTOR]["mix-blend-mode"]).toBe("normal !important");
+    expect(rules[IMAGE_SELECTOR].filter).toContain("brightness");
+  });
+
+  test("auto theme follows OS dark mode for image treatment", () => {
+    const settings = { ...DEFAULT_BOOKS_SETTINGS, themeOverride: "auto" as const };
+    const lightRules = buildEpubImageRules(
+      resolveReadingPalette(settings, false)
+    );
+    const darkRules = buildEpubImageRules(
+      resolveReadingPalette(settings, true)
+    );
+    expect(lightRules[IMAGE_SELECTOR]["mix-blend-mode"]).toBe(
+      "multiply !important"
+    );
+    expect(darkRules[IMAGE_SELECTOR].filter).toContain("brightness");
+  });
+
+  test("buildEpubTheme includes the image rules for the active palette", () => {
+    const settings = { ...DEFAULT_BOOKS_SETTINGS, themeOverride: "paper" as const };
+    const palette = resolveReadingPalette(settings, false);
+    const theme = buildEpubTheme(settings, palette);
+    expect(theme[IMAGE_SELECTOR]).toEqual(
+      buildEpubImageRules(palette)[IMAGE_SELECTOR]
+    );
+
+    const darkSettings = { ...DEFAULT_BOOKS_SETTINGS, themeOverride: "night" as const };
+    const darkPalette = resolveReadingPalette(darkSettings, false);
+    const darkTheme = buildEpubTheme(darkSettings, darkPalette);
+    expect(darkTheme[IMAGE_SELECTOR]["mix-blend-mode"]).toBe(
+      "normal !important"
+    );
   });
 });
 
