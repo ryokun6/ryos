@@ -7,6 +7,10 @@ import {
 } from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { getTranslatedAppName } from "@/utils/i18n";
+import {
+  PREVIEW_ZOOM_MAX,
+  PREVIEW_ZOOM_MIN,
+} from "../hooks/useImageZoomGestures";
 
 interface PreviewMenuBarProps {
   onClose: () => void;
@@ -21,7 +25,9 @@ interface PreviewMenuBarProps {
   onShowAbout: () => void;
   isImage: boolean;
   zoom: number;
-  onSetZoom: (zoom: number) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onActualSize: () => void;
   fitToWindow: boolean;
   onSetFitToWindow: (fit: boolean) => void;
 }
@@ -39,7 +45,9 @@ export function PreviewMenuBar({
   onShowAbout,
   isImage,
   zoom,
-  onSetZoom,
+  onZoomIn,
+  onZoomOut,
+  onActualSize,
   fitToWindow,
   onSetFitToWindow,
 }: PreviewMenuBarProps) {
@@ -107,30 +115,21 @@ export function PreviewMenuBar({
       {
         type: "action",
         label: t("apps.preview.menu.zoomIn"),
-        onClick: () => {
-          onSetFitToWindow(false);
-          onSetZoom(Math.min(400, zoom + 25));
-        },
-        disabled: !isImage || zoom >= 400,
+        onClick: onZoomIn,
+        disabled: !isImage || (!fitToWindow && zoom >= PREVIEW_ZOOM_MAX),
         shortcut: "+",
       },
       {
         type: "action",
         label: t("apps.preview.menu.zoomOut"),
-        onClick: () => {
-          onSetFitToWindow(false);
-          onSetZoom(Math.max(25, zoom - 25));
-        },
-        disabled: !isImage || zoom <= 25,
+        onClick: onZoomOut,
+        disabled: !isImage || (!fitToWindow && zoom <= PREVIEW_ZOOM_MIN),
         shortcut: "−",
       },
       {
         type: "action",
         label: t("apps.preview.menu.actualSize"),
-        onClick: () => {
-          onSetFitToWindow(false);
-          onSetZoom(100);
-        },
+        onClick: onActualSize,
         disabled: !isImage || (!fitToWindow && zoom === 100),
       },
       {
