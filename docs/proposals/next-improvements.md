@@ -88,7 +88,9 @@ Risk: high (most-touched user-facing app) — do behind the existing test suite
 
 Current status: the first extraction landed (`useIpodScale`,
 `useIpodStatusBacklight`). The remaining cohesive clusters still need follow-up
-PRs.
+PRs. The broader consolidation across all five media apps (shared transport,
+unified library, single `mediaControl` AI tool) now has its own phased plan:
+`docs/proposals/media-core.md`.
 
 ### 2.2 Generalize store persistence — **partial**
 
