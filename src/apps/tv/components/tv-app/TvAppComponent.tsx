@@ -41,6 +41,7 @@ import {
   ScrollingChannelName,
 } from "./TvLcdWidgets";
 import { useTvAppController } from "./useTvAppController";
+import { handleTvPlayerPause } from "./tvPlayerEvents";
 
 export function TvAppComponent(props: AppProps) {
   const c = useTvAppController(props);
@@ -172,7 +173,7 @@ export function TvAppComponent(props: AppProps) {
               playbackRequested={c.playbackRequested}
               isPlaying={c.isPlaying}
               onPlay={c.confirmPlayback}
-              onPause={() => c.setIsPlaying(false)}
+              onPause={handleTvPlayerPause}
               onTogglePlay={c.handleTogglePlay}
               onEnded={c.handleVideoEnd}
               onProgress={c.handleProgress}
@@ -260,7 +261,7 @@ export function TvAppComponent(props: AppProps) {
                       c.confirmPlayback();
                       c.setIsBuffering(false);
                     }}
-                    onPause={() => c.setIsPlaying(false)}
+                    onPause={handleTvPlayerPause}
                     onPlaybackAttemptFailed={c.handlePlaybackAttemptFailed}
                     onBuffer={() => c.setIsBuffering(true)}
                     onBufferEnd={() => c.setIsBuffering(false)}

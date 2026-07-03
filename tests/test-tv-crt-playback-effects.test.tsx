@@ -18,8 +18,22 @@ let root: Root;
 let screenOffUpdates: boolean[];
 let powerOnCalls: number;
 let powerOffCalls: number;
+let channelSwitchCalls: number;
+let channelSwitchKeyUpdates: number;
 
 const noop = () => {};
+const playPowerOnSpy = () => {
+  powerOnCalls += 1;
+};
+const playPowerOffSpy = () => {
+  powerOffCalls += 1;
+};
+const playChannelSwitchSpy = () => {
+  channelSwitchCalls += 1;
+};
+const setChannelSwitchKeySpy = () => {
+  channelSwitchKeyUpdates += 1;
+};
 
 function Harness({
   playbackRequested,
@@ -27,34 +41,34 @@ function Harness({
   isBuffering = false,
   poweringOff = false,
   screenOff,
+  currentChannelId = "ryos-picks",
+  currentVideoId = "video-1",
 }: {
   playbackRequested: boolean;
   isPlaying?: boolean;
   isBuffering?: boolean;
   poweringOff?: boolean;
   screenOff: boolean;
+  currentChannelId?: string;
+  currentVideoId?: string;
 }) {
   useTvCrtPlaybackEffects({
-    currentChannelId: "ryos-picks",
-    currentVideoId: "video-1",
+    currentChannelId,
+    currentVideoId,
     setLcdSlot: noop,
     isWindowOpen: true,
     skipInitialSound: true,
     isMobileSafariDevice: true,
     setPowerOnKey: noop,
     setPoweringOff: noop,
-    setChannelSwitchKey: noop,
+    setChannelSwitchKey: setChannelSwitchKeySpy,
     setIsBuffering: noop,
     setIsTransitioningCc: noop,
     setScreenOff: (value) => screenOffUpdates.push(value),
     isFullScreen: false,
-    playPowerOn: () => {
-      powerOnCalls += 1;
-    },
-    playPowerOff: () => {
-      powerOffCalls += 1;
-    },
-    playChannelSwitch: noop,
+    playPowerOn: playPowerOnSpy,
+    playPowerOff: playPowerOffSpy,
+    playChannelSwitch: playChannelSwitchSpy,
     startStatic: noop,
     stopStatic: noop,
     playbackRequested,
@@ -74,6 +88,8 @@ describe("TV CRT playback effects", () => {
     screenOffUpdates = [];
     powerOnCalls = 0;
     powerOffCalls = 0;
+    channelSwitchCalls = 0;
+    channelSwitchKeyUpdates = 0;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -172,5 +188,59 @@ describe("TV CRT playback effects", () => {
 
     expect(screenOffUpdates).toEqual([]);
     expect(powerOnCalls).toBe(0);
+  });
+
+  test("a video skip preserves playback intent and shows switch static", async () => {
+    await act(async () =>
+      root.render(
+        <Harness playbackRequested isPlaying screenOff={false} />
+      )
+    );
+    screenOffUpdates = [];
+    powerOffCalls = 0;
+    channelSwitchCalls = 0;
+    channelSwitchKeyUpdates = 0;
+
+    await act(async () =>
+      root.render(
+        <Harness
+          playbackRequested
+          isPlaying={false}
+          screenOff={false}
+          currentVideoId="video-2"
+        />
+      )
+    );
+
+    expect(screenOffUpdates).toEqual([]);
+    expect(powerOffCalls).toBe(0);
+    expect(channelSwitchKeyUpdates).toBe(1);
+    expect(channelSwitchCalls).toBe(1);
+  });
+
+  test("a channel switch preserves playback when both channels reuse a video id", async () => {
+    await act(async () =>
+      root.render(
+        <Harness playbackRequested isPlaying screenOff={false} />
+      )
+    );
+    screenOffUpdates = [];
+    powerOffCalls = 0;
+    channelSwitchCalls = 0;
+
+    await act(async () =>
+      root.render(
+        <Harness
+          playbackRequested
+          isPlaying={false}
+          screenOff={false}
+          currentChannelId="other-channel"
+        />
+      )
+    );
+
+    expect(screenOffUpdates).toEqual([]);
+    expect(powerOffCalls).toBe(0);
+    expect(channelSwitchCalls).toBe(1);
   });
 });

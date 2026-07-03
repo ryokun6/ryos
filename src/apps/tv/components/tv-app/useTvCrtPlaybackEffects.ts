@@ -96,7 +96,13 @@ export function useTvCrtPlaybackEffects({
     if (isFullScreen) return;
     setChannelSwitchKey((k) => k + 1);
     void playChannelSwitch();
-  }, [currentChannelId, playChannelSwitch, setChannelSwitchKey, isFullScreen]);
+  }, [
+    currentChannelId,
+    currentVideoId,
+    playChannelSwitch,
+    setChannelSwitchKey,
+    isFullScreen,
+  ]);
 
   useEffect(() => {
     setIsBuffering(false);
@@ -115,16 +121,21 @@ export function useTvCrtPlaybackEffects({
 
   const prevPlayingRef = useRef(isPlaying);
   const prevPlaybackRequestedRef = useRef(playbackRequested);
+  const prevChannelIdRef = useRef(currentChannelId);
   const prevVideoIdRef = useRef(currentVideoId);
   const hasPausedRef = useRef(false);
   useEffect(() => {
     const nextVideoId = currentVideoId;
     const prev = prevPlayingRef.current;
     const prevPlaybackRequested = prevPlaybackRequestedRef.current;
+    const prevChannelId = prevChannelIdRef.current;
     const prevVideoId = prevVideoIdRef.current;
     prevPlayingRef.current = isPlaying;
     prevPlaybackRequestedRef.current = playbackRequested;
+    prevChannelIdRef.current = currentChannelId;
     prevVideoIdRef.current = nextVideoId;
+    const sourceChanged =
+      prevChannelId !== currentChannelId || prevVideoId !== nextVideoId;
 
     if (!isWindowOpen || !wasOpenRef.current || poweringOff) {
       return;
@@ -137,6 +148,8 @@ export function useTvCrtPlaybackEffects({
       return;
     }
 
+    if (sourceChanged && playbackRequested) return;
+
     if (
       (prev && !isPlaying) ||
       (prevPlaybackRequested && !playbackRequested)
@@ -148,7 +161,7 @@ export function useTvCrtPlaybackEffects({
       return;
     }
 
-    if (isBuffering || prevVideoId !== nextVideoId) return;
+    if (isBuffering || sourceChanged) return;
 
     if (!prev && isPlaying && hasPausedRef.current) {
       setScreenOff(false);
@@ -163,6 +176,7 @@ export function useTvCrtPlaybackEffects({
     poweringOff,
     screenOff,
     currentVideoId,
+    currentChannelId,
     playPowerOff,
     playPowerOn,
     setPowerOnKey,
