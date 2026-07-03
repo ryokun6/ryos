@@ -249,6 +249,15 @@
   border-radius: var(--os-glass-r-metal) !important;
 }
 
+/* No-titlebar (immersive) windows — Maps, Photo Booth, Books, Karaoke,
+   Infinite Mac/PC — keep their own surface treatment but adopt the same
+   larger glass pane radius as default-material windows. Without this they
+   fall back to the smaller base `rounded-os` radius. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-notitlebar {
+  border-radius: var(--os-glass-r-lg) !important;
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-material-brushedmetal::before {
   background: var(--os-color-window-bg) !important;
