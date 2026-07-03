@@ -11,6 +11,16 @@
 import { nextHlc } from "@/shared/sync2/hlc";
 import type { SyncNamespace } from "@/shared/sync2/namespaces";
 import { getSyncKeyNamespace } from "@/shared/sync2/namespaces";
+import {
+  createEmptyPersistedSyncState,
+  loadPersistedSyncState,
+  persistSyncStateNow,
+  schedulePersistedSyncState,
+  type PersistedSyncState,
+  type ShadowEntry,
+} from "@/sync/stateStorage";
+
+export type { ShadowEntry } from "@/sync/stateStorage";
 
 const CLIENT_ID_KEY = "ryos:sync2:client-id";
 
@@ -40,89 +50,33 @@ export function getSyncClientId(): string {
   return inMemoryClientId;
 }
 
-export interface ShadowEntry {
-  /** HLC of the last synced value. */
-  t: string;
-  /** Content hash of the last synced doc (cyrb53 or sha256 for blob docs). */
-  h: string;
-}
-
-interface PersistedSyncState {
-  cursor: number | null;
-  lastHlc: string | null;
-  shadow: Record<string, ShadowEntry>;
-  dirty: SyncNamespace[];
-  localReconcileRequired: boolean;
-}
-
-function storageKey(username: string): string {
-  return `ryos:sync2:state:${username.toLowerCase()}`;
-}
-
 export class SyncClientState {
   private readonly username: string;
   private state: PersistedSyncState;
-  private writeTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(username: string) {
+  private constructor(username: string, state: PersistedSyncState) {
     this.username = username;
-    this.state = this.read();
+    this.state = state;
   }
 
-  private read(): PersistedSyncState {
-    const fallback: PersistedSyncState = {
-      cursor: null,
-      lastHlc: null,
-      shadow: {},
-      dirty: [],
-      localReconcileRequired: false,
-    };
-    if (typeof localStorage === "undefined") return fallback;
-    try {
-      const raw = localStorage.getItem(storageKey(this.username));
-      if (!raw) return fallback;
-      const parsed = JSON.parse(raw) as Partial<PersistedSyncState>;
-      return {
-        cursor:
-          typeof parsed.cursor === "number" && Number.isFinite(parsed.cursor)
-            ? parsed.cursor
-            : null,
-        lastHlc: typeof parsed.lastHlc === "string" ? parsed.lastHlc : null,
-        shadow:
-          parsed.shadow && typeof parsed.shadow === "object"
-            ? (parsed.shadow as Record<string, ShadowEntry>)
-            : {},
-        dirty: Array.isArray(parsed.dirty)
-          ? (parsed.dirty as SyncNamespace[])
-          : [],
-        localReconcileRequired: parsed.localReconcileRequired === true,
-      };
-    } catch {
-      return fallback;
-    }
+  static async open(username: string): Promise<SyncClientState> {
+    return new SyncClientState(
+      username,
+      await loadPersistedSyncState(username)
+    );
+  }
+
+  get accountUsername(): string {
+    return this.username;
   }
 
   /** Coalesced persistence; shadow updates arrive in bursts. */
   private schedulePersist(): void {
-    if (typeof localStorage === "undefined") return;
-    if (this.writeTimer) return;
-    this.writeTimer = setTimeout(() => {
-      this.writeTimer = null;
-      this.persistNow();
-    }, 250);
+    schedulePersistedSyncState(this.username, this.state);
   }
 
-  persistNow(): void {
-    if (typeof localStorage === "undefined") return;
-    if (this.writeTimer) {
-      clearTimeout(this.writeTimer);
-      this.writeTimer = null;
-    }
-    try {
-      localStorage.setItem(storageKey(this.username), JSON.stringify(this.state));
-    } catch (error) {
-      console.warn("[sync2] Failed to persist sync state:", error);
-    }
+  persistNow(): Promise<void> {
+    return persistSyncStateNow(this.username, this.state);
   }
 
   get cursor(): number | null {
@@ -173,6 +127,10 @@ export class SyncClientState {
     );
   }
 
+  get shadowKeys(): string[] {
+    return Object.keys(this.state.shadow);
+  }
+
   get dirtyNamespaces(): SyncNamespace[] {
     return [...this.state.dirty];
   }
@@ -204,22 +162,21 @@ export class SyncClientState {
   }
 
   /** Wipe cursor + shadow (force re-bootstrap). Keeps the client id. */
-  reset(): void {
+  async reset(): Promise<void> {
     this.state = {
-      cursor: null,
+      ...createEmptyPersistedSyncState(),
       lastHlc: this.state.lastHlc,
-      shadow: {},
-      dirty: [],
-      localReconcileRequired: false,
     };
-    this.persistNow();
+    await this.persistNow();
   }
 }
 
-export function markSyncLocalReconcileRequired(username: string): void {
-  const state = new SyncClientState(username);
+export async function markSyncLocalReconcileRequired(
+  username: string
+): Promise<void> {
+  const state = await SyncClientState.open(username);
   state.setLocalReconcileRequired(true);
-  state.persistNow();
+  await state.persistNow();
 }
 
 /** Fast 53-bit string hash (cyrb53) for shadow content hashes. */

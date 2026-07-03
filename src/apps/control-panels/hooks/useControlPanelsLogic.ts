@@ -53,10 +53,10 @@ import {
   MANUAL_BACKUP_VERSION,
   readStoreItems,
   readStoreItemByKey,
-  restoreStoreItems,
   restoreStoreItemsAtomically,
   serializeStoreItems,
   type ManualBackupIndexedDBData,
+  type IndexedDBStoreRestore,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
 import { FILES_STORE_PERSIST_KEY } from "@/stores/useFilesStore";
@@ -835,11 +835,16 @@ export function useControlPanelsLogic({
           STORES.PERSISTED_STATE,
           FILES_STORE_PERSIST_KEY
         );
-        await restoreStoreItems(
-          db,
-          STORES.PERSISTED_STATE,
-          preservedFilesRecord ? [preservedFilesRecord] : []
-        );
+        await restoreStoreItemsAtomically(db, [
+          {
+            storeName: STORES.PERSISTED_STATE,
+            items: preservedFilesRecord ? [preservedFilesRecord] : [],
+          },
+          {
+            storeName: STORES.SYNC2_STATE,
+            items: [],
+          },
+        ]);
       } finally {
         db.close();
       }
@@ -1067,10 +1072,9 @@ export function useControlPanelsLogic({
           try {
             const backupVersion =
               typeof backup.version === "number" ? backup.version : 1;
-            await restoreStoreItemsAtomically(
-              db,
-              MANUAL_BACKUP_INDEXEDDB_STORES.map((storeName) =>
-                ({
+            const restores: IndexedDBStoreRestore[] = [
+              ...MANUAL_BACKUP_INDEXEDDB_STORES.map(
+                (storeName): IndexedDBStoreRestore => ({
                   storeName,
                   items: backup.indexedDB?.[storeName] ?? [],
                   options: {
@@ -1083,8 +1087,13 @@ export function useControlPanelsLogic({
                       ),
                   },
                 })
-              )
-            );
+              ),
+              {
+                storeName: STORES.SYNC2_STATE,
+                items: [],
+              },
+            ];
+            await restoreStoreItemsAtomically(db, restores);
           } finally {
             db.close();
           }

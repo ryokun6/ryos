@@ -3,7 +3,7 @@
 import { createClientLogger } from "@/utils/logger";
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 13;
+const DB_VERSION = 14;
 let hasLoggedOpenSuccess = false;
 const log = createClientLogger("IndexedDB");
 
@@ -65,6 +65,9 @@ export const STORES = {
   APPLE_MUSIC_LIBRARY: "apple_music_library",
   APPLE_MUSIC_PLAYLISTS: "apple_music_playlists",
   APPLE_MUSIC_PLAYLIST_TRACKS: "apple_music_playlist_tracks",
+  // Per-user Cloud Sync cursor, shadow, and pending namespace state. This is
+  // operational metadata, so manual backups intentionally exclude it.
+  SYNC2_STATE: "sync2_state",
   // Backing store for zustand persist slices that are too large for
   // localStorage's 5–10MB per-origin quota (e.g. Soundboard recordings, which
   // are base64-encoded audio). Each record is one persisted slice keyed by its
