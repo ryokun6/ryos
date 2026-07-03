@@ -686,6 +686,7 @@
       },
       "selection": {
         "askRyo": "Ryoに尋ねる",
+        "askRyoFailed": "返答を取得できませんでした。しばらくしてからもう一度お試しください。",
         "askRyoQuestion": "この一節はどういう意味ですか？",
         "color": {
           "blue": "ブルーのハイライト",

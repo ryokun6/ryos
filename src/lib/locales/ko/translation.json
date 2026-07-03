@@ -686,6 +686,7 @@
       },
       "selection": {
         "askRyo": "Ryo에게 질문하기",
+        "askRyoFailed": "응답을 받지 못했습니다. 나중에 다시 시도하십시오.",
         "askRyoQuestion": "이 구절은 무슨 뜻인가요?",
         "color": {
           "blue": "파란색 하이라이트",

@@ -688,6 +688,7 @@
       },
       "selection": {
         "askRyo": "Chiedi a Ryo",
+        "askRyoFailed": "Impossibile ottenere una risposta. Riprova più tardi.",
         "askRyoQuestion": "cosa significa questo brano?",
         "color": {
           "blue": "Evidenzia in blu",

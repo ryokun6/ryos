@@ -114,8 +114,8 @@ export function BooksAppComponent({
   );
 
   const launchApp = useLaunchApp();
-  // "Ask Ryo" from the selection toolbar: open Chats with the passage quoted
-  // alongside the book's metadata (title / author / chapter).
+  // "Continue in Chats" from the Ask Ryo bubble: open Chats with the passage
+  // quoted alongside the book's metadata (title / author / chapter).
   const handleAskRyo = useCallback(
     (passage: string) => {
       const title = activeBookTitle || activeBook?.name || null;

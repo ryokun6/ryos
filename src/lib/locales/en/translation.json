@@ -4587,7 +4587,8 @@
         "copyFailed": "Couldn’t copy",
         "askRyo": "Ask Ryo",
         "removeHighlight": "Remove Highlight",
-        "askRyoQuestion": "what does this passage mean?"
+        "askRyoQuestion": "what does this passage mean?",
+        "askRyoFailed": "Couldn't get a reply. Try again later."
       },
       "bookmarks": {
         "title": "Bookmarks",

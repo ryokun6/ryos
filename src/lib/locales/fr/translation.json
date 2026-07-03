@@ -688,6 +688,7 @@
       },
       "selection": {
         "askRyo": "Demander à Ryo",
+        "askRyoFailed": "Impossible d’obtenir une réponse. Réessayez plus tard.",
         "askRyoQuestion": "que signifie ce passage ?",
         "color": {
           "blue": "Surlignage bleu",

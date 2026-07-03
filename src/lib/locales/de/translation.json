@@ -686,6 +686,7 @@
       },
       "selection": {
         "askRyo": "Ryo fragen",
+        "askRyoFailed": "Antwort konnte nicht abgerufen werden. Versuchen Sie es später erneut.",
         "askRyoQuestion": "was bedeutet dieser Abschnitt?",
         "color": {
           "blue": "Blaue Markierung",

@@ -686,6 +686,7 @@
       },
       "selection": {
         "askRyo": "詢問 Ryo",
+        "askRyoFailed": "無法取得回覆，請稍後再試。",
         "askRyoQuestion": "這段文字是什麼意思？",
         "color": {
           "blue": "藍色螢光標示",
