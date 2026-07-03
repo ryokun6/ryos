@@ -710,8 +710,8 @@
         "vertical": "Verticale"
       },
       "theme": {
-        "auto": "Automatico",
         "accent": "Accento",
+        "auto": "Automatico",
         "black": "Nero",
         "custom": "Personalizzato",
         "dark": "Scuro",
@@ -4748,6 +4748,10 @@
       "volume": "Volume"
     },
     "noResults": "Nessun risultato",
+    "offline": {
+      "appRequiresInternet": "{{appName}} richiede una connessione a Internet.",
+      "title": "Sei offline"
+    },
     "startMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
       "run": "Esegui…",

@@ -4,6 +4,9 @@ import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { appMetadata } from "../metadata";
 import { motion } from "motion/react";
 import { useInfinitePcLogic } from "../hooks/useInfinitePcLogic";
@@ -214,6 +217,7 @@ export function InfinitePcAppComponent({
   } = usePcLogic({ isWindowOpen, instanceId });
 
   const inSession = !!selectedPreset || isGameRunning;
+  const isOffline = useOffline();
 
   const handleBackToBrowse = useCallback(() => {
     if (selectedPreset) handleBackToPresets();
@@ -354,7 +358,17 @@ export function InfinitePcAppComponent({
                   }}
                   onLoad={handleIframeLoad}
                 />
-                {!isEmulatorLoaded && selectedPreset && (
+                {/* A running emulator keeps working from cached data, so
+                    only surface the offline state while it hasn't loaded. */}
+                {!isEmulatorLoaded && selectedPreset && isOffline && (
+                  <div className="absolute inset-0 z-[3] bg-black">
+                    <OfflineEmptyState
+                      appName={getTranslatedAppName("pc")}
+                      appearance="dark"
+                    />
+                  </div>
+                )}
+                {!isEmulatorLoaded && selectedPreset && !isOffline && (
                   <PcLoadingOverlay
                     presetName={getPcPresetName(selectedPreset, t)}
                     progress={loadProgress}
@@ -362,6 +376,11 @@ export function InfinitePcAppComponent({
                   />
                 )}
               </>
+            ) : !isGameRunning && isOffline ? (
+              <OfflineEmptyState
+                appName={getTranslatedAppName("pc")}
+                appearance="dark"
+              />
             ) : !isGameRunning ? (
               <div className="flex flex-col flex-1 min-h-0 relative z-0">
                 <InfinitePcBrowseHeader

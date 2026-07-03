@@ -708,8 +708,8 @@
         "vertical": "竖排"
       },
       "theme": {
-        "auto": "自动",
         "accent": "强调色",
+        "auto": "自动",
         "black": "黑色",
         "custom": "自定",
         "dark": "深色",
@@ -4744,6 +4744,10 @@
       "volume": "音量"
     },
     "noResults": "没有结果",
+    "offline": {
+      "appRequiresInternet": "{{appName}}需要互联网连接。",
+      "title": "您已离线"
+    },
     "startMenu": {
       "aboutThisComputer": "关于这台电脑",
       "run": "运行…",

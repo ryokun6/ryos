@@ -10,6 +10,9 @@ import { TvVideoDrawer } from "../TvVideoDrawer";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { appMetadata } from "../..";
 import { Button } from "@/components/ui/button";
 import { VideoFullScreenPortal } from "@/components/shared/VideoFullScreenPortal";
@@ -41,6 +44,7 @@ import { useTvAppController } from "./useTvAppController";
 
 export function TvAppComponent(props: AppProps) {
   const c = useTvAppController(props);
+  const isOffline = useOffline();
 
   const url = c.currentVideo?.url ?? "";
   const hasVideos = (c.currentChannel?.videos.length ?? 0) > 0;
@@ -303,6 +307,17 @@ export function TvAppComponent(props: AppProps) {
                     Boolean(url)
                   }
                 />
+              )}
+              {/* Offline empty state — covers the dead broadcast (CRT
+                  shader sits at z-30) but stays below the LCD status
+                  message (z-[45]). */}
+              {isOffline && !c.isFullScreen && (
+                <div className="absolute inset-0 z-40 bg-black">
+                  <OfflineEmptyState
+                    appName={getTranslatedAppName("tv")}
+                    appearance="dark"
+                  />
+                </div>
               )}
               <AnimatePresence>
                 {c.statusMessage && (
