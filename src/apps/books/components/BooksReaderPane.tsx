@@ -2584,7 +2584,7 @@ export const BooksReaderPane = forwardRef<
                 ? askRyo.status === "thinking"
                   ? {
                       // Stay compact while thinking; only the reply widens it.
-                      width: SPEECH_BAR_COLLAPSED.width,
+                      width: 64,
                       height: SPEECH_BAR_EXPANDED.height,
                     }
                   : {
