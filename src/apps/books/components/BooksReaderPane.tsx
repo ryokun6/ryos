@@ -116,6 +116,7 @@ import {
   BOOKS_EDGE_TAP_RATIO,
   resolveBooksEdgeTapDirection,
 } from "../utils/booksEdgeTap";
+import { resolveBooksSwipeDirection } from "../utils/booksSwipe";
 
 const booksLog = createClientLogger("BooksReader");
 
@@ -1841,9 +1842,10 @@ export const BooksReaderPane = forwardRef<
   );
   const clearEdgeHover = useCallback(() => setHoverSide(null), []);
 
-  // Handle page-turn taps inside the EPUB iframe instead of covering its text
-  // with parent-document buttons. A live selection or interactive target wins,
-  // so dragging / long-pressing near an edge remains selectable.
+  // Handle page-turn taps and swipes inside the EPUB iframe instead of
+  // covering its text with parent-document buttons. A live selection or
+  // interactive target wins, so dragging / long-pressing near an edge
+  // remains selectable.
   useEffect(() => {
     if (!isReady) return;
     const rendition = getRendition();
@@ -1852,7 +1854,7 @@ export const BooksReaderPane = forwardRef<
     const attachedDocuments = new WeakSet<Document>();
     const cleanups: Array<() => void> = [];
 
-    const attachEdgeTapListener = (contents: Contents) => {
+    const attachPageTurnListeners = (contents: Contents) => {
       const document = contents.document;
       const contentWindow = contents.window;
       if (!document || !contentWindow || attachedDocuments.has(document)) {
@@ -1860,17 +1862,21 @@ export const BooksReaderPane = forwardRef<
       }
       attachedDocuments.add(document);
 
+      const readSelectionState = () => {
+        try {
+          const selection = contentWindow.getSelection();
+          return (
+            !!selection && selection.rangeCount > 0 && !selection.isCollapsed
+          );
+        } catch {
+          return false;
+        }
+      };
+
       const handleClick = (event: MouseEvent) => {
         if (event.defaultPrevented || event.button !== 0) return;
 
-        let hasSelection = false;
-        try {
-          const selection = contentWindow.getSelection();
-          hasSelection =
-            !!selection && selection.rangeCount > 0 && !selection.isCollapsed;
-        } catch {
-          hasSelection = false;
-        }
+        const hasSelection = readSelectionState();
 
         const target =
           event.target &&
@@ -1934,6 +1940,65 @@ export const BooksReaderPane = forwardRef<
       document.addEventListener("click", handleClick);
       cleanups.push(() => document.removeEventListener("click", handleClick));
 
+      // Swipe-to-flip: a mostly-horizontal single-finger swipe anywhere on
+      // the page turns it, mirroring the edge taps (vertical text reverses
+      // the physical direction). Long-press selection drags carry a live
+      // selection by the time the finger lifts, so they never flip.
+      let swipeStart: { x: number; y: number } | null = null;
+
+      const handleTouchStart = (event: TouchEvent) => {
+        if (event.touches.length !== 1) {
+          swipeStart = null;
+          return;
+        }
+        const touch = event.touches[0];
+        swipeStart = { x: touch.clientX, y: touch.clientY };
+      };
+
+      const handleTouchMove = (event: TouchEvent) => {
+        if (event.touches.length !== 1) swipeStart = null;
+      };
+
+      const handleTouchCancel = () => {
+        swipeStart = null;
+      };
+
+      const handleTouchEnd = (event: TouchEvent) => {
+        const start = swipeStart;
+        swipeStart = null;
+        if (!start || event.changedTouches.length !== 1) return;
+        const touch = event.changedTouches[0];
+        const direction = resolveBooksSwipeDirection({
+          deltaX: touch.clientX - start.x,
+          deltaY: touch.clientY - start.y,
+          isVerticalText:
+            resolveEffectiveTextLayout(
+              textLayoutSettingRef.current,
+              bookLanguageRef.current
+            ) === "vertical",
+          hasSelection: readSelectionState(),
+        });
+        if (!direction) return;
+        turnPage(direction);
+      };
+
+      document.addEventListener("touchstart", handleTouchStart, {
+        passive: true,
+      });
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: true,
+      });
+      document.addEventListener("touchend", handleTouchEnd, { passive: true });
+      document.addEventListener("touchcancel", handleTouchCancel, {
+        passive: true,
+      });
+      cleanups.push(() => {
+        document.removeEventListener("touchstart", handleTouchStart);
+        document.removeEventListener("touchmove", handleTouchMove);
+        document.removeEventListener("touchend", handleTouchEnd);
+        document.removeEventListener("touchcancel", handleTouchCancel);
+      });
+
       // Parent mousemoves stop at the iframe boundary, so hover tracking for
       // the edge chevrons needs an in-document listener converting to host
       // coordinates (same mapping as the click handler above).
@@ -1964,7 +2029,7 @@ export const BooksReaderPane = forwardRef<
             ? [renditionContents]
             : []
       ) as Contents[];
-      contentsList.forEach(attachEdgeTapListener);
+      contentsList.forEach(attachPageTurnListeners);
     };
 
     const handleRendered = () => attachToCurrentContents();
