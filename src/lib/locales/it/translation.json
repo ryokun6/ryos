@@ -590,6 +590,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Aggiungi segnalibro",
+        "remove": "Rimuovi segnalibro",
+        "title": "Segnalibri"
+      },
+      "chineseScript": {
+        "original": "Originale",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "Automatico",
         "double": "Doppia",
@@ -600,7 +610,28 @@
         "moveToBottom": "Sposta in fondo",
         "moveToTop": "Sposta in cima"
       },
+      "customize": {
+        "background": "Sfondo",
+        "chinese": "Cinese",
+        "colors": "Colori",
+        "direction": "Direzione",
+        "lineSpacing": "Interlinea",
+        "margins": "Margini",
+        "spacing": "Spaziatura",
+        "textColor": "Testo",
+        "title": "Personalizza",
+        "transparent": "Trasparente"
+      },
       "description": "Leggi libri EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monospaziato",
+        "original": "Originale",
+        "rounded": "Arrotondato",
+        "sans": "Sans Serif",
+        "serif": "Serif"
+      },
       "help": {
         "bookshelf": {
           "description": "Gli EPUB importati sono allineati sullo scaffale di legno. Fai clic su un libro per aprirlo e iniziare a leggere.",
@@ -611,7 +642,7 @@
           "title": "Modalità scura"
         },
         "fonts": {
-          "description": "Scegli un font di lettura (incluso EB Garamond), la dimensione del testo e la visualizzazione a colonna singola o doppia dal menu Vista.",
+          "description": "Scegli un font di lettura (incluso Garamond), la dimensione del testo e la visualizzazione a colonna singola o doppia dal menu Vista.",
           "title": "Font e layout"
         },
         "import": {
@@ -635,21 +666,42 @@
         "backToShelf": "Torna alla libreria",
         "booksHelp": "Aiuto Libri",
         "chapters": "Capitoli",
+        "chineseScript": "Scrittura cinese",
         "columns": "Colonne",
+        "customizeTheme": "Personalizza…",
         "font": "Font",
         "import": "Importa EPUB…",
         "nextPage": "Pagina successiva",
         "previousPage": "Pagina precedente",
+        "speech": "Voce",
+        "speechRate": "Velocità voce",
+        "startSpeaking": "Avvia lettura",
+        "stopSpeaking": "Interrompi lettura",
+        "textLayout": "Direzione del testo",
         "textSize": "Dimensione testo",
-        "textSizeDecrease": "Più piccolo",
-        "textSizeIncrease": "Più grande",
-        "textSizeReset": "Dimensioni predefinite",
         "theme": "Tema"
       },
       "name": "Libri",
       "reader": {
         "backToShelf": "Libreria",
         "error": "Impossibile aprire questo libro."
+      },
+      "selection": {
+        "askRyo": "Chiedi a Ryo",
+        "askRyoFailed": "Impossibile ottenere una risposta. Riprova più tardi.",
+        "askRyoQuestion": "cosa significa questo brano?",
+        "color": {
+          "blue": "Evidenzia in blu",
+          "green": "Evidenzia in verde",
+          "pink": "Evidenzia in rosa",
+          "purple": "Evidenzia in viola",
+          "yellow": "Evidenzia in giallo"
+        },
+        "controls": "Controlli selezione",
+        "copied": "Copiato negli appunti",
+        "copy": "Copia",
+        "copyFailed": "Impossibile copiare",
+        "removeHighlight": "Rimuovi evidenziazione"
       },
       "shelf": {
         "emptyHint": "Fai clic su Aggiungi libro per importare un EPUB.",
@@ -660,10 +712,36 @@
         "listView": "Vista a elenco",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "Controlli di lettura ad alta voce",
+        "pause": "Pausa",
+        "resume": "Riprendi",
+        "rewind": "Riavvolgi",
+        "skip": "Salta",
+        "stop": "Interrompi"
+      },
+      "speechRate": {
+        "fast": "Veloce",
+        "normal": "Normale",
+        "slow": "Lenta",
+        "veryFast": "Molto veloce"
+      },
+      "textLayout": {
+        "book": "Predefinito del libro",
+        "horizontal": "Orizzontale",
+        "vertical": "Verticale"
+      },
       "theme": {
+        "accent": "Accento",
         "auto": "Automatico",
+        "black": "Nero",
+        "custom": "Personalizzato",
         "dark": "Scuro",
+        "gray": "Grigio",
+        "green": "Verde",
         "light": "Chiaro",
+        "night": "Notte",
+        "paper": "Carta",
         "sepia": "Seppia"
       },
       "title": "Libri",
@@ -1627,6 +1705,9 @@
       "backupRestoreDescription": "Esegui il backup o ripristina tutte le impostazioni e i file dell'app",
       "bootScreen": "Schermata di Avvio",
       "bootScreenDescription": "Testa l'animazione della schermata di avvio",
+      "browserTtsVoice": "Voce TTS",
+      "browserTtsVoiceAutomatic": "Automatica",
+      "browserTtsVoiceDescription": "Voce di sistema per la lettura ad alta voce di Libri e per la Calcolatrice",
       "changePassword": "Modifica password",
       "changePasswordButton": "Modifica",
       "chatSynth": "Synth Chat",
@@ -1832,7 +1913,7 @@
         "codeSentTitle": "Verifica inviata",
         "currentLabel": "Email di recupero attuale",
         "description": "Aggiungi un'email per poter reimpostare la password se la dimentichi.",
-        "emailLabel": "Indirizzo e-mail",
+        "emailLabel": "Indirizzo email",
         "genericError": "Qualcosa è andato storto. Riprova.",
         "invalidEmail": "Inserisci un indirizzo email valido",
         "notConfigured": "Il recupero tramite email non è disponibile su questo server. Puoi ancora effettuare il recupero tramite un account Telegram collegato.",
@@ -2265,6 +2346,7 @@
         "noAirDropUsersAvailable": "Nessun utente nelle vicinanze",
         "open": "Apri",
         "openAirDrop": "Apri AirDrop",
+        "openWith": "Apri con",
         "putBack": "Ripristina",
         "rename": "Rinomina…",
         "searchingForAirDropUsers": "Ricerca utenti vicini…",
@@ -2304,8 +2386,10 @@
         "internetShortcut": "Collegamento Internet",
         "jpegImage": "Immagine JPEG",
         "mp3Audio": "Audio MP3",
+        "pdfDocument": "Documento PDF",
         "pngImage": "Immagine PNG",
         "quicktimeMovie": "Filmato QuickTime",
+        "svgImage": "Immagine SVG",
         "unknown": "Sconosciuto",
         "webpImage": "Immagine WebP"
       },
@@ -3686,6 +3770,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "Visualizza immagini, PDF e documenti",
+      "empty": {
+        "hint": "Scegli un file o trascinalo qui",
+        "title": "Apri un documento"
+      },
+      "help": {
+        "images": {
+          "description": "Apri i formati di immagine comuni senza modificare il file originale",
+          "title": "Anteprima immagini"
+        },
+        "openFiles": {
+          "description": "Usa File > Apri per visualizzare l'anteprima di un file dal tuo dispositivo",
+          "title": "Apri file"
+        },
+        "openWith": {
+          "description": "Invia i file modificabili a Paint, TextEdit o Visualizzatore applet",
+          "title": "Apri con"
+        },
+        "pdfs": {
+          "description": "Visualizza documenti PDF utilizzando il visualizzatore di documenti integrato",
+          "title": "Leggi PDF"
+        },
+        "safeHtml": {
+          "description": "Visualizza l'anteprima di documenti HTML in una sandbox senza eseguire script",
+          "title": "HTML sicuro"
+        },
+        "zoom": {
+          "description": "Pizzica o tocca due volte per ingrandire le immagini o adattale alla finestra",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Informazioni su Anteprima",
+        "actualSize": "Dimensioni reali",
+        "export": "Esporta…",
+        "fitToWindow": "Adatta alla finestra",
+        "importFromDevice": "Importa da dispositivo…",
+        "open": "Apri…",
+        "openWith": "Apri con",
+        "previewHelp": "Aiuto Anteprima",
+        "saveAs": "Salva col nome…",
+        "zoomIn": "Ingrandisci",
+        "zoomOut": "Rimpicciolisci"
+      },
+      "name": "Anteprima",
+      "saveAs": {
+        "description": "Inserisci un nome per questa copia",
+        "title": "Salva col nome"
+      },
+      "status": {
+        "loadFailed": "Impossibile aprire questo file.",
+        "loading": "Caricamento anteprima…",
+        "notFound": "Impossibile trovare il contenuto del file.",
+        "unsupported": "Nessuna anteprima disponibile",
+        "unsupportedDescription": "Questo formato di file non è supportato da Anteprima."
+      },
+      "supportedFiles": "Documenti di Anteprima",
+      "title": "Anteprima",
+      "toasts": {
+        "exportFailed": "Impossibile esportare il file",
+        "importFailed": "Impossibile importare il file",
+        "imported": "File importato",
+        "saveFailed": "Impossibile salvare il file",
+        "saved": "File salvato"
+      },
+      "untitled": "Senza titolo"
+    },
     "soundboard": {
       "description": "Riproduci effetti audio",
       "help": {
@@ -4043,7 +4195,7 @@
         "newFile": "Nuovo file",
         "numberedList": "Elenco numerato",
         "open": "Apri…",
-        "plainText": "Solo testo",
+        "plainText": "Testo semplice",
         "save": "Salva",
         "saveEllipsis": "Salva…",
         "taskList": "Elenco attività",
@@ -4618,6 +4770,10 @@
       "volume": "Volume"
     },
     "noResults": "Nessun risultato",
+    "offline": {
+      "appRequiresInternet": "{{appName}} richiede una connessione a Internet.",
+      "title": "Sei offline"
+    },
     "startMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
       "run": "Esegui…",
@@ -4797,7 +4953,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Seleziona la tua lingua preferita per l'interfaccia di ryOS",
       "english": "Inglese",
       "french": "Français",

@@ -554,7 +554,7 @@
         "exportAs": "Exporter comme’…",
         "html": "HTML",
         "importFromDevice": "Importer depuis l’appareil…",
-        "logOut": "Fermer la session",
+        "logOut": "Déconnexion",
         "login": "Se connecter…",
         "noAppletsOpen": "Aucune applet ouverte",
         "open": "Ouvrir…",
@@ -590,6 +590,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Ajouter un signet",
+        "remove": "Supprimer le signet",
+        "title": "Signets"
+      },
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "Auto",
         "double": "Double",
@@ -600,7 +610,28 @@
         "moveToBottom": "Placer tout en bas",
         "moveToTop": "Placer tout en haut"
       },
+      "customize": {
+        "background": "Arrière-plan",
+        "chinese": "Chinois",
+        "colors": "Couleurs",
+        "direction": "Direction",
+        "lineSpacing": "Interligne",
+        "margins": "Marges",
+        "spacing": "Espacement",
+        "textColor": "Texte",
+        "title": "Personnaliser",
+        "transparent": "Transparent"
+      },
       "description": "Lire des livres EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monospace",
+        "original": "Original",
+        "rounded": "Arrondi",
+        "sans": "Sans empattement",
+        "serif": "Avec empattement"
+      },
       "help": {
         "bookshelf": {
           "description": "Les EPUB importés sont alignés sur l'étagère en bois. Cliquez sur un livre pour l'ouvrir et commencer la lecture.",
@@ -611,7 +642,7 @@
           "title": "Mode sombre"
         },
         "fonts": {
-          "description": "Choisissez une police de lecture (dont EB Garamond), la taille du texte et l’affichage sur une ou deux colonnes dans le menu Présentation.",
+          "description": "Choisissez une police de lecture (dont Garamond), la taille du texte et l’affichage sur une ou deux colonnes dans le menu Présentation.",
           "title": "Polices et mise en page"
         },
         "import": {
@@ -635,21 +666,42 @@
         "backToShelf": "Retour à la bibliothèque",
         "booksHelp": "Aide Books",
         "chapters": "Chapitres",
+        "chineseScript": "Écriture chinoise",
         "columns": "Colonnes",
+        "customizeTheme": "Personnaliser…",
         "font": "Police",
         "import": "Importer un EPUB…",
         "nextPage": "Page suivante",
         "previousPage": "Page précédente",
+        "speech": "Parole",
+        "speechRate": "Vitesse d’élocution",
+        "startSpeaking": "Commencer à parler",
+        "stopSpeaking": "Arrêter de parler",
+        "textLayout": "Sens du texte",
         "textSize": "Taille du texte",
-        "textSizeDecrease": "Plus petite",
-        "textSizeIncrease": "Plus grande",
-        "textSizeReset": "Taille par défaut",
         "theme": "Thème"
       },
       "name": "Livres",
       "reader": {
         "backToShelf": "Bibliothèque",
         "error": "Impossible d’ouvrir ce livre."
+      },
+      "selection": {
+        "askRyo": "Demander à Ryo",
+        "askRyoFailed": "Impossible d’obtenir une réponse. Réessayez plus tard.",
+        "askRyoQuestion": "que signifie ce passage ?",
+        "color": {
+          "blue": "Surlignage bleu",
+          "green": "Surlignage vert",
+          "pink": "Surlignage rose",
+          "purple": "Surlignage violet",
+          "yellow": "Surlignage jaune"
+        },
+        "controls": "Commandes de sélection",
+        "copied": "Copié dans le presse-papiers",
+        "copy": "Copier",
+        "copyFailed": "Impossible de copier",
+        "removeHighlight": "Supprimer le surlignage"
       },
       "shelf": {
         "emptyHint": "Cliquez sur Ajouter un livre pour importer un EPUB.",
@@ -660,10 +712,36 @@
         "listView": "Présentation par liste",
         "percentRead": "{{percent}} %"
       },
+      "speech": {
+        "controls": "Commandes de lecture à voix haute",
+        "pause": "Pause",
+        "resume": "Reprendre",
+        "rewind": "Retour arrière",
+        "skip": "Passer",
+        "stop": "Arrêter"
+      },
+      "speechRate": {
+        "fast": "Rapide",
+        "normal": "Normale",
+        "slow": "Lente",
+        "veryFast": "Très rapide"
+      },
+      "textLayout": {
+        "book": "Réglage du livre",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
       "theme": {
+        "accent": "Accent",
         "auto": "Auto",
+        "black": "Noir",
+        "custom": "Personnalisé",
         "dark": "Sombre",
+        "gray": "Gris",
+        "green": "Vert",
         "light": "Clair",
+        "night": "Nuit",
+        "paper": "Papier",
         "sepia": "Sépia"
       },
       "title": "Livres",
@@ -797,7 +875,7 @@
         "speakResults": "Énoncer les résultats",
         "speechEnabled": "Parole"
       },
-      "name": "Calculette",
+      "name": "Calculatrice",
       "speech": {
         "error": "Erreur",
         "keys": {
@@ -840,7 +918,7 @@
       "status": {
         "memory": "M={{value}}"
       },
-      "title": "Calculette"
+      "title": "Calculatrice"
     },
     "calendar": {
       "description": "Calendrier avec événements",
@@ -984,9 +1062,9 @@
         "saveTranscriptDescription": "Saisissez un nom pour le fichier de transcription de votre discussion",
         "saveTranscriptTitle": "Enregistrer la transcription",
         "searchUsernamePlaceholder": "Rechercher un nom d’utilisateur…",
-        "setPasswordButton": "Définir le mot de passe",
+        "setPasswordButton": "Définir un mot de passe",
         "setPasswordDescription": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez utiliser ce mot de passe pour obtenir un nouveau jeton si vous perdez l’accès.",
-        "setPasswordTitle": "Définir le mot de passe"
+        "setPasswordTitle": "Définir un mot de passe"
       },
       "help": {
         "chatWithRyo": {
@@ -1025,7 +1103,7 @@
         "increaseFontSize": "Augmenter la taille de police",
         "keepTalking": "Continuer à parler",
         "linkToTelegram": "Lien vers Telegram",
-        "logOut": "Fermer la session",
+        "logOut": "Déconnexion",
         "login": "Se connecter…",
         "newChat": "Nouvelle conversation’…",
         "resetFontSize": "Réinitialiser la taille de la police",
@@ -1627,6 +1705,9 @@
       "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l’application",
       "bootScreen": "Écran de démarrage",
       "bootScreenDescription": "Tester l'animation de l'écran de démarrage",
+      "browserTtsVoice": "Voix de synthèse",
+      "browserTtsVoiceAutomatic": "Automatique",
+      "browserTtsVoiceDescription": "Voix système pour la lecture à voix haute dans Livres et la Calculatrice",
       "changePassword": "Changer le mot de passe",
       "changePasswordButton": "Modifier",
       "chatSynth": "Synthétiseur de discussion",
@@ -1766,9 +1847,9 @@
       "ipod": "iPod",
       "ipodVolume": "Volume de l’iPod",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
+      "logOut": "Déconnexion",
       "logOutAll": "Tout déconnecter…",
-      "logOutButton": "Fermer la session…",
+      "logOutButton": "Déconnexion…",
       "logOutOfAllDevices": "Se déconnecter de tous les appareils",
       "logOutOfAllDevicesRowDescription": "Se déconnecter de votre compte ryOS sur tous les appareils",
       "logOutRowDescription": "Se déconnecter de votre compte ryOS sur cet appareil",
@@ -1896,11 +1977,11 @@
       "selectAPreset": "Sélectionner un préréglage",
       "selectScreenSaver": "Sélectionner un économiseur d’écran",
       "sepia": "Sépia",
-      "setPassword": "Définir le mot de passe…",
+      "setPassword": "Définir un mot de passe…",
       "setPasswordDialog": {
         "description": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez l'utiliser pour obtenir un nouveau jeton si vous perdez l'accès.",
-        "submitLabel": "Définir le mot de passe",
-        "title": "Définir le mot de passe"
+        "submitLabel": "Définir un mot de passe",
+        "title": "Définir un mot de passe"
       },
       "setup": "Configurer",
       "shaderEffect": "Effet Shader",
@@ -2265,6 +2346,7 @@
         "noAirDropUsersAvailable": "Aucun utilisateur a proximité",
         "open": "Ouvrir",
         "openAirDrop": "Ouvrir AirDrop",
+        "openWith": "Ouvrir avec",
         "putBack": "Remettre à sa place",
         "rename": "Renommer…",
         "searchingForAirDropUsers": "Recherche d’utilisateurs a proximité…",
@@ -2304,8 +2386,10 @@
         "internetShortcut": "Raccourci Internet",
         "jpegImage": "Image JPEG",
         "mp3Audio": "Audio MP3",
+        "pdfDocument": "Document PDF",
         "pngImage": "Image PNG",
         "quicktimeMovie": "Séquence QuickTime",
+        "svgImage": "Image SVG",
         "unknown": "Inconnu",
         "webpImage": "Image WebP"
       },
@@ -3686,6 +3770,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "Affichez des images, des PDF et des documents",
+      "empty": {
+        "hint": "Choisissez un fichier ou déposez-le ici",
+        "title": "Ouvrir un document"
+      },
+      "help": {
+        "images": {
+          "description": "Ouvrez des formats d’image courants sans modifier le fichier d’origine",
+          "title": "Aperçu des images"
+        },
+        "openFiles": {
+          "description": "Utilisez Fichier > Ouvrir pour afficher l’aperçu d’un fichier de votre appareil",
+          "title": "Ouvrir des fichiers"
+        },
+        "openWith": {
+          "description": "Envoyez des fichiers modifiables vers Paint, TextEdit ou Applet Viewer",
+          "title": "Ouvrir avec"
+        },
+        "pdfs": {
+          "description": "Affichez des documents PDF à l’aide du visualiseur de documents intégré",
+          "title": "Lire les PDF"
+        },
+        "safeHtml": {
+          "description": "Affichez l’aperçu de documents HTML dans un bac à sable sans exécuter de scripts",
+          "title": "HTML sécurisé"
+        },
+        "zoom": {
+          "description": "Pincez ou touchez deux fois pour zoomer sur les images, ou adaptez-les à la fenêtre",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "À propos d’Aperçu",
+        "actualSize": "Taille réelle",
+        "export": "Exporter…",
+        "fitToWindow": "Ajuster à la fenêtre",
+        "importFromDevice": "Importer depuis l’appareil…",
+        "open": "Ouvrir…",
+        "openWith": "Ouvrir avec",
+        "previewHelp": "Aide Aperçu",
+        "saveAs": "Enregistrer sous…",
+        "zoomIn": "Zoom avant",
+        "zoomOut": "Zoom arrière"
+      },
+      "name": "Aperçu",
+      "saveAs": {
+        "description": "Saisissez un nom pour cette copie",
+        "title": "Enregistrer sous"
+      },
+      "status": {
+        "loadFailed": "Impossible d’ouvrir ce fichier.",
+        "loading": "Chargement de l’aperçu…",
+        "notFound": "Le contenu du fichier est introuvable.",
+        "unsupported": "Aucun aperçu disponible",
+        "unsupportedDescription": "Ce format de fichier n’est pas pris en charge par Aperçu."
+      },
+      "supportedFiles": "Documents Aperçu",
+      "title": "Aperçu",
+      "toasts": {
+        "exportFailed": "Impossible d’exporter le fichier",
+        "importFailed": "Impossible d’importer le fichier",
+        "imported": "Fichier importé",
+        "saveFailed": "Impossible d’enregistrer le fichier",
+        "saved": "Fichier enregistré"
+      },
+      "untitled": "Sans titre"
+    },
     "soundboard": {
       "description": "Émettre des effets sonores",
       "help": {
@@ -4083,7 +4235,7 @@
           "title": "Texte"
         }
       },
-      "speak": "Prononcer",
+      "speak": "Énoncer",
       "stopSpeech": "Arrêter la parole",
       "text": "Texte",
       "underline": "Souligner",
@@ -4417,7 +4569,7 @@
       "dialogTitle": "Connexion ryOS",
       "forgotPassword": "Mot de passe oublié ?",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
+      "logOut": "Déconnexion",
       "logOutDescription": "Voulez-vous vraiment vous déconnecter ? Vous serez déconnecté de votre compte.",
       "loggingIn": "Connexion…",
       "loginDescription": "Connectez-vous à votre compte",
@@ -4618,6 +4770,10 @@
       "volume": "Volume"
     },
     "noResults": "Aucun résultat",
+    "offline": {
+      "appRequiresInternet": "{{appName}} nécessite une connexion Internet.",
+      "title": "Vous êtes hors ligne"
+    },
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",
       "run": "Exécuter…",
@@ -4666,7 +4822,7 @@
       "fullscreen": "Plein écran",
       "maximize": "Agrandir",
       "maximizeDisabled": "Agrandir (désactivé)",
-      "minimize": "Placer dans le Dock",
+      "minimize": "Minimiser",
       "minimizeDisabled": "Réduire (désactivé)"
     }
   },
@@ -4797,7 +4953,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Sélectionnez votre langue préférée pour l’interface ryOS",
       "english": "English",
       "french": "Français",

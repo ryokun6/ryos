@@ -1,6 +1,6 @@
 import { AppManager } from "./apps/base/AppManager";
 import { appRegistry } from "./config/appRegistry";
-import { useEffect, useMemo, useReducer, useCallback } from "react";
+import { Suspense, lazy, useEffect, useMemo, useReducer, useCallback } from "react";
 import { applyDisplayMode } from "./utils/displayMode";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "@/hooks/useToast";
@@ -14,22 +14,33 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isDesktop } from "./utils/platform";
-import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
+import {
+  onDesktopUpdate,
+  type DesktopUpdateResult,
+} from "./utils/desktopUpdateBridge";
 import {
   getDesktopDownloadUrl,
   getSupportedDesktopDownloadTarget,
 } from "./utils/desktopDownload";
 import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
-import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotifications";
+import { DeferredBackgroundChatNotifications } from "./hooks/DeferredBackgroundChatNotifications";
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
-import { AirDropListener } from "@/components/AirDropListener";
+import { DeferredAirDropListener } from "@/components/DeferredAirDropListener";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
-import { DebugLogOverlay } from "@/components/debug/DebugLogOverlay";
 import { createClientLogger } from "@/utils/logger";
+
+// Code-split: the debug overlay (console/network panels + live dashboard) is
+// a large component tree that only renders while Debug Mode is enabled, so
+// normal sessions never download or parse it.
+const DebugLogOverlay = lazy(() =>
+  import("@/components/debug/DebugLogOverlay").then((m) => ({
+    default: m.DebugLogOverlay,
+  }))
+);
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -76,13 +87,15 @@ export function App() {
       setLastSeenDesktopVersion: state.setLastSeenDesktopVersion,
     })
   );
-  const displayMode = useDisplaySettingsStoreShallow((state) => state.displayMode);
+  const { displayMode, debugMode } = useDisplaySettingsStoreShallow((state) => ({
+    displayMode: state.displayMode,
+    debugMode: state.debugMode,
+  }));
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass } =
     useThemeFlags();
   const isMobile = useIsMobile();
   // Initialize offline detection
   useOffline();
-  useBackgroundChatNotifications();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
@@ -239,13 +252,21 @@ export function App() {
     onDesktopUpdate(showDesktopUpdateToast);
 
     // Initial check on load (delayed to let app render first)
-    const timer = setTimeout(async () => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
       appShellLog.debug("Running initial desktop update check");
-      const result = await checkDesktopUpdate();
-      showDesktopUpdateToast(result);
+      void import("./utils/prefetch").then(async ({ checkDesktopUpdate }) => {
+        const result = await checkDesktopUpdate();
+        if (!cancelled) {
+          showDesktopUpdateToast(result);
+        }
+      });
     }, 2000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [setLastSeenDesktopVersion, t]);
 
   if (showBootScreen) {
@@ -273,11 +294,16 @@ export function App() {
         <AppManager apps={apps} />
       </DesktopErrorBoundary>
       <Toaster position={toastConfig.position} offset={toastConfig.offset} />
-      <AirDropListener />
+      <DeferredAirDropListener />
       <DeferredAutoCloudSync />
+      <DeferredBackgroundChatNotifications />
       <WallpaperAccentRunner />
       <ScreenSaverOverlay />
-      <DebugLogOverlay />
+      {debugMode && (
+        <Suspense fallback={null}>
+          <DebugLogOverlay />
+        </Suspense>
+      )}
     </>
   );
 }

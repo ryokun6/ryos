@@ -89,6 +89,7 @@ export const FetchLyricsSchema = z.object({
   returnMetadata: z.boolean().optional(),
   // Optional: include translation/furigana/soramimi info in same request to reduce round-trips
   translateTo: z.string().max(10).optional(),
+  lyricsLanguage: z.enum(["zh-TW", "zh-CN"]).optional(),
   includeFurigana: z.boolean().optional(),
   includeSoramimi: z.boolean().optional(),
   // Target language for soramimi: "zh-TW" for Chinese, "en" for English

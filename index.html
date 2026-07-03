@@ -26,21 +26,17 @@
     <!-- Cache control -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 
-    <!-- Preconnect to external domains for faster resource loading -->
-    <link rel="preconnect" href="https://www.youtube.com" />
-    <link rel="preconnect" href="https://i.ytimg.com" />
+    <!-- CJK content can appear independently of the UI locale (lyrics, files,
+         documents), so start its non-blocking font stylesheets at boot. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://www.youtube.com" />
-    <link rel="dns-prefetch" href="https://i.ytimg.com" />
-    
-    <!-- Google Fonts: Noto Serif JP/KR, Kosugi Maru, and Nanum Gothic (700) -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&family=Noto+Serif+KR:wght@700&family=Kosugi+Maru&family=Nanum+Gothic:wght@700&display=swap" rel="stylesheet" />
-
-    <!-- Preload critical fonts (used immediately on page load) -->
-    <link rel="preload" href="/fonts/ChicagoKare-Regular.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/geneva-12.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/LucidaGrande.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <link href="https://cdn.jsdelivr.net/npm/chiron-go-round-tc-webfont@1.0.11/css/vf.css" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@700&display=swap" rel="stylesheet" />
+      <link href="https://cdn.jsdelivr.net/npm/chiron-go-round-tc-webfont@1.0.11/css/vf.css" rel="stylesheet" />
+    </noscript>
 
     <!-- Preload critical JSON data -->
     <link rel="preload" href="/data/filesystem.json" as="fetch" type="application/json" crossorigin="use-credentials" />
@@ -129,8 +125,36 @@
 
         // ---- recovery flow ----
 
+        // navigator.onLine can be true while the network is unusable (Wi-Fi
+        // without internet, server down). Confirm the server is reachable
+        // before nuking caches + the service worker — doing so while
+        // disconnected would permanently break offline use.
+        function probeServerReachable(callback) {
+          var settled = false;
+          function finish(result) {
+            if (settled) return;
+            settled = true;
+            callback(result);
+          }
+          setTimeout(function() { finish(false); }, 5000);
+          try {
+            // Any response (even an error status) proves reachability. The
+            // unique query param stops the service worker's cached
+            // version.json from answering the probe while offline.
+            fetch('/version.json?_probe=' + Date.now(), { cache: 'no-store' })
+              .then(function() { finish(true); }, function() { finish(false); });
+          } catch (e) {
+            finish(false);
+          }
+        }
+
         function triggerStaleReload(reason) {
           if (isReloading) return;
+
+          if (navigator.onLine === false) {
+            console.warn('[ryOS] Offline - skipping stale-bundle recovery');
+            return;
+          }
 
           // Counter-based loop guard (shared with prefetch.ts and main.tsx)
           var countKey = 'ryos:reload-count';
@@ -159,23 +183,33 @@
           }
 
           isReloading = true;
-          console.warn('[ryOS] Stale bundle detected, clearing caches and reloading...', reason);
-          sessionStorage.setItem(reloadKey, String(Date.now()));
+          probeServerReachable(function(reachable) {
+            if (!reachable) {
+              isReloading = false;
+              console.warn('[ryOS] Server unreachable - skipping stale-bundle recovery');
+              return;
+            }
 
-          if (window.caches) {
-            caches.keys().then(function(names) {
-              return Promise.all(names.map(function(name) {
-                return caches.delete(name);
-              }));
-            }).then(function() {
-              console.log('[ryOS] Caches cleared');
+            console.warn('[ryOS] Stale bundle detected, clearing caches and reloading...', reason);
+            try {
+              sessionStorage.setItem(reloadKey, String(Date.now()));
+            } catch (e) { /* sessionStorage may throw */ }
+
+            if (window.caches) {
+              caches.keys().then(function(names) {
+                return Promise.all(names.map(function(name) {
+                  return caches.delete(name);
+                }));
+              }).then(function() {
+                console.log('[ryOS] Caches cleared');
+                doReload();
+              }).catch(function() {
+                doReload();
+              });
+            } else {
               doReload();
-            }).catch(function() {
-              doReload();
-            });
-          } else {
-            doReload();
-          }
+            }
+          });
         }
 
         function doReload() {
@@ -286,6 +320,41 @@
             }
           }
         } catch (e) {}
+      })();
+    </script>
+    <script>
+      (function () {
+        var theme = document.documentElement.dataset.osTheme || "macosx";
+        var fontsByTheme = {
+          macosx: [
+            "/fonts/LucidaGrande.woff2",
+            "/fonts/AquaKana.woff2",
+          ],
+          system7: [
+            "/fonts/ChicagoKare-Regular.woff2",
+            "/fonts/geneva-12.woff2",
+            "/fonts/fusion-pixel-12px-proportional-ja.woff2",
+          ],
+          xp: [
+            "/fonts/ms_sans_serif.woff2",
+            "/fonts/ms_sans_serif_bold.woff2",
+            "/fonts/fusion-pixel-12px-proportional-ja.woff2",
+          ],
+          win98: [
+            "/fonts/ms_sans_serif.woff2",
+            "/fonts/ms_sans_serif_bold.woff2",
+            "/fonts/fusion-pixel-12px-proportional-ja.woff2",
+          ],
+        };
+        (fontsByTheme[theme] || fontsByTheme.macosx).forEach(function (href) {
+          var link = document.createElement("link");
+          link.rel = "preload";
+          link.as = "font";
+          link.type = "font/woff2";
+          link.crossOrigin = "anonymous";
+          link.href = href;
+          document.head.appendChild(link);
+        });
       })();
     </script>
     <div id="root"></div>

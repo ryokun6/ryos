@@ -1,4 +1,6 @@
 import React from "react";
+import "@/styles/themes/control-panels-mac.css";
+import "@/styles/themes/control-panels-themed.css";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { ControlPanelsMenuBar } from "../ControlPanelsMenuBar";
 import { AppProps, ControlPanelsInitialData } from "@/apps/base/types";
@@ -96,6 +98,8 @@ export function ControlPanelsAppComponent({
     handleUISoundsChange,
     speechEnabled,
     handleSpeechChange,
+    browserTtsVoiceURI,
+    handleBrowserTtsVoiceChange,
     terminalSoundsEnabled,
     setTerminalSoundsEnabled,
     synthPreset,
@@ -284,6 +288,8 @@ export function ControlPanelsAppComponent({
       handleUISoundsChange={handleUISoundsChange}
       speechEnabled={speechEnabled}
       handleSpeechChange={handleSpeechChange}
+      browserTtsVoiceURI={browserTtsVoiceURI}
+      handleBrowserTtsVoiceChange={handleBrowserTtsVoiceChange}
       terminalSoundsEnabled={terminalSoundsEnabled}
       setTerminalSoundsEnabled={setTerminalSoundsEnabled}
       synthPreset={synthPreset}

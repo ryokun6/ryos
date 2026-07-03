@@ -588,6 +588,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "책갈피 추가",
+        "remove": "책갈피 제거",
+        "title": "책갈피"
+      },
+      "chineseScript": {
+        "original": "원본",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "자동",
         "double": "두 페이지",
@@ -598,7 +608,28 @@
         "moveToBottom": "맨 아래로 이동",
         "moveToTop": "맨 위로 이동"
       },
+      "customize": {
+        "background": "배경",
+        "chinese": "중국어",
+        "colors": "색상",
+        "direction": "방향",
+        "lineSpacing": "줄 간격",
+        "margins": "여백",
+        "spacing": "간격",
+        "textColor": "텍스트",
+        "title": "사용자화",
+        "transparent": "투명"
+      },
       "description": "EPUB 도서 읽기",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "고정폭",
+        "original": "원본",
+        "rounded": "둥근",
+        "sans": "산세리프",
+        "serif": "세리프"
+      },
       "help": {
         "bookshelf": {
           "description": "가져온 EPUB 도서들이 나무 책장에 나열됩니다. 책을 클릭하여 열고 읽기 시작하세요.",
@@ -609,7 +640,7 @@
           "title": "다크 모드"
         },
         "fonts": {
-          "description": "보기 메뉴에서 독서용 서체(EB Garamond 포함), 텍스트 크기, 단일 또는 이중 단 설정을 선택하십시오.",
+          "description": "보기 메뉴에서 독서용 서체(Garamond 포함), 텍스트 크기, 단일 또는 이중 단 설정을 선택하십시오.",
           "title": "서체 및 레이아웃"
         },
         "import": {
@@ -633,21 +664,42 @@
         "backToShelf": "서재로 돌아가기",
         "booksHelp": "Books 도움말",
         "chapters": "장",
+        "chineseScript": "중국어 문자",
         "columns": "단",
+        "customizeTheme": "사용자화…",
         "font": "서체",
         "import": "EPUB 가져오기…",
         "nextPage": "다음 페이지",
         "previousPage": "이전 페이지",
+        "speech": "말하기",
+        "speechRate": "말하기 속도",
+        "startSpeaking": "말하기 시작",
+        "stopSpeaking": "말하기 중단",
+        "textLayout": "글자 방향",
         "textSize": "텍스트 크기",
-        "textSizeDecrease": "작게",
-        "textSizeIncrease": "크게",
-        "textSizeReset": "기본 크기",
         "theme": "테마"
       },
       "name": "도서",
       "reader": {
         "backToShelf": "책장",
         "error": "이 책을 열 수 없습니다."
+      },
+      "selection": {
+        "askRyo": "Ryo에게 질문하기",
+        "askRyoFailed": "응답을 받지 못했습니다. 나중에 다시 시도하십시오.",
+        "askRyoQuestion": "이 구절은 무슨 뜻인가요?",
+        "color": {
+          "blue": "파란색 하이라이트",
+          "green": "초록색 하이라이트",
+          "pink": "분홍색 하이라이트",
+          "purple": "보라색 하이라이트",
+          "yellow": "노란색 하이라이트"
+        },
+        "controls": "선택 항목 제어",
+        "copied": "클립보드에 복사됨",
+        "copy": "복사하기",
+        "copyFailed": "복사할 수 없음",
+        "removeHighlight": "하이라이트 제거"
       },
       "shelf": {
         "emptyHint": "'도서 추가'를 클릭하여 EPUB를 가져오세요.",
@@ -658,10 +710,36 @@
         "listView": "목록 보기",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "말하기 제어기",
+        "pause": "일시 정지",
+        "resume": "재개",
+        "rewind": "되감기",
+        "skip": "건너뛰기",
+        "stop": "중단"
+      },
+      "speechRate": {
+        "fast": "빠름",
+        "normal": "보통",
+        "slow": "느림",
+        "veryFast": "매우 빠름"
+      },
+      "textLayout": {
+        "book": "책 기본값",
+        "horizontal": "가로",
+        "vertical": "세로쓰기"
+      },
       "theme": {
+        "accent": "액센트",
         "auto": "자동",
+        "black": "검은색",
+        "custom": "사용자화",
         "dark": "다크",
+        "gray": "회색",
+        "green": "초록색",
         "light": "라이트",
+        "night": "야간",
+        "paper": "종이",
         "sepia": "세피아"
       },
       "title": "도서",
@@ -1625,6 +1703,9 @@
       "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다",
       "bootScreen": "부팅 화면",
       "bootScreenDescription": "부팅 화면 애니메이션을 테스트합니다",
+      "browserTtsVoice": "TTS 음성",
+      "browserTtsVoiceAutomatic": "자동",
+      "browserTtsVoiceDescription": "도서 읽어주기 및 계산기용 시스템 음성",
       "changePassword": "암호 변경",
       "changePasswordButton": "변경",
       "chatSynth": "챗 신스",
@@ -2263,6 +2344,7 @@
         "noAirDropUsersAvailable": "근처 사용자가 없습니다",
         "open": "열기",
         "openAirDrop": "AirDrop 열기",
+        "openWith": "다음으로 열기",
         "putBack": "되돌려 놓기",
         "rename": "이름 변경…",
         "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
@@ -2302,8 +2384,10 @@
         "internetShortcut": "인터넷 바로 가기",
         "jpegImage": "JPEG 이미지",
         "mp3Audio": "MP3 오디오",
+        "pdfDocument": "PDF 문서",
         "pngImage": "PNG 이미지",
         "quicktimeMovie": "QuickTime 동영상",
+        "svgImage": "SVG 이미지",
         "unknown": "알 수 없음",
         "webpImage": "WebP 이미지"
       },
@@ -3683,6 +3767,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "이미지, PDF 및 문서 보기",
+      "empty": {
+        "hint": "파일을 선택하거나 여기에 드롭하십시오",
+        "title": "문서 열기"
+      },
+      "help": {
+        "images": {
+          "description": "원본 파일을 변경하지 않고 일반적인 이미지 포맷 열기",
+          "title": "이미지 미리보기"
+        },
+        "openFiles": {
+          "description": "파일 > 열기를 사용하여 기기의 파일 미리보기",
+          "title": "파일 열기"
+        },
+        "openWith": {
+          "description": "편집 가능한 파일을 그림판, 텍스트 편집기 또는 Applet 뷰어로 보내기",
+          "title": "다음으로 열기"
+        },
+        "pdfs": {
+          "description": "내장된 문서 뷰어를 사용하여 PDF 문서 보기",
+          "title": "PDF 읽기"
+        },
+        "safeHtml": {
+          "description": "스크립트를 실행하지 않고 샌드박스에서 HTML 문서 미리보기",
+          "title": "안전한 HTML"
+        },
+        "zoom": {
+          "description": "핀치 또는 이중 탭으로 이미지를 확대/축소하거나 윈도우 크기에 맞추기",
+          "title": "확대/축소"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Preview에 관하여",
+        "actualSize": "실제 크기",
+        "export": "내보내기…",
+        "fitToWindow": "윈도우 크기에 맞게 조절",
+        "importFromDevice": "기기에서 가져오기…",
+        "open": "열기…",
+        "openWith": "다음으로 열기",
+        "previewHelp": "미리보기 도움말",
+        "saveAs": "별도 저장…",
+        "zoomIn": "확대",
+        "zoomOut": "축소"
+      },
+      "name": "미리보기",
+      "saveAs": {
+        "description": "이 복사본의 이름을 입력하십시오.",
+        "title": "별도 저장"
+      },
+      "status": {
+        "loadFailed": "이 파일을 열 수 없습니다.",
+        "loading": "미리보기 로드 중…",
+        "notFound": "파일 콘텐츠를 찾을 수 없습니다.",
+        "unsupported": "미리보기를 사용할 수 없음",
+        "unsupportedDescription": "미리보기에서 이 파일 포맷을 지원하지 않습니다."
+      },
+      "supportedFiles": "미리보기 문서",
+      "title": "미리보기",
+      "toasts": {
+        "exportFailed": "파일을 내보낼 수 없습니다.",
+        "importFailed": "파일을 가져올 수 없습니다.",
+        "imported": "파일을 가져왔습니다.",
+        "saveFailed": "파일을 저장할 수 없습니다.",
+        "saved": "파일이 저장되었습니다."
+      },
+      "untitled": "제목 없음"
+    },
     "soundboard": {
       "description": "효과음 재생",
       "help": {
@@ -3986,7 +4138,7 @@
         "enterANameForYourFile": "파일 이름을 입력하세요.",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "저장할 파일 이름을 입력하거나 닫기 전에 삭제하세요.",
         "keepNewDocument": "새 문서 유지",
-        "saveChanges": "변경사항 저장",
+        "saveChanges": "변경 사항 저장",
         "saveFile": "파일 저장",
         "saveYourChangesBeforeClosing": "닫기 전에 변경사항을 저장하세요."
       },
@@ -4485,7 +4637,7 @@
       "openInGitHub": "GitHub에서 열기",
       "save": "저장",
       "saveBeforeClosing": "닫기 전에 변경사항을 저장하세요.",
-      "saveChanges": "변경사항 저장",
+      "saveChanges": "변경 사항 저장",
       "saveFile": "파일 저장",
       "share": {
         "by": "작성자",
@@ -4614,6 +4766,10 @@
       "volume": "볼륨"
     },
     "noResults": "결과 없음",
+    "offline": {
+      "appRequiresInternet": "{{appName}}은(는) 인터넷 연결이 필요합니다.",
+      "title": "오프라인 상태입니다."
+    },
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
       "run": "실행…",
@@ -4793,7 +4949,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "ryOS 인터페이스의 기본 언어 선택",
       "english": "English",
       "french": "Français",

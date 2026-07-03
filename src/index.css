@@ -4,25 +4,7 @@
 @source "../node_modules/@streamdown/code/dist/*.js";
 @config "../tailwind.config.js";
 
-/* Additional fonts not in fonts.css */
-@font-face {
-  font-family: "ArkPixel";
-  src: url("/fonts/fusion-pixel-12px-proportional-ja.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@supports not (font: -apple-system-body) {
-  @font-face {
-    font-family: "SerenityOS-Emoji";
-    src: url("/fonts/SerenityOS-Emoji.woff2") format("woff2");
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-  }
-}
-
+/* Additional font not declared in fonts.css */
 @font-face {
   font-family: "Geneva-9";
   src: url("/fonts/geneva-9.woff2") format("woff2");
@@ -54,8 +36,14 @@
     --radius: 0px;
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-apple-garamond: "AppleGaramond", "Hiragino Mincho ProN", "SerenityOS-Emoji",
-      serif;
+    --font-cjk-serif-jp: "Noto Serif JP", "Source Han Serif JP",
+      "Noto Serif CJK JP", "Source Han Serif", "Noto Serif KR",
+      "Source Han Serif KR", "Noto Serif SC", "Source Han Serif SC",
+      "Noto Serif CJK SC", "Hiragino Mincho ProN", "Hiragino Mincho Pro",
+      "Yu Mincho", "Songti TC", "Songti SC", SimSun, "Nanum Myeongjo",
+      "AppleMyungjo", Batang;
+    --font-apple-garamond: "AppleGaramond", var(--font-cjk-serif-jp),
+      "SerenityOS-Emoji", "Times New Roman", serif;
     --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
@@ -509,21 +497,21 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   /* Rounded lyrics font utility */
-  /* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
+  /* Chiron provides rounded CJK glyphs after bundled VAG Rounded. */
   .font-lyrics-rounded {
-    font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-      "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;
-    font-weight: normal;
+    font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
+      "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+      sans-serif;
+    font-weight: 700;
     line-height: 1.1;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
 
-  /* Serif lyrics font utility (Noto Serif JP/KR) */
+  /* Serif lyrics font utility (JP-first Source Han/Noto CJK fallback) */
   .font-lyrics-serif {
-    font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-      "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
+    font-family: Charter, var(--font-cjk-serif-jp), "Times New Roman", serif;
     font-weight: 700;
     line-height: 1.1;
     -webkit-font-smoothing: antialiased;
@@ -543,8 +531,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Serif Red - Japanese classic style (same font as serif but with outline styling) */
   .font-lyrics-serif-red {
-    font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-      "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
+    font-family: Charter, var(--font-cjk-serif-jp), "Times New Roman", serif;
     font-weight: 700;
     line-height: 1.1;
     -webkit-font-smoothing: antialiased;
@@ -553,9 +540,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Glow - Album art primary color glow style (uses rounded font) */
   .font-lyrics-gold-glow {
-    font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-      "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;
-    font-weight: normal;
+    font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
+      "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+      sans-serif;
+    font-weight: 700;
     line-height: 1.1;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
@@ -713,6 +701,19 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     user-select: text !important;
     -webkit-user-select: text !important;
     cursor: text;
+  }
+
+  /* Books reader (epub.js render host). iOS Safari consults the iframe
+     ELEMENT's -webkit-user-select / -webkit-touch-callout in the parent
+     document before starting the long-press selection gesture inside the
+     frame, so the deny-by-default `*` rule silently kills text selection in
+     books on iOS (desktop browsers only look at the inner document, which is
+     why this is iOS-only). Opt the epub.js host subtree back in. */
+  .books-reader-selectable,
+  .books-reader-selectable * {
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
   }
 
   .ryos-chat-streamdown {
@@ -1032,7 +1033,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 }
 
 /*
- * U+25CF is much larger in rounded/serif faces (VAGRounded, Charter, etc.) than in sans/gradient
+ * U+25CF is much larger in rounded/serif faces (VAG Rounded, Charter, etc.) than in sans/gradient
  * at the same font-size — scale down so interlude dots match sans/gradient visually.
  */
 .karaoke-force-font
@@ -2170,9 +2171,14 @@ ruby.lyrics-furigana rp {
   display: none;
 }
 
-/* Bold furigana for serif and sans-serif lyrics fonts */
+/* Bold pronunciation ruby (furigana, pinyin, romaji, etc.) for serif, sans-serif, and rounded lyrics fonts */
+/* :root[data-os-theme] variants outrank the theme-prefixed "normal" rule above in every theme */
 .font-lyrics-serif rt.lyrics-furigana-rt,
-.font-lyrics-sans rt.lyrics-furigana-rt {
+.font-lyrics-sans rt.lyrics-furigana-rt,
+.font-lyrics-rounded rt.lyrics-furigana-rt,
+.font-lyrics-gold-glow rt.lyrics-furigana-rt,
+:root[data-os-theme] .font-lyrics-rounded rt.lyrics-furigana-rt,
+:root[data-os-theme] .font-lyrics-gold-glow rt.lyrics-furigana-rt {
   font-weight: 700 !important;
 }
 

@@ -249,6 +249,15 @@
   border-radius: var(--os-glass-r-metal) !important;
 }
 
+/* No-titlebar (immersive) windows — Maps, Photo Booth, Books, Karaoke,
+   Infinite Mac/PC — keep their own surface treatment but adopt the same
+   larger glass pane radius as default-material windows. Without this they
+   fall back to the smaller base `rounded-os` radius. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .window.window-material-notitlebar {
+  border-radius: var(--os-glass-r-lg) !important;
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
   .window-material-brushedmetal::before {
   background: var(--os-color-window-bg) !important;
@@ -271,6 +280,119 @@
     transparent
   ) !important;
   filter: saturate(0.9) brightness(0.98) !important;
+}
+
+/* --- Frosted Books reader (transparent custom reading background) ---------- */
+/* The Books window uses the `notitlebar` material, so it never becomes a
+   `window-material-glass` pane and carries no backdrop blur of its own. When
+   the reader's custom theme opts into a transparent page background, the
+   reader surface itself becomes the frosted pane, with the same paint order
+   as `.window.window-material-glass`: the backdrop blur samples the wallpaper
+   behind the (transparent) window, and the translucent tint gradient paints
+   on top of the blur on the same element. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .books-reader-glass {
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--os-color-window-bg) 78%, transparent),
+    var(--os-color-window-bg)
+  );
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
+}
+
+/* The app shell behind the reader paints the regular `bg-os-window-bg` wash
+   (it is the window surface for the `notitlebar` material). Clear it while
+   the frosted reader is up, or the two translucent tints stack back to
+   near-opaque and bury the blur. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .books-app-shell:has(> .books-reader-glass) {
+  background-color: transparent;
+}
+
+/* Read-aloud floating controls — same glass island recipe as Chats' @ryo
+   toolbar pill: top gloss over a translucent gray→white (light) / graphite
+   (dark) base, frosted backdrop, raised hairline ring. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .books-speech-overlay {
+  border: none;
+  color: rgba(0, 0, 0, 0.78);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.18) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3));
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .books-speech-overlay
+  button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .books-speech-overlay {
+  border: none;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03) 60%,
+        rgba(255, 255, 255, 0) 100%
+      )
+      top / 100% 50% no-repeat,
+    linear-gradient(to bottom, rgba(72, 72, 78, 0.42), rgba(34, 34, 38, 0.42));
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .books-speech-overlay
+  button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* The floating Customize card / bottom sheet gets the frosted popover
+   treatment (same recipe as the dropdown/menu surfaces above): swap the
+   0.8-alpha `bg-os-window-bg` fill — opaque enough to bury the blur — for a
+   lighter wash, and add the blur + specular rim on the same element. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .books-customize-panel {
+  -webkit-backdrop-filter: blur(36px) saturate(200%);
+  backdrop-filter: blur(36px) saturate(200%);
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 6%,
+    rgba(248, 250, 253, 0.62)
+  );
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .books-customize-panel {
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-color, #3a73d6) 7%,
+    rgba(36, 38, 44, 0.62)
+  );
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* --- Frosted sidebar / list panes ------------------------------------------ */
@@ -734,6 +856,17 @@
   box-shadow: none;
 }
 
+/* Font pills are standalone rather than sharing the toolbar's recessed group.
+   Keep inactive choices flatter and clearer than the selected accent capsule. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
+    [data-os-color-scheme="dark"]
+  )
+  .metal-inset-btn.books-font-pill[data-state="off"] {
+  background: rgba(255, 255, 255, 0.13) !important;
+  box-shadow: none !important;
+  text-shadow: none;
+}
+
 /* Dark glass: graphite translucent stack, same as the dark dropdown toggle. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .metal-inset-btn-group {
@@ -788,6 +921,13 @@
     );
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
   box-shadow: none;
+}
+
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
+  .metal-inset-btn.books-font-pill[data-state="off"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+  text-shadow: none;
 }
 
 /* --- Frosted search field ------------------------------------------------- */

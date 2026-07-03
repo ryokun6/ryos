@@ -37,6 +37,7 @@ import {
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
 } from "@/stores/useIpodStore";
+import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
   resolveLyricsTrackMetadata,
@@ -90,6 +91,8 @@ import {
   resolveAppleMusicPlaylistMenu,
 } from "../utils/appleMusicPlaylistMenu";
 import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
+import { shouldPlayIpodWheelSound } from "../utils/wheelSound";
+import { shouldEnableAppleMusicIntegration } from "../utils/appleMusicActivation";
 import { createClientLogger } from "@/utils/logger";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
@@ -123,7 +126,14 @@ export function useIpodLogic({
   // load. Menu factories only need to rebuild when the locale changes.
   const menuLocale = i18n.resolvedLanguage ?? i18n.language;
   const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
-  const { play: playScrollSound } = useSound(Sounds.IPOD_CLICK_WHEEL);
+  const { play: playScrollSoundSource } = useSound(Sounds.IPOD_CLICK_WHEEL);
+  const lastScrollSoundAtRef = useRef<number | null>(null);
+  const playScrollSound = useCallback(() => {
+    const now = Date.now();
+    if (!shouldPlayIpodWheelSound(lastScrollSoundAtRef.current, now)) return;
+    lastScrollSoundAtRef.current = now;
+    void playScrollSoundSource();
+  }, [playScrollSoundSource]);
   const vibrate = useVibration(100, 50);
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("ipod", helpItems);
@@ -134,7 +144,6 @@ export function useIpodLogic({
     appleMusicPlaylistTracks,
     appleMusicPlaylistTracksLoading,
     appleMusicPlaylistsLoading,
-    appleMusicCurrentSongId,
     librarySource,
     isAppleMusic,
     tracks,
@@ -266,12 +275,9 @@ export function useIpodLogic({
   // ---------------------------------------------------------------------
   // MusicKit (Apple Music) integration
   // ---------------------------------------------------------------------
-  // Lazily configure MusicKit only after the iPod window is open at least
-  // once OR the user has already opted into Apple Music. This avoids
-  // pulling the v3 script on first paint for users that never use the
-  // Apple Music mode.
-  const enableMusicKit =
-    isAppleMusic || isWindowOpen || appleMusicCurrentSongId !== null;
+  // Keep every Apple Music side effect dormant while the YouTube library is
+  // active. Switching sources enables MusicKit first, then library hydration.
+  const enableMusicKit = shouldEnableAppleMusicIntegration(librarySource);
   const {
     instance: musicKitInstance,
     isAuthorized: appleMusicAuthorized,
@@ -909,6 +915,14 @@ export function useIpodLogic({
       });
       return;
     }
+    if (musicKitStatus === "idle" || musicKitStatus === "loading") {
+      showStatus(t("apps.ipod.menuItems.loading"));
+      return;
+    }
+    if (musicKitStatus !== "ready") {
+      toast.error(t("apps.ipod.dialogs.appleMusicSignInFailed"));
+      return;
+    }
     try {
       await musicKitAuthorize();
       showStatus(t("apps.ipod.status.appleMusicSignedIn", "Apple Music ✓"));
@@ -1328,22 +1342,8 @@ export function useIpodLogic({
     showStatus(
       t("apps.ipod.status.libraryAppleMusic", "Library: Apple Music")
     );
-    if (musicKitStatus === "missing-token") {
-      toast.error(t("apps.ipod.dialogs.appleMusicNotConfigured"), {
-        description: t("apps.ipod.dialogs.appleMusicNotConfiguredDescriptionShort"),
-      });
-      return;
-    }
-    if (!appleMusicAuthorized) {
-      queueMicrotask(() => {
-        void handleAppleMusicSignIn();
-      });
-    }
   }, [
-    appleMusicAuthorized,
-    handleAppleMusicSignIn,
     librarySource,
-    musicKitStatus,
     pauseBeforeWindowClose,
     registerActivity,
     setLibrarySource,
@@ -4900,6 +4900,14 @@ export function useIpodLogic({
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
     [lyricsTranslationLanguage, appLanguage]
   );
+  const effectiveChineseLyricsLanguage = useMemo(
+    () =>
+      resolveChineseLyricsLanguage(
+        romanization.chineseLyricsLanguage,
+        appLanguage
+      ),
+    [romanization.chineseLyricsLanguage, appLanguage]
+  );
   // For Apple Music stations / playlists the iPod's `currentTrack` is
   // a *shell* — its title / artist describe the station or playlist
   // itself ("Today's Hits" / "Apple Music"), NOT the song that's
@@ -4932,6 +4940,7 @@ export function useIpodLogic({
     // subscription effect below via `updateCurrentTimeManually`.
     currentTime: 0,
     translateTo: effectiveTranslationLanguage,
+    lyricsLanguage: effectiveChineseLyricsLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
     // Always include soramimi in request to avoid hydration timing issues
@@ -4970,7 +4979,7 @@ export function useIpodLogic({
         syncLyricsTime(state.elapsedTime);
       }
     });
-  }, [fullScreenLyricsControls.lines, lyricsTimingOffsetMs]);
+  }, [fullScreenLyricsControls.loadedSongId, lyricsTimingOffsetMs]);
 
   // Show toast with Search button when lyrics fetch fails
   useLyricsErrorToast({

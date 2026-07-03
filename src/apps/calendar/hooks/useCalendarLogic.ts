@@ -228,7 +228,9 @@ export function useCalendarLogic() {
     return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 0, 7 + i)));
   }, [locale]);
 
-  const prefers24Hour = ["zh-TW", "ja", "de", "fr", "ko"].includes(locale);
+  const prefers24Hour = ["zh-CN", "zh-TW", "ja", "de", "fr", "ko"].includes(
+    locale
+  );
 
   // Locale-aware hour labels (0–23)
   const hourLabels = useMemo(() => {

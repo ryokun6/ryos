@@ -16,8 +16,22 @@ import { toast } from "sonner";
 import { createElement } from "react";
 import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
 import { useAppStore } from "@/stores/useAppStore";
+import { computeDockPinnedItems, useDockStore } from "@/stores/useDockStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
+import { appIds } from "@/config/appRegistryData";
+import { getAppIconPath } from "@/config/appRegistry";
+import {
+  fetchIconManifest,
+  invalidateIconCache,
+  type IconManifest,
+} from "@/utils/icons";
+import {
+  collectActiveThemeIconUrls,
+  getAllThemeStaticAssetUrls,
+  getCoreSoundUrls,
+} from "@/utils/prefetchAssets";
 import { getApiUrl, isDesktop } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
@@ -29,16 +43,25 @@ import { shouldPrefetchNow } from "@/utils/network";
 import { track, SYSTEM_ANALYTICS } from "@/utils/analytics";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 import { getSupportedDesktopDownloadTarget } from "@/utils/desktopDownload";
+import {
+  notifyDesktopUpdate,
+  type DesktopUpdateResult,
+} from "@/utils/desktopUpdateBridge";
 import { createClientLogger } from "@/utils/logger";
+import type { OsThemeId } from "@/themes/types";
 
 const log = createClientLogger("Prefetch");
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
+const THEME_WARMUP_KEY_PREFIX = "ryos:theme-assets";
+const OS_THEME_IDS = ["system7", "macosx", "xp", "win98"] as const satisfies readonly OsThemeId[];
+const warmedThemeVersions = new Set<string>();
 
 // Periodic update check interval (5 minutes)
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
 let disposeUpdateCheckInterval: (() => void) | null = null;
+let disposeThemeWarmupSubscription: (() => void) | null = null;
 
 // HMR cleanup - clear interval when module is replaced
 if (import.meta.hot) {
@@ -48,6 +71,8 @@ if (import.meta.hot) {
       disposeUpdateCheckInterval = null;
       log.debug("HMR cleanup: cleared update check interval");
     }
+    disposeThemeWarmupSubscription?.();
+    disposeThemeWarmupSubscription = null;
   });
 }
 
@@ -130,8 +155,12 @@ async function reloadPage(version?: string, buildNumber?: string): Promise<void>
  * Call this when resetting settings or formatting file system
  */
 export function clearPrefetchFlag(): void {
+  warmedThemeVersions.clear();
   try {
     localStorage.removeItem(MANIFEST_KEY);
+    for (const theme of OS_THEME_IDS) {
+      localStorage.removeItem(`${THEME_WARMUP_KEY_PREFIX}:${theme}`);
+    }
     log.debug("Flag cleared; will re-prefetch on next boot");
   } catch {
     // localStorage might not be available
@@ -144,6 +173,43 @@ export function hasStoredPrefetchManifestTimestamp(): boolean {
   } catch {
     // Avoid repeatedly running background warmup in storage-restricted contexts.
     return true;
+  }
+}
+
+export function hasWarmedThemeAssets(
+  theme: OsThemeId,
+  manifestVersion: string
+): boolean {
+  const warmupToken = `${theme}:${manifestVersion}`;
+  if (warmedThemeVersions.has(warmupToken)) {
+    return true;
+  }
+
+  try {
+    const isWarm =
+      localStorage.getItem(`${THEME_WARMUP_KEY_PREFIX}:${theme}`) ===
+      manifestVersion;
+    if (isWarm) {
+      warmedThemeVersions.add(warmupToken);
+    }
+    return isWarm;
+  } catch {
+    return false;
+  }
+}
+
+export function markThemeAssetsWarmed(
+  theme: OsThemeId,
+  manifestVersion: string
+): void {
+  warmedThemeVersions.add(`${theme}:${manifestVersion}`);
+  try {
+    localStorage.setItem(
+      `${THEME_WARMUP_KEY_PREFIX}:${theme}`,
+      manifestVersion
+    );
+  } catch {
+    // The in-memory flag still prevents duplicate work in this session.
   }
 }
 
@@ -200,11 +266,6 @@ async function fetchServerVersion(forceRemote: boolean = false): Promise<ServerV
   }
 }
 
-export interface DesktopUpdateResult {
-  type: 'first-time' | 'update' | 'none';
-  version: string | null;
-}
-
 /**
  * Check for desktop app updates
  * Returns info about whether this is a first time visit, update available, or no changes
@@ -230,17 +291,6 @@ export async function checkDesktopUpdate(): Promise<DesktopUpdateResult> {
   return { type: 'none', version: null };
 }
 
-// Callback for desktop update notifications (set by App.tsx)
-let desktopUpdateCallback: ((result: DesktopUpdateResult) => void) | null = null;
-
-/**
- * Register a callback to be called when a desktop update is found
- * Used by App.tsx to show the download toast
- */
-export function onDesktopUpdate(callback: (result: DesktopUpdateResult) => void): void {
-  desktopUpdateCallback = callback;
-}
-
 /**
  * Check for desktop updates and notify via callback
  * Called during periodic checks and manual "Check for Updates"
@@ -253,8 +303,8 @@ async function checkAndNotifyDesktopUpdate(): Promise<void> {
   
   const result = await checkDesktopUpdate();
   
-  if (result.type !== 'none' && desktopUpdateCallback) {
-    desktopUpdateCallback(result);
+  if (result.type !== 'none') {
+    notifyDesktopUpdate(result);
   }
 }
 
@@ -294,6 +344,84 @@ async function determineUpdateAction(): Promise<CheckResult> {
   return { action: 'none', server: serverVersion };
 }
 
+const SHELL_FALLBACK_ICON_PATHS = [
+  "/icons/default/application.png",
+  "/icons/default/applications.png",
+  "/icons/default/directory.png",
+  "/icons/default/disk.png",
+  "/icons/default/file.png",
+  "/icons/default/file-text.png",
+  "/icons/default/pc.png",
+  "/icons/default/trash-empty.png",
+  "/icons/default/trash-full.png",
+] as const;
+
+function collectShellIconUrls(
+  theme: OsThemeId,
+  manifest: IconManifest
+): string[] {
+  const pinnedIconPaths = computeDockPinnedItems(
+    useDockStore.getState().pinnedItems
+  )
+    .map((item) => item.icon)
+    .filter((icon): icon is string => Boolean(icon));
+
+  return collectActiveThemeIconUrls({
+    theme,
+    manifest,
+    iconPaths: [
+      ...appIds.map((appId) => getAppIconPath(appId)),
+      ...pinnedIconPaths,
+      ...SHELL_FALLBACK_ICON_PATHS,
+    ],
+  });
+}
+
+/**
+ * Warm the active theme without rerunning update toasts or sound prefetching.
+ * Default icon fallbacks and every theme's small chrome assets are included so
+ * a first-time offline theme switch remains usable.
+ */
+export async function warmActiveThemeShellAssets(
+  theme: OsThemeId = useThemeStore.getState().current
+): Promise<boolean> {
+  if (
+    !shouldPrefetchNow() ||
+    (typeof navigator !== "undefined" && navigator.onLine === false)
+  ) {
+    return false;
+  }
+
+  const manifest = await fetchIconManifest().catch((error: unknown) => {
+    log.warn("Could not load icon manifest for theme warmup", { theme, error });
+    return null;
+  });
+  if (!manifest) return false;
+  if (hasWarmedThemeAssets(theme, manifest.generatedAt)) {
+    return true;
+  }
+
+  const iconUrls = collectShellIconUrls(theme, manifest);
+  const assetUrls = getAllThemeStaticAssetUrls();
+  const iconSucceeded = await prefetchUrlsWithProgress(
+    iconUrls,
+    `${theme} icons`,
+    () => undefined
+  );
+  const assetSucceeded = await prefetchUrlsWithProgress(
+    assetUrls,
+    "Theme chrome",
+    () => undefined
+  );
+  const didWarm =
+    iconSucceeded === iconUrls.length && assetSucceeded === assetUrls.length;
+
+  if (didWarm) {
+    markThemeAssetsWarmed(theme, manifest.generatedAt);
+  }
+  return didWarm;
+}
+
 /**
  * Unified check and update function
  * Handles first-time load, updates on load, and periodic checks
@@ -330,6 +458,8 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
       } finally {
         isUpdateInProgress = false;
       }
+    } else if (result.server) {
+      await warmActiveThemeShellAssets();
     }
     return;
   }
@@ -445,17 +575,22 @@ async function runPrefetchWithToast(
   }
 
   // Fetch manifest first
-  const manifest = await fetchIconManifest();
+  const manifest = await fetchIconManifest().catch((error) => {
+    console.warn('[Prefetch] Failed to load icon manifest:', error);
+    return null;
+  });
   if (!manifest) {
     toast.error(i18n.t("common.toast.failedToLoadAssetManifest"));
     log.debug("Could not fetch manifest");
     return;
   }
   
-  // Gather all URLs
-  const iconUrls = getIconUrlsFromManifest(manifest);
-  const soundUrls = getSoundUrls();
-  const assetUrls = getStaticAssetUrls();
+  // Warm the current theme plus default icon fallbacks. Default icons keep a
+  // first-time offline theme switch usable until themed icons can be fetched.
+  const theme = useThemeStore.getState().current;
+  const iconUrls = collectShellIconUrls(theme, manifest);
+  const soundUrls = getCoreSoundUrls();
+  const assetUrls = getAllThemeStaticAssetUrls();
   
   const totalItems = iconUrls.length + soundUrls.length + assetUrls.length;
   
@@ -504,11 +639,13 @@ async function runPrefetchWithToast(
   // The service worker will cache these responses, and ignoreSearch: true
   // means we don't need ?v= cache busting params anymore.
   const prefetchOptions = { skipCache: true };
+  let iconSucceeded = 0;
+  let assetSucceeded = 0;
   
   try {
     // Prefetch icons
     if (iconUrls.length > 0) {
-      await prefetchUrlsWithProgress(iconUrls, 'Icons', (completed, total) => {
+      iconSucceeded = await prefetchUrlsWithProgress(iconUrls, 'Icons', (completed, total) => {
         overallCompleted = completed;
         updateToast('icons', completed, total);
       }, prefetchOptions);
@@ -526,7 +663,7 @@ async function runPrefetchWithToast(
     // Prefetch static assets (textures, splash screens, etc.)
     if (assetUrls.length > 0) {
       const baseCompleted = overallCompleted;
-      await prefetchUrlsWithProgress(assetUrls, 'Assets', (completed, total) => {
+      assetSucceeded = await prefetchUrlsWithProgress(assetUrls, 'Assets', (completed, total) => {
         overallCompleted = baseCompleted + completed;
         updateToast('assets', completed, total);
       }, prefetchOptions);
@@ -534,6 +671,12 @@ async function runPrefetchWithToast(
     
     // Store manifest timestamp
     storeManifestTimestamp(manifest);
+    if (
+      iconSucceeded === iconUrls.length &&
+      assetSucceeded === assetUrls.length
+    ) {
+      markThemeAssetsWarmed(theme, manifest.generatedAt);
+    }
 
     track(SYSTEM_ANALYTICS.PREFETCH_COMPLETE, {
       category: "events",
@@ -581,76 +724,6 @@ function finalizePrefetch(
   }
 }
 
-// Static assets that should be prefetched for UI theming
-const STATIC_ASSETS = [
-  // Theme textures
-  '/assets/brushed-metal.jpg',
-  '/assets/button.svg',
-  '/assets/button-default.svg',
-  // Splash screens
-  '/assets/splash/hello.svg',
-  '/assets/splash/macos.svg',
-  '/assets/splash/win98.png',
-  '/assets/splash/win98.gif',
-  '/assets/splash/xp.png',
-  '/assets/splash/xp-boot.gif',
-  // Video player controls
-  '/assets/videos/play.png',
-  '/assets/videos/pause.png',
-  '/assets/videos/stop.png',
-  '/assets/videos/prev.png',
-  '/assets/videos/next.png',
-  '/assets/videos/clear.png',
-  '/assets/videos/switch.png',
-];
-
-// UI sound files in /sounds/ directory
-const UI_SOUNDS = [
-  'AlertBonk.mp3',
-  'AlertGrowl.mp3',
-  'AlertIndigo.mp3',
-  'AlertQuack.mp3',
-  'AlertSosumi.mp3',
-  'AlertTabitha.mp3',
-  'AlertWildEep.mp3',
-  'Beep.mp3',
-  'Boot.mp3',
-  'ButtonClickDown.mp3',
-  'ButtonClickUp.mp3',
-  'Click.mp3',
-  'EmailMailError.mp3',
-  'EmailMailSent.mp3',
-  'EmailNewMail.mp3',
-  'EmailNoMail.mp3',
-  'InputRadioClickDown.mp3',
-  'InputRadioClickUp.mp3',
-  'MSNNudge.mp3',
-  'MenuClose.mp3',
-  'MenuItemClick.mp3',
-  'MenuItemHover.mp3',
-  'MenuOpen.mp3',
-  'PhotoShutter.mp3',
-  'Thump.mp3',
-  'VideoTapeIn.mp3',
-  'Volume.mp3',
-  'WheelsOfTime.m4a',
-  'WindowClose.mp3',
-  'WindowCollapse.mp3',
-  'WindowControlClickDown.mp3',
-  'WindowControlClickUp.mp3',
-  'WindowExpand.mp3',
-  'WindowFocus.mp3',
-  'WindowMoveIdle.mp3',
-  'WindowMoveMoving.mp3',
-  'WindowMoveStop.mp3',
-  'WindowOpen.mp3',
-  'WindowResizeIdle.mp3',
-  'WindowResizeResizing.mp3',
-  'WindowResizeStop.mp3',
-  'WindowZoomMaximize.mp3',
-  'WindowZoomMinimize.mp3',
-];
-
 // Max simultaneous prefetch requests. Bounded so the background warmup doesn't
 // saturate the connection or contend with foreground app/network traffic.
 const PREFETCH_CONCURRENCY = 8;
@@ -690,7 +763,7 @@ async function prefetchUrlsWithProgress(
 
   await runWithConcurrency(urls, PREFETCH_CONCURRENCY, async (url) => {
     try {
-      await abortableFetch(url, {
+      const response = await abortableFetch(url, {
         method: 'GET',
         // Use 'reload' when skipCache is true (e.g., after cache clear on updates)
         // to bypass browser HTTP cache and fetch fresh from network.
@@ -700,7 +773,9 @@ async function prefetchUrlsWithProgress(
         throwOnHttpError: false,
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
-      succeeded++;
+      if (response.ok) {
+        succeeded++;
+      }
     } catch {
       // best-effort: count as attempted below regardless
     } finally {
@@ -717,49 +792,6 @@ async function prefetchUrlsWithProgress(
   return succeeded;
 }
 
-interface IconManifest {
-  version: number;
-  generatedAt: string;
-  themes: Record<string, string[]>;
-}
-
-/**
- * Fetch and parse the icon manifest
- */
-async function fetchIconManifest(): Promise<IconManifest | null> {
-  try {
-    const response = await abortableFetch('/icons/manifest.json', {
-      method: 'GET',
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch (error) {
-    console.warn('[Prefetch] Failed to load icon manifest:', error);
-    return null;
-  }
-}
-
-/**
- * Get all icon URLs from the icon manifest
- */
-function getIconUrlsFromManifest(manifest: IconManifest): string[] {
-  const urls: string[] = [];
-  
-  if (manifest.themes && typeof manifest.themes === 'object') {
-    for (const [themeName, icons] of Object.entries(manifest.themes)) {
-      if (Array.isArray(icons)) {
-        const prefix = themeName === 'default' ? '/icons/default/' : `/icons/${themeName}/`;
-        urls.push(...icons.map((icon: string) => `${prefix}${icon}`));
-      }
-    }
-  }
-  
-  return urls;
-}
-
 /**
  * Store the manifest timestamp after successful prefetch
  */
@@ -772,26 +804,13 @@ function storeManifestTimestamp(manifest: IconManifest): void {
 }
 
 /**
- * Get all UI sound URLs
- */
-function getSoundUrls(): string[] {
-  return UI_SOUNDS.map(sound => `/sounds/${sound}`);
-}
-
-/**
- * Get all static asset URLs (textures, splash screens, etc.)
- */
-function getStaticAssetUrls(): string[] {
-  return STATIC_ASSETS;
-}
-
-/**
  * Clear runtime (non-precache) caches so themed icons / sounds / data refresh
  * on update, while PRESERVING the Workbox precache (`workbox-precache-*`). This
  * keeps JS updates revision-efficient — only changed hashed chunks are fetched
  * by the new service worker — instead of nuking and re-downloading everything.
  */
 async function clearRuntimeCaches(): Promise<void> {
+  invalidateIconCache();
   try {
     if (typeof caches === 'undefined') return;
     const cacheNames = await caches.keys();
@@ -830,6 +849,39 @@ function createToastContent(props: {
   percentage?: number;
 }) {
   return createElement(PrefetchToast, props);
+}
+
+function startThemeAssetWarmup(): void {
+  if (disposeThemeWarmupSubscription) return;
+
+  let timeoutId: number | null = null;
+  const scheduleWarmup = (theme: OsThemeId) => {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+    timeoutId = window.setTimeout(() => {
+      timeoutId = null;
+      void warmActiveThemeShellAssets(theme);
+    }, 250);
+  };
+
+  const unsubscribe = useThemeStore.subscribe((state, previousState) => {
+    if (state.current !== previousState.current) {
+      scheduleWarmup(state.current);
+    }
+  });
+  const handleOnline = () => {
+    scheduleWarmup(useThemeStore.getState().current);
+  };
+  window.addEventListener("online", handleOnline);
+
+  disposeThemeWarmupSubscription = () => {
+    unsubscribe();
+    window.removeEventListener("online", handleOnline);
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+  };
 }
 
 /**
@@ -875,6 +927,8 @@ export function stopPeriodicUpdateCheck(): void {
  * 4. Start periodic checks every 5 minutes
  */
 export function initPrefetch(): void {
+  startThemeAssetWarmup();
+
   // Clean up cache-busting param from URL after reload
   const url = new URL(window.location.href);
   if (url.searchParams.has('_cb')) {

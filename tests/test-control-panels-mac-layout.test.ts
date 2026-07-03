@@ -203,12 +203,12 @@ describe("Control Panels macOS 10.3 layout", () => {
       expect(macosxIcons.has(icon)).toBe(true);
     }
 
-    expect(categoriesSource.includes("desktop.png")).toBe(true);
+    expect(categoriesSource.includes('icon: "desktop.png"')).toBe(false);
     expect(categoriesSource.includes("control-panels/desktop-screen-saver.png")).toBe(
-      false
+      true
     );
     expect(getControlPanelCategory("desktop-screen-saver")?.icon).toBe(
-      "desktop.png"
+      "control-panels/desktop-screen-saver.png"
     );
     expect(categoriesSource.includes("sound.png")).toBe(true);
     expect(getControlPanelCategory("sound")?.icon).toBe("sound.png");
@@ -566,9 +566,12 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(cssSource.includes(':root[data-os-theme="system7"]')).toBe(true);
     expect(cssSource.includes(':root[data-os-theme="xp"]')).toBe(true);
     expect(cssSource.includes(':root[data-os-theme="win98"]')).toBe(true);
-    // The themed stylesheet is wired into the global theme bundle.
-    const themesSource = readSource("src/styles/themes.css");
-    expect(themesSource.includes("control-panels-themed.css")).toBe(true);
+    // App-specific styles load with the lazy Control Panels chunk rather than
+    // inflating the global first-paint theme stylesheet.
+    const appSource = readSource(
+      "src/apps/control-panels/components/control-panels-app/ControlPanelsAppComponent.tsx"
+    );
+    expect(appSource.includes("control-panels-themed.css")).toBe(true);
   });
 
   test("category and pinned pane icons resolve on macosx theme", () => {

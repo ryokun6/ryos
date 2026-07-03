@@ -62,6 +62,10 @@
       "missionControl": "Mission Control (F3)",
       "volume": "Volume"
     },
+    "offline": {
+      "title": "You're Offline",
+      "appRequiresInternet": "{{appName}} requires an internet connection."
+    },
     "dialog": {
       "save": "Save",
       "cancel": "Cancel",
@@ -428,6 +432,8 @@
         "gifImage": "GIF Image",
         "webpImage": "WebP Image",
         "bmpImage": "BMP Image",
+        "svgImage": "SVG Image",
+        "pdfDocument": "PDF Document",
         "book": "Book",
         "document": "Document",
         "htmlApplet": "HTML Applet",
@@ -442,6 +448,7 @@
         "emptyTrash": "Empty Trash…",
         "newFolder": "New Folder…",
         "open": "Open",
+        "openWith": "Open With",
         "addToDesktop": "Add to Desktop",
         "rename": "Rename…",
         "duplicate": "Duplicate",
@@ -1378,6 +1385,74 @@
         "fileManagement": {
           "title": "Save as HTML, MD, or TXT",
           "description": "Export to Markdown, HTML, or plain text and drop files back in to import"
+        }
+      }
+    },
+    "preview": {
+      "name": "Preview",
+      "title": "Preview",
+      "description": "View images, PDFs, and documents",
+      "untitled": "Untitled",
+      "supportedFiles": "Preview documents",
+      "menu": {
+        "open": "Open…",
+        "openWith": "Open With",
+        "saveAs": "Save As…",
+        "importFromDevice": "Import from Device…",
+        "export": "Export…",
+        "zoomIn": "Zoom In",
+        "zoomOut": "Zoom Out",
+        "actualSize": "Actual Size",
+        "fitToWindow": "Fit to Window",
+        "previewHelp": "Preview Help",
+        "aboutPreview": "About Preview"
+      },
+      "empty": {
+        "title": "Open a document",
+        "hint": "Choose a file or drop it here"
+      },
+      "status": {
+        "loading": "Loading preview…",
+        "notFound": "The file content could not be found.",
+        "loadFailed": "Couldn’t open this file.",
+        "unsupported": "No preview available",
+        "unsupportedDescription": "This file format isn’t supported by Preview."
+      },
+      "saveAs": {
+        "title": "Save As",
+        "description": "Enter a name for this copy"
+      },
+      "toasts": {
+        "imported": "File imported",
+        "importFailed": "Couldn’t import the file",
+        "saved": "File saved",
+        "saveFailed": "Couldn’t save the file",
+        "exportFailed": "Couldn’t export the file"
+      },
+      "help": {
+        "images": {
+          "title": "Preview Images",
+          "description": "Open common image formats without changing the original file"
+        },
+        "pdfs": {
+          "title": "Read PDFs",
+          "description": "View PDF documents using the built-in document viewer"
+        },
+        "zoom": {
+          "title": "Zoom",
+          "description": "Pinch or double-tap to zoom images, or fit them to the window"
+        },
+        "openFiles": {
+          "title": "Open Files",
+          "description": "Open files from Finder or import a copy from your device"
+        },
+        "openWith": {
+          "title": "Open With",
+          "description": "Send editable files to Paint, TextEdit, or Applet Viewer"
+        },
+        "safeHtml": {
+          "title": "Safe HTML",
+          "description": "Preview HTML documents in a sandbox without running scripts"
         }
       }
     },
@@ -3003,6 +3078,9 @@
       "uiSounds": "UI Sounds",
       "uiSoundsDescription": "Clicks and feedback for windows and menus",
       "speechDescription": "Speaks assistant messages and selected text",
+      "browserTtsVoice": "TTS Voice",
+      "browserTtsVoiceDescription": "System voice for Books read-aloud and Calculator",
+      "browserTtsVoiceAutomatic": "Automatic",
       "terminalIeAmbientSynth": "Synth",
       "terminalIeAmbientSynthDescription": "Effects and synth for Terminal and IE",
       "chatSynth": "Chat Synth",
@@ -4457,24 +4535,102 @@
         "chapters": "Chapters",
         "font": "Font",
         "textSize": "Text Size",
-        "textSizeIncrease": "Bigger",
-        "textSizeDecrease": "Smaller",
-        "textSizeReset": "Default Size",
         "columns": "Columns",
+        "textLayout": "Text Direction",
+        "chineseScript": "Chinese Script",
         "theme": "Theme",
+        "customizeTheme": "Customize…",
+        "speech": "Speech",
+        "startSpeaking": "Start Speaking",
+        "stopSpeaking": "Stop Speaking",
+        "speechRate": "Speech Rate",
         "booksHelp": "Books Help",
         "aboutBooks": "About Books"
+      },
+      "customize": {
+        "title": "Customize",
+        "lineSpacing": "Line Spacing",
+        "spacing": "Spacing",
+        "direction": "Direction",
+        "chinese": "Chinese",
+        "margins": "Margins",
+        "colors": "Colors",
+        "background": "Background",
+        "textColor": "Text",
+        "transparent": "Transparent"
+      },
+      "speechRate": {
+        "slow": "Slow",
+        "normal": "Normal",
+        "fast": "Fast",
+        "veryFast": "Very Fast"
+      },
+      "speech": {
+        "controls": "Read-aloud controls",
+        "rewind": "Rewind",
+        "pause": "Pause",
+        "resume": "Resume",
+        "skip": "Skip",
+        "stop": "Stop"
+      },
+      "selection": {
+        "controls": "Selection controls",
+        "color": {
+          "yellow": "Yellow highlight",
+          "green": "Green highlight",
+          "blue": "Blue highlight",
+          "pink": "Pink highlight",
+          "purple": "Purple highlight"
+        },
+        "copy": "Copy",
+        "copied": "Copied to clipboard",
+        "copyFailed": "Couldn’t copy",
+        "askRyo": "Ask Ryo",
+        "removeHighlight": "Remove Highlight",
+        "askRyoQuestion": "what does this passage mean?",
+        "askRyoFailed": "Couldn't get a reply. Try again later."
+      },
+      "bookmarks": {
+        "title": "Bookmarks",
+        "add": "Add Bookmark",
+        "remove": "Remove Bookmark"
       },
       "columns": {
         "auto": "Auto",
         "single": "Single",
         "double": "Double"
       },
+      "fonts": {
+        "original": "Original",
+        "eb-garamond": "Garamond",
+        "serif": "Serif",
+        "sans": "Sans Serif",
+        "geneva": "Geneva",
+        "rounded": "Rounded",
+        "mono": "Monospace"
+      },
+      "textLayout": {
+        "book": "Book Default",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "theme": {
         "auto": "Auto",
+        "accent": "Accent",
         "light": "Light",
+        "paper": "Paper",
         "sepia": "Sepia",
-        "dark": "Dark"
+        "gray": "Gray",
+        "green": "Green",
+        "dark": "Dark",
+        "night": "Night",
+        "black": "Black",
+        "custom": "Custom"
       },
       "shelf": {
         "import": "Add Book",
@@ -4520,11 +4676,11 @@
         },
         "progress": {
           "title": "Reading Progress",
-          "description": "Your place is saved automatically and restored the next time you open the book."
+          "description": "Your place is saved automatically. Reopening Books resumes the book and page you left on, or the shelf if you closed it."
         },
         "fonts": {
           "title": "Fonts & Layout",
-          "description": "Pick a reading font (including EB Garamond), text size, and single or double columns from the View menu."
+          "description": "Pick a reading font (including Garamond), text size, and single or double columns from the View menu."
         },
         "darkMode": {
           "title": "Dark Mode",
@@ -4723,7 +4879,7 @@
       "emptyForFilter": "No requests match this filter.",
       "pending": "···",
       "filterRequests": "Filter requests",
-      "filterAll": "All requests",
+      "filterAll": "All Requests",
       "filters": {
         "error": "Failed",
         "warn": "Warnings",
@@ -4819,7 +4975,7 @@
     "scrollToBottom": "Scroll to bottom",
     "noLogsYet": "No logs captured yet.",
     "noLogsForFilter": "No logs match this filter.",
-    "filterAll": "All logs",
+    "filterAll": "All Logs",
     "filterOther": "Other",
     "filterByLogger": "Filter by logger",
     "toggleLabel": "Debug"
@@ -4834,7 +4990,8 @@
       "title": "Language",
       "description": "Select your preferred language for ryOS interface",
       "english": "English",
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "japanese": "日本語",
       "korean": "한국어",
       "french": "Français",

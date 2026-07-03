@@ -4,9 +4,10 @@ import { App } from "./App";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useLanguageStore } from "./stores/useLanguageStore";
-import { preloadIpodData } from "./stores/ipodPreload";
-import { initPrefetch } from "./utils/prefetch";
-import { initializeI18nForFirstPaint } from "./lib/i18n";
+import {
+  ensureCurrentLanguageResources,
+  initializeI18nForFirstPaint,
+} from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
 import { initializeAnalytics, track, SYSTEM_ANALYTICS } from "./utils/analytics";
 import {
@@ -67,6 +68,39 @@ try {
 // ============================================================================
 let isPreloadReloading = false;
 
+const RECOVERY_PROBE_TIMEOUT_MS = 5000;
+
+/**
+ * `navigator.onLine` can report true while the network is actually unusable
+ * (Wi-Fi without internet, captive portal, server down). Confirm the server
+ * is reachable before treating a chunk failure as a stale deploy — the
+ * recovery below deletes the Workbox precache and unregisters the service
+ * worker, which would permanently break offline use when run disconnected.
+ */
+const verifyServerReachable = async (): Promise<boolean> => {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(),
+      RECOVERY_PROBE_TIMEOUT_MS
+    );
+    try {
+      // Any response (even an error status) proves the server is reachable.
+      // The unique query param prevents the service worker's cached
+      // version.json from answering the probe while offline.
+      await fetch(`/version.json?_probe=${Date.now()}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      return true;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return false;
+  }
+};
+
 const handlePreloadError = (event: Event) => {
   console.warn("[ryOS] Chunk load failed:", event);
 
@@ -94,8 +128,6 @@ const handlePreloadError = (event: Event) => {
   }
 
   isPreloadReloading = true;
-  markStaleReload();
-  console.warn("[ryOS] Stale chunk detected — clearing caches and reloading...");
 
   const doNavigate = () => {
     const url = new URL(window.location.href);
@@ -115,15 +147,33 @@ const handlePreloadError = (event: Event) => {
     }
   };
 
-  if (typeof caches !== "undefined") {
-    caches
-      .keys()
-      .then((names) => Promise.all(names.map((n) => caches.delete(n))))
-      .then(() => unregisterAndNavigate())
-      .catch(() => unregisterAndNavigate());
-  } else {
-    unregisterAndNavigate();
-  }
+  const clearCachesAndRecover = () => {
+    markStaleReload();
+    console.warn(
+      "[ryOS] Stale chunk detected — clearing caches and reloading..."
+    );
+    if (typeof caches !== "undefined") {
+      caches
+        .keys()
+        .then((names) => Promise.all(names.map((n) => caches.delete(n))))
+        .then(() => unregisterAndNavigate())
+        .catch(() => unregisterAndNavigate());
+    } else {
+      unregisterAndNavigate();
+    }
+  };
+
+  void verifyServerReachable().then((reachable) => {
+    if (!reachable) {
+      // Effectively offline despite navigator.onLine — reloading can't help,
+      // and nuking caches/SW would break the app entirely until reconnect.
+      isPreloadReloading = false;
+      console.warn("[ryOS] Skipping reload - server unreachable (offline?)");
+      track(SYSTEM_ANALYTICS.OFFLINE_CHUNK_FAILURE, { category: "errors" });
+      return;
+    }
+    clearCachesAndRecover();
+  });
 };
 
 window.addEventListener("vite:preloadError", handlePreloadError);
@@ -184,8 +234,16 @@ const bootstrap = async () => {
   // the initial JS/CSS/i18n critical path.
   scheduleIdleWork(() => {
     bootstrapLog.debug("Running idle bootstrap work");
-    preloadIpodData();
-    initPrefetch();
+    void import("./stores/ipodPreload").then((module) =>
+      module.preloadIpodData()
+    );
+    void ensureCurrentLanguageResources();
+    if (import.meta.env.PROD) {
+      void import("./utils/pwaRegistration").then((module) =>
+        module.initPwaRegistration()
+      );
+    }
+    void import("./utils/prefetch").then((module) => module.initPrefetch());
   });
 };
 

@@ -4,26 +4,12 @@ import {
   getRealtimeWebSocketUrl,
 } from "@/utils/runtimeConfig";
 
-type FontResource = {
-  href: string;
-  type: string;
-  priority?: "low" | "high";
-};
-
 type FetchResource = {
   href: string;
   priority?: "low" | "high";
 };
 
 const STYLE_RESOURCES = ["/fonts/fonts.css"];
-
-const FONT_RESOURCES: FontResource[] = [
-  // NOTE: ChicagoKare-Regular and geneva-12 are intentionally omitted here —
-  // index.html already preloads them with high priority before this module
-  // runs, so re-declaring them would emit duplicate <link rel=preload> hints.
-  { href: "/fonts/fusion-pixel-12px-proportional-ja.woff2", type: "font/woff2" },
-  { href: "/fonts/Mondwest-Regular.woff2", type: "font/woff2" },
-];
 
 const FETCH_RESOURCES: FetchResource[] = [
   { href: "/data/filesystem.json", priority: "high" },
@@ -59,17 +45,6 @@ export function primeReactResources(): void {
       preinit(href, {
         as: "style",
         fetchPriority: "high",
-      })
-    )
-  );
-
-  FONT_RESOURCES.forEach((resource) =>
-    safely(() =>
-      preload(resource.href, {
-        as: "font",
-        type: resource.type,
-        crossOrigin: "anonymous",
-        fetchPriority: resource.priority ?? "auto",
       })
     )
   );

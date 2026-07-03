@@ -1,7 +1,12 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { motion } from "motion/react";
 import type { BooksReaderSettings } from "@/stores/useBooksStore";
-import { resolveReadingPalette } from "../utils/booksReader";
+import { useThemeStore } from "@/stores/useThemeStore";
+import {
+  getReadingOverlayBackground,
+  resolveOsAccentBaseHex,
+  resolveReadingPalette,
+} from "../utils/booksReader";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
 import { ZOOM_DURATION, ZOOM_EASE } from "./BooksReaderPane";
@@ -37,7 +42,8 @@ export function BookCloseZoom({
   osIsDark,
   onDone,
 }: BookCloseZoomProps) {
-  const palette = resolveReadingPalette(settings.themeOverride, osIsDark);
+  const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
+  const palette = resolveReadingPalette(settings, osIsDark, accentBaseHex);
   const { info: coverInfo, loading: coverLoading } = useBookCover(
     entry.path,
     entry.modifiedAt
@@ -228,7 +234,7 @@ export function BookCloseZoom({
   return (
     <motion.div
       className="pointer-events-none absolute z-50 overflow-hidden"
-      style={{ backgroundColor: palette.background }}
+      style={{ backgroundColor: getReadingOverlayBackground(palette) }}
       initial={false}
       animate={animateVals}
       transition={
@@ -240,14 +246,24 @@ export function BookCloseZoom({
         if (ready) finish();
       }}
     >
-      <BookCover
-        title={entry.name}
-        fileName={entry.fileName}
-        info={coverInfo}
-        loading={coverLoading}
-        large
-        fit="contain"
-      />
+      {/* The overlay background matches the reading page color, so fading the
+          cover in dissolves the page into the cover as the zoom-out starts
+          (instead of the cover popping in abruptly). */}
+      <motion.div
+        className="h-full w-full"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        <BookCover
+          title={entry.name}
+          fileName={entry.fileName}
+          info={coverInfo}
+          loading={coverLoading}
+          large
+          fit="contain"
+        />
+      </motion.div>
     </motion.div>
   );
 }

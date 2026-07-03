@@ -5,14 +5,20 @@ import {
   type MenuDescriptor,
 } from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   BOOK_FONTS,
   type BookFontOption,
 } from "../utils/booksReader";
 import {
-  BOOKS_FONT_SIZE_MAX,
-  BOOKS_FONT_SIZE_MIN,
-  BOOKS_FONT_SIZE_STEP,
+  isChineseBookLanguage,
+  isCjkBookLanguage,
+} from "../utils/booksLanguage";
+import { buildBooksMenuLayout } from "../utils/booksMenuLayout";
+import {
+  BOOKS_SPEECH_RATE_OPTIONS,
+  normalizeBooksSpeechRate,
+  type BookBookmark,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import type { BooksNavigationState } from "./BooksReaderPane";
@@ -23,13 +29,23 @@ interface BooksMenuBarProps {
   onShowAbout: () => void;
   onImport: () => void;
   onBackToShelf: () => void;
+  onShowCustomize: () => void;
   isReading: boolean;
+  /** EPUB package language; gates CJK-only reader options. */
+  bookLanguage?: string | null;
   settings: BooksReaderSettings;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
   navigationState: BooksNavigationState;
   onGoToPreviousPage: () => void;
   onGoToNextPage: () => void;
   onGoToChapter: (href: string) => void;
+  isSpeaking: boolean;
+  onStartSpeaking: () => void;
+  onStopSpeaking: () => void;
+  bookmarks: BookBookmark[];
+  isCurrentPageBookmarked: boolean;
+  onToggleBookmark: () => void;
+  onGoToBookmark: (cfi: string) => void;
 }
 
 export function BooksMenuBar({
@@ -38,15 +54,25 @@ export function BooksMenuBar({
   onShowAbout,
   onImport,
   onBackToShelf,
+  onShowCustomize,
   isReading,
+  bookLanguage = null,
   settings,
   updateSettings,
   navigationState,
   onGoToPreviousPage,
   onGoToNextPage,
   onGoToChapter,
+  isSpeaking,
+  onStartSpeaking,
+  onStopSpeaking,
+  bookmarks,
+  isCurrentPageBookmarked,
+  onToggleBookmark,
+  onGoToBookmark,
 }: BooksMenuBarProps) {
   const { t } = useTranslation();
+  const isCompactMenu = useMediaQuery("(max-width: 768px)");
   const {
     isShareDialogOpen,
     setIsShareDialogOpen,
@@ -55,14 +81,6 @@ export function BooksMenuBar({
     appId,
     appName,
   } = useAppMenuBarChrome("books");
-
-  const changeFontSize = (delta: number) => {
-    const next = Math.min(
-      BOOKS_FONT_SIZE_MAX,
-      Math.max(BOOKS_FONT_SIZE_MIN, settings.fontSizePct + delta)
-    );
-    updateSettings({ fontSizePct: next });
-  };
 
   const fileMenu: MenuDescriptor = {
       label: t("common.menu.file"),
@@ -88,6 +106,12 @@ export function BooksMenuBar({
       ],
     };
 
+  // Vertical writing mode is CJK-only; simp/trad conversion is Chinese-only.
+  const supportsVerticalText =
+    isReading && isCjkBookLanguage(bookLanguage);
+  const supportsChineseScript =
+    isReading && isChineseBookLanguage(bookLanguage);
+
   const viewMenu: MenuDescriptor = {
       label: t("common.menu.view"),
       items: [
@@ -100,57 +124,74 @@ export function BooksMenuBar({
               value: settings.fontId,
               onValueChange: (value) => updateSettings({ fontId: value }),
               options: BOOK_FONTS.map((font: BookFontOption) => ({
-                label: font.label,
+                label: t(`apps.books.fonts.${font.id}`),
                 value: font.id,
               })),
             },
           ],
         },
-        {
-          type: "submenu",
-          label: t("apps.books.menu.textSize"),
-          items: [
-            {
-              type: "action",
-              label: t("apps.books.menu.textSizeIncrease"),
-              onClick: () => changeFontSize(BOOKS_FONT_SIZE_STEP),
-              shortcut: "+",
-              disabled: settings.fontSizePct >= BOOKS_FONT_SIZE_MAX,
-            },
-            {
-              type: "action",
-              label: t("apps.books.menu.textSizeDecrease"),
-              onClick: () => changeFontSize(-BOOKS_FONT_SIZE_STEP),
-              shortcut: "−",
-              disabled: settings.fontSizePct <= BOOKS_FONT_SIZE_MIN,
-            },
-            {
-              type: "action",
-              label: t("apps.books.menu.textSizeReset"),
-              onClick: () => updateSettings({ fontSizePct: 100 }),
-              disabled: settings.fontSizePct === 100,
-            },
-          ],
-        },
-        {
-          type: "submenu",
-          label: t("apps.books.menu.columns"),
-          items: [
-            {
-              type: "radioGroup",
-              value: settings.columnMode,
-              onValueChange: (value) =>
-                updateSettings({
-                  columnMode: value as BooksReaderSettings["columnMode"],
-                }),
-              options: [
-                { label: t("apps.books.columns.auto"), value: "auto" },
-                { label: t("apps.books.columns.single"), value: "single" },
-                { label: t("apps.books.columns.double"), value: "double" },
-              ],
-            },
-          ],
-        },
+        ...(supportsVerticalText
+          ? ([
+              {
+                type: "submenu",
+                label: t("apps.books.menu.textLayout"),
+                items: [
+                  {
+                    type: "radioGroup",
+                    value: settings.textLayout,
+                    onValueChange: (value) => {
+                      if (value === "book" || value === "vertical") {
+                        updateSettings({ textLayout: value });
+                      }
+                    },
+                    options: [
+                      {
+                        label: t("apps.books.textLayout.book"),
+                        value: "book",
+                      },
+                      {
+                        label: t("apps.books.textLayout.vertical"),
+                        value: "vertical",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ] as MenuDescriptor["items"])
+          : []),
+        ...(supportsChineseScript
+          ? ([
+              {
+                type: "submenu",
+                label: t("apps.books.menu.chineseScript"),
+                items: [
+                  {
+                    type: "radioGroup",
+                    value: settings.chineseScript,
+                    onValueChange: (value) =>
+                      updateSettings({
+                        chineseScript:
+                          value as BooksReaderSettings["chineseScript"],
+                      }),
+                    options: [
+                      {
+                        label: t("apps.books.chineseScript.original"),
+                        value: "original",
+                      },
+                      {
+                        label: t("apps.books.chineseScript.simplified"),
+                        value: "simplified",
+                      },
+                      {
+                        label: t("apps.books.chineseScript.traditional"),
+                        value: "traditional",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ] as MenuDescriptor["items"])
+          : []),
         {
           type: "submenu",
           label: t("apps.books.menu.theme"),
@@ -165,18 +206,91 @@ export function BooksMenuBar({
                 }),
               options: [
                 { label: t("apps.books.theme.auto"), value: "auto" },
+                { label: t("apps.books.theme.accent"), value: "accent" },
                 { label: t("apps.books.theme.light"), value: "light" },
                 { label: t("apps.books.theme.sepia"), value: "sepia" },
                 { label: t("apps.books.theme.dark"), value: "dark" },
+                { label: t("apps.books.theme.custom"), value: "custom" },
               ],
             },
           ],
+        },
+        { type: "separator" },
+        {
+          type: "action",
+          label: t("apps.books.menu.customizeTheme"),
+          onClick: onShowCustomize,
         },
       ],
     };
 
   const chapters = navigationState.chapters;
   const canNavigateReader = isReading && navigationState.isReady;
+
+  // Reading-order list for the Bookmarks submenu (unknown positions last).
+  const sortedBookmarks = [...bookmarks].sort((a, b) => {
+    const pa = typeof a.percentage === "number" ? a.percentage : 2;
+    const pb = typeof b.percentage === "number" ? b.percentage : 2;
+    if (pa !== pb) return pa - pb;
+    return a.createdAt - b.createdAt;
+  });
+
+  const bookmarkLabel = (bookmark: BookBookmark): string => {
+    const pct =
+      typeof bookmark.percentage === "number"
+        ? `${Math.round(bookmark.percentage * 100)}%`
+        : null;
+    const snippet = bookmark.text?.trim();
+    if (snippet) return pct ? `${pct} · ${snippet}` : snippet;
+    if (pct) return pct;
+    return new Date(bookmark.createdAt).toLocaleDateString();
+  };
+
+  const speechRateLabels: Record<string, string> = {
+    "0.8": t("apps.books.speechRate.slow"),
+    "1": t("apps.books.speechRate.normal"),
+    "1.2": t("apps.books.speechRate.fast"),
+    "1.5": t("apps.books.speechRate.veryFast"),
+  };
+  const speechMenu: MenuDescriptor = {
+    label: t("apps.books.menu.speech"),
+    items: [
+      {
+        type: "action",
+        label: t("apps.books.menu.startSpeaking"),
+        onClick: onStartSpeaking,
+        disabled: !canNavigateReader || isSpeaking,
+      },
+      {
+        type: "action",
+        label: t("apps.books.menu.stopSpeaking"),
+        onClick: onStopSpeaking,
+        disabled: !isSpeaking,
+      },
+      { type: "separator" },
+      {
+        type: "submenu",
+        label: t("apps.books.menu.speechRate"),
+        items: [
+          {
+            type: "radioGroup",
+            value: String(normalizeBooksSpeechRate(settings.speechRate)),
+            onValueChange: (value) => {
+              const rate = Number(value);
+              if (Number.isFinite(rate) && rate > 0) {
+                updateSettings({ speechRate: rate });
+              }
+            },
+            options: BOOKS_SPEECH_RATE_OPTIONS.map((rate) => ({
+              label: speechRateLabels[String(rate)] ?? `${rate}×`,
+              value: String(rate),
+            })),
+          },
+        ],
+      },
+    ],
+  };
+
   const goMenu: MenuDescriptor = {
     label: t("common.menu.go"),
     items: [
@@ -229,8 +343,42 @@ export function BooksMenuBar({
           },
         ],
       },
+      { type: "separator" },
+      {
+        type: "action",
+        label: isCurrentPageBookmarked
+          ? t("apps.books.bookmarks.remove")
+          : t("apps.books.bookmarks.add"),
+        onClick: onToggleBookmark,
+        disabled: !canNavigateReader,
+      },
+      {
+        type: "submenu",
+        label: t("apps.books.bookmarks.title"),
+        disabled: !canNavigateReader || sortedBookmarks.length === 0,
+        className:
+          "data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
+        contentClassName:
+          "max-w-[260px] sm:max-w-[320px] max-h-[400px] overflow-y-auto",
+        items: sortedBookmarks.map((bookmark) => ({
+          type: "action",
+          label: (
+            <span className="truncate min-w-0">{bookmarkLabel(bookmark)}</span>
+          ),
+          onClick: () => onGoToBookmark(bookmark.cfi),
+          className:
+            "text-md h-6 pr-3 truncate max-w-[260px] sm:max-w-[320px]",
+        })),
+      },
     ],
   };
+  const menus = buildBooksMenuLayout({
+    fileMenu,
+    viewMenu,
+    speechMenu,
+    goMenu,
+    isCompact: isCompactMenu,
+  });
 
   return (
     <AppMenuBarShell
@@ -245,7 +393,7 @@ export function BooksMenuBar({
       onShowHelp={onShowHelp}
       onShowAbout={onShowAbout}
     >
-      <AppMenuBarMenus menus={[fileMenu, viewMenu, goMenu]} />
+      <AppMenuBarMenus menus={menus} />
     </AppMenuBarShell>
   );
 }

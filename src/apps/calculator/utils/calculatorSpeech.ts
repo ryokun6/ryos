@@ -1,7 +1,9 @@
 import {
-  pickSpeechVoiceForLanguage,
+  getBrowserSpeechSynthesis,
+  resolveSpeechVoice,
   ryOSLocaleToSpeechLanguage,
-} from "./calculatorSpeechLocale";
+} from "@/utils/browserSpeech";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 
 const KEY_TRANSLATION_KEYS: Record<string, string> = {
   "+": "apps.calculator.speech.keys.plus",
@@ -166,13 +168,8 @@ let queueState = createCalculatorSpeechQueue();
 let defaultRate = 1;
 let voicesListenerAttached = false;
 
-function getSynth(): SpeechSynthesis | null {
-  if (typeof window === "undefined") return null;
-  return window.speechSynthesis ?? null;
-}
-
 function getAdapter(): SpeechSynthAdapter | null {
-  const synth = getSynth();
+  const synth = getBrowserSpeechSynthesis();
   if (!synth) return null;
   return {
     getVoices: () => synth.getVoices(),
@@ -221,7 +218,11 @@ function drainSpeechQueue(adapter: SpeechSynthAdapter) {
   utterance.lang = lang;
   utterance.rate = rate;
 
-  const voice = pickSpeechVoiceForLanguage(adapter.getVoices(), lang);
+  const voice = resolveSpeechVoice(
+    adapter.getVoices(),
+    lang,
+    useAudioSettingsStore.getState().browserTtsVoiceURI
+  );
   if (voice) {
     utterance.voice = voice;
   }

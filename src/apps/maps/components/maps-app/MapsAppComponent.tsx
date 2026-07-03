@@ -1,6 +1,9 @@
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
 import { cn } from "@/lib/utils";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 import type { AppProps } from "@/apps/base/types";
 import { appMetadata } from "../..";
 import { MapsMenuBar } from "../MapsMenuBar";
@@ -62,6 +65,8 @@ export function MapsAppComponent({
     canUseMap,
     overlayMessage,
   } = useMapsAppController({ isWindowOpen });
+
+  const isOffline = useOffline();
 
   const menuBar = (
     <MapsMenuBar
@@ -129,7 +134,7 @@ export function MapsAppComponent({
             })}
           />
 
-          {overlayMessage && (
+          {!isOffline && overlayMessage && (
             <MapsMapStatusOverlay
               isDarkMode={isDarkMode}
               title={t("apps.maps.title", { defaultValue: "Maps" })}
@@ -140,6 +145,15 @@ export function MapsAppComponent({
                   "The server signs short-lived MapKit tokens automatically once credentials are configured.",
               })}
             />
+          )}
+
+          {isOffline && (
+            <div className="absolute inset-0 z-30 bg-os-window-bg/90 backdrop-blur-sm">
+              <OfflineEmptyState
+                appName={getTranslatedAppName("maps")}
+                appearance={isDarkMode ? "dark" : "light"}
+              />
+            </div>
           )}
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex max-h-[min(85%,100%)] min-h-0 w-full flex-col items-start justify-end gap-1.5 p-1.5">

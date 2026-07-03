@@ -1,12 +1,15 @@
 import type { ReactNode, RefObject } from "react";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
 import type {
   ErrorResponse,
   NavigationMode,
 } from "@/stores/useInternetExplorerStore";
 import { ErrorPage } from "./ErrorPage";
 import { isIeLiveBrowserAvailable } from "@/utils/runtimeConfig";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 export interface InternetExplorerContentPaneProps {
   errorDetails: ErrorResponse | null;
@@ -65,6 +68,8 @@ export function InternetExplorerContentPane({
   bringInstanceToForeground,
   instanceId,
 }: InternetExplorerContentPaneProps) {
+  const isOffline = useOffline();
+
   const renderErrorPage = () => {
     if (!errorDetails) return null;
 
@@ -182,6 +187,17 @@ export function InternetExplorerContentPane({
             onLoad={handleIframeLoad}
             onError={handleIframeError}
           />
+        )}
+
+        {/* Offline empty state — covers the stale page / error page while
+            offline (loading bar sits at z-40, the background-window click
+            shield at z-50). */}
+        {isOffline && (
+          <div className="absolute inset-0 z-[45] bg-white">
+            <OfflineEmptyState
+              appName={getTranslatedAppName("internet-explorer")}
+            />
+          </div>
         )}
 
         {!isForeground && (

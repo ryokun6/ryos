@@ -192,6 +192,7 @@ export const useLaunchApp = () => {
         options?.multiWindow ||
         appId === "finder" ||
         appId === "textedit" ||
+        appId === "preview" ||
         appId === "applet-viewer";
 
       // Use the new instance-based launch system

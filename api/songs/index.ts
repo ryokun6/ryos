@@ -33,6 +33,7 @@ import {
   type SongMetadata,
   type SongContent,
   type GetSongOptions,
+  type LyricsContent,
   type LyricsSource,
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
@@ -83,10 +84,30 @@ const FuriganaSegmentSchema = z.object({
   reading: z.string().optional(),
 });
 
+const ParsedLyricLineSchema = z.object({
+  startTimeMs: z.string(),
+  words: z.string(),
+  wordTimings: z
+    .array(
+      z.object({
+        text: z.string(),
+        startTimeMs: z.number(),
+        durationMs: z.number(),
+      })
+    )
+    .optional(),
+});
+
 // Lyrics content schema (cover is now in metadata, but accept it here for backwards compatibility during import)
 const LyricsContentSchema = z.object({
   lrc: z.string().optional(),
   krc: z.string().optional(),
+  parsedLinesByLanguage: z
+    .object({
+      "zh-TW": z.array(ParsedLyricLineSchema).optional(),
+      "zh-CN": z.array(ParsedLyricLineSchema).optional(),
+    })
+    .optional(),
   cover: z.string().optional(), // Accepted during import but stored in metadata
 });
 
@@ -348,7 +369,9 @@ export default apiHandler<Record<string, unknown>>(
 
           // Handle lyrics - may be compressed string or raw object
           // Extract cover from lyrics (old format) to put in metadata (new format)
-          const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
+          const lyricsValue = getFieldValue<
+            Partial<LyricsContent> & { cover?: string }
+          >(songData.lyrics);
           
           // Cover: prefer from lyrics data (backwards compat), otherwise from existing, otherwise fetch later
           const cover = songData.cover || lyricsValue?.cover || existing?.cover;
@@ -382,6 +405,7 @@ export default apiHandler<Record<string, unknown>>(
             content.lyrics = {
               lrc: lyricsValue.lrc,
               krc: lyricsValue.krc,
+              parsedLinesByLanguage: lyricsValue.parsedLinesByLanguage,
             };
           }
           

@@ -75,7 +75,9 @@ const {
   ENDED_FANOUT_DEDUP_WINDOW_MS,
   getMusicKitEventItemId,
   shouldSuppressPlaybackStateFanoutWhileQueueLoading,
+  shouldConfirmPlaybackAfterQueueLoad,
   isStaleQueueLoad,
+  isNewMusicKitInstance,
   isLikelyMusicKitUnhandledRejection,
   isMusicKitPlaying,
   isMusicKitRedundantPlayError,
@@ -101,8 +103,19 @@ const {
   APPLE_MUSIC_STREAMING_BITRATE_KBPS,
   buildMusicKitConfigureOptions,
 } = await import("../src/hooks/useMusicKit");
+const { shouldEnableAppleMusicIntegration } = await import(
+  "../src/apps/ipod/utils/appleMusicActivation"
+);
 
 describe("MusicKit configuration", () => {
+  test("stays disabled while the YouTube library is active", () => {
+    expect(shouldEnableAppleMusicIntegration("youtube")).toBe(false);
+  });
+
+  test("enables only after switching to the Apple Music library", () => {
+    expect(shouldEnableAppleMusicIntegration("appleMusic")).toBe(true);
+  });
+
   test("requests 256kbps Apple Music streaming quality", () => {
     const app = { name: "ryOS iPod", build: "1.0.0" };
 
@@ -594,6 +607,23 @@ describe("useIpodStore Apple Music slice", () => {
     expect(sanitized.ipodMenuBreadcrumb).toEqual([
       { title: "Songs", selectedIndex: 3 },
     ]);
+  });
+
+  test("rehydrate sanitizer adds the automatic Chinese lyric script preference", () => {
+    const sanitized = sanitizePersistedIpodStateForRehydrate({
+      romanization: {
+        enabled: false,
+        chinese: true,
+      },
+    });
+
+    expect(sanitized.romanization).toMatchObject({
+      enabled: false,
+      chinese: true,
+      chineseLyricsLanguage: "auto",
+      japaneseFurigana: true,
+      soramamiTargetLanguage: "zh-TW",
+    });
   });
 
   test("appleMusicNextTrack walks the library forward without touching the YouTube slice", () => {
@@ -1444,6 +1474,51 @@ describe("AppleMusicPlayerBridge queue-load playback-state fan-out", () => {
   });
 });
 
+describe("AppleMusicPlayerBridge post-queue playback reconciliation", () => {
+  test("confirms playback when the current queue reached playing while events were suppressed", () => {
+    expect(
+      shouldConfirmPlaybackAfterQueueLoad({
+        loadIsStale: false,
+        queuedTrackId: "am:current",
+        expectedTrackId: "am:current",
+        playbackState: MUSICKIT_PLAYBACK_STATE_PLAYING,
+      })
+    ).toBe(true);
+  });
+
+  test("does not confirm paused or transitional provider states", () => {
+    for (const playbackState of [0, 1, 3, 4, 6, 8, undefined]) {
+      expect(
+        shouldConfirmPlaybackAfterQueueLoad({
+          loadIsStale: false,
+          queuedTrackId: "am:current",
+          expectedTrackId: "am:current",
+          playbackState,
+        })
+      ).toBe(false);
+    }
+  });
+
+  test("does not confirm a stale or replaced queue", () => {
+    expect(
+      shouldConfirmPlaybackAfterQueueLoad({
+        loadIsStale: true,
+        queuedTrackId: "am:current",
+        expectedTrackId: "am:current",
+        playbackState: MUSICKIT_PLAYBACK_STATE_PLAYING,
+      })
+    ).toBe(false);
+    expect(
+      shouldConfirmPlaybackAfterQueueLoad({
+        loadIsStale: false,
+        queuedTrackId: "am:previous",
+        expectedTrackId: "am:current",
+        playbackState: MUSICKIT_PLAYBACK_STATE_PLAYING,
+      })
+    ).toBe(false);
+  });
+});
+
 describe("AppleMusicPlayerBridge queue-load generation guard", () => {
   test("stale when cancelled even if generation still matches", () => {
     expect(isStaleQueueLoad(3, 3, true)).toBe(true);
@@ -1455,6 +1530,18 @@ describe("AppleMusicPlayerBridge queue-load generation guard", () => {
 
   test("fresh when generation matches and effect is still active", () => {
     expect(isStaleQueueLoad(3, 3, false)).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge ready notification dedup", () => {
+  test("does not restart the queue when ready replays the captured singleton", () => {
+    const instance = {};
+    expect(isNewMusicKitInstance(instance, instance)).toBe(false);
+  });
+
+  test("refreshes the queue when a different singleton becomes ready", () => {
+    expect(isNewMusicKitInstance({}, {})).toBe(true);
+    expect(isNewMusicKitInstance(null, {})).toBe(true);
   });
 });
 

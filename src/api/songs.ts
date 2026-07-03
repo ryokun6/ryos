@@ -1,5 +1,6 @@
 import { apiRequest, apiRequestRaw, type ApiRequestOptions } from "@/api/core";
 import { createClientLogger } from "@/utils/logger";
+import type { ChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 
 const lyricsApiLog = createClientLogger("LyricsApi");
 
@@ -74,6 +75,7 @@ export interface FetchSongLyricsParams {
   title?: string;
   artist?: string;
   translateTo?: string;
+  lyricsLanguage?: ChineseLyricsLanguage;
   includeFurigana?: boolean;
   includeSoramimi?: boolean;
   soramimiTargetLanguage?: "zh-TW" | "en";
@@ -143,12 +145,19 @@ export async function fetchSongsVersion(
 
 export async function getSongById<TSong = Record<string, unknown>>(
   songId: string,
-  options: { include?: string; signal?: AbortSignal } = {}
+  options: {
+    include?: string;
+    lyricsLanguage?: ChineseLyricsLanguage;
+    signal?: AbortSignal;
+  } = {}
 ): Promise<TSong> {
   return apiRequest<TSong>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "GET",
-    query: { include: options.include || "metadata" },
+    query: {
+      include: options.include || "metadata",
+      lyricsLanguage: options.lyricsLanguage,
+    },
     signal: options.signal,
   });
 }
@@ -250,6 +259,7 @@ export async function fetchSongLyrics(
     hasArtist: Boolean(body.artist),
     hasLyricsSource: Boolean(body.lyricsSource),
     translateTo: body.translateTo,
+    lyricsLanguage: body.lyricsLanguage,
     includeFurigana: Boolean(body.includeFurigana),
     includeSoramimi: Boolean(body.includeSoramimi),
     soramimiTargetLanguage: body.soramimiTargetLanguage,

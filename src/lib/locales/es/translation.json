@@ -590,6 +590,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Añadir marcador",
+        "remove": "Eliminar marcador",
+        "title": "Marcadores"
+      },
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "Automático",
         "double": "Doble",
@@ -600,7 +610,28 @@
         "moveToBottom": "Mover al final",
         "moveToTop": "Mover al principio"
       },
+      "customize": {
+        "background": "Fondo",
+        "chinese": "Chino",
+        "colors": "Colores",
+        "direction": "Dirección",
+        "lineSpacing": "Interlineado",
+        "margins": "Márgenes",
+        "spacing": "Espaciado",
+        "textColor": "Texto",
+        "title": "Personalizar",
+        "transparent": "Transparente"
+      },
       "description": "Leer libros EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monoespaciada",
+        "original": "Original",
+        "rounded": "Redondeada",
+        "sans": "Sans Serif",
+        "serif": "Serif"
+      },
       "help": {
         "bookshelf": {
           "description": "Los EPUB importados se alinean en la estantería de madera. Haz clic en un libro para abrirlo y empezar a leer.",
@@ -611,7 +642,7 @@
           "title": "Modo oscuro"
         },
         "fonts": {
-          "description": "Elige una tipografía de lectura (incluida EB Garamond), el tamaño del texto y una o dos columnas en el menú Visualización.",
+          "description": "Elige una tipografía de lectura (incluida Garamond), el tamaño del texto y una o dos columnas en el menú Visualización.",
           "title": "Tipografía y diseño"
         },
         "import": {
@@ -635,21 +666,42 @@
         "backToShelf": "Volver a la estantería",
         "booksHelp": "Ayuda de Libros",
         "chapters": "Capítulos",
+        "chineseScript": "Escritura china",
         "columns": "Columnas",
+        "customizeTheme": "Personalizar…",
         "font": "Tipo de letra",
         "import": "Importar EPUB…",
         "nextPage": "Página siguiente",
         "previousPage": "Página anterior",
+        "speech": "Habla",
+        "speechRate": "Velocidad de habla",
+        "startSpeaking": "Iniciar lectura",
+        "stopSpeaking": "Detener lectura",
+        "textLayout": "Dirección del texto",
         "textSize": "Tamaño del texto",
-        "textSizeDecrease": "Más pequeño",
-        "textSizeIncrease": "Más grande",
-        "textSizeReset": "Tamaño predeterminado",
         "theme": "Tema"
       },
       "name": "Libros",
       "reader": {
         "backToShelf": "Estantería",
         "error": "No se pudo abrir este libro."
+      },
+      "selection": {
+        "askRyo": "Preguntar a Ryo",
+        "askRyoFailed": "No se pudo obtener una respuesta. Inténtalo más tarde.",
+        "askRyoQuestion": "¿qué significa este pasaje?",
+        "color": {
+          "blue": "Resaltado azul",
+          "green": "Resaltado verde",
+          "pink": "Resaltado rosa",
+          "purple": "Resaltado púrpura",
+          "yellow": "Resaltado amarillo"
+        },
+        "controls": "Controles de selección",
+        "copied": "Copiado al portapapeles",
+        "copy": "Copiar",
+        "copyFailed": "No se ha podido copiar",
+        "removeHighlight": "Eliminar resaltado"
       },
       "shelf": {
         "emptyHint": "Haz clic en Añadir libro para importar un EPUB.",
@@ -660,10 +712,36 @@
         "listView": "Visualización como lista",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "Controles de lectura en voz alta",
+        "pause": "Pausa",
+        "resume": "Reanudar",
+        "rewind": "Retroceder",
+        "skip": "Omitir",
+        "stop": "Detener"
+      },
+      "speechRate": {
+        "fast": "Rápida",
+        "normal": "Normal",
+        "slow": "Lenta",
+        "veryFast": "Muy rápida"
+      },
+      "textLayout": {
+        "book": "Predeterminado del libro",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
       "theme": {
+        "accent": "Acento",
         "auto": "Automático",
+        "black": "Negro",
+        "custom": "Personalizado",
         "dark": "Oscuro",
+        "gray": "Gris",
+        "green": "Verde",
         "light": "Claro",
+        "night": "Noche",
+        "paper": "Papel",
         "sepia": "Sepia"
       },
       "title": "Libros",
@@ -1627,6 +1705,9 @@
       "backupRestoreDescription": "Realiza una copia de seguridad o restaura todos los ajustes y archivos de la aplicación",
       "bootScreen": "Pantalla de arranque",
       "bootScreenDescription": "Probar la animación de la pantalla de arranque",
+      "browserTtsVoice": "Voz de texto a voz",
+      "browserTtsVoiceAutomatic": "Automática",
+      "browserTtsVoiceDescription": "Voz del sistema para la lectura en voz alta de Libros y la Calculadora",
       "changePassword": "Cambiar contraseña",
       "changePasswordButton": "Cambiar",
       "chatSynth": "Chat Synth",
@@ -2265,6 +2346,7 @@
         "noAirDropUsersAvailable": "No hay usuarios cercanos",
         "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "openWith": "Abrir con",
         "putBack": "Volver a colocar",
         "rename": "Cambiar nombre…",
         "searchingForAirDropUsers": "Buscando usuarios cercanos…",
@@ -2304,8 +2386,10 @@
         "internetShortcut": "Acceso directo a Internet",
         "jpegImage": "Imagen JPEG",
         "mp3Audio": "Audio MP3",
+        "pdfDocument": "Documento PDF",
         "pngImage": "Imagen PNG",
         "quicktimeMovie": "Película QuickTime",
+        "svgImage": "Imagen SVG",
         "unknown": "Desconocido",
         "webpImage": "Imagen WebP"
       },
@@ -2928,7 +3012,7 @@
         "playlistTrackCount_many": "{{count}} canciones",
         "playlistTrackCount_one": "{{count}} canción",
         "playlistTrackCount_other": "{{count}} canciones",
-        "playlists": "Listas de reproducción",
+        "playlists": "Playlists",
         "radio": "Radio",
         "recentlyAdded": "Añadido recientemente",
         "repeat": "Repetir",
@@ -3686,6 +3770,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "Ver imágenes, PDF y documentos",
+      "empty": {
+        "hint": "Selecciona un archivo o arrástralo aquí",
+        "title": "Abrir un documento"
+      },
+      "help": {
+        "images": {
+          "description": "Abre formatos de imagen comunes sin cambiar el archivo original",
+          "title": "Previsualizar imágenes"
+        },
+        "openFiles": {
+          "description": "Usa Archivo > Abrir para previsualizar un archivo de tu dispositivo",
+          "title": "Abrir archivos"
+        },
+        "openWith": {
+          "description": "Envía archivos editables a Paint, TextEdit o al Visor de Applets",
+          "title": "Abrir con"
+        },
+        "pdfs": {
+          "description": "Visualiza documentos PDF con el visor de documentos integrado",
+          "title": "Leer PDF"
+        },
+        "safeHtml": {
+          "description": "Previsualiza documentos HTML en un entorno seguro sin ejecutar scripts",
+          "title": "HTML seguro"
+        },
+        "zoom": {
+          "description": "Pellizca o toca dos veces para hacer zoom en las imágenes, o ajústalas a la ventana",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Acerca de Vista Previa",
+        "actualSize": "Tamaño real",
+        "export": "Exportar…",
+        "fitToWindow": "Ajustar a la ventana",
+        "importFromDevice": "Importar desde el dispositivo…",
+        "open": "Abrir…",
+        "openWith": "Abrir con",
+        "previewHelp": "Ayuda de Vista Previa",
+        "saveAs": "Guardar como…",
+        "zoomIn": "Acercar",
+        "zoomOut": "Alejar"
+      },
+      "name": "Vista Previa",
+      "saveAs": {
+        "description": "Introduce un nombre para esta copia",
+        "title": "Guardar como"
+      },
+      "status": {
+        "loadFailed": "No se ha podido abrir este archivo.",
+        "loading": "Cargando vista previa…",
+        "notFound": "No se ha podido encontrar el contenido del archivo.",
+        "unsupported": "No hay ninguna vista previa disponible",
+        "unsupportedDescription": "Vista Previa no admite este formato de archivo."
+      },
+      "supportedFiles": "Documentos de Vista Previa",
+      "title": "Vista Previa",
+      "toasts": {
+        "exportFailed": "No se ha podido exportar el archivo",
+        "importFailed": "No se ha podido importar el archivo",
+        "imported": "Archivo importado",
+        "saveFailed": "No se ha podido guardar el archivo",
+        "saved": "Archivo guardado"
+      },
+      "untitled": "Sin título"
+    },
     "soundboard": {
       "description": "Reproducir efectos de sonido",
       "help": {
@@ -4083,7 +4235,7 @@
           "title": "Texto"
         }
       },
-      "speak": "Hablar",
+      "speak": "Leer",
       "stopSpeech": "Detener habla",
       "text": "Texto",
       "underline": "Subrayar",
@@ -4618,6 +4770,10 @@
       "volume": "Volumen"
     },
     "noResults": "Sin resultados",
+    "offline": {
+      "appRequiresInternet": "{{appName}} requiere una conexión a internet.",
+      "title": "Sin conexión"
+    },
     "startMenu": {
       "aboutThisComputer": "Acerca de Este Equipo",
       "run": "Ejecutar…",
@@ -4797,7 +4953,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Selecciona tu idioma preferido para la interfaz de ryOS",
       "english": "Inglés",
       "french": "Français",

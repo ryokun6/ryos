@@ -14,7 +14,8 @@ export const TRANSLATION_LANGUAGES: TranslationLanguage[] = [
   { labelKey: "apps.ipod.translationLanguages.auto", code: "auto" },
   { separator: true, code: null, label: "" }, // Separator
   { labelKey: "apps.ipod.translationLanguages.english", code: "en" },
-  { labelKey: "apps.ipod.translationLanguages.chinese", code: "zh-TW" },
+  { labelKey: "settings.language.chineseTraditional", code: "zh-TW" },
+  { labelKey: "settings.language.chineseSimplified", code: "zh-CN" },
   { labelKey: "apps.ipod.translationLanguages.japanese", code: "ja" },
   { labelKey: "apps.ipod.translationLanguages.korean", code: "ko" },
   { labelKey: "apps.ipod.translationLanguages.spanish", code: "es" },
@@ -27,7 +28,8 @@ export const TRANSLATION_LANGUAGES: TranslationLanguage[] = [
 
 // Translation badge mappings
 export const TRANSLATION_BADGES: Record<string, string> = {
-  "zh-TW": "中",
+  "zh-TW": "繁",
+  "zh-CN": "简",
   en: "En",
   ja: "日",
   ko: "한",

@@ -25,6 +25,7 @@ export interface BaseApp<TInitialData = unknown> {
     | "internet-explorer"
     | "chats"
     | "textedit"
+    | "preview"
     | "control-panels"
     | "minesweeper"
     | "finder"
@@ -109,6 +110,11 @@ export interface PaintInitialData {
   content?: Blob;
 }
 
+export interface PreviewInitialData {
+  path?: string;
+  content?: string | Blob | ArrayBuffer;
+}
+
 export interface VideosInitialData {
   videoId?: string;
 }
@@ -138,6 +144,7 @@ export type AnyApp =
   | BaseApp<IpodInitialData>
   | BaseApp<KaraokeInitialData>
   | BaseApp<PaintInitialData>
+  | BaseApp<PreviewInitialData>
   | BaseApp<VideosInitialData>
   | BaseApp<BooksInitialData>
   | BaseApp<AppletViewerInitialData>
@@ -152,6 +159,7 @@ export type AnyInitialData =
   | IpodInitialData
   | KaraokeInitialData
   | PaintInitialData
+  | PreviewInitialData
   | VideosInitialData
   | BooksInitialData
   | FinderInitialData

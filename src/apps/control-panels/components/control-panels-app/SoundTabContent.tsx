@@ -17,6 +17,8 @@ export type SoundTabContentProps = {
   handleUISoundsChange: (enabled: boolean) => void;
   speechEnabled: boolean;
   handleSpeechChange: (enabled: boolean) => void;
+  browserTtsVoiceURI: string | null;
+  handleBrowserTtsVoiceChange: (voiceURI: string | null) => void;
   terminalSoundsEnabled: boolean;
   setTerminalSoundsEnabled: (enabled: boolean) => void;
   synthPreset: string;

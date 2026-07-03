@@ -392,6 +392,9 @@ export function WindowFrame({
                     isBrushedMetal &&
                       isMacOSTheme &&
                       "window-material-brushedmetal",
+                    isNoTitlebar &&
+                      isMacOSTheme &&
+                      "window-material-notitlebar",
                     isGlassRegular && "window-material-glass"
                   )}
                   style={{

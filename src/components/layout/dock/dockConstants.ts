@@ -10,4 +10,9 @@ export const DOCK_MAGNIFY_DISTANCE = 140;
 export const DOCK_BASE_BUTTON_SIZE = 48;
 
 /** Apps that support multi-window from the dock. */
-export const DOCK_MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
+export const DOCK_MULTI_WINDOW_APPS: AppId[] = [
+  "textedit",
+  "finder",
+  "preview",
+  "applet-viewer",
+];

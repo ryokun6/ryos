@@ -9,8 +9,10 @@ import {
 } from "../src/apps/calculator/utils/calculatorSpeech";
 import {
   pickSpeechVoiceForLanguage,
+  resolveSpeechVoice,
   ryOSLocaleToSpeechLanguage,
-} from "../src/apps/calculator/utils/calculatorSpeechLocale";
+} from "../src/utils/browserSpeech";
+import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 
 const enSpeech: Record<string, string> = {
   "apps.calculator.speech.error": "Error",
@@ -36,6 +38,7 @@ function t(key: string, options?: Record<string, string>): string {
 describe("calculatorSpeechLocale", () => {
   test("ryOSLocaleToSpeechLanguage maps supported ryOS locales", () => {
     expect(ryOSLocaleToSpeechLanguage("en")).toBe("en-US");
+    expect(ryOSLocaleToSpeechLanguage("zh-CN")).toBe("zh-CN");
     expect(ryOSLocaleToSpeechLanguage("zh-TW")).toBe("zh-TW");
     expect(ryOSLocaleToSpeechLanguage("ja")).toBe("ja-JP");
     expect(ryOSLocaleToSpeechLanguage("pt")).toBe("pt-PT");
@@ -51,6 +54,36 @@ describe("calculatorSpeechLocale", () => {
     expect(pickSpeechVoiceForLanguage(voices, "en-US")?.name).toBe("English US");
     expect(pickSpeechVoiceForLanguage(voices, "en-AU")?.name).toBe("English US");
     expect(pickSpeechVoiceForLanguage(voices, "fr-CA")?.name).toBe("French");
+  });
+
+  test("resolveSpeechVoice honors the preferred voice when languages match", () => {
+    const voices = [
+      { voiceURI: "us", lang: "en-US", name: "English US" },
+      { voiceURI: "uk", lang: "en-GB", name: "English UK" },
+      { voiceURI: "fr", lang: "fr-FR", name: "French" },
+    ] as SpeechSynthesisVoice[];
+
+    expect(resolveSpeechVoice(voices, "en-US", "uk")?.name).toBe("English UK");
+  });
+
+  test("resolveSpeechVoice falls back to auto pick when preferred voice speaks another language", () => {
+    const voices = [
+      { voiceURI: "us", lang: "en-US", name: "English US" },
+      { voiceURI: "fr", lang: "fr-FR", name: "French" },
+    ] as SpeechSynthesisVoice[];
+
+    expect(resolveSpeechVoice(voices, "fr-FR", "us")?.name).toBe("French");
+  });
+
+  test("resolveSpeechVoice falls back to auto pick when preferred voice is unavailable", () => {
+    const voices = [
+      { voiceURI: "us", lang: "en-US", name: "English US" },
+    ] as SpeechSynthesisVoice[];
+
+    expect(resolveSpeechVoice(voices, "en-US", "missing")?.name).toBe(
+      "English US"
+    );
+    expect(resolveSpeechVoice(voices, "en-US", null)?.name).toBe("English US");
   });
 });
 
@@ -124,16 +157,18 @@ describe("calculatorSpeech synchronous playback (mobile Safari)", () => {
   const originalWindow = g.window;
   const originalUtterance = g.SpeechSynthesisUtterance;
   let spoken: FakeUtterance[];
+  let fakeVoices: SpeechSynthesisVoice[];
 
   beforeEach(() => {
     spoken = [];
+    fakeVoices = [];
     const synth = {
       speak: (u: FakeUtterance) => {
         spoken.push(u);
       },
       cancel: () => {},
       resume: () => {},
-      getVoices: () => [],
+      getVoices: () => fakeVoices,
       addEventListener: () => {},
       removeEventListener: () => {},
     };
@@ -147,6 +182,7 @@ describe("calculatorSpeech synchronous playback (mobile Safari)", () => {
     // Flush any pending utterance timeout timers via onend before teardown.
     spoken.forEach((u) => u.onend?.());
     __resetCalculatorSpeechStateForTests();
+    useAudioSettingsStore.setState({ browserTtsVoiceURI: null });
     g.window = originalWindow;
     g.SpeechSynthesisUtterance = originalUtterance;
     delete g.speechSynthesis;
@@ -165,6 +201,18 @@ describe("calculatorSpeech synchronous playback (mobile Safari)", () => {
     speakCalculatorText("は", { locale: "ja" });
     expect(spoken).toHaveLength(1);
     expect(spoken[0].lang).toBe("ja-JP");
+  });
+
+  test("uses the preferred browser TTS voice from audio settings", () => {
+    fakeVoices = [
+      { voiceURI: "us", lang: "en-US", name: "English US" },
+      { voiceURI: "uk", lang: "en-GB", name: "English UK" },
+    ] as SpeechSynthesisVoice[];
+    useAudioSettingsStore.setState({ browserTtsVoiceURI: "uk" });
+
+    speakCalculatorText("plus", { locale: "en" });
+    expect(spoken).toHaveLength(1);
+    expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe("English UK");
   });
 
   test("queues subsequent utterances until the previous one ends", () => {

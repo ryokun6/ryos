@@ -375,6 +375,7 @@
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
+    <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -508,7 +509,7 @@ interface SystemState {
   // User identity
   username?: string | null;
   userOS?: string; // e.g., "iOS", "Android", "macOS", "Windows", "Linux"
-  locale?: string; // e.g., "en", "zh-TW", "ja", "ko"
+  locale?: string; // e.g., "en", "zh-TW", "zh-CN", "ja", "ko"
   
   // User's local time (from browser)
   userLocalTime?: {
@@ -733,7 +734,7 @@ Generate an HTML applet for ryOS.
 <h4><code>settings</code></h4>
 Change system preferences.
 <pre><code>{
-  language?: "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru";
+  language?: "en" | "zh-TW" | "zh-CN" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru";
   theme?: "system7" | "macosx" | "xp" | "win98";
   masterVolume?: number;     // 0-1
   speechEnabled?: boolean;   // Text-to-speech

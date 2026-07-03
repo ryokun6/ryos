@@ -1,9 +1,12 @@
 import { motion, AnimatePresence } from "motion/react";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
 import { VideosSeekBar } from "./VideosSeekBar";
 import { LcdStatusDisplay } from "@/components/shared/lcd/LcdStatusDisplay";
 import { VideosWhiteNoiseOverlay } from "./VideosWhiteNoise";
 import { STATUS_FADE_TRANSITION } from "@/components/shared/lcd/lcdMotionConstants";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 import type { VideosAppController } from "./useVideosAppController";
 
 type VideosVideoPaneProps = {
@@ -45,7 +48,19 @@ export function VideosVideoPane({
     handleOverlayPointerCancel,
   } = c;
 
+  const isOffline = useOffline();
+
   if (videos.length === 0) {
+    if (isOffline) {
+      return (
+        <div className="w-full h-full bg-black">
+          <OfflineEmptyState
+            appName={getTranslatedAppName("videos")}
+            appearance="dark"
+          />
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-center h-full text-neutral-400 font-geneva-12 text-sm">
         <a
@@ -127,6 +142,16 @@ export function VideosVideoPane({
           onPointerCancel={handleOverlayPointerCancel}
         />
       </div>
+      {/* Offline empty state — covers the stalled stream (click layer z-20,
+          seek bar z-30) but stays below the LCD status message (z-40). */}
+      {isOffline && (
+        <div className="absolute inset-0 z-[35] bg-black">
+          <OfflineEmptyState
+            appName={getTranslatedAppName("videos")}
+            appearance="dark"
+          />
+        </div>
+      )}
       <div className="absolute bottom-0 left-0 right-0 z-30">
         <VideosSeekBar
           duration={duration}

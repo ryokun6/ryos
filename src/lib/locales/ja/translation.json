@@ -588,6 +588,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "ブックマークを追加",
+        "remove": "ブックマークを削除",
+        "title": "ブックマーク"
+      },
+      "chineseScript": {
+        "original": "オリジナル",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "自動",
         "double": "見開き",
@@ -598,7 +608,28 @@
         "moveToBottom": "最下部へ移動",
         "moveToTop": "最上部へ移動"
       },
+      "customize": {
+        "background": "背景",
+        "chinese": "中国語",
+        "colors": "カラー",
+        "direction": "方向",
+        "lineSpacing": "行間",
+        "margins": "余白",
+        "spacing": "間隔",
+        "textColor": "テキスト",
+        "title": "カスタマイズ",
+        "transparent": "透明"
+      },
       "description": "EPUB形式の本を読む",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "等幅",
+        "original": "オリジナル",
+        "rounded": "丸ゴシック",
+        "sans": "ゴシック",
+        "serif": "明朝"
+      },
       "help": {
         "bookshelf": {
           "description": "インポートされたEPUBが木製の棚に並んでいます。本をクリックして開き、読書を始めましょう。",
@@ -609,7 +640,7 @@
           "title": "ダークモード"
         },
         "fonts": {
-          "description": "「表示」メニューから、読書用のフォント（EB Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
+          "description": "「表示」メニューから、読書用のフォント（Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
           "title": "フォントとレイアウト"
         },
         "import": {
@@ -633,21 +664,42 @@
         "backToShelf": "本棚に戻る",
         "booksHelp": "Booksヘルプ",
         "chapters": "章",
+        "chineseScript": "中国語の字体",
         "columns": "段組み",
+        "customizeTheme": "カスタマイズ…",
         "font": "フォント",
         "import": "EPUBを読み込む…",
         "nextPage": "次のページ",
         "previousPage": "前のページ",
+        "speech": "スピーチ",
+        "speechRate": "読み上げ速度",
+        "startSpeaking": "読み上げを開始",
+        "stopSpeaking": "読み上げを停止",
+        "textLayout": "文字方向",
         "textSize": "テキストサイズ",
-        "textSizeDecrease": "小さく",
-        "textSizeIncrease": "大きく",
-        "textSizeReset": "デフォルトサイズ",
         "theme": "テーマ"
       },
       "name": "ブック",
       "reader": {
         "backToShelf": "本棚",
         "error": "この本を開けませんでした。"
+      },
+      "selection": {
+        "askRyo": "Ryoに尋ねる",
+        "askRyoFailed": "返答を取得できませんでした。しばらくしてからもう一度お試しください。",
+        "askRyoQuestion": "この一節はどういう意味ですか？",
+        "color": {
+          "blue": "ブルーのハイライト",
+          "green": "グリーンのハイライト",
+          "pink": "ピンクのハイライト",
+          "purple": "パープルのハイライト",
+          "yellow": "イエローのハイライト"
+        },
+        "controls": "選択範囲のコントロール",
+        "copied": "クリップボードにコピーしました",
+        "copy": "コピー",
+        "copyFailed": "コピーできませんでした",
+        "removeHighlight": "ハイライトを削除"
       },
       "shelf": {
         "emptyHint": "「本を追加」をクリックしてEPUBをインポートしてください。",
@@ -658,10 +710,36 @@
         "listView": "リスト表示",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "読み上げコントロール",
+        "pause": "一時停止",
+        "resume": "再開",
+        "rewind": "早戻し",
+        "skip": "スキップ",
+        "stop": "停止"
+      },
+      "speechRate": {
+        "fast": "速い",
+        "normal": "標準",
+        "slow": "遅い",
+        "veryFast": "非常に速い"
+      },
+      "textLayout": {
+        "book": "本の設定",
+        "horizontal": "横書き",
+        "vertical": "縦書き"
+      },
       "theme": {
+        "accent": "アクセント",
         "auto": "自動",
+        "black": "ブラック",
+        "custom": "カスタム",
         "dark": "ダーク",
+        "gray": "グレー",
+        "green": "グリーン",
         "light": "ライト",
+        "night": "ナイト",
+        "paper": "ペーパー",
         "sepia": "セピア"
       },
       "title": "ブック",
@@ -1625,6 +1703,9 @@
       "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します",
       "bootScreen": "起動画面",
       "bootScreenDescription": "起動画面のアニメーションをテストします",
+      "browserTtsVoice": "読み上げ音声",
+      "browserTtsVoiceAutomatic": "自動",
+      "browserTtsVoiceDescription": "「ブック」の読み上げと「計算機」用のシステム音声",
       "changePassword": "パスワードを変更",
       "changePasswordButton": "変更",
       "chatSynth": "チャットシンセ",
@@ -1790,7 +1871,7 @@
       "menu": {
         "aboutControlPanels": "コントロールパネルについて",
         "aboutControlPanelsForMacosX": "システム環境設定について",
-        "app": "App",
+        "app": "アプリ",
         "controlPanelsHelp": "コントロールパネルヘルプ",
         "controlPanelsHelpForMacosX": "システム環境設定ヘルプ"
       },
@@ -2263,6 +2344,7 @@
         "noAirDropUsersAvailable": "近くのユーザーはいません",
         "open": "開く",
         "openAirDrop": "AirDropを開く",
+        "openWith": "このアプリケーションで開く",
         "putBack": "元に戻す",
         "rename": "名前の変更…",
         "searchingForAirDropUsers": "近くのユーザーを検索中…",
@@ -2300,10 +2382,12 @@
         "gifImage": "GIFイメージ",
         "htmlApplet": "HTMLアプレット",
         "internetShortcut": "インターネットショートカット",
-        "jpegImage": "JPEGイメージ",
+        "jpegImage": "JPEG画像",
         "mp3Audio": "MP3オーディオ",
-        "pngImage": "PNGイメージ",
+        "pdfDocument": "PDF書類",
+        "pngImage": "PNG画像",
         "quicktimeMovie": "QuickTimeムービー",
+        "svgImage": "SVGイメージ",
         "unknown": "不明",
         "webpImage": "WebP 画像"
       },
@@ -2314,7 +2398,7 @@
         "desktop": "デスクトップ",
         "documents": "書類",
         "downloads": "ダウンロード",
-        "images": "イメージ",
+        "images": "画像",
         "music": "ミュージック",
         "sites": "サイト",
         "system": "システム",
@@ -3683,6 +3767,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "イメージ、PDF、および書類を表示します",
+      "empty": {
+        "hint": "ファイルを選択するか、ここにドロップしてください",
+        "title": "書類を開く"
+      },
+      "help": {
+        "images": {
+          "description": "元のファイルを変更せずに、一般的なイメージフォーマットを開きます",
+          "title": "イメージをプレビュー"
+        },
+        "openFiles": {
+          "description": "「ファイル」＞「開く」を使用して、デバイスからファイルをプレビューします",
+          "title": "ファイルを開く"
+        },
+        "openWith": {
+          "description": "編集可能なファイルをペイント、テキストエディット、またはAppletビューアに送信します",
+          "title": "このアプリケーションで開く"
+        },
+        "pdfs": {
+          "description": "内蔵の書類ビューアを使用してPDF書類を表示します",
+          "title": "PDFを読み取る"
+        },
+        "safeHtml": {
+          "description": "スクリプトを実行せずに、サンドボックス内でHTML書類をプレビューします",
+          "title": "セーフHTML"
+        },
+        "zoom": {
+          "description": "ピンチまたはダブルタップでイメージを拡大/縮小、またはウインドウに合わせます",
+          "title": "拡大/縮小"
+        }
+      },
+      "menu": {
+        "aboutPreview": "プレビューについて",
+        "actualSize": "実際のサイズ",
+        "export": "書き出す…",
+        "fitToWindow": "ウインドウに合わせる",
+        "importFromDevice": "デバイスから読み込む…",
+        "open": "開く…",
+        "openWith": "このアプリケーションで開く",
+        "previewHelp": "プレビューヘルプ",
+        "saveAs": "別名で保存…",
+        "zoomIn": "拡大",
+        "zoomOut": "縮小"
+      },
+      "name": "プレビュー",
+      "saveAs": {
+        "description": "このコピーの名前を入力してください",
+        "title": "別名で保存"
+      },
+      "status": {
+        "loadFailed": "このファイルを開けませんでした。",
+        "loading": "プレビューを読み込み中…",
+        "notFound": "ファイルの内容が見つかりませんでした。",
+        "unsupported": "プレビューを利用できません",
+        "unsupportedDescription": "このファイルフォーマットはプレビューでサポートされていません。"
+      },
+      "supportedFiles": "プレビューの書類",
+      "title": "プレビュー",
+      "toasts": {
+        "exportFailed": "ファイルを書き出せませんでした",
+        "importFailed": "ファイルを読み込めませんでした",
+        "imported": "ファイルを読み込みました",
+        "saveFailed": "ファイルを保存できませんでした",
+        "saved": "ファイルを保存しました"
+      },
+      "untitled": "名称未設定"
+    },
     "soundboard": {
       "description": "サウンドエフェクトを再生",
       "help": {
@@ -4080,7 +4232,7 @@
           "title": "テキスト"
         }
       },
-      "speak": "読み上げる",
+      "speak": "読み上げ",
       "stopSpeech": "音声停止",
       "text": "テキスト",
       "underline": "アンダーライン",
@@ -4496,7 +4648,7 @@
         "from": "から",
         "generating": "生成中…",
         "itemTypes": {
-          "app": "App",
+          "app": "アプリ",
           "applet": "アプレット",
           "item": "項目",
           "page": "ページ",
@@ -4594,7 +4746,7 @@
       "file": "ファイル",
       "go": "移動",
       "help": "ヘルプ",
-      "images": "イメージ",
+      "images": "画像",
       "music": "ミュージック",
       "paste": "ペースト",
       "redo": "やり直す",
@@ -4614,6 +4766,10 @@
       "volume": "音量"
     },
     "noResults": "結果なし",
+    "offline": {
+      "appRequiresInternet": "{{appName}}を利用するにはインターネット接続が必要です。",
+      "title": "オフラインです"
+    },
     "startMenu": {
       "aboutThisComputer": "このコンピュータについて",
       "run": "ファイル名を指定して実行…",
@@ -4689,7 +4845,7 @@
     "fixLogs": "ログを Cursor エージェントに送信",
     "hideConsole": "コンソールを非表示",
     "live": {
-      "appVersion": "App",
+      "appVersion": "アプリ",
       "average": "平均",
       "bufferedLogs": "{{count}}件バッファ済み",
       "cloudSync": "クラウド同期",
@@ -4793,7 +4949,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "ryOSインターフェースの優先言語を選択",
       "english": "English",
       "french": "Français",

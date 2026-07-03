@@ -1,3 +1,9 @@
+/**
+ * Shared helpers for the browser's native SpeechSynthesis API (browser TTS).
+ * Used by apps that speak locally without the AI `/api/speech` endpoint
+ * (Calculator key/result speech, Books read-aloud).
+ */
+
 /** Map ryOS i18n codes to BCP 47 tags for SpeechSynthesisUtterance.lang */
 export function ryOSLocaleToSpeechLanguage(locale: string | undefined): string {
   if (!locale) return "en-US";
@@ -52,4 +58,36 @@ export function pickSpeechVoiceForLanguage(
     (voice) => voice.lang.toLowerCase().split("-")[0] === targetPrimary
   );
   return primaryMatch ?? null;
+}
+
+/**
+ * Resolve the voice for an utterance, honoring the user's preferred browser
+ * TTS voice (Control Panels → Sound). The preference only applies when the
+ * preferred voice speaks the same primary language as the utterance —
+ * otherwise (e.g. an English voice while reading a Japanese book) we fall
+ * back to the automatic per-language pick so speech stays intelligible.
+ */
+export function resolveSpeechVoice(
+  voices: SpeechSynthesisVoice[],
+  lang: string,
+  preferredVoiceURI?: string | null
+): SpeechSynthesisVoice | null {
+  if (preferredVoiceURI) {
+    const preferred = voices.find(
+      (voice) => voice.voiceURI === preferredVoiceURI
+    );
+    if (preferred) {
+      const targetPrimary = lang.toLowerCase().split("-")[0];
+      const voicePrimary = preferred.lang.toLowerCase().split("-")[0];
+      if (!targetPrimary || voicePrimary === targetPrimary) {
+        return preferred;
+      }
+    }
+  }
+  return pickSpeechVoiceForLanguage(voices, lang);
+}
+
+export function getBrowserSpeechSynthesis(): SpeechSynthesis | null {
+  if (typeof window === "undefined") return null;
+  return window.speechSynthesis ?? null;
 }

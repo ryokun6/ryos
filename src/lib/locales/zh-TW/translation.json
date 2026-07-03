@@ -588,6 +588,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "加入書籤",
+        "remove": "移除書籤",
+        "title": "書籤"
+      },
+      "chineseScript": {
+        "original": "原文",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "自動",
         "double": "雙頁",
@@ -598,7 +608,28 @@
         "moveToBottom": "移至底端",
         "moveToTop": "移至頂端"
       },
+      "customize": {
+        "background": "背景",
+        "chinese": "中文",
+        "colors": "顏色",
+        "direction": "方向",
+        "lineSpacing": "行距",
+        "margins": "邊界",
+        "spacing": "間距",
+        "textColor": "文字",
+        "title": "自訂",
+        "transparent": "透明"
+      },
       "description": "閱讀 EPUB 書籍",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "等寬",
+        "original": "原始",
+        "rounded": "圓體",
+        "sans": "無襯線體",
+        "serif": "襯線體"
+      },
       "help": {
         "bookshelf": {
           "description": "匯入的 EPUB 書籍排列在木製書架上。點擊書籍即可開啟並開始閱讀。",
@@ -609,7 +640,7 @@
           "title": "深色模式"
         },
         "fonts": {
-          "description": "從「顯示」選單中選擇閱讀字體（包含 EB Garamond）、文字大小以及單欄或雙欄顯示。",
+          "description": "從「顯示」選單中選擇閱讀字體（包含 Garamond）、文字大小以及單欄或雙欄顯示。",
           "title": "字體與版面"
         },
         "import": {
@@ -633,21 +664,42 @@
         "backToShelf": "返回書架",
         "booksHelp": "書籍輔助說明",
         "chapters": "章節",
+        "chineseScript": "簡繁轉換",
         "columns": "直欄",
+        "customizeTheme": "自訂…",
         "font": "字體",
         "import": "匯入 EPUB⋯",
         "nextPage": "下一頁",
         "previousPage": "上一頁",
+        "speech": "語音",
+        "speechRate": "語音速率",
+        "startSpeaking": "開始朗讀",
+        "stopSpeaking": "停止朗讀",
+        "textLayout": "文字方向",
         "textSize": "文字大小",
-        "textSizeDecrease": "縮小",
-        "textSizeIncrease": "放大",
-        "textSizeReset": "預設大小",
         "theme": "主題"
       },
       "name": "書籍",
       "reader": {
         "backToShelf": "書架",
         "error": "無法開啟此書。"
+      },
+      "selection": {
+        "askRyo": "詢問 Ryo",
+        "askRyoFailed": "無法取得回覆，請稍後再試。",
+        "askRyoQuestion": "這段文字是什麼意思？",
+        "color": {
+          "blue": "藍色螢光標示",
+          "green": "綠色螢光標示",
+          "pink": "粉紅色螢光標示",
+          "purple": "紫色螢光標示",
+          "yellow": "黃色螢光標示"
+        },
+        "controls": "選取範圍控制項目",
+        "copied": "已拷貝至剪貼簿",
+        "copy": "拷貝",
+        "copyFailed": "無法拷貝",
+        "removeHighlight": "移除螢光標示"
       },
       "shelf": {
         "emptyHint": "點擊「新增書籍」以匯入 EPUB。",
@@ -658,10 +710,36 @@
         "listView": "列表顯示方式",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "朗讀控制項",
+        "pause": "暫停",
+        "resume": "繼續",
+        "rewind": "倒轉",
+        "skip": "跳過",
+        "stop": "停止"
+      },
+      "speechRate": {
+        "fast": "快",
+        "normal": "正常",
+        "slow": "慢",
+        "veryFast": "非常快"
+      },
+      "textLayout": {
+        "book": "書籍預設",
+        "horizontal": "橫排",
+        "vertical": "直排"
+      },
       "theme": {
+        "accent": "強調色",
         "auto": "自動",
+        "black": "黑色",
+        "custom": "自訂",
         "dark": "深色",
+        "gray": "灰色",
+        "green": "綠色",
         "light": "淺色",
+        "night": "夜間",
+        "paper": "紙張",
         "sepia": "深褐色"
       },
       "title": "書籍",
@@ -719,7 +797,7 @@
           "gal": "加侖（美制）",
           "ha": "公頃",
           "hr": "小時",
-          "in": "英吋",
+          "in": "英寸",
           "j": "焦耳",
           "k": "開爾文",
           "kcal": "千卡路里",
@@ -1625,6 +1703,9 @@
       "backupRestoreDescription": "備份或還原所有應用程式設定和檔案",
       "bootScreen": "開機畫面",
       "bootScreenDescription": "測試開機畫面動畫",
+      "browserTtsVoice": "TTS 語音",
+      "browserTtsVoiceAutomatic": "自動",
+      "browserTtsVoiceDescription": "用於「書籍」朗讀和「計算機」的系統語音",
       "changePassword": "更改密碼",
       "changePasswordButton": "更改",
       "chatSynth": "聊天合成器",
@@ -2263,6 +2344,7 @@
         "noAirDropUsersAvailable": "附近沒有使用者",
         "open": "打開",
         "openAirDrop": "開啟 AirDrop",
+        "openWith": "打開方式",
         "putBack": "還原",
         "rename": "重新命名⋯",
         "searchingForAirDropUsers": "正在尋找附近的使用者⋯",
@@ -2302,8 +2384,10 @@
         "internetShortcut": "網際網路捷徑",
         "jpegImage": "JPEG影像",
         "mp3Audio": "MP3 音訊",
+        "pdfDocument": "PDF文件",
         "pngImage": "PNG影像",
         "quicktimeMovie": "QuickTime影片",
+        "svgImage": "SVG影像",
         "unknown": "未知",
         "webpImage": "WebP 影像"
       },
@@ -3683,6 +3767,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "檢視影像、PDF和文件",
+      "empty": {
+        "hint": "選擇檔案或將其拖移到此處",
+        "title": "打開文件"
+      },
+      "help": {
+        "images": {
+          "description": "打開常見的影像格式而不更改原始檔案",
+          "title": "預覽影像"
+        },
+        "openFiles": {
+          "description": "使用「檔案」>「打開」來預覽裝置上的檔案",
+          "title": "打開檔案"
+        },
+        "openWith": {
+          "description": "將可編輯的檔案傳送到「小畫家」、「文字編輯」或 Applet 檢視器",
+          "title": "打開方式"
+        },
+        "pdfs": {
+          "description": "使用內建的文件檢視器檢視 PDF 文件",
+          "title": "閱讀 PDF"
+        },
+        "safeHtml": {
+          "description": "在沙箱中預覽 HTML 文件而不執行工序指令",
+          "title": "安全 HTML"
+        },
+        "zoom": {
+          "description": "兩指開合或點兩下即可縮放影像，或使其符合視窗大小",
+          "title": "縮放"
+        }
+      },
+      "menu": {
+        "aboutPreview": "關於預覽程式",
+        "actualSize": "實際大小",
+        "export": "輸出…",
+        "fitToWindow": "縮放以符合視窗",
+        "importFromDevice": "從裝置輸入…",
+        "open": "打開⋯",
+        "openWith": "打開方式",
+        "previewHelp": "預覽程式輔助說明",
+        "saveAs": "另存新檔…",
+        "zoomIn": "放大",
+        "zoomOut": "縮小"
+      },
+      "name": "預覽程式",
+      "saveAs": {
+        "description": "輸入此拷貝的名稱",
+        "title": "另存新檔"
+      },
+      "status": {
+        "loadFailed": "無法打開此檔案。",
+        "loading": "正在載入預覽⋯",
+        "notFound": "找不到檔案內容。",
+        "unsupported": "無法預覽",
+        "unsupportedDescription": "「預覽程式」不支援此檔案格式。"
+      },
+      "supportedFiles": "預覽程式文件",
+      "title": "預覽程式",
+      "toasts": {
+        "exportFailed": "無法輸出檔案",
+        "importFailed": "無法輸入檔案",
+        "imported": "檔案已輸入",
+        "saveFailed": "無法儲存檔案",
+        "saved": "檔案已儲存"
+      },
+      "untitled": "未命名"
+    },
     "soundboard": {
       "description": "播放音效",
       "help": {
@@ -4614,6 +4766,10 @@
       "volume": "音量"
     },
     "noResults": "沒有結果",
+    "offline": {
+      "appRequiresInternet": "{{appName}} 需要網際網路連線。",
+      "title": "你已離線"
+    },
     "startMenu": {
       "aboutThisComputer": "關於這部電腦",
       "run": "執行⋯",
@@ -4793,7 +4949,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "選擇您的 ryOS 介面偏好語言",
       "english": "英文",
       "french": "Français",

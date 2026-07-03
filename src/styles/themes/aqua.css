@@ -287,6 +287,23 @@
   min-width: 24px;
 }
 
+/* Standalone Books font pills borrow the toolbar toggle material but keep a
+   capsule outline. Unselected pills stay flatter so the active font leads. */
+:root[data-os-theme="macosx"] .books-font-pill {
+  min-height: 22px;
+  border-right: none;
+  border-radius: 9999px !important;
+  outline: 1px solid rgba(0, 0, 0, 0.2);
+  outline-offset: -1px;
+}
+
+:root[data-os-theme="macosx"] .books-font-pill[data-state="off"] {
+  color: var(--os-color-text-primary);
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+  text-shadow: none;
+}
+
 /* Mac OS X Aqua Button Styles */
 .aqua-button {
   line-height: 1;
@@ -823,9 +840,7 @@
 }
 
 :root[data-os-theme="macosx"] .synth-force-font {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   font-size: 11px !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -843,9 +858,7 @@
   button:not(.aqua-button):not(.aqua-tab)
   span {
   font-size: 11px !important;
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
 }
 
 /* Internet Explorer favorites bar: compact bookmark labels (below url bar 12px) */
@@ -927,9 +940,7 @@
 /* Preserve LCD display styling in Videos app - keep original pixel fonts */
 /* But use Aqua Kana for player control buttons */
 :root[data-os-theme="macosx"] .videos-player-controls button.font-geneva-12 {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   font-size: 9px !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -1575,20 +1586,19 @@
 }
 
 :root[data-os-theme="macosx"] .synth-force-font .font-geneva-12 {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
   font-size: 12px !important;
 }
 
 /* Preserve rounded lyrics font inside iPod fullscreen on macOS theme */
-/* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
+/* Chiron provides rounded CJK glyphs after bundled VAG Rounded. */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
-  font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
-  font-weight: normal !important;
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
+    "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+    sans-serif !important;
+  font-weight: 700 !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1596,11 +1606,12 @@
 }
 
 /* Preserve rounded lyrics font inside Karaoke app on macOS theme */
-/* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
+/* Chiron provides rounded CJK glyphs after bundled VAG Rounded. */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
-  font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
-  font-weight: normal !important;
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
+    "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+    sans-serif !important;
+  font-weight: 700 !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1609,8 +1620,7 @@
 
 /* Preserve serif lyrics font inside iPod fullscreen on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif {
-  font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
+  font-family: Charter, var(--font-cjk-serif-jp), serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1619,8 +1629,7 @@
 
 /* Preserve serif lyrics font inside Karaoke app on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif {
-  font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
+  font-family: Charter, var(--font-cjk-serif-jp), serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1654,9 +1663,7 @@
 /* Preserve serif-red lyrics font on macOS theme (Japanese classic style) */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif-red,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif-red {
-  font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN",
-    "Hiragino Mincho Pro", "Yu Mincho", "Songti TC", "Songti SC", "SimSun",
-    "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
+  font-family: Charter, var(--font-cjk-serif-jp), serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1666,9 +1673,10 @@
 /* Preserve glow lyrics font on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gold-glow {
-  font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
-  font-weight: normal !important;
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
+    "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+    sans-serif !important;
+  font-weight: 700 !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;
   -webkit-font-smoothing: antialiased !important;
@@ -1688,7 +1696,41 @@
   font-smooth: auto !important;
 }
 
-/* Bold furigana for serif and sans-serif lyrics fonts on macOS theme */
+/* Aqua/Aqua Glass Simplified Chinese: keep Chiron first for rounded lyrics,
+   followed by mainland fallbacks; use mainland serif/sans stacks. */
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .ipod-force-font
+  :is(.font-lyrics-rounded, .font-lyrics-gold-glow),
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .karaoke-force-font
+  :is(.font-lyrics-rounded, .font-lyrics-gold-glow) {
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS", "Yuanti SC",
+    "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", ui-rounded,
+    sans-serif !important;
+}
+
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .ipod-force-font
+  :is(.font-lyrics-serif, .font-lyrics-serif-red),
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .karaoke-force-font
+  :is(.font-lyrics-serif, .font-lyrics-serif-red) {
+  font-family: Charter, "Noto Serif SC", "Source Han Serif SC",
+    "Noto Serif CJK SC", "Songti SC", STSong, SimSun, serif !important;
+}
+
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .ipod-force-font
+  :is(.font-lyrics-sans, .font-lyrics-gradient),
+:root[data-os-theme="macosx"]:lang(zh-CN)
+  .karaoke-force-font
+  :is(.font-lyrics-sans, .font-lyrics-gradient) {
+  font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans GB",
+    "PingFang SC", "Heiti SC", "Microsoft YaHei", "Noto Sans CJK SC",
+    system-ui, -apple-system, sans-serif !important;
+}
+
+/* Bold pronunciation ruby (furigana, pinyin, romaji, etc.) for lyrics fonts on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
@@ -1696,7 +1738,11 @@
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gradient rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient rt.lyrics-furigana-rt {
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gold-glow rt.lyrics-furigana-rt {
   font-weight: 700 !important;
 }
 
@@ -1968,9 +2014,7 @@
   ):not(.synth-force-font .font-geneva-12):not(.videos-status .font-geneva-12):not(
     .tv-cc-force-font .font-geneva-12
   ) {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
+  font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
@@ -2153,7 +2197,7 @@
 
 /* Use Apple Garamond for ryOS branding in macOSX dialogs */
 :root[data-os-theme="macosx"] .macosx-dialog .font-mondwest {
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", serif !important;
+  font-family: var(--font-apple-garamond) !important;
 }
 
 :root[data-os-theme="macosx"] .macosx-dialog-header {
@@ -2321,14 +2365,14 @@
 
 /* AboutDialog title styling for macOS theme */
 :root[data-os-theme="macosx"] .font-apple-garamond {
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
+  font-family: var(--font-apple-garamond) !important;
   font-size: 1.5rem !important;
 }
 
 /* Ensure AboutDialog title doesn't get overridden by general div styles */
 :root[data-os-theme="macosx"] .font-apple-garamond.text-2xl {
   font-size: 1.5rem !important;
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
+  font-family: var(--font-apple-garamond) !important;
 }
 
 /* AboutDialog body text styling for macOS theme */
@@ -2375,6 +2419,12 @@
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
+
+:root[data-os-theme="macosx"]:lang(zh-CN) .os-status-bar,
+:root[data-os-theme="macosx"]:lang(zh-CN) .os-status-bar-text {
+  font-family: var(--os-font-ui) !important;
+}
+
 :root[data-os-theme="macosx"] .os-status-bar * {
   font-size: inherit !important;
   -webkit-font-smoothing: inherit !important;
@@ -2468,7 +2518,7 @@
   height: 14px;
   width: 14px;
   border-radius: 9999px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   border: none;
@@ -2528,6 +2578,13 @@
   margin: 0 auto;
 }
 
+/* The 14px slider thumb needs a tighter highlight than the switch thumb:
+   keep it compact and oval instead of stretching to half the ball. */
+:root[data-os-theme="macosx"] .os-slider-thumb:before {
+  width: 6px;
+  height: 4px;
+}
+
 /* Bottom glow */
 :root[data-os-theme="macosx"] .os-switch-thumb:after,
 :root[data-os-theme="macosx"] .os-slider-thumb:after {
@@ -2547,88 +2604,74 @@
   margin: 0 auto;
 }
 
-/* Slider track — same recessed glossy channel as the switch track so sliders
-   and switches read as one cohesive set. The top white shine highlight + base
-   gradient mirror `.os-switch` (unchecked). The shine runs across the track's
-   short axis: top→down for a horizontal track. */
+/* Slider track — a quiet recessed channel. Unlike the taller switch track, the
+   thin slider channel gets no top shine layer (it reads as glare at 6px) —
+   just a neutral translucent recess (black/white rgba only, no gray tints so
+   the underlying surface shows through) with a soft inner shadow and a faint
+   bottom lip. */
 :root[data-os-theme="macosx"] .os-slider-track {
   background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    linear-gradient(rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3)) !important;
+    to bottom,
+    rgba(0, 0, 0, 0.12),
+    rgba(0, 0, 0, 0.04)
+  ) !important;
   border: 1px solid rgba(0, 0, 0, 0.22);
   border-radius: 9999px;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
-    inset 0 -1px 1px rgba(255, 255, 255, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.5);
+    inset 0 -1px 1px rgba(255, 255, 255, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.25);
   position: relative;
 }
 
-/* Vertical track — rotate the shine + bevel to the short (horizontal) axis so
-   the highlight sits on the leading (left) edge and reads correctly. */
+/* Vertical track — rotate the recess + bevel to the short (horizontal) axis so
+   the shadow sits on the leading (left) edge and reads correctly. */
 :root[data-os-theme="macosx"] .os-slider-track[data-orientation="vertical"] {
   background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      left / 50% 100% no-repeat,
-    linear-gradient(to right, rgba(188, 188, 188, 0.34), rgba(255, 255, 255, 0.3)) !important;
+    to right,
+    rgba(0, 0, 0, 0.12),
+    rgba(0, 0, 0, 0.04)
+  ) !important;
   box-shadow: inset 1px 0 2px rgba(0, 0, 0, 0.2),
-    inset -1px 0 1px rgba(255, 255, 255, 0.35),
-    1px 0 0 rgba(255, 255, 255, 0.5);
+    inset -1px 0 1px rgba(255, 255, 255, 0.2),
+    1px 0 0 rgba(255, 255, 255, 0.25);
 }
 
-/* Filled portion of the track uses the same glossy accent gradient as the
-   toggle thumbs / primary Aqua button (`--os-accent-button-bg`) so sliders and
-   switches read as one cohesive accent-driven set. Falls back to the classic
-   Aqua blue gloss when no accent override is set. */
+/* Horizontal fill borrows the under-tab seam's compact seven-stop shine. At
+   this 4px visible height, its bright 8% peak reads more crisply than the
+   larger Aqua button gradient. */
 :root[data-os-theme="macosx"] .os-slider-range {
-  background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      top / 100% 50% no-repeat,
-    var(
-      --os-accent-button-bg,
-      linear-gradient(
-        rgba(0, 65, 184, 0.625),
-        rgba(45, 115, 199, 0.625),
-        rgba(33, 160, 196, 0.625)
-      )
-    ) !important;
-  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.18),
-    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.4));
+  background: var(
+    --os-accent-tab-bar-line,
+    linear-gradient(
+      to bottom,
+      #2260a4 0%,
+      #e2fbfd 8%,
+      #aecef3 25%,
+      #7aafee 40%,
+      #98ceff 60%,
+      #9dcfff 80%,
+      #74deff 100%
+    )
+  ) !important;
+  box-shadow: none;
 }
 
-/* Vertical filled range — the shine + bevel run across the short (horizontal)
-   axis, so the highlight sits on the leading (left) edge. */
+/* Vertical fill uses the same under-tab seam rotated across its short axis. */
 :root[data-os-theme="macosx"] .os-slider-range[data-orientation="vertical"] {
-  background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.18) 60%,
-        rgba(255, 255, 255, 0) 100%
-      )
-      left / 50% 100% no-repeat,
-    var(
-      --os-accent-button-bg,
-      linear-gradient(
-        to right,
-        rgba(0, 65, 184, 0.625),
-        rgba(45, 115, 199, 0.625),
-        rgba(33, 160, 196, 0.625)
-      )
-    ) !important;
-  box-shadow: inset -1px 0 1px rgba(0, 0, 0, 0.18),
-    1px 0 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.4));
+  background: var(
+    --os-accent-tab-bar-line-horizontal,
+    linear-gradient(
+      to right,
+      #2260a4 0%,
+      #e2fbfd 8%,
+      #aecef3 25%,
+      #7aafee 40%,
+      #98ceff 60%,
+      #9dcfff 80%,
+      #74deff 100%
+    )
+  ) !important;
+  box-shadow: none;
 }
 
 /* Slider tick/label text - preserve explicit sizes */

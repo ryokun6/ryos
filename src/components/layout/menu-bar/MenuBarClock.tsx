@@ -22,7 +22,9 @@ export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }
   const currentLocale = i18nInstance.language || "en";
 
   // Determine if locale prefers 24-hour format
-  const prefers24Hour = ["zh-TW", "ja", "de", "fr", "ko"].includes(currentLocale);
+  const prefers24Hour = ["zh-CN", "zh-TW", "ja", "de", "fr", "ko"].includes(
+    currentLocale
+  );
 
   // Handle click on clock
   const handleClick = () => {
@@ -76,7 +78,7 @@ export function Clock({ enableExposeToggle = false, enableCalendarOpen = false }
     const timeString = prefers24Hour ? formatTime24h() : formatTime12h();
 
     // Custom formatting for Chinese, Japanese, and Korean
-    if (currentLocale === "zh-TW") {
+    if (currentLocale === "zh-CN" || currentLocale === "zh-TW") {
       // Chinese format: "12月2日 週二 12:03"
       const weekday = formatInTimeZone(time, timeZone, currentLocale, {
         weekday: "short",

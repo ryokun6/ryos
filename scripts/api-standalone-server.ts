@@ -43,6 +43,7 @@ import {
   discoverApiRouteManifest,
   type ApiRouteManifestEntry,
 } from "./api-route-manifest";
+import { getStaticCacheHeaders } from "./static-cache-policy";
 
 type QueryValue = string | string[];
 type QueryMap = Record<string, QueryValue>;
@@ -637,7 +638,15 @@ async function serveDistPath(
     return null;
   }
   const absolutePath = path.resolve(DIST_ROOT, decodedPath);
-  return await getStaticFileResponse(absolutePath, options);
+  // Explicit Cache-Control on every static response. Vercel gets these from
+  // vercel.json; here they also stop CDNs (e.g. Cloudflare in front of a
+  // Coolify deploy) from edge-caching sw.js/index.html past a deploy, which
+  // breaks service-worker installs and, with them, offline support.
+  const headers = {
+    ...getStaticCacheHeaders(decodedPath.split(path.sep).join("/")),
+    ...options?.headers,
+  };
+  return await getStaticFileResponse(absolutePath, { headers });
 }
 
 async function serveSpaIndex(): Promise<Response> {
@@ -905,10 +914,21 @@ async function bootstrap(): Promise<void> {
           return ogShareResponse;
         }
 
-        return (
-          (await handleStaticRequest(pathname)) ||
-          jsonResponse({ error: "Not found" }, 404)
-        );
+        const staticResponse = await handleStaticRequest(pathname);
+        if (staticResponse) {
+          return staticResponse;
+        }
+
+        // Never let CDNs cache static misses: after a deploy swaps the
+        // hashed bundles, a cached 404 for a new asset would keep breaking
+        // clients even once the origin can serve it.
+        return new Response(JSON.stringify({ error: "Not found" }), {
+          status: 404,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store",
+          },
+        });
       }
 
       const matched = matchRoute(pathname, routes);

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   clearPrefetchFlag,
   hasStoredPrefetchManifestTimestamp,
+  hasWarmedThemeAssets,
+  markThemeAssetsWarmed,
 } from "../src/utils/prefetch";
 
 class MemoryStorage {
@@ -29,6 +31,7 @@ beforeEach(() => {
     value: new MemoryStorage(),
     writable: true,
   });
+  clearPrefetchFlag();
 });
 
 afterEach(() => {
@@ -50,9 +53,21 @@ describe("prefetch manifest warmup flag", () => {
 
   test("clearPrefetchFlag clears the current key", () => {
     localStorage.setItem("ryos:manifest-timestamp", "current");
+    markThemeAssetsWarmed("xp", "current");
 
     clearPrefetchFlag();
 
     expect(hasStoredPrefetchManifestTimestamp()).toBe(false);
+    expect(hasWarmedThemeAssets("xp", "current")).toBe(false);
+  });
+
+  test("tracks warmed themes per manifest version", () => {
+    expect(hasWarmedThemeAssets("macosx", "build-a")).toBe(false);
+
+    markThemeAssetsWarmed("macosx", "build-a");
+
+    expect(hasWarmedThemeAssets("macosx", "build-a")).toBe(true);
+    expect(hasWarmedThemeAssets("xp", "build-a")).toBe(false);
+    expect(hasWarmedThemeAssets("macosx", "build-b")).toBe(false);
   });
 });

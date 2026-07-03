@@ -592,6 +592,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Добавить закладку",
+        "remove": "Удалить закладку",
+        "title": "Закладки"
+      },
+      "chineseScript": {
+        "original": "Оригинал",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "Авто",
         "double": "Две страницы",
@@ -602,7 +612,28 @@
         "moveToBottom": "Переместить в конец",
         "moveToTop": "Переместить в начало"
       },
+      "customize": {
+        "background": "Фон",
+        "chinese": "Китайский",
+        "colors": "Цвета",
+        "direction": "Направление",
+        "lineSpacing": "Межстрочный интервал",
+        "margins": "Поля",
+        "spacing": "Интервал",
+        "textColor": "Текст",
+        "title": "Настройка",
+        "transparent": "Прозрачный"
+      },
       "description": "Читайте книги EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Моноширинный",
+        "original": "Оригинал",
+        "rounded": "Скругленный",
+        "sans": "Без засечек",
+        "serif": "С засечками"
+      },
       "help": {
         "bookshelf": {
           "description": "Импортированные книги EPUB расставлены на деревянной полке. Нажмите на книгу, чтобы открыть её и начать чтение.",
@@ -613,7 +644,7 @@
           "title": "Тёмный режим"
         },
         "fonts": {
-          "description": "Выберите шрифт для чтения (включая EB Garamond), размер текста, а также одну или две колонки в меню «Вид».",
+          "description": "Выберите шрифт для чтения (включая Garamond), размер текста, а также одну или две колонки в меню «Вид».",
           "title": "Шрифты и макет"
         },
         "import": {
@@ -637,21 +668,42 @@
         "backToShelf": "На полку",
         "booksHelp": "Справка Книг",
         "chapters": "Главы",
+        "chineseScript": "Китайское письмо",
         "columns": "Колонки",
+        "customizeTheme": "Настроить…",
         "font": "Шрифт",
         "import": "Импортировать EPUB…",
         "nextPage": "Следующая страница",
         "previousPage": "Предыдущая страница",
+        "speech": "Проговаривание текста",
+        "speechRate": "Скорость проговаривания",
+        "startSpeaking": "Начать проговаривание",
+        "stopSpeaking": "Остановить проговаривание",
+        "textLayout": "Направление текста",
         "textSize": "Размер текста",
-        "textSizeDecrease": "Меньше",
-        "textSizeIncrease": "Больше",
-        "textSizeReset": "Размер по умолчанию",
         "theme": "Тема"
       },
       "name": "Книги",
       "reader": {
         "backToShelf": "Полка",
         "error": "Не удалось открыть эту книгу."
+      },
+      "selection": {
+        "askRyo": "Спросить Ryo",
+        "askRyoFailed": "Не удалось получить ответ. Повторите попытку позже.",
+        "askRyoQuestion": "что означает этот фрагмент?",
+        "color": {
+          "blue": "Синее выделение",
+          "green": "Зеленое выделение",
+          "pink": "Розовое выделение",
+          "purple": "Фиолетовое выделение",
+          "yellow": "Желтое выделение"
+        },
+        "controls": "Элементы управления выделением",
+        "copied": "Скопировано в буфер обмена",
+        "copy": "Скопировать",
+        "copyFailed": "Не удалось скопировать",
+        "removeHighlight": "Удалить выделение"
       },
       "shelf": {
         "emptyHint": "Нажмите «Добавить книгу», чтобы импортировать EPUB.",
@@ -662,10 +714,36 @@
         "listView": "Список",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "Элементы управления чтением вслух",
+        "pause": "Пауза",
+        "resume": "Продолжить",
+        "rewind": "Перемотать назад",
+        "skip": "Пропустить",
+        "stop": "Остановить"
+      },
+      "speechRate": {
+        "fast": "Быстро",
+        "normal": "Обычная",
+        "slow": "Медленно",
+        "veryFast": "Очень быстро"
+      },
+      "textLayout": {
+        "book": "Как в книге",
+        "horizontal": "Горизонтально",
+        "vertical": "Вертикально"
+      },
       "theme": {
+        "accent": "Акцент",
         "auto": "Авто",
+        "black": "Черный",
+        "custom": "Настроенная",
         "dark": "Темная",
+        "gray": "Серый",
+        "green": "Зеленый",
         "light": "Светлая",
+        "night": "Ночь",
+        "paper": "Бумага",
         "sepia": "Сепия"
       },
       "title": "Книги",
@@ -1632,6 +1710,9 @@
       "backupRestoreDescription": "Резервное копирование или восстановление всех настроек и файлов приложения",
       "bootScreen": "Экран загрузки",
       "bootScreenDescription": "Проверить анимацию экрана загрузки",
+      "browserTtsVoice": "Голос проговаривания текста",
+      "browserTtsVoiceAutomatic": "Автоматически",
+      "browserTtsVoiceDescription": "Системный голос для чтения вслух в Книгах и Калькуляторе",
       "changePassword": "Изменить пароль",
       "changePasswordButton": "Изменить",
       "chatSynth": "Чат-синтезатор",
@@ -1837,7 +1918,7 @@
         "codeSentTitle": "Код подтверждения отправлен",
         "currentLabel": "Текущий адрес для восстановления",
         "description": "Добавьте адрес электронной почты, чтобы иметь возможность сбросить пароль, если вы его забудете.",
-        "emailLabel": "Адрес e-mail",
+        "emailLabel": "Адрес e‑mail",
         "genericError": "Что-то пошло не так. Пожалуйста, попробуйте еще раз.",
         "invalidEmail": "Введите корректный адрес электронной почты",
         "notConfigured": "Восстановление через почту недоступно на этом сервере. Вы все еще можете восстановить доступ через привязанную учетную запись Telegram.",
@@ -2270,6 +2351,7 @@
         "noAirDropUsersAvailable": "Пользователей поблизости нет",
         "open": "Открыть",
         "openAirDrop": "Открыть AirDrop",
+        "openWith": "Открыть в программе",
         "putBack": "Вернуть на место",
         "rename": "Переименовать…",
         "searchingForAirDropUsers": "Поиск пользователей поблизости…",
@@ -2309,14 +2391,16 @@
         "internetShortcut": "Интернет-ярлык",
         "jpegImage": "Изображение JPEG",
         "mp3Audio": "Аудио MP3",
+        "pdfDocument": "Документ PDF",
         "pngImage": "Изображение PNG",
         "quicktimeMovie": "Фильм QuickTime",
+        "svgImage": "Изображение SVG",
         "unknown": "Неизвестно",
         "webpImage": "Изображение WebP"
       },
       "folders": {
         "applets": "Апплеты",
-        "applications": "Программы",
+        "applications": "Приложения",
         "books": "Книги",
         "desktop": "Рабочий стол",
         "documents": "Документы",
@@ -2851,7 +2935,7 @@
         "fontSansSerif": "Без засечек",
         "fontSerif": "С засечками",
         "fontSerifRed": "Serif (Контур)",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "furigana": "Фуригана",
         "goToAlbum": "Перейти к альбому",
         "goToArtist": "Перейти к исполнителю",
@@ -3440,7 +3524,7 @@
         "backToPresets": "Назад к системам",
         "captureScreenshot": "Сделать скриншот",
         "controls": "Управление",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "loadGame": "Загрузить игру",
         "loadState": "Загрузить состояние",
         "mouseSensitivity": "Чувствительность мыши",
@@ -3691,6 +3775,74 @@
         "photoBoothHelp": "Справка Фотокабина"
       },
       "name": "Photo Booth"
+    },
+    "preview": {
+      "description": "Просмотр изображений, PDF и документов",
+      "empty": {
+        "hint": "Выберите файл или перетяните его сюда",
+        "title": "Открыть документ"
+      },
+      "help": {
+        "images": {
+          "description": "Открывайте изображения популярных форматов без изменения исходного файла",
+          "title": "Просмотр изображений"
+        },
+        "openFiles": {
+          "description": "Используйте «Файл» > «Открыть», чтобы просмотреть файл на устройстве",
+          "title": "Открытие файлов"
+        },
+        "openWith": {
+          "description": "Отправляйте редактируемые файлы в Paint, TextEdit или Applet Viewer",
+          "title": "Открыть в программе"
+        },
+        "pdfs": {
+          "description": "Просматривайте документы PDF с помощью встроенного средства просмотра",
+          "title": "Чтение PDF"
+        },
+        "safeHtml": {
+          "description": "Просматривайте документы HTML в песочнице без запуска скриптов",
+          "title": "Безопасный HTML"
+        },
+        "zoom": {
+          "description": "Изменяйте масштаб изображений жестом сведения пальцев или двойным касанием либо вписывайте их в окно",
+          "title": "Масштаб"
+        }
+      },
+      "menu": {
+        "aboutPreview": "О приложении «Просмотр»",
+        "actualSize": "Реальный размер",
+        "export": "Экспортировать…",
+        "fitToWindow": "По размеру окна",
+        "importFromDevice": "Импортировать с устройства…",
+        "open": "Открыть…",
+        "openWith": "Открыть в программе",
+        "previewHelp": "Справка Просмотра",
+        "saveAs": "Сохранить как…",
+        "zoomIn": "Увеличить",
+        "zoomOut": "Уменьшить"
+      },
+      "name": "Просмотр",
+      "saveAs": {
+        "description": "Введите имя для этой копии",
+        "title": "Сохранить как"
+      },
+      "status": {
+        "loadFailed": "Не удалось открыть этот файл.",
+        "loading": "Загрузка…",
+        "notFound": "Содержимое файла не найдено.",
+        "unsupported": "Предварительный просмотр недоступен",
+        "unsupportedDescription": "Этот формат файлов не поддерживается программой «Просмотр»."
+      },
+      "supportedFiles": "Документы Просмотра",
+      "title": "Просмотр",
+      "toasts": {
+        "exportFailed": "Не удалось экспортировать файл",
+        "importFailed": "Не удалось импортировать файл",
+        "imported": "Файл импортирован",
+        "saveFailed": "Не удалось сохранить файл",
+        "saved": "Файл сохранен"
+      },
+      "untitled": "Без названия"
     },
     "soundboard": {
       "description": "Воспроизвести звуковые эффекты",
@@ -4161,7 +4313,7 @@
         "controls": "Управление",
         "deleteChannel": "Удалить канал",
         "exportChannels": "Экспортировать каналы…",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "importChannels": "Импортировать каналы…",
         "lcdFilter": "ЖК-фильтр",
         "newChannel": "Новый канал…",
@@ -4259,7 +4411,7 @@
         "allVideos": "Все видео",
         "clearLibrary": "Очистить медиатеку…",
         "controls": "Элементы управления",
-        "fullScreen": "Во весь экран",
+        "fullScreen": "На весь экран",
         "library": "Медиатека",
         "next": "Следующий",
         "openVideo": "Открыть видео…",
@@ -4377,7 +4529,7 @@
     "appMenu": {
       "aboutApp": "О программе {{appName}}",
       "appHelp": "Справка {{appName}}",
-      "fullScreen": "Во весь экран",
+      "fullScreen": "На весь экран",
       "hideApp": "Скрыть {{appName}}",
       "hideOthers": "Скрыть другие",
       "quitApp": "Завершить {{appName}}",
@@ -4530,7 +4682,7 @@
     "dock": {
       "addToDock": "Добавить в Dock",
       "appletStore": "Магазин апплетов",
-      "applications": "Программы",
+      "applications": "Приложения",
       "folderContents": "Содержимое папки",
       "hide": "Скрыть",
       "minimized": "(свернуто)",
@@ -4595,7 +4747,7 @@
       "openingSharedVideo": "Открытие общего видео…"
     },
     "menu": {
-      "applications": "Программы",
+      "applications": "Приложения",
       "clear": "Очистить",
       "close": "Закрыть",
       "copy": "Скопировать",
@@ -4625,6 +4777,10 @@
       "volume": "Громкость"
     },
     "noResults": "Нет результатов",
+    "offline": {
+      "appRequiresInternet": "Для работы приложения {{appName}} требуется подключение к интернету.",
+      "title": "Вы не в сети"
+    },
     "startMenu": {
       "aboutThisComputer": "Об этом компьютере",
       "run": "Выполнить…",
@@ -4670,10 +4826,10 @@
     },
     "window": {
       "close": "Закрыть",
-      "fullscreen": "Во весь экран",
+      "fullscreen": "На весь экран",
       "maximize": "Развернуть",
       "maximizeDisabled": "Развернуть (отключено)",
-      "minimize": "Убрать в Dock",
+      "minimize": "Убрать в Dock",
       "minimizeDisabled": "Свернуть (отключено)"
     }
   },
@@ -4804,7 +4960,8 @@
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Выберите предпочитаемый язык для интерфейса ryOS",
       "english": "Английский",
       "french": "Français",
@@ -4831,7 +4988,7 @@
     "placeholder": "Поиск в ryOS",
     "sections": {
       "applets": "Апплеты",
-      "apps": "Программы",
+      "apps": "Приложения",
       "calendar": "Календарь",
       "commands": "Команды",
       "contacts": "Контакты",
