@@ -112,47 +112,6 @@ export const mediaControlRefinement = (
 };
 
 /**
- * Factory for creating media control schemas (iPod, Karaoke)
- */
-export const createMediaControlSchema = (options: { hasEnableVideo?: boolean } = {}) => {
-  const baseSchema = z.object({
-    action: z
-      .enum(["toggle", "play", "pause", "playKnown", "addAndPlay", "next", "previous"])
-      .default("toggle")
-      .describe("Playback operation to perform. Defaults to 'toggle' when omitted."),
-    id: z
-      .preprocess(normalizeOptionalString, z.string().optional())
-      .describe("For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."),
-    title: z
-      .preprocess(normalizeOptionalString, z.string().optional())
-      .describe("For 'playKnown': The title (or part of it) of the song to play."),
-    artist: z
-      .preprocess(normalizeOptionalString, z.string().optional())
-      .describe("For 'playKnown': The artist name (or part of it) of the song to play."),
-    enableTranslation: z
-      .preprocess(normalizeOptionalString, z.string().optional())
-      .describe(
-        "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'zh-CN', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
-      ),
-    enableFullscreen: z
-      .boolean()
-      .optional()
-      .describe("Enable fullscreen mode. Can be combined with any action."),
-  });
-
-  if (options.hasEnableVideo) {
-    return baseSchema.extend({
-      enableVideo: z
-        .boolean()
-        .optional()
-        .describe("Enable video playback. Can be combined with any action."),
-    }).superRefine(mediaControlRefinement);
-  }
-
-  return baseSchema.superRefine(mediaControlRefinement);
-};
-
-/**
  * Year validation for Internet Explorer time travel
  */
 const yearRefinement = (year: string | undefined) => {
@@ -219,16 +178,6 @@ export const launchAppSchema = z
 export const closeAppSchema = z.object({
   id: z.enum(appIds).describe("The app id to close"),
 });
-
-/**
- * iPod control schema (with video support)
- */
-export const ipodControlSchema = createMediaControlSchema({ hasEnableVideo: true });
-
-/**
- * Karaoke control schema (without video)
- */
-export const karaokeControlSchema = createMediaControlSchema();
 
 /**
  * Generate HTML schema
@@ -1045,129 +994,6 @@ export const webFetchSchema = z.object({
 });
 
 // ============================================================================
-// TV Control Schema
-// ============================================================================
-
-export const tvControlSchema = z
-  .object({
-    action: z
-      .enum(TV_ACTIONS)
-      .describe(
-        "Action to perform: " +
-          "'list' returns the lineup (built-ins + custom channels), include videos when verbose; " +
-          "'tune' switches the TV to a channel by id or number; " +
-          "'createChannel' creates a new custom channel from a one-line theme/prompt — the server AI-plans the name, tagline, and lineup by fanning out YouTube searches; " +
-          "'deleteChannel' removes a custom channel by id; " +
-          "'addVideo' appends a YouTube video to a custom channel; " +
-          "'removeVideo' removes a video from a custom channel."
-      ),
-    channelId: z
-      .preprocess(normalizeOptionalString, z.string().max(200).optional())
-      .describe(
-        "Channel id from a previous 'list' (short id like 'ch3' or full id). Required for 'tune'/'deleteChannel'/'addVideo'/'removeVideo' unless 'channelNumber' is used for 'tune'."
-      ),
-    channelNumber: z
-      .number()
-      .int()
-      .min(1)
-      .max(999)
-      .optional()
-      .describe(
-        "For 'tune': switch by displayed channel number (e.g. 1 = RyoTV, 2 = MTV)."
-      ),
-    prompt: z
-      .preprocess(
-        normalizeOptionalString,
-        z.string().min(2).max(280).optional()
-      )
-      .describe(
-        "For 'createChannel' (REQUIRED): a one-line theme/description (e.g. 'skateboarding tricks', 'lofi beats to study to', '90s anime intros'). The server AI-plans the channel name, tagline, and 2-4 YouTube search queries, fans them out, dedupes, and builds the lineup. Do NOT manually pre-search videos — call createChannel directly with the user's intent as the prompt."
-      ),
-    name: z
-      .preprocess(normalizeOptionalString, z.string().min(1).max(24).optional())
-      .describe(
-        "For 'createChannel' (optional): override the planner's channel name. Omit to let the server pick a punchy 1-3 word name."
-      ),
-    videoId: z
-      .preprocess(normalizeOptionalString, z.string().max(200).optional())
-      .describe("For 'addVideo': YouTube video id (11 chars)."),
-    url: z
-      .preprocess(normalizeOptionalString, z.string().max(1000).optional())
-      .describe("For 'addVideo': YouTube URL (alternative to videoId)."),
-    title: z
-      .preprocess(normalizeOptionalString, z.string().max(300).optional())
-      .describe(
-        "For 'addVideo': optional explicit video title (otherwise looked up from YouTube oEmbed)."
-      ),
-    artist: z
-      .preprocess(normalizeOptionalString, z.string().max(300).optional())
-      .describe("For 'addVideo': optional explicit artist/channel name."),
-    removeVideoId: z
-      .preprocess(normalizeOptionalString, z.string().max(200).optional())
-      .describe("For 'removeVideo': the YouTube video id to remove from the channel."),
-  })
-  .superRefine((data, ctx) => {
-    if (data.action === "tune") {
-      if (!data.channelId && data.channelNumber === undefined) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "The 'tune' action requires 'channelId' or 'channelNumber'.",
-          path: ["channelId"],
-        });
-      }
-    }
-    if (data.action === "createChannel") {
-      if (!data.prompt || !data.prompt.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "The 'createChannel' action requires a 'prompt' (one-line theme/description). The server fans out YouTube searches automatically — do not pre-pick videos.",
-          path: ["prompt"],
-        });
-      }
-    }
-    if (data.action === "deleteChannel" && !data.channelId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "The 'deleteChannel' action requires the 'channelId' parameter.",
-        path: ["channelId"],
-      });
-    }
-    if (data.action === "addVideo") {
-      if (!data.channelId) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "The 'addVideo' action requires the 'channelId' parameter.",
-          path: ["channelId"],
-        });
-      }
-      if (!data.videoId && !data.url) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "The 'addVideo' action requires 'videoId' or 'url'.",
-          path: ["videoId"],
-        });
-      }
-    }
-    if (data.action === "removeVideo") {
-      if (!data.channelId) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "The 'removeVideo' action requires the 'channelId' parameter.",
-          path: ["channelId"],
-        });
-      }
-      if (!data.removeVideoId) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "The 'removeVideo' action requires the 'removeVideoId' parameter.",
-          path: ["removeVideoId"],
-        });
-      }
-    }
-  });
-
-// ============================================================================
 // Unified Media Control Schema (MediaCore)
 // ============================================================================
 
@@ -1181,10 +1007,6 @@ const isTvChannelAction = (action: string): action is TvAction =>
  * Videos, and TV apps. Transport actions (toggle/play/pause/playKnown/
  * addAndPlay/next/previous) work on the playback targets; TV's channel
  * actions (list/tune/createChannel/…) are gated to `target: "tv"`.
- *
- * The legacy `ipodControl` / `karaokeControl` / `tvControl` tools remain
- * registered as aliases for one release; their schemas are unchanged and the
- * client normalizes them into the same handler.
  */
 export const mediaControlSchema = z
   .object({
@@ -1280,7 +1102,7 @@ export const mediaControlSchema = z
         });
         return;
       }
-      // Channel-action parameter rules mirror the legacy tvControl schema.
+      // Channel-action parameter rules.
       if (action === "tune" && !data.channelId && data.channelNumber === undefined) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -1380,7 +1202,7 @@ export const mediaControlSchema = z
       });
     }
 
-    // Same transport parameter rules as the legacy media schemas.
+    // Shared transport parameter rules.
     mediaControlRefinement(data, ctx);
   });
 

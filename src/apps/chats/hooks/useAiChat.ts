@@ -346,34 +346,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "";
             break;
           }
-          // Legacy aliases of mediaControl — kept for one release so stale
-          // cached prompts keep working. Outputs report under the alias name.
-          case "ipodControl": {
-            await handleMediaControl(
-              {
-                ...(toolCall.input as Omit<MediaControlInput, "target">),
-                target: "music",
-              },
-              toolCall.toolCallId,
-              toolContext,
-              "ipodControl"
-            );
-            result = "";
-            break;
-          }
-          case "karaokeControl": {
-            await handleMediaControl(
-              {
-                ...(toolCall.input as Omit<MediaControlInput, "target">),
-                target: "karaoke",
-              },
-              toolCall.toolCallId,
-              toolContext,
-              "karaokeControl"
-            );
-            result = "";
-            break;
-          }
           case "list": {
             const { path, query, limit, librarySource } = toolCall.input as {
               path: string;
@@ -1344,19 +1316,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.input as ContactsControlInput,
               toolCall.toolCallId,
               toolContext
-            );
-            result = "";
-            break;
-          }
-          case "tvControl": {
-            await handleMediaControl(
-              {
-                ...(toolCall.input as Omit<MediaControlInput, "target">),
-                target: "tv",
-              },
-              toolCall.toolCallId,
-              toolContext,
-              "tvControl"
             );
             result = "";
             break;

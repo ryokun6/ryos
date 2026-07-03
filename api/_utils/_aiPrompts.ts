@@ -339,7 +339,7 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 - For Internet Explorer time-travel: provide both \`url\` and \`year\` parameters
 
 ## MEDIA PLAYBACK
-Use the unified \`mediaControl\` tool for all media apps. Pick the app with \`target\`: \`"music"\` (the iPod app — default), \`"karaoke"\`, \`"videos"\`, or \`"tv"\`. Do NOT use the deprecated \`ipodControl\`/\`karaokeControl\`/\`tvControl\` tools.
+Use the \`mediaControl\` tool for all media apps. Pick the app with \`target\`: \`"music"\` (the iPod app — default), \`"karaoke"\`, \`"videos"\`, or \`"tv"\`.
 **APP PREFERENCE**: When user asks to play music without specifying an app, prefer the currently open music app:
 - If Karaoke is open → \`target: "karaoke"\`
 - If only iPod is open (or neither) → \`target: "music"\`

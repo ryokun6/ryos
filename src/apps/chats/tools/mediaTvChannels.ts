@@ -3,9 +3,7 @@
  *
  * Manages the TV app's channel lineup: lists channels, tunes in, creates and
  * deletes channels, and adds/removes videos within custom channels. Moved
- * from the legacy `tvHandler.ts` (deleted in MediaCore Phase 5); behavior is
- * unchanged apart from emitting under the caller-provided tool name so the
- * legacy `tvControl` alias keeps working.
+ * from the former `tvHandler.ts` (deleted in MediaCore Phase 5).
  *
  * Built-in channels can be hidden from the lineup and restored with TV reset;
  * only custom channels can have their video lists edited.
@@ -211,11 +209,7 @@ const resolveChannelId = (raw: string): string => {
   return resolveId(raw, tvChannelIdMap);
 };
 
-/**
- * Handle a TV channel-management action (`target: "tv"` in `mediaControl`).
- * `emitToolName` is the tool name to report outputs under ("mediaControl" or
- * the legacy "tvControl" alias).
- */
+/** Handle a TV channel-management action (`target: "tv"` in `mediaControl`). */
 export const handleTvChannelAction = async (
   input: TvChannelActionInput,
   toolCallId: string,

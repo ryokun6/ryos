@@ -34,15 +34,19 @@ No server required. Import the code under test directly. Schema tests are the hi
 
 ```typescript
 import { describe, expect, test } from "bun:test";
-import { tvControlSchema } from "../api/chat/tools/schemas";
+import { mediaControlSchema } from "../api/chat/tools/schemas";
 
-describe("tvControlSchema", () => {
+describe("mediaControlSchema", () => {
   test("accepts a valid 'list' call", () => {
-    expect(tvControlSchema.safeParse({ action: "list" }).success).toBe(true);
+    expect(
+      mediaControlSchema.safeParse({ target: "tv", action: "list" }).success
+    ).toBe(true);
   });
 
   test("rejects 'tune' with neither channelId nor channelNumber", () => {
-    expect(tvControlSchema.safeParse({ action: "tune" }).success).toBe(false);
+    expect(
+      mediaControlSchema.safeParse({ target: "tv", action: "tune" }).success
+    ).toBe(false);
   });
 });
 ```
@@ -50,7 +54,7 @@ describe("tvControlSchema", () => {
 Run a single file:
 
 ```bash
-bun test tests/test-tv-control-schema.test.ts
+bun test tests/test-media-control-unified.test.ts
 ```
 
 ## API Integration Test

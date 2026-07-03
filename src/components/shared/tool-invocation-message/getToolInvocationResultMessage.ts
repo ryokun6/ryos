@@ -200,11 +200,7 @@ export function getToolInvocationResultMessage(
       displayResultMessage = t("apps.chats.toolCalls.launched", { appName: getAppName(input?.id) });
     } else if (toolName === "closeApp") {
       displayResultMessage = t("apps.chats.toolCalls.closed", { appName: getAppName(input?.id) });
-    } else if (
-      toolName === "mediaControl" ||
-      toolName === "ipodControl" ||
-      toolName === "karaokeControl"
-    ) {
+    } else if (toolName === "mediaControl") {
       // Use output directly if available (it contains detailed state information)
       if (typeof output === "string" && output.trim().length > 0) {
         displayResultMessage = output;
@@ -314,22 +310,6 @@ export function getToolInvocationResultMessage(
         } else if (out.message) {
           displayResultMessage = out.message;
         }
-      }
-    } else if (toolName === "tvControl") {
-      const out = output as
-        | {
-            success?: boolean;
-            message?: string;
-            channels?: unknown[];
-          }
-        | undefined;
-      if (out?.success && out.message) {
-        displayResultMessage = out.message;
-      } else if (out?.success && Array.isArray(out.channels)) {
-        displayResultMessage = t("apps.chats.toolCalls.tv.foundChannels", {
-          defaultValue: "Found {{count}} channels",
-          count: out.channels.length,
-        });
       }
     } else if (toolName === "stickiesControl") {
       if (typeof output === "string") {

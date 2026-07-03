@@ -8,10 +8,6 @@
  * and result messages are implemented exactly once.
  *
  * TV channel-management actions live in `mediaTvChannels.ts`.
- *
- * The legacy `ipodControl` / `karaokeControl` / `tvControl` tools normalize
- * into this handler (see `useAiChat.ts`); `emitToolName` keeps their outputs
- * reporting under the original tool name.
  */
 
 import { useAppStore } from "@/stores/useAppStore";
@@ -1029,19 +1025,13 @@ const TV_CHANNEL_ACTIONS: ReadonlySet<CanonicalAction> = new Set([
 // Main handler
 // ============================================================================
 
-/**
- * Handle a `mediaControl` tool call (or a legacy alias normalized into one).
- *
- * @param emitToolName - tool name to report outputs under; defaults to
- *   "mediaControl". Legacy aliases pass their own name so the AI SDK can
- *   match outputs to the original call.
- */
+/** Handle a `mediaControl` tool call. */
 export const handleMediaControl = async (
   input: MediaControlInput,
   toolCallId: string,
-  context: ToolContext,
-  emitToolName: string = "mediaControl"
+  context: ToolContext
 ): Promise<void> => {
+  const emitToolName = "mediaControl";
   const target: MediaControlTarget = input.target ?? "music";
   const rawAction = (input.action ?? "toggle").toString().trim();
   const action =

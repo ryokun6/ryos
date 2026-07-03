@@ -36,7 +36,7 @@ graph TD
 |------|-------------|
 | `launchApp` | Open applications (supports Internet Explorer URL + year time-travel launch) |
 | `closeApp` | Close applications |
-| `mediaControl` | Unified media control with `target` ("music" default, "karaoke", "videos", "tv"): toggle/play/pause/playKnown/addAndPlay/next/previous transport (+ video/fullscreen/lyrics translation options) and TV channel management (list/tune/createChannel/deleteChannel/addVideo/removeVideo). `ipodControl`/`karaokeControl`/`tvControl` remain as deprecated aliases. |
+| `mediaControl` | Unified media control with `target` ("music" default, "karaoke", "videos", "tv"): toggle/play/pause/playKnown/addAndPlay/next/previous transport (+ video/fullscreen/lyrics translation options) and TV channel management (list/tune/createChannel/deleteChannel/addVideo/removeVideo). |
 | `generateHtml` | Create HTML applets with title and emoji icon |
 | `aquarium` | Render interactive emoji aquarium in chat |
 | `list` | List VFS items: `/Applets`, `/Documents` (includes document names), `/Applications`, `/Music`, `/Applets Store` |
@@ -131,7 +131,7 @@ Client execution is split across two layers:
 - `src/apps/chats/tools/` — registered handlers for media/settings/app-state tools:
 
 - `appHandlers.ts` - Launch/close app execution
-- `mediaHandler.ts` - Unified `mediaControl` execution (music/karaoke/videos/tv transport; also serves the deprecated `ipodControl`/`karaokeControl`/`tvControl` aliases)
+- `mediaHandler.ts` - Unified `mediaControl` execution (music/karaoke/videos/tv transport)
 - `mediaTvChannels.ts` - TV channel lineup and tuning execution (target `tv` channel actions)
 - `calendarHandler.ts` - Calendar event management execution
 - `contactsHandler.ts` - Contact management execution
@@ -149,7 +149,7 @@ Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 ### Tool schema highlights
 
 - `launchApp` now enforces that `internet-explorer` launches must provide both `url` and `year` together (or neither), with year-range validation.
-- `mediaControl` is the unified media tool: a `target` field ("music" default, "karaoke", "videos", "tv") gates the action vocabulary and flags (e.g. TV channel actions require `target: "tv"`, `enableVideo` is music-only). Action-specific argument rules carry over from the legacy schemas (e.g. `addAndPlay` requires `id`; playback-state actions must not include track identifiers). `ipodControl`/`karaokeControl`/`tvControl` remain as deprecated aliases.
+- `mediaControl` is the media tool: a `target` field ("music" default, "karaoke", "videos", "tv") gates the action vocabulary and flags (e.g. TV channel actions require `target: "tv"`, `enableVideo` is music-only). Action-specific argument rules include requiring `id` for `addAndPlay` and rejecting track identifiers for playback-state actions.
 - `memoryWrite` / `memoryRead` are unified schemas using a `type` field:
   - `long_term` (default): key-based memory operations
   - `daily`: journal-style per-day operations

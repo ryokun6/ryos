@@ -3,10 +3,7 @@
  *
  * Covers:
  * 1. The `mediaControlSchema` target/action vocabulary and gating rules.
- * 2. Alias parity: every representative call the legacy `ipodControl` /
- *    `karaokeControl` / `tvControl` schemas accept is accepted by
- *    `mediaControl` with the corresponding target.
- * 3. Client handler wiring for the new `videos` and `tv` transport targets.
+ * 2. Client handler wiring for the `videos` and `tv` transport targets.
  */
 import "fake-indexeddb/auto";
 import { describe, expect, test, beforeEach } from "bun:test";
@@ -55,13 +52,11 @@ Object.defineProperty(browserGlobals, "navigator", {
   configurable: true,
 });
 
-const {
-  mediaControlSchema,
-  ipodControlSchema,
-  karaokeControlSchema,
-  tvControlSchema,
-} = await import("../api/chat/tools/schemas");
+const { mediaControlSchema } = await import("../api/chat/tools/schemas");
 const { MEDIA_TARGETS } = await import("../api/chat/tools/types");
+const { createChatTools, TOOL_DESCRIPTIONS } = await import(
+  "../api/chat/tools/index"
+);
 const { handleMediaControl } = await import(
   "../src/apps/chats/tools/mediaHandler"
 );
@@ -93,6 +88,20 @@ const validTransportParams = (action: string): Record<string, unknown> =>
   action === "addAndPlay" ? { id: "dQw4w9WgXcQ" } : {};
 
 describe("mediaControl schema", () => {
+  test("is the only registered browser media-control tool", () => {
+    const tools = createChatTools(
+      {} as Parameters<typeof createChatTools>[0]
+    ) as Record<string, unknown>;
+
+    expect(tools.mediaControl).toBeDefined();
+    expect("ipodControl" in tools).toBe(false);
+    expect("karaokeControl" in tools).toBe(false);
+    expect("tvControl" in tools).toBe(false);
+    expect("ipodControl" in TOOL_DESCRIPTIONS).toBe(false);
+    expect("karaokeControl" in TOOL_DESCRIPTIONS).toBe(false);
+    expect("tvControl" in TOOL_DESCRIPTIONS).toBe(false);
+  });
+
   test("target vocabulary is pinned and defaults to music", () => {
     expect([...MEDIA_TARGETS]).toEqual(["music", "karaoke", "videos", "tv"]);
     const result = mediaControlSchema.safeParse({});
@@ -162,7 +171,7 @@ describe("mediaControl schema", () => {
     }
   });
 
-  test("channel-action parameter rules mirror the legacy tvControl schema", () => {
+  test("enforces channel-action parameter rules", () => {
     expect(
       mediaControlSchema.safeParse({ target: "tv", action: "tune" }).success
     ).toBe(false);
@@ -238,7 +247,7 @@ describe("mediaControl schema", () => {
     }
   });
 
-  test("transport parameter rules match the legacy media schemas", () => {
+  test("enforces transport parameter rules", () => {
     // addAndPlay requires id and rejects manual title/artist.
     expect(
       mediaControlSchema.safeParse({ target: "music", action: "addAndPlay" })
@@ -271,81 +280,6 @@ describe("mediaControl schema", () => {
         mediaControlSchema.safeParse({ target: "videos", action, id: "x" })
           .success
       ).toBe(false);
-    }
-  });
-});
-
-describe("mediaControl alias parity", () => {
-  test("every call ipodControl accepts is accepted with target music", () => {
-    const calls: Record<string, unknown>[] = [
-      {},
-      { action: "toggle" },
-      { action: "play", enableVideo: true, enableFullscreen: true },
-      { action: "pause" },
-      { action: "playKnown" },
-      { action: "playKnown", id: "am:123", title: "Song", artist: "Artist" },
-      { action: "addAndPlay", id: "dQw4w9WgXcQ" },
-      { action: "next" },
-      { action: "previous", enableTranslation: "ja" },
-    ];
-    for (const call of calls) {
-      expect(ipodControlSchema.safeParse(call).success).toBe(true);
-      expect(
-        mediaControlSchema.safeParse({ ...call, target: "music" }).success
-      ).toBe(true);
-    }
-  });
-
-  test("every call karaokeControl accepts is accepted with target karaoke", () => {
-    const calls: Record<string, unknown>[] = [
-      {},
-      { action: "toggle" },
-      { action: "play", enableFullscreen: true },
-      { action: "pause" },
-      { action: "playKnown", title: "Song" },
-      { action: "addAndPlay", id: "dQw4w9WgXcQ" },
-      { action: "next" },
-      { action: "previous", enableTranslation: "off" },
-    ];
-    for (const call of calls) {
-      expect(karaokeControlSchema.safeParse(call).success).toBe(true);
-      expect(
-        mediaControlSchema.safeParse({ ...call, target: "karaoke" }).success
-      ).toBe(true);
-    }
-  });
-
-  test("every call tvControl accepts is accepted with target tv", () => {
-    const calls: Record<string, unknown>[] = [
-      { action: "list" },
-      { action: "tune", channelId: "mtv" },
-      { action: "tune", channelNumber: 2 },
-      { action: "createChannel", prompt: "lofi beats" },
-      { action: "createChannel", prompt: "lofi beats", name: "Lofi" },
-      { action: "deleteChannel", channelId: "custom-1" },
-      {
-        action: "addVideo",
-        channelId: "custom-1",
-        videoId: "dQw4w9WgXcQ",
-        title: "A Video",
-        artist: "A Channel",
-      },
-      {
-        action: "addVideo",
-        channelId: "custom-1",
-        url: "https://youtu.be/dQw4w9WgXcQ",
-      },
-      {
-        action: "removeVideo",
-        channelId: "custom-1",
-        removeVideoId: "dQw4w9WgXcQ",
-      },
-    ];
-    for (const call of calls) {
-      expect(tvControlSchema.safeParse(call).success).toBe(true);
-      expect(
-        mediaControlSchema.safeParse({ ...call, target: "tv" }).success
-      ).toBe(true);
     }
   });
 });
@@ -510,25 +444,5 @@ describe("mediaControl handler — tv transport", () => {
     );
     expect(outputs).toHaveLength(1);
     expect(outputs[0].state).toBe("output-error");
-  });
-});
-
-describe("mediaControl handler — legacy alias emission", () => {
-  test("alias tool name is used for outputs", async () => {
-    useVideoStore.setState({
-      videos: DEFAULT_VIDEOS,
-      currentVideoId: DEFAULT_VIDEOS[0].id,
-      playbackRequested: false,
-      isPlaying: false,
-    });
-    const { outputs, context } = makeContext();
-    await handleMediaControl(
-      { target: "tv", action: "toggle" },
-      "call-alias-1",
-      context,
-      "tvControl"
-    );
-    expect(outputs).toHaveLength(1);
-    expect(outputs[0].tool).toBe("tvControl");
   });
 });

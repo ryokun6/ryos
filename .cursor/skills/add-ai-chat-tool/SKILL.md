@@ -180,7 +180,7 @@ For tools that return images to the model (like `infiniteMacControl`'s `readScre
 
 ## Testing
 
-- **Schema** (fast, no server): add a `tests/test-<feature>-schema.test.ts` that `safeParse`s valid and invalid inputs (see `tests/test-tv-control-schema.test.ts`). Register it in `test:unit`. See the `write-tests` skill.
+- **Schema** (fast, no server): add a `tests/test-<feature>-schema.test.ts` that `safeParse`s valid and invalid inputs (see `tests/test-media-control-unified.test.ts`). Register it in `test:unit`. See the `write-tests` skill.
 - **Server executor**: cover via the AI endpoint suite (`test:ai`) where applicable.
 - **Client handler / end-to-end**: exercise in the Chats app by asking Ryo to use the capability and confirming the store/app updates and the tool result bubble.
 

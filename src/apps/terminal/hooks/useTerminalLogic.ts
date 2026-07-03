@@ -1042,7 +1042,7 @@ export const useTerminalLogic = ({
             );
             if (processed) lines.push(processed);
           } else if (partType.startsWith("tool-")) {
-            // AI SDK v5 tool parts have type like "tool-launchApp", "tool-ipodControl", etc.
+            // AI SDK v5 tool parts have type like "tool-launchApp", "tool-mediaControl", etc.
             const toolName = partType.slice(5); // Remove "tool-" prefix
             const toolPart = part as {
               type: string;

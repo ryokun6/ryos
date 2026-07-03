@@ -125,12 +125,6 @@ export const TOOL_DESCRIPTIONS = {
     "TARGET NOTES: Karaoke always uses the YouTube iPod library (never Apple Music 'am:' IDs) and has independent playback state. Music (iPod) supports 'enableVideo'; music and karaoke support 'enableFullscreen' and 'enableTranslation'. LYRICS TRANSLATION: keep lyrics in the ORIGINAL language by default — only set enableTranslation when the user EXPLICITLY asks. " +
     "IMPORTANT: If the user's OS is iOS, do NOT automatically start playback — tell the user to press play themselves (iOS browsers block programmatic audio).",
 
-  ipodControl:
-    "DEPRECATED alias of mediaControl with target 'music' — prefer mediaControl. Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video or fullscreen mode with enableVideo or enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
-  
-  karaokeControl:
-    "DEPRECATED alias of mediaControl with target 'karaoke' — prefer mediaControl. Control playback in the Karaoke app. Launches the Karaoke app automatically if needed. Karaoke always uses the YouTube iPod library, even when iPod is viewing Apple Music. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing YouTube-library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable fullscreen mode with enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to tap the play button themselves to start playing. NOTE: Karaoke has independent playback state.",
-  
   generateHtml:
     "Generate an HTML snippet for an ryOS Applet: a small windowed app (default ~320px wide) that runs inside ryOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html', a short 'title', and an 'icon' (emoji). DO NOT wrap it in markdown fences; the client will handle scaffolding.",
   
@@ -235,19 +229,6 @@ export const TOOL_DESCRIPTIONS = {
     "'delete' removes a contact by ID. " +
     "Use 'list' first to get IDs before calling 'get', 'update', or 'delete'.",
 
-  tvControl:
-    "DEPRECATED alias of mediaControl with target 'tv' — prefer mediaControl. Control the TV app. Manage the user's TV channel lineup and tune in to channels. " +
-    "Actions: " +
-    "'list' returns the full lineup (built-in + custom channels) with stable ids and channel numbers; " +
-    "'tune' switches the TV to a channel by id (from 'list') or by 'channelNumber'; " +
-    "'createChannel' creates a new custom channel from a one-line theme/prompt — the server AI-plans the channel name, tagline, and lineup by fanning out YouTube searches. Do NOT pre-search videos with searchSongs first or ask the user for a video list; just pass the user's intent as 'prompt' (e.g. 'lofi beats to study to', 'skateboarding tricks'). Optionally pass 'name' to override the planner's name; " +
-    "'deleteChannel' removes a custom channel by id (built-in channels cannot be deleted); " +
-    "'addVideo' appends a YouTube video (by 'videoId' or 'url') to a custom channel; " +
-    "'removeVideo' removes a video from a custom channel by 'removeVideoId'. " +
-    "Built-in channels (RyoTV, MTV, 台視) are read-only — only custom channels can be edited. " +
-    "Always call 'list' first to get channel ids and current state. " +
-    "The TV app opens automatically when tuning, creating, or editing channels.",
-
   mapsSearchPlaces:
     "Search Apple Maps for points of interest, businesses, and addresses. Use when the user asks to find a place, " +
     "look up an address, get directions to a venue, plan a route, or otherwise wants real geographic data. " +
@@ -336,19 +317,6 @@ export function createChatTools(
       inputSchema: schemas.mediaControlSchema,
       // No execute - handled client-side (requires browser media APIs)
     },
-    // Legacy aliases kept for one release so stale cached prompts keep
-    // working; the client normalizes these into the mediaControl handler.
-    ipodControl: {
-      description: TOOL_DESCRIPTIONS.ipodControl,
-      inputSchema: schemas.ipodControlSchema,
-      // No execute - handled client-side (requires browser media APIs)
-    },
-    karaokeControl: {
-      description: TOOL_DESCRIPTIONS.karaokeControl,
-      inputSchema: schemas.karaokeControlSchema,
-      // No execute - handled client-side (requires browser media APIs)
-    },
-
     // ============================================================================
     // HTML Generation Tools (Server-side execution)
     // ============================================================================
@@ -500,15 +468,6 @@ export function createChatTools(
       description: TOOL_DESCRIPTIONS.contactsControl,
       inputSchema: schemas.contactsControlSchema,
       // No execute - handled client-side in web chat, server-side in Telegram
-    },
-
-    // ============================================================================
-    // TV Control Tools (Client-side execution)
-    // ============================================================================
-    tvControl: {
-      description: TOOL_DESCRIPTIONS.tvControl,
-      inputSchema: schemas.tvControlSchema,
-      // No execute - handled client-side (requires Zustand store + browser fetch)
     },
 
     // ============================================================================

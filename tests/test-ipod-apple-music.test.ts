@@ -69,30 +69,18 @@ const {
 const { handleMediaControl } = await import(
   "../src/apps/chats/tools/mediaHandler"
 );
-// Legacy-shaped wrappers so the assertions below keep exercising the same
-// call surface the old ipodControl/karaokeControl aliases normalize into.
-const handleIpodControl = (
+const handleMusicControl = (
   input: Record<string, unknown>,
   toolCallId: string,
   context: Parameters<typeof handleMediaControl>[2]
 ) =>
-  handleMediaControl(
-    { ...input, target: "music" },
-    toolCallId,
-    context,
-    "ipodControl"
-  );
-const handleKaraokeControl = (
+  handleMediaControl({ ...input, target: "music" }, toolCallId, context);
+const handleKaraokeMediaControl = (
   input: Record<string, unknown>,
   toolCallId: string,
   context: Parameters<typeof handleMediaControl>[2]
 ) =>
-  handleMediaControl(
-    { ...input, target: "karaoke" },
-    toolCallId,
-    context,
-    "karaokeControl"
-  );
+  handleMediaControl({ ...input, target: "karaoke" }, toolCallId, context);
 const { useKaraokeStore } = await import("../src/stores/useKaraokeStore");
 const {
   shouldFireEndedForPlaybackState,
@@ -948,7 +936,7 @@ describe("useIpodStore Apple Music slice", () => {
     ).toEqual(["yt1"]);
   });
 
-  test("ipodControl playKnown selects Apple Music tracks when Apple Music is active", async () => {
+  test("music playKnown selects Apple Music tracks when Apple Music is active", async () => {
     useIpodStore.setState({
       tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],
       currentSongId: "yt1",
@@ -968,7 +956,7 @@ describe("useIpodStore Apple Music slice", () => {
     });
     const results: unknown[] = [];
 
-    await handleIpodControl(
+    await handleMusicControl(
       { action: "playKnown", id: "am:2" },
       "call-1",
       {
@@ -986,7 +974,7 @@ describe("useIpodStore Apple Music slice", () => {
     expect(results).toHaveLength(1);
   });
 
-  test("ipodControl next follows Apple Music navigation when Apple Music is active", async () => {
+  test("music next follows Apple Music navigation when Apple Music is active", async () => {
     useIpodStore.setState({
       tracks: [{ id: "yt1", url: "youtube:1", title: "YouTube One" }],
       currentSongId: "yt1",
@@ -1000,7 +988,7 @@ describe("useIpodStore Apple Music slice", () => {
       isShuffled: false,
     });
 
-    await handleIpodControl(
+    await handleMusicControl(
       { action: "next" },
       "call-2",
       {
@@ -1014,7 +1002,7 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.currentSongId).toBe("yt1");
   });
 
-  test("karaokeControl playKnown uses YouTube tracks while iPod is in Apple Music", async () => {
+  test("karaoke playKnown uses YouTube tracks while iPod is in Apple Music", async () => {
     useIpodStore.setState({
       tracks: [
         {
@@ -1039,7 +1027,7 @@ describe("useIpodStore Apple Music slice", () => {
     });
     const results: unknown[] = [];
 
-    await handleKaraokeControl(
+    await handleKaraokeMediaControl(
       { action: "playKnown", id: "yt2" },
       "call-karaoke-1",
       {
