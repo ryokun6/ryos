@@ -60,9 +60,7 @@ const { createChatTools, TOOL_DESCRIPTIONS } = await import(
 const { handleMediaControl } = await import(
   "../src/apps/chats/tools/mediaHandler"
 );
-const { useVideoStore, DEFAULT_VIDEOS } = await import(
-  "../src/stores/useVideoStore"
-);
+const { useVideoStore } = await import("../src/stores/useVideoStore");
 const { useTvStore } = await import("../src/stores/useTvStore");
 
 const TRANSPORT_ACTIONS = [
