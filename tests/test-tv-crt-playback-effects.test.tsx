@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useTvCrtPlaybackEffects } from "../src/apps/tv/components/tv-app/useTvCrtPlaybackEffects";
 
-if (typeof document === "undefined") {
+const registeredDomForSuite = typeof document === "undefined";
+if (registeredDomForSuite) {
   GlobalRegistrator.register();
 }
 
@@ -311,4 +312,10 @@ describe("TV CRT playback effects", () => {
     expect(powerOnCalls).toBe(1);
     expect(channelSwitchCalls).toBe(1);
   });
+});
+
+afterAll(() => {
+  if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
+    GlobalRegistrator.unregister();
+  }
 });

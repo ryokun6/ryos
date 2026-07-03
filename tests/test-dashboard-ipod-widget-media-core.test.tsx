@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -7,7 +7,8 @@ import { IpodWidget } from "../src/components/layout/dashboard/IpodWidget";
 import { useAppStore } from "../src/stores/useAppStore";
 import { useIpodStore } from "../src/stores/useIpodStore";
 
-if (typeof document === "undefined") {
+const registeredDomForSuite = typeof document === "undefined";
+if (registeredDomForSuite) {
   GlobalRegistrator.register();
 }
 
@@ -68,6 +69,12 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+});
+
+afterAll(() => {
+  if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
+    GlobalRegistrator.unregister();
+  }
 });
 
 describe("Dashboard iPod widget MediaCore wiring", () => {
