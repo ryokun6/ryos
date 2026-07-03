@@ -128,6 +128,10 @@ describe("mediaControl schema", () => {
       const result = mediaControlSchema.safeParse({
         target: "karaoke",
         action: "next",
+        id: neutralString,
+        title: neutralString,
+        artist: neutralString,
+        enableTranslation: neutralString,
         prompt: neutralString,
         name: neutralString,
         videoId: neutralString,

@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { appendFileSync } from "node:fs";
 import { appIds } from "../../../src/config/appIds.js";
 import {
   THEME_IDS,
@@ -37,6 +38,9 @@ import {
  * Converts empty/whitespace strings and placeholder values to undefined
  */
 export const normalizeOptionalString = (value: unknown) => {
+  if (value === null) {
+    return undefined;
+  }
   if (typeof value === "string") {
     const trimmed = value.trim().toLowerCase();
     // Treat empty strings and common AI placeholder values as undefined
@@ -1017,12 +1021,18 @@ const TV_ONLY_MEDIA_FIELDS = [
 ] as const;
 
 const normalizeMediaControlInput = (value: unknown): unknown => {
+  // #region agent log
+  appendFileSync("/opt/cursor/logs/debug.log", JSON.stringify({ hypothesisId: "A", location: "api/chat/tools/schemas.ts:1021", message: "media normalizer entry", data: { inputKind: value === null ? "null" : Array.isArray(value) ? "array" : typeof value }, timestamp: Date.now() }) + "\n");
+  // #endregion
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return value;
   }
 
   const data: Record<string, unknown> = { ...value };
   const target = data.target;
+  // #region agent log
+  appendFileSync("/opt/cursor/logs/debug.log", JSON.stringify({ hypothesisId: "B", location: "api/chat/tools/schemas.ts:1031", message: "media input before neutral-field filtering", data: { target: typeof target === "string" ? target : typeof target, action: typeof data.action === "string" ? data.action : typeof data.action, nullSharedFields: ["id", "title", "artist", "enableTranslation"].filter((field) => data[field] === null), nullTvFields: TV_ONLY_MEDIA_STRING_FIELDS.filter((field) => data[field] === null) }, timestamp: Date.now() }) + "\n");
+  // #endregion
 
   // Some tool clients populate every optional field with a neutral default.
   // Drop only values that cannot express an intent for the selected target.
@@ -1048,6 +1058,9 @@ const normalizeMediaControlInput = (value: unknown): unknown => {
     }
   }
 
+  // #region agent log
+  appendFileSync("/opt/cursor/logs/debug.log", JSON.stringify({ hypothesisId: "B", location: "api/chat/tools/schemas.ts:1060", message: "media input after neutral-field filtering", data: { nullSharedFields: ["id", "title", "artist", "enableTranslation"].filter((field) => data[field] === null), nullTvFields: TV_ONLY_MEDIA_STRING_FIELDS.filter((field) => data[field] === null) }, timestamp: Date.now() }) + "\n");
+  // #endregion
   return data;
 };
 
@@ -1142,6 +1155,9 @@ const mediaControlObjectSchema = z.object({
 export const mediaControlSchema = z
   .preprocess(normalizeMediaControlInput, mediaControlObjectSchema)
   .superRefine((data, ctx) => {
+    // #region agent log
+    appendFileSync("/opt/cursor/logs/debug.log", JSON.stringify({ hypothesisId: "C", location: "api/chat/tools/schemas.ts:1157", message: "media refinement entered", data: { target: data.target, action: data.action }, timestamp: Date.now() }) + "\n");
+    // #endregion
     const { target, action } = data;
 
     if (isTvChannelAction(action)) {
