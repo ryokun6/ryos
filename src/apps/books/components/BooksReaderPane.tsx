@@ -22,6 +22,7 @@ import {
   Pause,
   Play,
   Rewind,
+  SpeakerHigh,
   Stop,
   TextAa,
   Trash,
@@ -93,7 +94,12 @@ import {
   BOOKS_SPEECH_BAR_AUTO_REVEAL_MS,
   useBooksSpeechBarVisibility,
 } from "../hooks/useBooksSpeechBarVisibility";
-import { ryOSLocaleToSpeechLanguage } from "@/utils/browserSpeech";
+import {
+  getBrowserSpeechSynthesis,
+  resolveSpeechVoice,
+  ryOSLocaleToSpeechLanguage,
+} from "@/utils/browserSpeech";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
 import type {
@@ -2018,12 +2024,21 @@ export const BooksReaderPane = forwardRef<
     []
   );
 
-  // UI sounds: toolbar buttons click; Ask Ryo reuses the Chats/Terminal audio
-  // vocabulary (send whoosh → typing synth during the reveal → response ding).
+  // UI sounds: toolbar buttons click; Ask Ryo keeps it to simple pings —
+  // a soft synth pulse while thinking, a single ding when the reply lands,
+  // and the typing synth during the reveal.
   const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const { playNote } = useChatSynth();
-  const { playCommandSound, playErrorSound, playAiResponseSound } =
+  const { playErrorSound, playDingSound, playThinkingSound } =
     useTerminalSounds();
+  // Gentle thinking pulse: hushed echoing notes while waiting (the dedicated
+  // thinking synth self-initializes, so it is always audible).
+  useEffect(() => {
+    if (askRyo?.status !== "thinking") return;
+    void playThinkingSound();
+    const pulse = window.setInterval(() => void playThinkingSound(), 1600);
+    return () => window.clearInterval(pulse);
+  }, [askRyo?.status, playThinkingSound]);
   // Typing-synth notes paced with the reply's simulated stream.
   useEffect(() => {
     if (askRyo?.status !== "done" || !askRyo.reply) return;
@@ -2048,12 +2063,75 @@ export const BooksReaderPane = forwardRef<
     };
   }, [askRyo, playNote]);
 
+  // Speak the reply with browser TTS (non-AI), same voice/rate settings as
+  // the book read-aloud. Toggle: press again to stop.
+  const [isSpeakingAskReply, setIsSpeakingAskReply] = useState(false);
+  const askSpeechStartedRef = useRef(false);
+  const stopAskReplySpeech = useCallback(() => {
+    if (!askSpeechStartedRef.current) return;
+    askSpeechStartedRef.current = false;
+    setIsSpeakingAskReply(false);
+    try {
+      getBrowserSpeechSynthesis()?.cancel();
+    } catch {
+      // ignore
+    }
+  }, []);
+  useEffect(() => () => stopAskReplySpeech(), [stopAskReplySpeech]);
+  const handleToggleAskReplySpeech = useCallback(() => {
+    if (isSpeakingAskReply) {
+      stopAskReplySpeech();
+      return;
+    }
+    const reply = askRyo?.reply;
+    const synth = getBrowserSpeechSynthesis();
+    if (!reply || !synth) return;
+    // The reply follows the question's language (book language falling back
+    // to the UI locale), so reuse the read-aloud language + voice resolution.
+    const lang = getSpeechLanguage();
+    const utterance = new SpeechSynthesisUtterance(reply);
+    utterance.lang = lang;
+    utterance.rate = normalizeBooksSpeechRate(speechRateRef.current);
+    const voice = resolveSpeechVoice(
+      synth.getVoices(),
+      lang,
+      useAudioSettingsStore.getState().browserTtsVoiceURI
+    );
+    if (voice) utterance.voice = voice;
+    utterance.onend = () => {
+      askSpeechStartedRef.current = false;
+      setIsSpeakingAskReply(false);
+    };
+    utterance.onerror = () => {
+      askSpeechStartedRef.current = false;
+      setIsSpeakingAskReply(false);
+    };
+    // Page read-aloud shares the engine; stop it before speaking the reply.
+    stopSpeaking();
+    try {
+      synth.cancel();
+      synth.speak(utterance);
+      askSpeechStartedRef.current = true;
+      setIsSpeakingAskReply(true);
+    } catch {
+      askSpeechStartedRef.current = false;
+      setIsSpeakingAskReply(false);
+    }
+  }, [
+    askRyo,
+    getSpeechLanguage,
+    isSpeakingAskReply,
+    stopAskReplySpeech,
+    stopSpeaking,
+  ]);
+
   const dismissAskRyo = useCallback(() => {
     askRyoAbortRef.current?.abort();
     askRyoAbortRef.current = null;
     setAskRyo(null);
     setShowAskCopyCheck(false);
-  }, []);
+    stopAskReplySpeech();
+  }, [stopAskReplySpeech]);
 
   const handleContinueInChats = useCallback(() => {
     const passage = askRyo?.passage;
@@ -2125,10 +2203,10 @@ export const BooksReaderPane = forwardRef<
     );
 
     askRyoAbortRef.current?.abort();
+    stopAskReplySpeech();
     const controller = new AbortController();
     askRyoAbortRef.current = controller;
     setAskRyo({ status: "thinking", passage, bubbleWidth });
-    playCommandSound();
 
     try {
       const response = await abortableFetch(getApiUrl("/api/applet-ai"), {
@@ -2153,7 +2231,7 @@ export const BooksReaderPane = forwardRef<
         return;
       }
       setAskRyo({ status: "done", passage, reply, bubbleWidth });
-      playAiResponseSound();
+      void playDingSound();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       if (askRyoAbortRef.current !== controller) return;
@@ -2168,9 +2246,9 @@ export const BooksReaderPane = forwardRef<
     activeSelection,
     clearActiveSelection,
     entry.name,
-    playAiResponseSound,
-    playCommandSound,
+    playDingSound,
     playErrorSound,
+    stopAskReplySpeech,
     t,
   ]);
 
@@ -2610,6 +2688,36 @@ export const BooksReaderPane = forwardRef<
                       }
                       trailing={
                         <>
+                          {askRyo.status === "done" && (
+                            <button
+                              type="button"
+                              aria-label={
+                                isSpeakingAskReply
+                                  ? t("apps.books.speech.stop")
+                                  : t("apps.books.menu.startSpeaking")
+                              }
+                              title={
+                                isSpeakingAskReply
+                                  ? t("apps.books.speech.stop")
+                                  : t("apps.books.menu.startSpeaking")
+                              }
+                              onClick={handleToggleAskReplySpeech}
+                              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/15 transition-colors hover:bg-current/25"
+                              tabIndex={0}
+                            >
+                              <BarIconSwap
+                                iconKey={
+                                  isSpeakingAskReply ? "stop" : "speak"
+                                }
+                              >
+                                {isSpeakingAskReply ? (
+                                  <Stop weight="fill" size={12} />
+                                ) : (
+                                  <SpeakerHigh weight="bold" size={12} />
+                                )}
+                              </BarIconSwap>
+                            </button>
+                          )}
                           {askRyo.status === "done" && (
                             <button
                               type="button"

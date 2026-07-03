@@ -88,6 +88,30 @@ const MOO_PRESET = {
   duration: "4n",
 };
 
+// Soft "thinking" pulse preset (Books Ask Ryo, and other AI waits): a hushed
+// sine with a slow attack and long tail, run through echo + reverb so the
+// repeating pulse reads as ambient rather than rigid.
+const THINKING_PRESET = {
+  oscillator: {
+    type: "sine" as const,
+  },
+  envelope: {
+    attack: 0.12,
+    decay: 0.35,
+    sustain: 0.05,
+    release: 1.1,
+  },
+  filter: {
+    frequency: 1600,
+    rolloff: -24 as const,
+  },
+  volume: -14,
+  duration: "8n",
+} as const;
+
+// Gentle rotation so consecutive pulses don't hit the identical note.
+const THINKING_NOTES = ["G4", "C5", "E5", "C5"] as const;
+
 // Completion ding sound preset
 const DING_PRESET = {
   oscillator: {
@@ -758,6 +782,14 @@ export function useTerminalSounds() {
   const dingSynthRef = useRef<Tone.Synth | null>(null);
   // For cowsay moo sound
   const mooSynthRef = useRef<Tone.Synth | null>(null);
+  // For the soft AI "thinking" pulse (synth + echo/reverb tail to dispose)
+  const thinkingSynthRef = useRef<{
+    synth: Tone.Synth;
+    delay: Tone.FeedbackDelay;
+    reverb: Tone.Reverb;
+    filter: Tone.Filter;
+  } | null>(null);
+  const thinkingNoteIndexRef = useRef(0);
 
   // Shared function to initialize Tone.js once
   const initializeToneOnce = useCallback(async () => {
@@ -787,6 +819,11 @@ export function useTerminalSounds() {
           mooSynthRef.current = null;
         }
 
+        if (thinkingSynthRef.current) {
+          disposeThinkingSynth(thinkingSynthRef.current);
+          thinkingSynthRef.current = null;
+        }
+
         log.debug("Tone context was closed; created a new context and cleared synth cache");
       } catch (err) {
         console.error("Failed to reset Tone context:", err);
@@ -810,6 +847,7 @@ export function useTerminalSounds() {
           });
           dingSynthRef.current = createSynth(DING_PRESET);
           mooSynthRef.current = createSynth(MOO_PRESET);
+          thinkingSynthRef.current = createThinkingSynth();
         }
         return true;
       } catch (error) {
@@ -944,6 +982,30 @@ export function useTerminalSounds() {
     }
   }, []);
 
+  // Play one soft echoing "thinking" pulse (call on an interval while waiting)
+  const playThinkingSound = useCallback(async () => {
+    if (isMuted) return;
+
+    // Use shared initialization function
+    if (!(await initializeToneOnce())) return;
+
+    const instance = thinkingSynthRef.current;
+    if (!instance) return;
+
+    const note =
+      THINKING_NOTES[thinkingNoteIndexRef.current % THINKING_NOTES.length];
+    thinkingNoteIndexRef.current += 1;
+    try {
+      instance.synth.triggerAttackRelease(
+        note,
+        THINKING_PRESET.duration,
+        Tone.now()
+      );
+    } catch (error) {
+      log.debug("Error playing thinking sound", error);
+    }
+  }, [isMuted, initializeToneOnce]);
+
   // Play completion "ding" sound
   const playDingSound = useCallback(async () => {
     if (isMuted) return;
@@ -997,6 +1059,10 @@ export function useTerminalSounds() {
       if (mooSynthRef.current) {
         mooSynthRef.current.dispose();
       }
+
+      if (thinkingSynthRef.current) {
+        disposeThinkingSynth(thinkingSynthRef.current);
+      }
     };
   }, []);
 
@@ -1010,6 +1076,7 @@ export function useTerminalSounds() {
     playAiResponseSound: () => {
       return playSound("aiResponse");
     },
+    playThinkingSound,
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
@@ -1017,6 +1084,50 @@ export function useTerminalSounds() {
     toggleMute,
     isMuted,
   };
+}
+
+// Thinking pulse chain: synth → echo → reverb → lowpass → out. The echo and
+// reverb give each pulse a soft trailing wash instead of a dry blip.
+function createThinkingSynth() {
+  const filter = new Tone.Filter({
+    frequency: THINKING_PRESET.filter.frequency,
+    type: "lowpass",
+    rolloff: THINKING_PRESET.filter.rolloff,
+  }).toDestination();
+
+  const reverb = new Tone.Reverb({
+    decay: 2.4,
+    wet: 0.35,
+  }).connect(filter);
+
+  const delay = new Tone.FeedbackDelay({
+    delayTime: 0.28,
+    feedback: 0.35,
+    wet: 0.3,
+  }).connect(reverb);
+
+  const synth = new Tone.Synth({
+    oscillator: THINKING_PRESET.oscillator,
+    envelope: THINKING_PRESET.envelope,
+  }).connect(delay);
+  synth.volume.value = THINKING_PRESET.volume;
+
+  return { synth, delay, reverb, filter };
+}
+
+function disposeThinkingSynth(
+  instance: NonNullable<
+    ReturnType<typeof createThinkingSynth>
+  >
+) {
+  try {
+    instance.synth.dispose();
+    instance.delay.dispose();
+    instance.reverb.dispose();
+    instance.filter.dispose();
+  } catch (error) {
+    log.debug("Error disposing thinking synth", error);
+  }
 }
 
 function createSynth(
