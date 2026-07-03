@@ -1002,14 +1002,47 @@ const TV_CHANNEL_ACTION_SET: ReadonlySet<string> = new Set(TV_ACTIONS);
 const isTvChannelAction = (action: string): action is TvAction =>
   TV_CHANNEL_ACTION_SET.has(action);
 
-/**
- * Unified media control schema — one tool for the iPod ("music"), Karaoke,
- * Videos, and TV apps. Transport actions (toggle/play/pause/playKnown/
- * addAndPlay/next/previous) work on the playback targets; TV's channel
- * actions (list/tune/createChannel/…) are gated to `target: "tv"`.
- */
-export const mediaControlSchema = z
-  .object({
+const normalizeMediaControlInput = (value: unknown): unknown => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  const data: Record<string, unknown> = { ...value };
+  const target = data.target;
+
+  // Some tool clients populate every optional field with a neutral default.
+  // Drop only values that cannot express an intent for the selected target.
+  if (target !== "music" && data.enableVideo === false) {
+    delete data.enableVideo;
+  }
+  if (
+    target !== "music" &&
+    target !== "karaoke" &&
+    data.enableFullscreen === false
+  ) {
+    delete data.enableFullscreen;
+  }
+  if (
+    data.channelNumber === null ||
+    (target !== "tv" && data.channelNumber === 0)
+  ) {
+    delete data.channelNumber;
+  }
+
+  return data;
+};
+
+const TV_ONLY_MEDIA_FIELDS = [
+  "channelId",
+  "channelNumber",
+  "prompt",
+  "name",
+  "videoId",
+  "url",
+  "removeVideoId",
+] as const;
+
+const mediaControlObjectSchema = z.object({
     target: z
       .enum(MEDIA_TARGETS)
       .default("music")
@@ -1089,7 +1122,16 @@ export const mediaControlSchema = z
       .describe(
         "TV 'removeVideo' only: the YouTube video id to remove from the channel."
       ),
-  })
+});
+
+/**
+ * Unified media control schema — one tool for the iPod ("music"), Karaoke,
+ * Videos, and TV apps. Transport actions (toggle/play/pause/playKnown/
+ * addAndPlay/next/previous) work on the playback targets; TV's channel
+ * actions (list/tune/createChannel/…) are gated to `target: "tv"`.
+ */
+export const mediaControlSchema = z
+  .preprocess(normalizeMediaControlInput, mediaControlObjectSchema)
   .superRefine((data, ctx) => {
     const { target, action } = data;
 
@@ -1200,6 +1242,17 @@ export const mediaControlSchema = z
         message: "'enableFullscreen' is only supported for targets 'music' and 'karaoke'.",
         path: ["enableFullscreen"],
       });
+    }
+    if (target !== "tv") {
+      for (const field of TV_ONLY_MEDIA_FIELDS) {
+        if (data[field] !== undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `'${field}' is only supported for target 'tv'.`,
+            path: [field],
+          });
+        }
+      }
     }
 
     // Shared transport parameter rules.

@@ -123,6 +123,64 @@ describe("mediaControl schema", () => {
     }
   });
 
+  test("normalizes neutral auto-filled fields on karaoke navigation", () => {
+    for (const channelNumber of [null, 0]) {
+      const result = mediaControlSchema.safeParse({
+        target: "karaoke",
+        action: "next",
+        prompt: "",
+        name: "",
+        url: "",
+        channelId: "",
+        removeVideoId: "",
+        channelNumber,
+        enableVideo: false,
+      });
+
+      expect(result).toEqual({
+        success: true,
+        data: { target: "karaoke", action: "next" },
+      });
+    }
+  });
+
+  test("rejects meaningful fields for the wrong media target", () => {
+    expect(
+      mediaControlSchema.safeParse({
+        target: "karaoke",
+        action: "next",
+        enableVideo: true,
+      }).success
+    ).toBe(false);
+    expect(
+      mediaControlSchema.safeParse({
+        target: "karaoke",
+        action: "next",
+        channelNumber: 2,
+      }).success
+    ).toBe(false);
+    expect(
+      mediaControlSchema.safeParse({
+        target: "tv",
+        action: "tune",
+        channelNumber: 0,
+      }).success
+    ).toBe(false);
+  });
+
+  test("preserves neutral-looking values when they are meaningful", () => {
+    const result = mediaControlSchema.safeParse({
+      target: "music",
+      action: "play",
+      enableVideo: false,
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: { target: "music", action: "play", enableVideo: false },
+    });
+  });
+
   test("tv target only supports toggle/play/pause transport", () => {
     for (const action of ["toggle", "play", "pause"]) {
       expect(
