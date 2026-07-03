@@ -10,6 +10,10 @@ describe("large Zustand stores use one IndexedDB persistence path", () => {
     "src/stores/useIpodStore.ts",
     "src/stores/useStickiesStore.ts",
     "src/stores/useContactsStore.ts",
+    "src/stores/useBooksStore.ts",
+    "src/stores/useCalendarStore.ts",
+    "src/stores/useVideoStore.ts",
+    "src/stores/useTvStore.ts",
   ];
 
   for (const path of storePaths) {
@@ -21,7 +25,7 @@ describe("large Zustand stores use one IndexedDB persistence path", () => {
     });
   }
 
-  test("async hydration gates default-seeding and iPod sync paths", () => {
+  test("async hydration gates consumers and cloud sync paths", () => {
     const textEditState = readSource(
       "src/apps/textedit/hooks/useTextEditState.ts"
     );
@@ -42,9 +46,22 @@ describe("large Zustand stores use one IndexedDB persistence path", () => {
     expect(ipodUpdateChecker).toContain(
       "usePersistHydrated(useIpodStore.persist)"
     );
+    expect(readSource("src/apps/books/hooks/useBooksLogic.ts")).toContain(
+      "usePersistHydrated(useBooksStore.persist)"
+    );
     expect(syncCodecs).toContain(
       "return useIpodStore.persist.hasHydrated();"
     );
+    for (const store of [
+      "useBooksStore",
+      "useCalendarStore",
+      "useVideoStore",
+      "useTvStore",
+    ]) {
+      expect(syncCodecs).toContain(
+        `return ${store}.persist.hasHydrated();`
+      );
+    }
   });
 
   test("full-state stores partialize away action functions", () => {

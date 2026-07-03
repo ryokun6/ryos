@@ -1054,8 +1054,14 @@ const videosCodec: SyncCodec = {
   },
   subscribe(onChange) {
     return useVideoStore.subscribe((state, prev) => {
-      if (state.videos !== prev.videos) onChange();
+      if (state.videos !== prev.videos) {
+        if (!useVideoStore.persist.hasHydrated()) return;
+        onChange();
+      }
     });
+  },
+  isReady() {
+    return useVideoStore.persist.hasHydrated();
   },
 };
 
