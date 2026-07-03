@@ -51,6 +51,7 @@ const {
   flushAllPersistWrites,
   resetPersistWritesForTests,
   haltPersistWrites,
+  advancePersistEpoch,
 } = await import("../src/utils/persistWriteQueue");
 
 const resetDb = () =>
@@ -170,6 +171,28 @@ describe("createIndexedDBPersistStorage", () => {
     });
   });
 
+  test("renames legacy IndexedDB persist keys without losing state", async () => {
+    const legacyStorage = createIndexedDBPersistStorage<{ a: number }>({
+      delayMs: 5,
+    });
+    legacyStorage.setItem("old-storage", {
+      state: { a: 11 },
+      version: 1,
+    });
+    await settlePersistWrites();
+
+    const canonicalStorage = createIndexedDBPersistStorage<{ a: number }>({
+      legacyNames: ["old-storage"],
+    });
+    expect(await canonicalStorage.getItem("ryos:new-storage")).toEqual({
+      state: { a: 11 },
+      version: 1,
+    });
+
+    const freshLegacy = createIndexedDBPersistStorage<{ a: number }>();
+    expect(await freshLegacy.getItem("old-storage")).toBeNull();
+  });
+
   test("returns null when neither IndexedDB nor localStorage has the key", async () => {
     const storage = createIndexedDBPersistStorage<{ a: number }>();
     expect(await storage.getItem("missing")).toBeNull();
@@ -204,5 +227,48 @@ describe("createIndexedDBPersistStorage", () => {
     // durable: the queued write was dropped by the halt.
     const fresh = createIndexedDBPersistStorage<{ a: number }>();
     expect(await fresh.getItem("h")).toBeNull();
+  });
+
+  test("drops writes queued while asynchronous hydration is in flight", async () => {
+    const seed = createIndexedDBPersistStorage<{ a: number }>({ delayMs: 5 });
+    seed.setItem("hydrate-race", { state: { a: 9 }, version: 1 });
+    await settlePersistWrites();
+
+    const storage = createIndexedDBPersistStorage<{ a: number }>({
+      delayMs: 5,
+    });
+    const hydration = storage.getItem("hydrate-race");
+    storage.setItem("hydrate-race", { state: { a: 0 }, version: 1 });
+    expect(await hydration).toEqual({ state: { a: 9 }, version: 1 });
+    await settlePersistWrites();
+
+    expect(
+      await createIndexedDBPersistStorage<{ a: number }>().getItem(
+        "hydrate-race"
+      )
+    ).toEqual({ state: { a: 9 }, version: 1 });
+  });
+
+  test("an epoch change invalidates adapters created in an older tab", async () => {
+    const stale = createIndexedDBPersistStorage<{ a: number }>({ delayMs: 5 });
+    stale.setItem("epoch", { state: { a: 1 }, version: 1 });
+    advancePersistEpoch();
+    await settlePersistWrites();
+
+    expect(
+      await createIndexedDBPersistStorage<{ a: number }>().getItem("epoch")
+    ).toBeNull();
+  });
+
+  test("epoch invalidation does not delete a legacy value during hydration", async () => {
+    backing.set(
+      "legacy-race",
+      JSON.stringify({ state: { a: 7 }, version: 1 })
+    );
+    const stale = createIndexedDBPersistStorage<{ a: number }>();
+    const hydration = stale.getItem("legacy-race");
+    advancePersistEpoch();
+    expect(await hydration).toEqual({ state: { a: 7 }, version: 1 });
+    expect(backing.has("legacy-race")).toBe(true);
   });
 });

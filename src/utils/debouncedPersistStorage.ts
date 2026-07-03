@@ -3,7 +3,9 @@ import {
   clearPendingFlush,
   ensureLifecycleFlush,
   flushAllPersistWrites,
+  getPersistEpoch,
   haltPersistWrites,
+  isPersistEpochCurrent,
   isPersistWritesHalted,
   registerAdapterResetter,
   registerPendingFlush,
@@ -65,6 +67,7 @@ export function createDebouncedPersistStorage<S>(
   options: { delayMs?: number } = {}
 ): PersistStorage<S> {
   const delayMs = options.delayMs ?? 500;
+  const adapterEpoch = getPersistEpoch();
   let timer: ReturnType<typeof setTimeout> | null = null;
   let pendingName: string | null = null;
   let pendingValue: StorageValue<S> | null = null;
@@ -74,7 +77,10 @@ export function createDebouncedPersistStorage<S>(
       clearTimeout(timer);
       timer = null;
     }
-    if (isPersistWritesHalted()) {
+    if (
+      isPersistWritesHalted() ||
+      !isPersistEpochCurrent(adapterEpoch)
+    ) {
       pendingName = null;
       pendingValue = null;
       return;
@@ -129,7 +135,12 @@ export function createDebouncedPersistStorage<S>(
     },
 
     setItem: (name, value) => {
-      if (isPersistWritesHalted()) return;
+      if (
+        isPersistWritesHalted() ||
+        !isPersistEpochCurrent(adapterEpoch)
+      ) {
+        return;
+      }
       ensureLifecycleFlush();
       pendingName = name;
       pendingValue = value;
@@ -139,6 +150,7 @@ export function createDebouncedPersistStorage<S>(
     },
 
     removeItem: (name) => {
+      if (!isPersistEpochCurrent(adapterEpoch)) return;
       if (pendingName === name) {
         pendingName = null;
         pendingValue = null;

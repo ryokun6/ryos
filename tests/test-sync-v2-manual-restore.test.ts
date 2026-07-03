@@ -23,6 +23,9 @@ describe("manual backup Sync v2 metadata filtering", () => {
         "ryos:sync2:manual-restore-intent"
       )
     ).toBe(false);
+    expect(
+      shouldIncludeManualBackupLocalStorageKey("ryos:persist:epoch")
+    ).toBe(false);
   });
 
   test("Control Panels local backup and restore filter stale Sync v2 metadata", () => {

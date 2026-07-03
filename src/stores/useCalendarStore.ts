@@ -12,6 +12,7 @@ import {
   getEffectiveTimezone,
   getZonedDateTimeParts,
 } from "@/lib/timezoneConfig";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/utils/storageKeys";
 
 export type EventColor = "blue" | "red" | "green" | "orange" | "purple";
 
@@ -336,8 +337,10 @@ export const useCalendarStore = create<CalendarStoreState>()(
       };
     },
     {
-      name: "calendar-storage",
-      storage: createIndexedDBPersistStorage(),
+      name: STORAGE_KEYS.calendar,
+      storage: createIndexedDBPersistStorage({
+        legacyNames: [LEGACY_STORAGE_KEYS.calendar],
+      }),
       // Do not persist viewport — opening Calendar should show today, not last session.
       partialize: (state) => ({
         events: state.events,

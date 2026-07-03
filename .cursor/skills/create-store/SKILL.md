@@ -12,7 +12,7 @@ ryOS state lives in Zustand stores under `src/stores/`, named `use<Name>Store.ts
 ```
 - [ ] 1. Create src/stores/use<Name>Store.ts
 - [ ] 2. Define State interface (data + actions together)
-- [ ] 3. create<State>()(persist((set, get) => ({...}), { name: "<name>-storage" }))
+- [ ] 3. create<State>()(persist((set, get) => ({...}), { name: "ryos:<name>" }))
 - [ ] 4. Add version + migrate if the shape may evolve
 - [ ] 5. Use the debounced storage adapter for large/hot slices
 - [ ] 6. partialize to persist only what's needed
@@ -63,7 +63,7 @@ export const useMyStore = create<MyState>()(
       clearAll: () => set({ items: [] }),
     }),
     {
-      name: "my-storage", // unique localStorage key: "<feature>-storage"
+      name: "ryos:my-feature", // every app-owned storage key uses `ryos:`
     }
   )
 );
@@ -80,7 +80,7 @@ Inside the second `persist` argument:
 
 | Option | Use |
 |--------|-----|
-| `name` | Required. localStorage key, `"<feature>-storage"`. |
+| `name` | Required. Namespaced storage key, `"ryos:<feature>"`. |
 | `partialize` | Persist only the needed fields (omit transient UI/derived state). |
 | `version` + `migrate` | Required when the persisted shape can change over time. |
 | `storage` | Use the debounced adapter for large/hot slices (see below). |
@@ -155,6 +155,17 @@ Manual backup must `await settlePersistWrites()` (not just the sync flush)
 before reading the raw `persisted_state` records, and the store name must be
 listed in the backup's IndexedDB store set.
 
+### Normalized IndexedDB persistence
+
+If a slice contains a large entity collection or binary payloads, use
+`createSplitIndexedDBPersistStorage` from
+`src/utils/splitIndexedDBPersistStorage.ts`. It keeps scalar metadata in
+`persisted_state`, migrates old monolithic snapshots on hydration, and writes
+changed entities to dedicated object stores. Add each object store to
+`STORES`, bump `DB_VERSION`, include it in
+`MANUAL_BACKUP_INDEXEDDB_STORES`, and cover migration + row deletion in tests.
+Soundboard, Chats, TextEdit, and Files are the reference implementations.
+
 ## Cloud Sync: Deletion Tombstones
 
 If the store's data participates in cloud sync, a plain local delete isn't enough — the deletion must be recorded as a tombstone so other devices remove it too. Call `useCloudSyncStore.getState().markDeletedKeys(bucket, ids)` when deleting (pattern from `useStickiesStore.ts`):
@@ -179,7 +190,7 @@ Use an existing `CloudSyncDeletionBucket` value (see `useCloudSyncStore.ts`); on
 ## Conventions Summary
 
 - One interface holding both state and actions; export `use<Name>Store`.
-- `name: "<feature>-storage"`; `partialize` to the minimum needed.
+- `name: "ryos:<feature>"`; `partialize` to the minimum needed.
 - Add `version` + `migrate` for any shape that can evolve.
 - Debounced storage for large/hot slices; plain otherwise.
 - Synced collections must tombstone deletions via `useCloudSyncStore`.

@@ -16,6 +16,7 @@ import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
 import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
 import { formatZonedDateString } from "@/lib/timezoneConfig";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 type CalendarUndoAction =
   | { type: "addEvent"; event: CalendarEvent }
@@ -48,6 +49,7 @@ const formatDate = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export function useCalendarLogic() {
+  const hasHydrated = usePersistHydrated(useCalendarStore.persist);
   const { t, i18n } = useTranslation();
   const locale = i18n.language;
   const timeZone = useEffectiveTimezone();
@@ -128,8 +130,8 @@ export function useCalendarLogic() {
 
   // When the Calendar app window mounts (open / restore from dock), show today.
   useEffect(() => {
-    goToToday();
-  }, [goToToday]);
+    if (hasHydrated) goToToday();
+  }, [goToToday, hasHydrated]);
 
   // ========================================================================
   // UNDO / REDO
@@ -583,6 +585,7 @@ export function useCalendarLogic() {
   }, [events, t]);
 
   return {
+    hasHydrated,
     // i18n
     t,
     translatedHelpItems,

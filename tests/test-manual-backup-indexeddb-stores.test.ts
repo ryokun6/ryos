@@ -15,7 +15,7 @@ import {
 
 describe("manual IndexedDB backup manifest", () => {
   test("includes user data and persisted Zustand slices", () => {
-    expect(MANUAL_BACKUP_VERSION).toBe(5);
+    expect(MANUAL_BACKUP_VERSION).toBe(6);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.DOCUMENTS);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.IMAGES);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.BOOKS);
@@ -24,6 +24,19 @@ describe("manual IndexedDB backup manifest", () => {
     );
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.APPLETS);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.PERSISTED_STATE);
+    expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(
+      STORES.SOUNDBOARD_AUDIO
+    );
+    expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(
+      STORES.CHATS_AI_MESSAGES
+    );
+    expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(
+      STORES.CHATS_ROOM_MESSAGES
+    );
+    expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(
+      STORES.TEXTEDIT_INSTANCES
+    );
+    expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.VFS_ITEMS);
   });
 
   test("intentionally excludes rebuildable Apple Music caches", () => {

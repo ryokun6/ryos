@@ -12,6 +12,7 @@ import { resizeImageToBase64 } from "@/utils/imageResize";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { CONTACTS_ANALYTICS, track } from "@/utils/analytics";
 import { helpItems } from "..";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 type ContactGroupId = "all" | "imported" | "telegram" | "work" | "birthdays";
 
@@ -22,6 +23,7 @@ interface ContactGroup {
 }
 
 export function useContactsLogic() {
+  const hasHydrated = usePersistHydrated(useContactsStore.persist);
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("contacts", helpItems);
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
@@ -123,10 +125,11 @@ export function useContactsLogic() {
   );
 
   useEffect(() => {
-    requestCloudSyncDomainCheck("contacts");
-  }, []);
+    if (hasHydrated) requestCloudSyncDomainCheck("contacts");
+  }, [hasHydrated]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
     const hasSelectedContact = filteredContacts.some(
       (contact) => contact.id === selectedContactId
     );
@@ -134,7 +137,12 @@ export function useContactsLogic() {
     if ((!selectedContactId || !hasSelectedContact) && filteredContacts[0]) {
       setSelectedContactId(filteredContacts[0].id);
     }
-  }, [filteredContacts, selectedContactId, setSelectedContactId]);
+  }, [
+    filteredContacts,
+    hasHydrated,
+    selectedContactId,
+    setSelectedContactId,
+  ]);
 
   const handleCreateContact = () => {
     setSelectedGroupId("all");
@@ -242,6 +250,7 @@ export function useContactsLogic() {
   };
 
   return {
+    hasHydrated,
     t,
     translatedHelpItems,
     isWindowsTheme,

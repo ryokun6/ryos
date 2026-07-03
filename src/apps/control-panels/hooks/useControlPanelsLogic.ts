@@ -11,6 +11,11 @@ import {
   haltDebouncedPersistWrites,
   resumeDebouncedPersistWrites,
 } from "@/utils/debouncedPersistStorage";
+import {
+  advancePersistEpoch,
+  getPersistEpoch,
+  restorePersistEpoch,
+} from "@/utils/persistWriteQueue";
 import { settlePersistWrites } from "@/utils/indexedDBPersistStorage";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
@@ -53,13 +58,17 @@ import {
   MANUAL_BACKUP_VERSION,
   readStoreItems,
   readStoreItemByKey,
-  restoreStoreItems,
+  readStoresAtomically,
   restoreStoreItemsAtomically,
   serializeStoreItems,
   type ManualBackupIndexedDBData,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
 import { FILES_STORE_PERSIST_KEY } from "@/stores/useFilesStore";
+import {
+  LEGACY_STORAGE_KEYS,
+  STORAGE_KEYS,
+} from "@/utils/storageKeys";
 
 type PhotoCategory =
   | "3d_graphics"
@@ -209,6 +218,13 @@ function normalizeRestoredStoreValue(
       ? (upgraded.state as Record<string, unknown>)
       : null;
   if (!persistedState) return upgraded;
+  if (
+    backupVersion >= 6 &&
+    upgraded.__ryosSplitLayout &&
+    typeof upgraded.__ryosSplitLayout === "object"
+  ) {
+    return upgraded;
+  }
 
   const items =
     persistedState.items && typeof persistedState.items === "object"
@@ -818,51 +834,72 @@ export function useControlPanelsLogic({
     // Settle every localStorage and IndexedDB write before preserving files,
     // then halt all adapters so pagehide cannot overwrite the reset.
     await settlePersistWrites();
-    haltDebouncedPersistWrites();
-    const legacyFileMetadataStore = localStorage.getItem(
-      FILES_STORE_PERSIST_KEY
-    );
-    const usernameRecovery = localStorage.getItem("_usr_recovery_key_");
-
-    // Reset all IDB-backed Zustand slices while retaining the user's file
-    // metadata, matching the legacy localStorage reset behavior.
-    let preservedFilesRecord: StoreItemWithKey | null = null;
+    const previousPersistEpoch = getPersistEpoch();
+    const resetPersistEpoch = advancePersistEpoch();
     try {
-      const db = await ensureIndexedDBInitialized();
-      try {
-        preservedFilesRecord = await readStoreItemByKey(
-          db,
-          STORES.PERSISTED_STATE,
-          FILES_STORE_PERSIST_KEY
-        );
-        await restoreStoreItems(
-          db,
-          STORES.PERSISTED_STATE,
-          preservedFilesRecord ? [preservedFilesRecord] : []
-        );
-      } finally {
-        db.close();
-      }
-    } catch (error) {
-      throw new Error("Failed to reset persisted app state", { cause: error });
-    }
-
-    clearAllAppStates();
-    clearPrefetchFlag(); // Force re-prefetch on next boot
-
-    // Older installations may not have migrated files metadata to IndexedDB
-    // yet. Preserve that legacy value so the adapter can migrate it on boot.
-    if (!preservedFilesRecord && legacyFileMetadataStore) {
-      localStorage.setItem(
-        FILES_STORE_PERSIST_KEY,
-        legacyFileMetadataStore
+      haltDebouncedPersistWrites();
+      const legacyFileMetadataStore = localStorage.getItem(
+        FILES_STORE_PERSIST_KEY
       );
-    }
-    if (usernameRecovery) {
-      localStorage.setItem("_usr_recovery_key_", usernameRecovery);
-    }
+      const usernameRecovery =
+        localStorage.getItem(STORAGE_KEYS.usernameRecovery) ??
+        localStorage.getItem(LEGACY_STORAGE_KEYS.usernameRecovery);
 
-    window.location.reload();
+      // Reset all IDB-backed Zustand slices while retaining the user's file
+      // metadata, matching the legacy localStorage reset behavior.
+      let preservedFilesRecord: StoreItemWithKey | null = null;
+      let preservedVfsItems: StoreItemWithKey[] = [];
+      try {
+        const db = await ensureIndexedDBInitialized();
+        try {
+          preservedFilesRecord = await readStoreItemByKey(
+            db,
+            STORES.PERSISTED_STATE,
+            FILES_STORE_PERSIST_KEY
+          );
+          preservedVfsItems = await readStoreItems(db, STORES.VFS_ITEMS);
+          await restoreStoreItemsAtomically(
+            db,
+            [
+              {
+                storeName: STORES.PERSISTED_STATE,
+                items: preservedFilesRecord ? [preservedFilesRecord] : [],
+              },
+              { storeName: STORES.VFS_ITEMS, items: preservedVfsItems },
+              { storeName: STORES.SOUNDBOARD_AUDIO, items: [] },
+              { storeName: STORES.CHATS_AI_MESSAGES, items: [] },
+              { storeName: STORES.CHATS_ROOM_MESSAGES, items: [] },
+              { storeName: STORES.TEXTEDIT_INSTANCES, items: [] },
+            ]
+          );
+        } finally {
+          db.close();
+        }
+      } catch (error) {
+        throw new Error("Failed to reset persisted app state", { cause: error });
+      }
+
+      clearAllAppStates();
+      restorePersistEpoch(resetPersistEpoch);
+      clearPrefetchFlag(); // Force re-prefetch on next boot
+
+      // Older installations may not have migrated files metadata to IndexedDB
+      // yet. Preserve that legacy value so the adapter can migrate it on boot.
+      if (!preservedFilesRecord && legacyFileMetadataStore) {
+        localStorage.setItem(
+          FILES_STORE_PERSIST_KEY,
+          legacyFileMetadataStore
+        );
+      }
+      if (usernameRecovery) {
+        localStorage.setItem(STORAGE_KEYS.usernameRecovery, usernameRecovery);
+      }
+
+      window.location.reload();
+    } catch (error) {
+      restorePersistEpoch(previousPersistEpoch);
+      throw error;
+    }
   };
 
   const handleBackup = async () => {
@@ -899,10 +936,14 @@ export function useControlPanelsLogic({
     let backupDb: IDBDatabase | null = null;
     try {
       backupDb = await ensureIndexedDBInitialized();
+      const storeSnapshots = await readStoresAtomically(
+        backupDb,
+        MANUAL_BACKUP_INDEXEDDB_STORES
+      );
       const serializedStores = await Promise.all(
         MANUAL_BACKUP_INDEXEDDB_STORES.map(async (storeName) => [
           storeName,
-          await serializeStoreItems(await readStoreItems(backupDb!, storeName)),
+          await serializeStoreItems(storeSnapshots[storeName] ?? []),
         ] as const)
       );
       for (const [storeName, items] of serializedStores) {
@@ -1047,9 +1088,9 @@ export function useControlPanelsLogic({
         // Drain write-behind queues before replacing storage so an older
         // snapshot cannot commit over the restored backup.
         await settlePersistWrites();
-        haltDebouncedPersistWrites();
-
         const previousLocalStorage = snapshotLocalStorage();
+        const restoreEpoch = advancePersistEpoch();
+        haltDebouncedPersistWrites();
         const restoredLocalStorage = Object.fromEntries(
           Object.entries(backup.localStorage).filter(
             (entry): entry is [string, string] =>
@@ -1063,6 +1104,7 @@ export function useControlPanelsLogic({
         // older backups are intentionally restored as empty.
         try {
           replaceLocalStorage(restoredLocalStorage);
+          restorePersistEpoch(restoreEpoch);
           const db = await ensureIndexedDBInitialized();
           try {
             const backupVersion =
@@ -1104,40 +1146,6 @@ export function useControlPanelsLogic({
           );
         }
         clearPrefetchFlag(); // Force re-prefetch on next boot
-
-        // Update wallpaper after restore
-        if (backup.localStorage["ryos:app:settings:wallpaper"]) {
-          const wallpaper = backup.localStorage["ryos:app:settings:wallpaper"];
-          if (wallpaper) {
-            setCurrentWallpaper(wallpaper);
-          }
-        }
-
-        try {
-          // Ensure the files store is in a safe state after restore.
-          // Preserve the version from the backup so Zustand doesn't
-          // re-run migrations on already-current data.
-          const persistedKey = FILES_STORE_PERSIST_KEY;
-          const persistedState = localStorage.getItem(persistedKey);
-
-          if (persistedState) {
-            const parsed = JSON.parse(persistedState);
-            if (parsed && parsed.state) {
-              const hasItems =
-                parsed.state.items &&
-                Object.keys(parsed.state.items).length > 0;
-              parsed.state.libraryState = hasItems
-                ? "loaded"
-                : "uninitialized";
-              localStorage.setItem(persistedKey, JSON.stringify(parsed));
-            }
-          }
-        } catch (fallbackErr) {
-          console.error(
-            "[ControlPanels] Emergency fallback failed:",
-            fallbackErr
-          );
-        }
 
         setNextBootMessage(t("common.system.restoringSystem"));
         if (username && isAuthenticated) {
