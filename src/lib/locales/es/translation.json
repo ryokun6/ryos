@@ -3798,7 +3798,7 @@
           "title": "HTML seguro"
         },
         "zoom": {
-          "description": "Amplía o reduce las imágenes, o ajústalas a la ventana",
+          "description": "Pellizca o toca dos veces para hacer zoom en las imágenes, o ajústalas a la ventana",
           "title": "Zoom"
         }
       },

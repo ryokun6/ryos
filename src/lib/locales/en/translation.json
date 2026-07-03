@@ -1440,7 +1440,7 @@
         },
         "zoom": {
           "title": "Zoom",
-          "description": "Zoom images in or out, or fit them to the window"
+          "description": "Pinch or double-tap to zoom images, or fit them to the window"
         },
         "openFiles": {
           "title": "Open Files",

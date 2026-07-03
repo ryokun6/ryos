@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import type { AppProps } from "@/apps/base/types";
 import type { PreviewInitialData } from "..";
@@ -7,6 +8,7 @@ import { InputDialog } from "@/components/dialogs/InputDialog";
 import { cn } from "@/lib/utils";
 import { PREVIEW_FILE_ACCEPT } from "@/utils/fileAssociations";
 import { appMetadata } from "../metadata";
+import { useImageZoomGestures } from "../hooks/useImageZoomGestures";
 import { usePreviewLogic } from "../hooks/usePreviewLogic";
 import { PreviewMenuBar } from "./PreviewMenuBar";
 
@@ -58,6 +60,37 @@ export function PreviewAppComponent({
   } = usePreviewLogic({ initialData, instanceId, isWindowOpen });
 
   const isImage = kind === "image";
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [naturalSize, setNaturalSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+
+  useEffect(() => {
+    setNaturalSize(null);
+  }, [objectUrl]);
+
+  const handleSetFitToWindow = useCallback(
+    (fit: boolean) => {
+      setFitToWindow(fit);
+      if (fit) setZoom(100);
+    },
+    [setFitToWindow, setZoom],
+  );
+
+  const { zoomIn, zoomOut, zoomToActualSize } = useImageZoomGestures(
+    containerRef,
+    imageRef,
+    {
+      enabled: isImage && Boolean(objectUrl),
+      zoom,
+      fitToWindow,
+      onZoomChange: setZoom,
+      onFitToWindowChange: setFitToWindow,
+    },
+  );
+
   const menuBar = (
     <PreviewMenuBar
       onClose={onClose}
@@ -72,9 +105,11 @@ export function PreviewAppComponent({
       onShowAbout={() => setIsAboutDialogOpen(true)}
       isImage={isImage}
       zoom={zoom}
-      onSetZoom={setZoom}
+      onZoomIn={zoomIn}
+      onZoomOut={zoomOut}
+      onActualSize={zoomToActualSize}
       fitToWindow={fitToWindow}
-      onSetFitToWindow={setFitToWindow}
+      onSetFitToWindow={handleSetFitToWindow}
     />
   );
 
@@ -121,23 +156,38 @@ export function PreviewAppComponent({
 
     if (kind === "image" && objectUrl) {
       return (
-        <div className="flex min-h-full min-w-full items-center justify-center p-6">
+        <div
+          className={cn(
+            "flex p-6",
+            fitToWindow
+              ? "h-full w-full items-center justify-center"
+              : "min-h-full min-w-full",
+          )}
+        >
           <img
+            ref={imageRef}
             src={objectUrl}
             alt={displayName}
             draggable={false}
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              setNaturalSize({
+                width: image.naturalWidth || image.width,
+                height: image.naturalHeight || image.height,
+              });
+            }}
             className={
               fitToWindow
                 ? "max-h-full max-w-full object-contain drop-shadow-lg"
-                : "max-w-none object-contain drop-shadow-lg"
+                : "m-auto max-w-none object-contain drop-shadow-lg"
             }
             style={
-              fitToWindow
-                ? undefined
-                : {
-                    transform: `scale(${zoom / 100})`,
-                    transformOrigin: "center",
+              !fitToWindow && naturalSize
+                ? {
+                    width: (naturalSize.width * zoom) / 100,
+                    height: (naturalSize.height * zoom) / 100,
                   }
+                : undefined
             }
           />
         </div>
@@ -246,9 +296,15 @@ export function PreviewAppComponent({
       }
     >
       <div
+        ref={containerRef}
         className={cn(
           "relative h-full w-full overflow-auto font-os-ui text-os-text-primary",
           isAquaGlass ? "bg-transparent" : "bg-os-panel-bg",
+          // Let the browser handle one-finger panning but keep pinch and
+          // double-tap for the image zoom gestures (not page zoom).
+          isImage &&
+            Boolean(objectUrl) &&
+            "select-none touch-pan-x touch-pan-y overscroll-contain",
         )}
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleDrop}
