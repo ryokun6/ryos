@@ -17,6 +17,7 @@ import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 import { formatSecondsMmSs } from "@/utils/formatDuration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useTrackSwitchGuard } from "@/shared/media/useTrackSwitchGuard";
 import { createClientLogger } from "@/utils/logger";
 
 const log = createClientLogger("Videos");
@@ -229,8 +230,8 @@ export function useVideosLogic({
   const playerRef = useRef<ReactPlayer | null>(null);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isTrackSwitchingRef = useRef(false);
-  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { isTrackSwitchingRef, trackSwitchTimeoutRef, startTrackSwitch } =
+    useTrackSwitchGuard();
   const prevIsPlayingRef = useRef(isPlaying);
   const autoShowHoverResetRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoplayCheckedRef = useRef(false);
@@ -250,18 +251,6 @@ export function useVideosLogic({
     pointerId: number | null;
   } | null>(null);
   const SWIPE_MOVE_THRESHOLD = 10; // px
-
-  // Helper to mark track/fullscreen switch start and schedule end
-  const startTrackSwitch = useCallback(() => {
-    isTrackSwitchingRef.current = true;
-    if (trackSwitchTimeoutRef.current) {
-      clearTimeout(trackSwitchTimeoutRef.current);
-    }
-    // Allow 2 seconds for YouTube to load before accepting play/pause events
-    trackSwitchTimeoutRef.current = setTimeout(() => {
-      isTrackSwitchingRef.current = false;
-    }, 2000);
-  }, []);
 
   // Function to show status message
   const showStatus = useCallback(

@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type ReactPlayer from "react-player";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useTrackSwitchGuard } from "@/shared/media/useTrackSwitchGuard";
 import { createClientLogger } from "@/utils/logger";
 
 const ipodLog = createClientLogger("iPod");
@@ -26,8 +27,10 @@ export function useIpodPlayback(options: {
   const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);
   const userHasInteractedRef = useRef(false);
-  const isTrackSwitchingRef = useRef(false);
-  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { isTrackSwitchingRef, trackSwitchTimeoutRef, startTrackSwitch } =
+    useTrackSwitchGuard({
+      onGuardEnd: () => ipodLog.debug("Ended track-switch guard"),
+    });
 
   const pauseBeforeWindowClose = useCallback(() => {
     const store = useIpodStore.getState();
@@ -104,6 +107,7 @@ export function useIpodPlayback(options: {
     userHasInteractedRef,
     isTrackSwitchingRef,
     trackSwitchTimeoutRef,
+    startTrackSwitch,
     pauseBeforeWindowClose,
   };
 }
