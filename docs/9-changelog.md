@@ -8,10 +8,24 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## July 2026
 
+- **Books read-aloud**: browser TTS via a Speech menu with sentence highlighting, auto page turns, carry-tail highlights across page cuts, and bottom overlay controls (rewind/pause/skip/stop). Controls use an Aqua Glass island pill that collapses to a home-indicator pill when idle; Control Panels → Sound adds a browser TTS voice picker.
+- **Books customization & CJK reading**: a Customize panel for reading fonts (including Rounded and Original), custom colors, transparent backgrounds, vertical text layout (including legacy-tagged Japanese vertical text), live Simplified/Traditional Chinese conversion, and synced reader settings across devices; bookmarks and text-selection highlights with a selection toolbar.
+- **Books Ask Ryo**: inline reply bubble with streamed text, thinking pulse, browser-TTS speak button, and highlight tap-to-ask on selected passages.
+- **Offline PWA**: network-dependent apps show offline empty states; Books loads cached books reliably offline; the standalone server sends explicit Cache-Control headers for offline PWA cache behavior.
+- **Boot performance**: cut boot-critical JS ~44% by code-splitting heavy desktop shell dependencies, plus startup and build performance improvements.
+
 <details>
-<summary>Minor changes (1)</summary>
+<summary>Minor changes (9)</summary>
 
 - Restore Preview windows with their last document paths so reopened sessions load documents without persisting file contents.
+- Improve locale-aware CJK reading and lyrics fonts; bold pronunciation ruby (furigana/pinyin/romaji) at 700 weight in rounded lyrics fonts.
+- Match Aqua slider fills to tab bar shine; quiet Aqua slider track lighting with neutral rgba recess; match Aqua Glass pane radius on no-titlebar windows.
+- Blend book images into the reading background (multiply on light themes, dim on dark).
+- Books: in-page edge-tap page turns with hover chevrons over gutters (20% edge zones); render font chips in their typefaces; proportional fallback-cover typography and smoother close zoom.
+- Enlarge mobile Books customize panel controls to 44px rows; fix Books menus on narrow screens.
+- Fix Books read-aloud/Safari styling, font switching, line spacing, vertical layout glitches, and highlight flicker.
+- Polish Books customization panel, speech bar, and toolbar layout.
+- Use macOS 26 for the Apple terminology glossary.
 
 </details>
 
@@ -508,4 +522,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-06-27*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-07-03*
