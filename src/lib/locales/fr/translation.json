@@ -590,6 +590,11 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Ajouter un signet",
+        "remove": "Supprimer le signet",
+        "title": "Signets"
+      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",
@@ -680,6 +685,22 @@
       "reader": {
         "backToShelf": "Bibliothèque",
         "error": "Impossible d’ouvrir ce livre."
+      },
+      "selection": {
+        "askRyo": "Demander à Ryo",
+        "askRyoQuestion": "que signifie ce passage ?",
+        "color": {
+          "blue": "Surlignage bleu",
+          "green": "Surlignage vert",
+          "pink": "Surlignage rose",
+          "purple": "Surlignage violet",
+          "yellow": "Surlignage jaune"
+        },
+        "controls": "Commandes de sélection",
+        "copied": "Copié dans le presse-papiers",
+        "copy": "Copier",
+        "copyFailed": "Impossible de copier",
+        "removeHighlight": "Supprimer le surlignage"
       },
       "shelf": {
         "emptyHint": "Cliquez sur Ajouter un livre pour importer un EPUB.",

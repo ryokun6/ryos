@@ -4,27 +4,43 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
+  BookmarkSimple,
+  ChatCircleDots,
+  Copy,
   FastForward,
   Pause,
   Play,
   Rewind,
   Stop,
   TextAa,
+  Trash,
   X,
 } from "@phosphor-icons/react";
-import ePub, { type Book, type NavItem, type Rendition } from "epubjs";
+import ePub, {
+  EpubCFI,
+  type Book,
+  type NavItem,
+  type Rendition,
+} from "epubjs";
 import { cn } from "@/lib/utils";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
 import {
+  BOOKS_HIGHLIGHT_COLORS,
+  BOOKS_HIGHLIGHT_COLOR_HEX,
   clampBooksGutter,
   normalizeBooksSpeechRate,
+  type BookBookmark,
+  type BookHighlight,
+  type BooksHighlightColor,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -58,8 +74,12 @@ import {
   applyEpubTextLayout,
   resolveEpubPageDirection,
 } from "../utils/booksTextLayout";
-import { BOOKS_SPEECH_HIGHLIGHT_CSS } from "../utils/booksSpeech";
+import {
+  BOOKS_SPEECH_HIGHLIGHT_CSS,
+  getVisiblePageRange,
+} from "../utils/booksSpeech";
 import { useBooksSpeech } from "../hooks/useBooksSpeech";
+import { useBooksAnnotations } from "../hooks/useBooksAnnotations";
 import { useBooksSpeechBarVisibility } from "../hooks/useBooksSpeechBarVisibility";
 import { ryOSLocaleToSpeechLanguage } from "@/utils/browserSpeech";
 import { useBookCover } from "../utils/useBookCover";
@@ -92,6 +112,19 @@ interface BooksReaderPaneProps {
   onHideCustomize?: () => void;
   /** Keeps the read-aloud toolbar expanded while Customize is open. */
   isCustomizeOpen?: boolean;
+  /** Saved text highlights for this book. */
+  highlights: BookHighlight[];
+  onAddHighlight: (highlight: BookHighlight) => void;
+  onSetHighlightColor: (id: string, color: BooksHighlightColor) => void;
+  onRemoveHighlight: (id: string) => void;
+  /** Saved page bookmarks for this book. */
+  bookmarks: BookBookmark[];
+  onAddBookmark: (bookmark: BookBookmark) => void;
+  onRemoveBookmark: (cfi: string) => void;
+  /** Whether the current page holds a bookmark (drives the menu label). */
+  onBookmarkStateChange?: (isBookmarked: boolean) => void;
+  /** Ask Ryo about a selected passage (opens Chats with book context). */
+  onAskRyo: (passage: string) => void;
 }
 
 const clamp01 = (value: number): number =>
@@ -116,6 +149,8 @@ export interface BooksReaderPaneHandle {
   goToPreviousPage: () => void;
   goToNextPage: () => void;
   goToChapter: (href: string) => void;
+  goToCfi: (cfi: string) => void;
+  toggleBookmark: () => void;
   startSpeaking: () => void;
   stopSpeaking: () => void;
 }
@@ -154,6 +189,11 @@ const SPEECH_OVERLAY_BUTTON_CLASS =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40 disabled:hover:bg-transparent";
 const SPEECH_BAR_COLLAPSED = { width: 72, height: 5 } as const;
 const SPEECH_BAR_EXPANDED = { width: 130, height: 36 } as const;
+// Selection toolbar (shown in place of the read-aloud controls while text is
+// selected): 5 color dots + divider + copy + ask-ryo (+ remove for saved
+// highlights).
+const SELECTION_BAR_WIDTH = 212;
+const SELECTION_BAR_WIDTH_WITH_REMOVE = 244;
 
 // Open transition timings. Keep the page reveal slightly after the cover zoom
 // settles so the two never fight (which reads as a "pop"). Shared with the
@@ -339,6 +379,15 @@ export const BooksReaderPane = forwardRef<
     onShowCustomize,
     onHideCustomize,
     isCustomizeOpen = false,
+    highlights,
+    onAddHighlight,
+    onSetHighlightColor,
+    onRemoveHighlight,
+    bookmarks,
+    onAddBookmark,
+    onRemoveBookmark,
+    onBookmarkStateChange,
+    onAskRyo,
   },
   ref
 ) {
@@ -414,6 +463,11 @@ export const BooksReaderPane = forwardRef<
   // value with a transient 0 (epub.js reports 0 until locations are generated).
   const progressPctRef = useRef(progressPct);
   progressPctRef.current = progressPct;
+  // Start/end CFIs of the visible page(s), for bookmark membership checks.
+  const [pageCfis, setPageCfis] = useState<{
+    startCfi: string;
+    endCfi?: string;
+  } | null>(null);
 
   const { info: coverInfo, loading: coverLoading } = useBookCover(
     entry.path,
@@ -574,6 +628,7 @@ export const BooksReaderPane = forwardRef<
     publisherPageDirectionRef.current = "ltr";
     appliedTextLayoutRef.current = null;
     activeSectionHrefRef.current = undefined;
+    setPageCfis(null);
     setNavigationState(createInitialBooksNavigationState());
     appendDebugEvent("open:start", {
       path: entry.path,
@@ -1078,6 +1133,7 @@ export const BooksReaderPane = forwardRef<
             "relocated",
             (location: {
               start?: { cfi?: string; href?: string; percentage?: number };
+              end?: { cfi?: string };
               atStart?: boolean;
               atEnd?: boolean;
             }) => {
@@ -1086,6 +1142,9 @@ export const BooksReaderPane = forwardRef<
               const atEndNow = !!location?.atEnd;
               const activeHref = location?.start?.href;
               activeSectionHrefRef.current = activeHref;
+              setPageCfis(
+                cfi ? { startCfi: cfi, endCfi: location?.end?.cfi } : null
+              );
               setAtStart(atStartNow);
               setAtEnd(atEndNow);
               setNavigationState((state) => ({
@@ -1495,6 +1554,97 @@ export const BooksReaderPane = forwardRef<
   });
   speechRelocatedRef.current = handleSpeechRelocated;
 
+  // Text selection + highlight annotations. The selection toolbar replaces
+  // the read-aloud controls in the bottom pill while a passage is selected.
+  const getRendition = useCallback(() => renditionRef.current, []);
+  const {
+    activeSelection,
+    applyHighlightColor,
+    removeActiveHighlight,
+    copyActiveSelection,
+    clearActiveSelection,
+  } = useBooksAnnotations({
+    getRendition,
+    isReady,
+    isDarkPage: palette.isDark,
+    highlights,
+    onAddHighlight,
+    onSetHighlightColor,
+    onRemoveHighlight,
+  });
+
+  const handleCopySelection = useCallback(async () => {
+    const copied = await copyActiveSelection();
+    if (copied) {
+      toast.success(t("apps.books.selection.copied"));
+    } else {
+      toast.error(t("apps.books.selection.copyFailed"));
+    }
+  }, [copyActiveSelection, t]);
+
+  const handleAskRyo = useCallback(() => {
+    const passage = activeSelection?.text;
+    if (!passage) return;
+    clearActiveSelection();
+    onAskRyo(passage);
+  }, [activeSelection, clearActiveSelection, onAskRyo]);
+
+  // Bookmark for the visible page: a saved CFI counts as "on this page" when
+  // it falls between the page's start and end CFIs.
+  const activeBookmark = useMemo<BookBookmark | null>(() => {
+    if (!pageCfis || bookmarks.length === 0) return null;
+    const comparator = new EpubCFI();
+    for (const bookmark of bookmarks) {
+      if (bookmark.cfi === pageCfis.startCfi) return bookmark;
+      if (!pageCfis.endCfi) continue;
+      try {
+        if (
+          comparator.compare(bookmark.cfi, pageCfis.startCfi) >= 0 &&
+          comparator.compare(bookmark.cfi, pageCfis.endCfi) <= 0
+        ) {
+          return bookmark;
+        }
+      } catch {
+        // Unparseable CFI — exact match already handled above.
+      }
+    }
+    return null;
+  }, [bookmarks, pageCfis]);
+
+  useEffect(() => {
+    onBookmarkStateChange?.(!!activeBookmark);
+  }, [activeBookmark, onBookmarkStateChange]);
+  useEffect(
+    () => () => onBookmarkStateChange?.(false),
+    [onBookmarkStateChange]
+  );
+
+  const toggleBookmark = useCallback(() => {
+    if (activeBookmark) {
+      onRemoveBookmark(activeBookmark.cfi);
+      return;
+    }
+    if (!pageCfis) return;
+    let snippet = "";
+    const rendition = renditionRef.current;
+    if (rendition) {
+      try {
+        snippet = (getVisiblePageRange(rendition)?.toString() ?? "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 80);
+      } catch {
+        snippet = "";
+      }
+    }
+    onAddBookmark({
+      cfi: pageCfis.startCfi,
+      text: snippet || undefined,
+      percentage: progressPctRef.current,
+      createdAt: Date.now(),
+    });
+  }, [activeBookmark, pageCfis, onAddBookmark, onRemoveBookmark]);
+
   useEffect(() => {
     onSpeechStateChange?.(isSpeaking);
   }, [isSpeaking, onSpeechStateChange]);
@@ -1516,25 +1666,38 @@ export const BooksReaderPane = forwardRef<
     revealTemporarily: revealSpeechBarTemporarily,
   } = useBooksSpeechBarVisibility({ isPlaying: isSpeechPlaying });
   const speechBarOpen = isCustomizeOpen || speechBarVisibilityOpen;
+  // Active text selection swaps the bottom pill to the selection toolbar
+  // (highlight colors / copy / ask Ryo) and keeps it open.
+  const selectionBarActive = !!activeSelection;
+  const barOpen = selectionBarActive || speechBarOpen;
+
+  const displayTarget = useCallback(
+    (target: string, step: string) => {
+      const rendition = renditionRef.current;
+      if (!rendition || !target) return;
+      flipLockRef.current = false;
+      setFlip(null);
+      Promise.resolve(rendition.display(target)).catch((error) =>
+        appendDebugEvent(step, error, "error")
+      );
+    },
+    [appendDebugEvent]
+  );
 
   useImperativeHandle(
     ref,
     () => ({
       goToPreviousPage: () => turnPage("prev"),
       goToNextPage: () => turnPage("next"),
-      goToChapter: (href: string) => {
-        const rendition = renditionRef.current;
-        if (!rendition || !href) return;
-        flipLockRef.current = false;
-        setFlip(null);
-        Promise.resolve(rendition.display(href)).catch((error) =>
-          appendDebugEvent("epubjs:chapterDisplay:failed", error, "error")
-        );
-      },
+      goToChapter: (href: string) =>
+        displayTarget(href, "epubjs:chapterDisplay:failed"),
+      goToCfi: (cfi: string) =>
+        displayTarget(cfi, "epubjs:bookmarkDisplay:failed"),
+      toggleBookmark,
       startSpeaking,
       stopSpeaking,
     }),
-    [appendDebugEvent, startSpeaking, stopSpeaking, turnPage]
+    [displayTarget, startSpeaking, stopSpeaking, toggleBookmark, turnPage]
   );
 
   const handleKey = useCallback(
@@ -1649,6 +1812,43 @@ export const BooksReaderPane = forwardRef<
         </span>
       </div>
 
+      {/* Bookmark ribbon — tucked below the hover-revealed titlebar so its
+          hit area stays clickable; filled when the current page is saved. */}
+      {isReady && !loadError && (
+        <button
+          type="button"
+          aria-label={
+            activeBookmark
+              ? t("apps.books.bookmarks.remove")
+              : t("apps.books.bookmarks.add")
+          }
+          title={
+            activeBookmark
+              ? t("apps.books.bookmarks.remove")
+              : t("apps.books.bookmarks.add")
+          }
+          aria-pressed={!!activeBookmark}
+          disabled={!pageCfis}
+          onClick={toggleBookmark}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className={cn(
+            "absolute right-3 z-20 flex h-9 w-8 items-start justify-center pt-0.5 transition-colors disabled:opacity-0",
+            activeBookmark
+              ? "text-red-500"
+              : palette.isDark
+                ? "text-white/35 hover:text-white/70"
+                : "text-black/25 hover:text-black/55"
+          )}
+          style={{ top: 18 }}
+        >
+          <BookmarkSimple
+            size={22}
+            weight={activeBookmark ? "fill" : "regular"}
+          />
+        </button>
+      )}
+
       {/* Read-aloud overlay: home-indicator pill when idle/paused; stays
           expanded while playing. Hover or tap grows it otherwise. */}
       <motion.div
@@ -1681,13 +1881,19 @@ export const BooksReaderPane = forwardRef<
         >
           <motion.div
             role="toolbar"
-            aria-label={t("apps.books.speech.controls", {
-              defaultValue: "Read-aloud controls",
-            })}
-            aria-expanded={speechBarOpen}
+            aria-label={
+              selectionBarActive
+                ? t("apps.books.selection.controls", {
+                    defaultValue: "Selection controls",
+                  })
+                : t("apps.books.speech.controls", {
+                    defaultValue: "Read-aloud controls",
+                  })
+            }
+            aria-expanded={barOpen}
             className={cn(
               "books-speech-overlay flex items-center justify-center overflow-hidden rounded-full",
-              speechBarOpen ? "gap-0.5 px-1.5 py-1" : "cursor-pointer",
+              barOpen ? "gap-0.5 px-1.5 py-1" : "cursor-pointer",
               isAquaGlass
                 ? null
                 : cn(
@@ -1699,15 +1905,23 @@ export const BooksReaderPane = forwardRef<
             )}
             initial={false}
             animate={
-              speechBarOpen
+              selectionBarActive
                 ? {
-                    width: SPEECH_BAR_EXPANDED.width,
+                    width:
+                      activeSelection?.kind === "highlight"
+                        ? SELECTION_BAR_WIDTH_WITH_REMOVE
+                        : SELECTION_BAR_WIDTH,
                     height: SPEECH_BAR_EXPANDED.height,
                   }
-                : {
-                    width: SPEECH_BAR_COLLAPSED.width,
-                    height: SPEECH_BAR_COLLAPSED.height,
-                  }
+                : speechBarOpen
+                  ? {
+                      width: SPEECH_BAR_EXPANDED.width,
+                      height: SPEECH_BAR_EXPANDED.height,
+                    }
+                  : {
+                      width: SPEECH_BAR_COLLAPSED.width,
+                      height: SPEECH_BAR_COLLAPSED.height,
+                    }
             }
             transition={{
               type: "spring",
@@ -1716,7 +1930,7 @@ export const BooksReaderPane = forwardRef<
               mass: 0.7,
             }}
             onClick={() => {
-              if (speechBarOpen) return;
+              if (barOpen) return;
               revealSpeechBarTemporarily();
             }}
           >
@@ -1724,14 +1938,83 @@ export const BooksReaderPane = forwardRef<
               className="flex items-center gap-0.5"
               initial={false}
               animate={{
-                opacity: speechBarOpen ? 1 : 0,
-                scale: speechBarOpen ? 1 : 0.85,
+                opacity: barOpen ? 1 : 0,
+                scale: barOpen ? 1 : 0.85,
               }}
               transition={{ duration: 0.14, ease: "easeOut" }}
               style={{
-                pointerEvents: speechBarOpen ? "auto" : "none",
+                pointerEvents: barOpen ? "auto" : "none",
               }}
             >
+              {selectionBarActive ? (
+                <>
+                  {/* Highlight color swatches */}
+                  {BOOKS_HIGHLIGHT_COLORS.map((color) => {
+                    const isActiveColor =
+                      activeSelection?.kind === "highlight" &&
+                      activeSelection.color === color;
+                    return (
+                      <button
+                        key={color}
+                        type="button"
+                        aria-label={t(`apps.books.selection.color.${color}`)}
+                        title={t(`apps.books.selection.color.${color}`)}
+                        onClick={() => applyHighlightColor(color)}
+                        className="group flex h-7 w-6 shrink-0 items-center justify-center"
+                        tabIndex={0}
+                      >
+                        <span
+                          className={cn(
+                            "h-4 w-4 rounded-full transition-transform group-hover:scale-110",
+                            isActiveColor &&
+                              "ring-2 ring-white ring-offset-1 ring-offset-black/40"
+                          )}
+                          style={{
+                            backgroundColor: BOOKS_HIGHLIGHT_COLOR_HEX[color],
+                          }}
+                        />
+                      </button>
+                    );
+                  })}
+                  <span
+                    aria-hidden
+                    className="mx-0.5 h-4 w-px shrink-0 bg-white/25"
+                  />
+                  <button
+                    type="button"
+                    aria-label={t("apps.books.selection.copy")}
+                    title={t("apps.books.selection.copy")}
+                    onClick={handleCopySelection}
+                    className={speechOverlayButtonClass}
+                    tabIndex={0}
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("apps.books.selection.askRyo")}
+                    title={t("apps.books.selection.askRyo")}
+                    onClick={handleAskRyo}
+                    className={speechOverlayButtonClass}
+                    tabIndex={0}
+                  >
+                    <ChatCircleDots weight="fill" size={16} />
+                  </button>
+                  {activeSelection?.kind === "highlight" && (
+                    <button
+                      type="button"
+                      aria-label={t("apps.books.selection.removeHighlight")}
+                      title={t("apps.books.selection.removeHighlight")}
+                      onClick={removeActiveHighlight}
+                      className={speechOverlayButtonClass}
+                      tabIndex={0}
+                    >
+                      <Trash size={16} />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
               <button
                 type="button"
                 aria-label={t("apps.books.speech.rewind")}
@@ -1822,6 +2105,8 @@ export const BooksReaderPane = forwardRef<
                     <TextAa weight="bold" size={16} />
                   )}
                 </button>
+              )}
+                </>
               )}
             </motion.div>
           </motion.div>

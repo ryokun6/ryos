@@ -588,6 +588,11 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "添加书签",
+        "remove": "移除书签",
+        "title": "书签"
+      },
       "chineseScript": {
         "original": "原文",
         "simplified": "简体",
@@ -678,6 +683,22 @@
       "reader": {
         "backToShelf": "书架",
         "error": "无法打开此书。"
+      },
+      "selection": {
+        "askRyo": "询问 Ryo",
+        "askRyoQuestion": "这段文字是什么意思？",
+        "color": {
+          "blue": "蓝色高亮",
+          "green": "绿色高亮",
+          "pink": "粉色高亮",
+          "purple": "紫色高亮",
+          "yellow": "黄色高亮"
+        },
+        "controls": "选择控制",
+        "copied": "已拷贝到剪贴板",
+        "copy": "拷贝",
+        "copyFailed": "无法拷贝",
+        "removeHighlight": "移除高亮"
       },
       "shelf": {
         "emptyHint": "点按“+”以导入 EPUB。",

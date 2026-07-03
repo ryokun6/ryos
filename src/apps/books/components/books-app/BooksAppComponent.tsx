@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
-import { SquaresFour } from "@phosphor-icons/react";
-import type { AppProps, BooksInitialData } from "@/apps/base/types";
+import { BookmarkSimple, SquaresFour } from "@phosphor-icons/react";
+import type {
+  AppProps,
+  BooksInitialData,
+  ChatsInitialData,
+} from "@/apps/base/types";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
@@ -42,6 +47,7 @@ export function BooksAppComponent({
     viewMode,
     activeBook,
     activeBookTitle,
+    activeBookAuthor,
     openOriginRect,
     closingBook,
     openBook,
@@ -56,6 +62,13 @@ export function BooksAppComponent({
     setShelfView,
     progressByPath,
     saveProgress,
+    activeBookHighlights,
+    activeBookBookmarks,
+    addHighlight,
+    setHighlightColor,
+    removeHighlight,
+    addBookmark,
+    removeBookmark,
     handleImport,
     fileInputRef,
     handleFileInputChange,
@@ -91,6 +104,58 @@ export function BooksAppComponent({
     if (viewMode !== "reader") setBookLanguage(null);
   }, [viewMode]);
 
+  // Whether the visible page holds a bookmark (reported by the reader pane;
+  // drives the Go menu label and the titlebar ribbon state).
+  const [isCurrentPageBookmarked, setIsCurrentPageBookmarked] =
+    useState(false);
+  const handleBookmarkStateChange = useCallback(
+    (bookmarked: boolean) => setIsCurrentPageBookmarked(bookmarked),
+    []
+  );
+
+  const launchApp = useLaunchApp();
+  // "Ask Ryo" from the selection toolbar: open Chats with the passage quoted
+  // alongside the book's metadata (title / author / chapter).
+  const handleAskRyo = useCallback(
+    (passage: string) => {
+      const title = activeBookTitle || activeBook?.name || null;
+      const chapter =
+        readerNavigationState.currentChapterIndex >= 0
+          ? readerNavigationState.chapters[
+              readerNavigationState.currentChapterIndex
+            ]?.label
+          : undefined;
+      const source = [
+        title,
+        activeBookAuthor ? `by ${activeBookAuthor}` : null,
+        chapter ? `(${chapter})` : null,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const message = [
+        `“${passage}”`,
+        source ? `— ${source}` : null,
+        t("apps.books.selection.askRyoQuestion"),
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+      launchApp("chats", {
+        initialData: {
+          prefillMessage: message,
+          prefillRequestId: `books-ask-ryo-${Date.now()}`,
+        } satisfies ChatsInitialData,
+      });
+    },
+    [
+      activeBook,
+      activeBookAuthor,
+      activeBookTitle,
+      launchApp,
+      readerNavigationState,
+      t,
+    ]
+  );
+
   const menuBar = (
     <BooksMenuBar
       onClose={onClose}
@@ -110,6 +175,10 @@ export function BooksAppComponent({
       isSpeaking={isSpeaking}
       onStartSpeaking={() => readerRef.current?.startSpeaking()}
       onStopSpeaking={() => readerRef.current?.stopSpeaking()}
+      bookmarks={activeBookBookmarks}
+      isCurrentPageBookmarked={isCurrentPageBookmarked}
+      onToggleBookmark={() => readerRef.current?.toggleBookmark()}
+      onGoToBookmark={(cfi) => readerRef.current?.goToCfi(cfi)}
     />
   );
 
@@ -119,6 +188,44 @@ export function BooksAppComponent({
   // macOS X notitlebar uses a dark glass titlebar: light icon + shadow.
   // Classic/Windows themes use a dark icon with no shadow.
   const isDarkTitlebar = isMacOSTheme;
+  const bookmarkTitleBarButton = isReading ? (
+    <button
+      type="button"
+      aria-label={
+        isCurrentPageBookmarked
+          ? t("apps.books.bookmarks.remove")
+          : t("apps.books.bookmarks.add")
+      }
+      title={
+        isCurrentPageBookmarked
+          ? t("apps.books.bookmarks.remove")
+          : t("apps.books.bookmarks.add")
+      }
+      onClick={(e) => {
+        e.stopPropagation();
+        readerRef.current?.toggleBookmark();
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      className={`shrink-0 w-5 h-5 min-h-5 max-h-5 flex items-center justify-center transition-colors cursor-pointer ${
+        isCurrentPageBookmarked
+          ? "text-red-500 hover:text-red-400"
+          : isDarkTitlebar
+            ? "text-white/80 hover:text-white"
+            : "text-neutral-600 hover:text-neutral-800"
+      }`}
+      style={{
+        filter: isDarkTitlebar
+          ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
+          : undefined,
+      }}
+    >
+      <BookmarkSimple
+        size={14}
+        weight={isCurrentPageBookmarked ? "fill" : "bold"}
+      />
+    </button>
+  ) : null;
   const shelfButton = (
     <button
       type="button"
@@ -168,7 +275,12 @@ export function BooksAppComponent({
         instanceId,
         onNavigateNext,
         onNavigatePrevious,
-        titleBarRightContent: shelfButton,
+        titleBarRightContent: (
+          <div className="flex items-center gap-1">
+            {bookmarkTitleBarButton}
+            {shelfButton}
+          </div>
+        ),
       }}
       leading={
         <input
@@ -214,6 +326,15 @@ export function BooksAppComponent({
             onShowCustomize={() => setIsCustomizeOpen(true)}
             onHideCustomize={() => setIsCustomizeOpen(false)}
             isCustomizeOpen={isCustomizeOpen}
+            highlights={activeBookHighlights}
+            onAddHighlight={addHighlight}
+            onSetHighlightColor={setHighlightColor}
+            onRemoveHighlight={removeHighlight}
+            bookmarks={activeBookBookmarks}
+            onAddBookmark={addBookmark}
+            onRemoveBookmark={removeBookmark}
+            onBookmarkStateChange={handleBookmarkStateChange}
+            onAskRyo={handleAskRyo}
           />
         ) : (
           <BooksShelfView

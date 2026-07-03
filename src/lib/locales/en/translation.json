@@ -4573,6 +4573,27 @@
         "skip": "Skip",
         "stop": "Stop"
       },
+      "selection": {
+        "controls": "Selection controls",
+        "color": {
+          "yellow": "Yellow highlight",
+          "green": "Green highlight",
+          "blue": "Blue highlight",
+          "pink": "Pink highlight",
+          "purple": "Purple highlight"
+        },
+        "copy": "Copy",
+        "copied": "Copied to clipboard",
+        "copyFailed": "Couldn’t copy",
+        "askRyo": "Ask Ryo",
+        "removeHighlight": "Remove Highlight",
+        "askRyoQuestion": "what does this passage mean?"
+      },
+      "bookmarks": {
+        "title": "Bookmarks",
+        "add": "Add Bookmark",
+        "remove": "Remove Bookmark"
+      },
       "columns": {
         "auto": "Auto",
         "single": "Single",

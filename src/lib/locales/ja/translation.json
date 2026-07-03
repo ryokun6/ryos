@@ -588,6 +588,11 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "ブックマークを追加",
+        "remove": "ブックマークを削除",
+        "title": "ブックマーク"
+      },
       "chineseScript": {
         "original": "オリジナル",
         "simplified": "简体",
@@ -678,6 +683,22 @@
       "reader": {
         "backToShelf": "本棚",
         "error": "この本を開けませんでした。"
+      },
+      "selection": {
+        "askRyo": "Ryoに尋ねる",
+        "askRyoQuestion": "この一節はどういう意味ですか？",
+        "color": {
+          "blue": "ブルーのハイライト",
+          "green": "グリーンのハイライト",
+          "pink": "ピンクのハイライト",
+          "purple": "パープルのハイライト",
+          "yellow": "イエローのハイライト"
+        },
+        "controls": "選択範囲のコントロール",
+        "copied": "クリップボードにコピーしました",
+        "copy": "コピー",
+        "copyFailed": "コピーできませんでした",
+        "removeHighlight": "ハイライトを削除"
       },
       "shelf": {
         "emptyHint": "「本を追加」をクリックしてEPUBをインポートしてください。",
