@@ -195,6 +195,7 @@ export function useTvAppController({
     playChannelSwitch,
     startStatic,
     stopStatic,
+    playbackRequested,
     isPlaying,
     isBuffering,
     poweringOff,

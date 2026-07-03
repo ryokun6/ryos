@@ -20,6 +20,7 @@ export function useTvCrtPlaybackEffects({
   playChannelSwitch,
   startStatic,
   stopStatic,
+  playbackRequested,
   isPlaying,
   isBuffering,
   poweringOff,
@@ -50,6 +51,7 @@ export function useTvCrtPlaybackEffects({
   playChannelSwitch: () => void | Promise<void>;
   startStatic: () => void | Promise<void>;
   stopStatic: () => void;
+  playbackRequested: boolean;
   isPlaying: boolean;
   isBuffering: boolean;
   poweringOff: boolean;
@@ -122,7 +124,7 @@ export function useTvCrtPlaybackEffects({
       return;
     }
 
-    if (screenOff && isPlaying) {
+    if (screenOff && playbackRequested) {
       setScreenOff(false);
       setPowerOnKey((k) => k + 1);
       void playPowerOn();
@@ -156,6 +158,7 @@ export function useTvCrtPlaybackEffects({
     }
   }, [
     isPlaying,
+    playbackRequested,
     isWindowOpen,
     isBuffering,
     poweringOff,
