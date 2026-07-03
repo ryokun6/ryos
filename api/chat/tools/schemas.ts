@@ -1002,6 +1002,20 @@ const TV_CHANNEL_ACTION_SET: ReadonlySet<string> = new Set(TV_ACTIONS);
 const isTvChannelAction = (action: string): action is TvAction =>
   TV_CHANNEL_ACTION_SET.has(action);
 
+const TV_ONLY_MEDIA_STRING_FIELDS = [
+  "channelId",
+  "prompt",
+  "name",
+  "videoId",
+  "url",
+  "removeVideoId",
+] as const;
+
+const TV_ONLY_MEDIA_FIELDS = [
+  ...TV_ONLY_MEDIA_STRING_FIELDS,
+  "channelNumber",
+] as const;
+
 const normalizeMediaControlInput = (value: unknown): unknown => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return value;
@@ -1028,19 +1042,14 @@ const normalizeMediaControlInput = (value: unknown): unknown => {
   ) {
     delete data.channelNumber;
   }
+  for (const field of TV_ONLY_MEDIA_STRING_FIELDS) {
+    if (data[field] === null) {
+      delete data[field];
+    }
+  }
 
   return data;
 };
-
-const TV_ONLY_MEDIA_FIELDS = [
-  "channelId",
-  "channelNumber",
-  "prompt",
-  "name",
-  "videoId",
-  "url",
-  "removeVideoId",
-] as const;
 
 const mediaControlObjectSchema = z.object({
     target: z

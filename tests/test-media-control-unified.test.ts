@@ -124,16 +124,17 @@ describe("mediaControl schema", () => {
   });
 
   test("normalizes neutral auto-filled fields on karaoke navigation", () => {
-    for (const channelNumber of [null, 0]) {
+    for (const neutralString of ["", null]) {
       const result = mediaControlSchema.safeParse({
         target: "karaoke",
         action: "next",
-        prompt: "",
-        name: "",
-        url: "",
-        channelId: "",
-        removeVideoId: "",
-        channelNumber,
+        prompt: neutralString,
+        name: neutralString,
+        videoId: neutralString,
+        url: neutralString,
+        channelId: neutralString,
+        removeVideoId: neutralString,
+        channelNumber: null,
         enableVideo: false,
       });
 
@@ -142,6 +143,17 @@ describe("mediaControl schema", () => {
         data: { target: "karaoke", action: "next" },
       });
     }
+
+    expect(
+      mediaControlSchema.safeParse({
+        target: "karaoke",
+        action: "next",
+        channelNumber: 0,
+      })
+    ).toEqual({
+      success: true,
+      data: { target: "karaoke", action: "next" },
+    });
   });
 
   test("rejects meaningful fields for the wrong media target", () => {
@@ -229,11 +241,18 @@ describe("mediaControl schema", () => {
 
   test("enforces channel-action parameter rules", () => {
     expect(
-      mediaControlSchema.safeParse({ target: "tv", action: "tune" }).success
+      mediaControlSchema.safeParse({
+        target: "tv",
+        action: "tune",
+        channelId: null,
+      }).success
     ).toBe(false);
     expect(
-      mediaControlSchema.safeParse({ target: "tv", action: "createChannel" })
-        .success
+      mediaControlSchema.safeParse({
+        target: "tv",
+        action: "createChannel",
+        prompt: null,
+      }).success
     ).toBe(false);
     expect(
       mediaControlSchema.safeParse({ target: "tv", action: "deleteChannel" })
