@@ -20,6 +20,7 @@
     "build": "bun run scripts/build-app.ts",
     "build:vite": "vite build",
     "inspect:precache": "bun run scripts/inspect-precache.ts",
+    "verify:offline-pwa": "bun run scripts/verify-offline-pwa.ts",
     "measure:startup": "bun run scripts/measure-startup.ts",
     "typecheck": "tsc -b",
     "lint": "eslint .",
