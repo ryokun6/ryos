@@ -5,10 +5,18 @@ export const PREVIEW_ZOOM_MAX = 800;
 
 const ZOOM_STEP_FACTOR = 1.25;
 const WHEEL_ZOOM_INTENSITY = 0.01;
+const ZOOM_ANIMATION_MS = 250;
 const DOUBLE_TAP_MS = 300;
 const DOUBLE_TAP_DIST_PX = 30;
 const TAP_MOVE_SLOP_PX = 12;
 const TAP_MAX_DURATION_MS = 350;
+
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function clampPreviewZoom(zoom: number): number {
   if (!Number.isFinite(zoom)) return 100;
@@ -50,6 +58,7 @@ export interface ImageZoomControls {
   zoomIn: () => void;
   zoomOut: () => void;
   zoomToActualSize: () => void;
+  setFitMode: (fit: boolean) => void;
 }
 
 /**
@@ -74,6 +83,7 @@ export function useImageZoomGestures(
   const onZoomChangeRef = useRef(onZoomChange);
   const onFitChangeRef = useRef(onFitToWindowChange);
   const pendingAnchorRef = useRef<ZoomAnchor | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   zoomRef.current = zoom;
   fitRef.current = fitToWindow;
@@ -120,10 +130,14 @@ export function useImageZoomGestures(
   }, [imageRef]);
 
   const applyAnchoredZoom = useCallback(
-    (nextZoom: number, anchor: ZoomAnchor | null) => {
-      const clamped = clampPreviewZoom(nextZoom);
+    (nextZoom: number, anchor: ZoomAnchor | null, clampToLimits = true) => {
+      // Transient animation frames toward fit may pass below the user-facing
+      // minimum (huge images fit below PREVIEW_ZOOM_MIN), so skip clamping.
+      const next = clampToLimits
+        ? clampPreviewZoom(nextZoom)
+        : Math.max(1, nextZoom);
       const zoomChanged =
-        fitRef.current || Math.abs(clamped - zoomRef.current) > 0.001;
+        fitRef.current || Math.abs(next - zoomRef.current) > 0.001;
       if (!zoomChanged) {
         // Zoom is clamped at a limit; still honor the anchor so a moving
         // pinch midpoint keeps panning the image.
@@ -131,27 +145,97 @@ export function useImageZoomGestures(
         return;
       }
       pendingAnchorRef.current = anchor;
-      zoomRef.current = clamped;
+      zoomRef.current = next;
       if (fitRef.current) {
         fitRef.current = false;
         onFitChangeRef.current(false);
       }
-      onZoomChangeRef.current(clamped);
+      onZoomChangeRef.current(next);
     },
     [adjustScrollToAnchor],
   );
 
-  const zoomAtContainerCenter = useCallback(
-    (nextZoom: number) => {
-      const container = containerRef.current;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const clientX = rect.left + container.clientWidth / 2;
-      const clientY = rect.top + container.clientHeight / 2;
-      applyAnchoredZoom(nextZoom, makeAnchor(clientX, clientY));
+  const cancelZoomAnimation = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
+
+  /** Eased zoom toward `targetZoom`, keeping `anchor` pinned every frame. */
+  const animateAnchoredZoom = useCallback(
+    (
+      targetZoom: number,
+      anchor: ZoomAnchor | null,
+      options?: { clamp?: boolean; onComplete?: () => void },
+    ) => {
+      cancelZoomAnimation();
+      const clampToLimits = options?.clamp !== false;
+      const target = clampToLimits
+        ? clampPreviewZoom(targetZoom)
+        : Math.max(1, targetZoom);
+      const start = getEffectiveZoom();
+      if (prefersReducedMotion() || Math.abs(target - start) < 0.5) {
+        applyAnchoredZoom(target, anchor, clampToLimits);
+        options?.onComplete?.();
+        return;
+      }
+      const startTime = performance.now();
+      const step = (now: number) => {
+        const t = Math.min(1, (now - startTime) / ZOOM_ANIMATION_MS);
+        const next = start + (target - start) * easeOutCubic(t);
+        applyAnchoredZoom(next, anchor, clampToLimits);
+        if (t < 1) {
+          animationFrameRef.current = requestAnimationFrame(step);
+        } else {
+          animationFrameRef.current = null;
+          options?.onComplete?.();
+        }
+      };
+      animationFrameRef.current = requestAnimationFrame(step);
     },
-    [applyAnchoredZoom, containerRef, makeAnchor],
+    [applyAnchoredZoom, cancelZoomAnimation, getEffectiveZoom],
   );
+
+  const getCenterAnchor = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return null;
+    const rect = container.getBoundingClientRect();
+    return makeAnchor(
+      rect.left + container.clientWidth / 2,
+      rect.top + container.clientHeight / 2,
+    );
+  }, [containerRef, makeAnchor]);
+
+  /** Zoom % the image will render at once fit-to-window mode is re-enabled. */
+  const getFitZoom = useCallback(() => {
+    const container = containerRef.current;
+    const image = imageRef.current;
+    if (!container || !image) return 100;
+    const naturalWidth = image.naturalWidth;
+    const naturalHeight = image.naturalHeight;
+    if (naturalWidth <= 0 || naturalHeight <= 0) return 100;
+    let padX = 0;
+    let padY = 0;
+    const wrapper = image.parentElement;
+    if (wrapper) {
+      const style = window.getComputedStyle(wrapper);
+      padX =
+        (parseFloat(style.paddingLeft) || 0) +
+        (parseFloat(style.paddingRight) || 0);
+      padY =
+        (parseFloat(style.paddingTop) || 0) +
+        (parseFloat(style.paddingBottom) || 0);
+    }
+    const availWidth = Math.max(1, container.clientWidth - padX);
+    const availHeight = Math.max(1, container.clientHeight - padY);
+    const ratio = Math.min(
+      availWidth / naturalWidth,
+      availHeight / naturalHeight,
+      1,
+    );
+    return ratio * 100;
+  }, [containerRef, imageRef]);
 
   const resetToFit = useCallback(() => {
     pendingAnchorRef.current = null;
@@ -161,16 +245,25 @@ export function useImageZoomGestures(
     onZoomChangeRef.current(100);
   }, []);
 
+  /** Animate down/up to the fitted size, then hand back to fit-to-window mode. */
+  const animateToFit = useCallback(() => {
+    if (fitRef.current) return;
+    animateAnchoredZoom(getFitZoom(), getCenterAnchor(), {
+      clamp: false,
+      onComplete: resetToFit,
+    });
+  }, [animateAnchoredZoom, getCenterAnchor, getFitZoom, resetToFit]);
+
   const toggleZoomAtPoint = useCallback(
     (clientX: number, clientY: number) => {
       if (fitRef.current) {
         const target = Math.max(100, getEffectiveZoom() * 2);
-        applyAnchoredZoom(target, makeAnchor(clientX, clientY));
+        animateAnchoredZoom(target, makeAnchor(clientX, clientY));
       } else {
-        resetToFit();
+        animateToFit();
       }
     },
-    [applyAnchoredZoom, getEffectiveZoom, makeAnchor, resetToFit],
+    [animateAnchoredZoom, animateToFit, getEffectiveZoom, makeAnchor],
   );
 
   // Apply the pending anchor right after the zoomed image size hits the DOM.
@@ -214,6 +307,8 @@ export function useImageZoomGestures(
     });
 
     const onTouchStart = (e: TouchEvent) => {
+      // Fingers take over from any running zoom animation.
+      cancelZoomAnimation();
       if (e.touches.length === 2) {
         tapCandidate = null;
         touchPinchActive = true;
@@ -314,6 +409,7 @@ export function useImageZoomGestures(
       // Trackpad pinches arrive as ctrlKey wheel events in Chrome/Firefox.
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
+      cancelZoomAnimation();
       const factor = Math.exp(-e.deltaY * WHEEL_ZOOM_INTENSITY);
       applyAnchoredZoom(
         getEffectiveZoom() * factor,
@@ -330,6 +426,7 @@ export function useImageZoomGestures(
       // path is already handling this gesture (iOS fires both).
       e.preventDefault();
       if (touchPinchActive) return;
+      cancelZoomAnimation();
       const ge = e as SafariGestureEvent;
       const anchor = makeAnchor(ge.clientX, ge.clientY);
       gestureStart = anchor
@@ -369,6 +466,7 @@ export function useImageZoomGestures(
         return;
       }
       e.preventDefault();
+      cancelZoomAnimation();
       const start = {
         x: e.clientX,
         y: e.clientY,
@@ -410,6 +508,7 @@ export function useImageZoomGestures(
     container.addEventListener("gestureend", onGestureEnd);
 
     return () => {
+      cancelZoomAnimation();
       resizeObserver?.disconnect();
       container.style.cursor = "";
       container.removeEventListener("touchstart", onTouchStart);
@@ -428,22 +527,50 @@ export function useImageZoomGestures(
     containerRef,
     imageRef,
     applyAnchoredZoom,
+    cancelZoomAnimation,
     getEffectiveZoom,
     makeAnchor,
     toggleZoomAtPoint,
   ]);
 
   const zoomIn = useCallback(() => {
-    zoomAtContainerCenter(getNextZoomInLevel(getEffectiveZoom()));
-  }, [getEffectiveZoom, zoomAtContainerCenter]);
+    animateAnchoredZoom(
+      getNextZoomInLevel(getEffectiveZoom()),
+      getCenterAnchor(),
+    );
+  }, [animateAnchoredZoom, getCenterAnchor, getEffectiveZoom]);
 
   const zoomOut = useCallback(() => {
-    zoomAtContainerCenter(getNextZoomOutLevel(getEffectiveZoom()));
-  }, [getEffectiveZoom, zoomAtContainerCenter]);
+    animateAnchoredZoom(
+      getNextZoomOutLevel(getEffectiveZoom()),
+      getCenterAnchor(),
+    );
+  }, [animateAnchoredZoom, getCenterAnchor, getEffectiveZoom]);
 
   const zoomToActualSize = useCallback(() => {
-    zoomAtContainerCenter(100);
-  }, [zoomAtContainerCenter]);
+    animateAnchoredZoom(100, getCenterAnchor());
+  }, [animateAnchoredZoom, getCenterAnchor]);
 
-  return { zoomIn, zoomOut, zoomToActualSize };
+  /**
+   * Fit-to-window toggle: enabling animates down/up to the fitted size before
+   * switching modes; disabling keeps the current rendered size (no jump).
+   */
+  const setFitMode = useCallback(
+    (fit: boolean) => {
+      if (fit) {
+        animateToFit();
+        return;
+      }
+      if (!fitRef.current) return;
+      cancelZoomAnimation();
+      const effective = clampPreviewZoom(getEffectiveZoom());
+      fitRef.current = false;
+      zoomRef.current = effective;
+      onFitChangeRef.current(false);
+      onZoomChangeRef.current(effective);
+    },
+    [animateToFit, cancelZoomAnimation, getEffectiveZoom],
+  );
+
+  return { zoomIn, zoomOut, zoomToActualSize, setFitMode };
 }

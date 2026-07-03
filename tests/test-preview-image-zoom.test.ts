@@ -46,6 +46,19 @@ describe("Preview image zoom gesture wiring", () => {
     expect(component).toContain("touch-pan-x touch-pan-y overscroll-contain");
   });
 
+  test("discrete zoom actions animate and respect reduced motion", async () => {
+    const hook = await Bun.file(
+      "src/apps/preview/hooks/useImageZoomGestures.ts",
+    ).text();
+    expect(hook).toContain("requestAnimationFrame(step)");
+    expect(hook).toContain("prefers-reduced-motion: reduce");
+    // Double-tap/double-click toggles go through the animated paths.
+    expect(hook).toContain("animateAnchoredZoom(target, makeAnchor(clientX, clientY))");
+    expect(hook).toContain("onComplete: resetToFit");
+    // Direct-tracking gestures cancel a running animation instead of animating.
+    expect(hook).toContain("cancelZoomAnimation();");
+  });
+
   test("menu zoom actions route through the anchored zoom controls", async () => {
     const menuBar = await Bun.file(
       "src/apps/preview/components/PreviewMenuBar.tsx",

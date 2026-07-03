@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import type { AppProps } from "@/apps/base/types";
 import type { PreviewInitialData } from "..";
@@ -71,25 +71,14 @@ export function PreviewAppComponent({
     setNaturalSize(null);
   }, [objectUrl]);
 
-  const handleSetFitToWindow = useCallback(
-    (fit: boolean) => {
-      setFitToWindow(fit);
-      if (fit) setZoom(100);
-    },
-    [setFitToWindow, setZoom],
-  );
-
-  const { zoomIn, zoomOut, zoomToActualSize } = useImageZoomGestures(
-    containerRef,
-    imageRef,
-    {
+  const { zoomIn, zoomOut, zoomToActualSize, setFitMode } =
+    useImageZoomGestures(containerRef, imageRef, {
       enabled: isImage && Boolean(objectUrl),
       zoom,
       fitToWindow,
       onZoomChange: setZoom,
       onFitToWindowChange: setFitToWindow,
-    },
-  );
+    });
 
   const menuBar = (
     <PreviewMenuBar
@@ -109,7 +98,7 @@ export function PreviewAppComponent({
       onZoomOut={zoomOut}
       onActualSize={zoomToActualSize}
       fitToWindow={fitToWindow}
-      onSetFitToWindow={handleSetFitToWindow}
+      onSetFitToWindow={setFitMode}
     />
   );
 
