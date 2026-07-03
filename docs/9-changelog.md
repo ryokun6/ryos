@@ -1,22 +1,39 @@
 # Changelog
 
-A summary of changes and updates to ryOS, organized by month.
+The biggest ryOS updates, organized by month. Each release highlights about five features so the important work is easy to scan.
 
-**Major changes** highlight new features, significant platform work, and large refactors. **Minor changes** (collapsed per month) cover fixes, polish, chores, and smaller updates.
+Open **More from this month** for fixes, polish, infrastructure, and smaller updates.
+
+<style>
+.changelog-month-note { color: var(--doc-text-tertiary); margin: -6px 0 14px; }
+.changelog-feature-grid { display: grid; gap: 18px; margin: 12px 0 20px; }
+.changelog-feature { overflow: hidden; border: 1px solid var(--doc-border); border-radius: 12px; background: var(--doc-surface-alt); }
+.changelog-feature img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }
+.changelog-feature-copy { padding: 14px 16px 16px; }
+.changelog-feature h3 { font-size: 14px; margin: 0 0 6px; }
+.changelog-feature p { color: var(--doc-text-secondary); font-size: 12px; margin: 0; }
+@media screen and (max-width: 768px) { .changelog-feature-grid { gap: 14px; } .changelog-feature-copy { padding: 12px 14px 14px; } }
+</style>
 
 ---
 
 ## July 2026
 
-- **Books read-aloud**: browser TTS via a Speech menu with sentence highlighting, auto page turns, carry-tail highlights across page cuts, and bottom overlay controls (rewind/pause/skip/stop). Controls use an Aqua Glass island pill that collapses to a home-indicator pill when idle; Control Panels → Sound adds a browser TTS voice picker.
-- **Books customization & CJK reading**: a Customize panel for reading fonts (including Rounded and Original), custom colors, transparent backgrounds, vertical text layout (including legacy-tagged Japanese vertical text), live Simplified/Traditional Chinese conversion, and synced reader settings across devices; bookmarks and text-selection highlights with a selection toolbar.
-- **Books Ask Ryo**: inline reply bubble with streamed text, thinking pulse, browser-TTS speak button, and highlight tap-to-ask on selected passages.
-- **Offline PWA**: network-dependent apps show offline empty states; Books loads cached books reliably offline; the standalone server sends explicit Cache-Control headers for offline PWA cache behavior.
-- **Boot performance**: cut boot-critical JS ~44% by code-splitting heavy desktop shell dependencies, plus startup and build performance improvements.
+<p class="changelog-month-note">Books becomes a full reading space, from the shelf to spoken passages and inline help from Ryo.</p>
+
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/books-library.webp" alt="Books library with Meditations on a wooden shelf" width="1280" height="800" loading="eager"><div class="changelog-feature-copy"><h3>Books library</h3><p>A new EPUB home with a wooden bookshelf, protected Books folder, Finder import, synced progress, and <em>Meditations</em> ready to read.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/books-reader.webp" alt="Meditations open in the Books reader" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Immersive reading</h3><p>Page turns, bookmarks, highlights, edge taps, swipe navigation, single or double columns, and reliable offline reading.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/books-customize.webp" alt="Books Customize panel over an open book" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Make every book yours</h3><p>Choose fonts, spacing, margins, colors, transparency, and layout. CJK books add vertical text and live Simplified or Traditional Chinese conversion.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/books-read-aloud.webp" alt="Read-aloud controls below an open book" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Read aloud</h3><p>Browser voices read from the current sentence, highlight along the way, turn pages automatically, and stay close in a compact control pill.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/books-ask-ryo.webp" alt="Ask Ryo explaining a selected passage inside Books" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Ask Ryo in the margins</h3><p>Select a passage for an inline explanation, then copy it, hear it aloud, or continue the conversation in Chats.</p></div></article>
+</div>
 
 <details>
-<summary>Minor changes (9)</summary>
+<summary>More from this month (11)</summary>
 
+- Cut boot-critical JavaScript by about 44% through code splitting and startup work.
+- Add offline empty states for network-dependent apps and explicit standalone-server cache headers.
 - Restore Preview windows with their last document paths so reopened sessions load documents without persisting file contents.
 - Improve locale-aware CJK reading and lyrics fonts; bold pronunciation ruby (furigana/pinyin/romaji) at 700 weight in rounded lyrics fonts.
 - Match Aqua slider fills to tab bar shine; quiet Aqua slider track lighting with neutral rgba recess; match Aqua Glass pane radius on no-titlebar windows.
@@ -33,23 +50,23 @@ A summary of changes and updates to ryOS, organized by month.
 
 - **Aqua Glass theme**: a new macOS theme variant with frosted-glass chrome, backdrop blur, and squircle corners (progressive enhancement with rounded-rect fallback). A transparent menubar adapts text and pill highlights to the wallpaper, and frosted toolbars, menus, sidebars, and inputs carry across Chats, Admin, Finder, Soundboard, and Spotlight.
 - **Cloud Sync v2**: full rewrite to journal-based delta sync. State is a per-user `key → document` map; changes travel as ops with hybrid-logical-clock timestamps through `/api/sync/v2/*`, conflicts resolve per key (last-writer-wins, no 409s), small remote changes apply straight from realtime events with zero HTTP requests, and binary content is content-addressed with batched dedupe. Legacy v1 data imports lazily on first sync.
-- **Sync v1 retirement**: remove the legacy manual cloud backup/status endpoints and Control Panels cloud backup UI; local `.gz` restores now strip stale Sync v2 metadata and promote restored state back into Sync v2 on next boot for logged-in users.
-- **Redis canonical-only runtime**: API and app code read/write only canonical Redis keys (`src/shared/redisKeys.ts`); legacy key backfill and deletion moved to the standalone CLI `scripts/redis-key-migration.ts` (admin migration API/UI removed); rate-limit keys aligned and legacy read-only fallbacks removed.
 - **Desktop app (Electron)**: replace the Tauri shell with Electron — signed macOS releases, auto-update with Check for Updates, native app permissions, background chat notifications, native toasts, and Castlabs Electron for Apple Music DRM playback (releases v1.0.3–v1.0.8).
-- **Performance sweep**: cut ~1MB of boot-critical JS, narrowed store/instance/clock subscriptions, debounced write-behind localStorage persistence, lazy Pusher runtime, transient drag/resize and dock scaling, visibility-gated polling, and content-visibility for long lists.
-- **Control Panels redesign**: a macOS System Preferences layout across all themes with a Preferences-style search field, a consolidated **Account** ⋯ menu (login, change password, logout, logout-all-devices), reliable Safari auto-height, and Aqua polish.
 - **Books**: a new EPUB reader app with a 3D wooden bookshelf, a page-turn reader (zoom-in/out transitions, reading fonts including EB Garamond, single/double-column layouts, and light/sepia/dark page themes), auto-saved reading progress synced across devices, Finder `.epub` import into a protected `/Books` root, and *Meditations* bundled as the default book.
 - **Preview**: a new document viewer for images, PDFs, HTML, Markdown, and structured text, with Finder file associations, Open With handoff, import, Save As, and export workflows.
-- **International preferences**: a new Control Panels area (Language and Date & Time tabs) for locale formats and an interactive Earth-map time zone picker; the selected time zone is honored across the menubar clock, Dashboard, and Calendar, with localized time-zone and weather city names.
-- **Dynamic wallpapers**: day/night gradient, now-playing cover, and shuffle options, plus animated **Weather** and **Lyrics** live wallpapers backed by unified weather data and per-user deterministic shuffle that stays in sync across devices.
-- **Selectable accent colors**: named swatches in Control Panels → Appearance for Aqua and System 7, a wallpaper-sampled default, a **System** option that restores each theme's classic selection color, and accent theming applied across menus, sliders, progress bars, links, toasts, and Ryo AI bubbles.
-- **Self-service account recovery and deletion**: recover access to and delete your account without admin involvement.
-- **Privacy Policy & Terms of Service**: add GDPR Privacy Policy and Terms of Service pages.
-- **iPod / Karaoke lyrics glow**: cache cover-derived glow color in song metadata for stable cross-device sync; default fullscreen lyrics to glow; mirror player visuals in lyrics wallpaper backgrounds; improve palette extraction and karaoke timing/alignment.
 
 <details>
-<summary>Minor changes (33)</summary>
+<summary>More from this month (43)</summary>
 
+- Retire Sync v1 manual cloud backup endpoints and promote restored local backups into Sync v2.
+- Move legacy Redis backfill and deletion into a standalone migration CLI.
+- Cut about 1MB of boot-critical JavaScript and reduce hot subscriptions, polling, and persistence work.
+- Redesign Control Panels around a System Preferences layout with a consolidated Account menu.
+- Add locale formats and an interactive time-zone picker to International preferences.
+- Add day/night, now-playing, shuffle, Weather, and Lyrics wallpaper modes.
+- Add selectable accent colors across Aqua and System 7.
+- Add self-service account recovery and deletion.
+- Publish the Privacy Policy and Terms of Service.
+- Improve stable cover-derived glow and karaoke timing across iPod and Karaoke.
 - Allow multi-day all-day calendar events.
 - Show cloud sync upload progress in the menubar.
 - Adopt a shared Help/About dialog state across apps.
@@ -93,14 +110,14 @@ A summary of changes and updates to ryOS, organized by month.
 - **Virtual PC (v86)**: expand beyond DOS games with the v86 OS browser (Windows 1.0–2000/ME through Linux/BSD/ReactOS catalog), COEP `/embed/pc.html`, generated thumbnails, persisted presets, full localization, and `infinite-pc` → `pc` id migration.
 - **Cursor Cloud agent workflow**: `cursorCloudAgent` + `listCursorCloudAgentRuns` tools, live stream card with follow-up input and Open PR, Admin **Cursor agents** tab (90-day Redis retention), and Telegram completion DMs with plain-text **Agent** / **PR** URLs (markdown stripped via shared `telegram-format` helpers).
 - **Dashboard**: **Aquarium** widget, **currency converter** with Frankfurter rates, Apple PNG widget glyphs, and mobile narrow layout with scroll-to-new-widget animation.
-- **TV polish**: channel-bug logo overlay (fullscreen-safe), idle bursts, drawer SFX, square channel-strip buttons, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions), synced reset-channel deletes, and continued CRT/UI refinements.
-- **Theme platform layer**: refactor with `data-os-platform`, centralized menu tokens, and macOSX font fixes (menubar, Finder list, About dialog, TextEdit headings, chat meta).
-- Remove **CandyBar** app (dock icon pack browser added in March is no longer shipped).
-- **Cover Flow on fullscreen long-press**; **Apple menu toggle** for browser fullscreen ryOS shell.
 
 <details>
-<summary>Minor changes (30)</summary>
+<summary>More from this month (34)</summary>
 
+- Polish TV with a channel bug, idle bursts, drawer sounds, and fullscreen controls.
+- Centralize shared platform styling with `data-os-platform` and menu tokens.
+- Remove the CandyBar dock icon pack browser.
+- Add Cover Flow on fullscreen long-press and a browser-fullscreen Apple menu toggle.
 - Chats: Streamdown message rendering; subtler tool-error styling; extend Cursor SDK run Redis TTL to 90 days; rename channel prompt to "Make a new channel...".
 - iPod / Karaoke: Cover Flow title-bar toggle; Apple Music sharing copies direct links; default Cover display mode; locale-aware lyrics `auto` translation; karaoke visual-effect gating and hidden-video perf.
 - Calendar: tray event/todo details, drag/resize, keyboard delete; fix tray delete layout, mobile scroll during drag, and bottom padding clipping.
@@ -130,13 +147,13 @@ A summary of changes and updates to ryOS, organized by month.
 - **IRC chat**: `irc.pieter.com` default, IRC server registry, channel browser in New Chat IRC tab, authenticated-user join via registered servers, `IRC_BRIDGE_DISABLED` env opt-out, and IRC bridge wiring tests.
 - **`cursorCloudAgent` chat tool** (renamed from legacy `cursorRyOsRepoAgent`): async Cursor Cloud repo-agent runs with live stream card, persisted PR URL with Open PR button, follow-up endpoint with reply input, and Telegram completion notification.
 - **Karaoke polish**: intro title card (5s with lead time, scaling, marquee scroll, pause-aware), empty library state with Add Songs CTA, smoother ScrollingText marquee (shared with iPod), Korean romanization default, and lyrics perf isolation from playback ticks.
-- **Wallpaper system**: Leopard sets, picker layout improvements, category ordering, new default `nature earth horizon` wallpaper, and display settings persisted at version 1.
-- **Themed desktop**: System 7 shows Chats, IE, Karaoke after iPod; Applications shortcut on non-macOS X themes (Applet Store hidden there); themed Chats icons across System 7, macOSX, XP 48px, and Win98.
-- **System prompts**: optimize for static caching with tiered dynamic context.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (13)</summary>
 
+- Add Leopard wallpaper sets, picker improvements, and persisted display settings.
+- Refresh default desktop shortcuts and Chats icons across classic themes.
+- Optimize AI system prompts for static caching.
 - TV (CRT & playback): multi-stage power on/off, screen on/off with play/pause, LCD Filter toggle, opaque static and native-refresh noise, lineup-based channel numbers, mobile Safari sync play, hide CC during transitions, reset-channels item, Shorts exclusion, substring-confusable YouTube host rejection (CodeQL).
 - TV (lineup & drawer): dedicated channel cloud sync, YouTube URL paste, playlist drawer (side panel + compact bottom), drawer remove control, cached random playlists, prepopulate from exported library (incl. Taiwan), allow hiding default channels, synced reset-channel deletes.
 - TV (UI): marquee-scroll long NET names, inline AI channel creation shimmer, Ryo TV pulls from Videos library, channel-bug and fullscreen control groundwork.
@@ -153,18 +170,18 @@ A summary of changes and updates to ryOS, organized by month.
 ## March 2026
 
 - **Calendar**: iCal support, Dashboard widget overlay, and AI integration; redesign Dashboard with widget strip, Stocks, Dictionary, Translator, and smarter placement.
-- **CandyBar**: browse and apply dock icon packs; align dock customization with shared app UI patterns.
 - **AirDrop-style Finder sharing**: discovery, send/receive, and Downloads folder; multi-select on Desktop and Finder (marquee, modifier, range); universal undo/redo for Finder, Paint, and TextEdit.
 - **Cloud sync (logical domains)**: refactor around `/api/sync/domains`, per-domain GET/PUT, and attachment prepare — incremental settings and files-metadata uploads, coalesced uploads, domain triggers on app launch, deletion markers for songs, custom wallpapers on the files domain, and safer remote apply / merge (incl. iPod translation and wallpaper ordering).
-- **Auto Sync**: persist server-side (default on) with incremental Redis settings upload and force-full on manual upload; localized Sync tab statuses.
-- **`webFetch` chat tool**: server-side URL → HTML-to-text extraction with hardening and unit tests.
 - **Contacts, Telegram, and auth**: vCard import and cloud sync; Telegram linking, DMs, voice notes, song library tool, Gemini web search, heartbeats; migrate auth to **httpOnly cookies** with force upload/download sync controls.
-- **Real-time stack**: improve presence (heartbeat when Chats open with auth); fix launch crashes from partial cloud-sync persist and invalid theme.
 - **Theme system**: unify on semantic tokens and CSS variables; extract shared UI (ToolbarButton, SearchInput, EmptyState, SelectableListItem); z-index scale and prefers-reduced-motion; Finder brushed metal and Spotlight-style selection.
 
 <details>
-<summary>Minor changes (22)</summary>
+<summary>More from this month (26)</summary>
 
+- Add and apply dock icon packs with CandyBar.
+- Persist Auto Sync server-side with incremental settings uploads.
+- Add a hardened server-side `webFetch` chat tool.
+- Improve presence heartbeats and recover from partial sync or invalid theme state.
 - Improve iPod/karaoke playback, voice ducking for TTS/karaoke, and iPod widget control for karaoke.
 - Switch parse-title to Gemini 3 Flash; harden add-track against CORS, duplicates, and Shorts URLs.
 - Enable Gemini web search in chat for authenticated gemini-3-flash users; upgrade default chat/image models (gpt-5.4, etc.).
@@ -184,12 +201,12 @@ A summary of changes and updates to ryOS, organized by month.
 - **Two-tier memory system**: daily notes and long-term memories for AI proactive greetings and context.
 - **AmbientBackground**: audio-reactive liquid and warp display modes for iPod and Karaoke.
 - **Karaoke display modes**: selectable display mode in Karaoke; aligned display modes in iPod and Karaoke.
-- **Error boundaries**: app and desktop error boundaries for improved stability.
 - **App switcher**: keyboard shortcuts for switching between open apps.
 
 <details>
-<summary>Minor changes (9)</summary>
+<summary>More from this month (10)</summary>
 
+- Add app and desktop error boundaries for safer recovery.
 - Improve cloud backup and restore with increased limit, progress tracking, and UI enhancements.
 - Refactor daily notes processing for improved efficiency and reduced timeouts.
 - Fix Winamp icon theming, playlist layout, and foreground handling.
@@ -209,11 +226,11 @@ A summary of changes and updates to ryOS, organized by month.
 - **Stickies**: draggable notes with color localization and mobile touch support.
 - **Chats**: image upload support, improved styling, and AI-powered memory extraction.
 - **API runtime**: refactor endpoints to Node.js runtime with consolidated middleware and unified authentication.
-- **AI SDK 6.0**: migrate to AI SDK 6.0 and implement structured output for song title parsing.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Migrate to AI SDK 6.0 and structured song-title output.
 - Improve application launch animations and styling.
 - Enhance CoverFlow with improved styling, perspective calculations, and track playback.
 - Update macOS theme with aqua styling for buttons, progress bars, and other UI elements.
@@ -232,14 +249,14 @@ A summary of changes and updates to ryOS, organized by month.
 - **CoverFlow**: interactive CD animation with play/pause.
 - **Karaoke**: full-screen iPod player with lyrics synchronization.
 - **Lyrics pronunciation**: Japanese furigana and Chinese soramimi options.
-- **Song metadata**: KuGou integration and Redis caching.
 - **i18n**: language selection across the application.
-- **Admin**: restricted-access app for managing users and songs.
 - **Expose / Mission Control**: enhanced window management; screen saver.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (12)</summary>
 
+- Add KuGou song metadata lookup and Redis caching.
+- Add an Admin app for managing users and songs.
 - Fix lyrics translation, furigana, and soramimi processing.
 - Improve iPod and Karaoke touch handling and playback stability.
 - Update Apple menu with new items and improved functionality.
@@ -257,15 +274,14 @@ A summary of changes and updates to ryOS, organized by month.
 
 - **Applet Store**: AI-powered applet generation, sharing, and management.
 - **Gemini for applets**: Google Gemini as primary AI model for applet generation with OpenAI fallback.
-- **Prefetching and caching**: service worker updates, version handling, and improved offline support.
+- **PWA performance**: service worker prefetching, cache version handling, and offline support.
 - **iPod video**: playback, translation, and fullscreen controls with new video entries.
-- **PWA support**: service worker for faster loading and offline capabilities.
 - **AI chat tools**: new and refactored tools for file system access and applet management.
-- **Desktop and Finder shortcuts**: theme-conditional visibility and trash functionality.
 
 <details>
-<summary>Minor changes (9)</summary>
+<summary>More from this month (10)</summary>
 
+- Add theme-aware Desktop and Finder shortcuts with Trash support.
 - Fix applet loading, sharing, and display.
 - Update toast notifications for prefetching and version updates.
 - Enhance PaintCanvas selection tools.
@@ -286,7 +302,7 @@ A summary of changes and updates to ryOS, organized by month.
 - **Zod v4**: upgrade from v3.
 
 <details>
-<summary>Minor changes (8)</summary>
+<summary>More from this month (8)</summary>
 
 - Add icon support and toast notifications for generated HTML applets.
 - Enhance MacDock with emoji scaling and layout adjustments.
@@ -308,7 +324,7 @@ A summary of changes and updates to ryOS, organized by month.
 - **TextEdit**: fallback mechanism for instance management.
 
 <details>
-<summary>Minor changes (8)</summary>
+<summary>More from this month (8)</summary>
 
 - Fix translation dropdown and lyric offset for specific songs.
 - Update dependencies, including zod upgrade for AI SDK requirements.
@@ -323,7 +339,6 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## August 2025
 
-- **Default AI model**: GPT-4.1.
 - **macOS-style Dock**: app icons, interactions, and dynamic animations.
 - **Chat rooms**: improved presence tracking, profanity filtering, and collapsible sections.
 - **TextEdit**: new editor context, hooks, toolbar features, and improved dialog handling.
@@ -331,8 +346,9 @@ A summary of changes and updates to ryOS, organized by month.
 - **Authentication**: Redis-based rate limiting and multi-token support.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Update the default AI model to GPT-4.1.
 - Add music videos by Crush and ILLIT to the iPod videos collection.
 - Update iframe sandbox security with enhanced permissions.
 - Improve Dock with mobile/touch support, dynamic app focus/launch logic, and macOS X theme integration.
@@ -353,11 +369,11 @@ A summary of changes and updates to ryOS, organized by month.
 - **iPod**: fullscreen lyrics controls, improved UI, and NewJeans videos.
 - **Themes**: macOS, Windows 98, and Windows XP support with updated styling and layout adjustments.
 - **Link previews**: custom handling for YouTube and web links in chats.
-- **App management**: refactor app and instance management for performance and consistency.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Refactor app and instance management for performance and consistency.
 - Add chat burst rate limiting for public rooms; enhance username handling in Redis.
 - Fix mobile Safari playback; improve fullscreen video player interactions.
 - Update default wallpapers; improve wallpaper routing and caching.
@@ -377,12 +393,12 @@ A summary of changes and updates to ryOS, organized by month.
 - **Chat rooms**: private room support, user presence tracking, and improved room management.
 - **Chat API**: improved system message handling, caching, and Pusher event broadcasting.
 - **Chat UX**: enhanced error handling, updated dialogs, and better layout consistency.
-- **Password management**: password features in the chat application.
 - **Context menus**: right-click menus on Desktop and Finder with data-driven menu items.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Add password management to Chats.
 - Add user-specific token management in chat API and AI chat requests.
 - Update rate limiting and input validation for chat rooms.
 - Extend user token expiration and implement token refresh.
@@ -403,11 +419,11 @@ A summary of changes and updates to ryOS, organized by month.
 - **iPod**: full-screen lyrics, swipe track navigation, and library import/export.
 - **State management**: Zustand across core components, removing local storage dependencies.
 - **TextEdit**: markdown conversion, search/replace, and improved file handling.
-- **Chat features**: user mentions, online status, message deletion, and improved room management.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Add chat mentions, online status, message deletion, and room-management improvements.
 - Update iPod with new video entries, lyric offset adjustments, and playback synchronization.
 - Enhance chat UI with layout consistency, interaction sounds, and copy message.
 - Improve Internet Explorer with direct passthrough URL handling, updated favorites, and navigation controls.
@@ -430,7 +446,7 @@ A summary of changes and updates to ryOS, organized by month.
 - **AI model**: update to gpt-4.1 with enhanced generation prompts.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (10)</summary>
 
 - Update Internet Explorer menu bar with Share App and reordered menu items.
 - Improve video management with new default videos and updated titles and artist names.
@@ -452,11 +468,11 @@ A summary of changes and updates to ryOS, organized by month.
 - **Chats**: username management, message polling, profanity filtering, and real-time updates via Pusher.
 - **iPod**: video playback, dynamic menu items, responsive scaling, and theme management.
 - **Photo Booth**: camera selection, filter support, file system integration, and iOS compatibility.
-- **Chat API**: refactor for performance, error handling, model selection, and response formatting.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Refactor the Chat API for performance, error handling, and model selection.
 - Enhance Terminal with Vim editor, new commands (echo, whoami, date), and command history navigation.
 - Improve iPod with touch event handling, animated text scrolling, and dynamic video playlist loading.
 - Update chat generation instructions for UI element sizing, container wrapping, and responsive design.
@@ -477,11 +493,11 @@ A summary of changes and updates to ryOS, organized by month.
 - **Virtual PC**: classic games with DOSBox integration.
 - **File system**: migrate to IndexedDB with dedicated image storage.
 - **TextEdit**: document editing commands, markdown support, and file drag-and-drop.
-- **Backup and restore**: in Control Panels.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Add backup and restore to Control Panels.
 - Add advanced image filters and improved import scaling to Paint.
 - Add CRT display mode with scanline effect to Videos.
 - Enhance chat with nudge feature, urgent message highlighting, and markdown parsing.
@@ -502,11 +518,11 @@ A summary of changes and updates to ryOS, organized by month.
 - **Chats**: AI assistant (Ryo), persistent message storage, and animated typing display.
 - **TextEdit**: Tiptap rich text editor with slash commands and typography formatting.
 - **Desktop environment**: window management, drag/resize, minimize, and sound effects.
-- **Core apps**: Minesweeper, Finder, and Control Panels with multi-app architecture and desktop icons.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>More from this month (11)</summary>
 
+- Add Minesweeper, Finder, and Control Panels to the multi-app desktop.
 - Add sound effects for window operations, buttons, menus, and chat interactions.
 - Implement chat typing synthesis with Tone.js and pentatonic scale.
 - Add audio transcription for voice input in Chats and TextEdit.

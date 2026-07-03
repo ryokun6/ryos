@@ -145,7 +145,7 @@ ${commitMessages}
 
 RULES:
 1. Group related commits into single meaningful entries; deduplicate overlaps
-2. Major changes (3-8 items): new apps/features, platform/infrastructure rewrites, large refactors, breaking changes. Sort by impact (platform first, then new apps, then significant feature work)
+2. Major changes (up to 5 items): new apps/features, platform/infrastructure rewrites, large refactors, breaking changes. Combine related work and sort by impact (platform first, then new apps, then significant feature work). Move everything else to minor changes
 3. Minor changes (5-15 items): bug fixes, polish, refactors, chores, docs, CI. Never duplicate a major entry
 4. Major format: start with **Bold feature/app name**: then a concise description (one sentence when possible). Example: "**Cloud Sync v2**: journal-based delta sync with per-key conflict resolution."
 5. Minor format: start with a capitalized action verb (Fix, Improve, Refactor, Remove, Add, Update). No conventional-commit prefixes (feat:, fix:, refactor:). No bold unless naming a small UI surface
@@ -178,7 +178,7 @@ Return ONLY valid JSON, no other text.`;
     const parsed = JSON.parse(jsonMatch[0]);
     return {
       label: group.label,
-      majorChanges: parsed.majorChanges || [],
+      majorChanges: (parsed.majorChanges || []).slice(0, 5),
       minorChanges: parsed.minorChanges || [],
     };
   } catch (error) {
@@ -217,7 +217,7 @@ function generateMarkdown(summarizedMonths: SummarizedMonth[]): string {
     "",
     "A summary of changes and updates to ryOS, organized by month.",
     "",
-    "**Major changes** highlight new features, significant platform work, and large refactors. **Minor changes** (collapsed per month) cover fixes, polish, chores, and smaller updates.",
+    "Each month highlights up to five major features. Open **More from this month** for fixes, polish, infrastructure, and smaller updates.",
     "",
     "---",
     "",
@@ -241,7 +241,7 @@ function generateMarkdown(summarizedMonths: SummarizedMonth[]): string {
     // Minor changes in collapsible details
     if (month.minorChanges.length > 0) {
       lines.push("<details>");
-      lines.push(`<summary>Minor changes (${month.minorChanges.length})</summary>`);
+      lines.push(`<summary>More from this month (${month.minorChanges.length})</summary>`);
       lines.push("");
       for (const change of month.minorChanges) {
         lines.push(`- ${change}`);
