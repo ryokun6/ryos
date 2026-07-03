@@ -12,7 +12,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  BookmarkSimple,
   ChatCircleDots,
   Copy,
   FastForward,
@@ -79,7 +78,10 @@ import {
   getVisiblePageRange,
 } from "../utils/booksSpeech";
 import { useBooksSpeech } from "../hooks/useBooksSpeech";
-import { useBooksAnnotations } from "../hooks/useBooksAnnotations";
+import {
+  BOOKS_SELECTION_CONTENT_CSS,
+  useBooksAnnotations,
+} from "../hooks/useBooksAnnotations";
 import { useBooksSpeechBarVisibility } from "../hooks/useBooksSpeechBarVisibility";
 import { ryOSLocaleToSpeechLanguage } from "@/utils/browserSpeech";
 import { useBookCover } from "../utils/useBookCover";
@@ -1034,6 +1036,20 @@ export const BooksReaderPane = forwardRef<
                   );
                 }
 
+                // Keep passages selectable (iOS long-press + publisher CSS).
+                try {
+                  contents.addStylesheetCss(
+                    BOOKS_SELECTION_CONTENT_CSS,
+                    "ryos-books-selection"
+                  );
+                } catch {
+                  appendDebugEvent(
+                    "epubjs:contentHook:selectionCss:failed",
+                    undefined,
+                    "warn"
+                  );
+                }
+
                 const document = contents.document;
                 if (!document) return;
                 const textLayout = resolveEffectiveTextLayout(
@@ -1761,10 +1777,12 @@ export const BooksReaderPane = forwardRef<
       style={{ backgroundColor: palette.background }}
     >
       {/* The epub.js render target, inset below the top clearance, above the
-          progress footer, and with side gutters for a comfortable measure. */}
+          progress footer, and with side gutters for a comfortable measure.
+          `books-reader-selectable` re-enables text selection on the epub.js
+          iframe element — required for iOS long-press selection. */}
       <div
         ref={renderHostRef}
-        className="absolute"
+        className="books-reader-selectable absolute"
         style={{
           top: TOP_CLEARANCE,
           bottom: FOOTER_HEIGHT,
@@ -1811,43 +1829,6 @@ export const BooksReaderPane = forwardRef<
           {Math.round(progressPct * 100)}%
         </span>
       </div>
-
-      {/* Bookmark ribbon — tucked below the hover-revealed titlebar so its
-          hit area stays clickable; filled when the current page is saved. */}
-      {isReady && !loadError && (
-        <button
-          type="button"
-          aria-label={
-            activeBookmark
-              ? t("apps.books.bookmarks.remove")
-              : t("apps.books.bookmarks.add")
-          }
-          title={
-            activeBookmark
-              ? t("apps.books.bookmarks.remove")
-              : t("apps.books.bookmarks.add")
-          }
-          aria-pressed={!!activeBookmark}
-          disabled={!pageCfis}
-          onClick={toggleBookmark}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className={cn(
-            "absolute right-3 z-20 flex h-9 w-8 items-start justify-center pt-0.5 transition-colors disabled:opacity-0",
-            activeBookmark
-              ? "text-red-500"
-              : palette.isDark
-                ? "text-white/35 hover:text-white/70"
-                : "text-black/25 hover:text-black/55"
-          )}
-          style={{ top: 18 }}
-        >
-          <BookmarkSimple
-            size={22}
-            weight={activeBookmark ? "fill" : "regular"}
-          />
-        </button>
-      )}
 
       {/* Read-aloud overlay: home-indicator pill when idle/paused; stays
           expanded while playing. Hover or tap grows it otherwise. */}

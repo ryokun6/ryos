@@ -703,6 +703,19 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     cursor: text;
   }
 
+  /* Books reader (epub.js render host). iOS Safari consults the iframe
+     ELEMENT's -webkit-user-select / -webkit-touch-callout in the parent
+     document before starting the long-press selection gesture inside the
+     frame, so the deny-by-default `*` rule silently kills text selection in
+     books on iOS (desktop browsers only look at the inner document, which is
+     why this is iOS-only). Opt the epub.js host subtree back in. */
+  .books-reader-selectable,
+  .books-reader-selectable * {
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+  }
+
   .ryos-chat-streamdown {
     max-width: 100%;
     font-size: var(--ryos-chat-font-size, inherit) !important;

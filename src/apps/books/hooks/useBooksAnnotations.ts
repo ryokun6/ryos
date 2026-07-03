@@ -9,6 +9,21 @@ import {
 /** CSS class applied to highlight annotation marks (epub.js SVG overlay). */
 export const BOOKS_HIGHLIGHT_CLASS = "ryos-book-highlight";
 
+/**
+ * Injected into every section document so passages stay selectable on iOS:
+ * some publisher stylesheets ship `user-select: none`, and WebKit needs
+ * `-webkit-touch-callout` enabled for the long-press selection gesture.
+ * (The parent-document side of the iOS fix lives on `.books-reader-selectable`
+ * in index.css — WebKit also checks the iframe element's own styles.)
+ */
+export const BOOKS_SELECTION_CONTENT_CSS = `
+html, body, body * {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+`;
+
 /** How long after a selectionchange the cleared-selection check runs. Kept
  * slightly above epub.js's own 250ms "selected" debounce so a clear never
  * races the selection event that preceded it. */
