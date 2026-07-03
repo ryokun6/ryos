@@ -590,6 +590,11 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Adicionar Marcador",
+        "remove": "Remover Marcador",
+        "title": "Marcadores"
+      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",
@@ -680,6 +685,22 @@
       "reader": {
         "backToShelf": "Estante",
         "error": "Não foi possível abrir este livro."
+      },
+      "selection": {
+        "askRyo": "Perguntar ao Ryo",
+        "askRyoQuestion": "o que este trecho significa?",
+        "color": {
+          "blue": "Destaque Azul",
+          "green": "Destaque Verde",
+          "pink": "Destaque Rosa",
+          "purple": "Destaque Roxo",
+          "yellow": "Destaque Amarelo"
+        },
+        "controls": "Controles de seleção",
+        "copied": "Copiado para a área de transferência",
+        "copy": "Copiar",
+        "copyFailed": "Não foi possível copiar",
+        "removeHighlight": "Remover Destaque"
       },
       "shelf": {
         "emptyHint": "Clique em Adicionar Livro para importar um EPUB.",

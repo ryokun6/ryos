@@ -18,6 +18,7 @@ import { buildBooksMenuLayout } from "../utils/booksMenuLayout";
 import {
   BOOKS_SPEECH_RATE_OPTIONS,
   normalizeBooksSpeechRate,
+  type BookBookmark,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
 import type { BooksNavigationState } from "./BooksReaderPane";
@@ -41,6 +42,10 @@ interface BooksMenuBarProps {
   isSpeaking: boolean;
   onStartSpeaking: () => void;
   onStopSpeaking: () => void;
+  bookmarks: BookBookmark[];
+  isCurrentPageBookmarked: boolean;
+  onToggleBookmark: () => void;
+  onGoToBookmark: (cfi: string) => void;
 }
 
 export function BooksMenuBar({
@@ -61,6 +66,10 @@ export function BooksMenuBar({
   isSpeaking,
   onStartSpeaking,
   onStopSpeaking,
+  bookmarks,
+  isCurrentPageBookmarked,
+  onToggleBookmark,
+  onGoToBookmark,
 }: BooksMenuBarProps) {
   const { t } = useTranslation();
   const isCompactMenu = useMediaQuery("(max-width: 768px)");
@@ -218,6 +227,25 @@ export function BooksMenuBar({
   const chapters = navigationState.chapters;
   const canNavigateReader = isReading && navigationState.isReady;
 
+  // Reading-order list for the Bookmarks submenu (unknown positions last).
+  const sortedBookmarks = [...bookmarks].sort((a, b) => {
+    const pa = typeof a.percentage === "number" ? a.percentage : 2;
+    const pb = typeof b.percentage === "number" ? b.percentage : 2;
+    if (pa !== pb) return pa - pb;
+    return a.createdAt - b.createdAt;
+  });
+
+  const bookmarkLabel = (bookmark: BookBookmark): string => {
+    const pct =
+      typeof bookmark.percentage === "number"
+        ? `${Math.round(bookmark.percentage * 100)}%`
+        : null;
+    const snippet = bookmark.text?.trim();
+    if (snippet) return pct ? `${pct} · ${snippet}` : snippet;
+    if (pct) return pct;
+    return new Date(bookmark.createdAt).toLocaleDateString();
+  };
+
   const speechRateLabels: Record<string, string> = {
     "0.8": t("apps.books.speechRate.slow"),
     "1": t("apps.books.speechRate.normal"),
@@ -314,6 +342,33 @@ export function BooksMenuBar({
             })),
           },
         ],
+      },
+      { type: "separator" },
+      {
+        type: "action",
+        label: isCurrentPageBookmarked
+          ? t("apps.books.bookmarks.remove")
+          : t("apps.books.bookmarks.add"),
+        onClick: onToggleBookmark,
+        disabled: !canNavigateReader,
+      },
+      {
+        type: "submenu",
+        label: t("apps.books.bookmarks.title"),
+        disabled: !canNavigateReader || sortedBookmarks.length === 0,
+        className:
+          "data-[state=open]:bg-[var(--os-color-selection-bg)] data-[state=open]:text-[var(--os-color-selection-text)]",
+        contentClassName:
+          "max-w-[260px] sm:max-w-[320px] max-h-[400px] overflow-y-auto",
+        items: sortedBookmarks.map((bookmark) => ({
+          type: "action",
+          label: (
+            <span className="truncate min-w-0">{bookmarkLabel(bookmark)}</span>
+          ),
+          onClick: () => onGoToBookmark(bookmark.cfi),
+          className:
+            "text-md h-6 pr-3 truncate max-w-[260px] sm:max-w-[320px]",
+        })),
       },
     ],
   };

@@ -20,9 +20,17 @@ import { openNativeFile } from "@/utils/nativeFileDialogs";
 import { emitFileSaved, onFileRenamed } from "@/utils/appEventBus";
 import { helpItems } from "../metadata";
 import { useBookCover } from "../utils/useBookCover";
+import type {
+  BookBookmark,
+  BookHighlight,
+  BooksHighlightColor,
+} from "@/stores/useBooksStore";
 import type { BooksInitialData } from "@/apps/base/types";
 
 const BOOKS_PATH = "/Books";
+
+const EMPTY_HIGHLIGHTS: BookHighlight[] = [];
+const EMPTY_BOOKMARKS: BookBookmark[] = [];
 
 /**
  * Whether a path is a top-level `.epub` directly under /Books — the same shape
@@ -112,6 +120,13 @@ export function useBooksLogic({
   const moveBookToTop = useBooksStore((s) => s.moveBookToTop);
   const moveBookToBottom = useBooksStore((s) => s.moveBookToBottom);
   const removeBook = useBooksStore((s) => s.removeBook);
+  const highlightsByPath = useBooksStore((s) => s.highlightsByPath);
+  const bookmarksByPath = useBooksStore((s) => s.bookmarksByPath);
+  const addHighlightAction = useBooksStore((s) => s.addHighlight);
+  const setHighlightColorAction = useBooksStore((s) => s.setHighlightColor);
+  const removeHighlightAction = useBooksStore((s) => s.removeHighlight);
+  const addBookmarkAction = useBooksStore((s) => s.addBookmark);
+  const removeBookmarkAction = useBooksStore((s) => s.removeBookmark);
 
   const saveProgress = useCallback(
     (path: string, cfi: string, percentage: number) => {
@@ -167,6 +182,49 @@ export function useBooksLogic({
   const activeBookPathRef = useRef<string | null>(null);
   activeBookPathRef.current = activeBookPath;
   const recentlyDroppedRef = useRef<{ path: string; at: number } | null>(null);
+
+  // Annotations for the active book, with actions pre-bound to its path.
+  const activeBookHighlights = activeBookPath
+    ? highlightsByPath[activeBookPath] ?? EMPTY_HIGHLIGHTS
+    : EMPTY_HIGHLIGHTS;
+  const activeBookBookmarks = activeBookPath
+    ? bookmarksByPath[activeBookPath] ?? EMPTY_BOOKMARKS
+    : EMPTY_BOOKMARKS;
+  const addHighlight = useCallback(
+    (highlight: BookHighlight) => {
+      const path = activeBookPathRef.current;
+      if (path) addHighlightAction(path, highlight);
+    },
+    [addHighlightAction]
+  );
+  const setHighlightColor = useCallback(
+    (id: string, color: BooksHighlightColor) => {
+      const path = activeBookPathRef.current;
+      if (path) setHighlightColorAction(path, id, color);
+    },
+    [setHighlightColorAction]
+  );
+  const removeHighlight = useCallback(
+    (id: string) => {
+      const path = activeBookPathRef.current;
+      if (path) removeHighlightAction(path, id);
+    },
+    [removeHighlightAction]
+  );
+  const addBookmark = useCallback(
+    (bookmark: BookBookmark) => {
+      const path = activeBookPathRef.current;
+      if (path) addBookmarkAction(path, bookmark);
+    },
+    [addBookmarkAction]
+  );
+  const removeBookmark = useCallback(
+    (cfi: string) => {
+      const path = activeBookPathRef.current;
+      if (path) removeBookmarkAction(path, cfi);
+    },
+    [removeBookmarkAction]
+  );
   // Deferred openPath clear after an involuntary drop, kept outside the drop
   // effect's cleanup so setting activeBookPath to null doesn't cancel it.
   const clearOpenPathTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -343,6 +401,7 @@ export function useBooksLogic({
   );
   const activeBookTitle =
     activeBookInfo?.title || activeBook?.name || null;
+  const activeBookAuthor = activeBookInfo?.author || null;
 
   // If the active book is no longer a valid ACTIVE file, drop back to the shelf.
   // Covers hard delete (missing from items), move-to-Trash and move-away (item
@@ -423,6 +482,7 @@ export function useBooksLogic({
     viewMode,
     activeBook,
     activeBookTitle,
+    activeBookAuthor,
     activeBookPath,
     openOriginRect,
     closingBook,
@@ -438,6 +498,13 @@ export function useBooksLogic({
     setShelfView,
     progressByPath,
     saveProgress,
+    activeBookHighlights,
+    activeBookBookmarks,
+    addHighlight,
+    setHighlightColor,
+    removeHighlight,
+    addBookmark,
+    removeBookmark,
     handleImport,
     fileInputRef,
     handleFileInputChange,

@@ -588,6 +588,11 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "加入書籤",
+        "remove": "移除書籤",
+        "title": "書籤"
+      },
       "chineseScript": {
         "original": "原文",
         "simplified": "简体",
@@ -678,6 +683,22 @@
       "reader": {
         "backToShelf": "書架",
         "error": "無法開啟此書。"
+      },
+      "selection": {
+        "askRyo": "詢問 Ryo",
+        "askRyoQuestion": "這段文字是什麼意思？",
+        "color": {
+          "blue": "藍色螢光標示",
+          "green": "綠色螢光標示",
+          "pink": "粉紅色螢光標示",
+          "purple": "紫色螢光標示",
+          "yellow": "黃色螢光標示"
+        },
+        "controls": "選取範圍控制項目",
+        "copied": "已拷貝至剪貼簿",
+        "copy": "拷貝",
+        "copyFailed": "無法拷貝",
+        "removeHighlight": "移除螢光標示"
       },
       "shelf": {
         "emptyHint": "點擊「新增書籍」以匯入 EPUB。",

@@ -44,6 +44,57 @@ export interface BookProgress {
   updatedAt: number;
 }
 
+export type BooksHighlightColor =
+  | "yellow"
+  | "green"
+  | "blue"
+  | "pink"
+  | "purple";
+
+export const BOOKS_HIGHLIGHT_COLORS: readonly BooksHighlightColor[] = [
+  "yellow",
+  "green",
+  "blue",
+  "pink",
+  "purple",
+];
+
+/** Swatch / annotation fill per highlight color (works on light + dark pages
+ * via blend modes applied at render time). */
+export const BOOKS_HIGHLIGHT_COLOR_HEX: Record<BooksHighlightColor, string> = {
+  yellow: "#facc15",
+  green: "#4ade80",
+  blue: "#60a5fa",
+  pink: "#f472b6",
+  purple: "#c084fc",
+};
+
+export function isBooksHighlightColor(
+  value: unknown
+): value is BooksHighlightColor {
+  return (BOOKS_HIGHLIGHT_COLORS as readonly unknown[]).includes(value);
+}
+
+export interface BookHighlight {
+  id: string;
+  /** EPUB CFI range of the highlighted passage. */
+  cfiRange: string;
+  /** Plain text of the highlighted passage. */
+  text: string;
+  color: BooksHighlightColor;
+  createdAt: number;
+}
+
+export interface BookBookmark {
+  /** EPUB CFI of the bookmarked page start. */
+  cfi: string;
+  /** Short text snippet from the bookmarked page (used as a menu label). */
+  text?: string;
+  /** 0..1 progress of the bookmark position when known. */
+  percentage?: number;
+  createdAt: number;
+}
+
 export interface BooksReaderSettings {
   /** Font option id (see BOOK_FONTS). "original" keeps the publisher fonts. */
   fontId: string;
@@ -164,6 +215,14 @@ export function clampBooksGutter(value: number): number {
 
 interface BooksStoreState {
   progressByPath: Record<string, BookProgress>;
+  /**
+   * Text highlights per book. Device-local (not cloud-synced): the bookshelf
+   * sync namespace can't grow new keys without older clients inferring
+   * deletions, so annotations stay on the device that made them.
+   */
+  highlightsByPath: Record<string, BookHighlight[]>;
+  /** Page bookmarks per book. Device-local, same reasoning as highlights. */
+  bookmarksByPath: Record<string, BookBookmark[]>;
   settings: BooksReaderSettings;
   shelfView: BooksShelfView;
   lastOpenedPath: string | null;
@@ -188,6 +247,15 @@ interface BooksStoreState {
    * diff).
    */
   removeBook: (path: string) => void;
+  addHighlight: (path: string, highlight: BookHighlight) => void;
+  setHighlightColor: (
+    path: string,
+    id: string,
+    color: BooksHighlightColor
+  ) => void;
+  removeHighlight: (path: string, id: string) => void;
+  addBookmark: (path: string, bookmark: BookBookmark) => void;
+  removeBookmark: (path: string, cfi: string) => void;
   updateSettings: (partial: Partial<BooksReaderSettings>) => void;
   setShelfView: (view: BooksShelfView) => void;
   setLastOpenedPath: (path: string | null) => void;
@@ -208,6 +276,8 @@ export const useBooksStore = create<BooksStoreState>()(
   persist(
     (set, get) => ({
       progressByPath: {},
+      highlightsByPath: {},
+      bookmarksByPath: {},
       settings: { ...DEFAULT_BOOKS_SETTINGS },
       shelfView: "grid",
       lastOpenedPath: null,
@@ -229,12 +299,16 @@ export const useBooksStore = create<BooksStoreState>()(
       removeBook: (path) =>
         set((state) => {
           const hadProgress = path in state.progressByPath;
+          const hadHighlights = path in state.highlightsByPath;
+          const hadBookmarks = path in state.bookmarksByPath;
           const inTop = state.pinnedTop.includes(path);
           const inBottom = state.pinnedBottom.includes(path);
           const wasLastOpened = state.lastOpenedPath === path;
           const wasOpen = state.openPath === path;
           if (
             !hadProgress &&
+            !hadHighlights &&
+            !hadBookmarks &&
             !inTop &&
             !inBottom &&
             !wasLastOpened &&
@@ -247,8 +321,20 @@ export const useBooksStore = create<BooksStoreState>()(
             progressByPath = { ...state.progressByPath };
             delete progressByPath[path];
           }
+          let highlightsByPath = state.highlightsByPath;
+          if (hadHighlights) {
+            highlightsByPath = { ...state.highlightsByPath };
+            delete highlightsByPath[path];
+          }
+          let bookmarksByPath = state.bookmarksByPath;
+          if (hadBookmarks) {
+            bookmarksByPath = { ...state.bookmarksByPath };
+            delete bookmarksByPath[path];
+          }
           return {
             progressByPath,
+            highlightsByPath,
+            bookmarksByPath,
             pinnedTop: inTop ? without(state.pinnedTop, path) : state.pinnedTop,
             pinnedBottom: inBottom
               ? without(state.pinnedBottom, path)
@@ -256,6 +342,67 @@ export const useBooksStore = create<BooksStoreState>()(
             lastOpenedPath: wasLastOpened ? null : state.lastOpenedPath,
             openPath: wasOpen ? null : state.openPath,
           };
+        }),
+      addHighlight: (path, highlight) =>
+        set((state) => ({
+          highlightsByPath: {
+            ...state.highlightsByPath,
+            [path]: [
+              ...(state.highlightsByPath[path] ?? []).filter(
+                (h) => h.id !== highlight.id
+              ),
+              highlight,
+            ],
+          },
+        })),
+      setHighlightColor: (path, id, color) =>
+        set((state) => {
+          const list = state.highlightsByPath[path];
+          if (!list?.some((h) => h.id === id)) return state;
+          return {
+            highlightsByPath: {
+              ...state.highlightsByPath,
+              [path]: list.map((h) => (h.id === id ? { ...h, color } : h)),
+            },
+          };
+        }),
+      removeHighlight: (path, id) =>
+        set((state) => {
+          const list = state.highlightsByPath[path];
+          if (!list?.some((h) => h.id === id)) return state;
+          const next = list.filter((h) => h.id !== id);
+          const highlightsByPath = { ...state.highlightsByPath };
+          if (next.length > 0) {
+            highlightsByPath[path] = next;
+          } else {
+            delete highlightsByPath[path];
+          }
+          return { highlightsByPath };
+        }),
+      addBookmark: (path, bookmark) =>
+        set((state) => ({
+          bookmarksByPath: {
+            ...state.bookmarksByPath,
+            [path]: [
+              ...(state.bookmarksByPath[path] ?? []).filter(
+                (b) => b.cfi !== bookmark.cfi
+              ),
+              bookmark,
+            ],
+          },
+        })),
+      removeBookmark: (path, cfi) =>
+        set((state) => {
+          const list = state.bookmarksByPath[path];
+          if (!list?.some((b) => b.cfi === cfi)) return state;
+          const next = list.filter((b) => b.cfi !== cfi);
+          const bookmarksByPath = { ...state.bookmarksByPath };
+          if (next.length > 0) {
+            bookmarksByPath[path] = next;
+          } else {
+            delete bookmarksByPath[path];
+          }
+          return { bookmarksByPath };
         }),
       updateSettings: (partial) =>
         set((state) => ({ settings: { ...state.settings, ...partial } })),
@@ -265,12 +412,16 @@ export const useBooksStore = create<BooksStoreState>()(
       renameProgressPath: (oldPath, newPath) =>
         set((state) => {
           const existing = state.progressByPath[oldPath];
+          const existingHighlights = state.highlightsByPath[oldPath];
+          const existingBookmarks = state.bookmarksByPath[oldPath];
           const inTop = state.pinnedTop.includes(oldPath);
           const inBottom = state.pinnedBottom.includes(oldPath);
           const wasLastOpened = state.lastOpenedPath === oldPath;
           const wasOpen = state.openPath === oldPath;
           if (
             !existing &&
+            !existingHighlights &&
+            !existingBookmarks &&
             !inTop &&
             !inBottom &&
             !wasLastOpened &&
@@ -283,8 +434,22 @@ export const useBooksStore = create<BooksStoreState>()(
             delete next[oldPath];
             next[newPath] = existing;
           }
+          let highlightsByPath = state.highlightsByPath;
+          if (existingHighlights) {
+            highlightsByPath = { ...state.highlightsByPath };
+            delete highlightsByPath[oldPath];
+            highlightsByPath[newPath] = existingHighlights;
+          }
+          let bookmarksByPath = state.bookmarksByPath;
+          if (existingBookmarks) {
+            bookmarksByPath = { ...state.bookmarksByPath };
+            delete bookmarksByPath[oldPath];
+            bookmarksByPath[newPath] = existingBookmarks;
+          }
           return {
             progressByPath: next,
+            highlightsByPath,
+            bookmarksByPath,
             pinnedTop: inTop
               ? state.pinnedTop.map((p) => (p === oldPath ? newPath : p))
               : state.pinnedTop,
@@ -315,7 +480,8 @@ export const useBooksStore = create<BooksStoreState>()(
       // v7: backfill custom theme fields (customThemeBackground / -Text /
       // -Transparent) via the DEFAULT_BOOKS_SETTINGS spread below.
       // v8: device-local `openPath` for reader/shelf session restore.
-      version: 8,
+      // v9: device-local `highlightsByPath` / `bookmarksByPath` annotations.
+      version: 9,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         const settings = {
@@ -329,10 +495,14 @@ export const useBooksStore = create<BooksStoreState>()(
           settings,
           openPath:
             typeof state.openPath === "string" ? state.openPath : null,
+          highlightsByPath: state.highlightsByPath ?? {},
+          bookmarksByPath: state.bookmarksByPath ?? {},
         } as BooksStoreState;
       },
       partialize: (state) => ({
         progressByPath: state.progressByPath,
+        highlightsByPath: state.highlightsByPath,
+        bookmarksByPath: state.bookmarksByPath,
         settings: state.settings,
         shelfView: state.shelfView,
         lastOpenedPath: state.lastOpenedPath,
