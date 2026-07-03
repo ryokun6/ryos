@@ -341,7 +341,7 @@
         "appleMusicId": "Apple Music ID",
         "createdAt": "作成",
         "delete": "曲を削除",
-        "forceRefresh": "強制リフレッシュ",
+        "forceRefresh": "強制更新",
         "forceRefreshTooltip": "Kugouから歌詞を再取得し、キャッシュされた注釈をクリアします",
         "furigana": "ふりがな",
         "info": "情報",
@@ -372,6 +372,35 @@
         "export": "ライブラリを書き出す",
         "filterByRyo": "フィルター: ryoが作成した曲",
         "import": "インポート",
+        "importStatus": {
+          "completed": "読み込み完了: 新規{{imported}}、更新{{updated}}",
+          "failed": "読み込みに失敗しました: {{error}}",
+          "fileFallback": "ファイル",
+          "messages": {
+            "completed": "読み込み完了: 新規{{imported}}、更新{{updated}}",
+            "failed": "読み込みに失敗しました",
+            "parsingFile": "ファイルを解析中",
+            "preparingSongs": "読み込みのために曲を準備中",
+            "progressUpdated": "読み込み状況が更新されました",
+            "rateLimitedRetry": "{{count}}秒後に再試行します",
+            "readingFile": "ファイルを読み込み中",
+            "refreshingSongList": "曲のリストを更新中",
+            "splittingBatch": "アップロード制限に合わせてバッチを分割中",
+            "uploadedRefreshing": "インポート内容をアップロードしました。ライブラリを更新中",
+            "uploadingSongs": "曲をアップロード中",
+            "validatingFile": "ファイルフォーマットを検証中"
+          },
+          "parsing": "インポートファイルを解析中...",
+          "preparing": "曲を準備中 {{processed}}/{{total}}",
+          "rateLimited": "レート制限がかかりました。{{message}}",
+          "rateLimitedFallback": "再試行する前にしばらく待機しています...",
+          "reading": "{{fileName}}を読み込み中...",
+          "refreshing": "インポート内容をアップロードしました。ライブラリを更新中...",
+          "uploading": "曲をアップロード中 {{processed}}/{{total}}",
+          "validating": "インポートデータを検証中..."
+        },
+        "importingLibrary": "ライブラリをインポート中...",
+        "importingProgress": "インポート中 {{processed}}/{{total}}",
         "noSongs": "キャッシュに曲がありません",
         "noSongsMatchFilter": "現在のフィルターに一致する曲はありません",
         "noSongsToExport": "書き出す曲がありません"
@@ -559,6 +588,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "ブックマークを追加",
+        "remove": "ブックマークを削除",
+        "title": "ブックマーク"
+      },
+      "chineseScript": {
+        "original": "オリジナル",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "自動",
         "double": "見開き",
@@ -569,7 +608,28 @@
         "moveToBottom": "最下部へ移動",
         "moveToTop": "最上部へ移動"
       },
+      "customize": {
+        "background": "背景",
+        "chinese": "中国語",
+        "colors": "カラー",
+        "direction": "方向",
+        "lineSpacing": "行間",
+        "margins": "余白",
+        "spacing": "間隔",
+        "textColor": "テキスト",
+        "title": "カスタマイズ",
+        "transparent": "透明"
+      },
       "description": "EPUB形式の本を読む",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "等幅",
+        "original": "オリジナル",
+        "rounded": "丸ゴシック",
+        "sans": "ゴシック",
+        "serif": "明朝"
+      },
       "help": {
         "bookshelf": {
           "description": "インポートされたEPUBが木製の棚に並んでいます。本をクリックして開き、読書を始めましょう。",
@@ -580,7 +640,7 @@
           "title": "ダークモード"
         },
         "fonts": {
-          "description": "「表示」メニューから、読書用のフォント（EB Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
+          "description": "「表示」メニューから、読書用のフォント（Garamondを含む）、テキストサイズ、および1段組みまたは2段組みを選択できます。",
           "title": "フォントとレイアウト"
         },
         "import": {
@@ -604,21 +664,42 @@
         "backToShelf": "本棚に戻る",
         "booksHelp": "Booksヘルプ",
         "chapters": "章",
+        "chineseScript": "中国語の字体",
         "columns": "段組み",
+        "customizeTheme": "カスタマイズ…",
         "font": "フォント",
         "import": "EPUBを読み込む…",
         "nextPage": "次のページ",
         "previousPage": "前のページ",
+        "speech": "スピーチ",
+        "speechRate": "読み上げ速度",
+        "startSpeaking": "読み上げを開始",
+        "stopSpeaking": "読み上げを停止",
+        "textLayout": "文字方向",
         "textSize": "テキストサイズ",
-        "textSizeDecrease": "小さく",
-        "textSizeIncrease": "大きく",
-        "textSizeReset": "デフォルトサイズ",
         "theme": "テーマ"
       },
       "name": "ブック",
       "reader": {
         "backToShelf": "本棚",
         "error": "この本を開けませんでした。"
+      },
+      "selection": {
+        "askRyo": "Ryoに尋ねる",
+        "askRyoFailed": "返答を取得できませんでした。しばらくしてからもう一度お試しください。",
+        "askRyoQuestion": "この一節はどういう意味ですか？",
+        "color": {
+          "blue": "ブルーのハイライト",
+          "green": "グリーンのハイライト",
+          "pink": "ピンクのハイライト",
+          "purple": "パープルのハイライト",
+          "yellow": "イエローのハイライト"
+        },
+        "controls": "選択範囲のコントロール",
+        "copied": "クリップボードにコピーしました",
+        "copy": "コピー",
+        "copyFailed": "コピーできませんでした",
+        "removeHighlight": "ハイライトを削除"
       },
       "shelf": {
         "emptyHint": "「本を追加」をクリックしてEPUBをインポートしてください。",
@@ -629,10 +710,36 @@
         "listView": "リスト表示",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "読み上げコントロール",
+        "pause": "一時停止",
+        "resume": "再開",
+        "rewind": "早戻し",
+        "skip": "スキップ",
+        "stop": "停止"
+      },
+      "speechRate": {
+        "fast": "速い",
+        "normal": "標準",
+        "slow": "遅い",
+        "veryFast": "非常に速い"
+      },
+      "textLayout": {
+        "book": "本の設定",
+        "horizontal": "横書き",
+        "vertical": "縦書き"
+      },
       "theme": {
+        "accent": "アクセント",
         "auto": "自動",
+        "black": "ブラック",
+        "custom": "カスタム",
         "dark": "ダーク",
+        "gray": "グレー",
+        "green": "グリーン",
         "light": "ライト",
+        "night": "ナイト",
+        "paper": "ペーパー",
         "sepia": "セピア"
       },
       "title": "ブック",
@@ -776,9 +883,9 @@
           "closeParenthesis": "閉じ括弧",
           "cos": "コサイン",
           "degrees": "度",
-          "divide": "割る",
+          "divide": "わる",
           "e": "e",
-          "equals": "イコール",
+          "equals": "は",
           "factorial": "階乗",
           "ln": "自然対数",
           "log": "log",
@@ -787,12 +894,12 @@
           "memoryPlus": "メモリ加算",
           "memoryRecall": "メモリ読み出し",
           "memoryStore": "メモリー保存",
-          "minus": "マイナス",
+          "minus": "ひく",
           "negate": "プラスマイナス",
           "openParenthesis": "左括弧",
           "percent": "パーセント",
           "pi": "円周率",
-          "plus": "プラス",
+          "plus": "たす",
           "point": "小数点",
           "power": "xのy乗",
           "radians": "ラジアン",
@@ -1596,6 +1703,9 @@
       "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します",
       "bootScreen": "起動画面",
       "bootScreenDescription": "起動画面のアニメーションをテストします",
+      "browserTtsVoice": "読み上げ音声",
+      "browserTtsVoiceAutomatic": "自動",
+      "browserTtsVoiceDescription": "「ブック」の読み上げと「計算機」用のシステム音声",
       "changePassword": "パスワードを変更",
       "changePasswordButton": "変更",
       "chatSynth": "チャットシンセ",
@@ -1649,6 +1759,7 @@
         "deleting": "削除中…",
         "description": "これにより、アカウント、パスワード、リカバリメール、連携済みのTelegram、および同期されたデータが完全に削除されます。この操作は取り消せません。",
         "genericError": "アカウントを削除できませんでした。もう一度お試しください。",
+        "openButton": "アカウントを削除…",
         "passwordLabel": "現在のパスワード",
         "passwordRequired": "現在のパスワードを入力してください",
         "submit": "アカウントを削除",
@@ -1686,7 +1797,7 @@
         "title": "メール",
         "unverifiedAs": "{{email}} · 未認証",
         "verifiedAs": "{{email}} · 認証済み",
-        "verify": "認証"
+        "verify": "認証…"
       },
       "errorBoundaries": "エラー境界",
       "errorBoundariesDescription": "テスト用に、アプリまたはデスクトップのクラッシュ時のフォールバックをトリガーします。",
@@ -1735,7 +1846,8 @@
       "ipodVolume": "iPodの音量",
       "logIn": "サインイン",
       "logOut": "サインアウト",
-      "logOutAll": "すべてログアウト",
+      "logOutAll": "すべてログアウト…",
+      "logOutButton": "サインアウト…",
       "logOutOfAllDevices": "すべてのデバイスからログアウト",
       "logOutOfAllDevicesRowDescription": "すべてのデバイスでryOSアカウントからサインアウトする",
       "logOutRowDescription": "このデバイスで ryOS アカウントからサインアウト",
@@ -1759,7 +1871,7 @@
       "menu": {
         "aboutControlPanels": "コントロールパネルについて",
         "aboutControlPanelsForMacosX": "システム環境設定について",
-        "app": "App",
+        "app": "アプリ",
         "controlPanelsHelp": "コントロールパネルヘルプ",
         "controlPanelsHelpForMacosX": "システム環境設定ヘルプ"
       },
@@ -1863,7 +1975,7 @@
       "selectAPreset": "プリセットを選択",
       "selectScreenSaver": "スクリーンセーバーを選択",
       "sepia": "セピア",
-      "setPassword": "パスワードを設定",
+      "setPassword": "パスワードを設定…",
       "setPasswordDialog": {
         "description": "アカウント復元を有効にするにはパスワードを設定してください。アクセスできなくなった場合、このパスワードで新しいトークンを取得できます。",
         "submitLabel": "パスワードを設定",
@@ -2232,6 +2344,7 @@
         "noAirDropUsersAvailable": "近くのユーザーはいません",
         "open": "開く",
         "openAirDrop": "AirDropを開く",
+        "openWith": "このアプリケーションで開く",
         "putBack": "元に戻す",
         "rename": "名前の変更…",
         "searchingForAirDropUsers": "近くのユーザーを検索中…",
@@ -2269,10 +2382,12 @@
         "gifImage": "GIFイメージ",
         "htmlApplet": "HTMLアプレット",
         "internetShortcut": "インターネットショートカット",
-        "jpegImage": "JPEGイメージ",
+        "jpegImage": "JPEG画像",
         "mp3Audio": "MP3オーディオ",
-        "pngImage": "PNGイメージ",
+        "pdfDocument": "PDF書類",
+        "pngImage": "PNG画像",
         "quicktimeMovie": "QuickTimeムービー",
+        "svgImage": "SVGイメージ",
         "unknown": "不明",
         "webpImage": "WebP 画像"
       },
@@ -2283,7 +2398,7 @@
         "desktop": "デスクトップ",
         "documents": "書類",
         "downloads": "ダウンロード",
-        "images": "イメージ",
+        "images": "画像",
         "music": "ミュージック",
         "sites": "サイト",
         "system": "システム",
@@ -2521,11 +2636,13 @@
         "chinese": "中国語",
         "clearFavorites": "お気に入りをクリア…",
         "clearHistory": "履歴を消去…",
+        "debug": "デバッグ",
         "digitalBeing": "デジタル存在",
         "editFuture": "未来を編集…",
         "english": "英語",
         "favorites": "お気に入り",
         "folder": "フォルダ",
+        "forceHeadless": "ヘッドレスレンダリングを強制",
         "forward": "進む",
         "france": "フランス",
         "french": "フランス語",
@@ -2548,6 +2665,7 @@
         "openTimeMachine": "Time Machine を開く",
         "portugal": "ポルトガル",
         "portuguese": "ポルトガル語",
+        "proxySessions": "Cookie / セッションパススルー",
         "refresh": "更新",
         "resetFavorites": "お気に入りをリセット…",
         "russia": "ロシア",
@@ -2559,6 +2677,7 @@
         "stop": "停止",
         "unitedKingdom": "イギリス",
         "unitedStates": "アメリカ",
+        "verboseLogging": "詳細ログ",
         "welsh": "ウェールズ語",
         "year": "年"
       },
@@ -2572,6 +2691,7 @@
       "older": "以前",
       "olderVersion": "古いバージョン",
       "oldest": "最も古い",
+      "openInLiveBrowser": "このページをライブブラウザで開きます。",
       "openingRequestedPage": "要求されたページを開いています",
       "openingSharedPage": "共有ページを開いています",
       "page": "ページ",
@@ -3647,6 +3767,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "イメージ、PDF、および書類を表示します",
+      "empty": {
+        "hint": "ファイルを選択するか、ここにドロップしてください",
+        "title": "書類を開く"
+      },
+      "help": {
+        "images": {
+          "description": "元のファイルを変更せずに、一般的なイメージフォーマットを開きます",
+          "title": "イメージをプレビュー"
+        },
+        "openFiles": {
+          "description": "「ファイル」＞「開く」を使用して、デバイスからファイルをプレビューします",
+          "title": "ファイルを開く"
+        },
+        "openWith": {
+          "description": "編集可能なファイルをペイント、テキストエディット、またはAppletビューアに送信します",
+          "title": "このアプリケーションで開く"
+        },
+        "pdfs": {
+          "description": "内蔵の書類ビューアを使用してPDF書類を表示します",
+          "title": "PDFを読み取る"
+        },
+        "safeHtml": {
+          "description": "スクリプトを実行せずに、サンドボックス内でHTML書類をプレビューします",
+          "title": "セーフHTML"
+        },
+        "zoom": {
+          "description": "ピンチまたはダブルタップでイメージを拡大/縮小、またはウインドウに合わせます",
+          "title": "拡大/縮小"
+        }
+      },
+      "menu": {
+        "aboutPreview": "プレビューについて",
+        "actualSize": "実際のサイズ",
+        "export": "書き出す…",
+        "fitToWindow": "ウインドウに合わせる",
+        "importFromDevice": "デバイスから読み込む…",
+        "open": "開く…",
+        "openWith": "このアプリケーションで開く",
+        "previewHelp": "プレビューヘルプ",
+        "saveAs": "別名で保存…",
+        "zoomIn": "拡大",
+        "zoomOut": "縮小"
+      },
+      "name": "プレビュー",
+      "saveAs": {
+        "description": "このコピーの名前を入力してください",
+        "title": "別名で保存"
+      },
+      "status": {
+        "loadFailed": "このファイルを開けませんでした。",
+        "loading": "プレビューを読み込み中…",
+        "notFound": "ファイルの内容が見つかりませんでした。",
+        "unsupported": "プレビューを利用できません",
+        "unsupportedDescription": "このファイルフォーマットはプレビューでサポートされていません。"
+      },
+      "supportedFiles": "プレビューの書類",
+      "title": "プレビュー",
+      "toasts": {
+        "exportFailed": "ファイルを書き出せませんでした",
+        "importFailed": "ファイルを読み込めませんでした",
+        "imported": "ファイルを読み込みました",
+        "saveFailed": "ファイルを保存できませんでした",
+        "saved": "ファイルを保存しました"
+      },
+      "untitled": "名称未設定"
+    },
     "soundboard": {
       "description": "サウンドエフェクトを再生",
       "help": {
@@ -4044,7 +4232,7 @@
           "title": "テキスト"
         }
       },
-      "speak": "読み上げる",
+      "speak": "読み上げ",
       "stopSpeech": "音声停止",
       "text": "テキスト",
       "underline": "アンダーライン",
@@ -4384,14 +4572,11 @@
       "password": "パスワード",
       "recovery": {
         "back": "戻る",
-        "channel": "次の方法でコードを送信",
-        "channelEmail": "メールアドレス",
-        "channelTelegram": "Telegram",
         "code": "リセットコード",
         "codeRequired": "リセットコードを入力してください",
         "codeSent": "アカウントが一致した場合、リセットコードを送信しました。",
         "confirmPassword": "新しいパスワード（確認）",
-        "description": "リカバリチャネルにリセットコードを送信し、新しいパスワードを設定してください。",
+        "description": "利用可能な復旧方法にリセットコードを送信し、新しいパスワードを設定してください。",
         "genericError": "パスワードをリセットできませんでした。コードを確認して、もう一度お試しください。",
         "identifier": "ユーザー名またはメールアドレス",
         "identifierRequired": "ユーザー名またはメールアドレスを入力してください",
@@ -4463,7 +4648,7 @@
         "from": "から",
         "generating": "生成中…",
         "itemTypes": {
-          "app": "App",
+          "app": "アプリ",
           "applet": "アプレット",
           "item": "項目",
           "page": "ページ",
@@ -4561,7 +4746,7 @@
       "file": "ファイル",
       "go": "移動",
       "help": "ヘルプ",
-      "images": "イメージ",
+      "images": "画像",
       "music": "ミュージック",
       "paste": "ペースト",
       "redo": "やり直す",
@@ -4581,6 +4766,10 @@
       "volume": "音量"
     },
     "noResults": "結果なし",
+    "offline": {
+      "appRequiresInternet": "{{appName}}を利用するにはインターネット接続が必要です。",
+      "title": "オフラインです"
+    },
     "startMenu": {
       "aboutThisComputer": "このコンピュータについて",
       "run": "ファイル名を指定して実行…",
@@ -4656,9 +4845,10 @@
     "fixLogs": "ログを Cursor エージェントに送信",
     "hideConsole": "コンソールを非表示",
     "live": {
-      "appVersion": "App",
+      "appVersion": "アプリ",
       "average": "平均",
       "bufferedLogs": "{{count}}件バッファ済み",
+      "cloudSync": "クラウド同期",
       "copySnapshot": "環境スナップショットをコピー",
       "current": "現在",
       "darkMode": "ダーク",
@@ -4690,6 +4880,14 @@
       "offline": "オフライン",
       "online": "オンライン",
       "performance": "パフォーマンス",
+      "realtime": "リアルタイム",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} チャンネル",
+      "realtimeState": {
+        "connected": "接続済み",
+        "connecting": "接続中",
+        "disconnected": "未接続"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
       "reportTitle": "ライブ環境スナップショット",
       "runtime": {
         "browser": "ブラウザ",
@@ -4699,7 +4897,17 @@
       "runtimeLabel": "ランタイム",
       "sampling": "毎秒サンプリング中",
       "samplingPaused": "サンプリング一時停止中",
+      "services": "サービス",
+      "session": "セッション",
+      "sessionAdmin": "{{username}} (管理者)",
+      "sessionGuest": "ゲスト",
+      "sessionSignedOut": "{{username}} (サインアウト済み)",
       "storage": "ストレージ",
+      "syncAuto": "自動",
+      "syncError": "エラー",
+      "syncOff": "オフ",
+      "syncReport": "{{status}} · 最終確認: {{checkedAt}}",
+      "syncSyncing": "同期中…",
       "theme": "テーマ",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "ログの総数",
@@ -4709,6 +4917,23 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "警告"
     },
+    "network": {
+      "clear": "リクエストを消去",
+      "copy": "リクエストをコピー",
+      "empty": "キャプチャされたリクエストはまだありません。",
+      "emptyForFilter": "このフィルタに一致するリクエストはありません。",
+      "failedCount": "{{count}}件失敗",
+      "filterAll": "すべてのリクエスト",
+      "filterRequests": "リクエストをフィルタ",
+      "filters": {
+        "error": "失敗",
+        "ok": "成功",
+        "pending": "保留中",
+        "warn": "警告"
+      },
+      "pending": "···",
+      "title": "リクエスト"
+    },
     "noLogsForFilter": "このフィルターに一致するログはありません。",
     "noLogsYet": "ログはまだ記録されていません。",
     "scrollToBottom": "一番下へスクロール",
@@ -4716,14 +4941,16 @@
     "tabs": {
       "label": "デバッグパネルの表示",
       "live": "ライブ",
-      "logs": "ログ"
+      "logs": "ログ",
+      "network": "ネットワーク"
     },
     "toggleLabel": "デバッグ",
     "warnCount": "{{count}}警告"
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "ryOSインターフェースの優先言語を選択",
       "english": "English",
       "french": "Français",

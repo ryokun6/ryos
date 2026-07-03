@@ -1,3 +1,5 @@
+import type { ChineseLyricsLanguagePreference } from "@/shared/media/chineseLyrics";
+
 /**
  * Word-level timing information from KRC format
  */
@@ -98,6 +100,8 @@ export interface RomanizationSettings {
   korean: boolean;
   /** Chinese pinyin - Latin with tones over hanzi (e.g., 中国 → zhōngguó) */
   chinese: boolean;
+  /** Preferred Han script for KuGou lyrics; auto follows a Chinese ryOS locale. */
+  chineseLyricsLanguage: ChineseLyricsLanguagePreference;
   /** Soramimi (空耳) - misheard lyrics that phonetically approximate the original */
   soramimi: boolean;
   /** Target language for soramimi: "zh-TW" for Chinese (搜哩搜哩), "en" for English (meet sue mate a tie) */
@@ -116,6 +120,7 @@ export function areRomanizationSettingsEqual(
     a.japaneseRomaji === b.japaneseRomaji &&
     a.korean === b.korean &&
     a.chinese === b.chinese &&
+    a.chineseLyricsLanguage === b.chineseLyricsLanguage &&
     a.soramimi === b.soramimi &&
     a.soramamiTargetLanguage === b.soramamiTargetLanguage &&
     Boolean(a.pronunciationOnly) === Boolean(b.pronunciationOnly)

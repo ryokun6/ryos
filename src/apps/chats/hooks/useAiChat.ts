@@ -23,6 +23,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { getDefaultFileApp } from "@/utils/fileAssociations";
 import {
   useFileSystem,
   type DocumentContent,
@@ -56,7 +57,7 @@ import {
 import { getAssistantVisibleText } from "../utils/aiMessageText";
 import { useChatSpeechSync } from "./useChatSpeechSync";
 import { useSyncedAiMessages } from "./useSyncedAiMessages";
-import { detectUserOS, getSystemState } from "../utils/systemState";
+import { getSystemState } from "../utils/systemState";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -200,8 +201,9 @@ let sharedAiChat: Chat<AIChatMessage> | null = null;
 function getSharedAiChat(): Chat<AIChatMessage> {
   if (!sharedAiChat) {
     sharedAiChat = new Chat<AIChatMessage>({
-      // Initialize from the persisted store (hydrated synchronously before
-      // first mount); useSyncedAiMessages reconciles afterwards.
+      // Initialize from the store's current snapshot. Chat persistence hydrates
+      // asynchronously from IndexedDB, and useSyncedAiMessages reconciles the
+      // restored conversation after hydration completes.
       messages: useChatsStore.getState().aiMessages,
 
       transport: new DefaultChatTransport({
@@ -306,7 +308,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       const toolContext: ToolContext = {
         launchApp: (appId, options) => launchApp(appId as AppId, options),
         addToolOutput,
-        detectUserOS,
       };
 
       try {
@@ -754,6 +755,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 if (!fileItem || fileItem.status !== "active") {
                   throw new Error(`Document not found: ${path}`);
+                }
+
+                if (getDefaultFileApp(fileItem) === "preview") {
+                  launchApp("preview", {
+                    initialData: { path },
+                  });
+                  addToolOutput({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: i18n.t("apps.chats.toolCalls.openedDocument", {
+                      fileName: fileItem.name,
+                    }),
+                  });
+                  result = "";
+                  break;
                 }
 
                 const existingInstanceId = textEditStore.getInstanceIdByPath(path);

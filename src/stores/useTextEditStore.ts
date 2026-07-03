@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { JSONContent } from "@tiptap/core";
+import type { JSONContent } from "@tiptap/core";
 import { useAppStore } from "@/stores/useAppStore";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 
 export interface TextEditInstance {
   instanceId: string;
@@ -99,6 +100,7 @@ export const useTextEditStore = create<TextEditStoreState>()(
     }),
     {
       name: "ryos:textedit",
+      storage: createIndexedDBPersistStorage(),
       partialize: (state) => ({
         instances: Object.fromEntries(
           Object.entries(state.instances).map(([id, inst]) => {

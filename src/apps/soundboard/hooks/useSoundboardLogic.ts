@@ -12,6 +12,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { track } from "@/utils/analytics";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 interface ImportedSlot {
   audioData: string | null;
@@ -55,14 +56,19 @@ export function useSoundboardLogic({
   );
   const hasInitialized = useSoundboardStore((state) => state.hasInitialized);
 
+  // The store persists to IndexedDB, which hydrates asynchronously. Wait for
+  // hydration to finish before seeding default boards so we never overwrite the
+  // user's saved soundboards with the bundled defaults.
+  const hasHydrated = usePersistHydrated(useSoundboardStore.persist);
+
   // Get current theme
   const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   useEffect(() => {
-    if (!hasInitialized) {
+    if (hasHydrated && !hasInitialized) {
       initializeBoards();
     }
-  }, [hasInitialized, initializeBoards]);
+  }, [hasHydrated, hasInitialized, initializeBoards]);
 
   const storeSetSlotPlaybackState = useSoundboardStore(
     (state) => state.setSlotPlaybackState

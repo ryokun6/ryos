@@ -3,13 +3,9 @@
  *
  * Set or change a user's password (Node.js runtime for bcrypt).
  *
- * Behaviour:
- * - If the user already has a password, the request MUST include
- *   `currentPassword` and it must verify against the stored bcrypt hash.
- * - If the user has no password yet (e.g. legacy account, first set-up),
- *   `currentPassword` is not required so accounts can be migrated.
- * - Only fully-valid (non-grace-period) tokens are accepted. Stale or
- *   recently-rotated tokens cannot be used to take over an account.
+ * Requires `currentPassword` and verifies it against the stored bcrypt hash.
+ * Only fully-valid (non-grace-period) tokens are accepted. Stale or
+ * recently-rotated tokens cannot be used to take over an account.
  */
 
 import {
@@ -31,11 +27,8 @@ export const maxDuration = 15;
 interface SetPasswordRequest {
   /** New password to store. Required. */
   password: string;
-  /**
-   * Existing password. Required if the user already has a password set.
-   * If the user has no password yet (legacy account), this may be omitted.
-   */
-  currentPassword?: string;
+  /** Existing password. Required. */
+  currentPassword: string;
 }
 
 // Per-user rate limit on password-change attempts. Limits brute-forcing of
@@ -89,6 +82,12 @@ export default apiHandler<SetPasswordRequest>(
       return;
     }
 
+    if (!currentPassword || typeof currentPassword !== "string") {
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "Current password is required" });
+      return;
+    }
+
     // Per-user rate limit on password-set attempts. Limits brute-force
     // guessing of `currentPassword` from a hijacked session.
     try {
@@ -121,30 +120,24 @@ export default apiHandler<SetPasswordRequest>(
     try {
       const existingHash = await getUserPasswordHash(redis, username);
 
-      if (existingHash) {
-        if (!currentPassword || typeof currentPassword !== "string") {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Current password is required" });
-          return;
-        }
+      const valid = existingHash
+        ? await verifyPassword(currentPassword, existingHash)
+        : false;
+      if (!valid) {
+        logger.warn("Invalid current password during password change", {
+          username,
+        });
+        logger.response(401, Date.now() - startTime);
+        res.status(401).json({ error: "Current password is incorrect" });
+        return;
+      }
 
-        const valid = await verifyPassword(currentPassword, existingHash);
-        if (!valid) {
-          logger.warn("Invalid current password during password change", {
-            username,
-          });
-          logger.response(401, Date.now() - startTime);
-          res.status(401).json({ error: "Current password is incorrect" });
-          return;
-        }
-
-        if (currentPassword === password) {
-          logger.response(400, Date.now() - startTime);
-          res
-            .status(400)
-            .json({ error: "New password must be different from the current password" });
-          return;
-        }
+      if (currentPassword === password) {
+        logger.response(400, Date.now() - startTime);
+        res
+          .status(400)
+          .json({ error: "New password must be different from the current password" });
+        return;
       }
 
       const passwordHash = await hashPassword(password);

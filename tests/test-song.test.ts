@@ -39,6 +39,31 @@ describe("GET /api/songs/{id}", () => {
     const res = await fetchWithOrigin(`${BASE_URL}/api/songs`);
     expect(res.status === 200 || res.status === 405).toBe(true);
   });
+
+  test("GET list succeeds with stale auth cookie (anonymous)", async () => {
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs?include=version`, {
+      headers: {
+        Cookie: "ryos_auth=staleuser%3Anot-a-valid-session-token",
+      },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(typeof data.version).toBe("number");
+  });
+
+  test("GET metadata ignores partial stale auth (anonymous)", async () => {
+    const res = await fetchWithOrigin(
+      `${BASE_URL}/api/songs/${TEST_SONG_ID}?include=metadata`,
+      {
+        headers: {
+          Authorization: "Bearer stale-session-token",
+        },
+      }
+    );
+    expect(res.status).not.toBe(400);
+    expect(res.status).not.toBe(401);
+    expect([200, 404]).toContain(res.status);
+  });
 });
 
 describe("POST /api/songs/{id} action: search-lyrics", () => {
@@ -96,6 +121,23 @@ describe("POST /api/songs/{id} action: fetch-lyrics", () => {
       body: "invalid json",
     });
     expect(res.status).toBe(400);
+  });
+
+  test("Anonymous lyrics validation ignores partial stale auth", async () => {
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer stale-session-token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "fetch-lyrics",
+        force: "not-a-boolean",
+      }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe("Invalid request body");
   });
 
   test("Missing lyricsSource (non-existent song)", async () => {

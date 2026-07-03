@@ -375,6 +375,7 @@
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
+    <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -421,6 +422,7 @@
   <div class="nav-children" style="display: none;">
     <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
     <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
+    <a href="/docs/icon-resources" class="nav-child ">7.3 Icon Resources</a>
   </div>
 </div>
 <div class="nav-group expanded">
@@ -507,7 +509,7 @@ interface SystemState {
   // User identity
   username?: string | null;
   userOS?: string; // e.g., "iOS", "Android", "macOS", "Windows", "Linux"
-  locale?: string; // e.g., "en", "zh-TW", "ja", "ko"
+  locale?: string; // e.g., "en", "zh-TW", "zh-CN", "ja", "ko"
   
   // User's local time (from browser)
   userLocalTime?: {
@@ -595,7 +597,8 @@ data: {"type":"tool-call","toolCallId":"...","toolName":"launchApp","args":{...}
 data: {"type":"tool-result","toolCallId":"...","result":{...}}
 data: {"type":"finish","finishReason":"stop"}</code></pre>
 <h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Messages array is missing or malformed</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Requested model is not supported</td></tr><tr><td>400</td><td><code>Invalid JSON</code></td><td>Request body is not valid JSON</td></tr><tr><td>400</td><td><code>Both Authorization and X-Username headers are required</code></td><td>Partial auth headers</td></tr><tr><td>401</td><td><code>Unauthorized - invalid token</code></td><td>Invalid token/username pair</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Request origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Only POST requests are accepted</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded for the user</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Server-side error</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Messages array is missing or malformed</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Requested model is not supported</td></tr><tr><td>400</td><td><code>Invalid JSON</code></td><td>Request body is not valid JSON</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Request origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Only POST requests are accepted</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded for the user</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Server-side error</td></tr></tbody></table>
+<p>Authentication is optional. Partial, stale, or invalid credentials are treated as anonymous rather than blocking the chat request.</p>
 <h4>Rate Limit Error Response</h4>
 <pre><code>interface RateLimitError {
   error: "rate_limit_exceeded";
@@ -731,7 +734,7 @@ Generate an HTML applet for ryOS.
 <h4><code>settings</code></h4>
 Change system preferences.
 <pre><code>{
-  language?: "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru";
+  language?: "en" | "zh-TW" | "zh-CN" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru";
   theme?: "system7" | "macosx" | "xp" | "win98";
   masterVolume?: number;     // 0-1
   speechEnabled?: boolean;   // Text-to-speech

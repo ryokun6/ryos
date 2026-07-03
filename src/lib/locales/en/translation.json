@@ -62,6 +62,10 @@
       "missionControl": "Mission Control (F3)",
       "volume": "Volume"
     },
+    "offline": {
+      "title": "You're Offline",
+      "appRequiresInternet": "{{appName}} requires an internet connection."
+    },
     "dialog": {
       "save": "Save",
       "cancel": "Cancel",
@@ -240,7 +244,7 @@
     },
     "auth": {
       "dialogTitle": "Sign In to ryOS",
-      "username": "user name",
+      "username": "User name",
       "password": "Password",
       "logIn": "Sign In",
       "createAccount": "Create Account",
@@ -276,11 +280,8 @@
       "forgotPassword": "Forgot password?",
       "recovery": {
         "title": "Reset Password",
-        "description": "Send a reset code to a recovery channel, then choose a new password.",
+        "description": "Send a reset code to your recovery methods, then choose a new password.",
         "identifier": "user name or email",
-        "channel": "Send code via",
-        "channelTelegram": "Telegram",
-        "channelEmail": "Email",
         "sendCode": "Send Code",
         "sending": "Sending…",
         "codeSent": "If an account matches, a reset code has been sent.",
@@ -383,7 +384,7 @@
         "forward": "Forward",
         "sidebar": "Sidebar",
         "import": "Import File…",
-        "goUp": "go up",
+        "goUp": "Go Up",
         "newWindow": "New Window",
         "finderHelp": "Finder Help",
         "aboutFinder": "About Finder"
@@ -431,6 +432,8 @@
         "gifImage": "GIF Image",
         "webpImage": "WebP Image",
         "bmpImage": "BMP Image",
+        "svgImage": "SVG Image",
+        "pdfDocument": "PDF Document",
         "book": "Book",
         "document": "Document",
         "htmlApplet": "HTML Applet",
@@ -445,6 +448,7 @@
         "emptyTrash": "Empty Trash…",
         "newFolder": "New Folder…",
         "open": "Open",
+        "openWith": "Open With",
         "addToDesktop": "Add to Desktop",
         "rename": "Rename…",
         "duplicate": "Duplicate",
@@ -616,6 +620,7 @@
       "checkWebAddressAndTryAgain": "Check the web address you typed and try again.",
       "goBackToPreviousPage": "Go back to the previous page.",
       "tryRefreshingThePage": "Try refreshing the page.",
+      "openInLiveBrowser": "Open this page in a live browser.",
       "host": "Host: {{hostname}}",
       "loadingTitle": "Internet Explorer - Loading",
       "loadingTitleWithSite": "{{site}} - Loading",
@@ -728,7 +733,11 @@
         "clearHistory": "Clear History…",
         "internetExplorerHelp": "Internet Explorer Help",
         "aboutInternetExplorer": "About Internet Explorer",
-        "folder": "Folder"
+        "folder": "Folder",
+        "debug": "Debug",
+        "proxySessions": "Cookie / Session Passthrough",
+        "forceHeadless": "Force Headless Render",
+        "verboseLogging": "Verbose Logging"
       },
       "futureTimeline": {
         "title": "Edit Future Timeline",
@@ -1379,6 +1388,74 @@
         }
       }
     },
+    "preview": {
+      "name": "Preview",
+      "title": "Preview",
+      "description": "View images, PDFs, and documents",
+      "untitled": "Untitled",
+      "supportedFiles": "Preview documents",
+      "menu": {
+        "open": "Open…",
+        "openWith": "Open With",
+        "saveAs": "Save As…",
+        "importFromDevice": "Import from Device…",
+        "export": "Export…",
+        "zoomIn": "Zoom In",
+        "zoomOut": "Zoom Out",
+        "actualSize": "Actual Size",
+        "fitToWindow": "Fit to Window",
+        "previewHelp": "Preview Help",
+        "aboutPreview": "About Preview"
+      },
+      "empty": {
+        "title": "Open a document",
+        "hint": "Choose a file or drop it here"
+      },
+      "status": {
+        "loading": "Loading preview…",
+        "notFound": "The file content could not be found.",
+        "loadFailed": "Couldn’t open this file.",
+        "unsupported": "No preview available",
+        "unsupportedDescription": "This file format isn’t supported by Preview."
+      },
+      "saveAs": {
+        "title": "Save As",
+        "description": "Enter a name for this copy"
+      },
+      "toasts": {
+        "imported": "File imported",
+        "importFailed": "Couldn’t import the file",
+        "saved": "File saved",
+        "saveFailed": "Couldn’t save the file",
+        "exportFailed": "Couldn’t export the file"
+      },
+      "help": {
+        "images": {
+          "title": "Preview Images",
+          "description": "Open common image formats without changing the original file"
+        },
+        "pdfs": {
+          "title": "Read PDFs",
+          "description": "View PDF documents using the built-in document viewer"
+        },
+        "zoom": {
+          "title": "Zoom",
+          "description": "Pinch or double-tap to zoom images, or fit them to the window"
+        },
+        "openFiles": {
+          "title": "Open Files",
+          "description": "Open files from Finder or import a copy from your device"
+        },
+        "openWith": {
+          "title": "Open With",
+          "description": "Send editable files to Paint, TextEdit, or Applet Viewer"
+        },
+        "safeHtml": {
+          "title": "Safe HTML",
+          "description": "Preview HTML documents in a sandbox without running scripts"
+        }
+      }
+    },
     "paint": {
       "name": "Paint",
       "description": "Draw and edit images",
@@ -1599,8 +1676,8 @@
         "next": "Next",
         "fullScreen": "Full Screen",
         "shuffle": "Shuffle",
-        "repeatAll": "repeat all",
-        "repeatOne": "repeat one",
+        "repeatAll": "Repeat All",
+        "repeatOne": "Repeat One",
         "library": "Library",
         "addToLibrary": "Add to Library…",
         "allVideos": "All Videos",
@@ -1805,8 +1882,8 @@
         "previous": "Previous",
         "next": "Next",
         "shuffle": "Shuffle",
-        "repeatAll": "repeat all",
-        "repeatOne": "repeat one",
+        "repeatAll": "Repeat All",
+        "repeatOne": "Repeat One",
         "lyrics": "Lyrics",
         "showLyrics": "Show Lyrics",
         "refreshLyrics": "Search Lyrics…",
@@ -2237,8 +2314,8 @@
         "previous": "Previous",
         "next": "Next",
         "shuffle": "Shuffle",
-        "repeatAll": "repeat all",
-        "repeatOne": "repeat one",
+        "repeatAll": "Repeat All",
+        "repeatOne": "Repeat One",
         "showLyrics": "Show Lyrics",
         "karaokeHelp": "Karaoke Help",
         "shareApp": "Share App…",
@@ -3001,6 +3078,9 @@
       "uiSounds": "UI Sounds",
       "uiSoundsDescription": "Clicks and feedback for windows and menus",
       "speechDescription": "Speaks assistant messages and selected text",
+      "browserTtsVoice": "TTS Voice",
+      "browserTtsVoiceDescription": "System voice for Books read-aloud and Calculator",
+      "browserTtsVoiceAutomatic": "Automatic",
       "terminalIeAmbientSynth": "Synth",
       "terminalIeAmbientSynthDescription": "Effects and synth for Terminal and IE",
       "chatSynth": "Chat Synth",
@@ -3015,14 +3095,14 @@
       },
       "logIn": "Sign In",
       "accountMenu": "Account",
-      "setPassword": "Set Password",
+      "setPassword": "Set Password…",
       "changePassword": "Change Password",
       "changePasswordButton": "Change",
       "logOut": "Sign Out",
       "logOutRowDescription": "Sign out of your ryOS account on this device",
       "loggingOut": "Signing out…",
       "logOutOfAllDevices": "Sign Out of All Devices",
-      "logOutAll": "Sign Out Everywhere",
+      "logOutAll": "Sign Out Everywhere…",
       "logOutOfAllDevicesRowDescription": "Sign out of your ryOS account on every device",
       "ryOSAccount": "ryOS Account",
       "loginToSendMessages": "Sign in to send messages and more",
@@ -3068,7 +3148,8 @@
         "confirmMismatch": "user name doesn't match",
         "genericError": "Couldn't delete account. Try again.",
         "successTitle": "Account Deleted",
-        "successDescription": "Your account and data have been removed."
+        "successDescription": "Your account and data have been removed.",
+        "openButton": "Delete Account…"
       },
       "email": {
         "title": "Email",
@@ -3081,7 +3162,7 @@
         "notAvailable": "Email recovery is not available on this server",
         "add": "Add",
         "link": "Link",
-        "verify": "Verify",
+        "verify": "Verify…",
         "manage": "Manage"
       },
       "telegram": {
@@ -3328,7 +3409,8 @@
         "failedDescription": "Failed to sign out of all devices",
         "networkErrorTitle": "Network Error",
         "networkErrorDescription": "Failed to connect to server"
-      }
+      },
+      "logOutButton": "Sign Out…"
     },
     "stickies": {
       "name": "Stickies",
@@ -3777,8 +3859,8 @@
         "modeIpod": "iPod",
         "modeKaraoke": "Karaoke",
         "shuffle": "Shuffle",
-        "repeatOne": "repeat one",
-        "repeatAll": "repeat all"
+        "repeatOne": "Repeat One",
+        "repeatAll": "Repeat All"
       },
       "stocks": {
         "delayed": "Delayed up to 20 minutes",
@@ -4062,13 +4144,42 @@
       },
       "songs": {
         "import": "Import Library",
+        "importingProgress": "Importing {{processed}}/{{total}}",
+        "importingLibrary": "Importing library…",
         "export": "Export Library",
         "deleteAll": "Delete All Songs",
         "noSongs": "No songs in cache",
         "noSongsMatchFilter": "No songs match the current filter",
         "filterByRyo": "Filter: songs created by ryo",
         "noSongsToExport": "No songs to export",
-        "allSongs": "all songs"
+        "allSongs": "all songs",
+        "importStatus": {
+          "fileFallback": "file",
+          "reading": "Reading {{fileName}}…",
+          "parsing": "Parsing import file…",
+          "validating": "Validating import data…",
+          "preparing": "Preparing songs {{processed}}/{{total}}",
+          "uploading": "Uploading songs {{processed}}/{{total}}",
+          "rateLimited": "Rate limited. {{message}}",
+          "rateLimitedFallback": "Waiting briefly before retrying…",
+          "refreshing": "Import uploaded. Refreshing library…",
+          "completed": "Import complete: {{imported}} new, {{updated}} updated",
+          "failed": "Import failed: {{error}}",
+          "messages": {
+            "readingFile": "Reading file",
+            "parsingFile": "Parsing file",
+            "validatingFile": "Validating file format",
+            "preparingSongs": "Preparing songs for import",
+            "splittingBatch": "Splitting batch to fit upload limits",
+            "uploadingSongs": "Uploading songs",
+            "rateLimitedRetry": "Retrying in {{count}}s",
+            "uploadedRefreshing": "Import uploaded, refreshing library",
+            "failed": "Import failed",
+            "progressUpdated": "Import progress updated",
+            "refreshingSongList": "Refreshing song list",
+            "completed": "Import complete: {{imported}} new, {{updated}} updated"
+          }
+        }
       },
       "song": {
         "notFound": "Song not found",
@@ -4424,24 +4535,102 @@
         "chapters": "Chapters",
         "font": "Font",
         "textSize": "Text Size",
-        "textSizeIncrease": "Bigger",
-        "textSizeDecrease": "Smaller",
-        "textSizeReset": "Default Size",
         "columns": "Columns",
+        "textLayout": "Text Direction",
+        "chineseScript": "Chinese Script",
         "theme": "Theme",
+        "customizeTheme": "Customize…",
+        "speech": "Speech",
+        "startSpeaking": "Start Speaking",
+        "stopSpeaking": "Stop Speaking",
+        "speechRate": "Speech Rate",
         "booksHelp": "Books Help",
         "aboutBooks": "About Books"
+      },
+      "customize": {
+        "title": "Customize",
+        "lineSpacing": "Line Spacing",
+        "spacing": "Spacing",
+        "direction": "Direction",
+        "chinese": "Chinese",
+        "margins": "Margins",
+        "colors": "Colors",
+        "background": "Background",
+        "textColor": "Text",
+        "transparent": "Transparent"
+      },
+      "speechRate": {
+        "slow": "Slow",
+        "normal": "Normal",
+        "fast": "Fast",
+        "veryFast": "Very Fast"
+      },
+      "speech": {
+        "controls": "Read-aloud controls",
+        "rewind": "Rewind",
+        "pause": "Pause",
+        "resume": "Resume",
+        "skip": "Skip",
+        "stop": "Stop"
+      },
+      "selection": {
+        "controls": "Selection controls",
+        "color": {
+          "yellow": "Yellow highlight",
+          "green": "Green highlight",
+          "blue": "Blue highlight",
+          "pink": "Pink highlight",
+          "purple": "Purple highlight"
+        },
+        "copy": "Copy",
+        "copied": "Copied to clipboard",
+        "copyFailed": "Couldn’t copy",
+        "askRyo": "Ask Ryo",
+        "removeHighlight": "Remove Highlight",
+        "askRyoQuestion": "what does this passage mean?",
+        "askRyoFailed": "Couldn't get a reply. Try again later."
+      },
+      "bookmarks": {
+        "title": "Bookmarks",
+        "add": "Add Bookmark",
+        "remove": "Remove Bookmark"
       },
       "columns": {
         "auto": "Auto",
         "single": "Single",
         "double": "Double"
       },
+      "fonts": {
+        "original": "Original",
+        "eb-garamond": "Garamond",
+        "serif": "Serif",
+        "sans": "Sans Serif",
+        "geneva": "Geneva",
+        "rounded": "Rounded",
+        "mono": "Monospace"
+      },
+      "textLayout": {
+        "book": "Book Default",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "theme": {
         "auto": "Auto",
+        "accent": "Accent",
         "light": "Light",
+        "paper": "Paper",
         "sepia": "Sepia",
-        "dark": "Dark"
+        "gray": "Gray",
+        "green": "Green",
+        "dark": "Dark",
+        "night": "Night",
+        "black": "Black",
+        "custom": "Custom"
       },
       "shelf": {
         "import": "Add Book",
@@ -4487,11 +4676,11 @@
         },
         "progress": {
           "title": "Reading Progress",
-          "description": "Your place is saved automatically and restored the next time you open the book."
+          "description": "Your place is saved automatically. Reopening Books resumes the book and page you left on, or the shelf if you closed it."
         },
         "fonts": {
           "title": "Fonts & Layout",
-          "description": "Pick a reading font (including EB Garamond), text size, and single or double columns from the View menu."
+          "description": "Pick a reading font (including Garamond), text size, and single or double columns from the View menu."
         },
         "darkMode": {
           "title": "Dark Mode",
@@ -4679,7 +4868,25 @@
     "tabs": {
       "label": "Debug panel views",
       "logs": "Logs",
-      "live": "Live"
+      "live": "Live",
+      "network": "Network"
+    },
+    "network": {
+      "title": "Requests",
+      "copy": "Copy requests",
+      "clear": "Clear requests",
+      "empty": "No requests captured yet.",
+      "emptyForFilter": "No requests match this filter.",
+      "pending": "···",
+      "filterRequests": "Filter requests",
+      "filterAll": "All Requests",
+      "filters": {
+        "error": "Failed",
+        "warn": "Warnings",
+        "ok": "Successful",
+        "pending": "Pending"
+      },
+      "failedCount": "{{count}} failed"
     },
     "live": {
       "dashboardLabel": "Live environment snapshot",
@@ -4718,6 +4925,25 @@
       "online": "Online",
       "offline": "Offline",
       "storage": "Storage",
+      "services": "Services",
+      "realtime": "Realtime",
+      "realtimeState": {
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "disconnected": "Disconnected"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} channels",
+      "cloudSync": "Cloud sync",
+      "syncSyncing": "Syncing…",
+      "syncError": "Error",
+      "syncAuto": "Auto",
+      "syncOff": "Off",
+      "syncReport": "{{status}} · last checked {{checkedAt}}",
+      "session": "Session",
+      "sessionGuest": "Guest",
+      "sessionAdmin": "{{username}} (admin)",
+      "sessionSignedOut": "{{username}} (signed out)",
       "logHealth": "Log health",
       "logHealthValue": "{{errors}} errors · {{warnings}} warnings",
       "appVersion": "App",
@@ -4749,7 +4975,7 @@
     "scrollToBottom": "Scroll to bottom",
     "noLogsYet": "No logs captured yet.",
     "noLogsForFilter": "No logs match this filter.",
-    "filterAll": "All logs",
+    "filterAll": "All Logs",
     "filterOther": "Other",
     "filterByLogger": "Filter by logger",
     "toggleLabel": "Debug"
@@ -4764,7 +4990,8 @@
       "title": "Language",
       "description": "Select your preferred language for ryOS interface",
       "english": "English",
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "japanese": "日本語",
       "korean": "한국어",
       "french": "Français",

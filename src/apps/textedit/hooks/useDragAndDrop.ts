@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 interface UseDragAndDropProps {
   hasUnsavedChanges: boolean;
   onFileDropped: (file: File) => Promise<void>;
-  onConfirmOverwrite: () => void;
+  onConfirmOverwrite: (file: File) => void;
 }
 
 export function useDragAndDrop({
@@ -51,20 +51,9 @@ export function useDragAndDrop({
       return;
     }
 
-    const filePath = `/Documents/${file.name}`;
-    const text = await file.text();
-
     // If there are unsaved changes, prompt the user
     if (hasUnsavedChanges) {
-      // Store the dropped file temporarily
-      localStorage.setItem(
-        "ryos:pending-file-open",
-        JSON.stringify({
-          path: filePath,
-          content: text,
-        })
-      );
-      onConfirmOverwrite();
+      onConfirmOverwrite(file);
     } else {
       await onFileDropped(file);
     }

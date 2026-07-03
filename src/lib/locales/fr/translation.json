@@ -372,11 +372,41 @@
         "export": "Exporter la bibliothèque",
         "filterByRyo": "Filtre : chansons créées par ryo",
         "import": "Importation",
+        "importStatus": {
+          "completed": "Importation terminée : {{imported}} nouveaux, {{updated}} mis à jour",
+          "failed": "Échec de l’importation : {{error}}",
+          "fileFallback": "fichier",
+          "messages": {
+            "completed": "Importation terminée : {{imported}} nouveaux, {{updated}} mis à jour",
+            "failed": "Échec de l’importation",
+            "parsingFile": "Analyse du fichier",
+            "preparingSongs": "Préparation des morceaux pour l’importation",
+            "progressUpdated": "Progression de l’importation mise à jour",
+            "rateLimitedRetry": "Nouvelle tentative dans {{count}} s",
+            "readingFile": "Lecture du fichier",
+            "refreshingSongList": "Actualisation de la liste des morceaux",
+            "splittingBatch": "Division du lot pour respecter les limites d’envoi",
+            "uploadedRefreshing": "Importation envoyée, actualisation de la bibliothèque",
+            "uploadingSongs": "Envoi des morceaux",
+            "validatingFile": "Validation du format du fichier"
+          },
+          "parsing": "Analyse du fichier d’importation...",
+          "preparing": "Préparation des morceaux {{processed}}/{{total}}",
+          "rateLimited": "Limite de débit atteinte. {{message}}",
+          "rateLimitedFallback": "Attente avant une nouvelle tentative...",
+          "reading": "Lecture de {{fileName}}...",
+          "refreshing": "Importation effectuée. Actualisation de la bibliothèque...",
+          "uploading": "Envoi des morceaux {{processed}}/{{total}}",
+          "validating": "Validation des données d’importation..."
+        },
+        "importingLibrary": "Importation de la bibliothèque...",
+        "importingProgress": "Importation {{processed}}/{{total}}",
         "noSongs": "Aucun morceau en cache",
         "noSongsMatchFilter": "Aucune chanson ne correspond au filtre actuel",
         "noSongsToExport": "Aucune chanson à exporter"
       },
       "statusBar": {
+        "auditLogCount_many": "{{count}} entrées",
         "auditLogCount_one": "{{count}} entrée",
         "auditLogCount_other": "{{count}} entrées",
         "cursorAgentsCount": "{{count}} agent de curseur",
@@ -385,15 +415,14 @@
         "messagesCount": "{{count}} message",
         "messagesCount_plural": "{{count}} messages",
         "redis": "Explorateur Redis",
+        "redisKeysCount_many": "{{count}} clés",
         "redisKeysCount_one": "{{count}} clé",
         "redisKeysCount_other": "{{count}} clés",
         "roomsCount": "{{count}} pièce",
         "roomsCount_plural": "{{count}} pièces",
         "songsCount": "{{count}} morceaux",
         "usersCount": "{{count}} utilisateur",
-        "usersCount_plural": "{{count}} utilisateurs",
-        "redisKeysCount_many": "{{count}} clés",
-        "auditLogCount_many": "{{count}} entrées"
+        "usersCount_plural": "{{count}} utilisateurs"
       },
       "tableHeaders": {
         "added": "Ajouté",
@@ -525,7 +554,7 @@
         "exportAs": "Exporter comme’…",
         "html": "HTML",
         "importFromDevice": "Importer depuis l’appareil…",
-        "logOut": "Fermer la session",
+        "logOut": "Déconnexion",
         "login": "Se connecter…",
         "noAppletsOpen": "Aucune applet ouverte",
         "open": "Ouvrir…",
@@ -561,6 +590,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Ajouter un signet",
+        "remove": "Supprimer le signet",
+        "title": "Signets"
+      },
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "Auto",
         "double": "Double",
@@ -571,7 +610,28 @@
         "moveToBottom": "Placer tout en bas",
         "moveToTop": "Placer tout en haut"
       },
+      "customize": {
+        "background": "Arrière-plan",
+        "chinese": "Chinois",
+        "colors": "Couleurs",
+        "direction": "Direction",
+        "lineSpacing": "Interligne",
+        "margins": "Marges",
+        "spacing": "Espacement",
+        "textColor": "Texte",
+        "title": "Personnaliser",
+        "transparent": "Transparent"
+      },
       "description": "Lire des livres EPUB",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monospace",
+        "original": "Original",
+        "rounded": "Arrondi",
+        "sans": "Sans empattement",
+        "serif": "Avec empattement"
+      },
       "help": {
         "bookshelf": {
           "description": "Les EPUB importés sont alignés sur l'étagère en bois. Cliquez sur un livre pour l'ouvrir et commencer la lecture.",
@@ -582,7 +642,7 @@
           "title": "Mode sombre"
         },
         "fonts": {
-          "description": "Choisissez une police de lecture (dont EB Garamond), la taille du texte et l’affichage sur une ou deux colonnes dans le menu Présentation.",
+          "description": "Choisissez une police de lecture (dont Garamond), la taille du texte et l’affichage sur une ou deux colonnes dans le menu Présentation.",
           "title": "Polices et mise en page"
         },
         "import": {
@@ -606,21 +666,42 @@
         "backToShelf": "Retour à la bibliothèque",
         "booksHelp": "Aide Books",
         "chapters": "Chapitres",
+        "chineseScript": "Écriture chinoise",
         "columns": "Colonnes",
+        "customizeTheme": "Personnaliser…",
         "font": "Police",
         "import": "Importer un EPUB…",
         "nextPage": "Page suivante",
         "previousPage": "Page précédente",
+        "speech": "Parole",
+        "speechRate": "Vitesse d’élocution",
+        "startSpeaking": "Commencer à parler",
+        "stopSpeaking": "Arrêter de parler",
+        "textLayout": "Sens du texte",
         "textSize": "Taille du texte",
-        "textSizeDecrease": "Plus petite",
-        "textSizeIncrease": "Plus grande",
-        "textSizeReset": "Taille par défaut",
         "theme": "Thème"
       },
       "name": "Livres",
       "reader": {
         "backToShelf": "Bibliothèque",
         "error": "Impossible d’ouvrir ce livre."
+      },
+      "selection": {
+        "askRyo": "Demander à Ryo",
+        "askRyoFailed": "Impossible d’obtenir une réponse. Réessayez plus tard.",
+        "askRyoQuestion": "que signifie ce passage ?",
+        "color": {
+          "blue": "Surlignage bleu",
+          "green": "Surlignage vert",
+          "pink": "Surlignage rose",
+          "purple": "Surlignage violet",
+          "yellow": "Surlignage jaune"
+        },
+        "controls": "Commandes de sélection",
+        "copied": "Copié dans le presse-papiers",
+        "copy": "Copier",
+        "copyFailed": "Impossible de copier",
+        "removeHighlight": "Supprimer le surlignage"
       },
       "shelf": {
         "emptyHint": "Cliquez sur Ajouter un livre pour importer un EPUB.",
@@ -631,10 +712,36 @@
         "listView": "Présentation par liste",
         "percentRead": "{{percent}} %"
       },
+      "speech": {
+        "controls": "Commandes de lecture à voix haute",
+        "pause": "Pause",
+        "resume": "Reprendre",
+        "rewind": "Retour arrière",
+        "skip": "Passer",
+        "stop": "Arrêter"
+      },
+      "speechRate": {
+        "fast": "Rapide",
+        "normal": "Normale",
+        "slow": "Lente",
+        "veryFast": "Très rapide"
+      },
+      "textLayout": {
+        "book": "Réglage du livre",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
       "theme": {
+        "accent": "Accent",
         "auto": "Auto",
+        "black": "Noir",
+        "custom": "Personnalisé",
         "dark": "Sombre",
+        "gray": "Gris",
+        "green": "Vert",
         "light": "Clair",
+        "night": "Nuit",
+        "paper": "Papier",
         "sepia": "Sépia"
       },
       "title": "Livres",
@@ -768,7 +875,7 @@
         "speakResults": "Énoncer les résultats",
         "speechEnabled": "Parole"
       },
-      "name": "Calculette",
+      "name": "Calculatrice",
       "speech": {
         "error": "Erreur",
         "keys": {
@@ -778,7 +885,7 @@
           "closeParenthesis": "parenthèse fermante",
           "cos": "cosinus",
           "degrees": "degrés",
-          "divide": "Divisé par",
+          "divide": "divisé par",
           "e": "e",
           "equals": "égal",
           "factorial": "factorielle",
@@ -798,7 +905,7 @@
           "point": "virgule",
           "power": "x puissance y",
           "radians": "radians",
-          "random": "Aléatoire",
+          "random": "aléatoire",
           "root": "racine y-ième de x",
           "sin": "sinus",
           "sqrt": "racine carrée",
@@ -811,7 +918,7 @@
       "status": {
         "memory": "M={{value}}"
       },
-      "title": "Calculette"
+      "title": "Calculatrice"
     },
     "calendar": {
       "description": "Calendrier avec événements",
@@ -955,9 +1062,9 @@
         "saveTranscriptDescription": "Saisissez un nom pour le fichier de transcription de votre discussion",
         "saveTranscriptTitle": "Enregistrer la transcription",
         "searchUsernamePlaceholder": "Rechercher un nom d’utilisateur…",
-        "setPasswordButton": "Définir le mot de passe",
+        "setPasswordButton": "Définir un mot de passe",
         "setPasswordDescription": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez utiliser ce mot de passe pour obtenir un nouveau jeton si vous perdez l’accès.",
-        "setPasswordTitle": "Définir le mot de passe"
+        "setPasswordTitle": "Définir un mot de passe"
       },
       "help": {
         "chatWithRyo": {
@@ -996,7 +1103,7 @@
         "increaseFontSize": "Augmenter la taille de police",
         "keepTalking": "Continuer à parler",
         "linkToTelegram": "Lien vers Telegram",
-        "logOut": "Fermer la session",
+        "logOut": "Déconnexion",
         "login": "Se connecter…",
         "newChat": "Nouvelle conversation’…",
         "resetFontSize": "Réinitialiser la taille de la police",
@@ -1598,6 +1705,9 @@
       "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l’application",
       "bootScreen": "Écran de démarrage",
       "bootScreenDescription": "Tester l'animation de l'écran de démarrage",
+      "browserTtsVoice": "Voix de synthèse",
+      "browserTtsVoiceAutomatic": "Automatique",
+      "browserTtsVoiceDescription": "Voix système pour la lecture à voix haute dans Livres et la Calculatrice",
       "changePassword": "Changer le mot de passe",
       "changePasswordButton": "Modifier",
       "chatSynth": "Synthétiseur de discussion",
@@ -1651,6 +1761,7 @@
         "deleting": "Suppression…",
         "description": "Ceci supprimera définitivement votre compte, votre mot de passe, votre e-mail de récupération, votre compte Telegram lié et vos données synchronisées. Cette action est irréversible.",
         "genericError": "Impossible de supprimer le compte. Veuillez réessayer.",
+        "openButton": "Supprimer le compte…",
         "passwordLabel": "Mot de passe actuel",
         "passwordRequired": "Saisissez votre mot de passe actuel",
         "submit": "Supprimer le compte",
@@ -1688,7 +1799,7 @@
         "title": "E-mail",
         "unverifiedAs": "{{email}} · Non vérifié",
         "verifiedAs": "{{email}} · Vérifié",
-        "verify": "Vérifier"
+        "verify": "Vérifier…"
       },
       "errorBoundaries": "Limites d’erreur",
       "errorBoundariesDescription": "Déclencher les solutions de repli en cas de plantage de l’appli ou du bureau pour les tests",
@@ -1736,8 +1847,9 @@
       "ipod": "iPod",
       "ipodVolume": "Volume de l’iPod",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
-      "logOutAll": "Tout déconnecter",
+      "logOut": "Déconnexion",
+      "logOutAll": "Tout déconnecter…",
+      "logOutButton": "Déconnexion…",
       "logOutOfAllDevices": "Se déconnecter de tous les appareils",
       "logOutOfAllDevicesRowDescription": "Se déconnecter de votre compte ryOS sur tous les appareils",
       "logOutRowDescription": "Se déconnecter de votre compte ryOS sur cet appareil",
@@ -1865,11 +1977,11 @@
       "selectAPreset": "Sélectionner un préréglage",
       "selectScreenSaver": "Sélectionner un économiseur d’écran",
       "sepia": "Sépia",
-      "setPassword": "Définir le mot de passe",
+      "setPassword": "Définir un mot de passe…",
       "setPasswordDialog": {
         "description": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez l'utiliser pour obtenir un nouveau jeton si vous perdez l'accès.",
-        "submitLabel": "Définir le mot de passe",
-        "title": "Définir le mot de passe"
+        "submitLabel": "Définir un mot de passe",
+        "title": "Définir un mot de passe"
       },
       "setup": "Configurer",
       "shaderEffect": "Effet Shader",
@@ -2234,6 +2346,7 @@
         "noAirDropUsersAvailable": "Aucun utilisateur a proximité",
         "open": "Ouvrir",
         "openAirDrop": "Ouvrir AirDrop",
+        "openWith": "Ouvrir avec",
         "putBack": "Remettre à sa place",
         "rename": "Renommer…",
         "searchingForAirDropUsers": "Recherche d’utilisateurs a proximité…",
@@ -2273,8 +2386,10 @@
         "internetShortcut": "Raccourci Internet",
         "jpegImage": "Image JPEG",
         "mp3Audio": "Audio MP3",
+        "pdfDocument": "Document PDF",
         "pngImage": "Image PNG",
         "quicktimeMovie": "Séquence QuickTime",
+        "svgImage": "Image SVG",
         "unknown": "Inconnu",
         "webpImage": "Image WebP"
       },
@@ -2523,11 +2638,13 @@
         "chinese": "Chinois",
         "clearFavorites": "Effacer les favoris…",
         "clearHistory": "Effacer l’historique…",
+        "debug": "Débogage",
         "digitalBeing": "Être numérique",
         "editFuture": "Modifier l’avenir…",
         "english": "Anglais",
         "favorites": "Favoris",
         "folder": "Dossier",
+        "forceHeadless": "Forcer le rendu sans interface",
         "forward": "Avancer",
         "france": "France",
         "french": "Français",
@@ -2550,6 +2667,7 @@
         "openTimeMachine": "Ouvrir Time Machine",
         "portugal": "Portugal",
         "portuguese": "Portugais",
+        "proxySessions": "Transfert de cookies / sessions",
         "refresh": "Actualiser",
         "resetFavorites": "Réinitialiser les favoris…",
         "russia": "Russie",
@@ -2561,6 +2679,7 @@
         "stop": "Arrêter",
         "unitedKingdom": "Royaume-Uni",
         "unitedStates": "États-Unis",
+        "verboseLogging": "Journalisation détaillée",
         "welsh": "Gallois",
         "year": "Année"
       },
@@ -2574,6 +2693,7 @@
       "older": "Plus ancien",
       "olderVersion": "Version plus ancienne",
       "oldest": "Le plus ancien",
+      "openInLiveBrowser": "Ouvrir cette page dans un navigateur en direct.",
       "openingRequestedPage": "Ouverture de la page demandée",
       "openingSharedPage": "Ouverture de la page partagée",
       "page": "Page",
@@ -2889,6 +3009,7 @@
         "off": "Désactivé",
         "on": "Activé",
         "one": "Un",
+        "playlistTrackCount_many": "{{count}} morceaux",
         "playlistTrackCount_one": "{{count}} morceau",
         "playlistTrackCount_other": "{{count}} morceaux",
         "playlists": "Playlists",
@@ -2903,8 +3024,7 @@
         "songs": "Morceaux",
         "theme": "Thème",
         "unconfigured": "Non configuré",
-        "unknownAlbum": "Album inconnu",
-        "playlistTrackCount_many": "{{count}} morceaux"
+        "unknownAlbum": "Album inconnu"
       },
       "musicQuiz": {
         "correct": "Correct !",
@@ -3650,6 +3770,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "Affichez des images, des PDF et des documents",
+      "empty": {
+        "hint": "Choisissez un fichier ou déposez-le ici",
+        "title": "Ouvrir un document"
+      },
+      "help": {
+        "images": {
+          "description": "Ouvrez des formats d’image courants sans modifier le fichier d’origine",
+          "title": "Aperçu des images"
+        },
+        "openFiles": {
+          "description": "Utilisez Fichier > Ouvrir pour afficher l’aperçu d’un fichier de votre appareil",
+          "title": "Ouvrir des fichiers"
+        },
+        "openWith": {
+          "description": "Envoyez des fichiers modifiables vers Paint, TextEdit ou Applet Viewer",
+          "title": "Ouvrir avec"
+        },
+        "pdfs": {
+          "description": "Affichez des documents PDF à l’aide du visualiseur de documents intégré",
+          "title": "Lire les PDF"
+        },
+        "safeHtml": {
+          "description": "Affichez l’aperçu de documents HTML dans un bac à sable sans exécuter de scripts",
+          "title": "HTML sécurisé"
+        },
+        "zoom": {
+          "description": "Pincez ou touchez deux fois pour zoomer sur les images, ou adaptez-les à la fenêtre",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "À propos d’Aperçu",
+        "actualSize": "Taille réelle",
+        "export": "Exporter…",
+        "fitToWindow": "Ajuster à la fenêtre",
+        "importFromDevice": "Importer depuis l’appareil…",
+        "open": "Ouvrir…",
+        "openWith": "Ouvrir avec",
+        "previewHelp": "Aide Aperçu",
+        "saveAs": "Enregistrer sous…",
+        "zoomIn": "Zoom avant",
+        "zoomOut": "Zoom arrière"
+      },
+      "name": "Aperçu",
+      "saveAs": {
+        "description": "Saisissez un nom pour cette copie",
+        "title": "Enregistrer sous"
+      },
+      "status": {
+        "loadFailed": "Impossible d’ouvrir ce fichier.",
+        "loading": "Chargement de l’aperçu…",
+        "notFound": "Le contenu du fichier est introuvable.",
+        "unsupported": "Aucun aperçu disponible",
+        "unsupportedDescription": "Ce format de fichier n’est pas pris en charge par Aperçu."
+      },
+      "supportedFiles": "Documents Aperçu",
+      "title": "Aperçu",
+      "toasts": {
+        "exportFailed": "Impossible d’exporter le fichier",
+        "importFailed": "Impossible d’importer le fichier",
+        "imported": "Fichier importé",
+        "saveFailed": "Impossible d’enregistrer le fichier",
+        "saved": "Fichier enregistré"
+      },
+      "untitled": "Sans titre"
+    },
     "soundboard": {
       "description": "Émettre des effets sonores",
       "help": {
@@ -4047,7 +4235,7 @@
           "title": "Texte"
         }
       },
-      "speak": "Prononcer",
+      "speak": "Énoncer",
       "stopSpeech": "Arrêter la parole",
       "text": "Texte",
       "underline": "Souligner",
@@ -4156,10 +4344,10 @@
         "exportSuccess": "Chaînes exportées",
         "importEmpty": "Aucune chaîne valide trouvée dans ce fichier",
         "importFailed": "Impossible d’importer les chaînes — le fichier est peut-être non valide",
+        "importSuccess_many": "{{count}} chaînes importées ({{skipped}} ignorées)",
         "importSuccess_one": "{{count}} chaîne importée ({{skipped}} ignorée)",
         "importSuccess_other": "{{count}} chaînes importées ({{skipped}} ignorées)",
-        "resetSuccess": "Chaînes réinitialisées par défaut",
-        "importSuccess_many": "{{count}} chaînes importées ({{skipped}} ignorées)"
+        "resetSuccess": "Chaînes réinitialisées par défaut"
       },
       "youtubePaste": {
         "added": "« {{title}} » ajouté à cette chaîne",
@@ -4381,21 +4569,18 @@
       "dialogTitle": "Connexion ryOS",
       "forgotPassword": "Mot de passe oublié ?",
       "logIn": "Se connecter",
-      "logOut": "Fermer la session",
+      "logOut": "Déconnexion",
       "logOutDescription": "Voulez-vous vraiment vous déconnecter ? Vous serez déconnecté de votre compte.",
       "loggingIn": "Connexion…",
       "loginDescription": "Connectez-vous à votre compte",
       "password": "Mot de passe",
       "recovery": {
         "back": "Retour",
-        "channel": "Envoyer le code via",
-        "channelEmail": "E-mail",
-        "channelTelegram": "Telegram",
         "code": "Code de réinitialisation",
         "codeRequired": "Saisissez le code de réinitialisation",
         "codeSent": "Si un compte correspond, un code de réinitialisation a été envoyé.",
         "confirmPassword": "Confirmer le nouveau mot de passe",
-        "description": "Envoyez un code de réinitialisation vers un canal de récupération, puis choisissez un nouveau mot de passe.",
+        "description": "Envoyez un code de réinitialisation vers vos méthodes de récupération disponibles, puis choisissez un nouveau mot de passe.",
         "genericError": "Impossible de réinitialiser le mot de passe. Vérifiez votre code et réessayez.",
         "identifier": "Nom d’utilisateur ou e-mail",
         "identifierRequired": "Saisissez votre nom d’utilisateur ou e-mail",
@@ -4422,9 +4607,9 @@
     "colors": {
       "blue": "Bleu",
       "green": "Vert",
-      "orange": "orange",
+      "orange": "Orange",
       "pink": "Rose",
-      "purple": "violet",
+      "purple": "Violet",
       "yellow": "Jaune"
     },
     "desktop": {
@@ -4585,6 +4770,10 @@
       "volume": "Volume"
     },
     "noResults": "Aucun résultat",
+    "offline": {
+      "appRequiresInternet": "{{appName}} nécessite une connexion Internet.",
+      "title": "Vous êtes hors ligne"
+    },
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",
       "run": "Exécuter…",
@@ -4633,7 +4822,7 @@
       "fullscreen": "Plein écran",
       "maximize": "Agrandir",
       "maximizeDisabled": "Agrandir (désactivé)",
-      "minimize": "Placer dans le Dock",
+      "minimize": "Minimiser",
       "minimizeDisabled": "Réduire (désactivé)"
     }
   },
@@ -4663,6 +4852,7 @@
       "appVersion": "App",
       "average": "Moyenne",
       "bufferedLogs": "{{count}} mis en mémoire tampon",
+      "cloudSync": "Synchronisation Cloud",
       "copySnapshot": "Copier l'instantané de l'environnement",
       "current": "Actuel",
       "darkMode": "Sombre",
@@ -4694,6 +4884,14 @@
       "offline": "Hors ligne",
       "online": "En ligne",
       "performance": "Performance",
+      "realtime": "Temps réel",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} canaux",
+      "realtimeState": {
+        "connected": "Connecté",
+        "connecting": "Connexion…",
+        "disconnected": "Déconnecté"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
       "reportTitle": "Instantané de l’environnement en direct",
       "runtime": {
         "browser": "Navigateur",
@@ -4703,7 +4901,17 @@
       "runtimeLabel": "Runtime",
       "sampling": "Échantillonnage chaque seconde",
       "samplingPaused": "Échantillonnage en pause",
+      "services": "Services",
+      "session": "Session",
+      "sessionAdmin": "{{username}} (admin)",
+      "sessionGuest": "Invité",
+      "sessionSignedOut": "{{username}} (déconnecté)",
       "storage": "Stockage",
+      "syncAuto": "Auto",
+      "syncError": "Erreur",
+      "syncOff": "Désactivé",
+      "syncReport": "{{status}} · dernière vérification {{checkedAt}}",
+      "syncSyncing": "Synchronisation…",
       "theme": "Thème",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "Total des journaux",
@@ -4713,6 +4921,23 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "Avertissements"
     },
+    "network": {
+      "clear": "Effacer les requêtes",
+      "copy": "Copier les requêtes",
+      "empty": "Aucune requête capturée pour le moment.",
+      "emptyForFilter": "Aucune requête ne correspond à ce filtre.",
+      "failedCount": "{{count}} échecs",
+      "filterAll": "Toutes les requêtes",
+      "filterRequests": "Filtrer les requêtes",
+      "filters": {
+        "error": "Échec",
+        "ok": "Réussies",
+        "pending": "En attente",
+        "warn": "Avertissements"
+      },
+      "pending": "···",
+      "title": "Requêtes"
+    },
     "noLogsForFilter": "Aucun log ne correspond à ce filtre.",
     "noLogsYet": "Aucun log capturé pour le moment.",
     "scrollToBottom": "Faire défiler vers le bas",
@@ -4720,14 +4945,16 @@
     "tabs": {
       "label": "Vues du panneau de débogage",
       "live": "En direct",
-      "logs": "Journaux"
+      "logs": "Journaux",
+      "network": "Réseau"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} avert"
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Sélectionnez votre langue préférée pour l’interface ryOS",
       "english": "English",
       "french": "Français",

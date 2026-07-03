@@ -92,6 +92,17 @@ export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
   return parsed;
 };
 
+const readSetCookies = (headers: Headers): string[] => {
+  // `getSetCookie` returns each Set-Cookie header separately (undici / Bun);
+  // fall back to the (comma-joined) single header on older runtimes.
+  const maybe = headers as Headers & { getSetCookie?: () => string[] };
+  if (typeof maybe.getSetCookie === "function") {
+    return maybe.getSetCookie();
+  }
+  const single = headers.get("set-cookie");
+  return single ? [single] : [];
+};
+
 export const safeFetchWithRedirects = async (
   initialUrl: string,
   init: RequestInit,
@@ -100,11 +111,14 @@ export const safeFetchWithRedirects = async (
   response: Response;
   finalUrl: string;
   redirectChain: string[];
+  /** Set-Cookie headers collected across every hop (including the final one). */
+  setCookies: string[];
 }> => {
   const maxRedirects = options.maxRedirects ?? 5;
   let currentUrl = initialUrl;
   let currentInit: RequestInit = { ...init, redirect: "manual" };
   const redirectChain: string[] = [];
+  const setCookies: string[] = [];
 
   for (let attempt = 0; attempt <= maxRedirects; attempt += 1) {
     const validatedUrl = await validatePublicUrl(currentUrl);
@@ -112,6 +126,10 @@ export const safeFetchWithRedirects = async (
       ...currentInit,
       redirect: "manual",
     });
+
+    // Collect cookies set at every hop so login redirect chains (which often
+    // set the session cookie on the intermediate 302) are captured.
+    setCookies.push(...readSetCookies(response.headers));
 
     if (
       response.status >= 300 &&
@@ -148,6 +166,7 @@ export const safeFetchWithRedirects = async (
       response,
       finalUrl: validatedUrl.toString(),
       redirectChain,
+      setCookies,
     };
   }
 

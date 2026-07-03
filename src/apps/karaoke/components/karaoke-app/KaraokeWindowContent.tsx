@@ -4,7 +4,9 @@ import { CoverFlow } from "@/apps/ipod/components/cover-flow/CoverFlow";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
+import { getTranslatedAppName } from "@/utils/i18n";
 import {
   selectEffectiveIpodVolume,
   useAudioSettingsStore,
@@ -280,6 +282,19 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
             isPlaying={isPlaying}
             onTogglePlay={handlePlayPause}
             onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+          />
+        </div>
+      )}
+
+      {/* Offline empty state — dims the stalled video/visual layers and
+          CoverFlow (z-40) but stays below the control toolbar (z-[60]).
+          pointer-events-none keeps the toolbar and long-press gestures
+          usable while offline. */}
+      {isOffline && (
+        <div className="absolute inset-0 z-[50] bg-black/80 backdrop-blur-sm pointer-events-none">
+          <OfflineEmptyState
+            appName={getTranslatedAppName("karaoke")}
+            appearance="dark"
           />
         </div>
       )}

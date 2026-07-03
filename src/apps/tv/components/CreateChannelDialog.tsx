@@ -214,7 +214,7 @@ export function CreateChannelDialog({
         <p className="text-red-600 text-sm mt-3">{error}</p>
       )}
 
-      <DialogFooter className="mt-4 gap-1 sm:justify-end">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-end">
         <Button
           variant={isMacTheme ? "secondary" : "retro"}
           onClick={() => onOpenChange(false)}

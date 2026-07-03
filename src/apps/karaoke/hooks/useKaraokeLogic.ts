@@ -36,6 +36,7 @@ import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
 import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
 import { shouldRestartTrackOnPrevious } from "@/shared/media/previousTrackBehavior";
+import { createClientLogger } from "@/utils/logger";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -44,6 +45,7 @@ const UA = typeof navigator !== "undefined" ? navigator.userAgent : "";
 const IS_IOS = /iP(hone|od|ad)/.test(UA);
 const IS_SAFARI =
   /Safari/.test(UA) && !/Chrome/.test(UA) && !/CriOS/.test(UA);
+const karaokeLog = createClientLogger("Karaoke");
 
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
@@ -346,6 +348,53 @@ export function useKaraokeLogic({
         : null,
     [currentTrack]
   );
+  const previousPlaybackDebugRef = useRef<{
+    isWindowOpen: boolean;
+    currentSongId: string | null;
+    activeTrackId: string | null;
+    currentIndex: number;
+    playbackRequested: boolean;
+    isPlaying: boolean;
+    isFullScreen: boolean;
+    listenRemoteOnly: boolean;
+  } | null>(null);
+  useEffect(() => {
+    const snapshot = {
+      isWindowOpen,
+      currentSongId,
+      activeTrackId,
+      currentIndex,
+      playbackRequested,
+      isPlaying,
+      isFullScreen,
+      listenRemoteOnly,
+    };
+    const previous = previousPlaybackDebugRef.current;
+    if (previous === null) {
+      karaokeLog.debug("Initial playback state", snapshot);
+    } else if (
+      previous.isWindowOpen !== snapshot.isWindowOpen ||
+      previous.currentSongId !== snapshot.currentSongId ||
+      previous.activeTrackId !== snapshot.activeTrackId ||
+      previous.currentIndex !== snapshot.currentIndex ||
+      previous.playbackRequested !== snapshot.playbackRequested ||
+      previous.isPlaying !== snapshot.isPlaying ||
+      previous.isFullScreen !== snapshot.isFullScreen ||
+      previous.listenRemoteOnly !== snapshot.listenRemoteOnly
+    ) {
+      karaokeLog.debug("Playback state changed", { previous, next: snapshot });
+    }
+    previousPlaybackDebugRef.current = snapshot;
+  }, [
+    activeTrackId,
+    currentIndex,
+    currentSongId,
+    isFullScreen,
+    isPlaying,
+    isWindowOpen,
+    listenRemoteOnly,
+    playbackRequested,
+  ]);
 
   useEffect(() => {
     if (!listenRemoteOnly) {
@@ -492,6 +541,12 @@ export function useKaraokeLogic({
 
   // Helper to mark track switch start and schedule end
   const startTrackSwitch = useCallback(() => {
+    const state = useKaraokeStore.getState();
+    karaokeLog.debug("Started track-switch guard", {
+      currentSongId: state.currentSongId,
+      playbackRequested: state.playbackRequested,
+      isPlaying: state.isPlaying,
+    });
     isTrackSwitchingRef.current = true;
     if (trackSwitchTimeoutRef.current) {
       clearTimeout(trackSwitchTimeoutRef.current);
@@ -499,6 +554,7 @@ export function useKaraokeLogic({
     // Allow 2 seconds for YouTube to load before accepting play/pause events
     trackSwitchTimeoutRef.current = setTimeout(() => {
       isTrackSwitchingRef.current = false;
+      karaokeLog.debug("Ended track-switch guard");
     }, 2000);
   }, []);
 
@@ -521,6 +577,12 @@ export function useKaraokeLogic({
 
   // Wrapped handlers for fullscreen controls (with offline check)
   const handlePrevious = useCallback(() => {
+    karaokeLog.debug("Previous-track control pressed", {
+      currentTrackId: currentTrack?.id ?? null,
+      elapsedTime: useKaraokeStore.getState().elapsedTime,
+      isOffline,
+      listenRemoteOnly,
+    });
     if (isOffline) {
       showOfflineStatus();
     } else if (listenRemoteOnly) {
@@ -542,6 +604,7 @@ export function useKaraokeLogic({
     }
   }, [
     currentIndex,
+    currentTrack,
     isOffline,
     listenRemoteOnly,
     previousTrack,
@@ -556,6 +619,13 @@ export function useKaraokeLogic({
   const handlePlayPause = useCallback(() => {
     // Mark user interaction for autoplay guard
     userHasInteractedRef.current = true;
+    karaokeLog.debug("Playback toggle requested", {
+      currentTrackId: currentTrack?.id ?? null,
+      playbackRequested,
+      nextIntent: playbackRequested ? "pause" : "play",
+      isOffline,
+      listenRemoteOnly,
+    });
     if (isOffline) {
       showOfflineStatus();
     } else if (listenRemoteOnly) {
@@ -571,6 +641,7 @@ export function useKaraokeLogic({
     }
   }, [
     isOffline,
+    currentTrack,
     playbackRequested,
     listenRemoteOnly,
     sendRemotePlaybackCommand,
@@ -580,6 +651,11 @@ export function useKaraokeLogic({
   ]);
 
   const handleNext = useCallback(() => {
+    karaokeLog.debug("Next-track control pressed", {
+      currentTrackId: currentTrack?.id ?? null,
+      isOffline,
+      listenRemoteOnly,
+    });
     if (isOffline) {
       showOfflineStatus();
     } else if (listenRemoteOnly) {
@@ -594,6 +670,7 @@ export function useKaraokeLogic({
     }
   }, [
     isOffline,
+    currentTrack,
     listenRemoteOnly,
     nextTrack,
     sendRemotePlaybackCommand,
@@ -628,6 +705,13 @@ export function useKaraokeLogic({
 
     // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
     if (prevCurrentIndexRef.current !== currentIndex) {
+      karaokeLog.debug("Selected track changed", {
+        previousIndex: prevCurrentIndexRef.current,
+        currentIndex,
+        currentTrackId: tracks[currentIndex]?.id ?? null,
+        lyricOffset: tracks[currentIndex]?.lyricOffset ?? 0,
+        isFullScreen,
+      });
       isTrackSwitchingRef.current = true;
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
@@ -678,7 +762,15 @@ export function useKaraokeLogic({
 
   // Cleanup
   useEffect(() => {
-    if (!isWindowOpen) setIsPlaying(false);
+    if (!isWindowOpen) {
+      const state = useKaraokeStore.getState();
+      karaokeLog.debug("Window closed; stopping playback", {
+        currentTrackId: state.currentSongId,
+        playbackRequested: state.playbackRequested,
+        isPlaying: state.isPlaying,
+      });
+      setIsPlaying(false);
+    }
     return () => {
       if (statusTimeoutRef.current) {
         clearTimeout(statusTimeoutRef.current);
@@ -689,6 +781,10 @@ export function useKaraokeLogic({
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
       }
+      const state = useKaraokeStore.getState();
+      karaokeLog.debug("Cleaning up playback controller", {
+        currentTrackId: state.currentSongId,
+      });
       setIsPlaying(false);
     };
   }, [isWindowOpen, setIsPlaying]);
@@ -805,6 +901,12 @@ export function useKaraokeLogic({
 
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
+    karaokeLog.debug("Player reported track ended", {
+      trackId: currentTrack?.id ?? null,
+      loopCurrent,
+      isFullScreen,
+      listenRemoteOnly,
+    });
     if (listenRemoteOnly) return;
     if (loopCurrent) {
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
@@ -813,7 +915,14 @@ export function useKaraokeLogic({
     } else {
       nextTrack();
     }
-  }, [listenRemoteOnly, loopCurrent, nextTrack, isFullScreen, setIsPlaying]);
+  }, [
+    currentTrack,
+    isFullScreen,
+    listenRemoteOnly,
+    loopCurrent,
+    nextTrack,
+    setIsPlaying,
+  ]);
 
   const handleProgress = useCallback(
     (state: { playedSeconds: number }) => {
@@ -824,48 +933,95 @@ export function useKaraokeLogic({
   );
 
   const handlePlay = useCallback(() => {
-    if (listenRemoteOnly) return;
+    karaokeLog.debug("Player started playback", {
+      trackId: currentTrack?.id ?? null,
+      listenRemoteOnly,
+      wasTrackSwitching: isTrackSwitchingRef.current,
+    });
+    if (listenRemoteOnly) {
+      karaokeLog.debug("Ignored play event while following a remote session");
+      return;
+    }
     confirmPlayback();
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
+      karaokeLog.debug("Ignored play event during track switch");
       return;
     }
-    const currentTrack = tracks[currentIndex];
-    if (currentTrack) {
+    const analyticsTrack = tracks[currentIndex];
+    if (analyticsTrack) {
       trackAnalytics(MEDIA_ANALYTICS.SONG_PLAY, {
         appId: "karaoke",
-        trackId: currentTrack.id,
-        title: currentTrack.title,
-        artist: currentTrack.artist || "",
+        trackId: analyticsTrack.id,
+        title: analyticsTrack.title,
+        artist: analyticsTrack.artist || "",
       });
     }
-  }, [confirmPlayback, currentIndex, listenRemoteOnly, tracks]);
+  }, [
+    confirmPlayback,
+    currentIndex,
+    currentTrack,
+    listenRemoteOnly,
+    tracks,
+  ]);
 
   const handlePause = useCallback(() => {
-    if (listenRemoteOnly) return;
+    karaokeLog.debug("Player paused playback", {
+      trackId: currentTrack?.id ?? null,
+      listenRemoteOnly,
+      wasTrackSwitching: isTrackSwitchingRef.current,
+    });
+    if (listenRemoteOnly) {
+      karaokeLog.debug("Ignored pause event while following a remote session");
+      return;
+    }
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
+      karaokeLog.debug("Ignored pause event during track switch");
       return;
     }
     setIsPlaying(false);
-  }, [listenRemoteOnly, setIsPlaying]);
+  }, [currentTrack, listenRemoteOnly, setIsPlaying]);
 
   // Main player pause handler - ignore pause when switching to fullscreen or switching tracks
   const handleMainPlayerPause = useCallback(() => {
+    karaokeLog.debug("Main player paused playback", {
+      trackId: currentTrack?.id ?? null,
+      isFullScreen,
+      listenRemoteOnly,
+      wasTrackSwitching: isTrackSwitchingRef.current,
+    });
     if (listenRemoteOnly) return;
     // Don't set isPlaying to false if we're in fullscreen mode or switching tracks
     // (the pause was triggered by switching players, not user action)
     if (!isFullScreen && !isTrackSwitchingRef.current) {
       setIsPlaying(false);
     }
-  }, [isFullScreen, listenRemoteOnly, setIsPlaying]);
+  }, [currentTrack, isFullScreen, listenRemoteOnly, setIsPlaying]);
 
   // Handle player ready
-  const handleReady = useCallback(() => {}, []);
+  const handleReady = useCallback(() => {
+    karaokeLog.debug("Player ready", {
+      trackId: currentTrack?.id ?? null,
+      playbackRequested,
+      isFullScreen,
+    });
+  }, [currentTrack, isFullScreen, playbackRequested]);
 
   const handlePlaybackAttemptFailed = useCallback(() => {
+    karaokeLog.warn("Playback attempt failed", {
+      trackId: currentTrack?.id ?? null,
+      listenRemoteOnly,
+      playbackRequested,
+      elapsedTime: useKaraokeStore.getState().elapsedTime,
+    });
     if (!listenRemoteOnly) setIsPlaying(false);
-  }, [listenRemoteOnly, setIsPlaying]);
+  }, [
+    currentTrack,
+    listenRemoteOnly,
+    playbackRequested,
+    setIsPlaying,
+  ]);
 
   // Seek time (delta)
   const seekTime = useCallback(
@@ -1165,11 +1321,24 @@ export function useKaraokeLogic({
     if (!isListenSessionDj || !listenSession) return;
     const cmds = takeRemoteCommands();
     if (cmds.length === 0) return;
+    karaokeLog.debug("Received remote playback commands", {
+      commandCount: cmds.length,
+      commands: cmds.map((cmd) => ({
+        action: cmd.action,
+        trackId: cmd.trackId,
+        positionMs: cmd.positionMs,
+      })),
+    });
 
     const run = async () => {
       let afterSeekMs: number | undefined;
 
       for (const cmd of cmds) {
+        karaokeLog.debug("Applying remote playback command", {
+          action: cmd.action,
+          trackId: cmd.trackId,
+          positionMs: cmd.positionMs,
+        });
         switch (cmd.action) {
           case "play": {
             const pos = cmd.positionMs;
@@ -1233,6 +1402,11 @@ export function useKaraokeLogic({
           if (!r.ok) {
             toast.error("Could not sync after remote control", {
               description: r.error ?? undefined,
+            });
+          } else {
+            karaokeLog.debug("Remote playback commands synchronized", {
+              commandCount: cmds.length,
+              afterSeekMs,
             });
           }
         });

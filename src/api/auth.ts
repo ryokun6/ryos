@@ -1,11 +1,9 @@
 import { apiRequest, apiRequestRaw } from "@/api/core";
 import type {
-  CheckPasswordResponse,
   DeleteAccountResponse,
   EmailMutationResponse,
   EmailStatusResponse,
   LoginResponse,
-  RecoveryChannel,
   RecoveryRequestResponse,
   RegisterResponse,
   ResetPasswordResponse,
@@ -14,12 +12,10 @@ import type {
 } from "@/shared/contracts/auth";
 
 export type {
-  CheckPasswordResponse,
   DeleteAccountResponse,
   EmailMutationResponse,
   EmailStatusResponse,
   LoginResponse,
-  RecoveryChannel,
   RecoveryRequestResponse,
   RegisterResponse,
   ResetPasswordResponse,
@@ -84,13 +80,6 @@ export async function logoutUserSafe(): Promise<void> {
   }
 }
 
-export async function checkUserPassword(): Promise<CheckPasswordResponse> {
-  return apiRequest<CheckPasswordResponse>({
-    path: "/api/auth/password/check",
-    method: "GET",
-  });
-}
-
 export async function getAuthSession(): Promise<
   | { ok: true; data: SessionResponse }
   | { ok: false; status: number }
@@ -112,11 +101,8 @@ export async function getAuthSession(): Promise<
 export interface SetPasswordRequest {
   /** New password to store. */
   password: string;
-  /**
-   * Existing password. Required by the server when the user already has
-   * a password set; omitted only for first-time setup on legacy accounts.
-   */
-  currentPassword?: string;
+  /** Existing password. */
+  currentPassword: string;
 }
 
 export async function setUserPassword(
@@ -135,7 +121,6 @@ export async function setUserPassword(
 
 export async function requestRecovery(params: {
   identifier: string;
-  channel: RecoveryChannel;
 }): Promise<RecoveryRequestResponse> {
   return apiRequest<RecoveryRequestResponse, typeof params>({
     path: "/api/auth/recovery/request",
@@ -201,7 +186,7 @@ export async function removeRecoveryEmail(): Promise<{ success: boolean }> {
 export async function deleteAccount(params: {
   confirm: boolean;
   confirmUsername: string;
-  currentPassword?: string;
+  currentPassword: string;
 }): Promise<DeleteAccountResponse> {
   return apiRequest<DeleteAccountResponse, typeof params>({
     path: "/api/auth/account/delete",

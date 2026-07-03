@@ -335,14 +335,15 @@ Examples:
   }
 
   const hasApiKey = checkApiKey();
+  const exists = await changelogExists();
 
-  // Skip if changelog exists and no API key (use cached version)
-  if (!dryRun && !force && !hasApiKey) {
-    const exists = await changelogExists();
-    if (exists) {
-      console.log("ℹ️  Changelog already exists, skipping (no API key for regeneration)");
-      return;
-    }
+  // Never overwrite a curated changelog unless --force (generate:docs only renders HTML).
+  if (!dryRun && !force && exists) {
+    console.log("ℹ️  Changelog already exists, skipping (pass --force to regenerate from git history)");
+    return;
+  }
+
+  if (!dryRun && !hasApiKey) {
     console.error("❌ GOOGLE_GENERATIVE_AI_API_KEY required for initial changelog generation");
     process.exit(1);
   }

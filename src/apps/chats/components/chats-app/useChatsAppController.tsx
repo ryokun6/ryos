@@ -14,7 +14,6 @@ import {
 } from "@/types/chat";
 import { useRyoChat } from "../../hooks/useRyoChat";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
-import { toast } from "sonner";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
@@ -106,8 +105,6 @@ export function useChatsAppController({
     isVerifyingToken,
     verifyError,
     handleVerifyTokenSubmit,
-    hasPassword,
-    setPassword,
     logout,
     confirmLogout,
     isLogoutConfirmDialogOpen,
@@ -168,11 +165,6 @@ export function useChatsAppController({
     setIsAboutDialogOpen,
   } = useAppHelpAboutDialogs();
   const [scrollToBottomTrigger, setScrollToBottomTrigger] = useState(0);
-
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [isSettingPassword, setIsSettingPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const [prefilledUser, setPrefilledUser] = useState<string>("");
 
@@ -356,37 +348,6 @@ export function useChatsAppController({
       isSidebarVisible: sidebarVisibleBool,
       onToggleSidebar: toggleSidebarVisibility,
     });
-
-  const handleSetPassword = async (password: string) => {
-    setIsSettingPassword(true);
-    setPasswordError(null);
-
-    if (!password || password.length < 8) {
-      setPasswordError(t("apps.chats.dialogs.passwordMinLengthError"));
-      setIsSettingPassword(false);
-      return;
-    }
-
-    const result = await setPassword(password);
-
-    if (result.ok) {
-      toast.success(t("apps.chats.dialogs.passwordSetSuccess"), {
-        description: t("apps.chats.dialogs.passwordSetSuccessDescription"),
-      });
-      setIsPasswordDialogOpen(false);
-      setPasswordInput("");
-    } else {
-      setPasswordError(result.error || t("apps.chats.dialogs.passwordSetFailed"));
-    }
-
-    setIsSettingPassword(false);
-  };
-
-  const promptSetPassword = useCallback(() => {
-    setPasswordInput("");
-    setPasswordError(null);
-    setIsPasswordDialogOpen(true);
-  }, []);
 
   const handleSendMessage = useCallback(
     (targetUsername: string) => {
@@ -687,16 +648,6 @@ export function useChatsAppController({
     isLogoutConfirmDialogOpen,
     setIsLogoutConfirmDialogOpen,
     confirmLogout,
-    hasPassword,
-    promptSetPassword,
-    isPasswordDialogOpen,
-    setIsPasswordDialogOpen,
-    handleSetPassword,
-    passwordInput,
-    setPasswordInput,
-    isSettingPassword,
-    passwordError,
-    setPasswordError,
   };
 }
 

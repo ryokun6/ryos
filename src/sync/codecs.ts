@@ -22,7 +22,11 @@ import {
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import {
+  sanitizeRomanizationSettings,
+  useIpodStore,
+  type Track,
+} from "@/stores/useIpodStore";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
@@ -32,7 +36,21 @@ import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
-import { useBooksStore, type BookProgress } from "@/stores/useBooksStore";
+import {
+  BOOKS_FONT_SIZE_MAX,
+  BOOKS_FONT_SIZE_MIN,
+  BOOKS_GUTTER_MAX,
+  BOOKS_GUTTER_MIN,
+  BOOKS_SPEECH_RATE_MAX,
+  BOOKS_SPEECH_RATE_MIN,
+  clampBooksLineHeight,
+  isBooksCustomHexColor,
+  isBooksThemeOverride,
+  normalizeBooksCustomColor,
+  useBooksStore,
+  type BookProgress,
+  type BooksReaderSettings,
+} from "@/stores/useBooksStore";
 import {
   useCloudSyncStore,
   type CloudSyncDeletionBucket,
@@ -503,7 +521,10 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
       {
         field: "romanization",
         read: () => useIpodStore.getState().romanization,
-        write: (v) => useIpodStore.setState({ romanization: v as never }),
+        write: (v) =>
+          useIpodStore.setState({
+            romanization: sanitizeRomanizationSettings(v),
+          }),
       },
       {
         field: "lyricsTranslationLanguage",
@@ -679,6 +700,7 @@ const settingsCodec: SyncCodec = {
           state.theme !== prev.theme ||
           state.lcdFilterOn !== prev.lcdFilterOn
         ) {
+          if (!useIpodStore.persist.hasHydrated()) return;
           onChange();
         }
       }),
@@ -697,6 +719,9 @@ const settingsCodec: SyncCodec = {
       }),
     ];
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+  },
+  isReady() {
+    return useIpodStore.persist.hasHydrated();
   },
 };
 
@@ -940,6 +965,7 @@ const songsCodec: SyncCodec = {
         state.libraryState !== prev.libraryState ||
         state.lastKnownVersion !== prev.lastKnownVersion
       ) {
+        if (!useIpodStore.persist.hasHydrated()) return;
         // Track removals are corroborated by deletion markers so mass
         // local wipes (e.g. storage eviction) can't silently propagate.
         if (state.tracks !== prev.tracks) {
@@ -958,6 +984,9 @@ const songsCodec: SyncCodec = {
         onChange();
       }
     });
+  },
+  isReady() {
+    return useIpodStore.persist.hasHydrated();
   },
 };
 
@@ -1391,9 +1420,9 @@ const mapsCodec: SyncCodec = {
 //
 // Reading progress reconciles per book with `updatedAt`-aware last-writer-wins
 // on apply (a stale remote op never clobbers newer local progress), layered on
-// top of the engine's per-key timestamp LWW. Reader font/theme `settings` and
-// `shelfView` are intentionally NOT synced — they are device-local display
-// preferences.
+// top of the engine's per-key timestamp LWW. Reader preferences sync through
+// the separate `books-settings` namespace. `shelfView` and `openPath` remain
+// device-local (reopen this device's last reader/shelf session).
 //
 // Deleting a book: `useBooksLogic.deleteBook` calls `useBooksStore.removeBook`,
 // which drops the book's `progress` entry and prunes it from the order. On the
@@ -1514,6 +1543,218 @@ const bookshelfCodec: SyncCodec = {
 };
 
 // ---------------------------------------------------------------------------
+// Books settings codec
+//
+// Each reader preference gets its own key so unrelated changes on different
+// devices merge independently. This intentionally uses a namespace separate
+// from `bookshelf`: older clients collect that namespace without these keys
+// and would otherwise infer deletions when reading progress changes.
+// ---------------------------------------------------------------------------
+
+const BOOKS_SETTINGS_KEYS = {
+  fontId: "books-settings/fontId",
+  fontSizePct: "books-settings/fontSizePct",
+  columnMode: "books-settings/columnMode",
+  themeOverride: "books-settings/themeOverride",
+  customThemeBackground: "books-settings/customThemeBackground",
+  customThemeText: "books-settings/customThemeText",
+  customThemeTransparent: "books-settings/customThemeTransparent",
+  chineseScript: "books-settings/chineseScript",
+  textLayout: "books-settings/textLayout",
+  lineHeight: "books-settings/lineHeight",
+  gutterPx: "books-settings/gutterPx",
+  speechRate: "books-settings/speechRate",
+} as const satisfies Record<keyof BooksReaderSettings, string>;
+
+function collectBooksSettings(
+  keys?: ReadonlySet<string>
+): Map<string, unknown> {
+  const docs = new Map<string, unknown>();
+  const settings = useBooksStore.getState().settings;
+  const add = (key: string, value: unknown) => {
+    if (!keys || keys.has(key)) docs.set(key, value);
+  };
+
+  add(BOOKS_SETTINGS_KEYS.fontId, settings.fontId);
+  add(BOOKS_SETTINGS_KEYS.fontSizePct, settings.fontSizePct);
+  add(BOOKS_SETTINGS_KEYS.columnMode, settings.columnMode);
+  add(BOOKS_SETTINGS_KEYS.themeOverride, settings.themeOverride);
+  add(BOOKS_SETTINGS_KEYS.customThemeBackground, settings.customThemeBackground);
+  add(BOOKS_SETTINGS_KEYS.customThemeText, settings.customThemeText);
+  add(BOOKS_SETTINGS_KEYS.customThemeTransparent, settings.customThemeTransparent);
+  add(BOOKS_SETTINGS_KEYS.chineseScript, settings.chineseScript);
+  add(BOOKS_SETTINGS_KEYS.textLayout, settings.textLayout);
+  add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
+  add(BOOKS_SETTINGS_KEYS.gutterPx, settings.gutterPx);
+  add(BOOKS_SETTINGS_KEYS.speechRate, settings.speechRate);
+  return docs;
+}
+
+function applyBooksSettings(ops: AppliedSyncOp[]): void {
+  let updates: Partial<BooksReaderSettings> = {};
+
+  for (const op of ops) {
+    if (op.del) continue;
+
+    switch (op.k) {
+      case BOOKS_SETTINGS_KEYS.fontId:
+        if (typeof op.v === "string" && op.v.length > 0) {
+          updates = { ...updates, fontId: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.fontSizePct:
+        if (
+          typeof op.v === "number" &&
+          Number.isFinite(op.v) &&
+          op.v >= BOOKS_FONT_SIZE_MIN &&
+          op.v <= BOOKS_FONT_SIZE_MAX
+        ) {
+          updates = { ...updates, fontSizePct: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.columnMode:
+        if (op.v === "auto" || op.v === "single" || op.v === "double") {
+          updates = { ...updates, columnMode: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.themeOverride:
+        if (isBooksThemeOverride(op.v)) {
+          updates = { ...updates, themeOverride: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.customThemeBackground:
+        if (isBooksCustomHexColor(op.v)) {
+          updates = {
+            ...updates,
+            customThemeBackground: normalizeBooksCustomColor(op.v, "#fdfdfb"),
+          };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.customThemeText:
+        if (isBooksCustomHexColor(op.v)) {
+          updates = {
+            ...updates,
+            customThemeText: normalizeBooksCustomColor(op.v, "#1c1c1c"),
+          };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.customThemeTransparent:
+        if (typeof op.v === "boolean") {
+          updates = { ...updates, customThemeTransparent: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.chineseScript:
+        if (
+          op.v === "original" ||
+          op.v === "simplified" ||
+          op.v === "traditional"
+        ) {
+          updates = { ...updates, chineseScript: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.textLayout:
+        if (op.v === "book" || op.v === "vertical") {
+          updates = { ...updates, textLayout: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.lineHeight:
+        // Clamp instead of reject: devices on older app versions may still
+        // sync values below the raised 1.5 floor.
+        if (typeof op.v === "number" && Number.isFinite(op.v) && op.v > 0) {
+          updates = { ...updates, lineHeight: clampBooksLineHeight(op.v) };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.gutterPx:
+        if (
+          typeof op.v === "number" &&
+          Number.isFinite(op.v) &&
+          op.v >= BOOKS_GUTTER_MIN &&
+          op.v <= BOOKS_GUTTER_MAX
+        ) {
+          updates = { ...updates, gutterPx: op.v };
+        }
+        break;
+      case BOOKS_SETTINGS_KEYS.speechRate:
+        if (
+          typeof op.v === "number" &&
+          Number.isFinite(op.v) &&
+          op.v >= BOOKS_SPEECH_RATE_MIN &&
+          op.v <= BOOKS_SPEECH_RATE_MAX
+        ) {
+          updates = { ...updates, speechRate: op.v };
+        }
+        break;
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    useBooksStore.getState().updateSettings(updates);
+  }
+}
+
+const booksSettingsCodec: SyncCodec = {
+  namespace: "books-settings",
+  collect(_ctx, keys) {
+    return collectBooksSettings(keys);
+  },
+  apply(ops) {
+    applyBooksSettings(ops);
+  },
+  subscribe(onChange) {
+    return useBooksStore.subscribe((state, prev) => {
+      const keys: string[] = [];
+      if (state.settings.fontId !== prev.settings.fontId) {
+        keys.push(BOOKS_SETTINGS_KEYS.fontId);
+      }
+      if (state.settings.fontSizePct !== prev.settings.fontSizePct) {
+        keys.push(BOOKS_SETTINGS_KEYS.fontSizePct);
+      }
+      if (state.settings.columnMode !== prev.settings.columnMode) {
+        keys.push(BOOKS_SETTINGS_KEYS.columnMode);
+      }
+      if (state.settings.themeOverride !== prev.settings.themeOverride) {
+        keys.push(BOOKS_SETTINGS_KEYS.themeOverride);
+      }
+      if (
+        state.settings.customThemeBackground !==
+        prev.settings.customThemeBackground
+      ) {
+        keys.push(BOOKS_SETTINGS_KEYS.customThemeBackground);
+      }
+      if (state.settings.customThemeText !== prev.settings.customThemeText) {
+        keys.push(BOOKS_SETTINGS_KEYS.customThemeText);
+      }
+      if (
+        state.settings.customThemeTransparent !==
+        prev.settings.customThemeTransparent
+      ) {
+        keys.push(BOOKS_SETTINGS_KEYS.customThemeTransparent);
+      }
+      if (state.settings.chineseScript !== prev.settings.chineseScript) {
+        keys.push(BOOKS_SETTINGS_KEYS.chineseScript);
+      }
+      if (state.settings.textLayout !== prev.settings.textLayout) {
+        keys.push(BOOKS_SETTINGS_KEYS.textLayout);
+      }
+      if (state.settings.lineHeight !== prev.settings.lineHeight) {
+        keys.push(BOOKS_SETTINGS_KEYS.lineHeight);
+      }
+      if (state.settings.gutterPx !== prev.settings.gutterPx) {
+        keys.push(BOOKS_SETTINGS_KEYS.gutterPx);
+      }
+      if (state.settings.speechRate !== prev.settings.speechRate) {
+        keys.push(BOOKS_SETTINGS_KEYS.speechRate);
+      }
+      if (keys.length === 0 || !useBooksStore.persist.hasHydrated()) return;
+      onChange(keys);
+    });
+  },
+  isReady() {
+    return useBooksStore.persist.hasHydrated();
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Blob codecs (images / trash / applets / wallpapers)
 // ---------------------------------------------------------------------------
 
@@ -1621,6 +1862,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   images: imagesCodec,
   books: booksCodec,
   bookshelf: bookshelfCodec,
+  "books-settings": booksSettingsCodec,
   trash: trashCodec,
   applets: appletsCodec,
   wallpapers: wallpapersCodec,
@@ -1643,6 +1885,7 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "settings",
   "files",
   "bookshelf",
+  "books-settings",
   "songs",
   "videos",
   "tv",

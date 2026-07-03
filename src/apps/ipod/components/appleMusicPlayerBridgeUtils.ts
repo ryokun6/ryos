@@ -7,6 +7,18 @@
 import { isAppleMusicCollectionTrack, type Track } from "@/stores/useIpodStore";
 
 /**
+ * `onMusicKitReady` immediately replays an already-configured singleton to new
+ * subscribers. A bridge that captured that same singleton during render must
+ * not treat the replay as a second readiness transition and restart its queue.
+ */
+export function isNewMusicKitInstance<T>(
+  currentInstance: T | null,
+  readyInstance: T
+): boolean {
+  return currentInstance !== readyInstance;
+}
+
+/**
  * Decide whether a `playbackStateDidChange` event should fan out to the
  * parent's `onEnded` callback (which triggers our own next-track handler).
  *
@@ -149,6 +161,30 @@ export function isMusicKitPlaying(
   playbackState: number | undefined
 ): boolean {
   return playbackState === MUSICKIT_PLAYBACK_STATE_PLAYING;
+}
+
+/**
+ * Queue loading suppresses MusicKit state fan-out so transient paused states
+ * cannot cancel a requested play. If the provider reaches `playing` before
+ * the queue promise settles, that event is suppressed too. Reconcile only the
+ * active, successfully queued track after the load finishes.
+ */
+export function shouldConfirmPlaybackAfterQueueLoad({
+  loadIsStale,
+  queuedTrackId,
+  expectedTrackId,
+  playbackState,
+}: {
+  loadIsStale: boolean;
+  queuedTrackId: string | null;
+  expectedTrackId: string;
+  playbackState: number | undefined;
+}): boolean {
+  return (
+    !loadIsStale &&
+    queuedTrackId === expectedTrackId &&
+    isMusicKitPlaying(playbackState)
+  );
 }
 
 /**

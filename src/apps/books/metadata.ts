@@ -21,13 +21,13 @@ export const helpItems = [
     icon: "🔖",
     title: "Reading Progress",
     description:
-      "Your place is saved automatically and restored the next time you open the book.",
+      "Your place is saved automatically. Reopening Books resumes the book and page you left on, or the shelf if you closed it.",
   },
   {
     icon: "🅰️",
     title: "Fonts & Layout",
     description:
-      "Pick a reading font (including EB Garamond), text size, and single or double columns from the View menu.",
+      "Pick a reading font (including Garamond), text size, and single or double columns from the View menu.",
   },
   {
     icon: "🌙",

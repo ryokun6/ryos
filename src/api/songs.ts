@@ -1,4 +1,8 @@
 import { apiRequest, apiRequestRaw, type ApiRequestOptions } from "@/api/core";
+import { createClientLogger } from "@/utils/logger";
+import type { ChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
+
+const lyricsApiLog = createClientLogger("LyricsApi");
 
 /** Auth context for cookie-based auth (credentials sent automatically via credentials: "include") */
 export interface SongsAuthContext {
@@ -71,6 +75,7 @@ export interface FetchSongLyricsParams {
   title?: string;
   artist?: string;
   translateTo?: string;
+  lyricsLanguage?: ChineseLyricsLanguage;
   includeFurigana?: boolean;
   includeSoramimi?: boolean;
   soramimiTargetLanguage?: "zh-TW" | "en";
@@ -140,12 +145,19 @@ export async function fetchSongsVersion(
 
 export async function getSongById<TSong = Record<string, unknown>>(
   songId: string,
-  options: { include?: string; signal?: AbortSignal } = {}
+  options: {
+    include?: string;
+    lyricsLanguage?: ChineseLyricsLanguage;
+    signal?: AbortSignal;
+  } = {}
 ): Promise<TSong> {
   return apiRequest<TSong>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "GET",
-    query: { include: options.include || "metadata" },
+    query: {
+      include: options.include || "metadata",
+      lyricsLanguage: options.lyricsLanguage,
+    },
     signal: options.signal,
   });
 }
@@ -240,18 +252,39 @@ export async function fetchSongLyrics(
   } = params;
 
   const key = lyricsCacheKey(songId, body);
+  const requestContext = {
+    songId,
+    force: Boolean(body.force),
+    hasTitle: Boolean(body.title),
+    hasArtist: Boolean(body.artist),
+    hasLyricsSource: Boolean(body.lyricsSource),
+    translateTo: body.translateTo,
+    lyricsLanguage: body.lyricsLanguage,
+    includeFurigana: Boolean(body.includeFurigana),
+    includeSoramimi: Boolean(body.includeSoramimi),
+    soramimiTargetLanguage: body.soramimiTargetLanguage,
+    returnMetadata: Boolean(body.returnMetadata),
+  };
 
   if (body.force) {
     // Forced refetch (e.g. changing lyrics source): drop every cached
     // variant for this song so subsequent reads see the new content.
     invalidateLyricsCacheForSong(songId);
+    lyricsApiLog.debug("Cleared cached lyrics responses for forced fetch", {
+      songId,
+    });
   } else {
     const cached = lyricsResponseCache.get(key);
     if (cached && Date.now() - cached.at < LYRICS_CACHE_TTL_MS) {
+      lyricsApiLog.debug("Using lyrics response from memory", {
+        ...requestContext,
+        ageMs: Date.now() - cached.at,
+      });
       return cached.data;
     }
     const inFlight = lyricsInFlight.get(key);
     if (inFlight) {
+      lyricsApiLog.debug("Reusing active lyrics request", requestContext);
       // Share the request, but honor this caller's own abort signal without
       // cancelling the request for other awaiters.
       return raceWithSignal(inFlight, signal);
@@ -261,6 +294,7 @@ export async function fetchSongLyrics(
   // The shared request deliberately runs without the caller's signal —
   // aborting one awaiter must not cancel it for the others. Callers race
   // against their own signal instead.
+  lyricsApiLog.debug("Requesting lyrics from the songs API", requestContext);
   const requestPromise = apiRequest<FetchSongLyricsResponse>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "POST",
@@ -272,6 +306,15 @@ export async function fetchSongLyrics(
     retry,
   })
     .then((data) => {
+      lyricsApiLog.debug("Songs API returned lyrics", {
+        ...requestContext,
+        cached: data.cached ?? false,
+        lineCount: data.lyrics?.parsedLines?.length ?? 0,
+        hasMetadata: Boolean(data.metadata),
+        hasTranslation: Boolean(data.translation),
+        hasFurigana: Boolean(data.furigana),
+        hasSoramimi: Boolean(data.soramimi),
+      });
       lyricsResponseCache.set(key, { at: Date.now(), data });
       // Simple LRU-ish cap: drop the oldest insertion order entries.
       while (lyricsResponseCache.size > LYRICS_CACHE_MAX_ENTRIES) {
@@ -280,6 +323,13 @@ export async function fetchSongLyrics(
         lyricsResponseCache.delete(oldest);
       }
       return data;
+    })
+    .catch((error) => {
+      lyricsApiLog.debug("Songs API lyrics request failed", {
+        error,
+        ...requestContext,
+      });
+      throw error;
     })
     .finally(() => {
       lyricsInFlight.delete(key);

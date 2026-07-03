@@ -36,11 +36,14 @@ For each component:
 apps.[appName].menu.*        # Menu labels
 apps.[appName].dialogs.*     # Dialog titles/descriptions
 apps.[appName].status.*      # Status messages
+apps.[appName].toasts.*      # Toast titles/descriptions
+apps.[appName].empty.*       # Empty-state titles/hints
 apps.[appName].ariaLabels.*  # Accessibility labels
 apps.[appName].help.*        # Help items (auto-translated)
 apps.[appName].speech.*      # Spoken feedback / speech labels
 apps.[appName].conversion.*  # Unit conversion labels
 apps.[appName].angle.*       # Angle-mode labels
+common.auth.*                # Shared login/signup/recovery dialog labels
 ```
 
 ### Common Patterns
@@ -83,7 +86,7 @@ Do not rely on `defaultValue` as the only copy of a new key. `t("some.key", { de
 bun run i18n:sync:mark-todo
 ```
 
-Adds missing keys to all 10 language files, marked with `[TODO]`.
+Adds missing keys to all 11 language files, marked with `[TODO]`.
 
 ## Step 5: Machine Translate
 
@@ -101,7 +104,7 @@ bun run i18n:audit
 bun run i18n:find-untranslated
 ```
 
-Use `bun run i18n:audit:fix` only for terminology drift the script can safely repair, then rerun `bun run i18n:audit`.
+Use `bun run i18n:audit:fix` only for terminology drift the script can safely repair, then rerun `bun run i18n:audit`. When audit reports glossary mismatches that are not auto-fixable, edit the affected locale JSON values by hand and rerun the audit.
 
 ## Component Guidelines
 
@@ -109,8 +112,10 @@ Use `bun run i18n:audit:fix` only for terminology drift the script can safely re
 |-----------|-------------------|
 | Menu bars | All labels, items, submenus |
 | Dialogs | Titles, descriptions, button labels |
-| Status | `showStatus()` calls, toasts |
+| Status | `showStatus()` calls and inline state labels |
+| Toasts / empty states | Sonner toast copy, empty-state titles, empty-state hints |
 | Help items | Auto-translated via `useTranslatedHelpItems` |
+| Shared auth dialogs | `common.auth.*`, for login/signup/password recovery copy |
 
 ## Notes
 
@@ -119,3 +124,4 @@ Use `bun run i18n:audit:fix` only for terminology drift the script can safely re
 - Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps with longer localized help rows can export their key list (for example `src/apps/maps/helpKeys.ts`, `src/apps/calculator/helpKeys.ts`, or `src/apps/internet-explorer/helpKeys.ts`) and spread it into `APP_HELP_I18N_KEYS`
 - `tests/test-help-i18n-alignment.test.ts` covers every registered app; update it only if the global help-key contract changes
 - Include `t` in dependency arrays when used in `useMemo`/`useCallback`
+- If Apple terminology changes upstream, refresh the glossary source with `bun run i18n:apple-glossary` before auditing locale copy

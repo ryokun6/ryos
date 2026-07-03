@@ -16,6 +16,8 @@ import {
 import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
 import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
+import { useTranslation } from "react-i18next";
+import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 
 export interface NowPlayingLyrics {
   source: "ipod" | "karaoke" | null;
@@ -46,6 +48,7 @@ export interface NowPlayingLyrics {
  * Karaoke windows are open.
  */
 export function useNowPlayingLyrics(): NowPlayingLyrics {
+  const { i18n } = useTranslation();
   // iPod playback state.
   const ipodIsPlaying = useIpodStore((s) => s.isPlaying);
   const ipodLibrarySource = useIpodStore((s) => s.librarySource);
@@ -147,6 +150,10 @@ export function useNowPlayingLyrics(): NowPlayingLyrics {
   const effectiveTranslationLanguage = getEffectiveTranslationLanguage(
     lyricsTranslationLanguage
   );
+  const effectiveChineseLyricsLanguage = resolveChineseLyricsLanguage(
+    romanization.chineseLyricsLanguage,
+    i18n.resolvedLanguage ?? i18n.language
+  );
 
   const selectedMatchForLyrics = useMemo(() => {
     const src = track?.lyricsSource;
@@ -166,6 +173,7 @@ export function useNowPlayingLyrics(): NowPlayingLyrics {
     artist: track?.artist ?? "",
     currentTime,
     translateTo: effectiveTranslationLanguage,
+    lyricsLanguage: effectiveChineseLyricsLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true,
     includeSoramimi: true,

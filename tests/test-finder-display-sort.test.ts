@@ -85,4 +85,10 @@ describe("finder localized display sorting", () => {
     expect(getTranslatedFolderName("/Applications")).toBe("アプリケーション");
     expect(getTranslatedFolderName("/System")).toBe("システム");
   });
+
+  test("loads the Simplified Chinese catalog", async () => {
+    await applyLanguage("zh-CN");
+
+    expect(getTranslatedFolderName("/Applications")).toBe("应用程序");
+  });
 });

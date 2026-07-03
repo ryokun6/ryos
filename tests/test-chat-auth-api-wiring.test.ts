@@ -9,7 +9,6 @@ describe("chat auth API wiring", () => {
   test("routes auth HTTP calls through src/api/auth", () => {
     expect(storeSource).toContain("from \"@/api/auth\"");
     for (const symbol of [
-      "checkUserPassword",
       "getAuthSession",
       "logoutUserSafe",
       "registerUser",
@@ -31,13 +30,13 @@ describe("chat auth API wiring", () => {
     expect(storeSource).not.toContain("legacyToken");
   });
 
-  test("auth API exports session and password helpers", () => {
+  test("auth API exports session helper and omits password check helper", () => {
     for (const symbol of [
-      "checkUserPassword",
       "getAuthSession",
       "logoutUserSafe",
     ] as const) {
       expect(typeof authApi[symbol]).toBe("function");
     }
+    expect("checkUserPassword" in authApi).toBe(false);
   });
 });

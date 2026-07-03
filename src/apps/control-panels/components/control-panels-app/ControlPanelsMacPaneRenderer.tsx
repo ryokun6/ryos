@@ -51,6 +51,8 @@ export type ControlPanelsMacPaneRendererProps = {
   handleUISoundsChange: (enabled: boolean) => void;
   speechEnabled: boolean;
   handleSpeechChange: (enabled: boolean) => void;
+  browserTtsVoiceURI: string | null;
+  handleBrowserTtsVoiceChange: (voiceURI: string | null) => void;
   terminalSoundsEnabled: boolean;
   setTerminalSoundsEnabled: (enabled: boolean) => void;
   synthPreset: string;
@@ -119,7 +121,6 @@ export type ControlPanelsMacPaneRendererProps = {
   debugMode: boolean;
   isAdmin: boolean;
   promptVerifyToken: () => void;
-  hasPassword: boolean | null;
   setPasswordInput: (value: string) => void;
   setPasswordError: (error: string | null) => void;
   setIsPasswordDialogOpen: (open: boolean) => void;
@@ -205,7 +206,6 @@ export function ControlPanelsMacPaneRenderer(
           realtimeStatus={props.realtimeStatus}
           accountJoinedAt={props.accountJoinedAt}
           locale={props.currentLanguage}
-          hasPassword={props.hasPassword}
           promptSetUsername={props.promptSetUsername}
           promptLogin={props.promptLogin}
           logout={props.logout}
@@ -224,6 +224,8 @@ export function ControlPanelsMacPaneRenderer(
           handleUISoundsChange={props.handleUISoundsChange}
           speechEnabled={props.speechEnabled}
           handleSpeechChange={props.handleSpeechChange}
+          browserTtsVoiceURI={props.browserTtsVoiceURI}
+          handleBrowserTtsVoiceChange={props.handleBrowserTtsVoiceChange}
           terminalSoundsEnabled={props.terminalSoundsEnabled}
           setTerminalSoundsEnabled={props.setTerminalSoundsEnabled}
           synthPreset={props.synthPreset}
@@ -332,7 +334,6 @@ export function ControlPanelsMacPaneRenderer(
           recoveryEmailStatus={props.recoveryEmailStatus}
           isEmailStatusLoading={props.isEmailStatusLoading}
           refreshRecoveryEmailStatus={props.refreshRecoveryEmailStatus}
-          hasPassword={props.hasPassword}
           logout={props.logout}
           handleLogoutAllDevices={props.handleLogoutAllDevices}
           isLoggingOutAllDevices={props.isLoggingOutAllDevices}

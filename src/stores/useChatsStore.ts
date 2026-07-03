@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
-import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import {
   type ChatRoom,
   type ChatMessage,
@@ -15,7 +15,6 @@ import { ApiRequestError } from "@/api/core";
 import { USERNAME_REGEX, PASSWORD_MIN_LENGTH } from "@/shared/validation";
 import { normalizeChatTimestamp } from "@/shared/contracts/chat";
 import {
-  checkUserPassword,
   deleteAccount as deleteAccountApi,
   getAuthSession,
   logoutUserSafe,
@@ -202,7 +201,6 @@ function forceLogoutOnUnauthorized() {
   useChatsStore.setState({
     username: null,
     isAuthenticated: false,
-    hasPassword: null,
     currentRoomId: null,
   });
 }
@@ -225,7 +223,6 @@ export interface ChatsStoreState {
   // Room State
   username: string | null;
   isAuthenticated: boolean;
-  hasPassword: boolean | null; // Whether user has password set (null = unknown/not checked)
   rooms: ChatRoom[];
   currentRoomId: string | null; // ID of the currently selected room, null for AI chat (@ryo)
   roomMessages: Record<string, ChatMessage[]>; // roomId -> messages map
@@ -243,11 +240,9 @@ export interface ChatsStoreState {
   setAiMessages: (messages: AIChatMessage[]) => void;
   setUsername: (username: string | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
-  setHasPassword: (hasPassword: boolean | null) => void; // Set password status
-  checkHasPassword: () => Promise<{ ok: boolean; error?: string }>; // Check if user has password
   setPassword: (
     password: string,
-    currentPassword?: string
+    currentPassword: string
   ) => Promise<{ ok: boolean; error?: string }>; // Set or change password for user
   setRooms: (rooms: ChatRoom[]) => void;
   setCurrentRoomId: (roomId: string | null) => void;
@@ -297,7 +292,7 @@ export interface ChatsStoreState {
   logout: () => Promise<void>; // Logout and clear all user data
   deleteAccount: (params: {
     confirmUsername: string;
-    currentPassword?: string;
+    currentPassword: string;
   }) => Promise<{ ok: boolean; error?: string }>; // Permanently delete account
 }
 
@@ -321,8 +316,6 @@ const getInitialState = (): Omit<
   | "setAiMessages"
   | "setUsername"
   | "setAuthenticated"
-  | "setHasPassword"
-  | "checkHasPassword"
   | "setPassword"
   | "setRooms"
   | "setCurrentRoomId"
@@ -354,7 +347,6 @@ const getInitialState = (): Omit<
     aiMessages: [getInitialAiMessage()],
     username: recoveredUsername,
     isAuthenticated: false,
-    hasPassword: null,
     rooms: [],
     currentRoomId: null,
     roomMessages: {},
@@ -407,12 +399,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
           }
 
-          if (username) {
-            setTimeout(() => {
-              get().checkHasPassword();
-            }, 100);
-          } else {
-            set({ hasPassword: null });
+          if (!username) {
+            set({ isAuthenticated: false });
           }
         },
         setAuthenticated: (authenticated) => {
@@ -420,33 +408,6 @@ export const useChatsStore = create<ChatsStoreState>()(
             resetRoomsFetchCache();
           }
           set({ isAuthenticated: authenticated });
-        },
-        setHasPassword: (hasPassword) => {
-          set({ hasPassword });
-        },
-        checkHasPassword: async () => {
-          const currentUsername = get().username;
-
-          if (!currentUsername) {
-            set({ hasPassword: null });
-            return { ok: false, error: "Authentication required" };
-          }
-
-          try {
-            const data = await checkUserPassword();
-            set({ hasPassword: data.hasPassword });
-            return { ok: true };
-          } catch (error) {
-            chatsStoreLog.error(
-              "Error checking password status:",
-              error
-            );
-            set({ hasPassword: null });
-            return {
-              ok: false,
-              error: "Network error while checking password",
-            };
-          }
         },
         setPassword: async (password, currentPassword) => {
           const currentUsername = get().username;
@@ -456,17 +417,12 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const payload: { password: string; currentPassword?: string } = {
+            const payload = {
               password,
+              currentPassword,
             };
-            if (typeof currentPassword === "string" && currentPassword.length > 0) {
-              payload.currentPassword = currentPassword;
-            }
 
             await setUserPassword(payload);
-
-            // Update local state to reflect password has been set
-            set({ hasPassword: true });
             return { ok: true };
           } catch (error) {
             chatsStoreLog.error("Error setting password:", error);
@@ -745,7 +701,6 @@ export const useChatsStore = create<ChatsStoreState>()(
             aiMessages: [getInitialAiMessage()],
             username: null,
             isAuthenticated: false,
-            hasPassword: null,
             currentRoomId: null,
             rooms: [],
             roomMessages: {},
@@ -773,7 +728,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             await deleteAccountApi({
               confirm: true,
               confirmUsername,
-              ...(currentPassword ? { currentPassword } : {}),
+              currentPassword,
             });
           } catch (error) {
             chatsStoreLog.error("Error deleting account:", error);
@@ -797,7 +752,6 @@ export const useChatsStore = create<ChatsStoreState>()(
             aiMessages: [getInitialAiMessage()],
             username: null,
             isAuthenticated: false,
-            hasPassword: null,
             currentRoomId: null,
             rooms: [],
             roomMessages: {},
@@ -1169,10 +1123,6 @@ export const useChatsStore = create<ChatsStoreState>()(
             if (data.user) {
               set({ username: data.user.username, isAuthenticated: true });
 
-              setTimeout(() => {
-                get().checkHasPassword();
-              }, 100);
-
               track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
 
               return { ok: true };
@@ -1212,14 +1162,14 @@ export const useChatsStore = create<ChatsStoreState>()(
     {
       name: STORE_NAME,
       version: STORE_VERSION,
-      // Write-behind storage: chat history (aiMessages + capped roomMessages)
-      // used to be JSON.stringify'd and written synchronously on every
-      // appended message. Serialization now happens once per quiet window.
-      storage: createDebouncedPersistStorage(),
+      // AI tool parts can inline multi-megabyte document/applet content and
+      // overflow localStorage's small per-origin quota. IndexedDB preserves the
+      // full conversation and transparently migrates the legacy localStorage
+      // slice on first hydration.
+      storage: createIndexedDBPersistStorage(),
       partialize: (state) => ({
         aiMessages: state.aiMessages,
         username: state.username,
-        hasPassword: state.hasPassword,
         currentRoomId: state.currentRoomId,
         isSidebarVisible: state.isSidebarVisible,
         isChannelsOpen: state.isChannelsOpen,
@@ -1259,10 +1209,8 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             ensureUsernameRecovery(state.username);
 
-            // Restore session from the httpOnly cookie.
-            if (state.username) {
-              restoreSessionFromCookie(state.username);
-            }
+            // Reconcile local auth state with the httpOnly cookie (restore or clear).
+            reconcileSessionFromCookie(state.username);
           }
         };
       },
@@ -1273,14 +1221,15 @@ export const useChatsStore = create<ChatsStoreState>()(
 /**
  * Verify the current session with the server.
  *
- * The httpOnly cookie authenticates the request automatically.
+ * The httpOnly cookie authenticates the request automatically. Also clears
+ * stale cookies when local state is logged out but the browser still has one.
  */
-async function restoreSessionFromCookie(expectedUsername: string) {
+async function reconcileSessionFromCookie(expectedUsername: string | null) {
   try {
     const session = await getAuthSession();
 
     if (!session.ok) {
-      debug("Session restore failed:", session.status);
+      debug("Session reconcile failed:", session.status);
       if (session.status === 401 || session.status === 403) {
         forceLogoutOnUnauthorized();
       }
@@ -1295,18 +1244,24 @@ async function restoreSessionFromCookie(expectedUsername: string) {
       });
       const store = useChatsStore.getState();
 
-      if (store.username === expectedUsername) {
+      if (
+        expectedUsername === null ||
+        store.username === expectedUsername ||
+        store.username === data.username
+      ) {
+        if (store.username !== data.username) {
+          store.setUsername(data.username);
+        }
         store.setAuthenticated(true);
-        store.checkHasPassword();
       }
-    } else {
+    } else if (expectedUsername) {
       debug("No valid session — logging out.");
       forceLogoutOnUnauthorized();
     }
   } catch (err) {
     // Network error — keep state, don't force-logout.
     // The user may come back online and the cookie will still be valid.
-    chatsStoreLog.warn("Session restore request failed:", err);
+    chatsStoreLog.warn("Session reconcile request failed:", err);
   }
 }
 

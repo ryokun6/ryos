@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
 } from "react";
 import {
   ArrowDown,
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { OS_NATIVE_CHROME_SKIP_CLASS } from "@/lib/themeChrome";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -39,9 +41,17 @@ import {
   type ConsoleLogEntry,
   type ConsoleLogLevel,
 } from "@/utils/consoleCapture";
+import {
+  classifyNetworkStatus,
+  clearNetworkCapture,
+  formatNetworkEntriesForCopy,
+  getNetworkCaptureSnapshot,
+  subscribeNetworkCapture,
+} from "@/utils/networkCapture";
 import { osCardClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
 import { DebugLiveDashboard } from "./DebugLiveDashboard";
+import { DebugNetworkPanel } from "./DebugNetworkPanel";
 import { getRestoredScrollTop } from "./debugLogVirtualization";
 
 const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
@@ -58,7 +68,27 @@ const STICK_TO_BOTTOM_THRESHOLD = 24;
 const LOGGER_TAG_RE = /^\[([^\]]+)\]/;
 const ALL_LOGGERS_FILTER = "__all__";
 const OTHER_LOGGER_FILTER = "__other__";
-type DebugPanelTab = "logs" | "live";
+const ALL_NETWORK_FILTER = "all";
+const ALERT_FILTER_VALUES = ["error", "warn"] as const;
+type AlertFilterValue = (typeof ALERT_FILTER_VALUES)[number];
+type QuickFilterValue = "all" | AlertFilterValue;
+const NETWORK_FILTER_VALUES = [
+  ALL_NETWORK_FILTER,
+  "error",
+  "warn",
+  "ok",
+  "pending",
+] as const;
+type NetworkFilter = (typeof NETWORK_FILTER_VALUES)[number];
+type DebugPanelTab = "logs" | "live" | "network";
+
+const quickFilterPillClassName = cn(
+  "flex h-5 items-center gap-1 rounded-full border px-1.5 font-os-ui text-[10px] leading-none",
+  "border-[color:var(--os-color-separator)] bg-black/5 text-os-text-secondary hover:bg-black/10",
+  "os-mac-aqua-dark:bg-white/5 os-mac-aqua-dark:hover:bg-white/10",
+  "data-[state=on]:border-transparent data-[state=on]:bg-os-selection-bg data-[state=on]:text-os-selection-text",
+  "data-[state=on]:[text-shadow:var(--os-color-selection-text-shadow)]"
+);
 
 function extractLoggerTag(text: string): string | null {
   const match = text.match(LOGGER_TAG_RE);
@@ -97,6 +127,41 @@ function LoggerFilterMenuLabel({
   );
 }
 
+function QuickFilterPills({
+  value,
+  counts,
+  labels,
+  onValueChange,
+}: {
+  value: QuickFilterValue | null;
+  counts: Record<AlertFilterValue, number>;
+  labels: Record<AlertFilterValue, string>;
+  onValueChange: (value: QuickFilterValue) => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5">
+      {ALERT_FILTER_VALUES.map((filterValue) => {
+        const selected = value === filterValue;
+        return (
+          <button
+            key={filterValue}
+            type="button"
+            aria-pressed={selected}
+            data-state={selected ? "on" : "off"}
+            onClick={() => onValueChange(selected ? "all" : filterValue)}
+            className={quickFilterPillClassName}
+          >
+            <span>{labels[filterValue]}</span>
+            <span className="tabular-nums opacity-60">
+              {counts[filterValue]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function formatTime(timestamp: number): string {
   const d = new Date(timestamp);
   const pad = (n: number, len = 2) => String(n).padStart(len, "0");
@@ -129,6 +194,82 @@ function findFirstVisibleIndex(
   return Math.min(result, Math.max(0, offsets.length - 1));
 }
 
+function ConsoleEntryContent({
+  entry,
+  expandedJsonParts,
+  onToggleJsonPart,
+}: {
+  entry: ConsoleLogEntry;
+  expandedJsonParts: ReadonlySet<string>;
+  onToggleJsonPart: (partKey: string) => void;
+}) {
+  if (!entry.displayParts) {
+    return entry.styledSegments
+      ? entry.styledSegments.map((segment, segmentIndex) => (
+          <span
+            key={`${entry.id}-${segmentIndex}`}
+            style={segment.style as CSSProperties | undefined}
+          >
+            {segment.text}
+          </span>
+        ))
+      : entry.text;
+  }
+
+  return entry.displayParts.map((part, partIndex) => {
+    if (part.type === "text") {
+      return (
+        <span
+          key={`${entry.id}-${partIndex}`}
+          style={part.style as CSSProperties | undefined}
+        >
+          {part.text}
+        </span>
+      );
+    }
+
+    const partKey = `${entry.id}:${partIndex}`;
+    const expanded = expandedJsonParts.has(partKey);
+    return (
+      <div key={partKey} className={cn("contents", OS_NATIVE_CHROME_SKIP_CLASS)}>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => onToggleJsonPart(partKey)}
+          data-debug-json-toggle
+          className={cn(
+            "inline-flex max-w-full items-baseline gap-0.5 border-0 bg-transparent p-0 align-baseline",
+            "font-os-mono text-[10px] leading-[1.45] text-os-text-secondary",
+            "opacity-75 hover:opacity-100 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-os-selection-bg"
+          )}
+          style={{
+            fontFamily: "var(--os-font-mono)",
+            fontSize: "10px",
+            lineHeight: 1.45,
+          }}
+        >
+          <span className="shrink-0 no-underline" aria-hidden>
+            {expanded ? "▾" : "▸"}
+          </span>
+          <span className="truncate">{part.summary}</span>
+        </button>
+        {expanded ? (
+          <pre
+            data-debug-json-content
+            className={cn(
+              "my-0.5 max-w-full overflow-x-auto border-l pl-2",
+              "border-[color:var(--os-color-separator)]",
+              "whitespace-pre font-os-mono text-[10px] leading-[1.45] text-inherit"
+            )}
+          >
+            {part.text}
+          </pre>
+        ) : null}
+      </div>
+    );
+  });
+}
+
 /**
  * Floating, togglable console overlay shown only while Debug Mode is enabled
  * (Control Panels → Accounts → Debug). Mirrors captured `console.*` output into an
@@ -141,7 +282,7 @@ export function DebugLogOverlay() {
   const isRyoAdmin = useIsRyoAdmin();
   const debugMode = useDisplaySettingsStore((s) => s.debugMode);
   const flags = useThemeFlags();
-  const { isWindowsTheme, metadata } = flags;
+  const { isMacOSTheme, isWindowsTheme, metadata } = flags;
   const debugFabGapPx = 8;
   const debugFabBottom = isWindowsTheme
     ? `calc(env(safe-area-inset-bottom, 0px) + ${metadata.taskbarHeight + debugFabGapPx}px)`
@@ -149,6 +290,13 @@ export function DebugLogOverlay() {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DebugPanelTab>("logs");
   const [loggerFilter, setLoggerFilter] = useState(ALL_LOGGERS_FILTER);
+  const [logLevelFilter, setLogLevelFilter] =
+    useState<QuickFilterValue>("all");
+  const [networkFilter, setNetworkFilter] =
+    useState<NetworkFilter>(ALL_NETWORK_FILTER);
+  const [expandedJsonParts, setExpandedJsonParts] = useState<Set<string>>(
+    () => new Set()
+  );
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const liveReportRef = useRef("");
@@ -157,6 +305,52 @@ export function DebugLogOverlay() {
     subscribeConsoleCapture,
     getConsoleCaptureSnapshot,
     getConsoleCaptureSnapshot
+  );
+
+  const networkEntries = useSyncExternalStore(
+    subscribeNetworkCapture,
+    getNetworkCaptureSnapshot,
+    getNetworkCaptureSnapshot
+  );
+
+  const networkCounts = useMemo(() => {
+    const counts: Record<NetworkFilter, number> = {
+      all: networkEntries.length,
+      error: 0,
+      warn: 0,
+      ok: 0,
+      pending: 0,
+    };
+    for (const entry of networkEntries) {
+      counts[classifyNetworkStatus(entry.status, entry.outcome)] += 1;
+    }
+    return counts;
+  }, [networkEntries]);
+
+  const networkFilterOptions = useMemo(
+    () =>
+      NETWORK_FILTER_VALUES.map((value) => ({
+        value,
+        label:
+          value === ALL_NETWORK_FILTER
+            ? t("debug.network.filterAll")
+            : t(`debug.network.filters.${value}`),
+        count: networkCounts[value],
+      })),
+    [networkCounts, t]
+  );
+
+  const filteredNetworkEntries = useMemo(() => {
+    if (networkFilter === ALL_NETWORK_FILTER) return networkEntries;
+    return networkEntries.filter(
+      (entry) =>
+        classifyNetworkStatus(entry.status, entry.outcome) === networkFilter
+    );
+  }, [networkEntries, networkFilter]);
+
+  const networkCopyText = useMemo(
+    () => formatNetworkEntriesForCopy(filteredNetworkEntries),
+    [filteredNetworkEntries]
   );
 
   const loggerStats = useMemo(() => {
@@ -176,7 +370,7 @@ export function DebugLogOverlay() {
     return { counts, sorted, otherCount };
   }, [entries]);
 
-  const filteredEntries = useMemo(() => {
+  const loggerFilteredEntries = useMemo(() => {
     if (loggerFilter === ALL_LOGGERS_FILTER) return entries;
     if (loggerFilter === OTHER_LOGGER_FILTER) {
       return entries.filter((entry) => !extractLoggerTag(entry.text));
@@ -185,6 +379,28 @@ export function DebugLogOverlay() {
       (entry) => extractLoggerTag(entry.text) === loggerFilter
     );
   }, [entries, loggerFilter]);
+
+  const logLevelCounts = useMemo(
+    () => ({
+      all: loggerFilteredEntries.length,
+      error: loggerFilteredEntries.reduce(
+        (count, entry) => count + (entry.level === "error" ? 1 : 0),
+        0
+      ),
+      warn: loggerFilteredEntries.reduce(
+        (count, entry) => count + (entry.level === "warn" ? 1 : 0),
+        0
+      ),
+    }),
+    [loggerFilteredEntries]
+  );
+
+  const filteredEntries = useMemo(() => {
+    if (logLevelFilter === "all") return loggerFilteredEntries;
+    return loggerFilteredEntries.filter(
+      (entry) => entry.level === logLevelFilter
+    );
+  }, [logLevelFilter, loggerFilteredEntries]);
 
   useEffect(() => {
     if (loggerFilter === ALL_LOGGERS_FILTER) return;
@@ -297,6 +513,7 @@ export function DebugLogOverlay() {
   const handleClear = useCallback(() => {
     clearConsoleCapture();
     rowHeightsRef.current.clear();
+    setExpandedJsonParts(new Set());
     stickToBottomRef.current = true;
     pendingStickToBottomRef.current = false;
     setIsAtBottom(true);
@@ -316,7 +533,22 @@ export function DebugLogOverlay() {
       scrollTopRef.current = 0;
       setScrollTop(0);
     }
+    setExpandedJsonParts((previous) => {
+      const next = new Set(
+        [...previous].filter((partKey) => ids.has(Number(partKey.split(":")[0])))
+      );
+      return next.size === previous.size ? previous : next;
+    });
   }, [entries]);
+
+  const toggleJsonPart = useCallback((partKey: string) => {
+    setExpandedJsonParts((previous) => {
+      const next = new Set(previous);
+      if (next.has(partKey)) next.delete(partKey);
+      else next.add(partKey);
+      return next;
+    });
+  }, []);
 
   useLayoutEffect(() => {
     if (!open || activeTab !== "logs") return;
@@ -403,6 +635,14 @@ export function DebugLogOverlay() {
     void copyToClipboard(liveReportRef.current);
   }, [copyToClipboard]);
 
+  const handleCopyNetwork = useCallback(() => {
+    void copyToClipboard(networkCopyText);
+  }, [copyToClipboard, networkCopyText]);
+
+  const handleClearNetwork = useCallback(() => {
+    clearNetworkCapture();
+  }, []);
+
   const handleLiveReportChange = useCallback((report: string) => {
     liveReportRef.current = report;
   }, []);
@@ -426,14 +666,6 @@ export function DebugLogOverlay() {
 
   if (!debugMode) return null;
 
-  const errorCount = filteredEntries.reduce(
-    (acc, e) => (e.level === "error" ? acc + 1 : acc),
-    0
-  );
-  const warnCount = filteredEntries.reduce(
-    (acc, e) => (e.level === "warn" ? acc + 1 : acc),
-    0
-  );
   const fabErrorCount = entries.reduce(
     (acc, e) => (e.level === "error" ? acc + 1 : acc),
     0
@@ -445,7 +677,7 @@ export function DebugLogOverlay() {
 
   const filterTriggerLabel =
     loggerFilter === ALL_LOGGERS_FILTER
-      ? t("debug.console")
+      ? t("debug.filterAll")
       : loggerFilter === OTHER_LOGGER_FILTER
         ? t("debug.filterOther")
         : loggerFilter;
@@ -466,45 +698,70 @@ export function DebugLogOverlay() {
         <Tabs
           value={activeTab}
           onValueChange={(value) =>
-            setActiveTab(value === "live" ? "live" : "logs")
+            setActiveTab(
+              value === "live"
+                ? "live"
+                : value === "network"
+                  ? "network"
+                  : "logs"
+            )
           }
           className={cn(
-            osCardClassName(flags, {
-              embed: "panel",
-              className: cn(
-                "mb-2 h-[min(60vh,420px)] w-[min(92vw,440px)] shadow-os-window",
-                flags.isAquaGlass &&
-                  "window window-material-glass is-foreground"
-              ),
-            })
+            isMacOSTheme
+              ? cn(
+                  "window is-foreground flex flex-col overflow-hidden rounded-[0.5rem] font-geneva-12 text-os-text-primary",
+                  flags.isAquaGlass && "window-material-glass"
+                )
+              : osCardClassName(flags, { embed: "panel" }),
+            "mb-2 h-[min(60vh,420px)] w-[min(92vw,440px)] shadow-os-window"
           )}
+          style={
+            isMacOSTheme && !flags.isAquaGlass
+              ? {
+                  backgroundColor: "var(--os-color-window-bg)",
+                  backgroundImage: "var(--os-pinstripe-window)",
+                }
+              : undefined
+          }
         >
           {/* Header */}
           <div
             className={cn(
               "flex h-8 shrink-0 items-center gap-1.5 border-b px-2 py-1",
               "border-[color:var(--os-color-separator)]",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-panel-bg"
+              isMacOSTheme ? "bg-transparent" : "bg-os-panel-bg"
             )}
           >
             {activeTab === "logs" ? (
-              <>
+              <div className="flex min-w-0 items-center gap-0.5">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
+                      aria-pressed={logLevelFilter === "all"}
+                      data-state={logLevelFilter === "all" ? "on" : "off"}
+                      onPointerDown={() => setLogLevelFilter("all")}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" ||
+                          event.key === " " ||
+                          event.key === "ArrowDown"
+                        ) {
+                          setLogLevelFilter("all");
+                        }
+                      }}
                       aria-label={t("debug.filterByLogger")}
                       title={t("debug.filterByLogger")}
-                      className="flex min-w-0 items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                      className={quickFilterPillClassName}
                     >
-                      <span className="truncate">{filterTriggerLabel}</span>
-                      <span className="shrink-0 tabular-nums opacity-60">
-                        {filteredEntries.length}
+                      <span>{filterTriggerLabel}</span>
+                      <span className="tabular-nums opacity-60">
+                        {logLevelCounts.all}
                       </span>
                       <CaretDown
                         size={10}
                         weight="bold"
-                        className="shrink-0 opacity-50"
+                        className="opacity-50"
                         aria-hidden
                       />
                     </button>
@@ -513,7 +770,7 @@ export function DebugLogOverlay() {
                     align="start"
                     sideOffset={4}
                     container={overlayRootRef.current}
-                    className="min-w-[12rem]"
+                    className="max-h-[min(70vh,24rem)] min-w-[12rem] !overflow-y-auto overscroll-contain"
                   >
                     <DropdownMenuRadioGroup
                       value={loggerFilter}
@@ -551,17 +808,99 @@ export function DebugLogOverlay() {
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                {errorCount > 0 && (
-                  <span className="shrink-0 font-os-ui text-[12px] text-red-500">
-                    {t("debug.errorCount", { count: errorCount })}
-                  </span>
-                )}
-                {warnCount > 0 && (
-                  <span className="shrink-0 font-os-ui text-[12px] text-amber-500">
-                    {t("debug.warnCount", { count: warnCount })}
-                  </span>
-                )}
-              </>
+                <QuickFilterPills
+                  value={logLevelFilter}
+                  counts={{
+                    error: logLevelCounts.error,
+                    warn: logLevelCounts.warn,
+                  }}
+                  labels={{
+                    error: t("debug.live.errors"),
+                    warn: t("debug.live.warnings"),
+                  }}
+                  onValueChange={setLogLevelFilter}
+                />
+              </div>
+            ) : activeTab === "network" ? (
+              <div className="flex min-w-0 items-center gap-0.5">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-pressed={networkFilter === "all"}
+                      data-state={networkFilter === "all" ? "on" : "off"}
+                      onPointerDown={() => setNetworkFilter("all")}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" ||
+                          event.key === " " ||
+                          event.key === "ArrowDown"
+                        ) {
+                          setNetworkFilter("all");
+                        }
+                      }}
+                      aria-label={t("debug.network.filterRequests")}
+                      title={t("debug.network.filterRequests")}
+                      className={quickFilterPillClassName}
+                    >
+                      <span>{t("debug.network.filterAll")}</span>
+                      <span className="tabular-nums opacity-60">
+                        {networkCounts.all}
+                      </span>
+                      <CaretDown
+                        size={10}
+                        weight="bold"
+                        className="opacity-50"
+                        aria-hidden
+                      />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={4}
+                    container={overlayRootRef.current}
+                    className="min-w-[12rem]"
+                  >
+                    <DropdownMenuRadioGroup
+                      value={networkFilter}
+                      onValueChange={(value) =>
+                        setNetworkFilter(value as NetworkFilter)
+                      }
+                    >
+                      {networkFilterOptions.map((option) => (
+                        <DropdownMenuRadioItem
+                          key={option.value}
+                          value={option.value}
+                          className="font-os-ui text-[12px]"
+                        >
+                          <LoggerFilterMenuLabel
+                            label={option.label}
+                            count={option.count}
+                          />
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <QuickFilterPills
+                  value={
+                    networkFilter === "all" ||
+                    networkFilter === "error" ||
+                    networkFilter === "warn"
+                      ? networkFilter
+                      : null
+                  }
+                  counts={{
+                    error: networkCounts.error,
+                    warn: networkCounts.warn,
+                  }}
+                  labels={{
+                    error: t("debug.live.errors"),
+                    warn: t("debug.live.warnings"),
+                  }}
+                  onValueChange={setNetworkFilter}
+                />
+              </div>
             ) : null}
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
               {activeTab === "logs" ? (
@@ -571,44 +910,62 @@ export function DebugLogOverlay() {
                     onClick={handleFix}
                     title={t("debug.fixLogs")}
                     aria-label={t("debug.fixLogs")}
-                    className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                    className="flex size-6 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
                   >
                     <Wrench weight="bold" className="size-3.5" />
-                    <span>{t("debug.fix")}</span>
                   </button>
                 ) : null
               ) : null}
               <button
                 type="button"
-                onClick={activeTab === "logs" ? handleCopy : handleCopyLive}
+                onClick={
+                  activeTab === "logs"
+                    ? handleCopy
+                    : activeTab === "network"
+                      ? handleCopyNetwork
+                      : handleCopyLive
+                }
                 title={
                   activeTab === "logs"
                     ? t("debug.copyLogs")
-                    : t("debug.live.copySnapshot")
+                    : activeTab === "network"
+                      ? t("debug.network.copy")
+                      : t("debug.live.copySnapshot")
                 }
                 aria-label={
                   activeTab === "logs"
                     ? t("debug.copyLogs")
-                    : t("debug.live.copySnapshot")
+                    : activeTab === "network"
+                      ? t("debug.network.copy")
+                      : t("debug.live.copySnapshot")
                 }
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 font-os-ui text-[12px] hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                className="flex size-6 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
                 {copied ? (
                   <Check weight="bold" className="size-3.5 text-green-500" />
                 ) : (
                   <Copy weight="bold" className="size-3.5" />
                 )}
-                <span>{copied ? t("debug.copied") : t("debug.copy")}</span>
               </button>
-              {activeTab === "logs" ? (
+              {activeTab === "logs" || activeTab === "network" ? (
                 <button
                   type="button"
-                  onClick={handleClear}
-                  title={t("debug.clearLogs")}
-                  aria-label={t("debug.clearLogs")}
-                  className="flex items-center rounded p-1 hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                  onClick={
+                    activeTab === "logs" ? handleClear : handleClearNetwork
+                  }
+                  title={
+                    activeTab === "logs"
+                      ? t("debug.clearLogs")
+                      : t("debug.network.clear")
+                  }
+                  aria-label={
+                    activeTab === "logs"
+                      ? t("debug.clearLogs")
+                      : t("debug.network.clear")
+                  }
+                  className="flex size-6 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
                 >
-                  <Trash weight="bold" className="size-3" />
+                  <Trash weight="bold" className="size-3.5" />
                 </button>
               ) : null}
               <button
@@ -616,9 +973,9 @@ export function DebugLogOverlay() {
                 onClick={() => setOpen(false)}
                 title={t("common.window.close")}
                 aria-label={t("debug.closeConsole")}
-                className="flex items-center rounded p-1 hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                className="flex size-6 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
-                <X weight="bold" className="size-3" />
+                <X weight="bold" className="size-3.5" />
               </button>
             </div>
           </div>
@@ -626,9 +983,10 @@ export function DebugLogOverlay() {
           {/* Log list */}
           <TabsContent
             value="logs"
+            forceMount
             className={cn(
-              "relative mt-0 min-h-0 flex-1 overflow-hidden",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-window-bg"
+              "relative mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden",
+              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
             )}
           >
             <div
@@ -661,23 +1019,18 @@ export function DebugLogOverlay() {
                       <span className="shrink-0 tabular-nums opacity-40">
                         {formatTime(entry.timestamp)}
                       </span>
-                      <span
+                      <div
                         className={cn(
-                          "min-w-0 whitespace-pre-wrap break-words",
+                          "min-w-0 flex-1 whitespace-pre-wrap break-words",
                           LEVEL_TEXT_CLASS[entry.level]
                         )}
                       >
-                        {entry.styledSegments
-                          ? entry.styledSegments.map((segment, segmentIndex) => (
-                              <span
-                                key={`${entry.id}-${segmentIndex}`}
-                                style={segment.style}
-                              >
-                                {segment.text}
-                              </span>
-                            ))
-                          : entry.text}
-                      </span>
+                        <ConsoleEntryContent
+                          entry={entry}
+                          expandedJsonParts={expandedJsonParts}
+                          onToggleJsonPart={toggleJsonPart}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -706,7 +1059,7 @@ export function DebugLogOverlay() {
             value="live"
             className={cn(
               "relative mt-0 min-h-0 flex-1 overflow-hidden",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-window-bg"
+              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
             )}
           >
             <DebugLiveDashboard
@@ -715,11 +1068,23 @@ export function DebugLogOverlay() {
               onReportChange={handleLiveReportChange}
             />
           </TabsContent>
+          <TabsContent
+            value="network"
+            className={cn(
+              "relative mt-0 min-h-0 flex-1 overflow-hidden",
+              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
+            )}
+          >
+            <DebugNetworkPanel
+              entries={filteredNetworkEntries}
+              totalEntryCount={networkEntries.length}
+            />
+          </TabsContent>
           <div
             className={cn(
               "flex h-8 shrink-0 items-center justify-center border-t px-2 py-1",
               "border-[color:var(--os-color-separator)]",
-              flags.isAquaGlass ? "bg-transparent" : "bg-os-panel-bg"
+              isMacOSTheme ? "bg-transparent" : "bg-os-panel-bg"
             )}
           >
             <TabsList
@@ -749,6 +1114,18 @@ export function DebugLogOverlay() {
                 )}
               >
                 {t("debug.tabs.live")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="network"
+                className={cn(
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
+                  "border border-transparent",
+                  "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
+                  "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
+                  "os-theme-system7:rounded-none os-windows:rounded-none"
+                )}
+              >
+                {t("debug.tabs.network")}
               </TabsTrigger>
             </TabsList>
           </div>

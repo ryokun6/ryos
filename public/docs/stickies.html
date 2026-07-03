@@ -375,6 +375,7 @@
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
+    <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -421,6 +422,7 @@
   <div class="nav-children" style="display: none;">
     <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
     <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
+    <a href="/docs/icon-resources" class="nav-child ">7.3 Icon Resources</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -491,7 +493,7 @@ The app consists of the following component files:
 <strong>Utility Files:</strong>
 No custom utility files are used in this application.
 <h3>State Management</h3>
-The Stickies app manages its state primarily through the <code>useStickiesLogic</code> custom hook. This hook handles the array of sticky notes, their individual properties (content, position, size, color), and the currently selected note. Note data is persisted automatically between ryOS sessions, likely utilizing browser local storage to ensure notes are saved and restored upon application launch.
+The Stickies app manages its state through <code>useStickiesLogic</code> and <code>useStickiesStore</code>. Note content, position, size, and color are persisted in IndexedDB through the shared <code>persisted_state</code> adapter. Default-note creation waits for asynchronous hydration so it cannot overwrite restored notes.
 <h2>Related Apps</h2>
 <ul><li><strong>Todo List:</strong> For more structured task management, the Todo List app can complement Stickies by providing detailed checklists and project tracking.</li></ul><ul><li><strong>Notes:</strong> For longer-form writing and document creation, the Notes app offers a richer text editing experience beyond quick reminders.</li></ul>
       </article>

@@ -253,7 +253,7 @@ export function TelegramLinkDialog({
         </div>
       ) : null}
 
-      <DialogFooter className="mt-2 flex justify-end gap-1">
+      <DialogFooter className="mt-2 flex justify-end gap-1.5">
         {linkedAccount ? (
           <Button
             onClick={onDisconnectTelegramLink}

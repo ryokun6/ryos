@@ -120,8 +120,8 @@ export function InputDialog({
       {errorMessage && (
         <p className="text-red-600 text-sm mt-1">{errorMessage}</p>
       )}
-      <DialogFooter className="mt-4 gap-1 sm:justify-between">
-        <div className="flex gap-1 w-full sm:w-auto">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-between">
+        <div className="flex gap-1.5 w-full sm:w-auto">
           {actionGroups.left.map((action) => (
               <Button
                 key={`left-${action.label}-${action.variant || "retro"}`}

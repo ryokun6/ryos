@@ -232,20 +232,26 @@ export async function getCachedSongMetadata(
 ): Promise<CachedSongMetadata | null> {
   const memo = metadataMemo.get(youtubeId);
   if (memo && Date.now() - memo.at < METADATA_MEMO_TTL_MS) {
+    log.debug("Using metadata from memory", {
+      youtubeId,
+      ageMs: Date.now() - memo.at,
+    });
     return memo.data;
   }
 
   const inFlight = metadataInFlight.get(youtubeId);
   if (inFlight) {
+    log.debug("Reusing active metadata request", { youtubeId });
     return inFlight;
   }
 
   const requestPromise = (async (): Promise<CachedSongMetadata | null> => {
     try {
+      log.debug("Fetching public song metadata", { youtubeId });
       const data = await getSongById<UnifiedSongDocument>(youtubeId, {
         include: "metadata",
       });
-      log.debug("Cache hit", { youtubeId });
+      log.debug("Public song metadata loaded", { youtubeId });
       const metadata = unifiedToMetadata(data);
       // Only memoize hits — a miss (song not imported yet) should be
       // re-checked next time, e.g. right after an import completes.
@@ -253,10 +259,13 @@ export async function getCachedSongMetadata(
       return metadata;
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 404) {
-        log.debug("Cache miss", { youtubeId });
+        log.debug("No public song metadata found", { youtubeId });
         return null;
       }
-      console.error(`[SongMetadataCache] Error fetching metadata for ${youtubeId}:`, error);
+      log.error("Could not fetch public song metadata", {
+        error,
+        youtubeId,
+      });
       return null;
     } finally {
       metadataInFlight.delete(youtubeId);
@@ -275,6 +284,7 @@ export async function getCachedSongMetadata(
  */
 export async function listAllCachedSongMetadata(createdBy?: string): Promise<CachedSongMetadata[]> {
   try {
+    log.debug("Listing public song metadata", { createdBy });
     const data = await listSongs<UnifiedSongDocument>({
       include: "metadata",
       createdBy,
@@ -283,7 +293,7 @@ export async function listAllCachedSongMetadata(createdBy?: string): Promise<Cac
     log.debug("Listed songs", { count: songs.length, createdBy });
     return songs;
   } catch (error) {
-    console.error(`[SongMetadataCache] Error listing metadata:`, error);
+    log.error("Could not list public song metadata", { error, createdBy });
     return [];
   }
 }
@@ -311,19 +321,25 @@ export async function deleteSongMetadata(
   } catch (error) {
     if (error instanceof ApiRequestError) {
       if (error.status === 401) {
-        console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to delete metadata`);
+        log.warn("Could not delete metadata because login is required", {
+          youtubeId,
+        });
         return false;
       }
       if (error.status === 403) {
-        console.warn(`[SongMetadataCache] Forbidden - admin access required to delete metadata`);
+        log.warn("Could not delete metadata because admin access is required", {
+          youtubeId,
+        });
         return false;
       }
       if (error.status === 404) {
-        console.warn(`[SongMetadataCache] Song not found: ${youtubeId}`);
+        log.warn("Could not delete metadata because the song was not found", {
+          youtubeId,
+        });
         return false;
       }
     }
-    console.error(`[SongMetadataCache] Error deleting metadata for ${youtubeId}:`, error);
+    log.error("Could not delete song metadata", { error, youtubeId });
     return false;
   }
 }
@@ -350,15 +366,15 @@ export async function deleteAllSongMetadata(
   } catch (error) {
     if (error instanceof ApiRequestError) {
       if (error.status === 401) {
-        console.warn(`[SongMetadataCache] Unauthorized - user must be logged in`);
+        log.warn("Could not delete metadata because login is required");
         return { success: 0, total: 0 };
       }
       if (error.status === 403) {
-        console.warn(`[SongMetadataCache] Forbidden - admin access required`);
+        log.warn("Could not delete metadata because admin access is required");
         return { success: 0, total: 0 };
       }
     }
-    console.error(`[SongMetadataCache] Error deleting all metadata:`, error);
+    log.error("Could not delete all song metadata", { error });
     return { success: 0, total: 0 };
   }
 }
@@ -414,10 +430,15 @@ export async function saveSongMetadata(
     return true;
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 401) {
-      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to save metadata`);
+      log.warn("Could not save metadata because login is required", {
+        youtubeId: metadata.youtubeId,
+      });
       return false;
     }
-    console.error(`[SongMetadataCache] Error saving metadata for ${metadata.youtubeId}:`, error);
+    log.error("Could not save song metadata", {
+      error,
+      youtubeId: metadata.youtubeId,
+    });
     return false;
   }
 }
@@ -544,9 +565,12 @@ export async function bulkImportSongMetadata(
                 "Payload too large: one song entry exceeds import request size limits",
             };
           }
-          console.warn(
-            `[SongMetadataCache] Batch ${i + 1}/${batches.length} hit 413, splitting and retrying`
-          );
+          log.warn("Splitting metadata import batch after payload rejection", {
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            status: 413,
+          });
           reportProgress({
             stage: "batch-split",
             batchIndex: i + 1,
@@ -561,9 +585,11 @@ export async function bulkImportSongMetadata(
 
         if (response.status === 429) {
           if (rateLimitRetries >= BULK_IMPORT_MAX_RATE_LIMIT_RETRIES) {
-            console.warn(
-              `[SongMetadataCache] Rate limited too many times while importing batch ${i + 1}/${batches.length}`
-            );
+            log.warn("Metadata import stopped after repeated rate limits", {
+              batchIndex: i + 1,
+              batchCount: batches.length,
+              retryCount: rateLimitRetries,
+            });
             reportProgress({
               stage: "error",
               batchIndex: i + 1,
@@ -587,9 +613,12 @@ export async function bulkImportSongMetadata(
             ? retryAfterSeconds * 1000
             : 4000 * Math.pow(2, rateLimitRetries - 1);
 
-          console.warn(
-            `[SongMetadataCache] Import rate limited on batch ${i + 1}/${batches.length}, retrying in ${waitMs}ms`
-          );
+          log.warn("Retrying metadata import after rate limit", {
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            retryAttempt: rateLimitRetries,
+            waitMs,
+          });
           reportProgress({
             stage: "rate-limited",
             batchIndex: i + 1,
@@ -605,7 +634,7 @@ export async function bulkImportSongMetadata(
         }
 
         if (response.status === 401) {
-          console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to import`);
+          log.warn("Could not import metadata because login is required");
           reportProgress({
             stage: "error",
             batchIndex: i + 1,
@@ -618,7 +647,7 @@ export async function bulkImportSongMetadata(
         }
 
         if (response.status === 403) {
-          console.warn(`[SongMetadataCache] Forbidden - admin access required to import`);
+          log.warn("Could not import metadata because admin access is required");
           reportProgress({
             stage: "error",
             batchIndex: i + 1,
@@ -637,7 +666,11 @@ export async function bulkImportSongMetadata(
         }
 
         if (!response.ok) {
-          console.warn(`[SongMetadataCache] Failed to import songs: ${response.status}`);
+          log.warn("Metadata import request failed", {
+            status: response.status,
+            batchIndex: i + 1,
+            batchCount: batches.length,
+          });
           reportProgress({
             stage: "error",
             batchIndex: i + 1,
@@ -666,7 +699,11 @@ export async function bulkImportSongMetadata(
           | undefined;
 
         if (!data?.success) {
-          console.warn(`[SongMetadataCache] Failed to import: ${data?.error}`);
+          log.warn("Metadata import was rejected", {
+            error: data?.error,
+            batchIndex: i + 1,
+            batchCount: batches.length,
+          });
           reportProgress({
             stage: "error",
             batchIndex: i + 1,
@@ -713,7 +750,7 @@ export async function bulkImportSongMetadata(
     });
     return { success: true, imported, updated, total };
   } catch (error) {
-    console.error(`[SongMetadataCache] Error importing songs:`, error);
+    log.error("Could not import song metadata", { error });
     options?.onProgress?.({
       stage: "error",
       totalSongs: songs.length,

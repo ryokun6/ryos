@@ -18,6 +18,6 @@ export function getPronunciationGlyph(
 export function getFontLabel(language: string): string {
   if (language === "ja") return "あ";
   if (language === "ko") return "가";
-  if (language === "zh-TW") return "字";
+  if (language === "zh-CN" || language === "zh-TW") return "字";
   return "Aa";
 }

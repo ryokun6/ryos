@@ -1,11 +1,15 @@
 import type { ReactNode, RefObject } from "react";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
 import type {
   ErrorResponse,
   NavigationMode,
 } from "@/stores/useInternetExplorerStore";
 import { ErrorPage } from "./ErrorPage";
+import { isIeLiveBrowserAvailable } from "@/utils/runtimeConfig";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 export interface InternetExplorerContentPaneProps {
   errorDetails: ErrorResponse | null;
@@ -64,6 +68,8 @@ export function InternetExplorerContentPane({
   bringInstanceToForeground,
   instanceId,
 }: InternetExplorerContentPaneProps) {
+  const isOffline = useOffline();
+
   const renderErrorPage = () => {
     if (!errorDetails) return null;
 
@@ -74,11 +80,34 @@ export function InternetExplorerContentPane({
     const primaryMessage =
       errorDetails.message || t("apps.internet-explorer.anErrorOccurred");
     const secondaryMessage = errorDetails.details;
-    const suggestions = [
+    const suggestions: (string | ReactNode)[] = [
       t("apps.internet-explorer.checkWebAddressAndTryAgain"),
       t("apps.internet-explorer.goBackToPreviousPage"),
       t("apps.internet-explorer.tryRefreshingThePage"),
     ];
+
+    // Offer the "live browser" escape hatch only when the server has it
+    // configured and the site actively blocked the proxy (auth / bot walls).
+    const liveBrowserOffered =
+      isIeLiveBrowserAvailable() &&
+      (errorDetails.type === "access_blocked" ||
+        errorDetails.type === "http_error");
+    if (liveBrowserOffered) {
+      suggestions.push(
+        <a
+          href="#"
+          role="button"
+          onClick={(e) => {
+            e.preventDefault();
+            void handleOpenLiveBrowser();
+          }}
+          className="text-red-600 underline"
+        >
+          {t("apps.internet-explorer.openInLiveBrowser")}
+        </a>
+      );
+    }
+
     const footerText = errorDetails.hostname
       ? t("apps.internet-explorer.host", {
           hostname: errorDetails.hostname,
@@ -100,12 +129,30 @@ export function InternetExplorerContentPane({
     );
   };
 
+  const handleOpenLiveBrowser = async () => {
+    const target = errorDetails?.targetUrl || url;
+    if (!target) return;
+    try {
+      const res = await fetch(
+        `/api/iframe-check?mode=live&url=${encodeURIComponent(target)}`
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as { liveViewUrl?: string };
+      if (data.liveViewUrl) {
+        window.open(data.liveViewUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      // best-effort: live mode is optional, fail quietly
+    }
+  };
+
   return (
     <>
       <div className="flex-1 relative bg-white">
         {errorDetails ? (
           renderErrorPage()
-        ) : isFutureYear ||
+        ) : mode === "future" ||
+          isFutureYear ||
           (mode === "past" && (isAiLoading || aiGeneratedHtml !== null)) ? (
           <div className="size-full overflow-hidden absolute inset-0 font-geneva-12">
             <HtmlPreview
@@ -130,7 +177,7 @@ export function InternetExplorerContentPane({
         ) : (
           <iframe
             ref={iframeRef}
-            src={finalUrl || ""}
+            src={finalUrl || undefined}
             className="border-0 block"
             style={{
               width: "calc(100% + 1px)",
@@ -140,6 +187,17 @@ export function InternetExplorerContentPane({
             onLoad={handleIframeLoad}
             onError={handleIframeError}
           />
+        )}
+
+        {/* Offline empty state — covers the stale page / error page while
+            offline (loading bar sits at z-40, the background-window click
+            shield at z-50). */}
+        {isOffline && (
+          <div className="absolute inset-0 z-[45] bg-white">
+            <OfflineEmptyState
+              appName={getTranslatedAppName("internet-explorer")}
+            />
+          </div>
         )}
 
         {!isForeground && (

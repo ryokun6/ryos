@@ -4,8 +4,11 @@ import {
   MenubarSubContent,
   MenubarSeparator,
   MenubarCheckboxItem,
+  MenubarRadioGroup,
+  MenubarRadioItem,
 } from "@/components/ui/menubar";
 import type { RomanizationSettings } from "@/types/lyrics";
+import type { ChineseLyricsLanguagePreference } from "@/shared/media/chineseLyrics";
 import { MENUBAR_SEPARATOR_CLASS } from "../menubarStyles";
 
 export type LyricsPronunciationSubmenuProps = {
@@ -16,6 +19,9 @@ export type LyricsPronunciationSubmenuProps = {
   japaneseRomajiLabel: string;
   koreanRomanizationLabel: string;
   chinesePinyinLabel: string;
+  automaticLabel: string;
+  chineseTraditionalLabel: string;
+  chineseSimplifiedLabel: string;
   chineseSoramimiLabel: string;
   soramimiLabel: string;
   romanization: RomanizationSettings | undefined;
@@ -30,6 +36,9 @@ export function LyricsPronunciationSubmenu({
   japaneseRomajiLabel,
   koreanRomanizationLabel,
   chinesePinyinLabel,
+  automaticLabel,
+  chineseTraditionalLabel,
+  chineseSimplifiedLabel,
   chineseSoramimiLabel,
   soramimiLabel,
   romanization,
@@ -96,6 +105,25 @@ export function LyricsPronunciationSubmenu({
         >
           {chinesePinyinLabel}
         </MenubarCheckboxItem>
+        <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
+        <MenubarRadioGroup
+          value={romanization?.chineseLyricsLanguage ?? "auto"}
+          onValueChange={(value) =>
+            setRomanization({
+              chineseLyricsLanguage: value as ChineseLyricsLanguagePreference,
+            })
+          }
+        >
+          <MenubarRadioItem value="auto" className="text-md h-6 pr-3">
+            {automaticLabel}
+          </MenubarRadioItem>
+          <MenubarRadioItem value="zh-TW" className="text-md h-6 pr-3">
+            {chineseTraditionalLabel}
+          </MenubarRadioItem>
+          <MenubarRadioItem value="zh-CN" className="text-md h-6 pr-3">
+            {chineseSimplifiedLabel}
+          </MenubarRadioItem>
+        </MenubarRadioGroup>
         <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
         <MenubarCheckboxItem
           checked={

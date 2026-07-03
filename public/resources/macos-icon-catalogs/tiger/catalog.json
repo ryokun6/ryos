@@ -1,0 +1,2753 @@
+{
+  "generatedAt": "2026-06-29T19:18:01.449749+00:00",
+  "source": {
+    "name": "Mac OS X Tiger 10.4 Retail DVD",
+    "url": "https://archive.org/details/macosx10.4tigerretaildvd"
+  },
+  "counts": {
+    "applications": 51,
+    "systemPreferences": 10,
+    "folders": 61,
+    "devices": 81,
+    "fileTypes": 81,
+    "uiAssets": 35,
+    "total": 319
+  },
+  "entries": [
+    {
+      "type": "application",
+      "name": "Activity Monitor",
+      "bundleIdentifier": "com.apple.ActivityMonitor",
+      "version": "1.4",
+      "sourceBundlePath": "/Applications/Utilities/Activity Monitor.app",
+      "sourceIconPath": "/Applications/Utilities/Activity Monitor.app/Contents/Resources/ActivityMonitor.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/activity-monitor.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Address Book",
+      "bundleIdentifier": "com.apple.AddressBook",
+      "version": "4.0",
+      "sourceBundlePath": "/Applications/Address Book.app",
+      "sourceIconPath": "/Applications/Address Book.app/Contents/Resources/AddressBook.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/address-book.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "AirPort Admin Utility",
+      "bundleIdentifier": "com.apple.airport.adminutility",
+      "version": "4.1.1",
+      "sourceBundlePath": "/Applications/Utilities/AirPort Admin Utility.app",
+      "sourceIconPath": "/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AdminIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/airport-admin-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "AirPort Setup Assistant",
+      "bundleIdentifier": "com.apple.airport.assistant",
+      "version": "4.1.1",
+      "sourceBundlePath": "/Applications/Utilities/AirPort Setup Assistant.app",
+      "sourceIconPath": "/Applications/Utilities/AirPort Setup Assistant.app/Contents/Resources/App.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/airport-setup-assistant.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "AppleScript Utility",
+      "bundleIdentifier": "com.apple.AppleScriptUtility",
+      "version": "1.0",
+      "sourceBundlePath": "/Applications/AppleScript/AppleScript Utility.app",
+      "sourceIconPath": "/Applications/AppleScript/AppleScript Utility.app/Contents/Resources/AppleScript Utility.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/applescript-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Audio MIDI Setup",
+      "bundleIdentifier": "com.apple.audio.AudioMIDISetup",
+      "version": "2.1",
+      "sourceBundlePath": "/Applications/Utilities/Audio MIDI Setup.app",
+      "sourceIconPath": "/Applications/Utilities/Audio MIDI Setup.app/Contents/Resources/AudioMIDISetup.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/audio-midi-setup.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Automator",
+      "bundleIdentifier": "com.apple.Automator",
+      "version": "1.0",
+      "sourceBundlePath": "/Applications/Automator.app",
+      "sourceIconPath": "/Applications/Automator.app/Contents/Resources/Automator.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/automator.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Bluetooth File Exchange",
+      "bundleIdentifier": "com.apple.BluetoothFileExchange",
+      "version": "1.6",
+      "sourceBundlePath": "/Applications/Utilities/Bluetooth File Exchange.app",
+      "sourceIconPath": "/Applications/Utilities/Bluetooth File Exchange.app/Contents/Resources/BluetoothFileExchange.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/bluetooth-file-exchange.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Calculator",
+      "bundleIdentifier": "com.apple.calculator",
+      "version": "4.0",
+      "sourceBundlePath": "/Applications/Calculator.app",
+      "sourceIconPath": "/Applications/Calculator.app/Contents/Resources/Calculator.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/calculator.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Chess",
+      "bundleIdentifier": "com.apple.Chess",
+      "version": "2.1",
+      "sourceBundlePath": "/Applications/Chess.app",
+      "sourceIconPath": "/Applications/Chess.app/Contents/Resources/chess.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/chess.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "ColorSync Utility",
+      "bundleIdentifier": "com.apple.ColorSyncUtility",
+      "version": "4.4",
+      "sourceBundlePath": "/Applications/Utilities/ColorSync Utility.app",
+      "sourceIconPath": "/Applications/Utilities/ColorSync Utility.app/Contents/Resources/ColorSyncUtils.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/colorsync-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Console",
+      "bundleIdentifier": "com.apple.Console",
+      "version": "2.1",
+      "sourceBundlePath": "/Applications/Utilities/Console.app",
+      "sourceIconPath": "/Applications/Utilities/Console.app/Contents/Resources/Console.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/console.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Dashboard",
+      "bundleIdentifier": "com.apple.dashboardlauncher",
+      "version": "1.0",
+      "sourceBundlePath": "/Applications/Dashboard.app",
+      "sourceIconPath": "/Applications/Dashboard.app/Contents/Resources/Dashboard.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/dashboard.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Dictionary",
+      "bundleIdentifier": "com.apple.Dictionary",
+      "version": "1.0.0",
+      "sourceBundlePath": "/Applications/Dictionary.app",
+      "sourceIconPath": "/Applications/Dictionary.app/Contents/Resources/Dictionary.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/dictionary.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "DigitalColor Meter",
+      "bundleIdentifier": "com.apple.DigitalColorMeter",
+      "version": "3.4",
+      "sourceBundlePath": "/Applications/Utilities/DigitalColor Meter.app",
+      "sourceIconPath": "/Applications/Utilities/DigitalColor Meter.app/Contents/Resources/AppIcons.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/digitalcolor-meter.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Directory Access",
+      "bundleIdentifier": "com.apple.DirectoryService.Config",
+      "version": "1.8",
+      "sourceBundlePath": "/Applications/Utilities/Directory Access.app",
+      "sourceIconPath": "/Applications/Utilities/Directory Access.app/Contents/Resources/directory_access.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/directory-access.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Disk Utility",
+      "bundleIdentifier": "com.apple.DiskUtility",
+      "version": "10.5",
+      "sourceBundlePath": "/Applications/Utilities/Disk Utility.app",
+      "sourceIconPath": "/Applications/Utilities/Disk Utility.app/Contents/Resources/DFA.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/disk-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "DVD Player",
+      "bundleIdentifier": "com.apple.DVDPlayer",
+      "version": "4.5",
+      "sourceBundlePath": "/Applications/DVD Player.app",
+      "sourceIconPath": "/Applications/DVD Player.app/Contents/Resources/app.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/dvd-player.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Folder Actions Setup",
+      "bundleIdentifier": "com.apple.FolderActionsSetup",
+      "version": "1.1",
+      "sourceBundlePath": "/Applications/AppleScript/Folder Actions Setup.app",
+      "sourceIconPath": "/Applications/AppleScript/Folder Actions Setup.app/Contents/Resources/Folder Actions Setup.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/folder-actions-setup.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Font Book",
+      "bundleIdentifier": "com.apple.FontBook",
+      "version": "2.0",
+      "sourceBundlePath": "/Applications/Font Book.app",
+      "sourceIconPath": "/Applications/Font Book.app/Contents/Resources/appicon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/font-book.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Grab",
+      "bundleIdentifier": "com.apple.Grab",
+      "version": "1.3",
+      "sourceBundlePath": "/Applications/Utilities/Grab.app",
+      "sourceIconPath": "/Applications/Utilities/Grab.app/Contents/Resources/appicon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/grab.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Grapher",
+      "bundleIdentifier": "com.apple.grapher",
+      "version": "1.0",
+      "sourceBundlePath": "/Applications/Utilities/Grapher.app",
+      "sourceIconPath": "/Applications/Utilities/Grapher.app/Contents/Resources/Grapher.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/grapher.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "iCal",
+      "bundleIdentifier": "com.apple.iCal",
+      "version": "2.0",
+      "sourceBundlePath": "/Applications/iCal.app",
+      "sourceIconPath": "/Applications/iCal.app/Contents/Resources/App.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/ical.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "iChat",
+      "bundleIdentifier": "com.apple.iChat",
+      "version": "3.0",
+      "sourceBundlePath": "/Applications/iChat.app",
+      "sourceIconPath": "/Applications/iChat.app/Contents/Resources/iChat.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/ichat.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Image Capture",
+      "bundleIdentifier": "com.apple.ImageCaptureApp",
+      "version": "3.0",
+      "sourceBundlePath": "/Applications/Image Capture.app",
+      "sourceIconPath": "/Applications/Image Capture.app/Contents/Resources/ImageCapture.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/image-capture.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Installer",
+      "bundleIdentifier": "com.apple.installer",
+      "version": "2.0",
+      "sourceBundlePath": "/Applications/Utilities/Installer.app",
+      "sourceIconPath": "/Applications/Utilities/Installer.app/Contents/Resources/Installer.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/installer.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Internet Connect",
+      "bundleIdentifier": "com.apple.internetconnect",
+      "version": "1.4",
+      "sourceBundlePath": "/Applications/Internet Connect.app",
+      "sourceIconPath": "/Applications/Internet Connect.app/Contents/Resources/NetworkConnect.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/internet-connect.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "iSync",
+      "bundleIdentifier": "com.apple.isync",
+      "version": "2.0",
+      "sourceBundlePath": "/Applications/iSync.app",
+      "sourceIconPath": "/Applications/iSync.app/Contents/Resources/iSyncApplicationIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/isync.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "iTunes",
+      "bundleIdentifier": "com.apple.iTunes",
+      "version": "4.7.1",
+      "sourceBundlePath": "/Applications/iTunes.app",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/itunes.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Keychain Access",
+      "bundleIdentifier": "com.apple.keychainaccess",
+      "version": "3.2",
+      "sourceBundlePath": "/Applications/Utilities/Keychain Access.app",
+      "sourceIconPath": "/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/keychain-access.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Mail",
+      "bundleIdentifier": "com.apple.mail",
+      "version": "2.0",
+      "sourceBundlePath": "/Applications/Mail.app",
+      "sourceIconPath": "/Applications/Mail.app/Contents/Resources/app.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/mail.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Migration Assistant",
+      "bundleIdentifier": "com.apple.MigrateAssistant",
+      "version": "1.0",
+      "sourceBundlePath": "/Applications/Utilities/Migration Assistant.app",
+      "sourceIconPath": "/Applications/Utilities/Migration Assistant.app/Contents/Resources/MigrateAsst.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/migration-assistant.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "NetInfo Manager",
+      "bundleIdentifier": "com.apple.NetInfoManager",
+      "version": "1.4",
+      "sourceBundlePath": "/Applications/Utilities/NetInfo Manager.app",
+      "sourceIconPath": "/Applications/Utilities/NetInfo Manager.app/Contents/Resources/appicon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/netinfo-manager.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Network Utility",
+      "bundleIdentifier": "com.apple.NetworkUtility",
+      "version": "1.4",
+      "sourceBundlePath": "/Applications/Utilities/Network Utility.app",
+      "sourceIconPath": "/Applications/Utilities/Network Utility.app/Contents/Resources/Network Utility.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/network-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "ODBC Administrator",
+      "bundleIdentifier": "com.apple.odbcadministrator",
+      "version": "1.0.2",
+      "sourceBundlePath": "/Applications/Utilities/ODBC Administrator.app",
+      "sourceIconPath": "/Applications/Utilities/ODBC Administrator.app/Contents/Resources/ODBC.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/odbc-administrator.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Open Firmware Password",
+      "bundleIdentifier": "com.apple.OpenFirmwarePassword",
+      "version": "1.1",
+      "sourceBundlePath": "/Applications/Utilities/Open Firmware Password.app",
+      "sourceIconPath": "/Applications/Utilities/Open Firmware Password.app/Contents/Resources/Icons.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/open-firmware-password.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Preview",
+      "bundleIdentifier": "com.apple.Preview",
+      "version": "3.0",
+      "sourceBundlePath": "/Applications/Preview.app",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/preview.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/preview.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Printer Setup Utility",
+      "bundleIdentifier": "com.apple.print.PrintCenter",
+      "version": "4.0",
+      "sourceBundlePath": "/Applications/Utilities/Print Center.app",
+      "sourceIconPath": "/Applications/Utilities/Print Center.app/Contents/Resources/PrintCenter.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/printer-setup-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Printer Setup Utility",
+      "bundleIdentifier": "com.apple.print.PrintCenter",
+      "version": "4.0",
+      "sourceBundlePath": "/Applications/Utilities/Printer Setup Utility.app",
+      "sourceIconPath": "/Applications/Utilities/Printer Setup Utility.app/Contents/Resources/PrintCenter.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/printer-setup-utility-2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "QuickTime Player",
+      "bundleIdentifier": "com.apple.quicktimeplayer",
+      "version": "7.0",
+      "sourceBundlePath": "/Applications/QuickTime Player.app",
+      "sourceIconPath": "/Applications/QuickTime Player.app/Contents/Resources/QuickTimePlayer.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/quicktime-player.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Reset Password",
+      "bundleIdentifier": "com.apple.ResetPassword",
+      "version": "1.4",
+      "sourceBundlePath": "/Applications/Utilities/Reset Password.app",
+      "sourceIconPath": "/Applications/Utilities/Reset Password.app/Contents/Resources/PasswordReset.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/reset-password.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Safari",
+      "bundleIdentifier": "com.apple.Safari",
+      "version": "2.0",
+      "sourceBundlePath": "/Applications/Safari.app",
+      "sourceIconPath": "/Applications/Safari.app/Contents/Resources/compass.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/safari.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Script Editor",
+      "bundleIdentifier": "com.apple.ScriptEditor2",
+      "version": "2.1",
+      "sourceBundlePath": "/Applications/AppleScript/Script Editor.app",
+      "sourceIconPath": "/Applications/AppleScript/Script Editor.app/Contents/Resources/SEScriptEditorX.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/script-editor.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Sherlock",
+      "bundleIdentifier": "com.apple.Sherlock",
+      "version": "3.6.1",
+      "sourceBundlePath": "/Applications/Sherlock.app",
+      "sourceIconPath": "/Applications/Sherlock.app/Contents/Resources/Sherlock.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/sherlock.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Startup Disk",
+      "bundleIdentifier": "com.apple.StartupDisk",
+      "version": "1.2",
+      "sourceBundlePath": "/Applications/Utilities/Startup Disk.app",
+      "sourceIconPath": "/Applications/Utilities/Startup Disk.app/Contents/Resources/StartupDiskIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/startup-disk.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Stickies",
+      "bundleIdentifier": "com.apple.Stickies",
+      "version": "5.0.0",
+      "sourceBundlePath": "/Applications/Stickies.app",
+      "sourceIconPath": "/Applications/Stickies.app/Contents/Resources/Stickies.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/stickies.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "System Preferences",
+      "bundleIdentifier": "com.apple.systempreferences",
+      "version": "3.1",
+      "sourceBundlePath": "/Applications/System Preferences.app",
+      "sourceIconPath": "/Applications/System Preferences.app/Contents/Resources/PrefApp.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/system-preferences.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "System Profiler",
+      "bundleIdentifier": "com.apple.SystemProfiler",
+      "version": "4.1",
+      "sourceBundlePath": "/Applications/Utilities/System Profiler.app",
+      "sourceIconPath": "/Applications/Utilities/System Profiler.app/Contents/Resources/ASP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/system-profiler.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "Terminal",
+      "bundleIdentifier": "com.apple.Terminal",
+      "version": "1.5",
+      "sourceBundlePath": "/Applications/Utilities/Terminal.app",
+      "sourceIconPath": "/Applications/Utilities/Terminal.app/Contents/Resources/icon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/terminal.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "TextEdit",
+      "bundleIdentifier": "com.apple.TextEdit",
+      "version": "1.4",
+      "sourceBundlePath": "/Applications/TextEdit.app",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/Edit.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/textedit.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "application",
+      "name": "VoiceOver Utility",
+      "bundleIdentifier": "com.apple.VoiceOverUtility",
+      "version": "1.0",
+      "sourceBundlePath": "/Applications/Utilities/VoiceOver Utility.app",
+      "sourceIconPath": "/Applications/Utilities/VoiceOver Utility.app/Contents/Resources/voiceover.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/applications/voiceover-utility.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "AFPServer",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AFPServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/afpserver.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "AirPort Base Station",
+      "sourceIconPath": "/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/air-port-base-station.png",
+      "width": 128,
+      "height": 76
+    },
+    {
+      "type": "device",
+      "name": "AirPort Dual Ethernet",
+      "sourceIconPath": "/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort2.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/air-port-dual-ethernet.png",
+      "width": 128,
+      "height": 82
+    },
+    {
+      "type": "device",
+      "name": "AirPort Express",
+      "sourceIconPath": "/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPort3.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/air-port-express.png",
+      "width": 128,
+      "height": 88
+    },
+    {
+      "type": "device",
+      "name": "AirPort Extreme Base Station",
+      "sourceIconPath": "/Applications/Utilities/AirPort Admin Utility.app/Contents/Resources/AirPortExtreme.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/air-port-extreme-base-station.png",
+      "width": 125,
+      "height": 82
+    },
+    {
+      "type": "device",
+      "name": "AirPort Status",
+      "sourceIconPath": "/Applications/Internet Connect.app/Contents/Resources/AirPort.bundle/Contents/Resources/AirPort.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/air-port-status.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Apple Talk",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleTalkIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/apple-talk.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Apple Talk Zone",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleTalkZoneIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/apple-talk-zone.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Bluetooth Device",
+      "sourceIconPath": "/Applications/iSync.app/Contents/Resources/bluetooth.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/bluetooth-device.png",
+      "width": 48,
+      "height": 48
+    },
+    {
+      "type": "device",
+      "name": "Bluetooth Modem",
+      "sourceIconPath": "/Applications/Internet Connect.app/Contents/Resources/Modem.bundle/Contents/Resources/BlueTooth.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/bluetooth-modem.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Camera",
+      "sourceIconPath": "/Applications/Utilities/Grab.app/Contents/Resources/CameraNormal.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/camera.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "device",
+      "name": "Camera Flash",
+      "sourceIconPath": "/Applications/Utilities/Grab.app/Contents/Resources/CameraEyeFlash.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/camera-flash.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "device",
+      "name": "CD",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/cd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "CD Audio Volume",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CDAudioVolumeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/cd-audio-volume.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "CD-R",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CD-R.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/cd-r.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "CD-RW",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CD-RW.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/cd-rw.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Disconnected File Server",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DisconnectedFileServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/disconnected-file-server.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Disk Utility Disk",
+      "sourceIconPath": "/Applications/Utilities/Disk Utility.app/Contents/Frameworks/DUSupport.framework/Versions/A/Resources/Disk.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/disk-utility-disk.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Disk Utility RAID",
+      "sourceIconPath": "/Applications/Utilities/Disk Utility.app/Contents/Frameworks/DUSupport.framework/Versions/A/Resources/RAID.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/disk-utility-raid.png",
+      "width": 48,
+      "height": 48
+    },
+    {
+      "type": "device",
+      "name": "diskimage",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/diskimage.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/diskimage.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Displays",
+      "sourceIconPath": "/System/Library/PreferencePanes/Displays.prefPane/Contents/Resources/Displays.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/displays.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "dot Mac Neighbourhood",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/dotMacNeighbourhoodIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/dot-mac-neighbourhood.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DVD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/dvd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD+R",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DVD+R.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/dvd-r.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD+RW",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DVD+RW.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/dvd-rw.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD-R",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DVD-R.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/dvd-r-2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD-RAM",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DVD-RAM.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/dvd-ram.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "DVD-RW",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DVD-RW.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/dvd-rw-2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Eject Media",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/EjectMediaIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/eject-media.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "External",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/External.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/external.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Fibre Channel HD",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FibreChannelHD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/fibre-channel-hd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Fire Wire HD",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FireWireHD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/fire-wire-hd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "FireWire Device",
+      "sourceIconPath": "/Applications/iSync.app/Contents/Resources/firewire.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/fire-wire-device.png",
+      "width": 48,
+      "height": 48
+    },
+    {
+      "type": "device",
+      "name": "Floppy",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Floppy.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/floppy.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "FTPServer",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FTPServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/ftpserver.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Generic File Server",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFileServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/generic-file-server.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Generic Network",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/generic-network.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Generic Phone",
+      "sourceIconPath": "/Applications/iSync.app/Contents/PlugIns/ApplePhoneConduit.syncdevice/Contents/Resources/English.lproj/SynchroPushAgent.nib/GenericPhone.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/generic-phone.png",
+      "width": 42,
+      "height": 63
+    },
+    {
+      "type": "device",
+      "name": "Generic RAMDisk",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericRAMDiskIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/generic-ramdisk.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "HTTPServer",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HTTPServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/httpserver.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "i Disk Generic",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/iDiskGenericIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-disk-generic.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "i Disk User",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/iDiskUserIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-disk-user.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "i Mac",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/iMac.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-mac.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Inkjet Printer",
+      "sourceIconPath": "/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/InkjetPrinter.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/inkjet-printer.png",
+      "width": 48,
+      "height": 48
+    },
+    {
+      "type": "device",
+      "name": "Installer CD Drive",
+      "sourceIconPath": "/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-CD.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/installer-cd-drive.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "device",
+      "name": "Installer DVD Drive",
+      "sourceIconPath": "/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-DVD.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/installer-dvd-drive.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "device",
+      "name": "Installer FireWire Drive",
+      "sourceIconPath": "/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-FireWire.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/installer-fire-wire-drive.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "device",
+      "name": "Installer Internal Drive",
+      "sourceIconPath": "/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-internal.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/installer-internal-drive.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "device",
+      "name": "Installer iPod Drive",
+      "sourceIconPath": "/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-iPod.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/installer-i-pod-drive.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Installer USB Drive",
+      "sourceIconPath": "/Applications/Utilities/Installer.app/Contents/PlugIns/TargetSelect.bundle/Contents/Resources/drive-usb.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/installer-usb-drive.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "type": "device",
+      "name": "Internal",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Internal.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/internal.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "IPFile Server",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/IPFileServerIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/ipfile-server.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "iPod 4G",
+      "sourceIconPath": "/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/ipod_4g.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-pod-4g.png",
+      "width": 60,
+      "height": 60
+    },
+    {
+      "type": "device",
+      "name": "iPod Mini Blue",
+      "sourceIconPath": "/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodBlue.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-blue.png",
+      "width": 60,
+      "height": 60
+    },
+    {
+      "type": "device",
+      "name": "iPod Mini Gold",
+      "sourceIconPath": "/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodGold.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-gold.png",
+      "width": 60,
+      "height": 60
+    },
+    {
+      "type": "device",
+      "name": "iPod Mini Green",
+      "sourceIconPath": "/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodGreen.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-green.png",
+      "width": 60,
+      "height": 60
+    },
+    {
+      "type": "device",
+      "name": "iPod Mini Pink",
+      "sourceIconPath": "/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodPink.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-pink.png",
+      "width": 60,
+      "height": 60
+    },
+    {
+      "type": "device",
+      "name": "iPod Mini Silver",
+      "sourceIconPath": "/Applications/iSync.app/Contents/PlugIns/iPodSyncConduit.syncdevice/Contents/Resources/miniPodSilver.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/i-pod-mini-silver.png",
+      "width": 60,
+      "height": 60
+    },
+    {
+      "type": "device",
+      "name": "Magneto Optical",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MagnetoOptical.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/magneto-optical.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Memory Stick",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MemoryStick.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/memory-stick.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Modem",
+      "sourceIconPath": "/Applications/Internet Connect.app/Contents/Resources/Modem.bundle/Contents/Resources/Modem.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/modem.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Net Boot Volume",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NetBootVolume.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/net-boot-volume.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Non RAID",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NonRAID.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/non-raid.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "PC Card",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PCCard.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/pc-card.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Phone",
+      "sourceIconPath": "/Applications/Address Book.app/Contents/Resources/Telephony.bundle/Contents/Resources/bigPhone.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/phone.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "PostScript Printer",
+      "sourceIconPath": "/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/PSPrinter.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/post-script-printer.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Printer Setup",
+      "sourceIconPath": "/Applications/Utilities/Printer Setup Utility.app/Contents/Resources/Printer.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/printer-setup.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "RAID0",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RAID0.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/raid0.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "RAID1",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RAID1.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/raid1.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "RAID1_Locked",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RAID1_Locked.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/raid1-locked.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Removable",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Removable.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/removable.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Smart Media",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SmartMedia.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/smart-media.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Status Bar CDROM",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StatusBarCDROMIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/status-bar-cdrom.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "device",
+      "name": "Super Disk",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SuperDisk.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/super-disk.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "USB Device",
+      "sourceIconPath": "/Applications/iSync.app/Contents/Resources/usb.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/usb-device.png",
+      "width": 48,
+      "height": 48
+    },
+    {
+      "type": "device",
+      "name": "USB HD",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/USBHD.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/usb-hd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Video Chat Camera",
+      "sourceIconPath": "/Applications/iChat.app/Contents/Resources/vc-camera.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/video-chat-camera.png",
+      "width": 33,
+      "height": 32
+    },
+    {
+      "type": "device",
+      "name": "Warning Non RAID",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/WarningNonRAID.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/warning-non-raid.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Warning RAID0",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/WarningRAID0.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/warning-raid0.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Warning RAID1",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/WarningRAID1.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/warning-raid1.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "device",
+      "name": "Xserve RAID",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/XserveRAID.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/devices/xserve-raid.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "ADCReference Library",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ADCReferenceLibraryIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/adcreference-library.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Apple Script Badge",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleScriptBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/apple-script-badge.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Picture",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ClippingPicture.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/clipping-picture.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Sound",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ClippingSound.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/clipping-sound.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Text",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ClippingText.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/clipping-text.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Clipping Unknown",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ClippingUnknown.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/clipping-unknown.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Color Sync Profile",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ColorSyncProfileIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/color-sync-profile.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Executable Binary",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ExecutableBinaryIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/executable-binary.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "File Vault",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FileVaultIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/file-vault.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Application",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-application.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Document",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericDocumentIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-document.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Edition File",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericEditionFileIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-edition-file.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Font",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFontIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-font.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Preferences",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericPreferencesIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-preferences.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Question Mark",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericQuestionMarkIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-question-mark.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Shared Library",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericSharedLibraryIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-shared-library.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Stationery",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericStationeryIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-stationery.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Generic URL",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericURLIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-url.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Generic Window",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericWindowIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/generic-window.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location AFP",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetLocationAFP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/internet-location-afp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location File",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetLocationFile.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/internet-location-file.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location FTP",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetLocationFTP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/internet-location-ftp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location Generic",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetLocationGeneric.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/internet-location-generic.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location HTTP",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetLocationHTTP.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/internet-location-http.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location Mailto",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetLocationMAILTO.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/internet-location-mailto.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Internet Location News",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetLocationNEWS.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/internet-location-news.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-aac",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-aac.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-aac.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-aacp",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-aacp.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-aacp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-aiff",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-aiff.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-aiff.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-audible",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-audible.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-audible.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-cd",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-cd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-cd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-database",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-database.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-database.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-generic",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-generic.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-generic.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-itms",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-itms.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-itms.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-movie",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-movie.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-movie.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mp2",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mp2.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-mp2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mp3",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mp3.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-mp3.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mpeg4",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mpeg4.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-mpeg4.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mpeg4p",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mpeg4p.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-mpeg4p.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-mpg",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-mpg.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-mpg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-nvf",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-nvf.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-nvf.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-ogg",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-ogg.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-ogg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-playlist",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-playlist.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-playlist.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-sd2",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-sd2.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-sd2.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-snd",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-snd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-snd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-wav",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-wav.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-wav.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "iTunes i Tunes-wma",
+      "sourceIconPath": "/Applications/iTunes.app/Contents/Resources/iTunes-wma.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/itunes-i-tunes-wma.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Kernel Extension",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/KEXT.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/kernel-extension.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "No Files",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NoFilesIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/no-files.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "file-type",
+      "name": "Preview bmp",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/bmp.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-bmp.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview DNG",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/DNG.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-dng.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview eps",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/eps.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-eps.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview fax",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/fax.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-fax.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview fpx",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/fpx.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-fpx.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview Generic",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/Generic.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-generic.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview gif",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/gif.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-gif.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview icns",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/icns.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-icns.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview ico",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/ico.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-ico.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview jpeg",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/jpeg.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-jpeg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview JPEG 2000",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/JP2.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-jpeg-2000.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview Open EXR",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/OPENEXR.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-open-exr.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview pdf",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/pdf.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-pdf.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview pict",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/pict.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-pict.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview png",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/png.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-png.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview pntg",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/pntg.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-pntg.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview ps",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/ps.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-ps.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview psd",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/psd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-psd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview qtif",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/qtif.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-qtif.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview RADIANCE",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/RADIANCE.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-radiance.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview RAW",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/RAW.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-raw.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview sgi",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/sgi.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-sgi.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview tga",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/tga.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-tga.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview tiff",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/tiff.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-tiff.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Preview XBM",
+      "sourceIconPath": "/Applications/Preview.app/Contents/Resources/XBM.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/preview-xbm.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Safari document",
+      "sourceIconPath": "/Applications/Safari.app/Contents/Resources/document.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/safari-document.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Safari webarchive",
+      "sourceIconPath": "/Applications/Safari.app/Contents/Resources/webarchive.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/safari-webarchive.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit html",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/html.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/textedit-html.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit rtf",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/rtf.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/textedit-rtf.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit rtfd",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/rtfd.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/textedit-rtfd.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "TextEdit txt",
+      "sourceIconPath": "/Applications/TextEdit.app/Contents/Resources/txt.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/textedit-txt.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "file-type",
+      "name": "Unknown FSObject",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UnknownFSObjectIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/file-types/unknown-fsobject.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Apple Menu Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleMenuFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/apple-menu-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Application Support Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationSupportFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/application-support-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Applications Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/applications-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Assistants Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AssistantsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/assistants-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Classic System Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ClassicSystemFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/classic-system-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Color Sync Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ColorSyncFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/color-sync-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Contextual Menu Items Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ContextualMenuItemsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/contextual-menu-items-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Control Panel Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ControlPanelDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/control-panel-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Control Panel Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ControlPanelFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/control-panel-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Desktop Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DesktopFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/desktop-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Developer Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DeveloperFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/developer-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Documents Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DocumentsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/documents-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Drop Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DropFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/drop-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Extensions Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ExtensionsDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/extensions-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Fonts Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/FontsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/fonts-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Generic Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/generic-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Group Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GroupFolder.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/group-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Help Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HelpFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/help-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Home Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/HomeFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/home-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Internet Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/internet-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Internet Plug In Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/InternetPlugInFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/internet-plug-in-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Library Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LibraryFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/library-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Locales Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LocalesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/locales-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Mounted Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MountedFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/mounted-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Movie Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MovieFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/movie-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Music Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MusicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/music-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "No Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/NoFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/no-folder.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "folder",
+      "name": "Open Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/OpenFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/open-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Owned Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/OwnedFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/owned-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Pictures Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PicturesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/pictures-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Preferences Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PreferencesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/preferences-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Print Monitor Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrintMonitorFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/print-monitor-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Printer Description Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrinterDescriptionFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/printer-description-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Printer Driver Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrinterDriverFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/printer-driver-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Private Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PrivateFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/private-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Protected Application Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ProtectedApplicationFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/protected-application-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Protected System Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ProtectedSystemFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/protected-system-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Public Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/PublicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/public-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Read Only Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ReadOnlyFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/read-only-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Recent Applications Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentApplicationsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/recent-applications-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Recent Documents Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentDocumentsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/recent-documents-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Recent Servers Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/RecentServersFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/recent-servers-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Scripting Additions Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ScriptingAdditionsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/scripting-additions-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Scripts Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ScriptsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/scripts-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Shared Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SharedFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/shared-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Shutdown Items Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ShutdownItemsDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/shutdown-items-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Sites Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SitesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/sites-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Smart Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SmartFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/smart-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Startup Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StartupFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/startup-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Startup Items Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StartupItemsDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/startup-items-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "System Extension Disabled Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SystemExtensionDisabledFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/system-extension-disabled-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "System Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SystemFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/system-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "folder",
+      "name": "Text Encodings Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/TextEncodingsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/text-encodings-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Themes Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ThemesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/themes-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Apps Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarAppsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-apps-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Documents Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarDocumentsFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-documents-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Movie Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMovieFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-movie-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Music Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarMusicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-music-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Pictures Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPicturesFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-pictures-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Toolbar Public Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarPublicFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/toolbar-public-folder.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "folder",
+      "name": "Users Folder",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UsersFolderIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/folders/users-folder.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "system-preference",
+      "name": ".Mac",
+      "bundleIdentifier": "com.apple.preference.internet",
+      "version": "3.4",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Internet.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Internet.prefPane/Contents/Resources/Internet.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/mac.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": ".Mac",
+      "bundleIdentifier": "com.apple.preference.internet",
+      "version": "3.4",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Mac.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Mac.prefPane/Contents/Resources/Internet.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/mac-2.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": "Classic",
+      "bundleIdentifier": "com.apple.preference.classic",
+      "version": "1.1",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Classic.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Classic.prefPane/Contents/Resources/Classic.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/classic.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": "Network",
+      "bundleIdentifier": "com.apple.preference.network",
+      "version": "1.6",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Network.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Network.prefPane/Contents/Resources/Network.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/network.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": "Print & Fax",
+      "bundleIdentifier": "com.apple.preference.printfax",
+      "version": "2.0",
+      "sourceBundlePath": "/System/Library/PreferencePanes/PrintAndFax.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/PrintAndFax.prefPane/Contents/Resources/Printer.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/print-and-fax.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": "QuickTime",
+      "bundleIdentifier": "com.apple.preference.quicktime",
+      "version": "7.0",
+      "sourceBundlePath": "/System/Library/PreferencePanes/QuickTime.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QTPlugIn.prefPane/Contents/Resources/QuickTime.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/quicktime.png",
+      "width": 122,
+      "height": 122
+    },
+    {
+      "type": "system-preference",
+      "name": "Sharing",
+      "bundleIdentifier": "com.apple.preferences.sharing",
+      "version": "1.4.0",
+      "sourceBundlePath": "/System/Library/PreferencePanes/SharingPref.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/SharingPref.prefPane/Contents/Resources/SharingPref.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/sharing.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": "Sound",
+      "bundleIdentifier": "com.apple.preference.sound",
+      "version": "2.3",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Sound.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Sound.prefPane/Contents/Resources/Sound.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/sound.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": "Spotlight",
+      "bundleIdentifier": "com.apple.preference.spotlight",
+      "version": "1.0",
+      "sourceBundlePath": "/System/Library/PreferencePanes/Spotlight.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/Spotlight.prefPane/Contents/Resources/SpotlightPref.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/spotlight.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "system-preference",
+      "name": "Universal Access",
+      "bundleIdentifier": "com.apple.preference.universalaccess",
+      "version": "2.0",
+      "sourceBundlePath": "/System/Library/PreferencePanes/UniversalAccessPref.prefPane",
+      "sourceIconPath": "/System/Library/PreferencePanes/UniversalAccessPref.prefPane/Contents/Resources/UniversalAccessPref.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/system-preferences/universal-access.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "ui-asset",
+      "name": "Alert Caution",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertCautionIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-caution.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Alert Caution Badge",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertCautionBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-caution-badge.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Alert Note",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-note.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Alert Printing",
+      "sourceIconPath": "/Applications/iCal.app/Contents/Resources/alert_printing.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-printing.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Alert Stop",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/alert-stop.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Alias Badge",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AliasBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/alias-badge.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "AppleScript Badge",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AppleScriptBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/apple-script-badge.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "ui-asset",
+      "name": "Certificate",
+      "sourceIconPath": "/Applications/Mail.app/Contents/Resources/certificate.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/certificate.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "ui-asset",
+      "name": "Delete Alias",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/DeleteAliasIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/delete-alias.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Font Book Validation Info",
+      "sourceIconPath": "/Applications/Font Book.app/Contents/Resources/FBValidationInfoIcon.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/font-book-validation-info.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "ui-asset",
+      "name": "Generic Question Mark",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericQuestionMarkIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/generic-question-mark.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "iCal Notification Badge 3",
+      "sourceIconPath": "/Applications/iCal.app/Contents/Resources/notificationBadge3.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/i-cal-notification-badge-3.png",
+      "width": 71,
+      "height": 52
+    },
+    {
+      "type": "ui-asset",
+      "name": "iCal Notification Badge 5",
+      "sourceIconPath": "/Applications/iCal.app/Contents/Resources/notificationBadge5.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/i-cal-notification-badge-5.png",
+      "width": 91,
+      "height": 52
+    },
+    {
+      "type": "ui-asset",
+      "name": "iChat Large",
+      "sourceIconPath": "/Applications/iChat.app/Contents/Resources/iChat_Large.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/i-chat-large.png",
+      "width": 297,
+      "height": 324
+    },
+    {
+      "type": "ui-asset",
+      "name": "iChat New Invite Badge 3",
+      "sourceIconPath": "/Applications/iChat.app/Contents/Resources/newInvitesBadge3.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/i-chat-new-invite-badge-3.png",
+      "width": 71,
+      "height": 52
+    },
+    {
+      "type": "ui-asset",
+      "name": "iChat New Invite Badge 5",
+      "sourceIconPath": "/Applications/iChat.app/Contents/Resources/newInvitesBadge5.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/i-chat-new-invite-badge-5.png",
+      "width": 91,
+      "height": 52
+    },
+    {
+      "type": "ui-asset",
+      "name": "Internet Large",
+      "sourceIconPath": "/Applications/Utilities/Keychain Access.app/Contents/Resources/Internet_Large.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/internet-large.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Key Large",
+      "sourceIconPath": "/Applications/Utilities/Keychain Access.app/Contents/Resources/Key_Large.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/key-large.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Keychain Locked Large",
+      "sourceIconPath": "/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain_Locked.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/keychain-locked-large.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Keychain Unlocked Large",
+      "sourceIconPath": "/Applications/Utilities/Keychain Access.app/Contents/Resources/Keychain_Unlocked.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/keychain-unlocked-large.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Locked",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LockedIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/locked.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "ui-asset",
+      "name": "Locked Badge",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/LockedBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/locked-badge.png",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "type": "ui-asset",
+      "name": "Mail Large",
+      "sourceIconPath": "/Applications/Mail.app/Contents/Resources/Mail_Large.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/mail-large.png",
+      "width": 309,
+      "height": 412
+    },
+    {
+      "type": "ui-asset",
+      "name": "Mail New Badge 3",
+      "sourceIconPath": "/Applications/Mail.app/Contents/Resources/newMailBadge3.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/mail-new-badge-3.png",
+      "width": 71,
+      "height": 52
+    },
+    {
+      "type": "ui-asset",
+      "name": "Mail New Badge 5",
+      "sourceIconPath": "/Applications/Mail.app/Contents/Resources/newMailBadge5.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/mail-new-badge-5.png",
+      "width": 91,
+      "height": 52
+    },
+    {
+      "type": "ui-asset",
+      "name": "Mounted Badge",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/MountedBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/mounted-badge.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "ui-asset",
+      "name": "QuickTime Apple About",
+      "sourceIconPath": "/System/Library/PreferencePanes/QuickTime.prefPane/Contents/Resources/QTRegister.prefPane/Contents/Resources/QTAbout.bundle/Contents/Resources/QT_APPLE_ABOUT.tiff",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/quick-time-apple-about.png",
+      "width": 200,
+      "height": 60
+    },
+    {
+      "type": "ui-asset",
+      "name": "Safari Bookmark Drag Badge 3",
+      "sourceIconPath": "/Applications/Safari.app/Contents/Resources/BookmarksDragBadge3.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/safari-bookmark-drag-badge-3.png",
+      "width": 36,
+      "height": 26
+    },
+    {
+      "type": "ui-asset",
+      "name": "Safari Bookmark Drag Badge 5",
+      "sourceIconPath": "/Applications/Safari.app/Contents/Resources/BookmarksDragBadge5.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/safari-bookmark-drag-badge-5.png",
+      "width": 46,
+      "height": 26
+    },
+    {
+      "type": "ui-asset",
+      "name": "Safari Error Page",
+      "sourceIconPath": "/Applications/Safari.app/Contents/Resources/error-page-icon.tif",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/safari-error-page.png",
+      "width": 84,
+      "height": 90
+    },
+    {
+      "type": "ui-asset",
+      "name": "Shared Badge",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/SharedBadgeIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/shared-badge.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "type": "ui-asset",
+      "name": "Status Bar CD-ROM",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StatusBarCDROMIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/status-bar-cd-rom.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "ui-asset",
+      "name": "Status Bar Trash",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/StatusBarTrashIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/status-bar-trash.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "type": "ui-asset",
+      "name": "System Preferences Circle Badge",
+      "sourceIconPath": "/Applications/System Preferences.app/Contents/Resources/CircleBadge.png",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/system-preferences-circle-badge.png",
+      "width": 54,
+      "height": 58
+    },
+    {
+      "type": "ui-asset",
+      "name": "Unlocked",
+      "sourceIconPath": "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/UnlockedIcon.icns",
+      "catalogPath": "/public/resources/macos-icon-catalogs/tiger/ui-assets/unlocked.png",
+      "width": 16,
+      "height": 16
+    }
+  ]
+}

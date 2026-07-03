@@ -322,6 +322,36 @@ export function LyricsControlsIsland({
                 {t("apps.ipod.menu.chinesePinyin")}
               </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
+              <DropdownMenuRadioGroup
+                value={romanization.chineseLyricsLanguage ?? "auto"}
+                onValueChange={(value) => {
+                  onRomanizationChange({
+                    chineseLyricsLanguage:
+                      value as RomanizationSettings["chineseLyricsLanguage"],
+                  });
+                  onInteraction?.();
+                }}
+              >
+                <DropdownMenuRadioItem
+                  value="auto"
+                  className="text-md h-6 pr-3 whitespace-nowrap"
+                >
+                  {t("apps.ipod.translationLanguages.auto")}
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem
+                  value="zh-TW"
+                  className="text-md h-6 pr-3 whitespace-nowrap"
+                >
+                  {t("settings.language.chineseTraditional")}
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem
+                  value="zh-CN"
+                  className="text-md h-6 pr-3 whitespace-nowrap"
+                >
+                  {t("settings.language.chineseSimplified")}
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={
                   romanization.soramimi &&

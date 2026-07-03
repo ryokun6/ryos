@@ -99,6 +99,18 @@ describe("Chat Hook Channel Lifecycle Wiring", () => {
       assertNoBroadUnbinds(source);
     });
 
+    test("chat room hook removes its singleton connection error listener", () => {
+      const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
+      expect(source).toContain("connectionErrorHandlerRef");
+      expect(source).toMatch(
+        /connection\.bind\(\s*"error",\s*connectionErrorHandler\s*\)/
+      );
+      expect(source).toMatch(
+        /connection\.unbind\(\s*"error",\s*connectionErrorHandlerRef\.current\s*\)/
+      );
+      expect(source).not.toContain("[Pusher Hook] Connection error:");
+    });
+
     test("chat room hook scopes IRC updates to the current room", async () => {
       const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
       expect(source).toContain("shouldSubscribeToForegroundRoomUpdates");

@@ -375,6 +375,7 @@
     <a href="/docs/tv" class="nav-child ">2.25 TV</a>
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
+    <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -421,6 +422,7 @@
   <div class="nav-children" style="display: none;">
     <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
     <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
+    <a href="/docs/icon-resources" class="nav-child ">7.3 Icon Resources</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -488,7 +490,7 @@ Launch Calendar from the application launcher. Use the day, week, or month navig
 <h3>Utilities</h3>
 <ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/utils/parseIcal.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/apps/calendar/utils/parseIcal.ts</a></code> — iCal format parsing</li></ul>
 <h3>State Management</h3>
-<code>useCalendarStore</code> (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/stores/useCalendarStore.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/stores/useCalendarStore.ts</a></code>) — Zustand store with IndexedDB persistence for events, calendars, and todos.
+<code>useCalendarStore</code> (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/stores/useCalendarStore.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/stores/useCalendarStore.ts</a></code>) — Zustand store with localStorage persistence for events, calendars, and todos. Its structured payload remains small; large inline-content stores use IndexedDB instead.
 <h2>Related Apps</h2>
 <ul><li><strong>Stickies:</strong> For quick reminders alongside scheduled events</li></ul><ul><li><strong>Dashboard:</strong> Includes a mini calendar widget that can show your events</li><li><strong>Chats:</strong> Ask Ryo to create or manage calendar events via the AI integration</li><li><strong>Control Panels:</strong> Sets the International time zone the Calendar follows, and toggles Calendar cloud sync</li></ul>
       </article>

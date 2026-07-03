@@ -261,7 +261,7 @@ export function ShareItemDialog({
         />
       </div>
 
-      <DialogFooter className="mt-2 flex justify-end gap-1">
+      <DialogFooter className="mt-2 flex justify-end gap-1.5">
         <Button
           onClick={handleCopyToClipboard}
           disabled={!shareUrl || isLoading}

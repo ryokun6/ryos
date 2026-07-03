@@ -1259,6 +1259,18 @@
   padding-top: 10px;
 }
 
+:root[data-os-theme="macosx"]
+  .control-panels-pref-tabbed:has(> .control-panels-account-profile) {
+  padding-top: 4px;
+}
+
+:root[data-os-theme="macosx"]
+  .control-panels-pref-tabbed
+  > .control-panels-account-profile {
+  flex-shrink: 0;
+  padding-bottom: 14px;
+}
+
 :root[data-os-theme="macosx"] .control-panels-pref-tab-bar {
   display: flex;
   width: 100%;

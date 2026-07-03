@@ -19,14 +19,11 @@ import { useChatsStoreShallow } from "@/stores/useChatsStore";
 interface DeleteAccountDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Whether the account has a password (controls the password field). */
-  hasPassword: boolean | null;
 }
 
 export function DeleteAccountDialog({
   isOpen,
   onOpenChange,
-  hasPassword,
 }: DeleteAccountDialogProps) {
   const { t } = useTranslation();
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
@@ -59,12 +56,10 @@ export function DeleteAccountDialog({
       }
     : undefined;
 
-  const requiresPassword = hasPassword !== false;
-
   const handleDelete = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (busy) return;
-    if (requiresPassword && !password.trim()) {
+    if (!password.trim()) {
       setError(t("apps.control-panels.deleteAccount.passwordRequired"));
       return;
     }
@@ -77,7 +72,7 @@ export function DeleteAccountDialog({
     setError(null);
     const result = await deleteAccount({
       confirmUsername: confirmName.trim(),
-      ...(requiresPassword ? { currentPassword: password } : {}),
+      currentPassword: password,
     });
     if (result.ok) {
       toast.success(t("apps.control-panels.deleteAccount.successTitle"), {
@@ -97,28 +92,27 @@ export function DeleteAccountDialog({
 
   const form = (
     <form onSubmit={handleDelete} className="space-y-3">
-      {requiresPassword && (
-        <div className="space-y-2">
-          <Label
-            className={cn("text-neutral-700", themeFont)}
-            style={themeFontStyle}
-          >
-            {t("apps.control-panels.deleteAccount.passwordLabel")}
-          </Label>
-          <Input
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError(null);
-            }}
-            className={cn("shadow-none h-8", themeFont)}
-            style={themeFontStyle}
-            disabled={busy}
-          />
-        </div>
-      )}
+      <div className="space-y-2">
+        <Label
+          className={cn("text-neutral-700", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.control-panels.deleteAccount.passwordLabel")}
+        </Label>
+        <Input
+          type="password"
+          autoComplete="current-password"
+          autoFocus
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError(null);
+          }}
+          className={cn("shadow-none h-8", themeFont)}
+          style={themeFontStyle}
+          disabled={busy}
+        />
+      </div>
       <div className="space-y-2">
         <Label
           className={cn("text-neutral-700", themeFont)}
@@ -127,7 +121,6 @@ export function DeleteAccountDialog({
           {t("apps.control-panels.deleteAccount.confirmLabel")}
         </Label>
         <Input
-          autoFocus={!requiresPassword}
           value={confirmName}
           placeholder={t("apps.control-panels.deleteAccount.confirmPlaceholder", {
             username: username || "",
@@ -150,7 +143,7 @@ export function DeleteAccountDialog({
           {error}
         </p>
       )}
-      <DialogFooter className="mt-4 gap-1 sm:justify-end">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-end">
         <Button
           type="button"
           variant="retro"
@@ -163,9 +156,9 @@ export function DeleteAccountDialog({
         </Button>
         <Button
           type="submit"
-          variant="retro"
+          variant="destructive"
           disabled={busy}
-          className={cn("w-full sm:w-auto h-7 text-red-600", themeFont)}
+          className={cn("w-full sm:w-auto h-7", themeFont)}
           style={themeFontStyle}
         >
           {busy

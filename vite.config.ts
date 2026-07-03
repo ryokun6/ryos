@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { collectOfflinePrecacheChunkClosure } from "./vite/precachePolicy";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -56,61 +57,64 @@ self.addEventListener("activate", (event) => {
 `;
 
 // ---------------------------------------------------------------------------
-// Curated Workbox precache
+// Offline app Workbox precache
 //
-// We precache the app shell + every "normal" JS chunk so apps load offline and
-// updates only re-download content-hashed chunks that actually changed. But we
-// EXCLUDE a handful of heavy / rarely-needed-offline families from the precache
-// to keep the service-worker install small: they stay available on-demand via
-// the runtime CacheFirst /assets/*.js rule (and degrade gracefully offline):
-//   - shiki syntax grammars + themes  (chat code highlighting; falls back to
-//     plain text offline)
-//   - mermaid                         (chat diagrams)
-//   - webamp                          (Winamp app)
-//   - v86                             (Virtual PC emulator)
-//   - pusher-js                       (realtime chat; needs network anyway)
-//   - react-player                    (YouTube playback; needs network anyway)
-// `three` (3D wallpapers / Synth) and `audio` (Synth/Soundboard/iPod) are NOT
-// excluded so those keep working offline.
-//
-// The set is populated at build time by `collectHeavyChunksPlugin` (which
-// inspects each emitted chunk's modules) and consumed by the Workbox
-// `manifestTransforms` hook below.
+// We precache the shell, every app and every locale catalog with their static
+// dependencies. Features reached only through nested dynamic imports remain
+// available on demand through the runtime CacheFirst rules.
+// The exclusion set is populated at build time by inspecting emitted chunks
+// and consumed by the Workbox `manifestTransforms` hook below.
 // ---------------------------------------------------------------------------
-const HEAVY_PRECACHE_PACKAGES =
-  /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?(?:shiki|@shikijs|mermaid|webamp|v86|pusher-js|react-player)[/\\]/;
-const heavyPrecacheExclusions = new Set<string>();
+const precacheExclusions = new Set<string>();
 
-function collectHeavyChunksPlugin() {
+function collectPrecacheExclusionsPlugin() {
   return {
-    name: "ryos-collect-heavy-chunks",
+    name: "ryos-collect-precache-exclusions",
     apply: "build" as const,
     generateBundle(_options: unknown, bundle: Record<string, unknown>) {
-      for (const [fileName, output] of Object.entries(bundle)) {
-        const chunk = output as {
-          type?: string;
-          moduleIds?: string[];
-          modules?: Record<string, unknown>;
-          facadeModuleId?: string | null;
+      type EmittedChunk = {
+        type?: string;
+        facadeModuleId?: string | null;
+        imports?: string[];
+        isEntry?: boolean;
+        viteMetadata?: {
+          importedCss?: Set<string>;
         };
-        if (chunk.type !== "chunk" || !fileName.endsWith(".js")) continue;
-        const moduleIds =
-          chunk.moduleIds ?? Object.keys(chunk.modules ?? {});
-        if (moduleIds.length === 0) continue;
-        // Exclude a chunk when it is ENTIRELY composed of heavy packages
-        // (catches shiki language/theme grammars and manual heavy chunks), OR
-        // when its facade module is a heavy package (catches dynamic-import
-        // entry chunks like mermaid that also bundle non-heavy transitive deps
-        // such as d3/dagre). Requiring all-heavy or a heavy facade avoids ever
-        // dropping a shared chunk that also contains app code.
-        const allHeavy = moduleIds.every((id) =>
-          HEAVY_PRECACHE_PACKAGES.test(id)
-        );
-        const heavyFacade =
-          typeof chunk.facadeModuleId === "string" &&
-          HEAVY_PRECACHE_PACKAGES.test(chunk.facadeModuleId);
-        if (allHeavy || heavyFacade) {
-          heavyPrecacheExclusions.add(fileName.split("/").pop() as string);
+      };
+      const chunks = Object.entries(bundle)
+        .filter(
+          ([fileName, output]) =>
+            (output as EmittedChunk).type === "chunk" &&
+            fileName.endsWith(".js")
+        )
+        .map(([fileName, output]) => ({
+          fileName,
+          chunk: output as EmittedChunk,
+        }));
+      const offlineClosure = collectOfflinePrecacheChunkClosure(
+        chunks.map(({ fileName, chunk }) => ({
+          fileName,
+          imports: chunk.imports ?? [],
+          isEntry: chunk.isEntry,
+          facadeModuleId: chunk.facadeModuleId,
+        }))
+      );
+      const offlineCss = new Set(
+        chunks
+          .filter(({ fileName }) => offlineClosure.has(fileName))
+          .flatMap(({ chunk }) => [
+            ...(chunk.viteMetadata?.importedCss ?? []),
+          ])
+      );
+
+      for (const { fileName, chunk } of chunks) {
+        if (!offlineClosure.has(fileName)) {
+          precacheExclusions.add(fileName.split("/").pop() as string);
+          for (const cssFile of chunk.viteMetadata?.importedCss ?? []) {
+            if (!offlineCss.has(cssFile)) {
+              precacheExclusions.add(cssFile.split("/").pop() as string);
+            }
+          }
         }
       }
     },
@@ -282,11 +286,6 @@ export default defineConfig({
       // Motion (motion/react) is used on initial load for animations
       "motion/react",
       "motion",
-      // Pre-bundle so CJS→ESM works (avoids "exports is not defined" / "no export named default" in dev)
-      "react-player",
-      "pinyin-pro",
-      "wanakana",
-      "hangul-romanization",
     ],
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened
@@ -303,7 +302,6 @@ export default defineConfig({
       "@tiptap/react",
       "@tiptap/starter-kit",
       "@tiptap/pm",
-      // pinyin-pro, wanakana, hangul-romanization are in include for CJS→ESM pre-bundle
       // Realtime chat - only needed when Chats opens
       "pusher-js",
       // QR codes - only needed for specific features
@@ -337,6 +335,19 @@ export default defineConfig({
                 res.setHeader("Cache-Control", "no-store, max-age=0");
                 res.end(devServiceWorkerResetScript);
               });
+            },
+          },
+          {
+            name: "serve-dev-pwa-register-stub",
+            resolveId(id: string) {
+              return id === "virtual:pwa-register"
+                ? "\0virtual:pwa-register"
+                : undefined;
+            },
+            load(id: string) {
+              return id === "\0virtual:pwa-register"
+                ? "export const registerSW = () => undefined;"
+                : undefined;
             },
           },
         ]
@@ -436,15 +447,15 @@ export default defineConfig({
     // Only include PWA plugin in production builds (not dev)
     // Skip PWA plugin entirely in dev mode to save ~50MB memory (Workbox config is heavy)
     ...(isDev ? [] : [
-      collectHeavyChunksPlugin(),
+      collectPrecacheExclusionsPlugin(),
       VitePWA({
       registerType: "autoUpdate",
+      injectRegister: false,
       manifestFilename: "manifest.json",
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
         "icons/*.png",
-        "fonts/*.woff2",
       ],
       manifest: {
         name: "ryOS",
@@ -589,7 +600,7 @@ export default defineConfig({
             // Videos need range request support which CacheFirst doesn't handle well.
             // Keep this before the generic image route so wallpapers use their
             // larger, dedicated cache instead of consuming the shared image cache.
-            urlPattern: /\/wallpapers\/(?:photos|tiles|thumbs)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
+            urlPattern: /\/wallpapers\/(?:photos|tiles|thumbs)\/.+\.(?:jpg|jpeg|png|webp|avif)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "wallpapers",
@@ -601,7 +612,7 @@ export default defineConfig({
           },
           {
             // Cache images aggressively
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)(?:\?.*)?$/i,
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif|ico)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "images",
@@ -670,6 +681,20 @@ export default defineConfig({
             },
           },
           {
+            // Bundled EPUBs (Books app defaults) — cache-first so the lazy
+            // asset load / reader fallback fetch still resolves offline once
+            // the book has been fetched at least once.
+            urlPattern: /\/assets\/books\/.+\.epub(?:\?.*)?$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "books-assets",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
             // Cache JSON data files with network-first for freshness
             urlPattern: /\/data\/.*\.json$/i,
             handler: "NetworkFirst",
@@ -710,16 +735,14 @@ export default defineConfig({
             },
           },
         ],
-        // Precache the app shell + JS chunks for reliable offline support and
-        // efficient, revision-aware updates (only changed hashed chunks are
-        // re-fetched). Heavy/optional chunks are filtered out below via
-        // manifestTransforms so the install stays small; they load on-demand
-        // through the runtime CacheFirst /assets/*.js rule instead.
+        // Precache the shell, app chunks, locale catalogs, and their static
+        // dependencies. Nested optional imports still load on demand through
+        // the runtime CacheFirst /assets/*.js rule.
         globPatterns: [
           "index.html",
           "assets/*.js",
           "**/*.css",
-          "fonts/*.woff2",
+          "fonts/fonts.css",
           "icons/manifest.json",
         ],
         // Exclude large data files from precaching (they'll be cached at runtime)
@@ -727,9 +750,7 @@ export default defineConfig({
           "**/data/all-sounds.json", // 4.7MB - too large
           "**/node_modules/**",
         ],
-        // Drop heavy / rarely-needed-offline chunk families from the precache
-        // manifest (see heavyPrecacheExclusions above). They remain runtime
-        // cacheable on first use, and chat code/diagrams degrade gracefully.
+        // Keep only the offline app closure collected from the Rollup graph.
         manifestTransforms: [
           (
             entries: Array<{
@@ -740,7 +761,7 @@ export default defineConfig({
           ) => {
             const manifest = entries.filter((entry) => {
               const base = entry.url.split("/").pop() ?? entry.url;
-              return !heavyPrecacheExclusions.has(base);
+              return !precacheExclusions.has(base);
             });
             return { manifest, warnings: [] };
           },

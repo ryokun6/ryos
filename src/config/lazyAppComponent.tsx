@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import type { AppProps } from "@/apps/base/types";
+import { ensureCurrentLanguageResources } from "@/lib/i18n";
 import { LazyLoadSignal } from "./LazyLoadSignal";
 
 // Cache for lazy components to maintain stable references across HMR
@@ -41,9 +42,17 @@ export function createLazyComponent<T = unknown>(
     return cached as ComponentType<AppProps<T>>;
   }
 
-  appChunkLoaders.set(cacheKey, importFn);
+  const loadApp = async () => {
+    const [appModule] = await Promise.all([
+      importFn(),
+      ensureCurrentLanguageResources(),
+    ]);
+    return appModule;
+  };
 
-  const LazyComponent = lazy(importFn);
+  appChunkLoaders.set(cacheKey, loadApp);
+
+  const LazyComponent = lazy(loadApp);
 
   // Wrap with Suspense to handle loading state
   const WrappedComponent = (props: AppProps<T>) => (

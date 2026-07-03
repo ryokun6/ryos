@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
+import { useNowPlayingCoverBridge } from "@/stores/useNowPlayingCoverBridge";
 import { useWeatherWallpaper } from "@/hooks/useWeatherWallpaper";
 import { useWeatherSimulationStore } from "@/stores/useWeatherSimulationStore";
 import {
@@ -21,6 +21,7 @@ import {
   isLyricsWallpaper,
   isWeatherWallpaper,
 } from "@/utils/dynamicWallpaper";
+import { resolveStaticWallpaperRenderUrl } from "@/utils/staticWallpaperUrl";
 
 export interface WallpaperMenubarText {
   textColor: string;
@@ -115,9 +116,11 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
   const isCover = isCoverWallpaper(currentWallpaper);
   const isLyrics = isLyricsWallpaper(currentWallpaper);
   // Cover + lyrics wallpapers both tint from the now-playing album art, exactly
-  // like the wallpaper accent's cover-based path.
+  // like the wallpaper accent's cover-based path. The URL comes from the
+  // lightweight bridge (published by the lazily loaded cover / lyrics
+  // wallpaper layers) so this boot-path hook never pulls the iPod stores.
   const isCoverBased = isCover || isLyrics;
-  const { coverUrl: nowPlayingCoverUrl } = useNowPlayingCover();
+  const nowPlayingCoverUrl = useNowPlayingCoverBridge((s) => s.coverUrl);
   // Only subscribe to live weather (and its geolocation/fetch) while the weather
   // wallpaper is actually driving the menubar tone.
   const { weatherCode } = useWeatherWallpaper(enabled && isWeather);
@@ -134,7 +137,7 @@ export function useWallpaperMenubarText(enabled: boolean): WallpaperMenubarText 
   if (!isGradient && !isWeather) {
     if (isCoverBased) sampleSource = nowPlayingCoverUrl;
     else if (!isVideoWallpaper && isConcreteWallpaperSource(wallpaperSource)) {
-      sampleSource = wallpaperSource;
+      sampleSource = resolveStaticWallpaperRenderUrl(wallpaperSource);
     }
   }
 

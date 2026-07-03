@@ -163,6 +163,9 @@ export function MediaLyricsViewMenuItems({
         japaneseRomajiLabel={t("apps.ipod.menu.japaneseRomaji")}
         koreanRomanizationLabel={t("apps.ipod.menu.koreanRomanization")}
         chinesePinyinLabel={t("apps.ipod.menu.chinesePinyin")}
+        automaticLabel={t("apps.ipod.translationLanguages.auto")}
+        chineseTraditionalLabel={t("settings.language.chineseTraditional")}
+        chineseSimplifiedLabel={t("settings.language.chineseSimplified")}
         chineseSoramimiLabel={t("apps.ipod.menu.chineseSoramimi")}
         soramimiLabel={t("apps.ipod.menu.soramimi")}
         romanization={romanization}

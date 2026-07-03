@@ -1,4 +1,6 @@
 import React from "react";
+import "@/styles/themes/control-panels-mac.css";
+import "@/styles/themes/control-panels-themed.css";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { ControlPanelsMenuBar } from "../ControlPanelsMenuBar";
 import { AppProps, ControlPanelsInitialData } from "@/apps/base/types";
@@ -96,6 +98,8 @@ export function ControlPanelsAppComponent({
     handleUISoundsChange,
     speechEnabled,
     handleSpeechChange,
+    browserTtsVoiceURI,
+    handleBrowserTtsVoiceChange,
     terminalSoundsEnabled,
     setTerminalSoundsEnabled,
     synthPreset,
@@ -145,7 +149,6 @@ export function ControlPanelsAppComponent({
     setVerifyPasswordInput,
     verifyUsernameInput,
     setVerifyUsernameInput,
-    hasPassword,
     logout,
     confirmLogout,
     isLogoutConfirmDialogOpen,
@@ -285,6 +288,8 @@ export function ControlPanelsAppComponent({
       handleUISoundsChange={handleUISoundsChange}
       speechEnabled={speechEnabled}
       handleSpeechChange={handleSpeechChange}
+      browserTtsVoiceURI={browserTtsVoiceURI}
+      handleBrowserTtsVoiceChange={handleBrowserTtsVoiceChange}
       terminalSoundsEnabled={terminalSoundsEnabled}
       setTerminalSoundsEnabled={setTerminalSoundsEnabled}
       synthPreset={synthPreset}
@@ -353,7 +358,6 @@ export function ControlPanelsAppComponent({
       debugMode={debugMode}
       isAdmin={isAdmin}
       promptVerifyToken={promptVerifyToken}
-      hasPassword={hasPassword}
       setPasswordInput={setPasswordInput}
       setPasswordError={setPasswordError}
       setIsPasswordDialogOpen={setIsPasswordDialogOpen}
@@ -455,7 +459,6 @@ export function ControlPanelsAppComponent({
           setIsPasswordDialogOpen={setIsPasswordDialogOpen}
           setPasswordInput={setPasswordInput}
           setPasswordError={setPasswordError}
-          hasPassword={hasPassword}
           isSettingPassword={isSettingPassword}
           passwordError={passwordError}
           handleSetPassword={handleSetPassword}

@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { requestRecovery, resetPasswordWithCode } from "@/api/auth";
-import type { RecoveryChannel } from "@/shared/contracts/auth";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { ApiRequestError } from "@/api/core";
 import { PASSWORD_MIN_LENGTH } from "@/shared/validation";
@@ -42,7 +41,6 @@ export function ResetPasswordDialog({
 
   const [step, setStep] = useState<Step>("request");
   const [identifier, setIdentifier] = useState(defaultIdentifier);
-  const [channel, setChannel] = useState<RecoveryChannel>("telegram");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -53,7 +51,6 @@ export function ResetPasswordDialog({
     if (isOpen) {
       setStep("request");
       setIdentifier(defaultIdentifier);
-      setChannel("telegram");
       setCode("");
       setNewPassword("");
       setConfirmPassword("");
@@ -82,7 +79,7 @@ export function ResetPasswordDialog({
     setIsBusy(true);
     setError(null);
     try {
-      await requestRecovery({ identifier: identifier.trim(), channel });
+      await requestRecovery({ identifier: identifier.trim() });
       toast.success(t("common.auth.recovery.codeSent"));
       setStep("reset");
     } catch (err) {
@@ -140,23 +137,6 @@ export function ResetPasswordDialog({
     }
   };
 
-  const channelButton = (value: RecoveryChannel, label: string) => (
-    <Button
-      type="button"
-      variant="retro"
-      onClick={() => setChannel(value)}
-      className={cn(
-        "h-7 flex-1",
-        channel === value && "ring-2 ring-offset-1 ring-neutral-500",
-        themeFont
-      )}
-      style={themeFontStyle}
-      disabled={isBusy}
-    >
-      {label}
-    </Button>
-  );
-
   const requestForm = (
     <form onSubmit={handleSendCode} className="space-y-3">
       <div className="space-y-2">
@@ -175,21 +155,12 @@ export function ResetPasswordDialog({
           disabled={isBusy}
         />
       </div>
-      <div className="space-y-2">
-        <Label className={cn("text-neutral-700", themeFont)} style={themeFontStyle}>
-          {t("common.auth.recovery.channel")}
-        </Label>
-        <div className="flex gap-2">
-          {channelButton("telegram", t("common.auth.recovery.channelTelegram"))}
-          {channelButton("email", t("common.auth.recovery.channelEmail"))}
-        </div>
-      </div>
       {error && (
         <p className={cn("text-red-600", themeFont)} style={themeFontStyle} role="alert">
           {error}
         </p>
       )}
-      <DialogFooter className="mt-4 gap-1 sm:justify-end">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-end">
         <Button
           type="submit"
           variant="retro"
@@ -263,7 +234,7 @@ export function ResetPasswordDialog({
           {error}
         </p>
       )}
-      <DialogFooter className="mt-4 gap-1 sm:justify-between">
+      <DialogFooter className="mt-4 gap-1.5 sm:justify-between">
         <Button
           type="button"
           variant="retro"

@@ -158,7 +158,7 @@ describe("Account Deletion API", () => {
 
     // Old token invalid.
     const tokenCheck = await fetchWithAuth(
-      `${BASE_URL}/api/auth/password/check`,
+      `${BASE_URL}/api/auth/tokens`,
       username,
       token,
       { method: "GET" }

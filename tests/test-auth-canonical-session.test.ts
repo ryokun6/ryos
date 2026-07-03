@@ -5,7 +5,7 @@ import {
   getUserPasswordHash,
   setUserPasswordHash,
 } from "../api/_utils/auth/_password-storage";
-import { storeToken } from "../api/_utils/auth/_tokens";
+import { deleteToken, storeToken } from "../api/_utils/auth/_tokens";
 import {
   getStoredUserRecord,
   setStoredUserRecord,
@@ -21,6 +21,33 @@ const legacyStoredUserKey = (username: string) =>
   `chat:users:${username.toLowerCase()}`;
 
 describe("canonical auth sessions", () => {
+  test("deletes canonical sessions by owner without scanning user session sets", async () => {
+    class NoScanRedis extends FakeRedis {
+      override async scan(): Promise<[string, string[]]> {
+        throw new Error("deleteToken must not scan for session owners");
+      }
+    }
+
+    const fake = new NoScanRedis();
+    const redis = fake as unknown as Redis;
+    const username = "Ryo";
+    const normalizedUsername = username.toLowerCase();
+    const token = "session-to-delete";
+
+    await storeToken(redis, username, token);
+    const tokenHash = await sha256RedisIdentifier(token);
+    const sessionKey = redisKeys.auth.session(tokenHash);
+    const sessionSetKey = redisKeys.auth.userSessions(normalizedUsername);
+
+    expect(await redis.exists(sessionKey)).toBe(1);
+    expect(fake.sets.get(sessionSetKey)?.has(tokenHash)).toBe(true);
+
+    await deleteToken(redis, token, username);
+
+    expect(await redis.exists(sessionKey)).toBe(0);
+    expect(fake.sets.has(sessionSetKey)).toBe(false);
+  });
+
   test("validates against canonical session keys only", async () => {
     const fake = new FakeRedis();
     const redis = fake as unknown as Redis;

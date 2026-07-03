@@ -10,6 +10,7 @@ import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { getDefaultFileApp } from "@/utils/fileAssociations";
 import type {
   SpotlightSearchSnapshot,
   SpotlightWorkerResponse,
@@ -180,15 +181,21 @@ const mapWorkerResultToSpotlightResult = (
 ): SpotlightResult => {
   switch (result.type) {
     case "document":
+      {
+        const appId =
+          getDefaultFileApp({ path: result.path, name: result.title }) ??
+          "textedit";
       return {
         id: result.id,
         type: "document",
         title: result.title,
         subtitle: "Documents",
-        icon: "file-text.png",
+        icon:
+          appId === "preview" ? getAppIconPath("preview") : "file-text.png",
         action: () =>
-          launchApp("textedit", { initialData: { path: result.path } }),
+          launchApp(appId, { initialData: { path: result.path } }),
       };
+      }
     case "applet":
       return {
         id: result.id,

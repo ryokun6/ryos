@@ -1,4 +1,15 @@
 import type { PersistStorage, StorageValue } from "zustand/middleware";
+import {
+  clearPendingFlush,
+  ensureLifecycleFlush,
+  flushAllPersistWrites,
+  haltPersistWrites,
+  isPersistWritesHalted,
+  registerAdapterResetter,
+  registerPendingFlush,
+  resetPersistWritesForTests,
+  resumePersistWrites,
+} from "./persistWriteQueue";
 
 /**
  * Debounced write-behind localStorage adapter for zustand's persist
@@ -6,12 +17,10 @@ import type { PersistStorage, StorageValue } from "zustand/middleware";
  *
  * `createJSONStorage(() => localStorage)` serializes the entire partialized
  * slice and writes it synchronously on EVERY persisted mutation. For large
- * slices (Files VFS, chat history, iPod library) that means multi-MB
- * `JSON.stringify` + sync disk writes on hot paths like appending a chat
- * message or renaming a file.
+ * slices that still fit comfortably within the Web Storage quota, that can
+ * mean avoidable `JSON.stringify` + sync disk writes on hot mutation paths.
  *
- * This adapter keeps localStorage as the authoritative storage (backup,
- * restore, and reset flows that read the raw keys keep working) but:
+ * This adapter keeps localStorage as the authoritative storage but:
  *   - `setItem` only records the latest snapshot and starts a debounce
  *     timer; serialization happens once per quiet window instead of once
  *     per mutation (zustand state is immutable, so the held reference is a
@@ -21,55 +30,35 @@ import type { PersistStorage, StorageValue } from "zustand/middleware";
  *     guarantee browsers give localStorage itself on crash.
  *   - `getItem` serves a pending snapshot first (read-your-writes).
  *
- * Flows that read the raw localStorage keys directly (system reset, manual
- * backup) must call `flushDebouncedPersistWrites()` first.
+ * Write scheduling (debounce timer, lifecycle flush, and the halt switch) is
+ * shared with the IndexedDB adapter via `persistWriteQueue`, so a single flush
+ * drains every adapter instance regardless of backing store.
  */
-
-type PendingFlush = () => void;
-
-// name -> flush, so a global flush can drain every adapter instance.
-const pendingFlushes = new Map<string, PendingFlush>();
-const adapterResetters = new Set<() => void>();
-let lifecycleFlushRegistered = false;
-let halted = false;
 
 /** Synchronously write out every pending persist snapshot. */
 export function flushDebouncedPersistWrites(): void {
-  for (const flush of Array.from(pendingFlushes.values())) {
-    flush();
-  }
+  flushAllPersistWrites();
 }
 
 /**
  * Stop all further persist writes until the page reloads. Used by
- * restore/reset flows that rewrite localStorage directly and then reload:
+ * restore/reset flows that rewrite storage directly and then reload:
  * without this, an in-memory store mutation queued during the restore window
  * would be flushed by the pagehide handler mid-reload and clobber freshly
  * restored keys with pre-restore state.
  */
 export function haltDebouncedPersistWrites(): void {
-  halted = true;
-  pendingFlushes.clear();
+  haltPersistWrites();
+}
+
+/** Resume writes when a restore/reset operation aborts before reload. */
+export function resumeDebouncedPersistWrites(): void {
+  resumePersistWrites();
 }
 
 /** @internal Test-only reset for Bun's shared-process test runner. */
 export function resetDebouncedPersistWritesForTests(): void {
-  halted = false;
-  for (const resetAdapter of Array.from(adapterResetters)) {
-    resetAdapter();
-  }
-  pendingFlushes.clear();
-}
-
-function ensureLifecycleFlush(): void {
-  if (lifecycleFlushRegistered || typeof window === "undefined") return;
-  lifecycleFlushRegistered = true;
-  window.addEventListener("pagehide", flushDebouncedPersistWrites);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-      flushDebouncedPersistWrites();
-    }
-  });
+  resetPersistWritesForTests();
 }
 
 export function createDebouncedPersistStorage<S>(
@@ -85,7 +74,7 @@ export function createDebouncedPersistStorage<S>(
       clearTimeout(timer);
       timer = null;
     }
-    if (halted) {
+    if (isPersistWritesHalted()) {
       pendingName = null;
       pendingValue = null;
       return;
@@ -95,7 +84,7 @@ export function createDebouncedPersistStorage<S>(
     const value = pendingValue;
     pendingName = null;
     pendingValue = null;
-    pendingFlushes.delete(name);
+    clearPendingFlush(name);
     try {
       localStorage.setItem(name, JSON.stringify(value));
     } catch (error) {
@@ -112,13 +101,13 @@ export function createDebouncedPersistStorage<S>(
       timer = null;
     }
     if (pendingName !== null) {
-      pendingFlushes.delete(pendingName);
+      clearPendingFlush(pendingName);
     }
     pendingName = null;
     pendingValue = null;
   };
 
-  adapterResetters.add(resetForTests);
+  registerAdapterResetter(resetForTests);
 
   return {
     getItem: (name) => {
@@ -140,11 +129,11 @@ export function createDebouncedPersistStorage<S>(
     },
 
     setItem: (name, value) => {
-      if (halted) return;
+      if (isPersistWritesHalted()) return;
       ensureLifecycleFlush();
       pendingName = name;
       pendingValue = value;
-      pendingFlushes.set(name, writeNow);
+      registerPendingFlush(name, writeNow);
       if (timer !== null) clearTimeout(timer);
       timer = setTimeout(writeNow, delayMs);
     },
@@ -157,7 +146,7 @@ export function createDebouncedPersistStorage<S>(
           clearTimeout(timer);
           timer = null;
         }
-        pendingFlushes.delete(name);
+        clearPendingFlush(name);
       }
       localStorage.removeItem(name);
     },

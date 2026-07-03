@@ -19,6 +19,9 @@ import {
   type TranslationResult,
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
+import { shouldForceLyricsFetch } from "@/shared/media/lyricsFetchPolicy";
+import { canStartLyricsTranslation } from "@/shared/media/lyricsLifecycle";
+import type { ChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 
 const lyricsLog = createClientLogger("Lyrics");
 
@@ -41,6 +44,8 @@ interface UseLyricsParams {
   artist?: string;
   currentTime: number;
   translateTo?: string | null;
+  /** Script used for the primary KuGou lyric lines. */
+  lyricsLanguage?: ChineseLyricsLanguage;
   /** Include furigana info in initial fetch (for Japanese romanization) */
   includeFurigana?: boolean;
   /** Include soramimi info in initial fetch (for misheard lyrics) */
@@ -60,6 +65,16 @@ interface UseLyricsParams {
     isAuthenticated: boolean;
   };
 }
+
+interface UseLyricsDependencies {
+  fetchSongLyrics: typeof fetchSongLyrics;
+  processTranslationSSE: typeof processTranslationSSE;
+}
+
+const DEFAULT_LYRICS_DEPENDENCIES: UseLyricsDependencies = {
+  fetchSongLyrics,
+  processTranslationSSE,
+};
 
 interface LyricsState {
   lines: LyricLine[];
@@ -102,6 +117,7 @@ interface LyricsLogContext {
   title?: string;
   artist?: string;
   translateTo?: string | null;
+  lyricsLanguage?: ChineseLyricsLanguage;
   includeFurigana?: boolean;
   includeSoramimi?: boolean;
   soramimiTargetLanguage?: "zh-TW" | "en";
@@ -118,18 +134,24 @@ interface LyricsLogContext {
 // Hook
 // =============================================================================
 
-export function useLyrics({
-  songId,
-  title = "",
-  artist = "",
-  currentTime,
-  translateTo,
-  includeFurigana,
-  includeSoramimi,
-  soramimiTargetLanguage = "zh-TW",
-  selectedMatch,
-  auth,
-}: UseLyricsParams): LyricsState {
+export function useLyrics(
+  {
+    songId,
+    title = "",
+    artist = "",
+    currentTime,
+    translateTo,
+    lyricsLanguage = "zh-TW",
+    includeFurigana,
+    includeSoramimi,
+    soramimiTargetLanguage = "zh-TW",
+    selectedMatch,
+    auth,
+  }: UseLyricsParams,
+  dependencies: UseLyricsDependencies = DEFAULT_LYRICS_DEPENDENCIES
+): LyricsState {
+  const fetchLyrics = dependencies.fetchSongLyrics;
+  const translateLyrics = dependencies.processTranslationSSE;
   interface LyricsLocalState {
     originalLines: LyricLine[];
     translatedLines: LyricLine[] | null;
@@ -295,6 +317,7 @@ export function useLyrics({
       title: title || undefined,
       artist: artist || undefined,
       translateTo,
+      lyricsLanguage,
       includeFurigana: Boolean(includeFurigana),
       includeSoramimi: Boolean(includeSoramimi),
       soramimiTargetLanguage,
@@ -313,6 +336,7 @@ export function useLyrics({
       title,
       artist,
       translateTo,
+      lyricsLanguage,
       includeFurigana,
       includeSoramimi,
       soramimiTargetLanguage,
@@ -323,6 +347,9 @@ export function useLyrics({
   // Clear cached translation/furigana/soramimi info when cache bust trigger changes (force refresh)
   useEffect(() => {
     if (isCacheBustRequest) {
+      lyricsLog.debug("Clearing prefetched lyrics annotations for refresh", {
+        songId,
+      });
       translationInfoRef.current = undefined;
       dispatch({
         type: "patch",
@@ -333,17 +360,22 @@ export function useLyrics({
         },
       });
     }
-  }, [isCacheBustRequest]);
+  }, [isCacheBustRequest, songId]);
 
   // Track soramimi target language to clear prefetched info when it changes
   const lastSoramimiTargetLanguageRef = useRef(soramimiTargetLanguage);
   useEffect(() => {
     // Clear soramimi info when target language changes so useFurigana fetches fresh data
     if (lastSoramimiTargetLanguageRef.current !== soramimiTargetLanguage) {
+      lyricsLog.debug("Soramimi target language changed", {
+        songId,
+        previousLanguage: lastSoramimiTargetLanguageRef.current,
+        nextLanguage: soramimiTargetLanguage,
+      });
       setSoramimiInfo(undefined);
       lastSoramimiTargetLanguageRef.current = soramimiTargetLanguage;
     }
-  }, [soramimiTargetLanguage]);
+  }, [soramimiTargetLanguage, songId]);
 
   // ==========================================================================
   // Effect: Fetch lyrics (and optionally translation/furigana info)
@@ -372,6 +404,7 @@ export function useLyrics({
     }
 
     if (isOffline()) {
+      lyricsLog.debug("Skipped lyrics fetch while offline", logContext);
       dispatch({
         type: "patch",
         payload: {
@@ -384,9 +417,10 @@ export function useLyrics({
     }
 
     const selectedMatchKey = selectedMatch?.hash || "";
-    const cacheKey = `song:${effectSongId}:${selectedMatchKey}`;
+    const cacheKey = `song:${effectSongId}:${selectedMatchKey}:${lyricsLanguage}`;
 
     if (!isRefetchRequest && cacheKey === cachedKeyRef.current) {
+      lyricsLog.debug("Reusing lyrics already loaded in memory", logContext);
       markRefetchHandled();
       return;
     }
@@ -410,14 +444,20 @@ export function useLyrics({
     translationInfoRef.current = undefined;
 
     const controller = new AbortController();
+    let requestSettled = false;
+    const forceServerFetch = shouldForceLyricsFetch({
+      isCacheBustRequest,
+      isAuthenticated: Boolean(authCredentials),
+    });
 
     // Build request - include translateTo, includeFurigana, includeSoramimi to reduce round-trips
     const requestBody: Record<string, unknown> = {
       action: "fetch-lyrics",
-      force: isRefetchRequest,
+      force: forceServerFetch,
       title: title || undefined,
       artist: artist || undefined,
       translateTo: translateTo || undefined,
+      lyricsLanguage,
       includeFurigana: includeFurigana || undefined,
       includeSoramimi: includeSoramimi || undefined,
       soramimiTargetLanguage: includeSoramimi ? soramimiTargetLanguage : undefined,
@@ -433,7 +473,14 @@ export function useLyrics({
       };
     }
 
-    fetchSongLyrics(effectSongId, {
+    lyricsLog.debug("Fetching lyrics", {
+      ...logContext,
+      force: Boolean(requestBody.force),
+      isRefetchRequest,
+      isCacheBustRequest,
+      hasAuthenticatedUser: Boolean(authCredentials),
+    });
+    fetchLyrics(effectSongId, {
       force: Boolean(requestBody.force),
       title: typeof requestBody.title === "string" ? requestBody.title : undefined,
       artist: typeof requestBody.artist === "string" ? requestBody.artist : undefined,
@@ -441,6 +488,7 @@ export function useLyrics({
         typeof requestBody.translateTo === "string"
           ? requestBody.translateTo
           : undefined,
+      lyricsLanguage,
       includeFurigana: Boolean(requestBody.includeFurigana),
       includeSoramimi: Boolean(requestBody.includeSoramimi),
       soramimiTargetLanguage:
@@ -451,8 +499,17 @@ export function useLyrics({
       signal: controller.signal,
     })
       .then(async (json) => {
-        if (controller.signal.aborted) return null;
-        if (effectSongId !== currentSongIdRef.current) return null;
+        if (controller.signal.aborted) {
+          lyricsLog.debug("Ignored lyrics response after cancellation", logContext);
+          return null;
+        }
+        if (effectSongId !== currentSongIdRef.current) {
+          lyricsLog.debug("Ignored stale lyrics response", {
+            ...logContext,
+            currentSongId: currentSongIdRef.current,
+          });
+          return null;
+        }
         return json as UnifiedLyricsResponse;
       })
       .then((json) => {
@@ -491,10 +548,27 @@ export function useLyrics({
         // Store soramimi info for useFurigana to use (or clear if not included)
         // This ensures we don't show stale soramimi from a previous song
         setSoramimiInfo(json.soramimi ?? undefined);
+        lyricsLog.debug("Lyrics loaded", {
+          ...logContext,
+          lineCount: parsed.length,
+          cached: json.cached ?? false,
+          hasTranslation: Boolean(json.translation),
+          hasFurigana: Boolean(json.furigana),
+          hasSoramimi: Boolean(json.soramimi),
+        });
       })
       .catch((err: unknown) => {
-        if (controller.signal.aborted) return;
-        if (effectSongId !== currentSongIdRef.current) return;
+        if (controller.signal.aborted) {
+          lyricsLog.debug("Lyrics fetch cancelled", logContext);
+          return;
+        }
+        if (effectSongId !== currentSongIdRef.current) {
+          lyricsLog.debug("Ignored error from stale lyrics request", {
+            ...logContext,
+            currentSongId: currentSongIdRef.current,
+          });
+          return;
+        }
         handleLyricsError(
           normalizeLyricsFetchError(err),
           logContext,
@@ -513,6 +587,7 @@ export function useLyrics({
         });
       })
       .finally(() => {
+        requestSettled = true;
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetchingOriginal(false);
           markRefetchHandled();
@@ -520,11 +595,30 @@ export function useLyrics({
       });
 
     return () => {
+      if (!requestSettled && !controller.signal.aborted) {
+        lyricsLog.debug("Cancelling lyrics fetch", logContext);
+      }
       controller.abort();
       // Reset loading state on cleanup to prevent stuck indicators
       setIsFetchingOriginal(false);
     };
-  }, [songId, title, artist, isRefetchRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage, authCredentials, logContext]);
+  }, [
+    songId,
+    title,
+    artist,
+    isRefetchRequest,
+    isCacheBustRequest,
+    markRefetchHandled,
+    selectedMatch,
+    translateTo,
+    lyricsLanguage,
+    includeFurigana,
+    includeSoramimi,
+    soramimiTargetLanguage,
+    authCredentials,
+    logContext,
+    fetchLyrics,
+  ]);
 
   // ==========================================================================
   // Effect: Translate lyrics
@@ -532,7 +626,7 @@ export function useLyrics({
   useEffect(() => {
     const effectSongId = songId;
 
-    if (!effectSongId || !translateTo || originalLines.length === 0) {
+    if (!effectSongId || !translateTo) {
       dispatch({
         type: "patch",
         payload: {
@@ -544,12 +638,27 @@ export function useLyrics({
       return;
     }
 
-    if (isFetchingOriginal) {
+    if (
+      !canStartLyricsTranslation({
+        songId: effectSongId,
+        loadedSongId,
+        originalLineCount: originalLines.length,
+        isFetchingOriginal,
+      })
+    ) {
+      lyricsLog.debug("Waiting for original lyrics before translation", {
+        ...logContext,
+        targetLanguage: translateTo,
+      });
       dispatch({ type: "patch", payload: { isTranslating: false } });
       return;
     }
 
     if (isOffline()) {
+      lyricsLog.debug("Skipped lyrics translation while offline", {
+        ...logContext,
+        targetLanguage: translateTo,
+      });
       dispatch({
         type: "patch",
         payload: {
@@ -578,6 +687,11 @@ export function useLyrics({
           isTranslating: false,
         },
       });
+      lyricsLog.debug("Loaded cached lyrics translation", {
+        ...logContext,
+        targetLanguage: translateTo,
+        lineCount: translatedLines.length,
+      });
       return;
     }
 
@@ -591,8 +705,16 @@ export function useLyrics({
     });
 
     const controller = new AbortController();
+    let requestSettled = false;
 
-    processTranslationSSE(effectSongId, translateTo, {
+    lyricsLog.debug("Starting lyrics translation", {
+      ...logContext,
+      targetLanguage: translateTo,
+      lineCount: originalLines.length,
+      force: isCacheBustRequest,
+      hasAuthenticatedUser: Boolean(authCredentials),
+    });
+    translateLyrics(effectSongId, translateTo, {
       force: isCacheBustRequest,
       signal: controller.signal,
       prefetchedInfo: !isCacheBustRequest ? prefetchedInfo : undefined,
@@ -624,14 +746,34 @@ export function useLyrics({
           words: result.data[index] || line.words,
         }));
         setTranslatedLines(finalLines);
+        lyricsLog.debug("Lyrics translation completed", {
+          ...logContext,
+          targetLanguage: translateTo,
+          lineCount: finalLines.length,
+          success: result.success,
+        });
         markCacheBustHandled();
       })
       .catch((err: unknown) => {
-        if (controller.signal.aborted) return;
-        if (effectSongId !== currentSongIdRef.current) return;
+        if (controller.signal.aborted) {
+          lyricsLog.debug("Lyrics translation cancelled", {
+            ...logContext,
+            targetLanguage: translateTo,
+          });
+          return;
+        }
+        if (effectSongId !== currentSongIdRef.current) {
+          lyricsLog.debug("Ignored error from stale translation request", {
+            ...logContext,
+            currentSongId: currentSongIdRef.current,
+            targetLanguage: translateTo,
+          });
+          return;
+        }
         handleTranslationError(err, logContext, setError, setTranslatedLines);
       })
       .finally(() => {
+        requestSettled = true;
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           dispatch({
             type: "patch",
@@ -645,6 +787,12 @@ export function useLyrics({
       });
 
     return () => {
+      if (!requestSettled && !controller.signal.aborted) {
+        lyricsLog.debug("Cancelling lyrics translation", {
+          ...logContext,
+          targetLanguage: translateTo,
+        });
+      }
       controller.abort();
       // Reset loading state on cleanup to prevent stuck indicators
       dispatch({
@@ -655,7 +803,18 @@ export function useLyrics({
         },
       });
     };
-  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials, logContext]);
+  }, [
+    songId,
+    loadedSongId,
+    originalLines,
+    translateTo,
+    isFetchingOriginal,
+    isCacheBustRequest,
+    markCacheBustHandled,
+    authCredentials,
+    logContext,
+    translateLyrics,
+  ]);
 
   // ==========================================================================
   // Current line tracking
@@ -689,15 +848,34 @@ export function useLyrics({
     lastTimeRef.current = currentTime;
     const next = calculateCurrentLine(currentTime);
     // Remote / virtual clock ticks ~10/s; avoid setState when line index unchanged (saves Karaoke re-renders).
-    setCurrentLine((prev) => (prev === next ? prev : next));
-  }, [currentTime, calculateCurrentLine]);
+    setCurrentLine((prev) => {
+      if (prev === next) return prev;
+      lyricsLog.debug("Active lyric line changed", {
+        songId,
+        previousLine: prev,
+        nextLine: next,
+        timeMs: Math.round(currentTime * 1000),
+      });
+      return next;
+    });
+  }, [currentTime, calculateCurrentLine, songId]);
 
   const updateCurrentTimeManually = useCallback(
     (newTimeInSeconds: number) => {
       lastTimeRef.current = newTimeInSeconds;
-      setCurrentLine(calculateCurrentLine(newTimeInSeconds));
+      const nextLine = calculateCurrentLine(newTimeInSeconds);
+      setCurrentLine((previousLine) => {
+        if (previousLine === nextLine) return previousLine;
+        lyricsLog.debug("Updated lyric time manually", {
+          songId,
+          previousLine,
+          nextLine,
+          timeMs: Math.round(newTimeInSeconds * 1000),
+        });
+        return nextLine;
+      });
     },
-    [calculateCurrentLine]
+    [calculateCurrentLine, songId]
   );
 
   return {
@@ -729,9 +907,9 @@ function handleLyricsError(
   const displayError = getLyricsErrorMessage(err);
   const logPayload = { error: err, displayError, context };
   if (isExpectedLyricsMissError(err)) {
-    lyricsLog.warn("fetch:notFound", logPayload);
+    lyricsLog.warn("Lyrics were not found", logPayload);
   } else {
-    lyricsLog.error("fetch:failed", logPayload);
+    lyricsLog.error("Lyrics fetch failed", logPayload);
   }
   setError(displayError);
   setOriginalLines([]);
@@ -745,7 +923,7 @@ function handleTranslationError(
   setError: (e: string | undefined) => void,
   setTranslatedLines: (lines: LyricLine[] | null) => void
 ) {
-  lyricsLog.error("translation:failed", { error: err, context });
+  lyricsLog.error("Lyrics translation failed", { error: err, context });
   if (err instanceof DOMException && err.name === "AbortError") {
     setError("Translation timed out.");
   } else {

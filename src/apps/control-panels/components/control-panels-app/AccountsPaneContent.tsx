@@ -58,7 +58,6 @@ export type AccountsPaneContentProps = {
   recoveryEmailStatus: EmailStatusResponse | null;
   isEmailStatusLoading: boolean;
   refreshRecoveryEmailStatus: () => Promise<EmailStatusResponse | null>;
-  hasPassword: boolean | null;
   logout: () => void;
   handleLogoutAllDevices: () => void;
   isLoggingOutAllDevices: boolean;
@@ -104,7 +103,6 @@ export function AccountsPaneContent({
   recoveryEmailStatus,
   isEmailStatusLoading,
   refreshRecoveryEmailStatus,
-  hasPassword,
   logout,
   handleLogoutAllDevices,
   isLoggingOutAllDevices,
@@ -187,6 +185,18 @@ export function AccountsPaneContent({
   return (
     <div className="control-panels-pref-form control-panels-pref-form-tabbed h-full overflow-y-auto">
       <div className="control-panels-pref-tabbed">
+        <AccountProfileHeader
+          t={t}
+          username={username}
+          myContact={myContact}
+          accountAvatarLabel={accountAvatarLabel}
+          accountAvatarInitials={accountAvatarInitials}
+          realtimeStatus={realtimeStatus}
+          accountJoinedAt={accountJoinedAt}
+          locale={locale}
+          promptSetUsername={promptSetUsername}
+          promptLogin={promptLogin}
+        />
         <div
           role="tablist"
           className={cn("control-panels-pref-tab-bar", barClassName)}
@@ -236,19 +246,6 @@ export function AccountsPaneContent({
             aria-hidden={accountsTab !== "accounts"}
           >
             <div className="control-panels-pref-form-section">
-              <AccountProfileHeader
-                t={t}
-                username={username}
-                myContact={myContact}
-                accountAvatarLabel={accountAvatarLabel}
-                accountAvatarInitials={accountAvatarInitials}
-                realtimeStatus={realtimeStatus}
-                accountJoinedAt={accountJoinedAt}
-                locale={locale}
-                promptSetUsername={promptSetUsername}
-                promptLogin={promptLogin}
-              />
-
               <div
                 className={cn(
                   "flex items-center justify-between gap-3",
@@ -372,7 +369,6 @@ export function AccountsPaneContent({
               realtimeStatus={realtimeStatus}
               accountJoinedAt={accountJoinedAt}
               locale={locale}
-              hasPassword={hasPassword}
               promptSetUsername={promptSetUsername}
               promptLogin={promptLogin}
               logout={logout}
@@ -381,6 +377,7 @@ export function AccountsPaneContent({
               setPasswordInput={setPasswordInput}
               setPasswordError={setPasswordError}
               setIsPasswordDialogOpen={setIsPasswordDialogOpen}
+              showProfileHeader={false}
             />
           </div>
           {isAdmin && (

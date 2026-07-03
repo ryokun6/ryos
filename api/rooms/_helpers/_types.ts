@@ -16,8 +16,5 @@ export type {
 
 export type { TokenResponse } from "../../../src/shared/contracts/auth.js";
 
-export type {
-  VerifyTokenResponse,
-  CheckPasswordResponse,
-} from "../../../src/shared/contracts/auth.js";
+export type { VerifyTokenResponse } from "../../../src/shared/contracts/auth.js";
 

@@ -16,11 +16,6 @@ export interface VerifyTokenResponse {
   expiredAt?: number;
 }
 
-export interface CheckPasswordResponse {
-  hasPassword: boolean;
-  username: string;
-}
-
 export interface LoginResponse {
   username: string;
   timeZone?: string;
@@ -29,7 +24,6 @@ export interface LoginResponse {
 export interface RegisterResponse {
   user: {
     username: string;
-    hasPassword?: boolean;
     createdAt?: number;
     timeZone?: string;
   };
@@ -43,8 +37,6 @@ export interface SessionResponse {
   /** Account creation timestamp (ms since epoch) from the stored user profile. */
   createdAt?: number;
 }
-
-export type RecoveryChannel = "telegram" | "email";
 
 export interface RecoveryRequestResponse {
   success: boolean;

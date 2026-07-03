@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { resolveStaticWallpaperRenderUrl } from "@/utils/staticWallpaperUrl";
 import { useCoverPaletteResult } from "@/hooks/useCoverPalette";
-import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
 import { useWeatherWallpaper } from "@/hooks/useWeatherWallpaper";
 import { useWeatherSimulationStore } from "@/stores/useWeatherSimulationStore";
 import { DEFAULT_ACCENT, getAccentChrome } from "@/themes/accents";
@@ -45,11 +45,15 @@ const rgbToHex = ([r, g, b]: [number, number, number]): string =>
  * (mid) color. Video wallpapers and load/CORS failures fall back to the theme's
  * classic look.
  *
- * Returns `weatherAccentActive` so the runner can mount the weather sub-runner
- * (which pulls in live weather, and therefore geolocation) only while the
- * weather wallpaper is actually driving the accent.
+ * Returns `weatherAccentActive` / `coverAccentActive` so the runner can mount
+ * the matching sub-runner (live weather + geolocation, or the now-playing
+ * iPod/Karaoke cover stack) only while that wallpaper is actually driving the
+ * accent.
  */
-export function useWallpaperAccent(): { weatherAccentActive: boolean } {
+export function useWallpaperAccent(): {
+  weatherAccentActive: boolean;
+  coverAccentActive: boolean;
+} {
   const current = useThemeStore((s) => s.current);
   const accent = useThemeStore(
     (s) => s.accentByTheme[s.current] ?? DEFAULT_ACCENT
@@ -68,28 +72,31 @@ export function useWallpaperAccent(): { weatherAccentActive: boolean } {
   const isCover = isCoverWallpaper(currentWallpaper);
   const isLyrics = isLyricsWallpaper(currentWallpaper);
   // Cover + lyrics wallpapers both tint from the now-playing album art, exactly
-  // like the Karaoke/lyrics cover-color path.
+  // like the Karaoke/lyrics cover-color path. That sampling lives in the
+  // lazily-mounted CoverWallpaperAccentRunner (it subscribes to the iPod +
+  // Karaoke stores); this hook only handles plain image wallpapers.
   const isCoverBased = isCover || isLyrics;
 
-  const { coverUrl: nowPlayingCoverUrl } = useNowPlayingCover();
-
   // Pick the image URL fed to the canvas palette extractor:
-  //  - cover / lyrics wallpaper → the now-playing album art
   //  - image wallpapers (incl. shuffle photos) → the resolved wallpaper source
-  //  - gradient / weather / video / inactive → none (handled elsewhere/skipped)
+  //  - cover / lyrics / gradient / weather / video / inactive → none (handled
+  //    by the sub-runners or skipped)
   let sampleUrl: string | null = null;
-  if (isWallpaperAccent && !isGradient && !isWeather) {
-    if (isCoverBased) {
-      sampleUrl = nowPlayingCoverUrl;
-    } else if (!isVideoWallpaper && isConcreteWallpaperSource(wallpaperSource)) {
-      sampleUrl = wallpaperSource;
-    }
+  if (
+    isWallpaperAccent &&
+    !isGradient &&
+    !isWeather &&
+    !isCoverBased &&
+    !isVideoWallpaper &&
+    isConcreteWallpaperSource(wallpaperSource)
+  ) {
+    sampleUrl = resolveStaticWallpaperRenderUrl(wallpaperSource);
   }
 
   const { palette, source, coverUrl } = useCoverPaletteResult(sampleUrl);
 
   useEffect(() => {
-    if (!isWallpaperAccent || isGradient || isWeather) return;
+    if (!isWallpaperAccent || isGradient || isWeather || isCoverBased) return;
     // Only act on a palette actually extracted from an image.
     if (source !== "cover" || !coverUrl) return;
     setWallpaperAccentColor(resolveWallpaperAccentFromPalette(palette));
@@ -97,6 +104,7 @@ export function useWallpaperAccent(): { weatherAccentActive: boolean } {
     isWallpaperAccent,
     isGradient,
     isWeather,
+    isCoverBased,
     source,
     coverUrl,
     palette,
@@ -118,7 +126,10 @@ export function useWallpaperAccent(): { weatherAccentActive: boolean } {
     return () => window.clearInterval(id);
   }, [isWallpaperAccent, isGradient, setWallpaperAccentColor]);
 
-  return { weatherAccentActive: isWallpaperAccent && isWeather };
+  return {
+    weatherAccentActive: isWallpaperAccent && isWeather,
+    coverAccentActive: isWallpaperAccent && isCoverBased,
+  };
 }
 
 /**

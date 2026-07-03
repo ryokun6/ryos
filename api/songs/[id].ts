@@ -7,6 +7,7 @@
  *
  * Query params for GET:
  * - include: Comma-separated list of: metadata,lyrics,translations,furigana
+ * - lyricsLanguage: Processed primary lyric script (`zh-TW` or `zh-CN`)
  * - translateTo: Language code to fetch/generate translation
  * - withFurigana: Boolean to fetch/generate furigana
  * - force: Boolean to bypass cache
@@ -28,6 +29,7 @@ import {
   deleteSong,
   saveLyrics,
   saveTranslation,
+  saveTranslations,
   saveFurigana,
   saveSoramimi,
   canModifySong,
@@ -64,12 +66,18 @@ import {
 } from "./_kugou.js";
 
 import {
-  isChineseTraditional,
+  getChineseLyricsLanguage,
   parseLyricsContent,
-  buildChineseTranslationFromKrc,
+  buildChineseLyricsVariants,
+  buildChineseTextVariants,
+  buildChineseTranslationVariantsFromKrc,
   getTranslationSystemPrompt,
   streamTranslation,
 } from "./_lyrics.js";
+import {
+  isChineseLyricsLanguage,
+  type ChineseLyricsLanguage,
+} from "../../src/shared/media/chineseLyrics.js";
 
 import {
   lyricsAreMostlyChinese,
@@ -118,6 +126,38 @@ const RATE_LIMITS = {
   furiganaStream: { windowSeconds: 60, limit: 10 }, // 10/min for furigana-stream
   soramimiStream: { windowSeconds: 60, limit: 10 }, // 10/min for soramimi-stream
 };
+
+function withChineseLyricsVariants(
+  lyrics: LyricsContent,
+  title?: string,
+  artist?: string
+): LyricsContent {
+  if (
+    lyrics.parsedLinesByLanguage?.["zh-TW"] &&
+    lyrics.parsedLinesByLanguage?.["zh-CN"]
+  ) {
+    return lyrics;
+  }
+  return {
+    ...lyrics,
+    parsedLinesByLanguage: {
+      ...buildChineseLyricsVariants(lyrics, title, artist),
+      ...lyrics.parsedLinesByLanguage,
+    },
+  };
+}
+
+function getParsedLyrics(
+  lyrics: LyricsContent,
+  language: ChineseLyricsLanguage,
+  title?: string,
+  artist?: string
+) {
+  return (
+    lyrics.parsedLinesByLanguage?.[language] ??
+    parseLyricsContent(lyrics, title, artist, language)
+  );
+}
 
 // =============================================================================
 // Main Handler
@@ -199,8 +239,15 @@ export default apiHandler<Record<string, unknown>>(
       const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
       const includeSet = new Set(includes);
+      const requestedLyricsLanguage =
+        typeof req.query.lyricsLanguage === "string"
+          ? req.query.lyricsLanguage
+          : undefined;
+      const lyricsLanguage = isChineseLyricsLanguage(requestedLyricsLanguage)
+        ? requestedLyricsLanguage
+        : "zh-TW";
 
-      logger.info("GET song", { songId, includes });
+      logger.info("GET song", { songId, includes, lyricsLanguage });
 
       // Fetch song with requested includes
       const song = await getSong(redis, songId, {
@@ -216,14 +263,23 @@ export default apiHandler<Record<string, unknown>>(
         return errorResponse("Song not found", 404);
       }
 
-      // Generate parsedLines on-demand (not stored in Redis)
-      // Use lyricsSource title/artist for filtering (consistent with how annotations were generated)
       if (song.lyrics) {
-        (song.lyrics as LyricsContent & { parsedLines?: unknown }).parsedLines = parseLyricsContent(
-          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-          song.lyricsSource?.title || song.title,
-          song.lyricsSource?.artist || song.artist
+        const title = song.lyricsSource?.title || song.title;
+        const artist = song.lyricsSource?.artist || song.artist;
+        const lyricsWithVariants = withChineseLyricsVariants(
+          song.lyrics,
+          title,
+          artist
         );
+        (
+          lyricsWithVariants as LyricsContent & { parsedLines?: unknown }
+        ).parsedLines = getParsedLyrics(
+          lyricsWithVariants,
+          lyricsLanguage,
+          title,
+          artist
+        );
+        song.lyrics = lyricsWithVariants;
       }
 
       if (song.furigana) {
@@ -371,6 +427,10 @@ export default apiHandler<Record<string, unknown>>(
         
         // Optional: include translation/furigana/soramimi info to reduce round-trips
         const translateTo = parsed.data.translateTo;
+        const requestedChineseTranslationLanguage = translateTo
+          ? getChineseLyricsLanguage(translateTo)
+          : null;
+        const lyricsLanguage = parsed.data.lyricsLanguage || "zh-TW";
         const includeFurigana = parsed.data.includeFurigana;
         const includeSoramimi = parsed.data.includeSoramimi;
         const soramimiTargetLanguage = parsed.data.soramimiTargetLanguage || "zh-TW";
@@ -379,7 +439,11 @@ export default apiHandler<Record<string, unknown>>(
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
-          includeTranslations: translateTo ? [translateTo] : undefined,
+          includeTranslations: requestedChineseTranslationLanguage
+            ? ["zh-TW", "zh-CN"]
+            : translateTo
+              ? [translateTo]
+              : ["zh-TW", "zh-CN"],
           includeFurigana: includeFurigana,
           includeSoramimi: includeSoramimi,
         });
@@ -419,12 +483,97 @@ export default apiHandler<Record<string, unknown>>(
 
         // If we have cached lyrics and not forcing AND source hasn't changed, return them
         if (!force && !lyricsSourceChanged && song?.lyrics?.lrc) {
-          // Generate parsedLines on-demand (not stored in Redis)
-          const parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.lyricsSource?.title || song.title,
-            song.lyricsSource?.artist || song.artist
+          const lyricsTitle = song.lyricsSource?.title || song.title;
+          const lyricsArtist = song.lyricsSource?.artist || song.artist;
+          const hadStoredVariants = Boolean(
+            song.lyrics.parsedLinesByLanguage?.["zh-TW"] &&
+              song.lyrics.parsedLinesByLanguage?.["zh-CN"]
           );
+          song.lyrics = withChineseLyricsVariants(
+            song.lyrics,
+            lyricsTitle,
+            lyricsArtist
+          );
+          const parsedLines = getParsedLyrics(
+            song.lyrics,
+            lyricsLanguage,
+            lyricsTitle,
+            lyricsArtist
+          );
+
+          if (!hadStoredVariants) {
+            await saveLyrics(
+              redis,
+              songId,
+              song.lyrics,
+              song.lyricsSource
+            );
+            logger.info("Backfilled both Chinese lyric script variants");
+          }
+
+          const requestedChineseTarget =
+            requestedChineseTranslationLanguage;
+          const chineseTranslationVariants: Partial<
+            Record<ChineseLyricsLanguage, string>
+          > = {
+            ...(song.translations?.["zh-TW"]
+              ? { "zh-TW": song.translations["zh-TW"] }
+              : {}),
+            ...(song.translations?.["zh-CN"]
+              ? { "zh-CN": song.translations["zh-CN"] }
+              : {}),
+          };
+          if (
+            chineseTranslationVariants["zh-TW"] &&
+            !chineseTranslationVariants["zh-CN"]
+          ) {
+            chineseTranslationVariants["zh-CN"] =
+              buildChineseTextVariants(
+                chineseTranslationVariants["zh-TW"]
+              )["zh-CN"];
+          } else if (
+            chineseTranslationVariants["zh-CN"] &&
+            !chineseTranslationVariants["zh-TW"]
+          ) {
+            chineseTranslationVariants["zh-TW"] =
+              buildChineseTextVariants(
+                chineseTranslationVariants["zh-CN"]
+              )["zh-TW"];
+          }
+          if (
+            requestedChineseTarget &&
+            translateTo &&
+            song.translations?.[translateTo]
+          ) {
+            Object.assign(
+              chineseTranslationVariants,
+              buildChineseTextVariants(song.translations[translateTo])
+            );
+          }
+          if (song.lyrics.krc) {
+            const krcVariants = buildChineseTranslationVariantsFromKrc(
+              song.lyrics,
+              lyricsTitle,
+              lyricsArtist
+            );
+            for (const language of ["zh-TW", "zh-CN"] as const) {
+              if (!chineseTranslationVariants[language] && krcVariants[language]) {
+                chineseTranslationVariants[language] = krcVariants[language];
+              }
+            }
+          }
+          const missingChineseTranslations = Object.fromEntries(
+            Object.entries(chineseTranslationVariants).filter(
+              ([language]) => !song.translations?.[language]
+            )
+          ) as Record<string, string>;
+          if (Object.keys(missingChineseTranslations).length > 0) {
+            await saveTranslations(
+              redis,
+              songId,
+              missingChineseTranslations
+            );
+          }
           
           // Fetch cover in background if missing (don't block the response)
           if (!song.cover && song.lyricsSource?.hash && song.lyricsSource?.albumId) {
@@ -458,24 +607,13 @@ export default apiHandler<Record<string, unknown>>(
           // Include translation info if requested
           if (translateTo && parsedLines.length > 0) {
             const totalLines = parsedLines.length;
-            let hasTranslation = !!(song.translations?.[translateTo]);
-            let translationLrc = hasTranslation ? song.translations![translateTo] : undefined;
-            
-            // For Chinese Traditional: use KRC source directly if available (skip AI)
-            if (!hasTranslation && isChineseTraditional(translateTo) && song.lyrics.krc) {
-              const krcDerivedLrc = buildChineseTranslationFromKrc(
-                song.lyrics,
-                song.lyricsSource?.title || song.title,
-                song.lyricsSource?.artist || song.artist
-              );
-              if (krcDerivedLrc) {
-                hasTranslation = true;
-                translationLrc = krcDerivedLrc;
-                logger.info("Using KRC-derived Traditional Chinese translation (skipping AI)");
-                // Save this translation for future requests
-                await saveTranslation(redis, songId, translateTo, krcDerivedLrc);
-              }
-            }
+            const translationLrc =
+              song.translations?.[translateTo] ??
+              (requestedChineseTarget
+                ? song.translations?.[requestedChineseTarget] ??
+                  chineseTranslationVariants[requestedChineseTarget]
+                : undefined);
+            const hasTranslation = Boolean(translationLrc);
             
             response.translation = {
               totalLines,
@@ -594,24 +732,42 @@ export default apiHandler<Record<string, unknown>>(
           return errorResponse("Failed to fetch lyrics", 404);
         }
 
-        // Parse lyrics with consistent filtering (single source of truth)
-        // NOTE: parsedLines is generated on-demand, NOT stored in Redis
-        const parsedLines = parseLyricsContent(
-          { lrc: kugouResult.lyrics.lrc, krc: kugouResult.lyrics.krc },
+        const lyrics = withChineseLyricsVariants(
+          kugouResult.lyrics,
           lyricsSource.title,
           lyricsSource.artist
         );
-
-        // Save raw lyrics only (no parsedLines - it's derived data)
-        const lyrics: LyricsContent = kugouResult.lyrics;
+        const parsedLines = getParsedLyrics(
+          lyrics,
+          lyricsLanguage,
+          lyricsSource.title,
+          lyricsSource.artist
+        );
 
         // Save to song document (lyrics + cover in metadata)
         // Clear annotations (translations, furigana, soramimi) when source changed or force refresh
         const shouldClearAnnotations = force || lyricsSourceChanged;
         const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover, shouldClearAnnotations);
+        const chineseTranslationVariants = lyrics.krc
+          ? buildChineseTranslationVariantsFromKrc(
+              lyrics,
+              lyricsSource.title,
+              lyricsSource.artist
+            )
+          : {};
+        if (Object.keys(chineseTranslationVariants).length > 0) {
+          await saveTranslations(
+            redis,
+            songId,
+            chineseTranslationVariants as Record<string, string>
+          );
+        }
         logger.info(`Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
+          storedChineseTranslationVariants: Object.keys(
+            chineseTranslationVariants
+          ),
           parsedLinesCount: parsedLines.length,
         });
 
@@ -630,24 +786,11 @@ export default apiHandler<Record<string, unknown>>(
         // Include translation info if requested
         if (translateTo) {
           const totalLines = parsedLines.length;
-          let hasTranslation = false;
-          let translationLrc: string | undefined;
-          
-          // For Chinese Traditional: use KRC source directly if available (skip AI)
-          if (isChineseTraditional(translateTo) && lyrics.krc) {
-            const krcDerivedLrc = buildChineseTranslationFromKrc(
-              lyrics,
-              lyricsSource.title,
-              lyricsSource.artist
-            );
-            if (krcDerivedLrc) {
-              hasTranslation = true;
-              translationLrc = krcDerivedLrc;
-              logger.info("Using KRC-derived Traditional Chinese translation for fresh lyrics (skipping AI)");
-              // Save this translation for future requests
-              await saveTranslation(redis, songId, translateTo, krcDerivedLrc);
-            }
-          }
+          const chineseTarget = getChineseLyricsLanguage(translateTo);
+          const translationLrc = chineseTarget
+            ? chineseTranslationVariants[chineseTarget]
+            : undefined;
+          const hasTranslation = Boolean(translationLrc);
           
           response.translation = {
             totalLines,
@@ -698,18 +841,22 @@ export default apiHandler<Record<string, unknown>>(
       // Returns full LRC translation in JSON
       // =======================================================================
       if (action === "translate") {
-        const language =
+        const requestedLanguage =
           typeof bodyObj?.language === "string" ? (bodyObj.language as string).trim() : "";
         const force = bodyObj?.force === true;
+        const chineseTarget = getChineseLyricsLanguage(requestedLanguage);
+        const language = chineseTarget || requestedLanguage;
 
-        if (!language) {
+        if (!requestedLanguage) {
           return errorResponse("Invalid request body", 400);
         }
 
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
-          includeTranslations: [language],
+          includeTranslations: chineseTarget
+            ? ["zh-TW", "zh-CN"]
+            : [language],
         });
 
         if (!song) {
@@ -721,7 +868,13 @@ export default apiHandler<Record<string, unknown>>(
         }
 
         // Permission check: force refresh requires auth when translation already exists
-        if (force && song.translations?.[language]) {
+        const hasExistingTranslation = chineseTarget
+          ? Boolean(
+              song.translations?.["zh-TW"] ||
+                song.translations?.["zh-CN"]
+            )
+          : Boolean(song.translations?.[language]);
+        if (force && hasExistingTranslation) {
           if (!username) {
             return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
           }
@@ -731,9 +884,13 @@ export default apiHandler<Record<string, unknown>>(
           }
         }
 
-        // Generate parsedLines on-demand (not stored in Redis)
-        const parsedLines = parseLyricsContent(
-          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+        const parsedLines = getParsedLyrics(
+          withChineseLyricsVariants(
+            song.lyrics,
+            song.lyricsSource?.title || song.title,
+            song.lyricsSource?.artist || song.artist
+          ),
+          chineseTarget || "zh-TW",
           song.lyricsSource?.title || song.title,
           song.lyricsSource?.artist || song.artist
         );
@@ -743,23 +900,47 @@ export default apiHandler<Record<string, unknown>>(
         }
 
         // Return cached translation when available (and not forcing)
-        if (!force && song.translations?.[language]) {
+        const siblingChineseTranslation = chineseTarget
+          ? song.translations?.[
+              chineseTarget === "zh-TW" ? "zh-CN" : "zh-TW"
+            ]
+          : undefined;
+        const cachedTranslation =
+          song.translations?.[language] ??
+          (siblingChineseTranslation
+            ? buildChineseTextVariants(siblingChineseTranslation)[chineseTarget!]
+            : undefined);
+        if (!force && cachedTranslation) {
+          if (chineseTarget) {
+            await saveTranslations(
+              redis,
+              songId,
+              buildChineseTextVariants(cachedTranslation)
+            );
+          }
           return jsonResponse({
-            translation: song.translations[language],
+            translation: cachedTranslation,
             cached: true,
           });
         }
 
-        // For Chinese Traditional: use KRC source directly if available (skip AI)
-        if (isChineseTraditional(language) && song.lyrics.krc) {
-          const krcDerivedLrc = buildChineseTranslationFromKrc(
+        // KuGou KRC embeds Chinese translations in Simplified Chinese.
+        if (chineseTarget && song.lyrics.krc) {
+          const krcVariants = buildChineseTranslationVariantsFromKrc(
             song.lyrics,
             song.lyricsSource?.title || song.title,
             song.lyricsSource?.artist || song.artist
           );
+          const krcDerivedLrc = krcVariants[chineseTarget];
           if (krcDerivedLrc) {
-            await saveTranslation(redis, songId, language, krcDerivedLrc);
-            logger.info("Using KRC-derived Traditional Chinese translation (non-stream)");
+            await saveTranslations(
+              redis,
+              songId,
+              krcVariants as Record<string, string>
+            );
+            logger.info("Using KRC-derived Chinese translation (non-stream)", {
+              language: chineseTarget,
+            });
             return jsonResponse({
               translation: krcDerivedLrc,
               cached: false,
@@ -785,7 +966,15 @@ export default apiHandler<Record<string, unknown>>(
           )
           .join("\n");
 
-        await saveTranslation(redis, songId, language, translatedLrc);
+        if (chineseTarget) {
+          await saveTranslations(
+            redis,
+            songId,
+            buildChineseTextVariants(translatedLrc)
+          );
+        } else {
+          await saveTranslation(redis, songId, language, translatedLrc);
+        }
 
         return jsonResponse({
           translation: translatedLrc,
@@ -825,13 +1014,17 @@ export default apiHandler<Record<string, unknown>>(
           return errorResponse("Invalid request body");
         }
 
-        const { language, force } = parsed.data;
+        const { language: requestedLanguage, force } = parsed.data;
+        const chineseTarget = getChineseLyricsLanguage(requestedLanguage);
+        const language = chineseTarget || requestedLanguage;
 
         // Get song with lyrics and existing translation
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
-          includeTranslations: [language],
+          includeTranslations: chineseTarget
+            ? ["zh-TW", "zh-CN"]
+            : [language],
         });
 
         if (!song?.lyrics?.lrc) {
@@ -839,7 +1032,13 @@ export default apiHandler<Record<string, unknown>>(
         }
 
         // Permission check: force refresh requires auth when translation already exists
-        if (force && song.translations?.[language]) {
+        const hasExistingTranslation = chineseTarget
+          ? Boolean(
+              song.translations?.["zh-TW"] ||
+                song.translations?.["zh-CN"]
+            )
+          : Boolean(song.translations?.[language]);
+        if (force && hasExistingTranslation) {
           if (!username) {
             return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
           }
@@ -849,34 +1048,61 @@ export default apiHandler<Record<string, unknown>>(
           }
         }
 
-        // Generate parsedLines on-demand (not stored in Redis)
-        // Use lyricsSource title/artist for filtering (consistent with cached lyrics)
-        const parsedLines = parseLyricsContent(
-          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+        const parsedLines = getParsedLyrics(
+          withChineseLyricsVariants(
+            song.lyrics,
+            song.lyricsSource?.title || song.title,
+            song.lyricsSource?.artist || song.artist
+          ),
+          chineseTarget || "zh-TW",
           song.lyricsSource?.title || song.title,
           song.lyricsSource?.artist || song.artist
         );
 
         // Check if already cached in main document (and not forcing regeneration)
-        if (!force && song.translations?.[language]) {
+        const siblingChineseTranslation = chineseTarget
+          ? song.translations?.[
+              chineseTarget === "zh-TW" ? "zh-CN" : "zh-TW"
+            ]
+          : undefined;
+        const cachedTranslation =
+          song.translations?.[language] ??
+          (siblingChineseTranslation
+            ? buildChineseTextVariants(siblingChineseTranslation)[chineseTarget!]
+            : undefined);
+        if (!force && cachedTranslation) {
+          if (chineseTarget) {
+            await saveTranslations(
+              redis,
+              songId,
+              buildChineseTextVariants(cachedTranslation)
+            );
+          }
           logger.info("Returning cached translation via SSE");
           sendSSEResponse(res, effectiveOrigin, {
             type: "cached",
-            translation: song.translations![language],
+            translation: cachedTranslation,
           });
           return;
         }
 
-        // For Chinese Traditional: use KRC source directly if available (skip AI)
-        if (isChineseTraditional(language) && song.lyrics?.krc) {
-          const krcDerivedLrc = buildChineseTranslationFromKrc(
+        // KuGou KRC embeds Chinese translations in Simplified Chinese.
+        if (chineseTarget && song.lyrics?.krc) {
+          const krcVariants = buildChineseTranslationVariantsFromKrc(
             song.lyrics,
             song.lyricsSource?.title || song.title,
             song.lyricsSource?.artist || song.artist
           );
+          const krcDerivedLrc = krcVariants[chineseTarget];
           if (krcDerivedLrc) {
-            await saveTranslation(redis, songId, language, krcDerivedLrc);
-            logger.info("Using KRC-derived Traditional Chinese translation (skipping AI)");
+            await saveTranslations(
+              redis,
+              songId,
+              krcVariants as Record<string, string>
+            );
+            logger.info("Using KRC-derived Chinese translation (skipping AI)", {
+              language: chineseTarget,
+            });
             sendSSEResponse(res, effectiveOrigin, {
               type: "cached",
               translation: krcDerivedLrc,
@@ -974,7 +1200,15 @@ export default apiHandler<Record<string, unknown>>(
             const translatedLrc = parsedLines
               .map((line, index) => `${msToLrcTime(line.startTimeMs)}${allTranslations[index] || line.words}`)
               .join("\n");
-            await saveTranslation(redis, songId, language, translatedLrc);
+            if (chineseTarget) {
+              await saveTranslations(
+                redis,
+                songId,
+                buildChineseTextVariants(translatedLrc)
+              );
+            } else {
+              await saveTranslation(redis, songId, language, translatedLrc);
+            }
             logger.info(`Translation saved to Redis`);
           } catch (err) {
             logger.error("Failed to save translation", err);

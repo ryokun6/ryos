@@ -32,17 +32,6 @@ export function connectionLabel(username: string, clientInstanceId?: string): st
   return `${username} (${short})`;
 }
 
-export function parseConnectionKey(key: string): { username: string; clientInstanceId: string } {
-  const pipe = key.indexOf("|");
-  if (pipe === -1) {
-    return { username: key, clientInstanceId: `legacy:${key.toLowerCase()}` };
-  }
-  return {
-    username: key.slice(0, pipe),
-    clientInstanceId: key.slice(pipe + 1),
-  };
-}
-
 export function makeConnectionKey(username: string, clientInstanceId: string): string {
   return `${username}|${clientInstanceId}`;
 }

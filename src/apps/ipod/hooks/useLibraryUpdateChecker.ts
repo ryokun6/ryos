@@ -9,12 +9,14 @@ import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
 import { fetchSongsVersion, type SongsVersionInfo } from "@/api/songs";
 import { createVisibilityGatedInterval } from "@/utils/backgroundTask";
 import { createClientLogger } from "@/utils/logger";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 const debug = createClientLogger("IpodLibraryUpdateChecker").debug;
 
 export function useLibraryUpdateChecker(isActive: boolean) {
   const { t } = useTranslation();
+  const hasHydrated = usePersistHydrated(useIpodStore.persist);
   const syncLibrary = useIpodStore((state) => state.syncLibrary);
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const disposeIntervalRef = useRef<(() => void) | null>(null);
@@ -42,6 +44,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
       }
       return;
     }
+    if (!hasHydrated) return;
 
     const checkForUpdates = async () => {
       try {
@@ -210,7 +213,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
         disposeIntervalRef.current = null;
       }
     };
-  }, [isActive, syncLibrary, debugMode, t]);
+  }, [isActive, hasHydrated, syncLibrary, debugMode, t]);
 
   // Manual check function that can be called externally
   const manualCheck = async () => {

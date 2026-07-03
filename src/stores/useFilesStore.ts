@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
-import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { StoredContent } from "@/utils/indexedDBOperations";
@@ -289,6 +289,111 @@ function registerFilesForLazyLoad(
       pendingLazyLoadFiles.set(file.path, file);
     }
   }
+  scheduleDefaultBookWarmup();
+}
+
+// ---------------------------------------------------------------------------
+// Default book offline warmup
+//
+// Bundled books (e.g. Meditations) are lazy-loaded on first open, which means
+// a user who goes offline before ever opening them sees "Couldn't open this
+// book" even though the book sits on their shelf. Warm the EPUB bytes into
+// IndexedDB in the background so every shelved book stays readable offline.
+// Other lazy assets stay strictly on-demand — books are the only bundled
+// content users expect to work offline by default.
+// ---------------------------------------------------------------------------
+let bookWarmupScheduled = false;
+
+// Persisted set of already-warmed book paths so the warmup runs once per
+// book, not on every boot. Books whose bytes later vanish from IndexedDB
+// still self-heal through the regular on-open lazy load.
+const BOOK_WARMUP_STORAGE_KEY = "ryos:books:warmed-defaults";
+
+function readWarmedBookPaths(): Set<string> {
+  try {
+    const raw = localStorage.getItem(BOOK_WARMUP_STORAGE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.filter((p): p is string => typeof p === "string")
+        : []
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function markBookPathWarmed(path: string): void {
+  try {
+    const warmed = readWarmedBookPaths();
+    warmed.add(path);
+    localStorage.setItem(BOOK_WARMUP_STORAGE_KEY, JSON.stringify([...warmed]));
+  } catch {
+    // localStorage unavailable — worst case the warmup re-checks next boot.
+  }
+}
+
+/** Forget which books were warmed (call when default contents are rebuilt). */
+export function clearWarmedBookPaths(): void {
+  // Allow the next registerFilesForLazyLoad to schedule a fresh warmup even
+  // if one already ran this session.
+  bookWarmupScheduled = false;
+  try {
+    localStorage.removeItem(BOOK_WARMUP_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function listPendingUnwarmedBookPaths(): string[] {
+  const warmed = readWarmedBookPaths();
+  return [...pendingLazyLoadFiles.keys()].filter(
+    (path) => path.startsWith("/Books/") && !warmed.has(path)
+  );
+}
+
+/** Load not-yet-warmed default /Books EPUBs into IndexedDB, once per book. */
+export async function warmPendingBookContent(): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  for (const path of listPendingUnwarmedBookPaths()) {
+    const uuid = useFilesStore.getState().items[path]?.uuid;
+    if (!uuid) continue;
+    try {
+      if (await ensureFileContentLoaded(path, uuid)) {
+        markBookPathWarmed(path);
+      }
+    } catch (err) {
+      console.warn(`[FilesStore] Book warmup failed for ${path}:`, err);
+    }
+  }
+}
+
+function scheduleDefaultBookWarmup(): void {
+  if (bookWarmupScheduled) return;
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (listPendingUnwarmedBookPaths().length === 0) {
+    return;
+  }
+  bookWarmupScheduled = true;
+  const run = () => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // Offline right now — warm as soon as connectivity returns instead.
+      window.addEventListener(
+        "online",
+        () => void warmPendingBookContent(),
+        { once: true }
+      );
+      return;
+    }
+    void warmPendingBookContent();
+  };
+  // Idle-schedule so the (potentially ~MB-sized) fetch never competes with
+  // the boot critical path.
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 15000 });
+  } else {
+    window.setTimeout(run, 5000);
+  }
 }
 
 /**
@@ -380,6 +485,15 @@ export async function ensureFileContentLoaded(
       }
     }
     if (!pendingFile?.assetPath) {
+      return false;
+    }
+
+    // Offline: the asset fetch below cannot succeed — fail fast instead of
+    // burning through fetch retries so callers fall back immediately.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      console.warn(
+        `[FilesStore] Offline — cannot load content for ${filePath}`
+      );
       return false;
     }
 
@@ -539,8 +653,8 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 14; // Add Meditations as a default Books EPUB
-const STORE_NAME = "ryos:files";
+export const FILES_STORE_VERSION = 14; // Add Meditations as a default Books EPUB
+export const FILES_STORE_PERSIST_KEY = "ryos:files";
 
 const DEFAULT_MEDITATIONS_BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
 const DEFAULT_MEDITATIONS_BOOK_NAME = "Meditations - Marcus Aurelius.epub";
@@ -1223,6 +1337,10 @@ export const useFilesStore = create<FilesStoreState>()(
           libraryState: "loaded",
         });
 
+        // File UUIDs were regenerated, so previously warmed book bytes are
+        // orphaned — let the warmup re-cache the defaults once more.
+        clearWarmedBookPaths();
+
         await saveDefaultContents(data.files, newItems);
       },
 
@@ -1601,12 +1719,9 @@ export const useFilesStore = create<FilesStoreState>()(
         }),
     }),
     {
-      name: STORE_NAME,
-      version: STORE_VERSION,
-      // Write-behind storage: the whole VFS used to be JSON.stringify'd and
-      // written synchronously on every metadata mutation (rename, move,
-      // trash). Serialization now happens once per quiet window.
-      storage: createDebouncedPersistStorage(),
+      name: FILES_STORE_PERSIST_KEY,
+      version: FILES_STORE_VERSION,
+      storage: createIndexedDBPersistStorage(),
       partialize: (state) => ({
         items: state.items, // Persist the entire file structure
         libraryState: state.libraryState,

@@ -26,6 +26,10 @@ import {
 } from "../api/_utils/runtime-config.js";
 import { createOgShareResponse } from "../api/_utils/og-share.js";
 import {
+  isApiDebugLoggingEnabled,
+  summarizeForApiLog,
+} from "../api/_utils/_logging.js";
+import {
   ensureRealtimePubSubBridge,
   getRealtimeSocketUser,
   registerRealtimeSocket,
@@ -39,6 +43,7 @@ import {
   discoverApiRouteManifest,
   type ApiRouteManifestEntry,
 } from "./api-route-manifest";
+import { getStaticCacheHeaders } from "./static-cache-policy";
 
 type QueryValue = string | string[];
 type QueryMap = Record<string, QueryValue>;
@@ -330,6 +335,33 @@ function toUint8Array(chunk: unknown): Uint8Array | null {
   return new TextEncoder().encode(String(chunk));
 }
 
+function standaloneDebug(message: string, data?: unknown): void {
+  if (!isApiDebugLoggingEnabled()) return;
+  const suffix =
+    data === undefined ? "" : ` ${JSON.stringify(summarizeForApiLog(data))}`;
+  console.log(`[api-standalone:debug] ${message}${suffix}`);
+}
+
+function describeParsedBody(parsed: ParsedBody): Record<string, unknown> {
+  if (parsed.bodyError) {
+    return { kind: "invalid-json", error: parsed.bodyError.message };
+  }
+  if (parsed.rawBody) {
+    return { kind: "raw", byteLength: parsed.rawBody.byteLength };
+  }
+  const body = parsed.bodyValue;
+  if (body === undefined) return { kind: "undefined" };
+  if (body === null) return { kind: "null" };
+  if (Array.isArray(body)) return { kind: "array", length: body.length };
+  if (typeof body === "object") {
+    return {
+      kind: "object",
+      keys: Object.keys(body as Record<string, unknown>).sort(),
+    };
+  }
+  return { kind: typeof body };
+}
+
 function parseEnvLine(line: string): { key: string; value: string } | null {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith("#")) return null;
@@ -606,7 +638,15 @@ async function serveDistPath(
     return null;
   }
   const absolutePath = path.resolve(DIST_ROOT, decodedPath);
-  return await getStaticFileResponse(absolutePath, options);
+  // Explicit Cache-Control on every static response. Vercel gets these from
+  // vercel.json; here they also stop CDNs (e.g. Cloudflare in front of a
+  // Coolify deploy) from edge-caching sw.js/index.html past a deploy, which
+  // breaks service-worker installs and, with them, offline support.
+  const headers = {
+    ...getStaticCacheHeaders(decodedPath.split(path.sep).join("/")),
+    ...options?.headers,
+  };
+  return await getStaticFileResponse(absolutePath, { headers });
 }
 
 async function serveSpaIndex(): Promise<Response> {
@@ -770,6 +810,12 @@ async function bootstrap(): Promise<void> {
     workspaceRoot: WORKSPACE_ROOT,
     apiRoot: API_ROOT,
   });
+  standaloneDebug("Discovered API route manifest", {
+    routeCount: routes.length,
+    dynamicRouteCount: routes.filter((route) => route.dynamicSegmentCount > 0)
+      .length,
+    indexRouteCount: routes.filter((route) => route.isIndexRoute).length,
+  });
 
   if (shouldEnableLocalRealtime()) {
     await ensureRealtimePubSubBridge();
@@ -838,9 +884,16 @@ async function bootstrap(): Promise<void> {
         });
 
         if (upgraded) {
+          standaloneDebug("Accepted realtime websocket upgrade", {
+            authenticated: !!socketUsername,
+            username: socketUsername,
+          });
           return undefined as unknown as Response;
         }
 
+        standaloneDebug("Rejected realtime websocket upgrade", {
+          authenticated: !!socketUsername,
+        });
         return jsonResponse({ error: "WebSocket upgrade failed" }, 400);
       }
 
@@ -861,14 +914,29 @@ async function bootstrap(): Promise<void> {
           return ogShareResponse;
         }
 
-        return (
-          (await handleStaticRequest(pathname)) ||
-          jsonResponse({ error: "Not found" }, 404)
-        );
+        const staticResponse = await handleStaticRequest(pathname);
+        if (staticResponse) {
+          return staticResponse;
+        }
+
+        // Never let CDNs cache static misses: after a deploy swaps the
+        // hashed bundles, a cached 404 for a new asset would keep breaking
+        // clients even once the origin can serve it.
+        return new Response(JSON.stringify({ error: "Not found" }), {
+          status: 404,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store",
+          },
+        });
       }
 
       const matched = matchRoute(pathname, routes);
       if (!matched) {
+        standaloneDebug("No API route matched request", {
+          method: request.method,
+          pathname,
+        });
         return jsonResponse({ error: "Not found" }, 404);
       }
 
@@ -894,7 +962,22 @@ async function bootstrap(): Promise<void> {
         }
       }
 
-      const { bodyValue, bodyError, rawBody } = await parseBody(request);
+      standaloneDebug("Matched API route", {
+        method: request.method,
+        pathname,
+        routePath: matched.route.routePath,
+        relativePath: matched.route.relativePath,
+        paramNames: matched.route.paramNames,
+        peerIp,
+      });
+
+      const parsedBody = await parseBody(request);
+      const { bodyValue, bodyError, rawBody } = parsedBody;
+      standaloneDebug("Adapted API request body", {
+        routePath: matched.route.routePath,
+        contentType: request.headers.get("content-type"),
+        bodyShape: describeParsedBody(parsedBody),
+      });
       const reqShim = new BunRequestShim({
         method: request.method.toUpperCase(),
         url: `${url.pathname}${url.search}`,
@@ -908,6 +991,10 @@ async function bootstrap(): Promise<void> {
 
       try {
         const handler = await getHandler(matched.route);
+        standaloneDebug("Loaded API route handler", {
+          routePath: matched.route.routePath,
+          relativePath: matched.route.relativePath,
+        });
         const handlerPromise = Promise.resolve(handler(reqShim, resShim));
 
         // Race between handler completion and first write.
@@ -928,6 +1015,12 @@ async function bootstrap(): Promise<void> {
             }
           });
         }
+        standaloneDebug("API route adapter completed", {
+          routePath: matched.route.routePath,
+          status: resShim.statusCode,
+          headersSent: resShim.headersSent,
+          streaming: !resShim.writableEnded,
+        });
       } catch (error) {
         console.error(
           `[api-standalone] Handler error in ${matched.route.routePath} (${matched.route.relativePath})`,
@@ -955,6 +1048,10 @@ async function bootstrap(): Promise<void> {
       open: (socket) => {
         registerRealtimeSocket(socket);
         setRealtimeSocketUser(socket, socket.data?.username ?? null);
+        standaloneDebug("Realtime websocket opened", {
+          authenticated: !!socket.data?.username,
+          username: socket.data?.username,
+        });
       },
       message: (socket, message) => {
         let payload: { type?: string; channel?: string };
@@ -969,6 +1066,9 @@ async function bootstrap(): Promise<void> {
         }
 
         if (payload.type === "ping") {
+          standaloneDebug("Realtime websocket ping", {
+            authenticated: !!getRealtimeSocketUser(socket),
+          });
           socket.send(JSON.stringify({ type: "pong" }));
           return;
         }
@@ -981,6 +1081,10 @@ async function bootstrap(): Promise<void> {
           void authorizeRealtimeChannel(channel, getRealtimeSocketUser(socket))
             .then((allowed) => {
               if (allowed) {
+                standaloneDebug("Allowed realtime subscribe", {
+                  channel,
+                  username: getRealtimeSocketUser(socket),
+                });
                 subscribeRealtimeSocket(socket, channel);
               } else {
                 console.warn("[api-standalone] Denied realtime subscribe", {
@@ -1005,10 +1109,17 @@ async function bootstrap(): Promise<void> {
         }
 
         if (payload.type === "unsubscribe" && payload.channel) {
+          standaloneDebug("Realtime websocket unsubscribe", {
+            channel: payload.channel,
+            username: getRealtimeSocketUser(socket),
+          });
           unsubscribeRealtimeSocket(socket, payload.channel);
         }
       },
       close: (socket) => {
+        standaloneDebug("Realtime websocket closed", {
+          username: getRealtimeSocketUser(socket),
+        });
         unregisterRealtimeSocket(socket);
       },
     },

@@ -4,6 +4,8 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { DocumentContent } from "@/apps/finder/hooks/useFileSystem";
 import { STORES, dbOperations } from "@/utils/indexedDB";
 import i18n from "@/lib/i18n";
+import { getDefaultFileApp } from "@/utils/fileAssociations";
+import { getStoreForFile } from "@/utils/indexedDBOperations";
 
 // App name aliases for convenience
 const APP_ALIASES: Record<string, AppId> = {
@@ -179,14 +181,36 @@ async function openFile(
     };
   }
 
+  const associatedAppId = getDefaultFileApp({
+    path,
+    name,
+    type: fileMetadata?.type,
+  });
+
+  if (associatedAppId === "preview" || associatedAppId === "books") {
+    context.launchApp(associatedAppId, {
+      initialData: { path },
+    });
+    context.playCommandSound();
+    return {
+      output: i18n.t("apps.terminal.output.openedFile", { file: name }),
+      isError: false,
+    };
+  }
+
   // Handle documents
-  if (path.startsWith("/Documents/")) {
+  if (associatedAppId === "textedit") {
     let content = "";
     
     if (fileMetadata?.uuid) {
       try {
+        const storeName = getStoreForFile(path, {
+          name,
+          type: fileMetadata.type,
+        });
+        if (!storeName) throw new Error(`No content store for ${path}`);
         const contentData = await dbOperations.get<DocumentContent>(
-          STORES.DOCUMENTS,
+          storeName,
           fileMetadata.uuid
         );
         if (contentData?.content) {

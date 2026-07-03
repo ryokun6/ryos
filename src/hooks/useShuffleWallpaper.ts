@@ -54,7 +54,6 @@ export function useShuffleWallpaper() {
     let cancelled = false;
     let intervalId: ReturnType<typeof setInterval> | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let idleCallbackId: number | null = null;
     let candidates: string[] = [];
     // Seed combines a stable per-user id and the descriptor so every device of
     // the same user resolves the same wallpaper for a given wall-clock bucket.
@@ -110,13 +109,10 @@ export function useShuffleWallpaper() {
         );
     };
 
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleCallbackId = window.requestIdleCallback(startManifestLoad, {
-        timeout: 1500,
-      });
-    } else {
-      startManifestLoad();
-    }
+    // The manifest is a small, preloaded boot resource. Start resolving now so
+    // a fresh shuffle selection does not wait up to 1.5s for an idle callback
+    // before it can paint its first wallpaper.
+    startManifestLoad();
 
     document.addEventListener("visibilitychange", resolveIfOverdue);
     window.addEventListener("focus", resolveIfOverdue);
@@ -125,9 +121,6 @@ export function useShuffleWallpaper() {
       cancelled = true;
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
-      if (idleCallbackId !== null) {
-        window.cancelIdleCallback(idleCallbackId);
-      }
       document.removeEventListener("visibilitychange", resolveIfOverdue);
       window.removeEventListener("focus", resolveIfOverdue);
     };

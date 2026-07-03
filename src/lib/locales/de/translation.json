@@ -372,6 +372,35 @@
         "export": "Bibliothek exportieren",
         "filterByRyo": "Filter: Lieder von ryo erstellt",
         "import": "Import",
+        "importStatus": {
+          "completed": "Import abgeschlossen: {{imported}} neu, {{updated}} aktualisiert",
+          "failed": "Import fehlgeschlagen: {{error}}",
+          "fileFallback": "Datei",
+          "messages": {
+            "completed": "Import abgeschlossen: {{imported}} neu, {{updated}} aktualisiert",
+            "failed": "Import fehlgeschlagen",
+            "parsingFile": "Datei wird analysiert",
+            "preparingSongs": "Titel werden für den Import vorbereitet",
+            "progressUpdated": "Importfortschritt aktualisiert",
+            "rateLimitedRetry": "Erneuter Versuch in {{count}} s",
+            "readingFile": "Datei wird gelesen",
+            "refreshingSongList": "Titelliste wird aktualisiert",
+            "splittingBatch": "Batch wird aufgeteilt, um Upload-Limits einzuhalten",
+            "uploadedRefreshing": "Import hochgeladen, Mediathek wird aktualisiert",
+            "uploadingSongs": "Titel werden hochgeladen",
+            "validatingFile": "Dateiformat wird überprüft"
+          },
+          "parsing": "Importdatei wird analysiert …",
+          "preparing": "Titel werden vorbereitet {{processed}}/{{total}}",
+          "rateLimited": "Ratenbegrenzung. {{message}}",
+          "rateLimitedFallback": "Kurzes Warten vor erneutem Versuch …",
+          "reading": "{{fileName}} wird gelesen …",
+          "refreshing": "Import hochgeladen. Mediathek wird aktualisiert ...",
+          "uploading": "Titel werden hochgeladen {{processed}}/{{total}}",
+          "validating": "Importdaten werden validiert ..."
+        },
+        "importingLibrary": "Mediathek wird importiert ...",
+        "importingProgress": "Importieren {{processed}}/{{total}}",
         "noSongs": "Keine Lieder im Cache",
         "noSongsMatchFilter": "Keine Lieder passen zum aktuellen Filter",
         "noSongsToExport": "Keine Songs zum Exportieren"
@@ -396,14 +425,14 @@
       "tableHeaders": {
         "added": "Hinzugefügt",
         "addedBy": "Von",
-        "artist": "Künstler",
+        "artist": "Künstler:in",
         "lastActive": "Zuletzt aktiv",
         "message": "Nachricht",
         "role": "Rolle",
         "status": "Status",
         "time": "Zeit",
         "title": "Titel",
-        "user": "Benutzer",
+        "user": "Benutzer:in",
         "username": "Benutzername"
       },
       "time": {
@@ -417,7 +446,7 @@
         "active": "Aktiv",
         "admin": "Admin",
         "banned": "Gesperrt",
-        "user": "Benutzer"
+        "user": "Benutzer:in"
       }
     },
     "applet-viewer": {
@@ -559,6 +588,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "Lesezeichen hinzufügen",
+        "remove": "Lesezeichen entfernen",
+        "title": "Lesezeichen"
+      },
+      "chineseScript": {
+        "original": "Original",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "Automatisch",
         "double": "Zweiseitig",
@@ -569,7 +608,28 @@
         "moveToBottom": "Nach ganz unten",
         "moveToTop": "Nach ganz oben"
       },
+      "customize": {
+        "background": "Hintergrund",
+        "chinese": "Chinesisch",
+        "colors": "Farben",
+        "direction": "Richtung",
+        "lineSpacing": "Zeilenabstand",
+        "margins": "Seitenränder",
+        "spacing": "Abstand",
+        "textColor": "Text",
+        "title": "Anpassen",
+        "transparent": "Transparent"
+      },
       "description": "EPUB-Bücher lesen",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "Monospace",
+        "original": "Original",
+        "rounded": "Abgerundet",
+        "sans": "Sans Serif",
+        "serif": "Serif"
+      },
       "help": {
         "bookshelf": {
           "description": "Importierte EPUBs stehen im Holzregal. Klicken Sie auf ein Buch, um es zu öffnen und mit dem Lesen zu beginnen.",
@@ -580,7 +640,7 @@
           "title": "Dunkelmodus"
         },
         "fonts": {
-          "description": "Wähle eine Leseschrift (einschließlich EB Garamond), die Textgröße sowie ein- oder zweispaltiges Layout im Menü „Darstellung“.",
+          "description": "Wähle eine Leseschrift (einschließlich Garamond), die Textgröße sowie ein- oder zweispaltiges Layout im Menü „Darstellung“.",
           "title": "Schriften & Layout"
         },
         "import": {
@@ -604,21 +664,42 @@
         "backToShelf": "Zurück zum Regal",
         "booksHelp": "Books-Hilfe",
         "chapters": "Kapitel",
+        "chineseScript": "Chinesische Schrift",
         "columns": "Spalten",
+        "customizeTheme": "Anpassen…",
         "font": "Schrift",
         "import": "Importieren …",
         "nextPage": "Nächste Seite",
         "previousPage": "Vorherige Seite",
+        "speech": "Sprachausgabe",
+        "speechRate": "Sprechgeschwindigkeit",
+        "startSpeaking": "Sprachausgabe starten",
+        "stopSpeaking": "Sprachausgabe stoppen",
+        "textLayout": "Textrichtung",
         "textSize": "Textgröße",
-        "textSizeDecrease": "Kleiner",
-        "textSizeIncrease": "Größer",
-        "textSizeReset": "Standardgröße",
         "theme": "Design"
       },
       "name": "Bücher",
       "reader": {
         "backToShelf": "Regal",
         "error": "Dieses Buch konnte nicht geöffnet werden."
+      },
+      "selection": {
+        "askRyo": "Ryo fragen",
+        "askRyoFailed": "Antwort konnte nicht abgerufen werden. Versuchen Sie es später erneut.",
+        "askRyoQuestion": "was bedeutet dieser Abschnitt?",
+        "color": {
+          "blue": "Blaue Markierung",
+          "green": "Grüne Markierung",
+          "pink": "Rosa Markierung",
+          "purple": "Lila Markierung",
+          "yellow": "Gelbe Markierung"
+        },
+        "controls": "Auswahlsteuerung",
+        "copied": "In die Zwischenablage kopiert",
+        "copy": "Kopieren",
+        "copyFailed": "Kopieren fehlgeschlagen",
+        "removeHighlight": "Markierung entfernen"
       },
       "shelf": {
         "emptyHint": "Klicke auf „Buch hinzufügen“, um ein EPUB zu importieren.",
@@ -629,10 +710,36 @@
         "listView": "Listendarstellung",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "Steuerelemente zum Vorlesen",
+        "pause": "Pause",
+        "resume": "Fortsetzen",
+        "rewind": "Zurückspulen",
+        "skip": "Überspringen",
+        "stop": "Stopp"
+      },
+      "speechRate": {
+        "fast": "Schnell",
+        "normal": "Normal",
+        "slow": "Langsam",
+        "veryFast": "Sehr schnell"
+      },
+      "textLayout": {
+        "book": "Buchstandard",
+        "horizontal": "Horizontal",
+        "vertical": "Vertikal"
+      },
       "theme": {
+        "accent": "Akzent",
         "auto": "Automatisch",
+        "black": "Schwarz",
+        "custom": "Eigene",
         "dark": "Dunkel",
+        "gray": "Grau",
+        "green": "Grün",
         "light": "Hell",
+        "night": "Nacht",
+        "paper": "Papier",
         "sepia": "Sepia"
       },
       "title": "Bücher",
@@ -1596,6 +1703,9 @@
       "backupRestoreDescription": "Alle App-Einstellungen und Dateien sichern oder wiederherstellen",
       "bootScreen": "Startbildschirm",
       "bootScreenDescription": "Startbildschirm-Animation testen",
+      "browserTtsVoice": "TTS-Stimme",
+      "browserTtsVoiceAutomatic": "Automatisch",
+      "browserTtsVoiceDescription": "Systemstimme für das Vorlesen in „Bücher“ und den Rechner",
       "changePassword": "Passwort ändern",
       "changePasswordButton": "Ändern",
       "chatSynth": "Chat-Synth",
@@ -1649,6 +1759,7 @@
         "deleting": "Löschen …",
         "description": "Dies löscht dauerhaft Ihr Konto, Ihr Passwort, Ihre E-Mail zur Wiederherstellung, das verknüpfte Telegram-Konto und synchronisierte Daten. Dies kann nicht rückgängig gemacht werden.",
         "genericError": "Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+        "openButton": "Konto löschen…",
         "passwordLabel": "Aktuelles Passwort",
         "passwordRequired": "Geben Sie Ihr aktuelles Passwort ein",
         "submit": "Konto löschen",
@@ -1686,7 +1797,7 @@
         "title": "E-Mail",
         "unverifiedAs": "{{email}} · Nicht verifiziert",
         "verifiedAs": "{{email}} · Verifiziert",
-        "verify": "Verifizieren"
+        "verify": "Verifizieren…"
       },
       "errorBoundaries": "Fehlergrenzen",
       "errorBoundariesDescription": "App- oder Desktop-Absturz-Fallbacks zum Testen auslösen",
@@ -1735,7 +1846,8 @@
       "ipodVolume": "iPod-Lautstärke",
       "logIn": "Anmelden",
       "logOut": "Abmelden",
-      "logOutAll": "Alle abmelden",
+      "logOutAll": "Alle abmelden…",
+      "logOutButton": "Abmelden…",
       "logOutOfAllDevices": "Von allen Geräten abmelden",
       "logOutOfAllDevicesRowDescription": "Von deinem ryOS-Konto auf allen Geräten abmelden",
       "logOutRowDescription": "Melden Sie sich auf diesem Gerät von Ihrem ryOS-Konto ab",
@@ -1863,7 +1975,7 @@
       "selectAPreset": "Voreinstellung auswählen",
       "selectScreenSaver": "Bildschirmschoner auswählen",
       "sepia": "Sepia",
-      "setPassword": "Passwort festlegen",
+      "setPassword": "Passwort festlegen…",
       "setPasswordDialog": {
         "description": "Legen Sie ein Passwort fest, um die Kontowiederherstellung zu ermöglichen. Sie können dieses Passwort verwenden, um ein neues Token zu erhalten, wenn Sie den Zugriff verlieren.",
         "submitLabel": "Passwort festlegen",
@@ -2232,6 +2344,7 @@
         "noAirDropUsersAvailable": "Keine Nutzer in der Nähe",
         "open": "Öffnen",
         "openAirDrop": "AirDrop öffnen",
+        "openWith": "Öffnen mit",
         "putBack": "Zurücklegen",
         "rename": "Umbenennen …",
         "searchingForAirDropUsers": "Suche nach Nutzern in der Nähe…",
@@ -2259,7 +2372,7 @@
         }
       },
       "fileTypes": {
-        "application": "Programm",
+        "application": "App",
         "bmpImage": "BMP-Bild",
         "book": "Buch",
         "directory": "Verzeichnis",
@@ -2271,14 +2384,16 @@
         "internetShortcut": "Internetverknüpfung",
         "jpegImage": "JPEG-Bild",
         "mp3Audio": "MP3-Audio",
+        "pdfDocument": "PDF-Dokument",
         "pngImage": "PNG-Bild",
         "quicktimeMovie": "QuickTime-Film",
+        "svgImage": "SVG-Bild",
         "unknown": "Unbekannt",
         "webpImage": "WebP-Bild"
       },
       "folders": {
         "applets": "Applets",
-        "applications": "Programme",
+        "applications": "Apps",
         "books": "Bücher",
         "desktop": "Schreibtisch",
         "documents": "Dokumente",
@@ -2521,11 +2636,13 @@
         "chinese": "Chinesisch",
         "clearFavorites": "Favoriten löschen…",
         "clearHistory": "Verlauf löschen…",
+        "debug": "Debug",
         "digitalBeing": "Digitales Wesen",
         "editFuture": "Zukunft bearbeiten…",
         "english": "Englisch",
         "favorites": "Favoriten",
         "folder": "Ordner",
+        "forceHeadless": "Headless-Rendering erzwingen",
         "forward": "Weiter",
         "france": "Frankreich",
         "french": "Französisch",
@@ -2548,6 +2665,7 @@
         "openTimeMachine": "Time Machine öffnen",
         "portugal": "Portugal",
         "portuguese": "Portugiesisch",
+        "proxySessions": "Cookie-/Session-Passthrough",
         "refresh": "Aktualisieren",
         "resetFavorites": "Favoriten zurücksetzen…",
         "russia": "Russland",
@@ -2559,6 +2677,7 @@
         "stop": "Stopp",
         "unitedKingdom": "Vereinigtes Königreich",
         "unitedStates": "Vereinigte Staaten",
+        "verboseLogging": "Ausführliche Protokollierung",
         "welsh": "Walisisch",
         "year": "Jahr"
       },
@@ -2572,6 +2691,7 @@
       "older": "Älter",
       "olderVersion": "Ältere Version",
       "oldest": "Älteste",
+      "openInLiveBrowser": "Diese Seite in einem Live-Browser öffnen.",
       "openingRequestedPage": "Angeforderte Seite wird geöffnet",
       "openingSharedPage": "Geteilte Seite wird geöffnet",
       "page": "Seite",
@@ -2811,7 +2931,7 @@
         "fullScreen": "Vollbild",
         "furigana": "Furigana",
         "goToAlbum": "Zum Album",
-        "goToArtist": "Zum Interpreten",
+        "goToArtist": "Zum Künstler",
         "goToPlaylist": "Zur Playlist",
         "importLibrary": "Mediathek importieren…",
         "ipodHelp": "iPod-Hilfe",
@@ -2868,7 +2988,7 @@
         "alwaysOn": "Eingeschaltet lassen",
         "appleMusicSignIn": "Apple Music",
         "appleMusicSignOut": "Apple Music",
-        "artists": "Künstler",
+        "artists": "Künstler:innen",
         "backlight": "Hintergrundbeleuchtung",
         "brickGame": "Brick",
         "extras": "Extras",
@@ -3647,6 +3767,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "Bilder, PDFs und Dokumente anzeigen",
+      "empty": {
+        "hint": "Wähle eine Datei aus oder bewege sie hierher",
+        "title": "Ein Dokument öffnen"
+      },
+      "help": {
+        "images": {
+          "description": "Gängige Bildformate öffnen, ohne die Originaldatei zu ändern",
+          "title": "Bilder-Vorschau"
+        },
+        "openFiles": {
+          "description": "Verwende „Ablage“ > „Öffnen“, um eine Datei von deinem Gerät in der Vorschau anzuzeigen",
+          "title": "Dateien öffnen"
+        },
+        "openWith": {
+          "description": "Bearbeitbare Dateien an Paint, TextEdit oder den Applet Viewer senden",
+          "title": "Öffnen mit"
+        },
+        "pdfs": {
+          "description": "PDF-Dokumente mit dem integrierten Dokumenten-Viewer anzeigen",
+          "title": "PDFs lesen"
+        },
+        "safeHtml": {
+          "description": "HTML-Dokumente in einer Sandbox ohne Ausführung von Skripten in der Vorschau anzeigen",
+          "title": "Sicheres HTML"
+        },
+        "zoom": {
+          "description": "Bilder durch Auf- und Zuziehen oder Doppeltippen zoomen oder an das Fenster anpassen",
+          "title": "Zoom"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Über Vorschau",
+        "actualSize": "Originalgröße",
+        "export": "Exportieren…",
+        "fitToWindow": "An Fenster anpassen",
+        "importFromDevice": "Vom Gerät importieren…",
+        "open": "Öffnen…",
+        "openWith": "Öffnen mit",
+        "previewHelp": "Vorschau-Hilfe",
+        "saveAs": "Sichern unter…",
+        "zoomIn": "Vergrößern",
+        "zoomOut": "Verkleinern"
+      },
+      "name": "Vorschau",
+      "saveAs": {
+        "description": "Gib einen Namen für diese Kopie ein",
+        "title": "Sichern unter"
+      },
+      "status": {
+        "loadFailed": "Diese Datei konnte nicht geöffnet werden.",
+        "loading": "Vorschau laden …",
+        "notFound": "Der Dateiinhalt konnte nicht gefunden werden.",
+        "unsupported": "Keine Vorschau verfügbar",
+        "unsupportedDescription": "Dieses Dateiformat wird von Vorschau nicht unterstützt."
+      },
+      "supportedFiles": "Vorschau-Dokumente",
+      "title": "Vorschau",
+      "toasts": {
+        "exportFailed": "Die Datei konnte nicht exportiert werden",
+        "importFailed": "Die Datei konnte nicht importiert werden",
+        "imported": "Datei importiert",
+        "saveFailed": "Die Datei konnte nicht gesichert werden",
+        "saved": "Datei gesichert"
+      },
+      "untitled": "Ohne Titel"
+    },
     "soundboard": {
       "description": "Soundeffekte abspielen",
       "help": {
@@ -4384,14 +4572,11 @@
       "password": "Passwort",
       "recovery": {
         "back": "Zurück",
-        "channel": "Code senden via",
-        "channelEmail": "E-Mail",
-        "channelTelegram": "Telegram",
         "code": "Reset-Code",
         "codeRequired": "Reset-Code eingeben",
         "codeSent": "Falls ein passendes Konto gefunden wurde, wurde ein Reset-Code gesendet.",
         "confirmPassword": "Neues Passwort bestätigen",
-        "description": "Senden Sie einen Reset-Code an einen Wiederherstellungskanal und wählen Sie dann ein neues Passwort.",
+        "description": "Senden Sie einen Reset-Code an Ihre verfügbaren Wiederherstellungsmethoden und wählen Sie dann ein neues Passwort.",
         "genericError": "Passwort konnte nicht zurückgesetzt werden. Überprüfen Sie den Code und versuchen Sie es erneut.",
         "identifier": "Benutzername oder E-Mail",
         "identifierRequired": "Benutzername oder E-Mail eingeben",
@@ -4418,9 +4603,9 @@
     "colors": {
       "blue": "Blau",
       "green": "Grün",
-      "orange": "orange",
+      "orange": "Orange",
       "pink": "Rosa",
-      "purple": "lila",
+      "purple": "Lila",
       "yellow": "Gelb"
     },
     "desktop": {
@@ -4486,7 +4671,7 @@
     "dock": {
       "addToDock": "Zum Dock hinzufügen",
       "appletStore": "Applet Store",
-      "applications": "Programme",
+      "applications": "Apps",
       "folderContents": "Ordnerinhalt",
       "hide": "Ausblenden",
       "minimized": "(minimiert)",
@@ -4551,7 +4736,7 @@
       "openingSharedVideo": "Öffnen …"
     },
     "menu": {
-      "applications": "Programme",
+      "applications": "Apps",
       "clear": "Löschen",
       "close": "Schließen",
       "copy": "Kopieren",
@@ -4581,6 +4766,10 @@
       "volume": "Lautstärke"
     },
     "noResults": "Keine Ergebnisse",
+    "offline": {
+      "appRequiresInternet": "{{appName}} erfordert eine Internetverbindung.",
+      "title": "Du bist offline"
+    },
     "startMenu": {
       "aboutThisComputer": "Über diesen Computer",
       "run": "Ausführen…",
@@ -4629,7 +4818,7 @@
       "fullscreen": "Vollbild",
       "maximize": "Maximieren",
       "maximizeDisabled": "Maximieren (deaktiviert)",
-      "minimize": "Im Dock ablegen",
+      "minimize": "Minimieren",
       "minimizeDisabled": "Minimieren (deaktiviert)"
     }
   },
@@ -4659,6 +4848,7 @@
       "appVersion": "App",
       "average": "Durchschnitt",
       "bufferedLogs": "{{count}} gepuffert",
+      "cloudSync": "Cloud-Synchronisierung",
       "copySnapshot": "Umgebungs-Snapshot kopieren",
       "current": "Aktuell",
       "darkMode": "Dunkel",
@@ -4690,6 +4880,14 @@
       "offline": "Offline",
       "online": "Online",
       "performance": "Performance",
+      "realtime": "Echtzeit",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}} Kanäle",
+      "realtimeState": {
+        "connected": "Verbunden",
+        "connecting": "Verbinden …",
+        "disconnected": "Getrennt"
+      },
+      "realtimeValue": "{{state}} · {{count}} Kanäle",
       "reportTitle": "Live-Umgebungs-Snapshot",
       "runtime": {
         "browser": "Browser",
@@ -4699,7 +4897,17 @@
       "runtimeLabel": "Runtime",
       "sampling": "Sampling jede Sekunde",
       "samplingPaused": "Sampling pausiert",
+      "services": "Dienste",
+      "session": "Sitzung",
+      "sessionAdmin": "{{username}} (Admin)",
+      "sessionGuest": "Gast",
+      "sessionSignedOut": "{{username}} (abgemeldet)",
       "storage": "Speicher",
+      "syncAuto": "Automatisch",
+      "syncError": "Fehler",
+      "syncOff": "Aus",
+      "syncReport": "{{status}} · zuletzt geprüft {{checkedAt}}",
+      "syncSyncing": "Synchronisieren …",
       "theme": "Design",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "Protokolle insgesamt",
@@ -4709,6 +4917,23 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "Warnungen"
     },
+    "network": {
+      "clear": "Anfragen löschen",
+      "copy": "Anfragen kopieren",
+      "empty": "Noch keine Anfragen erfasst.",
+      "emptyForFilter": "Keine Anfragen entsprechen diesem Filter.",
+      "failedCount": "{{count}} fehlgeschlagen",
+      "filterAll": "Alle Anfragen",
+      "filterRequests": "Anfragen filtern",
+      "filters": {
+        "error": "Fehlgeschlagen",
+        "ok": "Erfolgreich",
+        "pending": "Ausstehend",
+        "warn": "Warnungen"
+      },
+      "pending": "···",
+      "title": "Anfragen"
+    },
     "noLogsForFilter": "Keine Logs für diesen Filter.",
     "noLogsYet": "Noch keine Logs erfasst.",
     "scrollToBottom": "Nach unten scrollen",
@@ -4716,14 +4941,16 @@
     "tabs": {
       "label": "Debug-Panel-Ansichten",
       "live": "Live",
-      "logs": "Protokolle"
+      "logs": "Protokolle",
+      "network": "Netzwerk"
     },
     "toggleLabel": "Debug",
     "warnCount": "{{count}} Warn."
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "Wählen Sie Ihre bevorzugte Sprache für die ryOS-Oberfläche",
       "english": "English",
       "french": "Français",
@@ -4750,7 +4977,7 @@
     "placeholder": "ryOS durchsuchen",
     "sections": {
       "applets": "Applets",
-      "apps": "Programme",
+      "apps": "Apps",
       "calendar": "Kalender",
       "commands": "Befehle",
       "contacts": "Kontakte",

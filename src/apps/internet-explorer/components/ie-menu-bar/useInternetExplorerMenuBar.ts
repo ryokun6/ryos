@@ -38,6 +38,13 @@ export function useInternetExplorerMenuBar(props: InternetExplorerMenuBarProps) 
     year = "current",
     onYearChange,
     onSharePage,
+    showDebugMenu = false,
+    debugProxySessions = false,
+    debugForceHeadless = false,
+    debugVerboseLogging = false,
+    onToggleProxySessions,
+    onToggleForceHeadless,
+    onToggleVerboseLogging,
   } = props;
 
   const { t } = useTranslation();
@@ -92,5 +99,12 @@ export function useInternetExplorerMenuBar(props: InternetExplorerMenuBarProps) 
     year,
     onYearChange,
     onSharePage,
+    showDebugMenu,
+    debugProxySessions,
+    debugForceHeadless,
+    debugVerboseLogging,
+    onToggleProxySessions,
+    onToggleForceHeadless,
+    onToggleVerboseLogging,
   };
 }

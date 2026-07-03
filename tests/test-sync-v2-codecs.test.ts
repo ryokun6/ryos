@@ -13,7 +13,10 @@ import { useVideoStore } from "../src/stores/useVideoStore";
 import { useTvStore } from "../src/stores/useTvStore";
 import { useIpodStore } from "../src/stores/useIpodStore";
 import { useMapsStore } from "../src/stores/useMapsStore";
-import { useBooksStore } from "../src/stores/useBooksStore";
+import {
+  DEFAULT_BOOKS_SETTINGS,
+  useBooksStore,
+} from "../src/stores/useBooksStore";
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 import {
   mergePersistedCloudSyncCategoryStatus,
@@ -184,6 +187,55 @@ describe("songs codec", () => {
     } as never);
   });
 
+  test("waits for async iPod persistence hydration", () => {
+    expect(SYNC_CODECS.songs.isReady).toBeDefined();
+    expect(SYNC_CODECS.settings.isReady).toBeDefined();
+  });
+
+  test("delays remote apply until the local store is hydrated", async () => {
+    const codec = SYNC_CODECS.songs;
+    const originalIsReady = codec.isReady;
+    const originalApply = codec.apply;
+    let ready = false;
+    let applied = false;
+    codec.isReady = () => ready;
+    codec.apply = async () => {
+      applied = true;
+    };
+    const previousAutoSyncEnabled =
+      useCloudSyncStore.getState().autoSyncEnabled;
+    const previousSyncSongs = useCloudSyncStore.getState().syncSongs;
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncSongs: true,
+    });
+    const engine = new CloudSyncEngine("hydration-test");
+
+    try {
+      const applying = engine.applyRemoteOps([
+        {
+          k: "songs/lib",
+          v: { libraryState: "loaded", lastKnownVersion: 1, order: [] },
+          t,
+        },
+      ]);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(applied).toBe(false);
+
+      ready = true;
+      await applying;
+      expect(applied).toBe(true);
+    } finally {
+      codec.isReady = originalIsReady;
+      codec.apply = originalApply;
+      useCloudSyncStore.setState({
+        autoSyncEnabled: previousAutoSyncEnabled,
+        syncSongs: previousSyncSongs,
+      });
+      engine.stop();
+    }
+  });
+
   test("apply orders tracks by the lib order doc", async () => {
     await SYNC_CODECS.songs.apply(
       [
@@ -335,7 +387,7 @@ describe("bookshelf codec", () => {
     expect(result).toBeUndefined();
   });
 
-  test("removeBook clears progress, ordering, and last-opened", () => {
+  test("removeBook clears progress, ordering, last-opened, and openPath", () => {
     useBooksStore.setState({
       progressByPath: {
         "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
@@ -344,6 +396,7 @@ describe("bookshelf codec", () => {
       pinnedTop: ["/Books/a.epub"],
       pinnedBottom: ["/Books/a.epub"],
       lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
     } as never);
 
     useBooksStore.getState().removeBook("/Books/a.epub");
@@ -354,12 +407,195 @@ describe("bookshelf codec", () => {
     expect(state.pinnedTop).toEqual([]);
     expect(state.pinnedBottom).toEqual([]);
     expect(state.lastOpenedPath).toBeNull();
+    expect(state.openPath).toBeNull();
 
     // collect must stop emitting the removed book's progress doc so the engine
     // shadow-diff can tombstone it cross-device.
     const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
     expect(docs.has("bookshelf/progress:/Books/a.epub")).toBe(false);
     expect(docs.has("bookshelf/progress:/Books/b.epub")).toBe(true);
+  });
+
+  test("renameProgressPath migrates openPath and last-opened with the book", () => {
+    useBooksStore.setState({
+      progressByPath: {
+        "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
+      },
+      pinnedTop: ["/Books/a.epub"],
+      pinnedBottom: [],
+      lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
+    } as never);
+
+    useBooksStore.getState().renameProgressPath("/Books/a.epub", "/Books/b.epub");
+
+    const state = useBooksStore.getState();
+    expect(state.progressByPath["/Books/a.epub"]).toBeUndefined();
+    expect(state.progressByPath["/Books/b.epub"]).toMatchObject({
+      percentage: 0.3,
+    });
+    expect(state.pinnedTop).toEqual(["/Books/b.epub"]);
+    expect(state.lastOpenedPath).toBe("/Books/b.epub");
+    expect(state.openPath).toBe("/Books/b.epub");
+  });
+
+  test("bookshelf collect does not sync device-local openPath", () => {
+    useBooksStore.setState({
+      progressByPath: {},
+      pinnedTop: [],
+      pinnedBottom: [],
+      lastOpenedPath: "/Books/a.epub",
+      openPath: "/Books/a.epub",
+    } as never);
+
+    const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
+    expect(docs.get("bookshelf/last-opened")).toMatchObject({
+      path: "/Books/a.epub",
+    });
+    for (const key of docs.keys()) {
+      expect(key).not.toContain("openPath");
+      expect(key).not.toContain("open-path");
+    }
+  });
+});
+
+describe("books settings codec", () => {
+  beforeEach(() => {
+    useBooksStore.setState({
+      settings: { ...DEFAULT_BOOKS_SETTINGS },
+    });
+  });
+
+  test("collect emits one document per reader preference", () => {
+    useBooksStore.getState().updateSettings({
+      fontId: "eb-garamond",
+      fontSizePct: 130,
+      columnMode: "double",
+      themeOverride: "sepia",
+      customThemeBackground: "#112233",
+      customThemeText: "#ddeeff",
+      customThemeTransparent: true,
+      chineseScript: "traditional",
+      textLayout: "vertical",
+      lineHeight: 1.8,
+      gutterPx: 32,
+      speechRate: 1.2,
+    });
+
+    const docs = SYNC_CODECS["books-settings"].collect(ctx) as Map<
+      string,
+      unknown
+    >;
+    expect(Object.fromEntries(docs)).toEqual({
+      "books-settings/fontId": "eb-garamond",
+      "books-settings/fontSizePct": 130,
+      "books-settings/columnMode": "double",
+      "books-settings/themeOverride": "sepia",
+      "books-settings/customThemeBackground": "#112233",
+      "books-settings/customThemeText": "#ddeeff",
+      "books-settings/customThemeTransparent": true,
+      "books-settings/chineseScript": "traditional",
+      "books-settings/textLayout": "vertical",
+      "books-settings/lineHeight": 1.8,
+      "books-settings/gutterPx": 32,
+      "books-settings/speechRate": 1.2,
+    });
+  });
+
+  test("apply updates every reader preference", async () => {
+    await SYNC_CODECS["books-settings"].apply(
+      [
+        { k: "books-settings/fontId", v: "sans", t },
+        { k: "books-settings/fontSizePct", v: 140, t },
+        { k: "books-settings/columnMode", v: "single", t },
+        { k: "books-settings/themeOverride", v: "custom", t },
+        { k: "books-settings/customThemeBackground", v: "#123", t },
+        { k: "books-settings/customThemeText", v: "#ABCDEF", t },
+        { k: "books-settings/customThemeTransparent", v: true, t },
+        { k: "books-settings/chineseScript", v: "simplified", t },
+        { k: "books-settings/textLayout", v: "vertical", t },
+        { k: "books-settings/lineHeight", v: 1.7, t },
+        { k: "books-settings/gutterPx", v: 48, t },
+        { k: "books-settings/speechRate", v: 1.5, t },
+      ],
+      ctx
+    );
+
+    expect(useBooksStore.getState().settings).toEqual({
+      fontId: "sans",
+      fontSizePct: 140,
+      columnMode: "single",
+      themeOverride: "custom",
+      // Synced colors are normalized to lowercase #rrggbb.
+      customThemeBackground: "#112233",
+      customThemeText: "#abcdef",
+      customThemeTransparent: true,
+      chineseScript: "simplified",
+      textLayout: "vertical",
+      lineHeight: 1.7,
+      gutterPx: 48,
+      speechRate: 1.5,
+    });
+  });
+
+  test("apply clamps line spacing from older app versions into range", async () => {
+    await SYNC_CODECS["books-settings"].apply(
+      [{ k: "books-settings/lineHeight", v: 1.1, t }],
+      ctx
+    );
+
+    expect(useBooksStore.getState().settings.lineHeight).toBe(1.5);
+  });
+
+  test("apply ignores malformed values and tombstones", async () => {
+    await SYNC_CODECS["books-settings"].apply(
+      [
+        { k: "books-settings/fontId", v: "", t },
+        { k: "books-settings/fontSizePct", v: 1_000, t },
+        { k: "books-settings/columnMode", v: "triple", t },
+        { k: "books-settings/themeOverride", v: "neon", t },
+        { k: "books-settings/customThemeBackground", v: "papayawhip", t },
+        { k: "books-settings/customThemeText", v: 0x112233, t },
+        { k: "books-settings/customThemeTransparent", v: "yes", t },
+        { k: "books-settings/chineseScript", v: "translated", t },
+        { k: "books-settings/textLayout", v: "diagonal", t },
+        { k: "books-settings/lineHeight", v: -1, t },
+        { k: "books-settings/gutterPx", v: 1_000, t },
+        { k: "books-settings/speechRate", v: 99, t },
+        { k: "books-settings/fontId", del: true, t },
+      ],
+      ctx
+    );
+
+    expect(useBooksStore.getState().settings).toEqual(DEFAULT_BOOKS_SETTINGS);
+  });
+
+  test("subscription scopes dirty work to changed settings", () => {
+    const changes: string[][] = [];
+    const unsubscribe = SYNC_CODECS["books-settings"].subscribe((keys) => {
+      changes.push(keys ? [...keys] : []);
+    });
+
+    try {
+      useBooksStore.getState().updateSettings({
+        fontSizePct: 120,
+        themeOverride: "custom",
+        customThemeBackground: "#101820",
+        textLayout: "vertical",
+        gutterPx: 40,
+      });
+      expect(changes).toEqual([
+        [
+          "books-settings/fontSizePct",
+          "books-settings/themeOverride",
+          "books-settings/customThemeBackground",
+          "books-settings/textLayout",
+          "books-settings/gutterPx",
+        ],
+      ]);
+    } finally {
+      unsubscribe();
+    }
   });
 });
 

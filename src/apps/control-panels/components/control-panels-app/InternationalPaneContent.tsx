@@ -117,23 +117,25 @@ export function InternationalPaneContent({
     `settings.language.${
       currentLanguage === "zh-TW"
         ? "chineseTraditional"
-        : currentLanguage === "ja"
-          ? "japanese"
-          : currentLanguage === "ko"
-            ? "korean"
-            : currentLanguage === "es"
-              ? "spanish"
-              : currentLanguage === "fr"
-                ? "french"
-                : currentLanguage === "de"
-                  ? "german"
-                  : currentLanguage === "pt"
-                    ? "portuguese"
-                    : currentLanguage === "it"
-                      ? "italian"
-                      : currentLanguage === "ru"
-                        ? "russian"
-                        : "english"
+        : currentLanguage === "zh-CN"
+          ? "chineseSimplified"
+          : currentLanguage === "ja"
+            ? "japanese"
+            : currentLanguage === "ko"
+              ? "korean"
+              : currentLanguage === "es"
+                ? "spanish"
+                : currentLanguage === "fr"
+                  ? "french"
+                  : currentLanguage === "de"
+                    ? "german"
+                    : currentLanguage === "pt"
+                      ? "portuguese"
+                      : currentLanguage === "it"
+                        ? "italian"
+                        : currentLanguage === "ru"
+                          ? "russian"
+                          : "english"
     }`
   );
 
@@ -194,6 +196,9 @@ export function InternationalPaneContent({
                     </SelectItem>
                     <SelectItem value="zh-TW">
                       {t("settings.language.chineseTraditional")}
+                    </SelectItem>
+                    <SelectItem value="zh-CN">
+                      {t("settings.language.chineseSimplified")}
                     </SelectItem>
                     <SelectItem value="ja">
                       {t("settings.language.japanese")}

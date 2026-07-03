@@ -13,7 +13,6 @@ export {
   setUserPasswordHash,
   getUserPasswordHash,
   deleteUserPasswordHash,
-  userHasPassword,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "./_password-storage.js";

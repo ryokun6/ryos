@@ -124,6 +124,37 @@ storage: createDebouncedPersistStorage(),
 
 It keeps localStorage authoritative but batches writes per quiet window and flushes on `pagehide`/tab-hidden. Flows that read raw localStorage keys directly (system reset, manual backup) must call `flushDebouncedPersistWrites()` first. Small slices (settings, a handful of notes) don't need this — plain `name` is fine.
 
+## IndexedDB Storage Adapter (slices that overflow the localStorage quota)
+
+localStorage has a hard ~5–10MB per-origin quota; a slice that inlines large
+binary-ish data (e.g. Soundboard recordings store base64 audio in `boards`)
+will silently throw `QuotaExceededError` and lose writes (historically crashing
+on mobile Safari). For those, persist to IndexedDB via
+`src/utils/indexedDBPersistStorage.ts`:
+
+```typescript
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
+
+// ...inside persist config:
+storage: createIndexedDBPersistStorage(),
+```
+
+It mirrors the debounced localStorage adapter (write-behind, read-your-writes,
+shared `flushDebouncedPersistWrites()`/`haltDebouncedPersistWrites()` hooks) but
+hydrates **asynchronously**. Two consequences:
+
+- Records live in the `persisted_state` IndexedDB object store, keyed by the
+  persist `name`. On first read it transparently migrates the slice's legacy
+  localStorage value, then drops the localStorage key.
+- Because hydration is async, gate any "seed defaults if empty" logic on
+  `useXStore.persist.hasHydrated()` / `onFinishHydration` so you don't clobber
+  restored data. Avoid for boot-critical stores read synchronously via
+  `getState()` before hydration completes.
+
+Manual backup must `await settlePersistWrites()` (not just the sync flush)
+before reading the raw `persisted_state` records, and the store name must be
+listed in the backup's IndexedDB store set.
+
 ## Cloud Sync: Deletion Tombstones
 
 If the store's data participates in cloud sync, a plain local delete isn't enough — the deletion must be recorded as a tombstone so other devices remove it too. Call `useCloudSyncStore.getState().markDeletedKeys(bucket, ids)` when deleting (pattern from `useStickiesStore.ts`):

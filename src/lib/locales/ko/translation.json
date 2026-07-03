@@ -372,6 +372,35 @@
         "export": "보관함 내보내기",
         "filterByRyo": "필터: ryo가 만든 노래",
         "import": "가져오기",
+        "importStatus": {
+          "completed": "가져오기 완료: 신규 {{imported}}개, 업데이트 {{updated}}개",
+          "failed": "가져오기 실패: {{error}}",
+          "fileFallback": "파일",
+          "messages": {
+            "completed": "가져오기 완료: 신규 {{imported}}개, 업데이트 {{updated}}개",
+            "failed": "가져오기 실패",
+            "parsingFile": "파일 분석 중",
+            "preparingSongs": "가져올 노래 준비 중",
+            "progressUpdated": "가져오기 진행 상황 업데이트됨",
+            "rateLimitedRetry": "{{count}}초 후 재시도 중",
+            "readingFile": "파일 읽는 중",
+            "refreshingSongList": "노래 목록 새로 고침 중",
+            "splittingBatch": "업로드 제한에 맞춰 배치 분할 중",
+            "uploadedRefreshing": "가져오기 업로드됨, 라이브러리 새로 고침 중",
+            "uploadingSongs": "노래 업로드 중",
+            "validatingFile": "파일 포맷 확인 중"
+          },
+          "parsing": "가져오기 파일 분석 중...",
+          "preparing": "노래 준비 중 {{processed}}/{{total}}",
+          "rateLimited": "요청 횟수 제한됨. {{message}}",
+          "rateLimitedFallback": "재시도 전 잠시 대기 중...",
+          "reading": "{{fileName}} 읽는 중...",
+          "refreshing": "가져오기가 업로드되었습니다. 라이브러리 새로 고침 중...",
+          "uploading": "노래 업로드 중 {{processed}}/{{total}}",
+          "validating": "가져오기 데이터 검증 중..."
+        },
+        "importingLibrary": "라이브러리 가져오는 중...",
+        "importingProgress": "가져오는 중 {{processed}}/{{total}}",
         "noSongs": "캐시에 곡 없음",
         "noSongsMatchFilter": "현재 필터와 일치하는 노래가 없습니다.",
         "noSongsToExport": "내보낼 노래가 없습니다."
@@ -559,6 +588,16 @@
       }
     },
     "books": {
+      "bookmarks": {
+        "add": "책갈피 추가",
+        "remove": "책갈피 제거",
+        "title": "책갈피"
+      },
+      "chineseScript": {
+        "original": "원본",
+        "simplified": "简体",
+        "traditional": "繁體"
+      },
       "columns": {
         "auto": "자동",
         "double": "두 페이지",
@@ -569,7 +608,28 @@
         "moveToBottom": "맨 아래로 이동",
         "moveToTop": "맨 위로 이동"
       },
+      "customize": {
+        "background": "배경",
+        "chinese": "중국어",
+        "colors": "색상",
+        "direction": "방향",
+        "lineSpacing": "줄 간격",
+        "margins": "여백",
+        "spacing": "간격",
+        "textColor": "텍스트",
+        "title": "사용자화",
+        "transparent": "투명"
+      },
       "description": "EPUB 도서 읽기",
+      "fonts": {
+        "eb-garamond": "Garamond",
+        "geneva": "Geneva",
+        "mono": "고정폭",
+        "original": "원본",
+        "rounded": "둥근",
+        "sans": "산세리프",
+        "serif": "세리프"
+      },
       "help": {
         "bookshelf": {
           "description": "가져온 EPUB 도서들이 나무 책장에 나열됩니다. 책을 클릭하여 열고 읽기 시작하세요.",
@@ -580,7 +640,7 @@
           "title": "다크 모드"
         },
         "fonts": {
-          "description": "보기 메뉴에서 독서용 서체(EB Garamond 포함), 텍스트 크기, 단일 또는 이중 단 설정을 선택하십시오.",
+          "description": "보기 메뉴에서 독서용 서체(Garamond 포함), 텍스트 크기, 단일 또는 이중 단 설정을 선택하십시오.",
           "title": "서체 및 레이아웃"
         },
         "import": {
@@ -604,21 +664,42 @@
         "backToShelf": "서재로 돌아가기",
         "booksHelp": "Books 도움말",
         "chapters": "장",
+        "chineseScript": "중국어 문자",
         "columns": "단",
+        "customizeTheme": "사용자화…",
         "font": "서체",
         "import": "EPUB 가져오기…",
         "nextPage": "다음 페이지",
         "previousPage": "이전 페이지",
+        "speech": "말하기",
+        "speechRate": "말하기 속도",
+        "startSpeaking": "말하기 시작",
+        "stopSpeaking": "말하기 중단",
+        "textLayout": "글자 방향",
         "textSize": "텍스트 크기",
-        "textSizeDecrease": "작게",
-        "textSizeIncrease": "크게",
-        "textSizeReset": "기본 크기",
         "theme": "테마"
       },
       "name": "도서",
       "reader": {
         "backToShelf": "책장",
         "error": "이 책을 열 수 없습니다."
+      },
+      "selection": {
+        "askRyo": "Ryo에게 질문하기",
+        "askRyoFailed": "응답을 받지 못했습니다. 나중에 다시 시도하십시오.",
+        "askRyoQuestion": "이 구절은 무슨 뜻인가요?",
+        "color": {
+          "blue": "파란색 하이라이트",
+          "green": "초록색 하이라이트",
+          "pink": "분홍색 하이라이트",
+          "purple": "보라색 하이라이트",
+          "yellow": "노란색 하이라이트"
+        },
+        "controls": "선택 항목 제어",
+        "copied": "클립보드에 복사됨",
+        "copy": "복사하기",
+        "copyFailed": "복사할 수 없음",
+        "removeHighlight": "하이라이트 제거"
       },
       "shelf": {
         "emptyHint": "'도서 추가'를 클릭하여 EPUB를 가져오세요.",
@@ -629,10 +710,36 @@
         "listView": "목록 보기",
         "percentRead": "{{percent}}%"
       },
+      "speech": {
+        "controls": "말하기 제어기",
+        "pause": "일시 정지",
+        "resume": "재개",
+        "rewind": "되감기",
+        "skip": "건너뛰기",
+        "stop": "중단"
+      },
+      "speechRate": {
+        "fast": "빠름",
+        "normal": "보통",
+        "slow": "느림",
+        "veryFast": "매우 빠름"
+      },
+      "textLayout": {
+        "book": "책 기본값",
+        "horizontal": "가로",
+        "vertical": "세로쓰기"
+      },
       "theme": {
+        "accent": "액센트",
         "auto": "자동",
+        "black": "검은색",
+        "custom": "사용자화",
         "dark": "다크",
+        "gray": "회색",
+        "green": "초록색",
         "light": "라이트",
+        "night": "야간",
+        "paper": "종이",
         "sepia": "세피아"
       },
       "title": "도서",
@@ -877,7 +984,7 @@
         "monthView": "월 보기",
         "newEvent": "새로운 이벤트",
         "showToDoItems": "할 일 항목 보기",
-        "syncCalendar": "일정 동기화",
+        "syncCalendar": "캘린더 동기화",
         "weekView": "주 보기"
       },
       "name": "캘린더",
@@ -1596,6 +1703,9 @@
       "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다",
       "bootScreen": "부팅 화면",
       "bootScreenDescription": "부팅 화면 애니메이션을 테스트합니다",
+      "browserTtsVoice": "TTS 음성",
+      "browserTtsVoiceAutomatic": "자동",
+      "browserTtsVoiceDescription": "도서 읽어주기 및 계산기용 시스템 음성",
       "changePassword": "암호 변경",
       "changePasswordButton": "변경",
       "chatSynth": "챗 신스",
@@ -1649,6 +1759,7 @@
         "deleting": "삭제 중…",
         "description": "계정, 암호, 복구 이메일, 연결된 Telegram 및 동기화된 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
         "genericError": "계정을 삭제할 수 없습니다. 다시 시도해 주세요.",
+        "openButton": "계정 삭제…",
         "passwordLabel": "현재 암호",
         "passwordRequired": "현재 암호를 입력하세요",
         "submit": "계정 삭제",
@@ -1686,7 +1797,7 @@
         "title": "이메일",
         "unverifiedAs": "{{email}} · 인증되지 않음",
         "verifiedAs": "{{email}} · 인증됨",
-        "verify": "확인"
+        "verify": "확인…"
       },
       "errorBoundaries": "오류 경계",
       "errorBoundariesDescription": "테스트를 위해 앱 또는 데스크톱 충돌 대체 기능을 유발합니다",
@@ -1735,7 +1846,8 @@
       "ipodVolume": "iPod 음량",
       "logIn": "로그인",
       "logOut": "로그아웃",
-      "logOutAll": "전체 로그아웃",
+      "logOutAll": "전체 로그아웃…",
+      "logOutButton": "로그아웃…",
       "logOutOfAllDevices": "모든 기기에서 로그아웃",
       "logOutOfAllDevicesRowDescription": "모든 기기에서 ryOS 계정 로그아웃",
       "logOutRowDescription": "이 기기에서 ryOS 계정에서 로그아웃",
@@ -1863,7 +1975,7 @@
       "selectAPreset": "사전 설정 선택",
       "selectScreenSaver": "화면 보호기 선택",
       "sepia": "세피아",
-      "setPassword": "암호 설정",
+      "setPassword": "암호 설정…",
       "setPasswordDialog": {
         "description": "계정 복구를 활성화하려면 암호를 설정하십시오. 접근 권한을 잃어버린 경우 이 암호를 사용하여 새 토큰을 받을 수 있습니다.",
         "submitLabel": "암호 설정",
@@ -2232,6 +2344,7 @@
         "noAirDropUsersAvailable": "근처 사용자가 없습니다",
         "open": "열기",
         "openAirDrop": "AirDrop 열기",
+        "openWith": "다음으로 열기",
         "putBack": "되돌려 놓기",
         "rename": "이름 변경…",
         "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
@@ -2271,8 +2384,10 @@
         "internetShortcut": "인터넷 바로 가기",
         "jpegImage": "JPEG 이미지",
         "mp3Audio": "MP3 오디오",
+        "pdfDocument": "PDF 문서",
         "pngImage": "PNG 이미지",
         "quicktimeMovie": "QuickTime 동영상",
+        "svgImage": "SVG 이미지",
         "unknown": "알 수 없음",
         "webpImage": "WebP 이미지"
       },
@@ -2521,11 +2636,13 @@
         "chinese": "중국어",
         "clearFavorites": "즐겨찾기 지우기…",
         "clearHistory": "기록 지우기…",
+        "debug": "디버그",
         "digitalBeing": "디지털 존재",
         "editFuture": "미래 편집…",
         "english": "영어",
         "favorites": "즐겨찾기",
         "folder": "폴더",
+        "forceHeadless": "헤드리스 렌더링 강제",
         "forward": "앞으로",
         "france": "프랑스",
         "french": "프랑스어",
@@ -2548,6 +2665,7 @@
         "openTimeMachine": "Time Machine 열기",
         "portugal": "포르투갈",
         "portuguese": "포르투갈어",
+        "proxySessions": "쿠키 / 세션 패스스루",
         "refresh": "새로 고침",
         "resetFavorites": "즐겨찾기 재설정…",
         "russia": "러시아",
@@ -2559,6 +2677,7 @@
         "stop": "중단",
         "unitedKingdom": "영국",
         "unitedStates": "미국",
+        "verboseLogging": "상세 로깅",
         "welsh": "웨일스어",
         "year": "연도"
       },
@@ -2572,6 +2691,7 @@
       "older": "이전",
       "olderVersion": "이전 버전",
       "oldest": "가장 오래된",
+      "openInLiveBrowser": "라이브 브라우저에서 이 페이지 열기",
       "openingRequestedPage": "요청한 페이지를 여는 중",
       "openingSharedPage": "공유된 페이지를 여는 중",
       "page": "페이지",
@@ -3647,6 +3767,74 @@
       },
       "name": "Photo Booth"
     },
+    "preview": {
+      "description": "이미지, PDF 및 문서 보기",
+      "empty": {
+        "hint": "파일을 선택하거나 여기에 드롭하십시오",
+        "title": "문서 열기"
+      },
+      "help": {
+        "images": {
+          "description": "원본 파일을 변경하지 않고 일반적인 이미지 포맷 열기",
+          "title": "이미지 미리보기"
+        },
+        "openFiles": {
+          "description": "파일 > 열기를 사용하여 기기의 파일 미리보기",
+          "title": "파일 열기"
+        },
+        "openWith": {
+          "description": "편집 가능한 파일을 그림판, 텍스트 편집기 또는 Applet 뷰어로 보내기",
+          "title": "다음으로 열기"
+        },
+        "pdfs": {
+          "description": "내장된 문서 뷰어를 사용하여 PDF 문서 보기",
+          "title": "PDF 읽기"
+        },
+        "safeHtml": {
+          "description": "스크립트를 실행하지 않고 샌드박스에서 HTML 문서 미리보기",
+          "title": "안전한 HTML"
+        },
+        "zoom": {
+          "description": "핀치 또는 이중 탭으로 이미지를 확대/축소하거나 윈도우 크기에 맞추기",
+          "title": "확대/축소"
+        }
+      },
+      "menu": {
+        "aboutPreview": "Preview에 관하여",
+        "actualSize": "실제 크기",
+        "export": "내보내기…",
+        "fitToWindow": "윈도우 크기에 맞게 조절",
+        "importFromDevice": "기기에서 가져오기…",
+        "open": "열기…",
+        "openWith": "다음으로 열기",
+        "previewHelp": "미리보기 도움말",
+        "saveAs": "별도 저장…",
+        "zoomIn": "확대",
+        "zoomOut": "축소"
+      },
+      "name": "미리보기",
+      "saveAs": {
+        "description": "이 복사본의 이름을 입력하십시오.",
+        "title": "별도 저장"
+      },
+      "status": {
+        "loadFailed": "이 파일을 열 수 없습니다.",
+        "loading": "미리보기 로드 중…",
+        "notFound": "파일 콘텐츠를 찾을 수 없습니다.",
+        "unsupported": "미리보기를 사용할 수 없음",
+        "unsupportedDescription": "미리보기에서 이 파일 포맷을 지원하지 않습니다."
+      },
+      "supportedFiles": "미리보기 문서",
+      "title": "미리보기",
+      "toasts": {
+        "exportFailed": "파일을 내보낼 수 없습니다.",
+        "importFailed": "파일을 가져올 수 없습니다.",
+        "imported": "파일을 가져왔습니다.",
+        "saveFailed": "파일을 저장할 수 없습니다.",
+        "saved": "파일이 저장되었습니다."
+      },
+      "untitled": "제목 없음"
+    },
     "soundboard": {
       "description": "효과음 재생",
       "help": {
@@ -3950,7 +4138,7 @@
         "enterANameForYourFile": "파일 이름을 입력하세요.",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "저장할 파일 이름을 입력하거나 닫기 전에 삭제하세요.",
         "keepNewDocument": "새 문서 유지",
-        "saveChanges": "변경사항 저장",
+        "saveChanges": "변경 사항 저장",
         "saveFile": "파일 저장",
         "saveYourChangesBeforeClosing": "닫기 전에 변경사항을 저장하세요."
       },
@@ -4384,14 +4572,11 @@
       "password": "암호",
       "recovery": {
         "back": "뒤로",
-        "channel": "다음을 통해 코드 보내기",
-        "channelEmail": "이메일",
-        "channelTelegram": "텔레그램",
         "code": "재설정 코드",
         "codeRequired": "재설정 코드를 입력하세요",
         "codeSent": "일치하는 계정이 있으면 재설정 코드가 전송되었습니다.",
         "confirmPassword": "새 암호 확인",
-        "description": "복구 채널로 재설정 코드를 전송한 후 새 암호를 설정하세요.",
+        "description": "사용 가능한 복구 방법으로 재설정 코드를 전송한 후 새 암호를 설정하세요.",
         "genericError": "암호를 재설정할 수 없습니다. 코드를 확인하고 다시 시도해 주세요.",
         "identifier": "사용자 이름 또는 이메일",
         "identifierRequired": "사용자 이름 또는 이메일을 입력하세요",
@@ -4452,7 +4637,7 @@
       "openInGitHub": "GitHub에서 열기",
       "save": "저장",
       "saveBeforeClosing": "닫기 전에 변경사항을 저장하세요.",
-      "saveChanges": "변경사항 저장",
+      "saveChanges": "변경 사항 저장",
       "saveFile": "파일 저장",
       "share": {
         "by": "작성자",
@@ -4581,6 +4766,10 @@
       "volume": "볼륨"
     },
     "noResults": "결과 없음",
+    "offline": {
+      "appRequiresInternet": "{{appName}}은(는) 인터넷 연결이 필요합니다.",
+      "title": "오프라인 상태입니다."
+    },
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
       "run": "실행…",
@@ -4659,6 +4848,7 @@
       "appVersion": "앱",
       "average": "평균",
       "bufferedLogs": "{{count}}개 버퍼링됨",
+      "cloudSync": "클라우드 동기화",
       "copySnapshot": "환경 스냅샷 복사",
       "current": "현재",
       "darkMode": "다크",
@@ -4690,6 +4880,14 @@
       "offline": "오프라인",
       "online": "온라인",
       "performance": "성능",
+      "realtime": "실시간",
+      "realtimeReport": "{{state}} · {{provider}} · {{count}}개 채널",
+      "realtimeState": {
+        "connected": "연결됨",
+        "connecting": "연결 중",
+        "disconnected": "연결 끊김"
+      },
+      "realtimeValue": "{{state}} · {{count}} ch",
       "reportTitle": "라이브 환경 스냅샷",
       "runtime": {
         "browser": "브라우저",
@@ -4699,7 +4897,17 @@
       "runtimeLabel": "런타임",
       "sampling": "매초 샘플링 중",
       "samplingPaused": "샘플링 일시 정지됨",
+      "services": "서비스",
+      "session": "세션",
+      "sessionAdmin": "{{username}} (관리자)",
+      "sessionGuest": "게스트",
+      "sessionSignedOut": "{{username}} (로그아웃됨)",
       "storage": "저장소",
+      "syncAuto": "자동",
+      "syncError": "오류",
+      "syncOff": "끔",
+      "syncReport": "{{status}} · 마지막 확인: {{checkedAt}}",
+      "syncSyncing": "동기화 중…",
       "theme": "테마",
       "themeValue": "{{theme}} · {{mode}}",
       "totalLogs": "총 로그",
@@ -4709,6 +4917,23 @@
       "viewportValue": "{{width}}×{{height}} @ {{dpr}}x",
       "warnings": "경고"
     },
+    "network": {
+      "clear": "요청 지우기",
+      "copy": "요청 복사하기",
+      "empty": "아직 캡처된 요청이 없습니다.",
+      "emptyForFilter": "이 필터와 일치하는 요청이 없습니다.",
+      "failedCount": "{{count}}개 실패",
+      "filterAll": "모든 요청",
+      "filterRequests": "요청 필터링",
+      "filters": {
+        "error": "실패함",
+        "ok": "성공함",
+        "pending": "대기 중",
+        "warn": "경고"
+      },
+      "pending": "···",
+      "title": "요청"
+    },
     "noLogsForFilter": "이 필터와 일치하는 로그가 없습니다.",
     "noLogsYet": "아직 캡처된 로그가 없습니다.",
     "scrollToBottom": "맨 아래로 스크롤",
@@ -4716,14 +4941,16 @@
     "tabs": {
       "label": "디버그 패널 뷰",
       "live": "라이브",
-      "logs": "로그"
+      "logs": "로그",
+      "network": "네트워크"
     },
     "toggleLabel": "디버그",
     "warnCount": "{{count}} 경고"
   },
   "settings": {
     "language": {
-      "chineseTraditional": "中文",
+      "chineseSimplified": "简体中文",
+      "chineseTraditional": "繁體中文",
       "description": "ryOS 인터페이스의 기본 언어 선택",
       "english": "English",
       "french": "Français",

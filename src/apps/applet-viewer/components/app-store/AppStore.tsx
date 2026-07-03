@@ -1,3 +1,6 @@
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { appletIconStyles } from "./constants";
 import { useAppStore } from "./useAppStore";
 import type { AppStoreProps } from "./types";
@@ -8,6 +11,17 @@ import { AppStoreListView } from "./AppStoreListView";
 export function AppStore(props: AppStoreProps) {
   const vm = useAppStore(props);
   const { t, isLoading, applets, selectedApplet, showListView } = vm;
+  const isOffline = useOffline();
+
+  // The store feed can't load without a connection; only fall back to the
+  // offline state when there's nothing cached to show.
+  if (isOffline && applets.length === 0) {
+    return (
+      <div className="size-full">
+        <OfflineEmptyState appName={getTranslatedAppName("applet-viewer")} />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

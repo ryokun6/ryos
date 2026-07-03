@@ -21,6 +21,7 @@ export interface FinderDisplayItem {
 
 const finderSortLocaleMap: Record<SupportedLanguage, string[]> = {
   en: ["en-US", "en"],
+  "zh-CN": ["zh-Hans-CN", "zh-CN", "zh-Hans", "zh"],
   "zh-TW": ["zh-Hant-TW", "zh-TW", "zh-Hant", "zh"],
   ja: ["ja-JP", "ja"],
   ko: ["ko-KR", "ko"],

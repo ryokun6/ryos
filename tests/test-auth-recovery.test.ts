@@ -56,7 +56,7 @@ describe("Account Recovery API", () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/auth/recovery/request`, {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
-        body: JSON.stringify({ channel: "telegram" }),
+        body: JSON.stringify({}),
       });
       expect(res.status).toBe(400);
     });
@@ -67,7 +67,6 @@ describe("Account Recovery API", () => {
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({
           identifier: uniqueTestUsername("nobody"),
-          channel: "telegram",
         }),
       });
       expect(res.status).toBe(200);
@@ -83,11 +82,12 @@ describe("Account Recovery API", () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/auth/recovery/request`, {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
-        body: JSON.stringify({ identifier: username, channel: "telegram" }),
+        body: JSON.stringify({ identifier: username }),
       });
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
+      expect(await redis.get(redisKeys.auth.passwordReset(username))).toBeNull();
     });
 
     test("GET not allowed -> 405", async () => {
@@ -131,7 +131,7 @@ describe("Account Recovery API", () => {
 
       // The OLD token must now be invalid (all sessions were cleared).
       const oldTokenCheck = await fetchWithAuth(
-        `${BASE_URL}/api/auth/password/check`,
+        `${BASE_URL}/api/auth/tokens`,
         username,
         oldToken as string,
         { method: "GET" }
@@ -140,7 +140,7 @@ describe("Account Recovery API", () => {
 
       // The NEW token should work.
       const newTokenCheck = await fetchWithAuth(
-        `${BASE_URL}/api/auth/password/check`,
+        `${BASE_URL}/api/auth/tokens`,
         username,
         newAuth?.token as string,
         { method: "GET" }

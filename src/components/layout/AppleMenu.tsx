@@ -84,7 +84,6 @@ export function AppleMenu() {
   const {
     username,
     isAuthenticated,
-    hasPassword,
     // Username/signup dialog
     promptSetUsername,
     isUsernameDialogOpen,
@@ -397,11 +396,6 @@ export function AppleMenu() {
         isOpen={isLogoutConfirmDialogOpen}
         onOpenChange={setIsLogoutConfirmDialogOpen}
         onConfirm={confirmLogout}
-        hasPassword={hasPassword}
-        onSetPassword={() => {
-          // For now, just close and prompt login to set password
-          setIsLogoutConfirmDialogOpen(false);
-        }}
       />
     </>
   );

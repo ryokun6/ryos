@@ -1,12 +1,18 @@
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useId, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import packageInfo from "../../../package.json";
 import { getTheme } from "@/themes";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useRealtimeConnectionStatus } from "@/hooks/useRealtimeConnectionStatus";
+import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
+import { getRealtimeChannelNames } from "@/lib/pusherClient";
+import { getRealtimeProvider } from "@/utils/runtimeConfig";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import type { ConsoleLogEntry } from "@/utils/consoleCapture";
 import { cn } from "@/lib/utils";
 import {
-  buildSparklinePoints,
+  buildSparklineGeometry,
   formatBytes,
   formatLiveSnapshotMarkdown,
 } from "./liveMetrics";
@@ -25,14 +31,23 @@ interface DebugLiveDashboardProps {
 interface SparklineProps {
   label: string;
   values: readonly (number | null)[];
+  formatTick: (value: number) => string;
 }
 
 interface InstrumentCardProps {
   label: string;
   value: string;
   detail: string;
-  children: ReactNode;
+  values: readonly (number | null)[];
+  formatTick: (value: number) => string;
+  chartLabel: string;
   glassy: boolean;
+}
+
+interface MetricSectionProps {
+  title: string;
+  glassy: boolean;
+  children: ReactNode;
 }
 
 interface MetricRowProps {
@@ -41,48 +56,107 @@ interface MetricRowProps {
   valueClassName?: string;
 }
 
-const SPARKLINE_WIDTH = 180;
-const SPARKLINE_HEIGHT = 42;
+const SPARKLINE_WIDTH = 200;
+const SPARKLINE_HEIGHT = 56;
+const SPARKLINE_PADDING = 5;
 
-function Sparkline({ label, values }: SparklineProps) {
-  const points = buildSparklinePoints(
+function Sparkline({ label, values, formatTick }: SparklineProps) {
+  const gradientId = useId();
+  const geometry = buildSparklineGeometry(
     values,
     SPARKLINE_WIDTH,
-    SPARKLINE_HEIGHT
+    SPARKLINE_HEIGHT,
+    SPARKLINE_PADDING
   );
 
   return (
-    <svg
-      role="img"
-      aria-label={label}
-      viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}
-      preserveAspectRatio="none"
-      className="h-10 w-full overflow-visible"
-      focusable="false"
-    >
-      <title>{label}</title>
-      <line
-        x1="0"
-        y1={SPARKLINE_HEIGHT / 2}
-        x2={SPARKLINE_WIDTH}
-        y2={SPARKLINE_HEIGHT / 2}
-        stroke="var(--os-color-separator)"
-        strokeWidth="1"
-        strokeDasharray="2 3"
-        vectorEffect="non-scaling-stroke"
-      />
-      {points ? (
-        <polyline
-          points={points}
-          fill="none"
-          stroke="var(--os-color-link)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-        />
+    <div className="relative" aria-hidden={false}>
+      <svg
+        role="img"
+        aria-label={label}
+        viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}
+        preserveAspectRatio="none"
+        className="block h-12 w-full"
+        focusable="false"
+      >
+        <title>{label}</title>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop
+              offset="0%"
+              stopColor="var(--os-color-link)"
+              stopOpacity="0.3"
+            />
+            <stop
+              offset="100%"
+              stopColor="var(--os-color-link)"
+              stopOpacity="0.02"
+            />
+          </linearGradient>
+        </defs>
+        {geometry ? (
+          <>
+            <polygon points={geometry.area} fill={`url(#${gradientId})`} />
+            <line
+              x1="0"
+              y1={geometry.averageY}
+              x2={SPARKLINE_WIDTH}
+              y2={geometry.averageY}
+              stroke="var(--os-color-separator)"
+              strokeWidth="1"
+              strokeDasharray="2 3"
+              vectorEffect="non-scaling-stroke"
+            />
+            <polyline
+              points={geometry.line}
+              fill="none"
+              stroke="var(--os-color-link)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </>
+        ) : (
+          <line
+            x1="0"
+            y1={SPARKLINE_HEIGHT / 2}
+            x2={SPARKLINE_WIDTH}
+            y2={SPARKLINE_HEIGHT / 2}
+            stroke="var(--os-color-separator)"
+            strokeWidth="1"
+            strokeDasharray="2 3"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
+      {geometry ? (
+        <>
+          {/* Live marker — positioned in screen space so it stays a perfect
+              circle despite the non-uniform SVG scaling. */}
+          <span
+            className="pointer-events-none absolute size-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--os-color-link)] ring-2 ring-os-panel-bg"
+            style={{
+              left: `${(geometry.last.x / SPARKLINE_WIDTH) * 100}%`,
+              top: `${(geometry.last.y / SPARKLINE_HEIGHT) * 100}%`,
+            }}
+            aria-hidden
+          />
+          <span
+            className="pointer-events-none absolute right-1 top-0 font-os-mono text-[8px] leading-none tabular-nums text-os-text-secondary"
+            aria-hidden
+          >
+            {formatTick(geometry.maximum)}
+          </span>
+          <span
+            className="pointer-events-none absolute bottom-0 right-1 font-os-mono text-[8px] leading-none tabular-nums text-os-text-secondary"
+            aria-hidden
+          >
+            {formatTick(geometry.minimum)}
+          </span>
+        </>
       ) : null}
-    </svg>
+    </div>
   );
 }
 
@@ -90,7 +164,9 @@ function InstrumentCard({
   label,
   value,
   detail,
-  children,
+  values,
+  formatTick,
+  chartLabel,
   glassy,
 }: InstrumentCardProps) {
   return (
@@ -110,10 +186,30 @@ function InstrumentCard({
           {value}
         </span>
       </div>
-      <div className="mt-1">{children}</div>
-      <p className="mt-0.5 truncate font-os-ui text-[9px] text-os-text-secondary">
+      <div className="mt-1.5">
+        <Sparkline values={values} formatTick={formatTick} label={chartLabel} />
+      </div>
+      <p className="mt-1 truncate font-os-ui text-[9px] text-os-text-secondary">
         {detail}
       </p>
+    </section>
+  );
+}
+
+function MetricSection({ title, glassy, children }: MetricSectionProps) {
+  return (
+    <section className="mt-2.5">
+      <h3 className="mb-1 px-0.5 font-os-ui text-[9px] font-semibold uppercase tracking-wider text-os-text-secondary">
+        {title}
+      </h3>
+      <dl
+        className={cn(
+          "overflow-hidden rounded-os border border-[color:var(--os-color-separator)]",
+          glassy ? "bg-os-input-bg" : "bg-os-panel-bg"
+        )}
+      >
+        {children}
+      </dl>
     </section>
   );
 }
@@ -160,6 +256,18 @@ export function DebugLiveDashboard({
   const numberFormatter = useMemo(
     () => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
     [locale]
+  );
+  const tickFormatter = useMemo(
+    () => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }),
+    [locale]
+  );
+  const formatFpsTick = useMemo(
+    () => (value: number) => tickFormatter.format(value),
+    [tickFormatter]
+  );
+  const formatLogRateTick = useMemo(
+    () => (value: number) => tickFormatter.format(value),
+    [tickFormatter]
   );
   const fpsValues = useMemo(
     () => snapshot.history.map((point) => point.fps),
@@ -213,6 +321,75 @@ export function DebugLiveDashboard({
   const networkValue = snapshot.online
     ? t("debug.live.online")
     : t("debug.live.offline");
+
+  const realtimeState = useRealtimeConnectionStatus();
+  const isAdmin = useIsRyoAdmin();
+  const username = useChatsStore((s) => s.username);
+  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const autoSyncEnabled = useCloudSyncStore((s) => s.autoSyncEnabled);
+  const isCheckingRemote = useCloudSyncStore((s) => s.isCheckingRemote);
+  const lastCheckedAt = useCloudSyncStore((s) => s.lastCheckedAt);
+  const syncLastError = useCloudSyncStore((s) => s.lastError);
+  const categoryStatus = useCloudSyncStore((s) => s.categoryStatus);
+
+  // Channel names are not reactive; re-read each sample tick so the count stays
+  // roughly fresh without binding to the realtime internals.
+  const channelCount = useMemo(
+    () => getRealtimeChannelNames().length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [snapshot.sampledAt]
+  );
+  const realtimeProvider = useMemo(() => getRealtimeProvider(), []);
+  const realtimeStateLabel = t(`debug.live.realtimeState.${realtimeState}`);
+  const realtimeValue = t("debug.live.realtimeValue", {
+    state: realtimeStateLabel,
+    count: channelCount,
+  });
+  const realtimeReportValue = t("debug.live.realtimeReport", {
+    state: realtimeStateLabel,
+    provider: realtimeProvider,
+    count: channelCount,
+  });
+  const realtimeColorClass =
+    realtimeState === "connected"
+      ? "text-green-600"
+      : realtimeState === "connecting"
+        ? "text-amber-500"
+        : "text-red-500";
+
+  const isSyncingNow =
+    isCheckingRemote ||
+    Object.values(categoryStatus).some(
+      (status) => status.isUploading || status.isDownloading
+    );
+  const syncStatusLabel = isSyncingNow
+    ? t("debug.live.syncSyncing")
+    : syncLastError
+      ? t("debug.live.syncError")
+      : autoSyncEnabled
+        ? t("debug.live.syncAuto")
+        : t("debug.live.syncOff");
+  const cloudSyncValue = syncStatusLabel;
+  const cloudSyncReportValue = lastCheckedAt
+    ? t("debug.live.syncReport", {
+        status: syncStatusLabel,
+        checkedAt: new Date(lastCheckedAt).toLocaleString(locale),
+      })
+    : syncStatusLabel;
+  const cloudSyncColorClass = syncLastError
+    ? "text-red-500"
+    : isSyncingNow
+      ? "text-amber-500"
+      : undefined;
+
+  const sessionValue = username
+    ? isAuthenticated
+      ? isAdmin
+        ? t("debug.live.sessionAdmin", { username })
+        : username
+      : t("debug.live.sessionSignedOut", { username })
+    : t("debug.live.sessionGuest");
+
   const report = useMemo(
     () =>
       formatLiveSnapshotMarkdown({
@@ -228,6 +405,9 @@ export function DebugLiveDashboard({
         domNodeCount: snapshot.domNodeCount,
         heap: snapshot.heap.kind === "available" ? heapValue : null,
         storage: snapshot.storage.kind === "available" ? storageValue : null,
+        realtime: realtimeReportValue,
+        cloudSync: cloudSyncReportValue,
+        session: sessionValue,
         totalLogs: snapshot.bufferedLogCount,
         logRate: snapshot.logRate,
         errors: snapshot.errorCount,
@@ -241,6 +421,10 @@ export function DebugLiveDashboard({
           history: t("debug.live.historySummary"),
           metric: t("debug.live.metric"),
           value: t("debug.live.value"),
+          services: t("debug.live.services"),
+          realtimeConnection: t("debug.live.realtime"),
+          cloudSync: t("debug.live.cloudSync"),
+          session: t("debug.live.session"),
           runtime: t("debug.live.runtimeLabel"),
           appVersion: t("debug.live.appVersion"),
           locale: t("debug.live.locale"),
@@ -264,10 +448,13 @@ export function DebugLiveDashboard({
         },
       }),
     [
+      cloudSyncReportValue,
       heapValue,
       locale,
       networkValue,
+      realtimeReportValue,
       runtimeLabel,
+      sessionValue,
       snapshot,
       storageValue,
       t,
@@ -308,13 +495,11 @@ export function DebugLiveDashboard({
           label={t("debug.live.fps")}
           value={fpsValue}
           detail={frameTime}
+          values={fpsValues}
+          formatTick={formatFpsTick}
+          chartLabel={t("debug.live.fpsChartAria", { value: fpsValue })}
           glassy={flags.isAquaGlass}
-        >
-          <Sparkline
-            values={fpsValues}
-            label={t("debug.live.fpsChartAria", { value: fpsValue })}
-          />
-        </InstrumentCard>
+        />
         <InstrumentCard
           label={t("debug.live.logRate")}
           value={t("debug.live.logsPerSecond", {
@@ -323,45 +508,29 @@ export function DebugLiveDashboard({
           detail={t("debug.live.bufferedLogs", {
             count: snapshot.bufferedLogCount,
           })}
+          values={logRateValues}
+          formatTick={formatLogRateTick}
+          chartLabel={t("debug.live.logRateChartAria", {
+            count: snapshot.logRate,
+          })}
           glassy={flags.isAquaGlass}
-        >
-          <Sparkline
-            values={logRateValues}
-            label={t("debug.live.logRateChartAria", {
-              count: snapshot.logRate,
-            })}
-          />
-        </InstrumentCard>
+        />
       </div>
 
-      <dl
-        className={cn(
-          "mt-2 overflow-hidden rounded-os border border-[color:var(--os-color-separator)]",
-          flags.isAquaGlass ? "bg-os-input-bg" : "bg-os-panel-bg"
-        )}
-      >
+      <MetricSection title={t("debug.live.performance")} glassy={flags.isAquaGlass}>
         <MetricRow label={t("debug.live.jsHeap")} value={heapValue} />
         <MetricRow
           label={t("debug.live.domNodes")}
           value={numberFormatter.format(snapshot.domNodeCount)}
         />
-        <MetricRow
-          label={t("debug.live.viewport")}
-          value={viewportValue}
-        />
-        <MetricRow
-          label={t("debug.live.network")}
-          value={
-            <span
-              role="status"
-              aria-live="off"
-              className={snapshot.online ? "text-green-600" : "text-red-500"}
-            >
-              {networkValue}
-            </span>
-          }
-        />
         <MetricRow label={t("debug.live.storage")} value={storageValue} />
+      </MetricSection>
+
+      <MetricSection title={t("debug.live.logging")} glassy={flags.isAquaGlass}>
+        <MetricRow
+          label={t("debug.live.totalLogs")}
+          value={numberFormatter.format(snapshot.bufferedLogCount)}
+        />
         <MetricRow
           label={t("debug.live.logHealth")}
           value={t("debug.live.logHealthValue", {
@@ -376,14 +545,47 @@ export function DebugLiveDashboard({
                 : undefined
           }
         />
+      </MetricSection>
+
+      <MetricSection title={t("debug.live.services")} glassy={flags.isAquaGlass}>
+        <MetricRow
+          label={t("debug.live.realtime")}
+          value={realtimeValue}
+          valueClassName={realtimeColorClass}
+        />
+        <MetricRow
+          label={t("debug.live.cloudSync")}
+          value={cloudSyncValue}
+          valueClassName={cloudSyncColorClass}
+        />
+        <MetricRow label={t("debug.live.session")} value={sessionValue} />
+      </MetricSection>
+
+      <MetricSection
+        title={t("debug.live.environment")}
+        glassy={flags.isAquaGlass}
+      >
+        <MetricRow
+          label={t("debug.live.network")}
+          value={
+            <span
+              role="status"
+              aria-live="off"
+              className={snapshot.online ? "text-green-600" : "text-red-500"}
+            >
+              {networkValue}
+            </span>
+          }
+        />
+        <MetricRow label={t("debug.live.viewport")} value={viewportValue} />
+        <MetricRow label={t("debug.live.runtimeLabel")} value={runtimeLabel} />
         <MetricRow
           label={t("debug.live.appVersion")}
           value={`ryOS ${packageInfo.version}`}
         />
-        <MetricRow label={t("debug.live.runtimeLabel")} value={runtimeLabel} />
         <MetricRow label={t("debug.live.locale")} value={locale} />
         <MetricRow label={t("debug.live.theme")} value={themeValue} />
-      </dl>
+      </MetricSection>
     </div>
   );
 }

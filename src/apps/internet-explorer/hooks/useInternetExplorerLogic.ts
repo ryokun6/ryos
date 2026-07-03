@@ -49,6 +49,10 @@ import {
   urlBarUiReducer,
   urlBarUiInitialState,
 } from "../utils/urlBarUiReducer";
+import {
+  getPastYears,
+  getFutureYears,
+} from "../components/ie-menu-bar/yearLists";
 
 const log = createClientLogger("InternetExplorer");
 
@@ -135,6 +139,12 @@ export function useInternetExplorerLogic({
     setLocation,
     setTimeMachineViewOpen,
     fetchCachedYears,
+    debugProxySessions,
+    debugForceHeadless,
+    debugVerboseLogging,
+    setDebugProxySessions,
+    setDebugForceHeadless,
+    setDebugVerboseLogging,
   } = useInternetExplorerStoreShallow((state) => ({
     url: state.url,
     year: state.year,
@@ -187,6 +197,12 @@ export function useInternetExplorerLogic({
     setLocation: state.setLocation,
     setTimeMachineViewOpen: state.setTimeMachineViewOpen,
     fetchCachedYears: state.fetchCachedYears,
+    debugProxySessions: state.debugProxySessions,
+    debugForceHeadless: state.debugForceHeadless,
+    debugVerboseLogging: state.debugVerboseLogging,
+    setDebugProxySessions: state.setDebugProxySessions,
+    setDebugForceHeadless: state.setDebugForceHeadless,
+    setDebugVerboseLogging: state.setDebugVerboseLogging,
   }));
 
   const { t } = useTranslation();
@@ -201,6 +217,36 @@ export function useInternetExplorerLogic({
     helpItems ?? []
   );
   const appName = t("apps.internet-explorer.appName");
+
+  // The IE Debug menu is only available when global debug mode is on. The
+  // advanced proxy toggles below opt into env-gated proxy features
+  // (cookie/session passthrough, forced headless) per browser.
+  const showDebugMenu = debugMode;
+
+  // Append the active debug toggles to a proxy (`/api/iframe-check`) URL so the
+  // server opts the request into the gated features. `dbg=1` signals the server
+  // that this is an admin/debug-mode caller permitted to use them.
+  const appendIeDebugParams = useCallback(
+    (proxyUrl: string): string => {
+      if (!proxyUrl.startsWith("/api/iframe-check")) return proxyUrl;
+      const extra: string[] = [];
+      if (debugForceHeadless) extra.push("render=headless", "dbg=1");
+      if (debugProxySessions) extra.push("ieSessions=1", "dbg=1");
+      if (extra.length === 0) return proxyUrl;
+      // De-dupe the dbg flag.
+      const unique = Array.from(new Set(extra));
+      const sep = proxyUrl.includes("?") ? "&" : "?";
+      const next = `${proxyUrl}${sep}${unique.join("&")}`;
+      if (debugVerboseLogging) {
+        log.info("[debug] proxy params", {
+          headless: debugForceHeadless,
+          sessions: debugProxySessions,
+        });
+      }
+      return next;
+    },
+    [debugForceHeadless, debugProxySessions, debugVerboseLogging]
+  );
 
   const getSharedPageToastDescription = useCallback(
     (sharedPage: { url: string; year?: string }) =>
@@ -390,45 +436,24 @@ export function useInternetExplorerLogic({
   const { currentTheme, isWindowsTheme } = useThemeFlags();
 
   const currentYear = new Date().getFullYear();
-  const pastYears = [
-    "1000 BC",
-    "1 CE",
-    "500",
-    "800",
-    "1000",
-    "1200",
-    "1400",
-    "1600",
-    "1700",
-    "1800",
-    "1900",
-    "1910",
-    "1920",
-    "1930",
-    "1940",
-    "1950",
-    "1960",
-    "1970",
-    "1980",
-    "1985",
-    "1990",
-    ...Array.from({ length: currentYear - 1991 + 1 }, (_, i) =>
-      (1991 + i).toString()
-    ).filter((year) => parseInt(year) !== currentYear),
-  ].reverse();
-  const futureYears = [
-    "2150",
-    "2200",
-    "2250",
-    "2300",
-    "2400",
-    "2500",
-    "2750",
-    "3000",
-  ].sort((a, b) => parseInt(b) - parseInt(a));
+  // Single source of truth for the year dropdowns, shared with the menu bar
+  // (see `ie-menu-bar/yearLists.ts`). Previously the toolbar duplicated a
+  // smaller future-year list (2150+ only), which caused menu-selected years
+  // like 2030–2090 to classify as `future` mode yet still render the iframe
+  // branch — navigation appeared to do nothing. Using the canonical lists
+  // keeps the toolbar, menu bar, and `mode` classification consistent.
+  const pastYears = useMemo(() => getPastYears(currentYear), [currentYear]);
+  const futureYears = useMemo(
+    () => getFutureYears(currentYear),
+    [currentYear]
+  );
 
-  // Check if current year is in the future
-  const isFutureYear = futureYears.includes(year);
+  // A page renders as an AI-generated reconstruction whenever the active
+  // navigation mode is "future" (any year beyond the current one), regardless
+  // of whether that specific year is in the dropdown. Deriving this from the
+  // store's `mode` — rather than membership in a hardcoded list — ensures the
+  // content pane reliably shows the AI view for every future year.
+  const isFutureYear = mode === "future";
 
   // Define loading state early to prevent hoisting issues
   const isLoading =
@@ -779,6 +804,16 @@ export function useInternetExplorerLogic({
 
       navigateStart(urlToNavigate, targetYearParam, newMode, newToken);
 
+      if (debugVerboseLogging) {
+        log.info("[debug] navigate", {
+          url: urlToNavigate,
+          year: targetYearParam,
+          mode: newMode,
+          headless: debugForceHeadless,
+          sessions: debugProxySessions,
+        });
+      }
+
       const normalizedTargetUrl = urlToNavigate.startsWith("http")
         ? urlToNavigate
         : `https://${urlToNavigate}`;
@@ -943,9 +978,11 @@ export function useInternetExplorerLogic({
               urlToLoad = normalizedTargetUrl;
             } else {
               // Proxy current year sites through iframe-check
-              urlToLoad = `/api/iframe-check?url=${encodeURIComponent(
-                normalizedTargetUrl
-              )}&theme=${encodeURIComponent(currentTheme)}`;
+              urlToLoad = appendIeDebugParams(
+                `/api/iframe-check?url=${encodeURIComponent(
+                  normalizedTargetUrl
+                )}&theme=${encodeURIComponent(currentTheme)}`
+              );
             }
 
             try {
@@ -1022,6 +1059,10 @@ export function useInternetExplorerLogic({
       localUrl,
       playElevatorMusic,
       terminalSoundsEnabled,
+      appendIeDebugParams,
+      debugVerboseLogging,
+      debugForceHeadless,
+      debugProxySessions,
       t,
     ]
   );
@@ -1976,6 +2017,15 @@ export function useInternetExplorerLogic({
     debugMode,
     terminalSoundsEnabled,
     isOffline,
+
+    // Debug menu (admin / debug-mode only)
+    showDebugMenu,
+    debugProxySessions,
+    debugForceHeadless,
+    debugVerboseLogging,
+    setDebugProxySessions,
+    setDebugForceHeadless,
+    setDebugVerboseLogging,
 
     // Years
     pastYears,
