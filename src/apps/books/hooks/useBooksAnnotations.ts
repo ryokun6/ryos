@@ -31,14 +31,24 @@ const SELECTION_CLEAR_DEBOUNCE_MS = 300;
 
 /** SVG attributes for a highlight mark; blend mode keeps the text readable on
  * both light (multiply darkens ink under the tint) and dark (screen lightens
- * the tint over the page) reading palettes. */
+ * the tint over the page) reading palettes. The active (tapped) highlight gets
+ * a moderately stronger tint — kept low enough that the blended ink underneath
+ * still reads (screen especially washes light text out fast). */
 export function buildHighlightAnnotationStyles(
   color: BooksHighlightColor,
-  isDarkPage: boolean
+  isDarkPage: boolean,
+  isActive = false
 ): Record<string, string> {
+  const fillOpacity = isDarkPage
+    ? isActive
+      ? "0.55"
+      : "0.45"
+    : isActive
+      ? "0.65"
+      : "0.5";
   return {
     fill: BOOKS_HIGHLIGHT_COLOR_HEX[color],
-    "fill-opacity": isDarkPage ? "0.45" : "0.5",
+    "fill-opacity": fillOpacity,
     "mix-blend-mode": isDarkPage ? "screen" : "multiply",
   };
 }
@@ -228,6 +238,19 @@ export function useBooksAnnotations({
       cleanups.push(() =>
         doc.removeEventListener("selectionchange", onSelectionChange)
       );
+
+      // A tapped highlight has no live selection, so selectionchange never
+      // clears it. Any press on the page itself (highlight marks live in the
+      // parent overlay and intercept their own clicks) dismisses the toolbar.
+      const onPointerDown = () => {
+        setActiveSelection((prev) =>
+          prev?.kind === "highlight" ? null : prev
+        );
+      };
+      doc.addEventListener("pointerdown", onPointerDown);
+      cleanups.push(() =>
+        doc.removeEventListener("pointerdown", onPointerDown)
+      );
     };
 
     const attachToCurrentContents = () => {
@@ -264,7 +287,10 @@ export function useBooksAnnotations({
   }, [getRendition, isReady]);
 
   // Keep the rendition's highlight marks in sync with the saved highlights
-  // (and re-tint them when the reading palette flips light/dark).
+  // (re-tinted when the palette flips light/dark, and brightened while a
+  // highlight is the active/tapped one).
+  const activeHighlightId =
+    activeSelection?.kind === "highlight" ? activeSelection.highlightId : null;
   useEffect(() => {
     if (!isReady) return;
     const rendition = getRendition();
@@ -286,14 +312,18 @@ export function useBooksAnnotations({
           { id: highlight.id },
           undefined,
           BOOKS_HIGHLIGHT_CLASS,
-          buildHighlightAnnotationStyles(highlight.color, isDarkPage)
+          buildHighlightAnnotationStyles(
+            highlight.color,
+            isDarkPage,
+            highlight.id === activeHighlightId
+          )
         );
         registeredCfiRangesRef.current.push(highlight.cfiRange);
       } catch {
         // Skip highlights whose CFI can't be resolved in this book build.
       }
     }
-  }, [getRendition, isReady, highlights, isDarkPage]);
+  }, [getRendition, isReady, highlights, isDarkPage, activeHighlightId]);
 
   // Reset transient selection state when the book changes/unmounts.
   useEffect(
@@ -309,36 +339,42 @@ export function useBooksAnnotations({
     setActiveSelection(null);
   }, [clearDocumentSelections]);
 
+  // Store updates must stay OUT of setActiveSelection updaters: React runs
+  // updaters during render (updating the parent mid-render) and StrictMode
+  // invokes them twice, which double-added highlights with distinct ids.
   const applyHighlightColor = useCallback(
     (color: BooksHighlightColor) => {
-      setActiveSelection((prev) => {
-        if (!prev) return prev;
-        if (prev.kind === "highlight" && prev.highlightId) {
-          onSetHighlightColor(prev.highlightId, color);
-        } else {
-          onAddHighlight({
-            id: makeHighlightId(),
-            cfiRange: prev.cfiRange,
-            text: prev.text,
-            color,
-            createdAt: Date.now(),
-          });
-        }
-        return null;
-      });
+      const active = activeSelection;
+      if (!active) return;
+      if (active.kind === "highlight" && active.highlightId) {
+        onSetHighlightColor(active.highlightId, color);
+      } else {
+        onAddHighlight({
+          id: makeHighlightId(),
+          cfiRange: active.cfiRange,
+          text: active.text,
+          color,
+          createdAt: Date.now(),
+        });
+      }
+      setActiveSelection(null);
       clearDocumentSelections();
     },
-    [clearDocumentSelections, onAddHighlight, onSetHighlightColor]
+    [
+      activeSelection,
+      clearDocumentSelections,
+      onAddHighlight,
+      onSetHighlightColor,
+    ]
   );
 
   const removeActiveHighlight = useCallback(() => {
-    setActiveSelection((prev) => {
-      if (prev?.kind === "highlight" && prev.highlightId) {
-        onRemoveHighlight(prev.highlightId);
-      }
-      return null;
-    });
-  }, [onRemoveHighlight]);
+    const active = activeSelection;
+    if (active?.kind === "highlight" && active.highlightId) {
+      onRemoveHighlight(active.highlightId);
+    }
+    setActiveSelection(null);
+  }, [activeSelection, onRemoveHighlight]);
 
   const copyActiveSelection = useCallback(async (): Promise<boolean> => {
     const text = activeSelection?.text;

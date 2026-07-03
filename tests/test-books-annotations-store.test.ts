@@ -47,7 +47,14 @@ describe("books highlights store", () => {
   test("addHighlight appends per book", () => {
     const s = useBooksStore.getState();
     s.addHighlight(PATH, makeHighlight());
-    s.addHighlight(PATH, makeHighlight({ id: "h2", color: "blue" }));
+    s.addHighlight(
+      PATH,
+      makeHighlight({
+        id: "h2",
+        color: "blue",
+        cfiRange: "epubcfi(/6/4!/4/2,/1:12,/1:20)",
+      })
+    );
     s.addHighlight(OTHER, makeHighlight({ id: "h3" }));
 
     const state = useBooksStore.getState();
@@ -68,10 +75,28 @@ describe("books highlights store", () => {
     expect(list[0].color).toBe("pink");
   });
 
+  test("addHighlight with the same cfiRange replaces instead of stacking", () => {
+    const s = useBooksStore.getState();
+    s.addHighlight(PATH, makeHighlight({ id: "h1", color: "yellow" }));
+    s.addHighlight(PATH, makeHighlight({ id: "h2", color: "green" }));
+
+    const list = useBooksStore.getState().highlightsByPath[PATH];
+    expect(list).toHaveLength(1);
+    expect(list[0].id).toBe("h2");
+    expect(list[0].color).toBe("green");
+  });
+
   test("setHighlightColor recolors only the matching id", () => {
     const s = useBooksStore.getState();
     s.addHighlight(PATH, makeHighlight());
-    s.addHighlight(PATH, makeHighlight({ id: "h2", color: "green" }));
+    s.addHighlight(
+      PATH,
+      makeHighlight({
+        id: "h2",
+        color: "green",
+        cfiRange: "epubcfi(/6/4!/4/2,/1:12,/1:20)",
+      })
+    );
 
     s.setHighlightColor(PATH, "h1", "purple");
     const list = useBooksStore.getState().highlightsByPath[PATH];
@@ -152,5 +177,19 @@ describe("highlight annotation styles", () => {
 
     const dark = buildHighlightAnnotationStyles("yellow", true);
     expect(dark["mix-blend-mode"]).toBe("screen");
+  });
+
+  test("the active highlight renders brighter than inactive ones", () => {
+    const inactiveLight = buildHighlightAnnotationStyles("yellow", false);
+    const activeLight = buildHighlightAnnotationStyles("yellow", false, true);
+    expect(Number(activeLight["fill-opacity"])).toBeGreaterThan(
+      Number(inactiveLight["fill-opacity"])
+    );
+
+    const inactiveDark = buildHighlightAnnotationStyles("yellow", true);
+    const activeDark = buildHighlightAnnotationStyles("yellow", true, true);
+    expect(Number(activeDark["fill-opacity"])).toBeGreaterThan(
+      Number(inactiveDark["fill-opacity"])
+    );
   });
 });

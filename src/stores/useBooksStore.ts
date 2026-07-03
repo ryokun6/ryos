@@ -348,8 +348,11 @@ export const useBooksStore = create<BooksStoreState>()(
           highlightsByPath: {
             ...state.highlightsByPath,
             [path]: [
+              // Same id (re-add) or same range (re-highlighting the exact
+              // passage) replaces the existing mark instead of stacking.
               ...(state.highlightsByPath[path] ?? []).filter(
-                (h) => h.id !== highlight.id
+                (h) =>
+                  h.id !== highlight.id && h.cfiRange !== highlight.cfiRange
               ),
               highlight,
             ],

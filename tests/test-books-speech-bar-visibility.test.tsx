@@ -132,9 +132,8 @@ describe("Books speech bar visibility", () => {
     expect(readerSource).toContain(
       "const speechBarOpen = isCustomizeOpen || speechBarVisibilityOpen;"
     );
-    expect(readerSource).toContain(
-      "isCustomizeOpen ? onHideCustomize : onShowCustomize"
-    );
+    expect(readerSource).toContain("? onHideCustomize");
+    expect(readerSource).toContain(": onShowCustomize");
     expect(readerSource).toContain('<X weight="bold" size={14} />');
     expect(appSource).toContain("isCustomizeOpen={isCustomizeOpen}");
     expect(appSource).toContain(

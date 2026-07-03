@@ -7,12 +7,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   ChatCircleDots,
+  Check,
   Copy,
   FastForward,
   Pause,
@@ -26,6 +28,7 @@ import {
 import ePub, {
   EpubCFI,
   type Book,
+  type Contents,
   type NavItem,
   type Rendition,
 } from "epubjs";
@@ -80,6 +83,7 @@ import {
 } from "../utils/booksSpeech";
 import { useBooksSpeech } from "../hooks/useBooksSpeech";
 import {
+  BOOKS_HIGHLIGHT_CLASS,
   BOOKS_SELECTION_CONTENT_CSS,
   useBooksAnnotations,
 } from "../hooks/useBooksAnnotations";
@@ -92,6 +96,7 @@ import type {
   BookOriginRect,
 } from "../hooks/useBooksLogic";
 import { createClientLogger } from "@/utils/logger";
+import { resolveBooksEdgeTapDirection } from "../utils/booksEdgeTap";
 
 const booksLog = createClientLogger("BooksReader");
 
@@ -194,9 +199,73 @@ const SPEECH_BAR_COLLAPSED = { width: 72, height: 5 } as const;
 const SPEECH_BAR_EXPANDED = { width: 130, height: 36 } as const;
 // Selection toolbar (shown in place of the read-aloud controls while text is
 // selected): 5 color dots + divider + copy + ask-ryo (+ remove for saved
-// highlights).
-const SELECTION_BAR_WIDTH = 212;
-const SELECTION_BAR_WIDTH_WITH_REMOVE = 244;
+// highlights). Content is centered at these fixed widths, so width = content
+// (195px / 225px) + 4px slack per side — matching the ~10px visual inset the
+// 4px vertical padding + 6px in-button space give the top edge.
+const SELECTION_BAR_WIDTH = 203;
+const SELECTION_BAR_WIDTH_WITH_REMOVE = 233;
+
+// Bar rows stagger their controls in reading order when a row enters or the
+// selection/speech rows swap; exits fade as one so the swap stays snappy.
+// `custom` carries whether the bar was already open before the swap — when a
+// row is replaced while the pill was still collapsed (e.g. selecting text with
+// the read-aloud bar minimized), the outgoing row vanishes instantly so its
+// controls never flash during the expansion.
+const BAR_ROW_VARIANTS: Variants = {
+  hidden: { opacity: 0, scale: 0.88 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.16,
+      ease: "easeOut",
+      delayChildren: 0.02,
+      staggerChildren: 0.03,
+    },
+  },
+  exit: (barWasOpen: boolean) =>
+    barWasOpen
+      ? {
+          opacity: 0,
+          scale: 0.88,
+          transition: { duration: 0.12, ease: "easeIn" },
+        }
+      : { opacity: 0, transition: { duration: 0 } },
+};
+const BAR_ITEM_VARIANTS: Variants = {
+  hidden: { opacity: 0, y: 4, scale: 0.6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 640, damping: 32 },
+  },
+};
+
+/** Animated icon swap for bar buttons (copy → check, customize → close):
+ * the outgoing glyph blurs/shrinks away while the incoming one sharpens in. */
+function BarIconSwap({
+  iconKey,
+  children,
+}: {
+  iconKey: string;
+  children: ReactNode;
+}) {
+  return (
+    <AnimatePresence mode="popLayout" initial={false}>
+      <motion.span
+        key={iconKey}
+        className="flex items-center justify-center"
+        initial={{ opacity: 0, scale: 0.4, filter: "blur(2px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, scale: 0.4, filter: "blur(2px)" }}
+        transition={{ duration: 0.12, ease: "easeOut" }}
+      >
+        {children}
+      </motion.span>
+    </AnimatePresence>
+  );
+}
 
 // Open transition timings. Keep the page reveal slightly after the cover zoom
 // settles so the two never fight (which reads as a "pop"). Shared with the
@@ -449,8 +518,6 @@ export const BooksReaderPane = forwardRef<
     null
   );
   const [flip, setFlip] = useState<FlipState | null>(null);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
   const [navigationState, setNavigationState] = useState(
     createInitialBooksNavigationState
   );
@@ -1180,8 +1247,6 @@ export const BooksReaderPane = forwardRef<
               setPageCfis(
                 cfi ? { startCfi: cfi, endCfi: location?.end?.cfi } : null
               );
-              setAtStart(atStartNow);
-              setAtEnd(atEndNow);
               setNavigationState((state) => ({
                 ...state,
                 canGoPreviousPage: !atStartNow,
@@ -1608,13 +1673,130 @@ export const BooksReaderPane = forwardRef<
     onRemoveHighlight,
   });
 
+  // Handle page-turn taps inside the EPUB iframe instead of covering its text
+  // with parent-document buttons. A live selection or interactive target wins,
+  // so dragging / long-pressing near an edge remains selectable.
+  useEffect(() => {
+    if (!isReady) return;
+    const rendition = getRendition();
+    if (!rendition) return;
+
+    const attachedDocuments = new WeakSet<Document>();
+    const cleanups: Array<() => void> = [];
+
+    const attachEdgeTapListener = (contents: Contents) => {
+      const document = contents.document;
+      const contentWindow = contents.window;
+      if (!document || !contentWindow || attachedDocuments.has(document)) {
+        return;
+      }
+      attachedDocuments.add(document);
+
+      const handleClick = (event: MouseEvent) => {
+        if (event.defaultPrevented || event.button !== 0) return;
+
+        let hasSelection = false;
+        try {
+          const selection = contentWindow.getSelection();
+          hasSelection =
+            !!selection && selection.rangeCount > 0 && !selection.isCollapsed;
+        } catch {
+          hasSelection = false;
+        }
+
+        const target =
+          event.target &&
+          typeof (event.target as Element).closest === "function"
+            ? (event.target as Element)
+            : null;
+        const isInteractiveTarget =
+          target?.closest(
+            `a, button, input, textarea, select, [role="button"], .${BOOKS_HIGHLIGHT_CLASS}`
+          ) !== null ||
+          target?.namespaceURI === "http://www.w3.org/2000/svg";
+        // In paginated mode epub.js makes the iframe as wide as the whole
+        // section (every column) and clips it with the parent host, so iframe
+        // coordinates don't map to what's visible. Convert the click into the
+        // parent host's coordinate space and measure edges there.
+        const host = viewportRef.current;
+        const frame = contentWindow.frameElement;
+        if (!host || !frame) return;
+        const hostRect = host.getBoundingClientRect();
+        const frameRect = frame.getBoundingClientRect();
+        const clientXInHost = frameRect.left + event.clientX - hostRect.left;
+        const direction = resolveBooksEdgeTapDirection({
+          clientX: clientXInHost,
+          viewportWidth: hostRect.width,
+          isVerticalText:
+            resolveEffectiveTextLayout(
+              textLayoutSettingRef.current,
+              bookLanguageRef.current
+            ) === "vertical",
+          hasSelection,
+          isInteractiveTarget,
+        });
+        if (!direction) return;
+
+        event.preventDefault();
+        turnPage(direction);
+      };
+
+      document.addEventListener("click", handleClick);
+      cleanups.push(() => document.removeEventListener("click", handleClick));
+    };
+
+    const attachToCurrentContents = () => {
+      const renditionContents = rendition.getContents() as unknown;
+      const contentsList = (
+        Array.isArray(renditionContents)
+          ? renditionContents
+          : renditionContents
+            ? [renditionContents]
+            : []
+      ) as Contents[];
+      contentsList.forEach(attachEdgeTapListener);
+    };
+
+    const handleRendered = () => attachToCurrentContents();
+    rendition.on("rendered", handleRendered);
+    attachToCurrentContents();
+
+    return () => {
+      cleanups.forEach((cleanup) => cleanup());
+      try {
+        rendition.off("rendered", handleRendered);
+      } catch {
+        // rendition may already be destroyed
+      }
+    };
+  }, [getRendition, isReady, turnPage]);
+
+  // Copy feedback: the copy glyph swaps to a check for a beat instead of
+  // raising a toast. Failure still surfaces as a toast.
+  const [showCopyCheck, setShowCopyCheck] = useState(false);
+  const copyCheckTimerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (copyCheckTimerRef.current !== null) {
+        window.clearTimeout(copyCheckTimerRef.current);
+      }
+    },
+    []
+  );
   const handleCopySelection = useCallback(async () => {
     const copied = await copyActiveSelection();
-    if (copied) {
-      toast.success(t("apps.books.selection.copied"));
-    } else {
+    if (!copied) {
       toast.error(t("apps.books.selection.copyFailed"));
+      return;
     }
+    setShowCopyCheck(true);
+    if (copyCheckTimerRef.current !== null) {
+      window.clearTimeout(copyCheckTimerRef.current);
+    }
+    copyCheckTimerRef.current = window.setTimeout(() => {
+      copyCheckTimerRef.current = null;
+      setShowCopyCheck(false);
+    }, 1200);
   }, [copyActiveSelection, t]);
 
   const handleAskRyo = useCallback(() => {
@@ -1705,6 +1887,14 @@ export const BooksReaderPane = forwardRef<
   // (highlight colors / copy / ask Ryo) and keeps it open.
   const selectionBarActive = !!activeSelection;
   const barOpen = selectionBarActive || speechBarOpen;
+  // Bar visibility from the previous render: when a row swap happens while
+  // the pill was still collapsed, the outgoing row exits instantly (see
+  // BAR_ROW_VARIANTS) so its controls never flash mid-expansion.
+  const barWasOpenRef = useRef(barOpen);
+  const barWasOpen = barWasOpenRef.current;
+  useEffect(() => {
+    barWasOpenRef.current = barOpen;
+  });
 
   const displayTarget = useCallback(
     (target: string, step: string) => {
@@ -1810,30 +2000,6 @@ export const BooksReaderPane = forwardRef<
         }}
       />
 
-      {/* Click zones for page turning (aligned with the render host) */}
-      <button
-        type="button"
-        aria-label={isVerticalText ? "Next page" : "Previous page"}
-        onClick={() => turnPage(isVerticalText ? "next" : "prev")}
-        disabled={isVerticalText ? atEnd : atStart}
-        style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
-        className={cn(
-          "absolute left-0 z-10 w-[22%] disabled:cursor-default",
-          isVerticalText ? "cursor-e-resize" : "cursor-w-resize"
-        )}
-      />
-      <button
-        type="button"
-        aria-label={isVerticalText ? "Previous page" : "Next page"}
-        onClick={() => turnPage(isVerticalText ? "prev" : "next")}
-        disabled={isVerticalText ? atStart : atEnd}
-        style={{ top: TOP_CLEARANCE, bottom: FOOTER_HEIGHT }}
-        className={cn(
-          "absolute right-0 z-10 w-[22%] disabled:cursor-default",
-          isVerticalText ? "cursor-w-resize" : "cursor-e-resize"
-        )}
-      />
-
       {/* Reading-progress footer — right-aligned percentage, no bar. */}
       <div
         className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-end px-4"
@@ -1935,7 +2101,7 @@ export const BooksReaderPane = forwardRef<
             }}
           >
             <motion.div
-              className="flex items-center gap-0.5"
+              className="relative flex items-center justify-center"
               initial={false}
               animate={{
                 opacity: barOpen ? 1 : 0,
@@ -1946,21 +2112,40 @@ export const BooksReaderPane = forwardRef<
                 pointerEvents: barOpen ? "auto" : "none",
               }}
             >
+              {/* Crossfade between the selection toolbar and the read-aloud
+                  controls; popLayout keeps the exiting row out of the flex
+                  flow so the pill's width spring never fights it. */}
+              <AnimatePresence
+                mode="popLayout"
+                initial={false}
+                custom={barWasOpen}
+              >
               {selectionBarActive ? (
-                <>
+                <motion.div
+                  key="selection"
+                  className="flex items-center gap-0.5"
+                  variants={BAR_ROW_VARIANTS}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
                   {/* Highlight color swatches */}
                   {BOOKS_HIGHLIGHT_COLORS.map((color) => {
                     const isActiveColor =
                       activeSelection?.kind === "highlight" &&
                       activeSelection.color === color;
                     return (
-                      <button
+                      <motion.button
                         key={color}
                         type="button"
+                        variants={BAR_ITEM_VARIANTS}
                         aria-label={t(`apps.books.selection.color.${color}`)}
                         title={t(`apps.books.selection.color.${color}`)}
                         onClick={() => applyHighlightColor(color)}
-                        className="group flex h-7 w-6 shrink-0 items-center justify-center"
+                        className={cn(
+                          "group flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors",
+                          isAquaGlass ? null : "hover:bg-white/20"
+                        )}
                         tabIndex={0}
                       >
                         <span
@@ -1973,50 +2158,78 @@ export const BooksReaderPane = forwardRef<
                             backgroundColor: BOOKS_HIGHLIGHT_COLOR_HEX[color],
                           }}
                         />
-                      </button>
+                      </motion.button>
                     );
                   })}
-                  <span
+                  {/* currentColor keeps the divider matched to the icon color
+                      on both light and dark overlay palettes. */}
+                  <motion.span
                     aria-hidden
-                    className="mx-0.5 h-4 w-px shrink-0 bg-white/25"
+                    variants={BAR_ITEM_VARIANTS}
+                    className="mx-0.5 h-4 w-px shrink-0 bg-current opacity-25"
                   />
-                  <button
+                  <motion.button
                     type="button"
-                    aria-label={t("apps.books.selection.copy")}
-                    title={t("apps.books.selection.copy")}
+                    variants={BAR_ITEM_VARIANTS}
+                    aria-label={
+                      showCopyCheck
+                        ? t("apps.books.selection.copied")
+                        : t("apps.books.selection.copy")
+                    }
+                    title={
+                      showCopyCheck
+                        ? t("apps.books.selection.copied")
+                        : t("apps.books.selection.copy")
+                    }
                     onClick={handleCopySelection}
                     className={speechOverlayButtonClass}
                     tabIndex={0}
                   >
-                    <Copy size={16} />
-                  </button>
-                  <button
+                    <BarIconSwap iconKey={showCopyCheck ? "check" : "copy"}>
+                      {showCopyCheck ? (
+                        <Check weight="bold" size={16} />
+                      ) : (
+                        <Copy weight="bold" size={16} />
+                      )}
+                    </BarIconSwap>
+                  </motion.button>
+                  <motion.button
                     type="button"
+                    variants={BAR_ITEM_VARIANTS}
                     aria-label={t("apps.books.selection.askRyo")}
                     title={t("apps.books.selection.askRyo")}
                     onClick={handleAskRyo}
                     className={speechOverlayButtonClass}
                     tabIndex={0}
                   >
-                    <ChatCircleDots weight="fill" size={16} />
-                  </button>
+                    <ChatCircleDots weight="bold" size={16} />
+                  </motion.button>
                   {activeSelection?.kind === "highlight" && (
-                    <button
+                    <motion.button
                       type="button"
+                      variants={BAR_ITEM_VARIANTS}
                       aria-label={t("apps.books.selection.removeHighlight")}
                       title={t("apps.books.selection.removeHighlight")}
                       onClick={removeActiveHighlight}
                       className={speechOverlayButtonClass}
                       tabIndex={0}
                     >
-                      <Trash size={16} />
-                    </button>
+                      <Trash weight="bold" size={16} />
+                    </motion.button>
                   )}
-                </>
+                </motion.div>
               ) : (
-                <>
-              <button
+                <motion.div
+                  key="speech"
+                  className="flex items-center gap-0.5"
+                  variants={BAR_ROW_VARIANTS}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+              <motion.button
                 type="button"
+                variants={BAR_ITEM_VARIANTS}
                 aria-label={t("apps.books.speech.rewind")}
                 title={t("apps.books.speech.rewind")}
                 onClick={skipToPreviousSentence}
@@ -2025,9 +2238,10 @@ export const BooksReaderPane = forwardRef<
                 tabIndex={speechBarOpen ? 0 : -1}
               >
                 <Rewind weight="fill" size={16} />
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
+                variants={BAR_ITEM_VARIANTS}
                 aria-label={
                   !isSpeaking
                     ? t("apps.books.menu.startSpeaking")
@@ -2051,14 +2265,19 @@ export const BooksReaderPane = forwardRef<
                 className={speechOverlayButtonClass}
                 tabIndex={speechBarOpen ? 0 : -1}
               >
-                {!isSpeaking || isPaused ? (
-                  <Play weight="fill" size={16} />
-                ) : (
-                  <Pause weight="fill" size={16} />
-                )}
-              </button>
-              <button
+                <BarIconSwap
+                  iconKey={!isSpeaking || isPaused ? "play" : "pause"}
+                >
+                  {!isSpeaking || isPaused ? (
+                    <Play weight="fill" size={16} />
+                  ) : (
+                    <Pause weight="fill" size={16} />
+                  )}
+                </BarIconSwap>
+              </motion.button>
+              <motion.button
                 type="button"
+                variants={BAR_ITEM_VARIANTS}
                 aria-label={t("apps.books.speech.skip")}
                 title={t("apps.books.speech.skip")}
                 onClick={skipToNextSentence}
@@ -2067,47 +2286,58 @@ export const BooksReaderPane = forwardRef<
                 tabIndex={speechBarOpen ? 0 : -1}
               >
                 <FastForward weight="fill" size={16} />
-              </button>
-              {/* Playback off → the stop slot becomes a Customize shortcut. */}
-              {isSpeaking ? (
-                <button
-                  type="button"
-                  aria-label={t("apps.books.speech.stop")}
-                  title={t("apps.books.speech.stop")}
-                  onClick={stopSpeaking}
-                  className={speechOverlayButtonClass}
-                  tabIndex={speechBarOpen ? 0 : -1}
-                >
-                  <Stop weight="fill" size={16} />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  aria-label={
-                    isCustomizeOpen
+              </motion.button>
+              {/* Playback off → the stop slot becomes a Customize shortcut.
+                  One button so the glyph swap (stop / close / customize)
+                  animates instead of remounting. */}
+              <motion.button
+                type="button"
+                variants={BAR_ITEM_VARIANTS}
+                aria-label={
+                  isSpeaking
+                    ? t("apps.books.speech.stop")
+                    : isCustomizeOpen
                       ? t("common.menu.close")
                       : t("apps.books.customize.title")
-                  }
-                  title={
-                    isCustomizeOpen
+                }
+                title={
+                  isSpeaking
+                    ? t("apps.books.speech.stop")
+                    : isCustomizeOpen
                       ? t("common.menu.close")
                       : t("apps.books.customize.title")
+                }
+                onClick={
+                  isSpeaking
+                    ? stopSpeaking
+                    : isCustomizeOpen
+                      ? onHideCustomize
+                      : onShowCustomize
+                }
+                className={speechOverlayButtonClass}
+                tabIndex={speechBarOpen ? 0 : -1}
+              >
+                <BarIconSwap
+                  iconKey={
+                    isSpeaking
+                      ? "stop"
+                      : isCustomizeOpen
+                        ? "close"
+                        : "customize"
                   }
-                  onClick={
-                    isCustomizeOpen ? onHideCustomize : onShowCustomize
-                  }
-                  className={speechOverlayButtonClass}
-                  tabIndex={speechBarOpen ? 0 : -1}
                 >
-                  {isCustomizeOpen ? (
+                  {isSpeaking ? (
+                    <Stop weight="fill" size={16} />
+                  ) : isCustomizeOpen ? (
                     <X weight="bold" size={14} />
                   ) : (
                     <TextAa weight="bold" size={16} />
                   )}
-                </button>
+                </BarIconSwap>
+              </motion.button>
+                </motion.div>
               )}
-                </>
-              )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         </div>
