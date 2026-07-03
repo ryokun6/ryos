@@ -29,6 +29,7 @@ import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
 import { DeferredAirDropListener } from "@/components/DeferredAirDropListener";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
+import { MediaCoreRunner } from "@/hooks/MediaCoreRunner";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
 import { createClientLogger } from "@/utils/logger";
@@ -298,6 +299,7 @@ export function App() {
       <DeferredAutoCloudSync />
       <DeferredBackgroundChatNotifications />
       <WallpaperAccentRunner />
+      <MediaCoreRunner />
       <ScreenSaverOverlay />
       {debugMode && (
         <Suspense fallback={null}>
