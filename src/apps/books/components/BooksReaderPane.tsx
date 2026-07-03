@@ -87,7 +87,10 @@ import {
   BOOKS_SELECTION_CONTENT_CSS,
   useBooksAnnotations,
 } from "../hooks/useBooksAnnotations";
-import { useBooksSpeechBarVisibility } from "../hooks/useBooksSpeechBarVisibility";
+import {
+  BOOKS_SPEECH_BAR_AUTO_REVEAL_MS,
+  useBooksSpeechBarVisibility,
+} from "../hooks/useBooksSpeechBarVisibility";
 import { ryOSLocaleToSpeechLanguage } from "@/utils/browserSpeech";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
@@ -193,8 +196,11 @@ const FOOTER_HEIGHT = 30;
 const SPREAD_MIN_WIDTH = 560;
 
 // Shared style for the read-aloud overlay control buttons.
+// Disabled dimming lives on the inner SVG (not the button): the stagger
+// variants leave an inline `opacity: 1` on the motion.button element, which
+// would override a `disabled:opacity-*` class on the button itself.
 const SPEECH_OVERLAY_BUTTON_CLASS =
-  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40 disabled:hover:bg-transparent";
+  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors disabled:[&_svg]:opacity-40 disabled:hover:bg-transparent";
 const SPEECH_BAR_COLLAPSED = { width: 72, height: 5 } as const;
 const SPEECH_BAR_EXPANDED = { width: 130, height: 36 } as const;
 // Selection toolbar (shown in place of the read-aloud controls while text is
@@ -1882,6 +1888,12 @@ export const BooksReaderPane = forwardRef<
     handleBlur: handleSpeechBarBlur,
     revealTemporarily: revealSpeechBarTemporarily,
   } = useBooksSpeechBarVisibility({ isPlaying: isSpeechPlaying });
+  // Auto-reveal the controls once the book is displayed so new readers see
+  // them, then tuck the pill away after a couple of seconds.
+  useEffect(() => {
+    if (!isReady) return;
+    revealSpeechBarTemporarily(BOOKS_SPEECH_BAR_AUTO_REVEAL_MS);
+  }, [isReady, revealSpeechBarTemporarily]);
   const speechBarOpen = isCustomizeOpen || speechBarVisibilityOpen;
   // Active text selection swaps the bottom pill to the selection toolbar
   // (highlight colors / copy / ask Ryo) and keeps it open.
@@ -2166,7 +2178,7 @@ export const BooksReaderPane = forwardRef<
                   <motion.span
                     aria-hidden
                     variants={BAR_ITEM_VARIANTS}
-                    className="mx-0.5 h-4 w-px shrink-0 bg-current opacity-25"
+                    className="mx-0.5 h-4 w-px shrink-0 bg-current/20"
                   />
                   <motion.button
                     type="button"

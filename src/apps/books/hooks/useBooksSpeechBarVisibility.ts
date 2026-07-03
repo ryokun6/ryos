@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const BOOKS_SPEECH_BAR_TOUCH_OPEN_MS = 3000;
+/** How long the bar stays open when auto-revealed on book load. */
+export const BOOKS_SPEECH_BAR_AUTO_REVEAL_MS = 2000;
 
 const BOOKS_SPEECH_BAR_POINTER_EXIT_MS = 160;
 const HOVER_POINTER_TYPE = "mouse";
@@ -16,7 +18,7 @@ interface BooksSpeechBarVisibility {
   handlePointerDown: (pointerType: string) => void;
   handleFocus: () => void;
   handleBlur: () => void;
-  revealTemporarily: () => void;
+  revealTemporarily: (durationMs?: number) => void;
 }
 
 export function useBooksSpeechBarVisibility({
@@ -67,23 +69,26 @@ export function useBooksSpeechBarVisibility({
     [clearCollapseTimer]
   );
 
-  const revealTemporarily = useCallback(() => {
-    clearCollapseTimer();
-    hasTemporaryTouchHoldRef.current = true;
-    setIsExpanded(true);
-    collapseTimerRef.current = window.setTimeout(() => {
-      collapseTimerRef.current = null;
-      hasTemporaryTouchHoldRef.current = false;
-      if (
-        isPlayingRef.current ||
-        isMouseInsideRef.current ||
-        hasFocusInsideRef.current
-      ) {
-        return;
-      }
-      setIsExpanded(false);
-    }, BOOKS_SPEECH_BAR_TOUCH_OPEN_MS);
-  }, [clearCollapseTimer]);
+  const revealTemporarily = useCallback(
+    (durationMs: number = BOOKS_SPEECH_BAR_TOUCH_OPEN_MS) => {
+      clearCollapseTimer();
+      hasTemporaryTouchHoldRef.current = true;
+      setIsExpanded(true);
+      collapseTimerRef.current = window.setTimeout(() => {
+        collapseTimerRef.current = null;
+        hasTemporaryTouchHoldRef.current = false;
+        if (
+          isPlayingRef.current ||
+          isMouseInsideRef.current ||
+          hasFocusInsideRef.current
+        ) {
+          return;
+        }
+        setIsExpanded(false);
+      }, durationMs);
+    },
+    [clearCollapseTimer]
+  );
 
   const handlePointerEnter = useCallback(
     (pointerType: string) => {

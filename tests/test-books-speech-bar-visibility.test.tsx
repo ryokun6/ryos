@@ -11,6 +11,7 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
+  BOOKS_SPEECH_BAR_AUTO_REVEAL_MS,
   BOOKS_SPEECH_BAR_TOUCH_OPEN_MS,
   useBooksSpeechBarVisibility,
 } from "../src/apps/books/hooks/useBooksSpeechBarVisibility";
@@ -109,6 +110,33 @@ describe("Books speech bar visibility", () => {
       jest.advanceTimersByTime(1);
     });
     expect(getVisibility().isOpen).toBe(false);
+  });
+
+  test("supports a custom reveal duration for the on-load auto-reveal", () => {
+    act(() => {
+      getVisibility().revealTemporarily(BOOKS_SPEECH_BAR_AUTO_REVEAL_MS);
+    });
+    expect(getVisibility().isOpen).toBe(true);
+
+    act(() => {
+      jest.advanceTimersByTime(BOOKS_SPEECH_BAR_AUTO_REVEAL_MS - 1);
+    });
+    expect(getVisibility().isOpen).toBe(true);
+
+    act(() => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(getVisibility().isOpen).toBe(false);
+  });
+
+  test("auto-reveals the bar when the reader becomes ready", async () => {
+    const readerSource = await Bun.file(
+      "src/apps/books/components/BooksReaderPane.tsx"
+    ).text();
+
+    expect(readerSource).toContain(
+      "revealSpeechBarTemporarily(BOOKS_SPEECH_BAR_AUTO_REVEAL_MS)"
+    );
   });
 
   test("wires the full-width bottom strip at the expanded bar height", async () => {
