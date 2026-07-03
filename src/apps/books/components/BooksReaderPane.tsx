@@ -319,18 +319,21 @@ function AskRyoReply({
   });
   return (
     /* px-0.5 + the pill's px-1.5 = 8px per side, matching the two py-1 rings */
-    <div className="max-h-44 select-text overflow-y-auto px-0.5 py-1 text-[12px] leading-relaxed whitespace-pre-wrap">
-      {spans}
-      {/* Actions fade in after the last chunk, right-aligned below the text. */}
+    <>
+      <div className="max-h-40 select-text overflow-y-auto px-0.5 pt-1 text-[12px] leading-relaxed whitespace-pre-wrap">
+        {spans}
+      </div>
+      {/* Actions fade in after the last chunk, pinned below the scroller so
+          long replies never bury them. */}
       <motion.div
-        className="mt-1 flex items-center justify-end gap-1"
+        className="mt-1 flex shrink-0 items-center justify-end gap-1 px-0.5 pb-1"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut", delay: lastDelay + 0.15 }}
       >
         {trailing}
       </motion.div>
-    </div>
+    </>
   );
 }
 
@@ -2702,7 +2705,7 @@ export const BooksReaderPane = forwardRef<
                                   : t("apps.books.menu.startSpeaking")
                               }
                               onClick={handleToggleAskReplySpeech}
-                              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/15 transition-colors hover:bg-current/25"
+                              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-current/15 transition-colors hover:bg-current/25"
                               tabIndex={0}
                             >
                               <BarIconSwap
@@ -2711,9 +2714,9 @@ export const BooksReaderPane = forwardRef<
                                 }
                               >
                                 {isSpeakingAskReply ? (
-                                  <Stop weight="fill" size={12} />
+                                  <Stop weight="fill" size={14} />
                                 ) : (
-                                  <SpeakerHigh weight="bold" size={12} />
+                                  <SpeakerHigh weight="bold" size={14} />
                                 )}
                               </BarIconSwap>
                             </button>
@@ -2732,16 +2735,16 @@ export const BooksReaderPane = forwardRef<
                                   : t("apps.books.selection.copy")
                               }
                               onClick={handleCopyAskReply}
-                              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/15 transition-colors hover:bg-current/25"
+                              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-current/15 transition-colors hover:bg-current/25"
                               tabIndex={0}
                             >
                               <BarIconSwap
                                 iconKey={showAskCopyCheck ? "check" : "copy"}
                               >
                                 {showAskCopyCheck ? (
-                                  <Check weight="bold" size={12} />
+                                  <Check weight="bold" size={14} />
                                 ) : (
-                                  <Copy weight="bold" size={12} />
+                                  <Copy weight="bold" size={14} />
                                 )}
                               </BarIconSwap>
                             </button>
@@ -2752,17 +2755,17 @@ export const BooksReaderPane = forwardRef<
                               aria-label={t("apps.books.selection.askRyo")}
                               title={t("apps.books.selection.askRyo")}
                               onClick={handleContinueInChats}
-                              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/15 transition-colors hover:bg-current/25"
+                              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-current/15 transition-colors hover:bg-current/25"
                               tabIndex={0}
                             >
-                              <ChatCircleDots weight="bold" size={12} />
+                              <ChatCircleDots weight="bold" size={14} />
                             </button>
                           )}
                           <button
                             type="button"
                             aria-label={t("common.dialog.done")}
                             onClick={dismissAskRyo}
-                            className="inline-flex h-5 shrink-0 items-center justify-center rounded-full bg-current/15 px-2 !text-[11px] leading-none transition-colors hover:bg-current/25"
+                            className="inline-flex h-6 shrink-0 items-center justify-center rounded-full bg-current/15 px-2.5 !text-[12px] leading-none transition-colors hover:bg-current/25"
                             tabIndex={0}
                           >
                             {t("common.dialog.done")}
