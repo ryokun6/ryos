@@ -62,6 +62,10 @@
       "missionControl": "Mission Control (F3)",
       "volume": "Volume"
     },
+    "offline": {
+      "title": "You're Offline",
+      "appRequiresInternet": "{{appName}} requires an internet connection."
+    },
     "dialog": {
       "save": "Save",
       "cancel": "Cancel",
