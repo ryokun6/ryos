@@ -57,7 +57,7 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 <details>
 <summary>More from this month (43)</summary>
 
-- Retire Sync v1 manual cloud backup endpoints and promote restored local backups into Sync v2.
+- **Sync v1 retirement**: remove manual cloud backup endpoints and promote restored local backups into Sync v2.
 - Move legacy Redis backfill and deletion into a standalone migration CLI.
 - Cut about 1MB of boot-critical JavaScript and reduce hot subscriptions, polling, and persistence work.
 - Redesign Control Panels around a System Preferences layout with a consolidated Account menu.
