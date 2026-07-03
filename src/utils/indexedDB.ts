@@ -2,7 +2,7 @@
 
 import { createClientLogger } from "@/utils/logger";
 
-const DB_NAME = "ryOS";
+export const DB_NAME = "ryOS";
 const DB_VERSION = 13;
 let hasLoggedOpenSuccess = false;
 const log = createClientLogger("IndexedDB");

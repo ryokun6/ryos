@@ -4848,6 +4848,21 @@
     "fix": "Reparar",
     "fixLogs": "Enviar logs ao agente Cursor",
     "hideConsole": "Ocultar console",
+    "idb": {
+      "backToStores": "Voltar para os armazenamentos",
+      "copy": "Copiar dump do IndexedDB",
+      "emptyDatabase": "Nenhum armazenamento de objetos encontrado.",
+      "emptyStore": "Nenhum registro neste armazenamento.",
+      "error": "Falha ao ler o IndexedDB.",
+      "loadMore_many": "Carregar mais {{count}} registros",
+      "loadMore_one": "Carregar mais {{count}} registro",
+      "loadMore_other": "Carregar mais {{count}} registros",
+      "loading": "Lendo IndexedDB…",
+      "recordCount_many": "{{count}} registros",
+      "recordCount_one": "{{count}} registro",
+      "recordCount_other": "{{count}} registros",
+      "refresh": "Atualizar visualização do IndexedDB"
+    },
     "live": {
       "appVersion": "App",
       "average": "Média",
@@ -4943,6 +4958,7 @@
     "scrollToBottom": "Rolar até o fim",
     "showConsole": "Mostrar console",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "Visualizações do painel de depuração",
       "live": "Ao vivo",
       "logs": "Registros",

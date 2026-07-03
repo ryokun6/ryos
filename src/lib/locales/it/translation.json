@@ -4848,6 +4848,21 @@
     "fix": "Correggi",
     "fixLogs": "Invia i log all'agente Cursor",
     "hideConsole": "Nascondi console",
+    "idb": {
+      "backToStores": "Torna agli archivi",
+      "copy": "Copia dump di IndexedDB",
+      "emptyDatabase": "Nessun object store trovato.",
+      "emptyStore": "Nessun record in questo archivio.",
+      "error": "Impossibile leggere IndexedDB.",
+      "loadMore_many": "Carica altri {{count}} record",
+      "loadMore_one": "Carica {{count}} altro record",
+      "loadMore_other": "Carica altri {{count}} record",
+      "loading": "Lettura di IndexedDB…",
+      "recordCount_many": "{{count}} record",
+      "recordCount_one": "{{count}} record",
+      "recordCount_other": "{{count}} record",
+      "refresh": "Aggiorna vista IndexedDB"
+    },
     "live": {
       "appVersion": "App",
       "average": "Media",
@@ -4943,6 +4958,7 @@
     "scrollToBottom": "Scorri in fondo",
     "showConsole": "Mostra console",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "Viste del pannello di debug",
       "live": "In diretta",
       "logs": "Log",

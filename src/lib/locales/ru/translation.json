@@ -4855,6 +4855,23 @@
     "fix": "Исправить",
     "fixLogs": "Отправить логи агенту Cursor",
     "hideConsole": "Скрыть консоль",
+    "idb": {
+      "backToStores": "Назад к хранилищам",
+      "copy": "Скопировать дамп IndexedDB",
+      "emptyDatabase": "Хранилища объектов не найдены.",
+      "emptyStore": "В этом хранилище нет записей.",
+      "error": "Не удалось прочитать IndexedDB.",
+      "loadMore_few": "Загрузить еще {{count}} записи",
+      "loadMore_many": "Загрузить еще {{count}} записей",
+      "loadMore_one": "Загрузить еще {{count}} запись",
+      "loadMore_other": "Загрузить еще {{count}} записей",
+      "loading": "Чтение IndexedDB…",
+      "recordCount_few": "{{count}} записи",
+      "recordCount_many": "{{count}} записей",
+      "recordCount_one": "{{count}} запись",
+      "recordCount_other": "{{count}} записей",
+      "refresh": "Обновить вид IndexedDB"
+    },
     "live": {
       "appVersion": "Приложение",
       "average": "Среднее",
@@ -4950,6 +4967,7 @@
     "scrollToBottom": "Прокрутить вниз",
     "showConsole": "Показать консоль",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "Виды панели отладки",
       "live": "В реальном времени",
       "logs": "Журналы",

@@ -4848,6 +4848,21 @@
     "fix": "Corregir",
     "fixLogs": "Enviar registros al agente Cursor",
     "hideConsole": "Ocultar consola",
+    "idb": {
+      "backToStores": "Volver a los almacenes",
+      "copy": "Copiar volcado de IndexedDB",
+      "emptyDatabase": "No se han encontrado almacenes de objetos.",
+      "emptyStore": "No hay registros en este almacén.",
+      "error": "Error al leer IndexedDB.",
+      "loadMore_many": "Cargar {{count}} registros más",
+      "loadMore_one": "Cargar {{count}} registro más",
+      "loadMore_other": "Cargar {{count}} registros más",
+      "loading": "Leyendo IndexedDB…",
+      "recordCount_many": "{{count}} registros",
+      "recordCount_one": "{{count}} registro",
+      "recordCount_other": "{{count}} registros",
+      "refresh": "Actualizar vista de IndexedDB"
+    },
     "live": {
       "appVersion": "App",
       "average": "Promedio",
@@ -4943,6 +4958,7 @@
     "scrollToBottom": "Desplazarse al final",
     "showConsole": "Mostrar consola",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "Vistas del panel de depuración",
       "live": "En vivo",
       "logs": "Registros",
