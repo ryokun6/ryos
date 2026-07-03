@@ -1,4 +1,4 @@
-export const BOOKS_EDGE_TAP_RATIO = 0.14;
+export const BOOKS_EDGE_TAP_RATIO = 0.2;
 
 export type BooksPageTurnDirection = "prev" | "next";
 

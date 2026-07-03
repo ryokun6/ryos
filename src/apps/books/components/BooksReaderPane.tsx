@@ -13,6 +13,8 @@ import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
+  CaretLeft,
+  CaretRight,
   ChatCircleDots,
   Check,
   Copy,
@@ -99,7 +101,10 @@ import type {
   BookOriginRect,
 } from "../hooks/useBooksLogic";
 import { createClientLogger } from "@/utils/logger";
-import { resolveBooksEdgeTapDirection } from "../utils/booksEdgeTap";
+import {
+  BOOKS_EDGE_TAP_RATIO,
+  resolveBooksEdgeTapDirection,
+} from "../utils/booksEdgeTap";
 
 const booksLog = createClientLogger("BooksReader");
 
@@ -1679,6 +1684,63 @@ export const BooksReaderPane = forwardRef<
     onRemoveHighlight,
   });
 
+  // Edge-hover chevrons (desktop only): hovering a page-turn gutter fades in
+  // a directional hint. Mobile/touch never hovers, so the media query gates
+  // the synthetic mousemoves some touch browsers emit after taps.
+  const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
+  const supportsHover = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      !!window.matchMedia?.("(hover: hover)").matches,
+    []
+  );
+  const updateEdgeHover = useCallback(
+    (hostX: number, hostY: number) => {
+      if (!supportsHover) return;
+      const host = viewportRef.current;
+      if (!host) {
+        setHoverSide(null);
+        return;
+      }
+      const rect = host.getBoundingClientRect();
+      if (hostY < TOP_CLEARANCE || hostY > rect.height - FOOTER_HEIGHT) {
+        setHoverSide(null);
+        return;
+      }
+      const edgeWidth = rect.width * BOOKS_EDGE_TAP_RATIO;
+      const side =
+        hostX <= edgeWidth
+          ? "left"
+          : hostX >= rect.width - edgeWidth
+            ? "right"
+            : null;
+      if (!side) {
+        setHoverSide(null);
+        return;
+      }
+      const isVertical =
+        resolveEffectiveTextLayout(
+          textLayoutSettingRef.current,
+          bookLanguageRef.current
+        ) === "vertical";
+      const direction =
+        side === "left"
+          ? isVertical
+            ? "next"
+            : "prev"
+          : isVertical
+            ? "prev"
+            : "next";
+      const canTurn =
+        direction === "prev"
+          ? navigationStateRef.current.canGoPreviousPage
+          : navigationStateRef.current.canGoNextPage;
+      setHoverSide(canTurn ? side : null);
+    },
+    [supportsHover]
+  );
+  const clearEdgeHover = useCallback(() => setHoverSide(null), []);
+
   // Handle page-turn taps inside the EPUB iframe instead of covering its text
   // with parent-document buttons. A live selection or interactive target wins,
   // so dragging / long-pressing near an edge remains selectable.
@@ -1749,6 +1811,26 @@ export const BooksReaderPane = forwardRef<
 
       document.addEventListener("click", handleClick);
       cleanups.push(() => document.removeEventListener("click", handleClick));
+
+      // Parent mousemoves stop at the iframe boundary, so hover tracking for
+      // the edge chevrons needs an in-document listener converting to host
+      // coordinates (same mapping as the click handler above).
+      const handlePointerMove = (event: PointerEvent) => {
+        if (event.pointerType !== "mouse") return;
+        const host = viewportRef.current;
+        const frame = contentWindow.frameElement;
+        if (!host || !frame) return;
+        const hostRect = host.getBoundingClientRect();
+        const frameRect = frame.getBoundingClientRect();
+        updateEdgeHover(
+          frameRect.left + event.clientX - hostRect.left,
+          frameRect.top + event.clientY - hostRect.top
+        );
+      };
+      document.addEventListener("pointermove", handlePointerMove);
+      cleanups.push(() =>
+        document.removeEventListener("pointermove", handlePointerMove)
+      );
     };
 
     const attachToCurrentContents = () => {
@@ -1775,7 +1857,7 @@ export const BooksReaderPane = forwardRef<
         // rendition may already be destroyed
       }
     };
-  }, [getRendition, isReady, turnPage]);
+  }, [getRendition, isReady, turnPage, updateEdgeHover]);
 
   // Copy feedback: the copy glyph swaps to a check for a beat instead of
   // raising a toast. Failure still surfaces as a toast.
@@ -1996,6 +2078,12 @@ export const BooksReaderPane = forwardRef<
         palette.background === "transparent" && "books-reader-glass"
       )}
       style={{ backgroundColor: palette.background }}
+      onMouseMove={(event) => {
+        const rect = viewportRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        updateEdgeHover(event.clientX - rect.left, event.clientY - rect.top);
+      }}
+      onMouseLeave={clearEdgeHover}
     >
       {/* The epub.js render target, inset below the top clearance, above the
           progress footer, and with side gutters for a comfortable measure.
@@ -2026,6 +2114,45 @@ export const BooksReaderPane = forwardRef<
           {Math.round(progressPct * 100)}%
         </span>
       </div>
+
+      {/* Edge-hover chevrons (desktop): fade in a page-turn hint over the
+          hovered gutter; hidden on touch (no hover) and at book boundaries. */}
+      <AnimatePresence>
+        {hoverSide && (
+          <motion.div
+            key={hoverSide}
+            className={cn(
+              "pointer-events-none absolute z-10 flex items-center justify-center",
+              hoverSide === "left" ? "left-0" : "right-0"
+            )}
+            style={{
+              top: TOP_CLEARANCE,
+              bottom: FOOTER_HEIGHT,
+              // Center the caret within the reading gutter (with a floor so
+              // it doesn't hug the window edge on very tight gutters).
+              width: Math.max(sideClearance, 28),
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            {hoverSide === "left" ? (
+              <CaretLeft
+                size={20}
+                weight="bold"
+                className={palette.isDark ? "text-white/45" : "text-black/35"}
+              />
+            ) : (
+              <CaretRight
+                size={20}
+                weight="bold"
+                className={palette.isDark ? "text-white/45" : "text-black/35"}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Read-aloud overlay: home-indicator pill when idle/paused; stays
           expanded while playing. Hover or tap grows it otherwise. */}

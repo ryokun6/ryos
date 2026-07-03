@@ -22,7 +22,7 @@ describe("Books edge-tap navigation", () => {
     expect(
       resolveBooksEdgeTapDirection({ ...base, clientX: 500 })
     ).toBeNull();
-    expect(BOOKS_EDGE_TAP_RATIO).toBe(0.14);
+    expect(BOOKS_EDGE_TAP_RATIO).toBe(0.2);
   });
 
   test("reverses physical edges for vertical text", () => {
