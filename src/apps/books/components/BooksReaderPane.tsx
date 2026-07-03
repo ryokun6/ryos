@@ -73,6 +73,7 @@ import {
   applyEpubTextLayout,
   resolveEpubPageDirection,
 } from "../utils/booksTextLayout";
+import { sanitizeEpubSectionDocument } from "../utils/booksContentSanitizer";
 import {
   BOOKS_SPEECH_HIGHLIGHT_CSS,
   getVisiblePageRange,
@@ -869,6 +870,18 @@ export const BooksReaderPane = forwardRef<
           nextBookLanguage ?? uiLanguage
         );
         book.spine.hooks.content.register((document: Document) => {
+          // Strip active content (scripts, inline handlers, javascript: URLs)
+          // BEFORE epub.js serializes the section into its iframe — required
+          // because the rendition runs with `allowScriptedContent: true` (see
+          // booksContentSanitizer.ts for the iOS selection rationale).
+          try {
+            const removedCount = sanitizeEpubSectionDocument(document);
+            if (removedCount > 0) {
+              appendDebugEvent("epubjs:section:sanitized", { removedCount });
+            }
+          } catch (error) {
+            appendDebugEvent("epubjs:section:sanitizeFailed", error, "warn");
+          }
           const textLayout = resolveEffectiveTextLayout(
             textLayoutSettingRef.current,
             bookLanguageRef.current
@@ -929,6 +942,12 @@ export const BooksReaderPane = forwardRef<
             minSpreadWidth: SPREAD_MIN_WIDTH,
             manager: "default",
             defaultDirection: pageDirection,
+            // WebKit blocks the long-press text-selection gesture (and
+            // events generally) inside `sandbox="allow-same-origin"` iframes
+            // without `allow-scripts`, killing selection/highlights on iOS.
+            // Safe because sections are sanitized in the spine content hook
+            // (booksContentSanitizer.ts) before they reach the iframe.
+            allowScriptedContent: true,
           });
           rendition = nextRendition;
           renditionRef.current = nextRendition;
