@@ -710,8 +710,8 @@
         "vertical": "Vertical"
       },
       "theme": {
-        "auto": "Auto",
         "accent": "Accent",
+        "auto": "Auto",
         "black": "Noir",
         "custom": "Personnalisé",
         "dark": "Sombre",
@@ -4748,6 +4748,10 @@
       "volume": "Volume"
     },
     "noResults": "Aucun résultat",
+    "offline": {
+      "appRequiresInternet": "{{appName}} nécessite une connexion Internet.",
+      "title": "Vous êtes hors ligne"
+    },
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",
       "run": "Exécuter…",

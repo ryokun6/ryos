@@ -708,8 +708,8 @@
         "vertical": "直排"
       },
       "theme": {
-        "auto": "自動",
         "accent": "強調色",
+        "auto": "自動",
         "black": "黑色",
         "custom": "自訂",
         "dark": "深色",
@@ -4744,6 +4744,10 @@
       "volume": "音量"
     },
     "noResults": "沒有結果",
+    "offline": {
+      "appRequiresInternet": "{{appName}} 需要網際網路連線。",
+      "title": "你已離線"
+    },
     "startMenu": {
       "aboutThisComputer": "關於這部電腦",
       "run": "執行⋯",

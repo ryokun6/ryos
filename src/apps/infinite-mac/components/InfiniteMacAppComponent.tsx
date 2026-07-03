@@ -2,6 +2,9 @@ import { useState } from "react";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
+import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
+import { useOffline } from "@/hooks/useOffline";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { appMetadata } from "../metadata";
 import { motion } from "motion/react";
 import { useInfiniteMacLogic } from "../hooks/useInfiniteMacLogic";
@@ -115,6 +118,8 @@ export function InfiniteMacAppComponent({
     handleIframeLoad,
   } = useInfiniteMacLogic({ isWindowOpen, instanceId });
 
+  const isOffline = useOffline();
+
   const menuBar = (
     <InfiniteMacMenuBar
       onClose={onClose}
@@ -203,7 +208,17 @@ export function InfiniteMacAppComponent({
                   }}
                   onLoad={handleIframeLoad}
                 />
-                {!isEmulatorLoaded && selectedPreset && (
+                {/* A running emulator keeps working from cached chunks, so
+                    only surface the offline state while it hasn't loaded. */}
+                {!isEmulatorLoaded && selectedPreset && isOffline && (
+                  <div className="absolute inset-0 bg-black">
+                    <OfflineEmptyState
+                      appName={getTranslatedAppName("infinite-mac")}
+                      appearance="dark"
+                    />
+                  </div>
+                )}
+                {!isEmulatorLoaded && selectedPreset && !isOffline && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                     <div className="px-4 py-2 rounded bg-black/50 backdrop-blur-sm">
                       <div className="font-geneva-12 text-sm shimmer">
@@ -216,6 +231,11 @@ export function InfiniteMacAppComponent({
                   </div>
                 )}
               </>
+            ) : isOffline ? (
+              <OfflineEmptyState
+                appName={getTranslatedAppName("infinite-mac")}
+                appearance="dark"
+              />
             ) : (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="bg-black px-4 py-2 border-b border-[#3a3a3a] shrink-0">

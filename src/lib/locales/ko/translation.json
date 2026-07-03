@@ -708,8 +708,8 @@
         "vertical": "세로쓰기"
       },
       "theme": {
-        "auto": "자동",
         "accent": "액센트",
+        "auto": "자동",
         "black": "검은색",
         "custom": "사용자화",
         "dark": "다크",
@@ -4744,6 +4744,10 @@
       "volume": "볼륨"
     },
     "noResults": "결과 없음",
+    "offline": {
+      "appRequiresInternet": "{{appName}}은(는) 인터넷 연결이 필요합니다.",
+      "title": "오프라인 상태입니다."
+    },
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
       "run": "실행…",

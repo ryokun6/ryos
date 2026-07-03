@@ -708,8 +708,8 @@
         "vertical": "縦書き"
       },
       "theme": {
-        "auto": "自動",
         "accent": "アクセント",
+        "auto": "自動",
         "black": "ブラック",
         "custom": "カスタム",
         "dark": "ダーク",
@@ -4744,6 +4744,10 @@
       "volume": "音量"
     },
     "noResults": "結果なし",
+    "offline": {
+      "appRequiresInternet": "{{appName}}を利用するにはインターネット接続が必要です。",
+      "title": "オフラインです"
+    },
     "startMenu": {
       "aboutThisComputer": "このコンピュータについて",
       "run": "ファイル名を指定して実行…",
