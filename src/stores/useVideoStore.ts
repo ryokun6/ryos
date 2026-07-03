@@ -8,12 +8,11 @@ import {
 } from "@/shared/media/confirmedPlayback";
 import { createTransportActions } from "@/shared/media/transport";
 
-export interface Video {
-  id: string;
-  url: string;
-  title: string;
-  artist?: string;
-}
+// The video item shape now lives in the shared MediaCore library model
+// (`Video` is a strict subset of the music `Track`). Re-exported here for
+// compatibility with existing importers.
+export type { VideoItem as Video } from "@/shared/media/library";
+import type { VideoItem as Video } from "@/shared/media/library";
 
 export const DEFAULT_VIDEOS: Video[] = [
   {

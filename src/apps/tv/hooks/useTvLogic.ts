@@ -6,6 +6,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useTvStore } from "@/stores/useTvStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
+import { trackToVideoItem } from "@/shared/media/library";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { helpItems } from "..";
 import { buildTvChannelLineup, type Channel } from "@/apps/tv/data/channels";
@@ -25,14 +26,7 @@ import { formatSecondsMmSs } from "@/utils/formatDuration";
 export const MTV_CHANNEL_ID = "mtv";
 export const RYO_TV_CHANNEL_ID = "ryos-picks";
 
-function trackToVideo(track: Track): Video {
-  return {
-    id: track.id,
-    url: track.url,
-    title: track.title,
-    artist: track.artist,
-  };
-}
+const trackToVideo = (track: Track): Video => trackToVideoItem(track);
 
 export interface UseTvLogicOptions {
   isWindowOpen: boolean;
