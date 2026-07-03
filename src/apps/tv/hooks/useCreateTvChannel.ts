@@ -37,7 +37,7 @@ export class TvChannelAuthRequiredError extends Error {
 
 /**
  * Owns the AI channel-create round-trip and store insertion. Shared by the
- * dialog, the inline prompt input, and the chat tvControl tool so they
+ * dialog, the inline prompt input, and the chat mediaControl tool so they
  * can't drift in behavior.
  *
  * Auth handling: the API requires authentication. If the network call

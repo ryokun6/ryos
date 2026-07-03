@@ -36,8 +36,7 @@ graph TD
 |------|-------------|
 | `launchApp` | Open applications (supports Internet Explorer URL + year time-travel launch) |
 | `closeApp` | Close applications |
-| `ipodControl` | iPod playback control: toggle/play/pause/playKnown/addAndPlay/next/previous (+ video/fullscreen/lyrics translation options) |
-| `karaokeControl` | Karaoke playback control (shared music library with iPod, independent playback state) |
+| `mediaControl` | Unified media control with `target` ("music" default, "karaoke", "videos", "tv"): toggle/play/pause/playKnown/addAndPlay/next/previous transport (+ video/fullscreen/lyrics translation options) and TV channel management (list/tune/createChannel/deleteChannel/addVideo/removeVideo). |
 | `generateHtml` | Create HTML applets with title and emoji icon |
 | `aquarium` | Render interactive emoji aquarium in chat |
 | `list` | List VFS items: `/Applets`, `/Documents` (includes document names), `/Applications`, `/Music`, `/Applets Store` |
@@ -60,7 +59,6 @@ graph TD
 | `web_search` | OpenAI provider web search (GPT-5.5 only, authenticated users, with geolocation context) |
 | `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
 | `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized) |
-| `tvControl` | TV lineup and playback: list/tune channels, AI `createChannel` fanout, add/remove videos on custom channels |
 | `cursorCloudAgent` | Async Cursor Cloud repo-agent runs against `ryokun6/ryos` (owner account + `CURSOR_API_KEY`): live stream card, PR link, follow-up turns |
 | `listCursorCloudAgentRuns` | List recent Cursor Cloud agent runs with dashboard URLs (owner account + `CURSOR_API_KEY`) |
 
@@ -133,13 +131,13 @@ Client execution is split across two layers:
 - `src/apps/chats/tools/` — registered handlers for media/settings/app-state tools:
 
 - `appHandlers.ts` - Launch/close app execution
-- `ipodHandler.ts` / `karaokeHandler.ts` - Media control execution
+- `mediaHandler.ts` - Unified `mediaControl` execution (music/karaoke/videos/tv transport)
+- `mediaTvChannels.ts` - TV channel lineup and tuning execution (target `tv` channel actions)
 - `calendarHandler.ts` - Calendar event management execution
 - `contactsHandler.ts` - Contact management execution
 - `settingsHandler.ts` - System settings updates
 - `stickiesHandler.ts` - Sticky note operations
 - `infiniteMacHandler.ts` - Infinite Mac control bridge
-- `tvHandler.ts` - TV channel lineup and tuning execution
 
 Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 
@@ -151,7 +149,7 @@ Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 ### Tool schema highlights
 
 - `launchApp` now enforces that `internet-explorer` launches must provide both `url` and `year` together (or neither), with year-range validation.
-- `ipodControl` and `karaokeControl` schemas enforce action-specific arguments (e.g. `addAndPlay` requires `id`; playback-state actions must not include track identifiers).
+- `mediaControl` is the media tool: a `target` field ("music" default, "karaoke", "videos", "tv") gates the action vocabulary and flags (e.g. TV channel actions require `target: "tv"`, `enableVideo` is music-only). Action-specific argument rules include requiring `id` for `addAndPlay` and rejecting track identifiers for playback-state actions.
 - `memoryWrite` / `memoryRead` are unified schemas using a `type` field:
   - `long_term` (default): key-based memory operations
   - `daily`: journal-style per-day operations

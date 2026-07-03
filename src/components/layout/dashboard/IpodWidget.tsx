@@ -1,5 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import { useIpodStore } from "@/stores/useIpodStore";
+import {
+  getActiveIpodCurrentTrack,
+  navigateActiveIpodTrack,
+  useIpodStore,
+} from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDashboardStore, type IpodWidgetConfig } from "@/stores/useDashboardStore";
@@ -247,18 +251,24 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const controlMode = (widget?.config as IpodWidgetConfig | undefined)?.controlMode ?? "ipod";
   const isKaraoke = controlMode === "karaoke";
 
-  const ipodGetCurrentTrack = useIpodStore((s) => s.getCurrentTrack);
+  const ipodTrack = useIpodStore(getActiveIpodCurrentTrack);
   const ipodIsPlaying = useIpodStore((s) => s.isPlaying);
   const ipodTogglePlay = useIpodStore((s) => s.togglePlay);
-  const ipodNextTrack = useIpodStore((s) => s.nextTrack);
-  const ipodPreviousTrack = useIpodStore((s) => s.previousTrack);
+  const ipodNextTrack = useCallback(
+    () => navigateActiveIpodTrack(useIpodStore.getState(), "next"),
+    []
+  );
+  const ipodPreviousTrack = useCallback(
+    () => navigateActiveIpodTrack(useIpodStore.getState(), "previous"),
+    []
+  );
   const ipodIsShuffled = useIpodStore((s) => s.isShuffled);
   const ipodToggleShuffle = useIpodStore((s) => s.toggleShuffle);
   const ipodLoopCurrent = useIpodStore((s) => s.loopCurrent);
   const ipodLoopAll = useIpodStore((s) => s.loopAll);
   const ipodToggleLoopCurrent = useIpodStore((s) => s.toggleLoopCurrent);
 
-  const karaokeGetCurrentTrack = useKaraokeStore((s) => s.getCurrentTrack);
+  const karaokeTrack = useKaraokeStore((s) => s.getCurrentTrack());
   const karaokeIsPlaying = useKaraokeStore((s) => s.isPlaying);
   const karaokeTogglePlay = useKaraokeStore((s) => s.togglePlay);
   const karaokeNextTrack = useKaraokeStore((s) => s.nextTrack);
@@ -269,7 +279,6 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const karaokeLoopAll = useKaraokeStore((s) => s.loopAll);
   const karaokeToggleLoopCurrent = useKaraokeStore((s) => s.toggleLoopCurrent);
 
-  const getCurrentTrack = isKaraoke ? karaokeGetCurrentTrack : ipodGetCurrentTrack;
   const isPlaying = isKaraoke ? karaokeIsPlaying : ipodIsPlaying;
   const togglePlay = isKaraoke ? karaokeTogglePlay : ipodTogglePlay;
   const nextTrack = isKaraoke ? karaokeNextTrack : ipodNextTrack;
@@ -285,7 +294,7 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
     (s) => Object.values(s.instances).some((inst) => inst.appId === targetAppId && inst.isOpen)
   );
 
-  const track = getCurrentTrack();
+  const track = isKaraoke ? karaokeTrack : ipodTrack;
   const title =
     track?.title ||
     t(isKaraoke ? "apps.dashboard.ipod.modeKaraoke" : "apps.dashboard.ipod.modeIpod");

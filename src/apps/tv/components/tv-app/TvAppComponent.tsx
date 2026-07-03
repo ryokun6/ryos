@@ -41,6 +41,10 @@ import {
   ScrollingChannelName,
 } from "./TvLcdWidgets";
 import { useTvAppController } from "./useTvAppController";
+import {
+  handleTvPlayerPause,
+  shouldPlayEmbeddedTv,
+} from "./tvPlayerEvents";
 
 export function TvAppComponent(props: AppProps) {
   const c = useTvAppController(props);
@@ -172,7 +176,7 @@ export function TvAppComponent(props: AppProps) {
               playbackRequested={c.playbackRequested}
               isPlaying={c.isPlaying}
               onPlay={c.confirmPlayback}
-              onPause={() => c.setIsPlaying(false)}
+              onPause={handleTvPlayerPause}
               onTogglePlay={c.handleTogglePlay}
               onEnded={c.handleVideoEnd}
               onProgress={c.handleProgress}
@@ -239,15 +243,14 @@ export function TvAppComponent(props: AppProps) {
                   <YouTubePlayer
                     ref={c.playerRef}
                     url={url}
-                    // Pause the iframe during the CRT shutdown / paused
-                    // "screen off" overlay so audio doesn't keep
-                    // playing through a black screen.
-                    playing={
-                      c.playbackRequested &&
-                      !c.isFullScreen &&
-                      !c.poweringOff &&
-                      !c.screenOff
-                    }
+                    // Keep visual CRT state out of playback intent so a
+                    // mobile Safari tap reaches the iframe synchronously.
+                    playing={shouldPlayEmbeddedTv({
+                      playbackRequested: c.playbackRequested,
+                      isFullScreen: c.isFullScreen,
+                      poweringOff: c.poweringOff,
+                      screenOff: c.screenOff,
+                    })}
                     controls={false}
                     width="calc(100% + 1px)"
                     height="calc(100% + 1px)"
@@ -260,7 +263,7 @@ export function TvAppComponent(props: AppProps) {
                       c.confirmPlayback();
                       c.setIsBuffering(false);
                     }}
-                    onPause={() => c.setIsPlaying(false)}
+                    onPause={handleTvPlayerPause}
                     onPlaybackAttemptFailed={c.handlePlaybackAttemptFailed}
                     onBuffer={() => c.setIsBuffering(true)}
                     onBufferEnd={() => c.setIsBuffering(false)}

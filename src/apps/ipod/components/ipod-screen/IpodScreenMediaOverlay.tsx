@@ -16,7 +16,7 @@ import {
   PLAYER_PROGRESS_INTERVAL_MS,
   IPOD_MODERN_SCREEN_HEIGHT_PX,
 } from "../../constants";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { useIpodStore } from "@/stores/useIpodStore";
 import type { IpodScreenProps } from "../../types";
 import type { ActivityInfo } from "@/hooks/useActivityLabel";

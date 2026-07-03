@@ -36,6 +36,9 @@ import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
 import { formatSecondsAsMinutesSeconds } from "@/utils/timeFormat";
 import { shouldRestartTrackOnPrevious } from "@/shared/media/previousTrackBehavior";
+import { useTrackSwitchGuard } from "@/shared/media/useTrackSwitchGuard";
+import { useActiveMediaPlayer } from "@/shared/media/useActiveMediaPlayer";
+import { useLyricOffsetTrackChange } from "@/shared/media/useLyricOffsetTrackChange";
 import { createClientLogger } from "@/utils/logger";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
@@ -296,8 +299,13 @@ export function useKaraokeLogic({
   const hideControlsTimeoutRef = useRef<number | null>(null);
 
   // Track switching state to prevent race conditions
-  const isTrackSwitchingRef = useRef(false);
-  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const {
+    isTrackSwitchingRef,
+    trackSwitchTimeoutRef,
+    startTrackSwitch: startTrackSwitchGuard,
+  } = useTrackSwitchGuard({
+    onGuardEnd: () => karaokeLog.debug("Ended track-switch guard"),
+  });
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
@@ -454,9 +462,10 @@ export function useKaraokeLogic({
     tracks,
   ]);
 
-  const getActivePlayer = useCallback(
-    () => (isFullScreen ? fullScreenPlayerRef.current : playerRef.current),
-    [isFullScreen]
+  const getActivePlayer = useActiveMediaPlayer(
+    isFullScreen,
+    playerRef,
+    fullScreenPlayerRef
   );
 
   const pushListenState = useCallback(async () => {
@@ -547,16 +556,8 @@ export function useKaraokeLogic({
       playbackRequested: state.playbackRequested,
       isPlaying: state.isPlaying,
     });
-    isTrackSwitchingRef.current = true;
-    if (trackSwitchTimeoutRef.current) {
-      clearTimeout(trackSwitchTimeoutRef.current);
-    }
-    // Allow 2 seconds for YouTube to load before accepting play/pause events
-    trackSwitchTimeoutRef.current = setTimeout(() => {
-      isTrackSwitchingRef.current = false;
-      karaokeLog.debug("Ended track-switch guard");
-    }, 2000);
-  }, []);
+    startTrackSwitchGuard();
+  }, [startTrackSwitchGuard]);
 
   // Classic click-wheel iPod behavior: restart the current track when the
   // back button is pressed after the song is already underway, instead of
@@ -696,69 +697,29 @@ export function useKaraokeLogic({
     };
   }, [isPlaying, anyMenuOpen, isSyncModeOpen, restartAutoHideTimer]);
 
-  // Reset elapsed time on track change and set track switching guard
-  // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
-  // Using null as initial value ensures first render triggers the auto-skip check
-  const prevCurrentIndexRef = useRef<number | null>(null);
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
-    if (prevCurrentIndexRef.current !== currentIndex) {
+  // Reset elapsed time on track change, arm the track-switch guard, and
+  // auto-seek for negative lyric offsets (shared MediaCore behavior).
+  useLyricOffsetTrackChange({
+    currentIndex,
+    tracks,
+    isFullScreen,
+    guard: {
+      isTrackSwitchingRef,
+      trackSwitchTimeoutRef,
+      startTrackSwitch: startTrackSwitchGuard,
+    },
+    getActivePlayer,
+    setElapsedTime: setStoreElapsedTime,
+    showStatus,
+    onTrackChange: (info) =>
       karaokeLog.debug("Selected track changed", {
-        previousIndex: prevCurrentIndexRef.current,
-        currentIndex,
-        currentTrackId: tracks[currentIndex]?.id ?? null,
-        lyricOffset: tracks[currentIndex]?.lyricOffset ?? 0,
+        previousIndex: info.previousIndex,
+        currentIndex: info.currentIndex,
+        currentTrackId: info.trackId,
+        lyricOffset: info.lyricOffset,
         isFullScreen,
-      });
-      isTrackSwitchingRef.current = true;
-      if (trackSwitchTimeoutRef.current) {
-        clearTimeout(trackSwitchTimeoutRef.current);
-      }
-      
-      // Get the new track's offset
-      const newTrack = tracks[currentIndex];
-      const newLyricOffset = newTrack?.lyricOffset ?? 0;
-      
-      // For negative offset, auto-skip to where lyrics time = 0
-      // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
-      // When lyricsTime = 0: playerTime = -lyricOffset / 1000
-      // Only seek if offset is negative (produces positive seek target)
-      // and the seek target is reasonable (at least 1 second)
-      const seekTarget = -newLyricOffset / 1000;
-      
-      if (newLyricOffset < 0 && seekTarget >= 1) {
-        setStoreElapsedTime(seekTarget);
-        
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-          if (activePlayer) {
-            activePlayer.seekTo(seekTarget);
-            showStatus(`▶ ${formatSecondsAsMinutesSeconds(seekTarget)}`);
-          }
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      } else {
-        // Start from beginning for positive/zero offset or small negative offset
-        setStoreElapsedTime(0);
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      }
-    }
-    prevCurrentIndexRef.current = currentIndex;
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-        if (trackSwitchTimeoutRef.current === timeoutId) {
-          trackSwitchTimeoutRef.current = null;
-        }
-      }
-    };
-  }, [currentIndex, tracks, isFullScreen, showStatus, setStoreElapsedTime]);
+      }),
+  });
 
   // Cleanup
   useEffect(() => {

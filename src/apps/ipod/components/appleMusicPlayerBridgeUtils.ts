@@ -4,7 +4,8 @@
 // component itself — keeping React Fast Refresh working for hot reloads
 // during development (`react-refresh/only-export-components`).
 
-import { isAppleMusicCollectionTrack, type Track } from "@/stores/useIpodStore";
+import { isAppleMusicCollectionTrack } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 
 /**
  * `onMusicKitReady` immediately replays an already-configured singleton to new

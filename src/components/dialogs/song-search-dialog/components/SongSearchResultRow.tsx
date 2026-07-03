@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import type { SongSearchResult } from "../types";
 
 type SongSearchResultRowProps = {

@@ -1,4 +1,4 @@
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { NUM_OPTIONS } from "./constants";
 
 export function shuffle<T>(arr: T[]): T[] {

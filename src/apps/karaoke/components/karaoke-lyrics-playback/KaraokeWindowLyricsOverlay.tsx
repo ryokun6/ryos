@@ -1,7 +1,7 @@
 import { useCallback, type CSSProperties } from "react";
 import type { TFunction } from "i18next";
 import { AnimatePresence } from "motion/react";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { LyricsDisplay } from "@/apps/ipod/components/lyrics-display/LyricsDisplay";
 import { shouldShowKaraokeTitleCard } from "@/apps/karaoke/utils/titleCard";
 import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";

@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { AlbumTracklist } from "./AlbumTracklist";
 
 export function AlbumFlipFaces({

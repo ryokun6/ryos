@@ -12,7 +12,7 @@ import {
 } from "../screen";
 import { IPOD_MODERN_MENU_BODY_HEIGHT_PX } from "../../constants";
 import type { MenuHistoryEntry, MenuItem } from "../../types";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import {
   MENU_ITEM_HEIGHT_MODERN_MEDIA,
   MODERN_MEDIA_BODY_SLACK_PX,

@@ -5,7 +5,6 @@
  * to improve DRY compliance and maintainability.
  */
 
-import i18n from "@/lib/i18n";
 import { detectUserOS } from "../utils/systemState";
 export {
   createShortIdMap,
@@ -53,7 +52,7 @@ export const buildResultMessage = (parts: string[]): string => {
 /**
  * Map language codes to human-readable names
  */
-export const LANGUAGE_NAMES: Record<string, string> = {
+const LANGUAGE_NAMES: Record<string, string> = {
   en: "English",
   "zh-TW": "Traditional Chinese",
   "zh-CN": "Simplified Chinese",
@@ -101,16 +100,4 @@ export const shouldDisableTranslation = (
     value === "" ||
     (typeof value === "string" && disableValues.includes(value.toLowerCase()))
   );
-};
-
-/**
- * Create iOS restriction message for music playback
- */
-export const getIOSRestrictionMessage = (appName: "iPod" | "Karaoke"): string => {
-  if (appName === "iPod") {
-    return i18n.t("apps.chats.toolCalls.ipodReady");
-  }
-  return i18n.t("apps.chats.toolCalls.karaokeReady", {
-    defaultValue: "Karaoke is ready. Tap play to start",
-  });
 };

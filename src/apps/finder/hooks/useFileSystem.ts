@@ -14,7 +14,6 @@ import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStoreShallow } from "@/stores/useFilesStore";
 import { useIpodStoreShallow } from "@/stores/useIpodStore";
 import { useVideoStoreShallow } from "@/stores/useVideoStore";
-import { formatKugouImageUrl } from "@/utils/coverArt";
 import { listVirtualMusicOrVideosPath } from "@/services/vfs/virtualTrees";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getStoreForFile, type StoredContent } from "@/utils/indexedDBOperations";
@@ -343,10 +342,12 @@ export function useFileSystem(
   const launchApp = useLaunchApp();
   const {
     tracks: ipodTracks,
+    setLibrarySource: setIpodLibrarySource,
     setCurrentSongId: setIpodSongId,
     setIsPlaying: setIpodPlaying,
   } = useIpodStoreShallow((state) => ({
     tracks: state.tracks,
+    setLibrarySource: state.setLibrarySource,
     setCurrentSongId: state.setCurrentSongId,
     setIsPlaying: state.setIsPlaying,
   }));
@@ -672,33 +673,10 @@ export function useFileSystem(
       }
       }
 
-      // a. Music Library (Virtual)
-      if (currentPath === "/Music Library") {
-        displayFiles = ipodTracks.map((track) => ({
-          name: `${track.title}.mp3`,
-          isDirectory: false,
-          path: `/Music Library/${track.title}.mp3`,
-          type: "Music",
-          data: track,
-          icon: "/icons/file-music.png",
-          modifiedAt: undefined, // Virtual files don't have timestamps
-          contentUrl: formatKugouImageUrl(track.cover, 100) ?? undefined,
-        }));
-      }
-      // b. Video Library (Virtual)
-      else if (currentPath === "/Video Library") {
-        displayFiles = videoTracks.map((video) => ({
-          name: `${video.title}.mov`,
-          isDirectory: false,
-          path: `/Video Library/${video.title}.mov`,
-          type: "Video",
-          data: video,
-          icon: "/icons/file-video.png",
-          modifiedAt: undefined, // Virtual files don't have timestamps
-        }));
-      }
-      // c. Favorites (Virtual)
-      else if (currentPath === "/Favorites") {
+      // Favorites (Virtual). The legacy flat "/Music Library" and
+      // "/Video Library" paths were removed in favor of the artist-tree
+      // "/Music" and "/Videos" virtual folders (listVirtualMusicOrVideosPath).
+      if (currentPath === "/Favorites") {
         displayFiles = internetExplorerFavorites.map((favorite) => ({
           name: `${favorite.title}.webloc`,
           isDirectory: false,
@@ -1025,7 +1003,9 @@ export function useFileSystem(
             );
           }
         } else if (file.appId === "ipod" && file.data?.songId) {
-          // iPod uses song ID directly
+          // Finder's /Music tree contains the YouTube-backed music library,
+          // so switch away from Apple Music before selecting the VFS item.
+          setIpodLibrarySource("youtube");
           setIpodSongId(file.data.songId);
           setIpodPlaying(true);
           launchApp("ipod", { launchOrigin });
@@ -1057,6 +1037,7 @@ export function useFileSystem(
     [
       launchApp,
       navigateToPath,
+      setIpodLibrarySource,
       setIpodSongId,
       setIpodPlaying,
       setVideoIndex,

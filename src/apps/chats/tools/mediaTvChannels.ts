@@ -1,8 +1,9 @@
 /**
- * TV Control Tool Handler
+ * TV channel actions for the unified `mediaControl` tool.
  *
  * Manages the TV app's channel lineup: lists channels, tunes in, creates and
- * deletes channels, and adds/removes videos within custom channels.
+ * deletes channels, and adds/removes videos within custom channels. Moved
+ * from the former `tvHandler.ts` (deleted in MediaCore Phase 5).
  *
  * Built-in channels can be hidden from the lineup and restored with TV reset;
  * only custom channels can have their video lists edited.
@@ -22,16 +23,23 @@ import { isYouTubeUrl, parseYouTubeId } from "@/apps/tv/utils";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { fetchYouTubeOembed } from "@/utils/youtubeMetadata";
 import { getApiUrl } from "@/utils/platform";
-import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
+import {
+  createShortIdMap,
+  isIOSDevice,
+  resolveId,
+  type ShortIdMap,
+} from "./helpers";
 
-export interface TvControlInput {
-  action:
-    | "list"
-    | "tune"
-    | "createChannel"
-    | "deleteChannel"
-    | "addVideo"
-    | "removeVideo";
+export type TvChannelAction =
+  | "list"
+  | "tune"
+  | "createChannel"
+  | "deleteChannel"
+  | "addVideo"
+  | "removeVideo";
+
+export interface TvChannelActionInput {
+  action: TvChannelAction;
   channelId?: string;
   channelNumber?: number;
   /**
@@ -201,13 +209,12 @@ const resolveChannelId = (raw: string): string => {
   return resolveId(raw, tvChannelIdMap);
 };
 
-/**
- * Handle the tvControl tool call.
- */
-export const handleTvControl = async (
-  input: TvControlInput,
+/** Handle a TV channel-management action (`target: "tv"` in `mediaControl`). */
+export const handleTvChannelAction = async (
+  input: TvChannelActionInput,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  emitToolName: string
 ): Promise<void> => {
   const { action } = input;
 
@@ -254,7 +261,7 @@ export const handleTvControl = async (
         });
 
         context.addToolOutput({
-          tool: "tvControl",
+          tool: emitToolName,
           toolCallId,
           output: { success: true, message, channels },
         });
@@ -278,7 +285,7 @@ export const handleTvControl = async (
 
         if (!target) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.channelNotFound", {
@@ -290,21 +297,29 @@ export const handleTvControl = async (
 
         ensureTvAppOpen(context);
         tvStore.setCurrentChannelId(target.id);
-        tvStore.setIsPlaying(true);
+        const requiresManualPlay = isIOSDevice();
+        if (!requiresManualPlay) {
+          tvStore.setIsPlaying(true);
+        }
 
         const isCustom = !DEFAULT_CHANNELS.some((c) => c.id === target!.id);
         const shortId =
           tvChannelIdMap?.fullToShort.get(target.id) ?? target.id;
 
         context.addToolOutput({
-          tool: "tvControl",
+          tool: emitToolName,
           toolCallId,
           output: {
             success: true,
-            message: i18n.t("apps.chats.toolCalls.tv.tunedTo", {
-              defaultValue: "Tuned to {{label}}",
-              label: formatChannelLabel(target),
-            }),
+            message: requiresManualPlay
+              ? i18n.t("apps.chats.toolCalls.tv.tunedToReady", {
+                  defaultValue: "Tuned to {{label}}. Tap play to start",
+                  label: formatChannelLabel(target),
+                })
+              : i18n.t("apps.chats.toolCalls.tv.tunedTo", {
+                  defaultValue: "Tuned to {{label}}",
+                  label: formatChannelLabel(target),
+                }),
             channel: buildChannelToolRecord(
               target,
               shortId,
@@ -321,7 +336,7 @@ export const handleTvControl = async (
         const prompt = input.prompt?.trim();
         if (!prompt) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.missingPrompt", {
@@ -381,7 +396,7 @@ export const handleTvControl = async (
                   defaultValue: "Failed to plan channel",
                 });
             context.addToolOutput({
-              tool: "tvControl",
+              tool: emitToolName,
               toolCallId,
               state: "output-error",
               errorText,
@@ -397,7 +412,7 @@ export const handleTvControl = async (
           };
           if (!raw?.videos?.length || !raw?.name) {
             context.addToolOutput({
-              tool: "tvControl",
+              tool: emitToolName,
               toolCallId,
               state: "output-error",
               errorText: i18n.t("apps.chats.toolCalls.tv.createNoVideos", {
@@ -414,9 +429,9 @@ export const handleTvControl = async (
             videos: raw.videos,
           };
         } catch (err) {
-          console.error("[tvControl] create-channel API failed:", err);
+          console.error("[mediaControl] create-channel API failed:", err);
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText:
@@ -434,7 +449,7 @@ export const handleTvControl = async (
         const safeVideos = planned.videos.filter((v) => isYouTubeUrl(v.url));
         if (safeVideos.length === 0) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.createNoVideos", {
@@ -461,7 +476,7 @@ export const handleTvControl = async (
         ).find((c) => c.id === created.id);
         if (!createdListed) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.createFailed", {
@@ -479,7 +494,7 @@ export const handleTvControl = async (
         });
 
         context.addToolOutput({
-          tool: "tvControl",
+          tool: emitToolName,
           toolCallId,
           output: {
             success: true,
@@ -499,7 +514,7 @@ export const handleTvControl = async (
       case "deleteChannel": {
         if (!input.channelId) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.missingChannelId", {
@@ -512,7 +527,7 @@ export const handleTvControl = async (
         const targetListed = findChannel(resolvedId);
         if (!targetListed) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.channelNotFound", {
@@ -523,7 +538,7 @@ export const handleTvControl = async (
         }
         useTvStore.getState().removeChannel(resolvedId);
         context.addToolOutput({
-          tool: "tvControl",
+          tool: emitToolName,
           toolCallId,
           output: {
             success: true,
@@ -539,7 +554,7 @@ export const handleTvControl = async (
       case "addVideo": {
         if (!input.channelId) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.missingChannelId", {
@@ -551,7 +566,7 @@ export const handleTvControl = async (
         const resolvedId = resolveChannelId(input.channelId);
         if (DEFAULT_CHANNELS.some((c) => c.id === resolvedId)) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.cannotEditBuiltin", {
@@ -564,7 +579,7 @@ export const handleTvControl = async (
         const target = findCustomChannel(resolvedId);
         if (!target) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.channelNotFound", {
@@ -582,7 +597,7 @@ export const handleTvControl = async (
         });
         if ("error" in resolvedVideo) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: resolvedVideo.error,
@@ -597,7 +612,7 @@ export const handleTvControl = async (
 
         if (!result.added) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             output: {
               success: true,
@@ -613,7 +628,7 @@ export const handleTvControl = async (
         }
 
         context.addToolOutput({
-          tool: "tvControl",
+          tool: emitToolName,
           toolCallId,
           output: {
             success: true,
@@ -631,7 +646,7 @@ export const handleTvControl = async (
       case "removeVideo": {
         if (!input.channelId) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.missingChannelId", {
@@ -642,7 +657,7 @@ export const handleTvControl = async (
         }
         if (!input.removeVideoId) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.missingRemoveVideoId", {
@@ -654,7 +669,7 @@ export const handleTvControl = async (
         const resolvedId = resolveChannelId(input.channelId);
         if (DEFAULT_CHANNELS.some((c) => c.id === resolvedId)) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.cannotEditBuiltin", {
@@ -667,7 +682,7 @@ export const handleTvControl = async (
         const target = findCustomChannel(resolvedId);
         if (!target) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.channelNotFound", {
@@ -685,7 +700,7 @@ export const handleTvControl = async (
 
         if (!result.removed) {
           context.addToolOutput({
-            tool: "tvControl",
+            tool: emitToolName,
             toolCallId,
             state: "output-error",
             errorText: i18n.t("apps.chats.toolCalls.tv.videoNotInChannel", {
@@ -696,7 +711,7 @@ export const handleTvControl = async (
         }
 
         context.addToolOutput({
-          tool: "tvControl",
+          tool: emitToolName,
           toolCallId,
           output: {
             success: true,
@@ -713,7 +728,7 @@ export const handleTvControl = async (
 
       default:
         context.addToolOutput({
-          tool: "tvControl",
+          tool: emitToolName,
           toolCallId,
           state: "output-error",
           errorText: i18n.t("apps.chats.toolCalls.tv.invalidAction", {
@@ -723,9 +738,9 @@ export const handleTvControl = async (
         });
     }
   } catch (error) {
-    console.error("[tvControl] Error:", error);
+    console.error("[mediaControl] TV channel action error:", error);
     context.addToolOutput({
-      tool: "tvControl",
+      tool: emitToolName,
       toolCallId,
       state: "output-error",
       errorText:

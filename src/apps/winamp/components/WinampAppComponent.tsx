@@ -8,7 +8,8 @@ import { useWinampLogic } from "../hooks/useWinampLogic";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { useMediaLibraryStore } from "@/stores/useMediaLibraryStore";
+import type { Track } from "@/shared/media/library";
 import { YouTubeMedia } from "../utils/youtubeMedia";
 import { WEBAMP_SKINS } from "../skins";
 import { useTranslation } from "react-i18next";
@@ -196,7 +197,7 @@ export function WinampAppComponent({
     containerRef.current = container;
 
     // Load tracks from the iPod music library
-    const ipodTracks = useIpodStore.getState().tracks;
+    const ipodTracks = useMediaLibraryStore.getState().tracks;
     const webampTracks = ipodTracksToWebamp(
       ipodTracks,
       t("apps.winamp.status.unknownArtist")

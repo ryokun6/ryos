@@ -12,10 +12,8 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getBrowserTimeZone, getBrowserTimeZoneHeaders } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
 import {
-  getActiveIpodTracks,
   getIpodTracksForLibrary,
   type IpodLibrarySelection,
-  setActiveIpodCurrentSongId,
   useIpodStore,
 } from "@/stores/useIpodStore";
 import { toast } from "@/hooks/useToast";
@@ -62,24 +60,20 @@ import {
   handleLaunchApp,
   handleCloseApp,
   handleSettings,
-  handleIpodControl,
-  handleKaraokeControl,
+  handleMediaControl,
   handleStickiesControl,
   handleInfiniteMacControl,
   handleCalendarControl,
   handleContactsControl,
-  handleTvControl,
   type ToolContext,
   type LaunchAppInput,
   type CloseAppInput,
   type SettingsInput,
-  type IpodControlInput,
-  type KaraokeControlInput,
+  type MediaControlInput,
   type StickiesControlInput,
   type InfiniteMacControlInput,
   type CalendarControlInput,
   type ContactsControlInput,
-  type TvControlInput,
 } from "../tools";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 
@@ -343,18 +337,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             );
             break;
           }
-          case "ipodControl": {
-            await handleIpodControl(
-              toolCall.input as IpodControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "karaokeControl": {
-            await handleKaraokeControl(
-              toolCall.input as KaraokeControlInput,
+          case "mediaControl": {
+            await handleMediaControl(
+              toolCall.input as MediaControlInput,
               toolCall.toolCallId,
               toolContext
             );
@@ -640,33 +625,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             try {
               // Route based on path prefix
               if (path.startsWith("/Music/")) {
-                // Play iPod song by ID
                 const songId = path.replace("/Music/", "");
-                const ipodState = useIpodStore.getState();
-                const track = getActiveIpodTracks(ipodState).find((t) => t.id === songId);
-
-                if (!track) {
-                  throw new Error(`Song not found: ${songId}`);
-                }
-
-                // Ensure iPod is open
-                const appState = useAppStore.getState();
-                const ipodInstances = appState.getInstancesByAppId("ipod");
-                if (!ipodInstances.some((inst) => inst.isOpen)) {
-                  launchApp("ipod");
-                }
-
-                setActiveIpodCurrentSongId(ipodState, songId);
-                ipodState.setIsPlaying(true);
-
-                const playingMessage = track.artist
-                  ? i18n.t("apps.chats.toolCalls.playingTrackByArtist", { title: track.title, artist: track.artist })
-                  : i18n.t("apps.chats.toolCalls.playingTrack", { title: track.title });
-                addToolOutput({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: playingMessage,
-                });
+                await handleMediaControl(
+                  {
+                    target: "music",
+                    action: "playKnown",
+                    id: songId,
+                  },
+                  toolCall.toolCallId,
+                  toolContext,
+                  toolCall.toolName
+                );
                 result = "";
               } else if (path.startsWith("/Applets Store/")) {
                 // Open shared applet preview
@@ -1345,15 +1314,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           case "contactsControl": {
             handleContactsControl(
               toolCall.input as ContactsControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = "";
-            break;
-          }
-          case "tvControl": {
-            await handleTvControl(
-              toolCall.input as TvControlInput,
               toolCall.toolCallId,
               toolContext
             );

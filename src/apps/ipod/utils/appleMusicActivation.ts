@@ -1,4 +1,4 @@
-import type { LibrarySource } from "@/stores/useIpodStore";
+import type { LibrarySource } from "@/shared/media/library";
 
 export function shouldEnableAppleMusicIntegration(
   librarySource: LibrarySource

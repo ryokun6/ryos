@@ -53,7 +53,7 @@ const { useIpodStore } = await import("../src/stores/useIpodStore");
 const { settlePersistWrites } = await import(
   "../src/utils/indexedDBPersistStorage"
 );
-type Track = import("../src/stores/useIpodStore").Track;
+type Track = import("../src/shared/media/library").Track;
 
 async function readPersistedIpodState(): Promise<unknown> {
   const storeWithPersist = useIpodStore as typeof useIpodStore & {

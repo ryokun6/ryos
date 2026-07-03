@@ -4,7 +4,7 @@ import {
 } from "../../constants";
 import { formatMsMmSs } from "@/utils/formatDuration";
 import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import type { CoverFlowItem } from "./types";
 
 // Format a track duration in milliseconds as `m:ss`. Returns an empty

@@ -14,7 +14,8 @@ import { useFurigana } from "@/hooks/useFurigana";
 import { useActivityState, isAnyActivityActive } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
-import { getEffectiveTranslationLanguage, type Track } from "@/stores/useIpodStore";
+import { getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import {
   getLyricsFontClassName,
   LyricsFont as LyricsFontEnum,

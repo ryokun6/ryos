@@ -68,8 +68,7 @@ export function getToolInvocationCallMessage(
       case "closeApp":
         displayCallMessage = t("apps.chats.toolCalls.closing", { appName: getAppName(input?.id) });
         break;
-      case "ipodControl":
-      case "karaokeControl": {
+      case "mediaControl": {
         const action = input?.action || "toggle";
         if (action === "next") {
           displayCallMessage = t("apps.chats.toolCalls.skippingToNext");
@@ -79,6 +78,30 @@ export function getToolInvocationCallMessage(
           displayCallMessage = t("apps.chats.toolCalls.addingSong");
         } else if (action === "playKnown") {
           displayCallMessage = t("apps.chats.toolCalls.playingSong");
+        } else if (action === "list") {
+          displayCallMessage = t("apps.chats.toolCalls.tv.listing", {
+            defaultValue: "Listing TV channels…",
+          });
+        } else if (action === "tune") {
+          displayCallMessage = t("apps.chats.toolCalls.tv.tuning", {
+            defaultValue: "Changing channel…",
+          });
+        } else if (action === "createChannel") {
+          displayCallMessage = t("apps.chats.toolCalls.tv.creating", {
+            defaultValue: "Creating channel…",
+          });
+        } else if (action === "deleteChannel") {
+          displayCallMessage = t("apps.chats.toolCalls.tv.deleting", {
+            defaultValue: "Deleting channel…",
+          });
+        } else if (action === "addVideo") {
+          displayCallMessage = t("apps.chats.toolCalls.tv.addingVideo", {
+            defaultValue: "Adding video to channel…",
+          });
+        } else if (action === "removeVideo") {
+          displayCallMessage = t("apps.chats.toolCalls.tv.removingVideo", {
+            defaultValue: "Removing video from channel…",
+          });
         } else {
           displayCallMessage = t("apps.chats.toolCalls.controllingPlayback");
         }
@@ -156,37 +179,6 @@ export function getToolInvocationCallMessage(
       }
       case "stickiesControl": {
         displayCallMessage = t("apps.chats.toolCalls.stickies.managing");
-        break;
-      }
-      case "tvControl": {
-        const action = input?.action;
-        if (action === "list") {
-          displayCallMessage = t("apps.chats.toolCalls.tv.listing", {
-            defaultValue: "Listing TV channels…",
-          });
-        } else if (action === "tune") {
-          displayCallMessage = t("apps.chats.toolCalls.tv.tuning", {
-            defaultValue: "Changing channel…",
-          });
-        } else if (action === "createChannel") {
-          displayCallMessage = t("apps.chats.toolCalls.tv.creating", {
-            defaultValue: "Creating channel…",
-          });
-        } else if (action === "deleteChannel") {
-          displayCallMessage = t("apps.chats.toolCalls.tv.deleting", {
-            defaultValue: "Deleting channel…",
-          });
-        } else if (action === "addVideo") {
-          displayCallMessage = t("apps.chats.toolCalls.tv.addingVideo", {
-            defaultValue: "Adding video to channel…",
-          });
-        } else if (action === "removeVideo") {
-          displayCallMessage = t("apps.chats.toolCalls.tv.removingVideo", {
-            defaultValue: "Removing video from channel…",
-          });
-        } else {
-          displayCallMessage = t("apps.chats.toolCalls.running", { toolName: "TV" });
-        }
         break;
       }
       case "contactsControl": {

@@ -130,17 +130,6 @@ export interface CloseAppInput {
   id: string;
 }
 
-// Media control input (iPod/Karaoke)
-export interface MediaControlInput {
-  action?: MediaAction;
-  id?: string;
-  title?: string;
-  artist?: string;
-  enableTranslation?: string;
-  enableFullscreen?: boolean;
-  enableVideo?: boolean;
-}
-
 // Generate HTML input
 export interface GenerateHtmlInput {
   html: string;
@@ -364,62 +353,28 @@ export const TV_ACTIONS = [
 ] as const;
 export type TvAction = (typeof TV_ACTIONS)[number];
 
-export interface TvControlInput {
-  action: TvAction;
-  /** For 'tune', 'deleteChannel', 'addVideo', 'removeVideo': the channel id (or short id from 'list'). */
-  channelId?: string;
-  /** For 'tune': switch by channel number instead of id. */
-  channelNumber?: number;
-  /**
-   * For 'createChannel' (REQUIRED): one-line description/theme of the channel
-   * (e.g. "skateboarding tricks", "lofi study"). The server fans out to YouTube
-   * via `/api/tv/create-channel` and AI-plans the name, tagline, and lineup —
-   * do not pass a `videos` list.
-   */
-  prompt?: string;
-  /** For 'createChannel': optional name override (otherwise planner picks one). */
-  name?: string;
-  /** For 'addVideo': YouTube video id or supported URL. */
-  videoId?: string;
-  /** For 'addVideo': YouTube URL alternative to videoId. */
-  url?: string;
-  /** For 'addVideo': optional explicit title (otherwise looked up from oEmbed). */
-  title?: string;
-  /** For 'addVideo': optional explicit artist/channel. */
-  artist?: string;
-  /** For 'removeVideo': the video id within the channel. */
-  removeVideoId?: string;
-}
+// ============================================================================
+// Unified Media Control Types (MediaCore)
+// ============================================================================
 
-export interface TvVideoToolRecord {
-  id: string;
-  title: string;
-  artist?: string;
-  url: string;
-}
+/**
+ * Targets the unified `mediaControl` tool can drive. "music" is the iPod app;
+ * the rest map 1:1 onto their apps. Winamp is intentionally not a target yet —
+ * it is not on the MediaCore now-playing bus (Webamp owns its own event loop).
+ */
+export const MEDIA_TARGETS = ["music", "karaoke", "videos", "tv"] as const;
+export type MediaTarget = (typeof MEDIA_TARGETS)[number];
 
-export interface TvChannelToolRecord {
-  /** Short id used for AI-friendly identification within a single 'list' call. */
-  id: string;
-  /** Stable channel id from the store. */
-  channelId: string;
-  number: number;
-  name: string;
-  description?: string;
-  isCustom: boolean;
-  isCurrent: boolean;
-  videoCount: number;
-  videos?: TvVideoToolRecord[];
-}
-
-export interface TvControlOutput {
-  success: boolean;
-  message: string;
-  channels?: TvChannelToolRecord[];
-  channel?: TvChannelToolRecord | null;
-  /** For 'addVideo' / 'removeVideo'. */
-  video?: TvVideoToolRecord | null;
-}
+/**
+ * Unified action vocabulary: the shared transport actions (`MEDIA_ACTIONS`)
+ * plus TV's channel-management actions (`TV_ACTIONS`). The two sets do not
+ * overlap; channel actions are only valid with `target: "tv"`.
+ */
+export const MEDIA_CONTROL_ACTIONS = [
+  ...MEDIA_ACTIONS,
+  ...TV_ACTIONS,
+] as const;
+export type MediaControlAction = (typeof MEDIA_CONTROL_ACTIONS)[number];
 
 // ============================================================================
 // Documents Control Types

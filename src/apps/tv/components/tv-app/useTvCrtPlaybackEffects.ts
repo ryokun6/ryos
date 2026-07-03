@@ -20,6 +20,7 @@ export function useTvCrtPlaybackEffects({
   playChannelSwitch,
   startStatic,
   stopStatic,
+  playbackRequested,
   isPlaying,
   isBuffering,
   poweringOff,
@@ -50,6 +51,7 @@ export function useTvCrtPlaybackEffects({
   playChannelSwitch: () => void | Promise<void>;
   startStatic: () => void | Promise<void>;
   stopStatic: () => void;
+  playbackRequested: boolean;
   isPlaying: boolean;
   isBuffering: boolean;
   poweringOff: boolean;
@@ -94,7 +96,13 @@ export function useTvCrtPlaybackEffects({
     if (isFullScreen) return;
     setChannelSwitchKey((k) => k + 1);
     void playChannelSwitch();
-  }, [currentChannelId, playChannelSwitch, setChannelSwitchKey, isFullScreen]);
+  }, [
+    currentChannelId,
+    currentVideoId,
+    playChannelSwitch,
+    setChannelSwitchKey,
+    isFullScreen,
+  ]);
 
   useEffect(() => {
     setIsBuffering(false);
@@ -112,55 +120,69 @@ export function useTvCrtPlaybackEffects({
   }, [currentChannelId, currentVideoId, setIsTransitioningCc]);
 
   const prevPlayingRef = useRef(isPlaying);
+  const prevPlaybackRequestedRef = useRef(playbackRequested);
+  const prevChannelIdRef = useRef(currentChannelId);
   const prevVideoIdRef = useRef(currentVideoId);
   const hasPausedRef = useRef(false);
   useEffect(() => {
     const nextVideoId = currentVideoId;
+    const prev = prevPlayingRef.current;
+    const prevPlaybackRequested = prevPlaybackRequestedRef.current;
+    const prevChannelId = prevChannelIdRef.current;
+    const prevVideoId = prevVideoIdRef.current;
+    prevPlayingRef.current = isPlaying;
+    prevPlaybackRequestedRef.current = playbackRequested;
+    prevChannelIdRef.current = currentChannelId;
+    prevVideoIdRef.current = nextVideoId;
+    const sourceChanged =
+      prevChannelId !== currentChannelId || prevVideoId !== nextVideoId;
+
     if (!isWindowOpen || !wasOpenRef.current || poweringOff) {
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
       return;
     }
 
-    if (screenOff && isPlaying) {
+    if (sourceChanged && playbackRequested) {
+      hasPausedRef.current = false;
+      if (screenOff) setScreenOff(false);
+      return;
+    }
+
+    if (screenOff && playbackRequested) {
+      hasPausedRef.current = false;
       setScreenOff(false);
       setPowerOnKey((k) => k + 1);
       void playPowerOn();
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
       return;
     }
 
-    if (isBuffering) {
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
-      return;
-    }
-    if (prevVideoIdRef.current !== nextVideoId) {
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
-      return;
-    }
-    const prev = prevPlayingRef.current;
-    prevPlayingRef.current = isPlaying;
-    if (prev === isPlaying) return;
-    if (prev && !isPlaying) {
+    if (
+      (prev && !isPlaying) ||
+      (prevPlaybackRequested && !playbackRequested)
+    ) {
       hasPausedRef.current = true;
       setScreenOff(true);
       stopStatic();
       void playPowerOff();
-    } else if (!prev && isPlaying && hasPausedRef.current) {
+      return;
+    }
+
+    if (isBuffering || sourceChanged) return;
+
+    if (!prev && isPlaying && hasPausedRef.current) {
+      hasPausedRef.current = false;
       setScreenOff(false);
       setPowerOnKey((k) => k + 1);
       void playPowerOn();
     }
   }, [
     isPlaying,
+    playbackRequested,
     isWindowOpen,
     isBuffering,
     poweringOff,
     screenOff,
     currentVideoId,
+    currentChannelId,
     playPowerOff,
     playPowerOn,
     setPowerOnKey,

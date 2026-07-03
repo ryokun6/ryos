@@ -10,12 +10,10 @@ import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
 import type { Video } from "@/stores/useVideoStore";
 import {
-  confirmPlayback,
-  requestPlayback,
   resetPlaybackConfirmation,
   stopPlayback,
-  togglePlayback,
 } from "@/shared/media/confirmedPlayback";
+import { createTransportActions } from "@/shared/media/transport";
 
 /** Persisted custom channel; `number` is assigned at runtime from lineup order. */
 export interface CustomChannel extends Omit<Channel, "number"> {
@@ -143,10 +141,7 @@ export const useTvStore = create<TvStoreState>()(
             ? resetPlaybackConfirmation(s)
             : {}),
         })),
-      setIsPlaying: (playing) =>
-        set(playing ? requestPlayback() : stopPlayback()),
-      confirmPlayback: () => set((s) => confirmPlayback(s)),
-      togglePlay: () => set((s) => togglePlayback(s)),
+      ...createTransportActions<TvStoreState>(set),
       toggleLcdFilter: () =>
         set((s) => ({ lcdFilterOn: !s.lcdFilterOn })),
       setLcdFilterOn: (on) => set({ lcdFilterOn: on }),

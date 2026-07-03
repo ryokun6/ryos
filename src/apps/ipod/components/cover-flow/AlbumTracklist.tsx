@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { IPOD_MODERN_MENU_ROW_HEIGHT_PX } from "../../constants";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { cn } from "@/lib/utils";
 import { formatTrackDuration } from "./utils";
 

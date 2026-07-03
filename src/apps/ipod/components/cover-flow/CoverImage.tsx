@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { useImageLoaded } from "../../hooks/useImageLoaded";
 import { COVER_FADE_TRANSITION } from "./constants";
 import { getCoverSizeCqmin, resolveCoverUrl } from "./utils";

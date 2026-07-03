@@ -15,6 +15,8 @@ import { useCustomEventListener, useEventListener } from "@/hooks/useEventListen
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import { useIpodActiveLibrary } from "./useIpodActiveLibrary";
 import { useIpodPlayback } from "./useIpodPlayback";
+import { useActiveMediaPlayer } from "@/shared/media/useActiveMediaPlayer";
+import { useLyricOffsetTrackChange } from "@/shared/media/useLyricOffsetTrackChange";
 import { useIpodScale } from "./useIpodScale";
 import { useIpodStatusBacklight } from "./useIpodStatusBacklight";
 import {
@@ -31,12 +33,13 @@ import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
   useIpodStore,
-  Track,
   IpodBacklightTimeout,
   getEffectiveTranslationLanguage,
+  getActiveIpodCurrentTrack,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
@@ -471,6 +474,7 @@ export function useIpodLogic({
     userHasInteractedRef,
     isTrackSwitchingRef,
     trackSwitchTimeoutRef,
+    startTrackSwitch: startTrackSwitchGuard,
     pauseBeforeWindowClose,
   } = useIpodPlayback({
     isWindowOpen,
@@ -1353,62 +1357,25 @@ export function useIpodLogic({
 
   // Backlight timer + foreground handling live in useIpodStatusBacklight.
 
-  // Reset elapsed time on track change and set track switching guard
-  // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
-  // Using null as initial value ensures first render triggers the auto-skip check
-  const prevCurrentIndexRef = useRef<number | null>(null);
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
-    if (prevCurrentIndexRef.current !== currentIndex) {
-      isTrackSwitchingRef.current = true;
-      if (trackSwitchTimeoutRef.current) {
-        clearTimeout(trackSwitchTimeoutRef.current);
-      }
-      
-      // Get the new track's offset
-      const newTrack = tracks[currentIndex];
-      const newLyricOffset = newTrack?.lyricOffset ?? 0;
-      
-      // For negative offset, auto-skip to where lyrics time = 0
-      // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
-      // When lyricsTime = 0: playerTime = -lyricOffset / 1000
-      // Only seek if offset is negative (produces positive seek target)
-      // and the seek target is reasonable (less than track duration, at least 1 second)
-      const seekTarget = -newLyricOffset / 1000;
-      
-      if (newLyricOffset < 0 && seekTarget >= 1) {
-        useIpodStore.getState().setElapsedTime(seekTarget);
-        
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-          if (activePlayer) {
-            activePlayer.seekTo(seekTarget);
-            showStatus(`▶ ${formatSecondsAsMinutesSeconds(seekTarget)}`);
-          }
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      } else {
-        // Start from beginning for positive/zero offset or small negative offset
-        useIpodStore.getState().setElapsedTime(0);
-        timeoutId = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-        }, 2000);
-        trackSwitchTimeoutRef.current = timeoutId;
-      }
-    }
-    prevCurrentIndexRef.current = currentIndex;
-    return () => {
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-        if (trackSwitchTimeoutRef.current === timeoutId) {
-          trackSwitchTimeoutRef.current = null;
-        }
-      }
-    };
-  }, [currentIndex, tracks, isFullScreen, showStatus]);
+  // Reset elapsed time on track change, arm the track-switch guard, and
+  // auto-seek for negative lyric offsets (shared MediaCore behavior).
+  const getActiveReactPlayer = useActiveMediaPlayer(
+    isFullScreen,
+    playerRef,
+    fullScreenPlayerRef
+  );
+  const setIpodElapsedTime = useCallback((seconds: number) => {
+    useIpodStore.getState().setElapsedTime(seconds);
+  }, []);
+  useLyricOffsetTrackChange({
+    currentIndex,
+    tracks,
+    isFullScreen,
+    guard: { isTrackSwitchingRef, trackSwitchTimeoutRef, startTrackSwitch: startTrackSwitchGuard },
+    getActivePlayer: getActiveReactPlayer,
+    setElapsedTime: setIpodElapsedTime,
+    showStatus,
+  });
 
   // Cleanup track-switch timeout on unmount (status timeout cleanup lives in
   // useIpodStatusBacklight).
@@ -3620,16 +3587,8 @@ export function useIpodLogic({
       playbackRequested: state.playbackRequested,
       isPlaying: state.isPlaying,
     });
-    isTrackSwitchingRef.current = true;
-    if (trackSwitchTimeoutRef.current) {
-      clearTimeout(trackSwitchTimeoutRef.current);
-    }
-    // Allow 2 seconds for YouTube to load before accepting play/pause events
-    trackSwitchTimeoutRef.current = setTimeout(() => {
-      isTrackSwitchingRef.current = false;
-      ipodLog.debug("Ended track-switch guard");
-    }, 2000);
-  }, []);
+    startTrackSwitchGuard();
+  }, [startTrackSwitchGuard]);
 
   const getCurrentAppleMusicCollectionShellTrack = useCallback(() => {
     const state = useIpodStore.getState();
@@ -4870,13 +4829,7 @@ export function useIpodLogic({
   );
 
   const getCurrentStoreTrack = useCallback(() => {
-    const state = useIpodStore.getState();
-    if (state.librarySource === "appleMusic") {
-      const id = state.appleMusicCurrentSongId;
-      if (!id) return state.appleMusicTracks[0] ?? null;
-      return state.appleMusicTracks.find((t) => t.id === id) ?? null;
-    }
-    return state.getCurrentTrack();
+    return getActiveIpodCurrentTrack(useIpodStore.getState());
   }, []);
 
   // Volume from audio settings store

@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import {
   useIpodStore,
   type AppleMusicPlaylist,
-  type Track,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { getMusicKitInstance } from "@/hooks/useMusicKit";
 import {
   loadAppleMusicLibrary,

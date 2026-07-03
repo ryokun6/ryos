@@ -3,19 +3,16 @@ import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { shouldUpdatePlaybackTime } from "./playbackTime";
 import {
-  confirmPlayback,
-  requestPlayback,
   resetPlaybackConfirmation,
   stopPlayback,
-  togglePlayback,
 } from "@/shared/media/confirmedPlayback";
+import { createTransportActions } from "@/shared/media/transport";
 
-export interface Video {
-  id: string;
-  url: string;
-  title: string;
-  artist?: string;
-}
+// The video item shape now lives in the shared MediaCore library model
+// (`Video` is a strict subset of the music `Track`). Re-exported here for
+// compatibility with existing importers.
+export type { VideoItem as Video } from "@/shared/media/library";
+import type { VideoItem as Video } from "@/shared/media/library";
 
 export const DEFAULT_VIDEOS: Video[] = [
   {
@@ -233,10 +230,7 @@ export const useVideoStore = create<VideoStoreState>()(
       setLoopAll: (val) => set({ loopAll: val }),
       setLoopCurrent: (val) => set({ loopCurrent: val }),
       setIsShuffled: (val) => set({ isShuffled: val }),
-      togglePlay: () => set((state) => togglePlayback(state)),
-      setIsPlaying: (val) =>
-        set(val ? requestPlayback() : stopPlayback()),
-      confirmPlayback: () => set((state) => confirmPlayback(state)),
+      ...createTransportActions<VideoStoreState>(set),
       setPlaybackTime: (seconds) =>
         set((state) => {
           const flooredSeconds = Math.floor(seconds);

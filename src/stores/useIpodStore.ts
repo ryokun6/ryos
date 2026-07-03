@@ -44,29 +44,31 @@ import {
 } from "@/utils/appleMusicLibraryCache";
 import type { IpodMenuKind } from "@/apps/ipod/types";
 import {
-  confirmPlayback,
   requestPlayback,
   resetPlaybackConfirmation,
   stopPlayback,
-  togglePlayback,
 } from "@/shared/media/confirmedPlayback";
+import {
+  IPOD_APPLE_MUSIC_NAVIGATION,
+  IPOD_YOUTUBE_NAVIGATION,
+  computeNextNavigation,
+  computePreviousNavigation,
+  createTransportActions,
+  dedupeAppendHistory,
+} from "@/shared/media/transport";
 
 const debug = createClientLogger("IpodStore").debug;
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
 
-/** Lyrics source from Kugou */
-export interface LyricsSource {
-  hash: string;
-  albumId: string | number;
-  title: string;
-  artist: string;
-  album?: string;
-}
-
-/** Library source the iPod is currently displaying. */
-export type LibrarySource = "youtube" | "appleMusic";
+// Track / library item types live in the shared MediaCore library model
+// (`@/shared/media/library`); import them from there, not from this store.
+import type {
+  LibrarySource,
+  LyricsSource,
+  Track,
+} from "@/shared/media/library";
 
 export const IPOD_BACKLIGHT_TIMEOUT_OPTIONS = ["2s", "10s", "always-on", "off"] as const;
 export type IpodBacklightTimeout = (typeof IPOD_BACKLIGHT_TIMEOUT_OPTIONS)[number];
@@ -103,54 +105,6 @@ export interface AppleMusicPlaylist {
   description?: string;
   trackCount?: number;
   canEdit?: boolean;
-}
-
-/** Apple Music play parameters needed for `setQueue` (catalog vs library). */
-export interface AppleMusicPlayParams {
-  /** Catalog song ID (numeric string) when available — preferred for setQueue. */
-  catalogId?: string;
-  /** Library song ID (`i.<hash>` form) for personal library tracks. */
-  libraryId?: string;
-  /** Catalog station ID (`ra.*` form) for Apple Music radio playback. */
-  stationId?: string;
-  /** Catalog playlist ID (`pl.*` form) for recommendation playback. */
-  playlistId?: string;
-  /** MusicKit kind, e.g. "song", "library-song". */
-  kind: string;
-  isLibrary?: boolean;
-}
-
-// Define the Track type (can be shared or defined here)
-export interface Track {
-  id: string;
-  url: string;
-  title: string;
-  artist?: string;
-  album?: string;
-  /** Album-level artist for grouping compilations/collaborative albums. */
-  albumArtist?: string;
-  /** Apple Music album/library album id when available, used for album grouping. */
-  appleMusicAlbumId?: string;
-  /** Cover image URL from Kugou */
-  cover?: string;
-  /** Cached boosted cover color for lyrics/title glow */
-  coverColor?: string;
-  /** Offset in milliseconds to adjust lyrics timing for this track (positive = lyrics earlier) */
-  lyricOffset?: number;
-  /** Selected lyrics source from Kugou (user override) */
-  lyricsSource?: LyricsSource;
-  /** Server/library creation time (ms); used for All Songs order (newest first) */
-  createdAt?: number;
-  /** Stable sequence when createdAt ties (e.g. bulk import index) */
-  importOrder?: number;
-  /** Last metadata update from server (ms); tiebreaker for list order */
-  updatedAt?: number;
-  /** Origin of this track. Defaults to "youtube" when unset for back-compat. */
-  source?: LibrarySource;
-  /** Track duration in milliseconds (Apple Music exposes this up front). */
-  durationMs?: number;
-  /** Apple Music play parameters used to drive MusicKit playback. */
-  appleMusicPlayParams?: AppleMusicPlayParams;
 }
 
 function updateTrackCoverColorList(
@@ -473,20 +427,9 @@ export function isAppleMusicCollectionTrack(
   );
 }
 
-/** Helper to get current index from song ID */
-function getIndexFromSongId(tracks: Track[], songId: string | null): number {
-  if (!songId || tracks.length === 0) return -1;
-  const index = tracks.findIndex((t) => t.id === songId);
-  return index >= 0 ? index : -1;
-}
-
 export interface IpodState extends IpodData {
   /** Set the current song by ID */
   setCurrentSongId: (songId: string | null) => void;
-  /** Get the current track (computed from currentSongId) */
-  getCurrentTrack: () => Track | null;
-  /** Get the current track index (computed from currentSongId) */
-  getCurrentIndex: () => number;
   toggleLoopCurrent: () => void;
   toggleLoopAll: () => void;
   toggleShuffle: () => void;
@@ -952,89 +895,6 @@ export function sanitizeRomanizationSettings(
   } as RomanizationSettings;
 }
 
-// Helper function to get unplayed track IDs from history
-function getUnplayedTrackIds(
-  tracks: Track[],
-  playbackHistory: string[]
-): string[] {
-  const playedIds = new Set(playbackHistory);
-  return tracks.reduce<string[]>((acc, track) => {
-    if (!playedIds.has(track.id)) {
-      acc.push(track.id);
-    }
-    return acc;
-  }, []);
-}
-
-// Helper function to get a random track ID avoiding recently played songs
-function getRandomTrackIdAvoidingRecent(
-  tracks: Track[],
-  playbackHistory: string[],
-  currentSongId: string | null
-): string | null {
-  if (tracks.length === 0) return null;
-  if (tracks.length === 1) return tracks[0].id;
-
-  // Get unplayed tracks first (tracks that have never been played)
-  const unplayedIds = getUnplayedTrackIds(tracks, playbackHistory);
-
-  // If we have unplayed tracks, prioritize them
-  if (unplayedIds.length > 0) {
-    const availableUnplayed = unplayedIds.filter((id) => id !== currentSongId);
-
-    if (availableUnplayed.length > 0) {
-      return availableUnplayed[Math.floor(Math.random() * availableUnplayed.length)];
-    }
-  }
-
-  // If no unplayed tracks, avoid recently played ones
-  // Keep a reasonable history size to avoid (e.g., half the playlist or 10 tracks, whichever is smaller)
-  const avoidCount = Math.min(Math.floor(tracks.length / 2), 10);
-  const recentTrackIds = playbackHistory.slice(-avoidCount);
-  const recentIds = new Set(recentTrackIds);
-
-  // Find tracks that haven't been played recently
-  const availableIds = tracks.reduce<string[]>((acc, track) => {
-    if (!recentIds.has(track.id) && track.id !== currentSongId) {
-      acc.push(track.id);
-    }
-    return acc;
-  }, []);
-
-  if (availableIds.length > 0) {
-    return availableIds[Math.floor(Math.random() * availableIds.length)];
-  }
-
-  // If all tracks have been played recently, just pick any track except current
-  const allIdsExceptCurrent = tracks.reduce<string[]>((acc, track) => {
-    if (track.id !== currentSongId) {
-      acc.push(track.id);
-    }
-    return acc;
-  }, []);
-
-  if (allIdsExceptCurrent.length > 0) {
-    return allIdsExceptCurrent[Math.floor(Math.random() * allIdsExceptCurrent.length)];
-  }
-
-  // Fallback: return current song ID if it's the only option
-  return currentSongId;
-}
-
-// Helper function to update playback history
-function updatePlaybackHistory(
-  playbackHistory: string[],
-  trackId: string,
-  maxHistory: number = 50
-): string[] {
-  // Remove the track if it's already in history (to avoid duplicates when going back/forward)
-  const filtered = playbackHistory.filter((id) => id !== trackId);
-  // Add the track ID to the end of history
-  const updated = [...filtered, trackId];
-  // Keep only the most recent tracks
-  return updated.slice(-maxHistory);
-}
-
 // ============================================================================
 // DEBOUNCED LYRIC OFFSET SAVE
 // ============================================================================
@@ -1205,7 +1065,7 @@ export const useIpodStore = create<IpodState>()(
           // Only update playback history if we're actually changing tracks
           if (songId !== state.currentSongId) {
             const newPlaybackHistory = state.currentSongId
-              ? updatePlaybackHistory(state.playbackHistory, state.currentSongId)
+              ? dedupeAppendHistory(state.playbackHistory, state.currentSongId)
               : state.playbackHistory;
 
             return {
@@ -1225,15 +1085,6 @@ export const useIpodStore = create<IpodState>()(
           }
           return {};
         }),
-      getCurrentTrack: () => {
-        const state = get();
-        if (!state.currentSongId) return state.tracks[0] ?? null;
-        return state.tracks.find((t) => t.id === state.currentSongId) ?? null;
-      },
-      getCurrentIndex: () => {
-        const state = get();
-        return getIndexFromSongId(state.tracks, state.currentSongId);
-      },
       toggleLoopCurrent: () =>
         set((state) => ({ loopCurrent: !state.loopCurrent })),
       toggleLoopAll: () => set((state) => ({ loopAll: !state.loopAll })),
@@ -1250,21 +1101,7 @@ export const useIpodStore = create<IpodState>()(
               : state.appleMusicPlaybackHistory,
           };
         }),
-      togglePlay: () => {
-        // Prevent playback when offline
-        if (typeof navigator !== "undefined" && !navigator.onLine) {
-          return;
-        }
-        set((state) => togglePlayback(state));
-      },
-      setIsPlaying: (playing) => {
-        // Prevent starting playback when offline
-        if (playing && typeof navigator !== "undefined" && !navigator.onLine) {
-          return;
-        }
-        set(playing ? requestPlayback() : stopPlayback());
-      },
-      confirmPlayback: () => set((state) => confirmPlayback(state)),
+      ...createTransportActions<IpodState>(set, { guardOffline: true }),
       toggleVideo: () => {
         // Prevent turning on video when offline
         if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -1486,114 +1323,82 @@ export const useIpodStore = create<IpodState>()(
       },
       nextTrack: () =>
         set((state) => {
-          if (state.tracks.length === 0)
+          const decision = computeNextNavigation(
+            {
+              items: state.tracks,
+              currentId: state.currentSongId,
+              loopCurrent: state.loopCurrent,
+              loopAll: state.loopAll,
+              isShuffled: state.isShuffled,
+              history: state.playbackHistory,
+            },
+            IPOD_YOUTUBE_NAVIGATION
+          );
+
+          if (decision.kind === "empty") {
             return {
               currentSongId: null,
               currentLyrics: null,
               currentFuriganaMap: null,
             };
-
-          // Add current track to history before moving to next
-          let newPlaybackHistory = state.playbackHistory;
-          if (state.currentSongId && !state.loopCurrent) {
-            newPlaybackHistory = updatePlaybackHistory(
-              state.playbackHistory,
-              state.currentSongId
-            );
           }
 
-          let nextSongId: string | null;
-
-          if (state.loopCurrent) {
-            // If looping current track, stay on the same track
-            nextSongId = state.currentSongId;
-          } else if (state.isShuffled) {
-            // Shuffle mode: pick a random track avoiding recent ones
-            nextSongId = getRandomTrackIdAvoidingRecent(
-              state.tracks,
-              newPlaybackHistory,
-              state.currentSongId
-            );
-          } else {
-            // Sequential mode
-            const currentIndex = getIndexFromSongId(state.tracks, state.currentSongId);
-            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % state.tracks.length;
-
-            // If we've reached the end and loop all is off, stop
-            if (!state.loopAll && nextIndex === 0 && currentIndex !== -1) {
-              const lastSongId =
-                state.tracks[state.tracks.length - 1]?.id ?? null;
-              const isSameTrack = lastSongId === state.currentSongId;
-              return {
-                currentSongId: lastSongId,
-                currentLyrics: isSameTrack ? state.currentLyrics : null,
-                currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
-                ...stopPlayback(),
-                ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
-              };
-            }
-            nextSongId = state.tracks[nextIndex]?.id ?? null;
-          }
-
-          const isSameTrack = nextSongId === state.currentSongId;
-          return {
-            currentSongId: nextSongId,
+          const isSameTrack = decision.id === state.currentSongId;
+          const lyricsPatch = {
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
+          };
+          // Reset playback position on a track change so the new track starts
+          // at 0 instead of inheriting the previous track's elapsedTime.
+          const clockPatch = isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 };
+
+          if (decision.kind === "stop") {
+            // End of the list with loop-all off.
+            return {
+              currentSongId: decision.id,
+              ...lyricsPatch,
+              ...stopPlayback(),
+              ...clockPatch,
+            };
+          }
+          return {
+            currentSongId: decision.id,
+            ...lyricsPatch,
             ...requestPlayback(),
-            playbackHistory: newPlaybackHistory,
+            playbackHistory: decision.history,
             historyPosition: -1, // Always reset to end when moving forward
-            // Reset playback position so the new track starts at 0 instead
-            // of inheriting the previous track's elapsedTime.
-            ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
+            ...clockPatch,
           };
         }),
       previousTrack: () =>
         set((state) => {
-          if (state.tracks.length === 0)
+          const decision = computePreviousNavigation(
+            {
+              items: state.tracks,
+              currentId: state.currentSongId,
+              loopCurrent: state.loopCurrent,
+              loopAll: state.loopAll,
+              isShuffled: state.isShuffled,
+              history: state.playbackHistory,
+            },
+            IPOD_YOUTUBE_NAVIGATION
+          );
+
+          if (decision.kind === "empty") {
             return {
               currentSongId: null,
               currentLyrics: null,
               currentFuriganaMap: null,
             };
-
-          let prevSongId: string | null;
-          let newPlaybackHistory = state.playbackHistory;
-
-          if (state.isShuffled && state.playbackHistory.length > 0) {
-            // In shuffle mode, go back to the last played track from history
-            const lastTrackId = state.playbackHistory[state.playbackHistory.length - 1];
-            const lastTrackExists = state.tracks.some((track) => track.id === lastTrackId);
-
-            if (lastTrackExists && lastTrackId !== state.currentSongId) {
-              // Found the previous track in history
-              prevSongId = lastTrackId;
-              // Remove it from history since we're going back to it
-              newPlaybackHistory = state.playbackHistory.slice(0, -1);
-            } else {
-              // No valid history, pick a random track
-              prevSongId = getRandomTrackIdAvoidingRecent(
-                state.tracks,
-                state.playbackHistory,
-                state.currentSongId
-              );
-            }
-          } else {
-            // Sequential mode or no history
-            const currentIndex = getIndexFromSongId(state.tracks, state.currentSongId);
-            const prevIndex = currentIndex <= 0 
-              ? state.tracks.length - 1 
-              : currentIndex - 1;
-            prevSongId = state.tracks[prevIndex]?.id ?? null;
           }
 
-          const isSameTrack = prevSongId === state.currentSongId;
+          const isSameTrack = decision.id === state.currentSongId;
           return {
-            currentSongId: prevSongId,
+            currentSongId: decision.id,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             ...requestPlayback(),
-            playbackHistory: newPlaybackHistory,
+            playbackHistory: decision.history,
             historyPosition: -1,
             // Reset playback position so the new track starts at 0 instead
             // of inheriting the previous track's elapsedTime.
@@ -1612,7 +1417,7 @@ export const useIpodStore = create<IpodState>()(
         })),
       clearLyricsCache: () => {
         const state = get();
-        const currentTrack = state.getCurrentTrack();
+        const currentTrack = getActiveIpodCurrentTrack(state);
         
         // Clear server-side cache for translations, furigana, and soramimi
         if (currentTrack?.id) {
@@ -2418,8 +2223,19 @@ export const useIpodStore = create<IpodState>()(
           // song), step through that ordered list. Otherwise fall back
           // to the full library so behaviour matches the old menu flow.
           const queueTracks = resolveAppleMusicQueueTracks(state);
+          const decision = computeNextNavigation(
+            {
+              items: queueTracks,
+              currentId: state.appleMusicCurrentSongId,
+              loopCurrent: state.loopCurrent,
+              loopAll: state.loopAll,
+              isShuffled: state.isShuffled,
+              history: state.appleMusicPlaybackHistory,
+            },
+            IPOD_APPLE_MUSIC_NAVIGATION
+          );
 
-          if (queueTracks.length === 0) {
+          if (decision.kind === "empty") {
             return {
               appleMusicCurrentSongId: null,
               currentLyrics: null,
@@ -2427,68 +2243,46 @@ export const useIpodStore = create<IpodState>()(
             };
           }
 
-          let nextSongId: string | null;
-          let newPlaybackHistory = state.appleMusicPlaybackHistory;
+          const isSameTrack = decision.id === state.appleMusicCurrentSongId;
+          // Reset playback position on a track change so the new track starts
+          // at 0 instead of inheriting the previous track's elapsedTime —
+          // otherwise the AppleMusicPlayerBridge resumes the new song from
+          // the previous song's current time (visible as a mid-song start in
+          // Apple Music mode).
+          const clockPatch = isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 };
 
-          if (state.loopCurrent) {
-            nextSongId = state.appleMusicCurrentSongId;
-          } else if (state.isShuffled) {
-            // Shuffle: record the current track, then pick avoiding recently
-            // played songs (parity with the YouTube shuffle algorithm) so we
-            // exhaust the queue before repeating instead of picking purely at
-            // random.
-            if (state.appleMusicCurrentSongId) {
-              newPlaybackHistory = updatePlaybackHistory(
-                state.appleMusicPlaybackHistory,
-                state.appleMusicCurrentSongId
-              );
-            }
-            nextSongId = getRandomTrackIdAvoidingRecent(
-              queueTracks,
-              newPlaybackHistory,
-              state.appleMusicCurrentSongId
-            );
-          } else {
-            const currentIndex = queueTracks.findIndex(
-              (t) => t.id === state.appleMusicCurrentSongId
-            );
-            const nextIndex =
-              currentIndex === -1
-                ? 0
-                : (currentIndex + 1) % queueTracks.length;
-            if (!state.loopAll && nextIndex === 0 && currentIndex !== -1) {
-              const lastSongId =
-                queueTracks[queueTracks.length - 1]?.id ?? null;
-              const isSameTrack = lastSongId === state.appleMusicCurrentSongId;
-              return {
-                appleMusicCurrentSongId: lastSongId,
-                ...stopPlayback(),
-                ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
-              };
-            }
-            nextSongId = queueTracks[nextIndex]?.id ?? null;
+          if (decision.kind === "stop") {
+            return {
+              appleMusicCurrentSongId: decision.id,
+              ...stopPlayback(),
+              ...clockPatch,
+            };
           }
-
-          const isSameTrack = nextSongId === state.appleMusicCurrentSongId;
           return {
-            appleMusicCurrentSongId: nextSongId,
-            appleMusicPlaybackHistory: newPlaybackHistory,
+            appleMusicCurrentSongId: decision.id,
+            appleMusicPlaybackHistory: decision.history,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             ...requestPlayback(),
-            // Reset playback position so the new track starts at 0 instead
-            // of inheriting the previous track's elapsedTime — otherwise the
-            // AppleMusicPlayerBridge resumes the new song from the previous
-            // song's current time (visible as a mid-song start in Apple
-            // Music mode).
-            ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
+            ...clockPatch,
           };
         }),
       appleMusicPreviousTrack: () =>
         set((state) => {
           const queueTracks = resolveAppleMusicQueueTracks(state);
+          const decision = computePreviousNavigation(
+            {
+              items: queueTracks,
+              currentId: state.appleMusicCurrentSongId,
+              loopCurrent: state.loopCurrent,
+              loopAll: state.loopAll,
+              isShuffled: state.isShuffled,
+              history: state.appleMusicPlaybackHistory,
+            },
+            IPOD_APPLE_MUSIC_NAVIGATION
+          );
 
-          if (queueTracks.length === 0) {
+          if (decision.kind === "empty") {
             return {
               appleMusicCurrentSongId: null,
               currentLyrics: null,
@@ -2496,50 +2290,10 @@ export const useIpodStore = create<IpodState>()(
             };
           }
 
-          let prevSongId: string | null;
-          let newPlaybackHistory = state.appleMusicPlaybackHistory;
-
-          if (state.isShuffled && state.appleMusicPlaybackHistory.length > 0) {
-            // Shuffle: step back to the actually-played previous track from
-            // history (parity with YouTube) instead of jumping to another
-            // random song — pressing "previous" should retrace your steps.
-            const lastTrackId =
-              state.appleMusicPlaybackHistory[
-                state.appleMusicPlaybackHistory.length - 1
-              ];
-            const lastTrackExists = queueTracks.some(
-              (track) => track.id === lastTrackId
-            );
-            if (lastTrackExists && lastTrackId !== state.appleMusicCurrentSongId) {
-              prevSongId = lastTrackId;
-              newPlaybackHistory = state.appleMusicPlaybackHistory.slice(0, -1);
-            } else {
-              prevSongId = getRandomTrackIdAvoidingRecent(
-                queueTracks,
-                state.appleMusicPlaybackHistory,
-                state.appleMusicCurrentSongId
-              );
-            }
-          } else if (state.isShuffled) {
-            // No history yet — fall back to an avoid-recent random pick.
-            prevSongId = getRandomTrackIdAvoidingRecent(
-              queueTracks,
-              state.appleMusicPlaybackHistory,
-              state.appleMusicCurrentSongId
-            );
-          } else {
-            const currentIndex = queueTracks.findIndex(
-              (t) => t.id === state.appleMusicCurrentSongId
-            );
-            const prevIndex =
-              currentIndex <= 0 ? queueTracks.length - 1 : currentIndex - 1;
-            prevSongId = queueTracks[prevIndex]?.id ?? null;
-          }
-
-          const isSameTrack = prevSongId === state.appleMusicCurrentSongId;
+          const isSameTrack = decision.id === state.appleMusicCurrentSongId;
           return {
-            appleMusicCurrentSongId: prevSongId,
-            appleMusicPlaybackHistory: newPlaybackHistory,
+            appleMusicCurrentSongId: decision.id,
+            appleMusicPlaybackHistory: decision.history,
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             ...requestPlayback(),
