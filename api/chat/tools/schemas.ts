@@ -37,6 +37,9 @@ import {
  * Converts empty/whitespace strings and placeholder values to undefined
  */
 export const normalizeOptionalString = (value: unknown) => {
+  if (value === null) {
+    return undefined;
+  }
   if (typeof value === "string") {
     const trimmed = value.trim().toLowerCase();
     // Treat empty strings and common AI placeholder values as undefined
