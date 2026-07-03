@@ -665,6 +665,39 @@ export async function reflowEpubAfterFontsSettle({
 
 export type EpubThemeRules = Record<string, Record<string, string>>;
 
+/** Elements that render book artwork (raster + inline/embedded SVG images). */
+const EPUB_IMAGE_SELECTOR = "img, svg, image";
+
+/**
+ * Image rules that blend book illustrations into the reading page.
+ *
+ * Many EPUB images (scanned photos, diagrams, ornaments) sit on an opaque
+ * white rectangle that glares against non-white reading themes. On light
+ * palettes `mix-blend-mode: multiply` melts white pixels into the page color
+ * while leaving darker content intact (multiplying by a near-white page barely
+ * changes it). Multiply against a dark page would crush the whole image toward
+ * black, so dark palettes instead dim the image — softening the white glare
+ * without inverting or destroying photographs.
+ */
+export function buildEpubImageRules(palette: ReadingPalette): EpubThemeRules {
+  if (palette.isDark) {
+    return {
+      [EPUB_IMAGE_SELECTOR]: {
+        filter: "brightness(0.8) contrast(1.05) !important",
+        "mix-blend-mode": "normal !important",
+      },
+    };
+  }
+  // A transparent reading background has no backdrop inside the iframe, so
+  // multiply simply no-ops there — safe to apply unconditionally.
+  return {
+    [EPUB_IMAGE_SELECTOR]: {
+      "mix-blend-mode": "multiply !important",
+      filter: "none !important",
+    },
+  };
+}
+
 /**
  * Serialize theme rules for epub.js `registerCss`. Unlike `themes.default(rules)`,
  * `registerCss` replaces the injected stylesheet instead of appending rules.
@@ -798,6 +831,7 @@ export function buildEpubTheme(
   const flowText: Record<string, string> = { ...textColor, ...readingFlow };
 
   return {
+    ...buildEpubImageRules(palette),
     // A transparent reading background only works when the publisher's own
     // root background can't paint over it (iframes are transparent by
     // default, but EPUB CSS often sets `html { background: … }`).
