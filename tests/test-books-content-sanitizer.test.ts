@@ -88,6 +88,26 @@ describe("sanitizeEpubSectionDocument", () => {
     ).toBeNull();
   });
 
+  test("neutralizes vbscript: and scriptable data: URLs, keeps raster data: images", () => {
+    const doc = createSectionDocument(
+      "<a href=\"vbscript:msgbox(1)\">vb</a>" +
+        "<a href=\"data:text/html,<script>alert(1)</script>\">html</a>" +
+        "<img src=\"data:image/svg+xml,<svg onload='alert(1)'/>\" alt=\"svg\" />" +
+        "<img src=\"data:image/png;base64,iVBORw0KGgo=\" alt=\"png\" />"
+    );
+
+    sanitizeEpubSectionDocument(doc);
+
+    const anchors = Array.from(doc.body.querySelectorAll("a"));
+    expect(anchors[0].getAttribute("href")).toBeNull();
+    expect(anchors[1].getAttribute("href")).toBeNull();
+    const images = Array.from(doc.body.querySelectorAll("img"));
+    expect(images[0].getAttribute("src")).toBeNull();
+    expect(images[1].getAttribute("src")).toBe(
+      "data:image/png;base64,iVBORw0KGgo="
+    );
+  });
+
   test("returns 0 and leaves a clean document untouched", () => {
     const doc = createSectionDocument(
       "<h1>Chapter 1</h1><p>Once upon a time…</p>" +

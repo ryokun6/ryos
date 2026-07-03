@@ -12,7 +12,8 @@
  * publisher JavaScript with full access to the ryOS origin (localStorage,
  * auth token), so every section document is sanitized here BEFORE epub.js
  * serializes it into the iframe: script elements, nested browsing contexts,
- * inline event handlers, and `javascript:` URLs are all removed.
+ * inline event handlers, and scriptable URL schemes (`javascript:`,
+ * `vbscript:`, non-raster-image `data:`) are all removed.
  */
 
 /** Elements that execute script or host nested browsing contexts / plugins. */
@@ -30,13 +31,28 @@ const URL_ATTRIBUTES = [
   "poster",
 ];
 
-function hasJavascriptUrl(value: string | null): boolean {
+function hasBlockedUrlScheme(value: string | null): boolean {
   if (!value) return false;
   // Control/whitespace characters are stripped by URL parsers, so remove them
   // before matching (`java\nscript:` is a classic filter bypass).
   // eslint-disable-next-line no-control-regex
   const normalized = value.replace(/[\u0000-\u0020]/g, "").toLowerCase();
-  return normalized.startsWith("javascript:");
+  if (
+    normalized.startsWith("javascript:") ||
+    normalized.startsWith("vbscript:")
+  ) {
+    return true;
+  }
+  // data: URLs can smuggle active documents (data:text/html,
+  // data:image/svg+xml with embedded scripts). Raster data: images are
+  // script-inert and some EPUBs legitimately inline them, so keep those.
+  if (normalized.startsWith("data:")) {
+    return (
+      !normalized.startsWith("data:image/") ||
+      normalized.startsWith("data:image/svg")
+    );
+  }
+  return false;
 }
 
 /**
@@ -62,9 +78,9 @@ export function sanitizeEpubSectionDocument(document: Document): number {
       }
     }
 
-    // javascript: URLs on links, images, forms, media posters, …
+    // javascript:/vbscript:/scriptable-data: URLs on links, images, forms, …
     for (const attrName of URL_ATTRIBUTES) {
-      if (hasJavascriptUrl(element.getAttribute(attrName))) {
+      if (hasBlockedUrlScheme(element.getAttribute(attrName))) {
         element.removeAttribute(attrName);
         removedCount += 1;
       }
