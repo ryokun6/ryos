@@ -88,7 +88,9 @@ export function TerminalToolInvocation({
           appName: getAppName(input?.id as string),
         });
         break;
-      case "ipodControl": {
+      case "mediaControl":
+      case "ipodControl":
+      case "karaokeControl": {
         const action = input?.action || "toggle";
         if (action === "next") {
           displayCallMessage = t("apps.chats.toolCalls.skippingToNext");
@@ -231,9 +233,19 @@ export function TerminalToolInvocation({
       displayResultMessage = t("apps.chats.toolCalls.closed", {
         appName: getAppName(input?.id as string),
       });
-    } else if (toolName === "ipodControl") {
+    } else if (
+      toolName === "mediaControl" ||
+      toolName === "ipodControl" ||
+      toolName === "karaokeControl"
+    ) {
       if (typeof output === "string" && output.trim().length > 0) {
         displayResultMessage = output;
+      } else if (
+        typeof output === "object" &&
+        output !== null &&
+        typeof (output as { message?: unknown }).message === "string"
+      ) {
+        displayResultMessage = (output as { message: string }).message;
       } else {
         const action = input?.action || "toggle";
         if (action === "addAndPlay") {

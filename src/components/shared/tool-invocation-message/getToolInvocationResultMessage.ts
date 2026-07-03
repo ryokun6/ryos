@@ -200,10 +200,29 @@ export function getToolInvocationResultMessage(
       displayResultMessage = t("apps.chats.toolCalls.launched", { appName: getAppName(input?.id) });
     } else if (toolName === "closeApp") {
       displayResultMessage = t("apps.chats.toolCalls.closed", { appName: getAppName(input?.id) });
-    } else if (toolName === "ipodControl" || toolName === "karaokeControl") {
+    } else if (
+      toolName === "mediaControl" ||
+      toolName === "ipodControl" ||
+      toolName === "karaokeControl"
+    ) {
       // Use output directly if available (it contains detailed state information)
       if (typeof output === "string" && output.trim().length > 0) {
         displayResultMessage = output;
+      } else if (
+        typeof output === "object" &&
+        output !== null &&
+        (output as { success?: boolean }).success
+      ) {
+        // TV channel actions routed through mediaControl return object outputs.
+        const out = output as { message?: string; channels?: unknown[] };
+        if (out.message) {
+          displayResultMessage = out.message;
+        } else if (Array.isArray(out.channels)) {
+          displayResultMessage = t("apps.chats.toolCalls.tv.foundChannels", {
+            defaultValue: "Found {{count}} channels",
+            count: out.channels.length,
+          });
+        }
       } else {
         // Fallback to basic messages if output is not available
         const action = input?.action || "toggle";

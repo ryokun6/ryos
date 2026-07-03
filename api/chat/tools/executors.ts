@@ -154,7 +154,7 @@ export async function executeSearchSongs(
   return {
     results,
     message: `Found ${results.length} ${results.length === 1 ? "song" : "songs"} for "${query}"`,
-    hint: "Use ipodControl with action 'addAndPlay' and the videoId to add a song to the iPod",
+    hint: "Use mediaControl with action 'addAndPlay' and the videoId to add a song to the iPod",
   };
 }
 // ============================================================================

@@ -3,7 +3,7 @@
  *
  * Pure, dependency-free functions (no React / stores) used to rank file and
  * applet/song matches for the AI's `open` / `searchSongs` / karaoke tools.
- * Extracted from `useAiChat.ts` (and de-duplicated from `karaokeHandler.ts`).
+ * Extracted from `useAiChat.ts` (and de-duplicated from the media tool handler).
  */
 
 export const stripDiacritics = (value: string): string =>

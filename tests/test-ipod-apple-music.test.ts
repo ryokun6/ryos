@@ -66,8 +66,33 @@ const {
   getIpodChatContextTrack,
   sanitizePersistedIpodStateForRehydrate,
 } = await import("../src/stores/useIpodStore");
-const { handleIpodControl } = await import("../src/apps/chats/tools/ipodHandler");
-const { handleKaraokeControl } = await import("../src/apps/chats/tools/karaokeHandler");
+const { handleMediaControl } = await import(
+  "../src/apps/chats/tools/mediaHandler"
+);
+// Legacy-shaped wrappers so the assertions below keep exercising the same
+// call surface the old ipodControl/karaokeControl aliases normalize into.
+const handleIpodControl = (
+  input: Record<string, unknown>,
+  toolCallId: string,
+  context: Parameters<typeof handleMediaControl>[2]
+) =>
+  handleMediaControl(
+    { ...input, target: "music" },
+    toolCallId,
+    context,
+    "ipodControl"
+  );
+const handleKaraokeControl = (
+  input: Record<string, unknown>,
+  toolCallId: string,
+  context: Parameters<typeof handleMediaControl>[2]
+) =>
+  handleMediaControl(
+    { ...input, target: "karaoke" },
+    toolCallId,
+    context,
+    "karaokeControl"
+  );
 const { useKaraokeStore } = await import("../src/stores/useKaraokeStore");
 const {
   shouldFireEndedForPlaybackState,

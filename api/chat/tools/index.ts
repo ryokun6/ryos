@@ -118,11 +118,18 @@ export const TOOL_DESCRIPTIONS = {
   closeApp:
     "Close an application in the ryOS interface—but only when the user explicitly asks you to close that specific app.",
   
+  mediaControl:
+    "Control media playback across ryOS apps with one tool. Pick the app with 'target': 'music' (the iPod app — default), 'karaoke', 'videos' (Apple keynote/ad player), or 'tv' (channel-based player). The target app launches automatically. " +
+    "TRANSPORT ACTIONS (all targets): 'toggle' (default), 'play', 'pause'; plus for music/karaoke/videos: 'playKnown' to play an existing library item by id/title/artist, 'addAndPlay' to add a YouTube ID/URL and start playback, 'next'/'previous' to navigate the playlist. " +
+    "TV CHANNEL ACTIONS (target 'tv' only): 'list' returns the lineup with stable ids and channel numbers; 'tune' switches channel by id (from 'list') or 'channelNumber'; 'createChannel' creates a custom channel from a one-line 'prompt' — the server AI-plans the name, tagline, and lineup by fanning out YouTube searches (do NOT pre-search videos; optionally pass 'name' to override); 'deleteChannel' removes a custom channel; 'addVideo' appends a YouTube video (by 'videoId' or 'url') to a custom channel; 'removeVideo' removes one by 'removeVideoId'. Built-in channels (RyoTV, MTV, 台視) are read-only. Always 'list' first to get channel ids. " +
+    "TARGET NOTES: Karaoke always uses the YouTube iPod library (never Apple Music 'am:' IDs) and has independent playback state. Music (iPod) supports 'enableVideo'; music and karaoke support 'enableFullscreen' and 'enableTranslation'. LYRICS TRANSLATION: keep lyrics in the ORIGINAL language by default — only set enableTranslation when the user EXPLICITLY asks. " +
+    "IMPORTANT: If the user's OS is iOS, do NOT automatically start playback — tell the user to press play themselves (iOS browsers block programmatic audio).",
+
   ipodControl:
-    "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video or fullscreen mode with enableVideo or enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
+    "DEPRECATED alias of mediaControl with target 'music' — prefer mediaControl. Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video or fullscreen mode with enableVideo or enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
   
   karaokeControl:
-    "Control playback in the Karaoke app. Launches the Karaoke app automatically if needed. Karaoke always uses the YouTube iPod library, even when iPod is viewing Apple Music. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing YouTube-library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable fullscreen mode with enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to tap the play button themselves to start playing. NOTE: Karaoke has independent playback state.",
+    "DEPRECATED alias of mediaControl with target 'karaoke' — prefer mediaControl. Control playback in the Karaoke app. Launches the Karaoke app automatically if needed. Karaoke always uses the YouTube iPod library, even when iPod is viewing Apple Music. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing YouTube-library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable fullscreen mode with enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to tap the play button themselves to start playing. NOTE: Karaoke has independent playback state.",
   
   generateHtml:
     "Generate an HTML snippet for an ryOS Applet: a small windowed app (default ~320px wide) that runs inside ryOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html', a short 'title', and an 'icon' (emoji). DO NOT wrap it in markdown fences; the client will handle scaffolding.",
@@ -174,7 +181,7 @@ export const TOOL_DESCRIPTIONS = {
     "- '/Applets/*' - Edit applet HTML files",
   
   searchSongs:
-    "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. PREFER official music videos from verified artist channels (look for 'VEVO' or the artist's official channel). AVOID karaoke versions, instrumental versions, playlists, compilations, 'best of' collections, lyric videos, and covers unless specifically requested. After getting results, you can use ipodControl with action 'addAndPlay' to add a song using its videoId.",
+    "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. PREFER official music videos from verified artist channels (look for 'VEVO' or the artist's official channel). AVOID karaoke versions, instrumental versions, playlists, compilations, 'best of' collections, lyric videos, and covers unless specifically requested. After getting results, you can use mediaControl with action 'addAndPlay' to add a song using its videoId.",
 
   songLibraryControl:
     "Search ryOS song libraries and cached song metadata from server-side contexts like Telegram. " +
@@ -229,7 +236,7 @@ export const TOOL_DESCRIPTIONS = {
     "Use 'list' first to get IDs before calling 'get', 'update', or 'delete'.",
 
   tvControl:
-    "Control the TV app. Manage the user's TV channel lineup and tune in to channels. " +
+    "DEPRECATED alias of mediaControl with target 'tv' — prefer mediaControl. Control the TV app. Manage the user's TV channel lineup and tune in to channels. " +
     "Actions: " +
     "'list' returns the full lineup (built-in + custom channels) with stable ids and channel numbers; " +
     "'tune' switches the TV to a channel by id (from 'list') or by 'channelNumber'; " +
@@ -324,6 +331,13 @@ export function createChatTools(
     // ============================================================================
     // Media Control Tools (Client-side execution)
     // ============================================================================
+    mediaControl: {
+      description: TOOL_DESCRIPTIONS.mediaControl,
+      inputSchema: schemas.mediaControlSchema,
+      // No execute - handled client-side (requires browser media APIs)
+    },
+    // Legacy aliases kept for one release so stale cached prompts keep
+    // working; the client normalizes these into the mediaControl handler.
     ipodControl: {
       description: TOOL_DESCRIPTIONS.ipodControl,
       inputSchema: schemas.ipodControlSchema,

@@ -62,24 +62,20 @@ import {
   handleLaunchApp,
   handleCloseApp,
   handleSettings,
-  handleIpodControl,
-  handleKaraokeControl,
+  handleMediaControl,
   handleStickiesControl,
   handleInfiniteMacControl,
   handleCalendarControl,
   handleContactsControl,
-  handleTvControl,
   type ToolContext,
   type LaunchAppInput,
   type CloseAppInput,
   type SettingsInput,
-  type IpodControlInput,
-  type KaraokeControlInput,
+  type MediaControlInput,
   type StickiesControlInput,
   type InfiniteMacControlInput,
   type CalendarControlInput,
   type ContactsControlInput,
-  type TvControlInput,
 } from "../tools";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 
@@ -343,20 +339,39 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             );
             break;
           }
-          case "ipodControl": {
-            await handleIpodControl(
-              toolCall.input as IpodControlInput,
+          case "mediaControl": {
+            await handleMediaControl(
+              toolCall.input as MediaControlInput,
               toolCall.toolCallId,
               toolContext
             );
             result = "";
             break;
           }
-          case "karaokeControl": {
-            await handleKaraokeControl(
-              toolCall.input as KaraokeControlInput,
+          // Legacy aliases of mediaControl — kept for one release so stale
+          // cached prompts keep working. Outputs report under the alias name.
+          case "ipodControl": {
+            await handleMediaControl(
+              {
+                ...(toolCall.input as Omit<MediaControlInput, "target">),
+                target: "music",
+              },
               toolCall.toolCallId,
-              toolContext
+              toolContext,
+              "ipodControl"
+            );
+            result = "";
+            break;
+          }
+          case "karaokeControl": {
+            await handleMediaControl(
+              {
+                ...(toolCall.input as Omit<MediaControlInput, "target">),
+                target: "karaoke",
+              },
+              toolCall.toolCallId,
+              toolContext,
+              "karaokeControl"
             );
             result = "";
             break;
@@ -1352,10 +1367,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
           }
           case "tvControl": {
-            await handleTvControl(
-              toolCall.input as TvControlInput,
+            await handleMediaControl(
+              {
+                ...(toolCall.input as Omit<MediaControlInput, "target">),
+                target: "tv",
+              },
               toolCall.toolCallId,
-              toolContext
+              toolContext,
+              "tvControl"
             );
             result = "";
             break;

@@ -133,13 +133,13 @@ Client execution is split across two layers:
 - `src/apps/chats/tools/` — registered handlers for media/settings/app-state tools:
 
 - `appHandlers.ts` - Launch/close app execution
-- `ipodHandler.ts` / `karaokeHandler.ts` - Media control execution
+- `mediaHandler.ts` - Unified `mediaControl` execution (music/karaoke/videos/tv transport; also serves the deprecated `ipodControl`/`karaokeControl`/`tvControl` aliases)
+- `mediaTvChannels.ts` - TV channel lineup and tuning execution (target `tv` channel actions)
 - `calendarHandler.ts` - Calendar event management execution
 - `contactsHandler.ts` - Contact management execution
 - `settingsHandler.ts` - System settings updates
 - `stickiesHandler.ts` - Sticky note operations
 - `infiniteMacHandler.ts` - Infinite Mac control bridge
-- `tvHandler.ts` - TV channel lineup and tuning execution
 
 Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 
@@ -151,7 +151,7 @@ Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 ### Tool schema highlights
 
 - `launchApp` now enforces that `internet-explorer` launches must provide both `url` and `year` together (or neither), with year-range validation.
-- `ipodControl` and `karaokeControl` schemas enforce action-specific arguments (e.g. `addAndPlay` requires `id`; playback-state actions must not include track identifiers).
+- `mediaControl` is the unified media tool: a `target` field ("music" default, "karaoke", "videos", "tv") gates the action vocabulary and flags (e.g. TV channel actions require `target: "tv"`, `enableVideo` is music-only). Action-specific argument rules carry over from the legacy schemas (e.g. `addAndPlay` requires `id`; playback-state actions must not include track identifiers). `ipodControl`/`karaokeControl`/`tvControl` remain as deprecated aliases.
 - `memoryWrite` / `memoryRead` are unified schemas using a `type` field:
   - `long_term` (default): key-based memory operations
   - `daily`: journal-style per-day operations

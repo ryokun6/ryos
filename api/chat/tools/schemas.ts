@@ -21,6 +21,9 @@ import {
   SONG_LIBRARY_ACTIONS,
   SONG_LIBRARY_SCOPES,
   TV_ACTIONS,
+  MEDIA_TARGETS,
+  MEDIA_CONTROL_ACTIONS,
+  type TvAction,
 } from "./types.js";
 import {
   MAX_KEY_LENGTH,
@@ -1162,6 +1165,223 @@ export const tvControlSchema = z
         });
       }
     }
+  });
+
+// ============================================================================
+// Unified Media Control Schema (MediaCore)
+// ============================================================================
+
+const TV_CHANNEL_ACTION_SET: ReadonlySet<string> = new Set(TV_ACTIONS);
+
+const isTvChannelAction = (action: string): action is TvAction =>
+  TV_CHANNEL_ACTION_SET.has(action);
+
+/**
+ * Unified media control schema — one tool for the iPod ("music"), Karaoke,
+ * Videos, and TV apps. Transport actions (toggle/play/pause/playKnown/
+ * addAndPlay/next/previous) work on the playback targets; TV's channel
+ * actions (list/tune/createChannel/…) are gated to `target: "tv"`.
+ *
+ * The legacy `ipodControl` / `karaokeControl` / `tvControl` tools remain
+ * registered as aliases for one release; their schemas are unchanged and the
+ * client normalizes them into the same handler.
+ */
+export const mediaControlSchema = z
+  .object({
+    target: z
+      .enum(MEDIA_TARGETS)
+      .default("music")
+      .describe(
+        "Which media app to control: 'music' (the iPod app — default), 'karaoke', 'videos' (Apple keynote/ad video player), or 'tv' (channel-based player)."
+      ),
+    action: z
+      .enum(MEDIA_CONTROL_ACTIONS)
+      .default("toggle")
+      .describe(
+        "Playback transport: 'toggle' (default), 'play', 'pause', 'playKnown', 'addAndPlay', 'next', 'previous'. TV channel management (target 'tv' only): 'list', 'tune', 'createChannel', 'deleteChannel', 'addVideo', 'removeVideo'."
+      ),
+    id: z
+      .preprocess(normalizeOptionalString, z.string().optional())
+      .describe(
+        "For 'playKnown' (optional) or 'addAndPlay' (required): item ID — a YouTube video ID or supported URL (music/karaoke/videos), or an Apple Music 'am:' track ID for playKnown when the iPod is in Apple Music mode."
+      ),
+    title: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe(
+        "For 'playKnown': the title (or part of it) of the item to play. For TV 'addVideo': optional explicit video title (otherwise looked up automatically)."
+      ),
+    artist: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe(
+        "For 'playKnown': the artist name (or part of it). For TV 'addVideo': optional explicit artist/channel name."
+      ),
+    enableTranslation: z
+      .preprocess(normalizeOptionalString, z.string().optional())
+      .describe(
+        "music/karaoke only. ONLY use when the user explicitly requests translated lyrics. Set to a language code (e.g. 'en', 'zh-TW', 'ja') to translate, or 'off'/'original' to show original lyrics. By default do NOT set this."
+      ),
+    enableFullscreen: z
+      .boolean()
+      .optional()
+      .describe(
+        "music/karaoke only. Enable fullscreen mode. Can be combined with any transport action."
+      ),
+    enableVideo: z
+      .boolean()
+      .optional()
+      .describe(
+        "music only. Enable music-video playback in the iPod. Can be combined with any transport action."
+      ),
+    channelId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe(
+        "TV only. Channel id from a previous 'list' (short id like 'ch3' or full id). Required for 'tune'/'deleteChannel'/'addVideo'/'removeVideo' unless 'channelNumber' is used for 'tune'."
+      ),
+    channelNumber: z
+      .number()
+      .int()
+      .min(1)
+      .max(999)
+      .optional()
+      .describe(
+        "TV 'tune' only: switch by displayed channel number (e.g. 1 = RyoTV, 2 = MTV)."
+      ),
+    prompt: z
+      .preprocess(normalizeOptionalString, z.string().min(2).max(280).optional())
+      .describe(
+        "TV 'createChannel' (REQUIRED): a one-line theme/description (e.g. 'lofi beats to study to'). The server AI-plans the channel name, tagline, and lineup by fanning out YouTube searches — do NOT manually pre-search videos."
+      ),
+    name: z
+      .preprocess(normalizeOptionalString, z.string().min(1).max(24).optional())
+      .describe(
+        "TV 'createChannel' (optional): override the planner's channel name. Omit to let the server pick a punchy 1-3 word name."
+      ),
+    videoId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("TV 'addVideo' only: YouTube video id (11 chars)."),
+    url: z
+      .preprocess(normalizeOptionalString, z.string().max(1000).optional())
+      .describe("TV 'addVideo' only: YouTube URL (alternative to videoId)."),
+    removeVideoId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe(
+        "TV 'removeVideo' only: the YouTube video id to remove from the channel."
+      ),
+  })
+  .superRefine((data, ctx) => {
+    const { target, action } = data;
+
+    if (isTvChannelAction(action)) {
+      if (target !== "tv") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `The '${action}' action requires target 'tv'.`,
+          path: ["target"],
+        });
+        return;
+      }
+      // Channel-action parameter rules mirror the legacy tvControl schema.
+      if (action === "tune" && !data.channelId && data.channelNumber === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'tune' action requires 'channelId' or 'channelNumber'.",
+          path: ["channelId"],
+        });
+      }
+      if (action === "createChannel" && (!data.prompt || !data.prompt.trim())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "The 'createChannel' action requires a 'prompt' (one-line theme/description). The server fans out YouTube searches automatically — do not pre-pick videos.",
+          path: ["prompt"],
+        });
+      }
+      if (action === "deleteChannel" && !data.channelId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'deleteChannel' action requires the 'channelId' parameter.",
+          path: ["channelId"],
+        });
+      }
+      if (action === "addVideo") {
+        if (!data.channelId) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "The 'addVideo' action requires the 'channelId' parameter.",
+            path: ["channelId"],
+          });
+        }
+        if (!data.videoId && !data.url) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "The 'addVideo' action requires 'videoId' or 'url'.",
+            path: ["videoId"],
+          });
+        }
+      }
+      if (action === "removeVideo") {
+        if (!data.channelId) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "The 'removeVideo' action requires the 'channelId' parameter.",
+            path: ["channelId"],
+          });
+        }
+        if (!data.removeVideoId) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "The 'removeVideo' action requires the 'removeVideoId' parameter.",
+            path: ["removeVideoId"],
+          });
+        }
+      }
+      return;
+    }
+
+    // Transport actions.
+    if (target === "tv" && !["toggle", "play", "pause"].includes(action)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Target 'tv' only supports 'toggle', 'play', 'pause', and the channel actions. Use 'tune' to change channels.",
+        path: ["action"],
+      });
+      return;
+    }
+
+    // Feature-flag gating per target.
+    if (data.enableVideo !== undefined && target !== "music") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "'enableVideo' is only supported for target 'music'.",
+        path: ["enableVideo"],
+      });
+    }
+    if (
+      data.enableTranslation !== undefined &&
+      target !== "music" &&
+      target !== "karaoke"
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "'enableTranslation' is only supported for targets 'music' and 'karaoke'.",
+        path: ["enableTranslation"],
+      });
+    }
+    if (
+      data.enableFullscreen !== undefined &&
+      target !== "music" &&
+      target !== "karaoke"
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "'enableFullscreen' is only supported for targets 'music' and 'karaoke'.",
+        path: ["enableFullscreen"],
+      });
+    }
+
+    // Same transport parameter rules as the legacy media schemas.
+    mediaControlRefinement(data, ctx);
   });
 
 // ============================================================================

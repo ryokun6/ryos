@@ -8,7 +8,7 @@ import {
 
 /**
  * Locks the behavior of the shared fuzzy-search helpers extracted from
- * useAiChat.ts and de-duplicated from karaokeHandler.ts.
+ * useAiChat.ts and de-duplicated from the media tool handler.
  */
 
 describe("chats fuzzySearch helpers", () => {

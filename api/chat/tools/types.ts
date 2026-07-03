@@ -422,6 +422,29 @@ export interface TvControlOutput {
 }
 
 // ============================================================================
+// Unified Media Control Types (MediaCore)
+// ============================================================================
+
+/**
+ * Targets the unified `mediaControl` tool can drive. "music" is the iPod app;
+ * the rest map 1:1 onto their apps. Winamp is intentionally not a target yet —
+ * it is not on the MediaCore now-playing bus (Webamp owns its own event loop).
+ */
+export const MEDIA_TARGETS = ["music", "karaoke", "videos", "tv"] as const;
+export type MediaTarget = (typeof MEDIA_TARGETS)[number];
+
+/**
+ * Unified action vocabulary: the shared transport actions (`MEDIA_ACTIONS`)
+ * plus TV's channel-management actions (`TV_ACTIONS`). The two sets do not
+ * overlap; channel actions are only valid with `target: "tv"`.
+ */
+export const MEDIA_CONTROL_ACTIONS = [
+  ...MEDIA_ACTIONS,
+  ...TV_ACTIONS,
+] as const;
+export type MediaControlAction = (typeof MEDIA_CONTROL_ACTIONS)[number];
+
+// ============================================================================
 // Documents Control Types
 // ============================================================================
 
