@@ -80,6 +80,8 @@ Add to `src/lib/locales/en/translation.json`:
 
 Do not rely on `defaultValue` as the only copy of a new key. `t("some.key", { defaultValue: "English" })` renders, but sync and audit scripts only compare locale JSON files, so missing keys stay invisible until the English catalog contains them.
 
+Use Apple-style title casing for standalone English menu and control labels, such as `Repeat All`, `Repeat One`, `Sign In`, and `Main Volume`. When a casing or terminology rule should be enforced globally, add the key to `ENGLISH_STYLE_EXPECTATIONS` in `scripts/apple-ui-terminology.ts` and cover it with `tests/test-translation-audit.test.ts`.
+
 ## Step 4: Sync Across Languages
 
 ```bash
