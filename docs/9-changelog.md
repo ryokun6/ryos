@@ -6,29 +6,27 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 <style>
 .changelog-month-note { color: var(--doc-text-tertiary); margin: -6px 0 14px; }
-.changelog-feature-grid { display: grid; gap: 18px; margin: 12px 0 20px; }
+.changelog-feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 12px 0 20px; }
 .changelog-feature { overflow: hidden; border: 1px solid var(--doc-border); border-radius: 12px; background: var(--doc-surface-alt); }
-.changelog-feature img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }
+.changelog-feature:first-child { grid-column: 1 / -1; }
+.changelog-feature img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }
 .changelog-feature-copy { padding: 14px 16px 16px; }
 .changelog-feature h3 { font-size: 14px; margin: 0 0 6px; }
 .changelog-feature p { color: var(--doc-text-secondary); font-size: 12px; margin: 0; }
-@media screen and (max-width: 768px) { .changelog-feature-grid { gap: 14px; } .changelog-feature-copy { padding: 12px 14px 14px; } }
+@media screen and (max-width: 768px) { .changelog-feature-grid { grid-template-columns: 1fr; gap: 14px; } .changelog-feature:first-child { grid-column: auto; } .changelog-feature-copy { padding: 12px 14px 14px; } }
 </style>
 
 ---
 
 ## July 2026
 
-<p class="changelog-month-note">Books becomes a full reading space, from the shelf to spoken passages and inline help from Ryo.</p>
-
 <div class="changelog-feature-grid">
-<article class="changelog-feature"><img src="/docs-assets/changelog/books-library.webp" alt="Books library with Meditations on a wooden shelf" width="1280" height="800" loading="eager"><div class="changelog-feature-copy"><h3>Books library</h3><p>A new EPUB home with a wooden bookshelf, protected Books folder, Finder import, synced progress, and <em>Meditations</em> ready to read.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/books-reader.webp" alt="Meditations open in the Books reader" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Immersive reading</h3><p>Page turns, bookmarks, highlights, edge taps, swipe navigation, single or double columns, and reliable offline reading.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/books-customize.webp" alt="Books Customize panel over an open book" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Make every book yours</h3><p>Choose fonts, spacing, margins, colors, transparency, and layout. CJK books add vertical text and live Simplified or Traditional Chinese conversion.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/books-read-aloud.webp" alt="Read-aloud controls below an open book" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Read aloud</h3><p>Browser voices read from the current sentence, highlight along the way, turn pages automatically, and stay close in a compact control pill.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/books-ask-ryo.webp" alt="Ask Ryo explaining a selected passage inside Books" width="1280" height="800" loading="lazy"><div class="changelog-feature-copy"><h3>Ask Ryo in the margins</h3><p>Select a passage for an inline explanation, then copy it, hear it aloud, or continue the conversation in Chats.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books library</h3><p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-02-cloud-sync-16x9.webp" alt="Cloud Sync in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cloud Sync</h3><p>Books, settings, and files stay current across signed-in devices.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-03-international-16x9.webp" alt="International in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>International</h3><p>Language, date, time, and time-zone controls live in one preference pane.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-04-preview-16x9.webp" alt="Preview in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Preview</h3><p>Images, PDFs, Markdown, HTML, and structured text open in a dedicated viewer.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-05-aqua-appearance-16x9.webp" alt="Aqua Glass theme in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass theme</h3><p>Frosted windows, wallpaper-aware color, and selectable accents reshape the desktop.</p></div></article>
 </div>
-
 <details>
 <summary>More from this month (11)</summary>
 
@@ -48,12 +46,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## June 2026
 
-- **Aqua Glass theme**: a new macOS theme variant with frosted-glass chrome, backdrop blur, and squircle corners (progressive enhancement with rounded-rect fallback). A transparent menubar adapts text and pill highlights to the wallpaper, and frosted toolbars, menus, sidebars, and inputs carry across Chats, Admin, Finder, Soundboard, and Spotlight.
-- **Cloud Sync v2**: full rewrite to journal-based delta sync. State is a per-user `key → document` map; changes travel as ops with hybrid-logical-clock timestamps through `/api/sync/v2/*`, conflicts resolve per key (last-writer-wins, no 409s), small remote changes apply straight from realtime events with zero HTTP requests, and binary content is content-addressed with batched dedupe. Legacy v1 data imports lazily on first sync.
-- **Desktop app (Electron)**: replace the Tauri shell with Electron — signed macOS releases, auto-update with Check for Updates, native app permissions, background chat notifications, native toasts, and Castlabs Electron for Apple Music DRM playback (releases v1.0.3–v1.0.8).
-- **Books**: a new EPUB reader app with a 3D wooden bookshelf, a page-turn reader (zoom-in/out transitions, reading fonts including EB Garamond, single/double-column layouts, and light/sepia/dark page themes), auto-saved reading progress synced across devices, Finder `.epub` import into a protected `/Books` root, and *Meditations* bundled as the default book.
-- **Preview**: a new document viewer for images, PDFs, HTML, Markdown, and structured text, with Finder file associations, Open With handoff, import, Save As, and export workflows.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-01-aqua-glass-16x9.webp" alt="Aqua Glass in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass</h3><p>The new macOS material brings translucent chrome and wallpaper-aware controls.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-02-cloud-sync-16x9.webp" alt="Cloud Sync v2 in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cloud Sync v2</h3><p>Journal-based delta sync replaces full-state uploads and resolves changes per key.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-03-books-16x9.webp" alt="Books in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books</h3><p>A skeuomorphic shelf, EPUB reader, and synced progress turn ryOS into a reading space.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-04-preview-16x9.webp" alt="Preview in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Preview</h3><p>A focused document viewer adds Finder associations, import, Save As, and export.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-05-international-16x9.webp" alt="International preferences in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>International preferences</h3><p>An interactive world map sets the time zone used across the system.</p></div></article>
+</div>
 <details>
 <summary>More from this month (43)</summary>
 
@@ -105,12 +104,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## May 2026
 
-- **Maps**: Apple MapKit JS app with place search (IP/region bias), Home/Work/Favorites pins, places drawer, POI category markers, cloud sync, and Chats **`mapsSearchPlaces`** inline cards that open places in-app; **Directions** hand off to Apple Maps in a new tab (in-map routing not yet implemented).
-- **iPod modern UI**: classic-js–inspired skin (now default) with Myriad Pro typography, split-menu Ken Burns slideshow, Cover Flow flip-to-tracklist, brick game and Music Quiz polish, and Apple Music library/radio/quiz support with playback stability fixes.
-- **Virtual PC (v86)**: expand beyond DOS games with the v86 OS browser (Windows 1.0–2000/ME through Linux/BSD/ReactOS catalog), COEP `/embed/pc.html`, generated thumbnails, persisted presets, full localization, and `infinite-pc` → `pc` id migration.
-- **Cursor Cloud agent workflow**: `cursorCloudAgent` + `listCursorCloudAgentRuns` tools, live stream card with follow-up input and Open PR, Admin **Cursor agents** tab (90-day Redis retention), and Telegram completion DMs with plain-text **Agent** / **PR** URLs (markdown stripped via shared `telegram-format` helpers).
-- **Dashboard**: **Aquarium** widget, **currency converter** with Frankfurter rates, Apple PNG widget glyphs, and mobile narrow layout with scroll-to-new-widget animation.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-05-01-maps-16x9.webp" alt="Maps in the May 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Maps</h3><p>MapKit search, saved places, and chat place cards bring Apple Maps into ryOS.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-05-02-ipod-16x9.webp" alt="iPod modern UI in the May 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod modern UI</h3><p>A new classic-inspired player adds Cover Flow, games, and Apple Music.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-05-03-virtual-pc-16x9.webp" alt="Virtual PC v86 in the May 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Virtual PC (v86)</h3><p>The emulator browser expands to classic Windows, Linux, BSD, and ReactOS images.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-05-04-dashboard-16x9.webp" alt="Dashboard in the May 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Dashboard</h3><p>Aquarium and currency widgets join the responsive widget canvas.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-05-05-tv-16x9.webp" alt="Ryo TV in the May 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Ryo TV</h3><p>Fullscreen controls, channel graphics, and CRT details make channel surfing feel complete.</p></div></article>
+</div>
 <details>
 <summary>More from this month (34)</summary>
 
@@ -142,12 +142,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## April 2026
 
-- **Ryo TV**: channel-surfing UI with CRT shader effects (power on/off, channel switch, buffering), procedural CRT SFX, AI-generated channels with import/export and cloud sync, MTV music-video channel with per-word KRC-timed Geneva CC captions, `/tv` route, OG card, and full localization.
-- **`tvControl` chat tool**: list/tune channels, AI `createChannel` server-side fanout, add/remove videos on custom lineups; expose current TV channel and custom lineup in system state; gate channel creation on login.
-- **IRC chat**: `irc.pieter.com` default, IRC server registry, channel browser in New Chat IRC tab, authenticated-user join via registered servers, `IRC_BRIDGE_DISABLED` env opt-out, and IRC bridge wiring tests.
-- **`cursorCloudAgent` chat tool** (renamed from legacy `cursorRyOsRepoAgent`): async Cursor Cloud repo-agent runs with live stream card, persisted PR URL with Open PR button, follow-up endpoint with reply input, and Telegram completion notification.
-- **Karaoke polish**: intro title card (5s with lead time, scaling, marquee scroll, pause-aware), empty library state with Add Songs CTA, smoother ScrollingText marquee (shared with iPod), Korean romanization default, and lyrics perf isolation from playback ticks.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-04-01-ryo-tv-16x9.webp" alt="Ryo TV in the April 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Ryo TV</h3><p>AI-generated channels, CRT effects, captions, and custom lineups launch as a new app.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-04-02-chats-16x9.webp" alt="IRC and Cursor agents in the April 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>IRC and Cursor agents</h3><p>Chats gains IRC discovery and live Cursor Cloud agent runs.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-04-03-karaoke-16x9.webp" alt="Karaoke in the April 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Karaoke</h3><p>Title cards, smoother marquees, and faster lyric rendering polish fullscreen playback.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-04-04-ipod-16x9.webp" alt="iPod in the April 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod</h3><p>Shared media controls and Cover Flow connect the player with Karaoke.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-04-05-wallpapers-16x9.webp" alt="Wallpaper system in the April 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Wallpaper system</h3><p>Leopard sets, improved browsing, and persisted display settings refresh the desktop.</p></div></article>
+</div>
 <details>
 <summary>More from this month (13)</summary>
 
@@ -169,12 +170,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## March 2026
 
-- **Calendar**: iCal support, Dashboard widget overlay, and AI integration; redesign Dashboard with widget strip, Stocks, Dictionary, Translator, and smarter placement.
-- **AirDrop-style Finder sharing**: discovery, send/receive, and Downloads folder; multi-select on Desktop and Finder (marquee, modifier, range); universal undo/redo for Finder, Paint, and TextEdit.
-- **Cloud sync (logical domains)**: refactor around `/api/sync/domains`, per-domain GET/PUT, and attachment prepare — incremental settings and files-metadata uploads, coalesced uploads, domain triggers on app launch, deletion markers for songs, custom wallpapers on the files domain, and safer remote apply / merge (incl. iPod translation and wallpaper ordering).
-- **Contacts, Telegram, and auth**: vCard import and cloud sync; Telegram linking, DMs, voice notes, song library tool, Gemini web search, heartbeats; migrate auth to **httpOnly cookies** with force upload/download sync controls.
-- **Theme system**: unify on semantic tokens and CSS variables; extract shared UI (ToolbarButton, SearchInput, EmptyState, SelectableListItem); z-index scale and prefers-reduced-motion; Finder brushed metal and Spotlight-style selection.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-03-01-calendar-16x9.webp" alt="Calendar in the March 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Calendar</h3><p>iCal support, todos, and Dashboard integration make scheduling useful across apps.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-03-02-dashboard-16x9.webp" alt="Dashboard in the March 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Dashboard</h3><p>Stocks, Dictionary, Translator, and smarter placement redesign the widget layer.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-03-03-finder-16x9.webp" alt="Finder sharing in the March 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Finder sharing</h3><p>AirDrop-style transfers, multi-select, and universal undo expand file workflows.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-03-04-contacts-16x9.webp" alt="Contacts in the March 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Contacts</h3><p>vCard import and cloud sync add a system address book.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-03-05-cloud-sync-16x9.webp" alt="Cloud Sync in the March 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cloud Sync</h3><p>Logical domains upload settings and files incrementally instead of replacing everything.</p></div></article>
+</div>
 <details>
 <summary>More from this month (26)</summary>
 
@@ -197,12 +199,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## February 2026
 
-- **Winamp integration**: Webamp with frameless mode, skins, YouTube seeking, and iPod library loading.
-- **Two-tier memory system**: daily notes and long-term memories for AI proactive greetings and context.
-- **AmbientBackground**: audio-reactive liquid and warp display modes for iPod and Karaoke.
-- **Karaoke display modes**: selectable display mode in Karaoke; aligned display modes in iPod and Karaoke.
-- **App switcher**: keyboard shortcuts for switching between open apps.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-02-01-winamp-16x9.webp" alt="Winamp in the February 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Winamp</h3><p>Webamp joins ryOS with skins, YouTube seeking, and iPod library loading.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-02-02-ipod-ambient-16x9.webp" alt="Ambient visuals in the February 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Ambient visuals</h3><p>Audio-reactive liquid and warp backgrounds respond to playback.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-02-03-karaoke-16x9.webp" alt="Karaoke display modes in the February 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Karaoke display modes</h3><p>Karaoke and iPod share selectable fullscreen visual modes.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-02-04-chats-memory-16x9.webp" alt="Ryo memory in the February 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Ryo memory</h3><p>Daily notes and long-term memories give Chats useful continuity.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-02-05-dashboard-16x9.webp" alt="Dashboard in the February 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Dashboard</h3><p>Widgets keep lightweight information close without opening full apps.</p></div></article>
+</div>
 <details>
 <summary>More from this month (10)</summary>
 
@@ -221,12 +224,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## January 2026
 
-- **Listen Together**: shared listening in iPod and Karaoke with session management, invite dialogs, and reaction overlays.
-- **Infinite Mac**: scaling options, screenshot functionality, dynamic title, and improved window management.
-- **Stickies**: draggable notes with color localization and mobile touch support.
-- **Chats**: image upload support, improved styling, and AI-powered memory extraction.
-- **API runtime**: refactor endpoints to Node.js runtime with consolidated middleware and unified authentication.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-01-01-listen-together-16x9.webp" alt="Listen Together in the January 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Listen Together</h3><p>iPod and Karaoke can host shared sessions with invites and reactions.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-01-02-infinite-mac-16x9.webp" alt="Infinite Mac in the January 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Infinite Mac</h3><p>Scaling, screenshots, and stronger window controls improve the classic Mac emulator.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-01-03-stickies-16x9.webp" alt="Stickies in the January 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Stickies</h3><p>Draggable, colored notes add a lightweight scratchpad to the desktop.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-01-04-chats-16x9.webp" alt="Chats in the January 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Chats</h3><p>Image uploads and AI memory extraction broaden conversations.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-01-05-finder-16x9.webp" alt="Finder in the January 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Finder</h3><p>File browsing remains the center of the growing multi-app desktop.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
@@ -246,12 +250,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## December 2025
 
-- **CoverFlow**: interactive CD animation with play/pause.
-- **Karaoke**: full-screen iPod player with lyrics synchronization.
-- **Lyrics pronunciation**: Japanese furigana and Chinese soramimi options.
-- **i18n**: language selection across the application.
-- **Expose / Mission Control**: enhanced window management; screen saver.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-12-01-cover-flow-16x9.webp" alt="Cover Flow in the December 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cover Flow</h3><p>Interactive album art gains CD motion and direct playback controls.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-12-02-karaoke-16x9.webp" alt="Karaoke in the December 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Karaoke</h3><p>A dedicated fullscreen player synchronizes video, music, and timed lyrics.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-12-03-videos-16x9.webp" alt="Videos in the December 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Videos</h3><p>The media library connects playback with iPod and Karaoke.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-12-04-control-panels-16x9.webp" alt="International settings in the December 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>International settings</h3><p>System language and localization become user-selectable.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-12-05-finder-16x9.webp" alt="Mission Control in the December 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Mission Control</h3><p>Window management gains Exposé-style overview and a screen saver.</p></div></article>
+</div>
 <details>
 <summary>More from this month (12)</summary>
 
@@ -272,12 +277,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## November 2025
 
-- **Applet Store**: AI-powered applet generation, sharing, and management.
-- **Gemini for applets**: Google Gemini as primary AI model for applet generation with OpenAI fallback.
-- **PWA performance**: service worker prefetching, cache version handling, and offline support.
-- **iPod video**: playback, translation, and fullscreen controls with new video entries.
-- **AI chat tools**: new and refactored tools for file system access and applet management.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-11-01-applet-store-16x9.webp" alt="Applet Store in the November 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Applet Store</h3><p>AI-generated applets can be created, shared, imported, and managed.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-11-02-chats-16x9.webp" alt="AI chat tools in the November 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>AI chat tools</h3><p>Ryo gains applet and file-system tools for richer desktop actions.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-11-03-ipod-video-16x9.webp" alt="iPod video in the November 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod video</h3><p>Video playback, translation, and fullscreen controls join the music player.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-11-04-finder-16x9.webp" alt="Desktop shortcuts in the November 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Desktop shortcuts</h3><p>Theme-aware shortcuts and Trash behavior make files easier to reach.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-11-05-paint-16x9.webp" alt="Paint selections in the November 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Paint selections</h3><p>Selection tools become more capable inside the MacPaint-inspired canvas.</p></div></article>
+</div>
 <details>
 <summary>More from this month (10)</summary>
 
@@ -296,11 +302,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## October 2025
 
-- **Applet viewer**: sharing, import/export, and content handling.
-- **Applet saving**: save applets and generate HTML for ryOS Applets.
-- **Applet design guidelines**: refactor for clarity and responsiveness.
-- **Zod v4**: upgrade from v3.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-10-01-applet-viewer-16x9.webp" alt="Applet Viewer in the October 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Applet Viewer</h3><p>Generated applets gain a dedicated viewer with sharing and import or export.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-10-02-chats-16x9.webp" alt="Applet generation in the October 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Applet generation</h3><p>Chats can generate applets and hand them to the viewer.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-10-03-textedit-16x9.webp" alt="Generated HTML in the October 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Generated HTML</h3><p>Editable applet content can be inspected and saved as HTML.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-10-04-finder-16x9.webp" alt="Applet files in the October 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Applet files</h3><p>Finder recognizes applet assets and their icons.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-10-05-control-panels-16x9.webp" alt="Responsive applets in the October 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Responsive applets</h3><p>Updated design guidance keeps generated interfaces readable at different sizes.</p></div></article>
+</div>
 <details>
 <summary>More from this month (8)</summary>
 
@@ -317,12 +325,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## September 2025
 
-- **Lyrics translation**: persistence and force-refresh.
-- **Title parsing**: switch from OpenAI to Google Gemini with messages-array prompts.
-- **AI chat**: automatic message handling and improved logging.
-- **Default AI model**: Claude 4.5, later GPT-5.
-- **TextEdit**: fallback mechanism for instance management.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-09-01-lyrics-16x9.webp" alt="Lyrics translation in the September 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Lyrics translation</h3><p>Translated lyrics persist and can be refreshed on demand.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-09-02-ai-chat-16x9.webp" alt="AI chat in the September 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>AI chat</h3><p>Automatic message handling and clearer logs improve Ryo conversations.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-09-03-textedit-16x9.webp" alt="TextEdit in the September 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>TextEdit</h3><p>More reliable instance fallback keeps editor windows available.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-09-04-finder-16x9.webp" alt="Finder in the September 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Finder</h3><p>File workflows stay integrated with the expanding media and editor apps.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-09-05-control-panels-16x9.webp" alt="Model settings in the September 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Model settings</h3><p>The default assistant progresses from Claude 4.5 to GPT-5.</p></div></article>
+</div>
 <details>
 <summary>More from this month (8)</summary>
 
@@ -339,12 +348,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## August 2025
 
-- **macOS-style Dock**: app icons, interactions, and dynamic animations.
-- **Chat rooms**: improved presence tracking, profanity filtering, and collapsible sections.
-- **TextEdit**: new editor context, hooks, toolbar features, and improved dialog handling.
-- **Finder**: responsive layout, consistent icon styling, and remembered view types.
-- **Authentication**: Redis-based rate limiting and multi-token support.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-08-01-dock-and-finder-16x9.webp" alt="macOS-style Dock in the August 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>macOS-style Dock</h3><p>Animated app icons, focus, and touch support establish the desktop launcher.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-08-02-chat-rooms-16x9.webp" alt="Chat rooms in the August 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Chat rooms</h3><p>Presence, moderation, and collapsible room sections improve public chat.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-08-03-textedit-16x9.webp" alt="TextEdit in the August 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>TextEdit</h3><p>A new editor context and toolbar make document work more reliable.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-08-04-authentication-16x9.webp" alt="Authentication in the August 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Authentication</h3><p>Redis-backed rate limits and multiple tokens harden account sessions.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-08-05-ipod-16x9.webp" alt="iPod in the August 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod</h3><p>The player continues to gain responsive controls and a larger library.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
@@ -364,12 +374,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## July 2025
 
-- **Emoji aquarium**: aquarium feature in chat messages.
-- **Ryo replies**: server-side reply generation and updated chat handling.
-- **iPod**: fullscreen lyrics controls, improved UI, and NewJeans videos.
-- **Themes**: macOS, Windows 98, and Windows XP support with updated styling and layout adjustments.
-- **Link previews**: custom handling for YouTube and web links in chats.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-07-01-chats-aquarium-16x9.webp" alt="Emoji aquarium in the July 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Emoji aquarium</h3><p>Aquarium messages bring a playful animated scene into Chats.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-07-02-ipod-16x9.webp" alt="iPod in the July 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod</h3><p>Fullscreen lyrics and touch controls improve mobile music playback.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-07-03-themes-16x9.webp" alt="Themes in the July 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Themes</h3><p>macOS, Windows 98, and Windows XP become complete desktop choices.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-07-04-link-previews-16x9.webp" alt="Link previews in the July 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Link previews</h3><p>Chats recognizes YouTube and web links with custom previews.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-07-05-finder-16x9.webp" alt="App management in the July 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>App management</h3><p>Window and instance handling becomes faster and more consistent.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
@@ -389,12 +400,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## June 2025
 
-- **Multi-token authentication**: improved validation and user mapping.
-- **Chat rooms**: private room support, user presence tracking, and improved room management.
-- **Chat API**: improved system message handling, caching, and Pusher event broadcasting.
-- **Chat UX**: enhanced error handling, updated dialogs, and better layout consistency.
-- **Context menus**: right-click menus on Desktop and Finder with data-driven menu items.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-06-01-chat-rooms-16x9.webp" alt="Private chat rooms in the June 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Private chat rooms</h3><p>Presence and room management expand beyond the original public channels.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-06-02-context-menus-16x9.webp" alt="Context menus in the June 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Context menus</h3><p>Desktop and Finder actions move into data-driven right-click menus.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-06-03-ipod-16x9.webp" alt="iPod in the June 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod</h3><p>New videos, click-wheel sound, and volume settings deepen the player.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-06-04-passwords-16x9.webp" alt="Password management in the June 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Password management</h3><p>Account and password controls become part of the desktop experience.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-06-05-internet-explorer-16x9.webp" alt="Internet Explorer in the June 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Internet Explorer</h3><p>The Time Machine browser keeps favorites and historical navigation close.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
@@ -414,12 +426,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## May 2025
 
-- **Multi-instance apps**: Finder and Terminal multi-instance support with improved window ordering.
-- **Chats**: AI-generated HTML support, improved message handling, and iPod/TextEdit tool integrations.
-- **iPod**: full-screen lyrics, swipe track navigation, and library import/export.
-- **State management**: Zustand across core components, removing local storage dependencies.
-- **TextEdit**: markdown conversion, search/replace, and improved file handling.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-05-01-multi-instance-finder-16x9.webp" alt="Multi-instance Finder in the May 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Multi-instance Finder</h3><p>Multiple Finder and Terminal windows gain predictable ordering.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-05-02-chats-16x9.webp" alt="Chats in the May 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Chats</h3><p>HTML replies, mentions, deletion, and app tools broaden conversations.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-05-03-ipod-16x9.webp" alt="iPod in the May 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod</h3><p>Fullscreen lyrics, swipe navigation, and library import or export arrive.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-05-04-textedit-16x9.webp" alt="TextEdit in the May 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>TextEdit</h3><p>Markdown conversion, search and replace, and file handling mature.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-05-05-internet-explorer-16x9.webp" alt="Internet Explorer in the May 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Internet Explorer</h3><p>Favorites and direct navigation connect the browser to the rest of ryOS.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
@@ -439,12 +452,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## April 2025
 
-- **Internet Explorer Time Machine**: navigate past and future web designs with animations, layouts, and mobile responsiveness.
-- **Internet Explorer AI**: AI-powered content generation, caching, and improved navigation with shared URLs and Wayback Machine integration.
-- **Internet Explorer UX**: terminal sounds, debug mode, foreground overlay, and dynamic title management.
-- **Internet Explorer state**: Zustand refactor for performance and maintainability.
-- **AI model**: update to gpt-4.1 with enhanced generation prompts.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-04-01-time-machine-16x9.webp" alt="Internet Explorer Time Machine in the April 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Internet Explorer Time Machine</h3><p>Browse past and future versions of the web from one address bar.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-04-02-ai-chat-16x9.webp" alt="Internet Explorer AI in the April 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Internet Explorer AI</h3><p>Generated pages, caching, and shared URLs connect the browser with Ryo.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-04-03-ipod-16x9.webp" alt="iPod in the April 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod</h3><p>Media playback remains available beside the new browsing experience.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-04-04-finder-16x9.webp" alt="Finder in the April 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Finder</h3><p>Files can move between the browser, editors, and media apps.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-04-05-paint-16x9.webp" alt="Paint in the April 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Paint</h3><p>The MacPaint-style canvas stays integrated with shared files.</p></div></article>
+</div>
 <details>
 <summary>More from this month (10)</summary>
 
@@ -463,12 +477,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## March 2025
 
-- **Synth**: preset management, 3D waveform visualization, and mobile responsiveness.
-- **Terminal HTML preview**: streaming support, save to disk, and copy to clipboard.
-- **Chats**: username management, message polling, profanity filtering, and real-time updates via Pusher.
-- **iPod**: video playback, dynamic menu items, responsive scaling, and theme management.
-- **Photo Booth**: camera selection, filter support, file system integration, and iOS compatibility.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-03-01-synth-16x9.webp" alt="Synth in the March 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Synth</h3><p>Preset management and a 3D waveform launch a playable instrument.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-03-02-terminal-16x9.webp" alt="Terminal in the March 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Terminal</h3><p>Vim, new commands, command history, and streaming HTML previews arrive.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-03-03-chats-16x9.webp" alt="Chats in the March 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Chats</h3><p>Pusher-powered realtime messages add rooms, presence, and moderation.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-03-04-ipod-16x9.webp" alt="iPod in the March 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>iPod</h3><p>Video playback and responsive controls expand the music player.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-03-05-photo-booth-16x9.webp" alt="Photo Booth in the March 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Photo Booth</h3><p>Camera selection, filters, file saving, and iOS support add a new creative app.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
@@ -488,12 +503,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## February 2025
 
-- **Paint**: MacPaint-inspired UI with pattern drawing, selection tools, undo/redo, clipboard, and touch support.
-- **Videos**: React Player with retro CD player UI, animated digit display, and fullscreen playback.
-- **Virtual PC**: classic games with DOSBox integration.
-- **File system**: migrate to IndexedDB with dedicated image storage.
-- **TextEdit**: document editing commands, markdown support, and file drag-and-drop.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-02-01-paint-16x9.webp" alt="Paint in the February 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Paint</h3><p>A MacPaint-inspired canvas launches with patterns, selections, undo, and touch.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-02-02-videos-16x9.webp" alt="Videos in the February 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Videos</h3><p>A retro CD-player interface wraps responsive video playback.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-02-03-virtual-pc-16x9.webp" alt="Virtual PC in the February 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Virtual PC</h3><p>Classic games run inside a DOSBox-powered PC app.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-02-04-finder-16x9.webp" alt="IndexedDB files in the February 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>IndexedDB files</h3><p>Images and documents move into a durable browser file system.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-02-05-textedit-16x9.webp" alt="TextEdit in the February 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>TextEdit</h3><p>Markdown, drag and drop, and document commands improve editing.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
@@ -513,12 +529,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ## January 2025
 
-- **ryOS launch**: Soundboard with audio recording, waveform visualization, and board management.
-- **Internet Explorer**: Wayback Machine integration, favorites, and history navigation.
-- **Chats**: AI assistant (Ryo), persistent message storage, and animated typing display.
-- **TextEdit**: Tiptap rich text editor with slash commands and typography formatting.
-- **Desktop environment**: window management, drag/resize, minimize, and sound effects.
-
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-01-01-desktop-16x9.webp" alt="ryOS launches in the January 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>ryOS launches</h3><p>A compact desktop starts with Soundboard, Internet Explorer, and Chats.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-01-02-soundboard-16x9.webp" alt="Soundboard in the January 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Soundboard</h3><p>Record sounds, see waveforms, and organize clips into boards.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-01-03-soundboard-library-16x9.webp" alt="Sound libraries in the January 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Sound libraries</h3><p>Named boards keep themed sound collections one click away.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-01-04-internet-explorer-16x9.webp" alt="Internet Explorer in the January 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Internet Explorer</h3><p>Favorites and Wayback Machine navigation bring the web onto the desktop.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2025-01-05-chats-16x9.webp" alt="Chats in the January 2025 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Chats</h3><p>Ryo debuts with persistent messages and an animated typing display.</p></div></article>
+</div>
 <details>
 <summary>More from this month (11)</summary>
 
