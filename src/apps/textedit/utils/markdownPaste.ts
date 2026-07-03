@@ -44,8 +44,10 @@ const SAFE_MARKDOWN_ATTRIBUTES = [
   "title",
   "type",
 ];
+const SAFE_MARKDOWN_TAG_SET = new Set(SAFE_MARKDOWN_TAGS);
 const SAFE_MARKDOWN_ATTRIBUTE_SET = new Set(SAFE_MARKDOWN_ATTRIBUTES);
 const SAFE_HREF_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
+const DROP_CONTENT_TAG_SET = new Set(["script", "style", "template"]);
 
 const markdownProcessor = unified()
   .use(remarkParse)
@@ -152,22 +154,31 @@ export function sanitizeHtmlForEditor(html: string): string {
     return html;
   }
 
-  if (typeof DOMPurify.sanitize !== "function") {
-    return html;
-  }
-
-  const sanitizedHtml = String(
-    DOMPurify.sanitize(html, {
-      ALLOWED_ATTR: SAFE_MARKDOWN_ATTRIBUTES,
-      ALLOWED_TAGS: SAFE_MARKDOWN_TAGS,
-      ALLOW_ARIA_ATTR: false,
-      ALLOW_DATA_ATTR: false,
-    })
-  );
+  const sanitizedHtml =
+    typeof DOMPurify.sanitize === "function"
+      ? String(
+          DOMPurify.sanitize(html, {
+            ALLOWED_ATTR: SAFE_MARKDOWN_ATTRIBUTES,
+            ALLOWED_TAGS: SAFE_MARKDOWN_TAGS,
+            ALLOW_ARIA_ATTR: false,
+            ALLOW_DATA_ATTR: false,
+          })
+        )
+      : html;
 
   const template = window.document.createElement("template");
   template.innerHTML = sanitizedHtml;
   for (const element of Array.from(template.content.querySelectorAll("*"))) {
+    const tagName = element.tagName.toLowerCase();
+    if (!SAFE_MARKDOWN_TAG_SET.has(tagName)) {
+      if (DROP_CONTENT_TAG_SET.has(tagName)) {
+        element.remove();
+      } else {
+        element.replaceWith(...Array.from(element.childNodes));
+      }
+      continue;
+    }
+
     for (const attribute of Array.from(element.attributes)) {
       if (!SAFE_MARKDOWN_ATTRIBUTE_SET.has(attribute.name)) {
         element.removeAttribute(attribute.name);
