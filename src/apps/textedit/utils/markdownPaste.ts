@@ -152,13 +152,12 @@ export function sanitizeHtmlForEditor(html: string): string {
     return html;
   }
 
-  const purifier = DOMPurify(window);
-  if (typeof purifier.sanitize !== "function") {
+  if (typeof DOMPurify.sanitize !== "function") {
     return html;
   }
 
   const sanitizedHtml = String(
-    purifier.sanitize(html, {
+    DOMPurify.sanitize(html, {
       ALLOWED_ATTR: SAFE_MARKDOWN_ATTRIBUTES,
       ALLOWED_TAGS: SAFE_MARKDOWN_TAGS,
       ALLOW_ARIA_ATTR: false,
