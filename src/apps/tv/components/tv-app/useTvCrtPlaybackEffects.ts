@@ -141,14 +141,19 @@ export function useTvCrtPlaybackEffects({
       return;
     }
 
+    if (sourceChanged && playbackRequested) {
+      hasPausedRef.current = false;
+      if (screenOff) setScreenOff(false);
+      return;
+    }
+
     if (screenOff && playbackRequested) {
+      hasPausedRef.current = false;
       setScreenOff(false);
       setPowerOnKey((k) => k + 1);
       void playPowerOn();
       return;
     }
-
-    if (sourceChanged && playbackRequested) return;
 
     if (
       (prev && !isPlaying) ||
@@ -164,6 +169,7 @@ export function useTvCrtPlaybackEffects({
     if (isBuffering || sourceChanged) return;
 
     if (!prev && isPlaying && hasPausedRef.current) {
+      hasPausedRef.current = false;
       setScreenOff(false);
       setPowerOnKey((k) => k + 1);
       void playPowerOn();

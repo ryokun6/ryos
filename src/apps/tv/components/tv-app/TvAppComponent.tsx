@@ -41,7 +41,10 @@ import {
   ScrollingChannelName,
 } from "./TvLcdWidgets";
 import { useTvAppController } from "./useTvAppController";
-import { handleTvPlayerPause } from "./tvPlayerEvents";
+import {
+  handleTvPlayerPause,
+  shouldPlayEmbeddedTv,
+} from "./tvPlayerEvents";
 
 export function TvAppComponent(props: AppProps) {
   const c = useTvAppController(props);
@@ -240,15 +243,14 @@ export function TvAppComponent(props: AppProps) {
                   <YouTubePlayer
                     ref={c.playerRef}
                     url={url}
-                    // Pause the iframe during the CRT shutdown / paused
-                    // "screen off" overlay so audio doesn't keep
-                    // playing through a black screen.
-                    playing={
-                      c.playbackRequested &&
-                      !c.isFullScreen &&
-                      !c.poweringOff &&
-                      !c.screenOff
-                    }
+                    // Keep visual CRT state out of playback intent so a
+                    // mobile Safari tap reaches the iframe synchronously.
+                    playing={shouldPlayEmbeddedTv({
+                      playbackRequested: c.playbackRequested,
+                      isFullScreen: c.isFullScreen,
+                      poweringOff: c.poweringOff,
+                      screenOff: c.screenOff,
+                    })}
                     controls={false}
                     width="calc(100% + 1px)"
                     height="calc(100% + 1px)"

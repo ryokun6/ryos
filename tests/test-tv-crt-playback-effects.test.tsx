@@ -243,4 +243,72 @@ describe("TV CRT playback effects", () => {
     expect(powerOffCalls).toBe(0);
     expect(channelSwitchCalls).toBe(1);
   });
+
+  test("a source change clears a stale off screen without power-on", async () => {
+    await act(async () =>
+      root.render(
+        <Harness playbackRequested isPlaying screenOff={false} />
+      )
+    );
+    screenOffUpdates = [];
+    powerOnCalls = 0;
+
+    await act(async () =>
+      root.render(
+        <Harness
+          playbackRequested
+          screenOff
+          currentVideoId="video-2"
+        />
+      )
+    );
+
+    expect(screenOffUpdates).toEqual([false]);
+    expect(powerOnCalls).toBe(0);
+  });
+
+  test("pause then resume consumes power-on before the next source starts", async () => {
+    await act(async () =>
+      root.render(
+        <Harness playbackRequested isPlaying screenOff={false} />
+      )
+    );
+
+    await act(async () =>
+      root.render(<Harness playbackRequested={false} screenOff={false} />)
+    );
+    powerOnCalls = 0;
+
+    await act(async () =>
+      root.render(<Harness playbackRequested screenOff />)
+    );
+    await act(async () =>
+      root.render(
+        <Harness playbackRequested isPlaying screenOff={false} />
+      )
+    );
+    await act(async () =>
+      root.render(
+        <Harness
+          playbackRequested
+          isPlaying={false}
+          screenOff={false}
+          currentVideoId="video-2"
+        />
+      )
+    );
+    await act(async () =>
+      root.render(
+        <Harness
+          playbackRequested
+          isPlaying
+          screenOff={false}
+          currentVideoId="video-2"
+        />
+      )
+    );
+
+    expect(powerOnCalls).toBe(1);
+    expect(channelSwitchCalls).toBe(1);
+  });
 });

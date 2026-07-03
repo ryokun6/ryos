@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { handleTvPlayerPause } from "../src/apps/tv/components/tv-app/tvPlayerEvents";
+import {
+  handleTvPlayerPause,
+  shouldPlayEmbeddedTv,
+} from "../src/apps/tv/components/tv-app/tvPlayerEvents";
 import { useTvStore } from "../src/stores/useTvStore";
 
 describe("TV player events", () => {
@@ -8,6 +11,28 @@ describe("TV player events", () => {
       isPlaying: false,
       playbackRequested: false,
     });
+  });
+
+  test("the initial mobile Safari request reaches the embedded player while the screen is visually off", () => {
+    expect(
+      shouldPlayEmbeddedTv({
+        playbackRequested: true,
+        isFullScreen: false,
+        poweringOff: false,
+        screenOff: true,
+      })
+    ).toBe(true);
+  });
+
+  test("an explicit pause keeps the embedded player silent", () => {
+    expect(
+      shouldPlayEmbeddedTv({
+        playbackRequested: false,
+        isFullScreen: false,
+        poweringOff: false,
+        screenOff: false,
+      })
+    ).toBe(false);
   });
 
   test("an early player pause does not cancel an unconfirmed play request", () => {
