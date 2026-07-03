@@ -642,27 +642,25 @@ Close an application.
   id: AppId;  // App to close
 }</code></pre>
 <h3>Media Control</h3>
-<h4><code>ipodControl</code></h4>
-Control iPod playback.
+<h4><code>mediaControl</code></h4>
+Unified media control across the iPod (music), Karaoke, Videos, and TV apps.
 <pre><code>{
-  action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
+  target?: "music" | "karaoke" | "videos" | "tv"; // default "music"
+  // Transport (all targets; TV supports toggle/play/pause only)
+  action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous"
+  // TV channel management (target "tv" only)
+        | "list" | "tune" | "createChannel" | "deleteChannel" | "addVideo" | "removeVideo";
   id?: string;              // YouTube ID or URL (for addAndPlay/playKnown)
-  title?: string;           // Track title (for playKnown)
+  title?: string;           // Item title (for playKnown)
   artist?: string;          // Artist name (for playKnown)
-  enableVideo?: boolean;    // Enable video playback
-  enableFullscreen?: boolean;
-  enableTranslation?: string; // Language code for lyrics translation
+  enableVideo?: boolean;    // Music only: enable video playback
+  enableFullscreen?: boolean;   // Music/karaoke only
+  enableTranslation?: string;   // Music/karaoke only: lyrics translation language
+  // TV channel-action params
+  channelId?: string; channelNumber?: number; prompt?: string;
+  name?: string; videoId?: string; url?: string; removeVideoId?: string;
 }</code></pre>
-<h4><code>karaokeControl</code></h4>
-Control Karaoke playback (same schema as iPod, without <code>enableVideo</code>).
-<pre><code>{
-  action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
-  id?: string;
-  title?: string;
-  artist?: string;
-  enableFullscreen?: boolean;
-  enableTranslation?: string;
-}</code></pre>
+<code>ipodControl</code> (target "music"), <code>karaokeControl</code> (target "karaoke"), and <code>tvControl</code> (target "tv") remain registered as deprecated aliases with the same per-target validation.
 <h4><code>searchSongs</code></h4>
 Search for songs on YouTube.
 <pre><code>// Input
@@ -808,7 +806,7 @@ function ChatComponent() {
 // AI will:
 // 1. Call list({ path: "/Music" }) to check library
 // 2. If not found, call searchSongs({ query: "Never Gonna Give You Up" })
-// 3. Call ipodControl({ action: "addAndPlay", id: "dQw4w9WgXcQ" })</code></pre>
+// 3. Call mediaControl({ action: "addAndPlay", id: "dQw4w9WgXcQ" })</code></pre>
 <h2>Configuration</h2>
 <h3>Runtime Settings</h3>
 <pre><code>export const runtime = "nodejs";   // Node.js runtime

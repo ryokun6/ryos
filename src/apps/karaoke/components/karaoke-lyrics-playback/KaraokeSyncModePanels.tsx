@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import type ReactPlayer from "react-player";
 import type { RefObject } from "react";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import type { RomanizationSettings } from "@/types/lyrics";
 import { useKaraokeLyricsPlayback } from "./context";

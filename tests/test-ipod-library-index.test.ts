@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Track } from "../src/stores/useIpodStore";
+import type { Track } from "../src/shared/media/library";
 import { useIpodStore } from "../src/stores/useIpodStore";
 import {
   buildIpodLibraryIndex,

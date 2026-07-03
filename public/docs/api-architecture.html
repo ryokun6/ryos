@@ -674,9 +674,10 @@ export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
     }),
   },
   
-  ipodControl: {
-    description: "Control iPod playback",
+  mediaControl: {
+    description: "Control music/karaoke/videos/TV playback",
     parameters: z.object({
+      target: z.enum(["music", "karaoke", "videos", "tv"]).optional(),
       action: z.enum(["toggle", "play", "pause", "next", "previous", ...]),
       title: z.string().optional(),
       artist: z.string().optional(),

@@ -4,8 +4,8 @@ import {
   useIpodStore,
   getActiveIpodCurrentTrack,
   getEffectiveTranslationLanguage,
-  type Track,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import {

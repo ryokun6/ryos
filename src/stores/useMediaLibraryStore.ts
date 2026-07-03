@@ -13,8 +13,8 @@ import {
   getEffectiveTranslationLanguage,
   getIpodTracksForLibrary,
   useIpodStore,
-  type Track,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { useVideoStore } from "@/stores/useVideoStore";
 import {
   trackToMediaItem,
@@ -24,7 +24,7 @@ import {
 } from "@/shared/media/library";
 import { useStoreShallow } from "./helpers";
 
-export type { Track } from "@/stores/useIpodStore";
+export type { Track } from "@/shared/media/library";
 export type { MediaItem, MediaItemKind } from "@/shared/media/library";
 export {
   flushPendingLyricOffsetSave,

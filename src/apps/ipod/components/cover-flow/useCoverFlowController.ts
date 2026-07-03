@@ -7,7 +7,7 @@ import {
   useReducer,
 } from "react";
 import type { PanInfo } from "motion/react";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useEventListener } from "@/hooks/useEventListener";

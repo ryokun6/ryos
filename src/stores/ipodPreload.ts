@@ -7,7 +7,7 @@
  */
 import { listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import { mapCatalogSongToTrack } from "@/stores/ipodCatalogTrackMapping";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { createClientLogger } from "@/utils/logger";
 
 const log = createClientLogger("IpodPreload");

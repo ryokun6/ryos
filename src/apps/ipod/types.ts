@@ -1,6 +1,6 @@
 // Shared types for the iPod app
 
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import type { LyricsAlignment, LyricsFont, RomanizationSettings, DisplayMode } from "@/types/lyrics";
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";

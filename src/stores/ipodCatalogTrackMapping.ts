@@ -1,4 +1,4 @@
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import type { CachedSongMetadata } from "@/utils/songMetadataCache";
 
 export function mapCatalogSongToTrack(song: CachedSongMetadata): Track {

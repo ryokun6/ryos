@@ -59,7 +59,7 @@ const { useIpodStore } = await import("../src/stores/useIpodStore");
 const { useKaraokeStore } = await import("../src/stores/useKaraokeStore");
 const { useVideoStore } = await import("../src/stores/useVideoStore");
 const { useTvStore } = await import("../src/stores/useTvStore");
-type Track = import("../src/stores/useIpodStore").Track;
+type Track = import("../src/shared/media/library").Track;
 type Video = import("../src/stores/useVideoStore").Video;
 
 const ytTrack = (n: number): Track => ({

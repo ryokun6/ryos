@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import {
   useIpodStore,
   getActiveIpodCurrentTrack,
-  type Track,
   type AppleMusicKitNowPlaying,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import {
   resolveAppleMusicArtworkUrl,

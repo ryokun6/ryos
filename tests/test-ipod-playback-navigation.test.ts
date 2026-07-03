@@ -51,7 +51,7 @@ const {
   PREVIOUS_RESTART_THRESHOLD_SECONDS,
 } = await import("../src/shared/media/previousTrackBehavior");
 const { useIpodStore } = await import("../src/stores/useIpodStore");
-type Track = import("../src/stores/useIpodStore").Track;
+type Track = import("../src/shared/media/library").Track;
 
 const amTrack = (n: number): Track => ({
   id: `am:${n}`,

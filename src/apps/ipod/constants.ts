@@ -1,7 +1,7 @@
 // Shared constants for the iPod app
 
 import { LyricsAlignment } from "@/types/lyrics";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { resolveMediaCoverUrl } from "@/utils/coverArt";
 

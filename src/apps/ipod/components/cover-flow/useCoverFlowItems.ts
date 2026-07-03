@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { getAlbumGroupingKey } from "../../constants";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import type { CoverFlowItem } from "./types";
 
 export function useCoverFlowItems(

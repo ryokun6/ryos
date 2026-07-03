@@ -25,8 +25,8 @@ import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import {
   sanitizeRomanizationSettings,
   useIpodStore,
-  type Track,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";

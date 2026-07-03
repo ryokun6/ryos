@@ -1,4 +1,4 @@
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 
 /** Props for the Karaoke app menubar shell (`karaoke-menu-bar/`). */
 export interface KaraokeMenuBarProps {

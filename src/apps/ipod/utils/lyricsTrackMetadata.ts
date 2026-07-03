@@ -2,8 +2,8 @@ import {
   appleMusicKitIdToLyricsSongId,
   isAppleMusicCollectionTrack,
   type AppleMusicKitNowPlaying,
-  type Track,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 
 /**
  * Lyrics-search metadata resolved against the *actual song* the iPod

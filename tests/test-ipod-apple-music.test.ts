@@ -110,7 +110,7 @@ const {
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
-type Track = import("../src/stores/useIpodStore").Track;
+type Track = import("../src/shared/media/library").Track;
 const {
   isValidAppleMusicSongId,
   isValidYouTubeVideoId,

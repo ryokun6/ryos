@@ -1,4 +1,4 @@
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 
 export interface IpodLibraryIndex {
   trackById: Map<string, Track>;

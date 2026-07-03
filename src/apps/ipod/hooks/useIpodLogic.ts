@@ -33,12 +33,12 @@ import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
   useIpodStore,
-  Track,
   IpodBacklightTimeout,
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
 } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
 import {
   resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,

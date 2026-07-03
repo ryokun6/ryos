@@ -63,15 +63,8 @@ const debug = createClientLogger("IpodStore").debug;
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
 
-// Track / library item types moved to the shared MediaCore library model so
-// the server (`api/_utils/song-library-state.ts`) and other apps stop
-// importing them from this store. Re-exported here for compatibility.
-export type {
-  AppleMusicPlayParams,
-  LibrarySource,
-  LyricsSource,
-  Track,
-} from "@/shared/media/library";
+// Track / library item types live in the shared MediaCore library model
+// (`@/shared/media/library`); import them from there, not from this store.
 import type {
   LibrarySource,
   LyricsSource,

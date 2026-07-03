@@ -18,7 +18,8 @@ import {
   parseAppleMusicId,
 } from "@/utils/appleMusicId";
 import { useAppStore } from "@/stores/useAppStore";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { useIpodStore } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import type { SongDetail, SongDetailPanelProps } from "./types";
 import {

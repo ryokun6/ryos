@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SetStateAction } from "react";
 import { DisplayMode } from "@/types/lyrics";
-import { useIpodStore, Track } from "./useIpodStore";
+import { useIpodStore } from "./useIpodStore";
+import type { Track } from "@/shared/media/library";
 import { shouldUpdatePlaybackTime } from "./playbackTime";
 import {
   requestPlayback,

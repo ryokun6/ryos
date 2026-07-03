@@ -36,8 +36,7 @@ graph TD
 |------|-------------|
 | `launchApp` | Open applications (supports Internet Explorer URL + year time-travel launch) |
 | `closeApp` | Close applications |
-| `ipodControl` | iPod playback control: toggle/play/pause/playKnown/addAndPlay/next/previous (+ video/fullscreen/lyrics translation options) |
-| `karaokeControl` | Karaoke playback control (shared music library with iPod, independent playback state) |
+| `mediaControl` | Unified media control with `target` ("music" default, "karaoke", "videos", "tv"): toggle/play/pause/playKnown/addAndPlay/next/previous transport (+ video/fullscreen/lyrics translation options) and TV channel management (list/tune/createChannel/deleteChannel/addVideo/removeVideo). `ipodControl`/`karaokeControl`/`tvControl` remain as deprecated aliases. |
 | `generateHtml` | Create HTML applets with title and emoji icon |
 | `aquarium` | Render interactive emoji aquarium in chat |
 | `list` | List VFS items: `/Applets`, `/Documents` (includes document names), `/Applications`, `/Music`, `/Applets Store` |
@@ -60,7 +59,6 @@ graph TD
 | `web_search` | OpenAI provider web search (GPT-5.5 only, authenticated users, with geolocation context) |
 | `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
 | `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized) |
-| `tvControl` | TV lineup and playback: list/tune channels, AI `createChannel` fanout, add/remove videos on custom channels |
 | `cursorCloudAgent` | Async Cursor Cloud repo-agent runs against `ryokun6/ryos` (owner account + `CURSOR_API_KEY`): live stream card, PR link, follow-up turns |
 | `listCursorCloudAgentRuns` | List recent Cursor Cloud agent runs with dashboard URLs (owner account + `CURSOR_API_KEY`) |
 

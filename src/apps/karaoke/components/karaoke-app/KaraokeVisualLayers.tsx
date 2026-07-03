@@ -4,7 +4,7 @@ import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
 import { DisplayMode } from "@/types/lyrics";
-import type { Track } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 
 type KaraokeVisualLayersProps = {
   effectiveDisplayMode: DisplayMode;

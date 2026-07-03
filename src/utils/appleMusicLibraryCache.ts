@@ -11,10 +11,8 @@
 // library atomically and load it in one round-trip.
 
 import { STORES, dbOperations } from "@/utils/indexedDB";
-import type {
-  AppleMusicPlaylist,
-  Track,
-} from "@/stores/useIpodStore";
+import type { AppleMusicPlaylist } from "@/stores/useIpodStore";
+import type { Track } from "@/shared/media/library";
 
 const LIBRARY_KEY = "library";
 const PLAYLISTS_KEY = "playlists";
