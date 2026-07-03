@@ -1,17 +1,33 @@
-import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useTvCrtPlaybackEffects } from "../src/apps/tv/components/tv-app/useTvCrtPlaybackEffects";
+import { ensureTestLocalStorage } from "./setup";
 
-const registeredDomForSuite = typeof document === "undefined";
-if (registeredDomForSuite) {
-  GlobalRegistrator.register();
-}
+let registeredDomForSuite = false;
+const originalActEnvironment = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "IS_REACT_ACT_ENVIRONMENT"
+);
 
-Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
-  configurable: true,
-  value: true,
+beforeAll(() => {
+  if (typeof document === "undefined") {
+    GlobalRegistrator.register();
+    registeredDomForSuite = true;
+  }
+  Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
+    configurable: true,
+    value: true,
+  });
 });
 
 let container: HTMLDivElement;
@@ -317,5 +333,15 @@ describe("TV CRT playback effects", () => {
 afterAll(() => {
   if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
+  }
+  ensureTestLocalStorage();
+  if (originalActEnvironment) {
+    Object.defineProperty(
+      globalThis,
+      "IS_REACT_ACT_ENVIRONMENT",
+      originalActEnvironment
+    );
+  } else {
+    Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   }
 });
