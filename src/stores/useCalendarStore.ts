@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import {
   calendarEventOccursOnDate,
   calendarEventOverlapsDateRange,
@@ -336,7 +337,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
     },
     {
       name: "calendar-storage",
-      storage: createJSONStorage(() => localStorage),
+      storage: createIndexedDBPersistStorage(),
       // Do not persist viewport — opening Calendar should show today, not last session.
       partialize: (state) => ({
         events: state.events,

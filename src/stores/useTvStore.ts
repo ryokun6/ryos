@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import {
   buildTvChannelLineup,
   DEFAULT_CHANNEL_ID,
@@ -7,6 +7,7 @@ import {
   type Channel,
 } from "@/apps/tv/data/channels";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
 import type { Video } from "@/stores/useVideoStore";
 import {
@@ -389,7 +390,7 @@ export const useTvStore = create<TvStoreState>()(
     }),
     {
       name: "ryos:tv",
-      storage: createJSONStorage(() => localStorage),
+      storage: createIndexedDBPersistStorage(),
       version: 5,
       // Channel lineup rotation uses an in-memory per-channel shuffle (see
       // `useTvLogic`); persisted indices would drift after reload.

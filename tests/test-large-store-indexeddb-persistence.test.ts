@@ -45,8 +45,20 @@ const { ensureIndexedDBInitialized, STORES } = await import(
 const { useTextEditStore } = await import("../src/stores/useTextEditStore");
 const { useStickiesStore } = await import("../src/stores/useStickiesStore");
 const { useContactsStore } = await import("../src/stores/useContactsStore");
+const { useBooksStore } = await import("../src/stores/useBooksStore");
+const { useCalendarStore } = await import("../src/stores/useCalendarStore");
+const { useVideoStore } = await import("../src/stores/useVideoStore");
+const { useTvStore } = await import("../src/stores/useTvStore");
 
-const stores = [useTextEditStore, useStickiesStore, useContactsStore];
+const stores = [
+  useTextEditStore,
+  useStickiesStore,
+  useContactsStore,
+  useBooksStore,
+  useCalendarStore,
+  useVideoStore,
+  useTvStore,
+];
 
 await Promise.all(stores.map((store) => store.persist.rehydrate()));
 await settleAllPersistWrites();
@@ -88,6 +100,14 @@ beforeEach(async () => {
     myContactId: null,
     lastRemoteSyncAt: 0,
   });
+  useBooksStore.setState({
+    progressByPath: {},
+    highlightsByPath: {},
+    bookmarksByPath: {},
+  });
+  useCalendarStore.setState({ events: [], todos: [] });
+  useVideoStore.setState({ videos: [], currentVideoId: null });
+  useTvStore.setState({ customChannels: [], hiddenDefaultChannelIds: [] });
   resetPersistWritesForTests();
 });
 
@@ -162,6 +182,86 @@ describe("large store IndexedDB persistence", () => {
         version: 0,
       })
     );
+    localStorage.setItem(
+      "ryos:books",
+      JSON.stringify({
+        state: {
+          progressByPath: {
+            "/Books/migrated.epub": {
+              cfi: "epubcfi(/6/2)",
+              percentage: 0.5,
+              updatedAt: 1,
+            },
+          },
+          highlightsByPath: {},
+          bookmarksByPath: {},
+        },
+        version: 9,
+      })
+    );
+    localStorage.setItem(
+      "calendar-storage",
+      JSON.stringify({
+        state: {
+          events: [
+            {
+              id: "migrated-event",
+              title: "Migrated event",
+              date: "2026-07-03",
+              color: "blue",
+              calendarId: "home",
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          ],
+          calendars: [],
+          todos: [],
+        },
+        version: 0,
+      })
+    );
+    localStorage.setItem(
+      "ryos:videos",
+      JSON.stringify({
+        state: {
+          videos: [
+            {
+              id: "migrated-video",
+              url: "https://youtu.be/migrated-video",
+              title: "Migrated video",
+              artist: "ryOS",
+            },
+          ],
+          currentVideoId: "migrated-video",
+          loopAll: true,
+          loopCurrent: false,
+          isShuffled: false,
+        },
+        version: 8,
+      })
+    );
+    localStorage.setItem(
+      "ryos:tv",
+      JSON.stringify({
+        state: {
+          currentChannelId: "migrated-channel",
+          customChannels: [
+            {
+              id: "migrated-channel",
+              name: "Migrated channel",
+              videos: [],
+              createdAt: 1,
+            },
+          ],
+          hiddenDefaultChannelIds: [],
+          hiddenDefaultChannelIdsUpdatedAt: null,
+          hiddenDefaultChannelIdsResetAt: null,
+          lcdFilterOn: true,
+          closedCaptionsOn: false,
+        },
+        version: 5,
+      })
+    );
 
     await Promise.all(stores.map((store) => store.persist.rehydrate()));
 
@@ -170,9 +270,26 @@ describe("large store IndexedDB persistence", () => {
     expect(
       useContactsStore.getState().contacts.some((contact) => contact.id === "friend")
     ).toBe(true);
-    expect(localStorage.getItem("ryos:textedit")).toBeNull();
-    expect(localStorage.getItem("stickies-storage")).toBeNull();
-    expect(localStorage.getItem("contacts-storage")).toBeNull();
+    expect(
+      useBooksStore.getState().progressByPath["/Books/migrated.epub"]?.percentage
+    ).toBe(0.5);
+    expect(useCalendarStore.getState().events[0]?.id).toBe("migrated-event");
+    expect(useVideoStore.getState().videos[0]?.id).toBe("migrated-video");
+    expect(useTvStore.getState().customChannels[0]?.id).toBe(
+      "migrated-channel"
+    );
+    for (const key of [
+      "ryos:textedit",
+      "stickies-storage",
+      "contacts-storage",
+      "ryos:books",
+      "calendar-storage",
+      "ryos:videos",
+      "ryos:tv",
+    ]) {
+      expect(localStorage.getItem(key)).toBeNull();
+      expect(await readPersistedRecord(key)).not.toBeNull();
+    }
   });
 
   test("persists document-sized payloads without consuming localStorage quota", async () => {
