@@ -1,5 +1,7 @@
 import {
+  createContext,
   useCallback,
+  useContext,
   useLayoutEffect,
   useRef,
   useState,
@@ -51,6 +53,12 @@ interface BooksCustomizePanelProps {
   onClose: () => void;
 }
 
+/**
+ * True when the panel renders as the narrow-window / mobile bottom sheet;
+ * rows and controls scale up to comfortable touch-target sizes (44px rows).
+ */
+const CompactPanelContext = createContext(false);
+
 /** Uniform "label — control — value" row so every setting reads the same. */
 function Row({
   label,
@@ -61,17 +69,31 @@ function Row({
   value?: string;
   children: ReactNode;
 }) {
+  const compact = useContext(CompactPanelContext);
   return (
-    <div className="flex h-8 shrink-0 items-center gap-2">
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-2",
+        compact ? "h-11" : "h-8"
+      )}
+    >
       <span
         title={label}
-        className="line-clamp-2 w-[72px] shrink-0 text-[12px] leading-[14px] text-os-text-secondary"
+        className={cn(
+          "line-clamp-2 w-[72px] shrink-0 text-os-text-secondary",
+          compact ? "text-[13px] leading-[15px]" : "text-[12px] leading-[14px]"
+        )}
       >
         {label}
       </span>
       <div className="flex min-w-0 flex-1 items-center">{children}</div>
       {value !== undefined && (
-        <span className="w-9 shrink-0 text-right text-[12px] tabular-nums text-os-text-secondary">
+        <span
+          className={cn(
+            "shrink-0 text-right tabular-nums text-os-text-secondary",
+            compact ? "w-10 text-[13px]" : "w-9 text-[12px]"
+          )}
+        >
           {value}
         </span>
       )}
@@ -158,10 +180,14 @@ function ColorWell({
   onChange: (hex: string) => void;
   ariaLabel: string;
 }) {
+  const compact = useContext(CompactPanelContext);
   return (
     <span
       title={ariaLabel}
-      className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-black/20 os-dark:border-white/25"
+      className={cn(
+        "relative shrink-0 overflow-hidden rounded-full border border-black/20 os-dark:border-white/25",
+        compact ? "h-9 w-9" : "h-7 w-7"
+      )}
       style={transparent ? TRANSPARENT_SWATCH_STYLE : { background: color }}
     >
       <input
@@ -187,13 +213,15 @@ function Segmented<T extends string>({
   ariaLabel: string;
 }) {
   const isMacOSTheme = useThemeStore((state) => state.current === "macosx");
+  const compact = useContext(CompactPanelContext);
 
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        "flex h-6 w-full",
+        "flex w-full",
+        compact ? "h-9" : "h-6",
         isMacOSTheme
           ? "metal-inset-btn-group"
           : "rounded-full bg-black/[0.07] p-0.5 os-dark:bg-white/10"
@@ -208,7 +236,8 @@ function Segmented<T extends string>({
           data-state={value === option.value ? "on" : "off"}
           onClick={() => onChange(option.value)}
           className={cn(
-            "h-full min-w-0 flex-1 truncate !text-[12px] transition-colors",
+            "h-full min-w-0 flex-1 truncate transition-colors",
+            compact ? "!text-[13px]" : "!text-[12px]",
             isMacOSTheme
               ? "metal-inset-btn"
               : cn(
@@ -316,6 +345,7 @@ export function BooksCustomizePanel({
   ];
 
   return (
+    <CompactPanelContext.Provider value={compact}>
     <motion.div
       initial={compact ? { y: "100%" } : { opacity: 0, y: 6, scale: 0.98 }}
       animate={compact ? { y: 0 } : { opacity: 1, y: 0, scale: 1 }}
@@ -344,7 +374,10 @@ export function BooksCustomizePanel({
           type="button"
           aria-label={t("common.dialog.done")}
           onClick={onClose}
-          className="-mr-1 flex h-6 items-center justify-center rounded-full bg-black/[0.07] px-2.5 !text-[12px] text-os-text-secondary transition-colors hover:bg-black/15 hover:text-os-text-primary os-dark:bg-white/10 os-dark:hover:bg-white/20"
+          className={cn(
+            "-mr-1 flex items-center justify-center rounded-full bg-black/[0.07] text-os-text-secondary transition-colors hover:bg-black/15 hover:text-os-text-primary os-dark:bg-white/10 os-dark:hover:bg-white/20",
+            compact ? "h-8 px-3.5 !text-[13px]" : "h-6 px-2.5 !text-[12px]"
+          )}
         >
           {t("common.dialog.done")}
         </button>
@@ -355,7 +388,7 @@ export function BooksCustomizePanel({
         value={`${settings.fontSizePct}%`}
       >
         <Slider
-          className="h-7"
+          className={compact ? "h-11" : "h-7"}
           aria-label={t("apps.books.menu.textSize")}
           min={BOOKS_FONT_SIZE_MIN}
           max={BOOKS_FONT_SIZE_MAX}
@@ -370,7 +403,7 @@ export function BooksCustomizePanel({
         value={settings.lineHeight.toFixed(2)}
       >
         <Slider
-          className="h-7"
+          className={compact ? "h-11" : "h-7"}
           aria-label={t("apps.books.customize.lineSpacing")}
           min={BOOKS_LINE_HEIGHT_MIN}
           max={BOOKS_LINE_HEIGHT_MAX}
@@ -387,7 +420,7 @@ export function BooksCustomizePanel({
         value={`${settings.gutterPx}px`}
       >
         <Slider
-          className="h-7"
+          className={compact ? "h-11" : "h-7"}
           aria-label={t("apps.books.customize.margins")}
           min={BOOKS_GUTTER_MIN}
           max={BOOKS_GUTTER_MAX}
@@ -415,7 +448,10 @@ export function BooksCustomizePanel({
                   applyFontPreviewStack(el, stack);
                 }}
                 className={cn(
-                  "h-7 shrink-0 whitespace-nowrap !rounded-full !px-2.5 !py-1 !text-[12px] transition-colors",
+                  "shrink-0 whitespace-nowrap !rounded-full !py-1 transition-colors",
+                  compact
+                    ? "h-9 !px-3.5 !text-[13px]"
+                    : "h-7 !px-2.5 !text-[12px]",
                   isMacOSTheme
                     ? "books-font-pill metal-inset-btn"
                     : selected
@@ -446,7 +482,8 @@ export function BooksCustomizePanel({
                 aria-pressed={selected}
                 onClick={() => updateSettings({ themeOverride: swatch.id })}
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center !rounded-[5px] transition-shadow",
+                  "flex shrink-0 items-center justify-center !rounded-[5px] transition-shadow",
+                  compact ? "h-9 w-9" : "h-7 w-7",
                   swatch.custom ? "!p-[2.5px]" : "!p-0",
                   selected &&
                     "ring-2 ring-[color:var(--os-color-selection-bg)] ring-offset-1 ring-offset-[color:var(--os-color-window-bg)]"
@@ -459,7 +496,8 @@ export function BooksCustomizePanel({
               >
                 <span
                   className={cn(
-                    "flex h-full w-full items-center justify-center rounded-[4px] !text-[11px] font-medium !leading-none",
+                    "flex h-full w-full items-center justify-center rounded-[4px] font-medium !leading-none",
+                    compact ? "!text-[13px]" : "!text-[11px]",
                     swatch.custom
                       ? "border-0"
                       : "border border-black/20 os-dark:border-white/25"
@@ -573,7 +611,8 @@ export function BooksCustomizePanel({
                   })
                 }
                 className={cn(
-                  "h-7 shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[12px] transition-colors",
+                  "shrink-0 whitespace-nowrap rounded-full py-1 transition-colors",
+                  compact ? "h-9 px-3.5 text-[13px]" : "h-7 px-2.5 text-[12px]",
                   settings.customThemeTransparent
                     ? "bg-os-selection-bg text-os-selection-text"
                     : "bg-black/[0.07] hover:bg-black/15 os-dark:bg-white/10 os-dark:hover:bg-white/20"
@@ -597,5 +636,6 @@ export function BooksCustomizePanel({
         </>
       )}
     </motion.div>
+    </CompactPanelContext.Provider>
   );
 }
