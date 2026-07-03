@@ -9,6 +9,7 @@ import type {
 } from "../hooks/useBooksLogic";
 import type { BookProgress } from "@/stores/useBooksStore";
 import { BookCover } from "./BookCover";
+import { BookSpineOverlay } from "./BookSpineOverlay";
 import { useBookCover } from "../utils/useBookCover";
 import type { BookCoverInfo } from "../utils/useBookCover";
 
@@ -102,10 +103,10 @@ export function BookMorphCover({
         fileName={entry.fileName}
         info={info}
         loading={loading}
+        progressInset={isGrid && percent > 0}
       />
-      {/* Spine highlight on the left edge (moves with the book). */}
-      <span className="pointer-events-none absolute inset-y-0 left-0 w-[6px] bg-gradient-to-r from-black/40 to-transparent" />
-      <span className="pointer-events-none absolute inset-y-0 left-[6px] w-[2px] bg-white/15" />
+      {/* Spine, hinge, and cover lighting (moves with the book). */}
+      <BookSpineOverlay variant={variant} />
       {/* Reading progress badge — grid only; the list row shows it as text. */}
       {isGrid && percent > 0 && (
         <span className="pointer-events-none absolute bottom-0 left-0 right-0 bg-black/55 px-1 py-[2px] text-center text-[9px] font-os-ui text-white">

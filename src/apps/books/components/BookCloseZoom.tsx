@@ -246,14 +246,24 @@ export function BookCloseZoom({
         if (ready) finish();
       }}
     >
-      <BookCover
-        title={entry.name}
-        fileName={entry.fileName}
-        info={coverInfo}
-        loading={coverLoading}
-        large
-        fit="contain"
-      />
+      {/* The overlay background matches the reading page color, so fading the
+          cover in dissolves the page into the cover as the zoom-out starts
+          (instead of the cover popping in abruptly). */}
+      <motion.div
+        className="h-full w-full"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        <BookCover
+          title={entry.name}
+          fileName={entry.fileName}
+          info={coverInfo}
+          loading={coverLoading}
+          large
+          fit="contain"
+        />
+      </motion.div>
     </motion.div>
   );
 }
