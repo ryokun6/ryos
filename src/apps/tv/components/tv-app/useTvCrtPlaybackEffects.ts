@@ -114,13 +114,19 @@ export function useTvCrtPlaybackEffects({
   }, [currentChannelId, currentVideoId, setIsTransitioningCc]);
 
   const prevPlayingRef = useRef(isPlaying);
+  const prevPlaybackRequestedRef = useRef(playbackRequested);
   const prevVideoIdRef = useRef(currentVideoId);
   const hasPausedRef = useRef(false);
   useEffect(() => {
     const nextVideoId = currentVideoId;
+    const prev = prevPlayingRef.current;
+    const prevPlaybackRequested = prevPlaybackRequestedRef.current;
+    const prevVideoId = prevVideoIdRef.current;
+    prevPlayingRef.current = isPlaying;
+    prevPlaybackRequestedRef.current = playbackRequested;
+    prevVideoIdRef.current = nextVideoId;
+
     if (!isWindowOpen || !wasOpenRef.current || poweringOff) {
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
       return;
     }
 
@@ -128,30 +134,23 @@ export function useTvCrtPlaybackEffects({
       setScreenOff(false);
       setPowerOnKey((k) => k + 1);
       void playPowerOn();
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
       return;
     }
 
-    if (isBuffering) {
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
-      return;
-    }
-    if (prevVideoIdRef.current !== nextVideoId) {
-      prevPlayingRef.current = isPlaying;
-      prevVideoIdRef.current = nextVideoId;
-      return;
-    }
-    const prev = prevPlayingRef.current;
-    prevPlayingRef.current = isPlaying;
-    if (prev === isPlaying) return;
-    if (prev && !isPlaying) {
+    if (
+      (prev && !isPlaying) ||
+      (prevPlaybackRequested && !playbackRequested)
+    ) {
       hasPausedRef.current = true;
       setScreenOff(true);
       stopStatic();
       void playPowerOff();
-    } else if (!prev && isPlaying && hasPausedRef.current) {
+      return;
+    }
+
+    if (isBuffering || prevVideoId !== nextVideoId) return;
+
+    if (!prev && isPlaying && hasPausedRef.current) {
       setScreenOff(false);
       setPowerOnKey((k) => k + 1);
       void playPowerOn();
