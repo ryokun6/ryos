@@ -35,6 +35,7 @@ import {
   useIpodStore,
   IpodBacklightTimeout,
   getEffectiveTranslationLanguage,
+  getActiveIpodCurrentTrack,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
 } from "@/stores/useIpodStore";
@@ -4828,13 +4829,7 @@ export function useIpodLogic({
   );
 
   const getCurrentStoreTrack = useCallback(() => {
-    const state = useIpodStore.getState();
-    if (state.librarySource === "appleMusic") {
-      const id = state.appleMusicCurrentSongId;
-      if (!id) return state.appleMusicTracks[0] ?? null;
-      return state.appleMusicTracks.find((t) => t.id === id) ?? null;
-    }
-    return state.getCurrentTrack();
+    return getActiveIpodCurrentTrack(useIpodStore.getState());
   }, []);
 
   // Volume from audio settings store

@@ -25,7 +25,12 @@ import { isYouTubeUrl, parseYouTubeId } from "@/apps/tv/utils";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { fetchYouTubeOembed } from "@/utils/youtubeMetadata";
 import { getApiUrl } from "@/utils/platform";
-import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
+import {
+  createShortIdMap,
+  isIOSDevice,
+  resolveId,
+  type ShortIdMap,
+} from "./helpers";
 
 export type TvChannelAction =
   | "list"
@@ -298,7 +303,10 @@ export const handleTvChannelAction = async (
 
         ensureTvAppOpen(context);
         tvStore.setCurrentChannelId(target.id);
-        tvStore.setIsPlaying(true);
+        const requiresManualPlay = isIOSDevice();
+        if (!requiresManualPlay) {
+          tvStore.setIsPlaying(true);
+        }
 
         const isCustom = !DEFAULT_CHANNELS.some((c) => c.id === target!.id);
         const shortId =
@@ -309,10 +317,15 @@ export const handleTvChannelAction = async (
           toolCallId,
           output: {
             success: true,
-            message: i18n.t("apps.chats.toolCalls.tv.tunedTo", {
-              defaultValue: "Tuned to {{label}}",
-              label: formatChannelLabel(target),
-            }),
+            message: requiresManualPlay
+              ? i18n.t("apps.chats.toolCalls.tv.tunedToReady", {
+                  defaultValue: "Tuned to {{label}}. Tap play to start",
+                  label: formatChannelLabel(target),
+                })
+              : i18n.t("apps.chats.toolCalls.tv.tunedTo", {
+                  defaultValue: "Tuned to {{label}}",
+                  label: formatChannelLabel(target),
+                }),
             channel: buildChannelToolRecord(
               target,
               shortId,

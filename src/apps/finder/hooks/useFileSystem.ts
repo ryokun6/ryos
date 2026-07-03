@@ -342,10 +342,12 @@ export function useFileSystem(
   const launchApp = useLaunchApp();
   const {
     tracks: ipodTracks,
+    setLibrarySource: setIpodLibrarySource,
     setCurrentSongId: setIpodSongId,
     setIsPlaying: setIpodPlaying,
   } = useIpodStoreShallow((state) => ({
     tracks: state.tracks,
+    setLibrarySource: state.setLibrarySource,
     setCurrentSongId: state.setCurrentSongId,
     setIsPlaying: state.setIsPlaying,
   }));
@@ -1001,7 +1003,9 @@ export function useFileSystem(
             );
           }
         } else if (file.appId === "ipod" && file.data?.songId) {
-          // iPod uses song ID directly
+          // Finder's /Music tree contains the YouTube-backed music library,
+          // so switch away from Apple Music before selecting the VFS item.
+          setIpodLibrarySource("youtube");
           setIpodSongId(file.data.songId);
           setIpodPlaying(true);
           launchApp("ipod", { launchOrigin });
@@ -1033,6 +1037,7 @@ export function useFileSystem(
     [
       launchApp,
       navigateToPath,
+      setIpodLibrarySource,
       setIpodSongId,
       setIpodPlaying,
       setVideoIndex,

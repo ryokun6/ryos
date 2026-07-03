@@ -1,9 +1,10 @@
 import type { AppId } from "@/config/appRegistry";
+import type { ToolInvocationPart } from "@/components/shared/tool-invocation-message/types";
 
 export interface ToolInvocationData {
   toolName: string;
   state?: "input-streaming" | "input-available" | "output-available" | "output-error";
-  input?: Record<string, unknown>;
+  input?: ToolInvocationPart["input"];
   output?: unknown;
 }
 

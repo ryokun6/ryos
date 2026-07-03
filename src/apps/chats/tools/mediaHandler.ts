@@ -52,6 +52,7 @@ import {
   type TvChannelAction,
 } from "./mediaTvChannels";
 import { createClientLogger } from "@/utils/logger";
+import { computeSequentialNavigation } from "@/shared/media/transport";
 
 const log = createClientLogger("ChatTools");
 
@@ -98,13 +99,25 @@ type AddAndPlayResult =
 /**
  * Everything the generic transport flow needs to know about one target app.
  */
-interface TransportTargetAdapter {
+interface PlaybackTargetAdapter {
   appId: AppId;
-  getItems(): MediaItemRef[];
   getCurrentItem(): MediaItemRef | null;
   isPlaybackRequested(): boolean;
   setIsPlaying(playing: boolean): void;
   togglePlay(): void;
+  /** Apply target-specific flags; returns human-readable state changes. */
+  applySettings(input: MediaControlInput): string[];
+  messages: {
+    ready: () => string;
+    playingTrack: (trackDesc: string) => string;
+    pausedTrack: (trackDesc: string) => string;
+    playing: () => string;
+    paused: () => string;
+  };
+}
+
+interface TransportTargetAdapter extends PlaybackTargetAdapter {
+  getItems(): MediaItemRef[];
   /** Select an item by id without starting playback. */
   selectItem(id: string): void;
   navigate(direction: "next" | "previous"): void;
@@ -114,14 +127,7 @@ interface TransportTargetAdapter {
     query: { id?: string; title?: string; artist?: string }
   ): number[];
   addAndPlay(id: string, isIOS: boolean): Promise<AddAndPlayResult>;
-  /** Apply target-specific flags; returns human-readable state changes. */
-  applySettings(input: MediaControlInput): string[];
-  messages: {
-    ready: () => string;
-    playingTrack: (trackDesc: string) => string;
-    pausedTrack: (trackDesc: string) => string;
-    playing: () => string;
-    paused: () => string;
+  messages: PlaybackTargetAdapter["messages"] & {
     selected: (trackDesc: string) => string;
     notFound: () => string;
     skippedTo: (trackDesc: string) => string;
@@ -532,28 +538,15 @@ const videosAdapter: TransportTargetAdapter = {
   togglePlay: () => useVideoStore.getState().togglePlay(),
   selectItem: (id) => useVideoStore.getState().setCurrentVideoId(id),
   navigate: (direction) => {
-    // Mirrors the Videos app's next/previous semantics: wrap around only
-    // when loop-all is on, otherwise stay on the boundary video.
     const store = useVideoStore.getState();
-    const { videos, loopAll } = store;
-    if (videos.length === 0) return;
-    const currentIndex = store.getCurrentIndex();
-    let nextIndex = currentIndex;
-    if (direction === "next") {
-      if (currentIndex === videos.length - 1) {
-        if (loopAll) nextIndex = 0;
-      } else {
-        nextIndex = currentIndex + 1;
-      }
-    } else {
-      if (currentIndex === 0) {
-        if (loopAll) nextIndex = videos.length - 1;
-      } else {
-        nextIndex = currentIndex - 1;
-      }
-    }
-    if (nextIndex !== currentIndex) {
-      store.setCurrentVideoId(videos[nextIndex].id);
+    const decision = computeSequentialNavigation(
+      store.videos,
+      store.currentVideoId,
+      store.loopAll,
+      direction
+    );
+    if (decision.changed) {
+      store.setCurrentVideoId(decision.itemId);
     }
     useVideoStore.getState().setIsPlaying(true);
   },
@@ -691,6 +684,48 @@ const videosAdapter: TransportTargetAdapter = {
   },
 };
 
+const tvPlaybackAdapter: PlaybackTargetAdapter = {
+  appId: "tv",
+  getCurrentItem: () => {
+    const state = useTvStore.getState();
+    const channel = buildTvChannelLineup(
+      state.customChannels,
+      state.hiddenDefaultChannelIds
+    ).find((candidate) => candidate.id === state.currentChannelId);
+    return channel
+      ? { id: channel.id, title: channel.name }
+      : null;
+  },
+  isPlaybackRequested: () => useTvStore.getState().playbackRequested,
+  setIsPlaying: (playing) => useTvStore.getState().setIsPlaying(playing),
+  togglePlay: () => useTvStore.getState().togglePlay(),
+  applySettings: () => [],
+  messages: {
+    ready: () =>
+      i18n.t("apps.chats.toolCalls.tvReady", {
+        defaultValue: "TV is ready. Tap play to start",
+      }),
+    playingTrack: (channel) =>
+      i18n.t("apps.chats.toolCalls.tvPlayingChannel", {
+        channel,
+        defaultValue: `TV is now playing ${channel}`,
+      }),
+    pausedTrack: (channel) =>
+      i18n.t("apps.chats.toolCalls.tvPausedChannel", {
+        channel,
+        defaultValue: `TV paused ${channel}`,
+      }),
+    playing: () =>
+      i18n.t("apps.chats.toolCalls.tvPlaying", {
+        defaultValue: "TV is now playing",
+      }),
+    paused: () =>
+      i18n.t("apps.chats.toolCalls.tvPaused", {
+        defaultValue: "TV is now paused",
+      }),
+  },
+};
+
 const TRANSPORT_ADAPTERS: Record<
   Exclude<MediaControlTarget, "tv">,
   TransportTargetAdapter
@@ -726,7 +761,7 @@ const emitOutput = (
 };
 
 const handlePlaybackState = (
-  adapter: TransportTargetAdapter,
+  adapter: PlaybackTargetAdapter,
   action: "toggle" | "play" | "pause",
   input: MediaControlInput,
   toolCallId: string,
@@ -956,75 +991,6 @@ const handleNavigation = (
 };
 
 // ============================================================================
-// TV transport (play/pause/toggle on the current channel)
-// ============================================================================
-
-const handleTvTransport = (
-  action: "toggle" | "play" | "pause",
-  toolCallId: string,
-  context: ToolContext,
-  emitToolName: string,
-  isIOS: boolean
-): void => {
-  ensureAppOpen("tv", context.launchApp);
-  const tv = useTvStore.getState();
-
-  if (isIOS && (action === "play" || action === "toggle")) {
-    context.addToolOutput({
-      tool: emitToolName,
-      toolCallId,
-      output: i18n.t("apps.chats.toolCalls.tvReady", {
-        defaultValue: "TV is ready. Tap play to start",
-      }),
-    });
-    log.debug("iOS detected; user must manually start TV playback");
-    return;
-  }
-
-  switch (action) {
-    case "play":
-      if (!tv.playbackRequested) tv.setIsPlaying(true);
-      break;
-    case "pause":
-      if (tv.playbackRequested) tv.setIsPlaying(false);
-      break;
-    default:
-      tv.togglePlay();
-      break;
-  }
-
-  const updated = useTvStore.getState();
-  const channel = buildTvChannelLineup(
-    updated.customChannels,
-    updated.hiddenDefaultChannelIds
-  ).find((c) => c.id === updated.currentChannelId);
-  const channelName = channel?.name;
-
-  const output = updated.playbackRequested
-    ? channelName
-      ? i18n.t("apps.chats.toolCalls.tvPlayingChannel", {
-          channel: channelName,
-          defaultValue: `TV is now playing ${channelName}`,
-        })
-      : i18n.t("apps.chats.toolCalls.tvPlaying", {
-          defaultValue: "TV is now playing",
-        })
-    : channelName
-    ? i18n.t("apps.chats.toolCalls.tvPausedChannel", {
-        channel: channelName,
-        defaultValue: `TV paused ${channelName}`,
-      })
-    : i18n.t("apps.chats.toolCalls.tvPaused", {
-        defaultValue: "TV is now paused",
-      });
-
-  context.addToolOutput({ tool: emitToolName, toolCallId, output });
-  log.debug("TV playback state changed", {
-    isPlaying: updated.playbackRequested,
-  });
-};
-
-// ============================================================================
 // Action normalization
 // ============================================================================
 
@@ -1126,7 +1092,16 @@ export const handleMediaControl = async (
   // TV transport.
   if (target === "tv") {
     if (action === "toggle" || action === "play" || action === "pause") {
-      handleTvTransport(action, toolCallId, context, emitToolName, isIOS);
+      ensureAppOpen(tvPlaybackAdapter.appId, context.launchApp);
+      handlePlaybackState(
+        tvPlaybackAdapter,
+        action,
+        input,
+        toolCallId,
+        context,
+        emitToolName,
+        isIOS
+      );
       return;
     }
     context.addToolOutput({

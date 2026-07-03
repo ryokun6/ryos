@@ -11,6 +11,7 @@ import {
   appendHistory,
   computeNextNavigation,
   computePreviousNavigation,
+  computeSequentialNavigation,
   createTransportActions,
   dedupeAppendHistory,
   findMediaIndexById,
@@ -48,6 +49,37 @@ describe("findMediaIndexById", () => {
 
   test("finds the index by id", () => {
     expect(findMediaIndexById(items("a", "b", "c"), "b")).toBe(1);
+  });
+});
+
+describe("computeSequentialNavigation", () => {
+  test("advances and goes back without wrapping", () => {
+    expect(
+      computeSequentialNavigation(items("a", "b", "c"), "b", false, "next")
+    ).toEqual({ itemId: "c", changed: true, wrapped: false });
+    expect(
+      computeSequentialNavigation(
+        items("a", "b", "c"),
+        "b",
+        false,
+        "previous"
+      )
+    ).toEqual({ itemId: "a", changed: true, wrapped: false });
+  });
+
+  test("wraps only when loop-all is enabled", () => {
+    expect(
+      computeSequentialNavigation(items("a", "b"), "b", true, "next")
+    ).toEqual({ itemId: "a", changed: true, wrapped: true });
+    expect(
+      computeSequentialNavigation(items("a", "b"), "a", false, "previous")
+    ).toEqual({ itemId: "a", changed: false, wrapped: false });
+  });
+
+  test("selects the first item when the current id is stale", () => {
+    expect(
+      computeSequentialNavigation(items("a", "b"), "missing", false, "next")
+    ).toEqual({ itemId: "a", changed: true, wrapped: false });
   });
 });
 

@@ -18,6 +18,7 @@ import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 import { formatSecondsMmSs } from "@/utils/formatDuration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTrackSwitchGuard } from "@/shared/media/useTrackSwitchGuard";
+import { computeSequentialNavigation } from "@/shared/media/transport";
 import { createClientLogger } from "@/utils/logger";
 
 const log = createClientLogger("Videos");
@@ -502,23 +503,26 @@ export function useVideosLogic({
     playButtonClick();
     startTrackSwitch(); // Guard against race conditions during track switch
 
-    const currentIndex = getCurrentIndex();
-    if (currentIndex === videos.length - 1) {
-      if (loopAll) {
-        showStatus(t("apps.videos.status.repeatingPlaylist"));
-        updateCurrentVideoId(videos[0].id, "next");
-      }
-      // If not looping, stay on current video
-    } else {
+    const decision = computeSequentialNavigation(
+      videos,
+      currentVideoId,
+      loopAll,
+      "next"
+    );
+    if (decision.wrapped) {
+      showStatus(t("apps.videos.status.repeatingPlaylist"));
+    } else if (decision.changed) {
       showStatus(t("apps.videos.status.next"));
-      updateCurrentVideoId(videos[currentIndex + 1].id, "next");
+    }
+    if (decision.changed) {
+      updateCurrentVideoId(decision.itemId, "next");
     }
     setIsPlaying(true);
   }, [
     videos,
+    currentVideoId,
     playButtonClick,
     startTrackSwitch,
-    getCurrentIndex,
     loopAll,
     showStatus,
     t,
@@ -531,23 +535,26 @@ export function useVideosLogic({
     playButtonClick();
     startTrackSwitch(); // Guard against race conditions during track switch
 
-    const currentIndex = getCurrentIndex();
-    if (currentIndex === 0) {
-      if (loopAll) {
-        showStatus(t("apps.videos.status.repeatingPlaylist"));
-        updateCurrentVideoId(videos[videos.length - 1].id, "prev");
-      }
-      // If not looping, stay on current video
-    } else {
+    const decision = computeSequentialNavigation(
+      videos,
+      currentVideoId,
+      loopAll,
+      "previous"
+    );
+    if (decision.wrapped) {
+      showStatus(t("apps.videos.status.repeatingPlaylist"));
+    } else if (decision.changed) {
       showStatus(t("apps.videos.status.prev"));
-      updateCurrentVideoId(videos[currentIndex - 1].id, "prev");
+    }
+    if (decision.changed) {
+      updateCurrentVideoId(decision.itemId, "prev");
     }
     setIsPlaying(true);
   }, [
     videos,
+    currentVideoId,
     playButtonClick,
     startTrackSwitch,
-    getCurrentIndex,
     loopAll,
     showStatus,
     t,

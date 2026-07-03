@@ -87,6 +87,53 @@ export function findMediaIndexById(
   return index >= 0 ? index : -1;
 }
 
+export interface SequentialNavigationDecision {
+  itemId: string | null;
+  changed: boolean;
+  wrapped: boolean;
+}
+
+/**
+ * Resolve next/previous for a simple ordered playlist.
+ *
+ * Videos uses this path because it has no shuffle history. Keeping the
+ * decision pure lets the UI add animation/status effects while AI control
+ * applies the same boundary and loop-all behavior.
+ */
+export function computeSequentialNavigation(
+  items: readonly MediaItemRef[],
+  currentId: string | null,
+  loopAll: boolean,
+  direction: "next" | "previous"
+): SequentialNavigationDecision {
+  if (items.length === 0) {
+    return { itemId: null, changed: false, wrapped: false };
+  }
+
+  const currentIndex = findMediaIndexById(items, currentId);
+  if (currentIndex < 0) {
+    return { itemId: items[0].id, changed: true, wrapped: false };
+  }
+
+  const atBoundary =
+    direction === "next"
+      ? currentIndex === items.length - 1
+      : currentIndex === 0;
+  if (atBoundary && !loopAll) {
+    return { itemId: items[currentIndex].id, changed: false, wrapped: false };
+  }
+
+  const nextIndex =
+    direction === "next"
+      ? (currentIndex + 1) % items.length
+      : (currentIndex - 1 + items.length) % items.length;
+  return {
+    itemId: items[nextIndex].id,
+    changed: nextIndex !== currentIndex,
+    wrapped: atBoundary,
+  };
+}
+
 // ============================================================================
 // Playback-history strategies
 // ============================================================================

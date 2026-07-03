@@ -478,6 +478,29 @@ describe("mediaControl handler — tv transport", () => {
     expect(useTvStore.getState().playbackRequested).toBe(false);
   });
 
+  test("tune selects a channel without autoplay on iOS", async () => {
+    Object.defineProperty(browserGlobals, "navigator", {
+      configurable: true,
+      value: { onLine: true, userAgent: "iPhone" },
+    });
+    try {
+      const { outputs, context } = makeContext();
+      await handleMediaControl(
+        { target: "tv", action: "tune", channelId: "mtv" },
+        "call-tv-ios",
+        context
+      );
+      expect(useTvStore.getState().currentChannelId).toBe("mtv");
+      expect(useTvStore.getState().playbackRequested).toBe(false);
+      expect(outputs[0].output).toMatchObject({ success: true });
+    } finally {
+      Object.defineProperty(browserGlobals, "navigator", {
+        configurable: true,
+        value: { onLine: true, userAgent: "test" },
+      });
+    }
+  });
+
   test("channel actions with a non-tv target report an error", async () => {
     const { outputs, context } = makeContext();
     await handleMediaControl(

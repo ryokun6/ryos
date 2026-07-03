@@ -2,9 +2,9 @@
  * MediaCore now-playing bus.
  *
  * A single answer to "which media app is driving playback right now".
- * Fed by `mediaCoreRuntime.ts` (which subscribes to the iPod, Karaoke,
- * Videos, and TV stores); consumed by cross-app surfaces like the dynamic
- * wallpaper and, later, the unified `mediaControl` AI tool.
+ * Fed by `mediaCoreRuntime.ts`, which subscribes to the iPod, Karaoke,
+ * Videos, and TV stores. The runtime also uses these entries to expose one
+ * stable active-app decision to future cross-app consumers.
  *
  * This module deliberately imports no app stores so it can be consumed from
  * boot-time code without pulling the media apps into the boot chunk.

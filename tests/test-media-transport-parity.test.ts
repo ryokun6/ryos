@@ -1,10 +1,8 @@
 /**
  * MediaCore Phase 0 guardrails — transport parity.
  *
- * Pins the current playback-transport semantics of the four media stores
- * (iPod, Karaoke, Videos, TV) before they are migrated onto a shared
- * transport slice factory. Phase 1 must keep every assertion here green
- * without modifying this file.
+ * Pins the playback-transport semantics of the four media stores after their
+ * migration to the shared transport factory.
  */
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, test } from "bun:test";

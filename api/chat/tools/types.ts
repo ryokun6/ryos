@@ -130,17 +130,6 @@ export interface CloseAppInput {
   id: string;
 }
 
-// Media control input (iPod/Karaoke)
-export interface MediaControlInput {
-  action?: MediaAction;
-  id?: string;
-  title?: string;
-  artist?: string;
-  enableTranslation?: string;
-  enableFullscreen?: boolean;
-  enableVideo?: boolean;
-}
-
 // Generate HTML input
 export interface GenerateHtmlInput {
   html: string;
@@ -363,63 +352,6 @@ export const TV_ACTIONS = [
   "removeVideo",
 ] as const;
 export type TvAction = (typeof TV_ACTIONS)[number];
-
-export interface TvControlInput {
-  action: TvAction;
-  /** For 'tune', 'deleteChannel', 'addVideo', 'removeVideo': the channel id (or short id from 'list'). */
-  channelId?: string;
-  /** For 'tune': switch by channel number instead of id. */
-  channelNumber?: number;
-  /**
-   * For 'createChannel' (REQUIRED): one-line description/theme of the channel
-   * (e.g. "skateboarding tricks", "lofi study"). The server fans out to YouTube
-   * via `/api/tv/create-channel` and AI-plans the name, tagline, and lineup —
-   * do not pass a `videos` list.
-   */
-  prompt?: string;
-  /** For 'createChannel': optional name override (otherwise planner picks one). */
-  name?: string;
-  /** For 'addVideo': YouTube video id or supported URL. */
-  videoId?: string;
-  /** For 'addVideo': YouTube URL alternative to videoId. */
-  url?: string;
-  /** For 'addVideo': optional explicit title (otherwise looked up from oEmbed). */
-  title?: string;
-  /** For 'addVideo': optional explicit artist/channel. */
-  artist?: string;
-  /** For 'removeVideo': the video id within the channel. */
-  removeVideoId?: string;
-}
-
-export interface TvVideoToolRecord {
-  id: string;
-  title: string;
-  artist?: string;
-  url: string;
-}
-
-export interface TvChannelToolRecord {
-  /** Short id used for AI-friendly identification within a single 'list' call. */
-  id: string;
-  /** Stable channel id from the store. */
-  channelId: string;
-  number: number;
-  name: string;
-  description?: string;
-  isCustom: boolean;
-  isCurrent: boolean;
-  videoCount: number;
-  videos?: TvVideoToolRecord[];
-}
-
-export interface TvControlOutput {
-  success: boolean;
-  message: string;
-  channels?: TvChannelToolRecord[];
-  channel?: TvChannelToolRecord | null;
-  /** For 'addVideo' / 'removeVideo'. */
-  video?: TvVideoToolRecord | null;
-}
 
 // ============================================================================
 // Unified Media Control Types (MediaCore)

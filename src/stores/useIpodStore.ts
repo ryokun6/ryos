@@ -55,7 +55,6 @@ import {
   computePreviousNavigation,
   createTransportActions,
   dedupeAppendHistory,
-  findMediaIndexById,
 } from "@/shared/media/transport";
 
 const debug = createClientLogger("IpodStore").debug;
@@ -431,10 +430,6 @@ export function isAppleMusicCollectionTrack(
 export interface IpodState extends IpodData {
   /** Set the current song by ID */
   setCurrentSongId: (songId: string | null) => void;
-  /** Get the current track (computed from currentSongId) */
-  getCurrentTrack: () => Track | null;
-  /** Get the current track index (computed from currentSongId) */
-  getCurrentIndex: () => number;
   toggleLoopCurrent: () => void;
   toggleLoopAll: () => void;
   toggleShuffle: () => void;
@@ -1090,15 +1085,6 @@ export const useIpodStore = create<IpodState>()(
           }
           return {};
         }),
-      getCurrentTrack: () => {
-        const state = get();
-        if (!state.currentSongId) return state.tracks[0] ?? null;
-        return state.tracks.find((t) => t.id === state.currentSongId) ?? null;
-      },
-      getCurrentIndex: () => {
-        const state = get();
-        return findMediaIndexById(state.tracks, state.currentSongId);
-      },
       toggleLoopCurrent: () =>
         set((state) => ({ loopCurrent: !state.loopCurrent })),
       toggleLoopAll: () => set((state) => ({ loopAll: !state.loopAll })),
@@ -1431,7 +1417,7 @@ export const useIpodStore = create<IpodState>()(
         })),
       clearLyricsCache: () => {
         const state = get();
-        const currentTrack = state.getCurrentTrack();
+        const currentTrack = getActiveIpodCurrentTrack(state);
         
         // Clear server-side cache for translations, furigana, and soramimi
         if (currentTrack?.id) {

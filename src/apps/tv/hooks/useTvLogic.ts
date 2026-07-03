@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useTvStore } from "@/stores/useTvStore";
 import { useIpodStore } from "@/stores/useIpodStore";
-import type { Track } from "@/shared/media/library";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { trackToVideoItem } from "@/shared/media/library";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -26,8 +25,6 @@ import { formatSecondsMmSs } from "@/utils/formatDuration";
 
 export const MTV_CHANNEL_ID = "mtv";
 export const RYO_TV_CHANNEL_ID = "ryos-picks";
-
-const trackToVideo = (track: Track): Video => trackToVideoItem(track);
 
 export interface UseTvLogicOptions {
   isWindowOpen: boolean;
@@ -127,7 +124,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     // other built-in channels keep their static `videos` array.
     let rawSource: Video[];
     if (base.id === MTV_CHANNEL_ID) {
-      rawSource = ipodTracks.map(trackToVideo);
+      rawSource = ipodTracks.map(trackToVideoItem);
     } else if (base.id === RYO_TV_CHANNEL_ID) {
       rawSource = videosLibrary;
     } else {
