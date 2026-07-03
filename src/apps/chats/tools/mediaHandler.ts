@@ -1025,13 +1025,18 @@ const TV_CHANNEL_ACTIONS: ReadonlySet<CanonicalAction> = new Set([
 // Main handler
 // ============================================================================
 
-/** Handle a `mediaControl` tool call. */
+/**
+ * Handle a `mediaControl` operation.
+ *
+ * `emitToolName` is overridden when another tool, such as VFS `open`, routes
+ * through MediaCore and must resolve its own tool call.
+ */
 export const handleMediaControl = async (
   input: MediaControlInput,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  emitToolName: string = "mediaControl"
 ): Promise<void> => {
-  const emitToolName = "mediaControl";
   const target: MediaControlTarget = input.target ?? "music";
   const rawAction = (input.action ?? "toggle").toString().trim();
   const action =
