@@ -247,7 +247,7 @@ export function PreviewAppComponent({
     >
       <div
         className={cn(
-          "relative h-full overflow-auto font-os-ui text-os-text-primary",
+          "relative h-full w-full overflow-auto font-os-ui text-os-text-primary",
           isAquaGlass ? "bg-transparent" : "bg-os-panel-bg",
         )}
         onDragOver={(event) => event.preventDefault()}
