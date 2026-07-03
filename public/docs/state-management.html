@@ -658,15 +658,17 @@ const STORES = {
   APPLE_MUSIC_LIBRARY: "apple_music_library",
   APPLE_MUSIC_PLAYLISTS: "apple_music_playlists",
   APPLE_MUSIC_PLAYLIST_TRACKS: "apple_music_playlist_tracks",
+  SYNC2_STATE: "sync2_state", // Per-user cursor, shadow, and dirty state
   PERSISTED_STATE: "persisted_state", // Large Zustand slices
 };
 
-// Database: ryOS (version 13)
+// Database: ryOS (version 14)
 interface StoredContent {
   name: string;               // Original filename
   content: string | Blob;     // File content
 }</code></pre>
 <p>Quota-sensitive stores use <code>createIndexedDBPersistStorage()</code>. The shared adapter debounces and serializes writes, participates in backup flushing, and migrates the same-named legacy localStorage value on first hydration. Because IndexedDB hydration is asynchronous, default seeding and sync jobs wait for <code>persist.hasHydrated()</code> (or the shared <code>usePersistHydrated</code> hook).</p>
+<p>Cloud Sync v2 keeps its per-user cursor and shadow in the dedicated <code>sync2_state</code> store. This operational metadata migrates from legacy <code>ryos:sync2:state:*</code> localStorage keys and is intentionally excluded from manual backups.</p>
 <h3>Hybrid Persistence (Files Store)</h3>
 <p>The <code>useFilesStore</code> demonstrates a sophisticated two-layer architecture:</p>
 <pre class="mermaid">flowchart TB
