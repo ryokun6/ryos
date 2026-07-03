@@ -74,4 +74,15 @@ describe("changelog docs sync", () => {
       );
     }
   });
+
+  test("preserves screenshot aspect ratios in responsive cards", async () => {
+    const html = await readFile(CHANGELOG_HTML, "utf-8");
+
+    expect(html).toContain(
+      ".changelog-feature img { display: block; width: 100%; height: auto;",
+    );
+    expect(html).not.toContain(
+      ".changelog-feature img { display: block; width: 100%; aspect-ratio:",
+    );
+  });
 });
