@@ -1,12 +1,13 @@
 /**
- * MediaCore Phase 3 — unified library model + API.
+ * MediaCore Phase 3 — shared library model.
  *
- * The unified `MediaItem` API must merge both physical libraries without
- * changing them, and the Cloud Sync v2 songs/videos wire format must remain
- * byte-identical to the pre-Phase-3 shape.
+ * The song and video libraries stay separate (no merged music+video
+ * surface); the shared model only provides the common item shape and the
+ * TV app's song→video projection. The Cloud Sync v2 songs/videos wire
+ * format must remain byte-identical to the pre-Phase-3 shape.
  */
 import "fake-indexeddb/auto";
-import { beforeEach, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 class MemoryStorage implements Storage {
   private readonly map = new Map<string, string>();
@@ -41,16 +42,9 @@ if (!browserGlobals.localStorage) {
   });
 }
 
-const {
-  trackToMediaItem,
-  trackToVideoItem,
-  videoToMediaItem,
-} = await import("../src/shared/media/library");
+const { trackToVideoItem } = await import("../src/shared/media/library");
 const { useIpodStore } = await import("../src/stores/useIpodStore");
 const { useVideoStore } = await import("../src/stores/useVideoStore");
-const { getMediaLibraryItems, findMediaLibraryItem } = await import(
-  "../src/stores/useMediaLibraryStore"
-);
 type Track = import("../src/shared/media/library").Track;
 
 const track: Track = {
@@ -64,22 +58,6 @@ const track: Track = {
 };
 
 describe("media item converters", () => {
-  test("trackToMediaItem keeps identity fields and tags kind=song", () => {
-    expect(trackToMediaItem(track)).toEqual({
-      id: "song1",
-      url: "https://youtu.be/song1",
-      title: "Song One",
-      artist: "Artist A",
-      kind: "song",
-    });
-  });
-
-  test("videoToMediaItem tags kind=video", () => {
-    expect(
-      videoToMediaItem({ id: "v1", url: "u", title: "T", artist: "A" })
-    ).toEqual({ id: "v1", url: "u", title: "T", artist: "A", kind: "video" });
-  });
-
   test("trackToVideoItem matches the TV app's historical projection", () => {
     // Exact shape the MTV channel used to build via its local trackToVideo.
     expect(trackToVideoItem(track)).toEqual({
@@ -88,35 +66,6 @@ describe("media item converters", () => {
       title: "Song One",
       artist: "Artist A",
     });
-  });
-});
-
-describe("unified library API", () => {
-  beforeEach(() => {
-    useIpodStore.setState({ tracks: [track] });
-    useVideoStore.setState({
-      videos: [{ id: "vid1", url: "https://youtu.be/vid1", title: "Video 1" }],
-      currentVideoId: "vid1",
-    });
-  });
-
-  test("getMediaLibraryItems merges both libraries with kind tags", () => {
-    const items = getMediaLibraryItems();
-    expect(items.map((i) => `${i.kind}:${i.id}`)).toEqual([
-      "song:song1",
-      "video:vid1",
-    ]);
-  });
-
-  test("getMediaLibraryItems filters by kind", () => {
-    expect(getMediaLibraryItems("song").map((i) => i.id)).toEqual(["song1"]);
-    expect(getMediaLibraryItems("video").map((i) => i.id)).toEqual(["vid1"]);
-  });
-
-  test("findMediaLibraryItem resolves across libraries", () => {
-    expect(findMediaLibraryItem("song1")?.kind).toBe("song");
-    expect(findMediaLibraryItem("vid1")?.kind).toBe("video");
-    expect(findMediaLibraryItem("missing")).toBeNull();
   });
 });
 

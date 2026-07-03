@@ -1,12 +1,12 @@
 /**
- * MediaCore unified library model.
+ * MediaCore library model.
  *
  * One item model for the media apps: songs (iPod / Karaoke / Winamp library)
  * and videos (Videos / TV library) share the same base shape — `Video` was
- * historically a strict subset of `Track`. The physical storage remains in
- * `useIpodStore.tracks` and `useVideoStore.videos` (keeping the Cloud Sync v2
- * wire format byte-identical); `useMediaLibraryStore` exposes the unified
- * read API over both.
+ * historically a strict subset of `Track`. The two libraries stay separate
+ * (physical storage in `useIpodStore.tracks` and `useVideoStore.videos`,
+ * keeping the Cloud Sync v2 wire format byte-identical); music and videos
+ * are never merged into one library surface.
  *
  * This module is shared with the server (`api/_utils/song-library-state.ts`),
  * so it must stay free of client-only imports.
@@ -78,33 +78,6 @@ export interface Track extends MediaItemBase {
 
 /** Video in the Videos / TV library. */
 export type VideoItem = MediaItemBase;
-
-export type MediaItemKind = "song" | "video";
-
-/** A library item tagged with which library it came from. */
-export interface MediaItem extends MediaItemBase {
-  kind: MediaItemKind;
-}
-
-export function trackToMediaItem(track: Track): MediaItem {
-  return {
-    id: track.id,
-    url: track.url,
-    title: track.title,
-    artist: track.artist,
-    kind: "song",
-  };
-}
-
-export function videoToMediaItem(video: VideoItem): MediaItem {
-  return {
-    id: video.id,
-    url: video.url,
-    title: video.title,
-    artist: video.artist,
-    kind: "video",
-  };
-}
 
 /**
  * Project a song onto the video shape (used by the TV app's MTV channel,

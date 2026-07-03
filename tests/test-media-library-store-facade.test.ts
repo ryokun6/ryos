@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  getMediaLibraryTracks,
-  useMediaLibraryStore,
-} from "../src/stores/useMediaLibraryStore";
+import { useMediaLibraryStore } from "../src/stores/useMediaLibraryStore";
 import { useIpodStore } from "../src/stores/useIpodStore";
 
 describe("useMediaLibraryStore facade", () => {
@@ -21,6 +18,8 @@ describe("useMediaLibraryStore facade", () => {
       ],
     });
 
-    expect(getMediaLibraryTracks().map((track) => track.id)).toEqual(["track-1"]);
+    expect(
+      useMediaLibraryStore.getState().tracks.map((track) => track.id)
+    ).toEqual(["track-1"]);
   });
 });
