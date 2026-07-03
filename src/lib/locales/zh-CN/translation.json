@@ -1462,18 +1462,18 @@
         "skippingToNext": "跳到下一首…",
         "skippingToPrevious": "跳到上一首…",
         "stickies": {
-          "cleared": "已清除 {{count}} 张便笺",
-          "createdWithColor": "已创建{{color}}便笺",
-          "deleted": "便笺已删除",
-          "foundStickies": "找到 {{count}} 张便笺",
+          "cleared": "已清除 {{count}} 张便条",
+          "createdWithColor": "已创建{{color}}便条",
+          "deleted": "便条已删除",
+          "foundStickies": "找到 {{count}} 张便条",
           "invalidAction": "无效的动作：{{action}}",
-          "managing": "正在管理便笺…",
-          "missingId": "缺少便笺 ID",
-          "noStickies": "没有便笺",
+          "managing": "正在管理便条…",
+          "missingId": "缺少便条 ID",
+          "noStickies": "没有便条",
           "noUpdates": "没有提供更新内容",
-          "notFound": "找不到便笺：{{id}}",
-          "nothingToClear": "没有可清除的便笺",
-          "updated": "便笺已更新"
+          "notFound": "找不到便条：{{id}}",
+          "nothingToClear": "没有可清除的便条",
+          "updated": "便条已更新"
         },
         "switchedTo": "已切换至 {{theme}}",
         "switchingTheme": "切换主题…",
@@ -2246,8 +2246,8 @@
           "purple": "紫色",
           "yellow": "黄色"
         },
-        "noteColor": "便笺颜色",
-        "placeholder": "输入便笺…"
+        "noteColor": "便条颜色",
+        "placeholder": "输入便条…"
       },
       "stocks": {
         "allAdded": "已添加所有股票代码",
@@ -3906,7 +3906,7 @@
           "title": "全部清除"
         },
         "colors": {
-          "description": "从「便条」菜单中选择黄色、粉色、蓝色、绿色、紫色等颜色",
+          "description": "从「颜色」菜单中选择黄色、粉色、蓝色、绿色、紫色等颜色",
           "title": "颜色标签"
         },
         "createNote": {

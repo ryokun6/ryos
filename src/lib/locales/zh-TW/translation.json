@@ -1070,7 +1070,7 @@
           "title": "與 Ryo 聊天"
         },
         "controlApps": {
-          "description": "Ryo 可以啟動 App、切換主題、移動便條、調整電視以及播放 iPod 歌曲。",
+          "description": "Ryo 可以啟動 App、切換主題、移動便條紙、調整電視以及播放 iPod 歌曲。",
           "title": "控制您的作業系統"
         },
         "createEditFiles": {
@@ -3898,20 +3898,20 @@
       },
       "help": {
         "autoSave": {
-          "description": "筆記會自動儲存，並在下次啟動時顯示在相同位置",
+          "description": "便條紙會自動儲存，下次開啟「便條紙」時仍會顯示在相同位置",
           "title": "自動儲存"
         },
         "clearAll": {
-          "description": "「檔案 ▸ 全部清除筆記」可一次清空佈告欄",
+          "description": "「檔案 ▸ 清除所有便條紙」可一次清空所有便條紙",
           "title": "全部清除"
         },
         "colors": {
-          "description": "從「筆記」選單中選擇黃色、粉紅色、藍色、綠色、紫色等顏色",
+          "description": "從「顏色」選單中選擇黃色、粉紅色、藍色、綠色、紫色等顏色",
           "title": "顏色標籤"
         },
         "createNote": {
-          "description": "檔案 ▸ 新增筆記（或 ⌘N）即可在桌面上放置一個新的便條紙",
-          "title": "建立筆記"
+          "description": "「檔案 ▸ 新增便條紙」（或 ⌘N）即可在桌面上放置一個新的便條紙",
+          "title": "建立便條紙"
         },
         "moveResize": {
           "description": "拖移標題列以重新定位；拖移角落以自由調整大小",
@@ -3930,7 +3930,7 @@
         "help": "便條紙輔助說明",
         "newNote": "新增便條紙",
         "note": "便條紙",
-        "syncStickies": "同步便條"
+        "syncStickies": "同步便條紙"
       },
       "name": "便條紙",
       "placeholder": "撰寫便條紙⋯",

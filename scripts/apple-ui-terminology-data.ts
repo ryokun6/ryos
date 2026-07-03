@@ -869,6 +869,18 @@ export const RAW_APPLE_UI_TERMINOLOGY = {
     "it": "Borsa",
     "ru": "Акции"
   },
+  "Stickies": {
+    "zh-TW": "便條紙",
+    "zh-CN": "便笺",
+    "ja": "スティッキーズ",
+    "ko": "스티커",
+    "fr": "Aide-mémoire",
+    "de": "Notizzettel",
+    "es": "Notas Adhesivas",
+    "pt": "Anotações",
+    "it": "Memo",
+    "ru": "Записки"
+  },
   "Empty Trash": {
     "zh-TW": "清空垃圾桶",
     "zh-CN": "清倒废纸篓",
