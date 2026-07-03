@@ -5,34 +5,17 @@ import { DisplayMode } from "@/types/lyrics";
 import { useIpodStore, Track } from "./useIpodStore";
 import { shouldUpdatePlaybackTime } from "./playbackTime";
 import {
-  confirmPlayback,
   requestPlayback,
   resetPlaybackConfirmation,
   stopPlayback,
-  togglePlayback,
 } from "@/shared/media/confirmedPlayback";
-
-/** Helper to get current index from song ID */
-function getIndexFromSongId(tracks: Track[], songId: string | null): number {
-  if (!songId || tracks.length === 0) return -1;
-  const index = tracks.findIndex((t) => t.id === songId);
-  return index >= 0 ? index : -1;
-}
-
-/** Get a random song ID avoiding the current song */
-function getRandomSongId(tracks: Track[], currentSongId: string | null): string | null {
-  if (tracks.length === 0) return null;
-  if (tracks.length === 1) return tracks[0].id;
-  
-  const availableIds = tracks.reduce<string[]>((acc, track) => {
-    if (track.id !== currentSongId) {
-      acc.push(track.id);
-    }
-    return acc;
-  }, []);
-  if (availableIds.length === 0) return currentSongId;
-  return availableIds[Math.floor(Math.random() * availableIds.length)];
-}
+import {
+  KARAOKE_NAVIGATION,
+  computeNextNavigation,
+  computePreviousNavigation,
+  createTransportActions,
+  findMediaIndexById,
+} from "@/shared/media/transport";
 
 interface KaraokeData {
   /** The ID of the currently playing song */
@@ -114,7 +97,7 @@ export const useKaraokeStore = create<KaraokeState>()(
       getCurrentIndex: () => {
         const { currentSongId } = get();
         const tracks = useIpodStore.getState().tracks;
-        return getIndexFromSongId(tracks, currentSongId);
+        return findMediaIndexById(tracks, currentSongId);
       },
 
       setCurrentSongId: (songId) =>
@@ -125,22 +108,7 @@ export const useKaraokeStore = create<KaraokeState>()(
             : {}),
         })),
 
-      togglePlay: () => {
-        // Prevent playback when offline
-        if (typeof navigator !== "undefined" && !navigator.onLine) {
-          return;
-        }
-        set((state) => togglePlayback(state));
-      },
-
-      setIsPlaying: (playing) => {
-        // Prevent starting playback when offline
-        if (playing && typeof navigator !== "undefined" && !navigator.onLine) {
-          return;
-        }
-        set(playing ? requestPlayback() : stopPlayback());
-      },
-      confirmPlayback: () => set((state) => confirmPlayback(state)),
+      ...createTransportActions<KaraokeState>(set, { guardOffline: true }),
 
       toggleLoopCurrent: () => set((state) => ({ loopCurrent: !state.loopCurrent })),
 
@@ -155,79 +123,53 @@ export const useKaraokeStore = create<KaraokeState>()(
       nextTrack: () =>
         set((state) => {
           const tracks = useIpodStore.getState().tracks;
-          if (tracks.length === 0) {
+          const decision = computeNextNavigation(
+            {
+              items: tracks,
+              currentId: state.currentSongId,
+              loopCurrent: state.loopCurrent,
+              loopAll: state.loopAll,
+              isShuffled: state.isShuffled,
+              history: state.playbackHistory,
+            },
+            KARAOKE_NAVIGATION
+          );
+
+          if (decision.kind === "empty") {
             return { currentSongId: null, ...stopPlayback() };
           }
-
-          let nextSongId: string | null;
-          let newPlaybackHistory = state.playbackHistory;
-
-          if (state.loopCurrent) {
-            // Stay on current track
-            nextSongId = state.currentSongId;
-          } else if (state.isShuffled) {
-            // Shuffle mode - add current to history and pick random
-            if (state.currentSongId) {
-              newPlaybackHistory = [...state.playbackHistory, state.currentSongId].slice(-50);
-            }
-            nextSongId = getRandomSongId(tracks, state.currentSongId);
-          } else {
-            // Sequential mode
-            const currentIndex = getIndexFromSongId(tracks, state.currentSongId);
-            const nextIndex = currentIndex === -1 ? 0 : currentIndex + 1;
-            
-            if (nextIndex >= tracks.length) {
-              if (state.loopAll) {
-                nextSongId = tracks[0]?.id ?? null;
-              } else {
-                // Stop at end
-                return {
-                  currentSongId: tracks[tracks.length - 1]?.id ?? null,
-                  ...stopPlayback(),
-                };
-              }
-            } else {
-              nextSongId = tracks[nextIndex]?.id ?? null;
-            }
+          if (decision.kind === "stop") {
+            return { currentSongId: decision.id, ...stopPlayback() };
           }
-
           return {
-            currentSongId: nextSongId,
+            currentSongId: decision.id,
             ...requestPlayback(),
-            playbackHistory: newPlaybackHistory,
+            playbackHistory: decision.history,
           };
         }),
 
       previousTrack: () =>
         set((state) => {
           const tracks = useIpodStore.getState().tracks;
-          if (tracks.length === 0) {
+          const decision = computePreviousNavigation(
+            {
+              items: tracks,
+              currentId: state.currentSongId,
+              loopCurrent: state.loopCurrent,
+              loopAll: state.loopAll,
+              isShuffled: state.isShuffled,
+              history: state.playbackHistory,
+            },
+            KARAOKE_NAVIGATION
+          );
+
+          if (decision.kind === "empty") {
             return { currentSongId: null, ...stopPlayback() };
           }
-
-          let prevSongId: string | null;
-          let newPlaybackHistory = state.playbackHistory;
-
-          if (state.isShuffled && state.playbackHistory.length > 0) {
-            // Shuffle mode - go back in history
-            const lastSongId = state.playbackHistory[state.playbackHistory.length - 1];
-            if (lastSongId && tracks.some((t) => t.id === lastSongId)) {
-              prevSongId = lastSongId;
-              newPlaybackHistory = state.playbackHistory.slice(0, -1);
-            } else {
-              prevSongId = getRandomSongId(tracks, state.currentSongId);
-            }
-          } else {
-            // Sequential mode
-            const currentIndex = getIndexFromSongId(tracks, state.currentSongId);
-            const prevIndex = currentIndex <= 0 ? tracks.length - 1 : currentIndex - 1;
-            prevSongId = tracks[prevIndex]?.id ?? null;
-          }
-
           return {
-            currentSongId: prevSongId,
+            currentSongId: decision.id,
             ...requestPlayback(),
-            playbackHistory: newPlaybackHistory,
+            playbackHistory: decision.history,
           };
         }),
 
