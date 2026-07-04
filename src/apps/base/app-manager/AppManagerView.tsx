@@ -10,6 +10,7 @@ import type { AppId } from "@/config/appRegistry";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
+import { AssistantOverlay } from "@/components/assistant/AssistantOverlay";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { isTextEditInitialData } from "@/types/appInitialData";
@@ -83,6 +84,7 @@ export function AppManagerView({
         apps={switcherApps}
         selectedIndex={switcherIndex}
       />
+      <AssistantOverlay />
       <DesktopCornerMask />
     </>
   );

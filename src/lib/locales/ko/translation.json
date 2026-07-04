@@ -4541,6 +4541,23 @@
       "softwareUpdate": "소프트웨어 업데이트…",
       "systemPreferences": "시스템 환경설정…"
     },
+    "assistant": {
+      "emptyBubble": "안녕하세요! 도움이 필요할 때면 언제든지 저를 클릭해 주세요.",
+      "genericError": "앗, 문제가 발생하여 엉켜버렸네요. 잠시 후에 다시 시도해 주세요! 📎",
+      "greetings": {
+        "hello": "안녕하세요! 저는 데스크탑 어시스턴트 {{name}}입니다. 필요한 것이 있으면 저를 클릭해 주세요! 👋",
+        "help": "ryOS를 사용 중이시군요! 도움이 필요하신가요? 저는 {{name}}이며, 기꺼이 도와드리겠습니다. 📎",
+        "looksLike": "안녕하세요! {{name}}입니다. 앱을 열거나 음악을 재생하고, 질문에 답해 드릴 수 있습니다. 무엇이든 물어보세요! ✨",
+        "tip": "안녕하세요! 저는 {{name}}입니다. 팁: 저를 어디로든 드래그할 수 있으며, 윈도우나 Dock에 달라붙습니다. 🪄"
+      },
+      "inputPlaceholder": "무엇이든 물어보세요…",
+      "label": "데스크탑 어시스턴트 {{name}}",
+      "menuLabel": "어시스턴트",
+      "rateLimited": "휴, 잠시 휴식이 필요해요! 조금 후에 다시 시도해 주세요. 더 많은 대화를 원하시면 로그인해 주세요. 😴",
+      "send": "보내기",
+      "thinking": "생각 중…",
+      "turnOff": "끄기"
+    },
     "auth": {
       "changePassword": {
         "confirmPassword": "새 암호 확인",

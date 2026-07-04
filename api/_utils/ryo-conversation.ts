@@ -10,6 +10,9 @@ import {
 } from "ai";
 import {
   ANSWER_STYLE_INSTRUCTIONS,
+  ASSISTANT_CHAT_INSTRUCTIONS,
+  ASSISTANT_CORE_PRIORITY_INSTRUCTIONS,
+  ASSISTANT_PERSONA_INSTRUCTIONS,
   CHAT_INSTRUCTIONS,
   CODE_GENERATION_INSTRUCTIONS,
   CORE_PRIORITY_INSTRUCTIONS,
@@ -132,7 +135,7 @@ export interface RyoConversationSystemState {
   };
 }
 
-export type RyoConversationChannel = "chat" | "telegram";
+export type RyoConversationChannel = "chat" | "telegram" | "assistant";
 
 export interface SimpleConversationMessage {
   id?: string;
@@ -160,6 +163,12 @@ export interface PrepareRyoConversationOptions {
   toolProfile?: ChatToolProfile;
   toolContextOverrides?: Partial<ChatToolsContext>;
   preloadedMemoryContext?: LoadedRyoMemoryContext;
+  /**
+   * Display name of the desktop assistant character (assistant channel only).
+   * Injected into the static system prompt so the character introduces
+   * itself correctly (e.g. "Clippy", "Neko").
+   */
+  assistantName?: string;
   /**
    * When set (typically by the Telegram webhook), the Cursor Cloud agent tool
    * will send a Telegram message to this chat once a background run completes.
@@ -205,11 +214,21 @@ const CHANNEL_PROMPT_SECTIONS = {
     TELEGRAM_CHAT_INSTRUCTIONS,
     MEMORY_INSTRUCTIONS,
   ],
+  // Desktop assistant character: full tool access, no Ryo persona.
+  assistant: [
+    ASSISTANT_CORE_PRIORITY_INSTRUCTIONS,
+    ASSISTANT_PERSONA_INSTRUCTIONS,
+    ASSISTANT_CHAT_INSTRUCTIONS,
+    TOOL_USAGE_INSTRUCTIONS,
+    MEMORY_INSTRUCTIONS,
+    CODE_GENERATION_INSTRUCTIONS,
+  ],
 } as const;
 
 const CHANNEL_TOOL_PROFILES: Record<RyoConversationChannel, ChatToolProfile> = {
   chat: "all",
   telegram: "telegram",
+  assistant: "all",
 };
 
 const CHANNEL_STATE_PROFILES = {
@@ -227,6 +246,14 @@ const CHANNEL_STATE_PROFILES = {
     includeMedia: false,
     includeBrowser: false,
     includeTextEdit: false,
+    includeChatRoomContext: false,
+  },
+  assistant: {
+    allowWithoutSystemState: false,
+    includeRunningApps: true,
+    includeMedia: true,
+    includeBrowser: true,
+    includeTextEdit: true,
     includeChatRoomContext: false,
   },
 } as const;
@@ -325,7 +352,9 @@ export function buildContextAwarePrompts(channel: RyoConversationChannel): {
     loadedSections: [
       channel === "telegram"
         ? "TELEGRAM_STATIC_SYSTEM_PROMPT"
-        : "STATIC_SYSTEM_PROMPT",
+        : channel === "assistant"
+          ? "ASSISTANT_STATIC_SYSTEM_PROMPT"
+          : "STATIC_SYSTEM_PROMPT",
     ],
   };
 }
@@ -461,10 +490,11 @@ export function buildVolatileStatePrompt({
   });
 
   const ryoTimeZone = "America/Los_Angeles";
+  const serverTimeLabel = channel === "assistant" ? "Server Time" : "Ryo Time";
 
   let prompt = `<system_state>
 ## TIME & LOCATION
-Ryo Time: ${timeString} on ${dateString} (${ryoTimeZone})`;
+${serverTimeLabel}: ${timeString} on ${dateString} (${ryoTimeZone})`;
 
   if (effectiveState.userLocalTime) {
     prompt += `
@@ -702,6 +732,7 @@ export async function prepareRyoConversationModelInput(
     toolContextOverrides,
     preloadedMemoryContext,
     cursorRepoAgentNotifyTelegram,
+    assistantName,
   } = options;
 
   const providedTimeZone = timeZone ?? preloadedMemoryContext?.userTimeZone;
@@ -743,7 +774,17 @@ export async function prepareRyoConversationModelInput(
       : `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge briefly and do **not** cite \`agentDashboardUrl\`, agent ids, or run ids — the inline Cursor agent card in web chat already exposes dashboard access, live progress, follow-up, and PR shortcuts.`
     : "";
 
-  const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
+  const assistantIdentityAddon =
+    channel === "assistant" && assistantName
+      ? `\n\n## YOUR NAME\nThe user has chosen the "${assistantName
+          .replace(/[^\p{L}\p{N} _'-]/gu, "")
+          .slice(0, 40)}" assistant character. Your name is ${assistantName
+          .replace(/[^\p{L}\p{N} _'-]/gu, "")
+          .slice(0, 40)}.`
+      : "";
+
+  const staticSystemPrompt =
+    staticPrompts.join("\n") + assistantIdentityAddon + cursorSdkAddon;
 
   const memoryContextPrompt = buildMemoryContextPrompt({
     username,

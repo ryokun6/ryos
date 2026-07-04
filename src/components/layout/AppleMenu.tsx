@@ -15,6 +15,11 @@ import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useAssistantStore } from "@/stores/useAssistantStore";
+import {
+  ASSISTANT_CHARACTERS,
+  type AssistantCharacterId,
+} from "@/components/assistant/characters";
 import { useRyosFullscreen } from "@/hooks/useRyosFullscreen";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppStore, RecentDocument } from "@/stores/useAppStore";
@@ -132,6 +137,18 @@ export function AppleMenu() {
     launchApp("applet-viewer" as AppId, { initialData: { path: "", content: "" } });
   };
 
+  const assistantEnabled = useAssistantStore((state) => state.enabled);
+  const assistantCharacterId = useAssistantStore((state) => state.characterId);
+  const setAssistantEnabled = useAssistantStore((state) => state.setEnabled);
+  const setAssistantCharacterId = useAssistantStore(
+    (state) => state.setCharacterId
+  );
+
+  const handleAssistantCharacterSelect = (characterId: AssistantCharacterId) => {
+    setAssistantCharacterId(characterId);
+    setAssistantEnabled(true);
+  };
+
   const handleMoreApps = () => {
     launchApp("finder" as AppId, { initialPath: "/Applications" });
   };
@@ -202,6 +219,45 @@ export function AppleMenu() {
           >
             {t("common.appleMenu.appletStore")}
           </MenubarItem>
+
+          {/* Desktop Assistant */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("common.assistant.menuLabel")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="min-w-[160px]">
+              {ASSISTANT_CHARACTERS.map((assistantCharacter) => {
+                const isActive =
+                  assistantEnabled &&
+                  assistantCharacter.id === assistantCharacterId;
+                return (
+                  <MenubarItem
+                    key={assistantCharacter.id}
+                    onClick={() =>
+                      handleAssistantCharacterSelect(assistantCharacter.id)
+                    }
+                    className="text-md h-6 px-3 flex items-center gap-2"
+                  >
+                    <span className="w-4 text-center">
+                      {isActive ? "✓" : ""}
+                    </span>
+                    {assistantCharacter.name}
+                  </MenubarItem>
+                );
+              })}
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={() => setAssistantEnabled(false)}
+                disabled={!assistantEnabled}
+                className="text-md h-6 px-3 flex items-center gap-2"
+              >
+                <span className="w-4 text-center">
+                  {!assistantEnabled ? "✓" : ""}
+                </span>
+                {t("common.assistant.turnOff")}
+              </MenubarItem>
+            </MenubarSubContent>
+          </MenubarSub>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 

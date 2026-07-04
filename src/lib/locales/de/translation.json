@@ -4541,6 +4541,23 @@
       "softwareUpdate": "Softwareaktualisierung…",
       "systemPreferences": "Systemeinstellungen …"
     },
+    "assistant": {
+      "emptyBubble": "Hi! Klicke mich jederzeit an, wenn du Hilfe brauchst.",
+      "genericError": "Hoppla, da hat sich etwas verheddert. Versuche es gleich noch einmal! 📎",
+      "greetings": {
+        "hello": "Hallo! Ich bin {{name}}, dein Schreibtisch-Assistent. Klicke mich an, wenn du etwas brauchst! 👋",
+        "help": "Es sieht so aus, als würdest du ryOS verwenden! Brauchst du Hilfe? Ich bin {{name}} und helfe dir gerne. 📎",
+        "looksLike": "Hallo! Hier ist {{name}} — ich kann Apps öffnen, Musik abspielen oder Fragen beantworten. Frag mich einfach! ✨",
+        "tip": "Hey! Ich bin {{name}}. Tipp: Du kannst mich überallhin ziehen, und ich docke an deine Fenster und das Dock an. 🪄"
+      },
+      "inputPlaceholder": "Frag mich etwas…",
+      "label": "{{name}} der Schreibtisch-Assistent",
+      "menuLabel": "Assistent",
+      "rateLimited": "Puh, ich brauche eine kleine Pause! Versuche es später noch einmal — oder melde dich für weitere Chats an. 😴",
+      "send": "Senden",
+      "thinking": "Überlegen…",
+      "turnOff": "Aus"
+    },
     "auth": {
       "changePassword": {
         "confirmPassword": "Neues Passwort bestätigen",

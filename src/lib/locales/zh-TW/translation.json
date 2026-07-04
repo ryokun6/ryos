@@ -4541,6 +4541,23 @@
       "softwareUpdate": "軟體更新⋯",
       "systemPreferences": "系統偏好設定⋯"
     },
+    "assistant": {
+      "emptyBubble": "嗨！需要協助時隨時點一下我。",
+      "genericError": "哎呀，我遇到了一點問題。請稍後再試！📎",
+      "greetings": {
+        "hello": "嗨！我是 {{name}}，你的桌面助理。有任何需要請點一下我！👋",
+        "help": "看起來你正在使用 ryOS！需要幫忙嗎？我是 {{name}}，很樂意為你提供協助。📎",
+        "looksLike": "哈囉！我是 {{name}} — 我可以打開 App、播放音樂或回答問題。儘管問我吧！✨",
+        "tip": "嘿！我是 {{name}}。提示：你可以將我拖移到任何地方，我會貼齊你的視窗和 Dock。🪄"
+      },
+      "inputPlaceholder": "隨便問我吧⋯",
+      "label": "桌面助理 {{name}}",
+      "menuLabel": "助理",
+      "rateLimited": "呼，我需要休息一下！請稍後再試 — 或登入以進行更多對話。😴",
+      "send": "傳送",
+      "thinking": "思考中⋯",
+      "turnOff": "關閉"
+    },
     "auth": {
       "changePassword": {
         "confirmPassword": "確認新密碼",

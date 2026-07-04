@@ -4545,6 +4545,23 @@
       "softwareUpdate": "Atualização de Software…",
       "systemPreferences": "Preferências do Sistema…"
     },
+    "assistant": {
+      "emptyBubble": "Olá! Clique em mim sempre que precisar de ajuda.",
+      "genericError": "Ops, algo me atrapalhou. Tente novamente em instantes! 📎",
+      "greetings": {
+        "hello": "Olá! Eu sou {{name}}, seu assistente de mesa. Clique em mim se precisar de algo! 👋",
+        "help": "Parece que você está usando o ryOS! Precisa de ajuda com algo? Eu sou {{name}}, fico feliz em ajudar. 📎",
+        "looksLike": "Olá! Aqui é o {{name}} — posso abrir apps, reproduzir música ou responder perguntas. É só perguntar! ✨",
+        "tip": "Ei! Eu sou o {{name}}. Dica: você pode me arrastar para qualquer lugar e eu me ajustarei às suas janelas e ao Dock. 🪄"
+      },
+      "inputPlaceholder": "Pergunte-me qualquer coisa…",
+      "label": "{{name}}, o assistente de mesa",
+      "menuLabel": "Assistente",
+      "rateLimited": "Ufa, preciso de um descanso! Tente novamente daqui a pouco — ou inicie a sessão para conversar mais. 😴",
+      "send": "Enviar",
+      "thinking": "Pensando…",
+      "turnOff": "Desativado"
+    },
     "auth": {
       "changePassword": {
         "confirmPassword": "Confirmar Nova Senha",
