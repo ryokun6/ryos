@@ -6,6 +6,7 @@ import {
 } from "@/shared/sync2/namespaces";
 import {
   mergeDeletionMarkerMaps,
+  normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
 import { persistAutoSyncPreferenceToServer } from "@/utils/autoSyncPreference";
@@ -96,6 +97,17 @@ function createInitialCategoryStatus(): CloudSyncCategoryStatusMap {
     maps: empty(),
     books: empty(),
   };
+}
+
+export function mergePersistedDeletionMarkers(
+  partial: Partial<CloudSyncDeletionMarkerState> | undefined
+): CloudSyncDeletionMarkerState {
+  const next = createEmptyDeletionMarkers();
+  if (!partial || typeof partial !== "object") return next;
+  for (const bucket of CLOUD_SYNC_DELETION_BUCKETS) {
+    next[bucket] = normalizeDeletionMarkerMap(partial[bucket]);
+  }
+  return next;
 }
 
 export function mergePersistedCloudSyncCategoryStatus(
@@ -381,7 +393,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
 
       markDeletedKeys: (bucket, keys, deletedAt = new Date().toISOString()) =>
         set((state) => {
-          const nextBucket = { ...state.deletionMarkers[bucket] };
+          const nextBucket = { ...(state.deletionMarkers[bucket] ?? {}) };
           let changed = false;
           let markerCount = 0;
           for (const key of keys) {
@@ -407,7 +419,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
 
       clearDeletedKeys: (bucket, keys) =>
         set((state) => {
-          const nextBucket = { ...state.deletionMarkers[bucket] };
+          const nextBucket = { ...(state.deletionMarkers[bucket] ?? {}) };
           let changed = false;
           let clearedCount = 0;
           for (const key of keys) {
@@ -432,11 +444,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
 
       mergeDeletedKeys: (bucket, markers) =>
         set((state) => {
-          const nextBucket = mergeDeletionMarkerMaps(
-            state.deletionMarkers[bucket],
-            markers
-          );
-          const currentBucket = state.deletionMarkers[bucket];
+          const currentBucket = state.deletionMarkers[bucket] ?? {};
+          const nextBucket = mergeDeletionMarkerMaps(currentBucket, markers);
           const changed =
             Object.keys(nextBucket).length !== Object.keys(currentBucket).length ||
             Object.entries(nextBucket).some(
@@ -469,6 +478,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           ...currentState,
           ...p,
           categoryStatus: mergePersistedCloudSyncCategoryStatus(p.categoryStatus),
+          deletionMarkers: mergePersistedDeletionMarkers(p.deletionMarkers),
         };
       },
       partialize: (state) => ({

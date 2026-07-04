@@ -98,6 +98,26 @@ describe("Cloud Sync deletion marker pruning", () => {
     ).toEqual({});
   });
 
+  test("tolerates missing deletion marker buckets during flush cleanup", () => {
+    useCloudSyncStore.setState({
+      deletionMarkers: {
+        stickyNoteIds: {
+          "31efd9cc-87e3-4d09-b222-689674cafc54": "2026-07-04T04:12:00.000Z",
+        },
+      } as never,
+    });
+
+    expect(() =>
+      clearDeletionMarkersForKeys([
+        "stickies/note:31efd9cc-87e3-4d09-b222-689674cafc54",
+        "maps/favorite:missing-bucket-id",
+      ])
+    ).not.toThrow();
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.stickyNoteIds
+    ).toEqual({});
+  });
+
   test("remote convergence clears a matching local deletion marker", async () => {
     const store = useCloudSyncStore.getState();
     store.markDeletedKeys("stickyNoteIds", ["remote-delete"]);
