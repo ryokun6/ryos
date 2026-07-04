@@ -20,8 +20,13 @@ import {
 import { installConsoleCapture } from "./utils/consoleCapture";
 import { installNetworkCapture } from "./utils/networkCapture";
 import { createClientLogger } from "./utils/logger";
+import { removeStaleStorageKeys } from "./utils/storageKeys";
+import { installPersistEpochListener } from "./utils/persistWriteQueue";
 
 const bootstrapLog = createClientLogger("Bootstrap");
+
+removeStaleStorageKeys();
+installPersistEpochListener();
 
 // Patch console output and fetch as early as possible; buffering is enabled
 // only when Debug Mode is on so normal sessions do not retain in-memory

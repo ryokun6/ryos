@@ -52,14 +52,16 @@ import {
   summarizeSyncOps,
 } from "@/sync/logging";
 import {
-  clearDeletionMarkerForKey,
+  clearDeletionMarkersForKeys,
   getDeletionMarkerForKey,
   isBlobCodec,
   NAMESPACE_APPLY_ORDER,
+  pruneDeletionMarkersWithoutShadow,
   SYNC_CODECS,
   type AppliedSyncOp,
   type CodecContext,
 } from "@/sync/codecs";
+import { getPersistedSyncShadowKeys } from "@/sync/stateStorage";
 import type { IndexedDBStoreItemWithKey as StoreItemWithKey } from "@/utils/indexedDBBackup";
 
 const FLUSH_DEBOUNCE_MS = 1000;
@@ -124,9 +126,22 @@ export class CloudSyncEngine {
   private stopped = false;
   private started = false;
 
-  constructor(username: string, callbacks: EngineStatusCallbacks = {}) {
-    this.state = new SyncClientState(username);
+  private constructor(
+    state: SyncClientState,
+    callbacks: EngineStatusCallbacks = {}
+  ) {
+    this.state = state;
     this.callbacks = callbacks;
+  }
+
+  static async create(
+    username: string,
+    callbacks: EngineStatusCallbacks = {}
+  ): Promise<CloudSyncEngine> {
+    return new CloudSyncEngine(
+      await SyncClientState.open(username),
+      callbacks
+    );
   }
 
   get cursor(): number | null {
@@ -210,6 +225,7 @@ export class CloudSyncEngine {
     }
 
     if (!initialSyncSucceeded || this.stopped) return;
+    await this.pruneObsoleteDeletionMarkers();
 
     // Fresh bootstraps and recorded inactive periods need a one-time local
     // reconciliation. Warm starts rely on persisted dirty namespaces instead.
@@ -249,6 +265,23 @@ export class CloudSyncEngine {
     cloudSyncLog.debug("Local reconcile marker cleared");
   }
 
+  private async pruneObsoleteDeletionMarkers(): Promise<void> {
+    try {
+      const shadowKeys = await getPersistedSyncShadowKeys({
+        excludeUsername: this.state.accountUsername,
+      });
+      for (const key of this.state.shadowKeys) shadowKeys.add(key);
+      const prunedCount = pruneDeletionMarkersWithoutShadow(shadowKeys);
+      if (prunedCount > 0) {
+        cloudSyncLog.debug("Obsolete deletion markers pruned", {
+          prunedCount,
+        });
+      }
+    } catch (error) {
+      cloudSyncLog.warn("Deletion marker pruning skipped", { error });
+    }
+  }
+
   private markAllEnabledNamespacesDirty(): number {
     let namespaceCount = 0;
     for (const namespace of SYNC_NAMESPACES) {
@@ -260,12 +293,17 @@ export class CloudSyncEngine {
     return namespaceCount;
   }
 
-  stop(): void {
+  async stop(options: { markLocalReconcileRequired?: boolean } = {}): Promise<void> {
     cloudSyncLog.debug("Engine stop requested", {
       dirtyNamespaceCount: this.state.dirtyNamespaces.length,
       flushInFlight: this.flushInFlight,
       pullInFlight: Boolean(this.pullInFlight),
+      markLocalReconcileRequired:
+        options.markLocalReconcileRequired === true,
     });
+    if (options.markLocalReconcileRequired) {
+      this.state.setLocalReconcileRequired(true);
+    }
     this.stopped = true;
     this.abortController.abort();
     for (const unsubscribe of this.unsubscribers) {
@@ -284,12 +322,12 @@ export class CloudSyncEngine {
       window.cancelIdleCallback(this.flushIdleCallbackId);
       this.flushIdleCallbackId = null;
     }
-    this.state.persistNow();
+    await this.state.persistNow();
   }
 
   /** Wipe cursor + shadow so the next start performs a fresh bootstrap. */
-  reset(): void {
-    this.state.reset();
+  async reset(): Promise<void> {
+    await this.state.reset();
   }
 
   // -------------------------------------------------------------------------
@@ -459,6 +497,7 @@ export class CloudSyncEngine {
           force: Boolean(options.force),
           dirtyNamespaceCount: this.state.dirtyNamespaces.length,
         });
+        await this.pruneObsoleteDeletionMarkers();
         return;
       }
 
@@ -504,6 +543,7 @@ export class CloudSyncEngine {
           }
           flushedNamespaces.push(namespace);
           flushedScopes.set(namespace, dirtyScope);
+          clearDeletionMarkersForKeys(collected.keys());
 
           // Upserts: keys whose content hash differs from the shadow.
           if (isSyncBlobNamespace(namespace)) {
@@ -621,6 +661,7 @@ export class CloudSyncEngine {
           });
           this.resetFlushBackoff();
           this.clearLocalReconcileIfSettled();
+          await this.pruneObsoleteDeletionMarkers();
           return;
         }
 
@@ -647,6 +688,7 @@ export class CloudSyncEngine {
           });
           this.resetFlushBackoff();
           this.clearLocalReconcileIfSettled();
+          await this.pruneObsoleteDeletionMarkers();
           this.reportError(null);
         } catch (error) {
           for (const namespace of flushedNamespaces) {
@@ -729,7 +771,6 @@ export class CloudSyncEngine {
           if (update) {
             if (update.h === "__del__") {
               this.state.deleteShadow(result.k);
-              clearDeletionMarkerForKey(result.k);
             } else {
               this.state.setShadow(result.k, update);
             }
@@ -1040,6 +1081,9 @@ export class CloudSyncEngine {
               this.markDirty(namespace);
             }
           }
+          clearDeletionMarkersForKeys(
+            namespaceOps.filter((op) => !op.del).map((op) => op.k)
+          );
           syncStore.markCategoryApplied(category, new Date().toISOString());
         } catch (error) {
           if (this.stopped || isAbortError(error)) throw error;
@@ -1055,6 +1099,7 @@ export class CloudSyncEngine {
     } finally {
       db?.close();
     }
+    await this.pruneObsoleteDeletionMarkers();
   }
 
   private async applyBlobOps(
@@ -1248,7 +1293,7 @@ export class CloudSyncEngine {
 
       // Drop stale cursor/shadow restored from a backup. The server snapshot is
       // only used as the deletion baseline; it must not be applied locally.
-      this.state.reset();
+      await this.state.reset();
       for (const entry of Object.values(snapshot.entries)) {
         this.state.observeTimestamp(entry.t);
       }
@@ -1261,6 +1306,7 @@ export class CloudSyncEngine {
       for (const namespace of namespaces) {
         const codec = SYNC_CODECS[namespace];
         const collected = await codec.collect(ctx);
+        clearDeletionMarkersForKeys(collected.keys());
         for (const key of collected.keys()) {
           localKeys.add(key);
         }
@@ -1332,6 +1378,7 @@ export class CloudSyncEngine {
         });
         await this.sendOps(ops, shadowUpdates);
       }
+      await this.pruneObsoleteDeletionMarkers();
 
       const completedAt = new Date().toISOString();
       for (const category of categories) {
@@ -1375,6 +1422,18 @@ export class CloudSyncEngine {
 // ---------------------------------------------------------------------------
 
 let activeEngine: CloudSyncEngine | null = null;
+let engineOperation: Promise<void> = Promise.resolve();
+
+function enqueueEngineOperation<T>(
+  operation: () => Promise<T>
+): Promise<T> {
+  const result = engineOperation.then(operation, operation);
+  engineOperation = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
+}
 
 export function getActiveCloudSyncEngine(): CloudSyncEngine | null {
   return activeEngine;
@@ -1383,13 +1442,23 @@ export function getActiveCloudSyncEngine(): CloudSyncEngine | null {
 export function createCloudSyncEngine(
   username: string,
   callbacks?: EngineStatusCallbacks
-): CloudSyncEngine {
-  activeEngine?.stop();
-  activeEngine = new CloudSyncEngine(username, callbacks);
-  return activeEngine;
+): Promise<CloudSyncEngine> {
+  return enqueueEngineOperation(async () => {
+    const previousEngine = activeEngine;
+    activeEngine = null;
+    if (previousEngine) await previousEngine.stop();
+    const nextEngine = await CloudSyncEngine.create(username, callbacks);
+    activeEngine = nextEngine;
+    return nextEngine;
+  });
 }
 
-export function destroyCloudSyncEngine(): void {
-  activeEngine?.stop();
-  activeEngine = null;
+export function destroyCloudSyncEngine(
+  options: { markLocalReconcileRequired?: boolean } = {}
+): Promise<void> {
+  return enqueueEngineOperation(async () => {
+    const engine = activeEngine;
+    activeEngine = null;
+    if (engine) await engine.stop(options);
+  });
 }

@@ -144,6 +144,38 @@ async function readPersistedChatRecord(): Promise<{
   }
 }
 
+async function readPersistedAiMessages(): Promise<AIChatMessage[]> {
+  const { ensureIndexedDBInitialized, STORES } = await import(
+    "../src/utils/indexedDB"
+  );
+  const db = await ensureIndexedDBInitialized();
+  try {
+    return await new Promise((resolve, reject) => {
+      const rows: Array<{ message: AIChatMessage; order: number }> = [];
+      const request = db
+        .transaction(STORES.CHATS_AI_MESSAGES, "readonly")
+        .objectStore(STORES.CHATS_AI_MESSAGES)
+        .openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (cursor) {
+          rows.push(cursor.value);
+          cursor.continue();
+          return;
+        }
+        resolve(
+          rows
+            .sort((left, right) => left.order - right.order)
+            .map((row) => row.message)
+        );
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
 beforeEach(async () => {
   resetPersistWritesForTests();
   installTestLocalStorage(new QuotaStorage());
@@ -170,9 +202,8 @@ describe("useChatsStore IndexedDB persistence", () => {
 
     expect(useChatsStore.getState().aiMessages).toEqual([legacyMessage]);
     expect(localStorage.getItem(CHATS_KEY)).toBeNull();
-    expect((await readPersistedChatRecord())?.state?.aiMessages).toEqual([
-      legacyMessage,
-    ]);
+    expect((await readPersistedChatRecord())?.state?.aiMessages).toEqual([]);
+    expect(await readPersistedAiMessages()).toEqual([legacyMessage]);
   });
 
   test("persists large applet tool results without localStorage quota errors", async () => {
@@ -199,6 +230,7 @@ describe("useChatsStore IndexedDB persistence", () => {
     expect(serializedBytes).toBeGreaterThan(LOCAL_STORAGE_QUOTA);
     expect(capturedWriteError).toBeUndefined();
     expect(localStorage.getItem(CHATS_KEY)).toBeNull();
-    expect(persisted?.state?.aiMessages).toEqual(messages);
+    expect(persisted?.state?.aiMessages).toEqual([]);
+    expect(await readPersistedAiMessages()).toEqual(messages);
   });
 });

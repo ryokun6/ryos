@@ -76,16 +76,6 @@ function TextEditContent({
     null
   );
 
-  useEffect(() => {
-    // Remove scratch payloads left by versions that staged full dropped files
-    // in localStorage while the overwrite dialog was open.
-    try {
-      localStorage.removeItem("ryos:pending-file-open");
-    } catch {
-      // Best-effort cleanup for browsers where Web Storage is unavailable.
-    }
-  }, []);
-
   // Register undo/redo with the universal system
   useRegisterUndoRedo(instanceId!, {
     undo: () => editor?.chain().focus().undo().run(),

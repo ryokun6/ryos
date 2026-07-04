@@ -6,6 +6,11 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppStore } from "@/stores/useAppStore";
 import { fetchCurrencyRateForWidget } from "@/lib/currency/frankfurter";
 import {
+  LEGACY_STORAGE_KEYS,
+  migrateLocalStorageKey,
+  STORAGE_KEYS,
+} from "@/utils/storageKeys";
+import {
   convertValue,
   DEFAULT_CONVERSION_CATEGORY,
   DEFAULT_CONVERSION_FROM_UNIT,
@@ -64,7 +69,9 @@ type CalculatorPersistedState = {
   speakResults?: boolean;
 };
 
-const STORAGE_KEY = "calculator-app-state-v1";
+const STORAGE_KEY = STORAGE_KEYS.calculator;
+
+migrateLocalStorageKey(LEGACY_STORAGE_KEYS.calculator, STORAGE_KEY);
 
 function loadPersistedState(): Partial<CalculatorPersistedState> {
   try {

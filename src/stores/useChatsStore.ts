@@ -2,7 +2,16 @@ import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
-import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
+import { STORES } from "@/utils/indexedDB";
+import {
+  createSplitIndexedDBPersistStorage,
+  type SplitPersistSnapshot,
+} from "@/utils/splitIndexedDBPersistStorage";
+import {
+  LEGACY_STORAGE_KEYS,
+  migrateLocalStorageKey,
+  STORAGE_KEYS,
+} from "@/utils/storageKeys";
 import {
   type ChatRoom,
   type ChatMessage,
@@ -37,7 +46,12 @@ const chatsStoreLog = createClientLogger("ChatsStore");
 const debug = chatsStoreLog.debug;
 
 // Username recovery - plain text, username is public info
-const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
+const USERNAME_RECOVERY_KEY = STORAGE_KEYS.usernameRecovery;
+
+migrateLocalStorageKey(
+  LEGACY_STORAGE_KEYS.usernameRecovery,
+  USERNAME_RECOVERY_KEY
+);
 
 const MESSAGE_HISTORY_CAP = 500;
 
@@ -362,6 +376,97 @@ const getInitialState = (): Omit<
 
 const STORE_VERSION = 3;
 const STORE_NAME = "ryos:chats";
+
+type ChatsPersistedState = Pick<
+  ChatsStoreState,
+  | "aiMessages"
+  | "username"
+  | "currentRoomId"
+  | "isSidebarVisible"
+  | "isChannelsOpen"
+  | "isPrivateOpen"
+  | "rooms"
+  | "roomMessages"
+  | "fontSize"
+  | "unreadCounts"
+  | "hasEverUsedChats"
+>;
+
+const splitChatsState = (
+  state: ChatsPersistedState
+): SplitPersistSnapshot<ChatsPersistedState> => {
+  const owner = state.username?.toLowerCase() ?? "anonymous";
+  const aiMessages = Array.isArray(state.aiMessages) ? state.aiMessages : [];
+  const roomMessages =
+    state.roomMessages && typeof state.roomMessages === "object"
+      ? state.roomMessages
+      : {};
+  return {
+    metadata: {
+      ...state,
+      aiMessages: [],
+      roomMessages: {},
+    },
+    rows: {
+      [STORES.CHATS_AI_MESSAGES]: aiMessages.map((message, order) => ({
+        key: message.id,
+        value: { message, order, owner },
+        revision: message,
+        position: order,
+      })),
+      [STORES.CHATS_ROOM_MESSAGES]: Object.entries(roomMessages).map(
+        ([roomId, messages]) => ({
+          key: roomId,
+          value: { roomId, messages, owner },
+          revision: messages,
+        })
+      ),
+    },
+  };
+};
+
+const mergeChatsState = (
+  metadata: ChatsPersistedState,
+  rows: Readonly<
+    Record<
+      string,
+      readonly { key: string; value: Record<string, unknown> }[]
+    >
+  >
+): ChatsPersistedState => {
+  const aiMessages = (rows[STORES.CHATS_AI_MESSAGES] ?? [])
+    .flatMap((row) => {
+      const message = row.value.message;
+      if (!message || typeof message !== "object" || Array.isArray(message)) {
+        return [];
+      }
+      return [
+        {
+          message: message as AIChatMessage,
+          order:
+            typeof row.value.order === "number"
+              ? row.value.order
+              : Number.MAX_SAFE_INTEGER,
+        },
+      ];
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ message }) => message);
+
+  const roomMessages: Record<string, ChatMessage[]> = {};
+  for (const row of rows[STORES.CHATS_ROOM_MESSAGES] ?? []) {
+    const messages = row.value.messages;
+    if (Array.isArray(messages)) {
+      roomMessages[row.key] = messages as ChatMessage[];
+    }
+  }
+
+  return {
+    ...metadata,
+    aiMessages,
+    roomMessages,
+  };
+};
 
 export const useChatsStore = create<ChatsStoreState>()(
   persist(
@@ -1162,11 +1267,16 @@ export const useChatsStore = create<ChatsStoreState>()(
     {
       name: STORE_NAME,
       version: STORE_VERSION,
-      // AI tool parts can inline multi-megabyte document/applet content and
-      // overflow localStorage's small per-origin quota. IndexedDB preserves the
-      // full conversation and transparently migrates the legacy localStorage
-      // slice on first hydration.
-      storage: createIndexedDBPersistStorage(),
+      // AI messages and room caches are normalized into dedicated IDB stores;
+      // the persisted_state record retains only small UI/account metadata.
+      // Legacy monolithic snapshots migrate on first hydration.
+      storage: createSplitIndexedDBPersistStorage<ChatsPersistedState>({
+        stores: [STORES.CHATS_AI_MESSAGES, STORES.CHATS_ROOM_MESSAGES],
+        layoutVersion: 1,
+        persistVersion: STORE_VERSION,
+        split: splitChatsState,
+        merge: mergeChatsState,
+      }),
       partialize: (state) => ({
         aiMessages: state.aiMessages,
         username: state.username,

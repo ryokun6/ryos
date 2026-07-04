@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { appIds, type AppId } from "@/config/appRegistryData";
+import {
+  LEGACY_STORAGE_KEYS,
+  migrateLocalStorageKey,
+  STORAGE_KEYS,
+} from "@/utils/storageKeys";
+
+migrateLocalStorageKey(LEGACY_STORAGE_KEYS.dock, STORAGE_KEYS.dock);
 
 // Dock item can be an app or a file/applet
 export interface DockItem {
@@ -182,7 +189,7 @@ export const useDockStore = create<DockStoreState>()(
       },
     }),
     {
-      name: "dock-storage",
+      name: STORAGE_KEYS.dock,
       version: DOCK_STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
     }

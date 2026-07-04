@@ -52,7 +52,7 @@ export type CloudSyncDeletionMarkerState = Record<
   DeletionMarkerMap
 >;
 
-function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
+export function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
   return {
     calendarTodoIds: {},
     calendarEventIds: {},

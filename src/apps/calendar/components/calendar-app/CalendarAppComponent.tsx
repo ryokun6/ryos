@@ -24,10 +24,12 @@ import { MonthGrid } from "./MonthGrid";
 import { TodoSidebar } from "./TodoSidebar";
 import { WeekTimeGrid } from "./WeekTimeGrid";
 import { isKeyboardDeleteTargetEditable } from "./calendarAppUtils";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 export function CalendarAppComponent({
   isWindowOpen, onClose, isForeground, skipInitialSound, instanceId, onNavigateNext, onNavigatePrevious,
 }: AppProps) {
+  const calendarHasHydrated = usePersistHydrated(useCalendarStore.persist);
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
   const calendarSyncReady = useCloudSyncStore(
@@ -37,14 +39,14 @@ export function CalendarAppComponent({
     username && isAuthenticated && calendarSyncReady
   );
   useEffect(() => {
-    if (canSyncCalendar) {
+    if (canSyncCalendar && calendarHasHydrated) {
       requestCloudSyncDomainCheck("calendar");
     }
-  }, [canSyncCalendar]);
+  }, [calendarHasHydrated, canSyncCalendar]);
 
   const logic = useCalendarLogic();
   const {
-    t, translatedHelpItems,
+    t, translatedHelpItems, hasHydrated,
     isHelpDialogOpen, setIsHelpDialogOpen, isAboutDialogOpen, setIsAboutDialogOpen,
     isWindowsTheme, isMacOSTheme, isSystem7Theme,
     searchQuery, setSearchQuery,
@@ -216,7 +218,7 @@ export function CalendarAppComponent({
   );
 
   useEffect(() => {
-    if (!isWindowOpen || !isForeground) return;
+    if (!hasHydrated || !isWindowOpen || !isForeground) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Delete" && e.key !== "Backspace") return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -234,6 +236,7 @@ export function CalendarAppComponent({
   }, [
     isWindowOpen,
     isForeground,
+    hasHydrated,
     selectedEventId,
     selectedTodoId,
     handleDeleteSelectedEvent,
@@ -245,7 +248,7 @@ export function CalendarAppComponent({
       isWindowOpen={isWindowOpen}
       isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
-      menuBar={menuBar}
+      menuBar={hasHydrated ? menuBar : undefined}
       windowFrameProps={{
         title: headerLabel,
         onClose,
@@ -298,7 +301,11 @@ export function CalendarAppComponent({
     >
         <div
           ref={containerRef}
-          className={cn("flex flex-col size-full font-os-ui overflow-hidden", isMacOSTheme ? "bg-transparent" : "bg-white")}
+          className={cn(
+            "flex flex-col size-full font-os-ui overflow-hidden",
+            isMacOSTheme ? "bg-transparent" : "bg-white",
+            !hasHydrated && "pointer-events-none opacity-0"
+          )}
         >
           {/* Main content area */}
           <div className={cn("flex-1 flex overflow-hidden", isMacOSTheme && "gap-[5px]")}>

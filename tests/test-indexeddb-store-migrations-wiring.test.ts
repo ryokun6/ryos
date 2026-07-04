@@ -3,10 +3,14 @@ import { readFileSync } from "node:fs";
 
 const readSource = (path: string): string => readFileSync(path, "utf8");
 
-describe("large Zustand stores use one IndexedDB persistence path", () => {
-  const storePaths = [
+describe("large Zustand stores use IndexedDB persistence", () => {
+  const splitStorePaths = [
     "src/stores/useTextEditStore.ts",
     "src/stores/useFilesStore.ts",
+    "src/stores/useSoundboardStore.ts",
+    "src/stores/useChatsStore.ts",
+  ];
+  const snapshotStorePaths = [
     "src/stores/useIpodStore.ts",
     "src/stores/useStickiesStore.ts",
     "src/stores/useContactsStore.ts",
@@ -16,10 +20,19 @@ describe("large Zustand stores use one IndexedDB persistence path", () => {
     "src/stores/useTvStore.ts",
   ];
 
-  for (const path of storePaths) {
-    test(`${path} uses createIndexedDBPersistStorage`, () => {
+  for (const path of splitStorePaths) {
+    test(`${path} uses normalized IndexedDB entity persistence`, () => {
       const source = readSource(path);
-      expect(source).toContain("createIndexedDBPersistStorage()");
+      expect(source).toContain("createSplitIndexedDBPersistStorage");
+      expect(source).not.toContain("createDebouncedPersistStorage()");
+      expect(source).not.toContain("createJSONStorage(() => localStorage)");
+    });
+  }
+
+  for (const path of snapshotStorePaths) {
+    test(`${path} uses IndexedDB snapshot persistence`, () => {
+      const source = readSource(path);
+      expect(source).toContain("createIndexedDBPersistStorage");
       expect(source).not.toContain("createDebouncedPersistStorage()");
       expect(source).not.toContain("createJSONStorage(() => localStorage)");
     });

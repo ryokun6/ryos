@@ -6,7 +6,7 @@ const CHANGELOG_MD = "docs/9-changelog.md";
 const CHANGELOG_HTML = "public/docs/changelog.html";
 /** Curated major entries that must appear in both markdown source and static HTML. */
 const ANCHOR_PHRASES = [
-  "Aqua Glass theme",
+  "Aqua Glass",
   "Cloud Sync v2",
   "Sync v1 retirement",
   "Virtual PC (v86)",
@@ -45,7 +45,7 @@ describe("changelog docs sync", () => {
     }
   });
 
-  test("renders five 1280x720 screenshots for every month", async () => {
+  test("renders one to five 1280x720 screenshots for every month", async () => {
     const [markdown, html] = await Promise.all([
       readFile(CHANGELOG_MD, "utf-8"),
       readFile(CHANGELOG_HTML, "utf-8"),
@@ -61,7 +61,8 @@ describe("changelog docs sync", () => {
         ),
       ].map((match) => match[1]);
 
-      expect(screenshots).toHaveLength(5);
+      expect(screenshots.length).toBeGreaterThanOrEqual(1);
+      expect(screenshots.length).toBeLessThanOrEqual(5);
       await Promise.all(
         screenshots.map(async (publicPath) => {
           expect(html).toContain(publicPath);
@@ -75,9 +76,41 @@ describe("changelog docs sync", () => {
     }
   });
 
-  test("preserves screenshot aspect ratios in responsive cards", async () => {
+  test("deduplicates the June and July featured changes", async () => {
+    const markdown = await readFile(CHANGELOG_MD, "utf-8");
+    const july =
+      markdown.split("## July 2026")[1]?.split("## June 2026")[0] ?? "";
+    const june =
+      markdown.split("## June 2026")[1]?.split("## May 2026")[0] ?? "";
+    const julyFeatured = july.split("<details>")[0] ?? "";
+    const juneFeatured = june.split("<details>")[0] ?? "";
+    const screenshotPattern =
+      /src="(\/docs-assets\/changelog\/[^"]+\.webp)"/g;
+
+    expect(
+      [...julyFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
+    ).toEqual([
+      "/docs-assets/changelog/2026-07-01-books-library-16x9.webp",
+    ]);
+    expect(julyFeatured).toContain("<h3>Books library</h3>");
+    expect(juneFeatured).not.toContain("<h3>Books</h3>");
+    expect(
+      [...juneFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
+    ).toEqual([
+      "/docs-assets/changelog/2026-07-05-aqua-appearance-16x9.webp",
+      "/docs-assets/changelog/2026-07-02-cloud-sync-16x9.webp",
+      "/docs-assets/changelog/2026-07-04-preview-16x9.webp",
+      "/docs-assets/changelog/2026-07-03-international-16x9.webp",
+    ]);
+  });
+
+  test("renders full-width screenshots with their original aspect ratios", async () => {
     const html = await readFile(CHANGELOG_HTML, "utf-8");
 
+    expect(html).toContain(
+      ".changelog-feature-grid { display: flex; flex-direction: column;",
+    );
+    expect(html).not.toContain(".changelog-feature-grid { display: grid;");
     expect(html).toContain(
       ".changelog-feature img { display: block; width: 100%; height: auto;",
     );
