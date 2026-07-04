@@ -52,6 +52,12 @@ import {
 } from "./assistantAnimation";
 import { markAssistantSoundInteraction } from "./assistantSounds";
 import { resolveAssistantSnapPoint } from "./assistantSnap";
+import {
+  ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+  ASSISTANT_BUBBLE_WIDTH,
+  resolveAssistantBubblePlacement,
+  type AssistantBubbleRect,
+} from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
 import { speakAssistantText, stopAssistantSpeech } from "./assistantSpeech";
 import { useAssistantSpeech } from "./useAssistantSpeech";
@@ -1180,11 +1186,64 @@ function AssistantOverlayInner() {
   );
 
   // --- Bubble placement --------------------------------------------------------
-  // Show the bubble above the character unless the character is near the top
-  // of the screen; keep the bubble inside the viewport horizontally.
-  const bubbleBelow = position.y < 220;
-  const bubbleAlignRight =
-    position.x + character.width / 2 > window.innerWidth / 2;
+  // Pick the side of the character (above/below/left/right) where the bubble
+  // stays inside the viewport and covers the least amount of open windows, so
+  // a character docked next to a window pops its bubble away from the window.
+  const windowInstances = useAppStore((state) => state.instances);
+  const bubblePlacement = useMemo(() => {
+    const insets = computeInsets();
+    const obstacles: AssistantBubbleRect[] = [];
+    for (const instance of Object.values(windowInstances)) {
+      if (!instance.isOpen || instance.isMinimized) continue;
+      if (!instance.position || !instance.size) continue;
+      obstacles.push({
+        x: instance.position.x,
+        y: instance.position.y,
+        width: instance.size.width,
+        height: instance.size.height,
+      });
+    }
+    return resolveAssistantBubblePlacement({
+      anchor: {
+        x: position.x,
+        y: position.y,
+        width: character.width,
+        height: character.height,
+      },
+      bubbleSize: {
+        width: ASSISTANT_BUBBLE_WIDTH,
+        height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+      },
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        topInset: insets.topInset,
+        bottomInset: insets.bottomInset,
+      },
+      obstacles,
+    });
+  }, [
+    windowInstances,
+    position,
+    character.width,
+    character.height,
+    computeInsets,
+  ]);
+  const bubbleSide = bubblePlacement.side;
+  const bubbleAlignEnd = bubblePlacement.align === "end";
+  const bubbleVertical = bubbleSide === "above" || bubbleSide === "below";
+  // Slide the bubble from the character's side as it scales in/out.
+  const bubblePopOffset = {
+    x: bubbleSide === "left" ? 1 : bubbleSide === "right" ? -1 : 0,
+    y: bubbleSide === "above" ? 1 : bubbleSide === "below" ? -1 : 0,
+  };
+  const bubbleTransformOrigin = bubbleVertical
+    ? `${bubbleAlignEnd ? "right" : "left"} ${
+        bubbleSide === "below" ? "top" : "bottom"
+      }`
+    : `${bubbleSide === "left" ? "right" : "left"} ${
+        bubbleAlignEnd ? "bottom" : "top"
+      }`;
 
   const handleSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -1270,24 +1329,35 @@ function AssistantOverlayInner() {
             onFocus={handleBubbleFocus}
             onPointerDown={handleBubblePointerDown}
             onWheel={handleBubbleWheel}
-            initial={{ opacity: 0, scale: 0.9, y: bubbleBelow ? -4 : 4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{
+              opacity: 0,
+              scale: 0.9,
+              x: bubblePopOffset.x * 4,
+              y: bubblePopOffset.y * 4,
+            }}
+            animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
             exit={{
               opacity: 0,
               scale: 0.96,
-              y: bubbleBelow ? -2 : 2,
+              x: bubblePopOffset.x * 2,
+              y: bubblePopOffset.y * 2,
               transition: reduceMotion ? { duration: 0 } : BUBBLE_EXIT,
             }}
             transition={reduceMotion ? { duration: 0 } : BUBBLE_OPEN_SPRING}
-            style={{
-              transformOrigin: `${bubbleAlignRight ? "right" : "left"} ${
-                bubbleBelow ? "top" : "bottom"
-              }`,
-            }}
+            style={{ transformOrigin: bubbleTransformOrigin }}
             className={cn(
               "absolute w-64 pointer-events-auto",
-              bubbleBelow ? "top-full mt-2" : "bottom-full mb-2",
-              bubbleAlignRight ? "right-0" : "left-0"
+              bubbleSide === "above" && "bottom-full mb-2",
+              bubbleSide === "below" && "top-full mt-2",
+              bubbleSide === "left" && "right-full mr-2",
+              bubbleSide === "right" && "left-full ml-2",
+              bubbleVertical
+                ? bubbleAlignEnd
+                  ? "right-0"
+                  : "left-0"
+                : bubbleAlignEnd
+                ? "bottom-0"
+                : "top-0"
             )}
           >
             <div
@@ -1354,10 +1424,17 @@ function AssistantOverlayInner() {
               <div
                 className={cn(
                   "absolute size-2.5 rotate-45 border-black bg-[#FFFFC8]",
-                  bubbleBelow
-                    ? "-top-[6px] border-l border-t"
-                    : "-bottom-[6px] border-b border-r",
-                  bubbleAlignRight ? "right-6" : "left-6"
+                  bubbleSide === "above" && "-bottom-[6px] border-b border-r",
+                  bubbleSide === "below" && "-top-[6px] border-l border-t",
+                  bubbleSide === "left" && "-right-[6px] border-r border-t",
+                  bubbleSide === "right" && "-left-[6px] border-b border-l",
+                  bubbleVertical
+                    ? bubbleAlignEnd
+                      ? "right-6"
+                      : "left-6"
+                    : bubbleAlignEnd
+                    ? "bottom-6"
+                    : "top-6"
                 )}
               />
             </div>

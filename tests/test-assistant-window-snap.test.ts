@@ -23,7 +23,9 @@ describe("assistant window snap point", () => {
     ).toEqual({ x: 708, y: 487 });
   });
 
-  test("uses an upper edge when the bottom edge has no room", () => {
+  test("keeps the bottom-right corner when the bubble can pop away from the window", () => {
+    // The window reaches low, but the bubble can still pop up-and-right from
+    // the bottom-right corner without covering the window.
     expect(
       resolveAssistantSnapPoint({
         currentPosition: { x: 1200, y: 700 },
@@ -31,10 +33,12 @@ describe("assistant window snap point", () => {
         viewport,
         targetBounds: { x: 100, y: 400, width: 600, height: 400 },
       })
-    ).toEqual({ x: 576, y: 299 });
+    ).toEqual({ x: 708, y: 707 });
   });
 
-  test("moves to the left when the target is against the right edge", () => {
+  test("tucks under the bottom edge when the target is against the right edge", () => {
+    // No room to the right: the assistant sits under the bottom-right corner
+    // and the bubble pops sideways to the left, clear of the window.
     expect(
       resolveAssistantSnapPoint({
         currentPosition: { x: 1200, y: 500 },
@@ -42,7 +46,7 @@ describe("assistant window snap point", () => {
         viewport,
         targetBounds: { x: 1000, y: 100, width: 400, height: 500 },
       })
-    ).toEqual({ x: 868, y: 507 });
+    ).toEqual({ x: 1276, y: 608 });
   });
 
   test("does not cover a window with no available outside point", () => {
