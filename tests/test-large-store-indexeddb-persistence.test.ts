@@ -87,6 +87,25 @@ async function readPersistedRecord(key: string): Promise<unknown> {
   }
 }
 
+async function readStoreRecord(
+  storeName: string,
+  key: string
+): Promise<Record<string, unknown> | null> {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    return await new Promise((resolve, reject) => {
+      const request = db
+        .transaction(storeName, "readonly")
+        .objectStore(storeName)
+        .get(key);
+      request.onsuccess = () => resolve(request.result ?? null);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
 beforeEach(async () => {
   await settleAllPersistWrites();
   resetPersistWritesForTests();
@@ -266,6 +285,9 @@ describe("large store IndexedDB persistence", () => {
     await Promise.all(stores.map((store) => store.persist.rehydrate()));
 
     expect(useTextEditStore.getState().instances.draft).toBeDefined();
+    expect(
+      (await readStoreRecord(STORES.TEXTEDIT_INSTANCES, "draft"))?.instance
+    ).toEqual(useTextEditStore.getState().instances.draft);
     expect(useStickiesStore.getState().notes[0]?.content).toBe("Remember me");
     expect(
       useContactsStore.getState().contacts.some((contact) => contact.id === "friend")
@@ -280,15 +302,23 @@ describe("large store IndexedDB persistence", () => {
     );
     for (const key of [
       "ryos:textedit",
-      "stickies-storage",
-      "contacts-storage",
+      "ryos:stickies",
+      "ryos:contacts",
       "ryos:books",
-      "calendar-storage",
+      "ryos:calendar",
       "ryos:videos",
       "ryos:tv",
     ]) {
       expect(localStorage.getItem(key)).toBeNull();
       expect(await readPersistedRecord(key)).not.toBeNull();
+    }
+    for (const legacyKey of [
+      "stickies-storage",
+      "contacts-storage",
+      "calendar-storage",
+    ]) {
+      expect(localStorage.getItem(legacyKey)).toBeNull();
+      expect(await readPersistedRecord(legacyKey)).toBeNull();
     }
   });
 
@@ -329,8 +359,11 @@ describe("large store IndexedDB persistence", () => {
     await settleAllPersistWrites();
 
     expect(await readPersistedRecord("ryos:textedit")).not.toBeNull();
-    expect(await readPersistedRecord("stickies-storage")).not.toBeNull();
+    expect(
+      (await readStoreRecord(STORES.TEXTEDIT_INSTANCES, "draft"))?.instance
+    ).toEqual(useTextEditStore.getState().instances.draft);
+    expect(await readPersistedRecord("ryos:stickies")).not.toBeNull();
     expect(localStorage.getItem("ryos:textedit")).toBeNull();
-    expect(localStorage.getItem("stickies-storage")).toBeNull();
+    expect(localStorage.getItem("ryos:stickies")).toBeNull();
   });
 });

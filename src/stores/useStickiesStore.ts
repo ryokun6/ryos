@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/utils/storageKeys";
 
 export type StickyColor = "yellow" | "blue" | "green" | "pink" | "purple" | "orange";
 
@@ -116,8 +117,10 @@ export const useStickiesStore = create<StickiesState>()(
       },
     }),
     {
-      name: "stickies-storage",
-      storage: createIndexedDBPersistStorage(),
+      name: STORAGE_KEYS.stickies,
+      storage: createIndexedDBPersistStorage({
+        legacyNames: [LEGACY_STORAGE_KEYS.stickies],
+      }),
       partialize: (state) => ({ notes: state.notes }),
     }
   )

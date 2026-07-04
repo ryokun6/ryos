@@ -6,6 +6,8 @@ import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import {
   clearPendingFlush,
   ensureLifecycleFlush,
+  getPersistEpoch,
+  isPersistEpochCurrent,
   isPersistWritesHalted,
   registerAdapterResetter,
   registerPendingFlush,
@@ -15,6 +17,7 @@ import {
 const LEGACY_STORAGE_PREFIX = "ryos:sync2:state:";
 const WRITE_DELAY_MS = 250;
 const STORE = STORES.SYNC2_STATE;
+const writerEpoch = getPersistEpoch();
 
 export interface ShadowEntry {
   /** HLC of the last synced value. */
@@ -36,6 +39,7 @@ const pendingStates = new Map<string, PersistedSyncState>();
 const writeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 let inFlight: Promise<void> = Promise.resolve();
 let writeError: unknown = null;
+let lastWriteCommitted = true;
 
 function recordKey(username: string): string {
   return username.toLowerCase();
@@ -177,10 +181,13 @@ async function readAllRecords(): Promise<StoredSyncStateRecord[]> {
 
 async function writeRecord(
   key: string,
-  state: PersistedSyncState
-): Promise<void> {
+  state: PersistedSyncState,
+  expectedEpoch: string
+): Promise<boolean> {
+  if (!isPersistEpochCurrent(expectedEpoch)) return false;
   const db = await ensureIndexedDBInitialized();
   try {
+    if (!isPersistEpochCurrent(expectedEpoch)) return false;
     await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction(STORE, "readwrite");
       transaction.objectStore(STORE).put(state, key);
@@ -188,6 +195,7 @@ async function writeRecord(
       transaction.onerror = () => reject(transaction.error);
       transaction.onabort = () => reject(transaction.error);
     });
+    return true;
   } finally {
     db.close();
   }
@@ -214,7 +222,10 @@ function writeNow(key: string): boolean {
     clearTimeout(timer);
     writeTimers.delete(key);
   }
-  if (isPersistWritesHalted()) {
+  if (
+    isPersistWritesHalted() ||
+    !isPersistEpochCurrent(writerEpoch)
+  ) {
     pendingStates.delete(key);
     clearPendingFlush(queueName(key));
     return false;
@@ -224,8 +235,9 @@ function writeNow(key: string): boolean {
   pendingStates.delete(key);
   clearPendingFlush(queueName(key));
   inFlight = inFlight
-    .then(() => writeRecord(key, state))
-    .then(() => {
+    .then(() => writeRecord(key, state, writerEpoch))
+    .then((committed) => {
+      lastWriteCommitted = committed;
       writeError = null;
     })
     .catch((error) => {
@@ -244,13 +256,18 @@ async function persistMigration(
   key: string,
   state: PersistedSyncState
 ): Promise<boolean> {
-  if (isPersistWritesHalted()) return false;
+  if (
+    isPersistWritesHalted() ||
+    !isPersistEpochCurrent(writerEpoch)
+  ) {
+    return false;
+  }
   pendingStates.set(key, clonePersistedSyncState(state));
   registerPendingFlush(queueName(key), () => writeNow(key));
   if (!writeNow(key)) return false;
   try {
     await settleWrites();
-    return true;
+    return lastWriteCommitted && isPersistEpochCurrent(writerEpoch);
   } catch {
     return false;
   }
@@ -263,6 +280,7 @@ function resetWriterForTests(): void {
   pendingStates.clear();
   inFlight = Promise.resolve();
   writeError = null;
+  lastWriteCommitted = true;
 }
 
 registerSettler(settleWrites);
@@ -318,7 +336,12 @@ export function schedulePersistedSyncState(
   username: string,
   state: PersistedSyncState
 ): void {
-  if (isPersistWritesHalted()) return;
+  if (
+    isPersistWritesHalted() ||
+    !isPersistEpochCurrent(writerEpoch)
+  ) {
+    return;
+  }
   const key = recordKey(username);
   ensureLifecycleFlush();
   pendingStates.set(key, clonePersistedSyncState(state));
@@ -334,7 +357,12 @@ export async function persistSyncStateNow(
   username: string,
   state: PersistedSyncState
 ): Promise<void> {
-  if (isPersistWritesHalted()) return;
+  if (
+    isPersistWritesHalted() ||
+    !isPersistEpochCurrent(writerEpoch)
+  ) {
+    return;
+  }
   const key = recordKey(username);
   pendingStates.set(key, clonePersistedSyncState(state));
   registerPendingFlush(queueName(key), () => writeNow(key));
@@ -380,7 +408,12 @@ export async function getPersistedSyncShadowKeys(options: {
     for (const key of Object.keys(state.shadow)) keys.add(key);
   }
 
-  if (isPersistWritesHalted()) return keys;
+  if (
+    isPersistWritesHalted() ||
+    !isPersistEpochCurrent(writerEpoch)
+  ) {
+    return keys;
+  }
   if (typeof localStorage === "undefined") return keys;
   const legacyKeys = Array.from(
     { length: localStorage.length },

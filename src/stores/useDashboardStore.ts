@@ -1,6 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { EventColor } from "./useCalendarStore";
+import {
+  LEGACY_STORAGE_KEYS,
+  migrateLocalStorageKey,
+  STORAGE_KEYS,
+} from "@/utils/storageKeys";
+
+migrateLocalStorageKey(
+  LEGACY_STORAGE_KEYS.dashboard,
+  STORAGE_KEYS.dashboard
+);
 
 export type WidgetType =
   | "clock"
@@ -177,7 +187,7 @@ export const useDashboardStore = create<DashboardStoreState>()(
       },
     }),
     {
-      name: "dashboard-storage",
+      name: STORAGE_KEYS.dashboard,
       version: DASHBOARD_STORE_VERSION,
     }
   )

@@ -3,7 +3,12 @@ import { persist } from "zustand/middleware";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
+import { base64FromBlob } from "@/utils/audio";
+import { STORES } from "@/utils/indexedDB";
+import {
+  createSplitIndexedDBPersistStorage,
+  type SplitPersistSnapshot,
+} from "@/utils/splitIndexedDBPersistStorage";
 
 // Helper to create a default soundboard
 const createDefaultBoard = (): Soundboard => ({
@@ -47,6 +52,110 @@ export interface SoundboardStoreState {
 
 const SOUNDBOARD_STORE_VERSION = 1;
 const SOUNDBOARD_STORE_NAME = "ryos:soundboard";
+
+type SoundboardPersistedState = Pick<
+  SoundboardStoreState,
+  "boards" | "activeBoardId" | "selectedDeviceId" | "hasInitialized"
+>;
+
+const audioBlobFromBase64 = (audioData: string, format?: string): Blob => {
+  const binary = atob(audioData);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new Blob([bytes], {
+    type: format ? `audio/${format}` : "application/octet-stream",
+  });
+};
+
+const soundboardAudioKey = (boardId: string, slotIndex: number): string =>
+  `${boardId}:${slotIndex}`;
+
+const splitSoundboardState = (
+  state: SoundboardPersistedState
+): SplitPersistSnapshot<SoundboardPersistedState> => {
+  const rows = state.boards.flatMap((board) =>
+    board.slots.flatMap((slot, slotIndex) => {
+      if (!slot.audioData) return [];
+      const audioData = slot.audioData;
+      return [
+        {
+          key: soundboardAudioKey(board.id, slotIndex),
+          value: {
+            boardId: board.id,
+            slotIndex,
+            format: slot.audioFormat,
+          },
+          materialize: () => ({
+            boardId: board.id,
+            slotIndex,
+            format: slot.audioFormat,
+            audio: audioBlobFromBase64(audioData, slot.audioFormat),
+          }),
+          revision: audioData,
+          secondaryRevision: slot.audioFormat,
+        },
+      ];
+    })
+  );
+
+  return {
+    metadata: {
+      ...state,
+      boards: state.boards.map((board) => ({
+        ...board,
+        slots: board.slots.map((slot) => ({
+          audioData: null,
+          audioFormat: slot.audioFormat,
+          emoji: slot.emoji,
+          title: slot.title,
+        })),
+      })),
+    },
+    rows: { [STORES.SOUNDBOARD_AUDIO]: rows },
+  };
+};
+
+const mergeSoundboardState = async (
+  metadata: SoundboardPersistedState,
+  rows: Readonly<
+    Record<
+      string,
+      readonly { key: string; value: Record<string, unknown> }[]
+    >
+  >
+): Promise<SoundboardPersistedState> => {
+  const audioRows = new Map(
+    (rows[STORES.SOUNDBOARD_AUDIO] ?? []).map((row) => [row.key, row.value])
+  );
+  const boards = await Promise.all(
+    metadata.boards.map(async (board) => ({
+      ...board,
+      slots: await Promise.all(
+        board.slots.map(async (slot, slotIndex): Promise<SoundSlot> => {
+          const row = audioRows.get(soundboardAudioKey(board.id, slotIndex));
+          const audio = row?.audio;
+          const audioData =
+            audio instanceof Blob
+              ? await base64FromBlob(audio)
+              : typeof row?.audioData === "string"
+                ? row.audioData
+                : null;
+          return {
+            ...slot,
+            audioData,
+            audioFormat:
+              typeof row?.format === "string"
+                ? (row.format as SoundSlot["audioFormat"])
+                : slot.audioFormat,
+          };
+        })
+      ),
+    }))
+  );
+  return { ...metadata, boards };
+};
 
 export const useSoundboardStore = create<SoundboardStoreState>()(
   persist(
@@ -236,11 +345,16 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
     {
       name: SOUNDBOARD_STORE_NAME,
       version: SOUNDBOARD_STORE_VERSION,
-      // Recorded audio is stored inline as base64 in `boards`, which easily
-      // exceeds localStorage's per-origin quota (a historical crash source on
-      // mobile Safari). Persist to IndexedDB instead; existing localStorage
-      // data is migrated transparently on first read.
-      storage: createIndexedDBPersistStorage(),
+      // Runtime slots retain base64 for playback/export compatibility, while
+      // persistence moves each recording into `soundboard_audio` as a Blob.
+      // Existing inline snapshots migrate transparently on first hydration.
+      storage: createSplitIndexedDBPersistStorage<SoundboardPersistedState>({
+        stores: [STORES.SOUNDBOARD_AUDIO],
+        layoutVersion: 1,
+        persistVersion: SOUNDBOARD_STORE_VERSION,
+        split: splitSoundboardState,
+        merge: mergeSoundboardState,
+      }),
       partialize: (state) => ({
         boards: state.boards,
         activeBoardId: state.activeBoardId,

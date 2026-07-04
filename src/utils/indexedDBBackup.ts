@@ -9,7 +9,7 @@ export interface IndexedDBStoreItemWithKey {
   value: IndexedDBStoreItem;
 }
 
-export const MANUAL_BACKUP_VERSION = 5;
+export const MANUAL_BACKUP_VERSION = 6;
 
 /**
  * User-owned IndexedDB data included in manual backups. Apple Music stores are
@@ -26,6 +26,11 @@ export const MANUAL_BACKUP_INDEXEDDB_STORES = [
   STORES.CUSTOM_WALLPAPERS,
   STORES.APPLETS,
   STORES.PERSISTED_STATE,
+  STORES.SOUNDBOARD_AUDIO,
+  STORES.CHATS_AI_MESSAGES,
+  STORES.CHATS_ROOM_MESSAGES,
+  STORES.TEXTEDIT_INSTANCES,
+  STORES.VFS_ITEMS,
 ] as const;
 
 export type ManualBackupIndexedDBStore =
@@ -165,6 +170,40 @@ export async function readStoreItems(
     } catch (error) {
       reject(error);
     }
+  });
+}
+
+/** Read a transactionally consistent snapshot across multiple object stores. */
+export async function readStoresAtomically(
+  db: IDBDatabase,
+  storeNames: readonly string[]
+): Promise<Record<string, IndexedDBStoreItemWithKey[]>> {
+  const names = [...new Set(storeNames)];
+  if (names.length === 0) return {};
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(names, "readonly");
+    const result: Record<string, IndexedDBStoreItemWithKey[]> = {};
+
+    for (const storeName of names) {
+      const items: IndexedDBStoreItemWithKey[] = [];
+      result[storeName] = items;
+      const request = transaction.objectStore(storeName).openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        items.push({
+          key: String(cursor.key),
+          value: cursor.value as IndexedDBStoreItem,
+        });
+        cursor.continue();
+      };
+    }
+
+    transaction.oncomplete = () => resolve(result);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () =>
+      reject(transaction.error ?? new Error("Backup read transaction aborted"));
   });
 }
 

@@ -24,6 +24,13 @@ import {
   type SystemFontId,
 } from "@/themes/systemFonts";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
+import {
+  LEGACY_STORAGE_KEYS,
+  migrateLocalStorageKey,
+  STORAGE_KEYS,
+} from "@/utils/storageKeys";
+
+migrateLocalStorageKey(LEGACY_STORAGE_KEYS.theme, STORAGE_KEYS.theme);
 
 function sanitizeStoredTheme(id: string | null | undefined): OsThemeId {
   if (id && id in themes) {
@@ -259,7 +266,7 @@ async function ensureLegacyCss(theme: OsThemeId) {
 }
 
 // Storage keys
-const THEME_KEY = "ryos:theme";
+const THEME_KEY = STORAGE_KEYS.theme;
 /**
  * Per-theme dark-mode preferences, keyed by theme id.
  * Stored as a single JSON blob so settings sync (which round-trips localStorage)

@@ -15,6 +15,7 @@ import {
 } from "@/utils/contacts";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/utils/storageKeys";
 
 export interface ImportContactsResult extends ContactImportResult {
   importedCount: number;
@@ -165,8 +166,10 @@ export const useContactsStore = create<ContactsStoreState>()(
       },
     }),
     {
-      name: "contacts-storage",
-      storage: createIndexedDBPersistStorage(),
+      name: STORAGE_KEYS.contacts,
+      storage: createIndexedDBPersistStorage({
+        legacyNames: [LEGACY_STORAGE_KEYS.contacts],
+      }),
       partialize: (state) => ({
         contacts: state.contacts,
         selectedContactId: state.selectedContactId,

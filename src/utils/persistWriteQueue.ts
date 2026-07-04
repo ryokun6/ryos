@@ -27,6 +27,54 @@ const pendingSettlers = new Set<PendingSettle>();
 const adapterResetters = new Set<() => void>();
 let lifecycleFlushRegistered = false;
 let halted = false;
+let epochListenerRegistered = false;
+
+export const PERSIST_EPOCH_KEY = "ryos:persist:epoch";
+
+export function getPersistEpoch(): string {
+  if (typeof localStorage === "undefined") return "memory";
+  try {
+    return localStorage.getItem(PERSIST_EPOCH_KEY) ?? "0";
+  } catch {
+    return "memory";
+  }
+}
+
+export function isPersistEpochCurrent(epoch: string): boolean {
+  return getPersistEpoch() === epoch;
+}
+
+/** Invalidate persistence adapters in every already-open tab. */
+export function advancePersistEpoch(): string {
+  const epoch =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(PERSIST_EPOCH_KEY, epoch);
+  }
+  return epoch;
+}
+
+/** Re-seed the epoch after a destructive localStorage replacement. */
+export function restorePersistEpoch(epoch: string): void {
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(PERSIST_EPOCH_KEY, epoch);
+  }
+}
+
+/** Halt and reload stale tabs when another tab starts reset/restore. */
+export function installPersistEpochListener(): void {
+  if (epochListenerRegistered || typeof window === "undefined") return;
+  epochListenerRegistered = true;
+  window.addEventListener("storage", (event) => {
+    if (event.key !== PERSIST_EPOCH_KEY || event.newValue === event.oldValue) {
+      return;
+    }
+    haltPersistWrites();
+    window.location.reload();
+  });
+}
 
 /** Whether all persist writes are currently halted (until reload). */
 export function isPersistWritesHalted(): boolean {

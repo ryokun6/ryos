@@ -67,7 +67,16 @@
     <!-- Stale bundle detection: reload if cached index.html references missing JS bundles -->
     <script>
       (function() {
-        var reloadKey = 'ryos-stale-reload';
+        var reloadKey = 'ryos:stale-reload';
+        var legacyReloadKey = 'ryos-stale-reload';
+        try {
+          var canonicalReload = sessionStorage.getItem(reloadKey);
+          var legacyReload = sessionStorage.getItem(legacyReloadKey);
+          if (canonicalReload === null && legacyReload !== null) {
+            sessionStorage.setItem(reloadKey, legacyReload);
+          }
+          if (legacyReload !== null) sessionStorage.removeItem(legacyReloadKey);
+        } catch (e) { /* sessionStorage may throw */ }
 
         // After a successful recovery redirect (?_cb= present), clear the
         // cooldown flag so listeners below get a fresh attempt.  Without
@@ -77,6 +86,7 @@
         try {
           if (window.location.search.indexOf('_cb=') !== -1) {
             sessionStorage.removeItem(reloadKey);
+            sessionStorage.removeItem(legacyReloadKey);
           }
         } catch (e) { /* sessionStorage may throw */ }
 
@@ -246,7 +256,13 @@
     <script>
       (function () {
         try {
-          var rawTheme = localStorage.getItem("ryos:theme") || localStorage.getItem("os_theme");
+          var rawTheme = localStorage.getItem("ryos:theme");
+          var legacyTheme = localStorage.getItem("os_theme");
+          if (!rawTheme && legacyTheme) {
+            rawTheme = legacyTheme;
+            localStorage.setItem("ryos:theme", legacyTheme);
+          }
+          if (legacyTheme !== null) localStorage.removeItem("os_theme");
           var config = window.__RYOS_THEME_BOOTSTRAP__ || {
             defaultTheme: "macosx",
             defaultAquaMaterial: "glass",

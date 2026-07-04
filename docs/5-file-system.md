@@ -19,7 +19,8 @@ graph TB
     subgraph Metadata["Metadata Layer"]
         FilesStore[(useFilesStore)]
         FinderStore[(useFinderStore)]
-        PersistedState[(IndexedDB persisted_state)]
+        PersistedState[(IndexedDB persisted_state<br/>libraryState)]
+        VfsItems[(IndexedDB vfs_items<br/>one row per path)]
         LocalStorage[(localStorage)]
     end
     
@@ -40,6 +41,7 @@ graph TB
     Service --> FilesStore
     Hook --> FinderStore
     FilesStore <--> PersistedState
+    FilesStore <--> VfsItems
     FinderStore <--> LocalStorage
     Service -->|"UUID lookup"| IDB
     IDB --> Stores
@@ -49,7 +51,7 @@ graph TB
 
 | Store | Purpose | Persistence |
 |-------|---------|-------------|
-| `useFilesStore` | File/folder metadata, paths, UUIDs, status | IndexedDB (`persisted_state`) |
+| `useFilesStore` | File/folder metadata, paths, UUIDs, status | IndexedDB (`vfs_items`, with lifecycle metadata in `persisted_state`) |
 | `useFinderStore` | Finder window instances, navigation history, view preferences | localStorage |
 | IndexedDB | File content (text, images, applets) | Browser storage |
 
@@ -151,7 +153,7 @@ interface FileSystemItem {
 
 ## IndexedDB Storage
 
-Database: `ryOS` (version 12)
+Database: `ryOS` (version 14)
 
 | Object Store | Content Type | Key |
 |--------------|--------------|-----|
@@ -165,6 +167,8 @@ Database: `ryOS` (version 12)
 | `apple_music_library` | Apple Music library cache | Apple Music ID |
 | `apple_music_playlists` | Apple Music playlist cache | Playlist ID |
 | `apple_music_playlist_tracks` | Apple Music playlist track cache | Playlist ID |
+| `vfs_items` | File/folder metadata (`FileSystemItem`) | Full path |
+| `persisted_state` | Zustand scalar metadata and unsplit snapshots | `ryos:*` persist key |
 
 Content structure stored in IndexedDB:
 ```typescript

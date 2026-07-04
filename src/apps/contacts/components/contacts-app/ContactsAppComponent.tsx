@@ -19,14 +19,14 @@ export function ContactsAppComponent({
     instanceId,
   });
 
-  const { t, isWindowsTheme, isMacOSTheme, menuBar } = c;
+  const { t, isWindowsTheme, isMacOSTheme, menuBar, hasHydrated } = c;
 
   return (
     <AppWindowShell
       isWindowOpen={isWindowOpen}
       isWindowsTheme={isWindowsTheme}
       isForeground={isForeground}
-      menuBar={menuBar}
+      menuBar={hasHydrated ? menuBar : undefined}
       windowFrameProps={{
         title: t("apps.contacts.title"),
         onClose,
@@ -37,8 +37,12 @@ export function ContactsAppComponent({
         instanceId,
       }}
     >
-      <ContactsWindowContent c={c} />
-      <ContactsAppDialogs c={c} />
+      {hasHydrated && (
+        <>
+          <ContactsWindowContent c={c} />
+          <ContactsAppDialogs c={c} />
+        </>
+      )}
     </AppWindowShell>
   );
 }

@@ -8,7 +8,10 @@
 
 import "fake-indexeddb/auto";
 import { describe, test, expect, beforeEach } from "bun:test";
-import { settleAllPersistWrites } from "../src/utils/persistWriteQueue";
+import {
+  resetPersistWritesForTests,
+  settleAllPersistWrites,
+} from "../src/utils/persistWriteQueue";
 
 const SOUNDBOARD_KEY = "ryos:soundboard";
 
@@ -31,6 +34,8 @@ const makeBoard = (id: string, name: string) => ({
 });
 
 beforeEach(async () => {
+  resetPersistWritesForTests();
+  localStorage.clear();
   await resetDb();
 });
 
@@ -95,5 +100,44 @@ describe("useSoundboardStore IndexedDB persistence", () => {
     db.close();
 
     expect(record?.state?.boards?.[0]?.name).toBe("Recorded Board");
+  });
+
+  test("stores recorded audio as a Blob row and restores runtime base64", async () => {
+    const { useSoundboardStore } = await import(
+      "../src/stores/useSoundboardStore"
+    );
+    await useSoundboardStore.persist.rehydrate();
+    const board = makeBoard("audio-board", "Audio Board");
+    board.slots[0].audioData = btoa("recorded audio bytes");
+    board.slots[0].audioFormat = "webm";
+    useSoundboardStore.getState()._setBoards_internal([board]);
+    await settleAllPersistWrites();
+
+    const { ensureIndexedDBInitialized, STORES } = await import(
+      "../src/utils/indexedDB"
+    );
+    const db = await ensureIndexedDBInitialized();
+    try {
+      const row = await new Promise<Record<string, unknown>>(
+        (resolve, reject) => {
+          const req = db
+            .transaction(STORES.SOUNDBOARD_AUDIO, "readonly")
+            .objectStore(STORES.SOUNDBOARD_AUDIO)
+            .get("audio-board:0");
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        }
+      );
+      expect(row.audio).toBeInstanceOf(Blob);
+    } finally {
+      db.close();
+    }
+
+    useSoundboardStore.setState({ boards: [] });
+    resetPersistWritesForTests();
+    await useSoundboardStore.persist.rehydrate();
+    expect(useSoundboardStore.getState().boards[0]?.slots[0]?.audioData).toBe(
+      btoa("recorded audio bytes")
+    );
   });
 });
