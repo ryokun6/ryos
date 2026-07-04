@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { OS_NATIVE_CHROME_SKIP_CLASS } from "@/lib/themeChrome";
 import { DB_NAME } from "@/utils/indexedDB";
 import {
   formatIDBEntriesForCopy,
@@ -144,7 +145,12 @@ export function DebugIndexedDBPanel({
   }, []);
 
   return (
-    <div className="h-full overflow-auto px-2 py-1 font-os-mono text-[10px] leading-[1.45]">
+    <div
+      className={cn(
+        "h-full overflow-auto px-2 py-1 font-os-mono text-[10px] leading-[1.45]",
+        OS_NATIVE_CHROME_SKIP_CLASS
+      )}
+    >
       {loadState === "loading" ? (
         <div className="py-4 text-center opacity-50">
           {t("debug.idb.loading")}
