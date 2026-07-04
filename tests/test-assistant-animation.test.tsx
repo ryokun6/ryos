@@ -99,20 +99,42 @@ describe("assistant semantic animation selection", () => {
     ).toBe("GetWizardy");
   });
 
-  test("plays Show before greeting on initial character load", () => {
-    const data = agentWithAnimations(["Show", "Greeting", "RestPose"]);
+  test("plays Show before a greeting gesture on initial character load", () => {
+    const data = agentWithAnimations(["Show", "Greet", "Wave", "RestPose"]);
 
     expect(resolveAssistantEntranceSequencePlan(data)).toEqual({
       first: "Show",
-      followUp: "Greeting",
+      followUp: "Greet",
     });
     expect(
       resolveAssistantEntranceSequencePlan(
-        agentWithAnimations(["Greeting", "RestPose"])
+        agentWithAnimations(["Greet", "RestPose"])
       )
     ).toEqual({
       first: "RestPose",
       followUp: null,
+    });
+  });
+
+  test("never chains a Greeting clip after Show (it is an alternate entrance)", () => {
+    // Microsoft Agent "Greeting" clips start from (nearly) empty frames, so
+    // playing one right after Show pops the character in, blanks it, and
+    // materializes it a second time (visible on Clippy, Saeko, and others).
+    const greetingOnly = agentWithAnimations(["Show", "Greeting", "RestPose"]);
+    expect(resolveAssistantEntranceSequencePlan(greetingOnly)).toEqual({
+      first: "Show",
+      followUp: null,
+    });
+
+    const withGesture = agentWithAnimations([
+      "Show",
+      "Greeting",
+      "Wave",
+      "RestPose",
+    ]);
+    expect(resolveAssistantEntranceSequencePlan(withGesture)).toEqual({
+      first: "Show",
+      followUp: "Wave",
     });
   });
 

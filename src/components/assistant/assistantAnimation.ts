@@ -258,6 +258,19 @@ export interface AssistantEntranceSequencePlan {
 }
 
 /**
+ * Follow-up gestures that continue from the visible rest pose. "Greeting" is
+ * intentionally absent: Microsoft Agent "Greeting" clips are alternate
+ * entrances whose first frames are (nearly) empty, so chaining one after Show
+ * pops the character in, blanks it, and materializes it a second time.
+ */
+const ENTRANCE_FOLLOW_UP_CANDIDATES = [
+  "Greet",
+  "Wave",
+  "GetAttention",
+  "Announce",
+] as const;
+
+/**
  * Prefer the agent's real entrance clip, then a separate greeting gesture.
  * Characters without an entrance clip appear in their static default pose.
  */
@@ -270,9 +283,7 @@ export function resolveAssistantEntranceSequencePlan(
   );
   const greeting = pickFirstAvailableAnimation(
     data,
-    ANIMATION_CANDIDATES.greeting.filter(
-      (name) => !isAssistantEntranceAnimation(name)
-    )
+    ENTRANCE_FOLLOW_UP_CANDIDATES
   );
 
   if (entrance) {
