@@ -48,6 +48,9 @@ function resolveFrameImages(
   return frame.images && frame.images.length > 0 ? frame.images : current;
 }
 
+/** How often a clip held at its WAITING point checks for an interrupt. */
+const WAITING_POLL_MS = 50;
+
 const agentDataCache = new Map<string, Promise<AgentData>>();
 
 export function loadAgentData(url: string): Promise<AgentData> {
@@ -158,6 +161,12 @@ interface PlaybackState {
   exiting: boolean;
   /** Frames stepped while exiting; caps malformed exit-branch loops. */
   exitSteps: number;
+  /**
+   * Reached the natural end of a useExitBranching clip: holding its final
+   * pose (original Microsoft Agent WAITING state). The end has been reported,
+   * and the clip's wind-down frames play when the next clip is requested.
+   */
+  waiting: boolean;
   /** Clip queued to start once the graceful exit completes. */
   pendingName: string | null;
   timer: ReturnType<typeof setTimeout> | null;
@@ -230,6 +239,7 @@ export function ClippySprite({
         index: 0,
         exiting: false,
         exitSteps: 0,
+        waiting: false,
         pendingName: null,
         timer: null,
       };
@@ -253,6 +263,28 @@ export function ClippySprite({
         const frame = playback.anim.frames[playback.index];
         if (!frame) {
           finish();
+          return;
+        }
+
+        // WAITING hold: the frame is already on screen, so just poll for an
+        // interrupt. Once one arrives, jump onto the held frame's exit path.
+        if (playback.waiting) {
+          if (!playback.exiting) {
+            playback.timer = setTimeout(step, WAITING_POLL_MS);
+            return;
+          }
+          playback.waiting = false;
+          playback.exitSteps += 1;
+          const exitIndex =
+            typeof frame.exitBranch === "number"
+              ? frame.exitBranch
+              : playback.index + 1;
+          if (exitIndex >= playback.anim.frames.length) {
+            finish();
+            return;
+          }
+          playback.index = exitIndex;
+          step();
           return;
         }
 
@@ -284,6 +316,27 @@ export function ClippySprite({
           }
         }
 
+        // Exit-branching clips never end on their own (original Microsoft
+        // Agent WAITING state): their last frame is a terminal marker, and
+        // the wind-down frames before it are only reachable via exitBranch
+        // pointers. Finishing here would strand the held pose on screen and
+        // make the next clip a hard cut. Instead hold the current frame —
+        // keeping its exitBranch reachable — and report the end once so the
+        // overlay's state machine can decide what plays next; its request
+        // then winds the clip down through the exit path above.
+        if (
+          !playback.exiting &&
+          playback.anim.useExitBranching &&
+          nextIndex >= playback.anim.frames.length - 1
+        ) {
+          playback.waiting = true;
+          spriteLog(`hold ${playback.name} at exit-branch wait point`);
+          onEndRef.current?.(playback.name);
+          if (playbackRef.current !== playback) return;
+          playback.timer = setTimeout(step, WAITING_POLL_MS);
+          return;
+        }
+
         if (nextIndex >= playback.anim.frames.length) {
           playback.timer = setTimeout(finish, frame.duration);
           return;
@@ -313,12 +366,14 @@ export function ClippySprite({
 
     // Graceful interrupt: clips authored with exit branching wind down along
     // their exitBranch path before the next clip starts (original Microsoft
-    // Agent behavior). Everything else hard-switches immediately.
+    // Agent behavior). Everything else hard-switches immediately. A clip
+    // holding at its WAITING point always winds down first — even a replay of
+    // the same clip, which restarts from the rest pose the exit path ends on.
     if (
       !dataChanged &&
       playback &&
       playback.anim.useExitBranching &&
-      !(playback.name === animation && !playback.exiting)
+      !(playback.name === animation && !playback.exiting && !playback.waiting)
     ) {
       spriteLog(
         `graceful exit of ${playback.name}, then ${animation} (exit-branch wind-down)`

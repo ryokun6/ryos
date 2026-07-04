@@ -754,6 +754,73 @@ describe("assistant sprite overlays", () => {
     expect(onAnimationEnd).toEqual([]);
   });
 
+  test("holds exit-branching clips at their wait point, then winds down into the next clip", async () => {
+    // Real Microsoft Agent exit-branching clips (e.g. Merlin's idles) never
+    // reach their wind-down frames naturally: the held pose branches straight
+    // to a terminal keep-previous frame, and the wind-down is only reachable
+    // via exitBranch. Ending the clip there used to strand the held pose and
+    // snap to the next clip.
+    const onAnimationEnd: string[] = [];
+    const data: AgentData = {
+      framesize: [64, 64],
+      animations: {
+        Held: {
+          useExitBranching: true,
+          frames: [
+            {
+              // Held pose: natural flow jumps to the terminal marker.
+              duration: 30,
+              images: [[64, 0]],
+              exitBranch: 1,
+              branching: { branches: [{ frameIndex: 3, weight: 100 }] },
+            },
+            { duration: 30, images: [[128, 0]] }, // wind-down
+            { duration: 30, images: [[0, 0]] }, // back at rest
+            { duration: 0 }, // terminal keep-previous marker
+          ],
+        },
+        Next: { frames: [{ duration: 10_000, images: [[192, 0]] }] },
+      },
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    const renderSprite = (animation: string) =>
+      act(async () => {
+        root?.render(
+          <ClippySprite
+            mapUrl="/map.png"
+            data={data}
+            characterId="clippy"
+            animation={animation}
+            onAnimationEnd={(name) => onAnimationEnd.push(name)}
+          />
+        );
+      });
+    const layer = () =>
+      host
+        .querySelector("[data-assistant-sprite-layer]")
+        ?.getAttribute("style") ?? "";
+
+    await renderSprite("Held");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    // Natural end reached: the end is reported, but the held pose stays on
+    // screen instead of jumping anywhere.
+    expect(onAnimationEnd).toEqual(["Held"]);
+    expect(layer()).toContain("background-position: -64px 0px");
+
+    // The next request winds down through the exit path before Next starts.
+    await renderSprite("Next");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+    expect(layer()).toContain("background-position: -192px 0px");
+    expect(onAnimationEnd).toEqual(["Held"]);
+  });
+
   test("hard-switches clips that lack exit branching", async () => {
     const data: AgentData = {
       framesize: [64, 64],
