@@ -62,6 +62,7 @@ import {
   type CodecContext,
 } from "@/sync/codecs";
 import { getPersistedSyncShadowKeys } from "@/sync/stateStorage";
+import { useFilesStore } from "@/stores/useFilesStore";
 import type { IndexedDBStoreItemWithKey as StoreItemWithKey } from "@/utils/indexedDBBackup";
 
 const FLUSH_DEBOUNCE_MS = 1000;
@@ -1175,8 +1176,21 @@ export class CloudSyncEngine {
       };
       emitProgress(0);
 
+      // Blob store keys are content UUIDs; resolve display filenames from the
+      // files-store metadata (may be empty on a fresh device — falls back to
+      // the category label in the UI).
+      const namesByUuid = new Map<string, string>();
+      for (const item of Object.values(useFilesStore.getState().items)) {
+        if (item.uuid && item.name) namesByUuid.set(item.uuid, item.name);
+      }
+
       for (let index = 0; index < downloads.length; index += 1) {
         const { op, contentHash, size } = downloads[index];
+        const storeKey = op.k.slice(prefix.length);
+        syncStore.markCategoryDownloadItem(
+          category,
+          namesByUuid.get(storeKey) ?? null
+        );
         const downloadUrl = urls[index];
         if (!downloadUrl) {
           cloudSyncLog.warn("Blob download URL missing", { namespace });

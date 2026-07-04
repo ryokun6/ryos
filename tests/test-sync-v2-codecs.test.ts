@@ -787,6 +787,30 @@ describe("cloud sync store", () => {
     expect(status.downloadProgress).toBeNull();
   });
 
+  test("download item name is normalized and cleared with download activity", () => {
+    const store = useCloudSyncStore.getState();
+    store.markCategorySyncing("files", "download", true);
+    store.markCategoryDownloadItem("files", "  photo.png  ");
+    expect(
+      useCloudSyncStore.getState().categoryStatus.files.downloadItemName
+    ).toBe("photo.png");
+
+    const unchangedStatus = useCloudSyncStore.getState().categoryStatus;
+    store.markCategoryDownloadItem("files", "photo.png");
+    expect(useCloudSyncStore.getState().categoryStatus).toBe(unchangedStatus);
+
+    store.markCategoryDownloadItem("files", "   ");
+    expect(
+      useCloudSyncStore.getState().categoryStatus.files.downloadItemName
+    ).toBeNull();
+
+    store.markCategoryDownloadItem("files", "book.epub");
+    store.markCategorySyncing("files", "download", false);
+    expect(
+      useCloudSyncStore.getState().categoryStatus.files.downloadItemName
+    ).toBeNull();
+  });
+
   test("sync status includes upload percentage when available", () => {
     const t = (key: string) => {
       const labels: Record<string, string> = {
