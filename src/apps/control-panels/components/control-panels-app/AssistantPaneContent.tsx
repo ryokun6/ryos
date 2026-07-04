@@ -120,7 +120,7 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                   type="button"
                   aria-label={character.name}
                   aria-pressed={isSelected}
-                  className="preview-button relative grid w-full aspect-square grid-rows-[72px_11px] content-center justify-items-center gap-1 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
+                  className="preview-button relative grid w-full aspect-square grid-rows-[72px_11px] content-start justify-items-center gap-0 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
                   style={{
                     boxShadow: isSelected
                       ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
@@ -137,7 +137,7 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                   <span className="pointer-events-none flex h-[72px] w-full items-center justify-center">
                     <CharacterTilePreview character={character} />
                   </span>
-                  <span className="pointer-events-none block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
+                  <span className="pointer-events-none -mt-1.5 block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
                     {character.name}
                   </span>
                 </button>
