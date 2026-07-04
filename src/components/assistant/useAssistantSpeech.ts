@@ -40,10 +40,11 @@ export function useAssistantSpeech({
 
   // When Speech was already on from a previous session, replies finish
   // outside any user gesture and iOS Safari drops the `speak()` call. Prime
-  // synthesis from the first gesture of the session so those asynchronous
-  // replies are audible. (Toggling Speech on manually primes as a side
-  // effect of speaking inside the menu click, which is why that path
-  // already worked.)
+  // synthesis from any gesture (tapping the assistant, typing, any tap on
+  // the page) so those asynchronous replies are audible; a reply that was
+  // already dropped is re-spoken by the priming gesture. primeAssistantSpeech
+  // keeps retrying until an utterance verifiably starts, then becomes a
+  // no-op, so leaving these listeners attached is cheap.
   useEffect(() => {
     if (!speechEnabled) return;
     if (typeof document === "undefined") return;

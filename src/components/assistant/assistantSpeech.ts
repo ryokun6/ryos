@@ -37,7 +37,22 @@ export function prepareAssistantSpeechTexts(text: string): string[] {
 // reply (or a stop) never lets stale `onend` handlers keep speaking.
 let generation = 0;
 let voicesWarmed = false;
-let synthesisPrimed = false;
+/**
+ * True once an utterance has actually started playing, which proves the
+ * engine accepted a `speak()` (on iOS Safari that only happens after a call
+ * made inside a user gesture). Until then every gesture retries the unlock:
+ * iOS grants user activation to `touchend`/`keydown` but not `pointerdown`,
+ * so the first attempt of a tap can fail while a later one succeeds.
+ */
+let synthesisUnlocked = false;
+/**
+ * The most recent reply handed to `speakAssistantText` that has not audibly
+ * started. On iOS Safari a `speak()` outside a user gesture is silently
+ * dropped (no events, no error); the next gesture re-speaks this reply so
+ * the user actually hears it in addition to unlocking synthesis.
+ */
+let droppedSpeech: { text: string; options?: AssistantSpeechOptions } | null =
+  null;
 
 /** Warm the async voice list (Chrome loads it lazily). Never blocks speech. */
 function warmVoices(synth: SpeechSynthesis) {
@@ -57,23 +72,51 @@ export interface AssistantSpeechOptions {
  * other engines) ignore `speechSynthesis.speak()` until the page's first
  * `speak()` happens inside a gesture handler. When Speech was enabled in a
  * previous session, replies finish asynchronously — outside any gesture — so
- * without priming they are silently dropped. Call this from gesture handlers
- * (pointer down, submit); it speaks one muted, empty utterance the first time.
+ * without priming they are silently dropped.
+ *
+ * Call this from gesture handlers (tapping the assistant, submitting a
+ * message, any pointer/key gesture). If the latest reply was dropped it is
+ * re-spoken inside the gesture (which both unlocks synthesis and finally
+ * makes the reply audible); otherwise a muted utterance unlocks silently.
+ * Attempts keep retrying on subsequent gestures until an utterance verifiably
+ * starts — iOS silently drops blocked `speak()` calls with no event or error,
+ * so a single fire-and-forget attempt can latch a failed unlock forever.
  */
 export function primeAssistantSpeech(): void {
-  if (synthesisPrimed) return;
   const synth = getBrowserSpeechSynthesis();
   if (!synth) return;
-  synthesisPrimed = true;
+  if (synthesisUnlocked && !droppedSpeech) return;
 
   warmVoices(synth);
   synth.resume();
-  // Never clobber speech that is already audible (it also proves synthesis
-  // is unlocked).
-  if (synth.speaking || synth.pending) return;
+
+  // Audible speech proves synthesis is unlocked, and a reply dropped earlier
+  // is stale once something else is speaking — never barge in over it.
+  if (synth.speaking) {
+    synthesisUnlocked = true;
+    droppedSpeech = null;
+    return;
+  }
+
+  // Re-speak the dropped reply inside this gesture. speakAssistantText
+  // cancels first, which also clears any utterances stuck in the queue from
+  // the blocked attempt.
+  if (droppedSpeech) {
+    const { text, options } = droppedSpeech;
+    speakAssistantText(text, options);
+    return;
+  }
+
+  // A queued-but-not-started utterance either belongs to another feature
+  // (never clobber it, and don't pile on) or is about to start; retry on the
+  // next gesture instead.
+  if (synth.pending) return;
 
   const utterance = new SpeechSynthesisUtterance(" ");
   utterance.volume = 0;
+  utterance.onstart = () => {
+    synthesisUnlocked = true;
+  };
   synth.speak(utterance);
 }
 
@@ -93,7 +136,15 @@ export function speakAssistantText(
   synth.cancel();
 
   const texts = prepareAssistantSpeechTexts(text);
-  if (texts.length === 0) return;
+  if (texts.length === 0) {
+    droppedSpeech = null;
+    return;
+  }
+
+  // Until an utterance verifiably starts, assume this reply may have been
+  // dropped (iOS Safari blocks out-of-gesture speak() calls silently) so the
+  // next user gesture can re-speak it via primeAssistantSpeech.
+  droppedSpeech = { text, options };
 
   warmVoices(synth);
   synth.resume();
@@ -111,6 +162,13 @@ export function speakAssistantText(
       useAudioSettingsStore.getState().browserTtsVoiceURI
     );
     if (voice) utterance.voice = voice;
+
+    utterance.onstart = () => {
+      // An audible start proves the engine accepted the speak() (i.e.
+      // synthesis is unlocked) and that this reply was not dropped.
+      synthesisUnlocked = true;
+      if (currentGeneration === generation) droppedSpeech = null;
+    };
 
     let advanced = false;
     const advance = () => {
@@ -135,6 +193,7 @@ export function speakAssistantText(
 /** Stop assistant speech and drop any queued utterances. */
 export function stopAssistantSpeech(): void {
   generation++;
+  droppedSpeech = null;
   getBrowserSpeechSynthesis()?.cancel();
 }
 
@@ -142,5 +201,6 @@ export function stopAssistantSpeech(): void {
 export function __resetAssistantSpeechStateForTests(): void {
   generation++;
   voicesWarmed = false;
-  synthesisPrimed = false;
+  synthesisUnlocked = false;
+  droppedSpeech = null;
 }

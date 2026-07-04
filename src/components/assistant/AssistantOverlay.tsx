@@ -59,7 +59,11 @@ import {
   type AssistantBubbleRect,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
-import { speakAssistantText, stopAssistantSpeech } from "./assistantSpeech";
+import {
+  primeAssistantSpeech,
+  speakAssistantText,
+  stopAssistantSpeech,
+} from "./assistantSpeech";
 import { useAssistantSpeech } from "./useAssistantSpeech";
 import {
   Streamdown,
@@ -576,6 +580,9 @@ function AssistantOverlayInner() {
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       markAssistantSoundInteraction();
+      // Tapping the assistant is a user gesture: unlock TTS (iOS Safari) and
+      // catch up on a reply that was silently dropped outside a gesture.
+      if (useAssistantStore.getState().speechEnabled) primeAssistantSpeech();
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (contextMenuPos) return;
       lastActiveAtRef.current = Date.now();
@@ -922,6 +929,7 @@ function AssistantOverlayInner() {
   const handleCharacterActivate = useCallback(() => {
     cancelBubbleAutoClose();
     markAssistantSoundInteraction();
+    if (useAssistantStore.getState().speechEnabled) primeAssistantSpeech();
     lastActiveAtRef.current = Date.now();
     const willOpen = !bubbleOpen;
     setBubbleOpen(willOpen);
@@ -1088,9 +1096,13 @@ function AssistantOverlayInner() {
       return;
     }
     // Speak the current reply inside the menu-click gesture: it audibly
-    // confirms the setting and unlocks synthesis on iOS Safari.
+    // confirms the setting and unlocks synthesis on iOS Safari. With no
+    // reply to speak yet, still unlock silently so the upcoming reply is
+    // audible.
     if (latestAssistantText && !isLoading) {
       speakAssistantText(latestAssistantText, { locale: i18n.language });
+    } else {
+      primeAssistantSpeech();
     }
   }, [
     cancelBubbleAutoClose,
@@ -1324,6 +1336,9 @@ function AssistantOverlayInner() {
     (event: React.FormEvent) => {
       event.preventDefault();
       markAssistantSoundInteraction();
+      // Submitting counts as a gesture even when triggered by the virtual
+      // keyboard's Go key, which may not dispatch pointer/key events.
+      if (useAssistantStore.getState().speechEnabled) primeAssistantSpeech();
       const text = input.trim();
       if (!text || isLoading) return;
       setInput("");

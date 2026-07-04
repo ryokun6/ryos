@@ -57,6 +57,7 @@ class FakeUtterance {
   rate = 1;
   volume = 1;
   voice: unknown = null;
+  onstart: (() => void) | null = null;
   onend: (() => void) | null = null;
   onerror: (() => void) | null = null;
   constructor(text: string) {
@@ -172,13 +173,35 @@ describe("assistant speech playback", () => {
     expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe("English UK");
   });
 
-  test("primeAssistantSpeech speaks one muted utterance, once", () => {
-    primeAssistantSpeech();
+  test("primeAssistantSpeech retries the muted unlock until an utterance starts", () => {
     primeAssistantSpeech();
     expect(spoken).toHaveLength(1);
     expect(spoken[0].volume).toBe(0);
     // Priming must not cancel anything (it runs on arbitrary gestures).
     expect(cancelCount).toBe(0);
+
+    // The engine never confirmed a start (iOS drops blocked speak() calls
+    // silently, with no event), so the next gesture retries the unlock.
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(2);
+    expect(spoken[1].volume).toBe(0);
+
+    // A started utterance proves synthesis is unlocked; priming becomes a
+    // no-op from then on.
+    spoken[1].onstart?.();
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(2);
+  });
+
+  test("primeAssistantSpeech never piles onto a pending queue", () => {
+    synth.pending = true;
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(0);
+    expect(cancelCount).toBe(0);
+    // The queue draining re-enables the unlock attempt on the next gesture.
+    synth.pending = false;
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(1);
   });
 
   test("primeAssistantSpeech skips the muted utterance while speech is active", () => {
@@ -200,6 +223,68 @@ describe("assistant speech playback", () => {
       "Hello there!",
     ]);
     expect(spoken[1].volume).toBe(1);
+  });
+
+  test("a reply dropped outside a gesture is re-spoken by the next priming gesture", () => {
+    speakAssistantText("Hello there!", { locale: "en" });
+    expect(spoken).toHaveLength(1);
+
+    // The engine never started the utterance (iOS blocked the speak() made
+    // outside a gesture), so the priming gesture re-speaks the reply at full
+    // volume instead of a muted unlock utterance.
+    primeAssistantSpeech();
+    expect(spoken.map((utterance) => utterance.text)).toEqual([
+      "Hello there!",
+      "Hello there!",
+    ]);
+    expect(spoken[1].volume).toBe(1);
+
+    // Once it audibly starts, later gestures stop re-speaking it.
+    spoken[1].onstart?.();
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(2);
+  });
+
+  test("a reply that already started is not re-spoken by later gestures", () => {
+    speakAssistantText("Hello there!", { locale: "en" });
+    spoken[0].onstart?.();
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(1);
+  });
+
+  test("priming re-speaks only the newest dropped reply", () => {
+    speakAssistantText("Old reply.", { locale: "en" });
+    speakAssistantText("New reply.", { locale: "en" });
+    primeAssistantSpeech();
+    expect(spoken.map((utterance) => utterance.text)).toEqual([
+      "Old reply.",
+      "New reply.",
+      "New reply.",
+    ]);
+  });
+
+  test("stopping speech clears the dropped reply", () => {
+    speakAssistantText("Hello there!", { locale: "en" });
+    stopAssistantSpeech();
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(2);
+    // The priming gesture unlocks silently instead of resurrecting the
+    // stopped reply.
+    expect(spoken[1].volume).toBe(0);
+  });
+
+  test("audible speech unlocks synthesis and drops the stale reply", () => {
+    speakAssistantText("Hello there!", { locale: "en" });
+    // Another feature's speech is audible (e.g. Books read-aloud): priming
+    // must not barge in over it with the stale assistant reply.
+    synth.speaking = true;
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(1);
+    expect(cancelCount).toBe(1);
+
+    synth.speaking = false;
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(1);
   });
 });
 
