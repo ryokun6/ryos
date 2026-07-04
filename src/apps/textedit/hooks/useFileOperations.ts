@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Editor } from "@tiptap/core";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import { readDocumentTextContent } from "@/services/vfs/FileContentRepository";
+import { getFileMetadata } from "@/services/vfs/FileMetadataService";
 import {
   htmlToMarkdown,
   htmlToPlainText,
@@ -233,6 +234,14 @@ export function useFileOperations({
     async (filePath: string): Promise<boolean> => {
       if (!editor) return false;
 
+      const metadata = getFileMetadata(filePath);
+      if (!metadata || metadata.status === "trashed") {
+        log.debug("Skipping load for missing or trashed document", {
+          path: filePath,
+        });
+        return false;
+      }
+
       try {
         const contentStr = await readDocumentTextContent(filePath);
         if (contentStr) {
@@ -259,16 +268,22 @@ export function useFileOperations({
             log.debug("Loaded content from file", { path: filePath });
             return true;
           }
-        } else {
-          console.warn("Document not found or empty:", filePath);
         }
+
+        // Metadata exists but content is empty or not yet synced — open a blank
+        // document at the same path so the user can keep editing without noise.
+        log.debug("Document has no stored content yet; opening blank editor", {
+          path: filePath,
+        });
+        await handleLoadFromPath(filePath, "");
+        return true;
       } catch (err) {
         console.error("Error loading file content from DB:", err);
       }
 
       return false;
     },
-    [editor, onLoadSuccess]
+    [editor, handleLoadFromPath, onLoadSuccess]
   );
 
   const generateSuggestedFileName = useCallback((): string => {

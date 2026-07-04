@@ -18,5 +18,7 @@ export default createAppleJwtTokenHandler({
   listMissingEnv: listMapKitMissingEnv,
   hasPrivateKeyEnv: () => Boolean(process.env.MAPKIT_PRIVATE_KEY),
   parsePrivateKey: parseMapKitPrivateKey,
-  sign: (ttlSeconds) => signMapKitJwt("mapkit-js", ttlSeconds),
+  sign: (ttlSeconds, requestOrigin) =>
+    signMapKitJwt("mapkit-js", ttlSeconds, { requestOrigin }),
+  originAwareCache: true,
 });

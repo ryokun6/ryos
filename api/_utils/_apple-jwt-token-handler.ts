@@ -29,7 +29,12 @@ export interface AppleJwtTokenHandlerConfig {
   /** Whether the private-key env var is actually present (drives diagnostics). */
   hasPrivateKeyEnv: () => boolean;
   parsePrivateKey: () => AppleJwtKeyDiagnostics;
-  sign: (ttlSeconds: number) => Promise<MapKitSignedJwt>;
+  sign: (
+    ttlSeconds: number,
+    requestOrigin?: string | null
+  ) => Promise<MapKitSignedJwt>;
+  /** When true, cache tokens per resolved request origin (MapKit JS). */
+  originAwareCache?: boolean;
 }
 
 /**
@@ -45,10 +50,11 @@ export function createAppleJwtTokenHandler(config: AppleJwtTokenHandlerConfig) {
   // token is re-signed well before expiry so the client never receives a
   // token that's about to expire.
   let cachedToken: MapKitSignedJwt | null = null;
+  const cachedTokensByOrigin = new Map<string, MapKitSignedJwt>();
 
   return apiHandler(
     { methods: ["GET"] },
-    async ({ res, logger, startTime }) => {
+    async ({ req, res, logger, startTime, origin }) => {
       const missing = config.listMissingEnv();
       if (missing.length > 0) {
         // When the only "missing" thing is the private key but the env var is
@@ -84,15 +90,31 @@ export function createAppleJwtTokenHandler(config: AppleJwtTokenHandlerConfig) {
 
       try {
         const now = Date.now();
-        if (
-          !cachedToken ||
-          cachedToken.expiresAt - now < config.safetyBufferMs
-        ) {
-          cachedToken = await config.sign(config.tokenTtlSeconds);
+        const cacheKey = config.originAwareCache
+          ? origin || "__default__"
+          : null;
+        const cached =
+          cacheKey !== null
+            ? cachedTokensByOrigin.get(cacheKey) ?? null
+            : cachedToken;
+
+        if (!cached || cached.expiresAt - now < config.safetyBufferMs) {
+          const signed = await config.sign(config.tokenTtlSeconds, origin);
+          if (cacheKey !== null) {
+            cachedTokensByOrigin.set(cacheKey, signed);
+          } else {
+            cachedToken = signed;
+          }
           logger.info(`Signed new ${config.label} JWT`, {
-            expiresAt: new Date(cachedToken.expiresAt).toISOString(),
+            expiresAt: new Date(signed.expiresAt).toISOString(),
+            ...(cacheKey !== null ? { origin: cacheKey } : {}),
           });
         }
+
+        const activeToken =
+          cacheKey !== null
+            ? cachedTokensByOrigin.get(cacheKey)!
+            : cachedToken!;
 
         res.setHeader(
           "Cache-Control",
@@ -100,8 +122,8 @@ export function createAppleJwtTokenHandler(config: AppleJwtTokenHandlerConfig) {
         );
         logger.response(200, Date.now() - startTime);
         res.status(200).json({
-          token: cachedToken.token,
-          expiresAt: cachedToken.expiresAt,
+          token: activeToken.token,
+          expiresAt: activeToken.expiresAt,
         });
       } catch (error) {
         logger.error(`Failed to sign ${config.label} token`, error);

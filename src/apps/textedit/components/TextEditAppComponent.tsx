@@ -30,6 +30,7 @@ import {
 } from "../utils/mergeEditorContent";
 import { persistedContentToEditorContent } from "../utils/documentContent";
 import { readDocumentTextContent } from "@/services/vfs/FileContentRepository";
+import { getFileMetadata } from "@/services/vfs/FileMetadataService";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -281,7 +282,18 @@ function TextEditContent({
       log.debug("Restoring instance content from DB", {
         path: currentFilePath,
       });
-      handleLoadFromDatabase(currentFilePath);
+      void (async () => {
+        const loaded = await handleLoadFromDatabase(currentFilePath);
+        if (loaded) return;
+
+        const metadata = getFileMetadata(currentFilePath);
+        if (!metadata || metadata.status === "trashed") {
+          log.debug("Clearing stale TextEdit file path after failed restore", {
+            path: currentFilePath,
+          });
+          setCurrentFilePath(null);
+        }
+      })();
     }
   }, [
     editor,
@@ -290,6 +302,7 @@ function TextEditContent({
     contentJson,
     currentFilePath,
     handleLoadFromDatabase,
+    setCurrentFilePath,
   ]);
 
   // Reactively merge externally-sourced content (cloud sync, file sync, or AI

@@ -1,4 +1,6 @@
 import { SignJWT, importPKCS8, type CryptoKey } from "jose";
+import { isAllowedOrigin } from "./_cors.js";
+import { getConfiguredPublicOrigin } from "./runtime-config.js";
 
 /**
  * Shared utilities for parsing the MapKit `.p8` private key and signing the
@@ -115,6 +117,27 @@ async function getPrivateKey(): Promise<CryptoKey> {
 }
 
 /**
+ * Resolve the browser origin claim for MapKit JS tokens.
+ *
+ * Priority:
+ *   1. Explicit `MAPKIT_ORIGIN`
+ *   2. Allowed request `Origin` header (localhost, preview deploys, etc.)
+ *   3. Configured `APP_PUBLIC_ORIGIN` for production deployments
+ */
+export function resolveMapKitJsOrigin(
+  requestOrigin?: string | null
+): string | null {
+  const explicit = process.env.MAPKIT_ORIGIN?.trim();
+  if (explicit) return explicit;
+
+  if (requestOrigin && isAllowedOrigin(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  return getConfiguredPublicOrigin();
+}
+
+/**
  * Sign a MapKit-style ES256 JWT.
  *
  * For `mapkit-js` we include an optional `origin` claim so that browsers must
@@ -124,7 +147,8 @@ async function getPrivateKey(): Promise<CryptoKey> {
  */
 export async function signMapKitJwt(
   kind: MapKitJwtKind,
-  ttlSeconds: number
+  ttlSeconds: number,
+  options: { requestOrigin?: string | null } = {}
 ): Promise<MapKitSignedJwt> {
   const teamId = process.env.MAPKIT_TEAM_ID;
   const keyId = process.env.MAPKIT_KEY_ID;
@@ -135,7 +159,10 @@ export async function signMapKitJwt(
   const now = Math.floor(Date.now() / 1000);
   const exp = now + ttlSeconds;
 
-  const allowedOrigin = process.env.MAPKIT_ORIGIN?.trim();
+  const allowedOrigin =
+    kind === "mapkit-js"
+      ? resolveMapKitJsOrigin(options.requestOrigin)
+      : null;
   const payload =
     kind === "mapkit-js" && allowedOrigin ? { origin: allowedOrigin } : {};
 
