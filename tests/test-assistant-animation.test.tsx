@@ -17,11 +17,15 @@ import {
 } from "../src/components/assistant/ClippySprite";
 import {
   getAssistantAnimationIntent,
+  getAssistantExitAnimationTimeout,
+  getAssistantLifecycleAnimationIntent,
   getAnimationCandidates,
   getDocumentToolSequenceKind,
   getIdleAnimationPool,
   getToolAnimationIntent,
+  isAssistantEntranceAnimation,
   isDocumentSequenceTool,
+  resolveAssistantEntranceSequencePlan,
   resolveDocumentToolSequencePlan,
   selectAssistantAnimation,
 } from "../src/components/assistant/assistantAnimation";
@@ -40,6 +44,67 @@ function agentWithAnimations(names: string[]): AgentData {
 }
 
 describe("assistant semantic animation selection", () => {
+  test("keeps enter and exit intents at character lifecycle boundaries", () => {
+    expect(getAssistantLifecycleAnimationIntent("characterLoad")).toBe(
+      "greeting"
+    );
+    expect(getAssistantLifecycleAnimationIntent("bubbleOpen")).toBe(
+      "attention"
+    );
+    expect(getAssistantLifecycleAnimationIntent("bubbleClose")).toBeNull();
+    expect(getAssistantLifecycleAnimationIntent("quit")).toBe("goodbye");
+  });
+
+  test("keeps entrance clips out of attention and working candidates", () => {
+    expect(
+      getAnimationCandidates("attention").some(isAssistantEntranceAnimation)
+    ).toBe(false);
+    expect(
+      getAnimationCandidates("processing", {
+        toolName: "launchApp",
+      }).some(isAssistantEntranceAnimation)
+    ).toBe(false);
+    expect(
+      getAnimationCandidates("processing", {
+        toolName: "closeApp",
+      })
+    ).not.toContain("Hide");
+  });
+
+  test("plays Show before greeting on initial character load", () => {
+    const data = agentWithAnimations(["Show", "Greeting", "RestPose"]);
+
+    expect(resolveAssistantEntranceSequencePlan(data)).toEqual({
+      first: "Show",
+      followUp: "Greeting",
+    });
+    expect(
+      resolveAssistantEntranceSequencePlan(
+        agentWithAnimations(["Greeting", "RestPose"])
+      )
+    ).toEqual({
+      first: "RestPose",
+      followUp: null,
+    });
+  });
+
+  test("uses clip duration for quit with a bounded malformed-data fallback", () => {
+    const data = agentWithAnimations(["GoodBye"]);
+    data.animations.GoodBye = {
+      frames: [
+        { duration: 400, images: frameImages },
+        { duration: 600, images: frameImages },
+      ],
+    };
+
+    expect(getAssistantExitAnimationTimeout(data, "GoodBye")).toBe(1250);
+    data.animations.GoodBye = {
+      frames: [{ duration: 60_000, images: frameImages }],
+    };
+    expect(getAssistantExitAnimationTimeout(data, "GoodBye")).toBe(10_000);
+    expect(getAssistantExitAnimationTimeout(data, "Missing")).toBe(500);
+  });
+
   test("supports original agent naming variants", () => {
     const data = agentWithAnimations([
       "Greet",
@@ -155,15 +220,7 @@ describe("assistant semantic animation selection", () => {
     expect(getIdleAnimationPool(data)).toEqual(["Idle1_1"]);
   });
 
-  test("adds enriched semantic candidates when present", () => {
-    const data = agentWithAnimations([
-      "Explain",
-      "DoMagic2",
-      "Embarrassed",
-      "HideQuick",
-      "RestPose",
-    ]);
-
+  test("adds enriched semantic candidates", () => {
     expect(
       getAnimationCandidates("thinking").includes("Explain")
     ).toBe(true);
@@ -328,6 +385,138 @@ describe("assistant sprite overlays", () => {
     if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
       GlobalRegistrator.unregister();
     }
+  });
+
+  test("starts empty and reveals the first visible entrance frame", async () => {
+    const data: AgentData = {
+      framesize: [64, 64],
+      animations: {
+        Show: {
+          frames: [
+            { duration: 30 },
+            { duration: 10_000, images: [[64, 0]] },
+          ],
+        },
+      },
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    await act(async () => {
+      root?.render(
+        <ClippySprite
+          mapUrl="/map.png"
+          data={data}
+          characterId="clippy"
+          animation="Show"
+          initiallyHidden
+        />
+      );
+    });
+
+    expect(
+      host.querySelectorAll("[data-assistant-sprite-layer]")
+    ).toHaveLength(0);
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+
+    const layers = host.querySelectorAll("[data-assistant-sprite-layer]");
+    expect(layers).toHaveLength(1);
+    expect(layers.item(0).getAttribute("style")).toContain(
+      "background-position: -64px 0px"
+    );
+  });
+
+  test("renders static previews immediately", async () => {
+    const data = agentWithAnimations(["RestPose"]);
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    await act(async () => {
+      root?.render(
+        <ClippySprite
+          mapUrl="/map.png"
+          data={data}
+          characterId="clippy"
+          animation="RestPose"
+        />
+      );
+    });
+
+    const layers = host.querySelectorAll("[data-assistant-sprite-layer]");
+    expect(layers).toHaveLength(1);
+    expect(layers.item(0).getAttribute("style")).toContain(
+      "background-position: 0px 0px"
+    );
+  });
+
+  test("falls back to the base pose when an entrance clip is missing", async () => {
+    const data: AgentData = {
+      framesize: [64, 64],
+      animations: {},
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    await act(async () => {
+      root?.render(
+        <ClippySprite
+          mapUrl="/map.png"
+          data={data}
+          characterId="clippy"
+          animation="Show"
+          initiallyHidden
+        />
+      );
+    });
+
+    expect(
+      host.querySelectorAll("[data-assistant-sprite-layer]")
+    ).toHaveLength(1);
+  });
+
+  test("keeps the current frame during ordinary animation changes", async () => {
+    const data: AgentData = {
+      framesize: [64, 64],
+      animations: {
+        RestPose: { frames: [frame] },
+        Thinking: { frames: [{ duration: 10_000 }] },
+      },
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    await act(async () => {
+      root?.render(
+        <ClippySprite
+          mapUrl="/map.png"
+          data={data}
+          characterId="clippy"
+          animation="RestPose"
+        />
+      );
+    });
+
+    await act(async () => {
+      root?.render(
+        <ClippySprite
+          mapUrl="/map.png"
+          data={data}
+          characterId="clippy"
+          animation="Thinking"
+        />
+      );
+    });
+
+    expect(
+      host.querySelectorAll("[data-assistant-sprite-layer]")
+    ).toHaveLength(1);
   });
 
   test("stacks every image and keeps layers through duration-only frames", async () => {

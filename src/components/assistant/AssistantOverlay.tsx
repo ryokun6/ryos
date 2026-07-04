@@ -24,19 +24,29 @@ import {
   ASSISTANT_CHARACTERS,
   getAssistantCharacter,
 } from "./characters";
-import { ClippySprite, useAgentData, type AgentData } from "./ClippySprite";
+import {
+  ClippySprite,
+  useAgentDataLoadState,
+  type AgentData,
+} from "./ClippySprite";
 import { useAssistantChat } from "./useAssistantChat";
 import {
+  getAnimationCandidates,
   getAssistantAnimationIntent,
+  getAssistantExitAnimationTimeout,
+  getAssistantLifecycleAnimationIntent,
   getDocumentToolSequenceKind,
   getIdleAnimationPool,
+  isAssistantEntranceAnimation,
   isDocumentSequenceTool,
+  resolveAssistantEntranceSequencePlan,
   resolveDocumentToolSequencePlan,
   selectAssistantAnimation,
   type AssistantAnimationIntent,
   type DocumentToolSequencePlan,
 } from "./assistantAnimation";
 import { markAssistantSoundInteraction } from "./assistantSounds";
+import { resolveAssistantSnapPoint } from "./assistantSnap";
 import {
   Streamdown,
   CHAT_STREAMDOWN_ANIMATED,
@@ -200,12 +210,15 @@ function AssistantOverlayInner() {
   const { computeInsets } = useWindowInsets();
   const launchApp = useLaunchApp();
   const reduceMotion = useReducedMotion();
+  const lastUserDragAtRef = useRef(0);
+  const pendingRelocationCancelRef = useRef<(() => void) | null>(null);
 
   const chatHandle = useAssistantChat();
   const {
     latestAssistantText,
     statusLabels,
     toolActivity,
+    openTarget,
     isAwaitingReply,
     isLoading,
     errorText,
@@ -253,6 +266,105 @@ function AssistantOverlayInner() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(position);
   positionRef.current = position;
+
+  // Move next to the exact window reported by a successful desktop-assistant
+  // tool. New windows wait on the app store's loaded/foreground transition;
+  // existing windows can resolve immediately from their committed geometry.
+  useEffect(() => {
+    if (!openTarget) return;
+    if (lastUserDragAtRef.current >= openTarget.toolStartedAt) return;
+
+    let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
+    const cancel = () => {
+      if (cancelled) return;
+      cancelled = true;
+      unsubscribe?.();
+      if (pendingRelocationCancelRef.current === cancel) {
+        pendingRelocationCancelRef.current = null;
+      }
+    };
+    pendingRelocationCancelRef.current?.();
+    pendingRelocationCancelRef.current = cancel;
+
+    const tryRelocate = (state: ReturnType<typeof useAppStore.getState>) => {
+      if (cancelled) return;
+      if (lastUserDragAtRef.current >= openTarget.toolStartedAt) {
+        cancel();
+        return;
+      }
+
+      const instance = state.instances[openTarget.instanceId];
+      if (!instance?.isOpen || instance.isMinimized) {
+        cancel();
+        return;
+      }
+      if (instance.isLoading) return;
+      if (state.foregroundInstanceId !== openTarget.instanceId) {
+        // A user-selected foreground window supersedes this completed open.
+        cancel();
+        return;
+      }
+
+      const insets = computeInsets();
+      const windowFrame = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-window-instance-id]")
+      ).find(
+        (element) =>
+          element.dataset.windowInstanceId === openTarget.instanceId
+      );
+      const frameBounds = windowFrame?.getBoundingClientRect();
+      const targetBounds =
+        frameBounds && frameBounds.width > 0 && frameBounds.height > 0
+          ? {
+              x: frameBounds.left,
+              y: frameBounds.top,
+              width: frameBounds.width,
+              height: frameBounds.height,
+            }
+          : instance.position && instance.size
+          ? {
+              x: instance.position.x,
+              y: instance.position.y,
+              width: instance.size.width,
+              height: instance.size.height,
+            }
+          : instance.launchOrigin ?? null;
+      const snapped = resolveAssistantSnapPoint({
+        currentPosition: positionRef.current,
+        assistantSize: {
+          width: character.width,
+          height: character.height,
+        },
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          topInset: insets.topInset,
+          bottomInset: insets.bottomInset,
+        },
+        targetBounds,
+      });
+
+      if (snapped) {
+        setPosition(snapped);
+        setStoredPosition(snapped);
+      }
+      cancel();
+    };
+
+    tryRelocate(useAppStore.getState());
+    if (!cancelled) {
+      unsubscribe = useAppStore.subscribe(tryRelocate);
+    }
+
+    return cancel;
+  }, [
+    openTarget,
+    computeInsets,
+    character.width,
+    character.height,
+    setStoredPosition,
+  ]);
 
   // Keep the assistant on-screen when the viewport or character size changes.
   useEffect(() => {
@@ -381,6 +493,8 @@ function AssistantOverlayInner() {
       markAssistantSoundInteraction();
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (contextMenuPos) return;
+      lastUserDragAtRef.current = Date.now();
+      pendingRelocationCancelRef.current?.();
       const { clientX, clientY, pointerId } = event;
       const overlayBounds = overlayRef.current?.getBoundingClientRect();
       const drag = {
@@ -423,7 +537,8 @@ function AssistantOverlayInner() {
   }, []);
 
   // --- Sprite animation state machine -----------------------------------------
-  const agentData = useAgentData(character.agentUrl);
+  const agentDataLoadState = useAgentDataLoadState(character.agentUrl);
+  const agentData = agentDataLoadState.data;
   const activityIntent = getAssistantAnimationIntent({
     isLoading,
     hasError: errorText !== null,
@@ -443,10 +558,30 @@ function AssistantOverlayInner() {
   toolActivityRef.current = toolActivity;
   const sequencePlanRef = useRef<DocumentToolSequencePlan | null>(null);
   const sequenceToolRef = useRef<string | null>(null);
+  const entranceSequenceRef = useRef<string[] | null>(null);
+  const enteredCharacterIdRef = useRef<string | null>(null);
+  const enteredAgentDataRef = useRef<AgentData | null>(null);
+  const quittingAnimationRef = useRef<string | null>(null);
+  const quitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const needsCharacterEntry =
+    agentData !== null &&
+    enteredCharacterIdRef.current !== character.id &&
+    enteredAgentDataRef.current !== agentData;
+  const pendingEntrancePlan = needsCharacterEntry
+    ? resolveAssistantEntranceSequencePlan(agentData)
+    : null;
+  const pendingEntranceAnimation = pendingEntrancePlan?.first ?? null;
+  const initiallyHideSprite =
+    pendingEntranceAnimation !== null &&
+    isAssistantEntranceAnimation(pendingEntranceAnimation);
 
   const clearSequencePlan = useCallback(() => {
     sequencePlanRef.current = null;
     sequenceToolRef.current = null;
+  }, []);
+
+  const clearEntranceSequence = useCallback(() => {
+    entranceSequenceRef.current = null;
   }, []);
 
   const pickAnimation = useCallback(
@@ -483,11 +618,34 @@ function AssistantOverlayInner() {
     [playAnimation]
   );
 
-  // Greet when this character's animation data arrives (also on switch).
+  // Play Show followed by a greeting once per character appearance. The data
+  // identity guard ignores the previous character's data while a switch loads.
   useEffect(() => {
     if (!agentData) return;
-    playAnimation(pickAnimation("greeting"));
-  }, [agentData, pickAnimation, playAnimation]);
+    if (enteredCharacterIdRef.current === character.id) return;
+    if (enteredAgentDataRef.current === agentData) return;
+
+    const intent = getAssistantLifecycleAnimationIntent("characterLoad");
+    if (intent !== "greeting") return;
+
+    enteredCharacterIdRef.current = character.id;
+    enteredAgentDataRef.current = agentData;
+    clearSequencePlan();
+    const plan = resolveAssistantEntranceSequencePlan(agentData);
+    if (!plan) return;
+    entranceSequenceRef.current = plan.followUp
+      ? [plan.first, plan.followUp]
+      : [plan.first];
+    // The pending-entry render already started this clip. Record it without
+    // bumping the replay token, which would restart the entrance.
+    setSpriteAnim((prev) =>
+      prev.name === plan.first ? prev : { name: plan.first, token: prev.token }
+    );
+  }, [
+    agentData,
+    character.id,
+    clearSequencePlan,
+  ]);
 
   // Reflect chat and structured tool lifecycle changes without restarting an
   // animation for unrelated renders or repeated updates in the same state.
@@ -495,6 +653,7 @@ function AssistantOverlayInner() {
     const previousIntent = previousActivityIntentRef.current;
     previousActivityIntentRef.current = activityIntent;
     if (!agentData) return;
+    if (entranceSequenceRef.current) return;
 
     const activeTool = toolActivityRef.current;
     const activeToolName =
@@ -514,6 +673,7 @@ function AssistantOverlayInner() {
 
     if (
       sequenceKind &&
+      activeToolName &&
       activeTool?.phase === "running" &&
       (activityIntent === "reading" || activityIntent === "writing")
     ) {
@@ -562,14 +722,27 @@ function AssistantOverlayInner() {
 
   const handleCharacterActivate = useCallback(() => {
     markAssistantSoundInteraction();
-    setBubbleOpen(!bubbleOpen);
-    if (!bubbleOpen) {
+    const willOpen = !bubbleOpen;
+    setBubbleOpen(willOpen);
+    if (willOpen) {
       requestAnimationFrame(() => inputRef.current?.focus());
     }
 
+    const intent = getAssistantLifecycleAnimationIntent(
+      willOpen ? "bubbleOpen" : "bubbleClose"
+    );
+    if (!intent) return;
+
     clearSequencePlan();
-    playAnimation(pickAnimation(bubbleOpen ? "goodbye" : "attention"));
-  }, [bubbleOpen, clearSequencePlan, pickAnimation, playAnimation]);
+    clearEntranceSequence();
+    playAnimation(pickAnimation(intent));
+  }, [
+    bubbleOpen,
+    clearEntranceSequence,
+    clearSequencePlan,
+    pickAnimation,
+    playAnimation,
+  ]);
   activateCharacterRef.current = handleCharacterActivate;
 
   const handleCharacterKeyDown = useCallback(
@@ -585,6 +758,29 @@ function AssistantOverlayInner() {
     (endedAnimation: string) => {
       const data = agentDataRef.current;
       if (!data) return;
+
+      if (quittingAnimationRef.current) {
+        if (endedAnimation === quittingAnimationRef.current) {
+          if (quitTimerRef.current) {
+            clearTimeout(quitTimerRef.current);
+            quitTimerRef.current = null;
+          }
+          quittingAnimationRef.current = null;
+          setEnabled(false);
+        }
+        return;
+      }
+
+      const entranceSequence = entranceSequenceRef.current;
+      if (entranceSequence?.[0] === endedAnimation) {
+        const remaining = entranceSequence.slice(1);
+        if (remaining.length > 0) {
+          entranceSequenceRef.current = remaining;
+          playAnimation(remaining[0]);
+          return;
+        }
+        entranceSequenceRef.current = null;
+      }
 
       const currentIntent = activityIntentRef.current;
       const activeTool = toolActivityRef.current;
@@ -640,15 +836,55 @@ function AssistantOverlayInner() {
         );
       }, 4000 + Math.random() * 8000);
     },
-    [clearSequencePlan, pickAnimation, playAnimation]
+    [clearSequencePlan, pickAnimation, playAnimation, setEnabled]
   );
 
   useEffect(
     () => () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (quitTimerRef.current) clearTimeout(quitTimerRef.current);
     },
     []
   );
+
+  const handleQuit = useCallback(() => {
+    if (quittingAnimationRef.current) return;
+
+    const data = agentDataRef.current;
+    const intent = getAssistantLifecycleAnimationIntent("quit");
+    if (!data || intent !== "goodbye") {
+      setEnabled(false);
+      return;
+    }
+
+    const exitAnimation = pickAnimation(intent);
+    const isAvailableExit = getAnimationCandidates(intent).includes(
+      exitAnimation
+    );
+    if (!isAvailableExit || data.animations[exitAnimation] === undefined) {
+      setEnabled(false);
+      return;
+    }
+
+    clearSequencePlan();
+    clearEntranceSequence();
+    quittingAnimationRef.current = exitAnimation;
+    playAnimation(exitAnimation);
+    quitTimerRef.current = window.setTimeout(
+      () => {
+        quittingAnimationRef.current = null;
+        quitTimerRef.current = null;
+        setEnabled(false);
+      },
+      getAssistantExitAnimationTimeout(data, exitAnimation)
+    );
+  }, [
+    clearEntranceSequence,
+    clearSequencePlan,
+    pickAnimation,
+    playAnimation,
+    setEnabled,
+  ]);
 
   // --- Context menu items ------------------------------------------------------
   const contextMenuItems = useMemo<MenuItem[]>(
@@ -684,10 +920,7 @@ function AssistantOverlayInner() {
       {
         type: "item",
         label: t("common.assistant.contextMenu.quit"),
-        onSelect: () => {
-          playAnimation(pickAnimation("goodbye"));
-          window.setTimeout(() => setEnabled(false), 500);
-        },
+        onSelect: handleQuit,
       },
     ],
     [
@@ -696,9 +929,7 @@ function AssistantOverlayInner() {
       setCharacterId,
       clearConversation,
       launchApp,
-      setEnabled,
-      playAnimation,
-      pickAnimation,
+      handleQuit,
     ]
   );
 
@@ -726,19 +957,45 @@ function AssistantOverlayInner() {
 
   const characterVisual = useMemo(() => {
     if (!agentData) {
+      if (agentDataLoadState.status === "error") {
+        return (
+          <div
+            aria-hidden
+            data-assistant-sprite-fallback
+            style={{
+              width: character.width,
+              height: character.height,
+              backgroundImage: `url(${character.mapUrl})`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "0 0",
+              pointerEvents: "none",
+            }}
+          />
+        );
+      }
       return <div style={{ width: character.width, height: character.height }} />;
     }
     return (
       <ClippySprite
+        key={character.id}
         mapUrl={character.mapUrl}
         data={agentData}
         characterId={character.id}
-        animation={spriteAnim.name}
+        animation={pendingEntranceAnimation ?? spriteAnim.name}
         playToken={spriteAnim.token}
+        initiallyHidden={initiallyHideSprite}
         onAnimationEnd={handleAnimationEnd}
       />
     );
-  }, [character, agentData, spriteAnim, handleAnimationEnd]);
+  }, [
+    character,
+    agentData,
+    agentDataLoadState.status,
+    pendingEntranceAnimation,
+    spriteAnim,
+    initiallyHideSprite,
+    handleAnimationEnd,
+  ]);
 
   return (
     <motion.div

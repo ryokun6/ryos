@@ -14,13 +14,12 @@ import {
 } from "@/components/assistant/ClippySprite";
 import { controlPanelItemIconShell } from "./constants";
 
-const TILE_PREVIEW_MAX = 76;
+const TILE_PREVIEW_MAX = 88;
 
 /** Static character preview (sprite rest pose) scaled to fit a tile. */
 function CharacterTilePreview({ character }: { character: AssistantCharacter }) {
   const agentData = useAgentData(character.agentUrl);
   const scale = Math.min(
-    1,
     TILE_PREVIEW_MAX / character.height,
     TILE_PREVIEW_MAX / character.width
   );
@@ -110,7 +109,7 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                 type="button"
                 aria-label={character.name}
                 aria-pressed={isSelected}
-                className="preview-button relative w-full aspect-square cursor-pointer hover:opacity-90 flex flex-col items-center justify-center gap-0 overflow-hidden bg-black/5"
+                className="preview-button relative grid w-full aspect-square grid-rows-[88px_11px] content-center justify-items-center gap-1 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
                 style={{
                   boxShadow: isSelected
                     ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
@@ -124,10 +123,10 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                   }
                 }}
               >
-                <span className="pointer-events-none">
+                <span className="pointer-events-none flex h-[88px] w-full items-center justify-center">
                   <CharacterTilePreview character={character} />
                 </span>
-                <span className="pointer-events-none -mt-1 w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-none text-neutral-600">
+                <span className="pointer-events-none block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
                   {character.name}
                 </span>
               </button>

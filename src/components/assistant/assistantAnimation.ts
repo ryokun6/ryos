@@ -14,6 +14,12 @@ export type AssistantAnimationIntent =
   | "goodbye"
   | "idle";
 
+export type AssistantAnimationLifecycleEvent =
+  | "characterLoad"
+  | "bubbleOpen"
+  | "bubbleClose"
+  | "quit";
+
 export type AssistantToolPhase = "running" | "complete" | "error";
 
 export interface AssistantToolActivity {
@@ -21,11 +27,24 @@ export interface AssistantToolActivity {
   phase: AssistantToolPhase;
 }
 
+const ENTRANCE_ANIMATION_CANDIDATES = [
+  "Show",
+  "Appear",
+  "AppearQuick",
+  "Entrance",
+] as const;
+const EXIT_ANIMATION_CANDIDATES = [
+  "GoodBye",
+  "Goodbye",
+  "Hide",
+  "HideQuick",
+] as const;
+
 const ANIMATION_CANDIDATES = {
   greeting: [
     "Greeting",
     "Greet",
-    "Show",
+    ...ENTRANCE_ANIMATION_CANDIDATES,
     "Wave",
     "Announce",
     "GetAttention",
@@ -82,7 +101,6 @@ const ANIMATION_CANDIDATES = {
     "CharacterSucceeds",
     "Pleased",
     "Acknowledge",
-    "Show",
     "Wave",
   ],
   error: [
@@ -99,7 +117,6 @@ const ANIMATION_CANDIDATES = {
     "ClickedOn",
     "GetAttentionMinor",
     "GetAttention",
-    "Show",
     "Wave",
     "Acknowledge",
     "Announce",
@@ -108,9 +125,37 @@ const ANIMATION_CANDIDATES = {
     "GestureRight",
     "GestureDown",
   ],
-  goodbye: ["GoodBye", "Goodbye", "Hide", "HideQuick"],
+  goodbye: EXIT_ANIMATION_CANDIDATES,
   idle: ["RestPose"],
 } satisfies Record<AssistantAnimationIntent, readonly string[]>;
+
+const ENTRANCE_ANIMATION_NAMES = new Set<string>(
+  ENTRANCE_ANIMATION_CANDIDATES
+);
+const EXIT_ANIMATION_NAMES = new Set<string>(EXIT_ANIMATION_CANDIDATES);
+
+export function isAssistantEntranceAnimation(animationName: string): boolean {
+  return ENTRANCE_ANIMATION_NAMES.has(animationName);
+}
+
+function isAssistantExitAnimation(animationName: string): boolean {
+  return EXIT_ANIMATION_NAMES.has(animationName);
+}
+
+export function getAssistantLifecycleAnimationIntent(
+  event: AssistantAnimationLifecycleEvent
+): AssistantAnimationIntent | null {
+  const intents = {
+    characterLoad: "greeting",
+    bubbleOpen: "attention",
+    bubbleClose: null,
+    quit: "goodbye",
+  } satisfies Record<
+    AssistantAnimationLifecycleEvent,
+    AssistantAnimationIntent | null
+  >;
+  return intents[event];
+}
 
 const SEARCH_TOOL_NAMES = new Set([
   "list",
@@ -190,15 +235,74 @@ function pickFirstAvailableAnimation(
   return null;
 }
 
+export interface AssistantEntranceSequencePlan {
+  first: string;
+  followUp: string | null;
+}
+
+/**
+ * Prefer the agent's real entrance clip, then a separate greeting gesture.
+ * Characters without an entrance clip appear in their static default pose.
+ */
+export function resolveAssistantEntranceSequencePlan(
+  data: AgentData
+): AssistantEntranceSequencePlan | null {
+  const entrance = pickFirstAvailableAnimation(
+    data,
+    ENTRANCE_ANIMATION_CANDIDATES
+  );
+  const greeting = pickFirstAvailableAnimation(
+    data,
+    ANIMATION_CANDIDATES.greeting.filter(
+      (name) => !isAssistantEntranceAnimation(name)
+    )
+  );
+
+  if (entrance) {
+    return { first: entrance, followUp: greeting };
+  }
+
+  return { first: "RestPose", followUp: null };
+}
+
 export function getAnimationTotalDuration(
   data: AgentData,
   animationName: string
 ): number {
   const animation = data.animations[animationName];
   if (!animation) return 0;
-  return animation.frames.reduce(
-    (total, frame) => total + (frame.duration ?? 0),
-    0
+  return animation.frames.reduce((total, frame) => {
+    const duration = frame.duration;
+    const validDuration =
+      typeof duration === "number" &&
+      Number.isFinite(duration) &&
+      duration > 0
+        ? duration
+        : 0;
+    return total + validDuration;
+  }, 0);
+}
+
+const DEFAULT_EXIT_ANIMATION_TIMEOUT_MS = 500;
+const EXIT_ANIMATION_TIMEOUT_BUFFER_MS = 250;
+const MAX_EXIT_ANIMATION_TIMEOUT_MS = 10_000;
+
+/**
+ * Safety timeout for exit clips. Normal completion unmounts sooner via the
+ * sprite callback; this cap handles malformed or endlessly branching data.
+ */
+export function getAssistantExitAnimationTimeout(
+  data: AgentData,
+  animationName: string
+): number {
+  const duration = getAnimationTotalDuration(data, animationName);
+  if (duration <= 0) return DEFAULT_EXIT_ANIMATION_TIMEOUT_MS;
+  return Math.min(
+    Math.max(
+      duration + EXIT_ANIMATION_TIMEOUT_BUFFER_MS,
+      DEFAULT_EXIT_ANIMATION_TIMEOUT_MS
+    ),
+    MAX_EXIT_ANIMATION_TIMEOUT_MS
   );
 }
 
@@ -306,7 +410,11 @@ export function getAnimationCandidates(
     ];
   }
 
-  return dedupeCandidates(candidates);
+  return dedupeCandidates(candidates).filter(
+    (name) =>
+      (intent === "greeting" || !isAssistantEntranceAnimation(name)) &&
+      (intent === "goodbye" || !isAssistantExitAnimation(name))
+  );
 }
 
 export function getToolAnimationIntent(

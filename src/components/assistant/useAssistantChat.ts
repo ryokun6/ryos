@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Chat, useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -15,6 +15,7 @@ import { AppId } from "@/config/appIds";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { getSystemState } from "@/apps/chats/utils/systemState";
 import { dispatchToolCall } from "@/apps/chats/tools/dispatchToolCall";
+import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
@@ -117,6 +118,8 @@ export interface AssistantChatHandle {
   statusLabels: string[];
   /** Latest structured tool lifecycle event in the current assistant turn. */
   toolActivity: AssistantToolActivity | null;
+  /** Latest successful client tool that opened or foregrounded an app window. */
+  openTarget: AssistantOpenTarget | null;
   /** True while a reply is generating and the new turn has no text yet. */
   isAwaitingReply: boolean;
   isLoading: boolean;
@@ -128,6 +131,12 @@ export interface AssistantChatHandle {
   stop: () => void;
 }
 
+export interface AssistantOpenTarget {
+  instanceId: string;
+  requestSequence: number;
+  toolStartedAt: number;
+}
+
 export function useAssistantChat(): AssistantChatHandle {
   const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
     username: state.username,
@@ -135,6 +144,41 @@ export function useAssistantChat(): AssistantChatHandle {
   }));
   const launchApp = useLaunchApp();
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
+  const [openTarget, setOpenTarget] = useState<AssistantOpenTarget | null>(null);
+  const toolRequestSequenceRef = useRef(0);
+  const latestOpenAttemptSequenceRef = useRef(0);
+  const latestOpenSequenceRef = useRef(0);
+
+  const recordOpenAttempt = useCallback((requestSequence: number) => {
+    if (requestSequence <= latestOpenAttemptSequenceRef.current) return;
+    latestOpenAttemptSequenceRef.current = requestSequence;
+    setOpenTarget((current) =>
+      current && current.requestSequence < requestSequence ? null : current
+    );
+  }, []);
+
+  const recordOpenResult = useCallback(
+    (
+      result: DispatchToolCallResult,
+      requestSequence: number,
+      toolStartedAt: number
+    ) => {
+      if (
+        result.kind !== "opened-app" ||
+        requestSequence < latestOpenAttemptSequenceRef.current ||
+        requestSequence <= latestOpenSequenceRef.current
+      ) {
+        return;
+      }
+      latestOpenSequenceRef.current = requestSequence;
+      setOpenTarget({
+        instanceId: result.instanceId,
+        requestSequence,
+        toolStartedAt,
+      });
+    },
+    []
+  );
 
   // One Chat per overlay mount; seeded from the persisted assistant thread.
   const chat = useMemo(
@@ -184,7 +228,9 @@ export function useAssistantChat(): AssistantChatHandle {
     }: {
       toolCall: { toolName: string; toolCallId: string; input: unknown };
     }) => {
-      await dispatchToolCall(
+      const requestSequence = ++toolRequestSequenceRef.current;
+      const toolStartedAt = Date.now();
+      const result = await dispatchToolCall(
         {
           toolName: toolCall.toolName,
           toolCallId: toolCall.toolCallId,
@@ -194,8 +240,10 @@ export function useAssistantChat(): AssistantChatHandle {
           addToolOutput,
           launchApp: (appId, options) => launchApp(appId as AppId, options),
           saveFile,
+          onOpenAttempt: () => recordOpenAttempt(requestSequence),
         }
       );
+      recordOpenResult(result, requestSequence, toolStartedAt);
     },
     onFinish: ({ messages: finished }: { messages: AIChatMessage[] }) => {
       const stamped = finished.map(
@@ -222,7 +270,9 @@ export function useAssistantChat(): AssistantChatHandle {
     },
   });
   handlersRef.current.onToolCall = async ({ toolCall }) => {
-    await dispatchToolCall(
+    const requestSequence = ++toolRequestSequenceRef.current;
+    const toolStartedAt = Date.now();
+    const result = await dispatchToolCall(
       {
         toolName: toolCall.toolName,
         toolCallId: toolCall.toolCallId,
@@ -232,8 +282,10 @@ export function useAssistantChat(): AssistantChatHandle {
         addToolOutput,
         launchApp: (appId, options) => launchApp(appId as AppId, options),
         saveFile,
+        onOpenAttempt: () => recordOpenAttempt(requestSequence),
       }
     );
+    recordOpenResult(result, requestSequence, toolStartedAt);
   };
 
   const isLoading = status === "streaming" || status === "submitted";
@@ -373,6 +425,7 @@ export function useAssistantChat(): AssistantChatHandle {
     latestAssistantText,
     statusLabels,
     toolActivity,
+    openTarget,
     isAwaitingReply,
     isLoading,
     errorText,

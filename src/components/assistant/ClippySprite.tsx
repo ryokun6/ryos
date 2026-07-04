@@ -55,25 +55,74 @@ export function loadAgentData(url: string): Promise<AgentData> {
   return cached;
 }
 
-export function useAgentData(url: string | undefined): AgentData | null {
-  const [data, setData] = useState<AgentData | null>(null);
+export type AgentDataLoadState =
+  | { status: "idle"; data: null }
+  | { status: "loading"; data: null }
+  | { status: "ready"; data: AgentData }
+  | { status: "error"; data: null };
+
+interface StoredAgentDataLoadState {
+  url: string | undefined;
+  result: AgentDataLoadState;
+}
+
+export function useAgentDataLoadState(
+  url: string | undefined
+): AgentDataLoadState {
+  const [loadState, setLoadState] = useState<StoredAgentDataLoadState>(() => ({
+    url,
+    result: url
+      ? { status: "loading", data: null }
+      : { status: "idle", data: null },
+  }));
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      setLoadState({
+        url,
+        result: { status: "idle", data: null },
+      });
+      return;
+    }
+
     let cancelled = false;
+    setLoadState({
+      url,
+      result: { status: "loading", data: null },
+    });
     loadAgentData(url)
       .then((loaded) => {
-        if (!cancelled) setData(loaded);
+        if (!cancelled) {
+          setLoadState({
+            url,
+            result: { status: "ready", data: loaded },
+          });
+        }
       })
       .catch((err) => {
         console.warn("[Assistant] Failed to load sprite agent data:", err);
+        if (!cancelled) {
+          setLoadState({
+            url,
+            result: { status: "error", data: null },
+          });
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [url]);
 
-  return data;
+  if (loadState.url !== url) {
+    return url
+      ? { status: "loading", data: null }
+      : { status: "idle", data: null };
+  }
+  return loadState.result;
+}
+
+export function useAgentData(url: string | undefined): AgentData | null {
+  return useAgentDataLoadState(url).data;
 }
 
 interface ClippySpriteProps {
@@ -84,6 +133,11 @@ interface ClippySpriteProps {
   animation: string;
   /** Re-trigger token: bump to replay the same animation name. */
   playToken?: number;
+  /**
+   * Start without a base tile. The first animation frame becomes the first
+   * rendered visual, including intentionally empty entrance frames.
+   */
+  initiallyHidden?: boolean;
   onAnimationEnd?: (animation: string) => void;
 }
 
@@ -93,11 +147,12 @@ export function ClippySprite({
   characterId,
   animation,
   playToken = 0,
+  initiallyHidden = false,
   onAnimationEnd,
 }: ClippySpriteProps) {
-  const [frameImages, setFrameImages] = useState<Array<[number, number]>>([
-    [0, 0],
-  ]);
+  const [frameImages, setFrameImages] = useState<Array<[number, number]>>(() =>
+    initiallyHidden ? [] : [[0, 0]]
+  );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const soundPlayerRef = useRef<AssistantSoundPlayer | null>(null);
   const onEndRef = useRef(onAnimationEnd);
@@ -120,6 +175,7 @@ export function ClippySprite({
   useEffect(() => {
     const anim = data.animations[animation];
     if (!anim || anim.frames.length === 0) {
+      setFrameImages([[0, 0]]);
       return;
     }
 

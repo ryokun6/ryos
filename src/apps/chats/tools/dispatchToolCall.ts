@@ -59,6 +59,10 @@ import {
   type ContactsControlInput,
 } from "./index";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
+import {
+  createToolOpenResultTracker,
+  type DispatchToolCallResult,
+} from "./toolOpenResult";
 
 const log = createClientLogger("AIChat");
 
@@ -72,6 +76,7 @@ export interface DispatchToolCallContext {
   addToolOutput: (payload: ToolOutputPayload) => void;
   launchApp: ToolContext["launchApp"];
   saveFile: SaveFileHandler;
+  onOpenAttempt?: (instanceId: string) => void;
 }
 
 async function storedContentToText(
@@ -134,8 +139,18 @@ const getRecentTextEditInstanceForPath = (path: string): string | null => {
 export async function dispatchToolCall(
   toolCall: SharedToolCall,
   ctx: DispatchToolCallContext
-): Promise<void> {
-  const { addToolOutput, launchApp, saveFile } = ctx;
+): Promise<DispatchToolCallResult> {
+  const openResultTracker = createToolOpenResultTracker({
+    toolName: toolCall.toolName,
+    toolCallId: toolCall.toolCallId,
+    context: {
+      addToolOutput: ctx.addToolOutput,
+      launchApp: ctx.launchApp,
+    },
+    onOpenAttempt: ctx.onOpenAttempt,
+  });
+  const { addToolOutput, launchApp } = openResultTracker.context;
+  const { saveFile } = ctx;
 
   // Short delay to allow the UI to render the "call" state
   await new Promise<void>((resolve) => setTimeout(resolve, 120));
@@ -159,7 +174,7 @@ export async function dispatchToolCall(
         toolName: toolCall.toolName,
         input: toolCall.input,
       });
-      return;
+      return openResultTracker.getResult();
     }
 
     switch (toolCall.toolName) {
@@ -592,6 +607,7 @@ export async function dispatchToolCall(
             if (existingInstanceId) {
               if (appStore.instances[existingInstanceId]) {
                 appStore.bringInstanceToForeground(existingInstanceId);
+                openResultTracker.recordOpenedInstance(existingInstanceId);
                 addToolOutput({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
@@ -612,6 +628,7 @@ export async function dispatchToolCall(
             const recentInstanceId = getRecentTextEditInstanceForPath(path);
             if (recentInstanceId) {
               appStore.bringInstanceToForeground(recentInstanceId);
+              openResultTracker.recordOpenedInstance(recentInstanceId);
               addToolOutput({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
@@ -907,6 +924,7 @@ export async function dispatchToolCall(
             trackNewTextEditInstance(targetInstanceId, path);
           }
 
+          openResultTracker.recordOpenedInstance(targetInstanceId);
           const outputKey = isNewFile ? "createdDocument" : "updatedDocument";
           addToolOutput({
             tool: toolCall.toolName,
@@ -1193,6 +1211,7 @@ export async function dispatchToolCall(
         output: result,
       });
     }
+    return openResultTracker.getResult();
   } catch (err) {
     console.error("Error executing tool call:", err);
     addToolOutput({
@@ -1201,5 +1220,6 @@ export async function dispatchToolCall(
       state: "output-error",
       errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.unknownError"),
     });
+    return openResultTracker.getResult();
   }
 }

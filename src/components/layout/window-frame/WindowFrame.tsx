@@ -244,6 +244,7 @@ export function WindowFrame({
         {shouldShow && (
           <motion.div
             key={`pos-${instanceId || appId}`}
+            data-window-instance-id={instanceId}
             className={cn(
               "absolute p-2 md:p-0",
               keepMountedWhenMinimized &&
