@@ -20,6 +20,7 @@ import {
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 import {
   mergePersistedCloudSyncCategoryStatus,
+  mergePersistedDeletionMarkers,
   useCloudSyncStore,
 } from "../src/stores/useCloudSyncStore";
 import {
@@ -736,6 +737,20 @@ describe("cloud sync store", () => {
     expect(merged.files.downloadProgress).toBeNull();
     expect(merged.maps).toBeDefined();
     expect(merged.tv).toBeDefined();
+  });
+
+  test("persist merge keeps all deletion marker buckets when persisted state is partial", () => {
+    const merged = mergePersistedDeletionMarkers({
+      contactIds: {
+        "31efd9cc-87e3-4d09-b222-689674cafc54": "2026-07-04T04:12:01.251Z",
+      },
+    });
+    expect(merged.contactIds).toEqual({
+      "31efd9cc-87e3-4d09-b222-689674cafc54": "2026-07-04T04:12:01.251Z",
+    });
+    expect(merged.mapsFavoriteIds).toEqual({});
+    expect(merged.tvCustomChannelIds).toEqual({});
+    expect(merged.stickyNoteIds).toEqual({});
   });
 
   test("category toggles round-trip through setCategoryEnabled", () => {

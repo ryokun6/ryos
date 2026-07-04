@@ -144,7 +144,9 @@ export function getDeletionMarkerForKey(key: string): string | null {
     [CloudSyncDeletionBucket, string]
   >) {
     if (key.startsWith(prefix)) {
-      return markers[bucket][key.slice(prefix.length)] || null;
+      const bucketMarkers = markers[bucket];
+      if (!bucketMarkers) return null;
+      return bucketMarkers[key.slice(prefix.length)] || null;
     }
   }
   return null;
@@ -168,6 +170,7 @@ export function clearDeletionMarkersForKeys(keys: Iterable<string>): number {
   const store = useCloudSyncStore.getState();
   for (const [bucket, ids] of idsByBucket) {
     const markers = store.deletionMarkers[bucket];
+    if (!markers) continue;
     const presentIds = [...ids].filter((id) => id in markers);
     if (presentIds.length === 0) continue;
     store.clearDeletedKeys(bucket, presentIds);
@@ -184,7 +187,9 @@ export function pruneDeletionMarkersWithoutShadow(
   for (const [bucket, prefix] of Object.entries(DELETION_BUCKET_PREFIXES) as Array<
     [CloudSyncDeletionBucket, string]
   >) {
-    const staleIds = Object.keys(store.deletionMarkers[bucket]).filter(
+    const bucketMarkers = store.deletionMarkers[bucket];
+    if (!bucketMarkers) continue;
+    const staleIds = Object.keys(bucketMarkers).filter(
       (id) => !shadowKeys.has(`${prefix}${id}`)
     );
     if (staleIds.length === 0) continue;

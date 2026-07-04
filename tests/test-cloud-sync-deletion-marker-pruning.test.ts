@@ -98,6 +98,20 @@ describe("Cloud Sync deletion marker pruning", () => {
     ).toEqual({});
   });
 
+  test("clearDeletionMarkersForKeys tolerates missing marker buckets", () => {
+    useCloudSyncStore.setState({
+      deletionMarkers: {
+        stickyNoteIds: {},
+      } as never,
+    });
+
+    expect(
+      clearDeletionMarkersForKeys([
+        "contacts/contact:31efd9cc-87e3-4d09-b222-689674cafc54",
+      ])
+    ).toBe(0);
+  });
+
   test("remote convergence clears a matching local deletion marker", async () => {
     const store = useCloudSyncStore.getState();
     store.markDeletedKeys("stickyNoteIds", ["remote-delete"]);
