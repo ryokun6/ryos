@@ -4848,6 +4848,21 @@
     "fix": "Réparer",
     "fixLogs": "Envoyer les logs à l’agent Cursor",
     "hideConsole": "Masquer la console",
+    "idb": {
+      "backToStores": "Retour aux magasins",
+      "copy": "Copier le dump IndexedDB",
+      "emptyDatabase": "Aucun magasin d'objets trouvé.",
+      "emptyStore": "Aucun enregistrement dans ce magasin.",
+      "error": "Échec de la lecture d'IndexedDB.",
+      "loadMore_many": "Charger {{count}} enregistrements supplémentaires",
+      "loadMore_one": "Charger {{count}} enregistrement supplémentaire",
+      "loadMore_other": "Charger {{count}} enregistrements supplémentaires",
+      "loading": "Lecture d'IndexedDB…",
+      "recordCount_many": "{{count}} enregistrements",
+      "recordCount_one": "{{count}} enregistrement",
+      "recordCount_other": "{{count}} enregistrements",
+      "refresh": "Actualiser la vue IndexedDB"
+    },
     "live": {
       "appVersion": "App",
       "average": "Moyenne",
@@ -4943,6 +4958,7 @@
     "scrollToBottom": "Faire défiler vers le bas",
     "showConsole": "Afficher la console",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "Vues du panneau de débogage",
       "live": "En direct",
       "logs": "Journaux",

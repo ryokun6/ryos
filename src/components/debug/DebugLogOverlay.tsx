@@ -9,6 +9,7 @@ import {
   type CSSProperties,
 } from "react";
 import {
+  ArrowClockwise,
   ArrowDown,
   Bug,
   CaretDown,
@@ -50,6 +51,7 @@ import {
 } from "@/utils/networkCapture";
 import { osCardClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
+import { DebugIndexedDBPanel } from "./DebugIndexedDBPanel";
 import { DebugLiveDashboard } from "./DebugLiveDashboard";
 import { DebugNetworkPanel } from "./DebugNetworkPanel";
 import { getRestoredScrollTop } from "./debugLogVirtualization";
@@ -80,7 +82,7 @@ const NETWORK_FILTER_VALUES = [
   "pending",
 ] as const;
 type NetworkFilter = (typeof NETWORK_FILTER_VALUES)[number];
-type DebugPanelTab = "logs" | "live" | "network";
+type DebugPanelTab = "logs" | "live" | "network" | "idb";
 
 const quickFilterPillClassName = cn(
   "flex h-5 items-center gap-1 rounded-full border px-1.5 font-os-ui text-[10px] leading-none",
@@ -300,6 +302,8 @@ export function DebugLogOverlay() {
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const liveReportRef = useRef("");
+  const idbCopyTextRef = useRef("");
+  const [idbRefreshToken, setIdbRefreshToken] = useState(0);
 
   const entries = useSyncExternalStore(
     subscribeConsoleCapture,
@@ -639,6 +643,18 @@ export function DebugLogOverlay() {
     void copyToClipboard(networkCopyText);
   }, [copyToClipboard, networkCopyText]);
 
+  const handleCopyIdb = useCallback(() => {
+    void copyToClipboard(idbCopyTextRef.current);
+  }, [copyToClipboard]);
+
+  const handleIdbCopyTextChange = useCallback((text: string) => {
+    idbCopyTextRef.current = text;
+  }, []);
+
+  const handleRefreshIdb = useCallback(() => {
+    setIdbRefreshToken((token) => token + 1);
+  }, []);
+
   const handleClearNetwork = useCallback(() => {
     clearNetworkCapture();
   }, []);
@@ -703,7 +719,9 @@ export function DebugLogOverlay() {
                 ? "live"
                 : value === "network"
                   ? "network"
-                  : "logs"
+                  : value === "idb"
+                    ? "idb"
+                    : "logs"
             )
           }
           className={cn(
@@ -916,6 +934,17 @@ export function DebugLogOverlay() {
                   </button>
                 ) : null
               ) : null}
+              {activeTab === "idb" ? (
+                <button
+                  type="button"
+                  onClick={handleRefreshIdb}
+                  title={t("debug.idb.refresh")}
+                  aria-label={t("debug.idb.refresh")}
+                  className="flex size-6 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                >
+                  <ArrowClockwise weight="bold" className="size-3.5" />
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={
@@ -923,21 +952,27 @@ export function DebugLogOverlay() {
                     ? handleCopy
                     : activeTab === "network"
                       ? handleCopyNetwork
-                      : handleCopyLive
+                      : activeTab === "idb"
+                        ? handleCopyIdb
+                        : handleCopyLive
                 }
                 title={
                   activeTab === "logs"
                     ? t("debug.copyLogs")
                     : activeTab === "network"
                       ? t("debug.network.copy")
-                      : t("debug.live.copySnapshot")
+                      : activeTab === "idb"
+                        ? t("debug.idb.copy")
+                        : t("debug.live.copySnapshot")
                 }
                 aria-label={
                   activeTab === "logs"
                     ? t("debug.copyLogs")
                     : activeTab === "network"
                       ? t("debug.network.copy")
-                      : t("debug.live.copySnapshot")
+                      : activeTab === "idb"
+                        ? t("debug.idb.copy")
+                        : t("debug.live.copySnapshot")
                 }
                 className="flex size-6 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
               >
@@ -1080,6 +1115,18 @@ export function DebugLogOverlay() {
               totalEntryCount={networkEntries.length}
             />
           </TabsContent>
+          <TabsContent
+            value="idb"
+            className={cn(
+              "relative mt-0 min-h-0 flex-1 overflow-hidden",
+              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
+            )}
+          >
+            <DebugIndexedDBPanel
+              refreshToken={idbRefreshToken}
+              onCopyTextChange={handleIdbCopyTextChange}
+            />
+          </TabsContent>
           <div
             className={cn(
               "flex h-8 shrink-0 items-center justify-center border-t px-2 py-1",
@@ -1126,6 +1173,18 @@ export function DebugLogOverlay() {
                 )}
               >
                 {t("debug.tabs.network")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="idb"
+                className={cn(
+                  "h-5 rounded px-2.5 py-0 font-os-ui text-[10px] font-medium shadow-none transition-none",
+                  "border border-transparent",
+                  "data-[state=active]:bg-os-selection-bg data-[state=active]:text-os-selection-text data-[state=active]:shadow-none",
+                  "focus-visible:ring-1 focus-visible:ring-os-selection-bg focus-visible:ring-offset-0",
+                  "os-theme-system7:rounded-none os-windows:rounded-none"
+                )}
+              >
+                {t("debug.tabs.idb")}
               </TabsTrigger>
             </TabsList>
           </div>

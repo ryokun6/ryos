@@ -4844,6 +4844,19 @@
     "fix": "修正",
     "fixLogs": "將記錄傳送給 Cursor 代理",
     "hideConsole": "隱藏主控台",
+    "idb": {
+      "backToStores": "返回存放區",
+      "copy": "拷貝 IndexedDB 傾印",
+      "emptyDatabase": "找不到物件存放區。",
+      "emptyStore": "此存放區中沒有紀錄。",
+      "error": "無法讀取 IndexedDB。",
+      "loadMore_one": "再載入 {{count}} 筆紀錄",
+      "loadMore_other": "再載入 {{count}} 筆紀錄",
+      "loading": "正在讀取 IndexedDB…",
+      "recordCount_one": "{{count}} 筆紀錄",
+      "recordCount_other": "{{count}} 筆紀錄",
+      "refresh": "重新整理 IndexedDB 檢視"
+    },
     "live": {
       "appVersion": "App",
       "average": "平均",
@@ -4939,6 +4952,7 @@
     "scrollToBottom": "捲動到底部",
     "showConsole": "顯示主控台",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "偵錯面板檢視",
       "live": "即時",
       "logs": "記錄",

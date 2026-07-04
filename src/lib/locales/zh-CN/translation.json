@@ -4844,6 +4844,19 @@
     "fix": "修复",
     "fixLogs": "将日志发送给 Cursor Agent",
     "hideConsole": "隐藏控制台",
+    "idb": {
+      "backToStores": "返回对象存储",
+      "copy": "拷贝 IndexedDB 转储",
+      "emptyDatabase": "未找到对象存储。",
+      "emptyStore": "此存储中没有记录。",
+      "error": "读取 IndexedDB 失败。",
+      "loadMore_one": "再加载 {{count}} 条记录",
+      "loadMore_other": "再加载 {{count}} 条记录",
+      "loading": "正在读取 IndexedDB…",
+      "recordCount_one": "{{count}} 条记录",
+      "recordCount_other": "{{count}} 条记录",
+      "refresh": "刷新 IndexedDB 视图"
+    },
     "live": {
       "appVersion": "App",
       "average": "平均",
@@ -4939,6 +4952,7 @@
     "scrollToBottom": "滚动到底部",
     "showConsole": "显示控制台",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "调试面板视图",
       "live": "实时",
       "logs": "日志",

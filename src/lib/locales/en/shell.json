@@ -374,7 +374,21 @@
       "label": "Debug panel views",
       "logs": "Logs",
       "live": "Live",
-      "network": "Network"
+      "network": "Network",
+      "idb": "IndexedDB"
+    },
+    "idb": {
+      "copy": "Copy IndexedDB dump",
+      "refresh": "Refresh IndexedDB view",
+      "backToStores": "Back to stores",
+      "loading": "Reading IndexedDB…",
+      "error": "Failed to read IndexedDB.",
+      "emptyDatabase": "No object stores found.",
+      "emptyStore": "No records in this store.",
+      "recordCount_one": "{{count}} record",
+      "recordCount_other": "{{count}} records",
+      "loadMore_one": "Load {{count}} more record",
+      "loadMore_other": "Load {{count}} more records"
     },
     "network": {
       "title": "Requests",

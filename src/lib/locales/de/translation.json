@@ -4844,6 +4844,19 @@
     "fix": "Beheben",
     "fixLogs": "Logs an Cursor-Agent senden",
     "hideConsole": "Konsole ausblenden",
+    "idb": {
+      "backToStores": "Zurück zu den Objektspeichern",
+      "copy": "IndexedDB-Dump kopieren",
+      "emptyDatabase": "Keine Objektspeicher gefunden.",
+      "emptyStore": "Keine Datensätze in diesem Objektspeicher.",
+      "error": "Fehler beim Lesen der IndexedDB.",
+      "loadMore_one": "{{count}} weiteren Datensatz laden",
+      "loadMore_other": "{{count}} weitere Datensätze laden",
+      "loading": "IndexedDB wird gelesen …",
+      "recordCount_one": "{{count}} Datensatz",
+      "recordCount_other": "{{count}} Datensätze",
+      "refresh": "IndexedDB-Ansicht aktualisieren"
+    },
     "live": {
       "appVersion": "App",
       "average": "Durchschnitt",
@@ -4939,6 +4952,7 @@
     "scrollToBottom": "Nach unten scrollen",
     "showConsole": "Konsole anzeigen",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "Debug-Panel-Ansichten",
       "live": "Live",
       "logs": "Protokolle",

@@ -4844,6 +4844,19 @@
     "fix": "수정",
     "fixLogs": "로그를 Cursor 에이전트에 전송",
     "hideConsole": "콘솔 숨기기",
+    "idb": {
+      "backToStores": "스토어로 돌아가기",
+      "copy": "IndexedDB 덤프 복사하기",
+      "emptyDatabase": "객체 저장소를 찾을 수 없습니다.",
+      "emptyStore": "이 스토어에 레코드가 없습니다.",
+      "error": "IndexedDB를 읽지 못했습니다.",
+      "loadMore_one": "레코드 {{count}}개 더 불러오기",
+      "loadMore_other": "레코드 {{count}}개 더 불러오기",
+      "loading": "IndexedDB 읽는 중…",
+      "recordCount_one": "레코드 {{count}}개",
+      "recordCount_other": "레코드 {{count}}개",
+      "refresh": "IndexedDB 보기 새로 고침"
+    },
     "live": {
       "appVersion": "앱",
       "average": "평균",
@@ -4939,6 +4952,7 @@
     "scrollToBottom": "맨 아래로 스크롤",
     "showConsole": "콘솔 표시",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "디버그 패널 뷰",
       "live": "라이브",
       "logs": "로그",

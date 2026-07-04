@@ -4844,6 +4844,19 @@
     "fix": "修正",
     "fixLogs": "ログを Cursor エージェントに送信",
     "hideConsole": "コンソールを非表示",
+    "idb": {
+      "backToStores": "ストアに戻る",
+      "copy": "IndexedDBのダンプをコピー",
+      "emptyDatabase": "オブジェクトストアが見つかりません。",
+      "emptyStore": "このストアにはレコードがありません。",
+      "error": "IndexedDBの読み込みに失敗しました。",
+      "loadMore_one": "さらに{{count}}件のレコードを読み込む",
+      "loadMore_other": "さらに{{count}}件のレコードを読み込む",
+      "loading": "IndexedDBを読み込み中…",
+      "recordCount_one": "{{count}}件のレコード",
+      "recordCount_other": "{{count}}件のレコード",
+      "refresh": "IndexedDB表示を更新"
+    },
     "live": {
       "appVersion": "アプリ",
       "average": "平均",
@@ -4939,6 +4952,7 @@
     "scrollToBottom": "一番下へスクロール",
     "showConsole": "コンソールを表示",
     "tabs": {
+      "idb": "IndexedDB",
       "label": "デバッグパネルの表示",
       "live": "ライブ",
       "logs": "ログ",
