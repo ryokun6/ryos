@@ -1670,6 +1670,11 @@
         "unknownError": "Error desconocido"
       },
       "appearance": "Apariencia",
+      "assistant": {
+        "description": "Un personaje que charla y ayuda",
+        "hint": "Consejo: haz clic derecho o mantén pulsado el personaje para abrir el menú rápido.",
+        "title": "Asistente de escritorio"
+      },
       "autoSync": {
         "books": "Libros",
         "calendar": "Calendario",
@@ -1890,11 +1895,11 @@
       "panes": {
         "accounts": "Cuentas",
         "appearance": "Apariencia",
+        "assistant": "Asistente",
         "desktopScreenSaver": "Escritorio y salvapantallas",
         "displays": "Pantallas",
         "dotMac": "Sincronización en la nube",
         "international": "Internacional",
-        "assistant": "Asistente",
         "security": "Seguridad",
         "sharing": "Copia de seguridad y restauración",
         "softwareUpdate": "Actualización de software",
@@ -2135,11 +2140,6 @@
         "objects": "Objetos",
         "plants": "Plantas",
         "structures": "Estructuras"
-      },
-      "assistant": {
-        "title": "Asistente de escritorio",
-        "description": "Un personaje que charla y ayuda",
-        "hint": "Consejo: haz clic derecho o mantén pulsado el personaje para abrir el menú rápido."
       }
     },
     "dashboard": {
@@ -4552,12 +4552,26 @@
       "systemPreferences": "Preferencias del Sistema…"
     },
     "assistant": {
+      "characters": {
+        "clippy": "Clipo",
+        "f1": "F1",
+        "genie": "Genie",
+        "genius": "Dr. Genio",
+        "links": "Minino",
+        "merlin": "Merlin",
+        "monkeyking": "Rey Mono",
+        "officelogo": "Logotipo de Office",
+        "peedy": "Peedy",
+        "rocky": "Rocky",
+        "rover": "Rover",
+        "saeko": "Saeko Sensei"
+      },
       "contextMenu": {
         "character": "Personaje",
-        "speech": "Habla",
         "newConversation": "Nueva conversación",
+        "quit": "Salir del Asistente",
         "settings": "Ajustes del Asistente…",
-        "quit": "Salir del Asistente"
+        "speech": "Habla"
       },
       "emptyBubble": "¡Hola! Haz clic en mí siempre que necesites ayuda.",
       "genericError": "¡Uy! Me he liado un poco. ¡Vuelve a intentarlo en un momento! 📎",

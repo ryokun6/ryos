@@ -960,7 +960,7 @@ function AssistantOverlayInner() {
         label: t("common.assistant.contextMenu.character"),
         items: ASSISTANT_CHARACTERS.map((entry) => ({
           type: "checkbox" as const,
-          label: entry.name,
+          label: t(entry.nameKey),
           checked: entry.id === characterId,
           onSelect: () => {
             cancelBubbleAutoClose();
@@ -1199,8 +1199,8 @@ function AssistantOverlayInner() {
         tabIndex={0}
         aria-controls="assistant-chat-bubble"
         aria-expanded={bubbleOpen}
-        aria-label={t("common.assistant.label", { name: character.name })}
-        title={character.name}
+        aria-label={t("common.assistant.label", { name: t(character.nameKey) })}
+        title={t(character.nameKey)}
       >
         {characterVisual}
       </div>
