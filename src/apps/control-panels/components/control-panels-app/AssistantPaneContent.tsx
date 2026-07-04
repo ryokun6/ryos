@@ -113,11 +113,12 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
           <div className="grid grid-cols-4 @max-[339px]:grid-cols-2 gap-2 py-1">
             {ASSISTANT_CHARACTERS.map((character) => {
               const isSelected = enabled && character.id === characterId;
+              const characterName = t(character.nameKey);
               return (
                 <button
                   key={character.id}
                   type="button"
-                  aria-label={character.name}
+                  aria-label={characterName}
                   aria-pressed={isSelected}
                   className="preview-button relative grid w-full aspect-square grid-rows-[72px_11px] content-start justify-items-center gap-0.5 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
                   style={{
@@ -137,7 +138,7 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                     <CharacterTilePreview character={character} />
                   </span>
                   <span className="pointer-events-none -mt-[3px] block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
-                    {character.name}
+                    {characterName}
                   </span>
                 </button>
               );

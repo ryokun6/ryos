@@ -1668,6 +1668,11 @@
         "unknownError": "Unbekannter Fehler"
       },
       "appearance": "Erscheinungsbild",
+      "assistant": {
+        "description": "Ein Charakter, der plaudert und hilft",
+        "hint": "Tipp: Rechtsklick oder langes Drücken auf den Charakter öffnet das Schnellmenü.",
+        "title": "Schreibtisch-Assistent"
+      },
       "autoSync": {
         "books": "Bücher",
         "calendar": "Kalender",
@@ -1888,11 +1893,11 @@
       "panes": {
         "accounts": "Accounts",
         "appearance": "Erscheinungsbild",
+        "assistant": "Assistent",
         "desktopScreenSaver": "Schreibtisch & Bildschirmschoner",
         "displays": "Monitore",
         "dotMac": "Cloud-Synchronisierung",
         "international": "International",
-        "assistant": "Assistent",
         "security": "Sicherheit",
         "sharing": "Backup & Wiederherstellung",
         "softwareUpdate": "Softwareupdate",
@@ -2133,11 +2138,6 @@
         "objects": "Objekte",
         "plants": "Pflanzen",
         "structures": "Strukturen"
-      },
-      "assistant": {
-        "title": "Schreibtisch-Assistent",
-        "description": "Ein Charakter, der plaudert und hilft",
-        "hint": "Tipp: Rechtsklick oder langes Drücken auf den Charakter öffnet das Schnellmenü."
       }
     },
     "dashboard": {
@@ -4548,12 +4548,26 @@
       "systemPreferences": "Systemeinstellungen …"
     },
     "assistant": {
+      "characters": {
+        "clippy": "Karl Klammer",
+        "f1": "F1",
+        "genie": "Genie",
+        "genius": "Genius",
+        "links": "Links",
+        "merlin": "Merlin",
+        "monkeyking": "Monkey King",
+        "officelogo": "Office-Logo",
+        "peedy": "Peedy",
+        "rocky": "Rocky",
+        "rover": "Rover",
+        "saeko": "Saeko Sensei"
+      },
       "contextMenu": {
         "character": "Charakter",
-        "speech": "Sprachausgabe",
         "newConversation": "Neue Unterhaltung",
+        "quit": "Assistent beenden",
         "settings": "Assistent-Einstellungen …",
-        "quit": "Assistent beenden"
+        "speech": "Sprachausgabe"
       },
       "emptyBubble": "Hi! Klicke mich jederzeit an, wenn du Hilfe brauchst.",
       "genericError": "Hoppla, da hat sich etwas verheddert. Versuche es gleich noch einmal! 📎",

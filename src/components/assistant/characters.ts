@@ -7,6 +7,8 @@
  * scripts/convert-acs-character.py).
  */
 
+import i18n from "@/lib/i18n";
+
 export type AssistantCharacterId =
   | "clippy"
   | "links"
@@ -23,7 +25,10 @@ export type AssistantCharacterId =
 
 export interface AssistantCharacter {
   id: AssistantCharacterId;
+  /** Canonical English name (fallback); use getAssistantCharacterName / t(nameKey) for display. */
   name: string;
+  /** Translation key for the localized character name. */
+  nameKey: string;
   /** Display size in CSS pixels. */
   width: number;
   height: number;
@@ -41,6 +46,7 @@ function spriteCharacter(
   return {
     id,
     name,
+    nameKey: `common.assistant.characters.${id}`,
     width,
     height,
     mapUrl: `/assets/assistant/${id}/map.png`,
@@ -74,4 +80,14 @@ export function getAssistantCharacter(
       (character) => character.id === DEFAULT_ASSISTANT_CHARACTER_ID
     )!
   );
+}
+
+/**
+ * Localized display name for a character (e.g. Clippy → "Karl Klammer" in
+ * German, "Скрепыш" in Russian). Falls back to the English name.
+ */
+export function getAssistantCharacterName(
+  character: AssistantCharacter
+): string {
+  return i18n.t(character.nameKey, { defaultValue: character.name });
 }

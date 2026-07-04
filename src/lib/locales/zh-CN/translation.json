@@ -1668,6 +1668,11 @@
         "unknownError": "未知错误"
       },
       "appearance": "外观",
+      "assistant": {
+        "description": "能聊天、还能帮你干活的角色",
+        "hint": "提示：右键点击或长按桌面上的角色可打开快捷菜单。",
+        "title": "桌面助理"
+      },
       "autoSync": {
         "books": "书籍",
         "calendar": "日历",
@@ -1888,11 +1893,11 @@
       "panes": {
         "accounts": "账户",
         "appearance": "外观",
+        "assistant": "助理",
         "desktopScreenSaver": "桌面与屏幕保护程序",
         "displays": "显示器",
         "dotMac": "云端同步",
         "international": "语言与地区",
-        "assistant": "助理",
         "security": "安全性",
         "sharing": "备份与恢复",
         "softwareUpdate": "软件更新",
@@ -2133,11 +2138,6 @@
         "objects": "物品",
         "plants": "植物",
         "structures": "建筑"
-      },
-      "assistant": {
-        "title": "桌面助理",
-        "description": "能聊天、还能帮你干活的角色",
-        "hint": "提示：右键点击或长按桌面上的角色可打开快捷菜单。"
       }
     },
     "dashboard": {
@@ -4548,12 +4548,26 @@
       "systemPreferences": "系统偏好设置…"
     },
     "assistant": {
+      "characters": {
+        "clippy": "大眼夹",
+        "f1": "F1",
+        "genie": "Genie",
+        "genius": "Genius",
+        "links": "恋恋",
+        "merlin": "默林",
+        "monkeyking": "孙悟空",
+        "officelogo": "七巧板",
+        "peedy": "Peedy",
+        "rocky": "聪聪",
+        "rover": "Rover",
+        "saeko": "苗苗老师"
+      },
       "contextMenu": {
         "character": "角色",
-        "speech": "语音",
         "newConversation": "新对话",
+        "quit": "退出助理",
         "settings": "助理设置…",
-        "quit": "退出助理"
+        "speech": "语音"
       },
       "emptyBubble": "你好！需要帮助时，随时点按我。",
       "genericError": "哎呀，出了一点小状况。请稍后重试！📎",

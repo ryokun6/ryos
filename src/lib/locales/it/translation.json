@@ -1670,6 +1670,11 @@
         "unknownError": "Errore sconosciuto"
       },
       "appearance": "Aspetto",
+      "assistant": {
+        "description": "Un personaggio che chiacchiera e aiuta",
+        "hint": "Suggerimento: fai clic destro o tieni premuto sul personaggio per aprire il menu rapido.",
+        "title": "Assistente da scrivania"
+      },
       "autoSync": {
         "books": "Libri",
         "calendar": "Calendario",
@@ -1890,11 +1895,11 @@
       "panes": {
         "accounts": "Account",
         "appearance": "Aspetto",
+        "assistant": "Assistente",
         "desktopScreenSaver": "Scrivania e Salvaschermo",
         "displays": "Monitor",
         "dotMac": "Sincronizzazione Cloud",
         "international": "Internazionale",
-        "assistant": "Assistente",
         "security": "Sicurezza",
         "sharing": "Backup e ripristino",
         "softwareUpdate": "Aggiornamento Software",
@@ -2135,11 +2140,6 @@
         "objects": "Oggetti",
         "plants": "Piante",
         "structures": "Strutture"
-      },
-      "assistant": {
-        "title": "Assistente da scrivania",
-        "description": "Un personaggio che chiacchiera e aiuta",
-        "hint": "Suggerimento: fai clic destro o tieni premuto sul personaggio per aprire il menu rapido."
       }
     },
     "dashboard": {
@@ -4552,12 +4552,26 @@
       "systemPreferences": "Preferenze di Sistema…"
     },
     "assistant": {
+      "characters": {
+        "clippy": "Clippy",
+        "f1": "F1",
+        "genie": "Maestro Eugenio",
+        "genius": "Genius",
+        "links": "Arturo",
+        "merlin": "Merlino",
+        "monkeyking": "Sun Wukong",
+        "officelogo": "Logo Office",
+        "peedy": "Portobello",
+        "rocky": "Augusto",
+        "rover": "Rover",
+        "saeko": "Miss Office"
+      },
       "contextMenu": {
         "character": "Personaggio",
-        "speech": "Voce",
         "newConversation": "Nuova conversazione",
+        "quit": "Esci dall'Assistente",
         "settings": "Impostazioni Assistente…",
-        "quit": "Esci dall'Assistente"
+        "speech": "Voce"
       },
       "emptyBubble": "Ciao! Cliccami ogni volta che ti serve aiuto.",
       "genericError": "Ops, qualcosa mi ha ingarbugliato. Riprova tra un momento! 📎",

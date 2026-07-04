@@ -1668,6 +1668,11 @@
         "unknownError": "不明なエラー"
       },
       "appearance": "外観",
+      "assistant": {
+        "description": "チャットや作業を手伝ってくれるキャラクター",
+        "hint": "ヒント: デスクトップのキャラクターを右クリックまたは長押しするとクイックメニューが開きます。",
+        "title": "デスクトップアシスタント"
+      },
       "autoSync": {
         "books": "本",
         "calendar": "カレンダー",
@@ -1888,11 +1893,11 @@
       "panes": {
         "accounts": "アカウント",
         "appearance": "外観",
+        "assistant": "アシスタント",
         "desktopScreenSaver": "デスクトップとスクリーンセーバ",
         "displays": "ディスプレイ",
         "dotMac": "クラウド同期",
         "international": "言語と地域",
-        "assistant": "アシスタント",
         "security": "セキュリティ",
         "sharing": "バックアップと復元",
         "softwareUpdate": "ソフトウェアアップデート",
@@ -2133,11 +2138,6 @@
         "objects": "オブジェクト",
         "plants": "植物",
         "structures": "ストラクチャ"
-      },
-      "assistant": {
-        "title": "デスクトップアシスタント",
-        "description": "チャットや作業を手伝ってくれるキャラクター",
-        "hint": "ヒント: デスクトップのキャラクターを右クリックまたは長押しするとクイックメニューが開きます。"
       }
     },
     "dashboard": {
@@ -4548,12 +4548,26 @@
       "systemPreferences": "システム環境設定…"
     },
     "assistant": {
+      "characters": {
+        "clippy": "クリッパー",
+        "f1": "F1",
+        "genie": "ジーニー",
+        "genius": "ジーニアス",
+        "links": "ミミー",
+        "merlin": "マーリン",
+        "monkeyking": "孫悟空",
+        "officelogo": "Office ロゴ",
+        "peedy": "ピーディー",
+        "rocky": "ロッキー",
+        "rover": "ローバー",
+        "saeko": "冴子先生"
+      },
       "contextMenu": {
         "character": "キャラクター",
-        "speech": "スピーチ",
         "newConversation": "新しい会話",
+        "quit": "アシスタントを終了",
         "settings": "アシスタント設定…",
-        "quit": "アシスタントを終了"
+        "speech": "スピーチ"
       },
       "emptyBubble": "こんにちは！ヘルプが必要なときはいつでもクリックしてください。",
       "genericError": "おっと、何か問題が発生したようです。少ししてからもう一度お試しください！ 📎",

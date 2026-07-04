@@ -1670,6 +1670,11 @@
         "unknownError": "Erro desconhecido"
       },
       "appearance": "Aparência",
+      "assistant": {
+        "description": "Um personagem que conversa e ajuda",
+        "hint": "Dica: clique com o botão direito ou mantenha pressionado o personagem para abrir o menu rápido.",
+        "title": "Assistente de desktop"
+      },
       "autoSync": {
         "books": "Livros",
         "calendar": "Calendário",
@@ -1890,11 +1895,11 @@
       "panes": {
         "accounts": "Contas",
         "appearance": "Aparência",
+        "assistant": "Assistente",
         "desktopScreenSaver": "Mesa e Protetor de Tela",
         "displays": "Monitores",
         "dotMac": "Sincronização na Nuvem",
         "international": "Internacional",
-        "assistant": "Assistente",
         "security": "Segurança",
         "sharing": "Backup e Restauração",
         "softwareUpdate": "Atualização de Software",
@@ -2135,11 +2140,6 @@
         "objects": "Objetos",
         "plants": "Plantas",
         "structures": "Estruturas"
-      },
-      "assistant": {
-        "title": "Assistente de desktop",
-        "description": "Um personagem que conversa e ajuda",
-        "hint": "Dica: clique com o botão direito ou mantenha pressionado o personagem para abrir o menu rápido."
       }
     },
     "dashboard": {
@@ -4552,12 +4552,26 @@
       "systemPreferences": "Preferências do Sistema…"
     },
     "assistant": {
+      "characters": {
+        "clippy": "Clippy",
+        "f1": "F1",
+        "genie": "Genie",
+        "genius": "Genius",
+        "links": "Links",
+        "merlin": "Merlin",
+        "monkeyking": "Rei Macaco",
+        "officelogo": "Logotipo do Office",
+        "peedy": "Peedy",
+        "rocky": "Rocky",
+        "rover": "Rover",
+        "saeko": "Saeko Sensei"
+      },
       "contextMenu": {
         "character": "Personagem",
-        "speech": "Fala",
         "newConversation": "Nova conversa",
+        "quit": "Encerrar Assistente",
         "settings": "Ajustes do Assistente…",
-        "quit": "Encerrar Assistente"
+        "speech": "Fala"
       },
       "emptyBubble": "Olá! Clique em mim sempre que precisar de ajuda.",
       "genericError": "Ops, algo me atrapalhou. Tente novamente em instantes! 📎",

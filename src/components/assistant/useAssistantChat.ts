@@ -19,7 +19,10 @@ import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
-import { getAssistantCharacter } from "./characters";
+import {
+  getAssistantCharacter,
+  getAssistantCharacterName,
+} from "./characters";
 import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
@@ -192,9 +195,9 @@ export function useAssistantChat(): AssistantChatHandle {
             systemState: getSystemState(),
             model: useAppStore.getState().aiModel,
             persona: "assistant",
-            assistantName: getAssistantCharacter(
-              useAssistantStore.getState().characterId
-            ).name,
+            assistantName: getAssistantCharacterName(
+              getAssistantCharacter(useAssistantStore.getState().characterId)
+            ),
           }),
         }),
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
@@ -366,9 +369,9 @@ export function useAssistantChat(): AssistantChatHandle {
             systemState: getSystemState(),
             model: useAppStore.getState().aiModel,
             persona: "assistant",
-            assistantName: getAssistantCharacter(
-              useAssistantStore.getState().characterId
-            ).name,
+            assistantName: getAssistantCharacterName(
+              getAssistantCharacter(useAssistantStore.getState().characterId)
+            ),
           },
         }
       );
@@ -379,9 +382,9 @@ export function useAssistantChat(): AssistantChatHandle {
   const appendLocalGreeting = useCallback(() => {
     const key =
       LOCAL_GREETING_KEYS[Math.floor(Math.random() * LOCAL_GREETING_KEYS.length)];
-    const characterName = getAssistantCharacter(
-      useAssistantStore.getState().characterId
-    ).name;
+    const characterName = getAssistantCharacterName(
+      getAssistantCharacter(useAssistantStore.getState().characterId)
+    );
     const greeting: AIChatMessage = {
       id: `assistant-local-greeting-${Date.now()}`,
       role: "assistant",
