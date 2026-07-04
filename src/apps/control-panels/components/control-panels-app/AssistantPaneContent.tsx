@@ -137,7 +137,7 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                   <span className="pointer-events-none flex h-[72px] w-full items-center justify-center">
                     <CharacterTilePreview character={character} />
                   </span>
-                  <span className="pointer-events-none block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
+                  <span className="pointer-events-none -mt-[3px] block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
                     {character.name}
                   </span>
                 </button>
