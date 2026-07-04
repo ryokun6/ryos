@@ -29,9 +29,12 @@ interface AudioSettingsState {
   ttsVoice: string | null;
   /**
    * Preferred browser speechSynthesis voice (voiceURI) used by all
-   * browser-based TTS (Calculator speech, Books read-aloud). `null` picks a
-   * voice automatically from the utterance language. Device-local: voice
-   * lists differ per browser/OS, so this is intentionally not cloud-synced.
+   * browser-based TTS (desktop assistant, Calculator speech, Books
+   * read-aloud). `null` picks a voice automatically: the assistant falls
+   * back to its character's default voices, everything else to the best
+   * voice for the utterance language (see utils/browserSpeech). Device-
+   * local: voice lists differ per browser/OS, so this is intentionally not
+   * cloud-synced.
    */
   browserTtsVoiceURI: string | null;
   synthPreset: string;

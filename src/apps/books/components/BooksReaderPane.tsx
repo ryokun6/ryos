@@ -95,11 +95,10 @@ import {
   useBooksSpeechBarVisibility,
 } from "../hooks/useBooksSpeechBarVisibility";
 import {
+  createSpeechUtterance,
   getBrowserSpeechSynthesis,
-  resolveSpeechVoice,
   ryOSLocaleToSpeechLanguage,
 } from "@/utils/browserSpeech";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useBookCover } from "../utils/useBookCover";
 import { BookCover } from "./BookCover";
 import type {
@@ -2157,15 +2156,11 @@ export const BooksReaderPane = forwardRef<
     // The reply follows the question's language (book language falling back
     // to the UI locale), so reuse the read-aloud language + voice resolution.
     const lang = getSpeechLanguage();
-    const utterance = new SpeechSynthesisUtterance(reply);
-    utterance.lang = lang;
-    utterance.rate = normalizeBooksSpeechRate(speechRateRef.current);
-    const voice = resolveSpeechVoice(
-      synth.getVoices(),
+    const utterance = createSpeechUtterance(reply, {
       lang,
-      useAudioSettingsStore.getState().browserTtsVoiceURI
-    );
-    if (voice) utterance.voice = voice;
+      rate: normalizeBooksSpeechRate(speechRateRef.current),
+      voices: synth.getVoices(),
+    });
     utterance.onend = () => {
       askSpeechStartedRef.current = false;
       setIsSpeakingAskReply(false);

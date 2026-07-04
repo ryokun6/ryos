@@ -55,6 +55,7 @@ class FakeUtterance {
   text: string;
   lang = "";
   rate = 1;
+  pitch = 1;
   volume = 1;
   voice: unknown = null;
   onstart: (() => void) | null = null;
@@ -113,6 +114,7 @@ describe("assistant speech playback", () => {
     spoken.forEach((utterance) => utterance.onend?.());
     __resetAssistantSpeechStateForTests();
     useAudioSettingsStore.setState({ browserTtsVoiceURI: null });
+    useAssistantStore.setState({ characterId: "rover" });
     g.window = originalWindow;
     g.SpeechSynthesisUtterance = originalUtterance;
     delete g.speechSynthesis;
@@ -159,6 +161,61 @@ describe("assistant speech playback", () => {
     speakAssistantText("こんにちは。", { locale: "ja" });
     expect(spoken).toHaveLength(1);
     expect(spoken[0].lang).toBe("ja-JP");
+  });
+
+  test("applies the character's default voice profile (voice, pitch, rate)", () => {
+    fakeVoices = [
+      { voiceURI: "sam", lang: "en-US", name: "Samantha" },
+      {
+        voiceURI: "dan",
+        lang: "en-GB",
+        name: "Daniel (English (United Kingdom))",
+      },
+    ] as SpeechSynthesisVoice[];
+    useAssistantStore.setState({ characterId: "merlin" });
+
+    speakAssistantText("Behold!", { locale: "en" });
+    expect(spoken).toHaveLength(1);
+    // Merlin defaults to a deep UK male voice, lowered pitch, slower rate.
+    expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe(
+      "Daniel (English (United Kingdom))"
+    );
+    expect(spoken[0].pitch).toBe(0.8);
+    expect(spoken[0].rate).toBe(0.95);
+  });
+
+  test("character voice preferences are language-gated", () => {
+    fakeVoices = [
+      { voiceURI: "sam", lang: "en-US", name: "Samantha" },
+      { voiceURI: "kyoko", lang: "ja-JP", name: "Kyoko" },
+    ] as SpeechSynthesisVoice[];
+    useAssistantStore.setState({ characterId: "saeko" });
+
+    // Speaking Japanese, Saeko prefers the Japanese voice…
+    speakAssistantText("こんにちは。", { locale: "ja" });
+    expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe("Kyoko");
+
+    // …and falls back to a female English voice for English replies.
+    speakAssistantText("Hello.", { locale: "en" });
+    expect((spoken[1].voice as SpeechSynthesisVoice).name).toBe("Samantha");
+  });
+
+  test("the user's preferred voice overrides the character default", () => {
+    fakeVoices = [
+      { voiceURI: "sam", lang: "en-US", name: "Samantha" },
+      {
+        voiceURI: "dan",
+        lang: "en-GB",
+        name: "Daniel (English (United Kingdom))",
+      },
+    ] as SpeechSynthesisVoice[];
+    useAssistantStore.setState({ characterId: "merlin" });
+    useAudioSettingsStore.setState({ browserTtsVoiceURI: "sam" });
+
+    speakAssistantText("Behold!", { locale: "en" });
+    expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe("Samantha");
+    // Persona pitch/rate still apply — only the voice choice is overridden.
+    expect(spoken[0].pitch).toBe(0.8);
   });
 
   test("honors the preferred browser TTS voice from audio settings", () => {
