@@ -16,6 +16,8 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { getSystemState } from "@/apps/chats/utils/systemState";
 import { dispatchToolCall } from "@/apps/chats/tools/dispatchToolCall";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
+import { getAppName } from "@/apps/chats/components/chat-messages/utils";
+import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { getAssistantCharacter } from "./characters";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
@@ -39,10 +41,46 @@ const LOCAL_GREETING_KEYS = [
   "common.assistant.greetings.tip",
 ] as const;
 
+/** Tools with a dedicated status line (others fall back to "Running X…"). */
+const TOOL_STATUS_KEYS: Record<string, string> = {
+  mediaControl: "apps.chats.toolCalls.controllingPlayback",
+  list: "apps.chats.toolCalls.findingFiles",
+  open: "apps.chats.toolCalls.openingFile",
+  read: "apps.chats.toolCalls.readingFile",
+  write: "apps.chats.toolCalls.writingContent",
+  edit: "apps.chats.toolCalls.editingFile",
+  switchTheme: "apps.chats.toolCalls.switchingTheme",
+  songLibrary: "apps.chats.toolCalls.loadingMusicLibrary",
+};
+
+function getToolStatusLabel(toolName: string, input: unknown): string {
+  const appId =
+    input && typeof input === "object"
+      ? (input as { id?: string }).id
+      : undefined;
+  if (toolName === "launchApp") {
+    return i18n.t("apps.chats.toolCalls.launching", {
+      appName: getAppName(appId),
+    });
+  }
+  if (toolName === "closeApp") {
+    return i18n.t("apps.chats.toolCalls.closing", {
+      appName: getAppName(appId),
+    });
+  }
+  const key = TOOL_STATUS_KEYS[toolName];
+  if (key) return i18n.t(key);
+  return i18n.t("apps.chats.toolCalls.running", {
+    toolName: formatToolName(toolName),
+  });
+}
+
 export interface AssistantChatHandle {
   messages: AIChatMessage[];
   /** Latest visible assistant reply text (streams in as it is generated). */
   latestAssistantText: string;
+  /** Friendly labels for tool calls in the in-flight assistant turn. */
+  statusLabels: string[];
   isLoading: boolean;
   errorText: string | null;
   sendUserMessage: (text: string) => void;
@@ -177,6 +215,25 @@ export function useAssistantChat(): AssistantChatHandle {
     return "";
   }, [messages, isLoading]);
 
+  // Friendly status lines for tool calls in the current turn, shown in the
+  // bubble's rolling "thinking" ticker while the reply is being generated.
+  const statusLabels = useMemo(() => {
+    if (!isLoading) return [];
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant" || !Array.isArray(last.parts)) {
+      return [];
+    }
+    const labels: string[] = [];
+    for (const part of last.parts as Array<{ type: string; input?: unknown }>) {
+      if (typeof part.type !== "string" || !part.type.startsWith("tool-")) {
+        continue;
+      }
+      const label = getToolStatusLabel(part.type.slice(5), part.input);
+      if (labels[labels.length - 1] !== label) labels.push(label);
+    }
+    return labels;
+  }, [messages, isLoading]);
+
   const errorText = useMemo(() => {
     if (!error) return null;
     const message = error.message || "";
@@ -261,6 +318,7 @@ export function useAssistantChat(): AssistantChatHandle {
   return {
     messages: messages as AIChatMessage[],
     latestAssistantText,
+    statusLabels,
     isLoading,
     errorText,
     sendUserMessage,

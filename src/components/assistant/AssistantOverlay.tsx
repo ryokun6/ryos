@@ -111,6 +111,60 @@ function snapAxis(value: number, candidates: number[]): number {
   return best;
 }
 
+/** How long each thinking/tool status line stays before rolling to the next. */
+const THINKING_TICK_MS = 1600;
+
+/**
+ * Vertical roller shown while a reply is being generated: cycles between
+ * "Thinking…" and friendly tool-call status lines, rolling each line up and
+ * out as the next one enters from below.
+ */
+function ThinkingTicker({ items }: { items: string[] }) {
+  const [tick, setTick] = useState(0);
+  const prevCountRef = useRef(items.length);
+
+  // Jump straight to a tool status line the moment a new one appears.
+  useEffect(() => {
+    if (items.length > prevCountRef.current) {
+      setTick(items.length - 1);
+    }
+    prevCountRef.current = items.length;
+  }, [items.length]);
+
+  useEffect(() => {
+    if (items.length <= 1) return;
+    const timer = setInterval(
+      () => setTick((value) => value + 1),
+      THINKING_TICK_MS
+    );
+    return () => clearInterval(timer);
+  }, [items.length]);
+
+  const index = items.length > 0 ? tick % items.length : 0;
+  const current = items[index] ?? "";
+
+  return (
+    <div
+      className="relative h-[18px] overflow-hidden"
+      aria-live="polite"
+      aria-label={current}
+    >
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={`${index}-${current}`}
+          initial={{ y: 14, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -14, opacity: 0 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="absolute inset-x-0 top-0 truncate italic text-black/60"
+        >
+          {current}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function clampToViewport(
   pos: AssistantPosition,
   width: number,
@@ -145,6 +199,7 @@ function AssistantOverlayInner() {
   const chatHandle = useAssistantChat();
   const {
     latestAssistantText,
+    statusLabels,
     isLoading,
     errorText,
     sendUserMessage,
@@ -549,11 +604,9 @@ function AssistantOverlayInner() {
               aria-live="polite"
             >
               {showTyping ? (
-                <div className="flex gap-1 py-1" aria-label={t("common.assistant.thinking")}>
-                  <span className="size-1.5 rounded-full bg-black/60 animate-bounce [animation-delay:0ms]" />
-                  <span className="size-1.5 rounded-full bg-black/60 animate-bounce [animation-delay:120ms]" />
-                  <span className="size-1.5 rounded-full bg-black/60 animate-bounce [animation-delay:240ms]" />
-                </div>
+                <ThinkingTicker
+                  items={[t("common.assistant.thinking"), ...statusLabels]}
+                />
               ) : (
                 <div className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
                   {bubbleText || t("common.assistant.emptyBubble")}
