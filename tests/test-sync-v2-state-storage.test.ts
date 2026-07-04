@@ -21,7 +21,10 @@ import {
   STORES,
 } from "../src/utils/indexedDB";
 import {
+  advancePersistEpoch,
+  getPersistEpoch,
   resetPersistWritesForTests,
+  restorePersistEpoch,
   settleAllPersistWrites,
 } from "../src/utils/persistWriteQueue";
 
@@ -141,5 +144,34 @@ describe("Sync v2 IndexedDB state storage", () => {
 
     expect(await readStoredState("delete-user")).toBeUndefined();
     expect(localStorage.getItem("ryos:sync2:state:delete-user")).toBeNull();
+  });
+
+  test("epoch invalidation preserves legacy state and drops stale writes", async () => {
+    const username = "stale-tab-user";
+    const legacyKey = `ryos:sync2:state:${username}`;
+    localStorage.setItem(
+      legacyKey,
+      JSON.stringify({
+        cursor: 12,
+        lastHlc: null,
+        shadow: {},
+        dirty: [],
+        localReconcileRequired: false,
+      })
+    );
+    const previousEpoch = getPersistEpoch();
+    advancePersistEpoch();
+
+    try {
+      const state = await SyncClientState.open(username);
+      expect(state.cursor).toBe(12);
+      state.setCursor(13);
+      await settleAllPersistWrites();
+
+      expect(localStorage.getItem(legacyKey)).not.toBeNull();
+      expect(await readStoredState(username)).toBeUndefined();
+    } finally {
+      restorePersistEpoch(previousEpoch);
+    }
   });
 });
