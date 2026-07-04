@@ -99,7 +99,7 @@ describe("assistant semantic animation selection", () => {
     ).toBe("GetWizardy");
   });
 
-  test("plays Show before a greeting gesture on initial character load", () => {
+  test("falls back to Show plus a greeting gesture when there is no Greeting clip", () => {
     const data = agentWithAnimations(["Show", "Greet", "Wave", "RestPose"]);
 
     expect(resolveAssistantEntranceSequencePlan(data)).toEqual({
@@ -116,26 +116,23 @@ describe("assistant semantic animation selection", () => {
     });
   });
 
-  test("never chains a Greeting clip after Show (it is an alternate entrance)", () => {
-    // Microsoft Agent "Greeting" clips start from (nearly) empty frames, so
-    // playing one right after Show pops the character in, blanks it, and
-    // materializes it a second time (visible on Clippy, Saeko, and others).
-    const greetingOnly = agentWithAnimations(["Show", "Greeting", "RestPose"]);
-    expect(resolveAssistantEntranceSequencePlan(greetingOnly)).toEqual({
-      first: "Show",
-      followUp: null,
-    });
-
-    const withGesture = agentWithAnimations([
+  test("prefers the fully-authored Greeting entrance over Show, with no follow-up", () => {
+    // On every character that ships one, "Greeting" is the real entrance: it
+    // starts from (nearly) empty frames, materializes the character, greets,
+    // and ends at the rest pose — while "Show" on those characters is a
+    // 40–300ms pop. Greeting already contains the greeting gesture, so
+    // chaining a follow-up (or playing Show first) would double the entry.
+    const withGreeting = agentWithAnimations([
       "Show",
       "Greeting",
       "Wave",
       "RestPose",
     ]);
-    expect(resolveAssistantEntranceSequencePlan(withGesture)).toEqual({
-      first: "Show",
-      followUp: "Wave",
+    expect(resolveAssistantEntranceSequencePlan(withGreeting)).toEqual({
+      first: "Greeting",
+      followUp: null,
     });
+    expect(isAssistantEntranceAnimation("Greeting")).toBe(true);
   });
 
   test("uses clip duration for quit with a bounded malformed-data fallback", () => {

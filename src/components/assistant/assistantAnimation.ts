@@ -29,7 +29,17 @@ export interface AssistantToolActivity {
   phase: AssistantToolPhase;
 }
 
+/**
+ * "Greeting" is preferred over "Show": on every character that ships one,
+ * Greeting is the fully-authored entrance — it starts from (nearly) empty
+ * frames, materializes the character gradually, includes a greeting gesture,
+ * and ends at the rest pose. On those same characters "Show" is a 40–300ms
+ * pop (e.g. Clippy's Show is 5 frames / 50ms vs. its 4.5s Greeting).
+ * Characters without a Greeting clip (Merlin, Genie, Peedy, Rover) have a
+ * real gradual Show and fall through to it.
+ */
 const ENTRANCE_ANIMATION_CANDIDATES = [
+  "Greeting",
   "Show",
   "Appear",
   "AppearQuick",
@@ -43,11 +53,10 @@ const EXIT_ANIMATION_CANDIDATES = [
 ] as const;
 
 const ANIMATION_CANDIDATES = {
-  // Entrance clips (Show/Appear/…) are intentionally NOT candidates here:
-  // they only play through the dedicated entrance sequence plan, so a random
-  // greeting pick can never replay the character's entry animation.
+  // Entrance clips (Greeting/Show/Appear/…) are intentionally NOT candidates
+  // here: they only play through the dedicated entrance sequence plan, so a
+  // random greeting pick can never replay the character's entry animation.
   greeting: [
-    "Greeting",
     "Greet",
     "Wave",
     "Announce",
@@ -258,10 +267,10 @@ export interface AssistantEntranceSequencePlan {
 }
 
 /**
- * Follow-up gestures that continue from the visible rest pose. "Greeting" is
- * intentionally absent: Microsoft Agent "Greeting" clips are alternate
- * entrances whose first frames are (nearly) empty, so chaining one after Show
- * pops the character in, blanks it, and materializes it a second time.
+ * Follow-up gestures that continue from the visible rest pose, for characters
+ * whose entrance is a bare materialization (Show/Appear) with no greeting of
+ * its own. "Greeting" entrances already end on a greeting gesture, so they
+ * never chain a follow-up.
  */
 const ENTRANCE_FOLLOW_UP_CANDIDATES = [
   "Greet",
@@ -271,8 +280,10 @@ const ENTRANCE_FOLLOW_UP_CANDIDATES = [
 ] as const;
 
 /**
- * Prefer the agent's real entrance clip, then a separate greeting gesture.
- * Characters without an entrance clip appear in their static default pose.
+ * Prefer the agent's fully-authored "Greeting" entrance (materialize +
+ * greeting gesture in one clip), else a bare materialization (Show/Appear)
+ * followed by a separate greeting gesture. Characters without any entrance
+ * clip appear in their static default pose.
  */
 export function resolveAssistantEntranceSequencePlan(
   data: AgentData
@@ -281,13 +292,19 @@ export function resolveAssistantEntranceSequencePlan(
     data,
     ENTRANCE_ANIMATION_CANDIDATES
   );
-  const greeting = pickFirstAvailableAnimation(
-    data,
-    ENTRANCE_FOLLOW_UP_CANDIDATES
-  );
+
+  if (entrance === "Greeting") {
+    return { first: entrance, followUp: null };
+  }
 
   if (entrance) {
-    return { first: entrance, followUp: greeting };
+    return {
+      first: entrance,
+      followUp: pickFirstAvailableAnimation(
+        data,
+        ENTRANCE_FOLLOW_UP_CANDIDATES
+      ),
+    };
   }
 
   return { first: "RestPose", followUp: null };
