@@ -59,23 +59,26 @@ Intro copy.
 ## June 2026
 
 <div class="changelog-feature-grid">
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-05-aqua-appearance-16x9.webp" alt="Aqua Glass" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass</h3><p>Older entry.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-05-aqua-appearance-16x9.webp" alt="Aqua Glass" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass</h3><p>Translucent chrome.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-02-cloud-sync-16x9.webp" alt="Cloud Sync v2" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cloud Sync v2</h3><p>Journal-based delta sync.</p></div></article>
 </div>
 `;
 
-  test("builds a card from the newest featured entry", () => {
+  test("builds cards from the two newest featured entries with month labels", () => {
     const card = buildLatestChangelogCard(changelogMd);
-    expect(card).toContain('href="/docs/changelog"');
-    expect(card).toContain("Latest changelog — July 2026");
+    expect(card).toContain('class="latest-changelog-grid"');
+    expect(card.match(/href="\/docs\/changelog"/g)?.length).toBe(2);
+    // Newest entry (July) with its month label
+    expect(card).toContain("July 2026");
     expect(card).toContain(
       'src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp"',
     );
     expect(card).toContain("<h3>Books library</h3>");
-    expect(card).toContain(
-      "A wooden EPUB shelf keeps imports, reading progress, and Meditations together.",
-    );
-    // Must not pick up the older month's entry
-    expect(card).not.toContain("Aqua Glass");
+    // Second-newest entry crosses into the previous month (June)
+    expect(card).toContain("June 2026");
+    expect(card).toContain("<h3>Aqua Glass</h3>");
+    // Must stop at two entries
+    expect(card).not.toContain("Cloud Sync v2");
   });
 
   test("falls back gracefully when no featured entry exists", () => {
