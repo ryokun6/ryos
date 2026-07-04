@@ -110,6 +110,19 @@ const BUBBLE_EXIT: Transition = {
 
 const REST_ANIMATION = "RestPose";
 
+/** Default distance (px) of the bubble tail from its aligned bubble edge. */
+const BUBBLE_TAIL_INSET = 24;
+/** Keep the tail clear of the bubble's rounded corners. */
+const BUBBLE_TAIL_MIN_OFFSET = 10;
+/** Farthest the tail can sit from the aligned edge along the bubble width. */
+const BUBBLE_TAIL_MAX_OFFSET_X = ASSISTANT_BUBBLE_WIDTH - 34;
+/**
+ * Farthest the tail can sit from the aligned edge along the bubble height.
+ * Conservative because the rendered bubble can be much shorter than the
+ * placement estimate; this keeps the tail attached even to a one-line bubble.
+ */
+const BUBBLE_TAIL_MAX_OFFSET_Y = 56;
+
 /** Wait for the snap spring to mostly settle before pointing at a window. */
 const POINTING_DELAY_MS = 550;
 
@@ -1207,9 +1220,31 @@ function AssistantOverlayInner() {
   const windowInstances = useAppStore((state) => state.instances);
   const bubblePlacement = useMemo(() => {
     const insets = computeInsets();
+    // Prefer the rendered window frames: on mobile the store keeps numeric
+    // sizes while windows actually render full-width, so store rects can
+    // misreport what the bubble would cover.
+    const frameByInstanceId = new Map<string, HTMLElement>();
+    for (const element of document.querySelectorAll<HTMLElement>(
+      "[data-window-instance-id]"
+    )) {
+      const instanceId = element.dataset.windowInstanceId;
+      if (instanceId) frameByInstanceId.set(instanceId, element);
+    }
     const obstacles: AssistantBubbleRect[] = [];
-    for (const instance of Object.values(windowInstances)) {
+    for (const [instanceId, instance] of Object.entries(windowInstances)) {
       if (!instance.isOpen || instance.isMinimized) continue;
+      const frameBounds = frameByInstanceId
+        .get(instanceId)
+        ?.getBoundingClientRect();
+      if (frameBounds && frameBounds.width > 0 && frameBounds.height > 0) {
+        obstacles.push({
+          x: frameBounds.left,
+          y: frameBounds.top,
+          width: frameBounds.width,
+          height: frameBounds.height,
+        });
+        continue;
+      }
       if (!instance.position || !instance.size) continue;
       obstacles.push({
         x: instance.position.x,
@@ -1247,6 +1282,31 @@ function AssistantOverlayInner() {
   const bubbleSide = bubblePlacement.side;
   const bubbleAlignEnd = bubblePlacement.align === "end";
   const bubbleVertical = bubbleSide === "above" || bubbleSide === "below";
+  // Cross-axis slide keeping the bubble on screen; the tail counter-shifts
+  // by the same amount so it keeps pointing at the character.
+  const bubbleCrossOffset = bubblePlacement.crossOffset;
+  const bubblePositionStyle = bubbleVertical
+    ? bubbleAlignEnd
+      ? { right: -bubbleCrossOffset }
+      : { left: bubbleCrossOffset }
+    : bubbleAlignEnd
+    ? { bottom: -bubbleCrossOffset }
+    : { top: bubbleCrossOffset };
+  const bubbleTailOffset = Math.min(
+    Math.max(
+      BUBBLE_TAIL_INSET +
+        (bubbleAlignEnd ? bubbleCrossOffset : -bubbleCrossOffset),
+      BUBBLE_TAIL_MIN_OFFSET
+    ),
+    bubbleVertical ? BUBBLE_TAIL_MAX_OFFSET_X : BUBBLE_TAIL_MAX_OFFSET_Y
+  );
+  const bubbleTailStyle = bubbleVertical
+    ? bubbleAlignEnd
+      ? { right: bubbleTailOffset }
+      : { left: bubbleTailOffset }
+    : bubbleAlignEnd
+    ? { bottom: bubbleTailOffset }
+    : { top: bubbleTailOffset };
   // Slide the bubble from the character's side as it scales in/out.
   const bubblePopOffset = {
     x: bubbleSide === "left" ? 1 : bubbleSide === "right" ? -1 : 0,
@@ -1359,20 +1419,16 @@ function AssistantOverlayInner() {
               transition: reduceMotion ? { duration: 0 } : BUBBLE_EXIT,
             }}
             transition={reduceMotion ? { duration: 0 } : BUBBLE_OPEN_SPRING}
-            style={{ transformOrigin: bubbleTransformOrigin }}
+            style={{
+              transformOrigin: bubbleTransformOrigin,
+              ...bubblePositionStyle,
+            }}
             className={cn(
               "absolute w-64 pointer-events-auto",
               bubbleSide === "above" && "bottom-full mb-2",
               bubbleSide === "below" && "top-full mt-2",
               bubbleSide === "left" && "right-full mr-2",
-              bubbleSide === "right" && "left-full ml-2",
-              bubbleVertical
-                ? bubbleAlignEnd
-                  ? "right-0"
-                  : "left-0"
-                : bubbleAlignEnd
-                ? "bottom-0"
-                : "top-0"
+              bubbleSide === "right" && "left-full ml-2"
             )}
           >
             <div
@@ -1437,19 +1493,13 @@ function AssistantOverlayInner() {
               </form>
               {/* Bubble tail pointing at the character */}
               <div
+                style={bubbleTailStyle}
                 className={cn(
                   "absolute size-2.5 rotate-45 border-black bg-[#FFFFC8]",
                   bubbleSide === "above" && "-bottom-[6px] border-b border-r",
                   bubbleSide === "below" && "-top-[6px] border-l border-t",
                   bubbleSide === "left" && "-right-[6px] border-r border-t",
-                  bubbleSide === "right" && "-left-[6px] border-b border-l",
-                  bubbleVertical
-                    ? bubbleAlignEnd
-                      ? "right-6"
-                      : "left-6"
-                    : bubbleAlignEnd
-                    ? "bottom-6"
-                    : "top-6"
+                  bubbleSide === "right" && "-left-[6px] border-b border-l"
                 )}
               />
             </div>

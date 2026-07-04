@@ -2,10 +2,12 @@
  * Window-aware placement for the assistant's speech bubble.
  *
  * The bubble can pop on any of the four sides of the character (above, below,
- * left, right) with two alignments per side. Candidates are scored by how much
- * of the bubble would fall outside the viewport (worst) and how much would
- * cover open windows, so a character docked next to a window pops its bubble
- * away from the window instead of over it.
+ * left, right) with two alignments per side. Each candidate is first slid
+ * along its side's cross axis so it stays inside the viewport, then scored:
+ * staying fully on screen is a hard constraint (a clipped bubble never beats
+ * an on-screen one), and among on-screen candidates the one covering the
+ * least amount of open windows wins, so a character docked next to a window
+ * pops its bubble away from the window instead of over it.
  */
 
 export interface AssistantBubbleRect {
@@ -36,6 +38,12 @@ export interface AssistantBubblePlacement {
   side: AssistantBubbleSide;
   align: AssistantBubbleAlign;
   bounds: AssistantBubbleRect;
+  /**
+   * Cross-axis shift (px) applied to the natural edge-aligned position to
+   * keep the bubble inside the viewport: horizontal for above/below,
+   * vertical for left/right. 0 when the bubble fits without sliding.
+   */
+  crossOffset: number;
   /** Weighted viewport-overflow + window-overlap area. 0 = fully clear. */
   penalty: number;
 }
@@ -46,6 +54,9 @@ export const ASSISTANT_BUBBLE_GAP = 8;
 
 /** Covering a window is bad; pushing the bubble offscreen is worse. */
 const OVERFLOW_WEIGHT = 4;
+
+/** Preferred clearance (px) between the bubble and the viewport edges. */
+const BUBBLE_VIEWPORT_MARGIN = 8;
 
 interface ResolveAssistantBubblePlacementOptions {
   /** Character rect (viewport coordinates). */
@@ -99,6 +110,11 @@ interface PlacementCandidate {
   align: AssistantBubbleAlign;
   bounds: AssistantBubbleRect;
   priority: number;
+}
+
+function clampAxis(value: number, min: number, max: number): number {
+  if (max < min) return min;
+  return Math.min(Math.max(value, min), max);
 }
 
 export function resolveAssistantBubblePlacement({
@@ -187,27 +203,69 @@ export function resolveAssistantBubblePlacement({
     })
   );
 
+  // Slide each candidate along its side's cross axis so it stays inside the
+  // viewport. The main axis (the offset away from the character) is never
+  // adjusted — that would cover the character — so any remaining overflow
+  // there still disqualifies the candidate against fully visible ones.
+  const slideOnScreen = (
+    candidate: PlacementCandidate
+  ): { bounds: AssistantBubbleRect; crossOffset: number } => {
+    const { bounds, side } = candidate;
+    if (side === "above" || side === "below") {
+      const x = clampAxis(
+        bounds.x,
+        BUBBLE_VIEWPORT_MARGIN,
+        viewport.width - bounds.width - BUBBLE_VIEWPORT_MARGIN
+      );
+      return { bounds: { ...bounds, x }, crossOffset: x - bounds.x };
+    }
+    const y = clampAxis(
+      bounds.y,
+      viewport.topInset + BUBBLE_VIEWPORT_MARGIN,
+      viewport.height -
+        viewport.bottomInset -
+        bounds.height -
+        BUBBLE_VIEWPORT_MARGIN
+    );
+    return { bounds: { ...bounds, y }, crossOffset: y - bounds.y };
+  };
+
   const scored = candidates.map((candidate) => {
+    const { bounds, crossOffset } = slideOnScreen(candidate);
+    const overflow = getOverflowArea(bounds, viewport);
     const overlap = obstacles.reduce(
-      (total, obstacle) =>
-        total + getIntersectionArea(candidate.bounds, obstacle),
+      (total, obstacle) => total + getIntersectionArea(bounds, obstacle),
       0
     );
     return {
-      ...candidate,
-      penalty:
-        getOverflowArea(candidate.bounds, viewport) * OVERFLOW_WEIGHT +
-        overlap,
+      side: candidate.side,
+      align: candidate.align,
+      priority: candidate.priority,
+      bounds,
+      crossOffset,
+      overflow,
+      overlap,
     };
   });
 
-  scored.sort((a, b) => a.penalty - b.penalty || a.priority - b.priority);
+  // Never clip: any placement that stays fully on screen beats any placement
+  // that overflows, no matter how much of a window it covers. Among equally
+  // visible candidates, cover as little of the open windows as possible,
+  // slide as little as possible, then fall back to the classic side order.
+  scored.sort(
+    (a, b) =>
+      a.overflow - b.overflow ||
+      a.overlap - b.overlap ||
+      Math.abs(a.crossOffset) - Math.abs(b.crossOffset) ||
+      a.priority - b.priority
+  );
 
   const best = scored[0];
   return {
     side: best.side,
     align: best.align,
     bounds: best.bounds,
-    penalty: best.penalty,
+    crossOffset: best.crossOffset,
+    penalty: best.overflow * OVERFLOW_WEIGHT + best.overlap,
   };
 }
