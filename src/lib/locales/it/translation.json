@@ -2138,7 +2138,7 @@
       },
       "assistant": {
         "title": "Assistente da scrivania",
-        "description": "Evoca un personaggio che chiacchiera e aiuta con il lavoro vero",
+        "description": "Un personaggio che chiacchiera e aiuta",
         "hint": "Suggerimento: fai clic destro o tieni premuto sul personaggio per aprire il menu rapido."
       }
     },

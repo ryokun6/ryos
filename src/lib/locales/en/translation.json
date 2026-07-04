@@ -3435,7 +3435,7 @@
       "logOutButton": "Sign Out…",
       "assistant": {
         "title": "Desktop Assistant",
-        "description": "Summon a character that chats and helps with real work",
+        "description": "A character that chats and helps",
         "hint": "Tip: right-click or long-press the character on the desktop for quick options."
       }
     },

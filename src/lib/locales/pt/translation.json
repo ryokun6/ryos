@@ -2138,7 +2138,7 @@
       },
       "assistant": {
         "title": "Assistente de desktop",
-        "description": "Invoque um personagem que conversa e ajuda com trabalho de verdade",
+        "description": "Um personagem que conversa e ajuda",
         "hint": "Dica: clique com o botão direito ou mantenha pressionado o personagem para abrir o menu rápido."
       }
     },

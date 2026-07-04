@@ -37,6 +37,7 @@ function CharacterTilePreview({ character }: { character: AssistantCharacter }) 
           <ClippySprite
             mapUrl={character.mapUrl}
             data={agentData}
+            characterId={character.id}
             animation="RestPose"
           />
         ) : (
@@ -109,7 +110,7 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                 type="button"
                 aria-label={character.name}
                 aria-pressed={isSelected}
-                className="preview-button relative w-full aspect-square cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden bg-black/5"
+                className="preview-button relative w-full aspect-square cursor-pointer hover:opacity-90 flex flex-col items-center justify-center gap-0 overflow-hidden bg-black/5"
                 style={{
                   boxShadow: isSelected
                     ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
@@ -123,10 +124,10 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                   }
                 }}
               >
-                <span className="pointer-events-none pb-3">
+                <span className="pointer-events-none">
                   <CharacterTilePreview character={character} />
                 </span>
-                <span className="pointer-events-none absolute inset-x-1 bottom-1 truncate font-geneva-12 text-[11px] leading-none text-neutral-600">
+                <span className="pointer-events-none -mt-1 w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-none text-neutral-600">
                   {character.name}
                 </span>
               </button>

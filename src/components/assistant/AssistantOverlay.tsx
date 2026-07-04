@@ -5,7 +5,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import {
+  motion,
+  AnimatePresence,
+  useReducedMotion,
+  type Transition,
+} from "motion/react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/useAppStore";
 import {
@@ -22,6 +27,17 @@ import {
 import { ClippySprite, useAgentData, type AgentData } from "./ClippySprite";
 import { useAssistantChat } from "./useAssistantChat";
 import {
+  getAssistantAnimationIntent,
+  getDocumentToolSequenceKind,
+  getIdleAnimationPool,
+  isDocumentSequenceTool,
+  resolveDocumentToolSequencePlan,
+  selectAssistantAnimation,
+  type AssistantAnimationIntent,
+  type DocumentToolSequencePlan,
+} from "./assistantAnimation";
+import { markAssistantSoundInteraction } from "./assistantSounds";
+import {
   Streamdown,
   CHAT_STREAMDOWN_ANIMATED,
   CHAT_STREAMDOWN_PLUGINS,
@@ -29,6 +45,7 @@ import {
   STREAMDOWN_DISALLOWED_ELEMENTS,
   chatStreamdownComponents,
 } from "@/apps/chats/components/chat-messages/streamdown";
+import { ArrowUp } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 /** Distance (px) within which the assistant snaps to an edge on release. */
@@ -40,32 +57,35 @@ const CLICK_SLOP = 5;
 /** Press-and-hold duration (ms) that opens the context menu. */
 const LONG_PRESS_MS = 550;
 
-// Animation names vary across the original agents; pick what's available.
-const GREET_CANDIDATES = ["Greeting", "Show", "Wave", "Announce", "GetAttention"];
-const THINKING_CANDIDATES = [
-  "Thinking",
-  "Processing",
-  "Searching",
-  "Writing",
-  "CheckingSomething",
-];
-const EXTRA_IDLE_CANDIDATES = [
-  "LookLeft",
-  "LookRight",
-  "LookUp",
-  "LookDown",
-  "GetAttention",
-  "Blink",
-];
+const SNAP_SPRING: Transition = {
+  type: "spring",
+  stiffness: 380,
+  damping: 24,
+  mass: 0.75,
+};
+
+const BUBBLE_OPEN_SPRING: Transition = {
+  type: "spring",
+  stiffness: 360,
+  damping: 25,
+  mass: 0.7,
+};
+
+const BUBBLE_EXIT: Transition = {
+  duration: 0.12,
+  ease: "easeIn",
+};
+
 const REST_ANIMATION = "RestPose";
 
-function availableFrom(data: AgentData, candidates: string[]): string[] {
-  return candidates.filter((name) => data.animations[name]);
-}
-
-function pickRandom(pool: string[], fallback: string): string {
-  if (pool.length === 0) return fallback;
-  return pool[Math.floor(Math.random() * pool.length)];
+function isWorkingIntent(intent: AssistantAnimationIntent): boolean {
+  return (
+    intent === "thinking" ||
+    intent === "processing" ||
+    intent === "searching" ||
+    intent === "reading" ||
+    intent === "writing"
+  );
 }
 
 interface SnapEdges {
@@ -179,11 +199,13 @@ function AssistantOverlayInner() {
   const character = getAssistantCharacter(characterId);
   const { computeInsets } = useWindowInsets();
   const launchApp = useLaunchApp();
+  const reduceMotion = useReducedMotion();
 
   const chatHandle = useAssistantChat();
   const {
     latestAssistantText,
     statusLabels,
+    toolActivity,
     isAwaitingReply,
     isLoading,
     errorText,
@@ -199,6 +221,7 @@ function AssistantOverlayInner() {
     y: number;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const activateCharacterRef = useRef<() => void>(() => {});
 
   // --- Position + dragging ---------------------------------------------------
   const defaultPosition = useCallback((): AssistantPosition => {
@@ -227,6 +250,7 @@ function AssistantOverlayInner() {
   });
   const [isDragging, setIsDragging] = useState(false);
 
+  const overlayRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(position);
   positionRef.current = position;
 
@@ -257,9 +281,10 @@ function AssistantOverlayInner() {
   const openContextMenu = useCallback((clientX: number, clientY: number) => {
     // RightClickMenu positions itself absolutely inside this fixed container,
     // so convert from viewport coordinates to container-local coordinates.
+    const overlayBounds = overlayRef.current?.getBoundingClientRect();
     setContextMenuPos({
-      x: clientX - positionRef.current.x,
-      y: clientY - positionRef.current.y,
+      x: clientX - (overlayBounds?.left ?? positionRef.current.x),
+      y: clientY - (overlayBounds?.top ?? positionRef.current.y),
     });
   }, []);
 
@@ -275,8 +300,7 @@ function AssistantOverlayInner() {
 
       if (!drag.moved) {
         if (!drag.longPressFired) {
-          // Plain click: toggle the speech bubble.
-          setBubbleOpen((open) => !open);
+          activateCharacterRef.current();
         }
         return;
       }
@@ -354,15 +378,17 @@ function AssistantOverlayInner() {
 
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      markAssistantSoundInteraction();
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (contextMenuPos) return;
       const { clientX, clientY, pointerId } = event;
+      const overlayBounds = overlayRef.current?.getBoundingClientRect();
       const drag = {
         pointerId,
         startX: clientX,
         startY: clientY,
-        originX: positionRef.current.x,
-        originY: positionRef.current.y,
+        originX: overlayBounds?.left ?? positionRef.current.x,
+        originY: overlayBounds?.top ?? positionRef.current.y,
         moved: false,
         longPressTimer: null as ReturnType<typeof setTimeout> | null,
         longPressFired: false,
@@ -398,17 +424,49 @@ function AssistantOverlayInner() {
 
   // --- Sprite animation state machine -----------------------------------------
   const agentData = useAgentData(character.agentUrl);
+  const activityIntent = getAssistantAnimationIntent({
+    isLoading,
+    hasError: errorText !== null,
+    toolActivity,
+  });
   const [spriteAnim, setSpriteAnim] = useState<{ name: string; token: number }>({
     name: REST_ANIMATION,
     token: 0,
   });
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isLoadingRef = useRef(isLoading);
-  isLoadingRef.current = isLoading;
   const agentDataRef = useRef<AgentData | null>(null);
   agentDataRef.current = agentData;
+  const activityIntentRef = useRef(activityIntent);
+  activityIntentRef.current = activityIntent;
+  const previousActivityIntentRef = useRef(activityIntent);
+  const toolActivityRef = useRef(toolActivity);
+  toolActivityRef.current = toolActivity;
+  const sequencePlanRef = useRef<DocumentToolSequencePlan | null>(null);
+  const sequenceToolRef = useRef<string | null>(null);
+
+  const clearSequencePlan = useCallback(() => {
+    sequencePlanRef.current = null;
+    sequenceToolRef.current = null;
+  }, []);
+
+  const pickAnimation = useCallback(
+    (intent: AssistantAnimationIntent, randomValue?: number) => {
+      if (!agentDataRef.current) return REST_ANIMATION;
+      const activeTool = toolActivityRef.current;
+      return selectAssistantAnimation({
+        data: agentDataRef.current,
+        intent,
+        characterId: character.id,
+        toolName:
+          activeTool?.phase === "running" ? activeTool.name : undefined,
+        randomValue,
+      });
+    },
+    [character.id]
+  );
 
   const playAnimation = useCallback((name: string) => {
+    if (!name) return;
     if (idleTimerRef.current) {
       clearTimeout(idleTimerRef.current);
       idleTimerRef.current = null;
@@ -416,48 +474,174 @@ function AssistantOverlayInner() {
     setSpriteAnim((prev) => ({ name, token: prev.token + 1 }));
   }, []);
 
+  const startDocumentSequence = useCallback(
+    (plan: DocumentToolSequencePlan, toolName: string) => {
+      sequencePlanRef.current = plan;
+      sequenceToolRef.current = toolName;
+      playAnimation(plan.intro);
+    },
+    [playAnimation]
+  );
+
   // Greet when this character's animation data arrives (also on switch).
   useEffect(() => {
     if (!agentData) return;
-    playAnimation(pickRandom(availableFrom(agentData, GREET_CANDIDATES), REST_ANIMATION));
-  }, [agentData, playAnimation]);
+    playAnimation(pickAnimation("greeting"));
+  }, [agentData, pickAnimation, playAnimation]);
 
-  // Thinking pose while the AI is working.
+  // Reflect chat and structured tool lifecycle changes without restarting an
+  // animation for unrelated renders or repeated updates in the same state.
   useEffect(() => {
+    const previousIntent = previousActivityIntentRef.current;
+    previousActivityIntentRef.current = activityIntent;
     if (!agentData) return;
-    if (isLoading) {
-      playAnimation(
-        pickRandom(availableFrom(agentData, THINKING_CANDIDATES), REST_ANIMATION)
-      );
-    }
-  }, [isLoading, agentData, playAnimation]);
 
-  const handleAnimationEnd = useCallback(() => {
-    const data = agentDataRef.current;
-    if (!data) return;
-    if (isLoadingRef.current) {
-      // Keep visibly "working" until the reply lands.
-      setSpriteAnim((prev) => ({
-        name: pickRandom(availableFrom(data, THINKING_CANDIDATES), REST_ANIMATION),
-        token: prev.token + 1,
-      }));
+    const activeTool = toolActivityRef.current;
+    const activeToolName =
+      activeTool?.phase === "running" ? activeTool.name : null;
+
+    if (activityIntent === "idle") {
+      clearSequencePlan();
+      if (isWorkingIntent(previousIntent)) {
+        playAnimation(pickAnimation("success"));
+      }
       return;
     }
-    setSpriteAnim((prev) => ({ name: REST_ANIMATION, token: prev.token + 1 }));
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      const idlePool = [
-        ...Object.keys(data.animations).filter((name) =>
-          name.toLowerCase().startsWith("idle")
-        ),
-        ...availableFrom(data, EXTRA_IDLE_CANDIDATES),
-      ];
-      setSpriteAnim((prev) => ({
-        name: pickRandom(idlePool, REST_ANIMATION),
-        token: prev.token + 1,
-      }));
-    }, 4000 + Math.random() * 8000);
-  }, []);
+
+    const sequenceKind = activeToolName
+      ? getDocumentToolSequenceKind(activeToolName)
+      : null;
+
+    if (
+      sequenceKind &&
+      activeTool?.phase === "running" &&
+      (activityIntent === "reading" || activityIntent === "writing")
+    ) {
+      const plan = resolveDocumentToolSequencePlan(agentData, sequenceKind);
+      if (plan) {
+        const sameSequence =
+          sequenceToolRef.current === activeToolName &&
+          sequencePlanRef.current?.kind === plan.kind;
+        if (!sameSequence) {
+          startDocumentSequence(plan, activeToolName);
+        }
+        return;
+      }
+    }
+
+    if (
+      sequencePlanRef.current &&
+      (activityIntent === "thinking" ||
+        activityIntent === "processing" ||
+        activityIntent === "searching") &&
+      isWorkingIntent(previousIntent)
+    ) {
+      const plan = sequencePlanRef.current;
+      clearSequencePlan();
+      playAnimation(plan.returnAnim);
+      return;
+    }
+
+    if (
+      sequencePlanRef.current &&
+      activeToolName !== sequenceToolRef.current
+    ) {
+      clearSequencePlan();
+    }
+
+    playAnimation(pickAnimation(activityIntent));
+  }, [
+    activityIntent,
+    agentData,
+    clearSequencePlan,
+    pickAnimation,
+    playAnimation,
+    startDocumentSequence,
+    toolActivity,
+  ]);
+
+  const handleCharacterActivate = useCallback(() => {
+    markAssistantSoundInteraction();
+    setBubbleOpen(!bubbleOpen);
+    if (!bubbleOpen) {
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+
+    clearSequencePlan();
+    playAnimation(pickAnimation(bubbleOpen ? "goodbye" : "attention"));
+  }, [bubbleOpen, clearSequencePlan, pickAnimation, playAnimation]);
+  activateCharacterRef.current = handleCharacterActivate;
+
+  const handleCharacterKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      handleCharacterActivate();
+    },
+    [handleCharacterActivate]
+  );
+
+  const handleAnimationEnd = useCallback(
+    (endedAnimation: string) => {
+      const data = agentDataRef.current;
+      if (!data) return;
+
+      const currentIntent = activityIntentRef.current;
+      const activeTool = toolActivityRef.current;
+      const plan = sequencePlanRef.current;
+      const sequenceTool = sequenceToolRef.current;
+      const sequenceStillActive =
+        plan !== null &&
+        sequenceTool !== null &&
+        activeTool?.phase === "running" &&
+        activeTool.name === sequenceTool &&
+        isDocumentSequenceTool(sequenceTool);
+
+      if (sequenceStillActive && plan) {
+        if (endedAnimation === plan.intro) {
+          playAnimation(plan.continued ?? plan.intro);
+          return;
+        }
+        if (plan.continued && endedAnimation === plan.continued) {
+          playAnimation(plan.continued);
+          return;
+        }
+        playAnimation(plan.continued ?? plan.intro);
+        return;
+      }
+
+      if (plan && endedAnimation === plan.returnAnim) {
+        clearSequencePlan();
+      }
+
+      if (isWorkingIntent(currentIntent)) {
+        if (
+          plan &&
+          (currentIntent === "reading" || currentIntent === "writing")
+        ) {
+          playAnimation(plan.continued ?? plan.intro);
+          return;
+        }
+        playAnimation(pickAnimation(currentIntent));
+        return;
+      }
+
+      if (endedAnimation !== REST_ANIMATION) {
+        playAnimation(REST_ANIMATION);
+      }
+
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => {
+        if (activityIntentRef.current !== "idle") return;
+        const idlePool = getIdleAnimationPool(data);
+        playAnimation(
+          idlePool[Math.floor(Math.random() * idlePool.length)] ??
+            REST_ANIMATION
+        );
+      }, 4000 + Math.random() * 8000);
+    },
+    [clearSequencePlan, pickAnimation, playAnimation]
+  );
 
   useEffect(
     () => () => {
@@ -500,10 +684,22 @@ function AssistantOverlayInner() {
       {
         type: "item",
         label: t("common.assistant.contextMenu.quit"),
-        onSelect: () => setEnabled(false),
+        onSelect: () => {
+          playAnimation(pickAnimation("goodbye"));
+          window.setTimeout(() => setEnabled(false), 500);
+        },
       },
     ],
-    [t, characterId, setCharacterId, clearConversation, launchApp, setEnabled]
+    [
+      t,
+      characterId,
+      setCharacterId,
+      clearConversation,
+      launchApp,
+      setEnabled,
+      playAnimation,
+      pickAnimation,
+    ]
   );
 
   // --- Bubble placement --------------------------------------------------------
@@ -516,6 +712,7 @@ function AssistantOverlayInner() {
   const handleSubmit = useCallback(
     (event: React.FormEvent) => {
       event.preventDefault();
+      markAssistantSoundInteraction();
       const text = input.trim();
       if (!text || isLoading) return;
       setInput("");
@@ -535,6 +732,7 @@ function AssistantOverlayInner() {
       <ClippySprite
         mapUrl={character.mapUrl}
         data={agentData}
+        characterId={character.id}
         animation={spriteAnim.name}
         playToken={spriteAnim.token}
         onAnimationEnd={handleAnimationEnd}
@@ -543,18 +741,34 @@ function AssistantOverlayInner() {
   }, [character, agentData, spriteAnim, handleAnimationEnd]);
 
   return (
-    <div
-      className="fixed z-[5000] select-none"
-      style={{ left: position.x, top: position.y }}
+    <motion.div
+      ref={overlayRef}
+      initial={false}
+      animate={{ x: position.x, y: position.y }}
+      transition={
+        isDragging || reduceMotion ? { duration: 0 } : SNAP_SPRING
+      }
+      className="fixed left-0 top-0 z-[5000] select-none"
       data-assistant-overlay
     >
       <AnimatePresence>
         {bubbleOpen && !isDragging && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.85, y: bubbleBelow ? -6 : 6 }}
+            id="assistant-chat-bubble"
+            initial={{ opacity: 0, scale: 0.9, y: bubbleBelow ? -4 : 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.85, y: bubbleBelow ? -6 : 6 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            exit={{
+              opacity: 0,
+              scale: 0.96,
+              y: bubbleBelow ? -2 : 2,
+              transition: reduceMotion ? { duration: 0 } : BUBBLE_EXIT,
+            }}
+            transition={reduceMotion ? { duration: 0 } : BUBBLE_OPEN_SPRING}
+            style={{
+              transformOrigin: `${bubbleAlignRight ? "right" : "left"} ${
+                bubbleBelow ? "top" : "bottom"
+              }`,
+            }}
             className={cn(
               "absolute w-64 pointer-events-auto",
               bubbleBelow ? "top-full mt-2" : "bottom-full mb-2",
@@ -562,20 +776,22 @@ function AssistantOverlayInner() {
             )}
           >
             <div
-              className="relative rounded-lg border border-black bg-[#FFFFC8] px-3 py-2 shadow-[2px_2px_0_rgba(0,0,0,0.35)] font-geneva-12 text-[12px] leading-snug text-black"
+              className="relative rounded-[8px] border border-black bg-[#FFFFC8] px-3 pt-1.5 pb-1 shadow-[2px_2px_0_rgba(0,0,0,0.35)] font-geneva-12 text-[12px] leading-snug text-black"
               role="log"
               aria-live="polite"
             >
               {showTyping ? (
-                <ThinkingTicker
-                  items={[t("common.assistant.thinking"), ...statusLabels]}
-                />
+                <div className="py-1.5">
+                  <ThinkingTicker
+                    items={[t("common.assistant.thinking"), ...statusLabels]}
+                  />
+                </div>
               ) : errorText ? (
-                <div className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
+                <div className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words py-1.5">
                   {errorText}
                 </div>
               ) : (
-                <div className="max-h-40 overflow-y-auto break-words">
+                <div className="max-h-40 overflow-y-auto break-words py-1.5">
                   {bubbleText ? (
                     <Streamdown
                       className="ryos-chat-streamdown"
@@ -599,7 +815,10 @@ function AssistantOverlayInner() {
                   )}
                 </div>
               )}
-              <form onSubmit={handleSubmit} className="mt-2 flex gap-1">
+              <form
+                onSubmit={handleSubmit}
+                className="-mx-3 mt-1.5 flex items-center gap-1 border-t border-black/15 px-3 pt-1 pb-0.5"
+              >
                 <input
                   ref={inputRef}
                   type="text"
@@ -607,14 +826,17 @@ function AssistantOverlayInner() {
                   onChange={(event) => setInput(event.target.value)}
                   placeholder={t("common.assistant.inputPlaceholder")}
                   aria-label={t("common.assistant.inputPlaceholder")}
-                  className="min-w-0 flex-1 rounded border border-black/50 bg-white px-1.5 py-0.5 text-[12px] font-geneva-12 focus:outline-none focus:ring-1 focus:ring-black/40"
+                  className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-[12px] leading-tight font-geneva-12 placeholder:text-black/45 focus:outline-none focus:ring-0"
                 />
                 <button
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="rounded border border-black/50 bg-white px-1.5 py-0.5 text-[12px] font-geneva-12 disabled:opacity-40 hover:bg-black/5 active:bg-black/10"
+                  aria-label={t("common.assistant.send")}
+                  className="group flex size-7 shrink-0 items-center justify-center rounded-full disabled:opacity-35"
                 >
-                  {t("common.assistant.send")}
+                  <span className="flex size-5 items-center justify-center rounded-full bg-black/10 text-black/70 group-hover:bg-black/15 group-active:bg-black/20">
+                    <ArrowUp className="size-3" weight="bold" aria-hidden />
+                  </span>
                 </button>
               </form>
               {/* Bubble tail pointing at the character */}
@@ -640,7 +862,11 @@ function AssistantOverlayInner() {
         style={{ width: character.width, height: character.height }}
         onPointerDown={handlePointerDown}
         onContextMenu={handleContextMenu}
+        onKeyDown={handleCharacterKeyDown}
         role="button"
+        tabIndex={0}
+        aria-controls="assistant-chat-bubble"
+        aria-expanded={bubbleOpen}
         aria-label={t("common.assistant.label", { name: character.name })}
         title={character.name}
       >
@@ -652,6 +878,6 @@ function AssistantOverlayInner() {
         onClose={() => setContextMenuPos(null)}
         items={contextMenuItems}
       />
-    </div>
+    </motion.div>
   );
 }

@@ -2138,7 +2138,7 @@
       },
       "assistant": {
         "title": "Asistente de escritorio",
-        "description": "Invoca un personaje que charla y ayuda con trabajo de verdad",
+        "description": "Un personaje que charla y ayuda",
         "hint": "Consejo: haz clic derecho o mantén pulsado el personaje para abrir el menú rápido."
       }
     },

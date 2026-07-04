@@ -2138,7 +2138,7 @@
       },
       "assistant": {
         "title": "Assistant de bureau",
-        "description": "Invoquez un personnage qui discute et vous aide vraiment",
+        "description": "Un personnage qui discute et aide",
         "hint": "Astuce : cliquez droit ou appuyez longuement sur le personnage pour ouvrir le menu rapide."
       }
     },

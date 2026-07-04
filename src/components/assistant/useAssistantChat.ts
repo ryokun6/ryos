@@ -19,6 +19,7 @@ import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { getAssistantCharacter } from "./characters";
+import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
 
@@ -75,12 +76,47 @@ function getToolStatusLabel(toolName: string, input: unknown): string {
   });
 }
 
+function getLatestToolActivity(
+  messages: AIChatMessage[]
+): AssistantToolActivity | null {
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "assistant" || !Array.isArray(last.parts)) {
+    return null;
+  }
+
+  for (let index = last.parts.length - 1; index >= 0; index -= 1) {
+    const part = last.parts[index];
+    if (
+      typeof part.type !== "string" ||
+      !part.type.startsWith("tool-") ||
+      !("state" in part)
+    ) {
+      continue;
+    }
+
+    const phase =
+      part.state === "output-error"
+        ? "error"
+        : part.state === "output-available"
+          ? "complete"
+          : "running";
+    return {
+      name: part.type.slice(5),
+      phase,
+    };
+  }
+
+  return null;
+}
+
 export interface AssistantChatHandle {
   messages: AIChatMessage[];
   /** Latest visible assistant reply text (streams in as it is generated). */
   latestAssistantText: string;
   /** Friendly labels for tool calls in the in-flight assistant turn. */
   statusLabels: string[];
+  /** Latest structured tool lifecycle event in the current assistant turn. */
+  toolActivity: AssistantToolActivity | null;
   /** True while a reply is generating and the new turn has no text yet. */
   isAwaitingReply: boolean;
   isLoading: boolean;
@@ -201,6 +237,10 @@ export function useAssistantChat(): AssistantChatHandle {
   };
 
   const isLoading = status === "streaming" || status === "submitted";
+  const toolActivity = useMemo(
+    () => getLatestToolActivity(messages),
+    [messages]
+  );
 
   const latestAssistantText = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -332,6 +372,7 @@ export function useAssistantChat(): AssistantChatHandle {
     messages: messages as AIChatMessage[],
     latestAssistantText,
     statusLabels,
+    toolActivity,
     isAwaitingReply,
     isLoading,
     errorText,
