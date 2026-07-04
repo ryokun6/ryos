@@ -128,7 +128,6 @@ export function useAssistantChat(): AssistantChatHandle {
           handlersRef.current.onError(error);
         },
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 

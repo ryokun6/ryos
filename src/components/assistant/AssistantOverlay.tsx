@@ -21,6 +21,14 @@ import {
 } from "./characters";
 import { ClippySprite, useAgentData, type AgentData } from "./ClippySprite";
 import { useAssistantChat } from "./useAssistantChat";
+import {
+  Streamdown,
+  CHAT_STREAMDOWN_ANIMATED,
+  CHAT_STREAMDOWN_PLUGINS,
+  CHAT_STREAMDOWN_SHIKI_THEME,
+  STREAMDOWN_DISALLOWED_ELEMENTS,
+  chatStreamdownComponents,
+} from "@/apps/chats/components/chat-messages/streamdown";
 import { cn } from "@/lib/utils";
 
 /** Distance (px) within which the assistant snaps to an edge on release. */
@@ -111,37 +119,13 @@ function snapAxis(value: number, candidates: number[]): number {
   return best;
 }
 
-/** How long each thinking/tool status line stays before rolling to the next. */
-const THINKING_TICK_MS = 1600;
-
 /**
- * Vertical roller shown while a reply is being generated: cycles between
- * "Thinking…" and friendly tool-call status lines, rolling each line up and
- * out as the next one enters from below.
+ * Vertical roller shown while a reply is being generated: shows the latest
+ * status ("Thinking…" or a friendly tool-call line) and rolls the old line up
+ * and out only when a new one arrives.
  */
 function ThinkingTicker({ items }: { items: string[] }) {
-  const [tick, setTick] = useState(0);
-  const prevCountRef = useRef(items.length);
-
-  // Jump straight to a tool status line the moment a new one appears.
-  useEffect(() => {
-    if (items.length > prevCountRef.current) {
-      setTick(items.length - 1);
-    }
-    prevCountRef.current = items.length;
-  }, [items.length]);
-
-  useEffect(() => {
-    if (items.length <= 1) return;
-    const timer = setInterval(
-      () => setTick((value) => value + 1),
-      THINKING_TICK_MS
-    );
-    return () => clearInterval(timer);
-  }, [items.length]);
-
-  const index = items.length > 0 ? tick % items.length : 0;
-  const current = items[index] ?? "";
+  const current = items[items.length - 1] ?? "";
 
   return (
     <div
@@ -151,7 +135,7 @@ function ThinkingTicker({ items }: { items: string[] }) {
     >
       <AnimatePresence initial={false}>
         <motion.div
-          key={`${index}-${current}`}
+          key={`${items.length}-${current}`}
           initial={{ y: 14, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -14, opacity: 0 }}
@@ -608,9 +592,33 @@ function AssistantOverlayInner() {
                 <ThinkingTicker
                   items={[t("common.assistant.thinking"), ...statusLabels]}
                 />
-              ) : (
+              ) : errorText ? (
                 <div className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
-                  {bubbleText || t("common.assistant.emptyBubble")}
+                  {errorText}
+                </div>
+              ) : (
+                <div className="max-h-40 overflow-y-auto break-words">
+                  {bubbleText ? (
+                    <Streamdown
+                      className="ryos-chat-streamdown"
+                      components={chatStreamdownComponents}
+                      disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                      controls={false}
+                      lineNumbers={false}
+                      shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+                      plugins={CHAT_STREAMDOWN_PLUGINS}
+                      skipHtml
+                      unwrapDisallowed
+                      mode={isLoading ? "streaming" : "static"}
+                      animated={CHAT_STREAMDOWN_ANIMATED}
+                      isAnimating={isLoading}
+                      parseIncompleteMarkdown={isLoading}
+                    >
+                      {bubbleText}
+                    </Streamdown>
+                  ) : (
+                    t("common.assistant.emptyBubble")
+                  )}
                 </div>
               )}
               <form onSubmit={handleSubmit} className="mt-2 flex gap-1">
