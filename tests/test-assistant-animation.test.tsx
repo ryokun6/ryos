@@ -6,7 +6,7 @@ import {
   expect,
   test,
 } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
@@ -29,6 +29,7 @@ import {
   resolveDocumentToolSequencePlan,
   selectAssistantAnimation,
 } from "../src/components/assistant/assistantAnimation";
+import { ASSISTANT_CHARACTERS } from "../src/components/assistant/characters";
 
 const frameImages: Array<[number, number]> = [[0, 0]];
 const frame = { duration: 100, images: frameImages };
@@ -229,6 +230,29 @@ describe("assistant semantic animation selection", () => {
     ).toBe(true);
     expect(getAnimationCandidates("error").includes("Embarrassed")).toBe(true);
     expect(getAnimationCandidates("goodbye").includes("HideQuick")).toBe(true);
+  });
+});
+
+describe("assistant character assets", () => {
+  test("every registered character ships consistent sprite data", () => {
+    for (const character of ASSISTANT_CHARACTERS) {
+      const dir = join(
+        process.cwd(),
+        "public/assets/assistant",
+        character.id
+      );
+      const data = JSON.parse(
+        readFileSync(join(dir, "agent.json"), "utf8")
+      ) as AgentData;
+
+      expect(data.framesize).toEqual([character.width, character.height]);
+      expect(statSync(join(dir, "map.png")).size).toBeGreaterThan(0);
+      // Core clips the overlay/animation planner relies on.
+      for (const name of ["RestPose", "Show", "Hide"]) {
+        expect(data.animations[name]).toBeDefined();
+      }
+      expect(getIdleAnimationPool(data).length).toBeGreaterThan(0);
+    }
   });
 });
 

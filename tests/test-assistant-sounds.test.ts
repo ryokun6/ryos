@@ -23,6 +23,9 @@ describe("assistant sound mapping", () => {
       "genie",
       "peedy",
       "rover",
+      "officelogo",
+      "saeko",
+      "monkeyking",
     ] as const) {
       const src = resolveAssistantSoundSrc(characterId, "1");
       expect(src).toStartWith("data:audio/mpeg;base64,");
