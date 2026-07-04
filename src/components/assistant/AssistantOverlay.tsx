@@ -654,7 +654,10 @@ function AssistantOverlayInner() {
   // Drop transient animation state when the character changes. Without this,
   // switching characters mid-entrance leaves a stale entrance sequence and a
   // stale entrance clip name behind, which replays the entry animation (and
-  // blocks activity-driven clips) when the sprite next mounts.
+  // blocks activity-driven clips) when the sprite next mounts. The pending
+  // ambient idle timer must go too: it captured the previous character's clip
+  // pool and would otherwise fire mid-entrance with a clip the new character
+  // may not have (flashing it to its base pose and aborting the entry).
   const previousCharacterIdRef = useRef(character.id);
   useEffect(() => {
     if (previousCharacterIdRef.current === character.id) return;
@@ -662,6 +665,10 @@ function AssistantOverlayInner() {
     clearSequencePlan();
     clearEntranceSequence();
     clearPointingTimer();
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
     setSpriteAnim({ name: REST_ANIMATION, token: 0 });
   }, [
     character.id,
@@ -975,14 +982,23 @@ function AssistantOverlayInner() {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       idleTimerRef.current = setTimeout(() => {
         if (activityIntentRef.current !== "idle") return;
+        // Never override an entrance or exit clip.
+        if (entranceSequenceRef.current || quittingAnimationRef.current) return;
+        // Re-read the agent data: the captured `data` may belong to a
+        // character that has since been switched away, and its clip names
+        // would flash the current sprite to its base pose.
+        const currentData = agentDataRef.current;
+        if (!currentData) return;
         // After prolonged inactivity, prefer the character's deep-idle
         // (sleep) clips when it ships them.
         const deepIdlePool =
           Date.now() - lastActiveAtRef.current >= DEEP_IDLE_AFTER_MS
-            ? getDeepIdleAnimationPool(data)
+            ? getDeepIdleAnimationPool(currentData)
             : [];
         const idlePool =
-          deepIdlePool.length > 0 ? deepIdlePool : getIdleAnimationPool(data);
+          deepIdlePool.length > 0
+            ? deepIdlePool
+            : getIdleAnimationPool(currentData);
         playAnimation(
           idlePool[Math.floor(Math.random() * idlePool.length)] ??
             REST_ANIMATION

@@ -608,6 +608,7 @@ describe("assistant sprite overlays", () => {
   });
 
   test("falls back to the base pose when an entrance clip is missing", async () => {
+    const onAnimationEnd: string[] = [];
     const data: AgentData = {
       framesize: [64, 64],
       animations: {},
@@ -624,6 +625,7 @@ describe("assistant sprite overlays", () => {
           characterId="clippy"
           animation="Show"
           initiallyHidden
+          onAnimationEnd={(name) => onAnimationEnd.push(name)}
         />
       );
     });
@@ -631,6 +633,9 @@ describe("assistant sprite overlays", () => {
     expect(
       host.querySelectorAll("[data-assistant-sprite-layer]")
     ).toHaveLength(1);
+    // A missing clip must still notify the state machine, otherwise the
+    // sprite freezes at its base pose until an unrelated state change.
+    expect(onAnimationEnd).toEqual(["Show"]);
   });
 
   test("keeps the current frame during ordinary animation changes", async () => {

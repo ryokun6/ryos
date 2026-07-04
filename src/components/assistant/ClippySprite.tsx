@@ -204,6 +204,10 @@ export function ClippySprite({
       const anim = dataRef.current.animations[name];
       if (!anim || anim.frames.length === 0) {
         setFrameImages([[0, 0]]);
+        // Report the clip as ended so the overlay's state machine recovers
+        // (otherwise a missing clip freezes the sprite at its base pose until
+        // the next unrelated state change).
+        onEndRef.current?.(name);
         return;
       }
 
