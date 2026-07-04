@@ -1892,6 +1892,7 @@
         "displays": "显示器",
         "dotMac": "云端同步",
         "international": "语言与地区",
+        "assistant": "助理",
         "security": "安全性",
         "sharing": "备份与恢复",
         "softwareUpdate": "软件更新",
@@ -2132,6 +2133,11 @@
         "objects": "物品",
         "plants": "植物",
         "structures": "建筑"
+      },
+      "assistant": {
+        "title": "桌面助理",
+        "description": "召唤一个能聊天、还能帮你干活的角色",
+        "hint": "提示：右键点击或长按桌面上的角色可打开快捷菜单。"
       }
     },
     "dashboard": {
@@ -4540,6 +4546,27 @@
       "recentItems": "最近使用的项目",
       "softwareUpdate": "软件更新…",
       "systemPreferences": "系统偏好设置…"
+    },
+    "assistant": {
+      "contextMenu": {
+        "character": "角色",
+        "newConversation": "新对话",
+        "settings": "助理设置…",
+        "quit": "退出助理"
+      },
+      "emptyBubble": "你好！需要帮助时，随时点按我。",
+      "genericError": "哎呀，出了一点小状况。请稍后重试！📎",
+      "greetings": {
+        "hello": "你好！我是 {{name}}，你的桌面助手。如有任何需要，请点按我！👋",
+        "help": "看来你正在使用 ryOS！需要帮忙吗？我是 {{name}}，很高兴为你提供帮助。📎",
+        "looksLike": "你好！我是 {{name}} — 我可以打开 App、播放音乐或回答问题。尽管开口问我吧！✨",
+        "tip": "嘿！我是 {{name}}。提示：你可以将我拖移到任何地方，我会吸附到窗口和程序坞。🪄"
+      },
+      "inputPlaceholder": "问我任何问题…",
+      "label": "桌面助手 {{name}}",
+      "rateLimited": "呼，我需要休息一下！请稍后再试 — 或登录以进行更多对话。😴",
+      "send": "发送",
+      "thinking": "正在思考…"
     },
     "auth": {
       "changePassword": {

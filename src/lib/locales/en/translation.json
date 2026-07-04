@@ -202,6 +202,27 @@
       "enterFullScreen": "Enter Full Screen",
       "exitFullScreen": "Exit Full Screen"
     },
+    "assistant": {
+      "label": "{{name}} the desktop assistant",
+      "contextMenu": {
+        "character": "Character",
+        "newConversation": "New Conversation",
+        "settings": "Assistant Settings…",
+        "quit": "Quit Assistant"
+      },
+      "inputPlaceholder": "Ask me anything…",
+      "send": "Send",
+      "thinking": "Thinking…",
+      "emptyBubble": "Hi! Click me anytime you need help.",
+      "rateLimited": "Phew, I need a little break! Try me again in a bit — or sign in for more chats. 😴",
+      "genericError": "Oops, something tangled me up. Try again in a moment! 📎",
+      "greetings": {
+        "hello": "Hi there! I'm {{name}}, your desktop assistant. Click me if you need anything! 👋",
+        "help": "It looks like you're using ryOS! Need a hand with anything? I'm {{name}}, happy to help. 📎",
+        "looksLike": "Hello! {{name}} here — I can open apps, play music, or answer questions. Just ask! ✨",
+        "tip": "Hey! I'm {{name}}. Tip: you can drag me anywhere, and I'll snap to your windows and dock. 🪄"
+      }
+    },
     "appMenu": {
       "aboutApp": "About {{appName}}",
       "appHelp": "{{appName}} Help",
@@ -2956,6 +2977,7 @@
         "appearance": "Appearance",
         "desktopScreenSaver": "Desktop & Screen Saver",
         "international": "International",
+        "assistant": "Assistant",
         "security": "Security",
         "displays": "Displays",
         "sound": "Sound",
@@ -3410,7 +3432,12 @@
         "networkErrorTitle": "Network Error",
         "networkErrorDescription": "Failed to connect to server"
       },
-      "logOutButton": "Sign Out…"
+      "logOutButton": "Sign Out…",
+      "assistant": {
+        "title": "Desktop Assistant",
+        "description": "Summon a character that chats and helps with real work",
+        "hint": "Tip: right-click or long-press the character on the desktop for quick options."
+      }
     },
     "stickies": {
       "name": "Stickies",

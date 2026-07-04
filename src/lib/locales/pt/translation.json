@@ -1894,6 +1894,7 @@
         "displays": "Monitores",
         "dotMac": "Sincronização na Nuvem",
         "international": "Internacional",
+        "assistant": "Assistente",
         "security": "Segurança",
         "sharing": "Backup e Restauração",
         "softwareUpdate": "Atualização de Software",
@@ -2134,6 +2135,11 @@
         "objects": "Objetos",
         "plants": "Plantas",
         "structures": "Estruturas"
+      },
+      "assistant": {
+        "title": "Assistente de desktop",
+        "description": "Invoque um personagem que conversa e ajuda com trabalho de verdade",
+        "hint": "Dica: clique com o botão direito ou mantenha pressionado o personagem para abrir o menu rápido."
       }
     },
     "dashboard": {
@@ -4544,6 +4550,27 @@
       "recentItems": "Itens Recentes",
       "softwareUpdate": "Atualização de Software…",
       "systemPreferences": "Preferências do Sistema…"
+    },
+    "assistant": {
+      "contextMenu": {
+        "character": "Personagem",
+        "newConversation": "Nova conversa",
+        "settings": "Ajustes do Assistente…",
+        "quit": "Encerrar Assistente"
+      },
+      "emptyBubble": "Olá! Clique em mim sempre que precisar de ajuda.",
+      "genericError": "Ops, algo me atrapalhou. Tente novamente em instantes! 📎",
+      "greetings": {
+        "hello": "Olá! Eu sou {{name}}, seu assistente de mesa. Clique em mim se precisar de algo! 👋",
+        "help": "Parece que você está usando o ryOS! Precisa de ajuda com algo? Eu sou {{name}}, fico feliz em ajudar. 📎",
+        "looksLike": "Olá! Aqui é o {{name}} — posso abrir apps, reproduzir música ou responder perguntas. É só perguntar! ✨",
+        "tip": "Ei! Eu sou o {{name}}. Dica: você pode me arrastar para qualquer lugar e eu me ajustarei às suas janelas e ao Dock. 🪄"
+      },
+      "inputPlaceholder": "Pergunte-me qualquer coisa…",
+      "label": "{{name}}, o assistente de mesa",
+      "rateLimited": "Ufa, preciso de um descanso! Tente novamente daqui a pouco — ou inicie a sessão para conversar mais. 😴",
+      "send": "Enviar",
+      "thinking": "Pensando…"
     },
     "auth": {
       "changePassword": {

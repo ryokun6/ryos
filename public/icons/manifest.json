@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-30T21:02:50.291Z",
+  "generatedAt": "2026-07-04T04:46:47.440Z",
   "themes": {
     "default": [
       "admin.png",
@@ -10,6 +10,7 @@
       "applet.png",
       "applets.png",
       "applications.png",
+      "assistant.png",
       "bomb.svg",
       "books-folder.png",
       "books.png",
@@ -169,6 +170,7 @@
       "applet.png",
       "applets.png",
       "applications.png",
+      "assistant.png",
       "automator.png",
       "band.png",
       "bento.png",
@@ -255,6 +257,7 @@
       "applet.png",
       "applets.png",
       "applications.png",
+      "assistant.png",
       "bomb.svg",
       "books-folder.png",
       "books.png",
@@ -411,6 +414,7 @@
       "applet.png",
       "applets.png",
       "applications.png",
+      "assistant.png",
       "bomb.svg",
       "books-folder.png",
       "books.png",

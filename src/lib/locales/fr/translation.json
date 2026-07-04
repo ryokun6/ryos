@@ -1894,6 +1894,7 @@
         "displays": "Moniteurs",
         "dotMac": "Synchronisation Cloud",
         "international": "International",
+        "assistant": "Assistant",
         "security": "Sécurité",
         "sharing": "Sauvegarde et restauration",
         "softwareUpdate": "Mise à jour de logiciels",
@@ -2134,6 +2135,11 @@
         "objects": "Objets",
         "plants": "Plantes",
         "structures": "Structures"
+      },
+      "assistant": {
+        "title": "Assistant de bureau",
+        "description": "Invoquez un personnage qui discute et vous aide vraiment",
+        "hint": "Astuce : cliquez droit ou appuyez longuement sur le personnage pour ouvrir le menu rapide."
       }
     },
     "dashboard": {
@@ -4544,6 +4550,27 @@
       "recentItems": "Éléments récents",
       "softwareUpdate": "Mise à jour de logiciels…",
       "systemPreferences": "Préférences Système…"
+    },
+    "assistant": {
+      "contextMenu": {
+        "character": "Personnage",
+        "newConversation": "Nouvelle conversation",
+        "settings": "Réglages de l'assistant…",
+        "quit": "Quitter l'Assistant"
+      },
+      "emptyBubble": "Salut ! Cliquez sur moi dès que vous avez besoin d’aide.",
+      "genericError": "Oups, un petit problème est survenu. Réessayez dans un instant ! 📎",
+      "greetings": {
+        "hello": "Bonjour ! Je suis {{name}}, votre assistant de bureau. Cliquez sur moi si vous avez besoin de quoi que ce soit ! 👋",
+        "help": "On dirait que vous utilisez ryOS ! Besoin d’aide ? Je suis {{name}}, ravi de vous aider. 📎",
+        "looksLike": "Bonjour ! Ici {{name}} — je peux ouvrir des apps, lire de la musique ou répondre à vos questions. Demandez-moi ! ✨",
+        "tip": "Salut ! Je suis {{name}}. Astuce : vous pouvez me faire glisser n’importe où, je m’aimanterai à vos fenêtres et au Dock. 🪄"
+      },
+      "inputPlaceholder": "Posez-moi une question…",
+      "label": "{{name}}, l’assistant de bureau",
+      "rateLimited": "Ouf, j’ai besoin d’une petite pause ! Réessayez plus tard — ou connectez-vous pour continuer à discuter. 😴",
+      "send": "Envoyer",
+      "thinking": "Réflexion…"
     },
     "auth": {
       "changePassword": {

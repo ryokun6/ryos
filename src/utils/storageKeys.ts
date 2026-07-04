@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   contacts: "ryos:contacts",
   usernameRecovery: "ryos:auth:username-recovery",
   calculator: "ryos:calculator",
+  assistant: "ryos:assistant",
   staleReload: "ryos:stale-reload",
   theme: "ryos:theme",
 } as const;

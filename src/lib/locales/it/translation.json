@@ -1894,6 +1894,7 @@
         "displays": "Monitor",
         "dotMac": "Sincronizzazione Cloud",
         "international": "Internazionale",
+        "assistant": "Assistente",
         "security": "Sicurezza",
         "sharing": "Backup e ripristino",
         "softwareUpdate": "Aggiornamento Software",
@@ -2134,6 +2135,11 @@
         "objects": "Oggetti",
         "plants": "Piante",
         "structures": "Strutture"
+      },
+      "assistant": {
+        "title": "Assistente da scrivania",
+        "description": "Evoca un personaggio che chiacchiera e aiuta con il lavoro vero",
+        "hint": "Suggerimento: fai clic destro o tieni premuto sul personaggio per aprire il menu rapido."
       }
     },
     "dashboard": {
@@ -4544,6 +4550,27 @@
       "recentItems": "Elementi recenti",
       "softwareUpdate": "Aggiornamento Software…",
       "systemPreferences": "Preferenze di Sistema…"
+    },
+    "assistant": {
+      "contextMenu": {
+        "character": "Personaggio",
+        "newConversation": "Nuova conversazione",
+        "settings": "Impostazioni Assistente…",
+        "quit": "Esci dall'Assistente"
+      },
+      "emptyBubble": "Ciao! Cliccami ogni volta che ti serve aiuto.",
+      "genericError": "Ops, qualcosa mi ha ingarbugliato. Riprova tra un momento! 📎",
+      "greetings": {
+        "hello": "Ciao! Sono {{name}}, il tuo assistente per la Scrivania. Cliccami se ti serve qualcosa! 👋",
+        "help": "Sembra che tu stia usando ryOS! Ti serve una mano? Sono {{name}}, felice di aiutarti. 📎",
+        "looksLike": "Ciao! Sono {{name}} — posso aprire app, riprodurre musica o rispondere a domande. Chiedi pure! ✨",
+        "tip": "Ehi! Sono {{name}}. Suggerimento: puoi trascinarmi ovunque e mi aggancerò alle tue finestre e al Dock. 🪄"
+      },
+      "inputPlaceholder": "Chiedimi qualsiasi cosa…",
+      "label": "{{name}}, l'assistente per la Scrivania",
+      "rateLimited": "Uff, ho bisogno di una piccola pausa! Riprova tra poco — oppure accedi per altre chat. 😴",
+      "send": "Invia",
+      "thinking": "Sto pensando…"
     },
     "auth": {
       "changePassword": {

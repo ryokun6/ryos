@@ -15,6 +15,7 @@ import {
 import { AppearancePaneContent } from "./AppearancePaneContent";
 import { DesktopScreenSaverPaneContent } from "./DesktopScreenSaverPaneContent";
 import { InternationalPaneContent } from "./InternationalPaneContent";
+import { AssistantPaneContent } from "./AssistantPaneContent";
 import { SecurityPaneContent } from "./SecurityPaneContent";
 import { SoundPaneContent } from "./SoundPaneContent";
 import { DisplaysPaneContent } from "./DisplaysPaneContent";
@@ -195,6 +196,8 @@ export function ControlPanelsMacPaneRenderer(
           setTimezone={props.setTimezone}
         />
       );
+    case "assistant":
+      return <AssistantPaneContent t={t} tabStyles={props.tabStyles} />;
     case "security":
       return (
         <SecurityPaneContent

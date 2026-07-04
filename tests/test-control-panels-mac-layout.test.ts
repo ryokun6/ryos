@@ -198,10 +198,13 @@ describe("Control Panels macOS 10.3 layout", () => {
       ...categoriesSource.matchAll(/icon:\s*"([^"]+)"/g),
     ].map((match) => match[1]);
 
-    expect(iconMatches.length).toBe(10);
+    expect(iconMatches.length).toBe(11);
     for (const icon of iconMatches) {
       expect(macosxIcons.has(icon)).toBe(true);
     }
+
+    expect(categoriesSource.includes('icon: "assistant.png"')).toBe(true);
+    expect(getControlPanelCategory("assistant")?.icon).toBe("assistant.png");
 
     expect(categoriesSource.includes('icon: "desktop.png"')).toBe(false);
     expect(categoriesSource.includes("control-panels/desktop-screen-saver.png")).toBe(
@@ -608,11 +611,12 @@ describe("Control Panels macOS 10.3 layout", () => {
     ]);
 
     const allPaneIds = CONTROL_PANEL_SECTIONS.flatMap((section) => section.paneIds);
-    expect(allPaneIds).toHaveLength(10);
+    expect(allPaneIds).toHaveLength(11);
     expect(allPaneIds).toEqual([
       "appearance",
       "desktop-screen-saver",
       "international",
+      "assistant",
       "displays",
       "sound",
       "accounts",

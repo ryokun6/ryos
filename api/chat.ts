@@ -49,6 +49,8 @@ export default apiHandler<{
   systemState?: SystemState;
   model?: string;
   proactiveGreeting?: boolean;
+  persona?: string;
+  assistantName?: string;
 }>(
   {
     methods: ["POST"],
@@ -70,12 +72,21 @@ export default apiHandler<{
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
       proactiveGreeting: isProactiveGreeting,
+      persona,
+      assistantName,
     } = req.body as {
       messages: unknown[];
       systemState?: SystemState;
       model?: string;
       proactiveGreeting?: boolean;
+      persona?: string;
+      assistantName?: string;
     };
+
+    // "assistant" switches to the desktop-assistant persona (no Ryo identity,
+    // same tool access). Any other value falls back to the default Ryo chat.
+    const conversationChannel: "chat" | "assistant" =
+      persona === "assistant" ? "assistant" : "chat";
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = normalizeChatModel(queryModel || bodyModel || DEFAULT_MODEL);
@@ -295,7 +306,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     }
 
     const preparedConversation = await prepareRyoConversationModelInput({
-      channel: "chat",
+      channel: conversationChannel,
       messages: messages as SimpleConversationMessage[],
       systemState,
       username: isAuthenticated ? username : null,
@@ -304,6 +315,10 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       log,
       logError,
       preloadedMemoryContext: loadedMemoryContext,
+      ...(conversationChannel === "assistant" &&
+      typeof assistantName === "string"
+        ? { assistantName }
+        : {}),
     });
     const { enrichedMessages, loadedSections, staticSystemPrompt } =
       preparedConversation;

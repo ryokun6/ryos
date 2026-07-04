@@ -145,6 +145,29 @@ export const CONTROL_PANEL_SEARCH_ENTRIES: ControlPanelSearchEntry[] = [
     ],
   },
 
+  // Assistant
+  {
+    paneId: "assistant",
+    labelKey: `${CP}.panes.assistant`,
+    keywords: ["assistant", "clippy", "helper", "character", "agent"],
+  },
+  {
+    paneId: "assistant",
+    labelKey: `${CP}.assistant.title`,
+    keywords: [
+      "assistant",
+      "desktop assistant",
+      "clippy",
+      "merlin",
+      "rover",
+      "links",
+      "genie",
+      "peedy",
+      "character",
+      "office assistant",
+    ],
+  },
+
   // Security
   {
     paneId: "security",

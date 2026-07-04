@@ -1892,6 +1892,7 @@
         "displays": "Monitore",
         "dotMac": "Cloud-Synchronisierung",
         "international": "International",
+        "assistant": "Assistent",
         "security": "Sicherheit",
         "sharing": "Backup & Wiederherstellung",
         "softwareUpdate": "Softwareupdate",
@@ -2132,6 +2133,11 @@
         "objects": "Objekte",
         "plants": "Pflanzen",
         "structures": "Strukturen"
+      },
+      "assistant": {
+        "title": "Schreibtisch-Assistent",
+        "description": "Beschwöre einen Charakter, der plaudert und bei echter Arbeit hilft",
+        "hint": "Tipp: Rechtsklick oder langes Drücken auf den Charakter öffnet das Schnellmenü."
       }
     },
     "dashboard": {
@@ -4540,6 +4546,27 @@
       "recentItems": "Benutzte Objekte",
       "softwareUpdate": "Softwareaktualisierung…",
       "systemPreferences": "Systemeinstellungen …"
+    },
+    "assistant": {
+      "contextMenu": {
+        "character": "Charakter",
+        "newConversation": "Neue Unterhaltung",
+        "settings": "Assistent-Einstellungen …",
+        "quit": "Assistent beenden"
+      },
+      "emptyBubble": "Hi! Klicke mich jederzeit an, wenn du Hilfe brauchst.",
+      "genericError": "Hoppla, da hat sich etwas verheddert. Versuche es gleich noch einmal! 📎",
+      "greetings": {
+        "hello": "Hallo! Ich bin {{name}}, dein Schreibtisch-Assistent. Klicke mich an, wenn du etwas brauchst! 👋",
+        "help": "Es sieht so aus, als würdest du ryOS verwenden! Brauchst du Hilfe? Ich bin {{name}} und helfe dir gerne. 📎",
+        "looksLike": "Hallo! Hier ist {{name}} — ich kann Apps öffnen, Musik abspielen oder Fragen beantworten. Frag mich einfach! ✨",
+        "tip": "Hey! Ich bin {{name}}. Tipp: Du kannst mich überallhin ziehen, und ich docke an deine Fenster und das Dock an. 🪄"
+      },
+      "inputPlaceholder": "Frag mich etwas…",
+      "label": "{{name}} der Schreibtisch-Assistent",
+      "rateLimited": "Puh, ich brauche eine kleine Pause! Versuche es später noch einmal — oder melde dich für weitere Chats an. 😴",
+      "send": "Senden",
+      "thinking": "Überlegen…"
     },
     "auth": {
       "changePassword": {
