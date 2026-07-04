@@ -8,49 +8,17 @@ import { uploadBlobWithStorageInstruction } from "@/utils/storageUpload";
 import type { StorageUploadInstruction } from "@/utils/storageUpload";
 import type { SyncBlobRef } from "@/shared/sync2/types";
 import { postSyncBlobs } from "@/sync/transport";
+import { decodeBlobItemOffThread } from "@/sync/workerClient";
 
-function assertCompressionSupport(): void {
-  if (
-    typeof CompressionStream === "undefined" ||
-    typeof DecompressionStream === "undefined"
-  ) {
-    throw new Error("Cloud sync requires browser compression support.");
-  }
-}
-
-export async function gzipJson(value: unknown): Promise<Uint8Array> {
-  assertCompressionSupport();
-  const inputData = new TextEncoder().encode(JSON.stringify(value));
-  const stream = new Blob([inputData])
-    .stream()
-    .pipeThrough(new CompressionStream("gzip"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-
-export async function gunzipJson<T>(data: ArrayBuffer | Uint8Array): Promise<T> {
-  assertCompressionSupport();
-  const buffer = data instanceof Uint8Array ? (data.slice().buffer as ArrayBuffer) : data;
-  const stream = new Blob([buffer])
-    .stream()
-    .pipeThrough(new DecompressionStream("gzip"));
-  const text = await new Response(stream).text();
-  return JSON.parse(text) as T;
-}
-
-/** SHA-256 hex of the serialized item JSON. */
-export async function sha256Json(value: unknown): Promise<string> {
-  const payload = new TextEncoder().encode(JSON.stringify(value));
-  const digest = await crypto.subtle.digest("SHA-256", payload);
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("");
-}
+// Pure content transforms live in the shared codec module (also bundled by
+// the cloud sync worker); re-exported here for existing import sites.
+export { gunzipJson, gzipJson, sha256Json } from "@/sync/contentCodec";
 
 export interface BlobUploadItem {
   key: string;
   sha256: string;
-  /** Serialized store item (JSON-able). */
-  item: unknown;
+  /** Gzip of the serialized item JSON (precompressed off the main thread). */
+  compressed: Uint8Array;
 }
 
 export interface BlobUploadBatchProgress {
@@ -89,7 +57,7 @@ export async function uploadBlobItems(
   const refs = new Map<string, SyncBlobRef>();
   if (items.length === 0) return refs;
 
-  // Pre-compress to know sizes; dedupe identical content within the batch.
+  // Items arrive precompressed; dedupe identical content within the batch.
   const byDigest = new Map<string, { compressed: Uint8Array; keys: string[] }>();
   for (const item of items) {
     options.signal?.throwIfAborted();
@@ -98,8 +66,7 @@ export async function uploadBlobItems(
       existing.keys.push(item.key);
       continue;
     }
-    const compressed = await gzipJson(item.item);
-    byDigest.set(item.sha256, { compressed, keys: [item.key] });
+    byDigest.set(item.sha256, { compressed: item.compressed, keys: [item.key] });
   }
 
   const digests = Array.from(byDigest.keys());
@@ -258,7 +225,7 @@ async function readResponseWithProgress(
   return result.buffer;
 }
 
-/** Download and decode one blob item. */
+/** Download and decode one blob item (gunzip + parse run off-thread). */
 export async function downloadBlobItem(
   downloadUrl: string,
   options: BlobDownloadOptions = {}
@@ -267,7 +234,7 @@ export async function downloadBlobItem(
   if (!response.ok) {
     throw new Error(`Failed to fetch sync blob: ${response.status}`);
   }
-  return await gunzipJson<unknown>(
+  return await decodeBlobItemOffThread(
     await readResponseWithProgress(response, options)
   );
 }

@@ -31,7 +31,6 @@ import {
 } from "@/shared/sync2/types";
 import {
   getSyncClientId,
-  hashDoc,
   SyncClientState,
 } from "@/sync/state";
 import {
@@ -46,6 +45,10 @@ import {
   uploadBlobItems,
   type BlobUploadItem,
 } from "@/sync/blobs";
+import {
+  hashDocsOffThread,
+  prepareBlobUpsertsOffThread,
+} from "@/sync/workerClient";
 import {
   cloudSyncLog,
   summarizeDirtyScope,
@@ -69,7 +72,6 @@ const FLUSH_MAX_DEBOUNCE_MS = 3000;
 const FLUSH_IDLE_TIMEOUT_MS = 2000;
 const FLUSH_FAILURE_BACKOFF_BASE_MS = 2000;
 const FLUSH_FAILURE_BACKOFF_MAX_MS = 60_000;
-const BLOB_HASH_YIELD_INTERVAL = 4;
 const OPS_BATCH_SIZE = 400;
 const SYNC_FLUSH_LOCK = "ryos:cloud-sync-flush";
 
@@ -81,10 +83,6 @@ const SUSPICIOUS_DELETE_RATIO = 0.8;
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
-}
-
-async function yieldToMainThread(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
 interface EngineStatusCallbacks {
@@ -431,6 +429,17 @@ export class CloudSyncEngine {
     );
   }
 
+  private collectShadowHashes(
+    keys: Iterable<string>
+  ): Record<string, string> {
+    const shadowHashes: Record<string, string> = {};
+    for (const key of keys) {
+      const shadow = this.state.getShadow(key);
+      if (shadow) shadowHashes[key] = shadow.h;
+    }
+    return shadowHashes;
+  }
+
   private isNamespaceEnabled(namespace: SyncNamespace): boolean {
     const syncStore = useCloudSyncStore.getState();
     return (
@@ -547,20 +556,28 @@ export class CloudSyncEngine {
 
           // Upserts: keys whose content hash differs from the shadow.
           if (isSyncBlobNamespace(namespace)) {
+            // Serialize + digest + gzip run in the sync worker (or the
+            // yielding main-thread fallback); only changed items come back
+            // with compressed payloads.
+            const candidates = await prepareBlobUpsertsOffThread(
+              [...collected].map(([key, item]) => ({
+                key,
+                item: item as StoreItemWithKey,
+              })),
+              this.collectShadowHashes(collected.keys()),
+              Boolean(options.force)
+            );
+            if (this.stopped) return;
             const pendingUploads: BlobUploadItem[] = [];
             const pendingTimestamps = new Map<string, string>();
-            let itemIndex = 0;
-            for (const [key, item] of collected) {
-              if (itemIndex > 0 && itemIndex % BLOB_HASH_YIELD_INTERVAL === 0) {
-                await yieldToMainThread();
-                if (this.stopped) return;
-              }
-              itemIndex += 1;
-              const sha256 = await sha256Json(item);
-              const shadow = this.state.getShadow(key);
-              if (!options.force && shadow?.h === sha256) continue;
-              pendingUploads.push({ key, sha256, item });
-              pendingTimestamps.set(key, this.state.nextTimestamp());
+            for (const candidate of candidates) {
+              if (!candidate.compressed) continue;
+              pendingUploads.push({
+                key: candidate.key,
+                sha256: candidate.sha256,
+                compressed: candidate.compressed,
+              });
+              pendingTimestamps.set(candidate.key, this.state.nextTimestamp());
             }
             upsertCount += pendingUploads.length;
             if (pendingUploads.length > 0) {
@@ -591,8 +608,12 @@ export class CloudSyncEngine {
               }
             }
           } else {
+            const hashes = await hashDocsOffThread(
+              [...collected].map(([key, doc]) => ({ key, doc }))
+            );
+            if (this.stopped) return;
             for (const [key, doc] of collected) {
-              const h = hashDoc(doc);
+              const h = hashes.get(key)!;
               const shadow = this.state.getShadow(key);
               if (!options.force && shadow?.h === h) continue;
               const t = this.state.nextTimestamp();
@@ -1061,11 +1082,19 @@ export class CloudSyncEngine {
               namespaceOps,
               ctx
             );
+            const upsertHashes = await hashDocsOffThread(
+              namespaceOps
+                .filter((op) => !op.del)
+                .map((op) => ({ key: op.k, doc: op.v }))
+            );
             for (const op of namespaceOps) {
               if (op.del) {
                 this.state.deleteShadow(op.k);
               } else {
-                this.state.setShadow(op.k, { t: op.t, h: hashDoc(op.v) });
+                this.state.setShadow(op.k, {
+                  t: op.t,
+                  h: upsertHashes.get(op.k)!,
+                });
               }
             }
             // A codec can reject an op when a newer local value won an
@@ -1312,20 +1341,26 @@ export class CloudSyncEngine {
         }
 
         if (isSyncBlobNamespace(namespace)) {
+          const candidates = await prepareBlobUpsertsOffThread(
+            [...collected].map(([key, item]) => ({
+              key,
+              item: item as StoreItemWithKey,
+            })),
+            {},
+            true
+          );
+          if (this.stopped) {
+            throw new DOMException("Cloud sync stopped", "AbortError");
+          }
           const pendingUploads: BlobUploadItem[] = [];
           const pendingTimestamps = new Map<string, string>();
-          let itemIndex = 0;
-          for (const [key, item] of collected) {
-            if (itemIndex > 0 && itemIndex % BLOB_HASH_YIELD_INTERVAL === 0) {
-              await yieldToMainThread();
-              if (this.stopped) {
-                throw new DOMException("Cloud sync stopped", "AbortError");
-              }
-            }
-            itemIndex += 1;
-            const sha256 = await sha256Json(item);
-            pendingUploads.push({ key, sha256, item });
-            pendingTimestamps.set(key, this.state.nextTimestamp());
+          for (const candidate of candidates) {
+            pendingUploads.push({
+              key: candidate.key,
+              sha256: candidate.sha256,
+              compressed: candidate.compressed!,
+            });
+            pendingTimestamps.set(candidate.key, this.state.nextTimestamp());
           }
 
           if (pendingUploads.length > 0) {
@@ -1350,8 +1385,11 @@ export class CloudSyncEngine {
             }
           }
         } else {
+          const hashes = await hashDocsOffThread(
+            [...collected].map(([key, doc]) => ({ key, doc }))
+          );
           for (const [key, doc] of collected) {
-            const h = hashDoc(doc);
+            const h = hashes.get(key)!;
             const t = this.state.nextTimestamp();
             ops.push({ k: key, v: doc, t });
             shadowUpdates.set(key, { t, h });

@@ -24,6 +24,8 @@ const { SYNC_CODECS, isBlobCodec } = await import("../src/sync/codecs");
 const { STORES, dbOperations, ensureIndexedDBInitialized } = await import(
   "../src/utils/indexedDB"
 );
+const { runPrepareBlobUpsertTask } = await import("../src/sync/workerTasks");
+const { gunzipJson } = await import("../src/sync/contentCodec");
 
 async function deleteRyOsDatabase(): Promise<void> {
   await new Promise<void>((resolve, reject) => {
@@ -72,8 +74,21 @@ describe("Books cloud blob sync", () => {
     const docs = await SYNC_CODECS.books.collect({ db });
     db.close();
 
+    // Collect returns the raw item with binary content (as a Blob for
+    // Safari-safe cross-thread cloning); serialization happens in the sync
+    // worker task before upload.
     const item = docs.get(`books/item:${uuid}`) as IndexedDBStoreItemWithKey;
-    const uploaded = JSON.parse(JSON.stringify(item)) as IndexedDBStoreItemWithKey;
+    expect(item.value.content).toBeInstanceOf(Blob);
+
+    const candidate = await runPrepareBlobUpsertTask(
+      { key: `books/item:${uuid}`, item },
+      undefined,
+      true
+    );
+    expect(candidate.compressed).toBeDefined();
+    const uploaded = await gunzipJson<IndexedDBStoreItemWithKey>(
+      candidate.compressed!
+    );
 
     expect(typeof uploaded.value.content).toBe("string");
     expect(

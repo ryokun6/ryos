@@ -1828,8 +1828,10 @@ function createBlobCodec(
     usesIndexedDb: true,
     storeName,
     async collect(ctx, keys) {
-      // Blob codec collect returns serialized items keyed by sync key; the
-      // engine converts them to `{ blob: ref }` docs after content upload.
+      // Blob codec collect returns *raw* store items keyed by sync key
+      // (binary fields still Blob/ArrayBuffer). The engine hands them to the
+      // sync worker, which serializes (base64), digests, and gzips them off
+      // the main thread before converting to `{ blob: ref }` docs.
       const db = requireDb(ctx, namespace);
       const itemPrefix = `${namespace}/item:`;
       const itemKeys = keys
@@ -1840,13 +1842,9 @@ function createBlobCodec(
       const storeItems = itemKeys
         ? await readStoreItemsByKeys(db, storeName, itemKeys)
         : await readStoreItems(db, storeName);
-      const items = await serializeStoreItems(
-        storeItems.map((item) =>
-          prepareStoreItemForSync(storeName, item)
-        )
-      );
       const docs = new Map<string, unknown>();
-      for (const item of items) {
+      for (const storeItem of storeItems) {
+        const item = prepareStoreItemForSync(storeName, storeItem);
         if (item.key) {
           docs.set(`${namespace}/item:${item.key}`, item);
         }
