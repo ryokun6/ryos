@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantCharacterId } from "./characters";
 import { AssistantSoundPlayer } from "./assistantSounds";
+import { createDebugLogger } from "@/utils/debug";
+
+/**
+ * Sprite playback trace. Silent in production unless the user opts in via
+ * `localStorage.setItem("ryos:debug", "1")` (see `src/utils/debug.ts`).
+ */
+const spriteLog = createDebugLogger("AssistantSprite");
 
 /**
  * Minimal player for Microsoft Agent animation data (clippy.js format).
@@ -203,6 +210,7 @@ export function ClippySprite({
       soundPlayerRef.current?.stopAll();
       const anim = dataRef.current.animations[name];
       if (!anim || anim.frames.length === 0) {
+        spriteLog(`missing clip "${name}" — falling back to base pose`);
         setFrameImages([[0, 0]]);
         // Report the clip as ended so the overlay's state machine recovers
         // (otherwise a missing clip freezes the sprite at its base pose until
@@ -211,6 +219,11 @@ export function ClippySprite({
         return;
       }
 
+      spriteLog(
+        `start ${name} (${anim.frames.length} frames${
+          anim.useExitBranching ? ", exit-branching" : ""
+        })`
+      );
       const playback: PlaybackState = {
         name,
         anim,
@@ -307,6 +320,9 @@ export function ClippySprite({
       playback.anim.useExitBranching &&
       !(playback.name === animation && !playback.exiting)
     ) {
+      spriteLog(
+        `graceful exit of ${playback.name}, then ${animation} (exit-branch wind-down)`
+      );
       playback.pendingName = animation;
       playback.exiting = true;
       return;
