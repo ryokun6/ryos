@@ -115,36 +115,32 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
           {ASSISTANT_CHARACTERS.map((character) => {
             const isSelected = enabled && character.id === characterId;
             return (
-              <div
+              <button
                 key={character.id}
-                className="flex min-w-0 flex-col items-center gap-1"
+                type="button"
+                aria-label={character.name}
+                aria-pressed={isSelected}
+                className="preview-button relative w-full aspect-square cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden bg-black/5"
+                style={{
+                  boxShadow: isSelected
+                    ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+                    : undefined,
+                }}
+                onClick={() => handleCharacterSelect(character)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCharacterSelect(character);
+                  }
+                }}
               >
-                <button
-                  type="button"
-                  aria-label={character.name}
-                  aria-pressed={isSelected}
-                  className="preview-button relative w-full aspect-square cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden bg-black/5"
-                  style={{
-                    boxShadow: isSelected
-                      ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
-                      : undefined,
-                  }}
-                  onClick={() => handleCharacterSelect(character)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleCharacterSelect(character);
-                    }
-                  }}
-                >
-                  <span className="pointer-events-none">
-                    <CharacterTilePreview character={character} />
-                  </span>
-                </button>
-                <span className="max-w-full truncate font-geneva-12 text-[11px] leading-none text-neutral-600">
+                <span className="pointer-events-none pb-3">
+                  <CharacterTilePreview character={character} />
+                </span>
+                <span className="pointer-events-none absolute inset-x-1 bottom-1 truncate font-geneva-12 text-[11px] leading-none text-neutral-600">
                   {character.name}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
