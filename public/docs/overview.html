@@ -470,39 +470,25 @@
         <h1>Overview</h1>
 <p>ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 27 fully-functional apps, an AI assistant, and a complete virtual file system.</p>
 <p>Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.</p>
-<pre class="mermaid">graph TB
-    subgraph Presentation["Presentation Layer"]
-        Apps[27 App Modules]
-        UI[UI Components]
-        Themes[4 Themes]
-    end
-    
-    subgraph State["State Management"]
-        Zustand[Zustand Stores]
-    end
-    
-    subgraph Data["Data Layer"]
-        IndexedDB[(IndexedDB)]
-        LocalStorage[(LocalStorage)]
-        API[Vercel + Bun API]
-    end
-    
-    subgraph External["External Services"]
-        AI[AI Providers]
-        Pusher[Real-time<br/>Pusher / Local WS]
-        Redis[(Redis<br/>Upstash / Standard)]
-        ObjectStorage[(Object Storage<br/>Vercel Blob / S3)]
-    end
-    
-    Apps --> Zustand
-    UI --> Zustand
-    Zustand --> IndexedDB
-    Zustand --> LocalStorage
-    Zustand --> API
-    API --> AI
-    API --> Redis
-    API --> ObjectStorage
-    Apps --> Pusher</pre>
+<style>
+.latest-changelog-card { display: block; margin: 16px 0 24px; border: 1px solid var(--doc-border); border-radius: 12px; overflow: hidden; background: var(--doc-surface-alt); text-decoration: none; color: inherit; }
+.latest-changelog-card:hover { border-color: var(--doc-text-faint); }
+.latest-changelog-card img { display: block; width: 100%; height: auto; object-fit: contain; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }
+.latest-changelog-card-copy { padding: 14px 16px 16px; }
+.latest-changelog-card h3 { font-size: 14px; margin: 0 0 6px; }
+.latest-changelog-card p { color: var(--doc-text-secondary); font-size: 12px; margin: 0; }
+.latest-changelog-card p.latest-changelog-card-label { color: var(--doc-text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px; }
+.latest-changelog-card p.latest-changelog-card-cta { color: var(--doc-link); font-size: 11px; margin-top: 8px; }
+</style>
+<a class="latest-changelog-card" href="/docs/changelog">
+<img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy">
+<div class="latest-changelog-card-copy">
+<p class="latest-changelog-card-label">Latest changelog — July 2026</p>
+<h3>Books library</h3>
+<p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p>
+<p class="latest-changelog-card-cta">See what's new →</p>
+</div>
+</a>
 <h2>Quick Start</h2>
 <table><thead><tr><th>I want to...</th><th>Go to</th></tr></thead><tbody><tr><td>Learn about the apps</td><td><a href="/docs/apps">Apps Overview</a></td></tr><tr><td>Understand the architecture</td><td><a href="/docs/architecture">Architecture</a></td></tr><tr><td>Understand the API layer</td><td><a href="/docs/api-architecture">API Architecture</a></td></tr><tr><td>Build with the framework</td><td><a href="/docs/application-framework">Application Framework</a></td></tr><tr><td>Work with AI features</td><td><a href="/docs/ai-system">AI System</a></td></tr><tr><td>Use the APIs</td><td><a href="/docs/api-reference">API Reference</a></td></tr></tbody></table>
 <h2>Key Features</h2>

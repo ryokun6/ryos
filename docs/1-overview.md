@@ -4,41 +4,8 @@ ryOS is a web-based desktop environment that brings the nostalgia of classic ope
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
-```mermaid
-graph TB
-    subgraph Presentation["Presentation Layer"]
-        Apps[27 App Modules]
-        UI[UI Components]
-        Themes[4 Themes]
-    end
-    
-    subgraph State["State Management"]
-        Zustand[Zustand Stores]
-    end
-    
-    subgraph Data["Data Layer"]
-        IndexedDB[(IndexedDB)]
-        LocalStorage[(LocalStorage)]
-        API[Vercel + Bun API]
-    end
-    
-    subgraph External["External Services"]
-        AI[AI Providers]
-        Pusher[Real-time<br/>Pusher / Local WS]
-        Redis[(Redis<br/>Upstash / Standard)]
-        ObjectStorage[(Object Storage<br/>Vercel Blob / S3)]
-    end
-    
-    Apps --> Zustand
-    UI --> Zustand
-    Zustand --> IndexedDB
-    Zustand --> LocalStorage
-    Zustand --> API
-    API --> AI
-    API --> Redis
-    API --> ObjectStorage
-    Apps --> Pusher
-```
+<!-- latest-changelog-card -->
+
 
 ## Quick Start
 

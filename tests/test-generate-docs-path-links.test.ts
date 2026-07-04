@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { resolveInlineCodePath } from "../scripts/generate-docs";
+import {
+  buildLatestChangelogCard,
+  resolveInlineCodePath,
+} from "../scripts/generate-docs";
 
 describe("generate-docs inline code path links", () => {
   test("keeps repo-root test files out of src links", () => {
@@ -37,5 +40,49 @@ describe("generate-docs inline code path links", () => {
       fullPath: "src/stores/useLanguageStore.ts",
       matchedText: "stores/useLanguageStore.ts",
     });
+  });
+});
+
+describe("generate-docs latest changelog card", () => {
+  const changelogMd = `# Changelog
+
+Intro copy.
+
+---
+
+## July 2026
+
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books library</h3><p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p></div></article>
+</div>
+
+## June 2026
+
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-05-aqua-appearance-16x9.webp" alt="Aqua Glass" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass</h3><p>Older entry.</p></div></article>
+</div>
+`;
+
+  test("builds a card from the newest featured entry", () => {
+    const card = buildLatestChangelogCard(changelogMd);
+    expect(card).toContain('href="/docs/changelog"');
+    expect(card).toContain("Latest changelog — July 2026");
+    expect(card).toContain(
+      'src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp"',
+    );
+    expect(card).toContain("<h3>Books library</h3>");
+    expect(card).toContain(
+      "A wooden EPUB shelf keeps imports, reading progress, and Meditations together.",
+    );
+    // Must not pick up the older month's entry
+    expect(card).not.toContain("Aqua Glass");
+  });
+
+  test("falls back gracefully when no featured entry exists", () => {
+    const card = buildLatestChangelogCard("# Changelog\n\nNo entries yet.\n");
+    expect(card).toContain('href="/docs/changelog"');
+    expect(card).toContain("Latest changelog");
+    expect(card).toContain("See what's new");
+    expect(card).not.toContain("<img");
   });
 });
