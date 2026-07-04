@@ -14,23 +14,27 @@ import {
 } from "@/components/assistant/ClippySprite";
 import { controlPanelItemIconShell } from "./constants";
 
-const TILE_PREVIEW_HEIGHT = 64;
+const TILE_PREVIEW_MAX = 76;
 
-/** Static character preview (sprite rest pose or image) scaled into a tile. */
+/** Static character preview (sprite rest pose or image) scaled to fit a tile. */
 function CharacterTilePreview({ character }: { character: AssistantCharacter }) {
   const agentData = useAgentData(
     character.kind === "sprite" ? character.agentUrl : undefined
   );
-  const scale = Math.min(1, TILE_PREVIEW_HEIGHT / character.height);
+  const scale = Math.min(
+    1,
+    TILE_PREVIEW_MAX / character.height,
+    TILE_PREVIEW_MAX / character.width
+  );
 
   return (
     <div
-      className="flex items-end justify-center overflow-hidden"
-      style={{ height: TILE_PREVIEW_HEIGHT }}
+      style={{
+        width: character.width * scale,
+        height: character.height * scale,
+      }}
     >
-      <div
-        style={{ transform: `scale(${scale})`, transformOrigin: "bottom center" }}
-      >
+      <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
         {character.kind === "sprite" ? (
           agentData ? (
             <ClippySprite
@@ -111,32 +115,36 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
           {ASSISTANT_CHARACTERS.map((character) => {
             const isSelected = enabled && character.id === characterId;
             return (
-              <button
+              <div
                 key={character.id}
-                type="button"
-                aria-label={character.name}
-                aria-pressed={isSelected}
-                className="preview-button relative w-full aspect-video cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden"
-                style={{
-                  boxShadow: isSelected
-                    ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
-                    : undefined,
-                }}
-                onClick={() => handleCharacterSelect(character)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleCharacterSelect(character);
-                  }
-                }}
+                className="flex min-w-0 flex-col items-center gap-1"
               >
-                <span className="pointer-events-none -mt-4">
-                  <CharacterTilePreview character={character} />
-                </span>
-                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent pt-3 pb-1 text-center font-geneva-12 text-[10px] leading-none text-white">
+                <button
+                  type="button"
+                  aria-label={character.name}
+                  aria-pressed={isSelected}
+                  className="preview-button relative w-full aspect-square cursor-pointer hover:opacity-90 flex items-center justify-center overflow-hidden bg-black/5"
+                  style={{
+                    boxShadow: isSelected
+                      ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+                      : undefined,
+                  }}
+                  onClick={() => handleCharacterSelect(character)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleCharacterSelect(character);
+                    }
+                  }}
+                >
+                  <span className="pointer-events-none">
+                    <CharacterTilePreview character={character} />
+                  </span>
+                </button>
+                <span className="max-w-full truncate font-geneva-12 text-[11px] leading-none text-neutral-600">
                   {character.name}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
