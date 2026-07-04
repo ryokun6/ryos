@@ -3,6 +3,8 @@ import { ensureIndexedDBInitialized, STORES } from "./indexedDB";
 import {
   clearPendingFlush,
   ensureLifecycleFlush,
+  getPersistEpoch,
+  isPersistEpochCurrent,
   isPersistWritesHalted,
   registerAdapterResetter,
   registerPendingFlush,
@@ -14,11 +16,10 @@ import {
  * Debounced write-behind IndexedDB adapter for zustand's persist middleware.
  *
  * Use this instead of `createDebouncedPersistStorage` for slices that can
- * exceed localStorage's ~5–10MB per-origin quota. The Soundboard, for example,
- * stores base64-encoded audio recordings inline in its persisted state; on
- * localStorage that silently throws `QuotaExceededError` (historically crashing
- * the app on mobile Safari). IndexedDB has a far larger quota and stores the
- * snapshot via structured clone (no `JSON.stringify` on the hot path).
+ * exceed localStorage's ~5–10MB per-origin quota but still fit a single
+ * snapshot. Entity-heavy slices use `createSplitIndexedDBPersistStorage`
+ * instead. IndexedDB has a far larger quota and stores the snapshot via
+ * structured clone (no `JSON.stringify` on the hot path).
  *
  * Semantics mirror the localStorage adapter:
  *   - `setItem` records the latest snapshot and debounces the write; the
@@ -42,10 +43,13 @@ const STORE = STORES.PERSISTED_STATE;
 
 async function writeRecord<S>(
   name: string,
-  value: StorageValue<S>
-): Promise<void> {
+  value: StorageValue<S>,
+  expectedEpoch?: string
+): Promise<boolean> {
+  if (expectedEpoch && !isPersistEpochCurrent(expectedEpoch)) return false;
   const db = await ensureIndexedDBInitialized();
   try {
+    if (expectedEpoch && !isPersistEpochCurrent(expectedEpoch)) return false;
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
       tx.objectStore(STORE).put(value, name);
@@ -53,6 +57,7 @@ async function writeRecord<S>(
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
+    return true;
   } finally {
     db.close();
   }
@@ -92,34 +97,85 @@ async function deleteRecord(name: string): Promise<void> {
   }
 }
 
+async function moveLegacyRecord<S>(
+  canonicalName: string,
+  legacyName: string,
+  expectedEpoch: string
+): Promise<StorageValue<S> | null> {
+  if (!isPersistEpochCurrent(expectedEpoch)) return null;
+  const db = await ensureIndexedDBInitialized();
+  try {
+    if (!isPersistEpochCurrent(expectedEpoch)) return null;
+    return await new Promise<StorageValue<S> | null>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      const store = tx.objectStore(STORE);
+      let result: StorageValue<S> | null = null;
+      const canonicalRequest = store.get(canonicalName);
+
+      canonicalRequest.onsuccess = () => {
+        if (canonicalRequest.result != null) {
+          result = canonicalRequest.result as StorageValue<S>;
+          return;
+        }
+        const legacyRequest = store.get(legacyName);
+        legacyRequest.onsuccess = () => {
+          if (legacyRequest.result == null) return;
+          result = legacyRequest.result as StorageValue<S>;
+          store.put(result, canonicalName);
+          store.delete(legacyName);
+        };
+      };
+
+      tx.oncomplete = () => resolve(result);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () =>
+        reject(tx.error ?? new Error("Persist key migration aborted"));
+    });
+  } finally {
+    db.close();
+  }
+}
+
 /**
  * One-time migration of a slice that previously persisted to localStorage.
  * Returns the parsed value (now also written to IndexedDB) or null.
  */
 async function migrateFromLocalStorage<S>(
-  name: string
+  name: string,
+  legacyNames: readonly string[],
+  expectedEpoch: string
 ): Promise<StorageValue<S> | null> {
   if (typeof localStorage === "undefined") return null;
+  let sourceName: string | null = null;
   let raw: string | null = null;
-  try {
-    raw = localStorage.getItem(name);
-  } catch {
-    return null;
+  for (const candidate of [name, ...legacyNames]) {
+    try {
+      raw = localStorage.getItem(candidate);
+    } catch {
+      return null;
+    }
+    if (raw) {
+      sourceName = candidate;
+      break;
+    }
   }
-  if (!raw) return null;
+  if (!raw || !sourceName) return null;
   let parsed: StorageValue<S>;
   try {
     parsed = JSON.parse(raw) as StorageValue<S>;
   } catch (error) {
     console.error(
-      `[indexedDBPersistStorage] Failed to parse legacy "${name}":`,
+      `[indexedDBPersistStorage] Failed to parse legacy "${sourceName}":`,
       error
     );
     return null;
   }
   try {
-    await writeRecord(name, parsed);
-    localStorage.removeItem(name);
+    if (!isPersistEpochCurrent(expectedEpoch)) return parsed;
+    const committed = await writeRecord(name, parsed, expectedEpoch);
+    if (committed && isPersistEpochCurrent(expectedEpoch)) {
+      localStorage.removeItem(sourceName);
+    }
   } catch (error) {
     // Keep the legacy key if the copy failed so data isn't lost.
     console.error(
@@ -131,22 +187,33 @@ async function migrateFromLocalStorage<S>(
 }
 
 export function createIndexedDBPersistStorage<S>(
-  options: { delayMs?: number } = {}
+  options: { delayMs?: number; legacyNames?: readonly string[] } = {}
 ): PersistStorage<S> {
   const delayMs = options.delayMs ?? 500;
+  const legacyNames = [...new Set(options.legacyNames ?? [])];
+  const adapterEpoch = getPersistEpoch();
   let timer: ReturnType<typeof setTimeout> | null = null;
   let pendingName: string | null = null;
   let pendingValue: StorageValue<S> | null = null;
   // Resolves once the most recently kicked-off write commits.
   let inFlight: Promise<void> = Promise.resolve();
   let writeError: unknown = null;
+  const hydratingNames = new Set<string>();
+  const writesDuringHydration = new Set<string>();
 
   const writeNow = () => {
     if (timer !== null) {
       clearTimeout(timer);
       timer = null;
     }
-    if (isPersistWritesHalted()) {
+    if (pendingName !== null && hydratingNames.has(pendingName)) {
+      writesDuringHydration.add(pendingName);
+      return;
+    }
+    if (
+      isPersistWritesHalted() ||
+      !isPersistEpochCurrent(adapterEpoch)
+    ) {
       pendingName = null;
       pendingValue = null;
       return;
@@ -160,7 +227,7 @@ export function createIndexedDBPersistStorage<S>(
     // Serialize commits for this adapter. Without chaining, a slower older
     // transaction could finish after a newer snapshot and overwrite it.
     inFlight = inFlight
-      .then(() => writeRecord(name, value))
+      .then(() => writeRecord(name, value, adapterEpoch))
       .then(() => {
         writeError = null;
       })
@@ -190,6 +257,8 @@ export function createIndexedDBPersistStorage<S>(
     pendingValue = null;
     inFlight = Promise.resolve();
     writeError = null;
+    hydratingNames.clear();
+    writesDuringHydration.clear();
   };
 
   registerSettler(settle);
@@ -201,23 +270,63 @@ export function createIndexedDBPersistStorage<S>(
       if (pendingName === name && pendingValue !== null) {
         return pendingValue;
       }
+      hydratingNames.add(name);
       try {
         const record = await readRecord<S>(name);
         if (record !== undefined && record !== null) {
           return record;
         }
+        for (const legacyName of legacyNames) {
+          try {
+            const legacyRecord = await moveLegacyRecord<S>(
+              name,
+              legacyName,
+              adapterEpoch
+            );
+            if (legacyRecord) return legacyRecord;
+          } catch (error) {
+            console.error(
+              `[indexedDBPersistStorage] Failed to rename "${legacyName}" to "${name}":`,
+              error
+            );
+            const retainedLegacy = await readRecord<S>(legacyName);
+            if (retainedLegacy != null) return retainedLegacy;
+          }
+        }
+        // No IndexedDB record yet — fall back to legacy localStorage slices.
+        return migrateFromLocalStorage<S>(
+          name,
+          legacyNames,
+          adapterEpoch
+        );
       } catch (error) {
         console.error(
           `[indexedDBPersistStorage] Failed to read "${name}":`,
           error
         );
+      } finally {
+        hydratingNames.delete(name);
+        if (writesDuringHydration.delete(name) && pendingName === name) {
+          if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+          }
+          pendingName = null;
+          pendingValue = null;
+          clearPendingFlush(name);
+        }
       }
-      // No IndexedDB record yet — fall back to the legacy localStorage slice.
-      return migrateFromLocalStorage<S>(name);
+      return null;
     },
 
     setItem: (name, value) => {
-      if (isPersistWritesHalted()) return;
+      if (
+        isPersistWritesHalted() ||
+        !isPersistEpochCurrent(adapterEpoch)
+      ) {
+        return;
+      }
+      if (hydratingNames.has(name)) writesDuringHydration.add(name);
       ensureLifecycleFlush();
       pendingName = name;
       pendingValue = value;
@@ -227,6 +336,7 @@ export function createIndexedDBPersistStorage<S>(
     },
 
     removeItem: async (name) => {
+      if (!isPersistEpochCurrent(adapterEpoch)) return;
       if (pendingName === name) {
         pendingName = null;
         pendingValue = null;
@@ -238,6 +348,9 @@ export function createIndexedDBPersistStorage<S>(
       }
       try {
         await deleteRecord(name);
+        for (const legacyName of legacyNames) {
+          await deleteRecord(legacyName);
+        }
       } catch (error) {
         console.error(
           `[indexedDBPersistStorage] Failed to remove "${name}":`,
@@ -245,7 +358,12 @@ export function createIndexedDBPersistStorage<S>(
         );
       }
       try {
-        if (typeof localStorage !== "undefined") localStorage.removeItem(name);
+        if (typeof localStorage !== "undefined") {
+          localStorage.removeItem(name);
+          for (const legacyName of legacyNames) {
+            localStorage.removeItem(legacyName);
+          }
+        }
       } catch {
         // ignore — best-effort legacy cleanup
       }

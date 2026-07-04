@@ -6,14 +6,13 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 <style>
 .changelog-month-note { color: var(--doc-text-tertiary); margin: -6px 0 14px; }
-.changelog-feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 12px 0 20px; }
+.changelog-feature-grid { display: flex; flex-direction: column; gap: 18px; margin: 12px 0 20px; }
 .changelog-feature { overflow: hidden; border: 1px solid var(--doc-border); border-radius: 12px; background: var(--doc-surface-alt); }
-.changelog-feature:first-child { grid-column: 1 / -1; }
 .changelog-feature img { display: block; width: 100%; height: auto; object-fit: contain; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }
 .changelog-feature-copy { padding: 14px 16px 16px; }
 .changelog-feature h3 { font-size: 14px; margin: 0 0 6px; }
 .changelog-feature p { color: var(--doc-text-secondary); font-size: 12px; margin: 0; }
-@media screen and (max-width: 768px) { .changelog-feature-grid { grid-template-columns: 1fr; gap: 14px; } .changelog-feature:first-child { grid-column: auto; } .changelog-feature-copy { padding: 12px 14px 14px; } }
+@media screen and (max-width: 768px) { .changelog-feature-grid { gap: 14px; } .changelog-feature-copy { padding: 12px 14px 14px; } }
 </style>
 
 ---
@@ -22,10 +21,6 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 <div class="changelog-feature-grid">
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books library</h3><p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-02-cloud-sync-16x9.webp" alt="Cloud Sync in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cloud Sync</h3><p>Books, settings, and files stay current across signed-in devices.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-03-international-16x9.webp" alt="International in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>International</h3><p>Language, date, time, and time-zone controls live in one preference pane.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-04-preview-16x9.webp" alt="Preview in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Preview</h3><p>Images, PDFs, Markdown, HTML, and structured text open in a dedicated viewer.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-05-aqua-appearance-16x9.webp" alt="Aqua Glass theme in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass theme</h3><p>Frosted windows, wallpaper-aware color, and selectable accents reshape the desktop.</p></div></article>
 </div>
 <details>
 <summary>More from this month (11)</summary>
@@ -47,11 +42,10 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 ## June 2026
 
 <div class="changelog-feature-grid">
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-01-aqua-glass-16x9.webp" alt="Aqua Glass in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass</h3><p>The new macOS material brings translucent chrome and wallpaper-aware controls.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-02-cloud-sync-16x9.webp" alt="Cloud Sync v2 in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cloud Sync v2</h3><p>Journal-based delta sync replaces full-state uploads and resolves changes per key.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-03-books-16x9.webp" alt="Books in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books</h3><p>A skeuomorphic shelf, EPUB reader, and synced progress turn ryOS into a reading space.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-04-preview-16x9.webp" alt="Preview in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Preview</h3><p>A focused document viewer adds Finder associations, import, Save As, and export.</p></div></article>
-<article class="changelog-feature"><img src="/docs-assets/changelog/2026-06-05-international-16x9.webp" alt="International preferences in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>International preferences</h3><p>An interactive world map sets the time zone used across the system.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-05-aqua-appearance-16x9.webp" alt="Aqua Glass in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Aqua Glass</h3><p>The new macOS material brings translucent chrome and wallpaper-aware controls.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-02-cloud-sync-16x9.webp" alt="Cloud Sync v2 in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cloud Sync v2</h3><p>Journal-based delta sync replaces full-state uploads and resolves changes per key.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-04-preview-16x9.webp" alt="Preview in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Preview</h3><p>A focused document viewer adds Finder associations, import, Save As, and export.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-03-international-16x9.webp" alt="International preferences in the June 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>International preferences</h3><p>An interactive world map sets the time zone used across the system.</p></div></article>
 </div>
 <details>
 <summary>More from this month (43)</summary>

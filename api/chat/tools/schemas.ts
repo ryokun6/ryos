@@ -37,6 +37,9 @@ import {
  * Converts empty/whitespace strings and placeholder values to undefined
  */
 export const normalizeOptionalString = (value: unknown) => {
+  if (value === null) {
+    return undefined;
+  }
   if (typeof value === "string") {
     const trimmed = value.trim().toLowerCase();
     // Treat empty strings and common AI placeholder values as undefined
@@ -1016,34 +1019,82 @@ const TV_ONLY_MEDIA_FIELDS = [
   "channelNumber",
 ] as const;
 
+const MEDIA_CONTROL_PARAMETER_FIELDS = [
+  "id",
+  "title",
+  "artist",
+  "enableTranslation",
+  "enableFullscreen",
+  "enableVideo",
+  ...TV_ONLY_MEDIA_FIELDS,
+] as const;
+
+const getAllowedMediaControlFields = (
+  target: unknown,
+  action: unknown
+): ReadonlySet<string> => {
+  const allowed = new Set<string>();
+
+  if (target === "music") {
+    allowed.add("enableTranslation");
+    allowed.add("enableFullscreen");
+    allowed.add("enableVideo");
+  } else if (target === "karaoke") {
+    allowed.add("enableTranslation");
+    allowed.add("enableFullscreen");
+  }
+
+  switch (action) {
+    case "playKnown":
+      allowed.add("id");
+      allowed.add("title");
+      allowed.add("artist");
+      break;
+    case "addAndPlay":
+      allowed.add("id");
+      break;
+    case "tune":
+      allowed.add("channelId");
+      allowed.add("channelNumber");
+      break;
+    case "createChannel":
+      allowed.add("prompt");
+      allowed.add("name");
+      break;
+    case "deleteChannel":
+      allowed.add("channelId");
+      break;
+    case "addVideo":
+      allowed.add("channelId");
+      allowed.add("videoId");
+      allowed.add("url");
+      allowed.add("title");
+      allowed.add("artist");
+      break;
+    case "removeVideo":
+      allowed.add("channelId");
+      allowed.add("removeVideoId");
+      break;
+  }
+
+  return allowed;
+};
+
 const normalizeMediaControlInput = (value: unknown): unknown => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return value;
   }
 
   const data: Record<string, unknown> = { ...value };
-  const target = data.target;
 
-  // Some tool clients populate every optional field with a neutral default.
-  // Drop only values that cannot express an intent for the selected target.
-  if (target !== "music" && data.enableVideo === false) {
-    delete data.enableVideo;
-  }
-  if (
-    target !== "music" &&
-    target !== "karaoke" &&
-    data.enableFullscreen === false
-  ) {
-    delete data.enableFullscreen;
-  }
-  if (
-    data.channelNumber === null ||
-    (target !== "tv" && data.channelNumber === 0)
-  ) {
-    delete data.channelNumber;
-  }
-  for (const field of TV_ONLY_MEDIA_STRING_FIELDS) {
-    if (data[field] === null) {
+  // Some tool clients populate every optional field, including fields that
+  // belong to a different target or action. Keep only parameters that can
+  // affect the requested operation, then validate those parameters normally.
+  const target = data.target === undefined ? "music" : data.target;
+  const action = data.action === undefined ? "toggle" : data.action;
+  const allowedFields = getAllowedMediaControlFields(target, action);
+  for (const field of MEDIA_CONTROL_PARAMETER_FIELDS) {
+    if (!allowedFields.has(field)) {
       delete data[field];
     }
   }

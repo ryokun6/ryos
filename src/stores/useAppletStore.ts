@@ -1,5 +1,12 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  LEGACY_STORAGE_KEYS,
+  migrateLocalStorageKey,
+  STORAGE_KEYS,
+} from "@/utils/storageKeys";
+
+migrateLocalStorageKey(LEGACY_STORAGE_KEYS.applet, STORAGE_KEYS.applet);
 
 interface WindowDimensions {
   width: number;
@@ -40,7 +47,7 @@ export const useAppletStore = create<AppletStoreState>()(
       },
     }),
     {
-      name: "applet-storage",
+      name: STORAGE_KEYS.applet,
       storage: createJSONStorage(() => localStorage),
     }
   )

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 
 export type BooksColumnMode = "auto" | "single" | "double";
 export type BooksThemeOverride =
@@ -476,7 +477,7 @@ export const useBooksStore = create<BooksStoreState>()(
     }),
     {
       name: "ryos:books",
-      storage: createJSONStorage(() => localStorage),
+      storage: createIndexedDBPersistStorage(),
       // v5+: backfill `settings.speechRate` (added in v4 without a version
       // bump, so persisted settings were missing it after the shallow merge).
       // v6: raised line-height floor.

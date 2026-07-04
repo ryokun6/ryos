@@ -2,7 +2,10 @@ import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
-import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
+import {
+  createSplitIndexedDBPersistStorage,
+  type SplitPersistSnapshot,
+} from "@/utils/splitIndexedDBPersistStorage";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { StoredContent } from "@/utils/indexedDBOperations";
@@ -656,6 +659,45 @@ const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 export const FILES_STORE_VERSION = 14; // Add Meditations as a default Books EPUB
 export const FILES_STORE_PERSIST_KEY = "ryos:files";
 
+type FilesPersistedState = Pick<FilesStoreState, "items" | "libraryState">;
+
+const splitFilesState = (
+  state: FilesPersistedState
+): SplitPersistSnapshot<FilesPersistedState> => ({
+  metadata: { items: {}, libraryState: state.libraryState },
+  rows: {
+    [STORES.VFS_ITEMS]: Object.entries(state.items).map(([path, item]) => ({
+      key: path,
+      value: { item },
+      revision: item,
+    })),
+  },
+});
+
+const mergeFilesState = (
+  metadata: FilesPersistedState,
+  rows: Readonly<
+    Record<
+      string,
+      readonly { key: string; value: Record<string, unknown> }[]
+    >
+  >
+): FilesPersistedState => {
+  const items: Record<string, FileSystemItem> = {};
+  for (const row of rows[STORES.VFS_ITEMS] ?? []) {
+    const item = row.value.item;
+    if (
+      item &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      "path" in item
+    ) {
+      items[row.key] = item as FileSystemItem;
+    }
+  }
+  return { ...metadata, items };
+};
+
 const DEFAULT_MEDITATIONS_BOOK_PATH = "/Books/Meditations - Marcus Aurelius.epub";
 const DEFAULT_MEDITATIONS_BOOK_NAME = "Meditations - Marcus Aurelius.epub";
 const DEFAULT_MEDITATIONS_BOOK_SIZE = 1378157;
@@ -829,7 +871,7 @@ const initialFilesData: FilesStoreState = {
 } as FilesStoreState;
 
 export const useFilesStore = create<FilesStoreState>()(
-  persist(
+  persist<FilesStoreState, [], [], FilesPersistedState>(
     (set, get) => ({
       ...initialFilesData,
 
@@ -1721,12 +1763,21 @@ export const useFilesStore = create<FilesStoreState>()(
     {
       name: FILES_STORE_PERSIST_KEY,
       version: FILES_STORE_VERSION,
-      storage: createIndexedDBPersistStorage(),
+      storage: createSplitIndexedDBPersistStorage<FilesPersistedState>({
+        stores: [STORES.VFS_ITEMS],
+        layoutVersion: 1,
+        persistVersion: FILES_STORE_VERSION,
+        split: splitFilesState,
+        merge: mergeFilesState,
+      }),
       partialize: (state) => ({
         items: state.items, // Persist the entire file structure
         libraryState: state.libraryState,
       }),
-      migrate: (persistedState: unknown, version: number) => {
+      migrate: (
+        persistedState: unknown,
+        version: number
+      ): FilesPersistedState => {
         if (version < 5) {
           const oldState = persistedState as {
             items: Record<string, FileSystemItem>;
@@ -1910,7 +1961,7 @@ export const useFilesStore = create<FilesStoreState>()(
           };
         }
 
-        return persistedState;
+        return persistedState as FilesPersistedState;
       },
       onRehydrateStorage: () => {
         return (state, error) => {

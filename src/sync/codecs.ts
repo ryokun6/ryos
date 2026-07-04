@@ -150,16 +150,48 @@ export function getDeletionMarkerForKey(key: string): string | null {
   return null;
 }
 
-export function clearDeletionMarkerForKey(key: string): void {
+export function clearDeletionMarkersForKeys(keys: Iterable<string>): number {
+  const idsByBucket = new Map<CloudSyncDeletionBucket, Set<string>>();
+  let clearedCount = 0;
+  for (const key of keys) {
+    for (const [bucket, prefix] of Object.entries(
+      DELETION_BUCKET_PREFIXES
+    ) as Array<[CloudSyncDeletionBucket, string]>) {
+      if (!key.startsWith(prefix)) continue;
+      const ids = idsByBucket.get(bucket) ?? new Set<string>();
+      ids.add(key.slice(prefix.length));
+      idsByBucket.set(bucket, ids);
+      break;
+    }
+  }
+
   const store = useCloudSyncStore.getState();
+  for (const [bucket, ids] of idsByBucket) {
+    const markers = store.deletionMarkers[bucket];
+    const presentIds = [...ids].filter((id) => id in markers);
+    if (presentIds.length === 0) continue;
+    store.clearDeletedKeys(bucket, presentIds);
+    clearedCount += presentIds.length;
+  }
+  return clearedCount;
+}
+
+export function pruneDeletionMarkersWithoutShadow(
+  shadowKeys: ReadonlySet<string>
+): number {
+  const store = useCloudSyncStore.getState();
+  let prunedCount = 0;
   for (const [bucket, prefix] of Object.entries(DELETION_BUCKET_PREFIXES) as Array<
     [CloudSyncDeletionBucket, string]
   >) {
-    if (key.startsWith(prefix)) {
-      store.clearDeletedKeys(bucket, [key.slice(prefix.length)]);
-      return;
-    }
+    const staleIds = Object.keys(store.deletionMarkers[bucket]).filter(
+      (id) => !shadowKeys.has(`${prefix}${id}`)
+    );
+    if (staleIds.length === 0) continue;
+    store.clearDeletedKeys(bucket, staleIds);
+    prunedCount += staleIds.length;
   }
+  return prunedCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -1054,8 +1086,14 @@ const videosCodec: SyncCodec = {
   },
   subscribe(onChange) {
     return useVideoStore.subscribe((state, prev) => {
-      if (state.videos !== prev.videos) onChange();
+      if (state.videos !== prev.videos) {
+        if (!useVideoStore.persist.hasHydrated()) return;
+        onChange();
+      }
     });
+  },
+  isReady() {
+    return useVideoStore.persist.hasHydrated();
   },
 };
 

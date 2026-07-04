@@ -45,8 +45,20 @@ const { ensureIndexedDBInitialized, STORES } = await import(
 const { useTextEditStore } = await import("../src/stores/useTextEditStore");
 const { useStickiesStore } = await import("../src/stores/useStickiesStore");
 const { useContactsStore } = await import("../src/stores/useContactsStore");
+const { useBooksStore } = await import("../src/stores/useBooksStore");
+const { useCalendarStore } = await import("../src/stores/useCalendarStore");
+const { useVideoStore } = await import("../src/stores/useVideoStore");
+const { useTvStore } = await import("../src/stores/useTvStore");
 
-const stores = [useTextEditStore, useStickiesStore, useContactsStore];
+const stores = [
+  useTextEditStore,
+  useStickiesStore,
+  useContactsStore,
+  useBooksStore,
+  useCalendarStore,
+  useVideoStore,
+  useTvStore,
+];
 
 await Promise.all(stores.map((store) => store.persist.rehydrate()));
 await settleAllPersistWrites();
@@ -75,6 +87,25 @@ async function readPersistedRecord(key: string): Promise<unknown> {
   }
 }
 
+async function readStoreRecord(
+  storeName: string,
+  key: string
+): Promise<Record<string, unknown> | null> {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    return await new Promise((resolve, reject) => {
+      const request = db
+        .transaction(storeName, "readonly")
+        .objectStore(storeName)
+        .get(key);
+      request.onsuccess = () => resolve(request.result ?? null);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
 beforeEach(async () => {
   await settleAllPersistWrites();
   resetPersistWritesForTests();
@@ -88,6 +119,14 @@ beforeEach(async () => {
     myContactId: null,
     lastRemoteSyncAt: 0,
   });
+  useBooksStore.setState({
+    progressByPath: {},
+    highlightsByPath: {},
+    bookmarksByPath: {},
+  });
+  useCalendarStore.setState({ events: [], todos: [] });
+  useVideoStore.setState({ videos: [], currentVideoId: null });
+  useTvStore.setState({ customChannels: [], hiddenDefaultChannelIds: [] });
   resetPersistWritesForTests();
 });
 
@@ -162,17 +201,125 @@ describe("large store IndexedDB persistence", () => {
         version: 0,
       })
     );
+    localStorage.setItem(
+      "ryos:books",
+      JSON.stringify({
+        state: {
+          progressByPath: {
+            "/Books/migrated.epub": {
+              cfi: "epubcfi(/6/2)",
+              percentage: 0.5,
+              updatedAt: 1,
+            },
+          },
+          highlightsByPath: {},
+          bookmarksByPath: {},
+        },
+        version: 9,
+      })
+    );
+    localStorage.setItem(
+      "calendar-storage",
+      JSON.stringify({
+        state: {
+          events: [
+            {
+              id: "migrated-event",
+              title: "Migrated event",
+              date: "2026-07-03",
+              color: "blue",
+              calendarId: "home",
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          ],
+          calendars: [],
+          todos: [],
+        },
+        version: 0,
+      })
+    );
+    localStorage.setItem(
+      "ryos:videos",
+      JSON.stringify({
+        state: {
+          videos: [
+            {
+              id: "migrated-video",
+              url: "https://youtu.be/migrated-video",
+              title: "Migrated video",
+              artist: "ryOS",
+            },
+          ],
+          currentVideoId: "migrated-video",
+          loopAll: true,
+          loopCurrent: false,
+          isShuffled: false,
+        },
+        version: 8,
+      })
+    );
+    localStorage.setItem(
+      "ryos:tv",
+      JSON.stringify({
+        state: {
+          currentChannelId: "migrated-channel",
+          customChannels: [
+            {
+              id: "migrated-channel",
+              name: "Migrated channel",
+              videos: [],
+              createdAt: 1,
+            },
+          ],
+          hiddenDefaultChannelIds: [],
+          hiddenDefaultChannelIdsUpdatedAt: null,
+          hiddenDefaultChannelIdsResetAt: null,
+          lcdFilterOn: true,
+          closedCaptionsOn: false,
+        },
+        version: 5,
+      })
+    );
 
     await Promise.all(stores.map((store) => store.persist.rehydrate()));
 
     expect(useTextEditStore.getState().instances.draft).toBeDefined();
+    expect(
+      (await readStoreRecord(STORES.TEXTEDIT_INSTANCES, "draft"))?.instance
+    ).toEqual(useTextEditStore.getState().instances.draft);
     expect(useStickiesStore.getState().notes[0]?.content).toBe("Remember me");
     expect(
       useContactsStore.getState().contacts.some((contact) => contact.id === "friend")
     ).toBe(true);
-    expect(localStorage.getItem("ryos:textedit")).toBeNull();
-    expect(localStorage.getItem("stickies-storage")).toBeNull();
-    expect(localStorage.getItem("contacts-storage")).toBeNull();
+    expect(
+      useBooksStore.getState().progressByPath["/Books/migrated.epub"]?.percentage
+    ).toBe(0.5);
+    expect(useCalendarStore.getState().events[0]?.id).toBe("migrated-event");
+    expect(useVideoStore.getState().videos[0]?.id).toBe("migrated-video");
+    expect(useTvStore.getState().customChannels[0]?.id).toBe(
+      "migrated-channel"
+    );
+    for (const key of [
+      "ryos:textedit",
+      "ryos:stickies",
+      "ryos:contacts",
+      "ryos:books",
+      "ryos:calendar",
+      "ryos:videos",
+      "ryos:tv",
+    ]) {
+      expect(localStorage.getItem(key)).toBeNull();
+      expect(await readPersistedRecord(key)).not.toBeNull();
+    }
+    for (const legacyKey of [
+      "stickies-storage",
+      "contacts-storage",
+      "calendar-storage",
+    ]) {
+      expect(localStorage.getItem(legacyKey)).toBeNull();
+      expect(await readPersistedRecord(legacyKey)).toBeNull();
+    }
   });
 
   test("persists document-sized payloads without consuming localStorage quota", async () => {
@@ -212,8 +359,11 @@ describe("large store IndexedDB persistence", () => {
     await settleAllPersistWrites();
 
     expect(await readPersistedRecord("ryos:textedit")).not.toBeNull();
-    expect(await readPersistedRecord("stickies-storage")).not.toBeNull();
+    expect(
+      (await readStoreRecord(STORES.TEXTEDIT_INSTANCES, "draft"))?.instance
+    ).toEqual(useTextEditStore.getState().instances.draft);
+    expect(await readPersistedRecord("ryos:stickies")).not.toBeNull();
     expect(localStorage.getItem("ryos:textedit")).toBeNull();
-    expect(localStorage.getItem("stickies-storage")).toBeNull();
+    expect(localStorage.getItem("ryos:stickies")).toBeNull();
   });
 });

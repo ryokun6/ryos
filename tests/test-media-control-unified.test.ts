@@ -128,6 +128,10 @@ describe("mediaControl schema", () => {
       const result = mediaControlSchema.safeParse({
         target: "karaoke",
         action: "next",
+        id: neutralString,
+        title: neutralString,
+        artist: neutralString,
+        enableTranslation: neutralString,
         prompt: neutralString,
         name: neutralString,
         videoId: neutralString,
@@ -156,21 +160,36 @@ describe("mediaControl schema", () => {
     });
   });
 
-  test("rejects meaningful fields for the wrong media target", () => {
+  test("strips overfilled fields that do not apply to karaoke navigation", () => {
     expect(
       mediaControlSchema.safeParse({
         target: "karaoke",
         action: "next",
-        enableVideo: true,
-      }).success
-    ).toBe(false);
-    expect(
-      mediaControlSchema.safeParse({
+        id: "",
+        title: "",
+        artist: "",
+        enableTranslation: "",
+        enableFullscreen: false,
+        enableVideo: false,
+        channelId: "",
+        channelNumber: 1,
+        prompt: "next karaoke song",
+        name: "x",
+        videoId: "",
+        url: "",
+        removeVideoId: "",
+      })
+    ).toEqual({
+      success: true,
+      data: {
         target: "karaoke",
         action: "next",
-        channelNumber: 2,
-      }).success
-    ).toBe(false);
+        enableFullscreen: false,
+      },
+    });
+  });
+
+  test("still rejects channel actions and parameters that are invalid after normalization", () => {
     expect(
       mediaControlSchema.safeParse({
         target: "tv",
@@ -190,6 +209,15 @@ describe("mediaControl schema", () => {
     expect(result).toEqual({
       success: true,
       data: { target: "music", action: "play", enableVideo: false },
+    });
+
+    expect(
+      mediaControlSchema.safeParse({
+        enableVideo: true,
+      })
+    ).toEqual({
+      success: true,
+      data: { target: "music", action: "toggle", enableVideo: true },
     });
   });
 
@@ -274,7 +302,7 @@ describe("mediaControl schema", () => {
     ).toBe(false);
   });
 
-  test("enableVideo is only valid for target music", () => {
+  test("enableVideo is only applied to target music", () => {
     expect(
       mediaControlSchema.safeParse({
         target: "music",
@@ -288,12 +316,15 @@ describe("mediaControl schema", () => {
           target,
           action: "play",
           enableVideo: true,
-        }).success
-      ).toBe(false);
+        })
+      ).toEqual({
+        success: true,
+        data: { target, action: "play" },
+      });
     }
   });
 
-  test("enableTranslation and enableFullscreen are gated to music/karaoke", () => {
+  test("enableTranslation and enableFullscreen are only applied to music/karaoke", () => {
     for (const target of ["music", "karaoke"]) {
       expect(
         mediaControlSchema.safeParse({
@@ -310,20 +341,26 @@ describe("mediaControl schema", () => {
           target,
           action: "play",
           enableTranslation: "zh-TW",
-        }).success
-      ).toBe(false);
+        })
+      ).toEqual({
+        success: true,
+        data: { target, action: "play" },
+      });
       expect(
         mediaControlSchema.safeParse({
           target,
           action: "play",
           enableFullscreen: true,
-        }).success
-      ).toBe(false);
+        })
+      ).toEqual({
+        success: true,
+        data: { target, action: "play" },
+      });
     }
   });
 
   test("enforces transport parameter rules", () => {
-    // addAndPlay requires id and rejects manual title/artist.
+    // addAndPlay requires id and ignores inapplicable manual metadata.
     expect(
       mediaControlSchema.safeParse({ target: "music", action: "addAndPlay" })
         .success
@@ -334,8 +371,15 @@ describe("mediaControl schema", () => {
         action: "addAndPlay",
         id: "dQw4w9WgXcQ",
         title: "Manual",
-      }).success
-    ).toBe(false);
+      })
+    ).toEqual({
+      success: true,
+      data: {
+        target: "music",
+        action: "addAndPlay",
+        id: "dQw4w9WgXcQ",
+      },
+    });
     // playKnown allows bare invocation and id/title/artist.
     expect(
       mediaControlSchema.safeParse({ target: "karaoke", action: "playKnown" })
@@ -349,12 +393,14 @@ describe("mediaControl schema", () => {
         artist: "Artist",
       }).success
     ).toBe(true);
-    // Playback-state and navigation actions reject item identifiers.
+    // Playback-state and navigation actions ignore inapplicable identifiers.
     for (const action of ["toggle", "play", "pause", "next", "previous"]) {
       expect(
         mediaControlSchema.safeParse({ target: "videos", action, id: "x" })
-          .success
-      ).toBe(false);
+      ).toEqual({
+        success: true,
+        data: { target: "videos", action },
+      });
     }
   });
 });

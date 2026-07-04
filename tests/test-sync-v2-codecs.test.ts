@@ -209,7 +209,7 @@ describe("songs codec", () => {
       autoSyncEnabled: true,
       syncSongs: true,
     });
-    const engine = new CloudSyncEngine("hydration-test");
+    const engine = await CloudSyncEngine.create("hydration-test");
 
     try {
       const applying = engine.applyRemoteOps([
@@ -232,7 +232,7 @@ describe("songs codec", () => {
         autoSyncEnabled: previousAutoSyncEnabled,
         syncSongs: previousSyncSongs,
       });
-      engine.stop();
+      await engine.stop();
     }
   });
 
@@ -622,7 +622,7 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
     };
     useBooksStore.setState({ progressByPath: { "/Books/a.epub": localProgress } } as never);
 
-    const engine = new CloudSyncEngine(
+    const engine = await CloudSyncEngine.create(
       `bookshelf-eng-${crypto.randomUUID()}`
     );
     try {
@@ -647,7 +647,7 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
       // will re-upload the local progress and re-converge peers.
       expect(state.getShadow(key)?.h).not.toBe(hashDoc(localProgress));
     } finally {
-      engine.stop();
+      await engine.stop();
     }
   });
 
@@ -659,7 +659,7 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
       },
     } as never);
 
-    const engine = new CloudSyncEngine(
+    const engine = await CloudSyncEngine.create(
       `bookshelf-eng-${crypto.randomUUID()}`
     );
     try {
@@ -678,7 +678,7 @@ describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
       // Shadow matches the applied remote value (no pending re-upload).
       expect(state.getShadow(key)?.h).toBe(hashDoc(newer));
     } finally {
-      engine.stop();
+      await engine.stop();
     }
   });
 });
@@ -897,7 +897,7 @@ describe("cloud sync engine resilience", () => {
       });
     }) as typeof fetch;
 
-    const engine = new CloudSyncEngine(username);
+    const engine = await CloudSyncEngine.create(username);
     try {
       await engine.start();
       const state = (engine as unknown as { state: SyncClientState }).state;
@@ -905,7 +905,7 @@ describe("cloud sync engine resilience", () => {
       expect(state.localReconcileRequired).toBe(false);
       expect(requests.some((url) => url.includes("/api/sync/v2/changes?since=7"))).toBe(true);
     } finally {
-      engine.stop();
+      await engine.stop();
       globalThis.fetch = originalFetch;
     }
   });
@@ -922,7 +922,7 @@ describe("cloud sync engine resilience", () => {
         localReconcileRequired: false,
       })
     );
-    markSyncLocalReconcileRequired(username);
+    await markSyncLocalReconcileRequired(username);
     useStickiesStore.setState({ notes: [] });
     useCloudSyncStore.setState({
       autoSyncEnabled: true,
@@ -945,7 +945,7 @@ describe("cloud sync engine resilience", () => {
         headers: { "Content-Type": "application/json" },
       })) as typeof fetch;
 
-    const engine = new CloudSyncEngine(username);
+    const engine = await CloudSyncEngine.create(username);
     try {
       await engine.start();
       const state = (engine as unknown as { state: SyncClientState }).state;
@@ -956,7 +956,7 @@ describe("cloud sync engine resilience", () => {
       expect(state.dirtyNamespaces).toEqual([]);
       expect(state.localReconcileRequired).toBe(false);
     } finally {
-      engine.stop();
+      await engine.stop();
       globalThis.fetch = originalFetch;
     }
   });
@@ -982,13 +982,13 @@ describe("cloud sync engine resilience", () => {
       })) as typeof fetch;
     console.error = () => {};
 
-    const engine = new CloudSyncEngine(username);
+    const engine = await CloudSyncEngine.create(username);
     try {
       await engine.start();
       const state = (engine as unknown as { state: SyncClientState }).state;
       expect(state.dirtyNamespaces).toEqual([]);
     } finally {
-      engine.stop();
+      await engine.stop();
       globalThis.fetch = originalFetch;
       console.error = originalConsoleError;
     }
@@ -1024,12 +1024,12 @@ describe("cloud sync engine resilience", () => {
     });
 
     const originalFetch = globalThis.fetch;
-    const engine = new CloudSyncEngine(username);
+    const engine = await CloudSyncEngine.create(username);
     globalThis.fetch = (async (_input, init) => {
       const body = JSON.parse(String(init?.body)) as {
         ops: Array<{ k: string }>;
       };
-      engine.stop();
+      await engine.stop();
       return new Response(
         JSON.stringify({
           seq: body.ops.length,
@@ -1045,7 +1045,7 @@ describe("cloud sync engine resilience", () => {
       const state = (engine as unknown as { state: SyncClientState }).state;
       expect(state.dirtyNamespaces).toContain("stickies");
     } finally {
-      engine.stop();
+      await engine.stop();
       globalThis.fetch = originalFetch;
       useStickiesStore.setState({ notes: [] });
     }

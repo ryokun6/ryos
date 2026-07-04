@@ -3,7 +3,7 @@
 import { createClientLogger } from "@/utils/logger";
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 13;
+const DB_VERSION = 15;
 let hasLoggedOpenSuccess = false;
 const log = createClientLogger("IndexedDB");
 
@@ -65,10 +65,19 @@ export const STORES = {
   APPLE_MUSIC_LIBRARY: "apple_music_library",
   APPLE_MUSIC_PLAYLISTS: "apple_music_playlists",
   APPLE_MUSIC_PLAYLIST_TRACKS: "apple_music_playlist_tracks",
-  // Backing store for zustand persist slices that are too large for
-  // localStorage's 5–10MB per-origin quota (e.g. Soundboard recordings, which
-  // are base64-encoded audio). Each record is one persisted slice keyed by its
-  // persist `name` (see createIndexedDBPersistStorage).
+  // Per-user Cloud Sync cursor, shadow, and pending namespace state. This is
+  // operational metadata, so manual backups intentionally exclude it.
+  SYNC2_STATE: "sync2_state",
+  // Normalized entity stores for large/hot Zustand slices. The small scalar
+  // metadata for each slice remains in `persisted_state`.
+  SOUNDBOARD_AUDIO: "soundboard_audio",
+  CHATS_AI_MESSAGES: "chats_ai_messages",
+  CHATS_ROOM_MESSAGES: "chats_room_messages",
+  TEXTEDIT_INSTANCES: "textedit_instances",
+  VFS_ITEMS: "vfs_items",
+  // Backing store for Zustand persist metadata/snapshots. Entity-heavy slices
+  // keep only scalar metadata here and put their records in dedicated stores.
+  // Each record is keyed by the persist `name`.
   PERSISTED_STATE: "persisted_state",
 } as const;
 
@@ -121,6 +130,30 @@ export const ensureIndexedDBInitialized = async (): Promise<IDBDatabase> => {
           log.debug("Store already exists", { storeName });
         }
       });
+
+      const upgradeTransaction = (
+        evt.target as IDBOpenDBRequest
+      ).transaction;
+      if (upgradeTransaction) {
+        const ensureIndex = (
+          storeName: string,
+          indexName: string,
+          keyPath: string
+        ) => {
+          const store = upgradeTransaction.objectStore(storeName);
+          if (!store.indexNames.contains(indexName)) {
+            store.createIndex(indexName, keyPath, { unique: false });
+          }
+        };
+
+        ensureIndex(STORES.SOUNDBOARD_AUDIO, "boardId", "boardId");
+        ensureIndex(STORES.CHATS_AI_MESSAGES, "owner", "owner");
+        ensureIndex(STORES.CHATS_ROOM_MESSAGES, "owner", "owner");
+        ensureIndex(STORES.CHATS_ROOM_MESSAGES, "roomId", "roomId");
+        ensureIndex(STORES.TEXTEDIT_INSTANCES, "filePath", "instance.filePath");
+        ensureIndex(STORES.VFS_ITEMS, "uuid", "item.uuid");
+        ensureIndex(STORES.VFS_ITEMS, "status", "item.status");
+      }
 
       log.debug("Upgrade complete", {
         objectStores: Array.from(db.objectStoreNames),

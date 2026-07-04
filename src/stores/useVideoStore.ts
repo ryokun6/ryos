@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useStoreShallow } from "./helpers";
 import { persist } from "zustand/middleware";
 import { shouldUpdatePlaybackTime } from "./playbackTime";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import {
   resetPlaybackConfirmation,
   stopPlayback,
@@ -269,6 +270,7 @@ export const useVideoStore = create<VideoStoreState>()(
     {
       name: "ryos:videos",
       version: CURRENT_VIDEO_STORE_VERSION,
+      storage: createIndexedDBPersistStorage(),
       // Persist videos array to prevent ID-based errors
       partialize: (state) => ({
         videos: state.videos,

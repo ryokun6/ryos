@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import {
   calendarEventOccursOnDate,
   calendarEventOverlapsDateRange,
@@ -11,6 +12,7 @@ import {
   getEffectiveTimezone,
   getZonedDateTimeParts,
 } from "@/lib/timezoneConfig";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/utils/storageKeys";
 
 export type EventColor = "blue" | "red" | "green" | "orange" | "purple";
 
@@ -335,8 +337,10 @@ export const useCalendarStore = create<CalendarStoreState>()(
       };
     },
     {
-      name: "calendar-storage",
-      storage: createJSONStorage(() => localStorage),
+      name: STORAGE_KEYS.calendar,
+      storage: createIndexedDBPersistStorage({
+        legacyNames: [LEGACY_STORAGE_KEYS.calendar],
+      }),
       // Do not persist viewport — opening Calendar should show today, not last session.
       partialize: (state) => ({
         events: state.events,
