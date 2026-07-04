@@ -25,6 +25,17 @@ const CHARACTER_IDS = [
   "rover",
 ] as const;
 
+/**
+ * Characters converted directly from .acs files (scripts/convert-acs-character.py)
+ * rather than fetched from the clippy.js upstream. Kept in the generated index
+ * but their sound modules are never overwritten by this script.
+ */
+const ACS_DERIVED_CHARACTER_IDS = [
+  "officelogo",
+  "saeko",
+  "monkeyking",
+] as const;
+
 type CharacterId = (typeof CHARACTER_IDS)[number];
 
 const ROOT = path.resolve(import.meta.dir, "..");
@@ -117,10 +128,17 @@ async function writeSoundModules(): Promise<void> {
     console.log(`Wrote ${fileName} (${Object.keys(sounds).length} sounds)`);
   }
 
+  for (const id of ACS_DERIVED_CHARACTER_IDS) {
+    importLines.push(
+      `import { ${id.toUpperCase()}_SOUNDS } from "./${id}";`
+    );
+    mapLines.push(`  ${id}: ${id.toUpperCase()}_SOUNDS,`);
+  }
+
   const indexSource = `${importLines.join("\n")}
 import type { AssistantCharacterId } from "../characters";
 
-/** MP3 clips from clippy.js — https://github.com/clippyjs/clippy.js */
+/** MP3 clips from clippy.js — https://github.com/clippyjs/clippy.js — or converted from the original .acs files. */
 export const ASSISTANT_SOUND_MAPS: Record<
   AssistantCharacterId,
   Record<string, string>

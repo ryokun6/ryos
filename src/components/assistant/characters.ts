@@ -3,7 +3,8 @@
  *
  * All characters are the historically accurate Microsoft Agent / Office
  * assistants (sprite sheets + animation data extracted from the original .acs
- * files via the clippy.js project).
+ * files via the clippy.js project, or converted directly with
+ * scripts/convert-acs-character.py).
  */
 
 export type AssistantCharacterId =
@@ -15,7 +16,10 @@ export type AssistantCharacterId =
   | "peedy"
   | "genius"
   | "rocky"
-  | "f1";
+  | "f1"
+  | "officelogo"
+  | "saeko"
+  | "monkeyking";
 
 export interface AssistantCharacter {
   id: AssistantCharacterId;
@@ -54,6 +58,9 @@ export const ASSISTANT_CHARACTERS: AssistantCharacter[] = [
   spriteCharacter("genius", "Genius", 124, 93),
   spriteCharacter("rocky", "Rocky", 124, 93),
   spriteCharacter("f1", "F1", 124, 93),
+  spriteCharacter("officelogo", "Office Logo", 124, 93),
+  spriteCharacter("saeko", "Saeko Sensei", 98, 115),
+  spriteCharacter("monkeyking", "Monkey King", 124, 93),
 ];
 
 export const DEFAULT_ASSISTANT_CHARACTER_ID: AssistantCharacterId = "rover";
