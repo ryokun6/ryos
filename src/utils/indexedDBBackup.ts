@@ -14,6 +14,8 @@ export const MANUAL_BACKUP_VERSION = 6;
 /**
  * User-owned IndexedDB data included in manual backups. Apple Music stores are
  * intentionally excluded because they are provider caches that can be rebuilt.
+ * Sync v2 cursor/shadow state is also excluded because restored user data must
+ * be reconciled against a fresh server snapshot.
  */
 export const MANUAL_BACKUP_INDEXEDDB_STORES = [
   STORES.DOCUMENTS,

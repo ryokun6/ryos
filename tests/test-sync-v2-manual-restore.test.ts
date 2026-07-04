@@ -42,6 +42,10 @@ describe("manual backup Sync v2 metadata filtering", () => {
       source.indexOf("const performRestore = async () =>"),
       source.indexOf("const performFormat = async () =>")
     );
+    const resetBlock = source.slice(
+      source.indexOf("const performReset = async () =>"),
+      source.indexOf("const handleBackup = async () =>")
+    );
 
     expect(localBackupBlock).toContain("shouldIncludeManualBackupLocalStorageKey");
     expect(localRestoreBlock).toContain("shouldIncludeManualBackupLocalStorageKey");
@@ -55,6 +59,8 @@ describe("manual backup Sync v2 metadata filtering", () => {
     expect(localRestoreBlock).toContain(
       "replaceLocalStorage(previousLocalStorage)"
     );
+    expect(localRestoreBlock).toContain("storeName: STORES.SYNC2_STATE");
+    expect(resetBlock).toContain("storeName: STORES.SYNC2_STATE");
   });
 });
 

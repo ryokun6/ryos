@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { BASE_URL, ensureUserAuth, fetchWithAuth } from "./test-utils";
 import { formatHlc } from "../src/shared/sync2/hlc";
 import { CloudSyncEngine } from "../src/sync/engine";
+import { deletePersistedSyncState } from "../src/sync/stateStorage";
 import { useStickiesStore } from "../src/stores/useStickiesStore";
 import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
 import {
@@ -76,12 +77,12 @@ beforeAll(async () => {
   useStickiesStore.setState({ notes: [] });
   useBooksStore.setState({ settings: { ...DEFAULT_BOOKS_SETTINGS } });
 
-  engine = new CloudSyncEngine(USERNAME);
+  engine = await CloudSyncEngine.create(USERNAME);
   await engine.start();
 });
 
-afterAll(() => {
-  engine?.stop();
+afterAll(async () => {
+  await engine?.stop();
   globalThis.fetch = originalFetch;
 });
 
@@ -245,23 +246,27 @@ describe("sync v2 engine end-to-end", () => {
   });
 
   test("local deletion uploads a tombstone", async () => {
-    useStickiesStore.setState((state) => ({
-      notes: state.notes.filter((note) => note.id !== "e2e-1"),
-    }));
+    useStickiesStore.getState().deleteNote("e2e-1");
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.stickyNoteIds["e2e-1"]
+    ).toEqual(expect.any(String));
     engine.markDirty("stickies");
     await engine.flush();
 
     const snapshot = await readServerSnapshot();
     expect(snapshot.entries["stickies/note:e2e-1"]?.del).toBe(true);
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.stickyNoteIds["e2e-1"]
+    ).toBeUndefined();
   });
 
   test("snapshot bootstrap restores state on a fresh device", async () => {
     // Simulate a new device: fresh engine state, empty local store.
-    engine.stop();
-    localStorage.removeItem(`ryos:sync2:state:${USERNAME.toLowerCase()}`);
+    await engine.stop();
+    await deletePersistedSyncState(USERNAME);
     useStickiesStore.setState({ notes: [] });
 
-    engine = new CloudSyncEngine(USERNAME);
+    engine = await CloudSyncEngine.create(USERNAME);
     await engine.start();
     // start() schedules a flush of local-only keys; none exist here.
 
@@ -273,8 +278,8 @@ describe("sync v2 engine end-to-end", () => {
   });
 
   test("manual restore promotes restored local state before bootstrap", async () => {
-    engine.stop();
-    localStorage.removeItem(`ryos:sync2:state:${USERNAME.toLowerCase()}`);
+    await engine.stop();
+    await deletePersistedSyncState(USERNAME);
 
     const remoteT = formatHlc(Date.now() + 2000, 0, "foreign-restore");
     await fetchWithAuth(`${BASE_URL}/api/sync/v2/ops`, USERNAME, token, {
@@ -303,7 +308,7 @@ describe("sync v2 engine end-to-end", () => {
       notes: [{ id: "restore-keep", content: "restored backup value" }] as never,
     });
 
-    engine = new CloudSyncEngine(USERNAME);
+    engine = await CloudSyncEngine.create(USERNAME);
     const result = await engine.restoreLocalStateToCloud({
       namespaces: ["stickies"],
     });
@@ -317,8 +322,8 @@ describe("sync v2 engine end-to-end", () => {
     });
     expect(snapshot.entries["stickies/note:restore-delete"]?.del).toBe(true);
 
-    engine.stop();
-    engine = new CloudSyncEngine(USERNAME);
+    await engine.stop();
+    engine = await CloudSyncEngine.create(USERNAME);
     await engine.start();
     expect(
       useStickiesStore

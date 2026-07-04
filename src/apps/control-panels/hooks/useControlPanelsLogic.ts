@@ -62,6 +62,7 @@ import {
   restoreStoreItemsAtomically,
   serializeStoreItems,
   type ManualBackupIndexedDBData,
+  type IndexedDBStoreRestore,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
 import { FILES_STORE_PERSIST_KEY } from "@/stores/useFilesStore";
@@ -870,6 +871,7 @@ export function useControlPanelsLogic({
               { storeName: STORES.CHATS_AI_MESSAGES, items: [] },
               { storeName: STORES.CHATS_ROOM_MESSAGES, items: [] },
               { storeName: STORES.TEXTEDIT_INSTANCES, items: [] },
+              { storeName: STORES.SYNC2_STATE, items: [] },
             ]
           );
         } finally {
@@ -1109,10 +1111,9 @@ export function useControlPanelsLogic({
           try {
             const backupVersion =
               typeof backup.version === "number" ? backup.version : 1;
-            await restoreStoreItemsAtomically(
-              db,
-              MANUAL_BACKUP_INDEXEDDB_STORES.map((storeName) =>
-                ({
+            const restores: IndexedDBStoreRestore[] = [
+              ...MANUAL_BACKUP_INDEXEDDB_STORES.map(
+                (storeName): IndexedDBStoreRestore => ({
                   storeName,
                   items: backup.indexedDB?.[storeName] ?? [],
                   options: {
@@ -1125,8 +1126,13 @@ export function useControlPanelsLogic({
                       ),
                   },
                 })
-              )
-            );
+              ),
+              {
+                storeName: STORES.SYNC2_STATE,
+                items: [],
+              },
+            ];
+            await restoreStoreItemsAtomically(db, restores);
           } finally {
             db.close();
           }

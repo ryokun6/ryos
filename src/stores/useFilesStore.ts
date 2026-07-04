@@ -871,7 +871,7 @@ const initialFilesData: FilesStoreState = {
 } as FilesStoreState;
 
 export const useFilesStore = create<FilesStoreState>()(
-  persist(
+  persist<FilesStoreState, [], [], FilesPersistedState>(
     (set, get) => ({
       ...initialFilesData,
 
@@ -1774,7 +1774,10 @@ export const useFilesStore = create<FilesStoreState>()(
         items: state.items, // Persist the entire file structure
         libraryState: state.libraryState,
       }),
-      migrate: (persistedState: unknown, version: number) => {
+      migrate: (
+        persistedState: unknown,
+        version: number
+      ): FilesPersistedState => {
         if (version < 5) {
           const oldState = persistedState as {
             items: Record<string, FileSystemItem>;
@@ -1958,7 +1961,7 @@ export const useFilesStore = create<FilesStoreState>()(
           };
         }
 
-        return persistedState;
+        return persistedState as FilesPersistedState;
       },
       onRehydrateStorage: () => {
         return (state, error) => {

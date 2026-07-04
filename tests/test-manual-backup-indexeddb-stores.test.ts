@@ -39,13 +39,14 @@ describe("manual IndexedDB backup manifest", () => {
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.VFS_ITEMS);
   });
 
-  test("intentionally excludes rebuildable Apple Music caches", () => {
+  test("excludes rebuildable caches and Sync v2 metadata", () => {
     const includedStores: readonly string[] = MANUAL_BACKUP_INDEXEDDB_STORES;
     expect(includedStores).not.toContain(STORES.APPLE_MUSIC_LIBRARY);
     expect(includedStores).not.toContain(STORES.APPLE_MUSIC_PLAYLISTS);
     expect(includedStores).not.toContain(
       STORES.APPLE_MUSIC_PLAYLIST_TRACKS
     );
+    expect(includedStores).not.toContain(STORES.SYNC2_STATE);
   });
 
   test("creates an empty entry for every manifest store", () => {

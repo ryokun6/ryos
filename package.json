@@ -70,7 +70,7 @@
     "test:speech": "bun test tests/test-speech.test.ts",
     "test:share-applet": "bun test tests/test-share-applet.test.ts",
     "test:song": "bun test tests/test-song.test.ts",
-    "test:sync-v2:unit": "bun test tests/test-sync-v2-core.test.ts tests/test-songs-tombstone-sync.test.ts tests/test-sync-maintenance.test.ts tests/test-sync-v2-codecs.test.ts",
+    "test:sync-v2:unit": "bun test tests/test-sync-v2-core.test.ts tests/test-songs-tombstone-sync.test.ts tests/test-sync-maintenance.test.ts tests/test-sync-v2-codecs.test.ts tests/test-sync-v2-state-storage.test.ts tests/test-cloud-sync-deletion-marker-pruning.test.ts",
     "test:sync-v2": "bun run test:sync-v2:unit && bun test tests/test-sync-v2-api.test.ts",
     "test:ai": "bun test tests/test-ai.test.ts",
     "test:media": "bun test tests/test-media.test.ts",
