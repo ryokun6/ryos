@@ -280,7 +280,10 @@ function AssistantOverlayInner() {
   const pointingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Last moment the assistant was doing something (drives deep idle). */
   const lastActiveAtRef = useRef(Date.now());
-  const closeBubble = useCallback(() => setBubbleOpen(false), []);
+  const closeBubble = useCallback(() => {
+    setBubbleOpen(false);
+    useAssistantStore.getState().markBubbleDismissed();
+  }, []);
   const {
     cancelAutoClose: cancelBubbleAutoClose,
     onBlur: handleBubbleBlur,
@@ -910,7 +913,12 @@ function AssistantOverlayInner() {
     const willOpen = !bubbleOpen;
     setBubbleOpen(willOpen);
     if (willOpen) {
+      // Reopening after a long dismissal starts a fresh conversation with a
+      // new greeting (AI when signed in, canned otherwise).
+      greetIfStale();
       requestAnimationFrame(() => inputRef.current?.focus());
+    } else {
+      useAssistantStore.getState().markBubbleDismissed();
     }
 
     const intent = getAssistantLifecycleAnimationIntent(
@@ -929,6 +937,7 @@ function AssistantOverlayInner() {
     cancelBubbleAutoClose,
     clearEntranceSequence,
     clearSequencePlan,
+    greetIfStale,
     pickAnimation,
     playAnimation,
   ]);
@@ -1084,6 +1093,11 @@ function AssistantOverlayInner() {
     clearPointingTimer();
     stopAssistantSpeech();
     if (quittingAnimationRef.current) return;
+    // Quitting dismisses the bubble too; if it was closed earlier the older
+    // (more accurate) dismissal timestamp stands.
+    if (bubbleOpen) {
+      useAssistantStore.getState().markBubbleDismissed();
+    }
 
     const data = agentDataRef.current;
     const intent = getAssistantLifecycleAnimationIntent("quit");
@@ -1114,6 +1128,7 @@ function AssistantOverlayInner() {
       getAssistantExitAnimationTimeout(data, exitAnimation)
     );
   }, [
+    bubbleOpen,
     cancelBubbleAutoClose,
     clearEntranceSequence,
     clearPointingTimer,

@@ -15,6 +15,13 @@ const resetDb = () =>
   });
 
 beforeEach(async () => {
+  // Earlier suites in the same process may have seeded the default library
+  // into this store instance and may still have a debounced write in flight.
+  // Settle those writes first: an in-flight transaction blocks deleteDatabase
+  // (resetDb resolves on `blocked`, silently keeping the stale rows).
+  const { useFilesStore } = await import("../src/stores/useFilesStore");
+  useFilesStore.setState({ items: {}, libraryState: "uninitialized" });
+  await settleAllPersistWrites();
   resetPersistWritesForTests();
   installTestLocalStorage();
   localStorage.clear();
@@ -45,7 +52,17 @@ describe("Files metadata normalized persistence", () => {
 
     const { useFilesStore } = await import("../src/stores/useFilesStore");
     await useFilesStore.persist.rehydrate();
-    expect(useFilesStore.getState().items["/Documents"]).toEqual(item);
+    // onRehydrateStorage kicks off a background root-directory sync that may
+    // decorate default folders (icon, modifiedAt) when an earlier suite cached
+    // /data/filesystem.json, so assert only the fields migration must keep.
+    expect(useFilesStore.getState().items["/Documents"]).toMatchObject({
+      path: item.path,
+      name: item.name,
+      isDirectory: true,
+      type: "directory",
+      status: "active",
+      createdAt: item.createdAt,
+    });
     expect(localStorage.getItem("ryos:files")).toBeNull();
 
     const { ensureIndexedDBInitialized, STORES } = await import(

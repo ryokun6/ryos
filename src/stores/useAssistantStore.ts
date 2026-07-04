@@ -27,6 +27,12 @@ interface AssistantStoreState {
   messages: AIChatMessage[];
   /** Epoch ms of the last user↔assistant exchange (for greeting staleness). */
   lastInteractionAt: number | null;
+  /**
+   * Epoch ms when the chat bubble was last dismissed (null while open). A
+   * bubble left dismissed long enough marks the conversation as done, so the
+   * next summon starts fresh with a new greeting.
+   */
+  bubbleDismissedAt: number | null;
   /** Speak assistant replies aloud with the browser's speech synthesis. */
   speechEnabled: boolean;
 
@@ -38,6 +44,8 @@ interface AssistantStoreState {
   setMessages: (messages: AIChatMessage[]) => void;
   clearMessages: () => void;
   markInteraction: () => void;
+  markBubbleDismissed: () => void;
+  clearBubbleDismissed: () => void;
 }
 
 export const useAssistantStore = create<AssistantStoreState>()(
@@ -48,6 +56,7 @@ export const useAssistantStore = create<AssistantStoreState>()(
       position: null,
       messages: [],
       lastInteractionAt: null,
+      bubbleDismissedAt: null,
       speechEnabled: false,
 
       setEnabled: (enabled) => set({ enabled }),
@@ -60,8 +69,11 @@ export const useAssistantStore = create<AssistantStoreState>()(
           messages: messages.slice(-MAX_PERSISTED_MESSAGES),
           lastInteractionAt: Date.now(),
         }),
-      clearMessages: () => set({ messages: [], lastInteractionAt: null }),
+      clearMessages: () =>
+        set({ messages: [], lastInteractionAt: null, bubbleDismissedAt: null }),
       markInteraction: () => set({ lastInteractionAt: Date.now() }),
+      markBubbleDismissed: () => set({ bubbleDismissedAt: Date.now() }),
+      clearBubbleDismissed: () => set({ bubbleDismissedAt: null }),
     }),
     {
       name: STORAGE_KEYS.assistant,
@@ -73,6 +85,7 @@ export const useAssistantStore = create<AssistantStoreState>()(
         position: state.position,
         messages: state.messages,
         lastInteractionAt: state.lastInteractionAt,
+        bubbleDismissedAt: state.bubbleDismissedAt,
         speechEnabled: state.speechEnabled,
       }),
     }

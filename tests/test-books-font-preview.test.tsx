@@ -5,8 +5,10 @@ import { createRoot, type Root } from "react-dom/client";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 
+let registeredDomForSuite = false;
 if (typeof document === "undefined") {
   GlobalRegistrator.register();
+  registeredDomForSuite = true;
 }
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
@@ -65,7 +67,10 @@ afterEach(async () => {
 });
 
 afterAll(() => {
-  if (GlobalRegistrator.isRegistered) {
+  // Only tear down the DOM this suite created: unregistering a DOM another
+  // suite registered (and still relies on) crashes React work later in the
+  // aggregate run.
+  if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }
 });

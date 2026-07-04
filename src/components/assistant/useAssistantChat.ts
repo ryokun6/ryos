@@ -23,6 +23,7 @@ import {
   getAssistantCharacter,
   getAssistantCharacterName,
 } from "./characters";
+import { getAssistantGreetDecision } from "./assistantGreeting";
 import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
@@ -34,9 +35,6 @@ const log = createClientLogger("Assistant");
  * automatic greeting request (see ASSISTANT_CHAT_INSTRUCTIONS).
  */
 export const ASSISTANT_SUMMON_MESSAGE = "👋 *user summoned the assistant*";
-
-/** Re-greet if the user hasn't talked to the assistant for this long. */
-const GREETING_STALE_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 /** Canned greetings for anonymous users (avoids burning the 3/day AI budget). */
 const LOCAL_GREETING_KEYS = [
@@ -128,7 +126,11 @@ export interface AssistantChatHandle {
   isLoading: boolean;
   errorText: string | null;
   sendUserMessage: (text: string) => void;
-  /** Trigger a greeting (AI for signed-in users, canned otherwise). */
+  /**
+   * Call when the bubble opens (summon or tap). Starts a fresh conversation
+   * if the bubble stayed dismissed long enough, then greets if warranted
+   * (AI for signed-in users, canned otherwise).
+   */
   greetIfStale: () => void;
   clearConversation: () => void;
   stop: () => void;
@@ -411,15 +413,34 @@ export function useAssistantChat(): AssistantChatHandle {
     useAssistantStore.getState().setMessages(next);
   }, [chat, setMessages]);
 
+  const clearConversation = useCallback(() => {
+    sdkStop();
+    clearError();
+    setMessages([]);
+    useAssistantStore.getState().clearMessages();
+  }, [sdkStop, clearError, setMessages]);
+
   const greetIfStale = useCallback(() => {
     const store = useAssistantStore.getState();
-    const hasAssistantReply = store.messages.some(
-      (msg) => msg.role === "assistant"
-    );
-    const stale =
-      !store.lastInteractionAt ||
-      Date.now() - store.lastInteractionAt > GREETING_STALE_MS;
-    if (hasAssistantReply && !stale) return;
+    const decision = getAssistantGreetDecision({
+      bubbleDismissedAt: store.bubbleDismissedAt,
+      lastInteractionAt: store.lastInteractionAt,
+      hasAssistantReply: store.messages.some(
+        (msg) => msg.role === "assistant"
+      ),
+      now: Date.now(),
+    });
+    // The bubble is (re)opening, so the dismissal no longer applies.
+    store.clearBubbleDismissed();
+    if (decision === "none") return;
+    // Never greet over an in-flight turn (e.g. a quick close/reopen while a
+    // reply is still streaming).
+    if (chat.status === "streaming" || chat.status === "submitted") return;
+
+    if (decision === "fresh-greet") {
+      log.debug("Bubble dismissed long enough — starting a fresh conversation");
+      clearConversation();
+    }
 
     if (username && isAuthenticated) {
       log.debug("Requesting AI greeting");
@@ -427,16 +448,16 @@ export function useAssistantChat(): AssistantChatHandle {
     } else {
       log.debug("Using local canned greeting (anonymous user)");
       appendLocalGreeting();
-      store.markInteraction();
+      useAssistantStore.getState().markInteraction();
     }
-  }, [username, isAuthenticated, sendUserMessage, appendLocalGreeting]);
-
-  const clearConversation = useCallback(() => {
-    sdkStop();
-    clearError();
-    setMessages([]);
-    useAssistantStore.getState().clearMessages();
-  }, [sdkStop, clearError, setMessages]);
+  }, [
+    chat,
+    username,
+    isAuthenticated,
+    sendUserMessage,
+    appendLocalGreeting,
+    clearConversation,
+  ]);
 
   return {
     messages: messages as AIChatMessage[],
