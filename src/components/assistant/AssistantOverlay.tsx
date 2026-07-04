@@ -48,6 +48,8 @@ import {
 import { markAssistantSoundInteraction } from "./assistantSounds";
 import { resolveAssistantSnapPoint } from "./assistantSnap";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
+import { speakAssistantText, stopAssistantSpeech } from "./assistantSpeech";
+import { useAssistantSpeech } from "./useAssistantSpeech";
 import {
   Streamdown,
   CHAT_STREAMDOWN_ANIMATED,
@@ -201,12 +203,14 @@ export function AssistantOverlay() {
 }
 
 function AssistantOverlayInner() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const characterId = useAssistantStore((state) => state.characterId);
   const storedPosition = useAssistantStore((state) => state.position);
   const setStoredPosition = useAssistantStore((state) => state.setPosition);
   const setCharacterId = useAssistantStore((state) => state.setCharacterId);
   const setEnabled = useAssistantStore((state) => state.setEnabled);
+  const speechEnabled = useAssistantStore((state) => state.speechEnabled);
+  const setSpeechEnabled = useAssistantStore((state) => state.setSpeechEnabled);
   const character = getAssistantCharacter(characterId);
   const { computeInsets } = useWindowInsets();
   const launchApp = useLaunchApp();
@@ -227,6 +231,9 @@ function AssistantOverlayInner() {
     greetIfStale,
     clearConversation,
   } = chatHandle;
+
+  // Speak finished replies aloud (browser TTS) when Speech is enabled.
+  useAssistantSpeech({ latestAssistantText, isLoading });
 
   const [bubbleOpen, setBubbleOpen] = useState(true);
   const [input, setInput] = useState("");
@@ -871,8 +878,31 @@ function AssistantOverlayInner() {
     []
   );
 
+  const handleSpeechToggle = useCallback(() => {
+    cancelBubbleAutoClose();
+    const willEnable = !speechEnabled;
+    setSpeechEnabled(willEnable);
+    if (!willEnable) {
+      stopAssistantSpeech();
+      return;
+    }
+    // Speak the current reply inside the menu-click gesture: it audibly
+    // confirms the setting and unlocks synthesis on iOS Safari.
+    if (latestAssistantText && !isLoading) {
+      speakAssistantText(latestAssistantText, { locale: i18n.language });
+    }
+  }, [
+    cancelBubbleAutoClose,
+    speechEnabled,
+    setSpeechEnabled,
+    latestAssistantText,
+    isLoading,
+    i18n.language,
+  ]);
+
   const handleQuit = useCallback(() => {
     cancelBubbleAutoClose();
+    stopAssistantSpeech();
     if (quittingAnimationRef.current) return;
 
     const data = agentDataRef.current;
@@ -928,12 +958,19 @@ function AssistantOverlayInner() {
           },
         })),
       },
+      {
+        type: "checkbox",
+        label: t("common.assistant.contextMenu.speech"),
+        checked: speechEnabled,
+        onSelect: handleSpeechToggle,
+      },
       { type: "separator" },
       {
         type: "item",
         label: t("common.assistant.contextMenu.newConversation"),
         onSelect: () => {
           cancelBubbleAutoClose();
+          stopAssistantSpeech();
           clearConversation();
           setBubbleOpen(true);
         },
@@ -961,6 +998,8 @@ function AssistantOverlayInner() {
       clearConversation,
       launchApp,
       handleQuit,
+      speechEnabled,
+      handleSpeechToggle,
     ]
   );
 

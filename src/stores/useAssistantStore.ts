@@ -27,10 +27,13 @@ interface AssistantStoreState {
   messages: AIChatMessage[];
   /** Epoch ms of the last user↔assistant exchange (for greeting staleness). */
   lastInteractionAt: number | null;
+  /** Speak assistant replies aloud with the browser's speech synthesis. */
+  speechEnabled: boolean;
 
   setEnabled: (enabled: boolean) => void;
   toggleEnabled: () => void;
   setCharacterId: (characterId: AssistantCharacterId) => void;
+  setSpeechEnabled: (speechEnabled: boolean) => void;
   setPosition: (position: AssistantPosition | null) => void;
   setMessages: (messages: AIChatMessage[]) => void;
   clearMessages: () => void;
@@ -45,10 +48,12 @@ export const useAssistantStore = create<AssistantStoreState>()(
       position: null,
       messages: [],
       lastInteractionAt: null,
+      speechEnabled: false,
 
       setEnabled: (enabled) => set({ enabled }),
       toggleEnabled: () => set((state) => ({ enabled: !state.enabled })),
       setCharacterId: (characterId) => set({ characterId }),
+      setSpeechEnabled: (speechEnabled) => set({ speechEnabled }),
       setPosition: (position) => set({ position }),
       setMessages: (messages) =>
         set({
@@ -68,6 +73,7 @@ export const useAssistantStore = create<AssistantStoreState>()(
         position: state.position,
         messages: state.messages,
         lastInteractionAt: state.lastInteractionAt,
+        speechEnabled: state.speechEnabled,
       }),
     }
   )

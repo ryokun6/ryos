@@ -4554,6 +4554,7 @@
     "assistant": {
       "contextMenu": {
         "character": "Personnage",
+        "speech": "Parole",
         "newConversation": "Nouvelle conversation",
         "settings": "Réglages de l'assistant…",
         "quit": "Quitter l'Assistant"
