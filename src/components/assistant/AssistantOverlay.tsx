@@ -891,7 +891,7 @@ function AssistantOverlayInner() {
     clearEntranceSequence();
     quittingAnimationRef.current = exitAnimation;
     playAnimation(exitAnimation);
-    quitTimerRef.current = window.setTimeout(
+    quitTimerRef.current = setTimeout(
       () => {
         quittingAnimationRef.current = null;
         quitTimerRef.current = null;
