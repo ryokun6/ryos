@@ -117,6 +117,59 @@ function clampAxis(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+interface ResolveAssistantBubbleCrossOffsetOptions {
+  side: AssistantBubbleSide;
+  align: AssistantBubbleAlign;
+  /** Character rect (viewport coordinates). */
+  anchor: AssistantBubbleRect;
+  bubbleSize: { width: number; height: number };
+  viewport: AssistantBubbleViewport;
+}
+
+/**
+ * Cross-axis slide (px) that keeps a bubble of the given size on screen for
+ * an already-chosen side/align: horizontal for above/below, vertical for
+ * left/right. The placement resolver picks the side using an estimated
+ * bubble size, but the rendered bubble is often much shorter, so the overlay
+ * recomputes the slide from the measured size — otherwise an estimate-based
+ * slide shifts the real bubble away from the character.
+ */
+export function resolveAssistantBubbleCrossOffset({
+  side,
+  align,
+  anchor,
+  bubbleSize,
+  viewport,
+}: ResolveAssistantBubbleCrossOffsetOptions): number {
+  if (side === "above" || side === "below") {
+    const naturalX =
+      align === "start"
+        ? anchor.x
+        : anchor.x + anchor.width - bubbleSize.width;
+    return (
+      clampAxis(
+        naturalX,
+        BUBBLE_VIEWPORT_MARGIN,
+        viewport.width - bubbleSize.width - BUBBLE_VIEWPORT_MARGIN
+      ) - naturalX
+    );
+  }
+  const naturalY =
+    align === "start"
+      ? anchor.y
+      : anchor.y + anchor.height - bubbleSize.height;
+  return (
+    clampAxis(
+      naturalY,
+      viewport.topInset + BUBBLE_VIEWPORT_MARGIN,
+      viewport.height -
+        viewport.bottomInset -
+        bubbleSize.height -
+        BUBBLE_VIEWPORT_MARGIN
+    ) - naturalY
+  );
+}
+
 export function resolveAssistantBubblePlacement({
   anchor,
   bubbleSize,
@@ -210,24 +263,18 @@ export function resolveAssistantBubblePlacement({
   const slideOnScreen = (
     candidate: PlacementCandidate
   ): { bounds: AssistantBubbleRect; crossOffset: number } => {
-    const { bounds, side } = candidate;
+    const { bounds, side, align } = candidate;
+    const crossOffset = resolveAssistantBubbleCrossOffset({
+      side,
+      align,
+      anchor,
+      bubbleSize,
+      viewport,
+    });
     if (side === "above" || side === "below") {
-      const x = clampAxis(
-        bounds.x,
-        BUBBLE_VIEWPORT_MARGIN,
-        viewport.width - bounds.width - BUBBLE_VIEWPORT_MARGIN
-      );
-      return { bounds: { ...bounds, x }, crossOffset: x - bounds.x };
+      return { bounds: { ...bounds, x: bounds.x + crossOffset }, crossOffset };
     }
-    const y = clampAxis(
-      bounds.y,
-      viewport.topInset + BUBBLE_VIEWPORT_MARGIN,
-      viewport.height -
-        viewport.bottomInset -
-        bounds.height -
-        BUBBLE_VIEWPORT_MARGIN
-    );
-    return { bounds: { ...bounds, y }, crossOffset: y - bounds.y };
+    return { bounds: { ...bounds, y: bounds.y + crossOffset }, crossOffset };
   };
 
   const scored = candidates.map((candidate) => {

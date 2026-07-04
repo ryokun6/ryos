@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
   ASSISTANT_BUBBLE_WIDTH,
+  resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
   type AssistantBubbleRect,
 } from "../src/components/assistant/assistantBubblePlacement";
@@ -178,5 +179,75 @@ describe("assistant bubble placement", () => {
     expect(placement.penalty).toBeLessThan(
       ASSISTANT_BUBBLE_WIDTH * ASSISTANT_BUBBLE_ESTIMATED_HEIGHT
     );
+  });
+});
+
+describe("assistant bubble cross offset", () => {
+  const viewport = { width: 393, height: 852, topInset: 26, bottomInset: 104 };
+  const bubbleWidth = ASSISTANT_BUBBLE_WIDTH;
+
+  test("a short measured bubble is not slid by the estimate's overshoot", () => {
+    // Regression: character near the top with a side pop hanging upward
+    // ("end" align). With the worst-case estimated height the bubble's top
+    // would poke above the menubar, so the estimate-based slide shoved it
+    // down — detaching the real (much shorter) bubble from the character.
+    const anchor = { x: 305, y: 60, width: 80, height: 80 };
+
+    const estimateBased = resolveAssistantBubbleCrossOffset({
+      side: "left",
+      align: "end",
+      anchor,
+      bubbleSize: { width: bubbleWidth, height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT },
+      viewport,
+    });
+    expect(estimateBased).toBeGreaterThan(0);
+
+    const measured = resolveAssistantBubbleCrossOffset({
+      side: "left",
+      align: "end",
+      anchor,
+      bubbleSize: { width: bubbleWidth, height: 104 },
+      viewport,
+    });
+    expect(measured).toBe(0);
+  });
+
+  test("still slides a measured bubble that would leave the viewport", () => {
+    // Character low on the screen with a top-aligned side pop: the measured
+    // bubble would dip into the dock area, so it slides up just enough.
+    const anchor = { x: 305, y: 700, width: 80, height: 80 };
+    const offset = resolveAssistantBubbleCrossOffset({
+      side: "left",
+      align: "start",
+      anchor,
+      bubbleSize: { width: bubbleWidth, height: 104 },
+      viewport,
+    });
+    // max top = 852 - 104 (bottom inset) - 104 (height) - 8 (margin) = 636
+    expect(offset).toBe(636 - 700);
+  });
+
+  test("matches the placement resolver's slide for vertical sides", () => {
+    // Above/below slide along x, where the bubble width is fixed, so the
+    // measured-size recompute must agree with the resolver's own offset.
+    const anchor = { x: 156, y: 640, width: 80, height: 80 };
+    const placement = resolveAssistantBubblePlacement({
+      anchor,
+      bubbleSize: {
+        width: bubbleWidth,
+        height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+      },
+      viewport,
+      obstacles: [],
+    });
+    expect(placement.side).toBe("above");
+    const offset = resolveAssistantBubbleCrossOffset({
+      side: placement.side,
+      align: placement.align,
+      anchor,
+      bubbleSize: { width: bubbleWidth, height: 104 },
+      viewport,
+    });
+    expect(offset).toBe(placement.crossOffset);
   });
 });

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -55,6 +56,7 @@ import { resolveAssistantSnapPoint } from "./assistantSnap";
 import {
   ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
   ASSISTANT_BUBBLE_WIDTH,
+  resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
   type AssistantBubbleRect,
 } from "./assistantBubblePlacement";
@@ -118,14 +120,8 @@ const REST_ANIMATION = "RestPose";
 const BUBBLE_TAIL_INSET = 24;
 /** Keep the tail clear of the bubble's rounded corners. */
 const BUBBLE_TAIL_MIN_OFFSET = 10;
-/** Farthest the tail can sit from the aligned edge along the bubble width. */
-const BUBBLE_TAIL_MAX_OFFSET_X = ASSISTANT_BUBBLE_WIDTH - 34;
-/**
- * Farthest the tail can sit from the aligned edge along the bubble height.
- * Conservative because the rendered bubble can be much shorter than the
- * placement estimate; this keeps the tail attached even to a one-line bubble.
- */
-const BUBBLE_TAIL_MAX_OFFSET_Y = 56;
+/** Clearance (px) between the tail and the bubble edge opposite its anchor. */
+const BUBBLE_TAIL_EDGE_CLEARANCE = 34;
 
 /** Wait for the snap spring to mostly settle before pointing at a window. */
 const POINTING_DELAY_MS = 550;
@@ -1294,9 +1290,70 @@ function AssistantOverlayInner() {
   const bubbleSide = bubblePlacement.side;
   const bubbleAlignEnd = bubblePlacement.align === "end";
   const bubbleVertical = bubbleSide === "above" || bubbleSide === "below";
-  // Cross-axis slide keeping the bubble on screen; the tail counter-shifts
-  // by the same amount so it keeps pointing at the character.
-  const bubbleCrossOffset = bubblePlacement.crossOffset;
+
+  // Track the rendered bubble height. The placement above chooses the side
+  // with a worst-case estimated height (so it stays stable while a reply
+  // streams in), but the on-screen slide must use the real height: a short
+  // bubble slid by the estimate's overshoot ends up detached from the
+  // character (bubble floating away, tail pointing at nothing).
+  const [bubbleMeasuredHeight, setBubbleMeasuredHeight] = useState<
+    number | null
+  >(null);
+  useLayoutEffect(() => {
+    if (!bubbleOpen) {
+      setBubbleMeasuredHeight(null);
+      return;
+    }
+    // While dragging the bubble unmounts; keep the last measurement so the
+    // bubble reappears in place, and re-observe the new element afterwards.
+    if (isDragging) return;
+    const element = bubbleRef.current;
+    if (!element) return;
+    // offsetHeight ignores the open/close scale transform, unlike
+    // getBoundingClientRect().
+    const measure = () => setBubbleMeasuredHeight(element.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [bubbleOpen, isDragging]);
+  const bubbleRenderHeight =
+    bubbleMeasuredHeight ?? ASSISTANT_BUBBLE_ESTIMATED_HEIGHT;
+
+  // Cross-axis slide keeping the bubble on screen, recomputed from the
+  // measured bubble size; the tail counter-shifts by the same amount so it
+  // keeps pointing at the character.
+  const bubbleCrossOffset = useMemo(() => {
+    const insets = computeInsets();
+    return resolveAssistantBubbleCrossOffset({
+      side: bubbleSide,
+      align: bubblePlacement.align,
+      anchor: {
+        x: position.x,
+        y: position.y,
+        width: character.width,
+        height: character.height,
+      },
+      bubbleSize: {
+        width: ASSISTANT_BUBBLE_WIDTH,
+        height: bubbleRenderHeight,
+      },
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        topInset: insets.topInset,
+        bottomInset: insets.bottomInset,
+      },
+    });
+  }, [
+    bubbleSide,
+    bubblePlacement.align,
+    position,
+    character.width,
+    character.height,
+    bubbleRenderHeight,
+    computeInsets,
+  ]);
   const bubblePositionStyle = bubbleVertical
     ? bubbleAlignEnd
       ? { right: -bubbleCrossOffset }
@@ -1310,7 +1367,11 @@ function AssistantOverlayInner() {
         (bubbleAlignEnd ? bubbleCrossOffset : -bubbleCrossOffset),
       BUBBLE_TAIL_MIN_OFFSET
     ),
-    bubbleVertical ? BUBBLE_TAIL_MAX_OFFSET_X : BUBBLE_TAIL_MAX_OFFSET_Y
+    Math.max(
+      BUBBLE_TAIL_MIN_OFFSET,
+      (bubbleVertical ? ASSISTANT_BUBBLE_WIDTH : bubbleRenderHeight) -
+        BUBBLE_TAIL_EDGE_CLEARANCE
+    )
   );
   const bubbleTailStyle = bubbleVertical
     ? bubbleAlignEnd
