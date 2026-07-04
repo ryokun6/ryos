@@ -56,13 +56,15 @@ export const ASSISTANT_CHARACTERS: AssistantCharacter[] = [
   spriteCharacter("f1", "F1", 124, 93),
 ];
 
-export const DEFAULT_ASSISTANT_CHARACTER_ID: AssistantCharacterId = "clippy";
+export const DEFAULT_ASSISTANT_CHARACTER_ID: AssistantCharacterId = "rover";
 
 export function getAssistantCharacter(
   id: string | null | undefined
 ): AssistantCharacter {
   return (
     ASSISTANT_CHARACTERS.find((character) => character.id === id) ??
-    ASSISTANT_CHARACTERS[0]
+    ASSISTANT_CHARACTERS.find(
+      (character) => character.id === DEFAULT_ASSISTANT_CHARACTER_ID
+    )!
   );
 }
