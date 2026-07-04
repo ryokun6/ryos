@@ -13,6 +13,7 @@ import React, { act, useCallback, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
   ASSISTANT_BUBBLE_AUTO_CLOSE_MS,
+  ASSISTANT_BUBBLE_AUTO_CLOSE_TOUCH_MS,
   useAssistantBubbleAutoClose,
 } from "../src/components/assistant/useAssistantBubbleAutoClose";
 
@@ -23,9 +24,11 @@ let root: Root | null = null;
 function AutoCloseProbe({
   onAutoClose,
   resetKey = "clippy",
+  holdOpen = false,
 }: {
   onAutoClose: () => void;
   resetKey?: string;
+  holdOpen?: boolean;
 }) {
   const [bubbleOpen, setBubbleOpen] = useState(true);
   const bubbleRef = useRef<HTMLDivElement>(null);
@@ -40,6 +43,7 @@ function AutoCloseProbe({
     inputRef,
     onClose: closeBubble,
     resetKey,
+    holdOpen,
   });
 
   const toggleBubble = () => {
@@ -329,5 +333,139 @@ describe("assistant bubble auto-close", () => {
     advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_MS);
 
     expect(closeCount).toBe(0);
+  });
+
+  test("never closes while holdOpen is active, restarts fresh after", async () => {
+    let closeCount = 0;
+    const onAutoClose = () => {
+      closeCount += 1;
+    };
+    await act(async () => {
+      root?.render(<AutoCloseProbe onAutoClose={onAutoClose} holdOpen />);
+    });
+
+    // Blur out while a reply is generating (e.g. mobile keyboard dismissed).
+    focusElement("[data-input]");
+    focusElement("[data-outside]");
+    advanceTimers(0);
+    advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_MS * 3);
+
+    expect(host?.querySelector("[data-bubble]")).not.toBeNull();
+    expect(closeCount).toBe(0);
+
+    // Reply finished: the full grace period restarts from zero.
+    await act(async () => {
+      root?.render(
+        <AutoCloseProbe onAutoClose={onAutoClose} holdOpen={false} />
+      );
+    });
+    advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_MS - 1);
+
+    expect(host?.querySelector("[data-bubble]")).not.toBeNull();
+    expect(closeCount).toBe(0);
+
+    advanceTimers(1);
+
+    expect(host?.querySelector("[data-bubble]")).toBeNull();
+    expect(closeCount).toBe(1);
+  });
+
+  test("holdOpen interrupts a running countdown and restarts it fresh", async () => {
+    let closeCount = 0;
+    const onAutoClose = () => {
+      closeCount += 1;
+    };
+    await act(async () => {
+      root?.render(<AutoCloseProbe onAutoClose={onAutoClose} />);
+    });
+
+    focusElement("[data-input]");
+    focusElement("[data-outside]");
+    advanceTimers(0);
+    advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_MS - 1);
+
+    // A new reply starts streaming just before the deadline.
+    await act(async () => {
+      root?.render(<AutoCloseProbe onAutoClose={onAutoClose} holdOpen />);
+    });
+    advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_MS * 3);
+
+    expect(host?.querySelector("[data-bubble]")).not.toBeNull();
+    expect(closeCount).toBe(0);
+
+    await act(async () => {
+      root?.render(
+        <AutoCloseProbe onAutoClose={onAutoClose} holdOpen={false} />
+      );
+    });
+    advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_MS - 1);
+
+    expect(host?.querySelector("[data-bubble]")).not.toBeNull();
+
+    advanceTimers(1);
+
+    expect(host?.querySelector("[data-bubble]")).toBeNull();
+    expect(closeCount).toBe(1);
+  });
+
+  test("holdOpen without a blur never arms a countdown after it lifts", async () => {
+    let closeCount = 0;
+    const onAutoClose = () => {
+      closeCount += 1;
+    };
+    await act(async () => {
+      root?.render(<AutoCloseProbe onAutoClose={onAutoClose} holdOpen />);
+    });
+
+    await act(async () => {
+      root?.render(
+        <AutoCloseProbe onAutoClose={onAutoClose} holdOpen={false} />
+      );
+    });
+    advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_MS * 3);
+
+    expect(host?.querySelector("[data-bubble]")).not.toBeNull();
+    expect(closeCount).toBe(0);
+  });
+
+  test("touch devices get the longer grace period", async () => {
+    const original = Object.getOwnPropertyDescriptor(
+      Object.getPrototypeOf(navigator),
+      "maxTouchPoints"
+    );
+    Object.defineProperty(navigator, "maxTouchPoints", {
+      configurable: true,
+      value: 5,
+    });
+    try {
+      let closeCount = 0;
+      await act(async () => {
+        root?.render(
+          <AutoCloseProbe onAutoClose={() => (closeCount += 1)} />
+        );
+      });
+
+      focusElement("[data-input]");
+      focusElement("[data-outside]");
+      advanceTimers(0);
+      advanceTimers(ASSISTANT_BUBBLE_AUTO_CLOSE_TOUCH_MS - 1);
+
+      expect(host?.querySelector("[data-bubble]")).not.toBeNull();
+      expect(closeCount).toBe(0);
+
+      advanceTimers(1);
+
+      expect(host?.querySelector("[data-bubble]")).toBeNull();
+      expect(closeCount).toBe(1);
+    } finally {
+      Reflect.deleteProperty(navigator, "maxTouchPoints");
+      if (original) {
+        Object.defineProperty(
+          Object.getPrototypeOf(navigator),
+          "maxTouchPoints",
+          original
+        );
+      }
+    }
   });
 });
