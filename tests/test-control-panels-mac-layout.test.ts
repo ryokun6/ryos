@@ -812,7 +812,7 @@ describe("Control Panels macOS 10.3 layout", () => {
       "src/apps/control-panels/components/control-panels-app/AssistantPaneContent.tsx"
     );
     expect(assistantSource.includes("@container")).toBe(true);
-    expect(assistantSource.includes("grid-cols-2 @min-[360px]:grid-cols-4")).toBe(
+    expect(assistantSource.includes("grid-cols-4 @max-[339px]:grid-cols-2")).toBe(
       true
     );
     expect(assistantSource.includes("grid-cols-3")).toBe(false);

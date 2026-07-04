@@ -106,7 +106,7 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
         <hr className="border-t" style={tabStyles.separatorStyle} />
 
         <div className="@container">
-          <div className="grid grid-cols-2 @min-[360px]:grid-cols-4 gap-2 py-1">
+          <div className="grid grid-cols-4 @max-[339px]:grid-cols-2 gap-2 py-1">
             {ASSISTANT_CHARACTERS.map((character) => {
               const isSelected = enabled && character.id === characterId;
               return (
