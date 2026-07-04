@@ -7,13 +7,14 @@
  */
 
 import {
+  createSpeechUtterance,
   getBrowserSpeechSynthesis,
-  resolveSpeechVoice,
   ryOSLocaleToSpeechLanguage,
 } from "@/utils/browserSpeech";
 import { cleanTextForSpeech } from "@/apps/chats/utils/textForSpeech";
 import { splitTextIntoSpeechSegments } from "@/apps/books/utils/booksSpeech";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { useAssistantStore } from "@/stores/useAssistantStore";
+import { getAssistantVoiceProfile } from "./assistantVoices";
 
 /** Safety net for engines that never fire `end`/`error` on an utterance. */
 export const ASSISTANT_SPEECH_UTTERANCE_TIMEOUT_MS = 30_000;
@@ -150,18 +151,20 @@ export function speakAssistantText(
   synth.resume();
 
   const lang = ryOSLocaleToSpeechLanguage(options?.locale);
+  // The active character's persona defaults (voice, pitch, rate); the user's
+  // preferred browser TTS voice still wins inside createSpeechUtterance.
+  const profile = getAssistantVoiceProfile(
+    useAssistantStore.getState().characterId
+  );
 
   const speakAt = (index: number) => {
     if (currentGeneration !== generation || index >= texts.length) return;
 
-    const utterance = new SpeechSynthesisUtterance(texts[index]);
-    utterance.lang = lang;
-    const voice = resolveSpeechVoice(
-      synth.getVoices(),
+    const utterance = createSpeechUtterance(texts[index], {
       lang,
-      useAudioSettingsStore.getState().browserTtsVoiceURI
-    );
-    if (voice) utterance.voice = voice;
+      profile,
+      voices: synth.getVoices(),
+    });
 
     utterance.onstart = () => {
       // An audible start proves the engine accepted the speak() (i.e.
