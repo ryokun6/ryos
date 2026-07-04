@@ -20,6 +20,7 @@ import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { getAssistantCharacter } from "./characters";
+import { getAssistantGreetDecision } from "./assistantGreeting";
 import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
@@ -31,49 +32,6 @@ const log = createClientLogger("Assistant");
  * automatic greeting request (see ASSISTANT_CHAT_INSTRUCTIONS).
  */
 export const ASSISTANT_SUMMON_MESSAGE = "👋 *user summoned the assistant*";
-
-/** Re-greet if the user hasn't talked to the assistant for this long. */
-const GREETING_STALE_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-/**
- * A bubble left dismissed this long marks the conversation as done: the next
- * summon clears the old thread and opens with a fresh greeting.
- */
-export const ASSISTANT_DISMISS_DONE_MS = 5 * 60 * 1000; // 5 minutes
-
-export type AssistantGreetDecision =
-  /** Recent conversation still going — keep showing it, no new greeting. */
-  | "none"
-  /** Greet, continuing the existing thread (first summon / stale thread). */
-  | "greet"
-  /** Conversation is done — clear it and greet on a fresh thread. */
-  | "fresh-greet";
-
-/**
- * Decide what should happen when the bubble opens (summon, tap, or reload).
- * Pure so the staleness/dismissal rules are unit-testable.
- */
-export function getAssistantGreetDecision({
-  bubbleDismissedAt,
-  lastInteractionAt,
-  hasAssistantReply,
-  now,
-}: {
-  bubbleDismissedAt: number | null;
-  lastInteractionAt: number | null;
-  hasAssistantReply: boolean;
-  now: number;
-}): AssistantGreetDecision {
-  const dismissedLongEnough =
-    bubbleDismissedAt !== null &&
-    now - bubbleDismissedAt >= ASSISTANT_DISMISS_DONE_MS;
-  if (dismissedLongEnough) return "fresh-greet";
-
-  const stale =
-    !lastInteractionAt || now - lastInteractionAt > GREETING_STALE_MS;
-  if (hasAssistantReply && !stale) return "none";
-  return "greet";
-}
 
 /** Canned greetings for anonymous users (avoids burning the 3/day AI budget). */
 const LOCAL_GREETING_KEYS = [

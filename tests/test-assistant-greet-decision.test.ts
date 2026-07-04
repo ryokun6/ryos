@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   ASSISTANT_DISMISS_DONE_MS,
   getAssistantGreetDecision,
-} from "../src/components/assistant/useAssistantChat";
+} from "../src/components/assistant/assistantGreeting";
 import { DEFAULT_ASSISTANT_CHARACTER_ID } from "../src/components/assistant/characters";
 import { STORAGE_KEYS } from "../src/utils/storageKeys";
 import { useAssistantStore } from "../src/stores/useAssistantStore";

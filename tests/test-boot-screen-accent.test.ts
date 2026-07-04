@@ -21,6 +21,9 @@ import { ensureTestLocalStorage } from "./setup";
 // would re-install the mocks for every later test file in this process.
 const actualSound = { ...(await import("../src/hooks/useSound")) };
 const actualReactI18next = { ...(await import("react-i18next")) };
+const actualRadixLayoutEffect = {
+  ...(await import("@radix-ui/react-use-layout-effect")),
+};
 
 beforeAll(() => {
   if (typeof document === "undefined") {
@@ -36,6 +39,7 @@ afterAll(async () => {
   ensureTestLocalStorage();
   mock.module("@/hooks/useSound", () => actualSound);
   mock.module("react-i18next", () => actualReactI18next);
+  mock.module("@radix-ui/react-use-layout-effect", () => actualRadixLayoutEffect);
 });
 
 mock.module("@/hooks/useSound", () => ({
@@ -54,6 +58,16 @@ mock.module("react-i18next", () => ({
     t: (key: string) =>
       key === "common.system.systemRestoring" ? "System Restoring..." : key,
   }),
+}));
+
+// When this suite runs alone, Radix loads before the DOM registers, so its
+// layout-effect shim (`globalThis.document ? useLayoutEffect : noop`) is a
+// no-op. When another suite has already registered a DOM, the real layout
+// effects run and Radix's dialog ref/presence wiring loops forever under
+// happy-dom ("Maximum update depth exceeded"). Pin the shim to the no-op so
+// the suite behaves the same regardless of which files ran before it.
+mock.module("@radix-ui/react-use-layout-effect", () => ({
+  useLayoutEffect: () => {},
 }));
 
 const { BootScreen } = await import("../src/components/dialogs/BootScreen");
