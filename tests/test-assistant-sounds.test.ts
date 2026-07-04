@@ -2,10 +2,13 @@ import { afterEach, describe, expect, mock, test } from "bun:test";
 import {
   AssistantSoundPlayer,
   canPlayAssistantSounds,
+  getCachedAssistantSoundCountForTests,
   markAssistantSoundInteraction,
+  resetAssistantSoundPlaybackGapForTests,
   resetAssistantSoundStateForTests,
   resolveAssistantSoundSrc,
 } from "../src/components/assistant/assistantSounds";
+import { ASSISTANT_SOUND_MAPS } from "../src/components/assistant/sounds";
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 
 describe("assistant sound mapping", () => {
@@ -94,8 +97,10 @@ describe("AssistantSoundPlayer", () => {
       src = "";
       play = play;
       pause() {}
+      load() {}
       addEventListener() {}
       removeEventListener() {}
+      removeAttribute() {}
     }
     // @ts-expect-error test double
     globalThis.Audio = MockAudio;
@@ -109,6 +114,132 @@ describe("AssistantSoundPlayer", () => {
       markAssistantSoundInteraction();
       player.play("1");
       expect(play).toHaveBeenCalledTimes(1);
+    } finally {
+      globalThis.Audio = originalAudio;
+    }
+  });
+
+  test("creates audio elements lazily on play, never on loadCharacter", () => {
+    let created = 0;
+    const originalAudio = globalThis.Audio;
+    class MockAudio {
+      preload = "";
+      volume = 1;
+      currentTime = 0;
+      src = "";
+      constructor() {
+        created += 1;
+      }
+      play() {
+        return Promise.resolve();
+      }
+      pause() {}
+      load() {}
+      addEventListener() {}
+      removeEventListener() {}
+      removeAttribute() {}
+    }
+    // @ts-expect-error test double
+    globalThis.Audio = MockAudio;
+
+    try {
+      markAssistantSoundInteraction();
+      const player = new AssistantSoundPlayer();
+      player.loadCharacter("rocky");
+      expect(created).toBe(0);
+
+      player.play("1");
+      expect(created).toBe(1);
+      expect(getCachedAssistantSoundCountForTests()).toBe(1);
+    } finally {
+      globalThis.Audio = originalAudio;
+    }
+  });
+
+  test("reuses cached clips across player instances and character switches", () => {
+    let created = 0;
+    const originalAudio = globalThis.Audio;
+    class MockAudio {
+      preload = "";
+      volume = 1;
+      currentTime = 0;
+      src = "";
+      constructor() {
+        created += 1;
+      }
+      play() {
+        return Promise.resolve();
+      }
+      pause() {}
+      load() {}
+      addEventListener() {}
+      removeEventListener() {}
+      removeAttribute() {}
+    }
+    // @ts-expect-error test double
+    globalThis.Audio = MockAudio;
+
+    try {
+      markAssistantSoundInteraction();
+
+      const first = new AssistantSoundPlayer();
+      first.loadCharacter("clippy");
+      first.play("1");
+      first.dispose();
+      expect(created).toBe(1);
+
+      // Remounted sprite (character switch back) reuses the cached element.
+      const second = new AssistantSoundPlayer();
+      second.loadCharacter("clippy");
+      resetAssistantSoundPlaybackGapForTests();
+      second.play("1");
+      expect(created).toBe(1);
+      expect(getCachedAssistantSoundCountForTests()).toBe(1);
+    } finally {
+      globalThis.Audio = originalAudio;
+    }
+  });
+
+  test("caps the shared clip cache and releases evicted elements", () => {
+    const released: string[] = [];
+    const originalAudio = globalThis.Audio;
+    class MockAudio {
+      preload = "";
+      volume = 1;
+      currentTime = 0;
+      src: string;
+      constructor(src: string) {
+        this.src = src;
+      }
+      play() {
+        return Promise.resolve();
+      }
+      pause() {}
+      load() {}
+      addEventListener() {}
+      removeEventListener() {}
+      removeAttribute(name: string) {
+        if (name === "src") released.push(this.src);
+      }
+    }
+    // @ts-expect-error test double
+    globalThis.Audio = MockAudio;
+
+    try {
+      markAssistantSoundInteraction();
+      const player = new AssistantSoundPlayer();
+      player.loadCharacter("rocky");
+
+      const soundIds = Object.keys(ASSISTANT_SOUND_MAPS.rocky);
+      for (const soundId of soundIds) {
+        resetAssistantSoundPlaybackGapForTests();
+        player.play(soundId);
+      }
+
+      expect(getCachedAssistantSoundCountForTests()).toBeLessThanOrEqual(24);
+      expect(released.length).toBe(
+        Math.max(0, soundIds.length - 24)
+      );
     } finally {
       globalThis.Audio = originalAudio;
     }

@@ -138,6 +138,8 @@ interface ClippySpriteProps {
    * rendered visual, including intentionally empty entrance frames.
    */
   initiallyHidden?: boolean;
+  /** Skip sound playback entirely (e.g. static preference-pane previews). */
+  muted?: boolean;
   onAnimationEnd?: (animation: string) => void;
 }
 
@@ -148,6 +150,7 @@ export function ClippySprite({
   animation,
   playToken = 0,
   initiallyHidden = false,
+  muted = false,
   onAnimationEnd,
 }: ClippySpriteProps) {
   const [frameImages, setFrameImages] = useState<Array<[number, number]>>(() =>
@@ -159,6 +162,7 @@ export function ClippySprite({
   onEndRef.current = onAnimationEnd;
 
   useEffect(() => {
+    if (muted) return;
     const player = new AssistantSoundPlayer();
     soundPlayerRef.current = player;
     player.loadCharacter(characterId);
@@ -168,7 +172,7 @@ export function ClippySprite({
         soundPlayerRef.current = null;
       }
     };
-  }, [characterId]);
+  }, [characterId, muted]);
 
   const [frameWidth, frameHeight] = data.framesize;
 
