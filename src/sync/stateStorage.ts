@@ -326,7 +326,10 @@ export async function loadPersistedSyncState(
 
   if (await persistMigration(key, migrated)) {
     removeLegacyState(legacyKey);
-  } else if (!isPersistWritesHalted()) {
+  } else if (
+    !isPersistWritesHalted() &&
+    isPersistEpochCurrent(writerEpoch)
+  ) {
     console.warn("[sync2] Failed to migrate sync state to IndexedDB");
   }
   return migrated;
@@ -443,7 +446,10 @@ export async function getPersistedSyncShadowKeys(options: {
     if (await persistMigration(username, state)) {
       removeLegacyState(legacyKey);
       storedUsers.add(username);
-    } else if (!isPersistWritesHalted()) {
+    } else if (
+      !isPersistWritesHalted() &&
+      isPersistEpochCurrent(writerEpoch)
+    ) {
       console.warn("[sync2] Failed to migrate inactive sync state");
     }
   }
