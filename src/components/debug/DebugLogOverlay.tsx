@@ -7,7 +7,9 @@ import {
   useState,
   useSyncExternalStore,
   type CSSProperties,
+  type ReactNode,
 } from "react";
+import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import {
   ArrowClockwise,
   ArrowDown,
@@ -52,10 +54,16 @@ import {
 } from "@/utils/networkCapture";
 import { osCardClassName } from "@/components/shared/osThemePrimitives";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { DebugIndexedDBPanel } from "./DebugIndexedDBPanel";
 import { DebugLiveDashboard } from "./DebugLiveDashboard";
 import { DebugNetworkPanel } from "./DebugNetworkPanel";
 import { getRestoredScrollTop } from "./debugLogVirtualization";
+import {
+  getDebugPanelMotionProps,
+  getDebugPanelTransformOrigin,
+  type DebugPanelAnchor,
+} from "./debugOverlayAnimations";
 import { DB_NAME } from "@/utils/indexedDB";
 
 const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
@@ -274,6 +282,33 @@ function ConsoleEntryContent({
   });
 }
 
+function DebugPanelMotionShell({
+  anchor,
+  prefersReducedMotion,
+  children,
+}: {
+  anchor: DebugPanelAnchor;
+  prefersReducedMotion: boolean;
+  children: ReactNode;
+}) {
+  const isPresent = useIsPresent();
+  const motionProps = getDebugPanelMotionProps({ prefersReducedMotion });
+
+  return (
+    <motion.div
+      key="debug-panel"
+      initial={motionProps.initial}
+      animate={motionProps.animate}
+      exit={motionProps.exit}
+      transition={motionProps.transition}
+      className={cn("mb-2", !isPresent && "pointer-events-none")}
+      style={{ transformOrigin: getDebugPanelTransformOrigin(anchor) }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 /**
  * Floating, togglable console overlay shown only while Debug Mode is enabled
  * (Control Panels → Accounts → Debug). Mirrors captured `console.*` output into an
@@ -291,6 +326,8 @@ export function DebugLogOverlay() {
   const debugFabBottom = isWindowsTheme
     ? `calc(env(safe-area-inset-bottom, 0px) + ${metadata.taskbarHeight + debugFabGapPx}px)`
     : `calc(env(safe-area-inset-bottom, 0px) + ${debugFabGapPx}px)`;
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const debugPanelAnchor: DebugPanelAnchor = isWindowsTheme ? "right" : "left";
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DebugPanelTab>("logs");
   const [loggerFilter, setLoggerFilter] = useState(ALL_LOGGERS_FILTER);
@@ -723,38 +760,43 @@ export function DebugLogOverlay() {
         zIndex: 2147483000,
       }}
     >
-      {open && (
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) =>
-            setActiveTab(
-              value === "live"
-                ? "live"
-                : value === "network"
-                  ? "network"
-                  : value === "idb"
-                    ? "idb"
-                    : "logs"
-            )
-          }
-          className={cn(
-            isMacOSTheme
-              ? cn(
-                  "window is-foreground flex flex-col overflow-hidden rounded-[0.5rem] font-geneva-12 text-os-text-primary",
-                  flags.isAquaGlass && "window-material-glass"
+      <AnimatePresence initial={false}>
+        {open ? (
+          <DebugPanelMotionShell
+            anchor={debugPanelAnchor}
+            prefersReducedMotion={prefersReducedMotion}
+          >
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) =>
+                setActiveTab(
+                  value === "live"
+                    ? "live"
+                    : value === "network"
+                      ? "network"
+                      : value === "idb"
+                        ? "idb"
+                        : "logs"
                 )
-              : osCardClassName(flags, { embed: "panel" }),
-            "mb-2 h-[min(60vh,420px)] w-[min(92vw,440px)] shadow-os-window"
-          )}
-          style={
-            isMacOSTheme && !flags.isAquaGlass
-              ? {
-                  backgroundColor: "var(--os-color-window-bg)",
-                  backgroundImage: "var(--os-pinstripe-window)",
-                }
-              : undefined
-          }
-        >
+              }
+              className={cn(
+                isMacOSTheme
+                  ? cn(
+                      "window is-foreground flex flex-col overflow-hidden rounded-[0.5rem] font-geneva-12 text-os-text-primary",
+                      flags.isAquaGlass && "window-material-glass"
+                    )
+                  : osCardClassName(flags, { embed: "panel" }),
+                "h-[min(60vh,420px)] w-[min(92vw,440px)] shadow-os-window"
+              )}
+              style={
+                isMacOSTheme && !flags.isAquaGlass
+                  ? {
+                      backgroundColor: "var(--os-color-window-bg)",
+                      backgroundImage: "var(--os-pinstripe-window)",
+                    }
+                  : undefined
+              }
+            >
           {/* Header */}
           <div
             className={cn(
@@ -1228,8 +1270,10 @@ export function DebugLogOverlay() {
               </TabsTrigger>
             </TabsList>
           </div>
-        </Tabs>
-      )}
+            </Tabs>
+          </DebugPanelMotionShell>
+        ) : null}
+      </AnimatePresence>
 
       {/* Toggle button */}
       <button
