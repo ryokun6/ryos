@@ -17,9 +17,12 @@ import {
 } from "../src/components/assistant/ClippySprite";
 import {
   getAssistantAnimationIntent,
+  getAssistantAnimationMappedToolNames,
   getAssistantExitAnimationTimeout,
   getAssistantLifecycleAnimationIntent,
+  getAssistantPointingDirection,
   getAnimationCandidates,
+  getDeepIdleAnimationPool,
   getDocumentToolSequenceKind,
   getIdleAnimationPool,
   getToolAnimationIntent,
@@ -28,8 +31,11 @@ import {
   resolveAssistantEntranceSequencePlan,
   resolveDocumentToolSequencePlan,
   selectAssistantAnimation,
+  selectAssistantPointingAnimation,
 } from "../src/components/assistant/assistantAnimation";
 import { ASSISTANT_CHARACTERS } from "../src/components/assistant/characters";
+import { TOOL_DESCRIPTIONS } from "../api/chat/tools/index.js";
+import { SERVER_EXECUTED_TOOL_NAMES } from "../src/shared/tools/serverExecuted";
 
 const frameImages: Array<[number, number]> = [[0, 0]];
 const frame = { duration: 100, images: frameImages };
@@ -52,11 +58,18 @@ describe("assistant semantic animation selection", () => {
     expect(getAssistantLifecycleAnimationIntent("bubbleOpen")).toBe(
       "attention"
     );
-    expect(getAssistantLifecycleAnimationIntent("bubbleClose")).toBeNull();
+    expect(getAssistantLifecycleAnimationIntent("bubbleClose")).toBe(
+      "acknowledge"
+    );
     expect(getAssistantLifecycleAnimationIntent("quit")).toBe("goodbye");
   });
 
-  test("keeps entrance clips out of attention and working candidates", () => {
+  test("keeps entrance clips out of every non-entrance candidate pool", () => {
+    // Entrance clips must only play through the entrance sequence plan;
+    // random picks replaying the entry animation looked like a double entry.
+    expect(
+      getAnimationCandidates("greeting").some(isAssistantEntranceAnimation)
+    ).toBe(false);
     expect(
       getAnimationCandidates("attention").some(isAssistantEntranceAnimation)
     ).toBe(false);
@@ -72,21 +85,54 @@ describe("assistant semantic animation selection", () => {
     ).not.toContain("Hide");
   });
 
-  test("plays Show before greeting on initial character load", () => {
-    const data = agentWithAnimations(["Show", "Greeting", "RestPose"]);
+  test("tool-specific prepends survive the entrance/exit filter", () => {
+    // "Show" (launchApp) and "Hide" (closeApp) prepends used to be filtered
+    // out entirely, leaving those tools with generic clips only.
+    expect(
+      getAnimationCandidates("processing", { toolName: "launchApp" })[0]
+    ).toBe("GetAttention");
+    expect(
+      getAnimationCandidates("processing", { toolName: "closeApp" })[0]
+    ).toBe("Wave");
+    expect(
+      getAnimationCandidates("processing", { toolName: "settings" })[0]
+    ).toBe("GetWizardy");
+  });
+
+  test("falls back to Show plus a greeting gesture when there is no Greeting clip", () => {
+    const data = agentWithAnimations(["Show", "Greet", "Wave", "RestPose"]);
 
     expect(resolveAssistantEntranceSequencePlan(data)).toEqual({
       first: "Show",
-      followUp: "Greeting",
+      followUp: "Greet",
     });
     expect(
       resolveAssistantEntranceSequencePlan(
-        agentWithAnimations(["Greeting", "RestPose"])
+        agentWithAnimations(["Greet", "RestPose"])
       )
     ).toEqual({
       first: "RestPose",
       followUp: null,
     });
+  });
+
+  test("prefers the fully-authored Greeting entrance over Show, with no follow-up", () => {
+    // On every character that ships one, "Greeting" is the real entrance: it
+    // starts from (nearly) empty frames, materializes the character, greets,
+    // and ends at the rest pose — while "Show" on those characters is a
+    // 40–300ms pop. Greeting already contains the greeting gesture, so
+    // chaining a follow-up (or playing Show first) would double the entry.
+    const withGreeting = agentWithAnimations([
+      "Show",
+      "Greeting",
+      "Wave",
+      "RestPose",
+    ]);
+    expect(resolveAssistantEntranceSequencePlan(withGreeting)).toEqual({
+      first: "Greeting",
+      followUp: null,
+    });
+    expect(isAssistantEntranceAnimation("Greeting")).toBe(true);
   });
 
   test("uses clip duration for quit with a bounded malformed-data fallback", () => {
@@ -205,9 +251,51 @@ describe("assistant semantic animation selection", () => {
     ).toBe("Hearing_1");
   });
 
-  test("maps open and songLibrary tools to reading and searching", () => {
+  test("maps open and songLibraryControl tools to reading and searching", () => {
     expect(getToolAnimationIntent("open")).toBe("reading");
-    expect(getToolAnimationIntent("songLibrary")).toBe("searching");
+    expect(getToolAnimationIntent("songLibraryControl")).toBe("searching");
+    expect(getToolAnimationIntent("stickiesControl")).toBe("writing");
+  });
+
+  test("speaks once the in-flight turn has visible reply text", () => {
+    expect(
+      getAssistantAnimationIntent({
+        isLoading: true,
+        hasError: false,
+        toolActivity: null,
+        hasVisibleReply: true,
+      })
+    ).toBe("speaking");
+    // A running tool still wins over streamed text.
+    expect(
+      getAssistantAnimationIntent({
+        isLoading: true,
+        hasError: false,
+        toolActivity: { name: "webFetch", phase: "running" },
+        hasVisibleReply: true,
+      })
+    ).toBe("searching");
+    expect(
+      getAssistantAnimationIntent({
+        isLoading: false,
+        hasError: false,
+        toolActivity: null,
+        hasVisibleReply: true,
+      })
+    ).toBe("idle");
+  });
+
+  test("every animation-mapped tool name exists in the tool registry", () => {
+    // Guards against tool renames silently killing animations (this bit us
+    // when switchTheme became settings and songLibrary became
+    // songLibraryControl).
+    const knownToolNames = new Set<string>([
+      ...Object.keys(TOOL_DESCRIPTIONS),
+      ...SERVER_EXECUTED_TOOL_NAMES,
+    ]);
+    for (const toolName of getAssistantAnimationMappedToolNames()) {
+      expect(knownToolNames).toContain(toolName);
+    }
   });
 
   test("excludes mega idle loops from the ambient idle pool", () => {
@@ -219,6 +307,66 @@ describe("assistant semantic animation selection", () => {
     ]);
 
     expect(getIdleAnimationPool(data)).toEqual(["Idle1_1"]);
+    expect(getDeepIdleAnimationPool(data)).toEqual(["DeepIdle1"]);
+    expect(getDeepIdleAnimationPool(agentWithAnimations(["RestPose"]))).toEqual(
+      []
+    );
+  });
+
+  test("resolves pointing directions from viewer-space geometry", () => {
+    const assistant = { x: 500, y: 400, width: 100, height: 100 };
+    const at = (x: number, y: number) => ({ x, y, width: 200, height: 100 });
+
+    // Window centered far to the left / right of the character.
+    expect(getAssistantPointingDirection(assistant, at(100, 420))).toBe(
+      "left"
+    );
+    expect(getAssistantPointingDirection(assistant, at(900, 420))).toBe(
+      "right"
+    );
+    // Mostly above / below.
+    expect(getAssistantPointingDirection(assistant, at(460, 40))).toBe("up");
+    expect(getAssistantPointingDirection(assistant, at(460, 800))).toBe(
+      "down"
+    );
+    // Clearly diagonal.
+    expect(getAssistantPointingDirection(assistant, at(100, 100))).toBe(
+      "upLeft"
+    );
+    expect(getAssistantPointingDirection(assistant, at(900, 800))).toBe(
+      "downRight"
+    );
+    // Too close to point at.
+    expect(getAssistantPointingDirection(assistant, at(470, 410))).toBeNull();
+  });
+
+  test("selects pointing clips with diagonal fallbacks and null when unavailable", () => {
+    const clippyLike = agentWithAnimations([
+      "GestureLeft",
+      "GestureRight",
+      "LookUpLeft",
+      "LookUp",
+      "RestPose",
+    ]);
+    expect(selectAssistantPointingAnimation(clippyLike, "left")).toBe(
+      "GestureLeft"
+    );
+    expect(selectAssistantPointingAnimation(clippyLike, "upLeft")).toBe(
+      "LookUpLeft"
+    );
+    expect(selectAssistantPointingAnimation(clippyLike, "up")).toBe("LookUp");
+
+    // Rover only ships GestureLeft / LookUp / LookUpLeft.
+    const roverLike = agentWithAnimations([
+      "GestureLeft",
+      "LookUp",
+      "LookUpLeft",
+      "RestPose",
+    ]);
+    expect(selectAssistantPointingAnimation(roverLike, "right")).toBeNull();
+    expect(selectAssistantPointingAnimation(roverLike, "upRight")).toBe(
+      "LookUp"
+    );
   });
 
   test("adds enriched semantic candidates", () => {
@@ -479,6 +627,7 @@ describe("assistant sprite overlays", () => {
   });
 
   test("falls back to the base pose when an entrance clip is missing", async () => {
+    const onAnimationEnd: string[] = [];
     const data: AgentData = {
       framesize: [64, 64],
       animations: {},
@@ -495,6 +644,7 @@ describe("assistant sprite overlays", () => {
           characterId="clippy"
           animation="Show"
           initiallyHidden
+          onAnimationEnd={(name) => onAnimationEnd.push(name)}
         />
       );
     });
@@ -502,6 +652,9 @@ describe("assistant sprite overlays", () => {
     expect(
       host.querySelectorAll("[data-assistant-sprite-layer]")
     ).toHaveLength(1);
+    // A missing clip must still notify the state machine, otherwise the
+    // sprite freezes at its base pose until an unrelated state change.
+    expect(onAnimationEnd).toEqual(["Show"]);
   });
 
   test("keeps the current frame during ordinary animation changes", async () => {
@@ -541,6 +694,166 @@ describe("assistant sprite overlays", () => {
     expect(
       host.querySelectorAll("[data-assistant-sprite-layer]")
     ).toHaveLength(1);
+  });
+
+  test("winds down exit-branching clips before starting the next animation", async () => {
+    const onAnimationEnd: string[] = [];
+    const data: AgentData = {
+      framesize: [64, 64],
+      animations: {
+        // Loops frame 0 forever; the only way out is the exitBranch path.
+        Loop: {
+          useExitBranching: true,
+          frames: [
+            {
+              duration: 30,
+              images: [[0, 0]],
+              exitBranch: 1,
+              branching: { branches: [{ frameIndex: 0, weight: 100 }] },
+            },
+            { duration: 30, images: [[64, 0]] },
+          ],
+        },
+        Next: { frames: [{ duration: 10_000, images: [[128, 0]] }] },
+      },
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    const renderSprite = (animation: string) =>
+      act(async () => {
+        root?.render(
+          <ClippySprite
+            mapUrl="/map.png"
+            data={data}
+            characterId="clippy"
+            animation={animation}
+            onAnimationEnd={(name) => onAnimationEnd.push(name)}
+          />
+        );
+      });
+
+    await renderSprite("Loop");
+    const layer = () =>
+      host
+        .querySelector("[data-assistant-sprite-layer]")
+        ?.getAttribute("style") ?? "";
+    expect(layer()).toContain("background-position: 0px 0px");
+
+    // Interrupt: the clip must not hard-cut to Next…
+    await renderSprite("Next");
+    expect(layer()).toContain("background-position: 0px 0px");
+
+    // …but follow its exit frame, then start Next without reporting an end
+    // for the interrupted clip.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    });
+    expect(layer()).toContain("background-position: -128px 0px");
+    expect(onAnimationEnd).toEqual([]);
+  });
+
+  test("holds exit-branching clips at their wait point, then winds down into the next clip", async () => {
+    // Real Microsoft Agent exit-branching clips (e.g. Merlin's idles) never
+    // reach their wind-down frames naturally: the held pose branches straight
+    // to a terminal keep-previous frame, and the wind-down is only reachable
+    // via exitBranch. Ending the clip there used to strand the held pose and
+    // snap to the next clip.
+    const onAnimationEnd: string[] = [];
+    const data: AgentData = {
+      framesize: [64, 64],
+      animations: {
+        Held: {
+          useExitBranching: true,
+          frames: [
+            {
+              // Held pose: natural flow jumps to the terminal marker.
+              duration: 30,
+              images: [[64, 0]],
+              exitBranch: 1,
+              branching: { branches: [{ frameIndex: 3, weight: 100 }] },
+            },
+            { duration: 30, images: [[128, 0]] }, // wind-down
+            { duration: 30, images: [[0, 0]] }, // back at rest
+            { duration: 0 }, // terminal keep-previous marker
+          ],
+        },
+        Next: { frames: [{ duration: 10_000, images: [[192, 0]] }] },
+      },
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    const renderSprite = (animation: string) =>
+      act(async () => {
+        root?.render(
+          <ClippySprite
+            mapUrl="/map.png"
+            data={data}
+            characterId="clippy"
+            animation={animation}
+            onAnimationEnd={(name) => onAnimationEnd.push(name)}
+          />
+        );
+      });
+    const layer = () =>
+      host
+        .querySelector("[data-assistant-sprite-layer]")
+        ?.getAttribute("style") ?? "";
+
+    await renderSprite("Held");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    // Natural end reached: the end is reported, but the held pose stays on
+    // screen instead of jumping anywhere.
+    expect(onAnimationEnd).toEqual(["Held"]);
+    expect(layer()).toContain("background-position: -64px 0px");
+
+    // The next request winds down through the exit path before Next starts.
+    await renderSprite("Next");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+    expect(layer()).toContain("background-position: -192px 0px");
+    expect(onAnimationEnd).toEqual(["Held"]);
+  });
+
+  test("hard-switches clips that lack exit branching", async () => {
+    const data: AgentData = {
+      framesize: [64, 64],
+      animations: {
+        Busy: {
+          frames: [{ duration: 10_000, images: [[0, 0]] }],
+        },
+        Next: { frames: [{ duration: 10_000, images: [[128, 0]] }] },
+      },
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+
+    const renderSprite = (animation: string) =>
+      act(async () => {
+        root?.render(
+          <ClippySprite
+            mapUrl="/map.png"
+            data={data}
+            characterId="clippy"
+            animation={animation}
+          />
+        );
+      });
+
+    await renderSprite("Busy");
+    await renderSprite("Next");
+    expect(
+      host
+        .querySelector("[data-assistant-sprite-layer]")
+        ?.getAttribute("style")
+    ).toContain("background-position: -128px 0px");
   });
 
   test("stacks every image and keeps layers through duration-only frames", async () => {

@@ -1,6 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantCharacterId } from "./characters";
 import { AssistantSoundPlayer } from "./assistantSounds";
+import { createClientLogger } from "@/utils/logger";
+
+/**
+ * Sprite playback trace. Silent in production unless the user enables Debug
+ * Mode (or sets `localStorage["ryos:debug"] = "1"`).
+ */
+const assistantSpriteLogger = createClientLogger("AssistantSprite");
+const spriteLog = (message: string): void =>
+  assistantSpriteLogger.debug(message);
 
 /**
  * Minimal player for Microsoft Agent animation data (clippy.js format).
@@ -40,6 +49,9 @@ function resolveFrameImages(
 ): Array<[number, number]> {
   return frame.images && frame.images.length > 0 ? frame.images : current;
 }
+
+/** How often a clip held at its WAITING point checks for an interrupt. */
+const WAITING_POLL_MS = 50;
 
 const agentDataCache = new Map<string, Promise<AgentData>>();
 
@@ -143,6 +155,25 @@ interface ClippySpriteProps {
   onAnimationEnd?: (animation: string) => void;
 }
 
+interface PlaybackState {
+  name: string;
+  anim: AgentAnimation;
+  index: number;
+  /** Following exitBranch frames toward the end after an interrupt request. */
+  exiting: boolean;
+  /** Frames stepped while exiting; caps malformed exit-branch loops. */
+  exitSteps: number;
+  /**
+   * Reached the natural end of a useExitBranching clip: holding its final
+   * pose (original Microsoft Agent WAITING state). The end has been reported,
+   * and the clip's wind-down frames play when the next clip is requested.
+   */
+  waiting: boolean;
+  /** Clip queued to start once the graceful exit completes. */
+  pendingName: string | null;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
 export function ClippySprite({
   mapUrl,
   data,
@@ -156,8 +187,10 @@ export function ClippySprite({
   const [frameImages, setFrameImages] = useState<Array<[number, number]>>(() =>
     initiallyHidden ? [] : [[0, 0]]
   );
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playbackRef = useRef<PlaybackState | null>(null);
   const soundPlayerRef = useRef<AssistantSoundPlayer | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
   const onEndRef = useRef(onAnimationEnd);
   onEndRef.current = onAnimationEnd;
 
@@ -176,60 +209,192 @@ export function ClippySprite({
 
   const [frameWidth, frameHeight] = data.framesize;
 
+  const stopPlayback = useCallback(() => {
+    const playback = playbackRef.current;
+    if (playback?.timer) clearTimeout(playback.timer);
+    playbackRef.current = null;
+  }, []);
+
+  const startAnimation = useCallback(
+    function start(name: string) {
+      stopPlayback();
+      soundPlayerRef.current?.stopAll();
+      const anim = dataRef.current.animations[name];
+      if (!anim || anim.frames.length === 0) {
+        spriteLog(`missing clip "${name}" — falling back to base pose`);
+        setFrameImages([[0, 0]]);
+        // Report the clip as ended so the overlay's state machine recovers
+        // (otherwise a missing clip freezes the sprite at its base pose until
+        // the next unrelated state change).
+        onEndRef.current?.(name);
+        return;
+      }
+
+      spriteLog(
+        `start ${name} (${anim.frames.length} frames${
+          anim.useExitBranching ? ", exit-branching" : ""
+        })`
+      );
+      const playback: PlaybackState = {
+        name,
+        anim,
+        index: 0,
+        exiting: false,
+        exitSteps: 0,
+        waiting: false,
+        pendingName: null,
+        timer: null,
+      };
+      playbackRef.current = playback;
+
+      const finish = () => {
+        if (playbackRef.current !== playback) return;
+        const pendingName = playback.pendingName;
+        playbackRef.current = null;
+        if (pendingName !== null) {
+          // Interrupted clips exit silently: the parent state machine already
+          // committed to the pending clip, so no end notification.
+          start(pendingName);
+          return;
+        }
+        onEndRef.current?.(playback.name);
+      };
+
+      const step = () => {
+        if (playbackRef.current !== playback) return;
+        const frame = playback.anim.frames[playback.index];
+        if (!frame) {
+          finish();
+          return;
+        }
+
+        // WAITING hold: the frame is already on screen, so just poll for an
+        // interrupt. Once one arrives, jump onto the held frame's exit path.
+        if (playback.waiting) {
+          if (!playback.exiting) {
+            playback.timer = setTimeout(step, WAITING_POLL_MS);
+            return;
+          }
+          playback.waiting = false;
+          playback.exitSteps += 1;
+          const exitIndex =
+            typeof frame.exitBranch === "number"
+              ? frame.exitBranch
+              : playback.index + 1;
+          if (exitIndex >= playback.anim.frames.length) {
+            finish();
+            return;
+          }
+          playback.index = exitIndex;
+          step();
+          return;
+        }
+
+        setFrameImages((current) => resolveFrameImages(current, frame));
+        soundPlayerRef.current?.play(frame.sound);
+
+        // Pick the next frame. Exiting follows exitBranch pointers toward the
+        // end (skipping probabilistic loops); normal playback honors
+        // branching, else advances sequentially. Reaching past the last frame
+        // ends the animation.
+        let nextIndex = playback.index + 1;
+        if (playback.exiting) {
+          playback.exitSteps += 1;
+          if (playback.exitSteps > playback.anim.frames.length * 2) {
+            finish();
+            return;
+          }
+          if (typeof frame.exitBranch === "number") {
+            nextIndex = frame.exitBranch;
+          }
+        } else if (frame.branching) {
+          let roll = Math.random() * 100;
+          for (const branch of frame.branching.branches) {
+            if (roll <= branch.weight) {
+              nextIndex = branch.frameIndex;
+              break;
+            }
+            roll -= branch.weight;
+          }
+        }
+
+        // Exit-branching clips never end on their own (original Microsoft
+        // Agent WAITING state): their last frame is a terminal marker, and
+        // the wind-down frames before it are only reachable via exitBranch
+        // pointers. Finishing here would strand the held pose on screen and
+        // make the next clip a hard cut. Instead hold the current frame —
+        // keeping its exitBranch reachable — and report the end once so the
+        // overlay's state machine can decide what plays next; its request
+        // then winds the clip down through the exit path above.
+        if (
+          !playback.exiting &&
+          playback.anim.useExitBranching &&
+          nextIndex >= playback.anim.frames.length - 1
+        ) {
+          playback.waiting = true;
+          spriteLog(`hold ${playback.name} at exit-branch wait point`);
+          onEndRef.current?.(playback.name);
+          if (playbackRef.current !== playback) return;
+          playback.timer = setTimeout(step, WAITING_POLL_MS);
+          return;
+        }
+
+        if (nextIndex >= playback.anim.frames.length) {
+          playback.timer = setTimeout(finish, frame.duration);
+          return;
+        }
+
+        playback.index = nextIndex;
+        playback.timer = setTimeout(step, frame.duration);
+      };
+
+      step();
+    },
+    [stopPlayback]
+  );
+
+  const previousRequestRef = useRef<{
+    data: AgentData;
+    animation: string;
+    playToken: number;
+  } | null>(null);
+
   useEffect(() => {
-    const anim = data.animations[animation];
-    if (!anim || anim.frames.length === 0) {
-      setFrameImages([[0, 0]]);
+    const previous = previousRequestRef.current;
+    previousRequestRef.current = { data, animation, playToken };
+
+    const playback = playbackRef.current;
+    const dataChanged = previous !== null && previous.data !== data;
+
+    // Graceful interrupt: clips authored with exit branching wind down along
+    // their exitBranch path before the next clip starts (original Microsoft
+    // Agent behavior). Everything else hard-switches immediately. A clip
+    // holding at its WAITING point always winds down first — even a replay of
+    // the same clip, which restarts from the rest pose the exit path ends on.
+    if (
+      !dataChanged &&
+      playback &&
+      playback.anim.useExitBranching &&
+      !(playback.name === animation && !playback.exiting && !playback.waiting)
+    ) {
+      spriteLog(
+        `graceful exit of ${playback.name}, then ${animation} (exit-branch wind-down)`
+      );
+      playback.pendingName = animation;
+      playback.exiting = true;
       return;
     }
 
-    let cancelled = false;
-    let index = 0;
+    startAnimation(animation);
+  }, [data, animation, playToken, startAnimation]);
 
-    const step = () => {
-      if (cancelled) return;
-      const frame = anim.frames[index];
-      if (!frame) {
-        onEndRef.current?.(animation);
-        return;
-      }
-
-      setFrameImages((current) => resolveFrameImages(current, frame));
-      soundPlayerRef.current?.play(frame.sound);
-
-      // Pick the next frame: probabilistic branching when present, else
-      // sequential. Reaching past the last frame ends the animation.
-      let nextIndex = index + 1;
-      if (frame.branching) {
-        let roll = Math.random() * 100;
-        for (const branch of frame.branching.branches) {
-          if (roll <= branch.weight) {
-            nextIndex = branch.frameIndex;
-            break;
-          }
-          roll -= branch.weight;
-        }
-      }
-
-      if (nextIndex >= anim.frames.length) {
-        timerRef.current = setTimeout(() => {
-          if (!cancelled) onEndRef.current?.(animation);
-        }, frame.duration);
-        return;
-      }
-
-      index = nextIndex;
-      timerRef.current = setTimeout(step, frame.duration);
-    };
-
-    step();
-
-    return () => {
-      cancelled = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
+  useEffect(
+    () => () => {
+      stopPlayback();
       soundPlayerRef.current?.stopAll();
-    };
-  }, [data, animation, playToken]);
+    },
+    [stopPlayback]
+  );
 
   return (
     <div

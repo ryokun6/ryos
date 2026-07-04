@@ -4,6 +4,7 @@ import type { AssistantCharacterId } from "./characters";
 export type AssistantAnimationIntent =
   | "greeting"
   | "thinking"
+  | "speaking"
   | "processing"
   | "searching"
   | "reading"
@@ -11,6 +12,7 @@ export type AssistantAnimationIntent =
   | "success"
   | "error"
   | "attention"
+  | "acknowledge"
   | "goodbye"
   | "idle";
 
@@ -27,7 +29,17 @@ export interface AssistantToolActivity {
   phase: AssistantToolPhase;
 }
 
+/**
+ * "Greeting" is preferred over "Show": on every character that ships one,
+ * Greeting is the fully-authored entrance — it starts from (nearly) empty
+ * frames, materializes the character gradually, includes a greeting gesture,
+ * and ends at the rest pose. On those same characters "Show" is a 40–300ms
+ * pop (e.g. Clippy's Show is 5 frames / 50ms vs. its 4.5s Greeting).
+ * Characters without a Greeting clip (Merlin, Genie, Peedy, Rover) have a
+ * real gradual Show and fall through to it.
+ */
 const ENTRANCE_ANIMATION_CANDIDATES = [
+  "Greeting",
   "Show",
   "Appear",
   "AppearQuick",
@@ -41,10 +53,11 @@ const EXIT_ANIMATION_CANDIDATES = [
 ] as const;
 
 const ANIMATION_CANDIDATES = {
+  // Entrance clips (Greeting/Show/Appear/…) are intentionally NOT candidates
+  // here: they only play through the dedicated entrance sequence plan, so a
+  // random greeting pick can never replay the character's entry animation.
   greeting: [
-    "Greeting",
     "Greet",
-    ...ENTRANCE_ANIMATION_CANDIDATES,
     "Wave",
     "Announce",
     "GetAttention",
@@ -59,6 +72,15 @@ const ANIMATION_CANDIDATES = {
     "Suggest",
     "GetWizardy",
     "Hearing_1",
+  ],
+  // Conversational gestures while reply text is streaming in.
+  speaking: [
+    "Explain",
+    "Announce",
+    "Suggest",
+    "Acknowledge",
+    "Pleased",
+    "GestureUp",
   ],
   processing: [
     "Processing",
@@ -125,6 +147,8 @@ const ANIMATION_CANDIDATES = {
     "GestureRight",
     "GestureDown",
   ],
+  // Brief nod: bubble dismissal and mid-turn tool completions.
+  acknowledge: ["Acknowledge", "Pleased", "GestureDown", "Blink"],
   goodbye: EXIT_ANIMATION_CANDIDATES,
   idle: ["RestPose"],
 } satisfies Record<AssistantAnimationIntent, readonly string[]>;
@@ -148,7 +172,7 @@ export function getAssistantLifecycleAnimationIntent(
   const intents = {
     characterLoad: "greeting",
     bubbleOpen: "attention",
-    bubbleClose: null,
+    bubbleClose: "acknowledge",
     quit: "goodbye",
   } satisfies Record<
     AssistantAnimationLifecycleEvent,
@@ -160,7 +184,7 @@ export function getAssistantLifecycleAnimationIntent(
 const SEARCH_TOOL_NAMES = new Set([
   "list",
   "searchSongs",
-  "songLibrary",
+  "songLibraryControl",
   "webFetch",
   "mapsSearchPlaces",
   "listCursorCloudAgentRuns",
@@ -174,6 +198,8 @@ const WRITE_TOOL_NAMES = new Set([
   "generateHtml",
   "memoryWrite",
   "memoryDelete",
+  "stickiesControl",
+  "documentsControl",
 ]);
 
 /**
@@ -241,8 +267,23 @@ export interface AssistantEntranceSequencePlan {
 }
 
 /**
- * Prefer the agent's real entrance clip, then a separate greeting gesture.
- * Characters without an entrance clip appear in their static default pose.
+ * Follow-up gestures that continue from the visible rest pose, for characters
+ * whose entrance is a bare materialization (Show/Appear) with no greeting of
+ * its own. "Greeting" entrances already end on a greeting gesture, so they
+ * never chain a follow-up.
+ */
+const ENTRANCE_FOLLOW_UP_CANDIDATES = [
+  "Greet",
+  "Wave",
+  "GetAttention",
+  "Announce",
+] as const;
+
+/**
+ * Prefer the agent's fully-authored "Greeting" entrance (materialize +
+ * greeting gesture in one clip), else a bare materialization (Show/Appear)
+ * followed by a separate greeting gesture. Characters without any entrance
+ * clip appear in their static default pose.
  */
 export function resolveAssistantEntranceSequencePlan(
   data: AgentData
@@ -251,15 +292,19 @@ export function resolveAssistantEntranceSequencePlan(
     data,
     ENTRANCE_ANIMATION_CANDIDATES
   );
-  const greeting = pickFirstAvailableAnimation(
-    data,
-    ANIMATION_CANDIDATES.greeting.filter(
-      (name) => !isAssistantEntranceAnimation(name)
-    )
-  );
+
+  if (entrance === "Greeting") {
+    return { first: entrance, followUp: null };
+  }
 
   if (entrance) {
-    return { first: entrance, followUp: greeting };
+    return {
+      first: entrance,
+      followUp: pickFirstAvailableAnimation(
+        data,
+        ENTRANCE_FOLLOW_UP_CANDIDATES
+      ),
+    };
   }
 
   return { first: "RestPose", followUp: null };
@@ -341,20 +386,27 @@ export function resolveDocumentToolSequencePlan(
 /** Idle loops that are too long for ambient rotation. */
 const MEGA_IDLE_ANIMATIONS = new Set(["Idle"]);
 
-/** Prepended when a specific tool is actively running. */
+/**
+ * Prepended when a specific tool is actively running. Entrance/exit clips
+ * (Show, Hide, GoodBye, …) are not usable here — `getAnimationCandidates`
+ * filters them out for every non-lifecycle intent.
+ */
 const TOOL_SPECIFIC_ANIMATIONS: Record<string, readonly string[]> = {
   mediaControl: ["Hearing_1", "StartListening"],
-  launchApp: ["Show", "GetAttention"],
-  closeApp: ["Hide", "Goodbye", "GoodBye"],
-  switchTheme: ["GetWizardy", "DoMagic1", "DoMagic2"],
+  launchApp: ["GetAttention", "Announce"],
+  closeApp: ["Wave", "GestureDown"],
+  settings: ["GetWizardy", "DoMagic1", "DoMagic2"],
   generateHtml: ["DoMagic1", "GetWizardy"],
+  aquarium: ["DoMagic1", "GetArtsy"],
+  infiniteMacControl: ["GetTechy", "DoMagic1"],
+  cursorCloudAgent: ["GetTechy", "Writing"],
 };
 
 /** Rover-only topic animations keyed by active tool name. */
 const ROVER_TOOL_ANIMATIONS: Record<string, readonly string[]> = {
   mapsSearchPlaces: ["Travel"],
   searchSongs: ["Celebrity"],
-  songLibrary: ["Sports"],
+  songLibraryControl: ["Sports"],
   list: ["Books"],
   read: ["Books"],
   write: ["Writing"],
@@ -362,6 +414,25 @@ const ROVER_TOOL_ANIMATIONS: Record<string, readonly string[]> = {
   webFetch: ["Searching"],
   mediaControl: ["Sports"],
 };
+
+/**
+ * Every tool name the animation layer references. Exists so tests can assert
+ * these stay in sync with the real tool registry (`api/chat/tools`) — tool
+ * renames silently killed animations before (e.g. switchTheme → settings).
+ */
+export function getAssistantAnimationMappedToolNames(): string[] {
+  return [
+    ...new Set([
+      ...SEARCH_TOOL_NAMES,
+      ...READ_TOOL_NAMES,
+      ...WRITE_TOOL_NAMES,
+      ...READ_SEQUENCE_TOOL_NAMES,
+      ...WRITE_SEQUENCE_TOOL_NAMES,
+      ...Object.keys(TOOL_SPECIFIC_ANIMATIONS),
+      ...Object.keys(ROVER_TOOL_ANIMATIONS),
+    ]),
+  ];
+}
 
 const EXTRA_IDLE_CANDIDATES = [
   "LookLeft",
@@ -410,9 +481,12 @@ export function getAnimationCandidates(
     ];
   }
 
+  // Entrance clips only ever play via the entrance sequence plan; exit clips
+  // only via the quit flow. Filtering both here guarantees a random pick can
+  // never duplicate the entry animation or hide the character mid-session.
   return dedupeCandidates(candidates).filter(
     (name) =>
-      (intent === "greeting" || !isAssistantEntranceAnimation(name)) &&
+      !isAssistantEntranceAnimation(name) &&
       (intent === "goodbye" || !isAssistantExitAnimation(name))
   );
 }
@@ -430,16 +504,20 @@ export function getAssistantAnimationIntent({
   isLoading,
   hasError,
   toolActivity,
+  hasVisibleReply = false,
 }: {
   isLoading: boolean;
   hasError: boolean;
   toolActivity: AssistantToolActivity | null;
+  /** True once the in-flight turn has streamed visible reply text. */
+  hasVisibleReply?: boolean;
 }): AssistantAnimationIntent {
   if (hasError || toolActivity?.phase === "error") return "error";
   if (!isLoading) return "idle";
   if (toolActivity?.phase === "running") {
     return getToolAnimationIntent(toolActivity.name);
   }
+  if (hasVisibleReply) return "speaking";
   return "thinking";
 }
 
@@ -468,6 +546,116 @@ export function getIdleAnimationPool(data: AgentData): string[] {
       (name) => data.animations[name] !== undefined
     ),
   ];
+}
+
+/** Continuous idle time after which deep-idle (sleep) clips become eligible. */
+export const DEEP_IDLE_AFTER_MS = 2 * 60 * 1000;
+
+/**
+ * Long "falls asleep" clips reserved for prolonged inactivity. Not every
+ * character ships DeepIdle clips; callers fall back to the ambient pool.
+ */
+export function getDeepIdleAnimationPool(data: AgentData): string[] {
+  return Object.keys(data.animations).filter((name) =>
+    name.toLowerCase().startsWith("deepidle")
+  );
+}
+
+// --- Pointing / directional attention ---------------------------------------
+
+export type AssistantPointingDirection =
+  | "left"
+  | "right"
+  | "up"
+  | "down"
+  | "upLeft"
+  | "upRight"
+  | "downLeft"
+  | "downRight";
+
+/**
+ * Microsoft Agent Gesture and Look clip names use the viewer's screen
+ * perspective (GestureLeft points toward the left edge of the screen).
+ * Diagonal Look clips exist on some characters only, so each diagonal falls
+ * back to its horizontal and vertical components.
+ */
+const POINTING_ANIMATION_CANDIDATES: Record<
+  AssistantPointingDirection,
+  readonly string[]
+> = {
+  left: ["GestureLeft", "LookLeft"],
+  right: ["GestureRight", "LookRight"],
+  up: ["GestureUp", "LookUp"],
+  down: ["GestureDown", "LookDown"],
+  upLeft: ["LookUpLeft", "GestureLeft", "LookLeft", "LookUp"],
+  upRight: ["LookUpRight", "GestureRight", "LookRight", "LookUp"],
+  downLeft: ["LookDownLeft", "GestureLeft", "LookLeft", "LookDown"],
+  downRight: ["LookDownRight", "GestureRight", "LookRight", "LookDown"],
+};
+
+export interface AssistantPointingRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Center-to-center offsets below this are too small to point at. */
+const POINTING_MIN_OFFSET_PX = 48;
+/** Secondary-axis share of the primary axis that upgrades to a diagonal. */
+const POINTING_DIAGONAL_RATIO = 0.5;
+
+/**
+ * Direction from the assistant toward a target window, from the viewer's
+ * perspective. Returns null when the target is too close to point at.
+ */
+export function getAssistantPointingDirection(
+  assistant: AssistantPointingRect,
+  target: AssistantPointingRect
+): AssistantPointingDirection | null {
+  const dx =
+    target.x + target.width / 2 - (assistant.x + assistant.width / 2);
+  const dy =
+    target.y + target.height / 2 - (assistant.y + assistant.height / 2);
+  const absX = Math.abs(dx);
+  const absY = Math.abs(dy);
+  if (absX < POINTING_MIN_OFFSET_PX && absY < POINTING_MIN_OFFSET_PX) {
+    return null;
+  }
+
+  const horizontal: AssistantPointingDirection = dx < 0 ? "left" : "right";
+  const vertical: AssistantPointingDirection = dy < 0 ? "up" : "down";
+  const diagonal: AssistantPointingDirection =
+    vertical === "up"
+      ? horizontal === "left"
+        ? "upLeft"
+        : "upRight"
+      : horizontal === "left"
+        ? "downLeft"
+        : "downRight";
+
+  if (absX >= absY) {
+    const isDiagonal =
+      absY >= POINTING_MIN_OFFSET_PX && absY >= absX * POINTING_DIAGONAL_RATIO;
+    return isDiagonal ? diagonal : horizontal;
+  }
+  const isDiagonal =
+    absX >= POINTING_MIN_OFFSET_PX && absX >= absY * POINTING_DIAGONAL_RATIO;
+  return isDiagonal ? diagonal : vertical;
+}
+
+/**
+ * Best available pointing/look clip toward a direction, or null when the
+ * character has none (e.g. Rover lacks right-facing clips).
+ */
+export function selectAssistantPointingAnimation(
+  data: AgentData,
+  direction: AssistantPointingDirection
+): string | null {
+  return pickFirstAvailableAnimation(
+    data,
+    POINTING_ANIMATION_CANDIDATES[direction]
+  );
 }
 
 export function selectAssistantAnimation({
