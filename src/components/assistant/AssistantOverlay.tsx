@@ -61,6 +61,7 @@ import {
   type AssistantBubbleRect,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
+import { useAssistantBubbleBodyHeightHold } from "./useAssistantBubbleBodyHeightHold";
 import {
   primeAssistantSpeech,
   speakAssistantText,
@@ -283,6 +284,14 @@ function AssistantOverlayInner() {
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const bubbleBodyRef = useRef<HTMLDivElement>(null);
+  // Reserve the pre-send body height while a reply is in flight so swapping
+  // the reply text for the one-line thinking ticker doesn't displace the
+  // bubble (it snapped smaller on send and regrew as the reply streamed).
+  const bubbleBodyMinHeight = useAssistantBubbleBodyHeightHold(
+    bubbleBodyRef,
+    isLoading
+  );
   const activateCharacterRef = useRef<() => void>(() => {});
   const pointAtTargetRef = useRef<
     (
@@ -1512,7 +1521,15 @@ function AssistantOverlayInner() {
               role="log"
               aria-live="polite"
             >
-              <div className={ASSISTANT_BUBBLE_BODY_CLASS}>
+              <div
+                ref={bubbleBodyRef}
+                className={ASSISTANT_BUBBLE_BODY_CLASS}
+                style={
+                  bubbleBodyMinHeight !== null
+                    ? { minHeight: bubbleBodyMinHeight }
+                    : undefined
+                }
+              >
                 {showTyping ? (
                   <ThinkingTicker
                     items={[t("common.assistant.thinking"), ...statusLabels]}
