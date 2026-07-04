@@ -4554,6 +4554,7 @@
     "assistant": {
       "contextMenu": {
         "character": "Personagem",
+        "speech": "Fala",
         "newConversation": "Nova conversa",
         "settings": "Ajustes do Assistente…",
         "quit": "Encerrar Assistente"

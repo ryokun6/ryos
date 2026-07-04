@@ -4550,6 +4550,7 @@
     "assistant": {
       "contextMenu": {
         "character": "キャラクター",
+        "speech": "スピーチ",
         "newConversation": "新しい会話",
         "settings": "アシスタント設定…",
         "quit": "アシスタントを終了"

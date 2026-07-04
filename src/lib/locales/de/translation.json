@@ -4550,6 +4550,7 @@
     "assistant": {
       "contextMenu": {
         "character": "Charakter",
+        "speech": "Sprachausgabe",
         "newConversation": "Neue Unterhaltung",
         "settings": "Assistent-Einstellungen …",
         "quit": "Assistent beenden"

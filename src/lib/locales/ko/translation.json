@@ -4550,6 +4550,7 @@
     "assistant": {
       "contextMenu": {
         "character": "캐릭터",
+        "speech": "말하기",
         "newConversation": "새로운 대화",
         "settings": "도우미 설정…",
         "quit": "도우미 종료"

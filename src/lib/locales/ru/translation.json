@@ -4561,6 +4561,7 @@
     "assistant": {
       "contextMenu": {
         "character": "Персонаж",
+        "speech": "Проговаривание текста",
         "newConversation": "Новый разговор",
         "settings": "Настройки ассистента…",
         "quit": "Завершить ассистента"

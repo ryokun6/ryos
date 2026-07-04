@@ -4550,6 +4550,7 @@
     "assistant": {
       "contextMenu": {
         "character": "角色",
+        "speech": "语音",
         "newConversation": "新对话",
         "settings": "助理设置…",
         "quit": "退出助理"

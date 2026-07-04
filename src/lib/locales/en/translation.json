@@ -206,6 +206,7 @@
       "label": "{{name}} the desktop assistant",
       "contextMenu": {
         "character": "Character",
+        "speech": "Speech",
         "newConversation": "New Conversation",
         "settings": "Assistant Settings…",
         "quit": "Quit Assistant"

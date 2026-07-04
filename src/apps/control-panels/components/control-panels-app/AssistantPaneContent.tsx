@@ -14,21 +14,25 @@ import {
 } from "@/components/assistant/ClippySprite";
 import { controlPanelItemIconShell } from "./constants";
 
-const TILE_PREVIEW_MAX = 88;
+const TILE_PREVIEW_MAX = 64;
+
+/** Scale a character preview to fit the tile (downscales only — never upscales). */
+function getCharacterTileScale(width: number, height: number): number {
+  return Math.min(TILE_PREVIEW_MAX / height, TILE_PREVIEW_MAX / width);
+}
 
 /** Static character preview (sprite rest pose) scaled to fit a tile. */
 function CharacterTilePreview({ character }: { character: AssistantCharacter }) {
   const agentData = useAgentData(character.agentUrl);
-  const scale = Math.min(
-    TILE_PREVIEW_MAX / character.height,
-    TILE_PREVIEW_MAX / character.width
-  );
+  const frameWidth = agentData?.framesize[0] ?? character.width;
+  const frameHeight = agentData?.framesize[1] ?? character.height;
+  const scale = getCharacterTileScale(frameWidth, frameHeight);
 
   return (
     <div
       style={{
-        width: character.width * scale,
-        height: character.height * scale,
+        width: frameWidth * scale,
+        height: frameHeight * scale,
       }}
     >
       <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
@@ -41,7 +45,7 @@ function CharacterTilePreview({ character }: { character: AssistantCharacter }) 
             muted
           />
         ) : (
-          <div style={{ width: character.width, height: character.height }} />
+          <div style={{ width: frameWidth, height: frameHeight }} />
         )}
       </div>
     </div>
@@ -105,38 +109,40 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
 
         <hr className="border-t" style={tabStyles.separatorStyle} />
 
-        <div className="grid grid-cols-3 gap-2 py-1">
-          {ASSISTANT_CHARACTERS.map((character) => {
-            const isSelected = enabled && character.id === characterId;
-            return (
-              <button
-                key={character.id}
-                type="button"
-                aria-label={character.name}
-                aria-pressed={isSelected}
-                className="preview-button relative grid w-full aspect-square grid-rows-[88px_11px] content-center justify-items-center gap-1 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
-                style={{
-                  boxShadow: isSelected
-                    ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
-                    : undefined,
-                }}
-                onClick={() => handleCharacterSelect(character)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleCharacterSelect(character);
-                  }
-                }}
-              >
-                <span className="pointer-events-none flex h-[88px] w-full items-center justify-center">
-                  <CharacterTilePreview character={character} />
-                </span>
-                <span className="pointer-events-none block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
-                  {character.name}
-                </span>
-              </button>
-            );
-          })}
+        <div className="@container">
+          <div className="grid grid-cols-4 @max-[339px]:grid-cols-2 gap-2 py-1">
+            {ASSISTANT_CHARACTERS.map((character) => {
+              const isSelected = enabled && character.id === characterId;
+              return (
+                <button
+                  key={character.id}
+                  type="button"
+                  aria-label={character.name}
+                  aria-pressed={isSelected}
+                  className="preview-button relative grid w-full aspect-square grid-rows-[72px_11px] content-start justify-items-center gap-0.5 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
+                  style={{
+                    boxShadow: isSelected
+                      ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+                      : undefined,
+                  }}
+                  onClick={() => handleCharacterSelect(character)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleCharacterSelect(character);
+                    }
+                  }}
+                >
+                  <span className="pointer-events-none flex h-[72px] w-full items-center justify-center">
+                    <CharacterTilePreview character={character} />
+                  </span>
+                  <span className="pointer-events-none -mt-[3px] block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
+                    {character.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <p className="text-[11px] text-neutral-600 font-geneva-12">
