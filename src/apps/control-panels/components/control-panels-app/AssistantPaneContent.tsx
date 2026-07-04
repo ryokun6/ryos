@@ -16,11 +16,9 @@ import { controlPanelItemIconShell } from "./constants";
 
 const TILE_PREVIEW_MAX = 76;
 
-/** Static character preview (sprite rest pose or image) scaled to fit a tile. */
+/** Static character preview (sprite rest pose) scaled to fit a tile. */
 function CharacterTilePreview({ character }: { character: AssistantCharacter }) {
-  const agentData = useAgentData(
-    character.kind === "sprite" ? character.agentUrl : undefined
-  );
+  const agentData = useAgentData(character.agentUrl);
   const scale = Math.min(
     1,
     TILE_PREVIEW_MAX / character.height,
@@ -35,23 +33,14 @@ function CharacterTilePreview({ character }: { character: AssistantCharacter }) 
       }}
     >
       <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-        {character.kind === "sprite" ? (
-          agentData ? (
-            <ClippySprite
-              mapUrl={character.mapUrl!}
-              data={agentData}
-              animation="RestPose"
-            />
-          ) : (
-            <div style={{ width: character.width, height: character.height }} />
-          )
-        ) : (
-          <img
-            src={character.imageUrl}
-            alt={character.name}
-            draggable={false}
-            style={{ width: character.width, height: character.height }}
+        {agentData ? (
+          <ClippySprite
+            mapUrl={character.mapUrl}
+            data={agentData}
+            animation="RestPose"
           />
+        ) : (
+          <div style={{ width: character.width, height: character.height }} />
         )}
       </div>
     </div>

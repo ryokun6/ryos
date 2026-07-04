@@ -397,9 +397,7 @@ function AssistantOverlayInner() {
   }, []);
 
   // --- Sprite animation state machine -----------------------------------------
-  const agentData = useAgentData(
-    character.kind === "sprite" ? character.agentUrl : undefined
-  );
+  const agentData = useAgentData(character.agentUrl);
   const [spriteAnim, setSpriteAnim] = useState<{ name: string; token: number }>({
     name: REST_ANIMATION,
     token: 0,
@@ -426,13 +424,13 @@ function AssistantOverlayInner() {
 
   // Thinking pose while the AI is working.
   useEffect(() => {
-    if (character.kind !== "sprite" || !agentData) return;
+    if (!agentData) return;
     if (isLoading) {
       playAnimation(
         pickRandom(availableFrom(agentData, THINKING_CANDIDATES), REST_ANIMATION)
       );
     }
-  }, [isLoading, character.kind, agentData, playAnimation]);
+  }, [isLoading, agentData, playAnimation]);
 
   const handleAnimationEnd = useCallback(() => {
     const data = agentDataRef.current;
@@ -530,39 +528,19 @@ function AssistantOverlayInner() {
   const showTyping = isAwaitingReply && !errorText;
 
   const characterVisual = useMemo(() => {
-    if (character.kind === "sprite") {
-      if (!agentData) {
-        return <div style={{ width: character.width, height: character.height }} />;
-      }
-      return (
-        <ClippySprite
-          mapUrl={character.mapUrl!}
-          data={agentData}
-          animation={spriteAnim.name}
-          playToken={spriteAnim.token}
-          onAnimationEnd={handleAnimationEnd}
-        />
-      );
+    if (!agentData) {
+      return <div style={{ width: character.width, height: character.height }} />;
     }
     return (
-      <motion.img
-        src={character.imageUrl}
-        alt={character.name}
-        draggable={false}
-        style={{ width: character.width, height: character.height }}
-        animate={
-          isLoading
-            ? { y: [0, -6, 0], rotate: [0, -3, 3, 0] }
-            : { y: [0, -3, 0] }
-        }
-        transition={{
-          duration: isLoading ? 0.9 : 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+      <ClippySprite
+        mapUrl={character.mapUrl}
+        data={agentData}
+        animation={spriteAnim.name}
+        playToken={spriteAnim.token}
+        onAnimationEnd={handleAnimationEnd}
       />
     );
-  }, [character, agentData, spriteAnim, handleAnimationEnd, isLoading]);
+  }, [character, agentData, spriteAnim, handleAnimationEnd]);
 
   return (
     <div

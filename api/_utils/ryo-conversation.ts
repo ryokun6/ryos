@@ -166,7 +166,7 @@ export interface PrepareRyoConversationOptions {
   /**
    * Display name of the desktop assistant character (assistant channel only).
    * Injected into the static system prompt so the character introduces
-   * itself correctly (e.g. "Clippy", "Neko").
+   * itself correctly (e.g. "Clippy", "Merlin").
    */
   assistantName?: string;
   /**
