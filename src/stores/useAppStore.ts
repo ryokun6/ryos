@@ -10,7 +10,7 @@ import { APP_ANALYTICS, track } from "@/utils/analytics";
 import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { shouldRequestCloudSyncOnAppLaunch } from "@/utils/cloudSyncLaunch";
 import { createClientLogger } from "@/utils/logger";
-import { getRestorablePreviewInitialData } from "@/types/appInitialData";
+import { getRestorablePreviewInitialData, getRestorableTextEditInitialData } from "@/types/appInitialData";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -858,6 +858,13 @@ const createUseAppStore = () =>
                 acc.push([id, {
                   ...instWithoutRuntimeState,
                   initialData: getRestorablePreviewInitialData(inst.initialData),
+                } as AppInstance]);
+                return acc;
+              }
+              if (inst.appId === "textedit") {
+                acc.push([id, {
+                  ...instWithoutRuntimeState,
+                  initialData: getRestorableTextEditInitialData(inst.initialData),
                 } as AppInstance]);
                 return acc;
               }

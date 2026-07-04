@@ -488,6 +488,27 @@ export async function ensureFileContentLoaded(
       }
     }
     if (!pendingFile?.assetPath) {
+      // Bundled documents ship inline content in filesystem.json instead of an
+      // assetPath. Recover those bytes when metadata exists but IndexedDB was
+      // cleared or never seeded.
+      if (storeName === STORES.DOCUMENTS) {
+        const data = await loadDefaultFiles();
+        const defaultFile = data.files.find((file) => file.path === filePath);
+        if (defaultFile?.content) {
+          await new Promise<void>((resolve, reject) => {
+            const tx = db!.transaction(storeName, "readwrite");
+            const store = tx.objectStore(storeName);
+            const putReq = store.put(
+              { name: defaultFile.name, content: defaultFile.content } as StoredContent,
+              uuid
+            );
+            putReq.onsuccess = () => resolve();
+            putReq.onerror = () => reject(putReq.error);
+            tx.onerror = () => reject(tx.error);
+          });
+          return true;
+        }
+      }
       return false;
     }
 

@@ -173,6 +173,18 @@ function TextEditContent({
       },
       [editor, setCurrentFilePath, setHasUnsavedChanges, setContentJson]
     ),
+    onLoadFailure: useCallback(
+      (filePath: string) => {
+        log.debug("Clearing stale TextEdit file path after failed restore", {
+          path: filePath,
+          instanceId,
+        });
+        setCurrentFilePath(null);
+        setHasUnsavedChanges(false);
+        setContentJson(editor?.getJSON() || null);
+      },
+      [editor, instanceId, setCurrentFilePath, setContentJson, setHasUnsavedChanges]
+    ),
   });
 
   const { isDraggingOver, dragHandlers } = useDragAndDrop({
@@ -281,7 +293,7 @@ function TextEditContent({
       log.debug("Restoring instance content from DB", {
         path: currentFilePath,
       });
-      handleLoadFromDatabase(currentFilePath);
+      void handleLoadFromDatabase(currentFilePath);
     }
   }, [
     editor,

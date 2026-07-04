@@ -13,6 +13,26 @@ export interface TextEditInitialData {
   content?: string;
 }
 
+/**
+ * Keep only the VFS path needed to restore a TextEdit window.
+ * Inline content can be large and is loaded from IndexedDB on restore.
+ */
+export function getRestorableTextEditInitialData(
+  data: unknown,
+): TextEditInitialData | undefined {
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    !("path" in data) ||
+    typeof data.path !== "string" ||
+    data.path.length === 0
+  ) {
+    return undefined;
+  }
+
+  return { path: data.path };
+}
+
 /** Paint initial data - for opening image files */
 export interface PaintInitialData {
   path: string;

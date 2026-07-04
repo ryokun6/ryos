@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Editor } from "@tiptap/core";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
 import { readDocumentTextContent } from "@/services/vfs/FileContentRepository";
+import { getFileMetadata } from "@/services/vfs/FileMetadataService";
 import {
   htmlToMarkdown,
   htmlToPlainText,
@@ -27,6 +28,7 @@ interface UseFileOperationsProps {
   customTitle?: string;
   onSaveSuccess?: (filePath: string) => void;
   onLoadSuccess?: (filePath: string) => void;
+  onLoadFailure?: (filePath: string) => void;
 }
 
 export function useFileOperations({
@@ -35,6 +37,7 @@ export function useFileOperations({
   customTitle,
   onSaveSuccess,
   onLoadSuccess,
+  onLoadFailure,
 }: UseFileOperationsProps) {
   const { saveFile } = useVfsFileOperations("/Documents");
 
@@ -259,16 +262,27 @@ export function useFileOperations({
             log.debug("Loaded content from file", { path: filePath });
             return true;
           }
-        } else {
-          console.warn("Document not found or empty:", filePath);
         }
+
+        const fileMetadata = getFileMetadata(filePath);
+        if (!fileMetadata || fileMetadata.status !== "active") {
+          log.debug("Skipping load for missing or inactive document", {
+            path: filePath,
+          });
+        } else {
+          log.debug("Document metadata exists but content is empty", {
+            path: filePath,
+          });
+        }
+        onLoadFailure?.(filePath);
       } catch (err) {
         console.error("Error loading file content from DB:", err);
+        onLoadFailure?.(filePath);
       }
 
       return false;
     },
-    [editor, onLoadSuccess]
+    [editor, onLoadSuccess, onLoadFailure]
   );
 
   const generateSuggestedFileName = useCallback((): string => {
