@@ -181,11 +181,6 @@ const LazyCalculatorApp = createLazyComponent<unknown>(
   "calculator"
 );
 
-const LazyAssistantApp = createLazyComponent<unknown>(
-  () => import("@/apps/assistant/components/AssistantAppComponent").then(m => ({ default: m.AssistantAppComponent })),
-  "assistant"
-);
-
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -225,7 +220,6 @@ import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } fro
 import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
 import { appMetadata as booksMetadata, helpItems as booksHelpItems } from "@/apps/books/metadata";
 import { appMetadata as calculatorMetadata, helpItems as calculatorHelpItems } from "@/apps/calculator/metadata";
-import { appMetadata as assistantMetadata, helpItems as assistantHelpItems } from "@/apps/assistant/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -606,19 +600,6 @@ export const appRegistry = {
       defaultSize: { width: 240, height: 360 },
       minSize: { width: 240, height: 360 },
       maxSize: { width: 320, height: 520 },
-    } as WindowConstraints,
-  },
-  ["assistant"]: {
-    id: "assistant",
-    name: "Assistant",
-    icon: { type: "image", src: assistantMetadata.icon },
-    description: "Summon a floating desktop assistant character",
-    component: LazyAssistantApp,
-    helpItems: assistantHelpItems,
-    metadata: assistantMetadata,
-    windowConfig: {
-      defaultSize: { width: 500, height: 420 },
-      minSize: { width: 360, height: 320 },
     } as WindowConstraints,
   },
 } as const;

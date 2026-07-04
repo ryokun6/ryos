@@ -589,50 +589,6 @@
         "updatedYesterday": "Actualizado ayer"
       }
     },
-    "assistant": {
-      "name": "Asistente",
-      "description": "Invoca un personaje asistente flotante en el escritorio",
-      "window": {
-        "title": "Asistente de escritorio",
-        "subtitle": "Elige un personaje para invocarlo en tu escritorio",
-        "on": "Activado",
-        "off": "Desactivado",
-        "toggleLabel": "Mostrar el asistente en el escritorio",
-        "hint": "Consejo: haz clic derecho o mantén pulsado el personaje para abrir el menú rápido."
-      },
-      "menu": {
-        "help": "Ayuda del Asistente",
-        "about": "Acerca del Asistente",
-        "quitAssistant": "Salir del Asistente",
-        "showAssistant": "Invocar Asistente"
-      },
-      "help": {
-        "meet": {
-          "title": "Conoce a tu asistente",
-          "description": "Elige un personaje y flotará en tu escritorio, listo para charlar y ayudar"
-        },
-        "characters": {
-          "title": "Personajes",
-          "description": "Elige entre los asistentes originales de Office como Clippy, Merlin y Rover, o los nuevos amigos de ryOS"
-        },
-        "chat": {
-          "title": "Chat",
-          "description": "Haz clic en el personaje para abrir su bocadillo y preguntarle lo que quieras"
-        },
-        "realWork": {
-          "title": "Trabajo de verdad",
-          "description": "El asistente puede abrir apps, reproducir música, editar documentos y cambiar ajustes por ti"
-        },
-        "moveSnap": {
-          "title": "Mover y ajustar",
-          "description": "Arrastra el personaje a donde quieras; se ajusta a los bordes de las ventanas, el Dock y las esquinas de la pantalla"
-        },
-        "quickMenu": {
-          "title": "Menú rápido",
-          "description": "Haz clic derecho o mantén pulsado el personaje para cambiarlo o salir"
-        }
-      }
-    },
     "books": {
       "bookmarks": {
         "add": "Añadir marcador",
@@ -1938,6 +1894,7 @@
         "displays": "Pantallas",
         "dotMac": "Sincronización en la nube",
         "international": "Internacional",
+        "assistant": "Asistente",
         "security": "Seguridad",
         "sharing": "Copia de seguridad y restauración",
         "softwareUpdate": "Actualización de software",
@@ -2178,6 +2135,11 @@
         "objects": "Objetos",
         "plants": "Plantas",
         "structures": "Estructuras"
+      },
+      "assistant": {
+        "title": "Asistente de escritorio",
+        "description": "Invoca un personaje que charla y ayuda con trabajo de verdad",
+        "hint": "Consejo: haz clic derecho o mantén pulsado el personaje para abrir el menú rápido."
       }
     },
     "dashboard": {
@@ -4593,7 +4555,7 @@
       "contextMenu": {
         "character": "Personaje",
         "newConversation": "Nueva conversación",
-        "openApp": "Abrir Asistente…",
+        "settings": "Ajustes del Asistente…",
         "quit": "Salir del Asistente"
       },
       "emptyBubble": "¡Hola! Haz clic en mí siempre que necesites ayuda.",

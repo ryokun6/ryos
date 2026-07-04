@@ -33,7 +33,6 @@ export const appIds = [
   "maps",
   "books",
   "calculator",
-  "assistant",
 ] as const;
 
 export type AppId = (typeof appIds)[number];
@@ -80,7 +79,6 @@ export const appNames: Record<AppId, string> = {
   "maps": "Maps",
   "books": "Books",
   "calculator": "Calculator",
-  "assistant": "Assistant",
 };
 
 /** Get list of apps with basic info for stores */

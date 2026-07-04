@@ -587,50 +587,6 @@
         "updatedYesterday": "Gestern aktualisiert"
       }
     },
-    "assistant": {
-      "name": "Assistent",
-      "description": "Beschwöre einen schwebenden Assistenten auf dem Schreibtisch",
-      "window": {
-        "title": "Schreibtisch-Assistent",
-        "subtitle": "Wähle einen Charakter, um ihn auf deinen Schreibtisch zu holen",
-        "on": "Ein",
-        "off": "Aus",
-        "toggleLabel": "Assistent auf dem Schreibtisch anzeigen",
-        "hint": "Tipp: Rechtsklick oder langes Drücken auf den Charakter öffnet das Schnellmenü."
-      },
-      "menu": {
-        "help": "Assistent-Hilfe",
-        "about": "Über Assistent",
-        "quitAssistant": "Assistent beenden",
-        "showAssistant": "Assistent herbeirufen"
-      },
-      "help": {
-        "meet": {
-          "title": "Lerne deinen Assistenten kennen",
-          "description": "Wähle einen Charakter – er schwebt auf deinem Schreibtisch, bereit zu plaudern und zu helfen"
-        },
-        "characters": {
-          "title": "Charaktere",
-          "description": "Wähle aus den Original-Office-Assistenten wie Clippy, Merlin und Rover oder neuen ryOS-Freunden"
-        },
-        "chat": {
-          "title": "Chat",
-          "description": "Klicke auf den Charakter, um seine Sprechblase zu öffnen und ihn alles zu fragen"
-        },
-        "realWork": {
-          "title": "Echte Arbeit",
-          "description": "Der Assistent kann Apps öffnen, Musik abspielen, Dokumente bearbeiten und Einstellungen für dich ändern"
-        },
-        "moveSnap": {
-          "title": "Bewegen & Andocken",
-          "description": "Ziehe den Charakter überallhin; er dockt an Fensterkanten, dem Dock und Bildschirmecken an"
-        },
-        "quickMenu": {
-          "title": "Schnellmenü",
-          "description": "Rechtsklick oder langes Drücken auf den Charakter, um ihn zu wechseln oder zu beenden"
-        }
-      }
-    },
     "books": {
       "bookmarks": {
         "add": "Lesezeichen hinzufügen",
@@ -1936,6 +1892,7 @@
         "displays": "Monitore",
         "dotMac": "Cloud-Synchronisierung",
         "international": "International",
+        "assistant": "Assistent",
         "security": "Sicherheit",
         "sharing": "Backup & Wiederherstellung",
         "softwareUpdate": "Softwareupdate",
@@ -2176,6 +2133,11 @@
         "objects": "Objekte",
         "plants": "Pflanzen",
         "structures": "Strukturen"
+      },
+      "assistant": {
+        "title": "Schreibtisch-Assistent",
+        "description": "Beschwöre einen Charakter, der plaudert und bei echter Arbeit hilft",
+        "hint": "Tipp: Rechtsklick oder langes Drücken auf den Charakter öffnet das Schnellmenü."
       }
     },
     "dashboard": {
@@ -4589,7 +4551,7 @@
       "contextMenu": {
         "character": "Charakter",
         "newConversation": "Neue Unterhaltung",
-        "openApp": "Assistent öffnen …",
+        "settings": "Assistent-Einstellungen …",
         "quit": "Assistent beenden"
       },
       "emptyBubble": "Hi! Klicke mich jederzeit an, wenn du Hilfe brauchst.",

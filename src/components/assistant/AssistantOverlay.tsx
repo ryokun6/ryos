@@ -452,8 +452,11 @@ function AssistantOverlayInner() {
       },
       {
         type: "item",
-        label: t("common.assistant.contextMenu.openApp"),
-        onSelect: () => launchApp("assistant"),
+        label: t("common.assistant.contextMenu.settings"),
+        onSelect: () =>
+          launchApp("control-panels", {
+            initialData: { defaultTab: "assistant" },
+          }),
       },
       { type: "separator" },
       {

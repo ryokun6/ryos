@@ -587,50 +587,6 @@
         "updatedYesterday": "어제 업데이트됨"
       }
     },
-    "assistant": {
-      "name": "도우미",
-      "description": "데스크탑에 떠다니는 도우미 캐릭터를 불러냅니다",
-      "window": {
-        "title": "데스크탑 도우미",
-        "subtitle": "캐릭터를 선택해 데스크탑으로 불러내세요",
-        "on": "켬",
-        "off": "끔",
-        "toggleLabel": "데스크탑에 도우미 표시",
-        "hint": "팁: 데스크탑의 캐릭터를 오른쪽 클릭하거나 길게 누르면 빠른 메뉴가 열립니다."
-      },
-      "menu": {
-        "help": "도우미 도움말",
-        "about": "도우미에 관하여",
-        "quitAssistant": "도우미 종료",
-        "showAssistant": "도우미 불러내기"
-      },
-      "help": {
-        "meet": {
-          "title": "도우미 만나기",
-          "description": "캐릭터를 선택하면 데스크탑에 떠서 언제든 대화하고 도와줄 준비를 합니다"
-        },
-        "characters": {
-          "title": "캐릭터",
-          "description": "Clippy, Merlin, Rover 같은 오리지널 Office 도우미나 새로운 ryOS 친구 중에서 선택하세요"
-        },
-        "chat": {
-          "title": "대화",
-          "description": "캐릭터를 클릭하면 말풍선이 열리고 무엇이든 물어볼 수 있습니다"
-        },
-        "realWork": {
-          "title": "실제로 일합니다",
-          "description": "도우미는 앱 열기, 음악 재생, 문서 편집, 설정 변경까지 대신해 줍니다"
-        },
-        "moveSnap": {
-          "title": "이동과 스냅",
-          "description": "캐릭터를 어디로든 드래그하세요. 윈도우 가장자리, Dock, 화면 모서리에 달라붙습니다"
-        },
-        "quickMenu": {
-          "title": "빠른 메뉴",
-          "description": "캐릭터를 오른쪽 클릭하거나 길게 누르면 캐릭터 전환이나 종료를 할 수 있습니다"
-        }
-      }
-    },
     "books": {
       "bookmarks": {
         "add": "책갈피 추가",
@@ -1936,6 +1892,7 @@
         "displays": "디스플레이",
         "dotMac": "클라우드 동기화",
         "international": "국제",
+        "assistant": "도우미",
         "security": "보안",
         "sharing": "백업 및 복원",
         "softwareUpdate": "소프트웨어 업데이트",
@@ -2176,6 +2133,11 @@
         "objects": "사물",
         "plants": "식물",
         "structures": "구조물"
+      },
+      "assistant": {
+        "title": "데스크탑 도우미",
+        "description": "대화도 하고 실제 작업도 도와주는 캐릭터를 불러냅니다",
+        "hint": "팁: 데스크탑의 캐릭터를 오른쪽 클릭하거나 길게 누르면 빠른 메뉴가 열립니다."
       }
     },
     "dashboard": {
@@ -4589,7 +4551,7 @@
       "contextMenu": {
         "character": "캐릭터",
         "newConversation": "새로운 대화",
-        "openApp": "도우미 열기…",
+        "settings": "도우미 설정…",
         "quit": "도우미 종료"
       },
       "emptyBubble": "안녕하세요! 도움이 필요할 때면 언제든지 저를 클릭해 주세요.",

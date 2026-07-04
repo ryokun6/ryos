@@ -207,7 +207,7 @@
       "contextMenu": {
         "character": "Character",
         "newConversation": "New Conversation",
-        "openApp": "Open Assistant…",
+        "settings": "Assistant Settings…",
         "quit": "Quit Assistant"
       },
       "inputPlaceholder": "Ask me anything…",
@@ -1706,10 +1706,6 @@
     "books": {
       "name": "Books",
       "description": "Read EPUB books"
-    },
-    "assistant": {
-      "name": "Assistant",
-      "description": "Summon a floating desktop assistant character"
     },
     "calculator": {
       "name": "Calculator",

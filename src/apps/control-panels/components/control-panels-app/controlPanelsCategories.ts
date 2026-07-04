@@ -2,6 +2,7 @@ export type ControlPanelPaneId =
   | "appearance"
   | "desktop-screen-saver"
   | "international"
+  | "assistant"
   | "security"
   | "displays"
   | "sound"
@@ -50,6 +51,11 @@ export const CONTROL_PANEL_CATEGORIES: ControlPanelCategory[] = [
     icon: "control-panels/international.png",
   },
   {
+    id: "assistant",
+    labelKey: "apps.control-panels.panes.assistant",
+    icon: "assistant.png",
+  },
+  {
     id: "security",
     labelKey: "apps.control-panels.panes.security",
     icon: "control-panels/keychain.png",
@@ -91,7 +97,7 @@ export const CONTROL_PANEL_SECTIONS: ControlPanelSection[] = [
   {
     id: "personal",
     labelKey: "apps.control-panels.sections.personal",
-    paneIds: ["appearance", "desktop-screen-saver", "international"],
+    paneIds: ["appearance", "desktop-screen-saver", "international", "assistant"],
   },
   {
     id: "hardware-system",

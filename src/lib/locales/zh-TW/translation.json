@@ -587,50 +587,6 @@
         "updatedYesterday": "昨天更新"
       }
     },
-    "assistant": {
-      "name": "小幫手",
-      "description": "召喚一個漂浮在桌面上的小幫手角色",
-      "window": {
-        "title": "桌面小幫手",
-        "subtitle": "選擇一個角色，把它召喚到你的桌面上",
-        "on": "開",
-        "off": "關",
-        "toggleLabel": "在桌面上顯示小幫手",
-        "hint": "提示：在桌面上的角色按右鍵或長按即可開啟快速選單。"
-      },
-      "menu": {
-        "help": "小幫手輔助說明",
-        "about": "關於小幫手",
-        "quitAssistant": "結束小幫手",
-        "showAssistant": "召喚小幫手"
-      },
-      "help": {
-        "meet": {
-          "title": "認識你的小幫手",
-          "description": "選擇一個角色，它會漂浮在桌面上，隨時陪你聊天並提供協助"
-        },
-        "characters": {
-          "title": "角色",
-          "description": "可選擇 Clippy、Merlin、Rover 等經典 Office 小幫手，或全新的 ryOS 夥伴"
-        },
-        "chat": {
-          "title": "聊天",
-          "description": "點一下角色開啟它的對話泡泡，想問什麼都可以"
-        },
-        "realWork": {
-          "title": "真的能做事",
-          "description": "小幫手可以幫你開啟應用程式、播放音樂、編輯文件和更改設定"
-        },
-        "moveSnap": {
-          "title": "移動與吸附",
-          "description": "把角色拖到任何位置；它會自動吸附到視窗邊緣、Dock 和螢幕角落"
-        },
-        "quickMenu": {
-          "title": "快速選單",
-          "description": "按右鍵或長按角色即可切換角色或結束小幫手"
-        }
-      }
-    },
     "books": {
       "bookmarks": {
         "add": "加入書籤",
@@ -1936,6 +1892,7 @@
         "displays": "顯示器",
         "dotMac": "雲端同步",
         "international": "語言與地區",
+        "assistant": "小幫手",
         "security": "安全性",
         "sharing": "備份與還原",
         "softwareUpdate": "軟體更新",
@@ -2176,6 +2133,11 @@
         "objects": "物件",
         "plants": "植物",
         "structures": "建築"
+      },
+      "assistant": {
+        "title": "桌面小幫手",
+        "description": "召喚一個能聊天、還能幫你做事的角色",
+        "hint": "提示：在桌面上的角色按右鍵或長按即可開啟快速選單。"
       }
     },
     "dashboard": {
@@ -4589,7 +4551,7 @@
       "contextMenu": {
         "character": "角色",
         "newConversation": "新對話",
-        "openApp": "開啟小幫手…",
+        "settings": "小幫手設定…",
         "quit": "結束小幫手"
       },
       "emptyBubble": "嗨！需要協助時隨時點一下我。",
