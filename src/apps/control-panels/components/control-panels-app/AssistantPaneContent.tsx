@@ -38,6 +38,7 @@ function CharacterTilePreview({ character }: { character: AssistantCharacter }) 
             data={agentData}
             characterId={character.id}
             animation="RestPose"
+            muted
           />
         ) : (
           <div style={{ width: character.width, height: character.height }} />
@@ -61,8 +62,12 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
 
   const handleCharacterSelect = (character: AssistantCharacter) => {
     playClick();
-    setCharacterId(character.id);
-    setEnabled(true);
+    if (character.id !== characterId) {
+      setCharacterId(character.id);
+    }
+    if (!enabled) {
+      setEnabled(true);
+    }
   };
 
   return (
