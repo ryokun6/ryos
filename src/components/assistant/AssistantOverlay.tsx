@@ -155,12 +155,16 @@ function snapAxis(value: number, candidates: number[]): number {
  * status ("Thinking…" or a friendly tool-call line) and rolls the old line up
  * and out only when a new one arrives.
  */
+/** Shared vertical envelope for thinking/tool-call and final reply text. */
+const ASSISTANT_BUBBLE_BODY_CLASS =
+  "max-h-40 overflow-y-auto break-words py-1.5 leading-snug";
+
 function ThinkingTicker({ items }: { items: string[] }) {
   const current = items[items.length - 1] ?? "";
 
   return (
     <div
-      className="relative h-[18px] overflow-hidden"
+      className="relative min-h-[1lh] overflow-hidden"
       aria-live="polite"
       aria-label={current}
     >
@@ -171,7 +175,7 @@ function ThinkingTicker({ items }: { items: string[] }) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -14, opacity: 0 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="absolute inset-x-0 top-0 truncate text-black/60"
+          className="absolute inset-x-0 top-0 truncate leading-snug shimmer-gray"
         >
           {current}
         </motion.div>
@@ -1073,41 +1077,35 @@ function AssistantOverlayInner() {
               role="log"
               aria-live="polite"
             >
-              {showTyping ? (
-                <div className="py-1.5">
+              <div className={ASSISTANT_BUBBLE_BODY_CLASS}>
+                {showTyping ? (
                   <ThinkingTicker
                     items={[t("common.assistant.thinking"), ...statusLabels]}
                   />
-                </div>
-              ) : errorText ? (
-                <div className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words py-1.5">
-                  {errorText}
-                </div>
-              ) : (
-                <div className="max-h-40 overflow-y-auto break-words py-1.5">
-                  {bubbleText ? (
-                    <Streamdown
-                      className="ryos-chat-streamdown"
-                      components={chatStreamdownComponents}
-                      disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
-                      controls={false}
-                      lineNumbers={false}
-                      shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
-                      plugins={CHAT_STREAMDOWN_PLUGINS}
-                      skipHtml
-                      unwrapDisallowed
-                      mode={isLoading ? "streaming" : "static"}
-                      animated={CHAT_STREAMDOWN_ANIMATED}
-                      isAnimating={isLoading}
-                      parseIncompleteMarkdown={isLoading}
-                    >
-                      {bubbleText}
-                    </Streamdown>
-                  ) : (
-                    t("common.assistant.emptyBubble")
-                  )}
-                </div>
-              )}
+                ) : errorText ? (
+                  <div className="whitespace-pre-wrap">{errorText}</div>
+                ) : bubbleText ? (
+                  <Streamdown
+                    className="ryos-chat-streamdown"
+                    components={chatStreamdownComponents}
+                    disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                    controls={false}
+                    lineNumbers={false}
+                    shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+                    plugins={CHAT_STREAMDOWN_PLUGINS}
+                    skipHtml
+                    unwrapDisallowed
+                    mode={isLoading ? "streaming" : "static"}
+                    animated={CHAT_STREAMDOWN_ANIMATED}
+                    isAnimating={isLoading}
+                    parseIncompleteMarkdown={isLoading}
+                  >
+                    {bubbleText}
+                  </Streamdown>
+                ) : (
+                  t("common.assistant.emptyBubble")
+                )}
+              </div>
               <form
                 onSubmit={handleSubmit}
                 className="-mx-3 mt-1.5 flex items-center gap-1 border-t border-black/15 px-3 pt-1 pb-0.5"

@@ -30,7 +30,7 @@ export function ToolInvocationMessageDefaultView({
   });
 
   return (
-    <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
+    <div key={partKey} className="mb-0 italic text-[12px] leading-snug">
       {(state === "input-streaming" || state === "input-available") &&
         !output && (
           <ToolInvocationStatusRow
@@ -40,7 +40,7 @@ export function ToolInvocationMessageDefaultView({
             {displayCallMessage ? (
               <span className="shimmer">{displayCallMessage}</span>
             ) : (
-              <span>
+              <span className="shimmer">
                 {t("apps.chats.toolCalls.calling", {
                   toolName: formatToolName(toolName),
                 })}

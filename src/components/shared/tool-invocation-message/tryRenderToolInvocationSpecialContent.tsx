@@ -270,7 +270,7 @@ export function tryRenderToolInvocationSpecialContent(
       }
       // Show loading state if HTML not yet available
       return (
-        <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
+        <div key={partKey} className="mb-0 italic text-[12px] leading-snug">
           <ToolInvocationStatusRow
             icon={<ActivityIndicator size="xs" className="text-neutral-500 dark:text-neutral-400" />}
             className="text-neutral-600 dark:text-neutral-300"
@@ -300,7 +300,7 @@ export function tryRenderToolInvocationSpecialContent(
         );
       }
       return (
-        <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
+        <div key={partKey} className="mb-0 italic text-[12px] leading-snug">
           <ToolInvocationStatusRow
             icon={<ActivityIndicator size="xs" className="text-neutral-500 dark:text-neutral-400" />}
             className="text-neutral-500 dark:text-neutral-400"
