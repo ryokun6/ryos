@@ -15,6 +15,7 @@ import {
   ArrowDown,
   Bug,
   CaretDown,
+  CaretLeft,
   Check,
   Copy,
   Trash,
@@ -63,6 +64,7 @@ import {
   getDebugPanelTransformOrigin,
   type DebugPanelAnchor,
 } from "./debugOverlayAnimations";
+import { DB_NAME } from "@/utils/indexedDB";
 
 const LEVEL_TEXT_CLASS: Record<ConsoleLogLevel, string> = {
   log: "text-os-text-primary",
@@ -341,6 +343,8 @@ export function DebugLogOverlay() {
   const liveReportRef = useRef("");
   const idbCopyTextRef = useRef("");
   const [idbRefreshToken, setIdbRefreshToken] = useState(0);
+  const [idbSelectedStore, setIdbSelectedStore] = useState<string | null>(null);
+  const [idbEntryTotal, setIdbEntryTotal] = useState(0);
 
   const entries = useSyncExternalStore(
     subscribeConsoleCapture,
@@ -692,6 +696,15 @@ export function DebugLogOverlay() {
     setIdbRefreshToken((token) => token + 1);
   }, []);
 
+  const handleIdbBackToStores = useCallback(() => {
+    setIdbSelectedStore(null);
+    setIdbEntryTotal(0);
+  }, []);
+
+  const handleIdbEntryTotalChange = useCallback((count: number) => {
+    setIdbEntryTotal(count);
+  }, []);
+
   const handleClearNetwork = useCallback(() => {
     clearNetworkCapture();
   }, []);
@@ -961,6 +974,30 @@ export function DebugLogOverlay() {
                   onValueChange={setNetworkFilter}
                 />
               </div>
+            ) : activeTab === "idb" ? (
+              <div className="flex min-w-0 items-center gap-1 font-os-ui text-[10px] leading-none">
+                {idbSelectedStore !== null ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleIdbBackToStores}
+                      title={t("debug.idb.backToStores")}
+                      aria-label={t("debug.idb.backToStores")}
+                      className="flex size-5 shrink-0 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
+                    >
+                      <CaretLeft weight="bold" className="size-3" />
+                    </button>
+                    <span className="min-w-0 truncate text-os-text-primary">
+                      {idbSelectedStore}
+                    </span>
+                    <span className="shrink-0 tabular-nums opacity-60">
+                      {t("debug.idb.recordCount", { count: idbEntryTotal })}
+                    </span>
+                  </>
+                ) : (
+                  <span className="truncate opacity-60">{DB_NAME}</span>
+                )}
+              </div>
             ) : null}
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
               {activeTab === "logs" ? (
@@ -1166,6 +1203,9 @@ export function DebugLogOverlay() {
           >
             <DebugIndexedDBPanel
               refreshToken={idbRefreshToken}
+              selectedStore={idbSelectedStore}
+              onSelectedStoreChange={setIdbSelectedStore}
+              onEntryTotalChange={handleIdbEntryTotalChange}
               onCopyTextChange={handleIdbCopyTextChange}
             />
           </TabsContent>
