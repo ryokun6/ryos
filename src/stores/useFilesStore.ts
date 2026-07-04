@@ -871,7 +871,7 @@ const initialFilesData: FilesStoreState = {
 } as FilesStoreState;
 
 export const useFilesStore = create<FilesStoreState>()(
-  persist(
+  persist<FilesStoreState, [], [], FilesPersistedState>(
     (set, get) => ({
       ...initialFilesData,
 
