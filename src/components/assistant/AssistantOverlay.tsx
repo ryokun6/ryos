@@ -252,6 +252,10 @@ function AssistantOverlayInner() {
     inputRef,
     onClose: closeBubble,
     resetKey: characterId,
+    // Never close mid-reply: on mobile the input blurs as soon as the
+    // keyboard dismisses, which would otherwise start the countdown while
+    // the reply is still generating (or before the user can read it).
+    holdOpen: isLoading,
   });
 
   // --- Position + dragging ---------------------------------------------------

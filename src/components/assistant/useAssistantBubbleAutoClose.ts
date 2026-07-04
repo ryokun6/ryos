@@ -7,8 +7,21 @@ import {
   type RefObject,
   type WheelEventHandler,
 } from "react";
+import { isTouchDevice } from "@/utils/device";
 
 export const ASSISTANT_BUBBLE_AUTO_CLOSE_MS = 5_000;
+/**
+ * Touch devices drop focus easily (soft keyboard dismissal, taps on
+ * non-focusable bubble content), so focus can't keep the bubble alive the way
+ * it does with a mouse + hardware keyboard. Give a longer reading window.
+ */
+export const ASSISTANT_BUBBLE_AUTO_CLOSE_TOUCH_MS = 15_000;
+
+export function getAssistantBubbleAutoCloseDelayMs(): number {
+  return isTouchDevice()
+    ? ASSISTANT_BUBBLE_AUTO_CLOSE_TOUCH_MS
+    : ASSISTANT_BUBBLE_AUTO_CLOSE_MS;
+}
 
 interface UseAssistantBubbleAutoCloseOptions {
   bubbleOpen: boolean;
@@ -16,6 +29,13 @@ interface UseAssistantBubbleAutoCloseOptions {
   inputRef: RefObject<HTMLInputElement | null>;
   onClose: () => void;
   resetKey: string;
+  /**
+   * While true (e.g. a reply is generating), the bubble never auto-closes.
+   * Close requests that arrive during the hold are deferred and re-armed with
+   * a fresh full grace period once the hold ends, so the user gets the whole
+   * window to read the finished reply.
+   */
+  holdOpen?: boolean;
 }
 
 interface AssistantBubbleAutoCloseHandlers {
@@ -34,6 +54,7 @@ export function useAssistantBubbleAutoClose({
   inputRef,
   onClose,
   resetKey,
+  holdOpen = false,
 }: UseAssistantBubbleAutoCloseOptions): AssistantBubbleAutoCloseHandlers {
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deferredFocusCheckRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -42,10 +63,15 @@ export function useAssistantBubbleAutoClose({
   const composingRef = useRef(false);
   const bubbleOpenRef = useRef(bubbleOpen);
   const onCloseRef = useRef(onClose);
+  const holdOpenRef = useRef(holdOpen);
+  /** A countdown was requested (or interrupted) while holdOpen was active. */
+  const pendingRestartAfterHoldRef = useRef(false);
   bubbleOpenRef.current = bubbleOpen;
   onCloseRef.current = onClose;
+  holdOpenRef.current = holdOpen;
 
   const cancelAutoClose = useCallback(() => {
+    pendingRestartAfterHoldRef.current = false;
     if (autoCloseTimerRef.current !== null) {
       clearTimeout(autoCloseTimerRef.current);
       autoCloseTimerRef.current = null;
@@ -74,6 +100,11 @@ export function useAssistantBubbleAutoClose({
     ) {
       return;
     }
+    if (holdOpenRef.current) {
+      // Defer: re-arm with a fresh full grace period once the hold lifts.
+      pendingRestartAfterHoldRef.current = true;
+      return;
+    }
 
     autoCloseTimerRef.current = setTimeout(() => {
       autoCloseTimerRef.current = null;
@@ -84,8 +115,12 @@ export function useAssistantBubbleAutoClose({
       ) {
         return;
       }
+      if (holdOpenRef.current) {
+        pendingRestartAfterHoldRef.current = true;
+        return;
+      }
       onCloseRef.current();
-    }, ASSISTANT_BUBBLE_AUTO_CLOSE_MS);
+    }, getAssistantBubbleAutoCloseDelayMs());
   }, [cancelAutoClose, hasFocusInsideBubble]);
 
   const deferFocusCheck = useCallback(() => {
@@ -143,6 +178,22 @@ export function useAssistantBubbleAutoClose({
   useEffect(() => {
     cancelAutoClose();
   }, [bubbleOpen, cancelAutoClose, resetKey]);
+
+  useEffect(() => {
+    if (holdOpen) {
+      // A countdown that was already running is interrupted by the hold and
+      // will restart from zero once the hold lifts.
+      if (autoCloseTimerRef.current !== null) {
+        cancelAutoClose();
+        pendingRestartAfterHoldRef.current = true;
+      }
+      return;
+    }
+    if (pendingRestartAfterHoldRef.current) {
+      pendingRestartAfterHoldRef.current = false;
+      startAutoClose();
+    }
+  }, [holdOpen, cancelAutoClose, startAutoClose]);
 
   useEffect(() => cancelAutoClose, [cancelAutoClose]);
 
