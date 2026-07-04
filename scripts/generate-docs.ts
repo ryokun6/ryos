@@ -259,6 +259,102 @@ function markdownToHtml(md: string, appContext?: string): string {
   return html;
 }
 
+const LATEST_CHANGELOG_CARD_PLACEHOLDER = "<!-- latest-changelog-card -->";
+const CHANGELOG_FILE = "9-changelog.md";
+
+interface FeaturedChangelogEntry {
+  monthLabel: string;
+  imageHtml: string;
+  title: string;
+  description: string;
+}
+
+const CHANGELOG_MONTH_OR_FEATURE_RE =
+  /^## (.+)$|<article class="changelog-feature"><img src="([^"]+)" alt="([^"]*)"([^>]*)><div class="changelog-feature-copy"><h3>([^<]+)<\/h3><p>([^<]+)<\/p>/gm;
+
+/**
+ * Collect the newest featured changelog entries in document order (the
+ * changelog is ordered newest-first), pairing each entry with the month
+ * heading it appears under.
+ */
+function parseFeaturedChangelogEntries(
+  changelogMd: string,
+  limit: number,
+): FeaturedChangelogEntry[] {
+  const entries: FeaturedChangelogEntry[] = [];
+  let currentMonth = "";
+
+  for (const match of changelogMd.matchAll(CHANGELOG_MONTH_OR_FEATURE_RE)) {
+    if (match[1] !== undefined) {
+      currentMonth = match[1].trim();
+      continue;
+    }
+    entries.push({
+      monthLabel: currentMonth,
+      imageHtml: `<img src="${match[2]}" alt="${match[3]}"${match[4]}>`,
+      title: match[5],
+      description: match[6],
+    });
+    if (entries.length >= limit) break;
+  }
+
+  return entries;
+}
+
+/**
+ * Build cards linking to the changelog that showcase the two newest featured
+ * entries (image + title + blurb), laid out as a 2-column grid on large
+ * screens and a single column on mobile.
+ */
+export function buildLatestChangelogCard(changelogMd: string): string {
+  const entries = parseFeaturedChangelogEntries(changelogMd, 2);
+
+  const cards =
+    entries.length > 0
+      ? entries.map((entry) =>
+          [
+            `<a class="latest-changelog-card" href="/docs/changelog">`,
+            entry.imageHtml,
+            `<div class="latest-changelog-card-copy">`,
+            `<p class="latest-changelog-card-label">${entry.monthLabel || "Changelog"}</p>`,
+            `<h3>${entry.title}</h3>`,
+            `<p>${entry.description}</p>`,
+            `<p class="latest-changelog-card-cta">See what's new →</p>`,
+            `</div>`,
+            `</a>`,
+          ].join("\n"),
+        )
+      : [
+          [
+            `<a class="latest-changelog-card" href="/docs/changelog">`,
+            `<div class="latest-changelog-card-copy">`,
+            `<p class="latest-changelog-card-label">Latest changelog</p>`,
+            `<h3>See what's new</h3>`,
+            `<p class="latest-changelog-card-cta">See what's new →</p>`,
+            `</div>`,
+            `</a>`,
+          ].join("\n"),
+        ];
+
+  return [
+    `<style>`,
+    `.latest-changelog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0 24px; }`,
+    `.latest-changelog-card { display: flex; flex-direction: column; border: 1px solid var(--doc-border); border-radius: 12px; overflow: hidden; background: var(--doc-surface-alt); text-decoration: none; color: inherit; }`,
+    `.latest-changelog-card:hover { border-color: var(--doc-text-faint); }`,
+    `.latest-changelog-card img { display: block; width: 100%; height: auto; object-fit: contain; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }`,
+    `.latest-changelog-card-copy { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }`,
+    `.latest-changelog-card h3 { font-size: 14px; margin: 0 0 6px; }`,
+    `.latest-changelog-card p { color: var(--doc-text-secondary); font-size: 12px; margin: 0; }`,
+    `.latest-changelog-card p.latest-changelog-card-label { color: var(--doc-text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px; }`,
+    `.latest-changelog-card p.latest-changelog-card-cta { color: var(--doc-link); font-size: 11px; margin-top: auto; padding-top: 8px; }`,
+    `@media screen and (max-width: 768px) { .latest-changelog-grid { grid-template-columns: 1fr; gap: 14px; } .latest-changelog-card-copy { padding: 12px 14px 14px; } }`,
+    `</style>`,
+    `<div class="latest-changelog-grid">`,
+    ...cards,
+    `</div>`,
+  ].join("\n");
+}
+
 interface DocEntry {
   id: string;
   title: string;
@@ -822,6 +918,12 @@ async function generate() {
   const files = await readdir(DOCS_DIR);
   const mdFiles = files.filter((f) => f.endsWith(".md")).sort();
 
+  let latestChangelogCard = "";
+  if (mdFiles.includes(CHANGELOG_FILE)) {
+    const changelogMd = await readFile(join(DOCS_DIR, CHANGELOG_FILE), "utf-8");
+    latestChangelogCard = buildLatestChangelogCard(changelogMd);
+  }
+
   const docs: DocEntry[] = [];
 
   for (const file of mdFiles) {
@@ -839,7 +941,10 @@ async function generate() {
       appContext = appNameMatch[1];
     }
     
-    const html = markdownToHtml(content, appContext);
+    let html = markdownToHtml(content, appContext);
+    if (latestChangelogCard && html.includes(LATEST_CHANGELOG_CARD_PLACEHOLDER)) {
+      html = html.replace(LATEST_CHANGELOG_CARD_PLACEHOLDER, latestChangelogCard);
+    }
     docs.push({ 
       id, 
       title, 
