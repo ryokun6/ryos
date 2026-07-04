@@ -1,4 +1,6 @@
 import { SignJWT, importPKCS8, type CryptoKey } from "jose";
+import { isAllowedOrigin } from "./_cors.js";
+import { getConfiguredPublicOrigin } from "./runtime-config.js";
 
 /**
  * Shared utilities for parsing the MapKit `.p8` private key and signing the
@@ -114,6 +116,43 @@ async function getPrivateKey(): Promise<CryptoKey> {
   return cachedPrivateKey;
 }
 
+function normalizeConfiguredOrigin(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  try {
+    const parsed = new URL(
+      trimmed.startsWith("http") ? trimmed : `https://${trimmed}`
+    );
+    return parsed.origin;
+  } catch {
+    return trimmed.replace(/\/+$/, "");
+  }
+}
+
+/**
+ * Resolve the browser origin claim for MapKit JS tokens.
+ *
+ * Priority:
+ *   1. `MAPKIT_ORIGIN` when explicitly configured
+ *   2. The caller's allowed request `Origin` (localhost, preview, self-host)
+ *   3. `APP_PUBLIC_ORIGIN` / `PUBLIC_APP_ORIGIN`
+ */
+export function resolveMapKitJsOrigin(
+  requestOrigin?: string | null
+): string | undefined {
+  const explicit = process.env.MAPKIT_ORIGIN?.trim();
+  if (explicit) {
+    return normalizeConfiguredOrigin(explicit);
+  }
+
+  if (requestOrigin && isAllowedOrigin(requestOrigin)) {
+    return normalizeConfiguredOrigin(requestOrigin);
+  }
+
+  const configuredPublicOrigin = getConfiguredPublicOrigin();
+  return configuredPublicOrigin ?? undefined;
+}
+
 /**
  * Sign a MapKit-style ES256 JWT.
  *
@@ -124,7 +163,8 @@ async function getPrivateKey(): Promise<CryptoKey> {
  */
 export async function signMapKitJwt(
   kind: MapKitJwtKind,
-  ttlSeconds: number
+  ttlSeconds: number,
+  options: { requestOrigin?: string | null } = {}
 ): Promise<MapKitSignedJwt> {
   const teamId = process.env.MAPKIT_TEAM_ID;
   const keyId = process.env.MAPKIT_KEY_ID;
@@ -135,9 +175,11 @@ export async function signMapKitJwt(
   const now = Math.floor(Date.now() / 1000);
   const exp = now + ttlSeconds;
 
-  const allowedOrigin = process.env.MAPKIT_ORIGIN?.trim();
-  const payload =
-    kind === "mapkit-js" && allowedOrigin ? { origin: allowedOrigin } : {};
+  const allowedOrigin =
+    kind === "mapkit-js"
+      ? resolveMapKitJsOrigin(options.requestOrigin)
+      : undefined;
+  const payload = allowedOrigin ? { origin: allowedOrigin } : {};
 
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: "ES256", kid: keyId, typ: "JWT" })
