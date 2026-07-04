@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { OS_NATIVE_CHROME_SKIP_CLASS } from "@/lib/themeChrome";
 import { DB_NAME } from "@/utils/indexedDB";
 import {
   formatIDBEntriesForCopy,
@@ -16,6 +16,11 @@ import {
 interface DebugIndexedDBPanelProps {
   /** Incremented by the header refresh action to force a reload. */
   refreshToken: number;
+  /** Currently drilled-in object store, or null for the store list. */
+  selectedStore: string | null;
+  onSelectedStoreChange: (storeName: string | null) => void;
+  /** Reports the total record count for the drilled-in store (header nav). */
+  onEntryTotalChange: (count: number) => void;
   /** Reports the copyable dump of the current view (stores or entries). */
   onCopyTextChange: (text: string) => void;
 }
@@ -42,7 +47,7 @@ function EntryRow({ entry }: { entry: IDBEntrySummary }) {
         <span className="min-w-0 flex-1 truncate text-os-text-primary">
           {entry.key}
         </span>
-        <span className="shrink-0 tabular-nums text-os-text-secondary">
+        <span className="shrink-0 tabular-nums opacity-50">
           {entry.summary}
         </span>
       </button>
@@ -69,12 +74,14 @@ function EntryRow({ entry }: { entry: IDBEntrySummary }) {
  */
 export function DebugIndexedDBPanel({
   refreshToken,
+  selectedStore,
+  onSelectedStoreChange,
+  onEntryTotalChange,
   onCopyTextChange,
 }: DebugIndexedDBPanelProps) {
   const { t } = useTranslation();
 
   const [stores, setStores] = useState<IDBStoreSummary[]>([]);
-  const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [entries, setEntries] = useState<IDBEntrySummary[]>([]);
   const [entryTotal, setEntryTotal] = useState(0);
   const [entryLimit, setEntryLimit] = useState(IDB_ENTRY_PAGE_SIZE);
@@ -90,12 +97,14 @@ export function DebugIndexedDBPanel({
           const nextStores = await listIDBStores();
           if (cancelled) return;
           setStores(nextStores);
+          onEntryTotalChange(0);
           onCopyTextChange(formatIDBStoresForCopy(DB_NAME, nextStores));
         } else {
           const page = await readIDBStoreEntries(selectedStore, entryLimit);
           if (cancelled) return;
           setEntries(page.entries);
           setEntryTotal(page.total);
+          onEntryTotalChange(page.total);
           onCopyTextChange(
             formatIDBEntriesForCopy(selectedStore, page.entries)
           );
@@ -112,62 +121,47 @@ export function DebugIndexedDBPanel({
     return () => {
       cancelled = true;
     };
-  }, [selectedStore, entryLimit, refreshToken, onCopyTextChange]);
+  }, [
+    selectedStore,
+    entryLimit,
+    refreshToken,
+    onCopyTextChange,
+    onEntryTotalChange,
+  ]);
 
-  const openStore = useCallback((storeName: string) => {
-    setEntries([]);
-    setEntryTotal(0);
-    setEntryLimit(IDB_ENTRY_PAGE_SIZE);
-    setSelectedStore(storeName);
-  }, []);
-
-  const backToStores = useCallback(() => {
-    setSelectedStore(null);
-    setEntries([]);
-  }, []);
+  const openStore = useCallback(
+    (storeName: string) => {
+      setEntries([]);
+      setEntryTotal(0);
+      onEntryTotalChange(0);
+      setEntryLimit(IDB_ENTRY_PAGE_SIZE);
+      onSelectedStoreChange(storeName);
+    },
+    [onEntryTotalChange, onSelectedStoreChange]
+  );
 
   const loadMore = useCallback(() => {
     setEntryLimit((limit) => limit + IDB_ENTRY_PAGE_SIZE);
   }, []);
 
   return (
-    <div className="h-full overflow-auto px-2 py-1 font-os-mono text-[10px] leading-[1.45]">
-      {selectedStore !== null ? (
-        <div
-          className={cn(
-            "sticky -top-1 z-10 -mx-2 flex items-center gap-1 border-b px-2 py-1",
-            "border-[color:var(--os-color-separator)] bg-os-window-bg"
-          )}
-        >
-          <button
-            type="button"
-            onClick={backToStores}
-            title={t("debug.idb.backToStores")}
-            aria-label={t("debug.idb.backToStores")}
-            className="flex size-5 shrink-0 items-center justify-center rounded hover:bg-black/10 os-mac-aqua-dark:hover:bg-white/15"
-          >
-            <CaretLeft weight="bold" className="size-3" />
-          </button>
-          <span className="min-w-0 flex-1 truncate font-semibold text-os-text-primary">
-            {selectedStore}
-          </span>
-          <span className="shrink-0 tabular-nums text-os-text-secondary">
-            {t("debug.idb.recordCount", { count: entryTotal })}
-          </span>
-        </div>
-      ) : null}
-
+    <div
+      className={cn(
+        "h-full overflow-auto px-2 py-1 font-os-mono text-[10px] leading-[1.45]",
+        OS_NATIVE_CHROME_SKIP_CLASS
+      )}
+    >
       {loadState === "loading" ? (
-        <div className="py-4 text-center text-[11px] opacity-50">
+        <div className="py-4 text-center opacity-50">
           {t("debug.idb.loading")}
         </div>
       ) : loadState === "error" ? (
-        <div className="py-4 text-center text-[11px] text-red-500">
+        <div className="py-4 text-center text-red-500">
           {t("debug.idb.error")}
         </div>
       ) : selectedStore === null ? (
         stores.length === 0 ? (
-          <div className="py-4 text-center text-[11px] opacity-50">
+          <div className="py-4 text-center opacity-50">
             {t("debug.idb.emptyDatabase")}
           </div>
         ) : (
@@ -184,19 +178,14 @@ export function DebugIndexedDBPanel({
               <span className="min-w-0 flex-1 truncate text-os-text-primary">
                 {store.name}
               </span>
-              <span className="shrink-0 tabular-nums text-os-text-secondary">
+              <span className="shrink-0 tabular-nums opacity-50">
                 {t("debug.idb.recordCount", { count: store.count })}
               </span>
-              <CaretRight
-                weight="bold"
-                className="size-3 shrink-0 opacity-40"
-                aria-hidden
-              />
             </button>
           ))
         )
       ) : entries.length === 0 ? (
-        <div className="py-4 text-center text-[11px] opacity-50">
+        <div className="py-4 text-center opacity-50">
           {t("debug.idb.emptyStore")}
         </div>
       ) : (
@@ -208,7 +197,7 @@ export function DebugIndexedDBPanel({
             <button
               type="button"
               onClick={loadMore}
-              className="w-full py-1.5 text-center text-[11px] text-os-text-secondary hover:text-os-text-primary"
+              className="w-full py-1.5 text-center opacity-50 hover:opacity-100"
             >
               {t("debug.idb.loadMore", {
                 count: entryTotal - entries.length,
