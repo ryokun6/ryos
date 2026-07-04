@@ -14,6 +14,8 @@ import {
 import { cleanTextForSpeech } from "@/apps/chats/utils/textForSpeech";
 import { splitTextIntoSpeechSegments } from "@/apps/books/utils/booksSpeech";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { setAssistantSpeechActive } from "./assistantSpeechState";
+import { stopActiveAssistantSounds } from "./assistantSounds";
 
 /** Safety net for engines that never fire `end`/`error` on an utterance. */
 export const ASSISTANT_SPEECH_UTTERANCE_TIMEOUT_MS = 30_000;
@@ -65,6 +67,7 @@ export function speakAssistantText(
 
   const currentGeneration = ++generation;
   synth.cancel();
+  setAssistantSpeechActive(false);
 
   const texts = prepareAssistantSpeechTexts(text);
   if (texts.length === 0) return;
@@ -72,10 +75,20 @@ export function speakAssistantText(
   warmVoices(synth);
   synth.resume();
 
+  // Character animation sounds interrupt the speech-synthesis audio session
+  // on several engines; silence anything already playing and flag speech as
+  // active so no new effect starts mid-reply (see assistantSpeechState).
+  stopActiveAssistantSounds();
+  setAssistantSpeechActive(true);
+
   const lang = ryOSLocaleToSpeechLanguage(options?.locale);
 
   const speakAt = (index: number) => {
-    if (currentGeneration !== generation || index >= texts.length) return;
+    if (currentGeneration !== generation) return;
+    if (index >= texts.length) {
+      setAssistantSpeechActive(false);
+      return;
+    }
 
     const utterance = new SpeechSynthesisUtterance(texts[index]);
     utterance.lang = lang;
@@ -109,6 +122,7 @@ export function speakAssistantText(
 /** Stop assistant speech and drop any queued utterances. */
 export function stopAssistantSpeech(): void {
   generation++;
+  setAssistantSpeechActive(false);
   getBrowserSpeechSynthesis()?.cancel();
 }
 
@@ -116,4 +130,5 @@ export function stopAssistantSpeech(): void {
 export function __resetAssistantSpeechStateForTests(): void {
   generation++;
   voicesWarmed = false;
+  setAssistantSpeechActive(false);
 }

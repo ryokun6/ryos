@@ -5,6 +5,12 @@ import {
   stopAssistantSpeech,
   __resetAssistantSpeechStateForTests,
 } from "../src/components/assistant/assistantSpeech";
+import { isAssistantSpeechActive } from "../src/components/assistant/assistantSpeechState";
+import {
+  AssistantSoundPlayer,
+  markAssistantSoundInteraction,
+  resetAssistantSoundStateForTests,
+} from "../src/components/assistant/assistantSounds";
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 import { useAssistantStore } from "../src/stores/useAssistantStore";
 
@@ -150,6 +156,118 @@ describe("assistant speech playback", () => {
     speakAssistantText("Hello.", { locale: "en" });
     expect(spoken).toHaveLength(1);
     expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe("English UK");
+  });
+
+  test("marks speech active for the whole utterance chain", () => {
+    expect(isAssistantSpeechActive()).toBe(false);
+    speakAssistantText("One. Two.", { locale: "en" });
+    expect(isAssistantSpeechActive()).toBe(true);
+    spoken[0].onend?.();
+    expect(isAssistantSpeechActive()).toBe(true);
+    spoken[1].onend?.();
+    expect(isAssistantSpeechActive()).toBe(false);
+  });
+
+  test("stopAssistantSpeech clears the speech-active flag", () => {
+    speakAssistantText("Hello.", { locale: "en" });
+    expect(isAssistantSpeechActive()).toBe(true);
+    stopAssistantSpeech();
+    expect(isAssistantSpeechActive()).toBe(false);
+  });
+});
+
+class MockSoundAudio {
+  preload = "";
+  volume = 1;
+  currentTime = 0;
+  src: string;
+  playCount = 0;
+  paused = true;
+  constructor(src: string) {
+    this.src = src;
+    MockSoundAudio.instances.push(this);
+  }
+  play() {
+    this.playCount += 1;
+    this.paused = false;
+    return Promise.resolve();
+  }
+  pause() {
+    this.paused = true;
+  }
+  load() {}
+  addEventListener() {}
+  removeEventListener() {}
+  removeAttribute() {}
+  static instances: MockSoundAudio[] = [];
+}
+
+describe("assistant sound effects vs speech", () => {
+  const g = globalThis as Record<string, unknown>;
+  const originalWindow = g.window;
+  const originalUtterance = g.SpeechSynthesisUtterance;
+  const originalAudio = globalThis.Audio;
+  let spoken: FakeUtterance[];
+
+  beforeEach(() => {
+    spoken = [];
+    MockSoundAudio.instances = [];
+    const synth = {
+      speak: (utterance: FakeUtterance) => {
+        spoken.push(utterance);
+      },
+      cancel: () => {},
+      resume: () => {},
+      getVoices: () => [],
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    };
+    g.window = globalThis;
+    g.speechSynthesis = synth;
+    g.SpeechSynthesisUtterance = FakeUtterance;
+    // @ts-expect-error test double
+    globalThis.Audio = MockSoundAudio;
+    __resetAssistantSpeechStateForTests();
+    resetAssistantSoundStateForTests();
+    markAssistantSoundInteraction();
+    useAudioSettingsStore.setState({ uiSoundsEnabled: true });
+  });
+
+  afterEach(() => {
+    stopAssistantSpeech();
+    spoken.forEach((utterance) => utterance.onend?.());
+    __resetAssistantSpeechStateForTests();
+    resetAssistantSoundStateForTests();
+    g.window = originalWindow;
+    g.SpeechSynthesisUtterance = originalUtterance;
+    globalThis.Audio = originalAudio;
+    delete g.speechSynthesis;
+  });
+
+  test("suppresses animation sound effects while speech is active", () => {
+    const player = new AssistantSoundPlayer();
+    player.loadCharacter("clippy");
+
+    speakAssistantText("A long reply.", { locale: "en" });
+    player.play("1");
+    expect(MockSoundAudio.instances).toHaveLength(0);
+
+    // After the reply finishes speaking, effects play again.
+    spoken[0].onend?.();
+    player.play("1");
+    expect(MockSoundAudio.instances).toHaveLength(1);
+    expect(MockSoundAudio.instances[0].playCount).toBe(1);
+  });
+
+  test("starting speech silences an effect already playing", () => {
+    const player = new AssistantSoundPlayer();
+    player.loadCharacter("clippy");
+    player.play("1");
+    const clip = MockSoundAudio.instances[0];
+    expect(clip.paused).toBe(false);
+
+    speakAssistantText("Hello.", { locale: "en" });
+    expect(clip.paused).toBe(true);
   });
 });
 

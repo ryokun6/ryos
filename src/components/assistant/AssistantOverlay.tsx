@@ -946,6 +946,12 @@ function AssistantOverlayInner() {
   const contextMenuItems = useMemo<MenuItem[]>(
     () => [
       {
+        type: "checkbox",
+        label: t("common.assistant.contextMenu.speech"),
+        checked: speechEnabled,
+        onSelect: handleSpeechToggle,
+      },
+      {
         type: "submenu",
         label: t("common.assistant.contextMenu.character"),
         items: ASSISTANT_CHARACTERS.map((entry) => ({
@@ -957,12 +963,6 @@ function AssistantOverlayInner() {
             setCharacterId(entry.id);
           },
         })),
-      },
-      {
-        type: "checkbox",
-        label: t("common.assistant.contextMenu.speech"),
-        checked: speechEnabled,
-        onSelect: handleSpeechToggle,
       },
       { type: "separator" },
       {

@@ -11,6 +11,7 @@
 
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import type { AssistantCharacterId } from "./characters";
+import { isAssistantSpeechActive } from "./assistantSpeechState";
 import { ASSISTANT_SOUND_MAPS } from "./sounds";
 
 const MAX_CONCURRENT_ASSISTANT_SOUNDS = 2;
@@ -128,6 +129,10 @@ export class AssistantSoundPlayer {
   play(soundId: string | undefined): void {
     if (!soundId || !this.characterId) return;
     if (!canPlayAssistantSounds()) return;
+    // Never start an effect while the assistant is speaking a reply:
+    // HTMLAudioElement playback interrupts speech synthesis on several
+    // engines, audibly cutting the TTS off mid-sentence.
+    if (isAssistantSpeechActive()) return;
 
     const now = Date.now();
     if (now - lastPlayedAt < MIN_SOUND_GAP_MS) return;
@@ -148,17 +153,22 @@ export class AssistantSoundPlayer {
   }
 
   stopAll(): void {
-    for (const audio of activeAudios) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
-    activeAudios.clear();
+    stopActiveAssistantSounds();
   }
 
   dispose(): void {
     this.stopAll();
     this.characterId = null;
   }
+}
+
+/** Silence every in-flight animation clip (used when assistant TTS starts). */
+export function stopActiveAssistantSounds(): void {
+  for (const audio of activeAudios) {
+    audio.pause();
+    audio.currentTime = 0;
+  }
+  activeAudios.clear();
 }
 
 /** Test-only view of how many clips are currently cached. */
