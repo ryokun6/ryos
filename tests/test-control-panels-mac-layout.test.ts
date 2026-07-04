@@ -807,6 +807,18 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(displaysSource.includes("Intentionally visible to all users")).toBe(true);
   });
 
+  test("Assistant pane shows character grid in four columns on wide panes", () => {
+    const assistantSource = readSource(
+      "src/apps/control-panels/components/control-panels-app/AssistantPaneContent.tsx"
+    );
+    expect(assistantSource.includes("@container")).toBe(true);
+    expect(assistantSource.includes("grid-cols-4 @max-[339px]:grid-cols-2")).toBe(
+      true
+    );
+    expect(assistantSource.includes("TILE_PREVIEW_MAX = 64")).toBe(true);
+    expect(assistantSource.includes("grid-cols-3")).toBe(false);
+  });
+
   test("macosx preview window is centered within visible canvas width", () => {
     const scale = 1;
     const hostWidth = 400;
