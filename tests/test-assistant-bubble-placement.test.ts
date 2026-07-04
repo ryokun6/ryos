@@ -39,11 +39,13 @@ describe("assistant bubble placement", () => {
     expect(left.side).toBe("above");
     expect(left.align).toBe("start");
     expect(left.penalty).toBe(0);
+    expect(left.crossOffset).toBe(0);
 
     const right = place({ x: 1300, y: 600 });
     expect(right.side).toBe("above");
     expect(right.align).toBe("end");
     expect(right.penalty).toBe(0);
+    expect(right.crossOffset).toBe(0);
   });
 
   test("flips below when the character is near the top of the screen", () => {
@@ -116,6 +118,41 @@ describe("assistant bubble placement", () => {
     const placement = place({ x: 600, y: 500 }, [window]);
     expect(placement.side).toBe("above");
     expect(placement.align).toBe("start");
+  });
+
+  test("slides along the cross axis instead of clipping on a narrow viewport", () => {
+    // Character horizontally centered on a phone: neither left- nor
+    // right-aligned above placement fits, so the bubble slides sideways to
+    // stay fully on screen instead of hanging off the edge.
+    const viewport = { width: 393, height: 852, topInset: 26, bottomInset: 90 };
+    const placement = place({ x: 156, y: 640 }, [], viewport);
+
+    expect(placement.side).toBe("above");
+    expect(placement.penalty).toBe(0);
+    expect(placement.crossOffset).toBe(-27);
+    expect(placement.bounds.x).toBe(129);
+    expect(placement.bounds.x + placement.bounds.width).toBeLessThanOrEqual(
+      393 - 8
+    );
+  });
+
+  test("pops to the top instead of clipping beside a full-width window", () => {
+    // Regression: character docked at the bottom of a phone viewport with a
+    // window filling the screen above it. Side pops hang off the viewport and
+    // must never win just because they cover less of the window — the bubble
+    // pops above (sliding on-screen), accepting the window overlap.
+    const viewport = { width: 393, height: 852, topInset: 26, bottomInset: 90 };
+    const window: AssistantBubbleRect = { x: 0, y: 26, width: 393, height: 560 };
+    const placement = place({ x: 150, y: 640 }, [window], viewport);
+
+    expect(placement.side).toBe("above");
+    const { bounds } = placement;
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(393);
+    expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(852);
+    // Slid left so the right-extending bubble stays on screen.
+    expect(placement.crossOffset).toBe(-21);
   });
 
   test("stays on screen and minimizes window coverage when boxed in", () => {
