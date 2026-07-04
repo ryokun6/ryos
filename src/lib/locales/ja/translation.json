@@ -587,6 +587,50 @@
         "updatedYesterday": "昨日更新"
       }
     },
+    "assistant": {
+      "name": "アシスタント",
+      "description": "デスクトップに浮かぶアシスタントキャラクターを呼び出します",
+      "window": {
+        "title": "デスクトップアシスタント",
+        "subtitle": "キャラクターを選んでデスクトップに呼び出しましょう",
+        "on": "オン",
+        "off": "オフ",
+        "toggleLabel": "デスクトップにアシスタントを表示",
+        "hint": "ヒント: デスクトップのキャラクターを右クリックまたは長押しするとクイックメニューが開きます。"
+      },
+      "menu": {
+        "help": "アシスタントヘルプ",
+        "about": "アシスタントについて",
+        "quitAssistant": "アシスタントを終了",
+        "showAssistant": "アシスタントを呼び出す"
+      },
+      "help": {
+        "meet": {
+          "title": "アシスタントと出会う",
+          "description": "キャラクターを選ぶと、デスクトップに浮かんでチャットやお手伝いをしてくれます"
+        },
+        "characters": {
+          "title": "キャラクター",
+          "description": "Clippy、Merlin、Rover などの初代 Office アシスタントや、新しい ryOS の仲間から選べます"
+        },
+        "chat": {
+          "title": "チャット",
+          "description": "キャラクターをクリックすると吹き出しが開き、何でも質問できます"
+        },
+        "realWork": {
+          "title": "実際に働きます",
+          "description": "アシスタントはアプリを開いたり、音楽を再生したり、書類を編集したり、設定を変更したりできます"
+        },
+        "moveSnap": {
+          "title": "移動とスナップ",
+          "description": "キャラクターはどこへでもドラッグでき、ウインドウの端や Dock、画面の隅にスナップします"
+        },
+        "quickMenu": {
+          "title": "クイックメニュー",
+          "description": "キャラクターを右クリックまたは長押しすると、キャラクターの切り替えや終了ができます"
+        }
+      }
+    },
     "books": {
       "bookmarks": {
         "add": "ブックマークを追加",
@@ -4542,6 +4586,12 @@
       "systemPreferences": "システム環境設定…"
     },
     "assistant": {
+      "contextMenu": {
+        "character": "キャラクター",
+        "newConversation": "新しい会話",
+        "openApp": "アシスタントを開く…",
+        "quit": "アシスタントを終了"
+      },
       "emptyBubble": "こんにちは！ヘルプが必要なときはいつでもクリックしてください。",
       "genericError": "おっと、何か問題が発生したようです。少ししてからもう一度お試しください！ 📎",
       "greetings": {
@@ -4552,11 +4602,9 @@
       },
       "inputPlaceholder": "何でも聞いてください…",
       "label": "デスクトップアシスタントの{{name}}",
-      "menuLabel": "アシスタント",
       "rateLimited": "ふう、少し休憩が必要です！しばらくしてからもう一度試すか、サインインしてもっとチャットしましょう。 😴",
       "send": "送信",
-      "thinking": "考え中…",
-      "turnOff": "オフ"
+      "thinking": "考え中…"
     },
     "auth": {
       "changePassword": {

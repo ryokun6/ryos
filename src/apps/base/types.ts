@@ -48,10 +48,17 @@ export interface BaseApp<TInitialData = unknown> {
     | "dashboard"
     | "maps"
     | "books"
-    | "calculator";
+    | "calculator"
+    | "assistant";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;
+  /**
+   * Accessory/utility apps set this to keep their open windows out of the
+   * dock's running-apps area and the Windows taskbar (e.g. the Assistant
+   * manager window, whose real presence is the floating character).
+   */
+  hideFromDock?: boolean;
   component: React.ComponentType<AppProps<TInitialData>>;
   windowConstraints?: {
     minWidth?: number | string;

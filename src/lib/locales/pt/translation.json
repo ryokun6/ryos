@@ -589,6 +589,50 @@
         "updatedYesterday": "Atualizado ontem"
       }
     },
+    "assistant": {
+      "name": "Assistente",
+      "description": "Invoque um personagem assistente flutuante no desktop",
+      "window": {
+        "title": "Assistente de desktop",
+        "subtitle": "Escolha um personagem para invocá-lo no seu desktop",
+        "on": "Ativado",
+        "off": "Desativado",
+        "toggleLabel": "Mostrar o assistente no desktop",
+        "hint": "Dica: clique com o botão direito ou mantenha pressionado o personagem para abrir o menu rápido."
+      },
+      "menu": {
+        "help": "Ajuda do Assistente",
+        "about": "Sobre o Assistente",
+        "quitAssistant": "Encerrar Assistente",
+        "showAssistant": "Invocar Assistente"
+      },
+      "help": {
+        "meet": {
+          "title": "Conheça seu assistente",
+          "description": "Escolha um personagem e ele flutuará no seu desktop, pronto para conversar e ajudar"
+        },
+        "characters": {
+          "title": "Personagens",
+          "description": "Escolha entre os assistentes originais do Office como Clippy, Merlin e Rover, ou os novos amigos do ryOS"
+        },
+        "chat": {
+          "title": "Conversa",
+          "description": "Clique no personagem para abrir o balão de fala e perguntar o que quiser"
+        },
+        "realWork": {
+          "title": "Trabalho de verdade",
+          "description": "O assistente pode abrir apps, tocar música, editar documentos e mudar ajustes por você"
+        },
+        "moveSnap": {
+          "title": "Mover e encaixar",
+          "description": "Arraste o personagem para onde quiser; ele se encaixa nas bordas das janelas, no Dock e nos cantos da tela"
+        },
+        "quickMenu": {
+          "title": "Menu rápido",
+          "description": "Clique com o botão direito ou mantenha pressionado o personagem para trocá-lo ou encerrá-lo"
+        }
+      }
+    },
     "books": {
       "bookmarks": {
         "add": "Adicionar Marcador",
@@ -4546,6 +4590,12 @@
       "systemPreferences": "Preferências do Sistema…"
     },
     "assistant": {
+      "contextMenu": {
+        "character": "Personagem",
+        "newConversation": "Nova conversa",
+        "openApp": "Abrir Assistente…",
+        "quit": "Encerrar Assistente"
+      },
       "emptyBubble": "Olá! Clique em mim sempre que precisar de ajuda.",
       "genericError": "Ops, algo me atrapalhou. Tente novamente em instantes! 📎",
       "greetings": {
@@ -4556,11 +4606,9 @@
       },
       "inputPlaceholder": "Pergunte-me qualquer coisa…",
       "label": "{{name}}, o assistente de mesa",
-      "menuLabel": "Assistente",
       "rateLimited": "Ufa, preciso de um descanso! Tente novamente daqui a pouco — ou inicie a sessão para conversar mais. 😴",
       "send": "Enviar",
-      "thinking": "Pensando…",
-      "turnOff": "Desativado"
+      "thinking": "Pensando…"
     },
     "auth": {
       "changePassword": {

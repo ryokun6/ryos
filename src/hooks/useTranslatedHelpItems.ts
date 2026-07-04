@@ -209,6 +209,14 @@ export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
     "darkMode",
   ],
   calculator: [...CALCULATOR_HELP_I18N_KEYS],
+  assistant: [
+    "meet",
+    "characters",
+    "chat",
+    "realWork",
+    "moveSnap",
+    "quickMenu",
+  ],
 };
 
 /**

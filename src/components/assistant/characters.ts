@@ -1,13 +1,25 @@
 /**
  * Floating desktop assistant character registry.
  *
- * "clippy" uses the historically accurate Office 97 sprite sheet + animation
- * data (extracted from the original Microsoft Agent .acs files via the
- * clippy.js project). The other characters are original ryOS creations
- * rendered as single images with CSS idle animations.
+ * Sprite characters are the historically accurate Microsoft Agent / Office
+ * assistants (sprite sheets + animation data extracted from the original .acs
+ * files via the clippy.js project). The image characters are original ryOS
+ * creations rendered as single images with CSS idle animations.
  */
 
-export type AssistantCharacterId = "clippy" | "maccy" | "neko" | "floppy";
+export type AssistantCharacterId =
+  | "clippy"
+  | "links"
+  | "rover"
+  | "merlin"
+  | "genie"
+  | "peedy"
+  | "genius"
+  | "rocky"
+  | "f1"
+  | "maccy"
+  | "neko"
+  | "floppy";
 
 export interface AssistantCharacter {
   id: AssistantCharacterId;
@@ -23,16 +35,35 @@ export interface AssistantCharacter {
   imageUrl?: string;
 }
 
-export const ASSISTANT_CHARACTERS: AssistantCharacter[] = [
-  {
-    id: "clippy",
-    name: "Clippy",
+function spriteCharacter(
+  id: AssistantCharacterId,
+  name: string,
+  width: number,
+  height: number
+): AssistantCharacter {
+  return {
+    id,
+    name,
     kind: "sprite",
-    width: 124,
-    height: 93,
-    mapUrl: "/assets/assistant/clippy/map.png",
-    agentUrl: "/assets/assistant/clippy/agent.json",
-  },
+    width,
+    height,
+    mapUrl: `/assets/assistant/${id}/map.png`,
+    agentUrl: `/assets/assistant/${id}/agent.json`,
+  };
+}
+
+export const ASSISTANT_CHARACTERS: AssistantCharacter[] = [
+  // Original Microsoft Agent / Office assistant characters.
+  spriteCharacter("clippy", "Clippy", 124, 93),
+  spriteCharacter("links", "Links", 124, 93),
+  spriteCharacter("rover", "Rover", 80, 80),
+  spriteCharacter("merlin", "Merlin", 128, 128),
+  spriteCharacter("genie", "Genie", 128, 128),
+  spriteCharacter("peedy", "Peedy", 160, 128),
+  spriteCharacter("genius", "Genius", 124, 93),
+  spriteCharacter("rocky", "Rocky", 124, 93),
+  spriteCharacter("f1", "F1", 124, 93),
+  // Original ryOS characters.
   {
     id: "maccy",
     name: "Maccy",

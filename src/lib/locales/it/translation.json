@@ -589,6 +589,50 @@
         "updatedYesterday": "Aggiornato ieri"
       }
     },
+    "assistant": {
+      "name": "Assistente",
+      "description": "Evoca un personaggio assistente fluttuante sulla scrivania",
+      "window": {
+        "title": "Assistente da scrivania",
+        "subtitle": "Scegli un personaggio da evocare sulla scrivania",
+        "on": "Attivo",
+        "off": "Disattivo",
+        "toggleLabel": "Mostra l'assistente sulla scrivania",
+        "hint": "Suggerimento: fai clic destro o tieni premuto sul personaggio per aprire il menu rapido."
+      },
+      "menu": {
+        "help": "Aiuto Assistente",
+        "about": "Informazioni su Assistente",
+        "quitAssistant": "Esci dall'Assistente",
+        "showAssistant": "Evoca Assistente"
+      },
+      "help": {
+        "meet": {
+          "title": "Incontra il tuo assistente",
+          "description": "Scegli un personaggio: fluttuerà sulla scrivania, pronto a chiacchierare e ad aiutarti"
+        },
+        "characters": {
+          "title": "Personaggi",
+          "description": "Scegli tra gli assistenti Office originali come Clippy, Merlin e Rover, o i nuovi amici di ryOS"
+        },
+        "chat": {
+          "title": "Chat",
+          "description": "Fai clic sul personaggio per aprire il fumetto e chiedergli qualsiasi cosa"
+        },
+        "realWork": {
+          "title": "Lavoro vero",
+          "description": "L'assistente può aprire app, riprodurre musica, modificare documenti e cambiare impostazioni per te"
+        },
+        "moveSnap": {
+          "title": "Sposta e aggancia",
+          "description": "Trascina il personaggio ovunque; si aggancia ai bordi delle finestre, al Dock e agli angoli dello schermo"
+        },
+        "quickMenu": {
+          "title": "Menu rapido",
+          "description": "Fai clic destro o tieni premuto sul personaggio per cambiarlo o uscire"
+        }
+      }
+    },
     "books": {
       "bookmarks": {
         "add": "Aggiungi segnalibro",
@@ -4546,6 +4590,12 @@
       "systemPreferences": "Preferenze di Sistema…"
     },
     "assistant": {
+      "contextMenu": {
+        "character": "Personaggio",
+        "newConversation": "Nuova conversazione",
+        "openApp": "Apri Assistente…",
+        "quit": "Esci dall'Assistente"
+      },
       "emptyBubble": "Ciao! Cliccami ogni volta che ti serve aiuto.",
       "genericError": "Ops, qualcosa mi ha ingarbugliato. Riprova tra un momento! 📎",
       "greetings": {
@@ -4556,11 +4606,9 @@
       },
       "inputPlaceholder": "Chiedimi qualsiasi cosa…",
       "label": "{{name}}, l'assistente per la Scrivania",
-      "menuLabel": "Assistente",
       "rateLimited": "Uff, ho bisogno di una piccola pausa! Riprova tra poco — oppure accedi per altre chat. 😴",
       "send": "Invia",
-      "thinking": "Sto pensando…",
-      "turnOff": "Disattiva"
+      "thinking": "Sto pensando…"
     },
     "auth": {
       "changePassword": {

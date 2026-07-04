@@ -203,9 +203,13 @@
       "exitFullScreen": "Exit Full Screen"
     },
     "assistant": {
-      "menuLabel": "Assistant",
-      "turnOff": "Off",
       "label": "{{name}} the desktop assistant",
+      "contextMenu": {
+        "character": "Character",
+        "newConversation": "New Conversation",
+        "openApp": "Open Assistant…",
+        "quit": "Quit Assistant"
+      },
       "inputPlaceholder": "Ask me anything…",
       "send": "Send",
       "thinking": "Thinking…",
@@ -4702,6 +4706,50 @@
         "darkMode": {
           "title": "Dark Mode",
           "description": "The reader follows the system theme, or set a light, sepia, or dark page from View ▸ Theme."
+        }
+      }
+    },
+    "assistant": {
+      "name": "Assistant",
+      "description": "Summon a floating desktop assistant character",
+      "window": {
+        "title": "Desktop Assistant",
+        "subtitle": "Pick a character to summon it onto your desktop",
+        "on": "On",
+        "off": "Off",
+        "toggleLabel": "Show assistant on desktop",
+        "hint": "Tip: right-click or long-press the character on the desktop for quick options."
+      },
+      "menu": {
+        "help": "Assistant Help",
+        "about": "About Assistant",
+        "quitAssistant": "Quit Assistant",
+        "showAssistant": "Summon Assistant"
+      },
+      "help": {
+        "meet": {
+          "title": "Meet Your Assistant",
+          "description": "Pick a character and it floats on your desktop, ready to chat and help"
+        },
+        "characters": {
+          "title": "Characters",
+          "description": "Choose from the original Office assistants like Clippy, Merlin, and Rover, or new ryOS friends"
+        },
+        "chat": {
+          "title": "Chat",
+          "description": "Click the character to open its speech bubble and ask it anything"
+        },
+        "realWork": {
+          "title": "Does Real Work",
+          "description": "The assistant can open apps, play music, edit documents, and change settings for you"
+        },
+        "moveSnap": {
+          "title": "Move & Snap",
+          "description": "Drag the character anywhere; it snaps to window edges, the dock, and screen corners"
+        },
+        "quickMenu": {
+          "title": "Quick Menu",
+          "description": "Right-click or long-press the character to switch characters or dismiss it"
         }
       }
     },

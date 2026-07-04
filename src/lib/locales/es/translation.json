@@ -589,6 +589,50 @@
         "updatedYesterday": "Actualizado ayer"
       }
     },
+    "assistant": {
+      "name": "Asistente",
+      "description": "Invoca un personaje asistente flotante en el escritorio",
+      "window": {
+        "title": "Asistente de escritorio",
+        "subtitle": "Elige un personaje para invocarlo en tu escritorio",
+        "on": "Activado",
+        "off": "Desactivado",
+        "toggleLabel": "Mostrar el asistente en el escritorio",
+        "hint": "Consejo: haz clic derecho o mantén pulsado el personaje para abrir el menú rápido."
+      },
+      "menu": {
+        "help": "Ayuda del Asistente",
+        "about": "Acerca del Asistente",
+        "quitAssistant": "Salir del Asistente",
+        "showAssistant": "Invocar Asistente"
+      },
+      "help": {
+        "meet": {
+          "title": "Conoce a tu asistente",
+          "description": "Elige un personaje y flotará en tu escritorio, listo para charlar y ayudar"
+        },
+        "characters": {
+          "title": "Personajes",
+          "description": "Elige entre los asistentes originales de Office como Clippy, Merlin y Rover, o los nuevos amigos de ryOS"
+        },
+        "chat": {
+          "title": "Chat",
+          "description": "Haz clic en el personaje para abrir su bocadillo y preguntarle lo que quieras"
+        },
+        "realWork": {
+          "title": "Trabajo de verdad",
+          "description": "El asistente puede abrir apps, reproducir música, editar documentos y cambiar ajustes por ti"
+        },
+        "moveSnap": {
+          "title": "Mover y ajustar",
+          "description": "Arrastra el personaje a donde quieras; se ajusta a los bordes de las ventanas, el Dock y las esquinas de la pantalla"
+        },
+        "quickMenu": {
+          "title": "Menú rápido",
+          "description": "Haz clic derecho o mantén pulsado el personaje para cambiarlo o salir"
+        }
+      }
+    },
     "books": {
       "bookmarks": {
         "add": "Añadir marcador",
@@ -4546,6 +4590,12 @@
       "systemPreferences": "Preferencias del Sistema…"
     },
     "assistant": {
+      "contextMenu": {
+        "character": "Personaje",
+        "newConversation": "Nueva conversación",
+        "openApp": "Abrir Asistente…",
+        "quit": "Salir del Asistente"
+      },
       "emptyBubble": "¡Hola! Haz clic en mí siempre que necesites ayuda.",
       "genericError": "¡Uy! Me he liado un poco. ¡Vuelve a intentarlo en un momento! 📎",
       "greetings": {
@@ -4556,11 +4606,9 @@
       },
       "inputPlaceholder": "Pregúntame lo que quieras…",
       "label": "{{name}}, el asistente de escritorio",
-      "menuLabel": "Asistente",
       "rateLimited": "¡Uf, necesito un pequeño descanso! Vuelve a intentarlo en un rato o inicia sesión para seguir chateando. 😴",
       "send": "Enviar",
-      "thinking": "Pensando…",
-      "turnOff": "Desactivado"
+      "thinking": "Pensando…"
     },
     "auth": {
       "changePassword": {

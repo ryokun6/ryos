@@ -203,9 +203,13 @@
       "exitFullScreen": "Exit Full Screen"
     },
     "assistant": {
-      "menuLabel": "Assistant",
-      "turnOff": "Off",
       "label": "{{name}} the desktop assistant",
+      "contextMenu": {
+        "character": "Character",
+        "newConversation": "New Conversation",
+        "openApp": "Open Assistant…",
+        "quit": "Quit Assistant"
+      },
       "inputPlaceholder": "Ask me anything…",
       "send": "Send",
       "thinking": "Thinking…",
@@ -1702,6 +1706,10 @@
     "books": {
       "name": "Books",
       "description": "Read EPUB books"
+    },
+    "assistant": {
+      "name": "Assistant",
+      "description": "Summon a floating desktop assistant character"
     },
     "calculator": {
       "name": "Calculator",

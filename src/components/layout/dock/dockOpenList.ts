@@ -1,4 +1,5 @@
 import type { AppId } from "@/config/appRegistry";
+import { shouldHideFromDock } from "@/config/appRegistry";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { DockOpenItem } from "./dockTypes";
 
@@ -35,6 +36,10 @@ export function computeDockOpenItems(
     }
     const appId = instance.appId;
     if (!appId) {
+      continue;
+    }
+    // Accessory apps (hideFromDock) never occupy a running-apps dock slot.
+    if (shouldHideFromDock(appId as AppId)) {
       continue;
     }
     (openByApp[appId] ??= []).push(instance);

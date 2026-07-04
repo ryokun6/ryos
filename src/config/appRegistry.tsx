@@ -181,6 +181,11 @@ const LazyCalculatorApp = createLazyComponent<unknown>(
   "calculator"
 );
 
+const LazyAssistantApp = createLazyComponent<unknown>(
+  () => import("@/apps/assistant/components/AssistantAppComponent").then(m => ({ default: m.AssistantAppComponent })),
+  "assistant"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -220,6 +225,7 @@ import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } fro
 import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
 import { appMetadata as booksMetadata, helpItems as booksHelpItems } from "@/apps/books/metadata";
 import { appMetadata as calculatorMetadata, helpItems as calculatorHelpItems } from "@/apps/calculator/metadata";
+import { appMetadata as assistantMetadata, helpItems as assistantHelpItems } from "@/apps/assistant/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -602,6 +608,20 @@ export const appRegistry = {
       maxSize: { width: 320, height: 520 },
     } as WindowConstraints,
   },
+  ["assistant"]: {
+    id: "assistant",
+    name: "Assistant",
+    icon: { type: "image", src: assistantMetadata.icon },
+    description: "Summon a floating desktop assistant character",
+    hideFromDock: true,
+    component: LazyAssistantApp,
+    helpItems: assistantHelpItems,
+    metadata: assistantMetadata,
+    windowConfig: {
+      defaultSize: { width: 500, height: 420 },
+      minSize: { width: 360, height: 320 },
+    } as WindowConstraints,
+  },
 } as const;
 
 // ============================================================================
@@ -615,6 +635,17 @@ export const getAppIconPath = (appId: AppId): string => {
     return app.icon;
   }
   return app.icon.src;
+};
+
+/**
+ * Accessory/utility apps (e.g. Assistant) keep their windows out of the
+ * dock's running-apps area and the Windows taskbar.
+ */
+export const shouldHideFromDock = (appId: AppId): boolean => {
+  const app = appRegistry[resolveAppId(appId) ?? appId] as
+    | { hideFromDock?: boolean }
+    | undefined;
+  return Boolean(app?.hideFromDock);
 };
 
 // Helper function to get all apps except Finder

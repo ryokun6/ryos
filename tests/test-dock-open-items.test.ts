@@ -118,6 +118,25 @@ describe("computeDockOpenItems", () => {
     expect(result.map((i) => i.appId)).toEqual(["chats"]);
   });
 
+  // Accessory apps (hideFromDock in the registry, e.g. Assistant) never get a
+  // running-apps dock slot even while their window is open.
+  test("drops open instances of hideFromDock accessory apps", () => {
+    const instances = toRecord([
+      makeInstance({ instanceId: "a", appId: "chats", createdAt: 1 }),
+      makeInstance({
+        instanceId: "helper",
+        appId: "assistant" as AppId,
+        createdAt: 2,
+      }),
+    ]);
+
+    const result = computeDockOpenItems(instances, [], (appId) =>
+      KNOWN_APPS.has(appId) || appId === "assistant"
+    );
+
+    expect(result.map((i) => i.appId)).toEqual(["chats"]);
+  });
+
   // Regression: an applet entry with no instanceId can't be matched to a live
   // window, so it must be skipped rather than render an empty slot.
   test("drops applet instances missing an instanceId", () => {

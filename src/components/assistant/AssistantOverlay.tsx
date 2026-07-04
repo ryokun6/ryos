@@ -13,8 +13,13 @@ import {
   type AssistantPosition,
 } from "@/stores/useAssistantStore";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
-import { getAssistantCharacter } from "./characters";
-import { ClippySprite, useAgentData } from "./ClippySprite";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
+import {
+  ASSISTANT_CHARACTERS,
+  getAssistantCharacter,
+} from "./characters";
+import { ClippySprite, useAgentData, type AgentData } from "./ClippySprite";
 import { useAssistantChat } from "./useAssistantChat";
 import { cn } from "@/lib/utils";
 
@@ -24,21 +29,36 @@ const SNAP_THRESHOLD = 32;
 const SNAP_MARGIN = 8;
 /** Pointer movement (px) below which a press counts as a click, not a drag. */
 const CLICK_SLOP = 5;
+/** Press-and-hold duration (ms) that opens the context menu. */
+const LONG_PRESS_MS = 550;
 
-const IDLE_ANIMATIONS = [
-  "IdleEyeBrowRaise",
-  "IdleFingerTap",
-  "IdleHeadScratch",
-  "IdleSideToSide",
-  "IdleRopePile",
-  "IdleAtom",
+// Animation names vary across the original agents; pick what's available.
+const GREET_CANDIDATES = ["Greeting", "Show", "Wave", "Announce", "GetAttention"];
+const THINKING_CANDIDATES = [
+  "Thinking",
+  "Processing",
+  "Searching",
+  "Writing",
+  "CheckingSomething",
+];
+const EXTRA_IDLE_CANDIDATES = [
   "LookLeft",
   "LookRight",
   "LookUp",
+  "LookDown",
   "GetAttention",
-] as const;
+  "Blink",
+];
+const REST_ANIMATION = "RestPose";
 
-const THINKING_ANIMATIONS = ["Thinking", "Processing", "Searching"] as const;
+function availableFrom(data: AgentData, candidates: string[]): string[] {
+  return candidates.filter((name) => data.animations[name]);
+}
+
+function pickRandom(pool: string[], fallback: string): string {
+  if (pool.length === 0) return fallback;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 interface SnapEdges {
   xs: number[];
@@ -116,8 +136,11 @@ function AssistantOverlayInner() {
   const characterId = useAssistantStore((state) => state.characterId);
   const storedPosition = useAssistantStore((state) => state.position);
   const setStoredPosition = useAssistantStore((state) => state.setPosition);
+  const setCharacterId = useAssistantStore((state) => state.setCharacterId);
+  const setEnabled = useAssistantStore((state) => state.setEnabled);
   const character = getAssistantCharacter(characterId);
   const { computeInsets } = useWindowInsets();
+  const launchApp = useLaunchApp();
 
   const chatHandle = useAssistantChat();
   const {
@@ -126,10 +149,15 @@ function AssistantOverlayInner() {
     errorText,
     sendUserMessage,
     greetIfStale,
+    clearConversation,
   } = chatHandle;
 
   const [bubbleOpen, setBubbleOpen] = useState(true);
   const [input, setInput] = useState("");
+  const [contextMenuPos, setContextMenuPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // --- Position + dragging ---------------------------------------------------
@@ -158,6 +186,23 @@ function AssistantOverlayInner() {
       : defaultPosition();
   });
   const [isDragging, setIsDragging] = useState(false);
+
+  const positionRef = useRef(position);
+  positionRef.current = position;
+
+  // Keep the assistant on-screen when the viewport or character size changes.
+  useEffect(() => {
+    const clamp = () => {
+      const insets = computeInsets();
+      setPosition((prev) =>
+        clampToViewport(prev, character.width, character.height, insets.topInset)
+      );
+    };
+    clamp();
+    window.addEventListener("resize", clamp);
+    return () => window.removeEventListener("resize", clamp);
+  }, [computeInsets, character.width, character.height]);
+
   const dragStateRef = useRef<{
     pointerId: number;
     startX: number;
@@ -165,73 +210,34 @@ function AssistantOverlayInner() {
     originX: number;
     originY: number;
     moved: boolean;
+    longPressTimer: ReturnType<typeof setTimeout> | null;
+    longPressFired: boolean;
   } | null>(null);
 
-  const positionRef = useRef(position);
-  positionRef.current = position;
+  const openContextMenu = useCallback((clientX: number, clientY: number) => {
+    // RightClickMenu positions itself absolutely inside this fixed container,
+    // so convert from viewport coordinates to container-local coordinates.
+    setContextMenuPos({
+      x: clientX - positionRef.current.x,
+      y: clientY - positionRef.current.y,
+    });
+  }, []);
 
-  // Keep the assistant on-screen when the viewport resizes.
-  useEffect(() => {
-    const handleResize = () => {
-      const insets = computeInsets();
-      setPosition((prev) =>
-        clampToViewport(prev, character.width, character.height, insets.topInset)
-      );
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [computeInsets, character.width, character.height]);
-
-  const handlePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (event.button !== 0 && event.pointerType === "mouse") return;
-      event.currentTarget.setPointerCapture(event.pointerId);
-      dragStateRef.current = {
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        originX: positionRef.current.x,
-        originY: positionRef.current.y,
-        moved: false,
-      };
-    },
-    []
-  );
-
-  const handlePointerMove = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+  const endDrag = useCallback(
+    (commit: boolean) => {
       const drag = dragStateRef.current;
-      if (!drag || drag.pointerId !== event.pointerId) return;
-      const dx = event.clientX - drag.startX;
-      const dy = event.clientY - drag.startY;
-      if (!drag.moved && Math.abs(dx) < CLICK_SLOP && Math.abs(dy) < CLICK_SLOP) {
-        return;
-      }
-      drag.moved = true;
-      setIsDragging(true);
-      const insets = computeInsets();
-      setPosition(
-        clampToViewport(
-          { x: drag.originX + dx, y: drag.originY + dy },
-          character.width,
-          character.height,
-          insets.topInset
-        )
-      );
-    },
-    [computeInsets, character.width, character.height]
-  );
-
-  const handlePointerUp = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      const drag = dragStateRef.current;
-      if (!drag || drag.pointerId !== event.pointerId) return;
+      if (!drag) return;
+      if (drag.longPressTimer) clearTimeout(drag.longPressTimer);
       dragStateRef.current = null;
       setIsDragging(false);
 
+      if (!commit) return;
+
       if (!drag.moved) {
-        // Click: toggle the speech bubble.
-        setBubbleOpen((open) => !open);
+        if (!drag.longPressFired) {
+          // Plain click: toggle the speech bubble.
+          setBubbleOpen((open) => !open);
+        }
         return;
       }
 
@@ -258,6 +264,89 @@ function AssistantOverlayInner() {
     [computeInsets, character.width, character.height, setStoredPosition]
   );
 
+  // Window-level listeners make dragging robust even if pointer capture is
+  // unavailable (e.g. synthesized events) or the pointer leaves the character.
+  useEffect(() => {
+    const handleMove = (event: PointerEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (!drag.moved && Math.abs(dx) < CLICK_SLOP && Math.abs(dy) < CLICK_SLOP) {
+        return;
+      }
+      if (drag.longPressTimer) {
+        clearTimeout(drag.longPressTimer);
+        drag.longPressTimer = null;
+      }
+      if (drag.longPressFired) return;
+      drag.moved = true;
+      setIsDragging(true);
+      const insets = computeInsets();
+      setPosition(
+        clampToViewport(
+          { x: drag.originX + dx, y: drag.originY + dy },
+          character.width,
+          character.height,
+          insets.topInset
+        )
+      );
+    };
+    const handleUp = (event: PointerEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      endDrag(true);
+    };
+    const handleCancel = (event: PointerEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      endDrag(false);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleCancel);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleCancel);
+    };
+  }, [computeInsets, character.width, character.height, endDrag]);
+
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      if (contextMenuPos) return;
+      const { clientX, clientY, pointerId } = event;
+      const drag = {
+        pointerId,
+        startX: clientX,
+        startY: clientY,
+        originX: positionRef.current.x,
+        originY: positionRef.current.y,
+        moved: false,
+        longPressTimer: null as ReturnType<typeof setTimeout> | null,
+        longPressFired: false,
+      };
+      // Long-press (touch and mouse) opens the context menu instead of a drag.
+      drag.longPressTimer = setTimeout(() => {
+        if (dragStateRef.current !== drag || drag.moved) return;
+        drag.longPressFired = true;
+        openContextMenu(clientX, clientY);
+      }, LONG_PRESS_MS);
+      dragStateRef.current = drag;
+    },
+    [contextMenuPos, openContextMenu]
+  );
+
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      endDrag(false);
+      openContextMenu(event.clientX, event.clientY);
+    },
+    [endDrag, openContextMenu]
+  );
+
   // --- Greeting on summon ------------------------------------------------------
   const greetedRef = useRef(false);
   useEffect(() => {
@@ -272,12 +361,14 @@ function AssistantOverlayInner() {
     character.kind === "sprite" ? character.agentUrl : undefined
   );
   const [spriteAnim, setSpriteAnim] = useState<{ name: string; token: number }>({
-    name: "Greeting",
+    name: REST_ANIMATION,
     token: 0,
   });
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingRef = useRef(isLoading);
   isLoadingRef.current = isLoading;
+  const agentDataRef = useRef<AgentData | null>(null);
+  agentDataRef.current = agentData;
 
   const playAnimation = useCallback((name: string) => {
     if (idleTimerRef.current) {
@@ -287,36 +378,44 @@ function AssistantOverlayInner() {
     setSpriteAnim((prev) => ({ name, token: prev.token + 1 }));
   }, []);
 
+  // Greet when this character's animation data arrives (also on switch).
+  useEffect(() => {
+    if (!agentData) return;
+    playAnimation(pickRandom(availableFrom(agentData, GREET_CANDIDATES), REST_ANIMATION));
+  }, [agentData, playAnimation]);
+
   // Thinking pose while the AI is working.
   useEffect(() => {
-    if (character.kind !== "sprite") return;
+    if (character.kind !== "sprite" || !agentData) return;
     if (isLoading) {
       playAnimation(
-        THINKING_ANIMATIONS[
-          Math.floor(Math.random() * THINKING_ANIMATIONS.length)
-        ]
+        pickRandom(availableFrom(agentData, THINKING_CANDIDATES), REST_ANIMATION)
       );
     }
-  }, [isLoading, character.kind, playAnimation]);
+  }, [isLoading, character.kind, agentData, playAnimation]);
 
   const handleAnimationEnd = useCallback(() => {
+    const data = agentDataRef.current;
+    if (!data) return;
     if (isLoadingRef.current) {
       // Keep visibly "working" until the reply lands.
       setSpriteAnim((prev) => ({
-        name: THINKING_ANIMATIONS[
-          Math.floor(Math.random() * THINKING_ANIMATIONS.length)
-        ],
+        name: pickRandom(availableFrom(data, THINKING_CANDIDATES), REST_ANIMATION),
         token: prev.token + 1,
       }));
       return;
     }
-    setSpriteAnim((prev) => ({ name: "RestPose", token: prev.token + 1 }));
+    setSpriteAnim((prev) => ({ name: REST_ANIMATION, token: prev.token + 1 }));
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     idleTimerRef.current = setTimeout(() => {
+      const idlePool = [
+        ...Object.keys(data.animations).filter((name) =>
+          name.toLowerCase().startsWith("idle")
+        ),
+        ...availableFrom(data, EXTRA_IDLE_CANDIDATES),
+      ];
       setSpriteAnim((prev) => ({
-        name: IDLE_ANIMATIONS[
-          Math.floor(Math.random() * IDLE_ANIMATIONS.length)
-        ],
+        name: pickRandom(idlePool, REST_ANIMATION),
         token: prev.token + 1,
       }));
     }, 4000 + Math.random() * 8000);
@@ -327,6 +426,43 @@ function AssistantOverlayInner() {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     },
     []
+  );
+
+  // --- Context menu items ------------------------------------------------------
+  const contextMenuItems = useMemo<MenuItem[]>(
+    () => [
+      {
+        type: "submenu",
+        label: t("common.assistant.contextMenu.character"),
+        items: ASSISTANT_CHARACTERS.map((entry) => ({
+          type: "checkbox" as const,
+          label: entry.name,
+          checked: entry.id === characterId,
+          onSelect: () => setCharacterId(entry.id),
+        })),
+      },
+      { type: "separator" },
+      {
+        type: "item",
+        label: t("common.assistant.contextMenu.newConversation"),
+        onSelect: () => {
+          clearConversation();
+          setBubbleOpen(true);
+        },
+      },
+      {
+        type: "item",
+        label: t("common.assistant.contextMenu.openApp"),
+        onSelect: () => launchApp("assistant"),
+      },
+      { type: "separator" },
+      {
+        type: "item",
+        label: t("common.assistant.contextMenu.quit"),
+        onSelect: () => setEnabled(false),
+      },
+    ],
+    [t, characterId, setCharacterId, clearConversation, launchApp, setEnabled]
   );
 
   // --- Bubble placement --------------------------------------------------------
@@ -460,15 +596,19 @@ function AssistantOverlayInner() {
         )}
         style={{ width: character.width, height: character.height }}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onContextMenu={handleContextMenu}
         role="button"
         aria-label={t("common.assistant.label", { name: character.name })}
         title={character.name}
       >
         {characterVisual}
       </div>
+
+      <RightClickMenu
+        position={contextMenuPos}
+        onClose={() => setContextMenuPos(null)}
+        items={contextMenuItems}
+      />
     </div>
   );
 }

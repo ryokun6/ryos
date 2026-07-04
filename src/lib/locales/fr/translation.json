@@ -589,6 +589,50 @@
         "updatedYesterday": "Mis à jour hier"
       }
     },
+    "assistant": {
+      "name": "Assistant",
+      "description": "Invoquez un personnage assistant flottant sur le bureau",
+      "window": {
+        "title": "Assistant de bureau",
+        "subtitle": "Choisissez un personnage pour l'invoquer sur votre bureau",
+        "on": "Activé",
+        "off": "Désactivé",
+        "toggleLabel": "Afficher l'assistant sur le bureau",
+        "hint": "Astuce : cliquez droit ou appuyez longuement sur le personnage pour ouvrir le menu rapide."
+      },
+      "menu": {
+        "help": "Aide Assistant",
+        "about": "À propos d'Assistant",
+        "quitAssistant": "Quitter l'Assistant",
+        "showAssistant": "Invoquer l'Assistant"
+      },
+      "help": {
+        "meet": {
+          "title": "Rencontrez votre assistant",
+          "description": "Choisissez un personnage : il flotte sur votre bureau, prêt à discuter et à vous aider"
+        },
+        "characters": {
+          "title": "Personnages",
+          "description": "Choisissez parmi les assistants Office d'origine comme Clippy, Merlin et Rover, ou les nouveaux amis ryOS"
+        },
+        "chat": {
+          "title": "Discussion",
+          "description": "Cliquez sur le personnage pour ouvrir sa bulle et lui demander ce que vous voulez"
+        },
+        "realWork": {
+          "title": "Du vrai travail",
+          "description": "L'assistant peut ouvrir des apps, jouer de la musique, éditer des documents et modifier les réglages pour vous"
+        },
+        "moveSnap": {
+          "title": "Déplacer et aimanter",
+          "description": "Faites glisser le personnage n'importe où ; il s'aimante aux bords des fenêtres, au Dock et aux coins de l'écran"
+        },
+        "quickMenu": {
+          "title": "Menu rapide",
+          "description": "Cliquez droit ou appuyez longuement sur le personnage pour en changer ou le quitter"
+        }
+      }
+    },
     "books": {
       "bookmarks": {
         "add": "Ajouter un signet",
@@ -4546,6 +4590,12 @@
       "systemPreferences": "Préférences Système…"
     },
     "assistant": {
+      "contextMenu": {
+        "character": "Personnage",
+        "newConversation": "Nouvelle conversation",
+        "openApp": "Ouvrir Assistant…",
+        "quit": "Quitter l'Assistant"
+      },
       "emptyBubble": "Salut ! Cliquez sur moi dès que vous avez besoin d’aide.",
       "genericError": "Oups, un petit problème est survenu. Réessayez dans un instant ! 📎",
       "greetings": {
@@ -4556,11 +4606,9 @@
       },
       "inputPlaceholder": "Posez-moi une question…",
       "label": "{{name}}, l’assistant de bureau",
-      "menuLabel": "Assistant",
       "rateLimited": "Ouf, j’ai besoin d’une petite pause ! Réessayez plus tard — ou connectez-vous pour continuer à discuter. 😴",
       "send": "Envoyer",
-      "thinking": "Réflexion…",
-      "turnOff": "Désactivé"
+      "thinking": "Réflexion…"
     },
     "auth": {
       "changePassword": {

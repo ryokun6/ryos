@@ -587,6 +587,50 @@
         "updatedYesterday": "昨天更新"
       }
     },
+    "assistant": {
+      "name": "助理",
+      "description": "召唤一个漂浮在桌面上的助理角色",
+      "window": {
+        "title": "桌面助理",
+        "subtitle": "选择一个角色，把它召唤到你的桌面上",
+        "on": "开",
+        "off": "关",
+        "toggleLabel": "在桌面上显示助理",
+        "hint": "提示：右键点击或长按桌面上的角色可打开快捷菜单。"
+      },
+      "menu": {
+        "help": "助理帮助",
+        "about": "关于助理",
+        "quitAssistant": "退出助理",
+        "showAssistant": "召唤助理"
+      },
+      "help": {
+        "meet": {
+          "title": "认识你的助理",
+          "description": "选择一个角色，它会漂浮在桌面上，随时陪你聊天并提供帮助"
+        },
+        "characters": {
+          "title": "角色",
+          "description": "可选择 Clippy、Merlin、Rover 等经典 Office 助手，或全新的 ryOS 伙伴"
+        },
+        "chat": {
+          "title": "聊天",
+          "description": "点击角色打开它的对话气泡，想问什么都可以"
+        },
+        "realWork": {
+          "title": "真能干活",
+          "description": "助理可以为你打开应用、播放音乐、编辑文档和更改设置"
+        },
+        "moveSnap": {
+          "title": "移动与吸附",
+          "description": "把角色拖到任意位置；它会自动吸附到窗口边缘、Dock 和屏幕角落"
+        },
+        "quickMenu": {
+          "title": "快捷菜单",
+          "description": "右键点击或长按角色即可切换角色或退出助理"
+        }
+      }
+    },
     "books": {
       "bookmarks": {
         "add": "添加书签",
@@ -4542,6 +4586,12 @@
       "systemPreferences": "系统偏好设置…"
     },
     "assistant": {
+      "contextMenu": {
+        "character": "角色",
+        "newConversation": "新对话",
+        "openApp": "打开助理…",
+        "quit": "退出助理"
+      },
       "emptyBubble": "你好！需要帮助时，随时点按我。",
       "genericError": "哎呀，出了一点小状况。请稍后重试！📎",
       "greetings": {
@@ -4552,11 +4602,9 @@
       },
       "inputPlaceholder": "问我任何问题…",
       "label": "桌面助手 {{name}}",
-      "menuLabel": "助手",
       "rateLimited": "呼，我需要休息一下！请稍后再试 — 或登录以进行更多对话。😴",
       "send": "发送",
-      "thinking": "正在思考…",
-      "turnOff": "关闭"
+      "thinking": "正在思考…"
     },
     "auth": {
       "changePassword": {
