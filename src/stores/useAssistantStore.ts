@@ -40,7 +40,7 @@ interface AssistantStoreState {
 export const useAssistantStore = create<AssistantStoreState>()(
   persist(
     (set) => ({
-      enabled: false,
+      enabled: true,
       characterId: DEFAULT_ASSISTANT_CHARACTER_ID,
       position: null,
       messages: [],
