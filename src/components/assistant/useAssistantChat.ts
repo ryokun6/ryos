@@ -81,6 +81,8 @@ export interface AssistantChatHandle {
   latestAssistantText: string;
   /** Friendly labels for tool calls in the in-flight assistant turn. */
   statusLabels: string[];
+  /** True while a reply is generating and the new turn has no text yet. */
+  isAwaitingReply: boolean;
   isLoading: boolean;
   errorText: string | null;
   sendUserMessage: (text: string) => void;
@@ -215,6 +217,18 @@ export function useAssistantChat(): AssistantChatHandle {
     return "";
   }, [messages, isLoading]);
 
+  // True while the in-flight turn hasn't produced visible text yet. Unlike
+  // `latestAssistantText` (which intentionally falls back to the previous
+  // reply while a new one is generating), this looks only at the current turn
+  // so the bubble can show the thinking ticker between replies.
+  const isAwaitingReply = useMemo(() => {
+    if (!isLoading) return false;
+    const last = messages[messages.length - 1];
+    if (!last) return true;
+    if (last.role !== "assistant") return true;
+    return !getAssistantVisibleText(last).trim();
+  }, [messages, isLoading]);
+
   // Friendly status lines for tool calls in the current turn, shown in the
   // bubble's rolling "thinking" ticker while the reply is being generated.
   const statusLabels = useMemo(() => {
@@ -319,6 +333,7 @@ export function useAssistantChat(): AssistantChatHandle {
     messages: messages as AIChatMessage[],
     latestAssistantText,
     statusLabels,
+    isAwaitingReply,
     isLoading,
     errorText,
     sendUserMessage,

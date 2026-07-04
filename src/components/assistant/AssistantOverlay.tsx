@@ -156,7 +156,7 @@ function ThinkingTicker({ items }: { items: string[] }) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -14, opacity: 0 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="absolute inset-x-0 top-0 truncate italic text-black/60"
+          className="absolute inset-x-0 top-0 truncate text-black/60"
         >
           {current}
         </motion.div>
@@ -200,6 +200,7 @@ function AssistantOverlayInner() {
   const {
     latestAssistantText,
     statusLabels,
+    isAwaitingReply,
     isLoading,
     errorText,
     sendUserMessage,
@@ -542,7 +543,7 @@ function AssistantOverlayInner() {
   );
 
   const bubbleText = errorText ?? latestAssistantText;
-  const showTyping = isLoading && !latestAssistantText.trim() && !errorText;
+  const showTyping = isAwaitingReply && !errorText;
 
   const characterVisual = useMemo(() => {
     if (character.kind === "sprite") {
