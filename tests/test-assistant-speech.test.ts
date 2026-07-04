@@ -5,11 +5,11 @@ import {
   stopAssistantSpeech,
   __resetAssistantSpeechStateForTests,
 } from "../src/components/assistant/assistantSpeech";
-import { isAssistantSpeechActive } from "../src/components/assistant/assistantSpeechState";
 import {
   AssistantSoundPlayer,
   markAssistantSoundInteraction,
   resetAssistantSoundStateForTests,
+  __setAssistantSoundPipelineForTests,
 } from "../src/components/assistant/assistantSounds";
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
 import { useAssistantStore } from "../src/stores/useAssistantStore";
@@ -158,60 +158,18 @@ describe("assistant speech playback", () => {
     expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe("English UK");
   });
 
-  test("marks speech active for the whole utterance chain", () => {
-    expect(isAssistantSpeechActive()).toBe(false);
-    speakAssistantText("One. Two.", { locale: "en" });
-    expect(isAssistantSpeechActive()).toBe(true);
-    spoken[0].onend?.();
-    expect(isAssistantSpeechActive()).toBe(true);
-    spoken[1].onend?.();
-    expect(isAssistantSpeechActive()).toBe(false);
-  });
-
-  test("stopAssistantSpeech clears the speech-active flag", () => {
-    speakAssistantText("Hello.", { locale: "en" });
-    expect(isAssistantSpeechActive()).toBe(true);
-    stopAssistantSpeech();
-    expect(isAssistantSpeechActive()).toBe(false);
-  });
 });
 
-class MockSoundAudio {
-  preload = "";
-  volume = 1;
-  currentTime = 0;
-  src: string;
-  playCount = 0;
-  paused = true;
-  constructor(src: string) {
-    this.src = src;
-    MockSoundAudio.instances.push(this);
-  }
-  play() {
-    this.playCount += 1;
-    this.paused = false;
-    return Promise.resolve();
-  }
-  pause() {
-    this.paused = true;
-  }
-  load() {}
-  addEventListener() {}
-  removeEventListener() {}
-  removeAttribute() {}
-  static instances: MockSoundAudio[] = [];
-}
-
-describe("assistant sound effects vs speech", () => {
+describe("assistant sound effects coexist with speech", () => {
   const g = globalThis as Record<string, unknown>;
   const originalWindow = g.window;
   const originalUtterance = g.SpeechSynthesisUtterance;
-  const originalAudio = globalThis.Audio;
   let spoken: FakeUtterance[];
+  let started: Array<{ stopped: boolean }>;
 
   beforeEach(() => {
     spoken = [];
-    MockSoundAudio.instances = [];
+    started = [];
     const synth = {
       speak: (utterance: FakeUtterance) => {
         spoken.push(utterance);
@@ -225,8 +183,35 @@ describe("assistant sound effects vs speech", () => {
     g.window = globalThis;
     g.speechSynthesis = synth;
     g.SpeechSynthesisUtterance = FakeUtterance;
-    // @ts-expect-error test double
-    globalThis.Audio = MockSoundAudio;
+    const fakeContext = {
+      state: "running",
+      destination: {},
+      decodeAudioData: () => Promise.resolve({ duration: 0.25 } as AudioBuffer),
+      createGain: () => ({
+        gain: { value: 1 },
+        connect() {},
+        disconnect() {},
+      }),
+      createBufferSource: () => {
+        const source = {
+          buffer: null as AudioBuffer | null,
+          onended: null as (() => void) | null,
+          stopped: false,
+          connect() {},
+          start() {
+            started.push(source);
+          },
+          stop() {
+            source.stopped = true;
+          },
+        };
+        return source;
+      },
+    };
+    __setAssistantSoundPipelineForTests({
+      resume: () => Promise.resolve(),
+      getContext: () => fakeContext as unknown as AudioContext,
+    });
     __resetAssistantSpeechStateForTests();
     resetAssistantSoundStateForTests();
     markAssistantSoundInteraction();
@@ -236,38 +221,37 @@ describe("assistant sound effects vs speech", () => {
   afterEach(() => {
     stopAssistantSpeech();
     spoken.forEach((utterance) => utterance.onend?.());
+    __setAssistantSoundPipelineForTests(null);
     __resetAssistantSpeechStateForTests();
     resetAssistantSoundStateForTests();
     g.window = originalWindow;
     g.SpeechSynthesisUtterance = originalUtterance;
-    globalThis.Audio = originalAudio;
     delete g.speechSynthesis;
   });
 
-  test("suppresses animation sound effects while speech is active", () => {
+  test("animation sound effects play while speech is active (Web Audio mix)", async () => {
     const player = new AssistantSoundPlayer();
     player.loadCharacter("clippy");
 
     speakAssistantText("A long reply.", { locale: "en" });
-    player.play("1");
-    expect(MockSoundAudio.instances).toHaveLength(0);
+    expect(spoken).toHaveLength(1);
 
-    // After the reply finishes speaking, effects play again.
-    spoken[0].onend?.();
     player.play("1");
-    expect(MockSoundAudio.instances).toHaveLength(1);
-    expect(MockSoundAudio.instances[0].playCount).toBe(1);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(started).toHaveLength(1);
+    expect(started[0].stopped).toBe(false);
   });
 
-  test("starting speech silences an effect already playing", () => {
+  test("starting speech leaves an in-flight effect playing", async () => {
     const player = new AssistantSoundPlayer();
     player.loadCharacter("clippy");
     player.play("1");
-    const clip = MockSoundAudio.instances[0];
-    expect(clip.paused).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(started).toHaveLength(1);
 
     speakAssistantText("Hello.", { locale: "en" });
-    expect(clip.paused).toBe(true);
+    expect(started[0].stopped).toBe(false);
+    expect(spoken).toHaveLength(1);
   });
 });
 
