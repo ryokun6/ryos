@@ -20,6 +20,8 @@ export interface CloudSyncCategoryStatus {
   isDownloading: boolean;
   uploadProgress: number | null;
   downloadProgress: number | null;
+  /** Display name of the item currently being downloaded (e.g. a filename). */
+  downloadItemName: string | null;
 }
 
 export type CloudSyncCategoryStatusMap = Record<
@@ -80,6 +82,7 @@ function createInitialCategoryStatus(): CloudSyncCategoryStatusMap {
     isDownloading: false,
     uploadProgress: null,
     downloadProgress: null,
+    downloadItemName: null,
   });
   return {
     files: empty(),
@@ -111,6 +114,7 @@ export function mergePersistedCloudSyncCategoryStatus(
         isDownloading: false,
         uploadProgress: null,
         downloadProgress: null,
+        downloadItemName: null,
       };
     }
   }
@@ -153,6 +157,10 @@ interface CloudSyncStoreState {
   markCategoryDownloadProgress: (
     category: SyncCategory,
     progress: number | null
+  ) => void;
+  markCategoryDownloadItem: (
+    category: SyncCategory,
+    name: string | null
   ) => void;
   markCategoryUploaded: (category: SyncCategory, uploadedAt: string) => void;
   markCategoryApplied: (category: SyncCategory, appliedAt: string) => void;
@@ -264,7 +272,9 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                   }
                 : {
                     isDownloading: active,
-                    ...(!active ? { downloadProgress: null } : {}),
+                    ...(!active
+                      ? { downloadProgress: null, downloadItemName: null }
+                      : {}),
                   }),
             },
           },
@@ -311,6 +321,26 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           };
         }),
 
+      markCategoryDownloadItem: (category, name) =>
+        set((state) => {
+          const normalized =
+            typeof name === "string" && name.trim().length > 0
+              ? name.trim()
+              : null;
+          if (state.categoryStatus[category].downloadItemName === normalized) {
+            return state;
+          }
+          return {
+            categoryStatus: {
+              ...state.categoryStatus,
+              [category]: {
+                ...state.categoryStatus[category],
+                downloadItemName: normalized,
+              },
+            },
+          };
+        }),
+
       markCategoryUploaded: (category, uploadedAt) => {
         cloudSyncLog.debug("Category upload marked complete", {
           category,
@@ -342,6 +372,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               lastFetchedAt: appliedAt,
               lastAppliedRemoteAt: appliedAt,
               downloadProgress: null,
+              downloadItemName: null,
             },
           },
           lastError: null,
@@ -465,6 +496,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               isDownloading: false,
               uploadProgress: null,
               downloadProgress: null,
+              downloadItemName: null,
             },
           ])
         ) as CloudSyncCategoryStatusMap,

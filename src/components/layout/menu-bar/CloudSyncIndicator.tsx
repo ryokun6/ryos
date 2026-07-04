@@ -83,6 +83,7 @@ interface SyncCategoryActivity {
   isDownloading: boolean;
   uploadProgress: number | null;
   downloadProgress: number | null;
+  downloadItemName: string | null;
 }
 
 export function CloudSyncIndicator() {
@@ -113,6 +114,7 @@ export function CloudSyncIndicator() {
       isDownloading: categoryStatus[category].isDownloading,
       uploadProgress: categoryStatus[category].uploadProgress,
       downloadProgress: categoryStatus[category].downloadProgress,
+      downloadItemName: categoryStatus[category].downloadItemName,
     })
   ).filter((entry) => entry.isUploading || entry.isDownloading);
 
@@ -181,11 +183,17 @@ export function CloudSyncIndicator() {
         <MenubarContent
           align="end"
           sideOffset={1}
-          className="min-w-[200px]"
+          className="min-w-[200px] max-w-[280px]"
         >
           <AnimatePresence initial={false}>
             {activeCategories.map(
-              ({ category, isUploading, uploadProgress, downloadProgress }) => {
+              ({
+                category,
+                isUploading,
+                uploadProgress,
+                downloadProgress,
+                downloadItemName,
+              }) => {
                 const meta = SYNC_CATEGORY_META[category];
                 const activeProgress = isUploading
                   ? uploadProgress
@@ -194,9 +202,17 @@ export function CloudSyncIndicator() {
                   typeof activeProgress === "number"
                     ? Math.round(Math.max(0, Math.min(100, activeProgress)))
                     : null;
+                const itemLabel =
+                  !isUploading && downloadItemName
+                    ? downloadItemName
+                    : t(meta.labelKey);
+                // While fetching, the row title already names the item and the
+                // progress bar shows activity — hide the "Fetching" text.
                 const transferLabel = isUploading
                   ? t("apps.control-panels.autoSync.uploading")
-                  : t("apps.control-panels.autoSync.fetching");
+                  : progress === null
+                    ? t("apps.control-panels.autoSync.fetching")
+                    : null;
                 const transferStatusLabel = isUploading
                   ? formatUploadingStatus(uploadProgress, t)
                   : formatFetchingStatus(downloadProgress, t);
@@ -218,12 +234,14 @@ export function CloudSyncIndicator() {
                         alt=""
                         className="size-4 shrink-0 object-contain"
                       />
-                      <span className="min-w-0 flex-1">{t(meta.labelKey)}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {itemLabel}
+                      </span>
                       <span
                         className="ml-auto pl-3 text-xs opacity-60 flex items-center gap-1.5"
                         aria-label={transferStatusLabel}
                       >
-                        <span>{transferLabel}</span>
+                        {transferLabel && <span>{transferLabel}</span>}
                         {progress !== null && (
                           <span
                             className="block h-1 w-12 overflow-hidden rounded-full bg-black/15 os-dark:bg-white/20"
