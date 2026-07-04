@@ -1,11 +1,12 @@
 import type { AssistantPosition } from "@/stores/useAssistantStore";
+import {
+  ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+  ASSISTANT_BUBBLE_WIDTH,
+  resolveAssistantBubblePlacement,
+} from "./assistantBubblePlacement";
 
 const SNAP_MARGIN = 8;
 const WINDOW_GAP = 8;
-const BUBBLE_GAP = 8;
-const BUBBLE_WIDTH = 256;
-const ESTIMATED_BUBBLE_HEIGHT = 208;
-const BUBBLE_BELOW_THRESHOLD = 220;
 
 export interface AssistantSnapRect {
   x: number;
@@ -69,42 +70,6 @@ function getIntersectionArea(a: AssistantSnapRect, b: AssistantSnapRect): number
     Math.min(getBottom(a), getBottom(b)) - Math.max(a.y, b.y)
   );
   return width * height;
-}
-
-function getBubbleBounds(
-  position: AssistantPosition,
-  assistantSize: AssistantSnapSize,
-  viewportWidth: number
-): AssistantSnapRect {
-  const below = position.y < BUBBLE_BELOW_THRESHOLD;
-  const alignRight =
-    position.x + assistantSize.width / 2 > viewportWidth / 2;
-
-  return {
-    x: alignRight
-      ? position.x + assistantSize.width - BUBBLE_WIDTH
-      : position.x,
-    y: below
-      ? position.y + assistantSize.height + BUBBLE_GAP
-      : position.y - ESTIMATED_BUBBLE_HEIGHT - BUBBLE_GAP,
-    width: BUBBLE_WIDTH,
-    height: ESTIMATED_BUBBLE_HEIGHT,
-  };
-}
-
-function getOverflowArea(
-  rect: AssistantSnapRect,
-  viewport: AssistantSnapViewport
-): number {
-  const visibleWidth = Math.max(
-    0,
-    Math.min(getRight(rect), viewport.width) - Math.max(rect.x, 0)
-  );
-  const visibleHeight = Math.max(
-    0,
-    Math.min(getBottom(rect), viewport.height) - Math.max(rect.y, 0)
-  );
-  return rect.width * rect.height - visibleWidth * visibleHeight;
 }
 
 function getDistanceSquared(
@@ -270,16 +235,21 @@ export function resolveAssistantSnapPoint({
 
   return valid
     .map((candidate) => {
-      const bubbleBounds = getBubbleBounds(
-        candidate.position,
-        assistantSize,
-        viewport.width
-      );
+      // Score with the same window-aware resolver the bubble UI uses, so the
+      // chosen dock point is one where the bubble can pop without covering
+      // the target window or the viewport edges.
+      const bubblePlacement = resolveAssistantBubblePlacement({
+        anchor: getRect(candidate.position, assistantSize),
+        bubbleSize: {
+          width: ASSISTANT_BUBBLE_WIDTH,
+          height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+        },
+        viewport,
+        obstacles: [targetBounds],
+      });
       return {
         ...candidate,
-        bubblePenalty:
-          getOverflowArea(bubbleBounds, viewport) +
-          getIntersectionArea(bubbleBounds, targetBounds),
+        bubblePenalty: bubblePlacement.penalty,
         distance: getDistanceSquared(currentPosition, candidate.position),
       };
     })
