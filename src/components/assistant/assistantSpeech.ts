@@ -37,6 +37,7 @@ export function prepareAssistantSpeechTexts(text: string): string[] {
 // reply (or a stop) never lets stale `onend` handlers keep speaking.
 let generation = 0;
 let voicesWarmed = false;
+let synthesisPrimed = false;
 
 /** Warm the async voice list (Chrome loads it lazily). Never blocks speech. */
 function warmVoices(synth: SpeechSynthesis) {
@@ -49,6 +50,31 @@ function warmVoices(synth: SpeechSynthesis) {
 export interface AssistantSpeechOptions {
   /** ryOS i18n locale (e.g. "zh-TW"); maps to the utterance language. */
   locale?: string;
+}
+
+/**
+ * Unlock speech synthesis from inside a user gesture. iOS Safari (and some
+ * other engines) ignore `speechSynthesis.speak()` until the page's first
+ * `speak()` happens inside a gesture handler. When Speech was enabled in a
+ * previous session, replies finish asynchronously — outside any gesture — so
+ * without priming they are silently dropped. Call this from gesture handlers
+ * (pointer down, submit); it speaks one muted, empty utterance the first time.
+ */
+export function primeAssistantSpeech(): void {
+  if (synthesisPrimed) return;
+  const synth = getBrowserSpeechSynthesis();
+  if (!synth) return;
+  synthesisPrimed = true;
+
+  warmVoices(synth);
+  synth.resume();
+  // Never clobber speech that is already audible (it also proves synthesis
+  // is unlocked).
+  if (synth.speaking || synth.pending) return;
+
+  const utterance = new SpeechSynthesisUtterance(" ");
+  utterance.volume = 0;
+  synth.speak(utterance);
 }
 
 /**
@@ -116,4 +142,5 @@ export function stopAssistantSpeech(): void {
 export function __resetAssistantSpeechStateForTests(): void {
   generation++;
   voicesWarmed = false;
+  synthesisPrimed = false;
 }
