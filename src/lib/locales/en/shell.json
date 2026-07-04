@@ -222,6 +222,20 @@
         "help": "It looks like you're using ryOS! Need a hand with anything? I'm {{name}}, happy to help. 📎",
         "looksLike": "Hello! {{name}} here — I can open apps, play music, or answer questions. Just ask! ✨",
         "tip": "Hey! I'm {{name}}. Tip: you can drag me anywhere, and I'll snap to your windows and dock. 🪄"
+      },
+      "characters": {
+        "clippy": "Clippy",
+        "links": "Links",
+        "rover": "Rover",
+        "merlin": "Merlin",
+        "genie": "Genie",
+        "peedy": "Peedy",
+        "genius": "Genius",
+        "rocky": "Rocky",
+        "f1": "F1",
+        "officelogo": "Office Logo",
+        "saeko": "Saeko Sensei",
+        "monkeyking": "Monkey King"
       }
     },
     "appMenu": {

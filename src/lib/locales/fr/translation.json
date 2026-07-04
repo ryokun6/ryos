@@ -1670,6 +1670,11 @@
         "unknownError": "Erreur inconnue"
       },
       "appearance": "Apparence",
+      "assistant": {
+        "description": "Un personnage qui discute et aide",
+        "hint": "Astuce : cliquez droit ou appuyez longuement sur le personnage pour ouvrir le menu rapide.",
+        "title": "Assistant de bureau"
+      },
       "autoSync": {
         "books": "Livres",
         "calendar": "Calendrier",
@@ -1890,11 +1895,11 @@
       "panes": {
         "accounts": "Comptes",
         "appearance": "Apparence",
+        "assistant": "Assistant",
         "desktopScreenSaver": "Bureau et économiseur d’écran",
         "displays": "Moniteurs",
         "dotMac": "Synchronisation Cloud",
         "international": "International",
-        "assistant": "Assistant",
         "security": "Sécurité",
         "sharing": "Sauvegarde et restauration",
         "softwareUpdate": "Mise à jour de logiciels",
@@ -2135,11 +2140,6 @@
         "objects": "Objets",
         "plants": "Plantes",
         "structures": "Structures"
-      },
-      "assistant": {
-        "title": "Assistant de bureau",
-        "description": "Un personnage qui discute et aide",
-        "hint": "Astuce : cliquez droit ou appuyez longuement sur le personnage pour ouvrir le menu rapide."
       }
     },
     "dashboard": {
@@ -4552,12 +4552,26 @@
       "systemPreferences": "Préférences Système…"
     },
     "assistant": {
+      "characters": {
+        "clippy": "Trombine",
+        "f1": "MécanOffice",
+        "genie": "Génie",
+        "genius": "Professeur Génial",
+        "links": "Tifauve",
+        "merlin": "Merlin",
+        "monkeyking": "Roi Singe",
+        "officelogo": "Logo Office",
+        "peedy": "Peedy",
+        "rocky": "Toufou",
+        "rover": "Rover",
+        "saeko": "Saeko Sensei"
+      },
       "contextMenu": {
         "character": "Personnage",
-        "speech": "Parole",
         "newConversation": "Nouvelle conversation",
+        "quit": "Quitter l'Assistant",
         "settings": "Réglages de l'assistant…",
-        "quit": "Quitter l'Assistant"
+        "speech": "Parole"
       },
       "emptyBubble": "Salut ! Cliquez sur moi dès que vous avez besoin d’aide.",
       "genericError": "Oups, un petit problème est survenu. Réessayez dans un instant ! 📎",

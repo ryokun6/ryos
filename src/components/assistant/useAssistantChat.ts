@@ -19,7 +19,10 @@ import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
-import { getAssistantCharacter } from "./characters";
+import {
+  getAssistantCharacter,
+  getAssistantCharacterName,
+} from "./characters";
 import { getAssistantGreetDecision } from "./assistantGreeting";
 import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
@@ -49,8 +52,8 @@ const TOOL_STATUS_KEYS: Record<string, string> = {
   read: "apps.chats.toolCalls.readingFile",
   write: "apps.chats.toolCalls.writingContent",
   edit: "apps.chats.toolCalls.editingFile",
-  switchTheme: "apps.chats.toolCalls.switchingTheme",
-  songLibrary: "apps.chats.toolCalls.loadingMusicLibrary",
+  settings: "apps.chats.toolCalls.changingSettings",
+  songLibraryControl: "apps.chats.toolCalls.loadingMusicLibrary",
 };
 
 function getToolStatusLabel(toolName: string, input: unknown): string {
@@ -194,9 +197,9 @@ export function useAssistantChat(): AssistantChatHandle {
             systemState: getSystemState(),
             model: useAppStore.getState().aiModel,
             persona: "assistant",
-            assistantName: getAssistantCharacter(
-              useAssistantStore.getState().characterId
-            ).name,
+            assistantName: getAssistantCharacterName(
+              getAssistantCharacter(useAssistantStore.getState().characterId)
+            ),
           }),
         }),
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
@@ -291,10 +294,25 @@ export function useAssistantChat(): AssistantChatHandle {
   };
 
   const isLoading = status === "streaming" || status === "submitted";
-  const toolActivity = useMemo(
-    () => getLatestToolActivity(messages),
-    [messages]
-  );
+
+  // Stabilize by value: `messages` gets a new identity on every streamed
+  // chunk, which would otherwise produce a fresh toolActivity object each
+  // update and make the overlay restart the current sprite clip mid-stream.
+  const stableToolActivityRef = useRef<AssistantToolActivity | null>(null);
+  const toolActivity = useMemo(() => {
+    const latest = getLatestToolActivity(messages);
+    const previous = stableToolActivityRef.current;
+    if (
+      latest !== null &&
+      previous !== null &&
+      latest.name === previous.name &&
+      latest.phase === previous.phase
+    ) {
+      return previous;
+    }
+    stableToolActivityRef.current = latest;
+    return latest;
+  }, [messages]);
 
   const latestAssistantText = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -368,9 +386,9 @@ export function useAssistantChat(): AssistantChatHandle {
             systemState: getSystemState(),
             model: useAppStore.getState().aiModel,
             persona: "assistant",
-            assistantName: getAssistantCharacter(
-              useAssistantStore.getState().characterId
-            ).name,
+            assistantName: getAssistantCharacterName(
+              getAssistantCharacter(useAssistantStore.getState().characterId)
+            ),
           },
         }
       );
@@ -381,9 +399,9 @@ export function useAssistantChat(): AssistantChatHandle {
   const appendLocalGreeting = useCallback(() => {
     const key =
       LOCAL_GREETING_KEYS[Math.floor(Math.random() * LOCAL_GREETING_KEYS.length)];
-    const characterName = getAssistantCharacter(
-      useAssistantStore.getState().characterId
-    ).name;
+    const characterName = getAssistantCharacterName(
+      getAssistantCharacter(useAssistantStore.getState().characterId)
+    );
     const greeting: AIChatMessage = {
       id: `assistant-local-greeting-${Date.now()}`,
       role: "assistant",

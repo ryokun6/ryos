@@ -1668,6 +1668,11 @@
         "unknownError": "未知的錯誤"
       },
       "appearance": "外觀",
+      "assistant": {
+        "description": "能聊天、還能幫你做事的角色",
+        "hint": "提示：在桌面上的角色按右鍵或長按即可開啟快速選單。",
+        "title": "桌面小幫手"
+      },
       "autoSync": {
         "books": "書籍",
         "calendar": "行事曆",
@@ -1888,11 +1893,11 @@
       "panes": {
         "accounts": "帳號",
         "appearance": "外觀",
+        "assistant": "小幫手",
         "desktopScreenSaver": "桌面與螢幕保護程式",
         "displays": "顯示器",
         "dotMac": "雲端同步",
         "international": "語言與地區",
-        "assistant": "小幫手",
         "security": "安全性",
         "sharing": "備份與還原",
         "softwareUpdate": "軟體更新",
@@ -2133,11 +2138,6 @@
         "objects": "物件",
         "plants": "植物",
         "structures": "建築"
-      },
-      "assistant": {
-        "title": "桌面小幫手",
-        "description": "能聊天、還能幫你做事的角色",
-        "hint": "提示：在桌面上的角色按右鍵或長按即可開啟快速選單。"
       }
     },
     "dashboard": {
@@ -4548,12 +4548,26 @@
       "systemPreferences": "系統偏好設定⋯"
     },
     "assistant": {
+      "characters": {
+        "clippy": "大眼迴紋針",
+        "f1": "微軟一號",
+        "genie": "Genie",
+        "genius": "天才老爹",
+        "links": "戲鼠貓",
+        "merlin": "梅林",
+        "monkeyking": "孫悟空",
+        "officelogo": "Office 拼圖",
+        "peedy": "Peedy",
+        "rocky": "Rocky",
+        "rover": "Rover",
+        "saeko": "Office 小姐"
+      },
       "contextMenu": {
         "character": "角色",
-        "speech": "語音",
         "newConversation": "新對話",
+        "quit": "結束小幫手",
         "settings": "小幫手設定…",
-        "quit": "結束小幫手"
+        "speech": "語音"
       },
       "emptyBubble": "嗨！需要協助時隨時點一下我。",
       "genericError": "哎呀，我遇到了一點問題。請稍後再試！📎",

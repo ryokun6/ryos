@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   prepareAssistantSpeechTexts,
+  primeAssistantSpeech,
   speakAssistantText,
   stopAssistantSpeech,
   __resetAssistantSpeechStateForTests,
@@ -54,6 +55,7 @@ class FakeUtterance {
   text: string;
   lang = "";
   rate = 1;
+  volume = 1;
   voice: unknown = null;
   onend: (() => void) | null = null;
   onerror: (() => void) | null = null;
@@ -69,12 +71,24 @@ describe("assistant speech playback", () => {
   let spoken: FakeUtterance[];
   let cancelCount: number;
   let fakeVoices: SpeechSynthesisVoice[];
+  let synth: {
+    speaking: boolean;
+    pending: boolean;
+    speak: (utterance: FakeUtterance) => void;
+    cancel: () => void;
+    resume: () => void;
+    getVoices: () => SpeechSynthesisVoice[];
+    addEventListener: () => void;
+    removeEventListener: () => void;
+  };
 
   beforeEach(() => {
     spoken = [];
     cancelCount = 0;
     fakeVoices = [];
-    const synth = {
+    synth = {
+      speaking: false,
+      pending: false,
       speak: (utterance: FakeUtterance) => {
         spoken.push(utterance);
       },
@@ -158,6 +172,35 @@ describe("assistant speech playback", () => {
     expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe("English UK");
   });
 
+  test("primeAssistantSpeech speaks one muted utterance, once", () => {
+    primeAssistantSpeech();
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(1);
+    expect(spoken[0].volume).toBe(0);
+    // Priming must not cancel anything (it runs on arbitrary gestures).
+    expect(cancelCount).toBe(0);
+  });
+
+  test("primeAssistantSpeech skips the muted utterance while speech is active", () => {
+    synth.speaking = true;
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(0);
+    // Active speech already proves synthesis is unlocked, so later gestures
+    // stay no-ops too.
+    synth.speaking = false;
+    primeAssistantSpeech();
+    expect(spoken).toHaveLength(0);
+  });
+
+  test("real speech still plays after priming", () => {
+    primeAssistantSpeech();
+    speakAssistantText("Hello there!", { locale: "en" });
+    expect(spoken.map((utterance) => utterance.text)).toEqual([
+      " ",
+      "Hello there!",
+    ]);
+    expect(spoken[1].volume).toBe(1);
+  });
 });
 
 describe("assistant sound effects coexist with speech", () => {
