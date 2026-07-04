@@ -47,6 +47,7 @@ import {
 } from "./assistantAnimation";
 import { markAssistantSoundInteraction } from "./assistantSounds";
 import { resolveAssistantSnapPoint } from "./assistantSnap";
+import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
 import {
   Streamdown,
   CHAT_STREAMDOWN_ANIMATED,
@@ -234,7 +235,24 @@ function AssistantOverlayInner() {
     y: number;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
   const activateCharacterRef = useRef<() => void>(() => {});
+  const closeBubble = useCallback(() => setBubbleOpen(false), []);
+  const {
+    cancelAutoClose: cancelBubbleAutoClose,
+    onBlur: handleBubbleBlur,
+    onFocus: handleBubbleFocus,
+    onPointerDown: handleBubblePointerDown,
+    onWheel: handleBubbleWheel,
+    onCompositionStart: handleInputCompositionStart,
+    onCompositionEnd: handleInputCompositionEnd,
+  } = useAssistantBubbleAutoClose({
+    bubbleOpen,
+    bubbleRef,
+    inputRef,
+    onClose: closeBubble,
+    resetKey: characterId,
+  });
 
   // --- Position + dragging ---------------------------------------------------
   const defaultPosition = useCallback((): AssistantPosition => {
@@ -721,6 +739,7 @@ function AssistantOverlayInner() {
   ]);
 
   const handleCharacterActivate = useCallback(() => {
+    cancelBubbleAutoClose();
     markAssistantSoundInteraction();
     const willOpen = !bubbleOpen;
     setBubbleOpen(willOpen);
@@ -738,6 +757,7 @@ function AssistantOverlayInner() {
     playAnimation(pickAnimation(intent));
   }, [
     bubbleOpen,
+    cancelBubbleAutoClose,
     clearEntranceSequence,
     clearSequencePlan,
     pickAnimation,
@@ -848,6 +868,7 @@ function AssistantOverlayInner() {
   );
 
   const handleQuit = useCallback(() => {
+    cancelBubbleAutoClose();
     if (quittingAnimationRef.current) return;
 
     const data = agentDataRef.current;
@@ -879,6 +900,7 @@ function AssistantOverlayInner() {
       getAssistantExitAnimationTimeout(data, exitAnimation)
     );
   }, [
+    cancelBubbleAutoClose,
     clearEntranceSequence,
     clearSequencePlan,
     pickAnimation,
@@ -896,7 +918,10 @@ function AssistantOverlayInner() {
           type: "checkbox" as const,
           label: entry.name,
           checked: entry.id === characterId,
-          onSelect: () => setCharacterId(entry.id),
+          onSelect: () => {
+            cancelBubbleAutoClose();
+            setCharacterId(entry.id);
+          },
         })),
       },
       { type: "separator" },
@@ -904,6 +929,7 @@ function AssistantOverlayInner() {
         type: "item",
         label: t("common.assistant.contextMenu.newConversation"),
         onSelect: () => {
+          cancelBubbleAutoClose();
           clearConversation();
           setBubbleOpen(true);
         },
@@ -927,6 +953,7 @@ function AssistantOverlayInner() {
       t,
       characterId,
       setCharacterId,
+      cancelBubbleAutoClose,
       clearConversation,
       launchApp,
       handleQuit,
@@ -1011,7 +1038,12 @@ function AssistantOverlayInner() {
       <AnimatePresence>
         {bubbleOpen && !isDragging && (
           <motion.div
+            ref={bubbleRef}
             id="assistant-chat-bubble"
+            onBlur={handleBubbleBlur}
+            onFocus={handleBubbleFocus}
+            onPointerDown={handleBubblePointerDown}
+            onWheel={handleBubbleWheel}
             initial={{ opacity: 0, scale: 0.9, y: bubbleBelow ? -4 : 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{
@@ -1081,6 +1113,8 @@ function AssistantOverlayInner() {
                   type="text"
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
+                  onCompositionStart={handleInputCompositionStart}
+                  onCompositionEnd={handleInputCompositionEnd}
                   placeholder={t("common.assistant.inputPlaceholder")}
                   aria-label={t("common.assistant.inputPlaceholder")}
                   className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-[12px] leading-tight font-geneva-12 placeholder:text-black/45 focus:outline-none focus:ring-0"
