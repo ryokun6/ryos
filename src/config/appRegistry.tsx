@@ -613,7 +613,6 @@ export const appRegistry = {
     name: "Assistant",
     icon: { type: "image", src: assistantMetadata.icon },
     description: "Summon a floating desktop assistant character",
-    hideFromDock: true,
     component: LazyAssistantApp,
     helpItems: assistantHelpItems,
     metadata: assistantMetadata,
@@ -635,17 +634,6 @@ export const getAppIconPath = (appId: AppId): string => {
     return app.icon;
   }
   return app.icon.src;
-};
-
-/**
- * Accessory/utility apps (e.g. Assistant) keep their windows out of the
- * dock's running-apps area and the Windows taskbar.
- */
-export const shouldHideFromDock = (appId: AppId): boolean => {
-  const app = appRegistry[resolveAppId(appId) ?? appId] as
-    | { hideFromDock?: boolean }
-    | undefined;
-  return Boolean(app?.hideFromDock);
 };
 
 // Helper function to get all apps except Finder

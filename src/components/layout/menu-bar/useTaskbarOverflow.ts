@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { shouldHideFromDock } from "@/config/appRegistry";
 import type { AppInstance } from "@/stores/useAppStore";
 
 export function useTaskbarOverflow(
@@ -12,7 +11,7 @@ export function useTaskbarOverflow(
 
   const allTaskbarIds = useMemo(() => {
     return Object.values(instances)
-      .filter((i) => i.isOpen && !shouldHideFromDock(i.appId))
+      .filter((i) => i.isOpen)
       .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
       .map((i) => i.instanceId);
   }, [instances]);
