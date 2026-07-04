@@ -815,6 +815,7 @@ describe("Control Panels macOS 10.3 layout", () => {
     expect(assistantSource.includes("grid-cols-4 @max-[339px]:grid-cols-2")).toBe(
       true
     );
+    expect(assistantSource.includes("TILE_PREVIEW_MAX = 64")).toBe(true);
     expect(assistantSource.includes("grid-cols-3")).toBe(false);
   });
 
