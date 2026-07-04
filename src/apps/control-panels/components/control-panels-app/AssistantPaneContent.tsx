@@ -15,7 +15,6 @@ import {
 import { controlPanelItemIconShell } from "./constants";
 
 const TILE_PREVIEW_MAX = 64;
-const TILE_PREVIEW_ROW_HEIGHT = 72;
 
 /** Scale a character preview to fit the tile (downscales only — never upscales). */
 function getCharacterTileScale(width: number, height: number): number {
