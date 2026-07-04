@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantCharacterId } from "./characters";
 import { AssistantSoundPlayer } from "./assistantSounds";
-import { createDebugLogger } from "@/utils/debug";
+import { createClientLogger } from "@/utils/logger";
 
 /**
- * Sprite playback trace. Silent in production unless the user opts in via
- * `localStorage.setItem("ryos:debug", "1")` (see `src/utils/debug.ts`).
+ * Sprite playback trace. Silent in production unless the user enables Debug
+ * Mode (or sets `localStorage["ryos:debug"] = "1"`).
  */
-const spriteLog = createDebugLogger("AssistantSprite");
+const assistantSpriteLogger = createClientLogger("AssistantSprite");
+const spriteLog = (message: string): void =>
+  assistantSpriteLogger.debug(message);
 
 /**
  * Minimal player for Microsoft Agent animation data (clippy.js format).

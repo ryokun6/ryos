@@ -65,13 +65,14 @@ import {
 } from "@/apps/chats/components/chat-messages/streamdown";
 import { ArrowUp } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { createDebugLogger } from "@/utils/debug";
+import { createClientLogger } from "@/utils/logger";
 
 /**
- * Animation state machine trace. Silent in production unless the user opts in
- * via `localStorage.setItem("ryos:debug", "1")` (see `src/utils/debug.ts`).
+ * Animation state machine trace. Silent in production unless the user enables
+ * Debug Mode (or sets `localStorage["ryos:debug"] = "1"`).
  */
-const animLog = createDebugLogger("AssistantAnim");
+const assistantAnimLogger = createClientLogger("AssistantAnim");
+const animLog = (message: string): void => assistantAnimLogger.debug(message);
 
 /** Distance (px) within which the assistant snaps to an edge on release. */
 const SNAP_THRESHOLD = 32;
