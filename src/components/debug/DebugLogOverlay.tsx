@@ -933,7 +933,7 @@ export function DebugLogOverlay() {
                 />
               </div>
             ) : activeTab === "idb" ? (
-              <div className="flex min-w-0 items-center gap-1 font-os-mono text-[10px] leading-none">
+              <div className="flex min-w-0 items-center gap-1 font-os-ui text-[10px] leading-none">
                 {idbSelectedStore !== null ? (
                   <>
                     <button
