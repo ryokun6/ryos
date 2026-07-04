@@ -736,6 +736,9 @@ function AssistantOverlayInner() {
     enteredCharacterIdRef.current = character.id;
     enteredAgentDataRef.current = agentData;
     clearSequencePlan();
+    // Reduced motion keeps the sprite pinned to its rest pose; arming the
+    // sequence would just block activity-driven state forever.
+    if (reduceMotion) return;
     const plan = resolveAssistantEntranceSequencePlan(agentData);
     if (!plan) return;
     entranceSequenceRef.current = plan.followUp
@@ -750,6 +753,7 @@ function AssistantOverlayInner() {
     agentData,
     character.id,
     clearSequencePlan,
+    reduceMotion,
   ]);
 
   // Reflect chat and structured tool lifecycle changes without restarting an
