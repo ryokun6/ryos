@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect } from "react";
 import type { ComponentType } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
@@ -10,7 +10,7 @@ import type { AppId } from "@/config/appRegistry";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
-import { AssistantOverlay } from "@/components/assistant/AssistantOverlay";
+import { useAssistantStore } from "@/stores/useAssistantStore";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { isTextEditInitialData } from "@/types/appInitialData";
@@ -26,6 +26,15 @@ import type { AppManagerViewModel } from "./useAppManager";
 import { createClientLogger } from "@/utils/logger";
 
 const appManagerViewLog = createClientLogger("AppManagerView");
+
+// Code-split: the assistant overlay pulls the AI chat pipeline and the full
+// client-side tool dispatcher, so it must never be statically reachable from
+// the boot bundle. It only loads once the user has summoned the assistant.
+const AssistantOverlay = lazy(() =>
+  import("@/components/assistant/AssistantOverlay").then((m) => ({
+    default: m.AssistantOverlay,
+  }))
+);
 
 export function AppManagerView({
   apps,
@@ -45,6 +54,7 @@ export function AppManagerView({
   navigateToNextInstance,
   navigateToPreviousInstance,
 }: AppManagerViewModel) {
+  const assistantEnabled = useAssistantStore((state) => state.enabled);
   return (
     <>
       {showDesktopMenuBar && <MenuBar />}
@@ -84,7 +94,11 @@ export function AppManagerView({
         apps={switcherApps}
         selectedIndex={switcherIndex}
       />
-      <AssistantOverlay />
+      {assistantEnabled && (
+        <Suspense fallback={null}>
+          <AssistantOverlay />
+        </Suspense>
+      )}
       <DesktopCornerMask />
     </>
   );

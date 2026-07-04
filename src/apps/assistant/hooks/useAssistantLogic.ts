@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAssistantStore } from "@/stores/useAssistantStore";
@@ -10,8 +10,12 @@ export function useAssistantLogic() {
   const currentTheme = useThemeStore((state) => state.current);
   const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
 
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
 
   const enabled = useAssistantStore((state) => state.enabled);
   const setEnabled = useAssistantStore((state) => state.setEnabled);
