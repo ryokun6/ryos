@@ -31,10 +31,13 @@ import {
 } from "./ClippySprite";
 import { useAssistantChat } from "./useAssistantChat";
 import {
+  DEEP_IDLE_AFTER_MS,
   getAnimationCandidates,
   getAssistantAnimationIntent,
   getAssistantExitAnimationTimeout,
   getAssistantLifecycleAnimationIntent,
+  getAssistantPointingDirection,
+  getDeepIdleAnimationPool,
   getDocumentToolSequenceKind,
   getIdleAnimationPool,
   isAssistantEntranceAnimation,
@@ -42,7 +45,9 @@ import {
   resolveAssistantEntranceSequencePlan,
   resolveDocumentToolSequencePlan,
   selectAssistantAnimation,
+  selectAssistantPointingAnimation,
   type AssistantAnimationIntent,
+  type AssistantToolActivity,
   type DocumentToolSequencePlan,
 } from "./assistantAnimation";
 import { markAssistantSoundInteraction } from "./assistantSounds";
@@ -89,9 +94,13 @@ const BUBBLE_EXIT: Transition = {
 
 const REST_ANIMATION = "RestPose";
 
+/** Wait for the snap spring to mostly settle before pointing at a window. */
+const POINTING_DELAY_MS = 550;
+
 function isWorkingIntent(intent: AssistantAnimationIntent): boolean {
   return (
     intent === "thinking" ||
+    intent === "speaking" ||
     intent === "processing" ||
     intent === "searching" ||
     intent === "reading" ||
@@ -237,6 +246,15 @@ function AssistantOverlayInner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const activateCharacterRef = useRef<() => void>(() => {});
+  const pointAtTargetRef = useRef<
+    (
+      target: { x: number; y: number; width: number; height: number },
+      from: AssistantPosition
+    ) => void
+  >(() => {});
+  const pointingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Last moment the assistant was doing something (drives deep idle). */
+  const lastActiveAtRef = useRef(Date.now());
   const closeBubble = useCallback(() => setBubbleOpen(false), []);
   const {
     cancelAutoClose: cancelBubbleAutoClose,
@@ -370,6 +388,10 @@ function AssistantOverlayInner() {
       if (snapped) {
         setPosition(snapped);
         setStoredPosition(snapped);
+        if (targetBounds) {
+          // Look/point toward the window the assistant just moved to show.
+          pointAtTargetRef.current(targetBounds, snapped);
+        }
       }
       cancel();
     };
@@ -515,6 +537,7 @@ function AssistantOverlayInner() {
       markAssistantSoundInteraction();
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (contextMenuPos) return;
+      lastActiveAtRef.current = Date.now();
       lastUserDragAtRef.current = Date.now();
       pendingRelocationCancelRef.current?.();
       const { clientX, clientY, pointerId } = event;
@@ -565,6 +588,7 @@ function AssistantOverlayInner() {
     isLoading,
     hasError: errorText !== null,
     toolActivity,
+    hasVisibleReply: !isAwaitingReply,
   });
   const [spriteAnim, setSpriteAnim] = useState<{ name: string; token: number }>({
     name: REST_ANIMATION,
@@ -578,6 +602,9 @@ function AssistantOverlayInner() {
   const previousActivityIntentRef = useRef(activityIntent);
   const toolActivityRef = useRef(toolActivity);
   toolActivityRef.current = toolActivity;
+  const previousToolActivityRef = useRef<AssistantToolActivity | null>(
+    toolActivity
+  );
   const sequencePlanRef = useRef<DocumentToolSequencePlan | null>(null);
   const sequenceToolRef = useRef<string | null>(null);
   const entranceSequenceRef = useRef<string[] | null>(null);
@@ -605,6 +632,32 @@ function AssistantOverlayInner() {
   const clearEntranceSequence = useCallback(() => {
     entranceSequenceRef.current = null;
   }, []);
+
+  const clearPointingTimer = useCallback(() => {
+    if (pointingTimerRef.current) {
+      clearTimeout(pointingTimerRef.current);
+      pointingTimerRef.current = null;
+    }
+  }, []);
+
+  // Drop transient animation state when the character changes. Without this,
+  // switching characters mid-entrance leaves a stale entrance sequence and a
+  // stale entrance clip name behind, which replays the entry animation (and
+  // blocks activity-driven clips) when the sprite next mounts.
+  const previousCharacterIdRef = useRef(character.id);
+  useEffect(() => {
+    if (previousCharacterIdRef.current === character.id) return;
+    previousCharacterIdRef.current = character.id;
+    clearSequencePlan();
+    clearEntranceSequence();
+    clearPointingTimer();
+    setSpriteAnim({ name: REST_ANIMATION, token: 0 });
+  }, [
+    character.id,
+    clearSequencePlan,
+    clearEntranceSequence,
+    clearPointingTimer,
+  ]);
 
   const pickAnimation = useCallback(
     (intent: AssistantAnimationIntent, randomValue?: number) => {
@@ -640,6 +693,36 @@ function AssistantOverlayInner() {
     [playAnimation]
   );
 
+  // Look/gesture toward a window the assistant just relocated next to.
+  // Delayed so the snap spring mostly settles first. Skipped under reduced
+  // motion and never interrupts an entrance or quit clip.
+  pointAtTargetRef.current = (target, from) => {
+    clearPointingTimer();
+    if (reduceMotion) return;
+    pointingTimerRef.current = setTimeout(() => {
+      pointingTimerRef.current = null;
+      const data = agentDataRef.current;
+      if (!data) return;
+      if (entranceSequenceRef.current || quittingAnimationRef.current) return;
+      const direction = getAssistantPointingDirection(
+        {
+          x: from.x,
+          y: from.y,
+          width: character.width,
+          height: character.height,
+        },
+        target
+      );
+      if (!direction) return;
+      const pointingAnimation = selectAssistantPointingAnimation(
+        data,
+        direction
+      );
+      if (!pointingAnimation) return;
+      playAnimation(pointingAnimation);
+    }, POINTING_DELAY_MS);
+  };
+
   // Play Show followed by a greeting once per character appearance. The data
   // identity guard ignores the previous character's data while a switch loads.
   useEffect(() => {
@@ -674,6 +757,11 @@ function AssistantOverlayInner() {
   useEffect(() => {
     const previousIntent = previousActivityIntentRef.current;
     previousActivityIntentRef.current = activityIntent;
+    const previousTool = previousToolActivityRef.current;
+    previousToolActivityRef.current = toolActivity;
+    if (activityIntent !== "idle") {
+      lastActiveAtRef.current = Date.now();
+    }
     if (!agentData) return;
     if (entranceSequenceRef.current) return;
 
@@ -714,6 +802,7 @@ function AssistantOverlayInner() {
     if (
       sequencePlanRef.current &&
       (activityIntent === "thinking" ||
+        activityIntent === "speaking" ||
         activityIntent === "processing" ||
         activityIntent === "searching") &&
       isWorkingIntent(previousIntent)
@@ -731,6 +820,20 @@ function AssistantOverlayInner() {
       clearSequencePlan();
     }
 
+    // Quick nod when a non-sequence tool just completed mid-turn (document
+    // sequences already acknowledge via their return clip). The working loop
+    // resumes once the nod ends.
+    if (
+      toolActivity?.phase === "complete" &&
+      previousTool?.phase === "running" &&
+      previousTool.name === toolActivity.name &&
+      !isDocumentSequenceTool(toolActivity.name) &&
+      (activityIntent === "thinking" || activityIntent === "speaking")
+    ) {
+      playAnimation(pickAnimation("acknowledge"));
+      return;
+    }
+
     playAnimation(pickAnimation(activityIntent));
   }, [
     activityIntent,
@@ -745,6 +848,7 @@ function AssistantOverlayInner() {
   const handleCharacterActivate = useCallback(() => {
     cancelBubbleAutoClose();
     markAssistantSoundInteraction();
+    lastActiveAtRef.current = Date.now();
     const willOpen = !bubbleOpen;
     setBubbleOpen(willOpen);
     if (willOpen) {
@@ -850,34 +954,46 @@ function AssistantOverlayInner() {
         playAnimation(REST_ANIMATION);
       }
 
+      // No ambient idle rotation for reduced motion.
+      if (reduceMotion) return;
+
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       idleTimerRef.current = setTimeout(() => {
         if (activityIntentRef.current !== "idle") return;
-        const idlePool = getIdleAnimationPool(data);
+        // After prolonged inactivity, prefer the character's deep-idle
+        // (sleep) clips when it ships them.
+        const deepIdlePool =
+          Date.now() - lastActiveAtRef.current >= DEEP_IDLE_AFTER_MS
+            ? getDeepIdleAnimationPool(data)
+            : [];
+        const idlePool =
+          deepIdlePool.length > 0 ? deepIdlePool : getIdleAnimationPool(data);
         playAnimation(
           idlePool[Math.floor(Math.random() * idlePool.length)] ??
             REST_ANIMATION
         );
       }, 4000 + Math.random() * 8000);
     },
-    [clearSequencePlan, pickAnimation, playAnimation, setEnabled]
+    [clearSequencePlan, pickAnimation, playAnimation, reduceMotion, setEnabled]
   );
 
   useEffect(
     () => () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       if (quitTimerRef.current) clearTimeout(quitTimerRef.current);
+      if (pointingTimerRef.current) clearTimeout(pointingTimerRef.current);
     },
     []
   );
 
   const handleQuit = useCallback(() => {
     cancelBubbleAutoClose();
+    clearPointingTimer();
     if (quittingAnimationRef.current) return;
 
     const data = agentDataRef.current;
     const intent = getAssistantLifecycleAnimationIntent("quit");
-    if (!data || intent !== "goodbye") {
+    if (!data || intent !== "goodbye" || reduceMotion) {
       setEnabled(false);
       return;
     }
@@ -906,9 +1022,11 @@ function AssistantOverlayInner() {
   }, [
     cancelBubbleAutoClose,
     clearEntranceSequence,
+    clearPointingTimer,
     clearSequencePlan,
     pickAnimation,
     playAnimation,
+    reduceMotion,
     setEnabled,
   ]);
 
@@ -1012,9 +1130,15 @@ function AssistantOverlayInner() {
         mapUrl={character.mapUrl}
         data={agentData}
         characterId={character.id}
-        animation={pendingEntranceAnimation ?? spriteAnim.name}
+        // Reduced motion pins the sprite to its rest pose; state changes are
+        // still conveyed by the bubble (ticker, error text, streamed reply).
+        animation={
+          reduceMotion
+            ? REST_ANIMATION
+            : pendingEntranceAnimation ?? spriteAnim.name
+        }
         playToken={spriteAnim.token}
-        initiallyHidden={initiallyHideSprite}
+        initiallyHidden={initiallyHideSprite && !reduceMotion}
         onAnimationEnd={handleAnimationEnd}
       />
     );
@@ -1026,6 +1150,7 @@ function AssistantOverlayInner() {
     spriteAnim,
     initiallyHideSprite,
     handleAnimationEnd,
+    reduceMotion,
   ]);
 
   return (

@@ -51,8 +51,8 @@ const TOOL_STATUS_KEYS: Record<string, string> = {
   read: "apps.chats.toolCalls.readingFile",
   write: "apps.chats.toolCalls.writingContent",
   edit: "apps.chats.toolCalls.editingFile",
-  switchTheme: "apps.chats.toolCalls.switchingTheme",
-  songLibrary: "apps.chats.toolCalls.loadingMusicLibrary",
+  settings: "apps.chats.toolCalls.changingSettings",
+  songLibraryControl: "apps.chats.toolCalls.loadingMusicLibrary",
 };
 
 function getToolStatusLabel(toolName: string, input: unknown): string {
@@ -289,10 +289,25 @@ export function useAssistantChat(): AssistantChatHandle {
   };
 
   const isLoading = status === "streaming" || status === "submitted";
-  const toolActivity = useMemo(
-    () => getLatestToolActivity(messages),
-    [messages]
-  );
+
+  // Stabilize by value: `messages` gets a new identity on every streamed
+  // chunk, which would otherwise produce a fresh toolActivity object each
+  // update and make the overlay restart the current sprite clip mid-stream.
+  const stableToolActivityRef = useRef<AssistantToolActivity | null>(null);
+  const toolActivity = useMemo(() => {
+    const latest = getLatestToolActivity(messages);
+    const previous = stableToolActivityRef.current;
+    if (
+      latest !== null &&
+      previous !== null &&
+      latest.name === previous.name &&
+      latest.phase === previous.phase
+    ) {
+      return previous;
+    }
+    stableToolActivityRef.current = latest;
+    return latest;
+  }, [messages]);
 
   const latestAssistantText = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantCharacterId } from "./characters";
 import { AssistantSoundPlayer } from "./assistantSounds";
 
@@ -143,6 +143,19 @@ interface ClippySpriteProps {
   onAnimationEnd?: (animation: string) => void;
 }
 
+interface PlaybackState {
+  name: string;
+  anim: AgentAnimation;
+  index: number;
+  /** Following exitBranch frames toward the end after an interrupt request. */
+  exiting: boolean;
+  /** Frames stepped while exiting; caps malformed exit-branch loops. */
+  exitSteps: number;
+  /** Clip queued to start once the graceful exit completes. */
+  pendingName: string | null;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
 export function ClippySprite({
   mapUrl,
   data,
@@ -156,8 +169,10 @@ export function ClippySprite({
   const [frameImages, setFrameImages] = useState<Array<[number, number]>>(() =>
     initiallyHidden ? [] : [[0, 0]]
   );
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playbackRef = useRef<PlaybackState | null>(null);
   const soundPlayerRef = useRef<AssistantSoundPlayer | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
   const onEndRef = useRef(onAnimationEnd);
   onEndRef.current = onAnimationEnd;
 
@@ -176,60 +191,133 @@ export function ClippySprite({
 
   const [frameWidth, frameHeight] = data.framesize;
 
+  const stopPlayback = useCallback(() => {
+    const playback = playbackRef.current;
+    if (playback?.timer) clearTimeout(playback.timer);
+    playbackRef.current = null;
+  }, []);
+
+  const startAnimation = useCallback(
+    function start(name: string) {
+      stopPlayback();
+      soundPlayerRef.current?.stopAll();
+      const anim = dataRef.current.animations[name];
+      if (!anim || anim.frames.length === 0) {
+        setFrameImages([[0, 0]]);
+        return;
+      }
+
+      const playback: PlaybackState = {
+        name,
+        anim,
+        index: 0,
+        exiting: false,
+        exitSteps: 0,
+        pendingName: null,
+        timer: null,
+      };
+      playbackRef.current = playback;
+
+      const finish = () => {
+        if (playbackRef.current !== playback) return;
+        const pendingName = playback.pendingName;
+        playbackRef.current = null;
+        if (pendingName !== null) {
+          // Interrupted clips exit silently: the parent state machine already
+          // committed to the pending clip, so no end notification.
+          start(pendingName);
+          return;
+        }
+        onEndRef.current?.(playback.name);
+      };
+
+      const step = () => {
+        if (playbackRef.current !== playback) return;
+        const frame = playback.anim.frames[playback.index];
+        if (!frame) {
+          finish();
+          return;
+        }
+
+        setFrameImages((current) => resolveFrameImages(current, frame));
+        soundPlayerRef.current?.play(frame.sound);
+
+        // Pick the next frame. Exiting follows exitBranch pointers toward the
+        // end (skipping probabilistic loops); normal playback honors
+        // branching, else advances sequentially. Reaching past the last frame
+        // ends the animation.
+        let nextIndex = playback.index + 1;
+        if (playback.exiting) {
+          playback.exitSteps += 1;
+          if (playback.exitSteps > playback.anim.frames.length * 2) {
+            finish();
+            return;
+          }
+          if (typeof frame.exitBranch === "number") {
+            nextIndex = frame.exitBranch;
+          }
+        } else if (frame.branching) {
+          let roll = Math.random() * 100;
+          for (const branch of frame.branching.branches) {
+            if (roll <= branch.weight) {
+              nextIndex = branch.frameIndex;
+              break;
+            }
+            roll -= branch.weight;
+          }
+        }
+
+        if (nextIndex >= playback.anim.frames.length) {
+          playback.timer = setTimeout(finish, frame.duration);
+          return;
+        }
+
+        playback.index = nextIndex;
+        playback.timer = setTimeout(step, frame.duration);
+      };
+
+      step();
+    },
+    [stopPlayback]
+  );
+
+  const previousRequestRef = useRef<{
+    data: AgentData;
+    animation: string;
+    playToken: number;
+  } | null>(null);
+
   useEffect(() => {
-    const anim = data.animations[animation];
-    if (!anim || anim.frames.length === 0) {
-      setFrameImages([[0, 0]]);
+    const previous = previousRequestRef.current;
+    previousRequestRef.current = { data, animation, playToken };
+
+    const playback = playbackRef.current;
+    const dataChanged = previous !== null && previous.data !== data;
+
+    // Graceful interrupt: clips authored with exit branching wind down along
+    // their exitBranch path before the next clip starts (original Microsoft
+    // Agent behavior). Everything else hard-switches immediately.
+    if (
+      !dataChanged &&
+      playback &&
+      playback.anim.useExitBranching &&
+      !(playback.name === animation && !playback.exiting)
+    ) {
+      playback.pendingName = animation;
+      playback.exiting = true;
       return;
     }
 
-    let cancelled = false;
-    let index = 0;
+    startAnimation(animation);
+  }, [data, animation, playToken, startAnimation]);
 
-    const step = () => {
-      if (cancelled) return;
-      const frame = anim.frames[index];
-      if (!frame) {
-        onEndRef.current?.(animation);
-        return;
-      }
-
-      setFrameImages((current) => resolveFrameImages(current, frame));
-      soundPlayerRef.current?.play(frame.sound);
-
-      // Pick the next frame: probabilistic branching when present, else
-      // sequential. Reaching past the last frame ends the animation.
-      let nextIndex = index + 1;
-      if (frame.branching) {
-        let roll = Math.random() * 100;
-        for (const branch of frame.branching.branches) {
-          if (roll <= branch.weight) {
-            nextIndex = branch.frameIndex;
-            break;
-          }
-          roll -= branch.weight;
-        }
-      }
-
-      if (nextIndex >= anim.frames.length) {
-        timerRef.current = setTimeout(() => {
-          if (!cancelled) onEndRef.current?.(animation);
-        }, frame.duration);
-        return;
-      }
-
-      index = nextIndex;
-      timerRef.current = setTimeout(step, frame.duration);
-    };
-
-    step();
-
-    return () => {
-      cancelled = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
+  useEffect(
+    () => () => {
+      stopPlayback();
       soundPlayerRef.current?.stopAll();
-    };
-  }, [data, animation, playToken]);
+    },
+    [stopPlayback]
+  );
 
   return (
     <div
