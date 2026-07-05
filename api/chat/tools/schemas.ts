@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { jsonSchema, zodSchema, type JSONSchema7 } from "ai";
 import { appIds } from "../../../src/config/appIds.js";
 import {
   THEME_IDS,
@@ -406,8 +407,12 @@ export const songLibraryControlSchema = z
  * Settings schema
  *
  * All fields are optional — callers should include ONLY settings the user
- * explicitly asked to change. Client-side `sanitizeSettingsInput` strips
- * parameters that match the live snapshot before store writes.
+ * explicitly asked to change. On the wire the tool uses a strict-mode schema
+ * (`settingsToolInputSchema`) where every field is required but nullable, so
+ * models set unrequested fields to `null` instead of inventing placeholder
+ * values; `null` is stripped here before validation. Client-side
+ * `sanitizeSettingsInput` then strips parameters that match the live
+ * snapshot before store writes.
  */
 const normalizeSettingsInput = (value: unknown): unknown => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -415,6 +420,12 @@ const normalizeSettingsInput = (value: unknown): unknown => {
   }
 
   const data: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+
+  for (const key of Object.keys(data)) {
+    if (data[key] === null) {
+      delete data[key];
+    }
+  }
 
   if (data.checkForUpdates === false) {
     delete data.checkForUpdates;
@@ -496,6 +507,63 @@ export const settingsSchema = z.preprocess(
   normalizeSettingsInput,
   settingsObjectSchema
 );
+
+/**
+ * Wire schema for the `settings` tool: strict-mode structured outputs.
+ *
+ * With plain all-optional schemas, models (observed with the default OpenAI
+ * model) sometimes treat every property as fillable and pad unrequested
+ * fields with placeholder junk (`wallpaper: "string"`, first enum values,
+ * `masterVolume: 0`, booleans). OpenAI strict mode constrains generation to
+ * the schema, but requires every property to be listed in `required` — the
+ * canonical strict pattern is required-but-nullable, where the model MUST
+ * emit `null` for anything it does not want to set.
+ *
+ * This helper derives that wire shape from the Zod object schema, and
+ * validation still runs through `settingsSchema`, whose preprocess strips
+ * `null` values, so parsed tool input stays a sparse object of only the
+ * requested settings.
+ */
+const buildStrictNullableJsonSchema = (
+  schema: z.ZodType
+): (() => JSONSchema7) => {
+  return () => {
+    const base = zodSchema(schema).jsonSchema as JSONSchema7;
+    const properties: Record<string, JSONSchema7> = {};
+    for (const [key, property] of Object.entries(base.properties ?? {})) {
+      if (typeof property === "boolean") continue;
+      // Anthropic strict tools reject numeric/string constraint keywords
+      // (minimum, maximum, maxLength). Zod validation still enforces them.
+      const { description, minimum, maximum, maxLength, ...shape } = property;
+      void minimum;
+      void maximum;
+      void maxLength;
+      const nullNote =
+        "Set to null unless the user explicitly requested this change.";
+      properties[key] = {
+        description: description ? `${description} ${nullNote}` : nullNote,
+        anyOf: [shape, { type: "null" }],
+      };
+    }
+    return {
+      type: "object",
+      properties,
+      required: Object.keys(properties),
+      additionalProperties: false,
+    };
+  };
+};
+
+export const settingsToolInputSchema = jsonSchema<
+  z.infer<typeof settingsObjectSchema>
+>(buildStrictNullableJsonSchema(settingsObjectSchema), {
+  validate: async (value) => {
+    const result = await settingsSchema.safeParseAsync(value);
+    return result.success
+      ? { success: true, value: result.data }
+      : { success: false, error: result.error };
+  },
+});
 
 /**
  * Stickies control schema

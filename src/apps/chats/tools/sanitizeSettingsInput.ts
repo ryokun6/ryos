@@ -110,9 +110,19 @@ export function readCurrentSettingsSnapshot(): CurrentSettingsSnapshot {
  * (system state + prompt guidance reduce bogus default-theme overfill).
  */
 export function sanitizeSettingsInput(
-  input: SettingsInput,
+  rawInput: SettingsInput,
   snapshot: CurrentSettingsSnapshot = readCurrentSettingsSnapshot()
 ): Partial<SettingsInput> {
+  // The wire schema is strict-mode (required-but-nullable): models emit null
+  // for unrequested fields. Nulls are stripped during server-side schema
+  // validation, but guard here too since tool input crosses a trust boundary.
+  const input: SettingsInput = { ...rawInput };
+  for (const key of SETTINGS_INPUT_KEYS) {
+    if ((input[key] as unknown) === null) {
+      delete input[key];
+    }
+  }
+
   const sanitized: Partial<SettingsInput> = {};
 
   if (input.language !== undefined && input.language !== snapshot.language) {

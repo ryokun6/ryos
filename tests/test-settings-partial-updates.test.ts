@@ -47,7 +47,9 @@ Object.defineProperty(browserGlobals, "navigator", {
   configurable: true,
 });
 
-const { settingsSchema } = await import("../api/chat/tools/schemas");
+const { settingsSchema, settingsToolInputSchema } = await import(
+  "../api/chat/tools/schemas"
+);
 const { sanitizeSettingsInput, resolveWallpaperConflict } = await import(
   "../src/apps/chats/tools/sanitizeSettingsInput"
 );
@@ -116,6 +118,72 @@ describe("settingsSchema partial updates", () => {
         uiSoundsEnabled: false,
       }).success
     ).toBe(true);
+  });
+
+  test("strips null fields during normalization (strict-mode wire format)", () => {
+    expect(
+      settingsSchema.safeParse({
+        language: null,
+        theme: null,
+        wallpaper: null,
+        wallpaperShuffle: "aqua",
+        wallpaperDynamic: null,
+        accent: null,
+        masterVolume: null,
+        speechEnabled: null,
+        uiSoundsEnabled: null,
+        checkForUpdates: null,
+      })
+    ).toEqual({
+      success: true,
+      data: { wallpaperShuffle: "aqua" },
+    });
+  });
+});
+
+describe("settingsToolInputSchema (strict-mode wire schema)", () => {
+  test("marks every field required and nullable so models emit null, not junk", () => {
+    const wire = settingsToolInputSchema.jsonSchema as {
+      properties: Record<string, { description?: string; anyOf?: unknown[] }>;
+      required: string[];
+      additionalProperties: boolean;
+    };
+    const keys = Object.keys(wire.properties);
+    expect(keys).toContain("wallpaperShuffle");
+    expect(wire.required.sort()).toEqual(keys.sort());
+    expect(wire.additionalProperties).toBe(false);
+    for (const key of keys) {
+      const property = wire.properties[key];
+      expect(property.anyOf).toHaveLength(2);
+      expect(property.anyOf![1]).toEqual({ type: "null" });
+      expect(property.description).toContain("Set to null");
+    }
+  });
+
+  test("validate strips nulls to a sparse settings object", async () => {
+    const result = await settingsToolInputSchema.validate!({
+      language: null,
+      theme: null,
+      wallpaper: null,
+      wallpaperShuffle: "aqua",
+      wallpaperDynamic: null,
+      accent: null,
+      masterVolume: null,
+      speechEnabled: null,
+      uiSoundsEnabled: null,
+      checkForUpdates: null,
+    });
+    expect(result).toEqual({
+      success: true,
+      value: { wallpaperShuffle: "aqua" },
+    });
+  });
+
+  test("validate still rejects invalid values", async () => {
+    const result = await settingsToolInputSchema.validate!({
+      wallpaperShuffle: "rainbows",
+    });
+    expect(result.success).toBe(false);
   });
 });
 
