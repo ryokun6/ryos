@@ -67,7 +67,10 @@ import {
   speakAssistantText,
   stopAssistantSpeech,
 } from "./assistantSpeech";
-import { useAssistantSpeech } from "./useAssistantSpeech";
+import {
+  useAssistantSpeech,
+  useAssistantSpeechPlaying,
+} from "./useAssistantSpeech";
 import {
   Streamdown,
   CHAT_STREAMDOWN_ANIMATED,
@@ -332,6 +335,7 @@ function AssistantOverlayInner() {
 
   // Speak finished replies aloud (browser TTS) when Speech is enabled.
   useAssistantSpeech({ latestAssistantText, isLoading });
+  const isSpeechPlaying = useAssistantSpeechPlaying();
 
   // The bubble stays hidden through the character's entrance sequence and
   // pops in once the entry/greeting animation finishes (or immediately when
@@ -401,8 +405,9 @@ function AssistantOverlayInner() {
     // Never close mid-reply: on mobile the input blurs as soon as the
     // keyboard dismisses, which would otherwise start the countdown while
     // the reply is still generating (or before the user can read it).
-    // Interacting with an embedded tool preview holds the bubble open too.
-    holdOpen: isLoading || isInteractingWithPreview,
+    // Interacting with an embedded tool preview holds the bubble open too,
+    // and so does speech (TTS) — the countdown re-arms once it finishes.
+    holdOpen: isLoading || isInteractingWithPreview || isSpeechPlaying,
   });
 
   // --- Position + dragging ---------------------------------------------------

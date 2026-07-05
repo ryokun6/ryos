@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
+  isAssistantSpeechPlaying,
   prepareAssistantSpeechTexts,
   primeAssistantSpeech,
   speakAssistantText,
   stopAssistantSpeech,
+  subscribeAssistantSpeechPlaying,
   __resetAssistantSpeechStateForTests,
 } from "../src/components/assistant/assistantSpeech";
 import {
@@ -328,6 +330,75 @@ describe("assistant speech playback", () => {
     // The priming gesture unlocks silently instead of resurrecting the
     // stopped reply.
     expect(spoken[1].volume).toBe(0);
+  });
+
+  test("playing state spans the utterance chain from start to final end", () => {
+    expect(isAssistantSpeechPlaying()).toBe(false);
+
+    speakAssistantText("First sentence. Second sentence.", { locale: "en" });
+    // speak() alone proves nothing (iOS drops blocked calls silently) —
+    // only a verified utterance start flips the playing state.
+    expect(isAssistantSpeechPlaying()).toBe(false);
+
+    spoken[0].onstart?.();
+    expect(isAssistantSpeechPlaying()).toBe(true);
+
+    // Still playing between chained utterances.
+    spoken[0].onend?.();
+    expect(isAssistantSpeechPlaying()).toBe(true);
+    spoken[1].onstart?.();
+    expect(isAssistantSpeechPlaying()).toBe(true);
+
+    spoken[1].onend?.();
+    expect(isAssistantSpeechPlaying()).toBe(false);
+  });
+
+  test("stopAssistantSpeech clears the playing state mid-chain", () => {
+    speakAssistantText("One. Two.", { locale: "en" });
+    spoken[0].onstart?.();
+    expect(isAssistantSpeechPlaying()).toBe(true);
+
+    stopAssistantSpeech();
+    expect(isAssistantSpeechPlaying()).toBe(false);
+
+    // The stale utterance's events must not resurrect the playing state.
+    spoken[0].onend?.();
+    expect(isAssistantSpeechPlaying()).toBe(false);
+  });
+
+  test("a new reply resets playing until its own utterance starts", () => {
+    speakAssistantText("Old reply.", { locale: "en" });
+    spoken[0].onstart?.();
+    expect(isAssistantSpeechPlaying()).toBe(true);
+
+    speakAssistantText("New reply.", { locale: "en" });
+    expect(isAssistantSpeechPlaying()).toBe(false);
+
+    // Stale start events from the cancelled chain are ignored.
+    spoken[0].onstart?.();
+    expect(isAssistantSpeechPlaying()).toBe(false);
+
+    spoken[1].onstart?.();
+    expect(isAssistantSpeechPlaying()).toBe(true);
+    spoken[1].onend?.();
+    expect(isAssistantSpeechPlaying()).toBe(false);
+  });
+
+  test("playing-state subscribers are notified on every transition", () => {
+    const seen: boolean[] = [];
+    const unsubscribe = subscribeAssistantSpeechPlaying(() => {
+      seen.push(isAssistantSpeechPlaying());
+    });
+
+    speakAssistantText("Hello there!", { locale: "en" });
+    spoken[0].onstart?.();
+    spoken[0].onend?.();
+    expect(seen).toEqual([true, false]);
+
+    unsubscribe();
+    speakAssistantText("Again!", { locale: "en" });
+    spoken[1].onstart?.();
+    expect(seen).toEqual([true, false]);
   });
 
   test("audible speech unlocks synthesis and drops the stale reply", () => {

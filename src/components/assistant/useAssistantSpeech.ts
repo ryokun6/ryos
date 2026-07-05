@@ -1,11 +1,25 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { useAssistantStore } from "@/stores/useAssistantStore";
 import {
+  isAssistantSpeechPlaying,
   primeAssistantSpeech,
   speakAssistantText,
   stopAssistantSpeech,
+  subscribeAssistantSpeechPlaying,
 } from "./assistantSpeech";
+
+/**
+ * True while an assistant reply is being spoken aloud. The bubble holds off
+ * its auto-close countdown until speech finishes.
+ */
+export function useAssistantSpeechPlaying(): boolean {
+  return useSyncExternalStore(
+    subscribeAssistantSpeechPlaying,
+    isAssistantSpeechPlaying,
+    () => false
+  );
+}
 
 /** Gesture events iOS Safari accepts for unlocking speech synthesis. */
 const SPEECH_UNLOCK_EVENTS = ["pointerdown", "touchend", "keydown"] as const;
