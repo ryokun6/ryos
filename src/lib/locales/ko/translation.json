@@ -1691,8 +1691,28 @@
       },
       "appearance": "모양",
       "assistant": {
+        "behavior": {
+          "greeting": "인사말",
+          "greetingDescription": "어시스턴트가 열릴 때 인사하기",
+          "instructions": "지침",
+          "instructionsHint": "어시스턴트가 어떻게 동작할지 설정합니다. 이 계정의 기기에서 생성되는 새로운 답변에 적용됩니다.",
+          "instructionsPlaceholder": "예: 저를 선장님이라고 부르고, 요리에 비유해서 설명해 주세요.",
+          "responseStyle": "답변 스타일",
+          "responseStyleDescription": "답변의 길이 설정",
+          "responseStyleOptions": {
+            "chatty": "수다스럽게",
+            "concise": "간결하게",
+            "normal": "보통"
+          },
+          "speech": "말하기",
+          "speechDescription": "답변을 소리 내어 읽기"
+        },
         "description": "대화하고 도와주는 캐릭터",
         "hint": "팁: 데스크탑의 캐릭터를 오른쪽 클릭하거나 길게 누르면 빠른 메뉴가 열립니다.",
+        "tabs": {
+          "behavior": "동작",
+          "character": "캐릭터"
+        },
         "title": "데스크탑 도우미"
       },
       "autoSync": {

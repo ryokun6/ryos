@@ -1693,8 +1693,28 @@
       },
       "appearance": "Apparence",
       "assistant": {
+        "behavior": {
+          "greeting": "Salutation",
+          "greetingDescription": "Saluer à l’ouverture de l’assistant",
+          "instructions": "Instructions",
+          "instructionsHint": "Indiquez à l’assistant comment se comporter. S’applique aux nouvelles réponses sur les appareils de ce compte.",
+          "instructionsPlaceholder": "p. ex. Appelez-moi Capitaine et expliquez les choses avec des métaphores culinaires.",
+          "responseStyle": "Style de réponse",
+          "responseStyleDescription": "Longueur des réponses",
+          "responseStyleOptions": {
+            "chatty": "Bavard",
+            "concise": "Concis",
+            "normal": "Normal"
+          },
+          "speech": "Parole",
+          "speechDescription": "Énoncer les réponses à haute voix"
+        },
         "description": "Un personnage qui discute et aide",
         "hint": "Astuce : cliquez droit ou appuyez longuement sur le personnage pour ouvrir le menu rapide.",
+        "tabs": {
+          "behavior": "Comportement",
+          "character": "Personnalité"
+        },
         "title": "Assistant de bureau"
       },
       "autoSync": {

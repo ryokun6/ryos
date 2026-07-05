@@ -47,6 +47,10 @@ import {
   type CursorRepoAgentTelegramNotify,
 } from "../chat/tools/cursor-repo-agent.js";
 import { getStoredUserLocalTimeContext } from "./user-time-context.js";
+import {
+  buildAssistantCustomizationAddon,
+  normalizeAssistantResponseStyle,
+} from "../../src/shared/assistantCustomization.js";
 
 export interface RyoConversationSystemState {
   username?: string | null;
@@ -169,6 +173,16 @@ export interface PrepareRyoConversationOptions {
    * itself correctly (e.g. "Clippy", "Merlin").
    */
   assistantName?: string;
+  /**
+   * Response-length preset from Assistant settings → Behavior (assistant
+   * channel only). Unknown values fall back to the default style.
+   */
+  assistantResponseStyle?: string;
+  /**
+   * Free-form behavior instructions from Assistant settings → Behavior
+   * (assistant channel only). Sanitized and length-capped before injection.
+   */
+  assistantInstructions?: string;
   /**
    * When set (typically by the Telegram webhook), the Cursor Cloud agent tool
    * will send a Telegram message to this chat once a background run completes.
@@ -732,6 +746,8 @@ export async function prepareRyoConversationModelInput(
     preloadedMemoryContext,
     cursorRepoAgentNotifyTelegram,
     assistantName,
+    assistantResponseStyle,
+    assistantInstructions,
   } = options;
 
   const providedTimeZone = timeZone ?? preloadedMemoryContext?.userTimeZone;
@@ -773,17 +789,19 @@ export async function prepareRyoConversationModelInput(
       : `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge briefly and do **not** cite \`agentDashboardUrl\`, agent ids, or run ids — the inline Cursor agent card in web chat already exposes dashboard access, live progress, follow-up, and PR shortcuts.`
     : "";
 
-  const assistantIdentityAddon =
-    channel === "assistant" && assistantName
-      ? `\n\n## YOUR NAME\nThe user has chosen the "${assistantName
-          .replace(/[^\p{L}\p{N} _'-]/gu, "")
-          .slice(0, 40)}" assistant character. Your name is ${assistantName
-          .replace(/[^\p{L}\p{N} _'-]/gu, "")
-          .slice(0, 40)}.`
+  const assistantCustomizationAddon =
+    channel === "assistant"
+      ? buildAssistantCustomizationAddon({
+          assistantName,
+          responseStyle: normalizeAssistantResponseStyle(
+            assistantResponseStyle
+          ),
+          instructions: assistantInstructions,
+        })
       : "";
 
   const staticSystemPrompt =
-    staticPrompts.join("\n") + assistantIdentityAddon + cursorSdkAddon;
+    staticPrompts.join("\n") + assistantCustomizationAddon + cursorSdkAddon;
 
   const memoryContextPrompt = buildMemoryContextPrompt({
     username,

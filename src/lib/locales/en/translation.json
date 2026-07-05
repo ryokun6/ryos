@@ -3473,7 +3473,27 @@
       "assistant": {
         "title": "Desktop Assistant",
         "description": "A character that chats and helps",
-        "hint": "Tip: right-click or long-press the character on the desktop for quick options."
+        "hint": "Tip: right-click or long-press the character on the desktop for quick options.",
+        "tabs": {
+          "character": "Character",
+          "behavior": "Behavior"
+        },
+        "behavior": {
+          "greeting": "Greeting",
+          "greetingDescription": "Say hello when the assistant opens",
+          "speech": "Speech",
+          "speechDescription": "Speak replies aloud",
+          "responseStyle": "Response Style",
+          "responseStyleDescription": "How long replies should be",
+          "responseStyleOptions": {
+            "concise": "Concise",
+            "normal": "Normal",
+            "chatty": "Chatty"
+          },
+          "instructions": "Instructions",
+          "instructionsPlaceholder": "e.g. Call me Captain, and explain things with cooking metaphors.",
+          "instructionsHint": "Tell the assistant how to behave. Applies to new replies on this account's devices."
+        }
       }
     },
     "stickies": {

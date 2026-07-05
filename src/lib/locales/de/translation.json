@@ -1691,8 +1691,28 @@
       },
       "appearance": "Erscheinungsbild",
       "assistant": {
+        "behavior": {
+          "greeting": "Begrüßung",
+          "greetingDescription": "Begrüßen, wenn der Assistent geöffnet wird",
+          "instructions": "Anweisungen",
+          "instructionsHint": "Lege fest, wie sich der Assistent verhalten soll. Gilt für neue Antworten auf den Geräten dieses Accounts.",
+          "instructionsPlaceholder": "z. B. Nenne mich Captain und erkläre Dinge mit Kochmetaphern.",
+          "responseStyle": "Antwortstil",
+          "responseStyleDescription": "Länge der Antworten",
+          "responseStyleOptions": {
+            "chatty": "Gesprächig",
+            "concise": "Prägnant",
+            "normal": "Normal"
+          },
+          "speech": "Sprachausgabe",
+          "speechDescription": "Antworten laut vorlesen"
+        },
         "description": "Ein Charakter, der plaudert und hilft",
         "hint": "Tipp: Rechtsklick oder langes Drücken auf den Charakter öffnet das Schnellmenü.",
+        "tabs": {
+          "behavior": "Verhalten",
+          "character": "Charakter"
+        },
         "title": "Schreibtisch-Assistent"
       },
       "autoSync": {

@@ -35,6 +35,25 @@ const log = createClientLogger("Assistant");
 
 export { ASSISTANT_SUMMON_MESSAGE };
 
+/** Request body shared by every assistant `/api/chat` call. Reads the store
+ * at call time so settings changes apply to the very next message. */
+function buildAssistantRequestBody() {
+  const assistant = useAssistantStore.getState();
+  const customInstructions = assistant.customInstructions.trim();
+  return {
+    systemState: getSystemState(),
+    model: useAppStore.getState().aiModel,
+    persona: "assistant",
+    assistantName: getAssistantCharacterName(
+      getAssistantCharacter(assistant.characterId)
+    ),
+    assistantResponseStyle: assistant.responseStyle,
+    ...(customInstructions
+      ? { assistantInstructions: customInstructions }
+      : {}),
+  };
+}
+
 /** Canned greetings for logged-out users (avoids burning the 3/day AI budget). */
 const LOCAL_GREETING_KEYS = [
   "common.assistant.greetings.hello",
@@ -202,14 +221,7 @@ export function useAssistantChat(): AssistantChatHandle {
         transport: new DefaultChatTransport({
           api: getApiUrl("/api/chat"),
           headers: getBrowserTimeZoneHeaders,
-          body: async () => ({
-            systemState: getSystemState(),
-            model: useAppStore.getState().aiModel,
-            persona: "assistant",
-            assistantName: getAssistantCharacterName(
-              getAssistantCharacter(useAssistantStore.getState().characterId)
-            ),
-          }),
+          body: async () => buildAssistantRequestBody(),
         }),
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
         async onToolCall(options) {
@@ -382,16 +394,7 @@ export function useAssistantChat(): AssistantChatHandle {
       useAssistantStore.getState().markInteraction();
       sendMessage(
         { text, metadata: { createdAt: new Date() } },
-        {
-          body: {
-            systemState: getSystemState(),
-            model: useAppStore.getState().aiModel,
-            persona: "assistant",
-            assistantName: getAssistantCharacterName(
-              getAssistantCharacter(useAssistantStore.getState().characterId)
-            ),
-          },
-        }
+        { body: buildAssistantRequestBody() }
       );
     },
     [sendMessage, clearError]
@@ -461,6 +464,10 @@ export function useAssistantChat(): AssistantChatHandle {
       log.debug("Bubble dismissed long enough — starting a fresh conversation");
       clearConversation();
     }
+
+    // Greeting turned off in Assistant settings → Behavior. The stale-thread
+    // cleanup above still applies; the bubble just opens quietly.
+    if (!store.greetOnSummon) return;
 
     triggerGreeting();
   }, [chat.status, clearConversation, triggerGreeting]);

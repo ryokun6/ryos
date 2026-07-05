@@ -629,6 +629,30 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
         read: () => useAssistantStore.getState().speechEnabled,
         write: (v) => useAssistantStore.getState().setSpeechEnabled(Boolean(v)),
       },
+      {
+        field: "greetOnSummon",
+        read: () => useAssistantStore.getState().greetOnSummon,
+        write: (v) => useAssistantStore.getState().setGreetOnSummon(Boolean(v)),
+      },
+      {
+        field: "responseStyle",
+        read: () => useAssistantStore.getState().responseStyle,
+        write: (v) => {
+          // setResponseStyle normalizes unknown synced values to the default.
+          if (typeof v === "string") {
+            useAssistantStore.getState().setResponseStyle(v as never);
+          }
+        },
+      },
+      {
+        field: "customInstructions",
+        read: () => useAssistantStore.getState().customInstructions,
+        write: (v) => {
+          if (typeof v === "string") {
+            useAssistantStore.getState().setCustomInstructions(v);
+          }
+        },
+      },
     ],
   },
 ];
