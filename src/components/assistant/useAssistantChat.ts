@@ -6,6 +6,7 @@ import {
 } from "ai";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
+import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import { useAssistantStore } from "@/stores/useAssistantStore";
 import { getBrowserTimeZoneHeaders } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
@@ -33,6 +34,14 @@ import { ASSISTANT_SUMMON_MESSAGE } from "@/shared/assistantGreeting";
 const log = createClientLogger("Assistant");
 
 export { ASSISTANT_SUMMON_MESSAGE };
+
+/** Canned greetings for logged-out users (avoids burning the 3/day AI budget). */
+const LOCAL_GREETING_KEYS = [
+  "common.assistant.greetings.hello",
+  "common.assistant.greetings.help",
+  "common.assistant.greetings.looksLike",
+  "common.assistant.greetings.tip",
+] as const;
 
 /** Tools with a dedicated status line (others fall back to "Running X…"). */
 const TOOL_STATUS_KEYS: Record<string, string> = {
@@ -124,7 +133,7 @@ export interface AssistantChatHandle {
   /**
    * Call when the bubble opens (summon or tap). Starts a fresh conversation
    * if the bubble stayed dismissed long enough, then greets if warranted
-   * (AI-generated for all users).
+   * (AI for signed-in users, canned otherwise).
    */
   greetIfStale: () => void;
   clearConversation: () => void;
@@ -138,6 +147,10 @@ export interface AssistantOpenTarget {
 }
 
 export function useAssistantChat(): AssistantChatHandle {
+  const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
+    username: state.username,
+    isAuthenticated: state.isAuthenticated,
+  }));
   const launchApp = useLaunchApp();
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
   const [openTarget, setOpenTarget] = useState<AssistantOpenTarget | null>(null);
@@ -396,6 +409,23 @@ export function useAssistantChat(): AssistantChatHandle {
     [sendMessage, clearError]
   );
 
+  const appendLocalGreeting = useCallback(() => {
+    const key =
+      LOCAL_GREETING_KEYS[Math.floor(Math.random() * LOCAL_GREETING_KEYS.length)];
+    const characterName = getAssistantCharacterName(
+      getAssistantCharacter(useAssistantStore.getState().characterId)
+    );
+    const greeting: AIChatMessage = {
+      id: `assistant-local-greeting-${Date.now()}`,
+      role: "assistant",
+      parts: [{ type: "text", text: i18n.t(key, { name: characterName }) }],
+      metadata: { createdAt: new Date() },
+    };
+    const next = [...chat.messages, greeting] as AIChatMessage[];
+    setMessages(next);
+    useAssistantStore.getState().setMessages(next);
+  }, [chat, setMessages]);
+
   const clearConversation = useCallback(() => {
     sdkStop();
     clearError();
@@ -425,9 +455,22 @@ export function useAssistantChat(): AssistantChatHandle {
       clearConversation();
     }
 
-    log.debug("Requesting AI greeting");
-    sendUserMessage(ASSISTANT_SUMMON_MESSAGE);
-  }, [chat, sendUserMessage, clearConversation]);
+    if (username && isAuthenticated) {
+      log.debug("Requesting AI greeting");
+      sendUserMessage(ASSISTANT_SUMMON_MESSAGE);
+    } else {
+      log.debug("Using local canned greeting (logged-out user)");
+      appendLocalGreeting();
+      useAssistantStore.getState().markInteraction();
+    }
+  }, [
+    chat,
+    username,
+    isAuthenticated,
+    sendUserMessage,
+    appendLocalGreeting,
+    clearConversation,
+  ]);
 
   return {
     messages: messages as AIChatMessage[],
