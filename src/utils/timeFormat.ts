@@ -1,7 +1,6 @@
+import { formatSeconds } from "./formatDuration";
+
+/** Unpadded minutes playback label (e.g. `1:05`, `60:00`). */
 export function formatSecondsAsMinutesSeconds(totalSeconds: number): string {
-  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-  return `${Math.floor(safeSeconds / 60)}:${String(safeSeconds % 60).padStart(
-    2,
-    "0"
-  )}`;
+  return formatSeconds(totalSeconds);
 }
