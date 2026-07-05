@@ -237,6 +237,15 @@ function clampToViewport(
   };
 }
 
+/** Layout viewport size; prefers visualViewport for mobile keyboard changes. */
+function readAssistantViewportSize(): { width: number; height: number } {
+  const viewport = window.visualViewport;
+  return {
+    width: Math.round(viewport?.width ?? window.innerWidth),
+    height: Math.round(viewport?.height ?? window.innerHeight),
+  };
+}
+
 export function AssistantOverlay() {
   const enabled = useAssistantStore((state) => state.enabled);
   if (!enabled) return null;
@@ -351,6 +360,7 @@ function AssistantOverlayInner() {
         )
       : defaultPosition();
   });
+  const [viewportSize, setViewportSize] = useState(readAssistantViewportSize);
   const [isDragging, setIsDragging] = useState(false);
 
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -460,17 +470,27 @@ function AssistantOverlayInner() {
     setStoredPosition,
   ]);
 
-  // Keep the assistant on-screen when the viewport or character size changes.
+  // Keep the assistant on-screen and refresh bubble placement when the
+  // viewport changes (mobile soft-keyboard open/close only updates
+  // visualViewport, not always window.innerHeight).
   useEffect(() => {
-    const clamp = () => {
+    const syncViewport = () => {
+      setViewportSize(readAssistantViewportSize());
       const insets = computeInsets();
       setPosition((prev) =>
         clampToViewport(prev, character.width, character.height, insets.topInset)
       );
     };
-    clamp();
-    window.addEventListener("resize", clamp);
-    return () => window.removeEventListener("resize", clamp);
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener("resize", syncViewport);
+    visualViewport?.addEventListener("scroll", syncViewport);
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      visualViewport?.removeEventListener("resize", syncViewport);
+      visualViewport?.removeEventListener("scroll", syncViewport);
+    };
   }, [computeInsets, character.width, character.height]);
 
   const dragStateRef = useRef<{
@@ -1282,8 +1302,8 @@ function AssistantOverlayInner() {
         height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
       },
       viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: viewportSize.width,
+        height: viewportSize.height,
         topInset: insets.topInset,
         bottomInset: insets.bottomInset,
       },
@@ -1295,6 +1315,8 @@ function AssistantOverlayInner() {
     character.width,
     character.height,
     computeInsets,
+    viewportSize.width,
+    viewportSize.height,
   ]);
   const bubbleSide = bubblePlacement.side;
   const bubbleAlignEnd = bubblePlacement.align === "end";
@@ -1325,7 +1347,7 @@ function AssistantOverlayInner() {
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [bubbleOpen, isDragging, bubbleContentMeasureKey]);
+  }, [bubbleOpen, isDragging, bubbleContentMeasureKey, viewportSize.height]);
   const bubbleRenderHeight = resolveAssistantBubbleRenderHeight({
     measuredHeight: bubbleMeasuredHeight,
     isThinking: showTyping,
@@ -1350,8 +1372,8 @@ function AssistantOverlayInner() {
         height: bubbleRenderHeight,
       },
       viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: viewportSize.width,
+        height: viewportSize.height,
         topInset: insets.topInset,
         bottomInset: insets.bottomInset,
       },
@@ -1364,6 +1386,8 @@ function AssistantOverlayInner() {
     character.height,
     bubbleRenderHeight,
     computeInsets,
+    viewportSize.width,
+    viewportSize.height,
   ]);
   const bubblePositionStyle = bubbleVertical
     ? bubbleAlignEnd

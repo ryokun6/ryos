@@ -311,4 +311,44 @@ describe("assistant bubble render height", () => {
     expect(estimateOffset).toBeGreaterThan(0);
     expect(thinkingOffset).toBe(0);
   });
+
+  test("side pop cross offset relaxes when the viewport grows after keyboard dismiss", () => {
+    // Regression: with the soft keyboard up the visual viewport is short, so a
+    // left/right bubble slides far up to stay on screen. After dismiss the
+    // placement math must rerun with the taller viewport or the bubble stays
+    // detached from the character.
+    const anchor = { x: 305, y: 600, width: 80, height: 80 };
+    const bubbleSize = {
+      width: ASSISTANT_BUBBLE_WIDTH,
+      height: ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
+    };
+    const keyboardUp = {
+      width: 393,
+      height: 500,
+      topInset: 26,
+      bottomInset: 104,
+    };
+    const keyboardDown = {
+      width: 393,
+      height: 852,
+      topInset: 26,
+      bottomInset: 104,
+    };
+    const whileKeyboardUp = resolveAssistantBubbleCrossOffset({
+      side: "left",
+      align: "end",
+      anchor,
+      bubbleSize,
+      viewport: keyboardUp,
+    });
+    const afterKeyboardDown = resolveAssistantBubbleCrossOffset({
+      side: "left",
+      align: "end",
+      anchor,
+      bubbleSize,
+      viewport: keyboardDown,
+    });
+    expect(whileKeyboardUp).toBeLessThan(afterKeyboardDown);
+    expect(afterKeyboardDown).toBeGreaterThan(-40);
+  });
 });
