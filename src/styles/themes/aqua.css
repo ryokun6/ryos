@@ -2022,11 +2022,13 @@
 /* Desktop assistant speech bubble: messages + input use the rounded VAG face
    on Aqua (excluded from the Lucida override above); other themes keep the
    Geneva pixel font. Chiron provides rounded CJK glyphs after bundled VAG
-   Rounded. */
+   Rounded. 13px matches the Chats app bubble size and applies to both the
+   bubble body and its input so they stay in sync. */
 :root[data-os-theme="macosx"] [data-assistant-overlay] .font-geneva-12 {
   font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
     "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
     sans-serif !important;
+  font-size: 13px !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }

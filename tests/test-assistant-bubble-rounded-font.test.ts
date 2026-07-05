@@ -38,6 +38,7 @@ describe("assistant bubble rounded font (macOS theme)", () => {
 
     expect(roundedBlock).toContain('"ryOS VAG Rounded"');
     expect(roundedBlock).toContain('"Chiron GoRound TC WS"');
+    expect(roundedBlock).toContain("font-size: 13px !important");
     expect(roundedBlock).toContain("!important");
   });
 
