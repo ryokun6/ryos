@@ -12,7 +12,8 @@ const NAMED_HTML_ENTITIES: Record<string, string> = {
  * Decode common named and numeric HTML entities exactly once.
  *
  * This intentionally avoids recursive decoding so `&amp;lt;` becomes `&lt;`,
- * not `<`.
+ * not `<`. For chat/UI strings that may include tags and need full decoding,
+ * use the client `decodeHtmlEntities()` helper instead.
  */
 export function decodeHtmlEntitiesOnce(text: string): string {
   return text.replace(
