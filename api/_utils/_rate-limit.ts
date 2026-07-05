@@ -1,4 +1,4 @@
-import { createRedis } from "./redis.js";
+import { createRedis, type Redis as RedisClient } from "./redis.js";
 import { validateAuth } from "./auth/index.js";
 import { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
 
@@ -103,6 +103,8 @@ interface CounterLimitArgs {
   key: string;
   windowSeconds: number;
   limit: number;
+  /** Redis client to use; defaults to this module's shared client. */
+  redis?: RedisClient;
 }
 
 export interface CounterLimitResult {
@@ -124,19 +126,20 @@ export async function checkCounterLimit({
   key,
   windowSeconds,
   limit,
+  redis: client = redis,
 }: CounterLimitArgs): Promise<CounterLimitResult> {
   // ATOMIC approach: increment first, then check
   // This prevents race conditions where two concurrent requests both read
   // the same count and both pass the limit check
-  const newCount = await redis.incr(key);
+  const newCount = await client.incr(key);
 
   // Set TTL only if this is the first increment (count became 1)
   // This is safe because INCR is atomic - only one request will see newCount === 1
   if (newCount === 1) {
-    await redis.expire(key, windowSeconds);
+    await client.expire(key, windowSeconds);
   }
 
-  const ttl = await redis.ttl(key);
+  const ttl = await client.ttl(key);
   const resetSeconds = typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds;
 
   // Check if the NEW count exceeds the limit

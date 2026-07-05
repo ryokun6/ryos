@@ -12,6 +12,7 @@
  * available in the tool context.
  */
 
+import type { Redis } from "../../_utils/redis.js";
 import { checkCounterLimit } from "../../_utils/_rate-limit.js";
 
 export type RateLimitedToolName =
@@ -36,9 +37,14 @@ export interface ToolRateLimitResult {
 
 export async function checkToolRateLimit(
   tool: RateLimitedToolName,
-  username: string | null | undefined,
-  logError: (...args: unknown[]) => void
+  context: {
+    username?: string | null;
+    /** Reuse the tool context's Redis client when available (also keeps unit tests offline). */
+    redis?: Redis;
+    logError: (...args: unknown[]) => void;
+  }
 ): Promise<ToolRateLimitResult> {
+  const { username, redis, logError } = context;
   if (!username) return { allowed: true };
 
   const { limit, windowSeconds } = TOOL_RATE_LIMITS[tool];
@@ -47,6 +53,7 @@ export async function checkToolRateLimit(
       key: `ratelimit:tool:${tool}:${username.toLowerCase()}`,
       windowSeconds,
       limit,
+      ...(redis ? { redis } : {}),
     });
     if (!result.allowed) {
       const minutes = Math.max(1, Math.ceil(result.resetSeconds / 60));

@@ -95,17 +95,13 @@ export async function executeGenerateHtml(
  */
 export async function executeSearchSongs(
   input: SearchSongsInput,
-  context: ServerToolContext & { username?: string | null }
+  context: ServerToolContext & { username?: string | null; redis?: Redis }
 ): Promise<SearchSongsOutput> {
   const { query, maxResults = 5 } = input;
   
   context.log(`[searchSongs] Searching for: "${query}" (max ${maxResults} results)`);
 
-  const rateLimit = await checkToolRateLimit(
-    "searchSongs",
-    context.username,
-    context.logError
-  );
+  const rateLimit = await checkToolRateLimit("searchSongs", context);
   if (!rateLimit.allowed) {
     return { results: [], message: rateLimit.message! };
   }
@@ -202,17 +198,13 @@ const WEB_FETCH_BROWSER_HEADERS: Record<string, string> = {
 
 export async function executeWebFetch(
   input: WebFetchInput,
-  context: ServerToolContext & { username?: string | null }
+  context: ServerToolContext & { username?: string | null; redis?: Redis }
 ): Promise<WebFetchOutput> {
   const { url, selector } = input;
 
   context.log(`[webFetch] Fetching: ${url}${selector ? ` (selector: ${selector})` : ""}`);
 
-  const rateLimit = await checkToolRateLimit(
-    "webFetch",
-    context.username,
-    context.logError
-  );
+  const rateLimit = await checkToolRateLimit("webFetch", context);
   if (!rateLimit.allowed) {
     return {
       success: false,

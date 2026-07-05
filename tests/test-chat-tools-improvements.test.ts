@@ -7,6 +7,8 @@ import {
 import { createChatTools } from "../api/chat/tools/index.js";
 import { repairRyoToolCall } from "../api/_utils/ryo-agent.js";
 import { checkToolRateLimit } from "../api/chat/tools/_tool-rate-limit.js";
+import type { Redis } from "../api/_utils/redis.js";
+import { FakeRedis } from "./fake-redis";
 
 // ============================================================================
 // Expanded settings schema
@@ -233,9 +235,42 @@ describe("repairRyoToolCall", () => {
 
 describe("checkToolRateLimit", () => {
   test("anonymous users are always allowed (chat budget already caps them)", async () => {
-    const result = await checkToolRateLimit("webFetch", null, () => {});
+    const result = await checkToolRateLimit("webFetch", {
+      username: null,
+      logError: () => {},
+    });
     expect(result.allowed).toBe(true);
-    const result2 = await checkToolRateLimit("searchSongs", undefined, () => {});
+    const result2 = await checkToolRateLimit("searchSongs", {
+      logError: () => {},
+    });
     expect(result2.allowed).toBe(true);
+  });
+
+  test("uses the context redis client and enforces the hourly limit", async () => {
+    const redis = new FakeRedis() as unknown as Redis;
+    const context = { username: "alice", redis, logError: () => {} };
+
+    // searchSongs allows 30 calls per hour
+    for (let i = 0; i < 30; i++) {
+      const result = await checkToolRateLimit("searchSongs", context);
+      expect(result.allowed).toBe(true);
+    }
+    const blocked = await checkToolRateLimit("searchSongs", context);
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.message).toContain("Rate limit reached for searchSongs");
+  });
+
+  test("fails open when the redis client errors", async () => {
+    const throwingRedis = {
+      incr: () => Promise.reject(new Error("redis down")),
+    } as unknown as Redis;
+    const logError = mock(() => {});
+    const result = await checkToolRateLimit("webFetch", {
+      username: "alice",
+      redis: throwingRedis,
+      logError,
+    });
+    expect(result.allowed).toBe(true);
+    expect(logError).toHaveBeenCalled();
   });
 });
