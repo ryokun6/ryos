@@ -19,6 +19,9 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
 
   const {
     isWindowsTheme,
+    isMacTheme,
+    isAquaGlass,
+    isDarkMode,
     containerRef,
     sidebarVisibleBool,
     isFrameNarrow,
