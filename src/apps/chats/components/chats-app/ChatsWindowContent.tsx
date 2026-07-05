@@ -48,7 +48,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     isLoading,
     isRyoLoading,
     error,
-    reload,
+    regenerate,
     handleMessageDeleted,
     fontSize,
     scrollToBottomTrigger,
@@ -317,7 +317,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                   (!!currentRoomId && isRyoLoading)
                 }
                 error={!currentRoomId ? error : undefined}
-                onRetry={reload}
+                onRetry={regenerate}
                 onClear={handleOpenClearDialog}
                 isRoomView={!!currentRoomId}
                 roomId={currentRoomId ?? undefined}

@@ -740,9 +740,9 @@ describe("telegram heartbeat helpers", () => {
       },
     });
 
-    expect(prepared.dynamicSystemPrompt).toContain("## LONG-TERM MEMORIES");
-    expect(prepared.dynamicSystemPrompt).toContain("projects: User is actively iterating");
-    expect(prepared.dynamicSystemPrompt).not.toContain("## DAILY NOTES (recent journal)");
+    expect(prepared.memoryContextPrompt).toContain("## LONG-TERM MEMORIES");
+    expect(prepared.memoryContextPrompt).toContain("projects: User is actively iterating");
+    expect(prepared.volatileStatePrompt).not.toContain("## DAILY NOTES (recent journal)");
   });
 });
 
