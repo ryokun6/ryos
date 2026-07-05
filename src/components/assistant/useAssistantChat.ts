@@ -30,6 +30,7 @@ import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
 import { ASSISTANT_SUMMON_MESSAGE } from "@/shared/assistantGreeting";
+import { processConversationMemories } from "@/utils/processConversationMemories";
 
 const log = createClientLogger("Assistant");
 
@@ -478,11 +479,23 @@ export function useAssistantChat(): AssistantChatHandle {
   }, [chat, setMessages]);
 
   const clearConversation = useCallback(() => {
+    void processConversationMemories({
+      messages,
+      isAuthenticated: Boolean(username && isAuthenticated),
+      source: "assistant",
+    });
     sdkStop();
     clearError();
     setMessages([]);
     useAssistantStore.getState().clearMessages();
-  }, [sdkStop, clearError, setMessages]);
+  }, [
+    messages,
+    username,
+    isAuthenticated,
+    sdkStop,
+    clearError,
+    setMessages,
+  ]);
 
   const triggerGreeting = useCallback(() => {
     if (chat.status === "streaming" || chat.status === "submitted") return;

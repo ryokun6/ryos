@@ -9,7 +9,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { getBrowserTimeZone, getBrowserTimeZoneHeaders } from "@/api/core";
+import { getBrowserTimeZoneHeaders } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -20,7 +20,6 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { aiChatLog as log } from "../logging";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
@@ -31,6 +30,7 @@ import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { getSystemState } from "../utils/systemState";
 import { dispatchToolCall } from "../tools/dispatchToolCall";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
+import { processConversationMemories } from "@/utils/processConversationMemories";
 
 
 // Helper to check if chats app is currently in the foreground
@@ -693,61 +693,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [handleDirectMessageSubmit, t]);
 
   const clearChats = useCallback(() => {
-    log.debug("Clearing AI chats", { messageCount: aiMessages.length });
-
-    // --- Extract memories before clearing (async, fire and forget) ---
-    // Capture current messages before we clear them
-    const messagesToAnalyze = [...aiMessages];
-    const currentUsername = username;
-    const currentTimeZone = getBrowserTimeZone() || "UTC";
-
-    // Only extract if user is logged in and there are messages worth analyzing
-    if (currentUsername && isAuthenticated && messagesToAnalyze.length > 2) {
-      log.debug("Triggering async memory extraction", {
-        messageCount: messagesToAnalyze.length,
-      });
-
-      abortableFetch(getApiUrl("/api/ai/extract-memories"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Timezone": currentTimeZone,
-        },
-        body: JSON.stringify({
-          timeZone: currentTimeZone,
-          messages: messagesToAnalyze.map(msg => ({
-            role: msg.role,
-            parts: msg.parts,
-            metadata: msg.metadata?.createdAt
-              ? {
-                  createdAt:
-                    msg.metadata.createdAt instanceof Date
-                      ? msg.metadata.createdAt.toISOString()
-                      : msg.metadata.createdAt,
-                }
-              : undefined,
-          })),
-        }),
-        timeout: 65000,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.extracted > 0) {
-            log.debug("Extracted memories from conversation", {
-              extracted: data.extracted,
-            });
-          } else {
-            log.debug("No memories extracted", {
-              hasMessage: Boolean(data.message),
-            });
-          }
-        })
-        .catch(err => {
-          console.warn("[clearChats] Memory extraction failed (non-blocking):", err);
-        });
-
-    }
+    const messagesToAnalyze = [...currentSdkMessagesRef.current];
+    log.debug("Clearing AI chats", {
+      messageCount: messagesToAnalyze.length,
+    });
+    void processConversationMemories({
+      messages: messagesToAnalyze,
+      isAuthenticated: Boolean(username && isAuthenticated),
+      source: "chats",
+    });
 
     // Stop any in-flight stream first. Otherwise the AI SDK keeps appending to
     // its message list after we reset it below, and `useSyncedAiMessages`
@@ -790,7 +744,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setNeedsUsername,
     resetSpeechState,
     markAssistantMessageProcessed,
-    aiMessages,
     username,
     isAuthenticated,
   ]);
