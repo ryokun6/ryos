@@ -126,6 +126,13 @@ const BUBBLE_TAIL_EDGE_CLEARANCE = 34;
 /** Wait for the snap spring to mostly settle before pointing at a window. */
 const POINTING_DELAY_MS = 550;
 
+/**
+ * Chance that a completed turn plays a celebratory success clip. Most turns
+ * skip it and settle straight to rest so the celebration stays a treat
+ * instead of a tic after every message.
+ */
+const SUCCESS_ANIMATION_CHANCE = 0.25;
+
 function isWorkingIntent(intent: AssistantAnimationIntent): boolean {
   return (
     intent === "thinking" ||
@@ -948,7 +955,14 @@ function AssistantOverlayInner() {
 
     if (activityIntent === "idle") {
       clearSequencePlan();
-      if (isWorkingIntent(previousIntent)) {
+      // Occasional celebration only. When the gate skips it, the in-flight
+      // working clip simply finishes and handleAnimationEnd settles to rest
+      // (arming the ambient idle timer and playing any deferred look), the
+      // same flow that runs after a success clip ends.
+      if (
+        isWorkingIntent(previousIntent) &&
+        Math.random() < SUCCESS_ANIMATION_CHANCE
+      ) {
         playAnimation(
           pickAnimation("success"),
           `success after ${previousIntent}`
