@@ -3,7 +3,7 @@
  * sanitization so overfilled tool calls do not mutate unrelated preferences.
  */
 import "fake-indexeddb/auto";
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import { describe, expect, test, beforeEach, afterAll, mock } from "bun:test";
 
 class MemoryStorage implements Storage {
   private readonly map = new Map<string, string>();
@@ -246,6 +246,10 @@ describe("handleSettings applies only sanitized fields", () => {
   mock.module("@/utils/prefetch", () => ({
     forceRefreshCache,
   }));
+
+  afterAll(() => {
+    mock.restore();
+  });
 
   beforeEach(() => {
     setLanguage.mockClear();

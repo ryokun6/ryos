@@ -15,7 +15,6 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { themes } from "@/themes";
-import type { OsThemeId } from "@/themes/types";
 import { getAccentChrome, isValidAccent, type AccentId } from "@/themes/accents";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import {
