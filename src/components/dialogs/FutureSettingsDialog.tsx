@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { OsTextarea } from "@/components/ui/os-textarea";
 import {
   Select,
   SelectContent,
@@ -133,7 +133,7 @@ const FutureSettingsDialog = ({
             </SelectContent>
           </Select>
         </div>
-        <Textarea
+        <OsTextarea
           value={
             timelineSettings[selectedYear] ||
             getDefaultTimelineText(selectedYear)
@@ -146,18 +146,12 @@ const FutureSettingsDialog = ({
             setTimelineSettings(newSettings);
           }}
           placeholder={getDefaultTimelineText(selectedYear)}
-          className={cn(
-            "min-h-[200px]",
+          textareaClassName={cn(
+            "min-h-[200px] resize-none",
             isWindowsTheme
               ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
               : "font-geneva-12 text-[12px]"
           )}
-          style={{
-            fontFamily: isWindowsTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isWindowsTheme ? "11px" : undefined,
-          }}
         />
         <div className="flex justify-end gap-1">
           <Button

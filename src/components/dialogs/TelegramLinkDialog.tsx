@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { OsTextarea } from "@/components/ui/os-textarea";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type {
@@ -185,7 +186,7 @@ export function TelegramLinkDialog({
               {t("apps.control-panels.telegram.heartbeatInstructionsDescription")}
             </p>
           </div>
-          <textarea
+          <OsTextarea
             id="telegram-heartbeat-instructions"
             value={heartbeatInstructionsDraft}
             onChange={(event) =>
@@ -196,8 +197,8 @@ export function TelegramLinkDialog({
             )}
             maxLength={1200}
             rows={5}
-            className={cn(
-              "w-full resize-none rounded-os border-[length:var(--os-metrics-border-width)] border-os-input-border bg-os-input-bg p-2 text-os-text-primary shadow-inner outline-none focus:border-os-input-focusBorder",
+            textareaClassName={cn(
+              "resize-none text-os-text-primary",
               isWindowsTheme
                 ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                 : "font-geneva-12 text-[11px]"
