@@ -341,6 +341,9 @@ describe("assistant semantic animation selection", () => {
   });
 
   test("selects pointing clips with diagonal fallbacks and null when unavailable", () => {
+    // Clip names use the CHARACTER's perspective (it faces the viewer), so a
+    // viewer-space direction maps to the mirrored clip name: a target on the
+    // viewer's left plays the character's right-side clip and vice versa.
     const clippyLike = agentWithAnimations([
       "GestureLeft",
       "GestureRight",
@@ -349,23 +352,37 @@ describe("assistant semantic animation selection", () => {
       "RestPose",
     ]);
     expect(selectAssistantPointingAnimation(clippyLike, "left")).toBe(
+      "GestureRight"
+    );
+    expect(selectAssistantPointingAnimation(clippyLike, "right")).toBe(
       "GestureLeft"
     );
-    expect(selectAssistantPointingAnimation(clippyLike, "upLeft")).toBe(
+    expect(selectAssistantPointingAnimation(clippyLike, "upRight")).toBe(
       "LookUpLeft"
+    );
+    // No LookUpRight clip: viewer upLeft falls back through GestureRight.
+    expect(selectAssistantPointingAnimation(clippyLike, "upLeft")).toBe(
+      "GestureRight"
     );
     expect(selectAssistantPointingAnimation(clippyLike, "up")).toBe("LookUp");
 
-    // Rover only ships GestureLeft / LookUp / LookUpLeft.
+    // Rover only ships GestureLeft / LookUp / LookUpLeft (character-side
+    // names), so it can only look toward the viewer's right.
     const roverLike = agentWithAnimations([
       "GestureLeft",
       "LookUp",
       "LookUpLeft",
       "RestPose",
     ]);
-    expect(selectAssistantPointingAnimation(roverLike, "right")).toBeNull();
-    expect(selectAssistantPointingAnimation(roverLike, "upRight")).toBe(
+    expect(selectAssistantPointingAnimation(roverLike, "left")).toBeNull();
+    expect(selectAssistantPointingAnimation(roverLike, "right")).toBe(
+      "GestureLeft"
+    );
+    expect(selectAssistantPointingAnimation(roverLike, "upLeft")).toBe(
       "LookUp"
+    );
+    expect(selectAssistantPointingAnimation(roverLike, "upRight")).toBe(
+      "LookUpLeft"
     );
   });
 

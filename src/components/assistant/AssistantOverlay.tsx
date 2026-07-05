@@ -137,9 +137,15 @@ function isWorkingIntent(intent: AssistantAnimationIntent): boolean {
   );
 }
 
+interface SnapAxisCandidate {
+  value: number;
+  /** Window whose edge produced this candidate, when any. */
+  windowRect: { x: number; y: number; width: number; height: number } | null;
+}
+
 interface SnapEdges {
-  xs: number[];
-  ys: number[];
+  xs: SnapAxisCandidate[];
+  ys: SnapAxisCandidate[];
 }
 
 /**
@@ -155,10 +161,16 @@ function collectSnapEdges(
 ): SnapEdges {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const xs = [SNAP_MARGIN, vw - width - SNAP_MARGIN];
+  const xs: SnapAxisCandidate[] = [
+    { value: SNAP_MARGIN, windowRect: null },
+    { value: vw - width - SNAP_MARGIN, windowRect: null },
+  ];
   // Bottom edge doubles as the dock snap: bottomInset already includes the
   // dock height, so this rests the character right on top of the dock.
-  const ys = [topInset + SNAP_MARGIN, vh - bottomInset - height - SNAP_MARGIN];
+  const ys: SnapAxisCandidate[] = [
+    { value: topInset + SNAP_MARGIN, windowRect: null },
+    { value: vh - bottomInset - height - SNAP_MARGIN, windowRect: null },
+  ];
 
   const { instances } = useAppStore.getState();
   for (const instance of Object.values(instances)) {
@@ -166,20 +178,42 @@ function collectSnapEdges(
     const pos = instance.position;
     const size = instance.size;
     if (!pos || !size) continue;
+    const windowRect = {
+      x: pos.x,
+      y: pos.y,
+      width: size.width,
+      height: size.height,
+    };
     // Left/right window edges (assistant sits flush outside or inside).
-    xs.push(pos.x - width, pos.x, pos.x + size.width - width, pos.x + size.width);
+    for (const value of [
+      pos.x - width,
+      pos.x,
+      pos.x + size.width - width,
+      pos.x + size.width,
+    ]) {
+      xs.push({ value, windowRect });
+    }
     // Perch on the window's top edge, or align with its bottom edge.
-    ys.push(pos.y - height, pos.y + size.height - height, pos.y + size.height);
+    for (const value of [
+      pos.y - height,
+      pos.y + size.height - height,
+      pos.y + size.height,
+    ]) {
+      ys.push({ value, windowRect });
+    }
   }
 
   return { xs, ys };
 }
 
-function snapAxis(value: number, candidates: number[]): number {
-  let best = value;
+function snapAxis(
+  value: number,
+  candidates: SnapAxisCandidate[]
+): SnapAxisCandidate {
+  let best: SnapAxisCandidate = { value, windowRect: null };
   let bestDistance = SNAP_THRESHOLD;
   for (const candidate of candidates) {
-    const distance = Math.abs(candidate - value);
+    const distance = Math.abs(candidate.value - value);
     if (distance < bestDistance) {
       best = candidate;
       bestDistance = distance;
@@ -303,6 +337,21 @@ function AssistantOverlayInner() {
     ) => void
   >(() => {});
   const pointingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Pointing/look clip currently playing; guards it from intent stomps. */
+  const pointingAnimationRef = useRef<string | null>(null);
+  /** Look deferred mid-turn; played once the turn settles into idle. */
+  const deferredPointingRef = useRef<{
+    target: { x: number; y: number; width: number; height: number };
+    from: AssistantPosition;
+  } | null>(null);
+  const clearPointingTimer = useCallback(() => {
+    if (pointingTimerRef.current) {
+      clearTimeout(pointingTimerRef.current);
+      pointingTimerRef.current = null;
+    }
+    deferredPointingRef.current = null;
+    pointingAnimationRef.current = null;
+  }, []);
   /** Last moment the assistant was doing something (drives deep idle). */
   const lastActiveAtRef = useRef(Date.now());
   const closeBubble = useCallback(() => {
@@ -530,17 +579,22 @@ function AssistantOverlayInner() {
         insets.topInset,
         insets.bottomInset
       );
+      const snappedX = snapAxis(positionRef.current.x, edges.xs);
+      const snappedY = snapAxis(positionRef.current.y, edges.ys);
       const snapped = clampToViewport(
-        {
-          x: snapAxis(positionRef.current.x, edges.xs),
-          y: snapAxis(positionRef.current.y, edges.ys),
-        },
+        { x: snappedX.value, y: snappedY.value },
         character.width,
         character.height,
         insets.topInset
       );
       setPosition(snapped);
       setStoredPosition(snapped);
+      // Drag-snapped onto a window edge: glance at that window, matching the
+      // tool-driven relocation behavior.
+      const snappedWindow = snappedX.windowRect ?? snappedY.windowRect;
+      if (snappedWindow) {
+        pointAtTargetRef.current(snappedWindow, snapped);
+      }
     },
     [computeInsets, character.width, character.height, setStoredPosition]
   );
@@ -604,6 +658,7 @@ function AssistantOverlayInner() {
       lastActiveAtRef.current = Date.now();
       lastUserDragAtRef.current = Date.now();
       pendingRelocationCancelRef.current?.();
+      clearPointingTimer();
       const { clientX, clientY, pointerId } = event;
       const overlayBounds = overlayRef.current?.getBoundingClientRect();
       const drag = {
@@ -624,7 +679,7 @@ function AssistantOverlayInner() {
       }, LONG_PRESS_MS);
       dragStateRef.current = drag;
     },
-    [contextMenuPos, openContextMenu]
+    [clearPointingTimer, contextMenuPos, openContextMenu]
   );
 
   const handleContextMenu = useCallback(
@@ -697,13 +752,6 @@ function AssistantOverlayInner() {
     entranceSequenceRef.current = null;
   }, []);
 
-  const clearPointingTimer = useCallback(() => {
-    if (pointingTimerRef.current) {
-      clearTimeout(pointingTimerRef.current);
-      pointingTimerRef.current = null;
-    }
-  }, []);
-
   // Drop transient animation state when the character changes. Without this,
   // switching characters mid-entrance leaves a stale entrance sequence and a
   // stale entrance clip name behind, which replays the entry animation (and
@@ -768,17 +816,20 @@ function AssistantOverlayInner() {
     [playAnimation]
   );
 
-  // Look/gesture toward a window the assistant just relocated next to.
-  // Delayed so the snap spring mostly settles first. Skipped under reduced
-  // motion and never interrupts an entrance or quit clip.
-  pointAtTargetRef.current = (target, from) => {
-    clearPointingTimer();
-    if (reduceMotion) return;
-    pointingTimerRef.current = setTimeout(() => {
-      pointingTimerRef.current = null;
+  // Play a Look/Gesture clip toward a target window. Returns false when
+  // pointing isn't possible (no data, entrance/quit in progress, target too
+  // close, or the character ships no clip for the direction — e.g. Rover
+  // can't look toward the viewer's left or down).
+  const startPointingAt = useCallback(
+    (
+      target: { x: number; y: number; width: number; height: number },
+      from: AssistantPosition
+    ): boolean => {
       const data = agentDataRef.current;
-      if (!data) return;
-      if (entranceSequenceRef.current || quittingAnimationRef.current) return;
+      if (!data) return false;
+      if (entranceSequenceRef.current || quittingAnimationRef.current) {
+        return false;
+      }
       const direction = getAssistantPointingDirection(
         {
           x: from.x,
@@ -788,16 +839,39 @@ function AssistantOverlayInner() {
         },
         target
       );
-      if (!direction) return;
+      if (!direction) return false;
       const pointingAnimation = selectAssistantPointingAnimation(
         data,
         direction
       );
       if (!pointingAnimation) {
-        assistantAnimLogger.debug(`pointing ${direction} skipped — no clip for direction`);
+        assistantAnimLogger.debug(
+          `pointing ${direction} skipped — no clip for direction`
+        );
+        return false;
+      }
+      pointingAnimationRef.current = pointingAnimation;
+      playAnimation(pointingAnimation, `pointing ${direction} at window`);
+      return true;
+    },
+    [character.width, character.height, playAnimation]
+  );
+
+  // Look/gesture toward a window the assistant just snapped next to.
+  // Delayed so the snap spring mostly settles first. Skipped under reduced
+  // motion. When the timer fires mid-turn (reply still streaming), the look
+  // is deferred until the turn settles into idle so intent transitions
+  // can't cut it off.
+  pointAtTargetRef.current = (target, from) => {
+    clearPointingTimer();
+    if (reduceMotion) return;
+    pointingTimerRef.current = setTimeout(() => {
+      pointingTimerRef.current = null;
+      if (activityIntentRef.current !== "idle") {
+        deferredPointingRef.current = { target, from };
         return;
       }
-      playAnimation(pointingAnimation, `pointing ${direction} at window`);
+      startPointingAt(target, from);
     }, POINTING_DELAY_MS);
   };
 
@@ -864,6 +938,9 @@ function AssistantOverlayInner() {
     }
     if (!agentData) return;
     if (entranceSequenceRef.current) return;
+    // Let an in-flight pointing/look clip finish: handleAnimationEnd resumes
+    // the working loop / idle flow the moment it ends.
+    if (pointingAnimationRef.current) return;
 
     const activeTool = toolActivityRef.current;
     const activeToolName =
@@ -1036,6 +1113,10 @@ function AssistantOverlayInner() {
         openInitialBubble();
       }
 
+      // Whatever clip just ended, the pointing clip is no longer on screen —
+      // release the interruption guard.
+      pointingAnimationRef.current = null;
+
       const currentIntent = activityIntentRef.current;
       const activeTool = toolActivityRef.current;
       const plan = sequencePlanRef.current;
@@ -1072,6 +1153,17 @@ function AssistantOverlayInner() {
           `working loop (${currentIntent})`
         );
         return;
+      }
+
+      // The turn has settled: play a look that was deferred mid-turn (the
+      // success clip that follows a completed turn ends here, so the glance
+      // toward the snapped window plays right after it).
+      const deferredPointing = deferredPointingRef.current;
+      if (deferredPointing) {
+        deferredPointingRef.current = null;
+        if (startPointingAt(deferredPointing.target, deferredPointing.from)) {
+          return;
+        }
       }
 
       if (endedAnimation !== REST_ANIMATION) {
@@ -1115,6 +1207,7 @@ function AssistantOverlayInner() {
       playAnimation,
       reduceMotion,
       setEnabled,
+      startPointingAt,
     ]
   );
 

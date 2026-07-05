@@ -574,23 +574,27 @@ export type AssistantPointingDirection =
   | "downRight";
 
 /**
- * Microsoft Agent Gesture and Look clip names use the viewer's screen
- * perspective (GestureLeft points toward the left edge of the screen).
- * Diagonal Look clips exist on some characters only, so each diagonal falls
- * back to its horizontal and vertical components.
+ * Microsoft Agent Gesture and Look clip names use the CHARACTER's
+ * perspective: the character faces the viewer, so its left is the viewer's
+ * right (Clippy's LookLeft frames show his eyes pointed at the right edge of
+ * the screen). The keys here are viewer-space directions (what
+ * getAssistantPointingDirection returns), so left/right candidates are
+ * mirrored relative to their clip names. Up/down are unaffected. Diagonal
+ * Look clips exist on some characters only, so each diagonal falls back to
+ * its horizontal and vertical components.
  */
 const POINTING_ANIMATION_CANDIDATES: Record<
   AssistantPointingDirection,
   readonly string[]
 > = {
-  left: ["GestureLeft", "LookLeft"],
-  right: ["GestureRight", "LookRight"],
+  left: ["GestureRight", "LookRight"],
+  right: ["GestureLeft", "LookLeft"],
   up: ["GestureUp", "LookUp"],
   down: ["GestureDown", "LookDown"],
-  upLeft: ["LookUpLeft", "GestureLeft", "LookLeft", "LookUp"],
-  upRight: ["LookUpRight", "GestureRight", "LookRight", "LookUp"],
-  downLeft: ["LookDownLeft", "GestureLeft", "LookLeft", "LookDown"],
-  downRight: ["LookDownRight", "GestureRight", "LookRight", "LookDown"],
+  upLeft: ["LookUpRight", "GestureRight", "LookRight", "LookUp"],
+  upRight: ["LookUpLeft", "GestureLeft", "LookLeft", "LookUp"],
+  downLeft: ["LookDownRight", "GestureRight", "LookRight", "LookDown"],
+  downRight: ["LookDownLeft", "GestureLeft", "LookLeft", "LookDown"],
 };
 
 export interface AssistantPointingRect {
@@ -645,8 +649,9 @@ export function getAssistantPointingDirection(
 }
 
 /**
- * Best available pointing/look clip toward a direction, or null when the
- * character has none (e.g. Rover lacks right-facing clips).
+ * Best available pointing/look clip toward a viewer-space direction, or null
+ * when the character has none (e.g. Rover only ships character-left clips,
+ * so it can't look toward the viewer's left).
  */
 export function selectAssistantPointingAnimation(
   data: AgentData,
