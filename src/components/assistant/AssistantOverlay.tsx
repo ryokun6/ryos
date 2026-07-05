@@ -79,6 +79,7 @@ import {
 import { ArrowUp } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { createClientLogger } from "@/utils/logger";
+import { AssistantBubbleToolParts } from "./AssistantBubbleToolParts";
 
 /**
  * Animation state machine trace. Silent in production unless the user enables
@@ -303,6 +304,7 @@ function AssistantOverlayInner() {
   const {
     latestAssistantText,
     statusLabels,
+    bubbleToolParts,
     toolActivity,
     openTarget,
     isAwaitingReply,
@@ -315,11 +317,18 @@ function AssistantOverlayInner() {
 
   const bubbleText = errorText ?? latestAssistantText;
   const showTyping = isAwaitingReply && !errorText;
-  const bubbleContentMeasureKey = showTyping
-    ? `thinking:${statusLabels.join("\0")}`
-    : errorText
-      ? `error:${errorText}`
-      : `reply:${bubbleText.length}:${isLoading}`;
+  // Tool embeds change bubble height without changing the text; fold their
+  // lifecycle into the measure key so placement re-measures on transitions.
+  const toolPartsMeasureKey = bubbleToolParts
+    .map((part) => `${part.type}=${part.state}`)
+    .join(",");
+  const bubbleContentMeasureKey = `${
+    showTyping
+      ? `thinking:${statusLabels.join("\0")}`
+      : errorText
+        ? `error:${errorText}`
+        : `reply:${bubbleText.length}:${isLoading}`
+  }|tools:${toolPartsMeasureKey}`;
 
   // Speak finished replies aloud (browser TTS) when Speech is enabled.
   useAssistantSpeech({ latestAssistantText, isLoading });
@@ -330,6 +339,10 @@ function AssistantOverlayInner() {
   const [bubbleOpen, setBubbleOpen] = useState(false);
   const initialBubblePendingRef = useRef(true);
   const [input, setInput] = useState("");
+  // True while the user interacts with an embedded tool card (e.g. an HTML
+  // preview iframe); keeps the bubble from auto-closing mid-interaction.
+  const [isInteractingWithPreview, setIsInteractingWithPreview] =
+    useState(false);
   const [contextMenuPos, setContextMenuPos] = useState<{
     x: number;
     y: number;
@@ -388,7 +401,8 @@ function AssistantOverlayInner() {
     // Never close mid-reply: on mobile the input blurs as soon as the
     // keyboard dismisses, which would otherwise start the countdown while
     // the reply is still generating (or before the user can read it).
-    holdOpen: isLoading,
+    // Interacting with an embedded tool preview holds the bubble open too.
+    holdOpen: isLoading || isInteractingWithPreview,
   });
 
   // --- Position + dragging ---------------------------------------------------
@@ -1697,10 +1711,20 @@ function AssistantOverlayInner() {
                   >
                     {bubbleText}
                   </Streamdown>
+                ) : bubbleToolParts.length > 0 ? (
+                  // A turn may produce only a tool embed (no text); skip the
+                  // empty-bubble placeholder and let the embed speak.
+                  null
                 ) : (
                   t("common.assistant.emptyBubble")
                 )}
               </div>
+              {bubbleToolParts.length > 0 && (
+                <AssistantBubbleToolParts
+                  parts={bubbleToolParts}
+                  onInteractionChange={setIsInteractingWithPreview}
+                />
+              )}
               <form
                 onSubmit={handleSubmit}
                 className="-mx-3 mt-1.5 flex items-center gap-1 border-t border-black/15 px-3 pt-1 pb-0.5"

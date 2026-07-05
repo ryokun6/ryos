@@ -29,6 +29,11 @@ export type ToolInvocationSpecialRenderProps = Pick<
   input?: ToolInvocationPart["input"];
   output?: unknown;
   t: ReturnType<typeof useTranslation>["t"];
+  /**
+   * Compact rendering for narrow hosts (the desktop assistant's speech
+   * bubble): shorter HTML previews and no minimum preview width.
+   */
+  compact?: boolean;
 };
 
 export function tryRenderToolInvocationSpecialContent(
@@ -46,7 +51,25 @@ export function tryRenderToolInvocationSpecialContent(
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
+    compact = false,
   } = props;
+
+  // Compact hosts (the assistant bubble): the inline iframe renders at
+  // `minHeight`, so this is the visible preview height; `maxHeight` bounds
+  // the applet-banner variant. Both stay under the bubble's embed scroll
+  // area so the preview is never cut off by it.
+  const htmlPreviewSizing = compact
+    ? { minHeight: "140px" as const, maxHeight: "200px" as const }
+    : {};
+  // Compact card chrome: drop the floating shadow (the aqua shadow comes
+  // from a theme CSS rule with higher specificity than a plain utility, so
+  // the override needs the important flag) and add the marker class that
+  // gives light Aqua a crisp panel + hairline border — the default
+  // translucent gray pinstripe goes muddy on the bubble's yellow surface
+  // (see `.tool-inline-card-compact` in aqua.css).
+  const compactCardClassName = compact
+    ? "tool-inline-card-compact !shadow-none"
+    : undefined;
 
   // Async Cursor Cloud agent — server streams events to Redis; UI polls /api/ai/cursor-run-status
   if (
@@ -75,7 +98,10 @@ export function tryRenderToolInvocationSpecialContent(
         key={partKey}
         runId={out.runId}
         headerTitle={headerTitle}
-        introMessage={out.message}
+        // Compact hosts (the assistant bubble) skip the intro status line —
+        // the card's header already identifies the run.
+        introMessage={compact ? undefined : out.message}
+        className={compactCardClassName}
       />
     );
   }
@@ -96,25 +122,32 @@ export function tryRenderToolInvocationSpecialContent(
         : "";
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
-          <ToolInvocationStatusRow
-            icon={
-              <Check
-                className="size-3"
-                style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
-                weight="bold"
-              />
-            }
-            className="text-neutral-700 dark:text-neutral-200"
-            align="start"
-          >
-            <span>
-              {`${t("apps.chats.toolCalls.listCursorCloudAgentRuns.listed", {
-                count: runs.length,
-              })}${more}`}
-            </span>
-          </ToolInvocationStatusRow>
+          {/* Compact hosts hide the status line when the list itself shows;
+              with zero runs the line is the only content, so it stays. */}
+          {(!compact || runs.length === 0) && (
+            <ToolInvocationStatusRow
+              icon={
+                <Check
+                  className="size-3"
+                  style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
+                  weight="bold"
+                />
+              }
+              className="text-neutral-700 dark:text-neutral-200"
+              align="start"
+            >
+              <span>
+                {`${t("apps.chats.toolCalls.listCursorCloudAgentRuns.listed", {
+                  count: runs.length,
+                })}${more}`}
+              </span>
+            </ToolInvocationStatusRow>
+          )}
           {runs.length > 0 ? (
-            <CursorCloudAgentRunsListCard runs={runs} />
+            <CursorCloudAgentRunsListCard
+              runs={runs}
+              className={compactCardClassName}
+            />
           ) : null}
         </div>
       );
@@ -141,37 +174,45 @@ export function tryRenderToolInvocationSpecialContent(
       const results = Array.isArray(out.results) ? out.results : [];
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
-          <ToolInvocationStatusRow
-            icon={
-              <Check
-                className="size-3"
-                style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
-                weight="bold"
-              />
-            }
-            className="text-neutral-700 dark:text-neutral-200"
-            align="start"
-          >
-            <span>
-              {results.length === 0
-                ? t("apps.chats.toolCalls.maps.noResults", {
-                    defaultValue: 'No places found for "{{query}}".',
-                    query,
-                  })
-                : results.length === 1
-                  ? t("apps.chats.toolCalls.maps.foundOne", {
-                      defaultValue: 'Found 1 place for "{{query}}".',
+          {/* Compact hosts hide the "Found N places" line when the place
+              list itself shows; with zero results it is the only content. */}
+          {(!compact || results.length === 0) && (
+            <ToolInvocationStatusRow
+              icon={
+                <Check
+                  className="size-3"
+                  style={{ color: "var(--os-accent-color, var(--os-color-selection-bg))" }}
+                  weight="bold"
+                />
+              }
+              className="text-neutral-700 dark:text-neutral-200"
+              align="start"
+            >
+              <span>
+                {results.length === 0
+                  ? t("apps.chats.toolCalls.maps.noResults", {
+                      defaultValue: 'No places found for "{{query}}".',
                       query,
                     })
-                  : t("apps.chats.toolCalls.maps.foundMany", {
-                      defaultValue: 'Found {{count}} places for "{{query}}".',
-                      count: results.length,
-                      query,
-                    })}
-            </span>
-          </ToolInvocationStatusRow>
+                  : results.length === 1
+                    ? t("apps.chats.toolCalls.maps.foundOne", {
+                        defaultValue: 'Found 1 place for "{{query}}".',
+                        query,
+                      })
+                    : t("apps.chats.toolCalls.maps.foundMany", {
+                        defaultValue: 'Found {{count}} places for "{{query}}".',
+                        count: results.length,
+                        query,
+                      })}
+              </span>
+            </ToolInvocationStatusRow>
+          )}
           {results.length > 0 && (
-            <MapsSearchPlacesCard query={query} results={results} />
+            <MapsSearchPlacesCard
+              query={query}
+              results={results}
+              className={compactCardClassName}
+            />
           )}
         </div>
       );
@@ -235,6 +276,7 @@ export function tryRenderToolInvocationSpecialContent(
           stopElevatorMusic={stopElevatorMusic}
           playDingSound={playDingSound}
           className="my-1"
+          {...htmlPreviewSizing}
           // AI tool output is generated by the trusted assistant ("ryo"),
           // so it gets the same-origin sandbox + auth bridge.
           appletCreatedBy="ryo"
@@ -258,12 +300,13 @@ export function tryRenderToolInvocationSpecialContent(
             appletTitle={appletTitle}
             appletIcon={appletIcon}
             isStreaming={true}
-            minWidth="320px"
+            minWidth={compact ? undefined : "320px"}
             onInteractionChange={setIsInteractingWithPreview}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}
             className="my-1"
+            {...htmlPreviewSizing}
             appletCreatedBy="ryo"
           />
         );
@@ -295,6 +338,7 @@ export function tryRenderToolInvocationSpecialContent(
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}
             className="my-1"
+            {...htmlPreviewSizing}
             appletCreatedBy="ryo"
           />
         );

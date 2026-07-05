@@ -32,6 +32,8 @@ interface CursorRepoAgentChatCardProps {
   introMessage?: string;
   /** Admin side panel: fill parent height, no chat card chrome (margin/shadow/rounded). */
   variant?: "chat" | "panel";
+  /** Extra classes merged onto the card shell (e.g. compact-host overrides). */
+  className?: string;
 }
 
 /**
@@ -45,6 +47,7 @@ export function CursorRepoAgentChatCard({
   headerTitle,
   introMessage,
   variant = "chat",
+  className,
 }: CursorRepoAgentChatCardProps) {
   const isPanel = variant === "panel";
   const { t } = useTranslation();
@@ -145,7 +148,8 @@ export function CursorRepoAgentChatCard({
             embed: isPanel ? "panel" : "chat",
           }),
           isPanel &&
-            "h-full min-h-0 rounded-none border-0 border-transparent !border-none shadow-none"
+            "h-full min-h-0 rounded-none border-0 border-transparent !border-none shadow-none",
+          className
         )}
       >
         <div

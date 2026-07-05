@@ -24,6 +24,8 @@ export interface CursorCloudAgentRunListRow {
 
 export interface CursorCloudAgentRunsListCardProps {
   runs: CursorCloudAgentRunListRow[];
+  /** Extra classes merged onto the card shell (e.g. compact-host overrides). */
+  className?: string;
 }
 
 function formatRunStatusLabel(status: string): string {
@@ -66,18 +68,22 @@ function rowPrimarySecondary(run: CursorCloudAgentRunListRow): {
  */
 export function CursorCloudAgentRunsListCard({
   runs,
+  className,
 }: CursorCloudAgentRunsListCardProps) {
   const { t } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
 
   if (!runs.length) return null;
 
-  const shell = toolInlineCardShellClassName({
-    isMacOSTheme,
-    isSystem7Theme,
-    isWindowsTheme,
-    isWin98,
-  });
+  const shell = cn(
+    toolInlineCardShellClassName({
+      isMacOSTheme,
+      isSystem7Theme,
+      isWindowsTheme,
+      isWin98,
+    }),
+    className
+  );
 
   return (
     <div className={shell}>

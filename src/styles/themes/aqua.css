@@ -3050,6 +3050,16 @@
   color: #ffffff;
 }
 
+/* Compact hosts (the assistant speech bubble's yellow surface): the
+   translucent gray pinstripe reads muddy over yellow and the card loses
+   definition once the drop shadow is removed. Use a crisper, near-opaque
+   white panel with a hairline border instead. Declared before the dark
+   overrides below so dark Aqua keeps its own panel background + border. */
+:root[data-os-theme="macosx"] .maps-place-card-aqua.tool-inline-card-compact {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+}
+
 /* Aqua dark: veil over the wallpaper so desktop icons/readability stay crisp */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .desktop-background {
   isolation: isolate;

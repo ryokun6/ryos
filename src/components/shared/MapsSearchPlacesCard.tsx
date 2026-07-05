@@ -39,6 +39,8 @@ export interface MapsSearchPlaceCardData {
 export interface MapsSearchPlacesCardProps {
   query: string;
   results: MapsSearchPlaceCardData[];
+  /** Extra classes merged onto the card shell (e.g. compact-host overrides). */
+  className?: string;
 }
 
 /**
@@ -53,6 +55,7 @@ export interface MapsSearchPlacesCardProps {
 export function MapsSearchPlacesCard({
   query,
   results,
+  className,
 }: MapsSearchPlacesCardProps) {
   const { t } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
@@ -85,7 +88,8 @@ export function MapsSearchPlacesCard({
       isWin98,
     }),
     "px-2.5 py-2 text-[12px]",
-    isMacOSTheme && "text-os-text-secondary"
+    isMacOSTheme && "text-os-text-secondary",
+    className
   );
 
   if (!results || results.length === 0) {
@@ -103,12 +107,15 @@ export function MapsSearchPlacesCard({
 
   return (
     <div
-      className={toolInlineCardShellClassName({
-        isMacOSTheme,
-        isSystem7Theme,
-        isWindowsTheme,
-        isWin98,
-      })}
+      className={cn(
+        toolInlineCardShellClassName({
+          isMacOSTheme,
+          isSystem7Theme,
+          isWindowsTheme,
+          isWin98,
+        }),
+        className
+      )}
     >
       <ul
         className={toolInlineCardListClassName({ isMacOSTheme })}

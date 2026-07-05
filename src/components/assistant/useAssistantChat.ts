@@ -19,10 +19,12 @@ import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
+import type { ToolInvocationPart } from "@/components/shared/tool-invocation-message/types";
 import {
   getAssistantCharacter,
   getAssistantCharacterName,
 } from "./characters";
+import { getAssistantBubbleToolParts } from "./assistantBubbleTools";
 import { getAssistantGreetDecision } from "./assistantGreeting";
 import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
@@ -117,6 +119,11 @@ export interface AssistantChatHandle {
   latestAssistantText: string;
   /** Friendly labels for tool calls in the in-flight assistant turn. */
   statusLabels: string[];
+  /**
+   * Map/HTML-preview/Cursor tool parts of the latest assistant turn, rendered
+   * as rich embeds in the bubble. Empty once a new turn is submitted.
+   */
+  bubbleToolParts: ToolInvocationPart[];
   /** Latest structured tool lifecycle event in the current assistant turn. */
   toolActivity: AssistantToolActivity | null;
   /** Latest successful client tool that opened or foregrounded an app window. */
@@ -340,6 +347,15 @@ export function useAssistantChat(): AssistantChatHandle {
     return !getAssistantVisibleText(last).trim();
   }, [messages, isLoading]);
 
+  // Rich-embed tool parts (maps, HTML preview, Cursor agents) from the most
+  // recent assistant message. Looking only at the last message means the
+  // embeds clear as soon as the user submits a new turn (the ticker takes
+  // over), then reappear live while the new turn streams its tool calls.
+  const bubbleToolParts = useMemo(() => {
+    const last = messages[messages.length - 1];
+    return getAssistantBubbleToolParts(last);
+  }, [messages]);
+
   // Friendly status lines for tool calls in the current turn, shown in the
   // bubble's rolling "thinking" ticker while the reply is being generated.
   const statusLabels = useMemo(() => {
@@ -463,6 +479,7 @@ export function useAssistantChat(): AssistantChatHandle {
     messages: messages as AIChatMessage[],
     latestAssistantText,
     statusLabels,
+    bubbleToolParts,
     toolActivity,
     openTarget,
     isAwaitingReply,
