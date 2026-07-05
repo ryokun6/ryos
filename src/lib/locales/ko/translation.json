@@ -1700,11 +1700,15 @@
           "instructionsHint": "어시스턴트가 어떻게 동작할지 설정합니다. 이 계정의 기기에서 생성되는 새로운 답변에 적용됩니다.",
           "instructionsPlaceholder": "예: 저를 선장님이라고 부르고, 요리에 비유해서 설명해 주세요.",
           "responseStyle": "답변 스타일",
-          "responseStyleDescription": "답변의 길이 설정",
+          "responseStyleDescription": "어시스턴트의 응답 방식",
           "responseStyleOptions": {
             "chatty": "수다스럽게",
             "concise": "간결하게",
-            "normal": "보통"
+            "detailed": "상세하게",
+            "friendly": "친근하게",
+            "normal": "보통",
+            "playful": "장난스럽게",
+            "professional": "전문적으로"
           },
           "speech": "말하기",
           "speechDescription": "답변을 소리 내어 읽기"

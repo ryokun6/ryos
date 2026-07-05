@@ -1702,11 +1702,15 @@
           "instructionsHint": "Indica all'assistente come comportarsi. Si applica alle nuove risposte sui dispositivi di questo account.",
           "instructionsPlaceholder": "ad es. Chiamami Capitano e spiega le cose usando metafore culinarie.",
           "responseStyle": "Stile di risposta",
-          "responseStyleDescription": "Lunghezza delle risposte",
+          "responseStyleDescription": "Come deve rispondere l'assistente",
           "responseStyleOptions": {
             "chatty": "Discorsivo",
             "concise": "Conciso",
-            "normal": "Normale"
+            "detailed": "Dettagliato",
+            "friendly": "Amichevole",
+            "normal": "Normale",
+            "playful": "Scherzoso",
+            "professional": "Professionale"
           },
           "speech": "Voce",
           "speechDescription": "Leggi le risposte a voce alta"

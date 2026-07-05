@@ -174,7 +174,7 @@ export interface PrepareRyoConversationOptions {
    */
   assistantName?: string;
   /**
-   * Response-length preset from Assistant settings → Behavior (assistant
+   * Response-style preset from Assistant settings → Behavior (assistant
    * channel only). Unknown values fall back to the default style.
    */
   assistantResponseStyle?: string;

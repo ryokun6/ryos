@@ -1700,11 +1700,15 @@
           "instructionsHint": "アシスタントの振る舞いを指定します。このアカウントのデバイスでの新しい返信に適用されます。",
           "instructionsPlaceholder": "例：私のことは「キャプテン」と呼び、料理の比喩を使って説明してください。",
           "responseStyle": "応答スタイル",
-          "responseStyleDescription": "返信の長さを設定します",
+          "responseStyleDescription": "アシスタントの応答方法",
           "responseStyleOptions": {
             "chatty": "おしゃべり",
             "concise": "簡潔",
-            "normal": "標準"
+            "detailed": "詳細",
+            "friendly": "フレンドリー",
+            "normal": "標準",
+            "playful": "遊び心のある",
+            "professional": "プロフェッショナル"
           },
           "speech": "スピーチ",
           "speechDescription": "返信を読み上げます"

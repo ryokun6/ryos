@@ -3486,11 +3486,15 @@
           "speech": "Speech",
           "speechDescription": "Speak replies aloud",
           "responseStyle": "Response Style",
-          "responseStyleDescription": "How long replies should be",
+          "responseStyleDescription": "How the assistant should reply",
           "responseStyleOptions": {
             "concise": "Concise",
             "normal": "Normal",
-            "chatty": "Chatty"
+            "chatty": "Chatty",
+            "detailed": "Detailed",
+            "friendly": "Friendly",
+            "professional": "Professional",
+            "playful": "Playful"
           },
           "instructions": "Instructions",
           "instructionsPlaceholder": "e.g. Call me Captain, and explain things with cooking metaphors.",

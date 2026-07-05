@@ -43,7 +43,7 @@ interface AssistantStoreState {
   speechEnabled: boolean;
   /** Whether the assistant greets when the bubble is summoned/opened. */
   greetOnSummon: boolean;
-  /** Preferred reply length (injected into the assistant system prompt). */
+  /** Preferred reply style (injected into the assistant system prompt). */
   responseStyle: AssistantResponseStyle;
   /** User-written behavior instructions (injected into the system prompt). */
   customInstructions: string;
