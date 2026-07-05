@@ -58,21 +58,6 @@ export function readAssistantBubbleViewport(insets: {
 /** Preferred clearance (px) between the bubble and the viewport edges. */
 const BUBBLE_VIEWPORT_MARGIN = 8;
 
-function getVerticalSlideBounds(
-  viewport: AssistantBubbleViewport,
-  bubbleHeight: number
-): { minY: number; maxY: number } {
-  const bandTop = viewport.visibleTop ?? 0;
-  const bandBottom = viewport.visibleBottom ?? viewport.height;
-  const minY = Math.max(bandTop, viewport.topInset + BUBBLE_VIEWPORT_MARGIN);
-  const maxY =
-    Math.min(bandBottom, viewport.height) -
-    viewport.bottomInset -
-    bubbleHeight -
-    BUBBLE_VIEWPORT_MARGIN;
-  return { minY, maxY: Math.max(minY, maxY) };
-}
-
 export type AssistantBubbleSide = "above" | "below" | "left" | "right";
 
 /**
@@ -237,8 +222,51 @@ export function resolveAssistantBubbleCrossOffset({
     align === "start"
       ? anchor.y
       : anchor.y + anchor.height - bubbleSize.height;
-  const { minY, maxY } = getVerticalSlideBounds(viewport, bubbleSize.height);
-  return clampAxis(naturalY, minY, maxY) - naturalY;
+  return (
+    clampAxis(
+      naturalY,
+      viewport.topInset + BUBBLE_VIEWPORT_MARGIN,
+      viewport.height -
+        viewport.bottomInset -
+        bubbleSize.height -
+        BUBBLE_VIEWPORT_MARGIN
+    ) - naturalY
+  );
+}
+
+interface ClampAssistantAnchorToVisibleBandOptions {
+  position: { x: number; y: number };
+  characterSize: { width: number; height: number };
+  viewport: AssistantBubbleViewport;
+}
+
+/**
+ * Lift/shift the assistant anchor into the visible layout band while the soft
+ * keyboard is up. Stored drag position stays in layout coordinates; this is
+ * the render-time position fed to the overlay and bubble anchor math.
+ */
+export function clampAssistantAnchorToVisibleBand({
+  position,
+  characterSize,
+  viewport,
+}: ClampAssistantAnchorToVisibleBandOptions): { x: number; y: number } {
+  const visibleTop = viewport.visibleTop ?? 0;
+  const visibleBottom = viewport.visibleBottom ?? viewport.height;
+  const keyboardCompressed = visibleBottom < viewport.height - 48;
+  const bottomInset = keyboardCompressed
+    ? BUBBLE_VIEWPORT_MARGIN
+    : viewport.bottomInset;
+  const minY = visibleTop + viewport.topInset + BUBBLE_VIEWPORT_MARGIN;
+  const maxY =
+    visibleBottom - bottomInset - characterSize.height - BUBBLE_VIEWPORT_MARGIN;
+  const minX = BUBBLE_VIEWPORT_MARGIN;
+  const maxX =
+    viewport.width - characterSize.width - BUBBLE_VIEWPORT_MARGIN;
+
+  return {
+    x: clampAxis(position.x, minX, Math.max(minX, maxX)),
+    y: clampAxis(position.y, minY, Math.max(minY, maxY)),
+  };
 }
 
 export function resolveAssistantBubblePlacement({

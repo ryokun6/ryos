@@ -60,6 +60,7 @@ import {
   resolveAssistantBubblePlacement,
   resolveAssistantBubbleRenderHeight,
   readAssistantBubbleViewport,
+  clampAssistantAnchorToVisibleBand,
   type AssistantBubbleRect,
   type AssistantBubbleViewport,
 } from "./assistantBubblePlacement";
@@ -1248,6 +1249,18 @@ function AssistantOverlayInner() {
   // Pick the side of the character (above/below/left/right) where the bubble
   // stays inside the viewport and covers the least amount of open windows, so
   // a character docked next to a window pops its bubble away from the window.
+  const renderPosition = useMemo(
+    () =>
+      clampAssistantAnchorToVisibleBand({
+        position,
+        characterSize: {
+          width: character.width,
+          height: character.height,
+        },
+        viewport: bubbleViewport,
+      }),
+    [position, character.width, character.height, bubbleViewport]
+  );
   const windowInstances = useAppStore((state) => state.instances);
   const bubblePlacement = useMemo(() => {
     // Prefer the rendered window frames: on mobile the store keeps numeric
@@ -1285,8 +1298,8 @@ function AssistantOverlayInner() {
     }
     return resolveAssistantBubblePlacement({
       anchor: {
-        x: position.x,
-        y: position.y,
+        x: renderPosition.x,
+        y: renderPosition.y,
         width: character.width,
         height: character.height,
       },
@@ -1299,7 +1312,7 @@ function AssistantOverlayInner() {
     });
   }, [
     windowInstances,
-    position,
+    renderPosition,
     character.width,
     character.height,
     bubbleViewport,
@@ -1347,8 +1360,8 @@ function AssistantOverlayInner() {
       side: bubbleSide,
       align: bubblePlacement.align,
       anchor: {
-        x: position.x,
-        y: position.y,
+        x: renderPosition.x,
+        y: renderPosition.y,
         width: character.width,
         height: character.height,
       },
@@ -1361,7 +1374,7 @@ function AssistantOverlayInner() {
   }, [
     bubbleSide,
     bubblePlacement.align,
-    position,
+    renderPosition,
     character.width,
     character.height,
     bubbleRenderHeight,
@@ -1474,7 +1487,10 @@ function AssistantOverlayInner() {
     <motion.div
       ref={overlayRef}
       initial={false}
-      animate={{ x: position.x, y: position.y }}
+      animate={{
+        x: isDragging ? position.x : renderPosition.x,
+        y: isDragging ? position.y : renderPosition.y,
+      }}
       transition={
         isDragging || reduceMotion ? { duration: 0 } : SNAP_SPRING
       }

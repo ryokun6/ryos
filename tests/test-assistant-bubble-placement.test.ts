@@ -3,6 +3,7 @@ import {
   ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
   ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
   ASSISTANT_BUBBLE_WIDTH,
+  clampAssistantAnchorToVisibleBand,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
   resolveAssistantBubbleRenderHeight,
@@ -312,45 +313,49 @@ describe("assistant bubble render height", () => {
     expect(thinkingOffset).toBe(0);
   });
 
-  test("visible viewport band keeps a bottom character anchored with keyboard up", () => {
-    // Regression: treating visualViewport.height as the layout bottom while the
-    // character stays in layout coordinates slides the bubble far above the
-    // visible area (even before the keyboard dismisses).
-    const anchor = { x: 305, y: 600, width: 80, height: 80 };
-    const bubbleSize = {
-      width: ASSISTANT_BUBBLE_WIDTH,
-      height: ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
-    };
+  test("lifts a bottom anchor into the visible band while the keyboard is up", () => {
     const layoutViewport = {
       width: 393,
       height: 844,
       topInset: 26,
       bottomInset: 104,
+      visibleTop: 0,
+      visibleBottom: 400,
     };
-    const buggyKeyboardViewport = {
-      ...layoutViewport,
-      height: 500,
+    const lifted = clampAssistantAnchorToVisibleBand({
+      position: { x: 305, y: 600 },
+      characterSize: { width: 80, height: 80 },
+      viewport: layoutViewport,
+    });
+    expect(lifted.y).toBe(400 - 8 - 80 - 8);
+    expect(lifted.x).toBe(305);
+  });
+
+  test("thinking bubble stays anchored after the anchor is lifted", () => {
+    const layoutViewport = {
+      width: 393,
+      height: 844,
+      topInset: 26,
+      bottomInset: 104,
+      visibleTop: 0,
+      visibleBottom: 400,
     };
-    const keyboardUpViewport = {
-      ...layoutViewport,
-      visibleTop: 340,
-      visibleBottom: 840,
-    };
-    const buggyOffset = resolveAssistantBubbleCrossOffset({
+    const anchorY = clampAssistantAnchorToVisibleBand({
+      position: { x: 305, y: 600 },
+      characterSize: { width: 80, height: 80 },
+      viewport: layoutViewport,
+    }).y;
+    const anchor = { x: 305, y: anchorY, width: 80, height: 80 };
+    const offset = resolveAssistantBubbleCrossOffset({
       side: "left",
       align: "end",
       anchor,
-      bubbleSize,
-      viewport: buggyKeyboardViewport,
+      bubbleSize: {
+        width: ASSISTANT_BUBBLE_WIDTH,
+        height: ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
+      },
+      viewport: layoutViewport,
     });
-    const anchoredOffset = resolveAssistantBubbleCrossOffset({
-      side: "left",
-      align: "end",
-      anchor,
-      bubbleSize,
-      viewport: keyboardUpViewport,
-    });
-    expect(buggyOffset).toBeLessThan(-200);
-    expect(anchoredOffset).toBe(0);
+    expect(offset).toBe(0);
   });
 });
