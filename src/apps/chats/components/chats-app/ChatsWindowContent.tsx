@@ -18,11 +18,10 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
   const { t } = useTranslation();
 
   const {
-    isWindowsLegacyTheme,
+    isWindowsTheme,
     isMacTheme,
     isAquaGlass,
     isDarkMode,
-    isWindowsTheme,
     containerRef,
     sidebarVisibleBool,
     isFrameNarrow,
@@ -100,7 +99,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     <div
       ref={containerRef}
       className={`relative size-full ${
-        isWindowsLegacyTheme ? "border-t border-[#919b9c]" : ""
+        isWindowsTheme ? "border-t border-[#919b9c]" : ""
       }`}
     >
       <AnimatePresence>
@@ -202,7 +201,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
             } ${
               isMacTheme ? "" : "bg-neutral-200/90 backdrop-blur-lg"
             } ${
-              isWindowsLegacyTheme
+              isWindowsTheme
                 ? "border-[#919b9c]"
                 : isMacTheme
                   ? ""

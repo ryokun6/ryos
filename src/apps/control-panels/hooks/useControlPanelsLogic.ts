@@ -1204,8 +1204,6 @@ export function useControlPanelsLogic({
   };
 
   // Theme flags come from useThemeFlags() above (single source of truth).
-  const isWindowsLegacyTheme = isWindowsTheme;
-
   const tabStyles = getTabStyles(currentTheme);
   const defaultTab = normalizeControlPanelClassicTabId(initialData?.defaultTab);
   const windowTitle = getTranslatedAppName("control-panels");
@@ -1295,7 +1293,6 @@ export function useControlPanelsLogic({
     isWindowsTheme,
     isMacOSTheme,
     isClassicMacTheme,
-    isWindowsLegacyTheme,
     uiSoundsEnabled,
     handleUISoundsChange,
     speechEnabled,
