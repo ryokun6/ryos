@@ -105,7 +105,7 @@ import type {
   BooksLibraryEntry,
   BookOriginRect,
 } from "../hooks/useBooksLogic";
-import { createClientLogger } from "@/utils/logger";
+import { createClientLogger, summarizeForLog } from "@/utils/logger";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import { Sounds, useSound } from "@/hooks/useSound";
@@ -427,69 +427,6 @@ function flattenBookChapters(
   });
 }
 
-function serializeDebugValue(
-  value: unknown,
-  seen = new WeakSet<object>()
-): unknown {
-  if (value instanceof Error) {
-    if (seen.has(value)) return "[Circular]";
-    seen.add(value);
-    const cause = "cause" in value ? value.cause : undefined;
-    return {
-      kind: "Error",
-      name: value.name,
-      message: value.message,
-      stack: value.stack,
-      cause: cause === undefined ? undefined : serializeDebugValue(cause, seen),
-    };
-  }
-  if (typeof DOMException !== "undefined" && value instanceof DOMException) {
-    if (seen.has(value)) return "[Circular]";
-    seen.add(value);
-    return {
-      kind: "DOMException",
-      name: value.name,
-      message: value.message,
-      code: value.code,
-      stack: value.stack,
-    };
-  }
-  if (value instanceof Blob) {
-    return {
-      kind: "Blob",
-      size: value.size,
-      type: value.type,
-      constructorName: value.constructor?.name,
-    };
-  }
-  if (value instanceof ArrayBuffer) {
-    return {
-      kind: "ArrayBuffer",
-      byteLength: value.byteLength,
-    };
-  }
-  if (ArrayBuffer.isView(value)) {
-    return {
-      kind: value.constructor?.name,
-      byteLength: value.byteLength,
-      length: "length" in value ? value.length : undefined,
-    };
-  }
-  if (Array.isArray(value)) {
-    return value.map((item) => serializeDebugValue(item, seen));
-  }
-  if (value && typeof value === "object") {
-    if (seen.has(value)) return "[Circular]";
-    seen.add(value);
-    const result: Record<string, unknown> = {};
-    for (const [key, nested] of Object.entries(value)) {
-      result[key] = serializeDebugValue(nested, seen);
-    }
-    return result;
-  }
-  return value;
-}
-
 function getBooksDebugEnvironment() {
   if (typeof window === "undefined") return {};
   return {
@@ -659,7 +596,7 @@ export const BooksReaderPane = forwardRef<
   const appendDebugEvent = useCallback(
     (step: string, data?: unknown, level: BooksDebugLevel = "info") => {
       if (!displayDebugModeRef.current) return;
-      const debugData = serializeDebugValue(data);
+      const debugData = summarizeForLog(data);
       if (level === "error") {
         booksLog.error(step, debugData);
       } else if (level === "warn") {

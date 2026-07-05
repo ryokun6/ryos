@@ -8,8 +8,6 @@ import { createClientLogger } from "@/utils/logger";
  * Mode (or sets `localStorage["ryos:debug"] = "1"`).
  */
 const assistantSpriteLogger = createClientLogger("AssistantSprite");
-const spriteLog = (message: string): void =>
-  assistantSpriteLogger.debug(message);
 
 /**
  * Minimal player for Microsoft Agent animation data (clippy.js format).
@@ -221,7 +219,7 @@ export function ClippySprite({
       soundPlayerRef.current?.stopAll();
       const anim = dataRef.current.animations[name];
       if (!anim || anim.frames.length === 0) {
-        spriteLog(`missing clip "${name}" — falling back to base pose`);
+        assistantSpriteLogger.debug(`missing clip "${name}" — falling back to base pose`);
         setFrameImages([[0, 0]]);
         // Report the clip as ended so the overlay's state machine recovers
         // (otherwise a missing clip freezes the sprite at its base pose until
@@ -230,7 +228,7 @@ export function ClippySprite({
         return;
       }
 
-      spriteLog(
+      assistantSpriteLogger.debug(
         `start ${name} (${anim.frames.length} frames${
           anim.useExitBranching ? ", exit-branching" : ""
         })`
@@ -332,7 +330,7 @@ export function ClippySprite({
           nextIndex >= playback.anim.frames.length - 1
         ) {
           playback.waiting = true;
-          spriteLog(`hold ${playback.name} at exit-branch wait point`);
+          assistantSpriteLogger.debug(`hold ${playback.name} at exit-branch wait point`);
           onEndRef.current?.(playback.name);
           if (playbackRef.current !== playback) return;
           playback.timer = setTimeout(step, WAITING_POLL_MS);
@@ -377,7 +375,7 @@ export function ClippySprite({
       playback.anim.useExitBranching &&
       !(playback.name === animation && !playback.exiting && !playback.waiting)
     ) {
-      spriteLog(
+      assistantSpriteLogger.debug(
         `graceful exit of ${playback.name}, then ${animation} (exit-branch wind-down)`
       );
       playback.pendingName = animation;

@@ -31,7 +31,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useInternetExplorerStoreShallow } from "@/stores/useInternetExplorerStore";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { createClientLogger } from "@/utils/logger";
+import { internetExplorerLog as log } from "../logging";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import {
@@ -54,7 +54,6 @@ import {
   getFutureYears,
 } from "../components/ie-menu-bar/yearLists";
 
-const log = createClientLogger("InternetExplorer");
 
 // Debug helper to identify direct passthrough URLs
 const logDirectPassthrough = (url: string) => {

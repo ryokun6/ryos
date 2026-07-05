@@ -13,9 +13,7 @@ import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("ChatTools");
+import { chatToolsLog as log } from "../logging";
 
 export interface SettingsInput {
   language?: string;

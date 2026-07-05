@@ -14,9 +14,7 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "../TimeNavigationControls";
 import type { ShaderOption } from "./types";
 import type { useTimeMachineView } from "./useTimeMachineView";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("TimeMachine");
+import { timeMachineLog as log } from "../../logging";
 
 export type TimeMachineViewVm = ReturnType<typeof useTimeMachineView>;
 

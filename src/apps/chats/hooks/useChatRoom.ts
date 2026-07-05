@@ -19,7 +19,7 @@ import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { shouldShowNativeToastNotification } from "@/utils/nativeToastNotifications";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { createClientLogger } from "@/utils/logger";
+import { chatRoomLog as log } from "../logging";
 import { shouldSubscribeToForegroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 import {
   getChatRoomChannelName,
@@ -56,7 +56,6 @@ interface RoomHandlers {
 }
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
-const log = createClientLogger("ChatRoom");
 
 export function useChatRoom(
   isWindowOpen: boolean,

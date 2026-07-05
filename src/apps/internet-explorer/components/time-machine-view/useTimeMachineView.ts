@@ -17,9 +17,7 @@ import { exitVariants, loadingBarVariants, pulsingAnimationVariants } from "./an
 import { getMaskStyle, getHostname, timeMachineGenerateShareUrl } from "./utils";
 import { initialState, timeMachineUiReducer } from "./time-machine-ui-reducer";
 import type { PreviewSource, TimeMachineViewProps } from "./types";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("TimeMachine");
+import { timeMachineLog as log } from "../../logging";
 
 export function useTimeMachineView({
   isOpen,

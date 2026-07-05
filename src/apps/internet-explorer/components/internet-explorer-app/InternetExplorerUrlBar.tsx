@@ -10,9 +10,7 @@ import { ClockCounterClockwise, MagnifyingGlass } from "@phosphor-icons/react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import type { InternetExplorerSuggestionItem } from "./types";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("InternetExplorer");
+import { internetExplorerLog as log } from "../../logging";
 
 export interface InternetExplorerUrlBarProps {
   urlInputRef: RefObject<HTMLInputElement | null>;

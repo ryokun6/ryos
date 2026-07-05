@@ -21,7 +21,7 @@ import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { createClientLogger } from "@/utils/logger";
+import { aiChatLog as log } from "../logging";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import { shouldShowNativeToastNotification } from "@/utils/nativeToastNotifications";
@@ -32,7 +32,6 @@ import { getSystemState } from "../utils/systemState";
 import { dispatchToolCall } from "../tools/dispatchToolCall";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 
-const log = createClientLogger("AIChat");
 
 // Helper to check if chats app is currently in the foreground
 const isChatsInForeground = (): boolean => {

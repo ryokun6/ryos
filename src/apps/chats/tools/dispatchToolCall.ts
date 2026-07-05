@@ -31,7 +31,7 @@ import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
-import { createClientLogger } from "@/utils/logger";
+import { aiChatLog as log } from "../logging";
 import { emitAppletUpdated, emitDocumentUpdated } from "@/utils/appEventBus";
 import {
   persistChatApplet,
@@ -64,7 +64,6 @@ import {
   type DispatchToolCallResult,
 } from "./toolOpenResult";
 
-const log = createClientLogger("AIChat");
 
 export interface SharedToolCall {
   toolName: string;

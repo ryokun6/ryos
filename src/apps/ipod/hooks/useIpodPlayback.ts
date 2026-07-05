@@ -2,9 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type ReactPlayer from "react-player";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useTrackSwitchGuard } from "@/shared/media/useTrackSwitchGuard";
-import { createClientLogger } from "@/utils/logger";
-
-const ipodLog = createClientLogger("iPod");
+import { ipodLog } from "../logging";
 
 type MusicKitLike = {
   currentPlaybackTime?: number;

@@ -28,9 +28,7 @@ import { useTelegramLink } from "@/hooks/useTelegramLink";
 import { useGlobalPresence } from "@/hooks/useGlobalPresence";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("ChatsApp");
+import { chatsAppLog as log } from "../../logging";
 
 export type UseChatsAppControllerArgs = AppProps;
 
