@@ -938,10 +938,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     messages: messagesWithTimestamps, // Return messages with timestamps
     handleSubmitMessage,
     isLoading,
-    reload: regenerate, // Map v5 regenerate to v4 reload
+    regenerate,
     error,
     stop,
-    append: sendMessage, // Map v5 sendMessage to v4 append (for compatibility)
+    sendMessage,
     handleDirectMessageSubmit,
     handleNudge,
     clearChats, // Expose the action

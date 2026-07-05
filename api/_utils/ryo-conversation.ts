@@ -183,7 +183,6 @@ export interface PreparedRyoConversation {
   enrichedMessages: ModelMessage[];
   loadedSections: string[];
   staticSystemPrompt: string;
-  dynamicSystemPrompt: string;
   memoryContextPrompt: string;
   volatileStatePrompt: string;
   userMemories: MemoryIndex | null;
@@ -798,10 +797,6 @@ export async function prepareRyoConversationModelInput(
     username,
   });
 
-  // Legacy combined prompt for backward compat
-  const dynamicSystemPrompt = [memoryContextPrompt, volatileStatePrompt]
-    .filter(Boolean)
-    .join("\n\n");
 
   const baseTools: ToolSet = createChatTools(
     {
@@ -921,7 +916,6 @@ export async function prepareRyoConversationModelInput(
     enrichedMessages,
     loadedSections,
     staticSystemPrompt,
-    dynamicSystemPrompt,
     memoryContextPrompt,
     volatileStatePrompt,
     userMemories: memoryContext.userMemories,

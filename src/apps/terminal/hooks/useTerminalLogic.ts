@@ -99,7 +99,7 @@ export const useTerminalLogic = ({
   // Shared AI chat hook
   const {
     messages: aiMessages,
-    append: appendAiMessage,
+    sendMessage: appendAiMessage,
     isLoading: isAiLoading,
     stop: stopAiResponse,
   } = useAiChat();
