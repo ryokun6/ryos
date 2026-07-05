@@ -283,7 +283,11 @@ function AssistantOverlayInner() {
   // Speak finished replies aloud (browser TTS) when Speech is enabled.
   useAssistantSpeech({ latestAssistantText, isLoading });
 
-  const [bubbleOpen, setBubbleOpen] = useState(true);
+  // The bubble stays hidden through the character's entrance sequence and
+  // pops in once the entry/greeting animation finishes (or immediately when
+  // no entrance will play: reduced motion or sprite data failure).
+  const [bubbleOpen, setBubbleOpen] = useState(false);
+  const initialBubblePendingRef = useRef(true);
   const [input, setInput] = useState("");
   const [contextMenuPos, setContextMenuPos] = useState<{
     x: number;
@@ -304,6 +308,12 @@ function AssistantOverlayInner() {
   const closeBubble = useCallback(() => {
     setBubbleOpen(false);
     useAssistantStore.getState().markBubbleDismissed();
+  }, []);
+  /** First-load bubble pop, deferred until the entrance sequence ends. */
+  const openInitialBubble = useCallback(() => {
+    if (!initialBubblePendingRef.current) return;
+    initialBubblePendingRef.current = false;
+    setBubbleOpen(true);
   }, []);
   const {
     cancelAutoClose: cancelBubbleAutoClose,
@@ -806,9 +816,15 @@ function AssistantOverlayInner() {
     clearSequencePlan();
     // Reduced motion keeps the sprite pinned to its rest pose; arming the
     // sequence would just block activity-driven state forever.
-    if (reduceMotion) return;
+    if (reduceMotion) {
+      openInitialBubble();
+      return;
+    }
     const plan = resolveAssistantEntranceSequencePlan(agentData);
-    if (!plan) return;
+    if (!plan) {
+      openInitialBubble();
+      return;
+    }
     entranceSequenceRef.current = plan.followUp
       ? [plan.first, plan.followUp]
       : [plan.first];
@@ -826,8 +842,15 @@ function AssistantOverlayInner() {
     agentData,
     character.id,
     clearSequencePlan,
+    openInitialBubble,
     reduceMotion,
   ]);
+
+  // No entrance will ever play when the sprite data fails to load (static
+  // fallback image); pop the bubble right away instead of never.
+  useEffect(() => {
+    if (agentDataLoadState.status === "error") openInitialBubble();
+  }, [agentDataLoadState.status, openInitialBubble]);
 
   // Reflect chat and structured tool lifecycle changes without restarting an
   // animation for unrelated renders or repeated updates in the same state.
@@ -937,6 +960,9 @@ function AssistantOverlayInner() {
     markAssistantSoundInteraction();
     if (useAssistantStore.getState().speechEnabled) primeAssistantSpeech();
     lastActiveAtRef.current = Date.now();
+    // A manual toggle supersedes the deferred first-load pop (the entrance
+    // sequence is cleared below, so the entrance-complete pop never fires).
+    initialBubblePendingRef.current = false;
     const willOpen = !bubbleOpen;
     setBubbleOpen(willOpen);
     if (willOpen) {
@@ -1007,6 +1033,7 @@ function AssistantOverlayInner() {
         }
         entranceSequenceRef.current = null;
         assistantAnimLogger.debug("entrance complete");
+        openInitialBubble();
       }
 
       const currentIntent = activityIntentRef.current;
@@ -1081,7 +1108,14 @@ function AssistantOverlayInner() {
         );
       }, 4000 + Math.random() * 8000);
     },
-    [clearSequencePlan, pickAnimation, playAnimation, reduceMotion, setEnabled]
+    [
+      clearSequencePlan,
+      openInitialBubble,
+      pickAnimation,
+      playAnimation,
+      reduceMotion,
+      setEnabled,
+    ]
   );
 
   useEffect(
