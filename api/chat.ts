@@ -29,6 +29,7 @@ import {
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
 import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
+import { isAssistantGreetingRequest } from "../src/shared/assistantGreeting.js";
 type SystemState = RyoConversationSystemState;
 
 const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
@@ -121,11 +122,23 @@ export default apiHandler<{
     const isAuthenticated = !!user;
     const identifier = isAuthenticated && username ? username : `anon:${ip}`;
 
-    // Only check rate limits for user messages (not system messages)
+    // Only check rate limits for user messages (not system messages).
+    // Automatic desktop-assistant greetings are exempt so opening the bubble
+    // does not burn the anonymous daily AI budget.
     const userMessages = (messages as Array<{ role: string }>).filter(
       (m) => m.role === "user"
     );
-    if (userMessages.length > 0) {
+    const isAssistantGreeting =
+      conversationChannel === "assistant" &&
+      isAssistantGreetingRequest(
+        messages as Array<{
+          role: string;
+          content?: string;
+          parts?: Array<{ type: string; text?: string }>;
+        }>,
+        { persona: "assistant" }
+      );
+    if (userMessages.length > 0 && !isAssistantGreeting) {
       const rateLimitResult = await checkAndIncrementAIMessageCount(
         identifier,
         isAuthenticated,

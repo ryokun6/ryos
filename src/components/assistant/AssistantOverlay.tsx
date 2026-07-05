@@ -312,7 +312,7 @@ function AssistantOverlayInner() {
     errorText,
     sendUserMessage,
     greetIfStale,
-    clearConversation,
+    startNewConversation,
   } = chatHandle;
 
   const bubbleText = errorText ?? latestAssistantText;
@@ -1354,7 +1354,7 @@ function AssistantOverlayInner() {
         onSelect: () => {
           cancelBubbleAutoClose();
           stopAssistantSpeech();
-          clearConversation();
+          startNewConversation();
           setBubbleOpen(true);
         },
       },
@@ -1378,7 +1378,7 @@ function AssistantOverlayInner() {
       characterId,
       setCharacterId,
       cancelBubbleAutoClose,
-      clearConversation,
+      startNewConversation,
       launchApp,
       handleQuit,
       speechEnabled,

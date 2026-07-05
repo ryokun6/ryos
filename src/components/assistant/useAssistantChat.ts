@@ -29,16 +29,13 @@ import { getAssistantGreetDecision } from "./assistantGreeting";
 import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
+import { ASSISTANT_SUMMON_MESSAGE } from "@/shared/assistantGreeting";
 
 const log = createClientLogger("Assistant");
 
-/**
- * Exact trigger message the server-side assistant persona recognizes as an
- * automatic greeting request (see ASSISTANT_CHAT_INSTRUCTIONS).
- */
-export const ASSISTANT_SUMMON_MESSAGE = "👋 *user summoned the assistant*";
+export { ASSISTANT_SUMMON_MESSAGE };
 
-/** Canned greetings for anonymous users (avoids burning the 3/day AI budget). */
+/** Canned greetings for logged-out users (avoids burning the 3/day AI budget). */
 const LOCAL_GREETING_KEYS = [
   "common.assistant.greetings.hello",
   "common.assistant.greetings.help",
@@ -139,6 +136,11 @@ export interface AssistantChatHandle {
    * (AI for signed-in users, canned otherwise).
    */
   greetIfStale: () => void;
+  /**
+   * Explicit fresh start (e.g. context menu "New Conversation"): clears the
+   * thread and always triggers a greeting.
+   */
+  startNewConversation: () => void;
   clearConversation: () => void;
   stop: () => void;
 }
@@ -419,6 +421,25 @@ export function useAssistantChat(): AssistantChatHandle {
     useAssistantStore.getState().clearMessages();
   }, [sdkStop, clearError, setMessages]);
 
+  const triggerGreeting = useCallback(() => {
+    if (chat.status === "streaming" || chat.status === "submitted") return;
+
+    if (username && isAuthenticated) {
+      log.debug("Requesting AI greeting");
+      sendUserMessage(ASSISTANT_SUMMON_MESSAGE);
+    } else {
+      log.debug("Using local canned greeting (logged-out user)");
+      appendLocalGreeting();
+      useAssistantStore.getState().markInteraction();
+    }
+  }, [
+    chat.status,
+    username,
+    isAuthenticated,
+    sendUserMessage,
+    appendLocalGreeting,
+  ]);
+
   const greetIfStale = useCallback(() => {
     const store = useAssistantStore.getState();
     const decision = getAssistantGreetDecision({
@@ -441,22 +462,13 @@ export function useAssistantChat(): AssistantChatHandle {
       clearConversation();
     }
 
-    if (username && isAuthenticated) {
-      log.debug("Requesting AI greeting");
-      sendUserMessage(ASSISTANT_SUMMON_MESSAGE);
-    } else {
-      log.debug("Using local canned greeting (anonymous user)");
-      appendLocalGreeting();
-      useAssistantStore.getState().markInteraction();
-    }
-  }, [
-    chat,
-    username,
-    isAuthenticated,
-    sendUserMessage,
-    appendLocalGreeting,
-    clearConversation,
-  ]);
+    triggerGreeting();
+  }, [chat.status, clearConversation, triggerGreeting]);
+
+  const startNewConversation = useCallback(() => {
+    clearConversation();
+    triggerGreeting();
+  }, [clearConversation, triggerGreeting]);
 
   return {
     messages: messages as AIChatMessage[],
@@ -470,6 +482,7 @@ export function useAssistantChat(): AssistantChatHandle {
     errorText,
     sendUserMessage,
     greetIfStale,
+    startNewConversation,
     clearConversation,
     stop: sdkStop,
   };
