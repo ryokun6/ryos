@@ -912,7 +912,7 @@
    white-glow inset. Override per-attribute so the field reads as a recessed
    dark pill with a light glyph. */
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  input[data-os-search-input="true"] {
+  :is(input[data-os-search-input="true"], textarea[data-os-field-input="true"]) {
   background-color: var(--os-color-input-bg) !important;
   color: var(--os-color-text-primary) !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
@@ -923,7 +923,7 @@
 }
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
-  input[data-os-search-input="true"]::placeholder {
+  :is(input[data-os-search-input="true"], textarea[data-os-field-input="true"])::placeholder {
   color: var(--os-color-text-disabled);
 }
 
@@ -1500,7 +1500,7 @@
     .bg-white\/30,
     .bg-white\/20,
     .bg-white\/10
-  ):not([data-os-search-input="true"]):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
+  ):not([data-os-search-input="true"]):not([data-os-field-input="true"]):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *):not(.synth-force-font *):not(.dashboard-overlay *) {
   background-color: var(--os-color-input-bg) !important;
   color: var(--os-color-text-primary) !important;
   /* Subtle inset recess — matches the canonical Finder SearchInput dark
