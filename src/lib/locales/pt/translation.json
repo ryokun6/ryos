@@ -1195,6 +1195,7 @@
       "toolCalls": {
         "addedAndStartedPlaying": "Adicionada e começou a reproduzir nova música",
         "addingSong": "Adicionando música…",
+        "appNotRunning": "{{appName}} não está em execução",
         "applet": "Applet",
         "calendar": {
           "addedEvent": "Adicionado evento \"{{title}}\"",
@@ -1415,6 +1416,20 @@
         "listingApplications": "Listando aplicativos…",
         "listingSharedApplets": "Listando applets compartilhados…",
         "loadingMusicLibrary": "Carregando biblioteca de música…",
+        "maps": {
+          "foundMany": "Encontrei {{count}} lugares para \"{{query}}\".",
+          "foundOne": "Encontrei 1 lugar para \"{{query}}\".",
+          "noResults": "Nenhum lugar encontrado para \"{{query}}\".",
+          "openInAppleMaps": "Abrir no Apple Maps",
+          "openInMaps": "Abrir {{name}} no Mapas",
+          "searching": "Buscando \"{{query}}\" no Mapas…",
+          "searchingNoQuery": "Buscando no Mapas…"
+        },
+        "memory": {
+          "deleting": "Apagando memória…",
+          "recalling": "Recuperando memórias…",
+          "saving": "Salvando memória…"
+        },
         "missingEditParameters": "Parâmetros obrigatórios ausentes: path, old_string e new_string",
         "multipleMatchesFound": "Múltiplas correspondências encontradas",
         "musicLibraryEmpty": "A biblioteca de Música está vazia",
@@ -1451,6 +1466,8 @@
         "searchedWebFor": "Pesquisou na web por {{query}}",
         "searchingSongs": "Pesquisando \"{{query}}\"…",
         "searchingWeb": "Pesquisando na web…",
+        "settingsAccentChanged": "Cor de destaque definida como {{accent}}",
+        "settingsAccentNotSupported": "Cores de destaque não são compatíveis com o tema {{theme}}",
         "settingsCheckingForUpdates": "Buscando atualizações…",
         "settingsLanguageChanged": "Idioma alterado para {{language}}",
         "settingsMasterVolumeSet": "Volume definido para {{volume}}%",
@@ -1458,7 +1475,11 @@
         "settingsSpeechDisabled": "Texto para fala desativado",
         "settingsSpeechEnabled": "Texto para fala ativado",
         "settingsThemeChanged": "Tema alterado para {{theme}}",
+        "settingsUiSoundsDisabled": "Sons da interface desativados",
+        "settingsUiSoundsEnabled": "Sons da interface ativados",
         "settingsUpdated": "Configurações atualizadas",
+        "settingsWallpaperChanged": "Imagem de fundo alterada para {{name}}",
+        "settingsWallpaperNotFound": "Nenhuma imagem de fundo corresponde a \"{{query}}\"",
         "skippedToNextTrack": "Pulou para a próxima faixa",
         "skippedToPreviousTrack": "Pulou para a faixa anterior",
         "skippingToNext": "Pulando para o próximo…",
@@ -1511,6 +1532,7 @@
           "videoAlreadyInChannel": "{{title}} já está em {{channel}}",
           "videoNotInChannel": "Vídeo não encontrado no canal"
         },
+        "unhandledTool": "Ferramenta não tratada: {{toolName}}",
         "unknownError": "Erro desconhecido",
         "updatedDocument": "Documento atualizado: {{path}}",
         "webFetch": {

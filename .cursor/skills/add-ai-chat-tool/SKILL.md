@@ -153,8 +153,8 @@ Handler conventions (match existing handlers like `stickiesHandler.ts`):
 
 ## E. Wire the Client Dispatch
 
-1. In `src/apps/chats/tools/index.ts`, export the handler/type and (optionally) `registerToolHandler("myFeatureControl", handleMyFeatureControl)`.
-2. In `src/apps/chats/hooks/useAiChat.ts`, import the handler and add a `case` to the `switch (toolCall.toolName)` inside `handleSharedToolCall`:
+1. In `src/apps/chats/tools/index.ts`, export the handler and its input type.
+2. In `src/apps/chats/tools/dispatchToolCall.ts` (shared by the Chats app and the desktop assistant), add a `case` to the `switch (toolCall.toolName)`:
 
 ```typescript
 case "myFeatureControl": {
@@ -168,7 +168,7 @@ case "myFeatureControl": {
 }
 ```
 
-> The registry (`registerToolHandler`/`getToolHandler`) exists for automatic dispatch, but `useAiChat` currently dispatches via the explicit `switch`. Add the `case` — otherwise the tool falls through to the `default` branch and reports "Unhandled tool". Set `result = ""` when the handler emits its own output (return a non-empty string only for trivial tools that don't call `addToolOutput`).
+> Dispatch is an explicit `switch` — there is no handler registry. Add the `case`, otherwise the tool falls through to the `default` branch and reports "Unhandled tool". Set `result = ""` when the handler emits its own output (return a non-empty string only for trivial tools that don't call `addToolOutput`). VFS tools (`list`/`open`/`read`/`write`/`edit`) live in `vfsHandlers.ts` and receive a `VfsToolContext` with `saveFile` + `recordOpenedInstance`.
 
 ## F. Server Executor (server-executed / dual tools)
 

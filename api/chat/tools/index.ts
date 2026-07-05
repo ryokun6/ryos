@@ -184,7 +184,7 @@ export const TOOL_DESCRIPTIONS = {
     "For 'add', pass the chosen YouTube result's videoId and title/channel when available. Results include canonical ryOS links for iPod and Karaoke share URLs.",
   
   settings:
-    "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",
+    "Change system settings in ryOS. Use this tool when the user asks to change language, theme, wallpaper, accent color, volume, enable/disable speech or UI sounds, or check for updates. Multiple settings can be changed in a single call.",
   
   stickiesControl:
     "Manage sticky notes in ryOS. Actions: 'list' returns all stickies with their IDs, content, and colors; 'create' makes a new sticky note with optional content/text, color (yellow/blue/green/pink/purple/orange), position, size; 'update' modifies an existing sticky by ID - use this to set/replace text content, change color, or move it; 'delete' removes a sticky by ID; 'clear' removes all stickies. The Stickies app opens automatically when creating notes.",
@@ -500,6 +500,18 @@ export function createChatTools(
   const profile = options.profile || "all";
 
   if (profile === "all") {
+    if (!context.username) {
+      // Anonymous users have no persistent memory storage, so the memory
+      // tools always fail for them. Omit them entirely to save prompt
+      // tokens and avoid dead-end tool calls.
+      const {
+        memoryWrite: _memoryWrite,
+        memoryRead: _memoryRead,
+        memoryDelete: _memoryDelete,
+        ...anonymousTools
+      } = allTools;
+      return anonymousTools;
+    }
     return allTools;
   }
 

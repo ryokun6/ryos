@@ -846,7 +846,8 @@ const handlePlayKnown = (
     context.addToolOutput({
       tool: emitToolName,
       toolCallId,
-      output: adapter.messages.notFound(),
+      state: "output-error",
+      errorText: adapter.messages.notFound(),
     });
     log.debug("playKnown found no matching item", { target: input.target });
     return;
@@ -859,7 +860,8 @@ const handlePlayKnown = (
     context.addToolOutput({
       tool: emitToolName,
       toolCallId,
-      output: adapter.messages.notFound(),
+      state: "output-error",
+      errorText: adapter.messages.notFound(),
     });
     return;
   }
@@ -916,7 +918,8 @@ const handleAddAndPlay = async (
     context.addToolOutput({
       tool: emitToolName,
       toolCallId,
-      output: errorMsg,
+      state: "output-error",
+      errorText: errorMsg,
     });
     console.error(`[ToolCall] ${errorMsg}`);
     return;
@@ -928,7 +931,8 @@ const handleAddAndPlay = async (
     context.addToolOutput({
       tool: emitToolName,
       toolCallId,
-      output: result.error,
+      state: "output-error",
+      errorText: result.error,
     });
     console.error(`[ToolCall] ${result.error}`);
     return;

@@ -1197,6 +1197,7 @@
       "toolCalls": {
         "addedAndStartedPlaying": "Добавлена новая песня и начато воспроизведение",
         "addingSong": "Добавление песни…",
+        "appNotRunning": "{{appName}} не запущено",
         "applet": "Апплет",
         "calendar": {
           "addedEvent": "Событие «{{title}}» добавлено",
@@ -1417,6 +1418,20 @@
         "listingApplications": "Перечисление приложений…",
         "listingSharedApplets": "Перечисление общих апплетов…",
         "loadingMusicLibrary": "Загрузка музыкальной библиотеки…",
+        "maps": {
+          "foundMany": "Найдено {{count}} мест по запросу «{{query}}».",
+          "foundOne": "Найдено 1 место по запросу «{{query}}».",
+          "noResults": "По запросу «{{query}}» ничего не найдено.",
+          "openInAppleMaps": "Открыть в Apple Maps",
+          "openInMaps": "Открыть «{{name}}» в Картах",
+          "searching": "Поиск «{{query}}» в Картах…",
+          "searchingNoQuery": "Поиск в Картах…"
+        },
+        "memory": {
+          "deleting": "Удаление из памяти…",
+          "recalling": "Поиск в памяти…",
+          "saving": "Сохранение в памяти…"
+        },
         "missingEditParameters": "Отсутствуют обязательные параметры: path, old_string и new_string",
         "multipleMatchesFound": "Найдено несколько совпадений",
         "musicLibraryEmpty": "Музыкальная библиотека пуста",
@@ -1453,6 +1468,8 @@
         "searchedWebFor": "Выполнен поиск в интернете по запросу {{query}}",
         "searchingSongs": "Поиск \"{{query}}\"…",
         "searchingWeb": "Поиск в интернете…",
+        "settingsAccentChanged": "Цвет акцента изменен на {{accent}}",
+        "settingsAccentNotSupported": "Цвета акцента не поддерживаются темой «{{theme}}»",
         "settingsCheckingForUpdates": "Проверка обновлений…",
         "settingsLanguageChanged": "Язык изменен на {{language}}",
         "settingsMasterVolumeSet": "Громкость установлена на {{volume}}%",
@@ -1460,7 +1477,11 @@
         "settingsSpeechDisabled": "Синтез речи отключен",
         "settingsSpeechEnabled": "Синтез речи включен",
         "settingsThemeChanged": "Тема изменена на {{theme}}",
+        "settingsUiSoundsDisabled": "Звуковые эффекты интерфейса выключены",
+        "settingsUiSoundsEnabled": "Звуковые эффекты интерфейса включены",
         "settingsUpdated": "Настройки обновлены",
+        "settingsWallpaperChanged": "Обои изменены на «{{name}}»",
+        "settingsWallpaperNotFound": "Обои по запросу «{{query}}» не найдены",
         "skippedToNextTrack": "Переключено на следующий трек",
         "skippedToPreviousTrack": "Переключено на предыдущий трек",
         "skippingToNext": "Переключение на следующий…",
@@ -1513,6 +1534,7 @@
           "videoAlreadyInChannel": "{{title}} уже есть в {{channel}}",
           "videoNotInChannel": "Видео не найдено в канале"
         },
+        "unhandledTool": "Необработанный инструмент: {{toolName}}",
         "unknownError": "Неизвестная ошибка",
         "updatedDocument": "Документ обновлен: {{path}}",
         "webFetch": {

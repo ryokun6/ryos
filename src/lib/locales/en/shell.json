@@ -1025,7 +1025,29 @@
           "resumed": "Resumed",
           "statusRunning": "Running {{system}}",
           "statusNotRunning": "No system running"
-        }
+        },
+        "maps": {
+          "searching": "Searching maps for \"{{query}}\"…",
+          "searchingNoQuery": "Searching maps…",
+          "noResults": "No places found for \"{{query}}\".",
+          "foundOne": "Found 1 place for \"{{query}}\".",
+          "foundMany": "Found {{count}} places for \"{{query}}\".",
+          "openInMaps": "Open {{name}} in Maps",
+          "openInAppleMaps": "Open in Apple Maps"
+        },
+        "memory": {
+          "saving": "Saving memory…",
+          "recalling": "Recalling memories…",
+          "deleting": "Deleting memory…"
+        },
+        "settingsWallpaperChanged": "Wallpaper changed to {{name}}",
+        "settingsWallpaperNotFound": "No wallpaper matched \"{{query}}\"",
+        "settingsAccentChanged": "Accent color set to {{accent}}",
+        "settingsAccentNotSupported": "Accent colors are not supported by the {{theme}} theme",
+        "settingsUiSoundsEnabled": "UI sounds enabled",
+        "settingsUiSoundsDisabled": "UI sounds disabled",
+        "appNotRunning": "{{appName}} is not running",
+        "unhandledTool": "Unhandled tool: {{toolName}}"
       }
     },
     "textedit": {

@@ -36,6 +36,22 @@ export {
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
 export type ThemeId = typeof THEME_IDS[number];
 
+// Accent color IDs (mirrors AccentId in src/themes/accents.ts)
+export const ACCENT_IDS = [
+  "default",
+  "wallpaper",
+  "graphite",
+  "blue",
+  "purple",
+  "pink",
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "teal",
+] as const;
+export type AccentId = typeof ACCENT_IDS[number];
+
 // Supported language codes
 export const LANGUAGE_CODES = [
   "en",
@@ -265,8 +281,11 @@ export interface SongLibraryControlOutput {
 export interface SettingsInput {
   language?: LanguageCode;
   theme?: ThemeId;
+  wallpaper?: string;
+  accent?: AccentId;
   masterVolume?: number;
   speechEnabled?: boolean;
+  uiSoundsEnabled?: boolean;
   checkForUpdates?: boolean;
 }
 

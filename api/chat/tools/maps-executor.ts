@@ -11,6 +11,8 @@ import {
   type MapKitSearchPlace,
 } from "../../_utils/_mapkit-server.js";
 import { listMapKitMissingEnv } from "../../_utils/_mapkit-jwt.js";
+import type { Redis } from "../../_utils/redis.js";
+import { checkToolRateLimit } from "./_tool-rate-limit.js";
 import type {
   MapsSearchPlaceResult,
   MapsSearchPlacesInput,
@@ -114,9 +116,21 @@ function resolveFallbackNear(
 
 export async function executeMapsSearchPlaces(
   input: MapsSearchPlacesInput,
-  context: ServerToolContext
+  context: ServerToolContext & { username?: string | null; redis?: Redis }
 ): Promise<MapsSearchPlacesOutput> {
   const query = input.query.trim();
+
+  const rateLimit = await checkToolRateLimit("mapsSearchPlaces", context);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      query,
+      results: [],
+      message: rateLimit.message!,
+      error: "rate_limited",
+    };
+  }
+
   const explicitNear = input.near ?? null;
   const fallbackNear = explicitNear ? null : resolveFallbackNear(context);
   const effectiveNear = explicitNear ?? fallbackNear;

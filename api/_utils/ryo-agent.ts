@@ -1,11 +1,60 @@
 import {
+  NoSuchToolError,
   ToolLoopAgent,
   stepCountIs,
   type TextStreamPart,
+  type ToolCallRepairFunction,
   type ToolSet,
 } from "ai";
 import { getOpenAIProviderOptions } from "./_aiModels.js";
 import type { PreparedRyoConversation } from "./ryo-conversation.js";
+
+/**
+ * Deterministic tool-call repair for malformed inputs.
+ *
+ * Models occasionally emit tool arguments as double-encoded JSON or wrapped
+ * in markdown fences, which fails schema parsing and surfaces as a tool
+ * error the model must burn a step recovering from. This repairs the common
+ * encoding mistakes without an extra LLM round-trip; anything else (including
+ * calls to unknown tools) is left to the SDK's normal error path.
+ */
+export const repairRyoToolCall: ToolCallRepairFunction<ToolSet> = async ({
+  toolCall,
+  error,
+}) => {
+  if (NoSuchToolError.isInstance(error)) {
+    return null;
+  }
+
+  const raw = toolCall.input;
+  if (typeof raw !== "string") return null;
+
+  let candidate = raw.trim();
+
+  // Strip markdown code fences (```json ... ```)
+  const fenceMatch = candidate.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  if (fenceMatch) {
+    candidate = fenceMatch[1].trim();
+  }
+
+  try {
+    let parsed: unknown = JSON.parse(candidate);
+    // Unwrap double-encoded JSON ("{\"a\":1}" parsed to a string)
+    if (typeof parsed === "string") {
+      parsed = JSON.parse(parsed);
+    }
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const repairedInput = JSON.stringify(parsed);
+      if (repairedInput !== raw) {
+        return { ...toolCall, input: repairedInput };
+      }
+    }
+  } catch {
+    // Not repairable deterministically; let the SDK surface the error.
+  }
+
+  return null;
+};
 
 export const RYO_AGENT_PRESETS = {
   chat: {
@@ -54,6 +103,7 @@ export function createRyoToolLoopAgent({
     temperature,
     maxOutputTokens: agentPreset.maxOutputTokens,
     stopWhen: stepCountIs(agentPreset.stopAfterSteps),
+    experimental_repairToolCall: repairRyoToolCall,
     ...(headers ? { headers } : {}),
     ...(providerOptions ? { providerOptions } : {}),
   });

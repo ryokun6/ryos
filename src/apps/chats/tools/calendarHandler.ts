@@ -1,26 +1,51 @@
 import type { ToolHandler } from "./types";
 import { useCalendarStore } from "@/stores/useCalendarStore";
-import type { EventColor } from "@/stores/useCalendarStore";
-import { calendarEventOccursOnDate } from "@/shared/calendarEventDates";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  applyCalendarToolAction,
+  serializeCalendarEvent,
+  serializeCalendarTodo,
+  type CalendarControlInput,
+  type CalendarEventToolRecord,
+  type CalendarTodoToolRecord,
+} from "@/shared/tools/calendar";
+import type { CalendarSnapshotData } from "@/shared/domains/calendar";
 import i18n from "@/lib/i18n";
+import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
 
-export interface CalendarControlInput {
-  action: "list" | "create" | "update" | "delete" | "listTodos" | "createTodo" | "toggleTodo" | "deleteTodo";
-  id?: string;
-  title?: string;
-  date?: string;
-  endDate?: string;
-  startTime?: string;
-  endTime?: string;
-  color?: EventColor;
-  notes?: string;
-  completed?: boolean;
-  calendarId?: string;
-}
+export type { CalendarControlInput } from "@/shared/tools/calendar";
 
 const tc = (key: string, opts?: Record<string, unknown>) =>
   i18n.t(`apps.chats.toolCalls.calendar.${key}`, opts);
 
+/**
+ * Module-level short-ID maps (events + todos) built on list actions and
+ * resolved on mutations, mirroring the stickies/contacts handlers. They
+ * intentionally persist across dispatches so the model can list once and
+ * mutate in later steps or messages.
+ */
+let eventIdMap: ShortIdMap | undefined;
+let todoIdMap: ShortIdMap | undefined;
+
+const withShortEventId = (
+  record: CalendarEventToolRecord
+): CalendarEventToolRecord => ({
+  ...record,
+  id: eventIdMap?.fullToShort.get(record.id) || record.id,
+});
+
+const withShortTodoId = (
+  record: CalendarTodoToolRecord
+): CalendarTodoToolRecord => ({
+  ...record,
+  id: todoIdMap?.fullToShort.get(record.id) || record.id,
+});
+
+/**
+ * Client calendar tool handler. Runs the same `applyCalendarToolAction`
+ * reducer as the server (Telegram) executor, then bridges the resulting
+ * snapshot back into the Zustand store + cloud-sync deletion markers.
+ */
 export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
   input,
   toolCallId,
@@ -29,309 +54,187 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
   const store = useCalendarStore.getState();
   const { action } = input;
 
-  switch (action) {
-    case "list": {
-      let events = store.events;
-      if (input.date) {
-        events = events.filter((ev) => calendarEventOccursOnDate(ev, input.date!));
+  const emitError = (errorText: string) => {
+    context.addToolOutput({
+      state: "output-error",
+      tool: "calendarControl",
+      toolCallId,
+      errorText,
+    });
+  };
+
+  const snapshot: CalendarSnapshotData = {
+    events: store.events,
+    calendars: store.calendars,
+    todos: store.todos,
+  };
+
+  // Resolve short IDs (e1/t1) from previous list outputs to full UUIDs.
+  const resolvedInput: CalendarControlInput = input.id
+    ? {
+        ...input,
+        id:
+          action === "toggleTodo" || action === "deleteTodo"
+            ? resolveId(input.id, todoIdMap)
+            : resolveId(input.id, eventIdMap),
       }
-      const formatted = events.map((ev) => ({
-        id: ev.id,
-        title: ev.title,
-        date: ev.date,
-        endDate: ev.endDate,
-        startTime: ev.startTime,
-        endTime: ev.endTime,
-        color: ev.color,
-        notes: ev.notes,
-      }));
+    : input;
+
+  const result = applyCalendarToolAction(snapshot, resolvedInput, {
+    generateId: () => crypto.randomUUID(),
+    now: () => Date.now(),
+    deletedAt: () => new Date().toISOString(),
+  });
+
+  if (!result.ok) {
+    switch (result.error) {
+      case "missing_fields":
+        emitError(
+          action === "createTodo"
+            ? tc("createTodoMissingTitle")
+            : tc("createEventMissingFields")
+        );
+        return;
+      case "missing_id": {
+        const keys: Partial<Record<CalendarControlInput["action"], string>> = {
+          update: "updateEventMissingId",
+          delete: "deleteEventMissingId",
+          toggleTodo: "toggleTodoMissingId",
+          deleteTodo: "deleteTodoMissingId",
+        };
+        emitError(tc(keys[action] || "updateEventMissingId"));
+        return;
+      }
+      case "not_found":
+        emitError(
+          action === "toggleTodo" || action === "deleteTodo"
+            ? tc("todoNotFound", { id: input.id })
+            : tc("eventNotFound", { id: input.id })
+        );
+        return;
+      default:
+        emitError(tc("unknownAction", { action }));
+        return;
+    }
+  }
+
+  const emitOutput = (output: unknown) => {
+    context.addToolOutput({ tool: "calendarControl", toolCallId, output });
+  };
+
+  switch (result.kind) {
+    case "list": {
+      eventIdMap = createShortIdMap(
+        result.events.map((event) => event.id),
+        "e"
+      );
+      const formatted = result.events.map(withShortEventId);
       const count = formatted.length;
       const message = input.date
-        ? tc(count === 1 ? "foundEventsForDate" : "foundEventsForDatePlural", { count, date: input.date })
-        : tc(count === 1 ? "foundEventsTotal" : "foundEventsTotalPlural", { count });
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message,
-          events: formatted,
-        },
-      });
-      break;
+        ? tc(count === 1 ? "foundEventsForDate" : "foundEventsForDatePlural", {
+            count,
+            date: input.date,
+          })
+        : tc(count === 1 ? "foundEventsTotal" : "foundEventsTotalPlural", {
+            count,
+          });
+      emitOutput({ success: true, message, events: formatted });
+      return;
     }
 
     case "create": {
-      if (!input.title || !input.date) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("createEventMissingFields"),
-        });
-        return;
-      }
-
-      const eventId = store.addEvent({
-        title: input.title,
-        date: input.date,
-        endDate: input.endDate,
-        startTime: input.startTime,
-        endTime: input.endTime,
-        color: input.color || "blue",
-        notes: input.notes,
-      });
-
-      store.setSelectedDate(input.date);
+      useCalendarStore.setState({ events: result.state.events });
+      store.setSelectedDate(result.event.date);
       context.launchApp("calendar");
-
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message: tc("createdEvent", { title: input.title, date: input.date }),
-          event: {
-            id: eventId,
-            title: input.title,
-            date: input.date,
-            endDate: input.endDate,
-            startTime: input.startTime,
-            endTime: input.endTime,
-            color: input.color || "blue",
-            notes: input.notes,
-          },
-        },
+      emitOutput({
+        success: true,
+        message: tc("createdEvent", {
+          title: result.event.title,
+          date: result.event.date,
+        }),
+        event: serializeCalendarEvent(result.event),
       });
-      break;
+      return;
     }
 
     case "update": {
-      if (!input.id) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("updateEventMissingId"),
-        });
-        return;
-      }
-
-      const existing = store.events.find((ev) => ev.id === input.id);
-      if (!existing) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("eventNotFound", { id: input.id }),
-        });
-        return;
-      }
-
-      const updates: Record<string, unknown> = {};
-      if (input.title !== undefined) updates.title = input.title;
-      if (input.date !== undefined) updates.date = input.date;
-      if (input.endDate !== undefined) updates.endDate = input.endDate;
-      if (input.startTime !== undefined) updates.startTime = input.startTime;
-      if (input.endTime !== undefined) updates.endTime = input.endTime;
-      if (input.color !== undefined) updates.color = input.color;
-      if (input.notes !== undefined) updates.notes = input.notes;
-
-      store.updateEvent(input.id, updates);
-
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message: tc("updatedEventMsg", { title: existing.title }),
-        },
+      useCalendarStore.setState({ events: result.state.events });
+      emitOutput({
+        success: true,
+        message: tc("updatedEventMsg", { title: result.event.title }),
+        event: withShortEventId(serializeCalendarEvent(result.event)),
       });
-      break;
+      return;
     }
 
     case "delete": {
-      if (!input.id) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("deleteEventMissingId"),
-        });
-        return;
-      }
-
-      const toDelete = store.events.find((ev) => ev.id === input.id);
-      if (!toDelete) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("eventNotFound", { id: input.id }),
-        });
-        return;
-      }
-
-      store.deleteEvent(input.id);
-
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message: tc("deletedEventMsg", { title: toDelete.title }),
-        },
+      useCalendarStore.setState({ events: result.state.events });
+      useCloudSyncStore
+        .getState()
+        .markDeletedKeys("calendarEventIds", [result.event.id]);
+      emitOutput({
+        success: true,
+        message: tc("deletedEventMsg", { title: result.event.title }),
       });
-      break;
+      return;
     }
 
     case "listTodos": {
-      let todos = store.todos;
-      if (input.completed === true) {
-        todos = todos.filter((t) => t.completed);
-      }
-      const formatted = todos.map((t) => ({
-        id: t.id,
-        title: t.title,
-        completed: t.completed,
-        dueDate: t.dueDate,
-        calendarId: t.calendarId,
-      }));
+      todoIdMap = createShortIdMap(
+        result.todos.map((todo) => todo.id),
+        "t"
+      );
+      const formatted = result.todos.map(withShortTodoId);
       const count = formatted.length;
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message: tc(count === 1 ? "foundTodosMsg" : "foundTodosMsgPlural", { count }),
-          todos: formatted,
-        },
+      emitOutput({
+        success: true,
+        message: tc(count === 1 ? "foundTodosMsg" : "foundTodosMsgPlural", {
+          count,
+        }),
+        todos: formatted,
       });
-      break;
+      return;
     }
 
     case "createTodo": {
-      if (!input.title) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("createTodoMissingTitle"),
-        });
-        return;
-      }
-
-      const calendarId = input.calendarId || store.calendars[0]?.id || "home";
-      const todoId = store.addTodo(input.title, calendarId, input.date);
-
+      useCalendarStore.setState({ todos: result.state.todos });
       store.setShowTodoSidebar(true);
       context.launchApp("calendar");
-
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message: input.date
-            ? tc("createdTodoDue", { title: input.title, date: input.date })
-            : tc("createdTodo", { title: input.title }),
-          todo: {
-            id: todoId,
-            title: input.title,
-            completed: false,
-            dueDate: input.date || null,
-            calendarId,
-          },
-        },
+      emitOutput({
+        success: true,
+        message: result.todo.dueDate
+          ? tc("createdTodoDue", {
+              title: result.todo.title,
+              date: result.todo.dueDate,
+            })
+          : tc("createdTodo", { title: result.todo.title }),
+        todo: serializeCalendarTodo(result.todo),
       });
-      break;
+      return;
     }
 
     case "toggleTodo": {
-      if (!input.id) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("toggleTodoMissingId"),
-        });
-        return;
-      }
-
-      const todoToToggle = store.todos.find((t) => t.id === input.id);
-      if (!todoToToggle) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("todoNotFound", { id: input.id }),
-        });
-        return;
-      }
-
-      store.toggleTodo(input.id);
-
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message: !todoToToggle.completed
-            ? tc("markedTodoCompleted", { title: todoToToggle.title })
-            : tc("markedTodoPending", { title: todoToToggle.title }),
-          todo: {
-            id: todoToToggle.id,
-            title: todoToToggle.title,
-            completed: !todoToToggle.completed,
-            dueDate: todoToToggle.dueDate,
-            calendarId: todoToToggle.calendarId,
-          },
-        },
+      useCalendarStore.setState({ todos: result.state.todos });
+      emitOutput({
+        success: true,
+        message: result.todo.completed
+          ? tc("markedTodoCompleted", { title: result.todo.title })
+          : tc("markedTodoPending", { title: result.todo.title }),
+        todo: withShortTodoId(serializeCalendarTodo(result.todo)),
       });
-      break;
+      return;
     }
 
     case "deleteTodo": {
-      if (!input.id) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("deleteTodoMissingId"),
-        });
-        return;
-      }
-
-      const todoToDelete = store.todos.find((t) => t.id === input.id);
-      if (!todoToDelete) {
-        context.addToolOutput({
-          state: "output-error",
-          tool: "calendarControl",
-          toolCallId,
-          errorText: tc("todoNotFound", { id: input.id }),
-        });
-        return;
-      }
-
-      store.deleteTodo(input.id);
-
-      context.addToolOutput({
-        tool: "calendarControl",
-        toolCallId,
-        output: {
-          success: true,
-          message: tc("deletedTodoMsg", { title: todoToDelete.title }),
-        },
+      useCalendarStore.setState({ todos: result.state.todos });
+      useCloudSyncStore
+        .getState()
+        .markDeletedKeys("calendarTodoIds", [result.todo.id]);
+      emitOutput({
+        success: true,
+        message: tc("deletedTodoMsg", { title: result.todo.title }),
       });
-      break;
+      return;
     }
-
-    default:
-      context.addToolOutput({
-        state: "output-error",
-        tool: "calendarControl",
-        toolCallId,
-        errorText: tc("unknownAction", { action }),
-      });
   }
 };

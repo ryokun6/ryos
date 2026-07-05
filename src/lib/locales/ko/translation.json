@@ -1193,6 +1193,7 @@
       "toolCalls": {
         "addedAndStartedPlaying": "새 곡 추가 및 재생 시작됨",
         "addingSong": "곡 추가 중…",
+        "appNotRunning": "{{appName}}이(가) 실행 중이 아닙니다",
         "applet": "애플릿",
         "calendar": {
           "addedEvent": "\"{{title}}\" 이벤트가 추가되었습니다.",
@@ -1413,6 +1414,20 @@
         "listingApplications": "애플리케이션 목록 표시 중…",
         "listingSharedApplets": "공유 앱렛 목록 표시 중…",
         "loadingMusicLibrary": "음악 라이브러리 로드 중…",
+        "maps": {
+          "foundMany": "\"{{query}}\"에 대한 장소 {{count}}개를 찾았습니다.",
+          "foundOne": "\"{{query}}\"에 대한 장소 1개를 찾았습니다.",
+          "noResults": "\"{{query}}\"에 대한 장소를 찾을 수 없습니다.",
+          "openInAppleMaps": "Apple 지도에서 열기",
+          "openInMaps": "지도에서 {{name}} 열기",
+          "searching": "지도에서 \"{{query}}\" 검색 중…",
+          "searchingNoQuery": "지도 검색 중…"
+        },
+        "memory": {
+          "deleting": "기억 삭제 중…",
+          "recalling": "기억 불러오는 중…",
+          "saving": "기억 저장 중…"
+        },
         "missingEditParameters": "필수 매개변수 누락: path, old_string, new_string",
         "multipleMatchesFound": "여러 일치 항목 찾음",
         "musicLibraryEmpty": "음악 보관함이 비어 있습니다.",
@@ -1449,6 +1464,8 @@
         "searchedWebFor": "웹에서 '{{query}}'을(를) 검색했습니다",
         "searchingSongs": "\"{{query}}\" 검색 중…",
         "searchingWeb": "웹 검색 중…",
+        "settingsAccentChanged": "강조 색상이 {{accent}}(으)로 설정됨",
+        "settingsAccentNotSupported": "{{theme}} 테마에서는 강조 색상이 지원되지 않음",
         "settingsCheckingForUpdates": "업데이트 확인 중…",
         "settingsLanguageChanged": "언어가 {{language}}로 변경되었습니다",
         "settingsMasterVolumeSet": "볼륨이 {{volume}}%로 설정되었습니다",
@@ -1456,7 +1473,11 @@
         "settingsSpeechDisabled": "음성 합성 비활성화됨",
         "settingsSpeechEnabled": "음성 합성 활성화됨",
         "settingsThemeChanged": "테마가 {{theme}}로 변경되었습니다",
+        "settingsUiSoundsDisabled": "UI 사운드 비활성화됨",
+        "settingsUiSoundsEnabled": "UI 사운드 활성화됨",
         "settingsUpdated": "설정이 업데이트되었습니다",
+        "settingsWallpaperChanged": "배경화면이 {{name}}(으)로 변경됨",
+        "settingsWallpaperNotFound": "\"{{query}}\"와(과) 일치하는 배경화면 없음",
         "skippedToNextTrack": "다음 트랙으로 건너뜀",
         "skippedToPreviousTrack": "이전 트랙으로 건너뜀",
         "skippingToNext": "다음으로 건너뛰는 중…",
@@ -1509,6 +1530,7 @@
           "videoAlreadyInChannel": "{{title}}은(는) 이미 {{channel}}에 있습니다",
           "videoNotInChannel": "채널에서 동영상을 찾을 수 없습니다"
         },
+        "unhandledTool": "처리되지 않은 도구: {{toolName}}",
         "unknownError": "알 수 없는 오류",
         "updatedDocument": "문서 업데이트됨: {{path}}",
         "webFetch": {
