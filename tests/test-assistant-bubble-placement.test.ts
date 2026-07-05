@@ -3,7 +3,6 @@ import {
   ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
   ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
   ASSISTANT_BUBBLE_WIDTH,
-  clampAssistantAnchorToVisibleBand,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
   resolveAssistantBubbleRenderHeight,
@@ -311,51 +310,5 @@ describe("assistant bubble render height", () => {
     });
     expect(estimateOffset).toBeGreaterThan(0);
     expect(thinkingOffset).toBe(0);
-  });
-
-  test("lifts a bottom anchor into the visible band while the keyboard is up", () => {
-    const layoutViewport = {
-      width: 393,
-      height: 844,
-      topInset: 26,
-      bottomInset: 104,
-      visibleTop: 0,
-      visibleBottom: 400,
-    };
-    const lifted = clampAssistantAnchorToVisibleBand({
-      position: { x: 305, y: 600 },
-      characterSize: { width: 80, height: 80 },
-      viewport: layoutViewport,
-    });
-    expect(lifted.y).toBe(400 - 8 - 80 - 8);
-    expect(lifted.x).toBe(305);
-  });
-
-  test("thinking bubble stays anchored after the anchor is lifted", () => {
-    const layoutViewport = {
-      width: 393,
-      height: 844,
-      topInset: 26,
-      bottomInset: 104,
-      visibleTop: 0,
-      visibleBottom: 400,
-    };
-    const anchorY = clampAssistantAnchorToVisibleBand({
-      position: { x: 305, y: 600 },
-      characterSize: { width: 80, height: 80 },
-      viewport: layoutViewport,
-    }).y;
-    const anchor = { x: 305, y: anchorY, width: 80, height: 80 };
-    const offset = resolveAssistantBubbleCrossOffset({
-      side: "left",
-      align: "end",
-      anchor,
-      bubbleSize: {
-        width: ASSISTANT_BUBBLE_WIDTH,
-        height: ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
-      },
-      viewport: layoutViewport,
-    });
-    expect(offset).toBe(0);
   });
 });

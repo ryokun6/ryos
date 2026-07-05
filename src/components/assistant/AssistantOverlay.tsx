@@ -59,10 +59,7 @@ import {
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
   resolveAssistantBubbleRenderHeight,
-  readAssistantBubbleViewport,
-  clampAssistantAnchorToVisibleBand,
   type AssistantBubbleRect,
-  type AssistantBubbleViewport,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
 import {
@@ -354,9 +351,6 @@ function AssistantOverlayInner() {
         )
       : defaultPosition();
   });
-  const [bubbleViewport, setBubbleViewport] = useState<AssistantBubbleViewport>(
-    () => readAssistantBubbleViewport({ topInset: 0, bottomInset: 0 })
-  );
   const [isDragging, setIsDragging] = useState(false);
 
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -466,26 +460,19 @@ function AssistantOverlayInner() {
     setStoredPosition,
   ]);
 
-  // Keep the assistant on-screen and refresh bubble placement when the
-  // layout or visual viewport changes (soft keyboard shifts offsetTop/height).
+  // Keep the assistant on-screen when the viewport or character size changes.
+  // Do not track visualViewport or shrink the layout on iOS keyboard open —
+  // that lifts the character and input out of the visible band.
   useEffect(() => {
-    const syncViewport = () => {
-      setBubbleViewport(readAssistantBubbleViewport(computeInsets()));
+    const clamp = () => {
       const insets = computeInsets();
       setPosition((prev) =>
         clampToViewport(prev, character.width, character.height, insets.topInset)
       );
     };
-    syncViewport();
-    window.addEventListener("resize", syncViewport);
-    const visualViewport = window.visualViewport;
-    visualViewport?.addEventListener("resize", syncViewport);
-    visualViewport?.addEventListener("scroll", syncViewport);
-    return () => {
-      window.removeEventListener("resize", syncViewport);
-      visualViewport?.removeEventListener("resize", syncViewport);
-      visualViewport?.removeEventListener("scroll", syncViewport);
-    };
+    clamp();
+    window.addEventListener("resize", clamp);
+    return () => window.removeEventListener("resize", clamp);
   }, [computeInsets, character.width, character.height]);
 
   const dragStateRef = useRef<{
@@ -1249,20 +1236,9 @@ function AssistantOverlayInner() {
   // Pick the side of the character (above/below/left/right) where the bubble
   // stays inside the viewport and covers the least amount of open windows, so
   // a character docked next to a window pops its bubble away from the window.
-  const renderPosition = useMemo(
-    () =>
-      clampAssistantAnchorToVisibleBand({
-        position,
-        characterSize: {
-          width: character.width,
-          height: character.height,
-        },
-        viewport: bubbleViewport,
-      }),
-    [position, character.width, character.height, bubbleViewport]
-  );
   const windowInstances = useAppStore((state) => state.instances);
   const bubblePlacement = useMemo(() => {
+    const insets = computeInsets();
     // Prefer the rendered window frames: on mobile the store keeps numeric
     // sizes while windows actually render full-width, so store rects can
     // misreport what the bubble would cover.
@@ -1298,8 +1274,8 @@ function AssistantOverlayInner() {
     }
     return resolveAssistantBubblePlacement({
       anchor: {
-        x: renderPosition.x,
-        y: renderPosition.y,
+        x: position.x,
+        y: position.y,
         width: character.width,
         height: character.height,
       },
@@ -1307,15 +1283,20 @@ function AssistantOverlayInner() {
         width: ASSISTANT_BUBBLE_WIDTH,
         height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
       },
-      viewport: bubbleViewport,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        topInset: insets.topInset,
+        bottomInset: insets.bottomInset,
+      },
       obstacles,
     });
   }, [
     windowInstances,
-    renderPosition,
+    position,
     character.width,
     character.height,
-    bubbleViewport,
+    computeInsets,
   ]);
   const bubbleSide = bubblePlacement.side;
   const bubbleAlignEnd = bubblePlacement.align === "end";
@@ -1346,7 +1327,7 @@ function AssistantOverlayInner() {
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [bubbleOpen, isDragging, bubbleContentMeasureKey, bubbleViewport]);
+  }, [bubbleOpen, isDragging, bubbleContentMeasureKey]);
   const bubbleRenderHeight = resolveAssistantBubbleRenderHeight({
     measuredHeight: bubbleMeasuredHeight,
     isThinking: showTyping,
@@ -1356,12 +1337,18 @@ function AssistantOverlayInner() {
   // measured bubble size; the tail counter-shifts by the same amount so it
   // keeps pointing at the character.
   const bubbleCrossOffset = useMemo(() => {
+    // Side pops stay edge-aligned with the character while a reply is in flight;
+    // cross-axis sliding uses estimated heights and detaches the thinking bubble.
+    if (!bubbleVertical && isLoading) {
+      return 0;
+    }
+    const insets = computeInsets();
     return resolveAssistantBubbleCrossOffset({
       side: bubbleSide,
       align: bubblePlacement.align,
       anchor: {
-        x: renderPosition.x,
-        y: renderPosition.y,
+        x: position.x,
+        y: position.y,
         width: character.width,
         height: character.height,
       },
@@ -1369,16 +1356,23 @@ function AssistantOverlayInner() {
         width: ASSISTANT_BUBBLE_WIDTH,
         height: bubbleRenderHeight,
       },
-      viewport: bubbleViewport,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        topInset: insets.topInset,
+        bottomInset: insets.bottomInset,
+      },
     });
   }, [
     bubbleSide,
     bubblePlacement.align,
-    renderPosition,
+    bubbleVertical,
+    isLoading,
+    position,
     character.width,
     character.height,
     bubbleRenderHeight,
-    bubbleViewport,
+    computeInsets,
   ]);
   const bubblePositionStyle = bubbleVertical
     ? bubbleAlignEnd
@@ -1487,10 +1481,7 @@ function AssistantOverlayInner() {
     <motion.div
       ref={overlayRef}
       initial={false}
-      animate={{
-        x: isDragging ? position.x : renderPosition.x,
-        y: isDragging ? position.y : renderPosition.y,
-      }}
+      animate={{ x: position.x, y: position.y }}
       transition={
         isDragging || reduceMotion ? { duration: 0 } : SNAP_SPRING
       }

@@ -34,4 +34,12 @@ describe("assistant bubble loading shimmer", () => {
     expect(toolInvocationDefaultSource).toContain("leading-snug");
     expect(toolInvocationDefaultSource).not.toContain("py-0.5");
   });
+
+  test("side pops skip cross-axis slide while a reply is in flight", () => {
+    expect(assistantOverlaySource).toContain("!bubbleVertical && isLoading");
+    expect(assistantOverlaySource).not.toContain(
+      "clampAssistantAnchorToVisibleBand"
+    );
+    expect(assistantOverlaySource).not.toContain("visualViewport?.addEventListener");
+  });
 });
