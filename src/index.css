@@ -457,7 +457,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
       .synth-force-font .font-geneva-12
     ):not(.videos-status .font-geneva-12):not(
       .tv-cc-force-font .font-geneva-12
-    ) {
+    ):not([data-assistant-overlay] .font-geneva-12) {
     font-family: var(--os-font-ui) !important;
   }
 

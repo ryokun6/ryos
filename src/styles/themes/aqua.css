@@ -2013,8 +2013,20 @@
     .videos-player-controls .font-geneva-12
   ):not(.synth-force-font .font-geneva-12):not(.videos-status .font-geneva-12):not(
     .tv-cc-force-font .font-geneva-12
-  ) {
+  ):not([data-assistant-overlay] .font-geneva-12) {
   font-family: var(--os-font-ui) !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* Desktop assistant speech bubble: messages + input use the rounded VAG face
+   on Aqua (excluded from the Lucida override above); other themes keep the
+   Geneva pixel font. Chiron provides rounded CJK glyphs after bundled VAG
+   Rounded. */
+:root[data-os-theme="macosx"] [data-assistant-overlay] .font-geneva-12 {
+  font-family: "ryOS VAG Rounded", "Chiron GoRound TC WS",
+    "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC", ui-rounded,
+    sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
