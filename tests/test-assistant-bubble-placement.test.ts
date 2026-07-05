@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+  ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
   ASSISTANT_BUBBLE_WIDTH,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
+  resolveAssistantBubbleRenderHeight,
   type AssistantBubbleRect,
 } from "../src/components/assistant/assistantBubblePlacement";
 
@@ -249,5 +251,64 @@ describe("assistant bubble cross offset", () => {
       viewport,
     });
     expect(offset).toBe(placement.crossOffset);
+  });
+});
+
+describe("assistant bubble render height", () => {
+  test("thinking state ignores a stale tall measurement from the prior reply", () => {
+    expect(
+      resolveAssistantBubbleRenderHeight({
+        measuredHeight: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+        isThinking: true,
+      })
+    ).toBe(ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT);
+  });
+
+  test("thinking state falls back to the compact estimate when unmeasured", () => {
+    expect(
+      resolveAssistantBubbleRenderHeight({
+        measuredHeight: null,
+        isThinking: true,
+      })
+    ).toBe(ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT);
+  });
+
+  test("streaming keeps the measured height once text is visible", () => {
+    expect(
+      resolveAssistantBubbleRenderHeight({
+        measuredHeight: 160,
+        isThinking: false,
+      })
+    ).toBe(160);
+  });
+
+  test("thinking cross offset stays anchored with the compact height", () => {
+    const viewport = { width: 393, height: 852, topInset: 26, bottomInset: 104 };
+    const anchor = { x: 305, y: 60, width: 80, height: 80 };
+    const estimateOffset = resolveAssistantBubbleCrossOffset({
+      side: "left",
+      align: "end",
+      anchor,
+      bubbleSize: {
+        width: ASSISTANT_BUBBLE_WIDTH,
+        height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+      },
+      viewport,
+    });
+    const thinkingOffset = resolveAssistantBubbleCrossOffset({
+      side: "left",
+      align: "end",
+      anchor,
+      bubbleSize: {
+        width: ASSISTANT_BUBBLE_WIDTH,
+        height: resolveAssistantBubbleRenderHeight({
+          measuredHeight: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
+          isThinking: true,
+        }),
+      },
+      viewport,
+    });
+    expect(estimateOffset).toBeGreaterThan(0);
+    expect(thinkingOffset).toBe(0);
   });
 });

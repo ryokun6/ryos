@@ -58,6 +58,7 @@ import {
   ASSISTANT_BUBBLE_WIDTH,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
+  resolveAssistantBubbleRenderHeight,
   type AssistantBubbleRect,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
@@ -271,6 +272,14 @@ function AssistantOverlayInner() {
     greetIfStale,
     clearConversation,
   } = chatHandle;
+
+  const bubbleText = errorText ?? latestAssistantText;
+  const showTyping = isAwaitingReply && !errorText;
+  const bubbleContentMeasureKey = showTyping
+    ? `thinking:${statusLabels.join("\0")}`
+    : errorText
+      ? `error:${errorText}`
+      : `reply:${bubbleText.length}:${isLoading}`;
 
   // Speak finished replies aloud (browser TTS) when Speech is enabled.
   useAssistantSpeech({ latestAssistantText, isLoading });
@@ -1316,9 +1325,11 @@ function AssistantOverlayInner() {
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [bubbleOpen, isDragging]);
-  const bubbleRenderHeight =
-    bubbleMeasuredHeight ?? ASSISTANT_BUBBLE_ESTIMATED_HEIGHT;
+  }, [bubbleOpen, isDragging, bubbleContentMeasureKey]);
+  const bubbleRenderHeight = resolveAssistantBubbleRenderHeight({
+    measuredHeight: bubbleMeasuredHeight,
+    isThinking: showTyping,
+  });
 
   // Cross-axis slide keeping the bubble on screen, recomputed from the
   // measured bubble size; the tail counter-shifts by the same amount so it
@@ -1407,9 +1418,6 @@ function AssistantOverlayInner() {
     },
     [input, isLoading, sendUserMessage]
   );
-
-  const bubbleText = errorText ?? latestAssistantText;
-  const showTyping = isAwaitingReply && !errorText;
 
   const characterVisual = useMemo(() => {
     if (!agentData) {
