@@ -63,7 +63,6 @@ import {
   type AssistantBubbleViewport,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
-import { useAssistantBubbleBodyHeightHold } from "./useAssistantBubbleBodyHeightHold";
 import {
   primeAssistantSpeech,
   speakAssistantText,
@@ -286,18 +285,10 @@ function AssistantOverlayInner() {
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
-  const bubbleBodyRef = useRef<HTMLDivElement>(null);
   // A reply turn is active from send until visible text (or an error)
   // settles. `isLoading` alone flickers off between auto-resent tool steps,
-  // which released the height hold mid-turn and collapsed the bubble.
+  // which flashed the bubble's empty state (and bounced its height) mid-turn.
   const isTurnActive = isLoading || isAwaitingReply;
-  // Reserve the pre-send body height while a reply is in flight so swapping
-  // the reply text for the one-line thinking ticker doesn't displace the
-  // bubble (it snapped smaller on send and regrew as the reply streamed).
-  const bubbleBodyMinHeight = useAssistantBubbleBodyHeightHold(
-    bubbleBodyRef,
-    isTurnActive
-  );
   const activateCharacterRef = useRef<() => void>(() => {});
   const pointAtTargetRef = useRef<
     (
@@ -1558,15 +1549,7 @@ function AssistantOverlayInner() {
               role="log"
               aria-live="polite"
             >
-              <div
-                ref={bubbleBodyRef}
-                className={ASSISTANT_BUBBLE_BODY_CLASS}
-                style={
-                  bubbleBodyMinHeight !== null
-                    ? { minHeight: bubbleBodyMinHeight }
-                    : undefined
-                }
-              >
+              <div className={ASSISTANT_BUBBLE_BODY_CLASS}>
                 {showTyping ? (
                   <ThinkingTicker
                     items={[t("common.assistant.thinking"), ...statusLabels]}
