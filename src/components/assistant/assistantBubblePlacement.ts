@@ -117,6 +117,57 @@ function clampAxis(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+interface AssistantVisualViewportLike {
+  offsetTop: number;
+  offsetLeft: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Effective viewport for bubble placement: the layout viewport (which the
+ * fixed-position overlay is laid out against) intersected with the visual
+ * viewport. On iOS the software keyboard shrinks — and, in browser tabs,
+ * pans — the visual viewport while `window.innerHeight` stays put, so
+ * clamping against the layout viewport alone can slide the bubble into a
+ * region the user cannot see (typically pinned to the hidden top).
+ */
+export function resolveAssistantVisibleViewport({
+  layout,
+  topInset,
+  bottomInset,
+  visual,
+}: {
+  layout: { width: number; height: number };
+  topInset: number;
+  bottomInset: number;
+  visual?: AssistantVisualViewportLike | null;
+}): AssistantBubbleViewport {
+  if (!visual) {
+    return {
+      width: layout.width,
+      height: layout.height,
+      topInset,
+      bottomInset,
+    };
+  }
+  const visibleBottom = Math.min(
+    layout.height,
+    visual.offsetTop + visual.height
+  );
+  const hiddenBelow = layout.height - visibleBottom;
+  return {
+    width: Math.min(layout.width, visual.offsetLeft + visual.width),
+    height: visibleBottom,
+    // A panned-down visual viewport scrolls the menubar out of view; the
+    // bubble then only needs to clear the visible top edge.
+    topInset: Math.max(topInset, visual.offsetTop),
+    // The dock hugs the layout-viewport bottom; whatever part of that band
+    // the keyboard already hides no longer needs clearing.
+    bottomInset: Math.max(0, bottomInset - hiddenBelow),
+  };
+}
+
 interface ResolveAssistantBubbleCrossOffsetOptions {
   side: AssistantBubbleSide;
   align: AssistantBubbleAlign;
@@ -158,16 +209,18 @@ export function resolveAssistantBubbleCrossOffset({
     align === "start"
       ? anchor.y
       : anchor.y + anchor.height - bubbleSize.height;
-  return (
-    clampAxis(
-      naturalY,
-      viewport.topInset + BUBBLE_VIEWPORT_MARGIN,
-      viewport.height -
-        viewport.bottomInset -
-        bubbleSize.height -
-        BUBBLE_VIEWPORT_MARGIN
-    ) - naturalY
-  );
+  const minY = viewport.topInset + BUBBLE_VIEWPORT_MARGIN;
+  const maxY =
+    viewport.height -
+    viewport.bottomInset -
+    bubbleSize.height -
+    BUBBLE_VIEWPORT_MARGIN;
+  // A bubble taller than the available band cannot avoid clipping. Keep its
+  // bottom edge (tail region and input row) visible and let the top
+  // overflow — pinning the top instead would bury the input below the
+  // viewport, e.g. under the iOS keyboard when vertical space is scarce.
+  const clampedY = maxY < minY ? maxY : clampAxis(naturalY, minY, maxY);
+  return clampedY - naturalY;
 }
 
 export function resolveAssistantBubblePlacement({

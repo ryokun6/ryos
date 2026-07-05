@@ -58,7 +58,9 @@ import {
   ASSISTANT_BUBBLE_WIDTH,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
+  resolveAssistantVisibleViewport,
   type AssistantBubbleRect,
+  type AssistantBubbleViewport,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
 import { useAssistantBubbleBodyHeightHold } from "./useAssistantBubbleBodyHeightHold";
@@ -285,12 +287,16 @@ function AssistantOverlayInner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const bubbleBodyRef = useRef<HTMLDivElement>(null);
+  // A reply turn is active from send until visible text (or an error)
+  // settles. `isLoading` alone flickers off between auto-resent tool steps,
+  // which released the height hold mid-turn and collapsed the bubble.
+  const isTurnActive = isLoading || isAwaitingReply;
   // Reserve the pre-send body height while a reply is in flight so swapping
   // the reply text for the one-line thinking ticker doesn't displace the
   // bubble (it snapped smaller on send and regrew as the reply streamed).
   const bubbleBodyMinHeight = useAssistantBubbleBodyHeightHold(
     bubbleBodyRef,
-    isLoading
+    isTurnActive
   );
   const activateCharacterRef = useRef<() => void>(() => {});
   const pointAtTargetRef = useRef<
@@ -323,7 +329,7 @@ function AssistantOverlayInner() {
     // Never close mid-reply: on mobile the input blurs as soon as the
     // keyboard dismisses, which would otherwise start the countdown while
     // the reply is still generating (or before the user can read it).
-    holdOpen: isLoading,
+    holdOpen: isTurnActive,
   });
 
   // --- Position + dragging ---------------------------------------------------
@@ -638,7 +644,9 @@ function AssistantOverlayInner() {
   const agentDataLoadState = useAgentDataLoadState(character.agentUrl);
   const agentData = agentDataLoadState.data;
   const activityIntent = getAssistantAnimationIntent({
-    isLoading,
+    // Bridge the auto-resend gap so the sprite doesn't flash a success nod
+    // and drop to idle between the steps of a tool-calling turn.
+    isLoading: isTurnActive,
     hasError: errorText !== null,
     toolActivity,
     hasVisibleReply: !isAwaitingReply,
@@ -1235,8 +1243,46 @@ function AssistantOverlayInner() {
   // stays inside the viewport and covers the least amount of open windows, so
   // a character docked next to a window pops its bubble away from the window.
   const windowInstances = useAppStore((state) => state.instances);
-  const bubblePlacement = useMemo(() => {
+  // The viewport the bubble must stay inside: the layout viewport clipped to
+  // the visual viewport. On iOS the software keyboard shrinks (and, in
+  // browser tabs, pans) the visual viewport without resizing the window, so
+  // clamping against `window.innerHeight` alone slid the bubble toward the
+  // hidden top of the page while typing.
+  const readVisibleViewport = useCallback((): AssistantBubbleViewport => {
     const insets = computeInsets();
+    return resolveAssistantVisibleViewport({
+      layout: { width: window.innerWidth, height: window.innerHeight },
+      topInset: insets.topInset,
+      bottomInset: insets.bottomInset,
+      visual: window.visualViewport,
+    });
+  }, [computeInsets]);
+  const [visibleViewport, setVisibleViewport] =
+    useState<AssistantBubbleViewport>(readVisibleViewport);
+  useEffect(() => {
+    const update = () => {
+      const next = readVisibleViewport();
+      setVisibleViewport((prev) =>
+        prev.width === next.width &&
+        prev.height === next.height &&
+        prev.topInset === next.topInset &&
+        prev.bottomInset === next.bottomInset
+          ? prev
+          : next
+      );
+    };
+    update();
+    window.addEventListener("resize", update);
+    const visual = window.visualViewport;
+    visual?.addEventListener("resize", update);
+    visual?.addEventListener("scroll", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      visual?.removeEventListener("resize", update);
+      visual?.removeEventListener("scroll", update);
+    };
+  }, [readVisibleViewport]);
+  const bubblePlacement = useMemo(() => {
     // Prefer the rendered window frames: on mobile the store keeps numeric
     // sizes while windows actually render full-width, so store rects can
     // misreport what the bubble would cover.
@@ -1281,12 +1327,7 @@ function AssistantOverlayInner() {
         width: ASSISTANT_BUBBLE_WIDTH,
         height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
       },
-      viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
-        topInset: insets.topInset,
-        bottomInset: insets.bottomInset,
-      },
+      viewport: visibleViewport,
       obstacles,
     });
   }, [
@@ -1294,7 +1335,7 @@ function AssistantOverlayInner() {
     position,
     character.width,
     character.height,
-    computeInsets,
+    visibleViewport,
   ]);
   const bubbleSide = bubblePlacement.side;
   const bubbleAlignEnd = bubblePlacement.align === "end";
@@ -1332,37 +1373,33 @@ function AssistantOverlayInner() {
   // Cross-axis slide keeping the bubble on screen, recomputed from the
   // measured bubble size; the tail counter-shifts by the same amount so it
   // keeps pointing at the character.
-  const bubbleCrossOffset = useMemo(() => {
-    const insets = computeInsets();
-    return resolveAssistantBubbleCrossOffset({
-      side: bubbleSide,
-      align: bubblePlacement.align,
-      anchor: {
-        x: position.x,
-        y: position.y,
-        width: character.width,
-        height: character.height,
-      },
-      bubbleSize: {
-        width: ASSISTANT_BUBBLE_WIDTH,
-        height: bubbleRenderHeight,
-      },
-      viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
-        topInset: insets.topInset,
-        bottomInset: insets.bottomInset,
-      },
-    });
-  }, [
-    bubbleSide,
-    bubblePlacement.align,
-    position,
-    character.width,
-    character.height,
-    bubbleRenderHeight,
-    computeInsets,
-  ]);
+  const bubbleCrossOffset = useMemo(
+    () =>
+      resolveAssistantBubbleCrossOffset({
+        side: bubbleSide,
+        align: bubblePlacement.align,
+        anchor: {
+          x: position.x,
+          y: position.y,
+          width: character.width,
+          height: character.height,
+        },
+        bubbleSize: {
+          width: ASSISTANT_BUBBLE_WIDTH,
+          height: bubbleRenderHeight,
+        },
+        viewport: visibleViewport,
+      }),
+    [
+      bubbleSide,
+      bubblePlacement.align,
+      position,
+      character.width,
+      character.height,
+      bubbleRenderHeight,
+      visibleViewport,
+    ]
+  );
   const bubblePositionStyle = bubbleVertical
     ? bubbleAlignEnd
       ? { right: -bubbleCrossOffset }

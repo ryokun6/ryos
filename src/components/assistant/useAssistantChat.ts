@@ -24,6 +24,7 @@ import {
   getAssistantCharacterName,
 } from "./characters";
 import { getAssistantGreetDecision } from "./assistantGreeting";
+import { resolveAssistantAwaitingReply } from "./assistantReplyState";
 import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
@@ -331,19 +332,22 @@ export function useAssistantChat(): AssistantChatHandle {
   // True while the in-flight turn hasn't produced visible text yet. Unlike
   // `latestAssistantText` (which intentionally falls back to the previous
   // reply while a new one is generating), this looks only at the current turn
-  // so the bubble can show the thinking ticker between replies.
-  const isAwaitingReply = useMemo(() => {
-    if (!isLoading) return false;
-    const last = messages[messages.length - 1];
-    if (!last) return true;
-    if (last.role !== "assistant") return true;
-    return !getAssistantVisibleText(last).trim();
-  }, [messages, isLoading]);
+  // so the bubble can show the thinking ticker between replies. Also bridges
+  // the SDK's momentary "ready" status between auto-resent tool steps.
+  const isAwaitingReply = useMemo(
+    () =>
+      resolveAssistantAwaitingReply({
+        messages,
+        isLoading,
+        hasError: error !== undefined,
+      }),
+    [messages, isLoading, error]
+  );
 
   // Friendly status lines for tool calls in the current turn, shown in the
   // bubble's rolling "thinking" ticker while the reply is being generated.
   const statusLabels = useMemo(() => {
-    if (!isLoading) return [];
+    if (!isLoading && !isAwaitingReply) return [];
     const last = messages[messages.length - 1];
     if (!last || last.role !== "assistant" || !Array.isArray(last.parts)) {
       return [];
@@ -357,7 +361,7 @@ export function useAssistantChat(): AssistantChatHandle {
       if (labels[labels.length - 1] !== label) labels.push(label);
     }
     return labels;
-  }, [messages, isLoading]);
+  }, [messages, isLoading, isAwaitingReply]);
 
   const errorText = useMemo(() => {
     if (!error) return null;
