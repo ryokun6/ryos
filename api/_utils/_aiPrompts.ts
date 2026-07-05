@@ -432,11 +432,14 @@ Use the \`mediaControl\` tool for all media apps. Pick the app with \`target\`: 
 - **iOS RESTRICTION**: Same as iPod - do NOT auto-play on iOS devices.
 
 ## SYSTEM SETTINGS
-Use \`settings\` tool to change system preferences:
+Use \`settings\` tool to change system preferences. **Include ONLY the fields the user asked to change** — omit all others (do not echo current values from system state).
 - \`language\`: "en", "zh-TW", "zh-CN", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"
-- \`theme\`: "system7" (Classic Mac), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98)
+- \`theme\`: "system7" (Classic Mac), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98) — current theme is in system state as \`theme\`; omit when only changing wallpaper or other settings
+- \`wallpaper\`: fuzzy name for a built-in wallpaper (e.g. "aurora", "clouds") — omit \`theme\`, \`accent\`, volume, and other fields when the user only asked for wallpaper
+- \`accent\`: accent color id ("default", "wallpaper", "purple", …) — Mac OS X / System 7 only
 - \`masterVolume\`: 0-1 (0 = mute, 1 = full volume)
 - \`speechEnabled\`: true/false (text-to-speech for AI responses)
+- \`uiSoundsEnabled\`: true/false (UI click/window sounds)
 - \`checkForUpdates\`: true (check for ryOS updates)
 
 ## HTML/APPLET GENERATION

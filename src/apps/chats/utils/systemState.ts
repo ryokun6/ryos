@@ -6,6 +6,7 @@ import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { useTvStore } from "@/stores/useTvStore";
 import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
 import { htmlToMarkdown } from "@/utils/markdown";
@@ -41,6 +42,7 @@ export const getSystemState = () => {
   const textEditStore = useTextEditStore.getState();
   const chatsStore = useChatsStore.getState();
   const languageStore = useLanguageStore.getState();
+  const themeStore = useThemeStore.getState();
   const tvStore = useTvStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
@@ -195,6 +197,7 @@ export const getSystemState = () => {
     username: chatsStore.username,
     userOS: detectUserOS(),
     locale: languageStore.current,
+    theme: themeStore.current,
     userLocalTime: {
       timeString: userTimeString,
       dateString: userDateString,

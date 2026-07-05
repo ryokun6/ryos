@@ -132,6 +132,35 @@ describe("sanitizeSettingsInput", () => {
     ).toEqual({ wallpaper: "aurora" });
   });
 
+  test("wallpaper request on XP strips injected default macosx theme", () => {
+    expect(
+      sanitizeSettingsInput(
+        {
+          wallpaper: "aurora",
+          theme: "macosx",
+          language: "en",
+          accent: "wallpaper",
+          masterVolume: 1,
+          speechEnabled: false,
+          uiSoundsEnabled: true,
+        },
+        { ...BASE_SNAPSHOT, theme: "xp" }
+      )
+    ).toEqual({ wallpaper: "aurora" });
+  });
+
+  test("wallpaper plus intentional theme change still applies both", () => {
+    expect(
+      sanitizeSettingsInput(
+        {
+          wallpaper: "aurora",
+          theme: "xp",
+        },
+        BASE_SNAPSHOT
+      )
+    ).toEqual({ wallpaper: "aurora", theme: "xp" });
+  });
+
   test("theme-only request does not keep echoed current settings", () => {
     expect(
       sanitizeSettingsInput(
@@ -283,6 +312,31 @@ describe("handleSettings applies only sanitized fields", () => {
     expect(setSpeechEnabled).not.toHaveBeenCalled();
     expect(setUiSoundsEnabled).not.toHaveBeenCalled();
     expect(forceRefreshCache).not.toHaveBeenCalled();
+  });
+
+  test("wallpaper on XP ignores injected default macosx theme", async () => {
+    useThemeStore.setState({
+      current: "xp",
+      accentByTheme: { xp: "wallpaper" },
+      setTheme,
+      setAccent,
+    } as Partial<ReturnType<typeof useThemeStore.getState>>);
+
+    const { handleSettings } = await import(
+      "../src/apps/chats/tools/settingsHandler"
+    );
+
+    await handleSettings(
+      {
+        wallpaper: "aurora",
+        theme: "macosx",
+      },
+      "tc_xp_wallpaper",
+      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
+    );
+
+    expect(setWallpaper).toHaveBeenCalledTimes(1);
+    expect(setTheme).not.toHaveBeenCalled();
   });
 
   test("multi-setting XP theme and muted UI sounds both apply", async () => {
