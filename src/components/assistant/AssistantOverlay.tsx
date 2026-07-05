@@ -1682,7 +1682,11 @@ function AssistantOverlayInner() {
             )}
           >
             <div
-              className="relative rounded-[8px] border border-black bg-[#FFFFC8] px-3 pt-1.5 pb-1 shadow-[2px_2px_0_rgba(0,0,0,0.35)] font-geneva-12 text-[12px] leading-snug text-black"
+              className="relative rounded-[8px] border px-3 pt-1.5 pb-1 shadow-[2px_2px_0_rgba(0,0,0,0.35)] font-geneva-12 text-[12px] leading-snug text-black"
+              style={{
+                backgroundColor: character.accent.bubbleBg,
+                borderColor: character.accent.bubbleBorder,
+              }}
               role="log"
               aria-live="polite"
             >
@@ -1753,9 +1757,13 @@ function AssistantOverlayInner() {
               </form>
               {/* Bubble tail pointing at the character */}
               <div
-                style={bubbleTailStyle}
+                style={{
+                  ...bubbleTailStyle,
+                  backgroundColor: character.accent.bubbleBg,
+                  borderColor: character.accent.bubbleBorder,
+                }}
                 className={cn(
-                  "absolute size-2.5 rotate-45 border-black bg-[#FFFFC8]",
+                  "absolute size-2.5 rotate-45",
                   bubbleSide === "above" && "-bottom-[6px] border-b border-r",
                   bubbleSide === "below" && "-top-[6px] border-l border-t",
                   bubbleSide === "left" && "-right-[6px] border-r border-t",
