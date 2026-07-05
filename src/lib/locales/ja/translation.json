@@ -1691,8 +1691,28 @@
       },
       "appearance": "外観",
       "assistant": {
+        "behavior": {
+          "greeting": "挨拶",
+          "greetingDescription": "アシスタントが開いたときに挨拶します",
+          "instructions": "指示",
+          "instructionsHint": "アシスタントの振る舞いを指定します。このアカウントのデバイスでの新しい返信に適用されます。",
+          "instructionsPlaceholder": "例：私のことは「キャプテン」と呼び、料理の比喩を使って説明してください。",
+          "responseStyle": "応答スタイル",
+          "responseStyleDescription": "返信の長さを設定します",
+          "responseStyleOptions": {
+            "chatty": "おしゃべり",
+            "concise": "簡潔",
+            "normal": "標準"
+          },
+          "speech": "スピーチ",
+          "speechDescription": "返信を読み上げます"
+        },
         "description": "チャットや作業を手伝ってくれるキャラクター",
         "hint": "ヒント: デスクトップのキャラクターを右クリックまたは長押しするとクイックメニューが開きます。",
+        "tabs": {
+          "behavior": "振る舞い",
+          "character": "キャラクター"
+        },
         "title": "デスクトップアシスタント"
       },
       "autoSync": {

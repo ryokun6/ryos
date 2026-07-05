@@ -1691,8 +1691,28 @@
       },
       "appearance": "外觀",
       "assistant": {
+        "behavior": {
+          "greeting": "問候語",
+          "greetingDescription": "在打開輔助程式時打招呼",
+          "instructions": "指令",
+          "instructionsHint": "告訴輔助程式如何運作。這會套用到此帳號裝置上的新回覆。",
+          "instructionsPlaceholder": "例如：稱呼我為船長，並以烹飪比喻來解釋事情。",
+          "responseStyle": "回覆風格",
+          "responseStyleDescription": "回覆內容的長度",
+          "responseStyleOptions": {
+            "chatty": "詳盡",
+            "concise": "精簡",
+            "normal": "標準"
+          },
+          "speech": "語音",
+          "speechDescription": "朗讀回覆內容"
+        },
         "description": "能聊天、還能幫你做事的角色",
         "hint": "提示：在桌面上的角色按右鍵或長按即可開啟快速選單。",
+        "tabs": {
+          "behavior": "行為",
+          "character": "角色"
+        },
         "title": "桌面小幫手"
       },
       "autoSync": {

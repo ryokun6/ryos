@@ -6,8 +6,14 @@ import {
   type AssistantCharacterId,
 } from "@/components/assistant/characters";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
+import {
+  ASSISTANT_INSTRUCTIONS_MAX_LENGTH,
+  DEFAULT_ASSISTANT_RESPONSE_STYLE,
+  normalizeAssistantResponseStyle,
+  type AssistantResponseStyle,
+} from "@/shared/assistantCustomization";
 
-const ASSISTANT_STORE_VERSION = 1;
+const ASSISTANT_STORE_VERSION = 2;
 
 /** Keep the persisted assistant conversation small — it lives in localStorage. */
 const MAX_PERSISTED_MESSAGES = 40;
@@ -35,11 +41,20 @@ interface AssistantStoreState {
   bubbleDismissedAt: number | null;
   /** Speak assistant replies aloud with the browser's speech synthesis. */
   speechEnabled: boolean;
+  /** Whether the assistant greets when the bubble is summoned/opened. */
+  greetOnSummon: boolean;
+  /** Preferred reply length (injected into the assistant system prompt). */
+  responseStyle: AssistantResponseStyle;
+  /** User-written behavior instructions (injected into the system prompt). */
+  customInstructions: string;
 
   setEnabled: (enabled: boolean) => void;
   toggleEnabled: () => void;
   setCharacterId: (characterId: AssistantCharacterId) => void;
   setSpeechEnabled: (speechEnabled: boolean) => void;
+  setGreetOnSummon: (greetOnSummon: boolean) => void;
+  setResponseStyle: (responseStyle: AssistantResponseStyle) => void;
+  setCustomInstructions: (customInstructions: string) => void;
   setPosition: (position: AssistantPosition | null) => void;
   setMessages: (messages: AIChatMessage[]) => void;
   clearMessages: () => void;
@@ -58,11 +73,27 @@ export const useAssistantStore = create<AssistantStoreState>()(
       lastInteractionAt: null,
       bubbleDismissedAt: null,
       speechEnabled: false,
+      greetOnSummon: true,
+      responseStyle: DEFAULT_ASSISTANT_RESPONSE_STYLE,
+      customInstructions: "",
 
       setEnabled: (enabled) => set({ enabled }),
       toggleEnabled: () => set((state) => ({ enabled: !state.enabled })),
       setCharacterId: (characterId) => set({ characterId }),
       setSpeechEnabled: (speechEnabled) => set({ speechEnabled }),
+      setGreetOnSummon: (greetOnSummon) => set({ greetOnSummon }),
+      setResponseStyle: (responseStyle) =>
+        set({ responseStyle: normalizeAssistantResponseStyle(responseStyle) }),
+      // Only cap the length here (full sanitization happens server-side at
+      // prompt time) so typing in the settings textarea isn't fought by
+      // whitespace collapsing.
+      setCustomInstructions: (customInstructions) =>
+        set({
+          customInstructions: customInstructions.slice(
+            0,
+            ASSISTANT_INSTRUCTIONS_MAX_LENGTH
+          ),
+        }),
       setPosition: (position) => set({ position }),
       setMessages: (messages) =>
         set({
@@ -87,7 +118,22 @@ export const useAssistantStore = create<AssistantStoreState>()(
         lastInteractionAt: state.lastInteractionAt,
         bubbleDismissedAt: state.bubbleDismissedAt,
         speechEnabled: state.speechEnabled,
+        greetOnSummon: state.greetOnSummon,
+        responseStyle: state.responseStyle,
+        customInstructions: state.customInstructions,
       }),
+      migrate: (persisted, version) => {
+        const state = (persisted ?? {}) as Partial<AssistantStoreState>;
+        if (version < 2) {
+          return {
+            ...state,
+            greetOnSummon: true,
+            responseStyle: DEFAULT_ASSISTANT_RESPONSE_STYLE,
+            customInstructions: "",
+          };
+        }
+        return state;
+      },
     }
   )
 );

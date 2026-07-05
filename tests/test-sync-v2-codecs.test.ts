@@ -729,6 +729,9 @@ describe("settings codec: assistant section", () => {
       characterId: DEFAULT_ASSISTANT_CHARACTER_ID,
       position: null,
       speechEnabled: false,
+      greetOnSummon: true,
+      responseStyle: "normal",
+      customInstructions: "",
     });
   });
 
@@ -738,11 +741,19 @@ describe("settings codec: assistant section", () => {
       characterId: "clippy",
       speechEnabled: true,
       position: { x: 12, y: 34 },
+      greetOnSummon: false,
+      responseStyle: "chatty",
+      customInstructions: "speak like a pirate",
     });
     const docs = SYNC_CODECS.settings.collect(ctx) as Map<string, unknown>;
     expect(docs.get("settings/assistant/enabled")).toBe(false);
     expect(docs.get("settings/assistant/characterId")).toBe("clippy");
     expect(docs.get("settings/assistant/speechEnabled")).toBe(true);
+    expect(docs.get("settings/assistant/greetOnSummon")).toBe(false);
+    expect(docs.get("settings/assistant/responseStyle")).toBe("chatty");
+    expect(docs.get("settings/assistant/customInstructions")).toBe(
+      "speak like a pirate"
+    );
     // Device-local state (dragged position, conversation, bubble/interaction
     // timestamps) must not sync.
     const assistantKeys = [...docs.keys()].filter((key) =>
@@ -750,7 +761,10 @@ describe("settings codec: assistant section", () => {
     );
     expect(assistantKeys.sort()).toEqual([
       "settings/assistant/characterId",
+      "settings/assistant/customInstructions",
       "settings/assistant/enabled",
+      "settings/assistant/greetOnSummon",
+      "settings/assistant/responseStyle",
       "settings/assistant/speechEnabled",
     ]);
   });
@@ -761,6 +775,9 @@ describe("settings codec: assistant section", () => {
         { k: "settings/assistant/enabled", v: false, t },
         { k: "settings/assistant/characterId", v: "clippy", t },
         { k: "settings/assistant/speechEnabled", v: true, t },
+        { k: "settings/assistant/greetOnSummon", v: false, t },
+        { k: "settings/assistant/responseStyle", v: "concise", t },
+        { k: "settings/assistant/customInstructions", v: "answer in haiku", t },
       ],
       ctx
     );
@@ -768,6 +785,17 @@ describe("settings codec: assistant section", () => {
     expect(state.enabled).toBe(false);
     expect(state.characterId).toBe("clippy");
     expect(state.speechEnabled).toBe(true);
+    expect(state.greetOnSummon).toBe(false);
+    expect(state.responseStyle).toBe("concise");
+    expect(state.customInstructions).toBe("answer in haiku");
+  });
+
+  test("apply normalizes unknown synced response styles to the default", async () => {
+    await SYNC_CODECS.settings.apply(
+      [{ k: "settings/assistant/responseStyle", v: "screaming", t }],
+      ctx
+    );
+    expect(useAssistantStore.getState().responseStyle).toBe("normal");
   });
 
   test("apply ignores malformed character ids and tombstones", async () => {

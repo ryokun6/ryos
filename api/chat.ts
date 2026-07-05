@@ -52,6 +52,8 @@ export default apiHandler<{
   proactiveGreeting?: boolean;
   persona?: string;
   assistantName?: string;
+  assistantResponseStyle?: string;
+  assistantInstructions?: string;
 }>(
   {
     methods: ["POST"],
@@ -75,6 +77,8 @@ export default apiHandler<{
       proactiveGreeting: isProactiveGreeting,
       persona,
       assistantName,
+      assistantResponseStyle,
+      assistantInstructions,
     } = req.body as {
       messages: unknown[];
       systemState?: SystemState;
@@ -82,6 +86,8 @@ export default apiHandler<{
       proactiveGreeting?: boolean;
       persona?: string;
       assistantName?: string;
+      assistantResponseStyle?: string;
+      assistantInstructions?: string;
     };
 
     // "assistant" switches to the desktop-assistant persona (no Ryo identity,
@@ -328,9 +334,16 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       log,
       logError,
       preloadedMemoryContext: loadedMemoryContext,
-      ...(conversationChannel === "assistant" &&
-      typeof assistantName === "string"
-        ? { assistantName }
+      ...(conversationChannel === "assistant"
+        ? {
+            ...(typeof assistantName === "string" ? { assistantName } : {}),
+            ...(typeof assistantResponseStyle === "string"
+              ? { assistantResponseStyle }
+              : {}),
+            ...(typeof assistantInstructions === "string"
+              ? { assistantInstructions }
+              : {}),
+          }
         : {}),
     });
     const { enrichedMessages, loadedSections, staticSystemPrompt } =

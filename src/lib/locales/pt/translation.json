@@ -1693,8 +1693,28 @@
       },
       "appearance": "Aparência",
       "assistant": {
+        "behavior": {
+          "greeting": "Saudação",
+          "greetingDescription": "Dizer olá quando o assistente abrir",
+          "instructions": "Instruções",
+          "instructionsHint": "Diga ao assistente como se comportar. Aplica-se a novas respostas nos dispositivos desta conta.",
+          "instructionsPlaceholder": "ex.: Chame-me de Capitão e explique as coisas com metáforas culinárias.",
+          "responseStyle": "Estilo de Resposta",
+          "responseStyleDescription": "O tamanho que as respostas devem ter",
+          "responseStyleOptions": {
+            "chatty": "Conversador",
+            "concise": "Conciso",
+            "normal": "Normal"
+          },
+          "speech": "Fala",
+          "speechDescription": "Falar respostas em voz alta"
+        },
         "description": "Um personagem que conversa e ajuda",
         "hint": "Dica: clique com o botão direito ou mantenha pressionado o personagem para abrir o menu rápido.",
+        "tabs": {
+          "behavior": "Comportamento",
+          "character": "Personagem"
+        },
         "title": "Assistente de desktop"
       },
       "autoSync": {
