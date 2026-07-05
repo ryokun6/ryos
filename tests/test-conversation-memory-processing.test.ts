@@ -166,4 +166,20 @@ describe("conversation memory processing", () => {
     );
     expect(assistantSource).toContain("messages: [...chat.messages]");
   });
+
+  test("identity changes clear the device-local Assistant transcript", () => {
+    const chatsStoreSource = readFileSync(
+      resolve(process.cwd(), "src/stores/useChatsStore.ts"),
+      "utf8"
+    );
+
+    expect(chatsStoreSource).toMatch(
+      /setUsername: \(username\) => \{[\s\S]*?previousUsername !== username[\s\S]*?useAssistantStore\.getState\(\)\.clearMessages\(\)/
+    );
+    expect(
+      chatsStoreSource.match(
+        /useAssistantStore\.getState\(\)\.clearMessages\(\)/g
+      )
+    ).toHaveLength(5);
+  });
 });

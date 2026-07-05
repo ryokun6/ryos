@@ -41,6 +41,7 @@ import {
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
+import { useAssistantStore } from "@/stores/useAssistantStore";
 
 const chatsStoreLog = createClientLogger("ChatsStore");
 const debug = chatsStoreLog.debug;
@@ -212,6 +213,7 @@ function forceLogoutOnUnauthorized() {
   if (!store.username) return;
   debug("Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
+  useAssistantStore.getState().clearMessages();
   useChatsStore.setState({
     username: null,
     isAuthenticated: false,
@@ -482,8 +484,10 @@ export const useChatsStore = create<ChatsStoreState>()(
         // --- Actions ---
         setAiMessages: (messages) => set({ aiMessages: messages }),
         setUsername: (username) => {
-          if (get().username !== username) {
+          const previousUsername = get().username;
+          if (previousUsername !== username) {
             resetRoomsFetchCache();
+            useAssistantStore.getState().clearMessages();
           }
           saveUsernameToRecovery(username);
           set({ username });
@@ -800,6 +804,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           resetRoomsFetchCache();
+          useAssistantStore.getState().clearMessages();
 
           set((state) => ({
             ...state,
@@ -851,6 +856,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           resetRoomsFetchCache();
+          useAssistantStore.getState().clearMessages();
 
           set((state) => ({
             ...state,
@@ -1226,6 +1232,9 @@ export const useChatsStore = create<ChatsStoreState>()(
               password,
             });
             if (data.user) {
+              if (get().username !== data.user.username) {
+                useAssistantStore.getState().clearMessages();
+              }
               set({ username: data.user.username, isAuthenticated: true });
 
               track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
