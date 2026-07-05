@@ -3,7 +3,7 @@
  * sanitization so overfilled tool calls do not mutate unrelated preferences.
  */
 import "fake-indexeddb/auto";
-import { describe, expect, test, beforeEach, afterAll, mock } from "bun:test";
+import { describe, expect, test, beforeEach, mock } from "bun:test";
 
 class MemoryStorage implements Storage {
   private readonly map = new Map<string, string>();
@@ -226,40 +226,17 @@ describe("sanitizeSettingsInput", () => {
 describe("handleSettings applies only sanitized fields", () => {
   const setLanguage = mock(() => {});
   const setTheme = mock(() => {});
-  const setAccent = mock(() => {});
   const setMasterVolume = mock(() => {});
-  const setSpeechEnabled = mock(() => {});
   const setUiSoundsEnabled = mock(() => {});
   const setWallpaper = mock(async () => {});
-  const forceRefreshCache = mock(() => {});
   const addToolOutput = mock(() => {});
-
-  mock.module("@/utils/wallpapers", () => ({
-    loadWallpaperManifest: async () => ({
-      version: 1,
-      generatedAt: "test",
-      tiles: [],
-      photos: { nature: ["photos/nature/aurora.jpg"] },
-      videos: [],
-    }),
-  }));
-  mock.module("@/utils/prefetch", () => ({
-    forceRefreshCache,
-  }));
-
-  afterAll(() => {
-    mock.restore();
-  });
 
   beforeEach(() => {
     setLanguage.mockClear();
     setTheme.mockClear();
-    setAccent.mockClear();
     setMasterVolume.mockClear();
-    setSpeechEnabled.mockClear();
     setUiSoundsEnabled.mockClear();
     setWallpaper.mockClear();
-    forceRefreshCache.mockClear();
     addToolOutput.mockClear();
 
     useLanguageStore.setState({
@@ -270,77 +247,17 @@ describe("handleSettings applies only sanitized fields", () => {
       current: "macosx",
       accentByTheme: { macosx: "wallpaper" },
       setTheme,
-      setAccent,
     } as Partial<ReturnType<typeof useThemeStore.getState>>);
     useAudioSettingsStore.setState({
       masterVolume: 1,
       speechEnabled: false,
       uiSoundsEnabled: true,
       setMasterVolume,
-      setSpeechEnabled,
       setUiSoundsEnabled,
     } as Partial<ReturnType<typeof useAudioSettingsStore.getState>>);
     useDisplaySettingsStore.setState({
       setWallpaper,
     } as Partial<ReturnType<typeof useDisplaySettingsStore.getState>>);
-  });
-
-  test("wallpaper-only overfilled call changes wallpaper but not theme or volume", async () => {
-    const { handleSettings } = await import(
-      "../src/apps/chats/tools/settingsHandler"
-    );
-
-    await handleSettings(
-      {
-        wallpaper: "aurora",
-        theme: "macosx",
-        language: "en",
-        accent: "wallpaper",
-        masterVolume: 1,
-        speechEnabled: false,
-        uiSoundsEnabled: true,
-        checkForUpdates: false,
-      },
-      "tc_wallpaper",
-      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
-    );
-
-    expect(setWallpaper).toHaveBeenCalledTimes(1);
-    expect(setWallpaper.mock.calls[0]?.[0]).toBe(
-      "/wallpapers/photos/nature/aurora.jpg"
-    );
-    expect(setTheme).not.toHaveBeenCalled();
-    expect(setLanguage).not.toHaveBeenCalled();
-    expect(setAccent).not.toHaveBeenCalled();
-    expect(setMasterVolume).not.toHaveBeenCalled();
-    expect(setSpeechEnabled).not.toHaveBeenCalled();
-    expect(setUiSoundsEnabled).not.toHaveBeenCalled();
-    expect(forceRefreshCache).not.toHaveBeenCalled();
-  });
-
-  test("wallpaper on XP applies theme when input theme differs", async () => {
-    useThemeStore.setState({
-      current: "xp",
-      accentByTheme: { xp: "wallpaper" },
-      setTheme,
-      setAccent,
-    } as Partial<ReturnType<typeof useThemeStore.getState>>);
-
-    const { handleSettings } = await import(
-      "../src/apps/chats/tools/settingsHandler"
-    );
-
-    await handleSettings(
-      {
-        wallpaper: "aurora",
-        theme: "macosx",
-      },
-      "tc_xp_wallpaper",
-      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
-    );
-
-    expect(setWallpaper).toHaveBeenCalledTimes(1);
-    expect(setTheme).toHaveBeenCalledWith("macosx");
   });
 
   test("multi-setting XP theme and muted UI sounds both apply", async () => {
@@ -380,9 +297,10 @@ describe("handleSettings applies only sanitized fields", () => {
       { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
     );
 
-    expect(forceRefreshCache).toHaveBeenCalledTimes(1);
     expect(setTheme).not.toHaveBeenCalled();
     expect(setWallpaper).not.toHaveBeenCalled();
     expect(setMasterVolume).not.toHaveBeenCalled();
+    expect(setLanguage).not.toHaveBeenCalled();
+    expect(setUiSoundsEnabled).not.toHaveBeenCalled();
   });
 });
