@@ -2,10 +2,7 @@ import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { motion, AnimatePresence, useDragControls } from "motion/react";
 import { ArrowsIn, Copy, Check, DownloadSimple, Code, Export, DotsSixVertical, Plus } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
-import {
-  loadHtmlPreviewSplit,
-  saveHtmlPreviewSplit,
-} from "@/stores/useDisplaySettingsStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -48,7 +45,10 @@ function HtmlPreview({
   const [isFullScreen, setIsFullScreen] = useState(initialFullScreen);
   const [copySuccess, setCopySuccess] = useState(false);
   const [showCode, setShowCode] = useState(false);
-  const [isSplitView, setIsSplitView] = useState(loadHtmlPreviewSplit());
+  const isSplitView = useDisplaySettingsStore((state) => state.htmlPreviewSplit);
+  const setHtmlPreviewSplit = useDisplaySettingsStore(
+    (state) => state.setHtmlPreviewSplit
+  );
   const [originalHeight, setOriginalHeight] = useState<string | null>(null);
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [isDragging, setIsDragging] = useState(false);
@@ -117,10 +117,6 @@ function HtmlPreview({
     getProcessedHtmlContent,
     getProcessedHtmlContentForSave
   );
-
-  useEffect(() => {
-    saveHtmlPreviewSplit(isSplitView);
-  }, [isSplitView]);
 
   useEffect(() => {
     if (isFullScreen && previewRef.current && !originalHeight) {
@@ -726,7 +722,7 @@ function HtmlPreview({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setIsSplitView(!isSplitView);
+                              setHtmlPreviewSplit(!isSplitView);
                               if (!isSplitView) {
                                 minimizeSound.play();
                               } else {
@@ -748,11 +744,11 @@ function HtmlPreview({
                             e.stopPropagation();
                             if (!showCode) {
                               setShowCode(true);
-                              setIsSplitView(true);
+                              setHtmlPreviewSplit(true);
                               maximizeSound.play();
                             } else {
                               setShowCode(false);
-                              setIsSplitView(false);
+                              setHtmlPreviewSplit(false);
                               minimizeSound.play();
                             }
                           }}
