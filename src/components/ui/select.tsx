@@ -73,46 +73,105 @@ const SelectTrigger = (
 };
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 
-const SelectScrollUpButton = (
-  {
-    ref,
-    className,
-    ...props
-  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton> & {
-    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollUpButton>>;
-  }
-) => (<SelectPrimitive.ScrollUpButton
-  ref={ref}
-  className={cn(
-    "flex cursor-default items-center justify-center py-1",
-    className
-  )}
-  {...props}
->
-  <CaretUp size={12} weight="bold" />
-</SelectPrimitive.ScrollUpButton>);
-SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
+// Custom scroll buttons instead of Radix's SelectPrimitive.ScrollUp/DownButton.
+// The Radix buttons unmount/remount as the viewport crosses the top/bottom edge,
+// and every remount runs a layout effect that scrollIntoView()s the focused
+// (selected) item — snapping the list back to the selection while the user is
+// scrolling (worst on iOS touch, where focus never leaves the selected item).
+// See radix-ui/primitives#3686. These buttons read the viewport directly, never
+// force focus-based scrolling, and stay mounted while the list is scrollable so
+// the layout doesn't shift mid-scroll.
+const SelectScrollButton = ({
+  direction,
+  viewport,
+  className,
+}: {
+  direction: "up" | "down";
+  viewport: HTMLDivElement | null;
+  className?: string;
+}) => {
+  const [isScrollable, setIsScrollable] = React.useState(false);
+  const [canScroll, setCanScroll] = React.useState(false);
+  const autoScrollTimerRef = React.useRef<number | null>(null);
 
-const SelectScrollDownButton = (
-  {
-    ref,
-    className,
-    ...props
-  }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton> & {
-    ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.ScrollDownButton>>;
-  }
-) => (<SelectPrimitive.ScrollDownButton
-  ref={ref}
-  className={cn(
-    "flex cursor-default items-center justify-center py-1",
-    className
-  )}
-  {...props}
->
-  <CaretDown size={12} weight="bold" />
-</SelectPrimitive.ScrollDownButton>);
-SelectScrollDownButton.displayName =
-  SelectPrimitive.ScrollDownButton.displayName;
+  React.useLayoutEffect(() => {
+    if (!viewport) return;
+    const update = () => {
+      const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+      setIsScrollable(maxScroll > 1);
+      setCanScroll(
+        direction === "up"
+          ? viewport.scrollTop > 0
+          : Math.ceil(viewport.scrollTop) < maxScroll
+      );
+    };
+    update();
+    viewport.addEventListener("scroll", update);
+    const observer = new ResizeObserver(update);
+    observer.observe(viewport);
+    return () => {
+      viewport.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [viewport, direction]);
+
+  const stopAutoScroll = React.useCallback(() => {
+    if (autoScrollTimerRef.current !== null) {
+      window.clearInterval(autoScrollTimerRef.current);
+      autoScrollTimerRef.current = null;
+    }
+  }, []);
+
+  React.useEffect(() => stopAutoScroll, [stopAutoScroll]);
+
+  const startAutoScroll = React.useCallback(() => {
+    if (!viewport || autoScrollTimerRef.current !== null) return;
+    autoScrollTimerRef.current = window.setInterval(() => {
+      const step =
+        viewport.querySelector<HTMLElement>('[role="option"]')?.offsetHeight ??
+        24;
+      viewport.scrollTop += direction === "up" ? -step : step;
+    }, 50);
+  }, [viewport, direction]);
+
+  if (!isScrollable) return null;
+
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "flex shrink-0 cursor-default touch-none select-none items-center justify-center py-1 transition-opacity",
+        !canScroll && "opacity-30",
+        className
+      )}
+      onPointerDown={startAutoScroll}
+      onPointerMove={(event) => {
+        if (event.pointerType === "mouse") startAutoScroll();
+      }}
+      onPointerUp={stopAutoScroll}
+      onPointerLeave={stopAutoScroll}
+      onPointerCancel={stopAutoScroll}
+    >
+      {direction === "up" ? (
+        <CaretUp size={12} weight="bold" />
+      ) : (
+        <CaretDown size={12} weight="bold" />
+      )}
+    </div>
+  );
+};
+
+const SelectScrollUpButton = ({ className, viewport }: {
+  className?: string;
+  viewport: HTMLDivElement | null;
+}) => <SelectScrollButton direction="up" viewport={viewport} className={className} />;
+SelectScrollUpButton.displayName = "SelectScrollUpButton";
+
+const SelectScrollDownButton = ({ className, viewport }: {
+  className?: string;
+  viewport: HTMLDivElement | null;
+}) => <SelectScrollButton direction="down" viewport={viewport} className={className} />;
+SelectScrollDownButton.displayName = "SelectScrollDownButton";
 
 const SelectContent = (
   {
@@ -126,6 +185,7 @@ const SelectContent = (
   }
 ) => {
   const { isMacOSTheme, isAquaGlass } = useThemeFlags();
+  const [viewport, setViewport] = React.useState<HTMLDivElement | null>(null);
 
   return (
     <SelectPrimitive.Portal>
@@ -155,10 +215,11 @@ const SelectContent = (
         position={position}
         {...props}
       >
-        <SelectScrollUpButton />
+        <SelectScrollUpButton viewport={viewport} />
         <SelectPrimitive.Viewport
+          ref={setViewport}
           className={cn(
-            "p-1",
+            "p-1 overscroll-contain",
             position === "popper" &&
               "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
             isMacOSTheme && "p-0"
@@ -166,7 +227,7 @@ const SelectContent = (
         >
           {children}
         </SelectPrimitive.Viewport>
-        <SelectScrollDownButton />
+        <SelectScrollDownButton viewport={viewport} />
       </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
   );
