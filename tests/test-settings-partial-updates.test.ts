@@ -221,6 +221,42 @@ describe("sanitizeSettingsInput", () => {
       sanitizeSettingsInput(OVERFILLED_CURRENT_VALUES, BASE_SNAPSHOT)
     ).toEqual({});
   });
+
+  test("keeps wallpaperShuffle when it differs from the current selection", () => {
+    expect(
+      sanitizeSettingsInput(
+        { wallpaperShuffle: "nature", ...OVERFILLED_CURRENT_VALUES },
+        { ...BASE_SNAPSHOT, currentWallpaper: "/wallpapers/tiles/bondi.png" }
+      )
+    ).toEqual({ wallpaperShuffle: "nature" });
+  });
+
+  test("drops wallpaperShuffle echoing the current shuffle descriptor", () => {
+    expect(
+      sanitizeSettingsInput(
+        { wallpaperShuffle: "nature" },
+        { ...BASE_SNAPSHOT, currentWallpaper: "shuffle://photos/nature" }
+      )
+    ).toEqual({});
+  });
+
+  test("keeps wallpaperDynamic when it differs from the current selection", () => {
+    expect(
+      sanitizeSettingsInput(
+        { wallpaperDynamic: "weather" },
+        { ...BASE_SNAPSHOT, currentWallpaper: "dynamic://cover" }
+      )
+    ).toEqual({ wallpaperDynamic: "weather" });
+  });
+
+  test("drops wallpaperDynamic echoing the current dynamic descriptor", () => {
+    expect(
+      sanitizeSettingsInput(
+        { wallpaperDynamic: "weather" },
+        { ...BASE_SNAPSHOT, currentWallpaper: "dynamic://weather" }
+      )
+    ).toEqual({});
+  });
 });
 
 describe("handleSettings applies only sanitized fields", () => {
@@ -256,6 +292,7 @@ describe("handleSettings applies only sanitized fields", () => {
       setUiSoundsEnabled,
     } as Partial<ReturnType<typeof useAudioSettingsStore.getState>>);
     useDisplaySettingsStore.setState({
+      currentWallpaper: "/wallpapers/tiles/bondi.png",
       setWallpaper,
     } as Partial<ReturnType<typeof useDisplaySettingsStore.getState>>);
   });
@@ -281,6 +318,36 @@ describe("handleSettings applies only sanitized fields", () => {
     expect(setLanguage).not.toHaveBeenCalled();
     expect(setMasterVolume).not.toHaveBeenCalled();
     expect(setWallpaper).not.toHaveBeenCalled();
+  });
+
+  test("wallpaperShuffle applies the shuffle descriptor directly", async () => {
+    const { handleSettings } = await import(
+      "../src/apps/chats/tools/settingsHandler"
+    );
+
+    await handleSettings(
+      { wallpaperShuffle: "nature" },
+      "tc_shuffle",
+      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
+    );
+
+    expect(setWallpaper).toHaveBeenCalledWith("shuffle://photos/nature");
+    expect(setTheme).not.toHaveBeenCalled();
+  });
+
+  test("wallpaperDynamic applies the dynamic descriptor directly", async () => {
+    const { handleSettings } = await import(
+      "../src/apps/chats/tools/settingsHandler"
+    );
+
+    await handleSettings(
+      { wallpaperDynamic: "day-night" },
+      "tc_dynamic",
+      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
+    );
+
+    expect(setWallpaper).toHaveBeenCalledWith("dynamic://gradient/day-night");
+    expect(setTheme).not.toHaveBeenCalled();
   });
 
   test("checkForUpdates-only call does not touch persisted settings", async () => {

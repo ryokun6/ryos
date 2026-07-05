@@ -1478,6 +1478,8 @@
         "settingsUpdated": "設定已更新",
         "settingsWallpaperChanged": "背景圖片已更改為 {{name}}",
         "settingsWallpaperNotFound": "沒有符合「{{query}}」的背景圖片",
+        "settingsWallpaperShuffleChanged": "背景圖片已設定為隨機顯示{{category}}",
+        "settingsWallpaperSuggestions": "找不到名為「{{query}}」的背景圖片。最接近的項目：{{suggestions}}",
         "skippedToNextTrack": "跳到下一首",
         "skippedToPreviousTrack": "跳到上一首",
         "skippingToNext": "跳到下一首⋯",

@@ -18,10 +18,14 @@ import { themes } from "@/themes";
 import { getAccentChrome, isValidAccent, type AccentId } from "@/themes/accents";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import {
-  normalizeSearchText,
-  computeMatchScore,
-  deriveScoreThreshold,
-} from "@/apps/chats/utils/fuzzySearch";
+  DYNAMIC_WALLPAPER_DESCRIPTORS,
+  buildShuffleDescriptor,
+} from "@/utils/dynamicWallpaper";
+import type {
+  DynamicWallpaperToolId,
+  WallpaperShuffleCategory,
+} from "@/shared/tools/wallpaper";
+import { resolveWallpaperFromManifest } from "./wallpaperResolution";
 import i18n from "@/lib/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
@@ -59,63 +63,34 @@ const getLanguageDisplayName = (langCode: string): string => {
   return langCode;
 };
 
-/** Human-readable label for a manifest-relative wallpaper path. */
-const wallpaperLabelFromPath = (relPath: string): string => {
-  const fileName = relPath.split("/").pop() || relPath;
-  return fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+/** Localized display name for a dynamic wallpaper id. */
+const getDynamicWallpaperDisplayName = (id: DynamicWallpaperToolId): string => {
+  const keyMap: Record<DynamicWallpaperToolId, string> = {
+    "day-night": "apps.control-panels.dynamicWallpapers.dayNight",
+    weather: "apps.control-panels.dynamicWallpapers.weather",
+    cover: "apps.control-panels.dynamicWallpapers.nowPlaying",
+    lyrics: "apps.control-panels.dynamicWallpapers.lyrics",
+  };
+  const translated = i18n.t(keyMap[id]);
+  return translated !== keyMap[id] ? translated : id;
 };
 
-/**
- * Fuzzy-match a requested wallpaper name against the built-in manifest
- * (tiles, photos across all categories, and video wallpapers). Returns the
- * absolute wallpaper path to feed `setWallpaper`, or null when nothing
- * matches well enough.
- */
-const resolveWallpaperPath = async (
-  query: string
-): Promise<{ path: string; label: string } | null> => {
-  const manifest = await loadWallpaperManifest();
-  const candidates: string[] = [
-    ...(manifest.tiles || []),
-    ...Object.values(manifest.photos || {}).flat(),
-    ...(manifest.videos || []),
-  ];
-
-  const normalizedQuery = normalizeSearchText(query.trim());
-  if (!normalizedQuery) return null;
-  const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
-
-  let best: { relPath: string; score: number } | null = null;
-  for (const relPath of candidates) {
-    const label = wallpaperLabelFromPath(relPath);
-    // Match against both the bare name and the categorized path
-    // ("photos/nature/aurora") so category words like "nature" also hit.
-    const fields = [label, relPath.replace(/\.[^.]+$/, "").replace(/[/_-]+/g, " ")];
-    const score = fields.reduce(
-      (bestScore, field) =>
-        Math.max(
-          bestScore,
-          computeMatchScore(
-            normalizeSearchText(field),
-            normalizedQuery,
-            queryTokens
-          )
-        ),
-      0
-    );
-    if (!best || score > best.score) {
-      best = { relPath, score };
-    }
-  }
-
-  if (!best || best.score < deriveScoreThreshold(normalizedQuery.length)) {
-    return null;
-  }
-
-  return {
-    path: `/wallpapers/${best.relPath}`,
-    label: wallpaperLabelFromPath(best.relPath),
-  };
+/** Localized display name for a shuffle category (mirrors WallpaperPicker). */
+const getShuffleCategoryDisplayName = (
+  category: WallpaperShuffleCategory
+): string => {
+  const key =
+    category === "tiles"
+      ? "apps.control-panels.patterns"
+      : category === "videos"
+        ? "common.menu.videos"
+        : `apps.control-panels.wallpaperCategories.${category}`;
+  const translated = i18n.t(key);
+  if (translated !== key) return translated;
+  return category
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 /**
@@ -130,6 +105,8 @@ export const handleSettings = async (
     language,
     theme,
     wallpaper,
+    wallpaperShuffle,
+    wallpaperDynamic,
     accent,
     masterVolume,
     speechEnabled,
@@ -168,18 +145,60 @@ export const handleSettings = async (
     }
   }
 
-  // Wallpaper change (fuzzy-matched against built-in manifest)
-  if (wallpaper !== undefined) {
+  // Dynamic wallpaper (fixed descriptor — no matching involved)
+  if (wallpaperDynamic !== undefined) {
+    await useDisplaySettingsStore
+      .getState()
+      .setWallpaper(DYNAMIC_WALLPAPER_DESCRIPTORS[wallpaperDynamic]);
+    changes.push(
+      i18n.t("apps.chats.toolCalls.settingsWallpaperChanged", {
+        name: getDynamicWallpaperDisplayName(wallpaperDynamic),
+      })
+    );
+    log.debug("Dynamic wallpaper set", { wallpaperDynamic });
+  }
+
+  // Shuffle wallpaper category (fixed descriptor — no matching involved)
+  if (wallpaperShuffle !== undefined && wallpaperDynamic === undefined) {
+    await useDisplaySettingsStore
+      .getState()
+      .setWallpaper(buildShuffleDescriptor(wallpaperShuffle));
+    changes.push(
+      i18n.t("apps.chats.toolCalls.settingsWallpaperShuffleChanged", {
+        category: getShuffleCategoryDisplayName(wallpaperShuffle),
+      })
+    );
+    log.debug("Shuffle wallpaper set", { wallpaperShuffle });
+  }
+
+  // Specific wallpaper by exact name (deterministic manifest resolution)
+  if (
+    wallpaper !== undefined &&
+    wallpaperShuffle === undefined &&
+    wallpaperDynamic === undefined
+  ) {
     try {
-      const match = await resolveWallpaperPath(wallpaper);
-      if (match) {
-        await useDisplaySettingsStore.getState().setWallpaper(match.path);
+      const resolution = resolveWallpaperFromManifest(
+        await loadWallpaperManifest(),
+        wallpaper
+      );
+      if (resolution.match) {
+        await useDisplaySettingsStore
+          .getState()
+          .setWallpaper(resolution.match.path);
         changes.push(
           i18n.t("apps.chats.toolCalls.settingsWallpaperChanged", {
-            name: match.label,
+            name: resolution.match.label,
           })
         );
-        log.debug("Wallpaper changed", { wallpaper: match.path });
+        log.debug("Wallpaper changed", { wallpaper: resolution.match.path });
+      } else if (resolution.suggestions.length > 0) {
+        failures.push(
+          i18n.t("apps.chats.toolCalls.settingsWallpaperSuggestions", {
+            query: wallpaper,
+            suggestions: resolution.suggestions.join(", "),
+          })
+        );
       } else {
         failures.push(
           i18n.t("apps.chats.toolCalls.settingsWallpaperNotFound", {

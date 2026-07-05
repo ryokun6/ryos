@@ -1482,6 +1482,8 @@
         "settingsUpdated": "Настройки обновлены",
         "settingsWallpaperChanged": "Обои изменены на «{{name}}»",
         "settingsWallpaperNotFound": "Обои по запросу «{{query}}» не найдены",
+        "settingsWallpaperShuffleChanged": "Для обоев установлено перемешивание: {{category}}",
+        "settingsWallpaperSuggestions": "Обои с названием «{{query}}» не найдены. Похожие варианты: {{suggestions}}",
         "skippedToNextTrack": "Переключено на следующий трек",
         "skippedToPreviousTrack": "Переключено на предыдущий трек",
         "skippingToNext": "Переключение на следующий…",

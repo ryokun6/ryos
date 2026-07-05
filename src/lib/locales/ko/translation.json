@@ -1478,6 +1478,8 @@
         "settingsUpdated": "설정이 업데이트되었습니다",
         "settingsWallpaperChanged": "배경화면이 {{name}}(으)로 변경됨",
         "settingsWallpaperNotFound": "\"{{query}}\"와(과) 일치하는 배경화면 없음",
+        "settingsWallpaperShuffleChanged": "배경화면이 {{category}} 셔플로 설정되었습니다.",
+        "settingsWallpaperSuggestions": "\"{{query}}\"라는 이름의 배경화면이 없습니다. 유사한 항목: {{suggestions}}",
         "skippedToNextTrack": "다음 트랙으로 건너뜀",
         "skippedToPreviousTrack": "이전 트랙으로 건너뜀",
         "skippingToNext": "다음으로 건너뛰는 중…",

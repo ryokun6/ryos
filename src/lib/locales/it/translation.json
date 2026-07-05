@@ -1480,6 +1480,8 @@
         "settingsUpdated": "Impostazioni aggiornate",
         "settingsWallpaperChanged": "Sfondo modificato in {{name}}",
         "settingsWallpaperNotFound": "Nessuno sfondo corrisponde a \"{{query}}\"",
+        "settingsWallpaperShuffleChanged": "Sfondo impostato sulla rotazione casuale {{category}}",
+        "settingsWallpaperSuggestions": "Nessuno sfondo denominato \"{{query}}\". Corrispondenze simili: {{suggestions}}",
         "skippedToNextTrack": "Saltato al brano successivo",
         "skippedToPreviousTrack": "Saltato al brano precedente",
         "skippingToNext": "Passaggio al successivo…",

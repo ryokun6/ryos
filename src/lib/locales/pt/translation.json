@@ -1480,6 +1480,8 @@
         "settingsUpdated": "Configurações atualizadas",
         "settingsWallpaperChanged": "Imagem de fundo alterada para {{name}}",
         "settingsWallpaperNotFound": "Nenhuma imagem de fundo corresponde a \"{{query}}\"",
+        "settingsWallpaperShuffleChanged": "Imagem de fundo definida para fotos aleatórias de {{category}}",
+        "settingsWallpaperSuggestions": "Nenhuma imagem de fundo chamada \"{{query}}\". Sugestões: {{suggestions}}",
         "skippedToNextTrack": "Pulou para a próxima faixa",
         "skippedToPreviousTrack": "Pulou para a faixa anterior",
         "skippingToNext": "Pulando para o próximo…",

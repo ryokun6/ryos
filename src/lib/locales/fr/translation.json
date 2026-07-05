@@ -1480,6 +1480,8 @@
         "settingsUpdated": "Paramètres mis à jour",
         "settingsWallpaperChanged": "Fond d’écran remplacé par {{name}}",
         "settingsWallpaperNotFound": "Aucun fond d’écran ne correspond à « {{query}} »",
+        "settingsWallpaperShuffleChanged": "Fond d’écran configuré pour le mélange {{category}}",
+        "settingsWallpaperSuggestions": "Aucun fond d’écran nommé « {{query}} ». Résultats proches : {{suggestions}}",
         "skippedToNextTrack": "Passage à la piste suivante",
         "skippedToPreviousTrack": "Passage à la piste précédente",
         "skippingToNext": "Passage au suivant…",

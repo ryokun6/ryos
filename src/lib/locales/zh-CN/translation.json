@@ -1478,6 +1478,8 @@
         "settingsUpdated": "设置已更新",
         "settingsWallpaperChanged": "墙纸已更改为 {{name}}",
         "settingsWallpaperNotFound": "没有与“{{query}}”匹配的墙纸",
+        "settingsWallpaperShuffleChanged": "壁纸已设置为随机显示{{category}}",
+        "settingsWallpaperSuggestions": "未找到名为“{{query}}”的壁纸。接近的匹配项：{{suggestions}}",
         "skippedToNextTrack": "跳到下一首",
         "skippedToPreviousTrack": "跳到上一首",
         "skippingToNext": "跳到下一首…",

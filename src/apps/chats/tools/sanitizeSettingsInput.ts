@@ -15,13 +15,24 @@
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLanguageStore, type LanguageCode } from "@/stores/useLanguageStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import {
+  DYNAMIC_WALLPAPER_DESCRIPTORS,
+  buildShuffleDescriptor,
+} from "@/utils/dynamicWallpaper";
 import { DEFAULT_ACCENT, type AccentId } from "@/themes/accents";
 import type { OsThemeId } from "@/themes/types";
+import type {
+  DynamicWallpaperToolId,
+  WallpaperShuffleCategory,
+} from "@/shared/tools/wallpaper";
 
 export interface SettingsInput {
   language?: string;
   theme?: OsThemeId;
   wallpaper?: string;
+  wallpaperShuffle?: WallpaperShuffleCategory;
+  wallpaperDynamic?: DynamicWallpaperToolId;
   accent?: string;
   masterVolume?: number;
   speechEnabled?: boolean;
@@ -34,6 +45,8 @@ export const SETTINGS_INPUT_KEYS = [
   "language",
   "theme",
   "wallpaper",
+  "wallpaperShuffle",
+  "wallpaperDynamic",
   "accent",
   "masterVolume",
   "speechEnabled",
@@ -51,6 +64,12 @@ export interface CurrentSettingsSnapshot {
   masterVolume: number;
   speechEnabled: boolean;
   uiSoundsEnabled: boolean;
+  /**
+   * Persisted wallpaper selection (concrete path or `dynamic://`/`shuffle://`
+   * descriptor). Optional so callers/tests that only care about other
+   * settings can omit it; when absent, wallpaper params are always kept.
+   */
+  currentWallpaper?: string;
 }
 
 export function readCurrentSettingsSnapshot(): CurrentSettingsSnapshot {
@@ -66,6 +85,7 @@ export function readCurrentSettingsSnapshot(): CurrentSettingsSnapshot {
     masterVolume: audioStore.masterVolume,
     speechEnabled: audioStore.speechEnabled,
     uiSoundsEnabled: audioStore.uiSoundsEnabled,
+    currentWallpaper: useDisplaySettingsStore.getState().currentWallpaper,
   };
 }
 
@@ -73,9 +93,11 @@ export function readCurrentSettingsSnapshot(): CurrentSettingsSnapshot {
  * Drop settings parameters that match the current snapshot (typical model
  * overfill) and no-op sentinels like `checkForUpdates: false`.
  *
- * Wallpaper queries are always kept when present — the input is a fuzzy search
- * string, not the persisted descriptor, so it cannot be compared reliably to
- * `currentWallpaper`. Theme is kept whenever it differs from the live snapshot
+ * Wallpaper name queries are always kept when present — the input is a name,
+ * not the persisted descriptor, so it cannot be compared reliably to
+ * `currentWallpaper`. Shuffle/dynamic wallpaper params map to exact stored
+ * descriptors and are dropped when they match the current selection. Theme is
+ * kept whenever it differs from the live snapshot
  * (system state + prompt guidance reduce bogus default-theme overfill).
  */
 export function sanitizeSettingsInput(
@@ -96,6 +118,22 @@ export function sanitizeSettingsInput(
     const query = input.wallpaper.trim();
     if (query.length > 0) {
       sanitized.wallpaper = query;
+    }
+  }
+
+  // Shuffle/dynamic selections map to exact stored descriptors, so echoed
+  // current values *can* be detected and dropped (unlike name queries).
+  if (input.wallpaperShuffle !== undefined) {
+    const descriptor = buildShuffleDescriptor(input.wallpaperShuffle);
+    if (descriptor !== snapshot.currentWallpaper) {
+      sanitized.wallpaperShuffle = input.wallpaperShuffle;
+    }
+  }
+
+  if (input.wallpaperDynamic !== undefined) {
+    const descriptor = DYNAMIC_WALLPAPER_DESCRIPTORS[input.wallpaperDynamic];
+    if (descriptor !== undefined && descriptor !== snapshot.currentWallpaper) {
+      sanitized.wallpaperDynamic = input.wallpaperDynamic;
     }
   }
 

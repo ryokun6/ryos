@@ -1480,6 +1480,8 @@
         "settingsUpdated": "Ajustes actualizados",
         "settingsWallpaperChanged": "Fondo de pantalla cambiado a {{name}}",
         "settingsWallpaperNotFound": "Ningún fondo de pantalla coincide con \"{{query}}\"",
+        "settingsWallpaperShuffleChanged": "Fondo de pantalla configurado para selección aleatoria de {{category}}",
+        "settingsWallpaperSuggestions": "No hay ningún fondo de pantalla llamado \"{{query}}\". Coincidencias similares: {{suggestions}}",
         "skippedToNextTrack": "Saltó a la siguiente pista",
         "skippedToPreviousTrack": "Saltó a la pista anterior",
         "skippingToNext": "Saltando al siguiente…",

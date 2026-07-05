@@ -1478,6 +1478,8 @@
         "settingsUpdated": "設定が更新されました",
         "settingsWallpaperChanged": "壁紙を{{name}}に変更しました",
         "settingsWallpaperNotFound": "\"{{query}}\"に一致する壁紙が見つかりませんでした",
+        "settingsWallpaperShuffleChanged": "壁紙が{{category}}のシャッフルに設定されました",
+        "settingsWallpaperSuggestions": "「{{query}}」という名前の壁紙はありません。似ている候補: {{suggestions}}",
         "skippedToNextTrack": "次のトラックにスキップしました",
         "skippedToPreviousTrack": "前のトラックにスキップしました",
         "skippingToNext": "次へスキップ中…",
