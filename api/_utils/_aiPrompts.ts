@@ -437,7 +437,9 @@ Use the \`mediaControl\` tool for all media apps. Pick the app with \`target\`: 
 Use \`settings\` tool to change system preferences. **Include ONLY the fields the user asked to change** — omit all others (do not echo current values from system state).
 - \`language\`: "en", "zh-TW", "zh-CN", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"
 - \`theme\`: "system7" (Classic Mac), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98) — current theme is in system state as \`theme\`; omit when only changing wallpaper or other settings
-- \`wallpaper\`: fuzzy name for a built-in wallpaper (e.g. "aurora", "clouds") — omit \`theme\`, \`accent\`, volume, and other fields when the user only asked for wallpaper
+- \`wallpaper\`: exact name of one built-in wallpaper (e.g. "aurora", "clouds") — if it fails, the result lists close names to retry with; omit \`theme\`, \`accent\`, volume, and other fields when the user only asked for wallpaper
+- \`wallpaperShuffle\`: shuffle a wallpaper category — "tiles", "videos", or a photo category ("aqua", "black_and_white", "convergency", "foliage", "graphics", "landscapes", "nature", "nostalgia", "objects", "plants", "structures"); use when the user wants rotating/shuffled wallpapers or a category
+- \`wallpaperDynamic\`: dynamic wallpaper — "day-night" (time-of-day gradient), "weather" (live weather), "cover" (now-playing album art), "lyrics" (now-playing lyrics); use exactly one of the three wallpaper fields per call
 - \`accent\`: accent color id ("default", "wallpaper", "purple", …) — Mac OS X / System 7 only
 - \`masterVolume\`: 0-1 (0 = mute, 1 = full volume)
 - \`speechEnabled\`: true/false (text-to-speech for AI responses)

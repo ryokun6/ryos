@@ -24,6 +24,8 @@ import {
   TV_ACTIONS,
   MEDIA_TARGETS,
   MEDIA_CONTROL_ACTIONS,
+  DYNAMIC_WALLPAPER_IDS,
+  WALLPAPER_SHUFFLE_CATEGORIES,
   type TvAction,
 } from "./types.js";
 import {
@@ -437,7 +439,19 @@ const settingsObjectSchema = z.object({
   wallpaper: z
     .preprocess(normalizeOptionalString, z.string().max(120).optional())
     .describe(
-      "Change the desktop wallpaper by name. Fuzzy-matched against the built-in tiles, photos, and video wallpapers (e.g. 'aurora', 'clouds', 'red tile'). ONLY include when the user explicitly asks to change wallpaper."
+      "Set a specific built-in wallpaper by exact name (e.g. 'aurora', 'clouds', 'bondi'). Matched case-insensitively against built-in tile, photo, and video wallpaper names — no fuzzy matching. If no exact match exists, the tool result lists close names to retry with. Use 'wallpaperShuffle' or 'wallpaperDynamic' instead when the user wants a shuffled category or a dynamic wallpaper. ONLY include when the user explicitly asks to change wallpaper."
+    ),
+  wallpaperShuffle: z
+    .enum(WALLPAPER_SHUFFLE_CATEGORIES)
+    .optional()
+    .describe(
+      "Shuffle wallpapers from a category (rotates automatically every few minutes). 'tiles' shuffles tiled patterns, 'videos' shuffles video wallpapers, and the rest shuffle that photo category. ONLY include when the user asks to shuffle/rotate wallpapers or asks for a category rather than one specific wallpaper. Do not combine with 'wallpaper' or 'wallpaperDynamic'."
+    ),
+  wallpaperDynamic: z
+    .enum(DYNAMIC_WALLPAPER_IDS)
+    .optional()
+    .describe(
+      "Set a dynamic wallpaper: 'day-night' is a gradient that shifts with the time of day, 'weather' reflects the live local weather, 'cover' shows the now-playing album art, 'lyrics' shows the now-playing synced lyrics. ONLY include when the user asks for one of these dynamic wallpapers. Do not combine with 'wallpaper' or 'wallpaperShuffle'."
     ),
   accent: z
     .enum(ACCENT_IDS)
@@ -475,7 +489,18 @@ const settingsObjectSchema = z.object({
 
 export const settingsSchema = z.preprocess(
   normalizeSettingsInput,
-  settingsObjectSchema
+  settingsObjectSchema.superRefine((data, ctx) => {
+    const wallpaperFields = (
+      ["wallpaper", "wallpaperShuffle", "wallpaperDynamic"] as const
+    ).filter((key) => data[key] !== undefined);
+    if (wallpaperFields.length > 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Provide only one of 'wallpaper', 'wallpaperShuffle', or 'wallpaperDynamic' (got ${wallpaperFields.join(", ")}).`,
+        path: [wallpaperFields[1]],
+      });
+    }
+  })
 );
 
 /**

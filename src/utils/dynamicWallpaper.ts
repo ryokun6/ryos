@@ -25,6 +25,7 @@
 // (see `pickDeterministicCandidate` and `useShuffleWallpaper`).
 
 import type { WallpaperManifest } from "@/utils/wallpapers";
+import type { DynamicWallpaperToolId } from "@/shared/tools/wallpaper";
 import {
   getEffectiveTimezone,
   getZonedFractionalHour,
@@ -37,6 +38,20 @@ export const DAY_NIGHT_GRADIENT_WALLPAPER = "dynamic://gradient/day-night";
 export const WEATHER_WALLPAPER = "dynamic://weather";
 export const COVER_WALLPAPER = "dynamic://cover";
 export const LYRICS_WALLPAPER = "dynamic://lyrics";
+
+/**
+ * Maps the AI settings tool's dynamic wallpaper ids (see
+ * `src/shared/tools/wallpaper.ts`) onto their stored descriptors.
+ */
+export const DYNAMIC_WALLPAPER_DESCRIPTORS: Record<
+  DynamicWallpaperToolId,
+  string
+> = {
+  "day-night": DAY_NIGHT_GRADIENT_WALLPAPER,
+  weather: WEATHER_WALLPAPER,
+  cover: COVER_WALLPAPER,
+  lyrics: LYRICS_WALLPAPER,
+};
 
 /**
  * How often shuffle wallpapers swap to a new random pick. Rotation is

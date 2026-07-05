@@ -31,6 +31,14 @@ export {
   type StickiesControlOutput,
   type StickyColor,
 } from "../../../src/shared/tools/stickies.js";
+export {
+  DYNAMIC_WALLPAPER_IDS,
+  WALLPAPER_PHOTO_CATEGORIES,
+  WALLPAPER_SHUFFLE_CATEGORIES,
+  type DynamicWallpaperToolId,
+  type WallpaperPhotoCategory,
+  type WallpaperShuffleCategory,
+} from "../../../src/shared/tools/wallpaper.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
@@ -282,6 +290,8 @@ export interface SettingsInput {
   language?: LanguageCode;
   theme?: ThemeId;
   wallpaper?: string;
+  wallpaperShuffle?: import("../../../src/shared/tools/wallpaper.js").WallpaperShuffleCategory;
+  wallpaperDynamic?: import("../../../src/shared/tools/wallpaper.js").DynamicWallpaperToolId;
   accent?: AccentId;
   masterVolume?: number;
   speechEnabled?: boolean;
