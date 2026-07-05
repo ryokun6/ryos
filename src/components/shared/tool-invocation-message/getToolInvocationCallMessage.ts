@@ -141,6 +141,15 @@ export function getToolInvocationCallMessage(
             });
         break;
       }
+      case "memoryWrite":
+        displayCallMessage = t("apps.chats.toolCalls.memory.saving");
+        break;
+      case "memoryRead":
+        displayCallMessage = t("apps.chats.toolCalls.memory.recalling");
+        break;
+      case "memoryDelete":
+        displayCallMessage = t("apps.chats.toolCalls.memory.deleting");
+        break;
       case "cursorCloudAgent":
         displayCallMessage = t("apps.chats.toolCalls.cursorCloudAgent.starting");
         break;

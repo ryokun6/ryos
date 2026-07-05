@@ -37,6 +37,7 @@ import {
 } from "../../sync/v2/_tool-state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { extractMetadata, stripHtmlToText } from "./htmlExtract.js";
+import { checkToolRateLimit } from "./_tool-rate-limit.js";
 import {
   getYouTubeApiKeys,
   toSearchSongsResult,
@@ -94,11 +95,20 @@ export async function executeGenerateHtml(
  */
 export async function executeSearchSongs(
   input: SearchSongsInput,
-  context: ServerToolContext
+  context: ServerToolContext & { username?: string | null }
 ): Promise<SearchSongsOutput> {
   const { query, maxResults = 5 } = input;
   
   context.log(`[searchSongs] Searching for: "${query}" (max ${maxResults} results)`);
+
+  const rateLimit = await checkToolRateLimit(
+    "searchSongs",
+    context.username,
+    context.logError
+  );
+  if (!rateLimit.allowed) {
+    return { results: [], message: rateLimit.message! };
+  }
 
   const apiKeys = getYouTubeApiKeys(context.env);
 
@@ -192,11 +202,27 @@ const WEB_FETCH_BROWSER_HEADERS: Record<string, string> = {
 
 export async function executeWebFetch(
   input: WebFetchInput,
-  context: ServerToolContext
+  context: ServerToolContext & { username?: string | null }
 ): Promise<WebFetchOutput> {
   const { url, selector } = input;
 
   context.log(`[webFetch] Fetching: ${url}${selector ? ` (selector: ${selector})` : ""}`);
+
+  const rateLimit = await checkToolRateLimit(
+    "webFetch",
+    context.username,
+    context.logError
+  );
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      url,
+      content: "",
+      contentLength: 0,
+      truncated: false,
+      message: rateLimit.message!,
+    };
+  }
 
   try {
     await validatePublicUrl(url);

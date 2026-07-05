@@ -1193,6 +1193,7 @@
       "toolCalls": {
         "addedAndStartedPlaying": "新しい曲を追加して再生を開始しました",
         "addingSong": "曲を追加中…",
+        "appNotRunning": "{{appName}}が実行されていません",
         "applet": "アプレット",
         "calendar": {
           "addedEvent": "「{{title}}」イベントを追加しました",
@@ -1413,6 +1414,20 @@
         "listingApplications": "アプリケーションを一覧表示中…",
         "listingSharedApplets": "共有アプレットを一覧表示中…",
         "loadingMusicLibrary": "音楽ライブラリを読み込み中…",
+        "maps": {
+          "foundMany": "\"{{query}}\"の場所が{{count}}件見つかりました。",
+          "foundOne": "\"{{query}}\"の場所が1件見つかりました。",
+          "noResults": "\"{{query}}\"の場所は見つかりませんでした。",
+          "openInAppleMaps": "Appleマップで開く",
+          "openInMaps": "{{name}}をマップで開く",
+          "searching": "マップで\"{{query}}\"を検索中…",
+          "searchingNoQuery": "マップを検索中…"
+        },
+        "memory": {
+          "deleting": "メモリを削除中…",
+          "recalling": "メモリを呼び出し中…",
+          "saving": "メモリを保存中…"
+        },
         "missingEditParameters": "必須パラメーターが不足しています: path, old_string, and new_string",
         "multipleMatchesFound": "複数の一致が見つかりました",
         "musicLibraryEmpty": "Musicライブラリは空です",
@@ -1449,6 +1464,8 @@
         "searchedWebFor": "「{{query}}」をウェブで検索しました",
         "searchingSongs": "\"{{query}}\"を検索中…",
         "searchingWeb": "ウェブを検索中…",
+        "settingsAccentChanged": "アクセントカラーを{{accent}}に設定しました",
+        "settingsAccentNotSupported": "アクセントカラーは{{theme}}テーマではサポートされていません",
         "settingsCheckingForUpdates": "アップデートを確認中…",
         "settingsLanguageChanged": "言語を{{language}}に変更しました",
         "settingsMasterVolumeSet": "音量を{{volume}}%に設定しました",
@@ -1456,7 +1473,11 @@
         "settingsSpeechDisabled": "音声読み上げを無効にしました",
         "settingsSpeechEnabled": "音声読み上げを有効にしました",
         "settingsThemeChanged": "テーマを{{theme}}に変更しました",
+        "settingsUiSoundsDisabled": "UIサウンドを無効にしました",
+        "settingsUiSoundsEnabled": "UIサウンドを有効にしました",
         "settingsUpdated": "設定が更新されました",
+        "settingsWallpaperChanged": "壁紙を{{name}}に変更しました",
+        "settingsWallpaperNotFound": "\"{{query}}\"に一致する壁紙が見つかりませんでした",
         "skippedToNextTrack": "次のトラックにスキップしました",
         "skippedToPreviousTrack": "前のトラックにスキップしました",
         "skippingToNext": "次へスキップ中…",
@@ -1509,6 +1530,7 @@
           "videoAlreadyInChannel": "{{title}}はすでに{{channel}}にあります",
           "videoNotInChannel": "チャンネル内に動画が見つかりません"
         },
+        "unhandledTool": "未処理のツール: {{toolName}}",
         "unknownError": "不明なエラー",
         "updatedDocument": "ドキュメントを更新しました: {{path}}",
         "webFetch": {

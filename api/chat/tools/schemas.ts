@@ -9,6 +9,7 @@ import { z } from "zod";
 import { appIds } from "../../../src/config/appIds.js";
 import {
   THEME_IDS,
+  ACCENT_IDS,
   LANGUAGE_CODES,
   VFS_PATHS,
   MEMORY_TYPES,
@@ -415,6 +416,19 @@ export const settingsSchema = z.object({
     .describe(
       'Change the OS theme. One of "system7" (Mac OS 7), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98).'
     ),
+  wallpaper: z
+    .string()
+    .max(120)
+    .optional()
+    .describe(
+      "Change the desktop wallpaper by name. Fuzzy-matched against the built-in tiles, photos, and video wallpapers (e.g. 'aurora', 'clouds', 'red tile')."
+    ),
+  accent: z
+    .enum(ACCENT_IDS)
+    .optional()
+    .describe(
+      "Change the accent color (Mac OS X and System 7 themes only). 'default' restores the theme's classic look; 'wallpaper' samples the color from the current wallpaper."
+    ),
   masterVolume: z
     .number()
     .min(0)
@@ -428,6 +442,12 @@ export const settingsSchema = z.object({
     .optional()
     .describe(
       "Enable or disable text-to-speech for AI responses. When enabled, the AI's responses will be read aloud."
+    ),
+  uiSoundsEnabled: z
+    .boolean()
+    .optional()
+    .describe(
+      "Enable or disable UI sound effects (window sounds, clicks, and other interface feedback)."
     ),
   checkForUpdates: z
     .boolean()
@@ -646,6 +666,11 @@ export const calendarControlSchema = z.object({
     .max(500)
     .optional()
     .describe("Optional notes for the event."),
+  location: z
+    .string()
+    .max(200)
+    .optional()
+    .describe("For 'create' and 'update': optional event location (shown under the title)."),
   completed: z
     .boolean()
     .optional()
@@ -839,12 +864,14 @@ export const documentsControlSchema = z
       ),
     path: z
       .string()
+      .max(300)
       .optional()
       .describe(
         "For 'read', 'write', and 'edit': full document path under /Documents, e.g. '/Documents/notes.md'."
       ),
     content: z
       .string()
+      .max(100_000)
       .optional()
       .describe("For 'write': markdown content to save. Required for writes."),
     mode: z
@@ -856,11 +883,16 @@ export const documentsControlSchema = z
       ),
     old_string: z
       .string()
+      .max(20_000)
       .optional()
       .describe(
         "For 'edit': exact text to replace. Must match uniquely within the document."
       ),
-    new_string: z.string().optional().describe("For 'edit': replacement text."),
+    new_string: z
+      .string()
+      .max(20_000)
+      .optional()
+      .describe("For 'edit': replacement text."),
   })
   .superRefine((data, ctx) => {
     const path = data.path?.trim();
@@ -887,6 +919,20 @@ export const documentsControlSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Document paths must end with .md.",
+          path: ["path"],
+        });
+      }
+      const fileName = path.slice("/Documents/".length);
+      if (
+        fileName.includes("/") ||
+        fileName.includes("\\") ||
+        fileName.includes("..") ||
+        fileName.trim().length === 0
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Document paths must point at a single file directly under /Documents (no subdirectories or '..').",
           path: ["path"],
         });
       }

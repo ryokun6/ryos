@@ -1193,6 +1193,7 @@
       "toolCalls": {
         "addedAndStartedPlaying": "已添加新歌曲并开始播放",
         "addingSong": "正在添加歌曲…",
+        "appNotRunning": "{{appName}}未运行",
         "applet": "Applet",
         "calendar": {
           "addedEvent": "已添加事件「{{title}}」",
@@ -1413,6 +1414,20 @@
         "listingApplications": "列出应用程序…",
         "listingSharedApplets": "列出共享小程序…",
         "loadingMusicLibrary": "正在加载音乐库…",
+        "maps": {
+          "foundMany": "找到 {{count}} 个与“{{query}}”相关的位置。",
+          "foundOne": "找到 1 个与“{{query}}”相关的位置。",
+          "noResults": "未找到与“{{query}}”相关的位置。",
+          "openInAppleMaps": "在 Apple 地图中打开",
+          "openInMaps": "在“地图”中打开 {{name}}",
+          "searching": "正在地图中搜索“{{query}}”…",
+          "searchingNoQuery": "正在搜索地图…"
+        },
+        "memory": {
+          "deleting": "正在删除记忆…",
+          "recalling": "正在检索记忆…",
+          "saving": "正在保存记忆…"
+        },
         "missingEditParameters": "缺少必要参数：path、old_string 和 new_string",
         "multipleMatchesFound": "找到多个匹配项",
         "musicLibraryEmpty": "资料库是空的",
@@ -1449,6 +1464,8 @@
         "searchedWebFor": "已在网络上搜索 {{query}}",
         "searchingSongs": "正在搜索「{{query}}」…",
         "searchingWeb": "正在搜索网络…",
+        "settingsAccentChanged": "强调色已设为 {{accent}}",
+        "settingsAccentNotSupported": "{{theme}} 主题不支持强调色",
         "settingsCheckingForUpdates": "正在检查更新…",
         "settingsLanguageChanged": "语言已变更为{{language}}",
         "settingsMasterVolumeSet": "音量已设置为 {{volume}}%",
@@ -1456,7 +1473,11 @@
         "settingsSpeechDisabled": "语音朗读已关闭",
         "settingsSpeechEnabled": "已启用语音朗读",
         "settingsThemeChanged": "主题已变更为{{theme}}",
+        "settingsUiSoundsDisabled": "用户界面声音已禁用",
+        "settingsUiSoundsEnabled": "用户界面声音已启用",
         "settingsUpdated": "设置已更新",
+        "settingsWallpaperChanged": "墙纸已更改为 {{name}}",
+        "settingsWallpaperNotFound": "没有与“{{query}}”匹配的墙纸",
         "skippedToNextTrack": "跳到下一首",
         "skippedToPreviousTrack": "跳到上一首",
         "skippingToNext": "跳到下一首…",
@@ -1509,6 +1530,7 @@
           "videoAlreadyInChannel": "{{title}} 已在 {{channel}} 中",
           "videoNotInChannel": "频道中找不到视频"
         },
+        "unhandledTool": "未处理的工具：{{toolName}}",
         "unknownError": "未知错误",
         "updatedDocument": "文件已更新：{{path}}",
         "webFetch": {

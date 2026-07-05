@@ -3,19 +3,17 @@
  */
 
 import type { ToolContext } from "./types";
-import { useStickiesStore, type StickyColor } from "@/stores/useStickiesStore";
+import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import { useAppStore } from "@/stores/useAppStore";
 import i18n from "@/lib/i18n";
+import {
+  buildStickyPatch,
+  serializeStickyToolRecord,
+  type StickiesControlInput,
+} from "@/shared/tools/stickies";
 import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
 
-export interface StickiesControlInput {
-  action: "list" | "create" | "update" | "delete" | "clear";
-  id?: string;
-  content?: string;
-  color?: StickyColor;
-  position?: { x: number; y: number };
-  size?: { width: number; height: number };
-}
+export type { StickiesControlInput } from "@/shared/tools/stickies";
 
 /**
  * Module-level storage for short ID mapping.
@@ -57,13 +55,9 @@ export const handleStickiesControl = (
         // Create short ID mapping for efficient AI communication
         stickyIdMap = createShortIdMap(notes.map((n) => n.id), "s");
         // Return data with short IDs to reduce token usage
-        const notesData = notes.map((n) => ({
-          id: stickyIdMap!.fullToShort.get(n.id),
-          color: n.color,
-          content: n.content,
-          position: n.position,
-          size: n.size,
-        }));
+        const notesData = notes.map((n) =>
+          serializeStickyToolRecord(n, stickyIdMap)
+        );
         context.addToolOutput({ 
           tool: "stickiesControl", 
           toolCallId, 
@@ -103,11 +97,11 @@ export const handleStickiesControl = (
           context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.notFound", { id }) });
           return;
         }
-        const updates: Record<string, unknown> = {};
-        if (content !== undefined) updates.content = content;
-        if (color !== undefined) updates.color = color;
-        if (position !== undefined) updates.position = position;
-        if (size !== undefined) updates.size = size;
+        // Input colors share the same union as the store; the shared patch
+        // builder is typed against the wire DTO (color: string).
+        const updates = buildStickyPatch(input) as Partial<
+          Omit<StickyNote, "id" | "createdAt">
+        >;
         if (Object.keys(updates).length === 0) {
           context.addToolOutput({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.noUpdates") });
           return;

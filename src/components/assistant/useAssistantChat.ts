@@ -235,28 +235,11 @@ export function useAssistantChat(): AssistantChatHandle {
   } = useChat<AIChatMessage>({ chat, experimental_throttle: 60 });
 
   const handlersRef = useRef({
-    onToolCall: async ({
-      toolCall,
-    }: {
+    // Placeholder; replaced with a fresh closure on every render below so the
+    // dispatch always sees the latest addToolOutput/launchApp identities.
+    onToolCall: async (_options: {
       toolCall: { toolName: string; toolCallId: string; input: unknown };
-    }) => {
-      const requestSequence = ++toolRequestSequenceRef.current;
-      const toolStartedAt = Date.now();
-      const result = await dispatchToolCall(
-        {
-          toolName: toolCall.toolName,
-          toolCallId: toolCall.toolCallId,
-          input: toolCall.input,
-        },
-        {
-          addToolOutput,
-          launchApp: (appId, options) => launchApp(appId as AppId, options),
-          saveFile,
-          onOpenAttempt: () => recordOpenAttempt(requestSequence),
-        }
-      );
-      recordOpenResult(result, requestSequence, toolStartedAt);
-    },
+    }): Promise<void> => {},
     onFinish: ({ messages: finished }: { messages: AIChatMessage[] }) => {
       const stamped = finished.map(
         (msg) =>

@@ -1195,6 +1195,7 @@
       "toolCalls": {
         "addedAndStartedPlaying": "Nouvelle chanson ajoutée et lecture démarrée",
         "addingSong": "Ajout de la chanson…",
+        "appNotRunning": "{{appName}} n’est pas ouverte",
         "applet": "Applet",
         "calendar": {
           "addedEvent": "Événement «{{title}}» ajouté",
@@ -1415,6 +1416,20 @@
         "listingApplications": "Liste des applications…",
         "listingSharedApplets": "Liste des applets partagées…",
         "loadingMusicLibrary": "Chargement de la bibliothèque musicale…",
+        "maps": {
+          "foundMany": "{{count}} lieux trouvés pour « {{query}} ».",
+          "foundOne": "1 lieu trouvé pour « {{query}} ».",
+          "noResults": "Aucun lieu trouvé pour « {{query}} ».",
+          "openInAppleMaps": "Ouvrir dans Apple Plans",
+          "openInMaps": "Ouvrir {{name}} dans Plans",
+          "searching": "Recherche de « {{query}} » dans Plans…",
+          "searchingNoQuery": "Recherche dans Plans…"
+        },
+        "memory": {
+          "deleting": "Suppression de la mémoire…",
+          "recalling": "Rappel des souvenirs…",
+          "saving": "Enregistrement de la mémoire…"
+        },
         "missingEditParameters": "Paramètres requis manquants : path, old_string et new_string",
         "multipleMatchesFound": "Plusieurs correspondances trouvées",
         "musicLibraryEmpty": "La bibliothèque Musique est vide",
@@ -1451,6 +1466,8 @@
         "searchedWebFor": "Recherché sur le web pour {{query}}",
         "searchingSongs": "Recherche de \"{{query}}\"…",
         "searchingWeb": "Recherche sur le web…",
+        "settingsAccentChanged": "Couleur d’accentuation définie sur {{accent}}",
+        "settingsAccentNotSupported": "Les couleurs d’accentuation ne sont pas prises en charge par le thème {{theme}}",
         "settingsCheckingForUpdates": "Recherche de mises à jour…",
         "settingsLanguageChanged": "Langue changée en {{language}}",
         "settingsMasterVolumeSet": "Volume réglé sur {{volume}}%",
@@ -1458,7 +1475,11 @@
         "settingsSpeechDisabled": "Synthèse vocale désactivée",
         "settingsSpeechEnabled": "Synthèse vocale activée",
         "settingsThemeChanged": "Thème changé en {{theme}}",
+        "settingsUiSoundsDisabled": "Sons de l’interface désactivés",
+        "settingsUiSoundsEnabled": "Sons de l’interface activés",
         "settingsUpdated": "Paramètres mis à jour",
+        "settingsWallpaperChanged": "Fond d’écran remplacé par {{name}}",
+        "settingsWallpaperNotFound": "Aucun fond d’écran ne correspond à « {{query}} »",
         "skippedToNextTrack": "Passage à la piste suivante",
         "skippedToPreviousTrack": "Passage à la piste précédente",
         "skippingToNext": "Passage au suivant…",
@@ -1511,6 +1532,7 @@
           "videoAlreadyInChannel": "{{title}} est déjà dans {{channel}}",
           "videoNotInChannel": "Vidéo introuvable dans la chaîne"
         },
+        "unhandledTool": "Outil non géré : {{toolName}}",
         "unknownError": "Erreur inconnue",
         "updatedDocument": "Document mis à jour : {{path}}",
         "webFetch": {
