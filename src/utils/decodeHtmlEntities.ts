@@ -1,6 +1,10 @@
 /**
  * Safely decode HTML entities without using innerHTML.
  * Uses DOMParser which does not execute scripts.
+ *
+ * Fully decodes entities (including double-encoded values) and strips HTML tags.
+ * For API metadata that must decode only once, use `decodeHtmlEntitiesOnce` in
+ * `api/_utils/html-entities.ts` instead.
  */
 export function decodeHtmlEntities(text: string): string {
   if (!text) return text;

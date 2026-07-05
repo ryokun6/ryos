@@ -813,6 +813,10 @@ function sanitizePersistedIpodMenuBreadcrumb(
           VALID_IPOD_MENU_KINDS.has(entry.kind as IpodMenuKind) && {
             kind: entry.kind as IpodMenuKind,
           }),
+        ...(entry.title === "Radio" &&
+          !entry.kind && {
+            kind: "radio" as IpodMenuKind,
+          }),
         ...(typeof entry.id === "string" && { id: entry.id }),
         title: entry.title,
         ...(typeof entry.displayTitle === "string" && {
