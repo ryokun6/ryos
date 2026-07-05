@@ -6,8 +6,16 @@ import { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
 // importing them from this module.
 export { makeKey, makeCanonicalRateKey } from "./_rate-limit-key.js";
 
-// Set up Redis client
-const redis = createRedis();
+// Lazily create the Redis client on first use. Creating it at module load
+// would throw in environments without Redis configuration (e.g. unit tests
+// importing chat tools), breaking every module in the import chain.
+let redisClient: RedisClient | null = null;
+function getRedis(): RedisClient {
+  if (!redisClient) {
+    redisClient = createRedis();
+  }
+  return redisClient;
+}
 
 // Constants for rate limiting
 export const AI_LIMIT_PER_5_HOURS = 15;
@@ -49,7 +57,7 @@ export async function checkAndIncrementAIMessageCount(
   // If authenticated, validate the token
   if (isAuthenticated && authToken) {
     const lower = identifier.toLowerCase();
-    const validation = await validateAuth(redis, lower, authToken);
+    const validation = await validateAuth(getRedis(), lower, authToken);
     if (!validation.valid) {
       // Invalid token for this user – treat as unauthenticated (use anon limit)
       return {
@@ -61,7 +69,7 @@ export async function checkAndIncrementAIMessageCount(
 
     // If the request is from ryo **and** the token is valid, bypass rate limits entirely
     if (isRyo) {
-      const currentCount = await redis.get<string>(key);
+      const currentCount = await getRedis().get<string>(key);
       const count = currentCount ? parseInt(currentCount, 10) : 0;
       return { allowed: true, count, limit };
     }
@@ -78,11 +86,11 @@ export async function checkAndIncrementAIMessageCount(
 
   // ATOMIC rate limit check: increment first, then check
   // This prevents race conditions where two requests read the same count
-  const newCount = await redis.incr(key);
+  const newCount = await getRedis().incr(key);
 
   // Set TTL only if this is the first increment (count became 1)
   if (newCount === 1) {
-    await redis.expire(key, ttlSeconds);
+    await getRedis().expire(key, ttlSeconds);
   }
 
   // Check if the NEW count exceeds the limit
@@ -126,8 +134,9 @@ export async function checkCounterLimit({
   key,
   windowSeconds,
   limit,
-  redis: client = redis,
+  redis: injectedClient,
 }: CounterLimitArgs): Promise<CounterLimitResult> {
+  const client = injectedClient ?? getRedis();
   // ATOMIC approach: increment first, then check
   // This prevents race conditions where two concurrent requests both read
   // the same count and both pass the limit check
