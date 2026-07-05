@@ -24,6 +24,9 @@ export interface AssistantBubbleViewport {
   bottomInset: number;
 }
 
+/** Preferred clearance (px) between the bubble and the viewport edges. */
+const BUBBLE_VIEWPORT_MARGIN = 8;
+
 export type AssistantBubbleSide = "above" | "below" | "left" | "right";
 
 /**
@@ -50,13 +53,43 @@ export interface AssistantBubblePlacement {
 
 export const ASSISTANT_BUBBLE_WIDTH = 256;
 export const ASSISTANT_BUBBLE_ESTIMATED_HEIGHT = 208;
+/** Compact thinking/sending bubble (ticker + input) before streamed text arrives. */
+export const ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT = 104;
 export const ASSISTANT_BUBBLE_GAP = 8;
+
+interface ResolveAssistantBubbleRenderHeightOptions {
+  measuredHeight: number | null;
+  /** True while the bubble shows the thinking ticker instead of reply text. */
+  isThinking: boolean;
+}
+
+/**
+ * Height used for on-screen cross-axis sliding. Falls back to a compact
+ * thinking estimate while awaiting a reply so a stale measurement from the
+ * previous long reply does not detach a short thinking bubble on left/right
+ * sides; otherwise uses the streaming worst-case estimate.
+ */
+export function resolveAssistantBubbleRenderHeight({
+  measuredHeight,
+  isThinking,
+}: ResolveAssistantBubbleRenderHeightOptions): number {
+  const fallback = isThinking
+    ? ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT
+    : ASSISTANT_BUBBLE_ESTIMATED_HEIGHT;
+  if (measuredHeight === null) return fallback;
+  // ResizeObserver updates one frame after the ticker replaces a long reply;
+  // ignore the prior reply's tall measurement while thinking.
+  if (
+    isThinking &&
+    measuredHeight > ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT + 16
+  ) {
+    return ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT;
+  }
+  return measuredHeight;
+}
 
 /** Covering a window is bad; pushing the bubble offscreen is worse. */
 const OVERFLOW_WEIGHT = 4;
-
-/** Preferred clearance (px) between the bubble and the viewport edges. */
-const BUBBLE_VIEWPORT_MARGIN = 8;
 
 interface ResolveAssistantBubblePlacementOptions {
   /** Character rect (viewport coordinates). */

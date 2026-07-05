@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ASSISTANT_CHARACTERS } from "../src/components/assistant/characters";
-import en from "../src/lib/locales/en/translation.json";
 
 const LOCALES = [
   "en",
@@ -38,7 +37,7 @@ describe("assistant character name localization", () => {
   });
 
   test("English catalog names match the canonical character names", () => {
-    const names = (en as Record<string, any>).common.assistant.characters;
+    const names = getCharacterNames("en") as Record<string, string>;
     for (const character of ASSISTANT_CHARACTERS) {
       expect(names[character.id]).toBe(character.name);
     }

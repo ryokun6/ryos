@@ -58,6 +58,7 @@ import {
   ASSISTANT_BUBBLE_WIDTH,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
+  resolveAssistantBubbleRenderHeight,
   type AssistantBubbleRect,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
@@ -271,6 +272,14 @@ function AssistantOverlayInner() {
     clearConversation,
   } = chatHandle;
 
+  const bubbleText = errorText ?? latestAssistantText;
+  const showTyping = isAwaitingReply && !errorText;
+  const bubbleContentMeasureKey = showTyping
+    ? `thinking:${statusLabels.join("\0")}`
+    : errorText
+      ? `error:${errorText}`
+      : `reply:${bubbleText.length}:${isLoading}`;
+
   // Speak finished replies aloud (browser TTS) when Speech is enabled.
   useAssistantSpeech({ latestAssistantText, isLoading });
 
@@ -451,6 +460,8 @@ function AssistantOverlayInner() {
   ]);
 
   // Keep the assistant on-screen when the viewport or character size changes.
+  // Do not track visualViewport or shrink the layout on iOS keyboard open —
+  // that lifts the character and input out of the visible band.
   useEffect(() => {
     const clamp = () => {
       const insets = computeInsets();
@@ -1315,14 +1326,22 @@ function AssistantOverlayInner() {
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [bubbleOpen, isDragging]);
-  const bubbleRenderHeight =
-    bubbleMeasuredHeight ?? ASSISTANT_BUBBLE_ESTIMATED_HEIGHT;
+  }, [bubbleOpen, isDragging, bubbleContentMeasureKey]);
+  const bubbleRenderHeight = resolveAssistantBubbleRenderHeight({
+    measuredHeight: bubbleMeasuredHeight,
+    isThinking: showTyping,
+  });
 
   // Cross-axis slide keeping the bubble on screen, recomputed from the
   // measured bubble size; the tail counter-shifts by the same amount so it
   // keeps pointing at the character.
   const bubbleCrossOffset = useMemo(() => {
+    // Side pops stay edge-aligned with the character for the whole turn
+    // (thinking → streaming → finished reply). Recomputing cross-offset when
+    // isLoading flips false uses the tall final height and jumps the bubble.
+    if (!bubbleVertical && (isLoading || showTyping || Boolean(bubbleText))) {
+      return 0;
+    }
     const insets = computeInsets();
     return resolveAssistantBubbleCrossOffset({
       side: bubbleSide,
@@ -1347,6 +1366,10 @@ function AssistantOverlayInner() {
   }, [
     bubbleSide,
     bubblePlacement.align,
+    bubbleVertical,
+    isLoading,
+    showTyping,
+    bubbleText,
     position,
     character.width,
     character.height,
@@ -1406,9 +1429,6 @@ function AssistantOverlayInner() {
     },
     [input, isLoading, sendUserMessage]
   );
-
-  const bubbleText = errorText ?? latestAssistantText;
-  const showTyping = isAwaitingReply && !errorText;
 
   const characterVisual = useMemo(() => {
     if (!agentData) {
