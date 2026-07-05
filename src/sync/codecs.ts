@@ -33,6 +33,7 @@ import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
+import { useAssistantStore } from "@/stores/useAssistantStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
@@ -600,6 +601,36 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
       },
     ],
   },
+  {
+    // Desktop assistant preferences. Device-local state (dragged position,
+    // conversation messages, bubble/interaction timestamps) intentionally
+    // does not sync.
+    section: "assistant",
+    fields: [
+      {
+        field: "enabled",
+        read: () => useAssistantStore.getState().enabled,
+        write: (v) => useAssistantStore.getState().setEnabled(Boolean(v)),
+      },
+      {
+        field: "characterId",
+        read: () => useAssistantStore.getState().characterId,
+        write: (v) => {
+          // Accept any non-empty string: a newer app version may sync a
+          // character this build doesn't ship; rendering falls back to the
+          // default via getAssistantCharacter.
+          if (typeof v === "string" && v) {
+            useAssistantStore.getState().setCharacterId(v as never);
+          }
+        },
+      },
+      {
+        field: "speechEnabled",
+        read: () => useAssistantStore.getState().speechEnabled,
+        write: (v) => useAssistantStore.getState().setSpeechEnabled(Boolean(v)),
+      },
+    ],
+  },
 ];
 
 const SETTINGS_SECTIONS_BY_NAME = new Map(
@@ -748,6 +779,15 @@ const settingsCodec: SyncCodec = {
       }),
       useDashboardStore.subscribe((state, prev) => {
         if (state.widgets !== prev.widgets) onChange();
+      }),
+      useAssistantStore.subscribe((state, prev) => {
+        if (
+          state.enabled !== prev.enabled ||
+          state.characterId !== prev.characterId ||
+          state.speechEnabled !== prev.speechEnabled
+        ) {
+          onChange();
+        }
       }),
     ];
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());

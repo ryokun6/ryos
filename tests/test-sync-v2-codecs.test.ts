@@ -18,6 +18,8 @@ import {
   useBooksStore,
 } from "../src/stores/useBooksStore";
 import { useAudioSettingsStore } from "../src/stores/useAudioSettingsStore";
+import { useAssistantStore } from "../src/stores/useAssistantStore";
+import { DEFAULT_ASSISTANT_CHARACTER_ID } from "../src/components/assistant/characters";
 import {
   mergePersistedCloudSyncCategoryStatus,
   mergePersistedDeletionMarkers,
@@ -717,6 +719,87 @@ describe("settings codec", () => {
     const state = useAudioSettingsStore.getState();
     expect(state.masterVolume).toBe(0.3);
     expect(state.uiVolume).toBe(0.7);
+  });
+});
+
+describe("settings codec: assistant section", () => {
+  beforeEach(() => {
+    useAssistantStore.setState({
+      enabled: true,
+      characterId: DEFAULT_ASSISTANT_CHARACTER_ID,
+      position: null,
+      speechEnabled: false,
+    });
+  });
+
+  test("collect emits per-field assistant preference keys only", () => {
+    useAssistantStore.setState({
+      enabled: false,
+      characterId: "clippy",
+      speechEnabled: true,
+      position: { x: 12, y: 34 },
+    });
+    const docs = SYNC_CODECS.settings.collect(ctx) as Map<string, unknown>;
+    expect(docs.get("settings/assistant/enabled")).toBe(false);
+    expect(docs.get("settings/assistant/characterId")).toBe("clippy");
+    expect(docs.get("settings/assistant/speechEnabled")).toBe(true);
+    // Device-local state (dragged position, conversation, bubble/interaction
+    // timestamps) must not sync.
+    const assistantKeys = [...docs.keys()].filter((key) =>
+      key.startsWith("settings/assistant/")
+    );
+    expect(assistantKeys.sort()).toEqual([
+      "settings/assistant/characterId",
+      "settings/assistant/enabled",
+      "settings/assistant/speechEnabled",
+    ]);
+  });
+
+  test("apply writes assistant preferences onto the store", async () => {
+    await SYNC_CODECS.settings.apply(
+      [
+        { k: "settings/assistant/enabled", v: false, t },
+        { k: "settings/assistant/characterId", v: "clippy", t },
+        { k: "settings/assistant/speechEnabled", v: true, t },
+      ],
+      ctx
+    );
+    const state = useAssistantStore.getState();
+    expect(state.enabled).toBe(false);
+    expect(state.characterId).toBe("clippy");
+    expect(state.speechEnabled).toBe(true);
+  });
+
+  test("apply ignores malformed character ids and tombstones", async () => {
+    await SYNC_CODECS.settings.apply(
+      [
+        { k: "settings/assistant/characterId", v: "", t },
+        { k: "settings/assistant/characterId", v: 42, t },
+        { k: "settings/assistant/enabled", del: true, t },
+      ],
+      ctx
+    );
+    const state = useAssistantStore.getState();
+    expect(state.characterId).toBe(DEFAULT_ASSISTANT_CHARACTER_ID);
+    expect(state.enabled).toBe(true);
+  });
+
+  test("subscription marks settings dirty on assistant preference changes only", () => {
+    let changes = 0;
+    const unsubscribe = SYNC_CODECS.settings.subscribe(() => {
+      changes += 1;
+    });
+    try {
+      useAssistantStore.getState().setCharacterId("merlin");
+      expect(changes).toBe(1);
+      // Device-local churn (dragging, bubble dismissal) must not dirty sync.
+      useAssistantStore.getState().setPosition({ x: 1, y: 2 });
+      useAssistantStore.getState().markBubbleDismissed();
+      useAssistantStore.getState().markInteraction();
+      expect(changes).toBe(1);
+    } finally {
+      unsubscribe();
+    }
   });
 });
 
