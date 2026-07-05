@@ -45,7 +45,7 @@ type MemoryExtractionRequest = (
 interface ProcessConversationMemoriesDependencies {
   request: MemoryExtractionRequest;
   resolveApiUrl: (path: string) => string;
-  getTimeZone: () => string | undefined;
+  getTimeZone: () => string | null | undefined;
 }
 
 const defaultDependencies: ProcessConversationMemoriesDependencies = {
