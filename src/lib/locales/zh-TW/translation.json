@@ -1477,7 +1477,7 @@
         "settingsUiSoundsEnabled": "使用者介面聲音已啟用",
         "settingsUpdated": "設定已更新",
         "settingsWallpaperChanged": "背景圖片已更改為 {{name}}",
-        "settingsWallpaperConflict": "提供了多個背景圖片欄位 ({{fields}})；未更改任何背景圖片。請僅使用「wallpaper」、「wallpaperShuffle」或「wallpaperDynamic」其中之一再試一次。",
+        "settingsWallpaperConflict": "提供了衝突的背景圖片欄位 ({{fields}})；未更改任何設定。請僅使用使用者要求的設定重試，且 'wallpaper'、'wallpaperShuffle' 或 'wallpaperDynamic' 中最多僅能使用一個。",
         "settingsWallpaperNotFound": "沒有符合「{{query}}」的背景圖片",
         "settingsWallpaperShuffleChanged": "背景圖片已設定為隨機顯示{{category}}",
         "settingsWallpaperSuggestions": "找不到名為「{{query}}」的背景圖片。最接近的項目：{{suggestions}}",

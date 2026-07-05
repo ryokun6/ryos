@@ -1479,7 +1479,7 @@
         "settingsUiSoundsEnabled": "Suoni interfaccia attivati",
         "settingsUpdated": "Impostazioni aggiornate",
         "settingsWallpaperChanged": "Sfondo modificato in {{name}}",
-        "settingsWallpaperConflict": "Sono stati forniti diversi campi per lo sfondo ({{fields}}); non è stato modificato alcuno sfondo. Riprova con esattamente uno tra 'wallpaper', 'wallpaperShuffle' o 'wallpaperDynamic'.",
+        "settingsWallpaperConflict": "Sono stati forniti campi dello sfondo in conflitto ({{fields}}); nessuna impostazione è stata modificata. Riprova solo con le impostazioni richieste dall'utente, utilizzando al massimo uno tra 'wallpaper', 'wallpaperShuffle' o 'wallpaperDynamic'.",
         "settingsWallpaperNotFound": "Nessuno sfondo corrisponde a \"{{query}}\"",
         "settingsWallpaperShuffleChanged": "Sfondo impostato sulla rotazione casuale {{category}}",
         "settingsWallpaperSuggestions": "Nessuno sfondo denominato \"{{query}}\". Corrispondenze simili: {{suggestions}}",

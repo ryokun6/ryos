@@ -341,7 +341,9 @@ describe("resolveWallpaperConflict", () => {
 describe("handleSettings applies only sanitized fields", () => {
   const setLanguage = mock(() => {});
   const setTheme = mock(() => {});
+  const setAccent = mock(() => {});
   const setMasterVolume = mock(() => {});
+  const setSpeechEnabled = mock(() => {});
   const setUiSoundsEnabled = mock(() => {});
   const setWallpaper = mock(async () => {});
   const addToolOutput = mock(() => {});
@@ -349,7 +351,9 @@ describe("handleSettings applies only sanitized fields", () => {
   beforeEach(() => {
     setLanguage.mockClear();
     setTheme.mockClear();
+    setAccent.mockClear();
     setMasterVolume.mockClear();
+    setSpeechEnabled.mockClear();
     setUiSoundsEnabled.mockClear();
     setWallpaper.mockClear();
     addToolOutput.mockClear();
@@ -362,12 +366,14 @@ describe("handleSettings applies only sanitized fields", () => {
       current: "macosx",
       accentByTheme: { macosx: "wallpaper" },
       setTheme,
+      setAccent,
     } as Partial<ReturnType<typeof useThemeStore.getState>>);
     useAudioSettingsStore.setState({
       masterVolume: 1,
       speechEnabled: false,
       uiSoundsEnabled: true,
       setMasterVolume,
+      setSpeechEnabled,
       setUiSoundsEnabled,
     } as Partial<ReturnType<typeof useAudioSettingsStore.getState>>);
     useDisplaySettingsStore.setState({
@@ -429,22 +435,30 @@ describe("handleSettings applies only sanitized fields", () => {
     expect(setTheme).not.toHaveBeenCalled();
   });
 
-  test("overfilled bundle with three wallpaper fields changes nothing and reports the conflict", async () => {
-    // Regression: a real tool call bundled language, theme, all three
-    // wallpaper fields, accent, volume, speech, and sounds when the user only
-    // asked for the nature shuffle. It must not mutate any store; the
-    // conflicting wallpaper fields fail with a retry hint instead of the
-    // whole call being rejected by the schema.
+  test("junk-filled bundle with three wallpaper fields changes nothing and reports the conflict", async () => {
+    // Regression: asking for the nature shuffle produced a tool call with
+    // every field populated with junk defaults (observed live): language,
+    // theme "system7", wallpaper "string", nature shuffle, day-night dynamic,
+    // accent, masterVolume 0, speech/sounds, and an update check. The
+    // wallpaper-field conflict marks the whole bundle untrustworthy: nothing
+    // may be applied (no theme switch, no mute, no update check) and the
+    // model gets one retry-hint error instead of a schema rejection.
     const { handleSettings } = await import(
       "../src/apps/chats/tools/settingsHandler"
     );
 
     await handleSettings(
       {
-        ...OVERFILLED_CURRENT_VALUES,
-        wallpaper: "aurora",
+        language: "en",
+        theme: "system7",
+        wallpaper: "string",
         wallpaperShuffle: "nature",
         wallpaperDynamic: "day-night",
+        accent: "default",
+        masterVolume: 0,
+        speechEnabled: true,
+        uiSoundsEnabled: true,
+        checkForUpdates: true,
       },
       "tc_bundle",
       { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
@@ -454,7 +468,9 @@ describe("handleSettings applies only sanitized fields", () => {
     expect(setTheme).not.toHaveBeenCalled();
     expect(setLanguage).not.toHaveBeenCalled();
     expect(setMasterVolume).not.toHaveBeenCalled();
+    expect(setSpeechEnabled).not.toHaveBeenCalled();
     expect(setUiSoundsEnabled).not.toHaveBeenCalled();
+    expect(setAccent).not.toHaveBeenCalled();
     expect(addToolOutput).toHaveBeenCalledTimes(1);
     expect(addToolOutput.mock.calls[0][0]).toMatchObject({
       tool: "settings",

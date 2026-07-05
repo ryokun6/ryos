@@ -137,19 +137,27 @@ export const handleSettings = async (
     conflict: wallpaperConflict,
   } = resolveWallpaperConflict(sanitized, snapshot, resolveWallpaperPath);
 
-  const changes: string[] = [];
-  const failures: string[] = [];
-
+  // Several non-echo wallpaper fields means the call violated the
+  // one-wallpaper-field contract — a junk-filled bundle whose remaining
+  // fields (e.g. masterVolume: 0) cannot be trusted either. Apply nothing
+  // and ask the model to retry with only the requested settings.
   if (wallpaperConflict) {
-    failures.push(
-      i18n.t("apps.chats.toolCalls.settingsWallpaperConflict", {
-        fields: wallpaperConflict.join(", "),
-      })
-    );
-    log.debug("Conflicting wallpaper parameters dropped", {
+    log.debug("Conflicting wallpaper parameters; applying nothing", {
       fields: wallpaperConflict,
     });
+    context.addToolOutput({
+      tool: "settings",
+      toolCallId,
+      state: "output-error",
+      errorText: i18n.t("apps.chats.toolCalls.settingsWallpaperConflict", {
+        fields: wallpaperConflict.join(", "),
+      }),
+    });
+    return;
   }
+
+  const changes: string[] = [];
+  const failures: string[] = [];
   const audioSettingsStore = useAudioSettingsStore.getState();
   const langStore = useLanguageStore.getState();
   const themeStore = useThemeStore.getState();

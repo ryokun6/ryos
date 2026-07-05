@@ -206,8 +206,10 @@ export interface WallpaperConflictResolution {
  *    wallpaper (an echo). Shuffle/dynamic echoes are already dropped by
  *    `sanitizeSettingsInput`.
  * 2. If more than one wallpaper parameter still remains, strip them all and
- *    report the conflict so the caller can ask the model to retry with
- *    exactly one — applying an arbitrary one could set the wrong wallpaper.
+ *    report the conflict. Callers should treat a conflict as a junk-filled
+ *    bundle (observed in the wild: every field populated with placeholder
+ *    defaults like `wallpaper: "string"`, `masterVolume: 0`) and apply
+ *    nothing, asking the model to retry with only the requested settings.
  *
  * `resolveWallpaperPath` maps a wallpaper name query to its manifest path
  * (or null); it is optional so callers without the manifest degrade to

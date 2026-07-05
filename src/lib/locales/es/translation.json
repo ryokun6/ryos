@@ -1479,7 +1479,7 @@
         "settingsUiSoundsEnabled": "Sonidos de la interfaz activados",
         "settingsUpdated": "Ajustes actualizados",
         "settingsWallpaperChanged": "Fondo de pantalla cambiado a {{name}}",
-        "settingsWallpaperConflict": "Se han proporcionado varios campos de fondo de pantalla ({{fields}}); no se ha cambiado ningún fondo de pantalla. Vuelve a intentarlo con exactamente uno de estos: 'wallpaper', 'wallpaperShuffle' o 'wallpaperDynamic'.",
+        "settingsWallpaperConflict": "Se han proporcionado campos de fondo de pantalla en conflicto ({{fields}}); no se ha cambiado ningún ajuste. Vuelve a intentarlo solo con los ajustes que el usuario ha solicitado, usando como máximo uno de 'wallpaper', 'wallpaperShuffle' o 'wallpaperDynamic'.",
         "settingsWallpaperNotFound": "Ningún fondo de pantalla coincide con \"{{query}}\"",
         "settingsWallpaperShuffleChanged": "Fondo de pantalla configurado para selección aleatoria de {{category}}",
         "settingsWallpaperSuggestions": "No hay ningún fondo de pantalla llamado \"{{query}}\". Coincidencias similares: {{suggestions}}",
