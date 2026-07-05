@@ -39,6 +39,34 @@ export function prepareAssistantSpeechTexts(text: string): string[] {
 let generation = 0;
 let voicesWarmed = false;
 /**
+ * True while an assistant reply is audibly speaking (from the first
+ * utterance's verified `start` until the chain ends or is cancelled). The
+ * bubble uses this to stay open until speech finishes.
+ */
+let speechPlaying = false;
+const speechPlayingListeners = new Set<() => void>();
+
+function setSpeechPlaying(next: boolean): void {
+  if (speechPlaying === next) return;
+  speechPlaying = next;
+  speechPlayingListeners.forEach((listener) => listener());
+}
+
+/** Whether an assistant reply is currently being spoken aloud. */
+export function isAssistantSpeechPlaying(): boolean {
+  return speechPlaying;
+}
+
+/** Subscribe to playing-state changes; returns an unsubscribe function. */
+export function subscribeAssistantSpeechPlaying(
+  listener: () => void
+): () => void {
+  speechPlayingListeners.add(listener);
+  return () => {
+    speechPlayingListeners.delete(listener);
+  };
+}
+/**
  * True once an utterance has actually started playing, which proves the
  * engine accepted a `speak()` (on iOS Safari that only happens after a call
  * made inside a user gesture). Until then every gesture retries the unlock:
@@ -135,6 +163,8 @@ export function speakAssistantText(
 
   const currentGeneration = ++generation;
   synth.cancel();
+  // The previous chain (if any) is dead; this reply reports its own start.
+  setSpeechPlaying(false);
 
   const texts = prepareAssistantSpeechTexts(text);
   if (texts.length === 0) {
@@ -158,7 +188,11 @@ export function speakAssistantText(
   );
 
   const speakAt = (index: number) => {
-    if (currentGeneration !== generation || index >= texts.length) return;
+    if (currentGeneration !== generation) return;
+    if (index >= texts.length) {
+      setSpeechPlaying(false);
+      return;
+    }
 
     const utterance = createSpeechUtterance(texts[index], {
       lang,
@@ -170,7 +204,10 @@ export function speakAssistantText(
       // An audible start proves the engine accepted the speak() (i.e.
       // synthesis is unlocked) and that this reply was not dropped.
       synthesisUnlocked = true;
-      if (currentGeneration === generation) droppedSpeech = null;
+      if (currentGeneration === generation) {
+        droppedSpeech = null;
+        setSpeechPlaying(true);
+      }
     };
 
     let advanced = false;
@@ -197,6 +234,7 @@ export function speakAssistantText(
 export function stopAssistantSpeech(): void {
   generation++;
   droppedSpeech = null;
+  setSpeechPlaying(false);
   getBrowserSpeechSynthesis()?.cancel();
 }
 
@@ -206,4 +244,5 @@ export function __resetAssistantSpeechStateForTests(): void {
   voicesWarmed = false;
   synthesisUnlocked = false;
   droppedSpeech = null;
+  setSpeechPlaying(false);
 }
