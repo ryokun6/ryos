@@ -1477,6 +1477,7 @@
         "settingsUiSoundsEnabled": "用户界面声音已启用",
         "settingsUpdated": "设置已更新",
         "settingsWallpaperChanged": "墙纸已更改为 {{name}}",
+        "settingsWallpaperConflict": "提供了多个墙纸字段 ({{fields}})；未更改任何墙纸。请重试，并仅提供“wallpaper”、“wallpaperShuffle”或“wallpaperDynamic”中的一个",
         "settingsWallpaperNotFound": "没有与“{{query}}”匹配的墙纸",
         "settingsWallpaperShuffleChanged": "壁纸已设置为随机显示{{category}}",
         "settingsWallpaperSuggestions": "未找到名为“{{query}}”的壁纸。接近的匹配项：{{suggestions}}",

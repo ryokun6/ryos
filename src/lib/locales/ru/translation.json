@@ -1481,6 +1481,7 @@
         "settingsUiSoundsEnabled": "Звуковые эффекты интерфейса включены",
         "settingsUpdated": "Настройки обновлены",
         "settingsWallpaperChanged": "Обои изменены на «{{name}}»",
+        "settingsWallpaperConflict": "Указано несколько полей обоев ({{fields}}); обои не изменены. Повторите попытку, выбрав только одно из полей: «wallpaper», «wallpaperShuffle» или «wallpaperDynamic».",
         "settingsWallpaperNotFound": "Обои по запросу «{{query}}» не найдены",
         "settingsWallpaperShuffleChanged": "Для обоев установлено перемешивание: {{category}}",
         "settingsWallpaperSuggestions": "Обои с названием «{{query}}» не найдены. Похожие варианты: {{suggestions}}",

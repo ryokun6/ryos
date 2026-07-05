@@ -1477,6 +1477,7 @@
         "settingsUiSoundsEnabled": "Bediengeräusche aktiviert",
         "settingsUpdated": "Einstellungen aktualisiert",
         "settingsWallpaperChanged": "Hintergrundbild in {{name}} geändert",
+        "settingsWallpaperConflict": "Es wurden mehrere Hintergrundbild-Felder angegeben ({{fields}}); das Hintergrundbild wurde nicht geändert. Versuche es mit genau einem der Felder 'wallpaper', 'wallpaperShuffle' oder 'wallpaperDynamic' erneut.",
         "settingsWallpaperNotFound": "Kein Hintergrundbild gefunden, das „{{query}}“ entspricht",
         "settingsWallpaperShuffleChanged": "Hintergrundbild auf zufällige Auswahl ({{category}}) eingestellt",
         "settingsWallpaperSuggestions": "Kein Hintergrundbild namens „{{query}}“. Ähnliche Treffer: {{suggestions}}",

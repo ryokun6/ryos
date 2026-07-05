@@ -56,6 +56,15 @@ export const SETTINGS_INPUT_KEYS = [
 
 export type SettingsInputKey = (typeof SETTINGS_INPUT_KEYS)[number];
 
+/** The mutually exclusive wallpaper parameters (exactly one may apply). */
+export const WALLPAPER_PARAM_KEYS = [
+  "wallpaper",
+  "wallpaperShuffle",
+  "wallpaperDynamic",
+] as const satisfies readonly SettingsInputKey[];
+
+export type WallpaperParamKey = (typeof WALLPAPER_PARAM_KEYS)[number];
+
 /** Live persisted settings used to detect no-op / overfilled parameters. */
 export interface CurrentSettingsSnapshot {
   language: LanguageCode;
@@ -167,4 +176,70 @@ export function sanitizeSettingsInput(
   }
 
   return sanitized;
+}
+
+/** Wallpaper parameter keys present on a (sanitized) settings input. */
+export function getWallpaperParamKeys(
+  params: Partial<SettingsInput>
+): WallpaperParamKey[] {
+  return WALLPAPER_PARAM_KEYS.filter((key) => params[key] !== undefined);
+}
+
+export interface WallpaperConflictResolution {
+  /** Input with at most one wallpaper parameter remaining. */
+  params: Partial<SettingsInput>;
+  /**
+   * When several non-echo wallpaper parameters were provided and intent could
+   * not be determined: the conflicting keys (all stripped from `params`).
+   */
+  conflict: WallpaperParamKey[] | null;
+}
+
+/**
+ * Resolve overfilled multi-wallpaper tool calls into at most one wallpaper
+ * parameter. The schema documents the three wallpaper fields as mutually
+ * exclusive, but models sometimes bundle all of them (typically the current
+ * wallpaper plus examples copied from field descriptions).
+ *
+ * Resolution is deterministic and never guesses:
+ * 1. Drop a `wallpaper` name query that resolves to the currently applied
+ *    wallpaper (an echo). Shuffle/dynamic echoes are already dropped by
+ *    `sanitizeSettingsInput`.
+ * 2. If more than one wallpaper parameter still remains, strip them all and
+ *    report the conflict so the caller can ask the model to retry with
+ *    exactly one — applying an arbitrary one could set the wrong wallpaper.
+ *
+ * `resolveWallpaperPath` maps a wallpaper name query to its manifest path
+ * (or null); it is optional so callers without the manifest degrade to
+ * conflict reporting alone.
+ */
+export function resolveWallpaperConflict(
+  params: Partial<SettingsInput>,
+  snapshot: CurrentSettingsSnapshot,
+  resolveWallpaperPath?: (query: string) => string | null
+): WallpaperConflictResolution {
+  let keys = getWallpaperParamKeys(params);
+  if (keys.length <= 1) {
+    return { params, conflict: null };
+  }
+
+  const resolved: Partial<SettingsInput> = { ...params };
+
+  if (
+    resolved.wallpaper !== undefined &&
+    resolveWallpaperPath &&
+    snapshot.currentWallpaper !== undefined &&
+    resolveWallpaperPath(resolved.wallpaper) === snapshot.currentWallpaper
+  ) {
+    delete resolved.wallpaper;
+    keys = getWallpaperParamKeys(resolved);
+    if (keys.length <= 1) {
+      return { params: resolved, conflict: null };
+    }
+  }
+
+  for (const key of keys) {
+    delete resolved[key];
+  }
+  return { params: resolved, conflict: keys };
 }

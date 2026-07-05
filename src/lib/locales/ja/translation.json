@@ -1477,6 +1477,7 @@
         "settingsUiSoundsEnabled": "UIサウンドを有効にしました",
         "settingsUpdated": "設定が更新されました",
         "settingsWallpaperChanged": "壁紙を{{name}}に変更しました",
+        "settingsWallpaperConflict": "複数の壁紙フィールドが指定されました（{{fields}}）。壁紙は変更されませんでした。'wallpaper'、'wallpaperShuffle'、または'wallpaperDynamic'のいずれか1つのみを指定して再試行してください。",
         "settingsWallpaperNotFound": "\"{{query}}\"に一致する壁紙が見つかりませんでした",
         "settingsWallpaperShuffleChanged": "壁紙が{{category}}のシャッフルに設定されました",
         "settingsWallpaperSuggestions": "「{{query}}」という名前の壁紙はありません。似ている候補: {{suggestions}}",

@@ -4,7 +4,9 @@
  * Partial updates: the model should only send fields the user asked to change.
  * Raw tool input is sanitized in `sanitizeSettingsInput` before any store
  * mutation so echoed current values (language, theme, volume, etc.) are not
- * re-applied. See `sanitizeSettingsInput.ts` for the guardrail rules.
+ * re-applied, and overfilled multi-wallpaper calls are reduced to at most one
+ * wallpaper parameter via `resolveWallpaperConflict`. See
+ * `sanitizeSettingsInput.ts` for the guardrail rules.
  */
 
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -31,6 +33,8 @@ import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
 import { chatToolsLog as log } from "../logging";
 import {
+  readCurrentSettingsSnapshot,
+  resolveWallpaperConflict,
   sanitizeSettingsInput,
   type SettingsInput,
 } from "./sanitizeSettingsInput";
@@ -101,21 +105,51 @@ export const handleSettings = async (
   toolCallId: string,
   context: ToolContext
 ): Promise<void> => {
+  const snapshot = readCurrentSettingsSnapshot();
+  const sanitized = sanitizeSettingsInput(input, snapshot);
+
+  // Overfilled calls sometimes bundle several wallpaper fields; resolve them
+  // to at most one (dropping echoes of the current wallpaper) instead of
+  // failing the whole call or applying an arbitrary wallpaper.
+  let resolveWallpaperPath: ((query: string) => string | null) | undefined;
+  if (sanitized.wallpaper !== undefined) {
+    try {
+      const manifest = await loadWallpaperManifest();
+      resolveWallpaperPath = (query) =>
+        resolveWallpaperFromManifest(manifest, query).match?.path ?? null;
+    } catch (error) {
+      log.debug("Wallpaper manifest load failed", { error });
+    }
+  }
   const {
-    language,
-    theme,
-    wallpaper,
-    wallpaperShuffle,
-    wallpaperDynamic,
-    accent,
-    masterVolume,
-    speechEnabled,
-    uiSoundsEnabled,
-    checkForUpdates,
-  } = sanitizeSettingsInput(input);
+    params: {
+      language,
+      theme,
+      wallpaper,
+      wallpaperShuffle,
+      wallpaperDynamic,
+      accent,
+      masterVolume,
+      speechEnabled,
+      uiSoundsEnabled,
+      checkForUpdates,
+    },
+    conflict: wallpaperConflict,
+  } = resolveWallpaperConflict(sanitized, snapshot, resolveWallpaperPath);
 
   const changes: string[] = [];
   const failures: string[] = [];
+
+  if (wallpaperConflict) {
+    failures.push(
+      i18n.t("apps.chats.toolCalls.settingsWallpaperConflict", {
+        fields: wallpaperConflict.join(", "),
+      })
+    );
+    log.debug("Conflicting wallpaper parameters dropped", {
+      fields: wallpaperConflict,
+    });
+  }
   const audioSettingsStore = useAudioSettingsStore.getState();
   const langStore = useLanguageStore.getState();
   const themeStore = useThemeStore.getState();
@@ -159,7 +193,7 @@ export const handleSettings = async (
   }
 
   // Shuffle wallpaper category (fixed descriptor — no matching involved)
-  if (wallpaperShuffle !== undefined && wallpaperDynamic === undefined) {
+  if (wallpaperShuffle !== undefined) {
     await useDisplaySettingsStore
       .getState()
       .setWallpaper(buildShuffleDescriptor(wallpaperShuffle));
@@ -172,11 +206,7 @@ export const handleSettings = async (
   }
 
   // Specific wallpaper by exact name (deterministic manifest resolution)
-  if (
-    wallpaper !== undefined &&
-    wallpaperShuffle === undefined &&
-    wallpaperDynamic === undefined
-  ) {
+  if (wallpaper !== undefined) {
     try {
       const resolution = resolveWallpaperFromManifest(
         await loadWallpaperManifest(),

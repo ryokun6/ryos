@@ -1479,6 +1479,7 @@
         "settingsUiSoundsEnabled": "Sons de l’interface activés",
         "settingsUpdated": "Paramètres mis à jour",
         "settingsWallpaperChanged": "Fond d’écran remplacé par {{name}}",
+        "settingsWallpaperConflict": "Plusieurs champs de fond d’écran ont été fournis ({{fields}}) ; aucun fond d’écran n’a été modifié. Réessayez avec exactement l’un des éléments suivants : 'wallpaper', 'wallpaperShuffle' ou 'wallpaperDynamic'",
         "settingsWallpaperNotFound": "Aucun fond d’écran ne correspond à « {{query}} »",
         "settingsWallpaperShuffleChanged": "Fond d’écran configuré pour le mélange {{category}}",
         "settingsWallpaperSuggestions": "Aucun fond d’écran nommé « {{query}} ». Résultats proches : {{suggestions}}",

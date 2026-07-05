@@ -439,7 +439,7 @@ const settingsObjectSchema = z.object({
   wallpaper: z
     .preprocess(normalizeOptionalString, z.string().max(120).optional())
     .describe(
-      "Set a specific built-in wallpaper by exact name (e.g. 'aurora', 'clouds', 'bondi'). Matched case-insensitively against built-in tile, photo, and video wallpaper names — no fuzzy matching. If no exact match exists, the tool result lists close names to retry with. Use 'wallpaperShuffle' or 'wallpaperDynamic' instead when the user wants a shuffled category or a dynamic wallpaper. ONLY include when the user explicitly asks to change wallpaper."
+      "Set a specific built-in wallpaper by exact name (e.g. 'aurora', 'clouds', 'bondi'). Matched case-insensitively against built-in tile, photo, and video wallpaper names — no fuzzy matching. If no exact match exists, the tool result lists close names to retry with. Use 'wallpaperShuffle' or 'wallpaperDynamic' instead when the user wants a shuffled category or a dynamic wallpaper. ONLY include when the user explicitly asks to change wallpaper. Do not combine with 'wallpaperShuffle' or 'wallpaperDynamic'."
     ),
   wallpaperShuffle: z
     .enum(WALLPAPER_SHUFFLE_CATEGORIES)
@@ -487,20 +487,14 @@ const settingsObjectSchema = z.object({
     ),
 });
 
+// The three wallpaper fields are documented as mutually exclusive, but
+// overfilled calls that bundle several of them are accepted here and resolved
+// client-side (`resolveWallpaperConflict`), where the current wallpaper is
+// known: echoes are dropped, and a genuine conflict fails only the wallpaper
+// change with a retry hint instead of rejecting the whole call.
 export const settingsSchema = z.preprocess(
   normalizeSettingsInput,
-  settingsObjectSchema.superRefine((data, ctx) => {
-    const wallpaperFields = (
-      ["wallpaper", "wallpaperShuffle", "wallpaperDynamic"] as const
-    ).filter((key) => data[key] !== undefined);
-    if (wallpaperFields.length > 1) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Provide only one of 'wallpaper', 'wallpaperShuffle', or 'wallpaperDynamic' (got ${wallpaperFields.join(", ")}).`,
-        path: [wallpaperFields[1]],
-      });
-    }
-  })
+  settingsObjectSchema
 );
 
 /**

@@ -104,19 +104,22 @@ describe("settingsSchema wallpaper fields", () => {
     ).toBe(false);
   });
 
-  test("rejects combining multiple wallpaper fields in one call", () => {
+  test("accepts combined wallpaper fields (conflicts resolve client-side)", () => {
+    // Overfilled bundles must reach the client, where the current wallpaper
+    // is known: echoes are dropped by resolveWallpaperConflict and genuine
+    // conflicts fail only the wallpaper change with a retry hint.
     expect(
       settingsSchema.safeParse({
         wallpaper: "aurora",
         wallpaperShuffle: "nature",
       }).success
-    ).toBe(false);
+    ).toBe(true);
     expect(
       settingsSchema.safeParse({
         wallpaperShuffle: "tiles",
         wallpaperDynamic: "weather",
       }).success
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("wallpaper fields combine with unrelated settings", () => {
