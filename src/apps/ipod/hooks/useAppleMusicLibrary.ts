@@ -18,9 +18,7 @@ import {
   saveAppleMusicTrackCollection,
   type AppleMusicTrackCollectionKey,
 } from "@/utils/appleMusicLibraryCache";
-import { createClientLogger } from "@/utils/logger";
-
-const appleMusicLog = createClientLogger("AppleMusic");
+import { appleMusicLog } from "../logging";
 
 /**
  * Apple Music library fetcher.

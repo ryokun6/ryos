@@ -1,3 +1,11 @@
+/**
+ * Canonical localStorage keys and legacy migration helpers.
+ *
+ * Removal criteria: keep `LEGACY_STORAGE_KEYS` / `migrateLocalStorageKey` until
+ * production telemetry shows zero legacy-key reads for 90+ days. IndexedDB
+ * `legacyNames` paths follow the same gate. `removeStaleStorageKeys()` is a
+ * cheap idempotent cleanup for keys with no remaining readers.
+ */
 export const STORAGE_KEYS = {
   dock: "ryos:dock",
   applet: "ryos:applet",

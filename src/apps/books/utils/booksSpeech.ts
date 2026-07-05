@@ -1005,8 +1005,8 @@ export function applyGeometricPageEndCut(chunk: BooksSpeechChunk): void {
 export const BOOKS_SPEECH_ACTIVE_CLASS = "ryos-books-speech-active";
 /** Spoken characters painted at full ink (CSS Custom Highlight API). */
 export const BOOKS_SPEECH_HIGHLIGHT_NAME = "ryos-books-speech-spoken";
-/** @deprecated No longer used (edge fade caused flicker). */
-export const BOOKS_SPEECH_EDGE_HIGHLIGHT_NAME = "ryos-books-speech-edge";
+/** @deprecated No longer used (edge fade caused flicker). Kept for highlight cleanup. */
+const BOOKS_SPEECH_EDGE_HIGHLIGHT_NAME = "ryos-books-speech-edge";
 /** Fallback class when the CSS Highlight API is unavailable. */
 export const BOOKS_SPEECH_HIGHLIGHT_BLOCK_CLASS = "ryos-books-speech-spoken-block";
 

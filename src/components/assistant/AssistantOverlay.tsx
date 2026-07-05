@@ -84,7 +84,6 @@ import { createClientLogger } from "@/utils/logger";
  * Debug Mode (or sets `localStorage["ryos:debug"] = "1"`).
  */
 const assistantAnimLogger = createClientLogger("AssistantAnim");
-const animLog = (message: string): void => assistantAnimLogger.debug(message);
 
 /** Distance (px) within which the assistant snaps to an edge on release. */
 const SNAP_THRESHOLD = 32;
@@ -694,7 +693,7 @@ function AssistantOverlayInner() {
   const previousCharacterIdRef = useRef(character.id);
   useEffect(() => {
     if (previousCharacterIdRef.current === character.id) return;
-    animLog(
+    assistantAnimLogger.debug(
       `character switch ${previousCharacterIdRef.current} → ${character.id}; reset transient animation state`
     );
     previousCharacterIdRef.current = character.id;
@@ -731,7 +730,7 @@ function AssistantOverlayInner() {
 
   const playAnimation = useCallback((name: string, reason?: string) => {
     if (!name) return;
-    animLog(`play ${name}${reason ? ` — ${reason}` : ""}`);
+    assistantAnimLogger.debug(`play ${name}${reason ? ` — ${reason}` : ""}`);
     if (idleTimerRef.current) {
       clearTimeout(idleTimerRef.current);
       idleTimerRef.current = null;
@@ -774,7 +773,7 @@ function AssistantOverlayInner() {
         direction
       );
       if (!pointingAnimation) {
-        animLog(`pointing ${direction} skipped — no clip for direction`);
+        assistantAnimLogger.debug(`pointing ${direction} skipped — no clip for direction`);
         return;
       }
       playAnimation(pointingAnimation, `pointing ${direction} at window`);
@@ -802,7 +801,7 @@ function AssistantOverlayInner() {
     entranceSequenceRef.current = plan.followUp
       ? [plan.first, plan.followUp]
       : [plan.first];
-    animLog(
+    assistantAnimLogger.debug(
       `entrance ${character.id}: ${plan.first}${
         plan.followUp ? ` → ${plan.followUp}` : ""
       }`
@@ -973,7 +972,7 @@ function AssistantOverlayInner() {
     (endedAnimation: string) => {
       const data = agentDataRef.current;
       if (!data) return;
-      animLog(`ended ${endedAnimation}`);
+      assistantAnimLogger.debug(`ended ${endedAnimation}`);
 
       if (quittingAnimationRef.current) {
         if (endedAnimation === quittingAnimationRef.current) {
@@ -996,7 +995,7 @@ function AssistantOverlayInner() {
           return;
         }
         entranceSequenceRef.current = null;
-        animLog("entrance complete");
+        assistantAnimLogger.debug("entrance complete");
       }
 
       const currentIntent = activityIntentRef.current;

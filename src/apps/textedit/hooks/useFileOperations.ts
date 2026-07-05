@@ -17,9 +17,7 @@ import {
 } from "../utils/richMarkdown";
 import { TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("TextEdit");
+import { textEditLog as log } from "../logging";
 
 interface UseFileOperationsProps {
   editor: Editor | null;

@@ -316,6 +316,11 @@ export async function loadPersistedSyncState(
   }
   if (!raw) return createEmptyPersistedSyncState();
 
+  console.warn(
+    "[sync2] Loaded legacy localStorage sync state; migrating to IndexedDB",
+    { username: recordKey(username) }
+  );
+
   let migrated: PersistedSyncState;
   try {
     migrated = normalizePersistedSyncState(JSON.parse(raw));

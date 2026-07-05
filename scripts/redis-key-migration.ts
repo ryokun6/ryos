@@ -23,7 +23,7 @@
  */
 
 import { createRedis } from "../api/_utils/redis.js";
-import { LEGACY_REDIS_SCAN_PATTERNS } from "../src/shared/redisKeys.js";
+import { LEGACY_REDIS_SCAN_PATTERNS } from "../src/shared/redisLegacyPatterns.js";
 import {
   assertKnownLegacyRedisPattern,
   backfillRedisKeyScheme,

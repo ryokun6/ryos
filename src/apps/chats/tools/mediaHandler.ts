@@ -47,10 +47,9 @@ import {
   handleTvChannelAction,
   type TvChannelAction,
 } from "./mediaTvChannels";
-import { createClientLogger } from "@/utils/logger";
+import { chatToolsLog as log } from "../logging";
 import { computeSequentialNavigation } from "@/shared/media/transport";
 
-const log = createClientLogger("ChatTools");
 
 export type MediaControlTarget = "music" | "karaoke" | "videos" | "tv";
 

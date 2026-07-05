@@ -30,5 +30,4 @@ export type TimeMachineUiAction =
   | { type: "setPreviewError"; value: string | null }
   | { type: "setIsIframeLoaded"; value: boolean };
 
-export type ShaderOption =
-  import("@/components/shared/GalaxyBackground").ShaderType | "off";
+export type ShaderOption = import("@/types/shader").ShaderType | "off";

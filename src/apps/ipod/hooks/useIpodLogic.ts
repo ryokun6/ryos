@@ -96,7 +96,7 @@ import {
 import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
 import { shouldPlayIpodWheelSound } from "../utils/wheelSound";
 import { shouldEnableAppleMusicIntegration } from "../utils/appleMusicActivation";
-import { createClientLogger } from "@/utils/logger";
+import { ipodLog } from "../logging";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
 // at module load instead of re-running these regexes on every render of the
@@ -107,7 +107,6 @@ const IS_IOS = /iP(hone|od|ad)/.test(UA);
 const IS_SAFARI =
   /Safari/.test(UA) && !/Chrome/.test(UA) && !/CriOS/.test(UA);
 const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
-const ipodLog = createClientLogger("iPod");
 
 /** Stable fallback so `rebuildMenuItems` never returns a fresh `[]` per call. */
 const EMPTY_IPOD_MENU_ITEMS: MenuItem[] = [];

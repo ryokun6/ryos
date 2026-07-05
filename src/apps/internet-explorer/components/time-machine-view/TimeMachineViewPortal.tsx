@@ -2,7 +2,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { X, Sparkle, Export } from "@phosphor-icons/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { Button } from "@/components/ui/button";
-import GalaxyBackground, { ShaderType } from "@/components/shared/GalaxyBackground";
+import GalaxyBackground from "@/components/shared/GalaxyBackground";
+import { ShaderType } from "@/types/shader";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +15,7 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "../TimeNavigationControls";
 import type { ShaderOption } from "./types";
 import type { useTimeMachineView } from "./useTimeMachineView";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("TimeMachine");
+import { timeMachineLog as log } from "../../logging";
 
 export type TimeMachineViewVm = ReturnType<typeof useTimeMachineView>;
 

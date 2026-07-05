@@ -35,9 +35,7 @@ import { useMenuShortcuts } from "@/hooks/useMenuShortcuts";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("TextEdit");
+import { textEditLog as log } from "../logging";
 
 // Debounce window for mirroring the editor content into the persisted store on
 // each keystroke, plus a max wait so continuous typing still snapshots for

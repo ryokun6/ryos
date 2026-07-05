@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useReducer, useRef } from "react";
-import { ShaderType } from "@/components/shared/GalaxyBackground";
+import { ShaderType } from "@/types/shader";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -17,9 +17,7 @@ import { exitVariants, loadingBarVariants, pulsingAnimationVariants } from "./an
 import { getMaskStyle, getHostname, timeMachineGenerateShareUrl } from "./utils";
 import { initialState, timeMachineUiReducer } from "./time-machine-ui-reducer";
 import type { PreviewSource, TimeMachineViewProps } from "./types";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("TimeMachine");
+import { timeMachineLog as log } from "../../logging";
 
 export function useTimeMachineView({
   isOpen,

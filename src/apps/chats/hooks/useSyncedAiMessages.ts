@@ -2,9 +2,7 @@ import { useEffect, useRef } from "react";
 import type { UIMessage } from "@ai-sdk/react";
 import type { AIChatMessage } from "@/types/chat";
 import { resolveAiMessageSync } from "../utils/proactiveGreetingApply";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("AIChat");
+import { aiChatLog as log } from "../logging";
 
 interface UseSyncedAiMessagesOptions {
   aiMessages: AIChatMessage[];

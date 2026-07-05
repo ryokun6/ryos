@@ -17,9 +17,7 @@ import {
   normalizeUrlForAnalytics,
   track,
 } from "@/utils/analytics";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("InternetExplorer");
+import { internetExplorerLog as log } from "../logging";
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;

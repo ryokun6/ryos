@@ -49,8 +49,6 @@ interface UseFuriganaReturn {
   furiganaMap: Map<string, FuriganaSegment[]>;
   /** Map of startTimeMs -> SoramimiSegment[] (Chinese misheard lyrics) */
   soramimiMap: Map<string, FuriganaSegment[]>;
-  /** Whether currently fetching (furigana OR soramimi) */
-  isFetching: boolean;
   /** Whether currently fetching furigana specifically */
   isFetchingFurigana: boolean;
   /** Whether currently fetching soramimi specifically */
@@ -218,9 +216,6 @@ export function useFurigana({
   const setError = useCallback((value: string | undefined) => {
     dispatch({ type: "patch", payload: { error: value } });
   }, []);
-  
-  // Combined fetching state for backwards compatibility
-  const isFetching = isFetchingFurigana || isFetchingSoramimi;
   const furiganaCacheKeyRef = useRef<string>("");
   const soramimiCacheKeyRef = useRef<string>("");
   // Track current songId for race condition prevention
@@ -833,7 +828,6 @@ export function useFurigana({
   return {
     furiganaMap,
     soramimiMap,
-    isFetching,
     isFetchingFurigana,
     isFetchingSoramimi,
     progress,

@@ -9,9 +9,7 @@ import type { AppId } from "@/config/appIds";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
 import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";
-import { createClientLogger } from "@/utils/logger";
-
-const log = createClientLogger("ChatTools");
+import { chatToolsLog as log } from "../logging";
 
 export interface LaunchAppInput {
   id: string;
