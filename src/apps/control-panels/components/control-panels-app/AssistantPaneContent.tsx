@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -32,17 +32,33 @@ import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 
 const TILE_PREVIEW_MAX = 64;
 
+/** Horizontal breathing room inside a tile so previews never touch the edges. */
+const TILE_PREVIEW_INSET = 6;
+
 /** Scale a character preview to fit the tile (downscales only — never upscales). */
-function getCharacterTileScale(width: number, height: number): number {
-  return Math.min(TILE_PREVIEW_MAX / height, TILE_PREVIEW_MAX / width);
+function getCharacterTileScale(
+  width: number,
+  height: number,
+  maxWidth: number
+): number {
+  return Math.min(
+    TILE_PREVIEW_MAX / height,
+    Math.min(TILE_PREVIEW_MAX, maxWidth) / width
+  );
 }
 
 /** Static character preview (sprite rest pose) scaled to fit a tile. */
-function CharacterTilePreview({ character }: { character: AssistantCharacter }) {
+function CharacterTilePreview({
+  character,
+  maxWidth = TILE_PREVIEW_MAX,
+}: {
+  character: AssistantCharacter;
+  maxWidth?: number;
+}) {
   const agentData = useAgentData(character.agentUrl);
   const frameWidth = agentData?.framesize[0] ?? character.width;
   const frameHeight = agentData?.framesize[1] ?? character.height;
-  const scale = getCharacterTileScale(frameWidth, frameHeight);
+  const scale = getCharacterTileScale(frameWidth, frameHeight, maxWidth);
 
   return (
     <div
@@ -97,6 +113,27 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
   const setCustomInstructions = useAssistantStore(
     (state) => state.setCustomInstructions
   );
+
+  // The grid is always 4 columns, so previews must shrink with the tile
+  // width when the pane is narrow (the sprite scale is computed in JS).
+  const characterGridRef = useRef<HTMLDivElement | null>(null);
+  const [previewMaxWidth, setPreviewMaxWidth] = useState(TILE_PREVIEW_MAX);
+  useEffect(() => {
+    const grid = characterGridRef.current;
+    if (!grid) return;
+    const measure = () => {
+      if (grid.clientWidth <= 0) return; // hidden tab panel
+      const gap = parseFloat(getComputedStyle(grid).columnGap) || 0;
+      const tileWidth = (grid.clientWidth - gap * 3) / 4;
+      setPreviewMaxWidth(
+        Math.min(TILE_PREVIEW_MAX, Math.max(24, tileWidth - TILE_PREVIEW_INSET))
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, []);
 
   const handleCharacterSelect = (character: AssistantCharacter) => {
     playClick();
@@ -179,41 +216,42 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
 
               <hr className="border-t" style={tabStyles.separatorStyle} />
 
-              <div className="@container">
-                <div className="grid grid-cols-4 @max-[339px]:grid-cols-2 gap-2 py-1">
-                  {ASSISTANT_CHARACTERS.map((character) => {
-                    const isSelected = enabled && character.id === characterId;
-                    const characterName = t(character.nameKey);
-                    return (
-                      <button
-                        key={character.id}
-                        type="button"
-                        aria-label={characterName}
-                        aria-pressed={isSelected}
-                        className="preview-button relative grid w-full aspect-square grid-rows-[72px_11px] content-start justify-items-center gap-0.5 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
-                        style={{
-                          boxShadow: isSelected
-                            ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
-                            : undefined,
-                        }}
-                        onClick={() => handleCharacterSelect(character)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleCharacterSelect(character);
-                          }
-                        }}
-                      >
-                        <span className="pointer-events-none flex h-[72px] w-full items-center justify-center">
-                          <CharacterTilePreview character={character} />
-                        </span>
-                        <span className="pointer-events-none -mt-[3px] block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
-                          {characterName}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div ref={characterGridRef} className="grid grid-cols-4 gap-2 py-1">
+                {ASSISTANT_CHARACTERS.map((character) => {
+                  const isSelected = enabled && character.id === characterId;
+                  const characterName = t(character.nameKey);
+                  return (
+                    <button
+                      key={character.id}
+                      type="button"
+                      aria-label={characterName}
+                      aria-pressed={isSelected}
+                      className="preview-button relative grid w-full h-[90px] grid-rows-[72px_11px] content-start justify-items-center gap-0.5 overflow-hidden bg-black/5 cursor-pointer hover:opacity-90"
+                      style={{
+                        boxShadow: isSelected
+                          ? "0 0 0 1px var(--os-color-selection-ring-gap), 0 0 0 3px var(--os-color-selection-bg)"
+                          : undefined,
+                      }}
+                      onClick={() => handleCharacterSelect(character)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleCharacterSelect(character);
+                        }
+                      }}
+                    >
+                      <span className="pointer-events-none flex h-[72px] w-full items-center justify-center">
+                        <CharacterTilePreview
+                          character={character}
+                          maxWidth={previewMaxWidth}
+                        />
+                      </span>
+                      <span className="pointer-events-none -mt-[3px] block h-[11px] w-full truncate px-1 text-center font-geneva-12 text-[11px] leading-[11px] text-neutral-600">
+                        {characterName}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               <p className="text-[11px] text-neutral-600 font-geneva-12">
