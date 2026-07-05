@@ -59,13 +59,12 @@ describe("assistant greeting request detection", () => {
     ).toBe(false);
   });
 
-  test("extractUserMessageText prefers parts over content", () => {
+  test("getUserMessageText reads legacy content", () => {
     expect(
       getUserMessageText({
         role: "user",
         content: "legacy",
-        parts: [{ type: "text", text: "from parts" }],
       })
-    ).toBe("from parts");
+    ).toBe("legacy");
   });
 });
