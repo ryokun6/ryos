@@ -427,12 +427,6 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
   )
 );
 
-// Helper functions for backward compatibility
-export const loadHtmlPreviewSplit = () =>
-  useDisplaySettingsStore.getState().htmlPreviewSplit;
-export const saveHtmlPreviewSplit = (v: boolean) =>
-  useDisplaySettingsStore.getState().setHtmlPreviewSplit(v);
-
 /**
  * Shallow-equality selector hook for this store. Co-located with the store
  * (rather than a central helpers barrel) so importing it doesn't pull other
