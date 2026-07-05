@@ -136,6 +136,11 @@ export interface AssistantChatHandle {
    * (AI for signed-in users, canned otherwise).
    */
   greetIfStale: () => void;
+  /**
+   * Explicit fresh start (e.g. context menu "New Conversation"): clears the
+   * thread and always triggers a greeting.
+   */
+  startNewConversation: () => void;
   clearConversation: () => void;
   stop: () => void;
 }
@@ -433,6 +438,25 @@ export function useAssistantChat(): AssistantChatHandle {
     useAssistantStore.getState().clearMessages();
   }, [sdkStop, clearError, setMessages]);
 
+  const triggerGreeting = useCallback(() => {
+    if (chat.status === "streaming" || chat.status === "submitted") return;
+
+    if (username && isAuthenticated) {
+      log.debug("Requesting AI greeting");
+      sendUserMessage(ASSISTANT_SUMMON_MESSAGE);
+    } else {
+      log.debug("Using local canned greeting (logged-out user)");
+      appendLocalGreeting();
+      useAssistantStore.getState().markInteraction();
+    }
+  }, [
+    chat.status,
+    username,
+    isAuthenticated,
+    sendUserMessage,
+    appendLocalGreeting,
+  ]);
+
   const greetIfStale = useCallback(() => {
     const store = useAssistantStore.getState();
     const decision = getAssistantGreetDecision({
@@ -455,22 +479,13 @@ export function useAssistantChat(): AssistantChatHandle {
       clearConversation();
     }
 
-    if (username && isAuthenticated) {
-      log.debug("Requesting AI greeting");
-      sendUserMessage(ASSISTANT_SUMMON_MESSAGE);
-    } else {
-      log.debug("Using local canned greeting (logged-out user)");
-      appendLocalGreeting();
-      useAssistantStore.getState().markInteraction();
-    }
-  }, [
-    chat,
-    username,
-    isAuthenticated,
-    sendUserMessage,
-    appendLocalGreeting,
-    clearConversation,
-  ]);
+    triggerGreeting();
+  }, [chat.status, clearConversation, triggerGreeting]);
+
+  const startNewConversation = useCallback(() => {
+    clearConversation();
+    triggerGreeting();
+  }, [clearConversation, triggerGreeting]);
 
   return {
     messages: messages as AIChatMessage[],
@@ -484,6 +499,7 @@ export function useAssistantChat(): AssistantChatHandle {
     errorText,
     sendUserMessage,
     greetIfStale,
+    startNewConversation,
     clearConversation,
     stop: sdkStop,
   };
