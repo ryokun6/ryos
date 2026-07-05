@@ -16,7 +16,6 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLanguageStore, type LanguageCode } from "@/stores/useLanguageStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { DEFAULT_ACCENT, type AccentId } from "@/themes/accents";
-import { DEFAULT_OS_THEME_ID } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
 
 export interface SettingsInput {
@@ -71,40 +70,13 @@ export function readCurrentSettingsSnapshot(): CurrentSettingsSnapshot {
 }
 
 /**
- * Whether a theme change should survive sanitization.
- *
- * Snapshot equality handles echoed current theme. When a wallpaper change is
- * also present, we drop a switch to `macosx` (the OS default) from a
- * non-default theme — the common overfill pattern when the model fills every
- * settings field but does not know the live theme (system state omits it).
- */
-export function shouldApplyThemeChange(
-  input: SettingsInput,
-  snapshot: CurrentSettingsSnapshot
-): boolean {
-  if (input.theme === undefined || input.theme === snapshot.theme) {
-    return false;
-  }
-
-  const wallpaperQuery = input.wallpaper?.trim() ?? "";
-  if (
-    wallpaperQuery.length > 0 &&
-    input.theme === DEFAULT_OS_THEME_ID &&
-    snapshot.theme !== DEFAULT_OS_THEME_ID
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-/**
  * Drop settings parameters that match the current snapshot (typical model
  * overfill) and no-op sentinels like `checkForUpdates: false`.
  *
  * Wallpaper queries are always kept when present — the input is a fuzzy search
  * string, not the persisted descriptor, so it cannot be compared reliably to
- * `currentWallpaper`.
+ * `currentWallpaper`. Theme is kept whenever it differs from the live snapshot
+ * (system state + prompt guidance reduce bogus default-theme overfill).
  */
 export function sanitizeSettingsInput(
   input: SettingsInput,
@@ -116,7 +88,7 @@ export function sanitizeSettingsInput(
     sanitized.language = input.language;
   }
 
-  if (shouldApplyThemeChange(input, snapshot)) {
+  if (input.theme !== undefined && input.theme !== snapshot.theme) {
     sanitized.theme = input.theme;
   }
 

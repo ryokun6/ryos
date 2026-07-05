@@ -132,7 +132,7 @@ describe("sanitizeSettingsInput", () => {
     ).toEqual({ wallpaper: "aurora" });
   });
 
-  test("wallpaper request on XP strips injected default macosx theme", () => {
+  test("wallpaper request keeps theme when it differs from snapshot", () => {
     expect(
       sanitizeSettingsInput(
         {
@@ -146,7 +146,7 @@ describe("sanitizeSettingsInput", () => {
         },
         { ...BASE_SNAPSHOT, theme: "xp" }
       )
-    ).toEqual({ wallpaper: "aurora" });
+    ).toEqual({ wallpaper: "aurora", theme: "macosx" });
   });
 
   test("wallpaper plus intentional theme change still applies both", () => {
@@ -314,7 +314,7 @@ describe("handleSettings applies only sanitized fields", () => {
     expect(forceRefreshCache).not.toHaveBeenCalled();
   });
 
-  test("wallpaper on XP ignores injected default macosx theme", async () => {
+  test("wallpaper on XP applies theme when input theme differs", async () => {
     useThemeStore.setState({
       current: "xp",
       accentByTheme: { xp: "wallpaper" },
@@ -336,7 +336,7 @@ describe("handleSettings applies only sanitized fields", () => {
     );
 
     expect(setWallpaper).toHaveBeenCalledTimes(1);
-    expect(setTheme).not.toHaveBeenCalled();
+    expect(setTheme).toHaveBeenCalledWith("macosx");
   });
 
   test("multi-setting XP theme and muted UI sounds both apply", async () => {
