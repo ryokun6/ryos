@@ -167,7 +167,47 @@ describe("conversation memory processing", () => {
     expect(assistantSource).toContain("messages: [...chat.messages]");
   });
 
-  test("identity changes clear the device-local Assistant transcript", () => {
+  test("identity changes clear the device-local Assistant transcript", async () => {
+    const [{ useChatsStore }, { useAssistantStore }] = await Promise.all([
+      import("../src/stores/useChatsStore"),
+      import("../src/stores/useAssistantStore"),
+    ]);
+    const previousChats = useChatsStore.getState();
+    const previousAssistant = useAssistantStore.getState();
+
+    try {
+      useChatsStore.setState({
+        username: "alice",
+        isAuthenticated: true,
+        rooms: [],
+      });
+      useAssistantStore.setState({
+        messages: [
+          textMessage("private", "user", "Alice's private conversation"),
+        ],
+        lastInteractionAt: Date.now(),
+        bubbleDismissedAt: Date.now(),
+      });
+
+      useChatsStore.getState().setUsername("bob");
+
+      expect(useChatsStore.getState().username).toBe("bob");
+      expect(useAssistantStore.getState().messages).toEqual([]);
+      expect(useAssistantStore.getState().lastInteractionAt).toBeNull();
+      expect(useAssistantStore.getState().bubbleDismissedAt).toBeNull();
+    } finally {
+      useChatsStore.setState({
+        username: previousChats.username,
+        isAuthenticated: previousChats.isAuthenticated,
+        rooms: previousChats.rooms,
+      });
+      useAssistantStore.setState({
+        messages: previousAssistant.messages,
+        lastInteractionAt: previousAssistant.lastInteractionAt,
+        bubbleDismissedAt: previousAssistant.bubbleDismissedAt,
+      });
+    }
+
     const chatsStoreSource = readFileSync(
       resolve(process.cwd(), "src/stores/useChatsStore.ts"),
       "utf8"
