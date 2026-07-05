@@ -1337,9 +1337,10 @@ function AssistantOverlayInner() {
   // measured bubble size; the tail counter-shifts by the same amount so it
   // keeps pointing at the character.
   const bubbleCrossOffset = useMemo(() => {
-    // Side pops stay edge-aligned with the character while a reply is in flight;
-    // cross-axis sliding uses estimated heights and detaches the thinking bubble.
-    if (!bubbleVertical && isLoading) {
+    // Side pops stay edge-aligned with the character for the whole turn
+    // (thinking → streaming → finished reply). Recomputing cross-offset when
+    // isLoading flips false uses the tall final height and jumps the bubble.
+    if (!bubbleVertical && (isLoading || showTyping || Boolean(bubbleText))) {
       return 0;
     }
     const insets = computeInsets();
@@ -1368,6 +1369,8 @@ function AssistantOverlayInner() {
     bubblePlacement.align,
     bubbleVertical,
     isLoading,
+    showTyping,
+    bubbleText,
     position,
     character.width,
     character.height,

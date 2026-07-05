@@ -36,7 +36,9 @@ describe("assistant bubble loading shimmer", () => {
   });
 
   test("side pops skip cross-axis slide while a reply is in flight", () => {
-    expect(assistantOverlaySource).toContain("!bubbleVertical && isLoading");
+    expect(assistantOverlaySource).toContain(
+      "!bubbleVertical && (isLoading || showTyping || Boolean(bubbleText))"
+    );
     expect(assistantOverlaySource).not.toContain(
       "clampAssistantAnchorToVisibleBand"
     );

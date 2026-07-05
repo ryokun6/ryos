@@ -310,5 +310,8 @@ describe("assistant bubble render height", () => {
     });
     expect(estimateOffset).toBeGreaterThan(0);
     expect(thinkingOffset).toBe(0);
+    // A tall finished reply would also slide (estimateOffset); the overlay
+    // keeps side-pop cross-offset at 0 for the whole turn so it does not jump
+    // when isLoading flips false after streaming.
   });
 });
