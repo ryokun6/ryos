@@ -393,7 +393,6 @@ export function useChatSynth() {
         // This catch might be less necessary with the active voice check, but kept for safety
         log.debug("Skipping note due to timing or error", error);
       }
-    } else {
     }
   }, [isAudioReady, vibrate, initializeAudio, currentPresetKey]); // Add initializeAudio dependency
 

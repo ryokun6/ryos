@@ -75,8 +75,6 @@ export function BootScreen({
 
   useEffect(() => {
     let progressInterval: number | undefined;
-    let bootTimer: number | undefined;
-    let soundTimer: number | undefined;
     let completeTimer: number | undefined;
 
     if (!isOpen) {
@@ -89,7 +87,7 @@ export function BootScreen({
       return undefined;
     }
 
-    soundTimer = window.setTimeout(() => {
+    const soundTimer = window.setTimeout(() => {
       play();
     }, 100);
 
@@ -97,7 +95,7 @@ export function BootScreen({
       dispatch({ type: "increment", amount: Math.random() * 10 });
     }, 100);
 
-    bootTimer = window.setTimeout(() => {
+    const bootTimer = window.setTimeout(() => {
       window.clearInterval(progressInterval);
       progressInterval = undefined;
       dispatch({ type: "setProgress", value: 100 });

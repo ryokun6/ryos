@@ -2608,7 +2608,7 @@ export const BooksReaderPane = forwardRef<
           }}
         >
           <motion.div
-            role="toolbar"
+            role={barOpen ? "toolbar" : "button"}
             aria-label={
               askRyoActive
                 ? t("apps.books.selection.askRyo")
@@ -2620,7 +2620,7 @@ export const BooksReaderPane = forwardRef<
                       defaultValue: "Read-aloud controls",
                     })
             }
-            aria-expanded={barOpen}
+            aria-expanded={barOpen ? undefined : false}
             className={cn(
               "books-speech-overlay flex items-center justify-center overflow-hidden",
               // The reply bubble squares off; the control pill (including the
