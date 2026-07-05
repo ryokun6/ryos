@@ -1700,11 +1700,15 @@
           "instructionsHint": "告訴輔助程式如何運作。這會套用到此帳號裝置上的新回覆。",
           "instructionsPlaceholder": "例如：稱呼我為船長，並以烹飪比喻來解釋事情。",
           "responseStyle": "回覆風格",
-          "responseStyleDescription": "回覆內容的長度",
+          "responseStyleDescription": "助理應如何回覆",
           "responseStyleOptions": {
             "chatty": "詳盡",
             "concise": "精簡",
-            "normal": "標準"
+            "detailed": "詳細",
+            "friendly": "親切",
+            "normal": "標準",
+            "playful": "活潑",
+            "professional": "專業"
           },
           "speech": "語音",
           "speechDescription": "朗讀回覆內容"

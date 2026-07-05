@@ -11,6 +11,10 @@ export const ASSISTANT_RESPONSE_STYLES = [
   "concise",
   "normal",
   "chatty",
+  "detailed",
+  "friendly",
+  "professional",
+  "playful",
 ] as const;
 
 export type AssistantResponseStyle = (typeof ASSISTANT_RESPONSE_STYLES)[number];
@@ -62,6 +66,14 @@ const RESPONSE_STYLE_PROMPTS: Record<AssistantResponseStyle, string> = {
   normal: "",
   chatty:
     "The user prefers chatty replies: feel free to use 3-4 sentences with a playful aside, while staying on topic.",
+  detailed:
+    "The user prefers detailed replies: give thorough, well-organized answers that cover the relevant context and caveats, not just the headline.",
+  friendly:
+    "The user prefers friendly replies: keep a warm, encouraging tone as if helping a friend, while staying accurate and on topic.",
+  professional:
+    "The user prefers professional replies: keep a polished, businesslike tone, avoid slang and filler, and get straight to the point.",
+  playful:
+    "The user prefers playful replies: sprinkle in light humor, puns, or whimsy where it fits, while still answering the question properly.",
 };
 
 export interface AssistantCustomization {
@@ -94,7 +106,7 @@ export function buildAssistantCustomizationAddon({
   const stylePrompt =
     RESPONSE_STYLE_PROMPTS[normalizeAssistantResponseStyle(responseStyle)];
   if (stylePrompt) {
-    sections.push(`## RESPONSE LENGTH\n${stylePrompt}`);
+    sections.push(`## RESPONSE STYLE\n${stylePrompt}`);
   }
 
   const sanitizedInstructions = sanitizeAssistantInstructions(instructions);

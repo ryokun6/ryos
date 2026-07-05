@@ -1700,11 +1700,15 @@
           "instructionsHint": "Lege fest, wie sich der Assistent verhalten soll. Gilt für neue Antworten auf den Geräten dieses Accounts.",
           "instructionsPlaceholder": "z. B. Nenne mich Captain und erkläre Dinge mit Kochmetaphern.",
           "responseStyle": "Antwortstil",
-          "responseStyleDescription": "Länge der Antworten",
+          "responseStyleDescription": "Wie der Assistent antworten soll",
           "responseStyleOptions": {
             "chatty": "Gesprächig",
             "concise": "Prägnant",
-            "normal": "Normal"
+            "detailed": "Ausführlich",
+            "friendly": "Freundlich",
+            "normal": "Normal",
+            "playful": "Verspielt",
+            "professional": "Professionell"
           },
           "speech": "Sprachausgabe",
           "speechDescription": "Antworten laut vorlesen"

@@ -1700,11 +1700,15 @@
           "instructionsHint": "告诉助理如何表现。适用于此账户设备上的新回复。",
           "instructionsPlaceholder": "例如：称呼我为“船长”，并用烹饪比喻来解释事物。",
           "responseStyle": "回复风格",
-          "responseStyleDescription": "回复内容的长度",
+          "responseStyleDescription": "助理应如何回复",
           "responseStyleOptions": {
             "chatty": "话多",
             "concise": "简洁",
-            "normal": "标准"
+            "detailed": "详细",
+            "friendly": "亲切",
+            "normal": "标准",
+            "playful": "俏皮",
+            "professional": "专业"
           },
           "speech": "语音",
           "speechDescription": "朗读回复内容"

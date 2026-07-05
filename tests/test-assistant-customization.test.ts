@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   ASSISTANT_INSTRUCTIONS_MAX_LENGTH,
+  ASSISTANT_RESPONSE_STYLES,
   buildAssistantCustomizationAddon,
   normalizeAssistantResponseStyle,
   sanitizeAssistantInstructions,
@@ -8,9 +9,9 @@ import {
 
 describe("normalizeAssistantResponseStyle", () => {
   test("accepts every valid style", () => {
-    expect(normalizeAssistantResponseStyle("concise")).toBe("concise");
-    expect(normalizeAssistantResponseStyle("normal")).toBe("normal");
-    expect(normalizeAssistantResponseStyle("chatty")).toBe("chatty");
+    for (const style of ASSISTANT_RESPONSE_STYLES) {
+      expect(normalizeAssistantResponseStyle(style)).toBe(style);
+    }
   });
 
   test("falls back to normal for unknown or non-string values", () => {
@@ -67,22 +68,22 @@ describe("buildAssistantCustomizationAddon", () => {
     expect(addon).not.toContain("N".repeat(41));
   });
 
-  test("normal style adds no response-length section", () => {
+  test("normal style adds no response-style section", () => {
     expect(
       buildAssistantCustomizationAddon({
         assistantName: "Rover",
         responseStyle: "normal",
       })
-    ).not.toContain("## RESPONSE LENGTH");
+    ).not.toContain("## RESPONSE STYLE");
   });
 
-  test("concise and chatty styles add a response-length section", () => {
-    expect(
-      buildAssistantCustomizationAddon({ responseStyle: "concise" })
-    ).toContain("## RESPONSE LENGTH");
-    expect(
-      buildAssistantCustomizationAddon({ responseStyle: "chatty" })
-    ).toContain("## RESPONSE LENGTH");
+  test("every non-normal style adds a response-style section", () => {
+    for (const style of ASSISTANT_RESPONSE_STYLES) {
+      if (style === "normal") continue;
+      expect(
+        buildAssistantCustomizationAddon({ responseStyle: style })
+      ).toContain("## RESPONSE STYLE");
+    }
   });
 
   test("unknown style falls back to the default (no section)", () => {
@@ -113,7 +114,7 @@ describe("buildAssistantCustomizationAddon", () => {
       instructions: "speak like a wizard",
     });
     const nameIndex = addon.indexOf("## YOUR NAME");
-    const styleIndex = addon.indexOf("## RESPONSE LENGTH");
+    const styleIndex = addon.indexOf("## RESPONSE STYLE");
     const instructionsIndex = addon.indexOf("## USER CUSTOM INSTRUCTIONS");
     expect(nameIndex).toBeGreaterThanOrEqual(0);
     expect(styleIndex).toBeGreaterThan(nameIndex);

@@ -1707,11 +1707,15 @@
           "instructionsHint": "Укажите, как ассистент должен себя вести. Применяется к новым ответам на устройствах этой учетной записи.",
           "instructionsPlaceholder": "Например: «Называй меня Капитаном и используй кулинарные метафоры».",
           "responseStyle": "Стиль ответов",
-          "responseStyleDescription": "Длина ответов",
+          "responseStyleDescription": "Как ассистент должен отвечать",
           "responseStyleOptions": {
             "chatty": "Развернутые",
             "concise": "Краткие",
-            "normal": "Обычные"
+            "detailed": "Подробный",
+            "friendly": "Дружелюбный",
+            "normal": "Обычные",
+            "playful": "Игривый",
+            "professional": "Профессиональный"
           },
           "speech": "Проговаривание текста",
           "speechDescription": "Озвучивать ответы"
