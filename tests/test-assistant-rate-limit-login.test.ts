@@ -56,4 +56,10 @@ describe("assistant bubble rate-limit login wiring", () => {
     expect(overlaySource).toContain("isUsernameDialogOpen");
     expect(overlaySource).toContain("submitUsernameDialog");
   });
+
+  test("closes the bubble before opening the auth dialog", () => {
+    expect(overlaySource).toContain("handleRateLimitSignIn");
+    expect(overlaySource).toContain("closeBubble()");
+    expect(overlaySource).toContain("promptSetUsername()");
+  });
 });

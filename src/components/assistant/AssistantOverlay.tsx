@@ -406,6 +406,10 @@ function AssistantOverlayInner() {
     setBubbleOpen(false);
     useAssistantStore.getState().markBubbleDismissed();
   }, []);
+  const handleRateLimitSignIn = useCallback(() => {
+    closeBubble();
+    promptSetUsername();
+  }, [closeBubble, promptSetUsername]);
   /** First-load bubble pop, deferred until the entrance sequence ends. */
   const openInitialBubble = useCallback(() => {
     if (!initialBubblePendingRef.current) return;
@@ -1762,7 +1766,7 @@ function AssistantOverlayInner() {
                 <div className="-mx-3 mt-1.5 border-t border-black/15 px-3 pt-1 pb-0.5">
                   <button
                     type="button"
-                    onClick={promptSetUsername}
+                    onClick={handleRateLimitSignIn}
                     className="w-full rounded bg-orange-600 px-2 py-1 text-[12px] leading-tight font-geneva-12 text-white hover:bg-orange-700 active:bg-orange-800"
                   >
                     {t("apps.chats.status.loginToChat")}
