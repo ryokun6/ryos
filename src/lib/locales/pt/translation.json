@@ -1479,6 +1479,7 @@
         "settingsUiSoundsEnabled": "Sons da interface ativados",
         "settingsUpdated": "Configurações atualizadas",
         "settingsWallpaperChanged": "Imagem de fundo alterada para {{name}}",
+        "settingsWallpaperConflict": "Foram fornecidos campos de imagem de fundo conflitantes ({{fields}}); nenhum ajuste foi alterado. Tente novamente apenas com os ajustes solicitados pelo usuário, usando no máximo um de 'wallpaper', 'wallpaperShuffle' ou 'wallpaperDynamic'.",
         "settingsWallpaperNotFound": "Nenhuma imagem de fundo corresponde a \"{{query}}\"",
         "settingsWallpaperShuffleChanged": "Imagem de fundo definida para fotos aleatórias de {{category}}",
         "settingsWallpaperSuggestions": "Nenhuma imagem de fundo chamada \"{{query}}\". Sugestões: {{suggestions}}",

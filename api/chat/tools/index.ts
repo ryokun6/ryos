@@ -185,7 +185,7 @@ export const TOOL_DESCRIPTIONS = {
   
   settings:
     "Change system settings in ryOS. Use when the user asks to change language, theme, wallpaper, accent color, volume, enable/disable speech or UI sounds, or check for updates. " +
-    "IMPORTANT: Include ONLY the settings the user explicitly requested — omit every other field. Do not echo current values for language, theme, wallpaper, accent, volume, speech, or UI sounds. " +
+    "IMPORTANT: Change ONLY the settings the user explicitly requested — set every other field to null. Do not echo current values for language, theme, wallpaper, accent, volume, speech, or UI sounds, and never fill unrequested fields with placeholder values like \"string\", 0, or false. " +
     "Wallpaper fields (use exactly one per call): 'wallpaper' sets one specific built-in wallpaper by exact name; 'wallpaperShuffle' rotates through a category (tiles, videos, or a photo category); 'wallpaperDynamic' sets a live wallpaper ('day-night' time-of-day gradient, 'weather' live weather, 'cover' now-playing album art, 'lyrics' now-playing lyrics). " +
     "Multiple settings can be changed in one call when the user asks for several (e.g. 'set XP theme and mute sounds').",
   
@@ -407,7 +407,11 @@ export function createChatTools(
     // ============================================================================
     settings: {
       description: TOOL_DESCRIPTIONS.settings,
-      inputSchema: schemas.settingsSchema,
+      // Strict-mode wire schema (required-but-nullable fields) so models
+      // emit null for unrequested settings instead of placeholder junk;
+      // nulls are stripped during validation. See settingsToolInputSchema.
+      inputSchema: schemas.settingsToolInputSchema,
+      strict: true,
       // No execute - handled client-side (requires Zustand store access)
     },
 

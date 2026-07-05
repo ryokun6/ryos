@@ -1313,6 +1313,7 @@
         "settingsWallpaperShuffleChanged": "Wallpaper set to shuffle {{category}}",
         "settingsWallpaperNotFound": "No wallpaper matched \"{{query}}\"",
         "settingsWallpaperSuggestions": "No wallpaper named \"{{query}}\". Close matches: {{suggestions}}",
+        "settingsWallpaperConflict": "Conflicting wallpaper fields were provided ({{fields}}); no settings were changed. Retry with only the settings the user asked for, using at most one of 'wallpaper', 'wallpaperShuffle', or 'wallpaperDynamic'",
         "settingsAccentChanged": "Accent color set to {{accent}}",
         "settingsAccentNotSupported": "Accent colors are not supported by the {{theme}} theme",
         "settingsUiSoundsEnabled": "UI sounds enabled",

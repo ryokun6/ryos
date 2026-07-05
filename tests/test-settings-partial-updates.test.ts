@@ -47,8 +47,10 @@ Object.defineProperty(browserGlobals, "navigator", {
   configurable: true,
 });
 
-const { settingsSchema } = await import("../api/chat/tools/schemas");
-const { sanitizeSettingsInput } = await import(
+const { settingsSchema, settingsToolInputSchema } = await import(
+  "../api/chat/tools/schemas"
+);
+const { sanitizeSettingsInput, resolveWallpaperConflict } = await import(
   "../src/apps/chats/tools/sanitizeSettingsInput"
 );
 const { useLanguageStore } = await import("../src/stores/useLanguageStore");
@@ -116,6 +118,72 @@ describe("settingsSchema partial updates", () => {
         uiSoundsEnabled: false,
       }).success
     ).toBe(true);
+  });
+
+  test("strips null fields during normalization (strict-mode wire format)", () => {
+    expect(
+      settingsSchema.safeParse({
+        language: null,
+        theme: null,
+        wallpaper: null,
+        wallpaperShuffle: "aqua",
+        wallpaperDynamic: null,
+        accent: null,
+        masterVolume: null,
+        speechEnabled: null,
+        uiSoundsEnabled: null,
+        checkForUpdates: null,
+      })
+    ).toEqual({
+      success: true,
+      data: { wallpaperShuffle: "aqua" },
+    });
+  });
+});
+
+describe("settingsToolInputSchema (strict-mode wire schema)", () => {
+  test("marks every field required and nullable so models emit null, not junk", () => {
+    const wire = settingsToolInputSchema.jsonSchema as {
+      properties: Record<string, { description?: string; anyOf?: unknown[] }>;
+      required: string[];
+      additionalProperties: boolean;
+    };
+    const keys = Object.keys(wire.properties);
+    expect(keys).toContain("wallpaperShuffle");
+    expect(wire.required.sort()).toEqual(keys.sort());
+    expect(wire.additionalProperties).toBe(false);
+    for (const key of keys) {
+      const property = wire.properties[key];
+      expect(property.anyOf).toHaveLength(2);
+      expect(property.anyOf![1]).toEqual({ type: "null" });
+      expect(property.description).toContain("Set to null");
+    }
+  });
+
+  test("validate strips nulls to a sparse settings object", async () => {
+    const result = await settingsToolInputSchema.validate!({
+      language: null,
+      theme: null,
+      wallpaper: null,
+      wallpaperShuffle: "aqua",
+      wallpaperDynamic: null,
+      accent: null,
+      masterVolume: null,
+      speechEnabled: null,
+      uiSoundsEnabled: null,
+      checkForUpdates: null,
+    });
+    expect(result).toEqual({
+      success: true,
+      value: { wallpaperShuffle: "aqua" },
+    });
+  });
+
+  test("validate still rejects invalid values", async () => {
+    const result = await settingsToolInputSchema.validate!({
+      wallpaperShuffle: "rainbows",
+    });
+    expect(result.success).toBe(false);
   });
 });
 
@@ -259,10 +327,91 @@ describe("sanitizeSettingsInput", () => {
   });
 });
 
+describe("resolveWallpaperConflict", () => {
+  const AURORA_PATH = "/wallpapers/photos/nature/aurora.jpg";
+  const resolveName = (query: string) =>
+    query === "aurora" ? AURORA_PATH : null;
+
+  test("a single wallpaper param passes through untouched", () => {
+    expect(
+      resolveWallpaperConflict(
+        { wallpaperShuffle: "nature", masterVolume: 0 },
+        BASE_SNAPSHOT,
+        resolveName
+      )
+    ).toEqual({
+      params: { wallpaperShuffle: "nature", masterVolume: 0 },
+      conflict: null,
+    });
+  });
+
+  test("drops a wallpaper name echoing the current wallpaper, keeping the requested shuffle", () => {
+    expect(
+      resolveWallpaperConflict(
+        { wallpaper: "aurora", wallpaperShuffle: "nature" },
+        { ...BASE_SNAPSHOT, currentWallpaper: AURORA_PATH },
+        resolveName
+      )
+    ).toEqual({
+      params: { wallpaperShuffle: "nature" },
+      conflict: null,
+    });
+  });
+
+  test("reports remaining conflicts after dropping the echoed name", () => {
+    expect(
+      resolveWallpaperConflict(
+        {
+          wallpaper: "aurora",
+          wallpaperShuffle: "nature",
+          wallpaperDynamic: "day-night",
+        },
+        { ...BASE_SNAPSHOT, currentWallpaper: AURORA_PATH },
+        resolveName
+      )
+    ).toEqual({
+      params: {},
+      conflict: ["wallpaperShuffle", "wallpaperDynamic"],
+    });
+  });
+
+  test("strips all wallpaper params on an unresolvable conflict, keeping other settings", () => {
+    expect(
+      resolveWallpaperConflict(
+        {
+          wallpaper: "aurora",
+          wallpaperShuffle: "nature",
+          wallpaperDynamic: "day-night",
+          masterVolume: 0,
+        },
+        { ...BASE_SNAPSHOT, currentWallpaper: "/wallpapers/tiles/bondi.png" },
+        resolveName
+      )
+    ).toEqual({
+      params: { masterVolume: 0 },
+      conflict: ["wallpaper", "wallpaperShuffle", "wallpaperDynamic"],
+    });
+  });
+
+  test("without a name resolver, multi-wallpaper bundles report a conflict", () => {
+    expect(
+      resolveWallpaperConflict(
+        { wallpaper: "aurora", wallpaperShuffle: "nature" },
+        { ...BASE_SNAPSHOT, currentWallpaper: AURORA_PATH }
+      )
+    ).toEqual({
+      params: {},
+      conflict: ["wallpaper", "wallpaperShuffle"],
+    });
+  });
+});
+
 describe("handleSettings applies only sanitized fields", () => {
   const setLanguage = mock(() => {});
   const setTheme = mock(() => {});
+  const setAccent = mock(() => {});
   const setMasterVolume = mock(() => {});
+  const setSpeechEnabled = mock(() => {});
   const setUiSoundsEnabled = mock(() => {});
   const setWallpaper = mock(async () => {});
   const addToolOutput = mock(() => {});
@@ -270,7 +419,9 @@ describe("handleSettings applies only sanitized fields", () => {
   beforeEach(() => {
     setLanguage.mockClear();
     setTheme.mockClear();
+    setAccent.mockClear();
     setMasterVolume.mockClear();
+    setSpeechEnabled.mockClear();
     setUiSoundsEnabled.mockClear();
     setWallpaper.mockClear();
     addToolOutput.mockClear();
@@ -283,12 +434,14 @@ describe("handleSettings applies only sanitized fields", () => {
       current: "macosx",
       accentByTheme: { macosx: "wallpaper" },
       setTheme,
+      setAccent,
     } as Partial<ReturnType<typeof useThemeStore.getState>>);
     useAudioSettingsStore.setState({
       masterVolume: 1,
       speechEnabled: false,
       uiSoundsEnabled: true,
       setMasterVolume,
+      setSpeechEnabled,
       setUiSoundsEnabled,
     } as Partial<ReturnType<typeof useAudioSettingsStore.getState>>);
     useDisplaySettingsStore.setState({
@@ -348,6 +501,73 @@ describe("handleSettings applies only sanitized fields", () => {
 
     expect(setWallpaper).toHaveBeenCalledWith("dynamic://gradient/day-night");
     expect(setTheme).not.toHaveBeenCalled();
+  });
+
+  test("junk-filled bundle with three wallpaper fields changes nothing and reports the conflict", async () => {
+    // Regression: asking for the nature shuffle produced a tool call with
+    // every field populated with junk defaults (observed live): language,
+    // theme "system7", wallpaper "string", nature shuffle, day-night dynamic,
+    // accent, masterVolume 0, speech/sounds, and an update check. The
+    // wallpaper-field conflict marks the whole bundle untrustworthy: nothing
+    // may be applied (no theme switch, no mute, no update check) and the
+    // model gets one retry-hint error instead of a schema rejection.
+    const { handleSettings } = await import(
+      "../src/apps/chats/tools/settingsHandler"
+    );
+
+    await handleSettings(
+      {
+        language: "en",
+        theme: "system7",
+        wallpaper: "string",
+        wallpaperShuffle: "nature",
+        wallpaperDynamic: "day-night",
+        accent: "default",
+        masterVolume: 0,
+        speechEnabled: true,
+        uiSoundsEnabled: true,
+        checkForUpdates: true,
+      },
+      "tc_bundle",
+      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
+    );
+
+    expect(setWallpaper).not.toHaveBeenCalled();
+    expect(setTheme).not.toHaveBeenCalled();
+    expect(setLanguage).not.toHaveBeenCalled();
+    expect(setMasterVolume).not.toHaveBeenCalled();
+    expect(setSpeechEnabled).not.toHaveBeenCalled();
+    expect(setUiSoundsEnabled).not.toHaveBeenCalled();
+    expect(setAccent).not.toHaveBeenCalled();
+    expect(addToolOutput).toHaveBeenCalledTimes(1);
+    expect(addToolOutput.mock.calls[0][0]).toMatchObject({
+      tool: "settings",
+      toolCallId: "tc_bundle",
+      state: "output-error",
+    });
+  });
+
+  test("shuffle plus an echoed dynamic wallpaper resolves to the shuffle", async () => {
+    const { handleSettings } = await import(
+      "../src/apps/chats/tools/settingsHandler"
+    );
+
+    useDisplaySettingsStore.setState({
+      currentWallpaper: "dynamic://gradient/day-night",
+      setWallpaper,
+    } as Partial<ReturnType<typeof useDisplaySettingsStore.getState>>);
+
+    await handleSettings(
+      { wallpaperShuffle: "nature", wallpaperDynamic: "day-night" },
+      "tc_echo_dynamic",
+      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
+    );
+
+    expect(setWallpaper).toHaveBeenCalledTimes(1);
+    expect(setWallpaper).toHaveBeenCalledWith("shuffle://photos/nature");
+    expect(addToolOutput.mock.calls[0][0]).not.toMatchObject({
+      state: "output-error",
+    });
   });
 
   test("checkForUpdates-only call does not touch persisted settings", async () => {

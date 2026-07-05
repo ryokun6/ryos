@@ -1477,6 +1477,7 @@
         "settingsUiSoundsEnabled": "UI 사운드 활성화됨",
         "settingsUpdated": "설정이 업데이트되었습니다",
         "settingsWallpaperChanged": "배경화면이 {{name}}(으)로 변경됨",
+        "settingsWallpaperConflict": "충돌하는 배경화면 필드({{fields}})가 제공되었습니다. 변경된 설정이 없습니다. 'wallpaper', 'wallpaperShuffle' 또는 'wallpaperDynamic' 중 최대 하나만 사용하여 사용자가 요청한 설정으로 다시 시도하십시오.",
         "settingsWallpaperNotFound": "\"{{query}}\"와(과) 일치하는 배경화면 없음",
         "settingsWallpaperShuffleChanged": "배경화면이 {{category}} 셔플로 설정되었습니다.",
         "settingsWallpaperSuggestions": "\"{{query}}\"라는 이름의 배경화면이 없습니다. 유사한 항목: {{suggestions}}",
