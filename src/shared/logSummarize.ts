@@ -55,8 +55,7 @@ function ownErrorProperties(
     depth: number,
     seen: WeakSet<object>,
     key?: string
-  ) => unknown,
-  options: Required<LogSummarizeOptions>
+  ) => unknown
 ): Record<string, unknown> | undefined {
   const props: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(error)) {
@@ -110,7 +109,7 @@ export function summarizeForStructuredLog(
     seen.add(value);
     const cause = "cause" in value ? value.cause : undefined;
     const props = resolved.includeErrorProps
-      ? ownErrorProperties(value, depth, seen, summarize, resolved)
+      ? ownErrorProperties(value, depth, seen, summarize)
       : undefined;
     return {
       kind: "Error",
