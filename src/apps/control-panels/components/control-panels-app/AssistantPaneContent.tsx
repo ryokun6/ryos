@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { OsTextarea } from "@/components/ui/os-textarea";
 import {
   Select,
   SelectContent,
@@ -330,12 +330,12 @@ export function AssistantPaneContent({ t, tabStyles }: AssistantPaneContentProps
                     {customInstructions.length}/{ASSISTANT_INSTRUCTIONS_MAX_LENGTH}
                   </span>
                 </div>
-                <Textarea
+                <OsTextarea
                   value={customInstructions}
                   onChange={(e) => setCustomInstructions(e.target.value)}
                   maxLength={ASSISTANT_INSTRUCTIONS_MAX_LENGTH}
                   rows={4}
-                  className="min-h-20 max-h-40 font-geneva-12 text-[12px] md:text-[12px]"
+                  textareaClassName="min-h-20 max-h-40 text-[12px] resize-none"
                   placeholder={t(
                     "apps.control-panels.assistant.behavior.instructionsPlaceholder"
                   )}

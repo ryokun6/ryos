@@ -936,7 +936,7 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
     [data-os-color-scheme="dark"]
   )
-  input[data-os-search-input="true"] {
+  :is(input[data-os-search-input="true"], textarea[data-os-field-input="true"]) {
   background-color: rgba(255, 255, 255, 0.26) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   backdrop-filter: blur(12px) saturate(180%);
@@ -946,7 +946,7 @@
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  input[data-os-search-input="true"] {
+  :is(input[data-os-search-input="true"], textarea[data-os-field-input="true"]) {
   background-color: rgba(255, 255, 255, 0.06) !important;
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   backdrop-filter: blur(12px) saturate(180%);
