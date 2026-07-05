@@ -3,9 +3,6 @@ import * as THREE from "three";
 import { useShaderEffectsEnabled } from "@/hooks/useShaderEffectsEnabled";
 import { ShaderType } from "@/types/shader";
 
-// Re-export for backwards compatibility
-export { ShaderType };
-
 interface GalaxyBackgroundProps {
   shaderType?: ShaderType;
   /** When true, render regardless of the global shaderEffectEnabled setting */
@@ -22,19 +19,6 @@ const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 
   // Combined state for rendering condition - removed screen size check
   const shouldRender = forceRender || shaderEffectEnabled;
-
-  // Check initial screen width and add resize listener - REMOVED
-  // useEffect(() => {
-  //   const checkScreenWidth = () => {
-  //     // Use a common breakpoint like 768px (Tailwind 'md') or 640px ('sm')
-  //     setIsLargeScreen(window.innerWidth >= 640); // Update screen size state
-  //   };
-  //
-  //   checkScreenWidth(); // Initial check
-  //   window.addEventListener('resize', checkScreenWidth);
-  //
-  //   return () => window.removeEventListener('resize', checkScreenWidth);
-  // }, []);
 
   useEffect(() => {
     if (!shouldRender || !mountRef.current) return;

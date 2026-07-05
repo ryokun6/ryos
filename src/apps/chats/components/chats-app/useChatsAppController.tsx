@@ -363,7 +363,6 @@ export function useChatsAppController({
     isAquaGlass,
     isDarkMode,
   } = useThemeFlags();
-  const isWindowsLegacyTheme = isWindowsTheme;
   const isOffline = useOffline();
   const {
     telegramLinkedAccount,
@@ -557,7 +556,6 @@ export function useChatsAppController({
     isMacTheme,
     isAquaGlass,
     isDarkMode,
-    isWindowsLegacyTheme,
     isOffline,
     menuBar,
     currentRoom,

@@ -2,7 +2,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { X, Sparkle, Export } from "@phosphor-icons/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { Button } from "@/components/ui/button";
-import GalaxyBackground, { ShaderType } from "@/components/shared/GalaxyBackground";
+import GalaxyBackground from "@/components/shared/GalaxyBackground";
+import { ShaderType } from "@/types/shader";
 import {
   DropdownMenu,
   DropdownMenuContent,

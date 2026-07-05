@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useReducer, useRef } from "react";
-import { ShaderType } from "@/components/shared/GalaxyBackground";
+import { ShaderType } from "@/types/shader";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useSound, Sounds } from "@/hooks/useSound";
