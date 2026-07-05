@@ -58,7 +58,6 @@ import {
   ASSISTANT_BUBBLE_WIDTH,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
-  resolveAssistantVisibleViewport,
   type AssistantBubbleRect,
   type AssistantBubbleViewport,
 } from "./assistantBubblePlacement";
@@ -1234,26 +1233,29 @@ function AssistantOverlayInner() {
   // stays inside the viewport and covers the least amount of open windows, so
   // a character docked next to a window pops its bubble away from the window.
   const windowInstances = useAppStore((state) => state.instances);
-  // The viewport the bubble must stay inside: the layout viewport clipped to
-  // the visual viewport. On iOS the software keyboard shrinks (and, in
-  // browser tabs, pans) the visual viewport without resizing the window, so
-  // clamping against `window.innerHeight` alone slid the bubble toward the
-  // hidden top of the page while typing.
-  const readVisibleViewport = useCallback((): AssistantBubbleViewport => {
+  // The viewport the bubble must stay inside: the layout viewport, which is
+  // what this fixed-position overlay (and the character) is laid out against.
+  // Deliberately NOT the iOS visual viewport — when the keyboard opens in a
+  // Safari tab the browser pans the page to keep the focused input visible,
+  // and reclamping against that moving visible region slides the bubble away
+  // from the character mid-focus. Anchored to layout coordinates, character
+  // and bubble pan together and stay attached. Standalone/PWA keyboards
+  // resize the layout viewport itself, which the resize listener picks up.
+  const readLayoutViewport = useCallback((): AssistantBubbleViewport => {
     const insets = computeInsets();
-    return resolveAssistantVisibleViewport({
-      layout: { width: window.innerWidth, height: window.innerHeight },
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight,
       topInset: insets.topInset,
       bottomInset: insets.bottomInset,
-      visual: window.visualViewport,
-    });
+    };
   }, [computeInsets]);
-  const [visibleViewport, setVisibleViewport] =
-    useState<AssistantBubbleViewport>(readVisibleViewport);
+  const [layoutViewport, setLayoutViewport] =
+    useState<AssistantBubbleViewport>(readLayoutViewport);
   useEffect(() => {
     const update = () => {
-      const next = readVisibleViewport();
-      setVisibleViewport((prev) =>
+      const next = readLayoutViewport();
+      setLayoutViewport((prev) =>
         prev.width === next.width &&
         prev.height === next.height &&
         prev.topInset === next.topInset &&
@@ -1264,15 +1266,10 @@ function AssistantOverlayInner() {
     };
     update();
     window.addEventListener("resize", update);
-    const visual = window.visualViewport;
-    visual?.addEventListener("resize", update);
-    visual?.addEventListener("scroll", update);
     return () => {
       window.removeEventListener("resize", update);
-      visual?.removeEventListener("resize", update);
-      visual?.removeEventListener("scroll", update);
     };
-  }, [readVisibleViewport]);
+  }, [readLayoutViewport]);
   const bubblePlacement = useMemo(() => {
     // Prefer the rendered window frames: on mobile the store keeps numeric
     // sizes while windows actually render full-width, so store rects can
@@ -1318,7 +1315,7 @@ function AssistantOverlayInner() {
         width: ASSISTANT_BUBBLE_WIDTH,
         height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
       },
-      viewport: visibleViewport,
+      viewport: layoutViewport,
       obstacles,
     });
   }, [
@@ -1326,7 +1323,7 @@ function AssistantOverlayInner() {
     position,
     character.width,
     character.height,
-    visibleViewport,
+    layoutViewport,
   ]);
   const bubbleSide = bubblePlacement.side;
   const bubbleAlignEnd = bubblePlacement.align === "end";
@@ -1379,7 +1376,7 @@ function AssistantOverlayInner() {
           width: ASSISTANT_BUBBLE_WIDTH,
           height: bubbleRenderHeight,
         },
-        viewport: visibleViewport,
+        viewport: layoutViewport,
       }),
     [
       bubbleSide,
@@ -1388,7 +1385,7 @@ function AssistantOverlayInner() {
       character.width,
       character.height,
       bubbleRenderHeight,
-      visibleViewport,
+      layoutViewport,
     ]
   );
   const bubblePositionStyle = bubbleVertical

@@ -4,7 +4,6 @@ import {
   ASSISTANT_BUBBLE_WIDTH,
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
-  resolveAssistantVisibleViewport,
   type AssistantBubbleRect,
 } from "../src/components/assistant/assistantBubblePlacement";
 
@@ -270,74 +269,5 @@ describe("assistant bubble cross offset", () => {
       viewport,
     });
     expect(offset).toBe(placement.crossOffset);
-  });
-});
-
-describe("assistant visible viewport", () => {
-  const layout = { width: 390, height: 844 };
-
-  test("passes the layout viewport through without a visual viewport", () => {
-    expect(
-      resolveAssistantVisibleViewport({
-        layout,
-        topInset: 26,
-        bottomInset: 104,
-        visual: null,
-      })
-    ).toEqual({ width: 390, height: 844, topInset: 26, bottomInset: 104 });
-  });
-
-  test("is unchanged when the visual viewport matches the layout viewport", () => {
-    // Standalone PWA: the keyboard resizes the layout viewport itself, so
-    // both viewports agree and nothing needs adjusting.
-    expect(
-      resolveAssistantVisibleViewport({
-        layout,
-        topInset: 26,
-        bottomInset: 104,
-        visual: { offsetTop: 0, offsetLeft: 0, width: 390, height: 844 },
-      })
-    ).toEqual({ width: 390, height: 844, topInset: 26, bottomInset: 104 });
-  });
-
-  test("clips to the visible region when the keyboard shrinks the visual viewport", () => {
-    // Safari tab with the keyboard up: innerHeight stays 844 while the
-    // visual viewport shrinks to 508 — the keyboard hides the bottom 336px,
-    // including the whole dock band.
-    expect(
-      resolveAssistantVisibleViewport({
-        layout,
-        topInset: 26,
-        bottomInset: 104,
-        visual: { offsetTop: 0, offsetLeft: 0, width: 390, height: 508 },
-      })
-    ).toEqual({ width: 390, height: 508, topInset: 26, bottomInset: 0 });
-  });
-
-  test("raises the top inset when the page pans down to the focused input", () => {
-    // iOS panned the page by 100px to keep the focused input above the
-    // keyboard: the visible region is layout y 100..508 and the menubar is
-    // scrolled out of view.
-    expect(
-      resolveAssistantVisibleViewport({
-        layout,
-        topInset: 26,
-        bottomInset: 104,
-        visual: { offsetTop: 100, offsetLeft: 0, width: 390, height: 408 },
-      })
-    ).toEqual({ width: 390, height: 508, topInset: 100, bottomInset: 0 });
-  });
-
-  test("keeps the visible part of the dock band clear", () => {
-    // Keyboard hides only the bottom 60px: the dock band (104px) still pokes
-    // 44px above it and the bubble must keep clearing that part.
-    expect(
-      resolveAssistantVisibleViewport({
-        layout,
-        topInset: 26,
-        bottomInset: 104,
-        visual: { offsetTop: 0, offsetLeft: 0, width: 390, height: 784 },
-      })
-    ).toEqual({ width: 390, height: 784, topInset: 26, bottomInset: 44 });
   });
 });
