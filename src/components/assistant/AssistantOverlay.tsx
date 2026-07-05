@@ -20,6 +20,7 @@ import {
 } from "@/stores/useAssistantStore";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useAuth } from "@/hooks/useAuth";
 import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
 import {
   ASSISTANT_CHARACTERS,
@@ -299,6 +300,7 @@ function AssistantOverlayInner() {
   const character = getAssistantCharacter(characterId);
   const { computeInsets } = useWindowInsets();
   const launchApp = useLaunchApp();
+  const { promptSetUsername } = useAuth();
   const reduceMotion = useReducedMotion();
   const lastUserDragAtRef = useRef(0);
   const pendingRelocationCancelRef = useRef<(() => void) | null>(null);
@@ -313,6 +315,8 @@ function AssistantOverlayInner() {
     isAwaitingReply,
     isLoading,
     errorText,
+    showLoginForRateLimit,
+    isInputBlockedByRateLimit,
     sendUserMessage,
     greetIfStale,
     startNewConversation,
@@ -1734,32 +1738,44 @@ function AssistantOverlayInner() {
                   onInteractionChange={setIsInteractingWithPreview}
                 />
               )}
-              <form
-                onSubmit={handleSubmit}
-                className="-mx-3 mt-1.5 flex items-center gap-1 border-t border-black/15 px-3 pt-1 pb-0.5"
-              >
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onCompositionStart={handleInputCompositionStart}
-                  onCompositionEnd={handleInputCompositionEnd}
-                  placeholder={t("common.assistant.inputPlaceholder")}
-                  aria-label={t("common.assistant.inputPlaceholder")}
-                  className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-[12px] leading-tight font-geneva-12 placeholder:text-black/45 focus:outline-none focus:ring-0"
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || isLoading}
-                  aria-label={t("common.assistant.send")}
-                  className="group flex size-7 shrink-0 items-center justify-center rounded-full disabled:opacity-35"
+              {showLoginForRateLimit ? (
+                <div className="-mx-3 mt-1.5 border-t border-black/15 px-3 pt-1 pb-0.5">
+                  <button
+                    type="button"
+                    onClick={promptSetUsername}
+                    className="w-full rounded bg-orange-600 px-2 py-1 text-[12px] leading-tight font-geneva-12 text-white hover:bg-orange-700 active:bg-orange-800"
+                  >
+                    {t("apps.chats.status.loginToChat")}
+                  </button>
+                </div>
+              ) : !isInputBlockedByRateLimit ? (
+                <form
+                  onSubmit={handleSubmit}
+                  className="-mx-3 mt-1.5 flex items-center gap-1 border-t border-black/15 px-3 pt-1 pb-0.5"
                 >
-                  <span className="flex size-5 items-center justify-center rounded-full bg-black/10 text-black/70 group-hover:bg-black/15 group-active:bg-black/20">
-                    <ArrowUp className="size-3" weight="bold" aria-hidden />
-                  </span>
-                </button>
-              </form>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    onCompositionStart={handleInputCompositionStart}
+                    onCompositionEnd={handleInputCompositionEnd}
+                    placeholder={t("common.assistant.inputPlaceholder")}
+                    aria-label={t("common.assistant.inputPlaceholder")}
+                    className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-[12px] leading-tight font-geneva-12 placeholder:text-black/45 focus:outline-none focus:ring-0"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || isLoading}
+                    aria-label={t("common.assistant.send")}
+                    className="group flex size-7 shrink-0 items-center justify-center rounded-full disabled:opacity-35"
+                  >
+                    <span className="flex size-5 items-center justify-center rounded-full bg-black/10 text-black/70 group-hover:bg-black/15 group-active:bg-black/20">
+                      <ArrowUp className="size-3" weight="bold" aria-hidden />
+                    </span>
+                  </button>
+                </form>
+              ) : null}
               {/* Bubble tail pointing at the character */}
               <div
                 style={{

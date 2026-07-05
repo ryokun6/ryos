@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chat, useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -74,6 +74,48 @@ const TOOL_STATUS_KEYS: Record<string, string> = {
   songLibraryControl: "apps.chats.toolCalls.loadingMusicLibrary",
 };
 
+export function parseAssistantRateLimitState(
+  error: Error | undefined,
+  isAuthenticated: boolean
+): { blocked: boolean; showLogin: boolean } | null {
+  if (!error) return null;
+  const message = error.message || "";
+  if (
+    message.includes("AI_TypeValidationError") ||
+    message.includes("Type validation failed")
+  ) {
+    return null;
+  }
+
+  const jsonMatch = message.match(/\{.*\}/);
+  if (jsonMatch) {
+    try {
+      const errorData = JSON.parse(jsonMatch[0]) as {
+        error?: string;
+        isAuthenticated?: boolean;
+      };
+      if (errorData.error === "rate_limit_exceeded") {
+        const authed = !!errorData.isAuthenticated;
+        return {
+          blocked: true,
+          showLogin: !authed && !isAuthenticated,
+        };
+      }
+    } catch {
+      // Fall through to generic 429 detection.
+    }
+  }
+
+  if (message.includes("429") || message.includes("rate_limit_exceeded")) {
+    return {
+      blocked: true,
+      showLogin: !isAuthenticated,
+    };
+  }
+
+  return null;
+}
+
 function getToolStatusLabel(toolName: string, input: unknown): string {
   const appId =
     input && typeof input === "object"
@@ -148,6 +190,10 @@ export interface AssistantChatHandle {
   isAwaitingReply: boolean;
   isLoading: boolean;
   errorText: string | null;
+  /** True when the chat input should be replaced with a sign-in prompt. */
+  showLoginForRateLimit: boolean;
+  /** True when rate limiting blocks further messages (signed-in or not). */
+  isInputBlockedByRateLimit: boolean;
   sendUserMessage: (text: string) => void;
   /**
    * Call when the bubble opens (summon or tap). Starts a fresh conversation
@@ -372,6 +418,11 @@ export function useAssistantChat(): AssistantChatHandle {
     return labels;
   }, [messages, isLoading]);
 
+  const rateLimitState = useMemo(
+    () => parseAssistantRateLimitState(error, isAuthenticated),
+    [error, isAuthenticated]
+  );
+
   const errorText = useMemo(() => {
     if (!error) return null;
     const message = error.message || "";
@@ -381,11 +432,20 @@ export function useAssistantChat(): AssistantChatHandle {
     ) {
       return null;
     }
-    if (message.includes("429") || message.includes("rate_limit_exceeded")) {
+    if (rateLimitState?.blocked) {
       return i18n.t("common.assistant.rateLimited");
     }
     return i18n.t("common.assistant.genericError");
-  }, [error]);
+  }, [error, rateLimitState]);
+
+  const showLoginForRateLimit = rateLimitState?.showLogin ?? false;
+  const isInputBlockedByRateLimit = rateLimitState?.blocked ?? false;
+
+  useEffect(() => {
+    if (isAuthenticated && rateLimitState?.showLogin) {
+      clearError();
+    }
+  }, [isAuthenticated, rateLimitState?.showLogin, clearError]);
 
   const sendUserMessage = useCallback(
     (text: string) => {
@@ -487,6 +547,8 @@ export function useAssistantChat(): AssistantChatHandle {
     isAwaitingReply,
     isLoading,
     errorText,
+    showLoginForRateLimit,
+    isInputBlockedByRateLimit,
     sendUserMessage,
     greetIfStale,
     startNewConversation,
