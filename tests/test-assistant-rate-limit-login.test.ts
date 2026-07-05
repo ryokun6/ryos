@@ -50,4 +50,10 @@ describe("assistant bubble rate-limit login wiring", () => {
     expect(overlaySource).toContain("isInputBlockedByRateLimit");
     expect(overlaySource).toContain('t("apps.chats.status.loginToChat")');
   });
+
+  test("mounts LoginDialog so the sign-in button opens the auth dialog", () => {
+    expect(overlaySource).toContain("LoginDialog");
+    expect(overlaySource).toContain("isUsernameDialogOpen");
+    expect(overlaySource).toContain("submitUsernameDialog");
+  });
 });

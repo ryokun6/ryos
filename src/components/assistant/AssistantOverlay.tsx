@@ -84,6 +84,7 @@ import { ArrowUp } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { createClientLogger } from "@/utils/logger";
 import { AssistantBubbleToolParts } from "./AssistantBubbleToolParts";
+import { LoginDialog } from "@/components/dialogs/LoginDialog";
 
 /**
  * Animation state machine trace. Silent in production unless the user enables
@@ -300,7 +301,26 @@ function AssistantOverlayInner() {
   const character = getAssistantCharacter(characterId);
   const { computeInsets } = useWindowInsets();
   const launchApp = useLaunchApp();
-  const { promptSetUsername } = useAuth();
+  const {
+    promptSetUsername,
+    usernameDialogInitialTab,
+    isUsernameDialogOpen,
+    setIsUsernameDialogOpen,
+    newUsername,
+    setNewUsername,
+    newPassword,
+    setNewPassword,
+    isSettingUsername,
+    usernameError,
+    submitUsernameDialog,
+    verifyUsernameInput,
+    setVerifyUsernameInput,
+    verifyPasswordInput,
+    setVerifyPasswordInput,
+    isVerifyingToken,
+    verifyError,
+    handleVerifyTokenSubmit,
+  } = useAuth();
   const reduceMotion = useReducedMotion();
   const lastUserDragAtRef = useRef(0);
   const pendingRelocationCancelRef = useRef<(() => void) | null>(null);
@@ -1819,6 +1839,28 @@ function AssistantOverlayInner() {
         position={contextMenuPos}
         onClose={() => setContextMenuPos(null)}
         items={contextMenuItems}
+      />
+
+      <LoginDialog
+        initialTab={usernameDialogInitialTab}
+        isOpen={isUsernameDialogOpen}
+        onOpenChange={setIsUsernameDialogOpen}
+        usernameInput={verifyUsernameInput}
+        onUsernameInputChange={setVerifyUsernameInput}
+        passwordInput={verifyPasswordInput}
+        onPasswordInputChange={setVerifyPasswordInput}
+        onLoginSubmit={async () => {
+          await handleVerifyTokenSubmit(verifyPasswordInput, true);
+        }}
+        isLoginLoading={isVerifyingToken}
+        loginError={verifyError}
+        newUsername={newUsername}
+        onNewUsernameChange={setNewUsername}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        onSignUpSubmit={submitUsernameDialog}
+        isSignUpLoading={isSettingUsername}
+        signUpError={usernameError}
       />
     </motion.div>
   );
