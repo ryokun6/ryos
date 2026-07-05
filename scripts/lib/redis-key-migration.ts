@@ -1,9 +1,11 @@
 import type { Redis, RedisSortedSetEntry } from "../../api/_utils/redis.js";
 import {
   LEGACY_REDIS_SCAN_PATTERNS,
+  type LegacyRedisScanPattern,
+} from "../../src/shared/redisLegacyPatterns.js";
+import {
   redisKeys,
   sha256RedisIdentifier,
-  type LegacyRedisScanPattern,
 } from "../../src/shared/redisKeys.js";
 
 export interface RedisLegacyPatternStatus {

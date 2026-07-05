@@ -1,10 +1,13 @@
 /**
  * Canonical Redis key registry — the runtime reads and writes only these key shapes.
  *
- * {@link LEGACY_REDIS_SCAN_PATTERNS} lists residual legacy key patterns for the
- * standalone migration CLI (`scripts/redis-key-migration.ts`), which can inspect,
- * backfill, and delete historical keys. The app API does not expose migration.
+ * Legacy key patterns for the migration CLI live in `./redisLegacyPatterns.ts`.
  */
+
+export {
+  LEGACY_REDIS_SCAN_PATTERNS,
+  type LegacyRedisScanPattern,
+} from "./redisLegacyPatterns";
 
 export const REDIS_KEY_SEPARATOR = ":";
 
@@ -26,47 +29,6 @@ export const CANONICAL_REDIS_PREFIXES = [
 ] as const;
 
 export type CanonicalRedisPrefix = (typeof CANONICAL_REDIS_PREFIXES)[number];
-
-/**
- * Legacy key patterns that must be empty before the final no-compatibility
- * cutover. Patterns stay precise where a top-level prefix remains canonical
- * (for example, `chat:*` becomes only selected legacy subtrees).
- */
-export const LEGACY_REDIS_SCAN_PATTERNS = [
-  "airdrop:*",
-  "analytics:aiu:*",
-  "analytics:daily:*",
-  "analytics:ep:*",
-  "analytics:st:*",
-  "analytics:uv:*",
-  "apple:*",
-  "applet:*",
-  "chat:irc:*",
-  "chat:messages:*",
-  "chat:password:*",
-  "chat:presence:*",
-  "chat:presencez:*",
-  "chat:room:*",
-  "chat:rooms",
-  "chat:token:*",
-  "chat:users:*",
-  "cursor-sdk-agent:*",
-  "cursor-sdk-run:*",
-  "geoip:*",
-  "ie:*",
-  "listen:*",
-  "memory:user:*:processing_lock",
-  "rl:*",
-  "rt:*",
-  "ryos:presence:*",
-  "song:*",
-  "sync:pref:*",
-  "sync2:*",
-  "telegram:*",
-  "wayback:*",
-] as const;
-
-export type LegacyRedisScanPattern = (typeof LEGACY_REDIS_SCAN_PATTERNS)[number];
 
 export function normalizeRedisSegment(segment: string | number): string {
   return encodeURIComponent(String(segment).trim().toLowerCase());
