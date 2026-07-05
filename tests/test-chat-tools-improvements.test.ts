@@ -48,6 +48,30 @@ describe("settingsSchema expanded fields", () => {
       settingsSchema.safeParse({ uiSoundsEnabled: "yes" }).success
     ).toBe(false);
   });
+
+  test("drops checkForUpdates: false during normalization", () => {
+    expect(
+      settingsSchema.safeParse({
+        checkForUpdates: false,
+        theme: "xp",
+      })
+    ).toEqual({
+      success: true,
+      data: { theme: "xp" },
+    });
+  });
+
+  test("normalizes empty wallpaper strings to undefined", () => {
+    expect(
+      settingsSchema.safeParse({
+        wallpaper: "",
+        theme: "xp",
+      })
+    ).toEqual({
+      success: true,
+      data: { theme: "xp" },
+    });
+  });
 });
 
 // ============================================================================

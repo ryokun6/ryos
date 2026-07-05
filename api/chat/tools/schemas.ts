@@ -402,32 +402,48 @@ export const songLibraryControlSchema = z
 
 /**
  * Settings schema
+ *
+ * All fields are optional — callers should include ONLY settings the user
+ * explicitly asked to change. Client-side `sanitizeSettingsInput` strips
+ * parameters that match the live snapshot before store writes.
  */
-export const settingsSchema = z.object({
+const normalizeSettingsInput = (value: unknown): unknown => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  const data: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+
+  if (data.checkForUpdates === false) {
+    delete data.checkForUpdates;
+  }
+
+  return data;
+};
+
+const settingsObjectSchema = z.object({
   language: z
     .enum(LANGUAGE_CODES)
     .optional()
     .describe(
-      "Change the system language. Supported: 'en' (English), 'zh-TW' (Traditional Chinese), 'zh-CN' (Simplified Chinese), 'ja' (Japanese), 'ko' (Korean), 'fr' (French), 'de' (German), 'es' (Spanish), 'pt' (Portuguese), 'it' (Italian), 'ru' (Russian)."
+      "Change the system language. Supported: 'en' (English), 'zh-TW' (Traditional Chinese), 'zh-CN' (Simplified Chinese), 'ja' (Japanese), 'ko' (Korean), 'fr' (French), 'de' (German), 'es' (Spanish), 'pt' (Portuguese), 'it' (Italian), 'ru' (Russian). ONLY include when the user explicitly asks to change language."
     ),
   theme: z
     .enum(THEME_IDS)
     .optional()
     .describe(
-      'Change the OS theme. One of "system7" (Mac OS 7), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98).'
+      'Change the OS theme. One of "system7" (Mac OS 7), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98). ONLY include when the user explicitly asks to change theme.'
     ),
   wallpaper: z
-    .string()
-    .max(120)
-    .optional()
+    .preprocess(normalizeOptionalString, z.string().max(120).optional())
     .describe(
-      "Change the desktop wallpaper by name. Fuzzy-matched against the built-in tiles, photos, and video wallpapers (e.g. 'aurora', 'clouds', 'red tile')."
+      "Change the desktop wallpaper by name. Fuzzy-matched against the built-in tiles, photos, and video wallpapers (e.g. 'aurora', 'clouds', 'red tile'). ONLY include when the user explicitly asks to change wallpaper."
     ),
   accent: z
     .enum(ACCENT_IDS)
     .optional()
     .describe(
-      "Change the accent color (Mac OS X and System 7 themes only). 'default' restores the theme's classic look; 'wallpaper' samples the color from the current wallpaper."
+      "Change the accent color (Mac OS X and System 7 themes only). 'default' restores the theme's classic look; 'wallpaper' samples the color from the current wallpaper. ONLY include when the user explicitly asks to change accent color."
     ),
   masterVolume: z
     .number()
@@ -435,27 +451,32 @@ export const settingsSchema = z.object({
     .max(1)
     .optional()
     .describe(
-      "Set the master volume (0-1). Affects all system sounds including UI sounds, speech, and music. Use 0 to mute."
+      "Set the master volume (0-1). Affects all system sounds including UI sounds, speech, and music. Use 0 to mute. ONLY include when the user explicitly asks to change volume."
     ),
   speechEnabled: z
     .boolean()
     .optional()
     .describe(
-      "Enable or disable text-to-speech for AI responses. When enabled, the AI's responses will be read aloud."
+      "Enable or disable text-to-speech for AI responses. ONLY include when the user explicitly asks to change speech/TTS."
     ),
   uiSoundsEnabled: z
     .boolean()
     .optional()
     .describe(
-      "Enable or disable UI sound effects (window sounds, clicks, and other interface feedback)."
+      "Enable or disable UI sound effects (window sounds, clicks, and other interface feedback). ONLY include when the user explicitly asks to change UI sounds."
     ),
   checkForUpdates: z
     .boolean()
     .optional()
     .describe(
-      "When true, triggers a check for ryOS updates. Will notify the user if an update is available."
+      "When true, triggers a check for ryOS updates. ONLY include when the user explicitly asks to check for updates. Do not set to false."
     ),
 });
+
+export const settingsSchema = z.preprocess(
+  normalizeSettingsInput,
+  settingsObjectSchema
+);
 
 /**
  * Stickies control schema

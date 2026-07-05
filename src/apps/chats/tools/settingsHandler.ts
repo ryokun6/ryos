@@ -1,5 +1,10 @@
 /**
  * Settings Tool Handler
+ *
+ * Partial updates: the model should only send fields the user asked to change.
+ * Raw tool input is sanitized in `sanitizeSettingsInput` before any store
+ * mutation so echoed current values (language, theme, volume, etc.) are not
+ * re-applied. See `sanitizeSettingsInput.ts` for the guardrail rules.
  */
 
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -22,17 +27,12 @@ import i18n from "@/lib/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
 import { chatToolsLog as log } from "../logging";
+import {
+  sanitizeSettingsInput,
+  type SettingsInput,
+} from "./sanitizeSettingsInput";
 
-export interface SettingsInput {
-  language?: string;
-  theme?: OsThemeId;
-  wallpaper?: string;
-  accent?: string;
-  masterVolume?: number;
-  speechEnabled?: boolean;
-  uiSoundsEnabled?: boolean;
-  checkForUpdates?: boolean;
-}
+export type { SettingsInput };
 
 /**
  * Get display name for a language code using translations
@@ -136,7 +136,7 @@ export const handleSettings = async (
     speechEnabled,
     uiSoundsEnabled,
     checkForUpdates,
-  } = input;
+  } = sanitizeSettingsInput(input);
 
   const changes: string[] = [];
   const failures: string[] = [];
