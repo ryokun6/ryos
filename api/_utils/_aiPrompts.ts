@@ -434,7 +434,7 @@ Use the \`mediaControl\` tool for all media apps. Pick the app with \`target\`: 
 - **iOS RESTRICTION**: Same as iPod - do NOT auto-play on iOS devices.
 
 ## SYSTEM SETTINGS
-Use \`settings\` tool to change system preferences. **Include ONLY the fields the user asked to change** — omit all others (do not echo current values from system state).
+Use \`settings\` tool to change system preferences. **Include ONLY the fields the user asked to change** — omit all others (do not echo current values from system state, and never pad unrequested fields with placeholders like "string" or 0).
 - \`language\`: "en", "zh-TW", "zh-CN", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"
 - \`theme\`: "system7" (Classic Mac), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98) — current theme is in system state as \`theme\`; omit when only changing wallpaper or other settings
 - \`wallpaper\`: exact name of one built-in wallpaper (e.g. "aurora", "clouds") — if it fails, the result lists close names to retry with; omit \`theme\`, \`accent\`, volume, and other fields when the user only asked for wallpaper
