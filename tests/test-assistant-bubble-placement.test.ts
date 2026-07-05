@@ -312,43 +312,45 @@ describe("assistant bubble render height", () => {
     expect(thinkingOffset).toBe(0);
   });
 
-  test("side pop cross offset relaxes when the viewport grows after keyboard dismiss", () => {
-    // Regression: with the soft keyboard up the visual viewport is short, so a
-    // left/right bubble slides far up to stay on screen. After dismiss the
-    // placement math must rerun with the taller viewport or the bubble stays
-    // detached from the character.
+  test("visible viewport band keeps a bottom character anchored with keyboard up", () => {
+    // Regression: treating visualViewport.height as the layout bottom while the
+    // character stays in layout coordinates slides the bubble far above the
+    // visible area (even before the keyboard dismisses).
     const anchor = { x: 305, y: 600, width: 80, height: 80 };
     const bubbleSize = {
       width: ASSISTANT_BUBBLE_WIDTH,
       height: ASSISTANT_BUBBLE_THINKING_ESTIMATED_HEIGHT,
     };
-    const keyboardUp = {
+    const layoutViewport = {
       width: 393,
+      height: 844,
+      topInset: 26,
+      bottomInset: 104,
+    };
+    const buggyKeyboardViewport = {
+      ...layoutViewport,
       height: 500,
-      topInset: 26,
-      bottomInset: 104,
     };
-    const keyboardDown = {
-      width: 393,
-      height: 852,
-      topInset: 26,
-      bottomInset: 104,
+    const keyboardUpViewport = {
+      ...layoutViewport,
+      visibleTop: 340,
+      visibleBottom: 840,
     };
-    const whileKeyboardUp = resolveAssistantBubbleCrossOffset({
+    const buggyOffset = resolveAssistantBubbleCrossOffset({
       side: "left",
       align: "end",
       anchor,
       bubbleSize,
-      viewport: keyboardUp,
+      viewport: buggyKeyboardViewport,
     });
-    const afterKeyboardDown = resolveAssistantBubbleCrossOffset({
+    const anchoredOffset = resolveAssistantBubbleCrossOffset({
       side: "left",
       align: "end",
       anchor,
       bubbleSize,
-      viewport: keyboardDown,
+      viewport: keyboardUpViewport,
     });
-    expect(whileKeyboardUp).toBeLessThan(afterKeyboardDown);
-    expect(afterKeyboardDown).toBeGreaterThan(-40);
+    expect(buggyOffset).toBeLessThan(-200);
+    expect(anchoredOffset).toBe(0);
   });
 });

@@ -59,7 +59,9 @@ import {
   resolveAssistantBubbleCrossOffset,
   resolveAssistantBubblePlacement,
   resolveAssistantBubbleRenderHeight,
+  readAssistantBubbleViewport,
   type AssistantBubbleRect,
+  type AssistantBubbleViewport,
 } from "./assistantBubblePlacement";
 import { useAssistantBubbleAutoClose } from "./useAssistantBubbleAutoClose";
 import {
@@ -237,15 +239,6 @@ function clampToViewport(
   };
 }
 
-/** Layout viewport size; prefers visualViewport for mobile keyboard changes. */
-function readAssistantViewportSize(): { width: number; height: number } {
-  const viewport = window.visualViewport;
-  return {
-    width: Math.round(viewport?.width ?? window.innerWidth),
-    height: Math.round(viewport?.height ?? window.innerHeight),
-  };
-}
-
 export function AssistantOverlay() {
   const enabled = useAssistantStore((state) => state.enabled);
   if (!enabled) return null;
@@ -360,7 +353,9 @@ function AssistantOverlayInner() {
         )
       : defaultPosition();
   });
-  const [viewportSize, setViewportSize] = useState(readAssistantViewportSize);
+  const [bubbleViewport, setBubbleViewport] = useState<AssistantBubbleViewport>(
+    () => readAssistantBubbleViewport({ topInset: 0, bottomInset: 0 })
+  );
   const [isDragging, setIsDragging] = useState(false);
 
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -471,11 +466,10 @@ function AssistantOverlayInner() {
   ]);
 
   // Keep the assistant on-screen and refresh bubble placement when the
-  // viewport changes (mobile soft-keyboard open/close only updates
-  // visualViewport, not always window.innerHeight).
+  // layout or visual viewport changes (soft keyboard shifts offsetTop/height).
   useEffect(() => {
     const syncViewport = () => {
-      setViewportSize(readAssistantViewportSize());
+      setBubbleViewport(readAssistantBubbleViewport(computeInsets()));
       const insets = computeInsets();
       setPosition((prev) =>
         clampToViewport(prev, character.width, character.height, insets.topInset)
@@ -1256,7 +1250,6 @@ function AssistantOverlayInner() {
   // a character docked next to a window pops its bubble away from the window.
   const windowInstances = useAppStore((state) => state.instances);
   const bubblePlacement = useMemo(() => {
-    const insets = computeInsets();
     // Prefer the rendered window frames: on mobile the store keeps numeric
     // sizes while windows actually render full-width, so store rects can
     // misreport what the bubble would cover.
@@ -1301,12 +1294,7 @@ function AssistantOverlayInner() {
         width: ASSISTANT_BUBBLE_WIDTH,
         height: ASSISTANT_BUBBLE_ESTIMATED_HEIGHT,
       },
-      viewport: {
-        width: viewportSize.width,
-        height: viewportSize.height,
-        topInset: insets.topInset,
-        bottomInset: insets.bottomInset,
-      },
+      viewport: bubbleViewport,
       obstacles,
     });
   }, [
@@ -1314,9 +1302,7 @@ function AssistantOverlayInner() {
     position,
     character.width,
     character.height,
-    computeInsets,
-    viewportSize.width,
-    viewportSize.height,
+    bubbleViewport,
   ]);
   const bubbleSide = bubblePlacement.side;
   const bubbleAlignEnd = bubblePlacement.align === "end";
@@ -1347,7 +1333,7 @@ function AssistantOverlayInner() {
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [bubbleOpen, isDragging, bubbleContentMeasureKey, viewportSize.height]);
+  }, [bubbleOpen, isDragging, bubbleContentMeasureKey, bubbleViewport]);
   const bubbleRenderHeight = resolveAssistantBubbleRenderHeight({
     measuredHeight: bubbleMeasuredHeight,
     isThinking: showTyping,
@@ -1357,7 +1343,6 @@ function AssistantOverlayInner() {
   // measured bubble size; the tail counter-shifts by the same amount so it
   // keeps pointing at the character.
   const bubbleCrossOffset = useMemo(() => {
-    const insets = computeInsets();
     return resolveAssistantBubbleCrossOffset({
       side: bubbleSide,
       align: bubblePlacement.align,
@@ -1371,12 +1356,7 @@ function AssistantOverlayInner() {
         width: ASSISTANT_BUBBLE_WIDTH,
         height: bubbleRenderHeight,
       },
-      viewport: {
-        width: viewportSize.width,
-        height: viewportSize.height,
-        topInset: insets.topInset,
-        bottomInset: insets.bottomInset,
-      },
+      viewport: bubbleViewport,
     });
   }, [
     bubbleSide,
@@ -1385,9 +1365,7 @@ function AssistantOverlayInner() {
     character.width,
     character.height,
     bubbleRenderHeight,
-    computeInsets,
-    viewportSize.width,
-    viewportSize.height,
+    bubbleViewport,
   ]);
   const bubblePositionStyle = bubbleVertical
     ? bubbleAlignEnd

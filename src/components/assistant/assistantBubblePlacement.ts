@@ -18,10 +18,59 @@ export interface AssistantBubbleRect {
 }
 
 export interface AssistantBubbleViewport {
+  /** Layout viewport width (`window.innerWidth`). */
   width: number;
+  /** Layout viewport height (`window.innerHeight`). */
   height: number;
   topInset: number;
   bottomInset: number;
+  /**
+   * Layout Y of the visible viewport top (`visualViewport.offsetTop`). When
+   * omitted, 0. Required for correct side-pop sliding while the soft keyboard
+   * is up — anchor positions use layout coordinates, so using only
+   * `visualViewport.height` as the layout bottom over-slides the bubble.
+   */
+  visibleTop?: number;
+  /** Layout Y of the visible viewport bottom (`offsetTop + height`). */
+  visibleBottom?: number;
+}
+
+/** Build a viewport snapshot for bubble placement from layout + visualViewport. */
+export function readAssistantBubbleViewport(insets: {
+  topInset: number;
+  bottomInset: number;
+}): AssistantBubbleViewport {
+  const visual = window.visualViewport;
+  const height = window.innerHeight;
+  const width = window.innerWidth;
+  return {
+    width,
+    height,
+    topInset: insets.topInset,
+    bottomInset: insets.bottomInset,
+    visibleTop: visual ? Math.round(visual.offsetTop) : 0,
+    visibleBottom: visual
+      ? Math.round(visual.offsetTop + visual.height)
+      : height,
+  };
+}
+
+/** Preferred clearance (px) between the bubble and the viewport edges. */
+const BUBBLE_VIEWPORT_MARGIN = 8;
+
+function getVerticalSlideBounds(
+  viewport: AssistantBubbleViewport,
+  bubbleHeight: number
+): { minY: number; maxY: number } {
+  const bandTop = viewport.visibleTop ?? 0;
+  const bandBottom = viewport.visibleBottom ?? viewport.height;
+  const minY = Math.max(bandTop, viewport.topInset + BUBBLE_VIEWPORT_MARGIN);
+  const maxY =
+    Math.min(bandBottom, viewport.height) -
+    viewport.bottomInset -
+    bubbleHeight -
+    BUBBLE_VIEWPORT_MARGIN;
+  return { minY, maxY: Math.max(minY, maxY) };
 }
 
 export type AssistantBubbleSide = "above" | "below" | "left" | "right";
@@ -87,9 +136,6 @@ export function resolveAssistantBubbleRenderHeight({
 
 /** Covering a window is bad; pushing the bubble offscreen is worse. */
 const OVERFLOW_WEIGHT = 4;
-
-/** Preferred clearance (px) between the bubble and the viewport edges. */
-const BUBBLE_VIEWPORT_MARGIN = 8;
 
 interface ResolveAssistantBubblePlacementOptions {
   /** Character rect (viewport coordinates). */
@@ -191,16 +237,8 @@ export function resolveAssistantBubbleCrossOffset({
     align === "start"
       ? anchor.y
       : anchor.y + anchor.height - bubbleSize.height;
-  return (
-    clampAxis(
-      naturalY,
-      viewport.topInset + BUBBLE_VIEWPORT_MARGIN,
-      viewport.height -
-        viewport.bottomInset -
-        bubbleSize.height -
-        BUBBLE_VIEWPORT_MARGIN
-    ) - naturalY
-  );
+  const { minY, maxY } = getVerticalSlideBounds(viewport, bubbleSize.height);
+  return clampAxis(naturalY, minY, maxY) - naturalY;
 }
 
 export function resolveAssistantBubblePlacement({
