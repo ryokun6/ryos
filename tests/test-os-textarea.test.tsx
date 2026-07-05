@@ -12,9 +12,11 @@ describe("os-field-styles", () => {
     expect(osFieldInputClasses(true, "pill")).not.toContain("rounded-os");
   });
 
-  test("textarea field uses rounded-os corners", () => {
+  test("textarea field uses rounded-os on macOS and square corners on classic themes", () => {
     expect(osFieldTextareaClasses(true)).toContain("rounded-os");
     expect(osFieldTextareaClasses(true)).not.toContain("rounded-full");
+    expect(osFieldTextareaClasses(true)).toContain("os-theme-system7:rounded-none");
+    expect(osFieldTextareaClasses(true)).toContain("os-windows:rounded-none");
   });
 
   test("search field reserves space for leading and trailing chrome", () => {

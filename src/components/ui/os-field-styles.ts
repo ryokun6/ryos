@@ -9,6 +9,10 @@ export interface OsFieldPadding {
   withTrailingAction?: boolean;
 }
 
+/** Classic Mac/Windows themes use square field corners. */
+const osFieldClassicSquareCorners =
+  "os-theme-system7:rounded-none os-windows:rounded-none";
+
 /** Shared recessed field chrome used by SearchInput, OsTextarea, etc. */
 export function osFieldInputClasses(
   isMacOSTheme: boolean,
@@ -16,7 +20,10 @@ export function osFieldInputClasses(
   { withLeadingIcon = false, withTrailingAction = false }: OsFieldPadding = {},
   className?: string,
 ) {
-  const rounding = shape === "pill" ? "rounded-full" : "rounded-os";
+  const rounding =
+    shape === "pill"
+      ? "rounded-full"
+      : cn("rounded-os", osFieldClassicSquareCorners);
   const pl = withLeadingIcon ? "pl-7" : "pl-3";
   const pr = withTrailingAction ? "pr-7" : "pr-3";
 
@@ -36,9 +43,11 @@ export function osFieldTextareaClasses(
 ) {
   return cn(
     "w-full outline-none min-w-0 resize-y",
+    "rounded-os",
+    osFieldClassicSquareCorners,
     isMacOSTheme
-      ? "rounded-os border border-black/40 bg-white px-3 py-2 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12"
-      : "rounded-os border border-black/20 bg-white px-3 py-2 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]",
+      ? "border border-black/40 bg-white px-3 py-2 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12"
+      : "border border-black/20 bg-white px-3 py-2 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]",
     className,
   );
 }
