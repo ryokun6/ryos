@@ -13,7 +13,7 @@
  * to avoid render storms when something logs in a tight loop.
  */
 
-import { DEBUG_FLAG_KEY } from "./debug";
+import { readStoredDebugFlagEnabled } from "./debug";
 
 export type ConsoleLogLevel = "log" | "info" | "warn" | "error" | "debug";
 
@@ -76,21 +76,10 @@ let buffer: ConsoleLogEntry[] = [];
 let snapshot: ConsoleLogEntry[] = buffer;
 let nextId = 1;
 let installed = false;
-let captureEnabled = readInitialCaptureEnabled();
+let captureEnabled = readStoredDebugFlagEnabled();
 
 const listeners = new Set<() => void>();
 let flushScheduled = false;
-
-function readInitialCaptureEnabled(): boolean {
-  try {
-    return (
-      typeof localStorage !== "undefined" &&
-      localStorage.getItem(DEBUG_FLAG_KEY) === "1"
-    );
-  } catch {
-    return false;
-  }
-}
 
 function scheduleFlush(): void {
   if (flushScheduled) return;

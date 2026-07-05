@@ -77,3 +77,15 @@ export function setRuntimeDebugEnabled(enabled: boolean): void {
 export function refreshRuntimeDebugFlag(): void {
   runtimeDebugEnabled = null;
 }
+
+/** Whether debug mode was explicitly persisted via localStorage (ignores dev default). */
+export function readStoredDebugFlagEnabled(): boolean {
+  try {
+    return (
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem(DEBUG_FLAG_KEY) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
