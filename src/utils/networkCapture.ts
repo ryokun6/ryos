@@ -16,7 +16,7 @@
  * storms during bursts of requests.
  */
 
-import { DEBUG_FLAG_KEY } from "./debug";
+import { readStoredDebugFlagEnabled } from "./debug";
 
 export type NetworkRequestOutcome = "success" | "error" | "pending";
 
@@ -41,21 +41,10 @@ let buffer: NetworkRequestEntry[] = [];
 let snapshot: NetworkRequestEntry[] = buffer;
 let nextId = 1;
 let installed = false;
-let captureEnabled = readInitialCaptureEnabled();
+let captureEnabled = readStoredDebugFlagEnabled();
 
 const listeners = new Set<() => void>();
 let flushScheduled = false;
-
-function readInitialCaptureEnabled(): boolean {
-  try {
-    return (
-      typeof localStorage !== "undefined" &&
-      localStorage.getItem(DEBUG_FLAG_KEY) === "1"
-    );
-  } catch {
-    return false;
-  }
-}
 
 function scheduleFlush(): void {
   if (flushScheduled) return;
