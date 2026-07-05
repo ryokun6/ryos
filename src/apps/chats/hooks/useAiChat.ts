@@ -693,7 +693,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [handleDirectMessageSubmit, t]);
 
   const clearChats = useCallback(() => {
-    const messagesToAnalyze = [...currentSdkMessagesRef.current];
+    const messagesToAnalyze = [...getSharedAiChat().messages];
     log.debug("Clearing AI chats", {
       messageCount: messagesToAnalyze.length,
     });

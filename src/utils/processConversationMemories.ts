@@ -77,11 +77,20 @@ export function prepareConversationMessagesForMemory(
       continue;
     }
 
-    const parts = message.parts.flatMap((part) =>
-      part.type === "text" && typeof part.text === "string" && part.text.trim()
-        ? [{ type: "text" as const, text: part.text }]
-        : []
-    );
+    if (!Array.isArray(message.parts)) {
+      continue;
+    }
+
+    const parts = message.parts.flatMap((part) => {
+      if (!part || typeof part !== "object") {
+        return [];
+      }
+      const type = Reflect.get(part, "type");
+      const text = Reflect.get(part, "text");
+      return type === "text" && typeof text === "string" && text.trim()
+        ? [{ type: "text" as const, text }]
+        : [];
+    });
     if (parts.length === 0) {
       continue;
     }
@@ -113,9 +122,11 @@ function parseMemoryExtractionResponse(
   const dailyNotes = Reflect.get(value, "dailyNotes");
   if (
     typeof extracted !== "number" ||
-    !Number.isFinite(extracted) ||
+    !Number.isSafeInteger(extracted) ||
+    extracted < 0 ||
     typeof dailyNotes !== "number" ||
-    !Number.isFinite(dailyNotes)
+    !Number.isSafeInteger(dailyNotes) ||
+    dailyNotes < 0
   ) {
     throw new Error("Invalid memory extraction response");
   }

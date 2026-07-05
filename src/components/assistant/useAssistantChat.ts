@@ -480,7 +480,7 @@ export function useAssistantChat(): AssistantChatHandle {
 
   const clearConversation = useCallback(() => {
     void processConversationMemories({
-      messages,
+      messages: [...chat.messages],
       isAuthenticated: Boolean(username && isAuthenticated),
       source: "assistant",
     });
@@ -489,7 +489,7 @@ export function useAssistantChat(): AssistantChatHandle {
     setMessages([]);
     useAssistantStore.getState().clearMessages();
   }, [
-    messages,
+    chat,
     username,
     isAuthenticated,
     sdkStop,

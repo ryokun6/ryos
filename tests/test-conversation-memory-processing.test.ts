@@ -161,5 +161,9 @@ describe("conversation memory processing", () => {
     expect(assistantSource).toMatch(
       /processConversationMemories\(\{[\s\S]*?source: "assistant"/
     );
+    expect(chatsSource).toContain(
+      "const messagesToAnalyze = [...getSharedAiChat().messages]"
+    );
+    expect(assistantSource).toContain("messages: [...chat.messages]");
   });
 });
