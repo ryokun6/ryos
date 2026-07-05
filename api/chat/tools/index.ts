@@ -184,7 +184,9 @@ export const TOOL_DESCRIPTIONS = {
     "For 'add', pass the chosen YouTube result's videoId and title/channel when available. Results include canonical ryOS links for iPod and Karaoke share URLs.",
   
   settings:
-    "Change system settings in ryOS. Use this tool when the user asks to change language, theme, wallpaper, accent color, volume, enable/disable speech or UI sounds, or check for updates. Multiple settings can be changed in a single call.",
+    "Change system settings in ryOS. Use when the user asks to change language, theme, wallpaper, accent color, volume, enable/disable speech or UI sounds, or check for updates. " +
+    "IMPORTANT: Include ONLY the settings the user explicitly requested — omit every other field. Do not echo current values for language, theme, wallpaper, accent, volume, speech, or UI sounds. " +
+    "Multiple settings can be changed in one call when the user asks for several (e.g. 'set XP theme and mute sounds').",
   
   stickiesControl:
     "Manage sticky notes in ryOS. Actions: 'list' returns all stickies with their IDs, content, and colors; 'create' makes a new sticky note with optional content/text, color (yellow/blue/green/pink/purple/orange), position, size; 'update' modifies an existing sticky by ID - use this to set/replace text content, change color, or move it; 'delete' removes a sticky by ID; 'clear' removes all stickies. The Stickies app opens automatically when creating notes.",
