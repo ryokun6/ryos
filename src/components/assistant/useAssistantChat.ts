@@ -6,7 +6,10 @@ import {
 } from "ai";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
-import { useChatsStoreShallow } from "@/stores/useChatsStore";
+import {
+  useChatsStore,
+  useChatsStoreShallow,
+} from "@/stores/useChatsStore";
 import { useAssistantStore } from "@/stores/useAssistantStore";
 import { getBrowserTimeZoneHeaders } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
@@ -31,6 +34,11 @@ import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
 import { ASSISTANT_SUMMON_MESSAGE } from "@/shared/assistantGreeting";
 import { processConversationMemories } from "@/utils/processConversationMemories";
+import {
+  getAIConversationRequestContext,
+  loadAIConversation,
+  resetAIConversationSession,
+} from "@/api/aiConversations";
 
 const log = createClientLogger("Assistant");
 
@@ -38,9 +46,18 @@ export { ASSISTANT_SUMMON_MESSAGE };
 
 /** Request body shared by every assistant `/api/chat` call. Reads the store
  * at call time so settings changes apply to the very next message. */
-function buildAssistantRequestBody() {
+async function buildAssistantRequestBody() {
   const assistant = useAssistantStore.getState();
+  const chats = useChatsStore.getState();
   const customInstructions = assistant.customInstructions.trim();
+  const conversation =
+    chats.username && chats.isAuthenticated
+      ? await getAIConversationRequestContext({
+          channel: "assistant",
+          username: chats.username,
+          localMessages: assistant.messages,
+        })
+      : undefined;
   return {
     systemState: getSystemState(),
     model: useAppStore.getState().aiModel,
@@ -52,6 +69,7 @@ function buildAssistantRequestBody() {
     ...(customInstructions
       ? { assistantInstructions: customInstructions }
       : {}),
+    ...(conversation ? { conversation } : {}),
   };
 }
 
@@ -295,6 +313,63 @@ export function useAssistantChat(): AssistantChatHandle {
     error,
   } = useChat<AIChatMessage>({ chat, experimental_throttle: 60 });
 
+  const hydrateServerConversation = useCallback(
+    async (force = false) => {
+      if (!username || !isAuthenticated) return;
+      const loaded = await loadAIConversation({
+        channel: "assistant",
+        username,
+        localMessages: useAssistantStore.getState().messages,
+        force,
+        importLocalIfEmpty: !force,
+      });
+      const currentAuth = useChatsStore.getState();
+      if (
+        loaded.stale ||
+        currentAuth.username?.toLowerCase() !== loaded.owner ||
+        !currentAuth.isAuthenticated ||
+        chat.status !== "ready"
+      ) {
+        return;
+      }
+      setMessages(loaded.messages);
+      if (loaded.messages.length > 0) {
+        useAssistantStore.getState().hydrateMessages(loaded.messages);
+      } else {
+        useAssistantStore.getState().clearMessages();
+      }
+    },
+    [username, isAuthenticated, chat, setMessages]
+  );
+
+  useEffect(() => {
+    if (!username || !isAuthenticated) return;
+    void hydrateServerConversation().catch((hydrationError) => {
+      log.warn("Failed to hydrate server conversation", {
+        error: hydrationError,
+      });
+    });
+  }, [username, isAuthenticated, hydrateServerConversation]);
+
+  useEffect(() => {
+    if (!username || !isAuthenticated) return;
+    const refresh = () => {
+      if (document.visibilityState === "visible" && chat.status === "ready") {
+        void hydrateServerConversation(true).catch((hydrationError) => {
+          log.warn("Failed to refresh server conversation", {
+            error: hydrationError,
+          });
+        });
+      }
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [username, isAuthenticated, chat, hydrateServerConversation]);
+
   const handlersRef = useRef({
     // Placeholder; replaced with a fresh closure on every render below so the
     // dispatch always sees the latest addToolOutput/launchApp identities.
@@ -453,10 +528,18 @@ export function useAssistantChat(): AssistantChatHandle {
       if (!text.trim()) return;
       clearError();
       useAssistantStore.getState().markInteraction();
-      sendMessage(
-        { text, metadata: { createdAt: new Date() } },
-        { body: buildAssistantRequestBody() }
-      );
+      void buildAssistantRequestBody()
+        .then((body) =>
+          sendMessage(
+            { text, metadata: { createdAt: new Date() } },
+            { body }
+          )
+        )
+        .catch((requestError) => {
+          log.warn("Failed to prepare server conversation", {
+            error: requestError,
+          });
+        });
     },
     [sendMessage, clearError]
   );
@@ -478,16 +561,30 @@ export function useAssistantChat(): AssistantChatHandle {
     useAssistantStore.getState().setMessages(next);
   }, [chat, setMessages]);
 
-  const clearConversation = useCallback(() => {
+  const clearConversationInternal = useCallback(async (): Promise<boolean> => {
+    const messagesToAnalyze = [...chat.messages] as AIChatMessage[];
+    sdkStop();
+    if (username && isAuthenticated) {
+      try {
+        await resetAIConversationSession({
+          channel: "assistant",
+          username,
+          localMessages: messagesToAnalyze,
+        });
+      } catch (resetError) {
+        log.warn("Failed to reset server conversation", { error: resetError });
+        return false;
+      }
+    }
     void processConversationMemories({
-      messages: [...chat.messages],
+      messages: messagesToAnalyze,
       isAuthenticated: Boolean(username && isAuthenticated),
       source: "assistant",
     });
-    sdkStop();
     clearError();
     setMessages([]);
     useAssistantStore.getState().clearMessages();
+    return true;
   }, [
     chat,
     username,
@@ -496,6 +593,10 @@ export function useAssistantChat(): AssistantChatHandle {
     clearError,
     setMessages,
   ]);
+
+  const clearConversation = useCallback(() => {
+    void clearConversationInternal();
+  }, [clearConversationInternal]);
 
   const triggerGreeting = useCallback(() => {
     if (chat.status === "streaming" || chat.status === "submitted") return;
@@ -535,7 +636,10 @@ export function useAssistantChat(): AssistantChatHandle {
 
     if (decision === "fresh-greet") {
       log.debug("Bubble dismissed long enough — starting a fresh conversation");
-      clearConversation();
+      void clearConversationInternal().then((cleared) => {
+        if (cleared && store.greetOnSummon) triggerGreeting();
+      });
+      return;
     }
 
     // Greeting turned off in Assistant settings → Behavior. The stale-thread
@@ -543,12 +647,13 @@ export function useAssistantChat(): AssistantChatHandle {
     if (!store.greetOnSummon) return;
 
     triggerGreeting();
-  }, [chat.status, clearConversation, triggerGreeting]);
+  }, [chat.status, clearConversationInternal, triggerGreeting]);
 
   const startNewConversation = useCallback(() => {
-    clearConversation();
-    triggerGreeting();
-  }, [clearConversation, triggerGreeting]);
+    void clearConversationInternal().then((cleared) => {
+      if (cleared) triggerGreeting();
+    });
+  }, [clearConversationInternal, triggerGreeting]);
 
   return {
     messages: messages as AIChatMessage[],

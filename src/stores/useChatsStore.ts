@@ -42,6 +42,7 @@ import {
 } from "@/api/rooms";
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 import { useAssistantStore } from "@/stores/useAssistantStore";
+import { clearAIConversationSessionCache } from "@/api/aiConversations";
 
 const chatsStoreLog = createClientLogger("ChatsStore");
 const debug = chatsStoreLog.debug;
@@ -214,7 +215,9 @@ function forceLogoutOnUnauthorized() {
   debug("Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
   useAssistantStore.getState().clearMessages();
+  clearAIConversationSessionCache();
   useChatsStore.setState({
+    aiMessages: [getInitialAiMessage()],
     username: null,
     isAuthenticated: false,
     currentRoomId: null,
@@ -436,8 +439,10 @@ const mergeChatsState = (
     >
   >
 ): ChatsPersistedState => {
+  const expectedOwner = metadata.username?.toLowerCase() ?? "anonymous";
   const aiMessages = (rows[STORES.CHATS_AI_MESSAGES] ?? [])
     .flatMap((row) => {
+      if (row.value.owner !== expectedOwner) return [];
       const message = row.value.message;
       if (!message || typeof message !== "object" || Array.isArray(message)) {
         return [];
@@ -457,6 +462,7 @@ const mergeChatsState = (
 
   const roomMessages: Record<string, ChatMessage[]> = {};
   for (const row of rows[STORES.CHATS_ROOM_MESSAGES] ?? []) {
+    if (row.value.owner !== expectedOwner) continue;
     const messages = row.value.messages;
     if (Array.isArray(messages)) {
       roomMessages[row.key] = messages as ChatMessage[];
@@ -488,9 +494,15 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (previousUsername !== username) {
             resetRoomsFetchCache();
             useAssistantStore.getState().clearMessages();
+            clearAIConversationSessionCache();
           }
           saveUsernameToRecovery(username);
-          set({ username });
+          set({
+            username,
+            ...(previousUsername !== username
+              ? { aiMessages: [getInitialAiMessage()] }
+              : {}),
+          });
 
           // Re-filter rooms: drop private rooms the new identity cannot see.
           // IRC rooms remain visible to everyone.
@@ -805,6 +817,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           resetRoomsFetchCache();
           useAssistantStore.getState().clearMessages();
+          clearAIConversationSessionCache();
 
           set((state) => ({
             ...state,
@@ -857,6 +870,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           resetRoomsFetchCache();
           useAssistantStore.getState().clearMessages();
+          clearAIConversationSessionCache();
 
           set((state) => ({
             ...state,
@@ -1234,8 +1248,15 @@ export const useChatsStore = create<ChatsStoreState>()(
             if (data.user) {
               if (get().username !== data.user.username) {
                 useAssistantStore.getState().clearMessages();
+                clearAIConversationSessionCache();
               }
-              set({ username: data.user.username, isAuthenticated: true });
+              set({
+                username: data.user.username,
+                isAuthenticated: true,
+                ...(get().username !== data.user.username
+                  ? { aiMessages: [getInitialAiMessage()] }
+                  : {}),
+              });
 
               track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
 
