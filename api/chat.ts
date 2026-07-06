@@ -39,6 +39,7 @@ import type { AIConversationRequestContext } from "../src/shared/contracts/aiCon
 import {
   AIConversationError,
   getAIConversationModelMessages,
+  prepareAIConversationRegeneration,
   syncAIConversationMessages,
 } from "./ai/conversations/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
@@ -108,6 +109,8 @@ export default apiHandler<{
   assistantResponseStyle?: string;
   assistantInstructions?: string;
   conversation?: unknown;
+  trigger?: string;
+  messageId?: string;
 }>(
   {
     methods: ["POST"],
@@ -134,6 +137,8 @@ export default apiHandler<{
       assistantResponseStyle,
       assistantInstructions,
       conversation,
+      trigger,
+      messageId,
     } = req.body as {
       messages: unknown[];
       systemState?: SystemState;
@@ -144,6 +149,8 @@ export default apiHandler<{
       assistantResponseStyle?: string;
       assistantInstructions?: string;
       conversation?: unknown;
+      trigger?: string;
+      messageId?: string;
     };
 
     // "assistant" switches to the desktop-assistant persona (no Ryo identity,
@@ -248,6 +255,23 @@ export default apiHandler<{
     > | null = null;
     if (isAuthenticated && username && !isProactiveGreeting) {
       try {
+        if (trigger === "regenerate-message") {
+          await prepareAIConversationRegeneration({
+            redis,
+            username,
+            channel: conversationChannel,
+            operationId: `regenerate:${conversationOperationId}`,
+            ...(parsedConversationContext.value
+              ? {
+                  expectedConversationId:
+                    parsedConversationContext.value.id,
+                }
+              : {}),
+            ...(typeof messageId === "string" && messageId
+              ? { targetMessageId: messageId }
+              : {}),
+          });
+        }
         storedConversation = await syncAIConversationMessages({
           redis,
           username,

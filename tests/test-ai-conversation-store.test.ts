@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   AIConversationError,
   getAIConversationPage,
+  prepareAIConversationRegeneration,
   resetAIConversation,
   sanitizeAIConversationMessages,
   syncAIConversationMessages,
@@ -234,6 +235,40 @@ describe("AI conversation store", () => {
     });
     expect(replay.reset).toBe(false);
     expect(replay.document.id).toBe(reset.document.id);
+  });
+
+  test("regeneration removes the selected assistant branch", async () => {
+    const redis = new MemoryConversationRedis();
+    const seeded = await syncAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "seed",
+      messages: [
+        message("u1", "user", "question"),
+        message("a1", "assistant", "old answer"),
+        message("u2", "user", "later branch"),
+      ],
+    });
+
+    const regenerated = await prepareAIConversationRegeneration({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: seeded.id,
+      operationId: "regenerate-a1",
+      targetMessageId: "a1",
+    });
+    expect(regenerated.messages.map((entry) => entry.id)).toEqual(["u1"]);
+
+    const replacement = await syncAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "replacement",
+      messages: [message("a2", "assistant", "new answer")],
+    });
+    expect(replacement.messages.map((entry) => entry.seq)).toEqual([1, 4]);
   });
 
   test("bounds retained history without resetting sequence numbers", async () => {

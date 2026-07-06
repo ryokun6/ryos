@@ -91,6 +91,15 @@ export interface ResetAIConversationInput {
   operationId: string;
 }
 
+export interface RegenerateAIConversationInput {
+  redis: AIConversationRedis;
+  username: string;
+  channel: AIConversationChannel;
+  operationId: string;
+  expectedConversationId?: string;
+  targetMessageId?: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -509,6 +518,64 @@ export async function resetAIConversation(
       replacement.recentOperationIds = [input.operationId];
       await saveConversation(input.redis, input.username, replacement);
       return { document: replacement, reset: true };
+    },
+  });
+}
+
+export async function prepareAIConversationRegeneration(
+  input: RegenerateAIConversationInput
+): Promise<StoredConversation> {
+  return withConversationLock({
+    redis: input.redis,
+    username: input.username,
+    channel: input.channel,
+    task: async () => {
+      const document =
+        (await readConversation(input.redis, input.username, input.channel)) ??
+        createConversation(input.channel);
+      if (document.recentOperationIds.includes(input.operationId)) {
+        return document;
+      }
+      if (
+        input.expectedConversationId &&
+        input.expectedConversationId !== document.id
+      ) {
+        throw new AIConversationError(
+          "conversation_changed",
+          409,
+          "Conversation changed"
+        );
+      }
+
+      const target = input.targetMessageId
+        ? document.messages.find(
+            (message) => message.id === input.targetMessageId
+          )
+        : document.messages.findLast(
+            (message) => message.role === "assistant"
+          );
+      if (!target) {
+        throw new AIConversationError(
+          "message_id_conflict",
+          409,
+          "Regeneration target was not found"
+        );
+      }
+
+      const retained = document.messages.filter((message) =>
+        target.role === "assistant"
+          ? message.seq < target.seq
+          : message.seq <= target.seq
+      );
+      const changed = retained.length !== document.messages.length;
+      document.messages = retained;
+      appendOperation(document, input.operationId);
+      if (changed) {
+        document.revision += 1;
+        document.updatedAt = new Date().toISOString();
+      }
+      await saveConversation(input.redis, input.username, document);
+      return document;
     },
   });
 }

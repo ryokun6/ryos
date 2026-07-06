@@ -164,7 +164,9 @@ describe("conversation memory processing", () => {
     expect(chatsSource).toContain(
       "const messagesToAnalyze = [...getSharedAiChat().messages]"
     );
-    expect(assistantSource).toContain("messages: [...chat.messages]");
+    expect(assistantSource).toContain(
+      "const messagesToAnalyze = [...chat.messages] as AIChatMessage[]"
+    );
   });
 
   test("identity changes clear the device-local Assistant transcript", async () => {
@@ -180,6 +182,9 @@ describe("conversation memory processing", () => {
         username: "alice",
         isAuthenticated: true,
         rooms: [],
+        aiMessages: [
+          textMessage("private-chat", "user", "Alice's private Ryo chat"),
+        ],
       });
       useAssistantStore.setState({
         messages: [
@@ -192,6 +197,8 @@ describe("conversation memory processing", () => {
       useChatsStore.getState().setUsername("bob");
 
       expect(useChatsStore.getState().username).toBe("bob");
+      expect(useChatsStore.getState().aiMessages).toHaveLength(1);
+      expect(useChatsStore.getState().aiMessages[0]?.id).toBe("1");
       expect(useAssistantStore.getState().messages).toEqual([]);
       expect(useAssistantStore.getState().lastInteractionAt).toBeNull();
       expect(useAssistantStore.getState().bubbleDismissedAt).toBeNull();
@@ -200,6 +207,7 @@ describe("conversation memory processing", () => {
         username: previousChats.username,
         isAuthenticated: previousChats.isAuthenticated,
         rooms: previousChats.rooms,
+        aiMessages: previousChats.aiMessages,
       });
       useAssistantStore.setState({
         messages: previousAssistant.messages,
