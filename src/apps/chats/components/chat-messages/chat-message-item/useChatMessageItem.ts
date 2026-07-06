@@ -12,6 +12,7 @@ import {
   getMessageText,
   getUserColorClass,
   isUrgentMessage,
+  shouldShowAssistantTypingDots,
 } from "../utils";
 import { extractUrlsFromContent } from "./utils";
 
@@ -58,7 +59,13 @@ export function useChatMessageItem(props: ChatMessageItemProps) {
   );
 
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
-  const showTypingDots = isLoadingGreeting && !isRoomView && isStaticGreeting;
+  const showTypingDots = shouldShowAssistantTypingDots({
+    message,
+    isStreamingMessage,
+    isLoadingGreeting,
+    isRoomView,
+    isStaticGreeting,
+  });
 
   // Message objects are referentially stable across renders (only the
   // streaming message gets a new reference per tick), so memoizing on
