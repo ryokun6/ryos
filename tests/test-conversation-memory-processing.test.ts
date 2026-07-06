@@ -36,7 +36,7 @@ describe("conversation memory processing", () => {
 
     expect(resetRoute).toContain("result.clearedMessages");
     expect(resetRoute).toContain("extractMemoriesFromConversation");
-    expect(resetRoute).toContain("waitUntil(extraction)");
+    expect(resetRoute).toContain("waitUntil(Promise.all(backgroundTasks))");
     expect(chatsSource).not.toContain("processConversationMemories");
     expect(assistantSource).not.toContain("processConversationMemories");
   });
