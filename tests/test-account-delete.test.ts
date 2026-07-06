@@ -129,6 +129,14 @@ describe("Account Deletion API", () => {
     });
     await setUserEmailIndex(redis, email, username);
     await redis.set(redisKeys.sync.v2Kv(username), JSON.stringify({ a: 1 }));
+    await redis.set(
+      redisKeys.chat.aiConversation(username, "chat"),
+      JSON.stringify({ seeded: true })
+    );
+    await redis.set(
+      redisKeys.chat.aiConversation(username, "assistant"),
+      JSON.stringify({ seeded: true })
+    );
 
     expect(await getUsernameByEmail(redis, email)).toBe(username);
 
@@ -155,6 +163,13 @@ describe("Account Deletion API", () => {
     expect(await getUsernameByEmail(redis, email)).toBeNull();
     // Sync data gone.
     expect(await redis.get(redisKeys.sync.v2Kv(username))).toBeNull();
+    // Personal AI conversation data gone.
+    expect(
+      await redis.get(redisKeys.chat.aiConversation(username, "chat"))
+    ).toBeNull();
+    expect(
+      await redis.get(redisKeys.chat.aiConversation(username, "assistant"))
+    ).toBeNull();
 
     // Old token invalid.
     const tokenCheck = await fetchWithAuth(

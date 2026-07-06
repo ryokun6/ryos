@@ -222,4 +222,68 @@ describe("AI conversation API", () => {
       error: "conversation_changed",
     });
   });
+
+  test("persists an authenticated streamed turn on the server", async () => {
+    const username = uniqueTestUsername("aistream");
+    const token = await ensureUserAuth(username, password);
+    if (!token) throw new Error("Failed to authenticate stream test user");
+
+    const initialResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    const initial = (await initialResponse.json()) as AIConversationPage;
+    const userMessageId = crypto.randomUUID();
+    const chatResponse = await fetchWithAuth(
+      `${BASE_URL}/api/chat`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          model: "gemini-3-flash",
+          conversation: {
+            id: initial.conversation.id,
+            operationId: crypto.randomUUID(),
+          },
+          messages: [
+            {
+              id: userMessageId,
+              role: "user",
+              parts: [{ type: "text", text: "Reply with exactly SYNC_OK." }],
+              metadata: { createdAt: new Date().toISOString() },
+            },
+          ],
+        }),
+      }
+    );
+    expect(chatResponse.status).toBe(200);
+    const streamBody = await chatResponse.text();
+    expect(streamBody).toContain("SYNC_OK");
+
+    let persisted: AIConversationPage | null = null;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const response = await fetchWithAuth(
+        `${BASE_URL}/api/ai/conversations/chat`,
+        username,
+        token
+      );
+      const page = (await response.json()) as AIConversationPage;
+      if (page.messages.some((message) => message.role === "assistant")) {
+        persisted = page;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    expect(persisted).not.toBeNull();
+    expect(persisted?.messages.map((message) => message.role)).toEqual([
+      "user",
+      "assistant",
+    ]);
+    expect(persisted?.messages[0]?.id).toBe(userMessageId);
+    expect(persisted?.messages[1]?.parts[0]?.text).toContain("SYNC_OK");
+  });
 });
