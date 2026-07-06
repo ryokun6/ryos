@@ -28,6 +28,16 @@ function apiMessage(id: string, role: "user" | "assistant", text: string) {
   };
 }
 
+function messageText(
+  message: AIConversationPage["messages"][number] | undefined
+): string {
+  return (
+    message?.parts
+      .flatMap((part) => (part.type === "text" ? [part.text] : []))
+      .join("") ?? ""
+  );
+}
+
 describe("AI conversation API", () => {
   test("requires authentication", async () => {
     const response = await fetchWithOrigin(
@@ -406,7 +416,7 @@ describe("AI conversation API", () => {
       "assistant",
     ]);
     expect(persisted?.messages[0]?.id).toBe(userMessageId);
-    expect(persisted?.messages[1]?.parts[0]?.text).toContain("SYNC_OK");
+    expect(messageText(persisted?.messages[1])).toContain("SYNC_OK");
 
     if (!persisted) throw new Error("First streamed turn was not persisted");
     const firstAssistantId = persisted.messages[1]?.id;
@@ -498,9 +508,7 @@ describe("AI conversation API", () => {
         (message) => message.id === oldSecondAssistantId
       )
     ).toBe(false);
-    expect(regenerated.messages[3]?.parts[0]?.text).toContain(
-      "SERVER_CONTEXT_OK"
-    );
+    expect(messageText(regenerated.messages[3])).toContain("SERVER_CONTEXT_OK");
   }, 90_000);
 
   test("validates chat conversation envelopes before generation", async () => {
