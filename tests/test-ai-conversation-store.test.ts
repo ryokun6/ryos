@@ -15,6 +15,7 @@ import {
   type AIConversationRedis,
 } from "../api/ai/conversations/_helpers/store";
 import { ASSISTANT_SUMMON_MESSAGE } from "../src/shared/assistantGreeting";
+import { redisKeys } from "../src/shared/redisKeys";
 
 class MemoryConversationRedis implements AIConversationRedis {
   private readonly values = new Map<string, unknown>();
@@ -211,6 +212,64 @@ describe("AI conversation store", () => {
       title: "Example",
     });
     expect(assistant?.parts).toHaveLength(4);
+  });
+
+  test("reads version 1 text history and upgrades it on the next write", async () => {
+    const redis = new MemoryConversationRedis();
+    const key = redisKeys.chat.aiConversation("alice", "chat");
+    await redis.set(
+      key,
+      JSON.stringify({
+        version: 1,
+        id: "44444444-4444-4444-8444-444444444444",
+        channel: "chat",
+        revision: 1,
+        nextSeq: 2,
+        createdAt: "2026-07-06T00:00:00.000Z",
+        updatedAt: "2026-07-06T00:00:00.000Z",
+        historyTruncated: false,
+        legacyImportAllowed: false,
+        messages: [
+          {
+            id: "legacy-user",
+            seq: 1,
+            role: "user",
+            parts: [{ type: "text", text: "legacy text" }],
+            createdAt: "2026-07-06T00:00:00.000Z",
+          },
+        ],
+        recentOperationIds: [],
+        lastResetOperationId: null,
+        pendingTurnId: null,
+        pendingTurnStartedAt: null,
+      })
+    );
+
+    const page = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+    expect(page.messages[0]?.parts).toEqual([
+      { type: "text", text: "legacy text" },
+    ]);
+
+    await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: page.conversation.id,
+      expectedRevision: page.conversation.revision,
+      operationId: "upgrade-v1",
+      turnId: "upgrade-v1",
+      action: {
+        kind: "user-message",
+        message: message("new-user", "user", "new text"),
+      },
+    });
+    const stored = await redis.get<string>(key);
+    expect(JSON.parse(stored ?? "{}").version).toBe(2);
   });
 
   test("appends idempotently with revisions and stable cursor pagination", async () => {
