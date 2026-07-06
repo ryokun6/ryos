@@ -42,6 +42,7 @@ import {
   getAIConversationModelMessages,
   getAIConversationRegenerationModelMessages,
   prepareAIConversationRegeneration,
+  releaseAIConversationTurn,
   syncAIConversationMessages,
 } from "./ai/conversations/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
@@ -128,6 +129,11 @@ export default apiHandler<{
   },
   async ({ req, res, redis, logger, startTime, origin, user }) => {
     const validOrigin = origin || "http://localhost";
+    let activeConversationTurn: {
+      username: string;
+      channel: "chat" | "assistant";
+      id: string;
+    } | null = null;
     try {
     // Parse query string to get model parameter
     // Handle both full URLs and relative paths (vercel dev uses relative paths)
@@ -274,7 +280,7 @@ export default apiHandler<{
     if (isAuthenticated && username && !isProactiveGreeting) {
       try {
         if (trigger === "regenerate-message") {
-          storedConversation = await prepareAIConversationRegeneration({
+          await prepareAIConversationRegeneration({
             redis,
             username,
             channel: conversationChannel,
@@ -291,23 +297,28 @@ export default apiHandler<{
               ? { targetMessageId: messageId }
               : {}),
           });
-        } else {
-          storedConversation = await syncAIConversationMessages({
-            redis,
-            username,
-            channel: conversationChannel,
-            messages,
-            operationId: `request:${conversationOperationId}`,
-            ...(parsedConversationContext.value
-              ? {
-                  expectedConversationId:
-                    parsedConversationContext.value.id,
-                  expectedRevision:
-                    parsedConversationContext.value.revision,
-                }
-              : {}),
-          });
         }
+        storedConversation = await syncAIConversationMessages({
+          redis,
+          username,
+          channel: conversationChannel,
+          messages: trigger === "regenerate-message" ? [] : messages,
+          operationId: `request:${conversationOperationId}`,
+          turn: { id: conversationOperationId, action: "begin" },
+          ...(parsedConversationContext.value
+            ? {
+                expectedConversationId:
+                  parsedConversationContext.value.id,
+                expectedRevision:
+                  parsedConversationContext.value.revision,
+              }
+            : {}),
+        });
+        activeConversationTurn = {
+          username,
+          channel: conversationChannel,
+          id: conversationOperationId,
+        };
       } catch (error) {
         if (error instanceof AIConversationError) {
           logger.response(error.status, Date.now() - startTime);
@@ -540,12 +551,19 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       generateMessageId: () => crypto.randomUUID(),
       consumeSseStream: consumeStream,
       onFinish: async ({ messages: completedMessages, isAborted }) => {
-        if (
-          isAborted ||
-          !storedConversation ||
-          !isAuthenticated ||
-          !username
-        ) {
+        if (!storedConversation || !isAuthenticated || !username) {
+          return;
+        }
+        if (isAborted) {
+          await releaseAIConversationTurn({
+            redis,
+            username,
+            channel: conversationChannel,
+            turnId: conversationOperationId,
+          }).catch((error) => {
+            logError("Failed to release aborted conversation turn", error);
+          });
+          activeConversationTurn = null;
           return;
         }
 
@@ -557,6 +575,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               channel: conversationChannel,
               messages: completedMessages,
               operationId: `response:${conversationOperationId}`,
+              turnId: conversationOperationId,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
               ...(typeof messageId === "string" && messageId
@@ -572,14 +591,32 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               operationId: `response:${conversationOperationId}`,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
+              turn: { id: conversationOperationId, action: "complete" },
             });
           }
+          activeConversationTurn = null;
         } catch (error) {
           logError("Failed to persist completed conversation response", error);
+          await releaseAIConversationTurn({
+            redis,
+            username,
+            channel: conversationChannel,
+            turnId: conversationOperationId,
+          }).catch(() => {});
+          activeConversationTurn = null;
         }
       },
     });
   } catch (error) {
+    if (activeConversationTurn) {
+      await releaseAIConversationTurn({
+        redis,
+        username: activeConversationTurn.username,
+        channel: activeConversationTurn.channel,
+        turnId: activeConversationTurn.id,
+      }).catch(() => {});
+      activeConversationTurn = null;
+    }
     logger.error("Chat API error", error);
 
     if (validOrigin) {

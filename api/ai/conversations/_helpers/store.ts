@@ -18,6 +18,7 @@ const MAX_TEXT_BYTES = 256 * 1024;
 const MAX_MESSAGE_TEXT_LENGTH = 12_000;
 const MAX_RECENT_OPERATIONS = 48;
 const MAX_MESSAGE_ID_LENGTH = 160;
+const PENDING_TURN_TTL_MS = 2 * 60 * 1000;
 
 const storedMessageSchema = z.object({
   id: z.string().min(1).max(MAX_MESSAGE_ID_LENGTH),
@@ -45,6 +46,8 @@ const storedConversationSchema = z.object({
   messages: z.array(storedMessageSchema),
   recentOperationIds: z.array(z.string()),
   lastResetOperationId: z.string().nullable(),
+  pendingTurnId: z.string().nullable(),
+  pendingTurnStartedAt: z.number().int().nonnegative().nullable(),
 });
 
 type StoredConversation = z.infer<typeof storedConversationSchema>;
@@ -83,6 +86,10 @@ export interface SyncAIConversationInput {
   expectedConversationId?: string;
   expectedRevision?: number;
   requireEmpty?: boolean;
+  turn?: {
+    id: string;
+    action: "begin" | "complete";
+  };
 }
 
 export interface ResetAIConversationInput {
@@ -106,6 +113,7 @@ export interface RegenerateAIConversationInput {
 export interface CommitAIConversationRegenerationInput
   extends RegenerateAIConversationInput {
   messages: readonly unknown[];
+  turnId: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -212,6 +220,8 @@ function createConversation(channel: AIConversationChannel): StoredConversation 
     messages: [],
     recentOperationIds: [],
     lastResetOperationId: null,
+    pendingTurnId: null,
+    pendingTurnStartedAt: null,
   };
 }
 
@@ -549,7 +559,38 @@ export async function syncAIConversationMessages(
         );
       }
 
+      if (input.turn) {
+        const pendingIsStale =
+          document.pendingTurnStartedAt !== null &&
+          Date.now() - document.pendingTurnStartedAt > PENDING_TURN_TTL_MS;
+        if (input.turn.action === "begin") {
+          if (
+            document.pendingTurnId &&
+            document.pendingTurnId !== input.turn.id &&
+            !pendingIsStale
+          ) {
+            throw new AIConversationError(
+              "conversation_busy",
+              409,
+              "Another conversation turn is still running"
+            );
+          }
+          document.pendingTurnId = input.turn.id;
+          document.pendingTurnStartedAt = Date.now();
+        } else if (document.pendingTurnId !== input.turn.id) {
+          throw new AIConversationError(
+            "revision_conflict",
+            409,
+            "Conversation turn is no longer active"
+          );
+        }
+      }
+
       const changed = mergeConversationMessages(document, input.messages);
+      if (input.turn?.action === "complete") {
+        document.pendingTurnId = null;
+        document.pendingTurnStartedAt = null;
+      }
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
       if (changed) {
@@ -563,6 +604,31 @@ export async function syncAIConversationMessages(
         lockToken
       );
       return document;
+    },
+  });
+}
+
+export async function releaseAIConversationTurn({
+  redis,
+  username,
+  channel,
+  turnId,
+}: {
+  redis: AIConversationRedis;
+  username: string;
+  channel: AIConversationChannel;
+  turnId: string;
+}): Promise<void> {
+  await withConversationLock({
+    redis,
+    username,
+    channel,
+    task: async (lockToken) => {
+      const document = await readConversation(redis, username, channel);
+      if (!document || document.pendingTurnId !== turnId) return;
+      document.pendingTurnId = null;
+      document.pendingTurnStartedAt = null;
+      await saveConversation(redis, username, document, lockToken);
     },
   });
 }
@@ -664,6 +730,13 @@ export async function commitAIConversationRegeneration(
       if (document.recentOperationIds.includes(input.operationId)) {
         return document;
       }
+      if (document.pendingTurnId !== input.turnId) {
+        throw new AIConversationError(
+          "revision_conflict",
+          409,
+          "Conversation turn is no longer active"
+        );
+      }
       const target = validateRegenerationTarget(document, input);
       document.messages = document.messages.filter((message) =>
         target.role === "assistant"
@@ -673,6 +746,8 @@ export async function commitAIConversationRegeneration(
       mergeConversationMessages(document, input.messages);
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
+      document.pendingTurnId = null;
+      document.pendingTurnStartedAt = null;
       document.revision += 1;
       document.updatedAt = new Date().toISOString();
       await saveConversation(

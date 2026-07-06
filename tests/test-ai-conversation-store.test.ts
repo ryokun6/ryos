@@ -6,6 +6,7 @@ import {
   deleteAIConversationKeys,
   getAIConversationPage,
   prepareAIConversationRegeneration,
+  releaseAIConversationTurn,
   resetAIConversation,
   sanitizeAIConversationMessages,
   syncAIConversationMessages,
@@ -304,6 +305,16 @@ describe("AI conversation store", () => {
       "a1",
       "u2",
     ]);
+    await syncAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "request-regenerate-a1",
+      expectedConversationId: seeded.id,
+      expectedRevision: seeded.revision,
+      messages: [],
+      turn: { id: "turn-regenerate-a1", action: "begin" },
+    });
 
     const replacement = await commitAIConversationRegeneration({
       redis,
@@ -313,6 +324,7 @@ describe("AI conversation store", () => {
       expectedConversationId: seeded.id,
       expectedRevision: seeded.revision,
       targetMessageId: "a1",
+      turnId: "turn-regenerate-a1",
       messages: [message("a2", "assistant", "new answer")],
     });
     expect(replacement.messages.map((entry) => entry.id)).toEqual(["u1", "a2"]);
@@ -337,6 +349,52 @@ describe("AI conversation store", () => {
     expect(document.messages[0]?.seq).toBe(6);
     expect(document.messages.at(-1)?.seq).toBe(205);
     expect(document.historyTruncated).toBe(true);
+  });
+
+  test("rejects a concurrent turn until the active turn completes", async () => {
+    const redis = new MemoryConversationRedis();
+    const first = await syncAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "request-a",
+      messages: [message("u1", "user", "first")],
+      turn: { id: "turn-a", action: "begin" },
+    });
+
+    await expect(
+      syncAIConversationMessages({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "request-b",
+        expectedConversationId: first.id,
+        expectedRevision: first.revision,
+        messages: [message("u2", "user", "second")],
+        turn: { id: "turn-b", action: "begin" },
+      })
+    ).rejects.toMatchObject({
+      code: "conversation_busy",
+      status: 409,
+    });
+
+    await releaseAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      turnId: "turn-a",
+    });
+    const second = await syncAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "request-b",
+      expectedConversationId: first.id,
+      expectedRevision: first.revision,
+      messages: [message("u2", "user", "second")],
+      turn: { id: "turn-b", action: "begin" },
+    });
+    expect(second.messages.map((entry) => entry.id)).toEqual(["u1", "u2"]);
   });
 
   test("account deletion tombstones reject in-flight and future writes", async () => {
