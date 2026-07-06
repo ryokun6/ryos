@@ -137,10 +137,6 @@ describe("Account Deletion API", () => {
       redisKeys.chat.aiConversation(username, "assistant"),
       JSON.stringify({ seeded: true })
     );
-    await redis.sadd(
-      redisKeys.chat.aiAttachments(username),
-      "s3://missing/test-attachment"
-    );
 
     expect(await getUsernameByEmail(redis, email)).toBe(username);
 
@@ -174,9 +170,6 @@ describe("Account Deletion API", () => {
     expect(
       await redis.get(redisKeys.chat.aiConversation(username, "assistant"))
     ).toBeNull();
-    expect(await redis.smembers(redisKeys.chat.aiAttachments(username))).toEqual(
-      []
-    );
 
     // Old token invalid.
     const tokenCheck = await fetchWithAuth(

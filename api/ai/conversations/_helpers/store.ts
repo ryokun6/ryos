@@ -553,9 +553,16 @@ function trimConversation(document: StoredConversation): void {
     document.messages.length > MAX_MESSAGES ||
     (totalBytes > MAX_CONVERSATION_BYTES && document.messages.length > 1)
   ) {
-    const oldest = document.messages.shift();
-    if (!oldest) break;
-    totalBytes -= jsonByteLength(oldest.parts);
+    const nextTurn = document.messages.findIndex(
+      (message, index) => index > 0 && message.role === "user"
+    );
+    const removedMessages = document.messages.splice(
+      0,
+      nextTurn > 0 ? nextTurn : 1
+    );
+    for (const message of removedMessages) {
+      totalBytes -= jsonByteLength(message.parts);
+    }
     removed = true;
   }
 

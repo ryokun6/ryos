@@ -163,8 +163,6 @@ export async function deleteAllAIAttachments(
 ): Promise<number> {
   const indexKey = redisKeys.chat.aiAttachments(username);
   const storageUrls = await redis.smembers<string[]>(indexKey);
-  await Promise.all(
-    storageUrls.map((url) => deleteStoredObject(url).catch(() => {}))
-  );
+  await Promise.all(storageUrls.map((url) => deleteStoredObject(url)));
   return redis.del(indexKey);
 }
