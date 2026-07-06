@@ -1,4 +1,8 @@
 import { apiHandler } from "../../_utils/api-handler.js";
+import {
+  checkCounterLimit,
+  makeKey,
+} from "../../_utils/_rate-limit.js";
 import { isAIAttachmentId } from "../../../src/shared/contracts/aiAttachment.js";
 import { getAIAttachmentContent } from "./_helpers/store.js";
 
@@ -19,12 +23,42 @@ export default apiHandler(
       res.status(404).json({ error: "attachment_not_found" });
       return;
     }
-
-    const attachment = await getAIAttachmentContent({
+    const rateLimit = await checkCounterLimit({
+      key: makeKey([
+        "rl",
+        "ai-attachment-download",
+        "user",
+        user!.username,
+      ]),
+      windowSeconds: 60,
+      limit: 120,
       redis,
-      username: user!.username,
-      attachmentId,
     });
+    if (!rateLimit.allowed) {
+      res.setHeader("Retry-After", String(rateLimit.resetSeconds));
+      logger.response(429, Date.now() - startTime);
+      res.status(429).json({ error: "attachment_rate_limit_exceeded" });
+      return;
+    }
+
+    let attachment: Awaited<ReturnType<typeof getAIAttachmentContent>>;
+    try {
+      attachment = await getAIAttachmentContent({
+        redis,
+        username: user!.username,
+        attachmentId,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "attachment_storage_invalid"
+      ) {
+        logger.response(404, Date.now() - startTime);
+        res.status(404).json({ error: "attachment_not_found" });
+        return;
+      }
+      throw error;
+    }
     if (!attachment) {
       logger.response(404, Date.now() - startTime);
       res.status(404).json({ error: "attachment_not_found" });
@@ -34,6 +68,7 @@ export default apiHandler(
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("Content-Type", attachment.record.mediaType);
     res.setHeader("Content-Length", String(attachment.bytes.byteLength));
+    res.setHeader("X-Content-Type-Options", "nosniff");
     if (attachment.record.filename) {
       res.setHeader(
         "Content-Disposition",

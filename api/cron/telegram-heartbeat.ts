@@ -43,7 +43,10 @@ import {
 } from "../_utils/_aiModels.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import { createRyoToolLoopAgent } from "../_utils/ryo-agent.js";
-import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
+import {
+  getStoredUserRecord,
+  getStoredUserTimeZone,
+} from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -148,6 +151,7 @@ export default async function handler(
 
   const redis = createRedis();
   const username = TELEGRAM_HEARTBEAT_TARGET_USERNAME;
+  const accountRecord = await getStoredUserRecord(redis, username);
   const userTimeZone =
     (await getStoredUserTimeZone(redis, username)) || TELEGRAM_HEARTBEAT_TIME_ZONE;
   const linkedAccount = await getLinkedTelegramAccountByUsername(redis, username);
@@ -239,7 +243,10 @@ export default async function handler(
     heartbeatHistoryContext.latestHeartbeatTimestamp
   );
 
-  if (newTelegramConversation.length > 0) {
+  if (
+    newTelegramConversation.length > 0 &&
+    typeof accountRecord?.createdAt === "number"
+  ) {
     try {
       const extractionResult = await extractMemoriesFromConversation({
         redis,
@@ -254,6 +261,7 @@ export default async function handler(
         timeZone: userTimeZone,
         storeLongTermMemories: false,
         markTodayProcessed: false,
+        accountCreatedAt: accountRecord.createdAt,
         log: (...args: unknown[]) => logger.info("[TelegramHeartbeatChatDelta]", args),
         logError: (...args: unknown[]) =>
           logger.error("[TelegramHeartbeatChatDelta]", args),

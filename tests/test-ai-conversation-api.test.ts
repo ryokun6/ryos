@@ -11,6 +11,12 @@ import type {
   AIConversationPage,
   AIConversationResetResult,
 } from "../src/shared/contracts/aiConversation";
+import { createRedis } from "../api/_utils/redis";
+import {
+  AI_LIMIT_PER_5_HOURS,
+  AI_WINDOW_AUTHENTICATED,
+  getAIRateLimitKey,
+} from "../api/_utils/_rate-limit";
 
 const password = "testtest123";
 const CHAT_ID = "11111111-1111-4111-8111-111111111111";
@@ -40,6 +46,60 @@ describe("AI conversation API", () => {
       `${BASE_URL}/api/ai/conversations/chat`
     );
     expect(response.status).toBe(401);
+  });
+
+  test("does not persist a user turn rejected by the generation quota", async () => {
+    const username = uniqueTestUsername("aiquota");
+    const token = await ensureUserAuth(username, password);
+    expect(token).not.toBeNull();
+    if (!token) throw new Error("Failed to authenticate test user");
+
+    const initialResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    expect(initialResponse.status).toBe(200);
+    const initial = (await initialResponse.json()) as AIConversationPage;
+    const redis = createRedis();
+    const rateLimitKey = getAIRateLimitKey(username);
+    await redis.set(rateLimitKey, String(AI_LIMIT_PER_5_HOURS), {
+      ex: AI_WINDOW_AUTHENTICATED,
+    });
+
+    try {
+      const rejected = await fetchWithAuth(
+        `${BASE_URL}/api/chat`,
+        username,
+        token,
+        {
+          method: "POST",
+          headers: makeRateLimitBypassHeaders(),
+          body: JSON.stringify({
+            conversation: {
+              id: initial.conversation.id,
+              revision: initial.conversation.revision,
+              operationId: crypto.randomUUID(),
+            },
+            trigger: "submit-message",
+            message: apiMessage("quota-user", "user", "should not persist"),
+          }),
+        }
+      );
+      expect(rejected.status).toBe(429);
+
+      const currentResponse = await fetchWithAuth(
+        `${BASE_URL}/api/ai/conversations/chat`,
+        username,
+        token
+      );
+      expect(currentResponse.status).toBe(200);
+      const current = (await currentResponse.json()) as AIConversationPage;
+      expect(current.conversation.revision).toBe(0);
+      expect(current.messages).toEqual([]);
+    } finally {
+      await redis.del(rateLimitKey);
+    }
   });
 
   test("rejects malformed and oversized image uploads", async () => {
@@ -105,10 +165,6 @@ describe("AI conversation API", () => {
         body: imageBytes,
       }
     );
-    if (uploadResponse.status === 500) {
-      console.warn("Skipping object-storage round trip: storage is not configured");
-      return;
-    }
     expect(uploadResponse.status).toBe(201);
     const completed = (await uploadResponse.json()) as {
       attachmentId: string;
@@ -163,7 +219,7 @@ describe("AI conversation API", () => {
                   type: "tool-generateHtml",
                   toolCallId: "call-html",
                   state: "output-available",
-                  input: { prompt: "page" },
+                  input: { html: "<main>Synced</main>", title: "Synced" },
                   output: { html: "<main>Synced</main>" },
                 },
               ],
@@ -206,6 +262,47 @@ describe("AI conversation API", () => {
     const otherToken = await ensureUserAuth(otherUsername, password);
     expect(otherToken).not.toBeNull();
     if (!otherToken) throw new Error("Failed to authenticate second test user");
+    const otherConversationResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      otherUsername,
+      otherToken
+    );
+    expect(otherConversationResponse.status).toBe(200);
+    const otherConversation =
+      (await otherConversationResponse.json()) as AIConversationPage;
+    const crossUserImportResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat/import`,
+      otherUsername,
+      otherToken,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          conversationId: otherConversation.conversation.id,
+          expectedRevision: 0,
+          operationId: crypto.randomUUID(),
+          messages: [
+            {
+              id: "foreign-image",
+              role: "user",
+              parts: [
+                { type: "text", text: "Not mine" },
+                {
+                  type: "file",
+                  mediaType: "image/png",
+                  url: completed.url,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+    expect(crossUserImportResponse.status).toBe(422);
+    expect(await crossUserImportResponse.json()).toEqual({
+      error: "attachment_not_found",
+    });
+
     const otherUserImageResponse = await fetchWithAuth(
       `${BASE_URL}${completed.url}`,
       otherUsername,
@@ -221,6 +318,7 @@ describe("AI conversation API", () => {
     );
     expect(imageResponse.status).toBe(200);
     expect(imageResponse.headers.get("cache-control")).toBe("private, no-store");
+    expect(imageResponse.headers.get("x-content-type-options")).toBe("nosniff");
     expect(
       Buffer.from(await imageResponse.arrayBuffer()).equals(imageBytes)
     ).toBe(true);
@@ -321,6 +419,28 @@ describe("AI conversation API", () => {
     const initial = (await initialResponse.json()) as AIConversationPage;
     expect(initial.conversation.revision).toBe(0);
     expect(initial.messages).toEqual([]);
+
+    const oversizedTextResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat/import`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          conversationId: initial.conversation.id,
+          expectedRevision: 0,
+          operationId: crypto.randomUUID(),
+          messages: [
+            apiMessage("too-long", "user", "x".repeat(128_001)),
+          ],
+        }),
+      }
+    );
+    expect(oversizedTextResponse.status).toBe(422);
+    expect(await oversizedTextResponse.json()).toEqual({
+      error: "message_too_large",
+    });
 
     const operationId = crypto.randomUUID();
     const importResponse = await fetchWithAuth(
@@ -510,6 +630,27 @@ describe("AI conversation API", () => {
     );
     const initial = (await initialResponse.json()) as AIConversationPage;
     const userMessageId = crypto.randomUUID();
+    const firstOperationId = crypto.randomUUID();
+    const firstRequestBody = {
+      model: "gemini-3-flash",
+      conversation: {
+        id: initial.conversation.id,
+        revision: initial.conversation.revision,
+        operationId: firstOperationId,
+      },
+      trigger: "submit-message",
+      message: {
+        id: userMessageId,
+        role: "user",
+        parts: [
+          {
+            type: "text",
+            text: "Remember the passphrase SERVER_CONTEXT_OK. Reply with exactly SYNC_OK.",
+          },
+        ],
+        metadata: { createdAt: new Date().toISOString() },
+      },
+    };
     const chatResponse = await fetchWithAuth(
       `${BASE_URL}/api/chat`,
       username,
@@ -517,26 +658,7 @@ describe("AI conversation API", () => {
       {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
-        body: JSON.stringify({
-          model: "gemini-3-flash",
-          conversation: {
-            id: initial.conversation.id,
-            revision: initial.conversation.revision,
-            operationId: crypto.randomUUID(),
-          },
-          trigger: "submit-message",
-          message: {
-            id: userMessageId,
-            role: "user",
-            parts: [
-              {
-                type: "text",
-                text: "Remember the passphrase SERVER_CONTEXT_OK. Reply with exactly SYNC_OK.",
-              },
-            ],
-            metadata: { createdAt: new Date().toISOString() },
-          },
-        }),
+        body: JSON.stringify(firstRequestBody),
       }
     );
     expect(chatResponse.status).toBe(200);
@@ -567,6 +689,21 @@ describe("AI conversation API", () => {
     expect(getPersistedMessageText(persisted?.messages[1])).toContain("SYNC_OK");
 
     if (!persisted) throw new Error("First streamed turn was not persisted");
+    const replayResponse = await fetchWithAuth(
+      `${BASE_URL}/api/chat`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify(firstRequestBody),
+      }
+    );
+    expect(replayResponse.status).toBe(409);
+    expect(await replayResponse.json()).toEqual({
+      error: "operation_replayed",
+    });
+
     const firstAssistantId = persisted.messages[1]?.id;
     const secondUserId = crypto.randomUUID();
     const secondResponse = await fetchWithAuth(
@@ -660,6 +797,68 @@ describe("AI conversation API", () => {
       "SERVER_CONTEXT_OK"
     );
   }, 90_000);
+
+  test("persists desktop Assistant turns in its separate channel", async () => {
+    const username = uniqueTestUsername("assistantstream");
+    const token = await ensureUserAuth(username, password);
+    if (!token) throw new Error("Failed to authenticate Assistant test user");
+
+    const initialResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/assistant`,
+      username,
+      token
+    );
+    expect(initialResponse.status).toBe(200);
+    const initial = (await initialResponse.json()) as AIConversationPage;
+    const response = await fetchWithAuth(
+      `${BASE_URL}/api/chat`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          model: "gemini-3-flash",
+          persona: "assistant",
+          conversation: {
+            id: initial.conversation.id,
+            revision: initial.conversation.revision,
+            operationId: crypto.randomUUID(),
+          },
+          trigger: "submit-message",
+          message: apiMessage(
+            crypto.randomUUID(),
+            "user",
+            "Reply with exactly ASSISTANT_SYNC_OK."
+          ),
+        }),
+      }
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("ASSISTANT_SYNC_OK");
+
+    const assistantResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/assistant`,
+      username,
+      token
+    );
+    const assistant = (await assistantResponse.json()) as AIConversationPage;
+    expect(assistant.messages.map((message) => message.role)).toEqual([
+      "user",
+      "assistant",
+    ]);
+    expect(getPersistedMessageText(assistant.messages[1])).toContain(
+      "ASSISTANT_SYNC_OK"
+    );
+
+    const chatResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    const chat = (await chatResponse.json()) as AIConversationPage;
+    expect(chat.messages).toEqual([]);
+  }, 45_000);
 
   test("validates chat conversation envelopes before generation", async () => {
     const invalid = await fetchWithOrigin(`${BASE_URL}/api/chat`, {

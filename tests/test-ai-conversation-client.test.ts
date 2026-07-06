@@ -123,11 +123,12 @@ describe("AI conversation client", () => {
             role: "assistant",
             parts: [
               { type: "text", text: "Here it is" },
+              { type: "step-start" },
               {
                 type: "tool-generateHtml",
                 toolCallId: "call-1",
                 state: "output-available",
-                input: { prompt: "page" },
+                input: { html: "<main>Synced</main>" },
                 output: { html: "<main>Synced</main>" },
               },
               {
@@ -135,6 +136,11 @@ describe("AI conversation client", () => {
                 sourceId: "source-1",
                 url: "https://example.com",
                 title: "Example",
+              },
+              {
+                type: "file",
+                mediaType: "image/png",
+                url: "/api/ai/attachments/33333333-3333-4333-8333-333333333333",
               },
             ],
             createdAt: "2026-07-06T00:00:00.000Z",
@@ -149,11 +155,12 @@ describe("AI conversation client", () => {
     });
     expect(loaded.messages[0]?.parts).toEqual([
       { type: "text", text: "Here it is" },
+      { type: "step-start" },
       {
         type: "tool-generateHtml",
         toolCallId: "call-1",
         state: "output-available",
-        input: { prompt: "page" },
+        input: { html: "<main>Synced</main>" },
         output: { html: "<main>Synced</main>" },
       },
       {
@@ -161,6 +168,11 @@ describe("AI conversation client", () => {
         sourceId: "source-1",
         url: "https://example.com",
         title: "Example",
+      },
+      {
+        type: "file",
+        mediaType: "image/png",
+        url: "/api/ai/attachments/33333333-3333-4333-8333-333333333333",
       },
     ]);
   });
@@ -312,6 +324,7 @@ describe("AI conversation client", () => {
       role: "assistant",
       parts: [
         { type: "text", text: "Visible" },
+        { type: "step-start" },
         {
           type: "tool-launchApp",
           toolCallId: "tool-1",
@@ -329,6 +342,7 @@ describe("AI conversation client", () => {
         role: "assistant",
         parts: [
           { type: "text", text: "Visible" },
+          { type: "step-start" },
           {
             type: "tool-launchApp",
             toolCallId: "tool-1",

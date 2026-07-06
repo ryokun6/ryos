@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { validateUIMessages } from "ai";
 import {
   AIConversationError,
   beginAIConversationTurn,
+  beginAIConversationTurnWithStatus,
   commitAIConversationRegeneration,
   clearAIConversationTombstone,
   completeAIConversationTurn,
   deleteAIConversationKeys,
+  getAIConversationModelMessages,
   getAIConversationPage,
   getAIConversationRegenerationModelMessages,
   importAIConversationMessages,
@@ -15,6 +18,7 @@ import {
   sanitizeAIConversationMessages,
   type AIConversationRedis,
 } from "../api/ai/conversations/_helpers/store";
+import { writeSchema } from "../api/chat/tools/schemas";
 import { ASSISTANT_SUMMON_MESSAGE } from "../src/shared/assistantGreeting";
 import { redisKeys } from "../src/shared/redisKeys";
 
@@ -98,9 +102,31 @@ class MemoryConversationRedis implements AIConversationRedis {
       } else if (this.values.has(keys[1] ?? "")) {
         result = -2;
       } else {
-        this.values.set(keys[2] ?? "", String(args[1]));
-        result = 1;
+        const claimCount = Number(args[3] ?? 0);
+        const claimsMatch = Array.from(
+          { length: claimCount },
+          (_, index) => {
+            const current = this.values.get(keys[3 + index] ?? "");
+            const serialized =
+              typeof current === "string" ? current : JSON.stringify(current);
+            return serialized === args[4 + index * 2];
+          }
+        ).every(Boolean);
+        if (!claimsMatch) {
+          result = -3;
+        } else {
+          for (let index = 0; index < claimCount; index += 1) {
+            this.values.set(
+              keys[3 + index] ?? "",
+              String(args[5 + index * 2])
+            );
+          }
+          this.values.set(keys[2] ?? "", String(args[1]));
+          result = 1;
+        }
       }
+    } else if (script.includes('redis.call("EXPIRE", KEYS[1]')) {
+      result = this.values.get(keys[0] ?? "") === args[0] ? 1 : 0;
     } else if (this.values.get(keys[0] ?? "") === args[0]) {
       this.values.delete(keys[0] ?? "");
       result = 1;
@@ -226,6 +252,117 @@ describe("AI conversation store", () => {
     expect(assistant?.parts).toHaveLength(4);
   });
 
+  test("preserves text boundaries and rejects oversized messages", () => {
+    const unicodeBoundary = `${"a".repeat(127_999)}😀`;
+    const [messageAtLimit] = sanitizeAIConversationMessages([
+      {
+        id: "unicode-limit",
+        role: "user",
+        parts: [
+          { type: "text", text: "  keep surrounding whitespace  " },
+          {
+            type: "text",
+            text: unicodeBoundary.slice("  keep surrounding whitespace  ".length),
+          },
+        ],
+      },
+    ]);
+    expect(messageAtLimit?.parts[0]).toEqual({
+      type: "text",
+      text: "  keep surrounding whitespace  ",
+    });
+    expect(
+      messageAtLimit?.parts
+        .flatMap((part) => (part.type === "text" ? [...part.text] : []))
+        .length
+    ).toBe(128_000);
+
+    expect(() =>
+      sanitizeAIConversationMessages([
+        {
+          id: "too-long",
+          role: "user",
+          parts: [{ type: "text", text: "x".repeat(128_001) }],
+        },
+      ])
+    ).toThrow("Message text exceeds the conversation limit");
+  });
+
+  test("retains schema-valid tool inputs and step boundaries for model context", async () => {
+    const redis = new MemoryConversationRedis();
+    const initial = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+    await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 0,
+      operationId: "tool-context-request",
+      turnId: "tool-context",
+      action: {
+        kind: "user-message",
+        message: message("tool-user", "user", "Write this down"),
+      },
+    });
+    const completed = await completeAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 1,
+      operationId: "tool-context-response",
+      turnId: "tool-context",
+      responseMessage: {
+        id: "tool-assistant",
+        role: "assistant",
+        parts: [
+          { type: "step-start" },
+          {
+            type: "tool-write",
+            toolCallId: "write-call",
+            state: "output-available",
+            input: {
+              path: "/Documents/synced.md",
+              content: "  exact content\n",
+            },
+            output: "saved",
+          },
+        ],
+      },
+    });
+
+    const modelMessages = getAIConversationModelMessages(completed);
+    expect(modelMessages.at(-1)?.parts).toEqual([
+      { type: "step-start" },
+      {
+        type: "tool-write",
+        toolCallId: "write-call",
+        state: "output-available",
+        input: {
+          path: "/Documents/synced.md",
+          content: "  exact content\n",
+        },
+        output: "saved",
+      },
+    ]);
+    await expect(
+      validateUIMessages({
+        messages: modelMessages,
+        tools: {
+          write: {
+            description: "Write a file",
+            inputSchema: writeSchema,
+          },
+        },
+      })
+    ).resolves.toEqual(modelMessages);
+  });
+
   test("reads version 1 text history and upgrades it on the next write", async () => {
     const redis = new MemoryConversationRedis();
     const key = redisKeys.chat.aiConversation("alice", "chat");
@@ -282,6 +419,62 @@ describe("AI conversation store", () => {
     });
     const stored = await redis.get<string>(key);
     expect(JSON.parse(stored ?? "{}").version).toBe(2);
+  });
+
+  test("claims a new image in the same atomic write as its conversation", async () => {
+    const redis = new MemoryConversationRedis();
+    const attachmentId = "33333333-3333-4333-8333-333333333333";
+    const attachmentKey = redisKeys.chat.aiAttachment("alice", attachmentId);
+    await redis.set(
+      attachmentKey,
+      JSON.stringify({
+        version: 1,
+        status: "unattached",
+        id: attachmentId,
+        storageUrl: `s3://private/${attachmentId}`,
+        mediaType: "image/png",
+        size: 68,
+        sha256: "a".repeat(64),
+        createdAt: "2026-07-06T00:00:00.000Z",
+      })
+    );
+    const initial = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+
+    const imported = await importAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 0,
+      operationId: "claim-image",
+      messages: [
+        {
+          id: "image-user",
+          role: "user",
+          parts: [
+            { type: "text", text: "Keep this image" },
+            {
+              type: "file",
+              mediaType: "image/png",
+              url: `/api/ai/attachments/${attachmentId}`,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(imported.messages[0]?.parts).toHaveLength(2);
+    expect(
+      JSON.parse((await redis.get<string>(attachmentKey)) ?? "{}")
+    ).toMatchObject({
+      id: attachmentId,
+      status: "attached",
+    });
   });
 
   test("appends idempotently with revisions and stable cursor pagination", async () => {
@@ -369,6 +562,68 @@ describe("AI conversation store", () => {
     });
     expect(older.messages.map((entry) => entry.id)).toEqual(["u1"]);
     expect(older.page.hasMore).toBe(false);
+  });
+
+  test("authorizes a new turn before committing it", async () => {
+    const redis = new MemoryConversationRedis();
+    const initial = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+    let authorizationCalls = 0;
+    const deniedTurn = {
+      redis,
+      username: "alice",
+      channel: "chat" as const,
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 0,
+      operationId: "request-denied",
+      turnId: "turn-denied",
+      action: {
+        kind: "user-message" as const,
+        message: message("u-denied", "user", "do not persist"),
+      },
+    };
+
+    await expect(
+      beginAIConversationTurnWithStatus({
+        ...deniedTurn,
+        beforeCommit: async () => {
+          authorizationCalls += 1;
+          throw new Error("quota denied");
+        },
+      })
+    ).rejects.toThrow("quota denied");
+    const unchanged = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+    expect(unchanged.conversation.revision).toBe(0);
+    expect(unchanged.messages).toEqual([]);
+
+    const accepted = await beginAIConversationTurnWithStatus({
+      ...deniedTurn,
+      beforeCommit: async () => {
+        authorizationCalls += 1;
+      },
+    });
+    expect(accepted.operationApplied).toBe(true);
+    expect(accepted.document.messages.map((entry) => entry.id)).toEqual([
+      "u-denied",
+    ]);
+
+    const replay = await beginAIConversationTurnWithStatus({
+      ...deniedTurn,
+      beforeCommit: async () => {
+        authorizationCalls += 1;
+      },
+    });
+    expect(replay.operationApplied).toBe(false);
+    expect(authorizationCalls).toBe(2);
   });
 
   test("rejects stale revisions and user-message id reuse", async () => {

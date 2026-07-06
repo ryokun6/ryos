@@ -1108,6 +1108,30 @@ export async function clearAllMemories(
 }
 
 /**
+ * Delete all memory data for account removal, including expiring daily notes.
+ */
+export async function deleteAllUserMemories(
+  redis: Redis,
+  username: string,
+  now = Date.now()
+): Promise<number> {
+  const index = await getMemoryIndex(redis, username);
+  const dailyDates = Array.from({ length: 34 }, (_, index) => {
+    const date = new Date(now - (index - 1) * DAY_IN_MS);
+    return date.toISOString().slice(0, 10);
+  });
+  const keys = [
+    getMemoryIndexKey(username),
+    redisKeys.memory.processingLock(username),
+    ...(index?.memories ?? []).map((entry) =>
+      getMemoryDetailKey(username, entry.key)
+    ),
+    ...dailyDates.map((date) => getDailyNoteKey(username, date)),
+  ];
+  return redis.del(...new Set(keys));
+}
+
+/**
  * Reset all daily notes' processedForMemories flag to false.
  * This allows them to be re-processed by the daily notes processor.
  * Fetches all notes in parallel, then saves modified ones in parallel.

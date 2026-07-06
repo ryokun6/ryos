@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  assertStoredObjectPath,
   createStorageUploadDescriptor,
   getStorageBackend,
 } from "../api/_utils/storage";
@@ -41,6 +42,30 @@ describe("self-host storage backend selection", () => {
     delete process.env.STORAGE_PROVIDER;
 
     expect(getStorageBackend()).toBe("s3");
+  });
+
+  test("binds private object locations to the configured bucket and path", () => {
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "us-east-1";
+    process.env.S3_ENDPOINT = "https://storage.example.com";
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+    const pathname =
+      "ai/alice/attachments/33333333-3333-4333-8333-333333333333";
+
+    expect(() =>
+      assertStoredObjectPath(`s3://bucket/${pathname}`, pathname)
+    ).not.toThrow();
+    expect(() =>
+      assertStoredObjectPath(`s3://other/${pathname}`, pathname)
+    ).toThrow("does not match its owner");
+    expect(() =>
+      assertStoredObjectPath(
+        "https://store.private.blob.vercel-storage.com/ai/bob/attachments/33333333-3333-4333-8333-333333333333",
+        pathname
+      )
+    ).toThrow("does not match its owner");
   });
 
   test("respects explicit S3 selection", () => {

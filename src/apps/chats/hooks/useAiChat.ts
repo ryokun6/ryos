@@ -390,8 +390,44 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       console.error("AI Chat Error:", err);
-      if (sharedRequestOwner) {
-        invalidateAIConversationSession("chat", sharedRequestOwner);
+      const failedOwner = sharedRequestOwner;
+      sharedRequestOwner = null;
+      if (failedOwner) {
+        invalidateAIConversationSession("chat", failedOwner);
+        void loadAIConversation({
+          channel: "chat",
+          username: failedOwner,
+          localMessages: [],
+          force: true,
+          importLocalIfEmpty: false,
+        })
+          .then((loaded) => {
+            const currentAuth = useChatsStore.getState();
+            const currentOwner =
+              currentAuth.username && currentAuth.isAuthenticated
+                ? currentAuth.username.toLowerCase()
+                : null;
+            const shared = getSharedAiChat();
+            if (
+              loaded.stale ||
+              currentOwner !== failedOwner ||
+              shared.status === "submitted" ||
+              shared.status === "streaming"
+            ) {
+              return;
+            }
+            const nextMessages =
+              loaded.messages.length > 0
+                ? loaded.messages
+                : [createInitialChatMessage()];
+            setAiMessages(nextMessages);
+            setSdkMessages(nextMessages);
+          })
+          .catch((syncError) => {
+            log.error("Failed to reconcile conversation after chat error", {
+              error: syncError,
+            });
+          });
       }
 
       // Helper function to handle authentication errors consistently
@@ -1069,13 +1105,48 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [setSdkMessages]
   );
 
-  const handleRetry = useCallback(() => {
-    const lastMessage = currentSdkMessagesRef.current.at(-1);
-    if (!lastMessage) return;
+  const handleRetry = useCallback(async () => {
+    const localLastMessage = currentSdkMessagesRef.current.at(-1);
+    if (!localLastMessage) return;
     clearError();
+    let retryMessages = currentSdkMessagesRef.current;
+    if (username && isAuthenticated) {
+      try {
+        const loaded = await loadAIConversation({
+          channel: "chat",
+          username,
+          localMessages: [],
+          force: true,
+          importLocalIfEmpty: false,
+        });
+        if (!loaded.stale) {
+          const authoritativeMessages =
+            loaded.messages.length > 0
+              ? loaded.messages
+              : [createInitialChatMessage()];
+          setAiMessages(authoritativeMessages);
+          setSdkMessages(authoritativeMessages);
+          const authoritativeLast = loaded.messages.at(-1);
+          if (
+            authoritativeLast?.role === "assistant" &&
+            (authoritativeLast.id !== localLastMessage.id ||
+              JSON.stringify(authoritativeLast.parts) !==
+                JSON.stringify(localLastMessage.parts))
+          ) {
+            return;
+          }
+          retryMessages = loaded.messages;
+        }
+      } catch (refreshError) {
+        log.error("Failed to refresh conversation before retry", refreshError);
+      }
+    }
+
+    const lastMessage = retryMessages.at(-1);
+    if (!lastMessage) return;
     const requestOptions = { body: buildChatRequestBody() };
     if (lastMessage.role === "user") {
-      void sendMessage(
+      await sendMessage(
         {
           role: "user",
           parts: lastMessage.parts,
@@ -1087,12 +1158,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       return;
     }
     if (lastMessage.role === "assistant") {
-      void regenerate({
+      await regenerate({
         messageId: lastMessage.id,
         ...requestOptions,
       });
     }
-  }, [clearError, regenerate, sendMessage]);
+  }, [
+    clearError,
+    isAuthenticated,
+    regenerate,
+    sendMessage,
+    setAiMessages,
+    setSdkMessages,
+    username,
+  ]);
 
   return {
     // AI Chat State & Actions

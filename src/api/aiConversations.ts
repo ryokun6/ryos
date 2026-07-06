@@ -86,6 +86,9 @@ function isAIConversationPart(value: unknown): value is AIConversationPart {
       (value.filename === undefined || typeof value.filename === "string")
     );
   }
+  if (value.type === "step-start") {
+    return true;
+  }
   if (
     !value.type.startsWith("tool-") ||
     typeof value.toolCallId !== "string" ||
@@ -371,7 +374,8 @@ function projectRichPart(part: AIChatMessage["parts"][number]): AIConversationPa
     part.type === "text" ||
     part.type === "file" ||
     part.type === "source-url" ||
-    part.type === "source-document"
+    part.type === "source-document" ||
+    part.type === "step-start"
   ) {
     return [part];
   }
@@ -386,17 +390,6 @@ function projectRichPart(part: AIChatMessage["parts"][number]): AIConversationPa
     return [];
   }
 
-  if (part.state === "output-available") {
-    return [
-      {
-        type: part.type,
-        toolCallId: part.toolCallId,
-        state: "output-available",
-        input: { synced: false, reason: "too_large" },
-        output: { synced: false, reason: "too_large" },
-      },
-    ];
-  }
   return [];
 }
 

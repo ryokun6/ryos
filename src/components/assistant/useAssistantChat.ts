@@ -457,6 +457,44 @@ export function useAssistantChat(): AssistantChatHandle {
       ) {
         return;
       }
+      const failedOwner = requestOwnerRef.current;
+      requestOwnerRef.current = null;
+      if (failedOwner) {
+        invalidateAIConversationSession("assistant", failedOwner);
+        void loadAIConversation({
+          channel: "assistant",
+          username: failedOwner,
+          localMessages: [],
+          force: true,
+          importLocalIfEmpty: false,
+        })
+          .then((loaded) => {
+            const currentAuth = useChatsStore.getState();
+            const currentOwner =
+              currentAuth.username && currentAuth.isAuthenticated
+                ? currentAuth.username.toLowerCase()
+                : null;
+            if (
+              loaded.stale ||
+              currentOwner !== failedOwner ||
+              chat.status === "submitted" ||
+              chat.status === "streaming"
+            ) {
+              return;
+            }
+            setMessages(loaded.messages);
+            if (loaded.messages.length > 0) {
+              useAssistantStore.getState().hydrateMessages(loaded.messages);
+            } else {
+              useAssistantStore.getState().clearMessages();
+            }
+          })
+          .catch((syncError) => {
+            log.warn("Failed to reconcile assistant conversation after error", {
+              error: syncError,
+            });
+          });
+      }
       log.debug("Assistant chat error", { message });
     },
   });

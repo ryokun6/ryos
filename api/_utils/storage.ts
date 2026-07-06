@@ -320,6 +320,38 @@ function parseS3StorageUrl(storageUrl: string): { bucket: string; key: string } 
   };
 }
 
+export function assertStoredObjectPath(
+  storageUrl: string,
+  expectedPathname: string
+): void {
+  const expected = normalizePathname(expectedPathname);
+  if (storageUrl.startsWith("s3://")) {
+    const config = getS3Config();
+    const { bucket, key } = parseS3StorageUrl(storageUrl);
+    if (!config || bucket !== config.bucket || key !== expected) {
+      throw new Error("Stored object location does not match its owner.");
+    }
+    return;
+  }
+
+  try {
+    const parsed = new URL(storageUrl);
+    const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
+    if (
+      parsed.protocol !== "https:" ||
+      (parsed.hostname !== "blob.vercel-storage.com" &&
+        !parsed.hostname.endsWith(".blob.vercel-storage.com")) ||
+      parsed.search ||
+      parsed.hash ||
+      pathname !== expected
+    ) {
+      throw new Error("Stored object location does not match its owner.");
+    }
+  } catch {
+    throw new Error("Stored object location does not match its owner.");
+  }
+}
+
 function isMissingObjectError(error: unknown): boolean {
   if (!error || typeof error !== "object") {
     return false;

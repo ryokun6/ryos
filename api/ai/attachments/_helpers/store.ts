@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { z } from "zod";
 import type { RedisLike } from "../../../_utils/redis.js";
 import {
+  assertStoredObjectPath,
   deleteStoredObject,
   deleteStoredObjectByPathname,
   downloadPrivateStoredObject,
@@ -100,6 +101,11 @@ export interface AIAttachmentClaim {
   nextValue: string;
 }
 
+export interface AIAttachmentDeletionPlan {
+  claims: AIAttachmentClaim[];
+  attachments: DeletingAIAttachment[];
+}
+
 export type AIAttachmentRedis = Pick<
   RedisLike,
   | "get"
@@ -144,20 +150,6 @@ redis.call("SET", KEYS[2], ARGV[2])
 return 1
 `;
 
-const STAGE_ATTACHMENT_DELETION_SCRIPT = `
-if redis.call("EXISTS", KEYS[1]) == 1 then
-  return -2
-end
-if redis.call("GET", KEYS[2]) ~= ARGV[1] then
-  return -3
-end
-if redis.call("GET", KEYS[3]) ~= ARGV[2] then
-  return 0
-end
-redis.call("SET", KEYS[3], ARGV[3])
-return 1
-`;
-
 const STAGE_STALE_ATTACHMENT_SCRIPT = `
 if redis.call("GET", KEYS[1]) ~= ARGV[1] then
   return 0
@@ -187,6 +179,38 @@ export function getAIAttachmentPath(
   attachmentId: string
 ): string {
   return `ai/${username.toLowerCase()}/attachments/${attachmentId}`;
+}
+
+function assertAttachmentRecordLocation({
+  username,
+  attachmentId,
+  record,
+}: {
+  username: string;
+  attachmentId: string;
+  record: AIAttachmentRecord;
+}): void {
+  if (record.id !== attachmentId) {
+    throw new Error("attachment_storage_invalid");
+  }
+  assertStoredObjectPath(
+    record.storageUrl,
+    getAIAttachmentPath(username, attachmentId)
+  );
+}
+
+function assertPendingAttachmentLocation({
+  username,
+  attachment,
+}: {
+  username: string;
+  attachment: PendingAIAttachment | DeletingPendingAIAttachment;
+}): void {
+  if (
+    attachment.pathname !== getAIAttachmentPath(username, attachment.id)
+  ) {
+    throw new Error("attachment_storage_invalid");
+  }
 }
 
 function parseStoredValue(value: unknown): unknown {
@@ -492,6 +516,15 @@ export async function getAIAttachmentRecord({
   const key = redisKeys.chat.aiAttachment(username, attachmentId);
   const parsed = parseAvailableAttachment(await redis.get(key));
   if (!parsed) return null;
+  try {
+    assertAttachmentRecordLocation({
+      username,
+      attachmentId,
+      record: parsed.record,
+    });
+  } catch {
+    return null;
+  }
   await Promise.all([
     redis.persist(key).catch(() => 0),
     redis.persist(redisKeys.chat.aiAttachmentIds(username)).catch(() => 0),
@@ -568,6 +601,15 @@ export async function prepareAIAttachmentClaims({
     const expectedValue = serializeStoredValue(raw);
     const available = parseAvailableAttachment(raw);
     if (!expectedValue || !available) return null;
+    try {
+      assertAttachmentRecordLocation({
+        username,
+        attachmentId,
+        record: available.record,
+      });
+    } catch {
+      return null;
+    }
     const next: AttachedAIAttachment = {
       ...available.record,
       status: "attached",
@@ -616,22 +658,19 @@ export async function validateAIAttachmentReferences({
   });
 }
 
-export async function stageUnreferencedAIAttachments({
+export async function prepareUnreferencedAIAttachmentDeletions({
   redis,
   username,
   candidateIds,
   referencedIds,
-  lockToken,
 }: {
   redis: AIAttachmentRedis;
   username: string;
   candidateIds: readonly string[];
   referencedIds: ReadonlySet<string>;
-  lockToken: string;
-}): Promise<DeletingAIAttachment[]> {
-  const staged: DeletingAIAttachment[] = [];
-  const tombstoneKey = redisKeys.chat.aiConversationTombstone(username);
-  const lockKey = redisKeys.chat.aiConversationLock(username);
+}): Promise<AIAttachmentDeletionPlan> {
+  const claims: AIAttachmentClaim[] = [];
+  const attachments: DeletingAIAttachment[] = [];
   for (const attachmentId of new Set(candidateIds)) {
     if (referencedIds.has(attachmentId)) continue;
     const key = redisKeys.chat.aiAttachment(username, attachmentId);
@@ -650,18 +689,14 @@ export async function stageUnreferencedAIAttachments({
       status: "deleting",
       deletionStartedAt: new Date().toISOString(),
     };
-    const result = await redis.eval<number>(
-      STAGE_ATTACHMENT_DELETION_SCRIPT,
-      [tombstoneKey, lockKey, key],
-      [
-        lockToken,
-        rawJson,
-        JSON.stringify(deleting),
-      ]
-    );
-    if (result === 1) staged.push(deleting);
+    claims.push({
+      key,
+      expectedValue: rawJson,
+      nextValue: JSON.stringify(deleting),
+    });
+    attachments.push(deleting);
   }
-  return staged;
+  return { claims, attachments };
 }
 
 export async function finishStagedAIAttachmentDeletions({
@@ -676,6 +711,11 @@ export async function finishStagedAIAttachmentDeletions({
   let deleted = 0;
   for (const attachment of attachments) {
     try {
+      assertAttachmentRecordLocation({
+        username,
+        attachmentId: attachment.id,
+        record: attachment,
+      });
       await deleteStoredObject(attachment.storageUrl);
       deleted += await removeAttachmentMetadata({
         redis,
@@ -704,6 +744,7 @@ async function finishPendingAttachmentDeletion({
   attachment: DeletingPendingAIAttachment;
 }): Promise<number> {
   try {
+    assertPendingAttachmentLocation({ username, attachment });
     await deleteStoredObjectByPathname(
       attachment.pathname,
       attachment.provider
@@ -846,13 +887,27 @@ export async function deleteAllAIAttachments({
     const pending = pendingAttachmentSchema.safeParse(parsed);
     const deletingPending = deletingPendingAttachmentSchema.safeParse(parsed);
     if (available) {
+      assertAttachmentRecordLocation({
+        username,
+        attachmentId,
+        record: available.record,
+      });
       await deleteStoredObject(available.record.storageUrl);
     } else if (deleting.success) {
+      assertAttachmentRecordLocation({
+        username,
+        attachmentId,
+        record: deleting.data,
+      });
       await deleteStoredObject(deleting.data.storageUrl);
     } else if (pending.success || deletingPending.success) {
       const pendingRecord = pending.success
         ? pending.data
         : deletingPending.data;
+      assertPendingAttachmentLocation({
+        username,
+        attachment: pendingRecord,
+      });
       await deleteStoredObjectByPathname(
         pendingRecord.pathname,
         pendingRecord.provider

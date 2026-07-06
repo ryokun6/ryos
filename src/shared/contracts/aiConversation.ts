@@ -2,11 +2,13 @@ import type {
   FileUIPart,
   SourceDocumentUIPart,
   SourceUrlUIPart,
+  StepStartUIPart,
   TextUIPart,
   ToolUIPart,
 } from "ai";
 
 export const AI_CONVERSATION_CHANNELS = ["chat", "assistant"] as const;
+export const AI_CONVERSATION_OPERATION_ID_MAX_LENGTH = 128;
 
 export type AIConversationChannel =
   (typeof AI_CONVERSATION_CHANNELS)[number];
@@ -23,6 +25,7 @@ export type AIConversationPart =
   | AIConversationTextPart
   | FileUIPart
   | ToolUIPart
+  | StepStartUIPart
   | SourceUrlUIPart
   | SourceDocumentUIPart;
 

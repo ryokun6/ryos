@@ -22,6 +22,13 @@ export const config = {
 
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const RATE_LIMIT_MAX = 15;
+const INCREMENT_RATE_LIMIT_SCRIPT = `
+local count = redis.call("INCR", KEYS[1])
+if count == 1 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+return count
+`;
 
 export default apiHandler(
   {
@@ -76,10 +83,11 @@ export default apiHandler(
       "user",
       username,
     ]);
-    const requestCount = await redis.incr(rateLimitKey);
-    if (requestCount === 1) {
-      await redis.expire(rateLimitKey, RATE_LIMIT_WINDOW_SECONDS);
-    }
+    const requestCount = await redis.eval<number>(
+      INCREMENT_RATE_LIMIT_SCRIPT,
+      [rateLimitKey],
+      [RATE_LIMIT_WINDOW_SECONDS]
+    );
     if (requestCount > RATE_LIMIT_MAX) {
       logger.response(429, Date.now() - startTime);
       res.status(429).json({ error: "attachment_rate_limit_exceeded" });

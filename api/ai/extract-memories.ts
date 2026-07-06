@@ -27,7 +27,10 @@ import {
   markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
 } from "../_utils/_memory.js";
-import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
+import {
+  getStoredUserRecord,
+} from "../_utils/auth/_user-record.js";
+import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -111,6 +114,7 @@ export interface ExtractMemoriesFromConversationOptions {
   timeZone?: string;
   storeLongTermMemories?: boolean;
   markTodayProcessed?: boolean;
+  accountCreatedAt: number;
   log?: LogFn;
   logError?: LogFn;
 }
@@ -120,7 +124,10 @@ export interface ExtractMemoriesFromConversationResult {
   dailyNotes: number;
   analyzed: number;
   message: string;
-  skippedReason?: "empty-messages" | "conversation-too-short";
+  skippedReason?:
+    | "empty-messages"
+    | "conversation-too-short"
+    | "account_changed";
 }
 
 export function getChatMessageTimestamp(msg: ChatMessage): number | null {
@@ -230,6 +237,7 @@ export async function extractMemoriesFromConversation({
   timeZone,
   storeLongTermMemories = true,
   markTodayProcessed = true,
+  accountCreatedAt,
   log = console.log,
   logError = console.error,
 }: ExtractMemoriesFromConversationOptions): Promise<ExtractMemoriesFromConversationResult> {
@@ -241,6 +249,25 @@ export async function extractMemoriesFromConversation({
       message: "Messages array required",
       skippedReason: "empty-messages",
     };
+  }
+
+  const accountIsCurrent = async (): Promise<boolean> => {
+    const tombstone = await redis.get(
+      redisKeys.chat.aiConversationTombstone(username)
+    );
+    if (tombstone !== null) return false;
+    const record = await getStoredUserRecord(redis, username);
+    return record?.createdAt === accountCreatedAt;
+  };
+  const accountChangedResult = (): ExtractMemoriesFromConversationResult => ({
+    extracted: 0,
+    dailyNotes: 0,
+    analyzed: 0,
+    message: "Account changed before memory extraction completed",
+    skippedReason: "account_changed",
+  });
+  if (!(await accountIsCurrent())) {
+    return accountChangedResult();
   }
 
   const userTimeZone = normalizeTimeZone(timeZone);
@@ -338,6 +365,9 @@ export async function extractMemoriesFromConversation({
       `Extract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
     temperature: 0.3,
   });
+  if (!(await accountIsCurrent())) {
+    return accountChangedResult();
+  }
 
   log("[extractMemories] Extraction complete", {
     username,
@@ -348,6 +378,9 @@ export async function extractMemoriesFromConversation({
   let dailyNotesStored = 0;
   const touchedDates = new Set<string>();
   for (const note of result.dailyNotes) {
+    if (!(await accountIsCurrent())) {
+      return accountChangedResult();
+    }
     const sourceTimestamp = resolveDailyNoteSourceTimestamp(
       conversationMessages,
       note.sourceMessageIndex
@@ -369,6 +402,9 @@ export async function extractMemoriesFromConversation({
     const toProcess = result.longTermMemories.slice(0, maxLongTerm);
 
     for (const mem of toProcess) {
+      if (!(await accountIsCurrent())) {
+        return accountChangedResult();
+      }
       const key = mem.key.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 30);
       if (!key || !/^[a-z]/.test(key)) {
         continue;
@@ -419,6 +455,9 @@ export async function extractMemoriesFromConversation({
       }
 
       const mode = targetKeyExists ? "update" : "add";
+      if (!(await accountIsCurrent())) {
+        return accountChangedResult();
+      }
       const storeResult = await upsertMemory(
         redis,
         username,
@@ -458,6 +497,9 @@ export async function extractMemoriesFromConversation({
   }
 
   if (markTodayProcessed && (dailyNotesStored > 0 || hasExistingDailyEntries)) {
+    if (!(await accountIsCurrent())) {
+      return accountChangedResult();
+    }
     const datesToMarkProcessed = getDailyNoteDatesToMarkProcessed({
       today,
       touchedDates,
@@ -499,9 +541,14 @@ export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
     const headerTimeZone = Array.isArray(headerTimeZoneRaw)
       ? headerTimeZoneRaw[0]
       : headerTimeZoneRaw;
-    const storedTimeZone = await getStoredUserTimeZone(redis, username);
+    const accountRecord = await getStoredUserRecord(redis, username);
+    if (typeof accountRecord?.createdAt !== "number") {
+      logger.response(409, Date.now() - startTime);
+      res.status(409).json({ error: "account_changed" });
+      return;
+    }
     const userTimeZone = normalizeTimeZone(
-      bodyTimeZone || headerTimeZone || storedTimeZone
+      bodyTimeZone || headerTimeZone || accountRecord.timeZone
     );
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -519,6 +566,7 @@ export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
         timeZone: userTimeZone,
         storeLongTermMemories: true,
         markTodayProcessed: true,
+        accountCreatedAt: accountRecord.createdAt,
         log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
         logError: (...args: unknown[]) => logger.error(String(args[0]), args[1]),
       });

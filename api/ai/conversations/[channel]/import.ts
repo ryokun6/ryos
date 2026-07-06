@@ -6,7 +6,10 @@ import {
   importAIConversationMessages,
 } from "../_helpers/store.js";
 import { validateAIAttachmentReferences } from "../../attachments/_helpers/store.js";
-import { isAIConversationChannel } from "../../../../src/shared/contracts/aiConversation.js";
+import {
+  AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
+  isAIConversationChannel,
+} from "../../../../src/shared/contracts/aiConversation.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -14,7 +17,10 @@ export const maxDuration = 10;
 const importConversationSchema = z.object({
   conversationId: z.string().uuid(),
   expectedRevision: z.literal(0),
-  operationId: z.string().min(1).max(160),
+  operationId: z
+    .string()
+    .min(1)
+    .max(AI_CONVERSATION_OPERATION_ID_MAX_LENGTH),
   messages: z.array(z.unknown()).min(1).max(200),
 });
 

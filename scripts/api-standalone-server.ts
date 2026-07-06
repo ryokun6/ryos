@@ -64,6 +64,7 @@ interface ParsedBody {
 }
 
 const MAX_STANDALONE_BODY_BYTES = 55 * 1024 * 1024;
+const MAX_AI_CONVERSATION_REQUEST_BYTES = 8 * 1024 * 1024;
 
 class StandaloneRequestBodyTooLargeError extends Error {
   constructor() {
@@ -500,9 +501,19 @@ function buildHeaderMap(
 function getRequestBodyLimit(pathname: string): number {
   const normalizedPathname =
     pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  return normalizedPathname === "/api/ai/attachments"
-    ? AI_ATTACHMENT_MAX_BYTES
-    : MAX_STANDALONE_BODY_BYTES;
+  if (normalizedPathname === "/api/ai/attachments") {
+    return AI_ATTACHMENT_MAX_BYTES;
+  }
+  if (
+    normalizedPathname === "/api/chat" ||
+    normalizedPathname === "/api/ai/extract-memories" ||
+    /^\/api\/ai\/conversations\/(?:chat|assistant)\/import$/.test(
+      normalizedPathname
+    )
+  ) {
+    return MAX_AI_CONVERSATION_REQUEST_BYTES;
+  }
+  return MAX_STANDALONE_BODY_BYTES;
 }
 
 async function readRequestBytes(
