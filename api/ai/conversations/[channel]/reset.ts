@@ -1,10 +1,7 @@
 import { z } from "zod";
 import { waitUntil } from "@vercel/functions";
 import { apiHandler } from "../../../_utils/api-handler.js";
-import {
-  getStoredUserRecord,
-  normalizeUserTimeZone,
-} from "../../../_utils/auth/_user-record.js";
+import { getStoredUserRecord } from "../../../_utils/auth/_user-record.js";
 import { extractMemoriesFromConversation } from "../../extract-memories.js";
 import {
   AIConversationError,
@@ -41,14 +38,14 @@ export default apiHandler(
       res.status(404).json({ error: "conversation_channel_not_found" });
       return;
     }
+    const account = await getStoredUserRecord(redis, user!.username);
+    if (typeof account?.createdAt !== "number") {
+      logger.response(409, Date.now() - startTime);
+      res.status(409).json({ error: "account_changed" });
+      return;
+    }
 
     try {
-      const accountRecord = await getStoredUserRecord(redis, user!.username);
-      if (typeof accountRecord?.createdAt !== "number") {
-        logger.response(409, Date.now() - startTime);
-        res.status(409).json({ error: "account_changed" });
-        return;
-      }
       const result = await resetAIConversation({
         redis,
         username: user!.username,
@@ -56,41 +53,31 @@ export default apiHandler(
         conversationId: body!.conversationId,
         operationId: body!.operationId,
       });
-      if (result.reset) {
-        const backgroundTasks: Promise<unknown>[] = [];
-        if (
-          result.clearedMessages.some((message) => message.role === "user")
-        ) {
-          backgroundTasks.push(
-            extractMemoriesFromConversation({
-              redis,
-              username: user!.username,
-              messages: result.clearedMessages.map((message) => ({
-                role: message.role,
-                parts: message.parts,
-                metadata: { createdAt: message.createdAt },
-              })),
-              timeZone:
-                normalizeUserTimeZone(accountRecord.timeZone) ?? undefined,
-              accountCreatedAt: accountRecord.createdAt,
-              storeLongTermMemories: true,
-              markTodayProcessed: true,
-              log: (...args: unknown[]) =>
-                logger.info(String(args[0]), args[1]),
-              logError: (...args: unknown[]) =>
-                logger.error(String(args[0]), args[1]),
-            })
-              .catch((error) => {
-                logger.error(
-                  "Cleared conversation memory extraction failed",
-                  error
-                );
-              })
-          );
-        }
-        if (backgroundTasks.length > 0) {
-          waitUntil(Promise.all(backgroundTasks));
-        }
+      if (
+        result.reset &&
+        result.clearedMessages.some((message) => message.role === "user")
+      ) {
+        const extraction = extractMemoriesFromConversation({
+          redis,
+          username: user!.username,
+          messages: result.clearedMessages.map((message) => ({
+            role: message.role,
+            parts: message.parts,
+            metadata: { createdAt: message.createdAt },
+          })),
+          timeZone: account.timeZone,
+          storeLongTermMemories: true,
+          markTodayProcessed: true,
+          accountCreatedAt: account.createdAt,
+          log: (...args: unknown[]) =>
+            logger.info(String(args[0]), args[1]),
+          logError: (...args: unknown[]) =>
+            logger.error(String(args[0]), args[1]),
+        })
+          .catch((error) => {
+            logger.error("Cleared conversation memory extraction failed", error);
+          });
+        waitUntil(extraction);
       }
       logger.response(200, Date.now() - startTime);
       res.status(200).json({

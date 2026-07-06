@@ -1107,28 +1107,25 @@ export async function clearAllMemories(
   return { deletedCount: count };
 }
 
-/**
- * Delete all memory data for account removal, including expiring daily notes.
- */
 export async function deleteAllUserMemories(
   redis: Redis,
   username: string,
   now = Date.now()
 ): Promise<number> {
   const index = await getMemoryIndex(redis, username);
-  const dailyDates = Array.from({ length: 34 }, (_, index) => {
-    const date = new Date(now - (index - 1) * DAY_IN_MS);
-    return date.toISOString().slice(0, 10);
-  });
-  const keys = [
-    getMemoryIndexKey(username),
-    redisKeys.memory.processingLock(username),
-    ...(index?.memories ?? []).map((entry) =>
-      getMemoryDetailKey(username, entry.key)
-    ),
-    ...dailyDates.map((date) => getDailyNoteKey(username, date)),
-  ];
-  return redis.del(...new Set(keys));
+  const dailyDates = Array.from({ length: 34 }, (_, index) =>
+    new Date(now - (index - 1) * DAY_IN_MS).toISOString().slice(0, 10)
+  );
+  return redis.del(
+    ...new Set([
+      getMemoryIndexKey(username),
+      redisKeys.memory.processingLock(username),
+      ...(index?.memories ?? []).map((entry) =>
+        getMemoryDetailKey(username, entry.key)
+      ),
+      ...dailyDates.map((date) => getDailyNoteKey(username, date)),
+    ])
+  );
 }
 
 /**

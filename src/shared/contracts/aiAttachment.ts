@@ -1,65 +1,67 @@
 export const AI_ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024;
-export const AI_ATTACHMENT_MAX_COUNT_PER_USER = 128;
-export const AI_ATTACHMENT_MAX_TOTAL_BYTES_PER_USER = 256 * 1024 * 1024;
-export const AI_ATTACHMENT_UNATTACHED_GRACE_MS = 60 * 60 * 1000;
-export const AI_ATTACHMENT_MEDIA_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const;
 
-export type AIAttachmentMediaType =
-  (typeof AI_ATTACHMENT_MEDIA_TYPES)[number];
+export const AI_ATTACHMENT_MEDIA_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+} as const;
 
-const ATTACHMENT_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const ATTACHMENT_PATH_PREFIX = "/api/ai/attachments/";
+export type AIAttachmentMediaType = keyof typeof AI_ATTACHMENT_MEDIA_TYPES;
+
+const ATTACHMENT_PATTERN =
+  /^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.(jpg|png|webp)$/i;
+const ATTACHMENT_URL_PREFIX = "/api/ai/attachments/";
 
 export function isAIAttachmentMediaType(
   value: unknown
 ): value is AIAttachmentMediaType {
-  return (
-    typeof value === "string" &&
-    AI_ATTACHMENT_MEDIA_TYPES.some((mediaType) => mediaType === value)
-  );
+  return typeof value === "string" && value in AI_ATTACHMENT_MEDIA_TYPES;
 }
 
-export function isAIAttachmentId(value: unknown): value is string {
-  return typeof value === "string" && ATTACHMENT_ID_PATTERN.test(value);
+export function createAIAttachmentName(
+  id: string,
+  mediaType: AIAttachmentMediaType
+): string {
+  return `${id}.${AI_ATTACHMENT_MEDIA_TYPES[mediaType]}`;
 }
 
-export function getAIAttachmentUrl(attachmentId: string): string {
-  return `${ATTACHMENT_PATH_PREFIX}${attachmentId}`;
+export function parseAIAttachmentName(value: unknown): {
+  name: string;
+  mediaType: AIAttachmentMediaType;
+} | null {
+  if (typeof value !== "string") return null;
+  const match = ATTACHMENT_PATTERN.exec(value);
+  if (!match) return null;
+  const extension = match[2]?.toLowerCase();
+  const mediaType =
+    extension === "jpg"
+      ? "image/jpeg"
+      : extension === "png"
+        ? "image/png"
+        : "image/webp";
+  return { name: value.toLowerCase(), mediaType };
 }
 
-export function getAIAttachmentIdFromUrl(value: unknown): string | null {
+export function getAIAttachmentUrl(name: string): string {
+  return `${ATTACHMENT_URL_PREFIX}${name}`;
+}
+
+export function parseAIAttachmentUrl(value: unknown): {
+  name: string;
+  mediaType: AIAttachmentMediaType;
+} | null {
   if (typeof value !== "string" || value.length > 2_048) return null;
-
   try {
-    const parsed = new URL(value, "https://ryos.invalid");
-    if (!parsed.pathname.startsWith(ATTACHMENT_PATH_PREFIX)) return null;
-    const attachmentId = parsed.pathname.slice(ATTACHMENT_PATH_PREFIX.length);
+    const url = new URL(value, "https://ryos.invalid");
     if (
-      attachmentId.includes("/") ||
-      parsed.search ||
-      parsed.hash ||
-      !isAIAttachmentId(attachmentId)
+      !url.pathname.startsWith(ATTACHMENT_URL_PREFIX) ||
+      url.search ||
+      url.hash
     ) {
       return null;
     }
-    return attachmentId.toLowerCase();
+    return parseAIAttachmentName(url.pathname.slice(ATTACHMENT_URL_PREFIX.length));
   } catch {
     return null;
   }
-}
-
-export interface AIAttachmentRecord {
-  version: 1;
-  id: string;
-  storageUrl: string;
-  mediaType: AIAttachmentMediaType;
-  size: number;
-  sha256: string;
-  filename?: string;
-  createdAt: string;
 }

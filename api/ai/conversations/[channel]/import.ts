@@ -5,7 +5,6 @@ import {
   getAIConversationSummary,
   importAIConversationMessages,
 } from "../_helpers/store.js";
-import { validateAIAttachmentReferences } from "../../attachments/_helpers/store.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
@@ -40,26 +39,6 @@ export default apiHandler(
     }
 
     try {
-      if (
-        !(await validateAIAttachmentReferences({
-          redis,
-          username: user!.username,
-          messages: body!.messages.filter(
-            (
-              message
-            ): message is {
-              parts?: readonly { type?: unknown; url?: unknown }[];
-            } =>
-              typeof message === "object" &&
-              message !== null &&
-              !Array.isArray(message)
-          ),
-        }))
-      ) {
-        logger.response(422, Date.now() - startTime);
-        res.status(422).json({ error: "attachment_not_found" });
-        return;
-      }
       const document = await importAIConversationMessages({
         redis,
         username: user!.username,

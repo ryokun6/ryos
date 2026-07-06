@@ -1,65 +1,50 @@
 import { z } from "zod";
-import type { ToolUIPart, UIMessage } from "ai";
 import type { RedisLike } from "../../../_utils/redis.js";
 import { redisKeys } from "../../../../src/shared/redisKeys.js";
 import {
-  AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   type AIConversation,
   type AIConversationChannel,
   type AIConversationMessage,
   type AIConversationPart,
   type AIConversationPage,
+  AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
 } from "../../../../src/shared/contracts/aiConversation.js";
-import { ASSISTANT_SUMMON_MESSAGE } from "../../../../src/shared/assistantGreeting.js";
 import {
-  canonicalizeAIAttachmentUrl,
-  cleanupStaleAIAttachments,
-  collectAIAttachmentIds,
-  finishStagedAIAttachmentDeletions,
-  prepareAIAttachmentClaims,
-  type AIAttachmentClaim,
-  type AIAttachmentDeletionPlan,
-  type DeletingAIAttachment,
-  prepareUnreferencedAIAttachmentDeletions,
-} from "../../attachments/_helpers/store.js";
+  getAIAttachmentUrl,
+  parseAIAttachmentUrl,
+} from "../../../../src/shared/contracts/aiAttachment.js";
+import { ASSISTANT_SUMMON_MESSAGE } from "../../../../src/shared/assistantGreeting.js";
 
 const CONVERSATION_TTL_SECONDS = 365 * 24 * 60 * 60;
 const LOCK_TTL_SECONDS = 60;
-const LOCK_REFRESH_MS = 20_000;
 const LOCK_ATTEMPTS = 40;
 const LOCK_RETRY_MS = 25;
 const MAX_MESSAGES = 200;
 const MAX_CONVERSATION_BYTES = 4 * 1024 * 1024;
-const MAX_MESSAGE_TEXT_LENGTH = 128_000;
 const MAX_MESSAGE_BYTES = 768 * 1024;
+const MAX_MESSAGE_TEXT_LENGTH = 128_000;
 const MAX_PARTS_PER_MESSAGE = 48;
-const MAX_TOOL_NAME_LENGTH = 96;
-const MAX_TOOL_CALL_ID_LENGTH = 200;
-const MAX_TOOL_INPUT_BYTES = 16 * 1024;
-const MAX_LARGE_TOOL_INPUT_BYTES = 512 * 1024;
-const MAX_TOOL_OUTPUT_BYTES = 64 * 1024;
-const MAX_LARGE_TOOL_OUTPUT_BYTES = 512 * 1024;
-const MAX_TOOL_ERROR_LENGTH = 2_000;
-const MAX_URL_LENGTH = 2_048;
-const MAX_TITLE_LENGTH = 512;
 const MAX_RECENT_OPERATIONS = 48;
 const MAX_MESSAGE_ID_LENGTH = 160;
 const PENDING_TURN_TTL_MS = 2 * 60 * 1000;
 
-const storedMessageV1Schema = z.object({
+const storedPartSchema = z.custom<AIConversationPart>(
+  (value) =>
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof Reflect.get(value, "type") === "string"
+);
+
+const storedMessageSchema = z.object({
   id: z.string().min(1).max(MAX_MESSAGE_ID_LENGTH),
   seq: z.number().int().positive(),
   role: z.enum(["user", "assistant"]),
-  parts: z.array(
-    z.object({
-      type: z.literal("text"),
-      text: z.string(),
-    })
-  ),
+  parts: z.array(storedPartSchema),
   createdAt: z.string(),
 });
 
-const storedConversationV1Schema = z.object({
+const storedConversationSchema = z.object({
   version: z.literal(1),
   id: z.string().uuid(),
   channel: z.enum(["chat", "assistant"]),
@@ -69,162 +54,17 @@ const storedConversationV1Schema = z.object({
   updatedAt: z.string(),
   historyTruncated: z.boolean(),
   legacyImportAllowed: z.boolean(),
-  messages: z.array(storedMessageV1Schema),
+  messages: z.array(storedMessageSchema),
   recentOperationIds: z.array(z.string()),
   lastResetOperationId: z.string().nullable(),
   pendingTurnId: z.string().nullable(),
   pendingTurnStartedAt: z.number().int().nonnegative().nullable(),
 });
 
-const toolPartTypeSchema = z.custom<`tool-${string}`>(
-  (value) =>
-    typeof value === "string" &&
-    value.startsWith("tool-") &&
-    value.length > 5 &&
-    value.length <= MAX_TOOL_NAME_LENGTH + 5 &&
-    /^tool-[A-Za-z0-9_-]+$/.test(value)
-);
-
-const storedToolPartBaseSchema = z.object({
-  type: toolPartTypeSchema,
-  toolCallId: z.string().min(1).max(MAX_TOOL_CALL_ID_LENGTH),
-  title: z.string().min(1).max(MAX_TITLE_LENGTH).optional(),
-  providerExecuted: z.boolean().optional(),
-});
-
-const storedApprovalRequestSchema = z.object({
-  id: z.string().min(1).max(MAX_TOOL_CALL_ID_LENGTH),
-});
-
-const storedApprovalResponseSchema = z.object({
-  id: z.string().min(1).max(MAX_TOOL_CALL_ID_LENGTH),
-  approved: z.boolean(),
-  reason: z.string().max(MAX_TOOL_ERROR_LENGTH).optional(),
-});
-
-const storedToolPartSchema = z.discriminatedUnion("state", [
-  storedToolPartBaseSchema.extend({
-    state: z.literal("input-streaming"),
-    input: z.unknown().optional(),
-  }),
-  storedToolPartBaseSchema.extend({
-    state: z.literal("input-available"),
-    input: z.unknown(),
-  }),
-  storedToolPartBaseSchema.extend({
-    state: z.literal("approval-requested"),
-    input: z.unknown(),
-    approval: storedApprovalRequestSchema,
-  }),
-  storedToolPartBaseSchema.extend({
-    state: z.literal("approval-responded"),
-    input: z.unknown(),
-    approval: storedApprovalResponseSchema,
-  }),
-  storedToolPartBaseSchema.extend({
-    state: z.literal("output-available"),
-    input: z.unknown(),
-    output: z.unknown(),
-    preliminary: z.boolean().optional(),
-  }),
-  storedToolPartBaseSchema.extend({
-    state: z.literal("output-error"),
-    input: z.unknown().optional(),
-    errorText: z.string().max(MAX_TOOL_ERROR_LENGTH),
-  }),
-  storedToolPartBaseSchema.extend({
-    state: z.literal("output-denied"),
-    input: z.unknown(),
-    approval: storedApprovalResponseSchema.extend({
-      approved: z.literal(false),
-    }),
-  }),
-]);
-
-const storedPartSchema = z.union([
-  z.object({
-    type: z.literal("text"),
-    text: z.string(),
-    state: z.enum(["streaming", "done"]).optional(),
-  }),
-  z.object({
-    type: z.literal("file"),
-    mediaType: z.string().min(1).max(128),
-    filename: z.string().min(1).max(160).optional(),
-    url: z.string().min(1).max(MAX_URL_LENGTH),
-  }),
-  storedToolPartSchema,
-  z.object({
-    type: z.literal("source-url"),
-    sourceId: z.string().min(1).max(MAX_TOOL_CALL_ID_LENGTH),
-    url: z.string().url().max(MAX_URL_LENGTH),
-    title: z.string().max(MAX_TITLE_LENGTH).optional(),
-  }),
-  z.object({
-    type: z.literal("source-document"),
-    sourceId: z.string().min(1).max(MAX_TOOL_CALL_ID_LENGTH),
-    mediaType: z.string().min(1).max(128),
-    title: z.string().min(1).max(MAX_TITLE_LENGTH),
-    filename: z.string().min(1).max(160).optional(),
-  }),
-  z.object({
-    type: z.literal("step-start"),
-  }),
-]);
-
-const storedMessageV2Schema = z.object({
-  id: z.string().min(1).max(MAX_MESSAGE_ID_LENGTH),
-  seq: z.number().int().positive(),
-  role: z.enum(["user", "assistant"]),
-  parts: z.array(storedPartSchema).min(1).max(MAX_PARTS_PER_MESSAGE),
-  createdAt: z.string(),
-});
-
-const storedConversationV2Schema = z.object({
-  version: z.literal(2),
-  id: z.string().uuid(),
-  channel: z.enum(["chat", "assistant"]),
-  revision: z.number().int().nonnegative(),
-  nextSeq: z.number().int().positive(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  historyTruncated: z.boolean(),
-  legacyImportAllowed: z.boolean(),
-  messages: z.array(storedMessageV2Schema),
-  recentOperationIds: z.array(z.string()),
-  lastResetOperationId: z.string().nullable(),
-  pendingTurnId: z.string().nullable(),
-  pendingTurnStartedAt: z.number().int().nonnegative().nullable(),
-});
-
-interface StoredConversation {
-  version: 2;
-  id: string;
-  channel: AIConversationChannel;
-  revision: number;
-  nextSeq: number;
-  createdAt: string;
-  updatedAt: string;
-  historyTruncated: boolean;
-  legacyImportAllowed: boolean;
-  messages: AIConversationMessage[];
-  recentOperationIds: string[];
-  lastResetOperationId: string | null;
-  pendingTurnId: string | null;
-  pendingTurnStartedAt: number | null;
-}
+type StoredConversation = z.infer<typeof storedConversationSchema>;
 export type AIConversationRedis = Pick<
   RedisLike,
-  | "get"
-  | "set"
-  | "del"
-  | "exists"
-  | "expire"
-  | "persist"
-  | "eval"
-  | "sadd"
-  | "srem"
-  | "smembers"
+  "get" | "set" | "del" | "expire" | "eval"
 >;
 
 export type AIConversationErrorCode =
@@ -232,9 +72,8 @@ export type AIConversationErrorCode =
   | "conversation_changed"
   | "revision_conflict"
   | "message_id_conflict"
-  | "message_too_large"
-  | "attachment_not_found"
   | "conversation_not_empty"
+  | "message_too_large"
   | "invalid_cursor"
   | "conversation_corrupt"
   | "account_deleted";
@@ -259,20 +98,10 @@ interface WriteAIConversationMessagesInput {
   expectedConversationId?: string;
   expectedRevision?: number;
   requireEmpty?: boolean;
-  assistantContinuationId?: string;
   turn?: {
     id: string;
     action: "begin" | "complete";
   };
-  regeneration?: {
-    targetMessageId?: string;
-  };
-  beforeCommit?: () => Promise<void>;
-}
-
-export interface AIConversationWriteResult {
-  document: StoredConversation;
-  operationApplied: boolean;
 }
 
 interface ConversationWriteContext {
@@ -286,11 +115,10 @@ interface ConversationWriteContext {
 
 export interface BeginAIConversationTurnInput extends ConversationWriteContext {
   turnId: string;
-  beforeCommit?: () => Promise<void>;
   action:
     | { kind: "user-message"; message: unknown }
     | { kind: "assistant-continuation"; message: unknown }
-    | { kind: "regenerate"; targetMessageId?: string };
+    | { kind: "regenerate" };
 }
 
 export interface CompleteAIConversationTurnInput
@@ -357,38 +185,10 @@ function getMessageTimestamp(message: Record<string, unknown>): string {
   );
 }
 
-function normalizeText(text: string, maxLength = MAX_MESSAGE_TEXT_LENGTH): string {
+function normalizeText(text: string): string {
   return text
     .replaceAll("\0", "")
-    .replace(/\r\n?/g, "\n")
-    .slice(0, maxLength)
-    .trim();
-}
-
-function normalizeMessageText(text: string): string {
-  return text.replaceAll("\0", "").replace(/\r\n?/g, "\n");
-}
-
-function countCharacters(value: string): number {
-  let count = 0;
-  for (const _character of value) count += 1;
-  return count;
-}
-
-function getToolName(type: `tool-${string}`): string {
-  return type.slice(5);
-}
-
-function isToolConversationPart(
-  part: AIConversationPart
-): part is ToolUIPart {
-  return part.type.startsWith("tool-");
-}
-
-function getToolPartType(value: unknown): `tool-${string}` | null {
-  return toolPartTypeSchema.safeParse(value).success
-    ? (value as `tool-${string}`)
-    : null;
+    .replace(/\r\n?/g, "\n");
 }
 
 function jsonByteLength(value: unknown): number {
@@ -402,416 +202,75 @@ function jsonByteLength(value: unknown): number {
   }
 }
 
-function cloneJsonValue(value: unknown): unknown {
-  const serialized = JSON.stringify(value);
-  return serialized === undefined ? undefined : JSON.parse(serialized);
-}
+function clonePart(value: unknown): AIConversationPart | null {
+  if (!isRecord(value) || typeof value.type !== "string") return null;
+  const type = value.type;
+  const allowed =
+    type === "text" ||
+    type === "reasoning" ||
+    type === "file" ||
+    type === "source-url" ||
+    type === "source-document" ||
+    type === "step-start" ||
+    type === "dynamic-tool" ||
+    type.startsWith("tool-") ||
+    type.startsWith("data-");
+  if (!allowed) return null;
 
-function omitObjectFields(
-  value: unknown,
-  fields: ReadonlySet<string>
-): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => omitObjectFields(item, fields));
-  }
-  if (!isRecord(value)) return value;
-  return Object.fromEntries(
-    Object.entries(value).flatMap(([key, child]) =>
-      fields.has(key)
-        ? []
-        : [[key, omitObjectFields(child, fields)] as const]
-    )
-  );
-}
-
-function omittedToolPayload(reason: "private" | "too_large", byteLength: number) {
-  return {
-    synced: false,
-    reason,
-    byteLength: Number.isFinite(byteLength) ? byteLength : null,
-  };
-}
-
-const INVALID_TOOL_INPUT = Symbol("invalid-tool-input");
-
-function sanitizeToolInput({
-  toolName,
-  value,
-}: {
-  toolName: string;
-  value: unknown;
-}): unknown | typeof INVALID_TOOL_INPUT {
-  let normalized: unknown;
+  let cloned: unknown;
   try {
-    normalized = cloneJsonValue(value);
+    cloned = JSON.parse(JSON.stringify(value));
   } catch {
-    return INVALID_TOOL_INPUT;
-  }
-
-  const maxBytes =
-    toolName === "generateHtml" ||
-    toolName === "write" ||
-    toolName === "edit"
-      ? MAX_LARGE_TOOL_INPUT_BYTES
-      : MAX_TOOL_INPUT_BYTES;
-  return jsonByteLength(normalized) <= maxBytes
-    ? normalized
-    : INVALID_TOOL_INPUT;
-}
-
-function sanitizeToolOutput({
-  toolName,
-  value,
-}: {
-  toolName: string;
-  value: unknown;
-}): unknown {
-  const originalByteLength = jsonByteLength(value);
-  if (toolName === "memoryRead" || toolName === "read") {
-    return omittedToolPayload("private", originalByteLength);
-  }
-
-  let normalized: unknown;
-  try {
-    normalized = cloneJsonValue(value);
-  } catch {
-    return omittedToolPayload("too_large", originalByteLength);
-  }
-
-  if (toolName === "webFetch") {
-    normalized = omitObjectFields(normalized, new Set(["content"]));
-  }
-  if (toolName === "infiniteMacControl") {
-    normalized = omitObjectFields(normalized, new Set(["screenImageDataUrl"]));
-  }
-
-  const maxBytes =
-    toolName === "generateHtml"
-      ? MAX_LARGE_TOOL_OUTPUT_BYTES
-      : MAX_TOOL_OUTPUT_BYTES;
-  const normalizedByteLength = jsonByteLength(normalized);
-  return normalizedByteLength <= maxBytes
-    ? normalized
-    : omittedToolPayload("too_large", originalByteLength);
-}
-
-function sanitizeToolBase(part: Record<string, unknown>) {
-  const type = getToolPartType(part.type);
-  const toolCallId = getString(part.toolCallId)?.trim();
-  if (
-    !type ||
-    !toolCallId ||
-    toolCallId.length > MAX_TOOL_CALL_ID_LENGTH
-  ) {
     return null;
   }
-  const title =
-    typeof part.title === "string"
-      ? normalizeText(part.title, MAX_TITLE_LENGTH)
-      : "";
-  return {
-    type,
-    toolCallId,
-    ...(title ? { title } : {}),
-    ...(typeof part.providerExecuted === "boolean"
-      ? { providerExecuted: part.providerExecuted }
-      : {}),
-  };
-}
+  const parsed = storedPartSchema.safeParse(cloned);
+  if (!parsed.success) return null;
 
-function sanitizeApproval(
-  value: unknown,
-  mode: "requested" | "responded"
-):
-  | { id: string }
-  | { id: string; approved: boolean; reason?: string }
-  | null {
-  if (!isRecord(value)) return null;
-  const id = getString(value.id)?.trim();
-  if (!id || id.length > MAX_TOOL_CALL_ID_LENGTH) return null;
-  if (mode === "requested") return { id };
-  if (typeof value.approved !== "boolean") return null;
-  const reason =
-    typeof value.reason === "string"
-      ? normalizeText(value.reason, MAX_TOOL_ERROR_LENGTH)
-      : "";
-  return {
-    id,
-    approved: value.approved,
-    ...(reason ? { reason } : {}),
-  };
-}
-
-function sanitizeToolPart(
-  part: Record<string, unknown>
-): AIConversationPart | null {
-  const base = sanitizeToolBase(part);
-  if (!base || typeof part.state !== "string") return null;
-  const toolName = getToolName(base.type);
-  const input =
-    part.input === undefined
-      ? undefined
-      : sanitizeToolInput({ toolName, value: part.input });
-  if (input === INVALID_TOOL_INPUT) return null;
-
-  switch (part.state) {
-    case "input-streaming":
-      return {
-        ...base,
-        state: "input-streaming",
-        ...(part.input === undefined ? {} : { input }),
-      };
-    case "input-available":
-      if (!("input" in part)) return null;
-      return { ...base, state: "input-available", input };
-    case "approval-requested": {
-      if (!("input" in part)) return null;
-      const approval = sanitizeApproval(part.approval, "requested");
-      return approval
-        ? { ...base, state: "approval-requested", input, approval }
-        : null;
-    }
-    case "approval-responded": {
-      if (!("input" in part)) return null;
-      const approval = sanitizeApproval(part.approval, "responded");
-      return approval
-        ? { ...base, state: "approval-responded", input, approval }
-        : null;
-    }
-    case "output-available":
-      if (!("input" in part)) return null;
-      return {
-        ...base,
-        state: "output-available",
-        input,
-        output: sanitizeToolOutput({
-          toolName,
-          value: part.output,
-        }),
-        ...(typeof part.preliminary === "boolean"
-          ? { preliminary: part.preliminary }
-          : {}),
-      };
-    case "output-error": {
-      const errorText =
-        typeof part.errorText === "string"
-          ? normalizeText(part.errorText, MAX_TOOL_ERROR_LENGTH)
-          : "";
-      if (!errorText) return null;
-      return {
-        ...base,
-        state: "output-error",
-        ...(part.input === undefined ? {} : { input }),
-        errorText,
-      };
-    }
-    case "output-denied": {
-      if (!("input" in part)) return null;
-      const approval = sanitizeApproval(part.approval, "responded");
-      if (!approval || approval.approved !== false) return null;
-      return { ...base, state: "output-denied", input, approval };
-    }
-    default:
-      return null;
-  }
-}
-
-function sanitizeFilePart(
-  part: Record<string, unknown>,
-  role: "user" | "assistant"
-): AIConversationPart | null {
-  if (
-    typeof part.mediaType !== "string" ||
-    !part.mediaType.startsWith("image/") ||
-    part.mediaType.length > 128
-  ) {
-    return null;
-  }
-  const ownedUrl = canonicalizeAIAttachmentUrl(part.url);
-  let url = ownedUrl;
-  if (!url && role === "assistant" && typeof part.url === "string") {
-    try {
-      const parsed = new URL(part.url);
-      if (parsed.protocol === "https:" && part.url.length <= MAX_URL_LENGTH) {
-        url = part.url;
-      }
-    } catch {
-      url = null;
-    }
-  }
-  if (!url) return null;
-  const filename =
-    typeof part.filename === "string"
-      ? normalizeText(part.filename, 160)
-      : "";
-  return {
-    type: "file",
-    mediaType: part.mediaType,
-    ...(filename ? { filename } : {}),
-    url,
-  };
-}
-
-function sanitizeSourcePart(
-  part: Record<string, unknown>
-): AIConversationPart | null {
-  const sourceId = getString(part.sourceId)?.trim();
-  if (!sourceId || sourceId.length > MAX_TOOL_CALL_ID_LENGTH) return null;
-
-  if (part.type === "source-url") {
-    if (typeof part.url !== "string" || part.url.length > MAX_URL_LENGTH) {
-      return null;
-    }
-    try {
-      if (new URL(part.url).protocol !== "https:") return null;
-    } catch {
-      return null;
-    }
-    const title =
-      typeof part.title === "string"
-        ? normalizeText(part.title, MAX_TITLE_LENGTH)
-        : "";
+  if (type === "text" || type === "reasoning") {
+    if (typeof Reflect.get(parsed.data, "text") !== "string") return null;
     return {
-      type: "source-url",
-      sourceId,
-      url: part.url,
-      ...(title ? { title } : {}),
-    };
+      ...parsed.data,
+      text: normalizeText(Reflect.get(parsed.data, "text")),
+    } as AIConversationPart;
   }
 
-  if (
-    part.type !== "source-document" ||
-    typeof part.mediaType !== "string" ||
-    part.mediaType.length > 128 ||
-    typeof part.title !== "string"
-  ) {
-    return null;
+  if (type === "file") {
+    const url = Reflect.get(parsed.data, "url");
+    const mediaType = Reflect.get(parsed.data, "mediaType");
+    const attachment = parseAIAttachmentUrl(url);
+    if (!attachment || attachment.mediaType !== mediaType) return null;
+    return {
+      ...parsed.data,
+      url: getAIAttachmentUrl(attachment.name),
+    } as AIConversationPart;
   }
-  const title = normalizeText(part.title, MAX_TITLE_LENGTH);
-  if (!title) return null;
-  const filename =
-    typeof part.filename === "string"
-      ? normalizeText(part.filename, 160)
-      : "";
-  return {
-    type: "source-document",
-    sourceId,
-    mediaType: part.mediaType,
-    title,
-    ...(filename ? { filename } : {}),
-  };
-}
-
-function sanitizeMessageParts(
-  candidate: Record<string, unknown>,
-  role: "user" | "assistant"
-): AIConversationPart[] {
-  const parts: AIConversationPart[] = [];
-  let remainingTextLength = MAX_MESSAGE_TEXT_LENGTH;
-  const candidates = Array.isArray(candidate.parts)
-    ? candidate.parts
-    : typeof candidate.content === "string"
-      ? [{ type: "text", text: candidate.content }]
-      : [];
-
-  for (const rawPart of candidates.slice(0, MAX_PARTS_PER_MESSAGE)) {
-    if (!isRecord(rawPart) || typeof rawPart.type !== "string") continue;
-    if (rawPart.type === "text" && typeof rawPart.text === "string") {
-      const text = normalizeMessageText(rawPart.text);
-      if (!text.trim()) continue;
-      const characterLength = countCharacters(text);
-      if (characterLength > remainingTextLength) {
-        throw new AIConversationError(
-          "message_too_large",
-          422,
-          "Message text exceeds the conversation limit"
-        );
-      }
-      parts.push({
-        type: "text",
-        text,
-        ...(rawPart.state === "streaming" || rawPart.state === "done"
-          ? { state: rawPart.state }
-          : {}),
-      });
-      remainingTextLength -= characterLength;
-      continue;
-    }
-    if (rawPart.type === "file") {
-      const filePart = sanitizeFilePart(rawPart, role);
-      if (filePart) parts.push(filePart);
-      continue;
-    }
-    if (role !== "assistant") continue;
-    if (rawPart.type === "step-start") {
-      parts.push({ type: "step-start" });
-      continue;
-    }
-    if (rawPart.type.startsWith("tool-")) {
-      const toolPart = sanitizeToolPart(rawPart);
-      if (toolPart) parts.push(toolPart);
-      continue;
-    }
-    if (
-      rawPart.type === "source-url" ||
-      rawPart.type === "source-document"
-    ) {
-      const sourcePart = sanitizeSourcePart(rawPart);
-      if (sourcePart) parts.push(sourcePart);
-    }
-  }
-
-  while (jsonByteLength(parts) > MAX_MESSAGE_BYTES) {
-    const outputIndex = parts.findLastIndex(
-      (part) =>
-        isToolConversationPart(part) &&
-        part.state === "output-available" &&
-        (!isRecord(part.output) || part.output.synced !== false)
-    );
-    if (outputIndex >= 0) {
-      const outputPart = parts[outputIndex];
-      if (
-        outputPart &&
-        isToolConversationPart(outputPart) &&
-        outputPart.state === "output-available"
-      ) {
-        parts[outputIndex] = {
-          ...outputPart,
-          output: omittedToolPayload(
-            "too_large",
-            jsonByteLength(outputPart.output)
-          ),
-        };
-        continue;
-      }
-    }
-    const removableIndex = parts.findLastIndex(
-      (part) => part.type !== "text" && part.type !== "file"
-    );
-    if (removableIndex < 0) break;
-    parts.splice(removableIndex, 1);
-  }
-  if (jsonByteLength(parts) > MAX_MESSAGE_BYTES) {
-    throw new AIConversationError(
-      "message_too_large",
-      422,
-      "Message exceeds the serialized conversation limit"
-    );
-  }
-  return parts;
+  return parsed.data;
 }
 
 function getPartsText(parts: readonly AIConversationPart[]): string {
   return parts
-    .flatMap((part) => (part.type === "text" ? [part.text] : []))
-    .join("\n")
-    .trim();
+    .flatMap((part) =>
+      part.type === "text" && typeof part.text === "string" ? [part.text] : []
+    )
+    .join("\n");
 }
 
-function isSyntheticMessage(id: string, role: "user" | "assistant", text: string) {
+function isSyntheticMessage(
+  id: string,
+  role: "user" | "assistant",
+  text: string
+) {
   if (role === "user" && text === ASSISTANT_SUMMON_MESSAGE) return true;
   if (role !== "assistant") return false;
   return id === "1" || id.startsWith("assistant-local-greeting-");
+}
+
+function throwMessageTooLarge(): never {
+  throw new AIConversationError(
+    "message_too_large",
+    422,
+    "Conversation message exceeds its storage limit"
+  );
 }
 
 export function sanitizeAIConversationMessages(
@@ -824,9 +283,23 @@ export function sanitizeAIConversationMessages(
     if (candidate.role !== "user" && candidate.role !== "assistant") continue;
 
     const role = candidate.role;
-    const parts = sanitizeMessageParts(candidate, role);
+    const rawParts = Array.isArray(candidate.parts)
+      ? candidate.parts
+      : typeof candidate.content === "string"
+        ? [{ type: "text", text: candidate.content }]
+        : [];
+    if (
+      rawParts.length > MAX_PARTS_PER_MESSAGE ||
+      jsonByteLength(rawParts) > MAX_MESSAGE_BYTES
+    ) {
+      throwMessageTooLarge();
+    }
+    const parts = rawParts
+      .map(clonePart)
+      .filter((part): part is AIConversationPart => part !== null);
     if (parts.length === 0) continue;
     const text = getPartsText(parts);
+    if ([...text].length > MAX_MESSAGE_TEXT_LENGTH) throwMessageTooLarge();
 
     const candidateId = getString(candidate.id)?.trim();
     const id =
@@ -849,7 +322,7 @@ export function sanitizeAIConversationMessages(
 function createConversation(channel: AIConversationChannel): StoredConversation {
   const now = new Date().toISOString();
   return {
-    version: 2,
+    version: 1,
     id: crypto.randomUUID(),
     channel,
     revision: 0,
@@ -885,31 +358,15 @@ function parseStoredConversation(
     }
   }
 
-  const current = storedConversationV2Schema.safeParse(value);
-  if (current.success && current.data.channel === channel) {
-    return current.data as StoredConversation;
+  const parsed = storedConversationSchema.safeParse(value);
+  if (!parsed.success || parsed.data.channel !== channel) {
+    throw new AIConversationError(
+      "conversation_corrupt",
+      503,
+      "Stored conversation is invalid"
+    );
   }
-
-  const legacy = storedConversationV1Schema.safeParse(value);
-  if (legacy.success && legacy.data.channel === channel) {
-    return {
-      ...legacy.data,
-      version: 2,
-      messages: legacy.data.messages.map((message) => ({
-        ...message,
-        parts: message.parts.map((part) => ({
-          type: "text",
-          text: part.text,
-        })),
-      })),
-    };
-  }
-
-  throw new AIConversationError(
-    "conversation_corrupt",
-    503,
-    "Stored conversation is invalid"
-  );
+  return parsed.data;
 }
 
 function summarizeConversation(document: StoredConversation): AIConversation {
@@ -940,30 +397,12 @@ end
 return 0
 `;
 
-const REFRESH_LOCK_SCRIPT = `
-if redis.call("GET", KEYS[1]) == ARGV[1] then
-  return redis.call("EXPIRE", KEYS[1], ARGV[2])
-end
-return 0
-`;
-
 const SAVE_CONVERSATION_SCRIPT = `
 if redis.call("GET", KEYS[1]) ~= ARGV[1] then
   return -1
 end
 if redis.call("EXISTS", KEYS[2]) == 1 then
   return -2
-end
-local claimCount = tonumber(ARGV[4])
-for index = 1, claimCount do
-  local expectedIndex = 3 + index * 2
-  if redis.call("GET", KEYS[3 + index]) ~= ARGV[expectedIndex] then
-    return -3
-  end
-end
-for index = 1, claimCount do
-  local nextIndex = 4 + index * 2
-  redis.call("SET", KEYS[3 + index], ARGV[nextIndex])
 end
 redis.call("SET", KEYS[3], ARGV[2], "EX", ARGV[3])
 return 1
@@ -972,6 +411,7 @@ return 1
 async function withConversationLock<T>({
   redis,
   username,
+  channel,
   task,
 }: {
   redis: AIConversationRedis;
@@ -979,7 +419,7 @@ async function withConversationLock<T>({
   channel: AIConversationChannel;
   task: (lockToken: string) => Promise<T>;
 }): Promise<T> {
-  const key = redisKeys.chat.aiConversationLock(username);
+  const key = redisKeys.chat.aiConversationLock(username, channel);
   const token = crypto.randomUUID();
 
   for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt += 1) {
@@ -988,16 +428,6 @@ async function withConversationLock<T>({
       ex: LOCK_TTL_SECONDS,
     });
     if (claimed !== null && claimed !== undefined) {
-      const refreshTimer = setInterval(() => {
-        void redis
-          .eval<number>(
-            REFRESH_LOCK_SCRIPT,
-            [key],
-            [token, LOCK_TTL_SECONDS]
-          )
-          .catch(() => 0);
-      }, LOCK_REFRESH_MS);
-      refreshTimer.unref?.();
       try {
         const tombstone = await redis.get(
           redisKeys.chat.aiConversationTombstone(username)
@@ -1011,7 +441,6 @@ async function withConversationLock<T>({
         }
         return await task(token);
       } finally {
-        clearInterval(refreshTimer);
         await redis
           .eval<number>(RELEASE_LOCK_SCRIPT, [key], [token])
           .catch(() => 0);
@@ -1042,27 +471,16 @@ async function saveConversation(
   redis: AIConversationRedis,
   username: string,
   document: StoredConversation,
-  lockToken: string,
-  attachmentClaims: readonly AIAttachmentClaim[] = []
+  lockToken: string
 ): Promise<void> {
   const result = await redis.eval<number>(
     SAVE_CONVERSATION_SCRIPT,
     [
-      redisKeys.chat.aiConversationLock(username),
+      redisKeys.chat.aiConversationLock(username, document.channel),
       redisKeys.chat.aiConversationTombstone(username),
       redisKeys.chat.aiConversation(username, document.channel),
-      ...attachmentClaims.map((claim) => claim.key),
     ],
-    [
-      lockToken,
-      JSON.stringify(document),
-      CONVERSATION_TTL_SECONDS,
-      attachmentClaims.length,
-      ...attachmentClaims.flatMap((claim) => [
-        claim.expectedValue,
-        claim.nextValue,
-      ]),
-    ]
+    [lockToken, JSON.stringify(document), CONVERSATION_TTL_SECONDS]
   );
   if (result === -2) {
     throw new AIConversationError(
@@ -1072,13 +490,6 @@ async function saveConversation(
     );
   }
   if (result !== 1) {
-    if (result === -3) {
-      throw new AIConversationError(
-        "attachment_not_found",
-        422,
-        "Attachment changed before it could be linked"
-      );
-    }
     throw new AIConversationError(
       "conversation_busy",
       503,
@@ -1131,34 +542,24 @@ function appendOperation(
   ].slice(-MAX_RECENT_OPERATIONS);
 }
 
-function trimConversation(
-  document: StoredConversation
-): AIConversationMessage[] {
+function trimConversation(document: StoredConversation): void {
   let totalBytes = document.messages.reduce(
     (total, message) => total + jsonByteLength(message.parts),
     0
   );
-  const removed: AIConversationMessage[] = [];
+  let removed = false;
 
   while (
     document.messages.length > MAX_MESSAGES ||
     (totalBytes > MAX_CONVERSATION_BYTES && document.messages.length > 1)
   ) {
-    const removeCount =
-      document.messages[0]?.role === "user" &&
-      document.messages[1]?.role === "assistant"
-        ? 2
-        : 1;
-    const oldestTurn = document.messages.splice(0, removeCount);
-    if (oldestTurn.length === 0) break;
-    for (const message of oldestTurn) {
-      totalBytes -= jsonByteLength(message.parts);
-      removed.push(message);
-    }
+    const oldest = document.messages.shift();
+    if (!oldest) break;
+    totalBytes -= jsonByteLength(oldest.parts);
+    removed = true;
   }
 
-  if (removed.length > 0) document.historyTruncated = true;
-  return removed;
+  if (removed) document.historyTruncated = true;
 }
 
 function sameMessageContent(
@@ -1174,7 +575,7 @@ function sameMessageContent(
 function mergeConversationMessages(
   document: StoredConversation,
   messages: readonly unknown[]
-): { changed: boolean } {
+): boolean {
   const incomingMessages = sanitizeAIConversationMessages(messages);
   const byId = new Map(
     document.messages.map((message) => [message.id, message])
@@ -1210,77 +611,7 @@ function mergeConversationMessages(
 
   document.messages.sort((left, right) => left.seq - right.seq);
   trimConversation(document);
-  return { changed };
-}
-
-function getConversationAttachmentIds(
-  document: StoredConversation
-): Set<string> {
-  return new Set(collectAIAttachmentIds(document.messages));
-}
-
-function getRemovedAttachmentIds(
-  before: ReadonlySet<string>,
-  after: ReadonlySet<string>
-): string[] {
-  return [...before].filter((attachmentId) => !after.has(attachmentId));
-}
-
-async function prepareNewAttachmentClaims({
-  redis,
-  username,
-  before,
-  after,
-}: {
-  redis: AIConversationRedis;
-  username: string;
-  before: ReadonlySet<string>;
-  after: ReadonlySet<string>;
-}): Promise<AIAttachmentClaim[]> {
-  const added = [...after].filter((attachmentId) => !before.has(attachmentId));
-  if (added.length === 0) return [];
-  const claims = await prepareAIAttachmentClaims({
-    redis,
-    username,
-    attachmentIds: added,
-  });
-  if (!claims) {
-    throw new AIConversationError(
-      "attachment_not_found",
-      422,
-      "Attachment was not found"
-    );
-  }
-  return claims;
-}
-
-async function prepareRemovedAttachmentDeletions({
-  redis,
-  username,
-  document,
-  candidateIds,
-}: {
-  redis: AIConversationRedis;
-  username: string;
-  document: StoredConversation;
-  candidateIds: readonly string[];
-}): Promise<AIAttachmentDeletionPlan> {
-  if (candidateIds.length === 0) {
-    return { claims: [], attachments: [] };
-  }
-  const otherChannel: AIConversationChannel =
-    document.channel === "chat" ? "assistant" : "chat";
-  const other = await readConversation(redis, username, otherChannel);
-  const referencedIds = getConversationAttachmentIds(document);
-  for (const attachmentId of other ? getConversationAttachmentIds(other) : []) {
-    referencedIds.add(attachmentId);
-  }
-  return prepareUnreferencedAIAttachmentDeletions({
-    redis,
-    username,
-    candidateIds,
-    referencedIds,
-  });
+  return changed;
 }
 
 function assertMessageRole(
@@ -1296,118 +627,9 @@ function assertMessageRole(
   }
 }
 
-function isAllowedToolContinuation(
-  existing: ToolUIPart,
-  incoming: ToolUIPart
-): boolean {
-  if (
-    existing.type !== incoming.type ||
-    existing.toolCallId !== incoming.toolCallId ||
-    existing.title !== incoming.title ||
-    existing.providerExecuted !== incoming.providerExecuted
-  ) {
-    return false;
-  }
-  if (
-    existing.state === "input-streaming" &&
-    incoming.state === "input-available"
-  ) {
-    return true;
-  }
-  const existingInput = "input" in existing ? existing.input : undefined;
-  const incomingInput = "input" in incoming ? incoming.input : undefined;
-  if (JSON.stringify(existingInput) !== JSON.stringify(incomingInput)) {
-    return false;
-  }
-
-  if (existing.state === "input-available") {
-    return (
-      incoming.state === "output-available" ||
-      incoming.state === "output-error"
-    );
-  }
-  if (existing.state === "approval-requested") {
-    return (
-      (incoming.state === "approval-responded" ||
-        incoming.state === "output-denied") &&
-      incoming.approval.id === existing.approval.id
-    );
-  }
-  if (existing.state === "approval-responded") {
-    return (
-      existing.approval.approved &&
-      (incoming.state === "output-available" ||
-        incoming.state === "output-error")
-    );
-  }
-  return false;
-}
-
-function assertAssistantContinuation(
-  document: StoredConversation,
-  messageId: string,
-  messages: readonly unknown[]
-): void {
-  const existing = document.messages.at(-1);
-  const [incoming] = sanitizeAIConversationMessages(messages);
-  if (
-    !existing ||
-    existing.role !== "assistant" ||
-    existing.id !== messageId ||
-    incoming?.id !== messageId ||
-    incoming.role !== "assistant" ||
-    incoming.parts.length !== existing.parts.length
-  ) {
-    throw new AIConversationError(
-      "message_id_conflict",
-      409,
-      "Assistant continuation does not match the active tool call"
-    );
-  }
-
-  let transitionedTool = false;
-  for (let index = 0; index < existing.parts.length; index += 1) {
-    const existingPart = existing.parts[index];
-    const incomingPart = incoming.parts[index];
-    if (!existingPart || !incomingPart) {
-      transitionedTool = false;
-      break;
-    }
-    const existingIsTool = isToolConversationPart(existingPart);
-    const incomingIsTool = isToolConversationPart(incomingPart);
-    if (existingIsTool !== incomingIsTool) {
-      transitionedTool = false;
-      break;
-    }
-    if (!existingIsTool || !incomingIsTool) {
-      if (JSON.stringify(existingPart) !== JSON.stringify(incomingPart)) {
-        transitionedTool = false;
-        break;
-      }
-      continue;
-    }
-    if (JSON.stringify(existingPart) === JSON.stringify(incomingPart)) {
-      continue;
-    }
-    if (!isAllowedToolContinuation(existingPart, incomingPart)) {
-      transitionedTool = false;
-      break;
-    }
-    transitionedTool = true;
-  }
-
-  if (!transitionedTool) {
-    throw new AIConversationError(
-      "message_id_conflict",
-      409,
-      "Assistant continuation does not advance an active tool call"
-    );
-  }
-}
-
 async function writeAIConversationMessages(
   input: WriteAIConversationMessagesInput
-): Promise<AIConversationWriteResult> {
+): Promise<{ document: StoredConversation; operationApplied: boolean }> {
   if (
     !input.operationId.trim() ||
     input.operationId.length > AI_CONVERSATION_OPERATION_ID_MAX_LENGTH
@@ -1419,8 +641,7 @@ async function writeAIConversationMessages(
     );
   }
 
-  let stagedAttachments: DeletingAIAttachment[] = [];
-  const result = await withConversationLock({
+  return withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1466,24 +687,6 @@ async function writeAIConversationMessages(
           "Legacy import is no longer allowed"
         );
       }
-      if (input.assistantContinuationId) {
-        assertAssistantContinuation(
-          document,
-          input.assistantContinuationId,
-          input.messages
-        );
-      }
-      if (input.regeneration) {
-        validateRegenerationTarget(document, {
-          redis: input.redis,
-          username: input.username,
-          channel: input.channel,
-          operationId: input.operationId,
-          ...(input.regeneration.targetMessageId
-            ? { targetMessageId: input.regeneration.targetMessageId }
-            : {}),
-        });
-      }
 
       if (input.turn) {
         const pendingIsStale =
@@ -1501,6 +704,8 @@ async function writeAIConversationMessages(
               "Another conversation turn is still running"
             );
           }
+          document.pendingTurnId = input.turn.id;
+          document.pendingTurnStartedAt = Date.now();
         } else if (document.pendingTurnId !== input.turn.id) {
           throw new AIConversationError(
             "revision_conflict",
@@ -1509,41 +714,15 @@ async function writeAIConversationMessages(
           );
         }
       }
-      if (input.beforeCommit) {
-        sanitizeAIConversationMessages(input.messages);
-        await input.beforeCommit();
-      }
-      if (input.turn?.action === "begin") {
-        document.pendingTurnId = input.turn.id;
-        document.pendingTurnStartedAt = Date.now();
-      }
 
-      const attachmentsBefore = getConversationAttachmentIds(document);
-      const merged = mergeConversationMessages(document, input.messages);
-      const attachmentsAfter = getConversationAttachmentIds(document);
-      const attachmentClaims = await prepareNewAttachmentClaims({
-        redis: input.redis,
-        username: input.username,
-        before: attachmentsBefore,
-        after: attachmentsAfter,
-      });
-      const deletionPlan = await prepareRemovedAttachmentDeletions({
-        redis: input.redis,
-        username: input.username,
-        document,
-        candidateIds: getRemovedAttachmentIds(
-          attachmentsBefore,
-          attachmentsAfter
-        ),
-      });
-      stagedAttachments = deletionPlan.attachments;
+      const changed = mergeConversationMessages(document, input.messages);
       if (input.turn?.action === "complete") {
         document.pendingTurnId = null;
         document.pendingTurnStartedAt = null;
       }
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
-      if (merged.changed) {
+      if (changed) {
         document.revision += 1;
         document.updatedAt = new Date().toISOString();
       }
@@ -1551,18 +730,11 @@ async function writeAIConversationMessages(
         input.redis,
         input.username,
         document,
-        lockToken,
-        [...attachmentClaims, ...deletionPlan.claims]
+        lockToken
       );
       return { document, operationApplied: true };
     },
   });
-  await finishStagedAIAttachmentDeletions({
-    redis: input.redis,
-    username: input.username,
-    attachments: stagedAttachments,
-  });
-  return result;
 }
 
 export async function beginAIConversationTurn(
@@ -1573,32 +745,14 @@ export async function beginAIConversationTurn(
 
 export async function beginAIConversationTurnWithStatus(
   input: BeginAIConversationTurnInput
-): Promise<AIConversationWriteResult> {
+): Promise<{ document: StoredConversation; operationApplied: boolean }> {
   let messages: readonly unknown[] = [];
-  let assistantContinuationId: string | undefined;
-  let regeneration: { targetMessageId?: string } | undefined;
   if (input.action.kind === "user-message") {
     assertMessageRole(input.action.message, "user");
     messages = [input.action.message];
   } else if (input.action.kind === "assistant-continuation") {
     assertMessageRole(input.action.message, "assistant");
     messages = [input.action.message];
-    assistantContinuationId = isRecord(input.action.message)
-      ? getString(input.action.message.id)?.trim() || undefined
-      : undefined;
-    if (!assistantContinuationId) {
-      throw new AIConversationError(
-        "message_id_conflict",
-        422,
-        "Assistant continuation requires a message id"
-      );
-    }
-  } else {
-    regeneration = {
-      ...(input.action.targetMessageId
-        ? { targetMessageId: input.action.targetMessageId }
-        : {}),
-    };
   }
 
   return writeAIConversationMessages({
@@ -1607,9 +761,6 @@ export async function beginAIConversationTurnWithStatus(
     channel: input.channel,
     operationId: input.operationId,
     messages,
-    ...(assistantContinuationId ? { assistantContinuationId } : {}),
-    ...(regeneration ? { regeneration } : {}),
-    ...(input.beforeCommit ? { beforeCommit: input.beforeCommit } : {}),
     turn: { id: input.turnId, action: "begin" },
     ...(input.expectedConversationId
       ? { expectedConversationId: input.expectedConversationId }
@@ -1685,8 +836,7 @@ export async function resetAIConversation(
   reset: boolean;
   clearedMessages: AIConversationMessage[];
 }> {
-  let stagedAttachments: DeletingAIAttachment[] = [];
-  const result = await withConversationLock({
+  return withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1710,36 +860,19 @@ export async function resetAIConversation(
       replacement.legacyImportAllowed = false;
       replacement.lastResetOperationId = input.operationId;
       replacement.recentOperationIds = [input.operationId];
-      const removedAttachmentIds = [
-        ...getConversationAttachmentIds(current),
-      ];
       const clearedMessages = current.messages.map((message) => ({
         ...message,
         parts: message.parts.map((part) => ({ ...part })),
       }));
-      const deletionPlan = await prepareRemovedAttachmentDeletions({
-        redis: input.redis,
-        username: input.username,
-        document: replacement,
-        candidateIds: removedAttachmentIds,
-      });
-      stagedAttachments = deletionPlan.attachments;
       await saveConversation(
         input.redis,
         input.username,
         replacement,
-        lockToken,
-        deletionPlan.claims
+        lockToken
       );
       return { document: replacement, reset: true, clearedMessages };
     },
   });
-  await finishStagedAIAttachmentDeletions({
-    redis: input.redis,
-    username: input.username,
-    attachments: stagedAttachments,
-  });
-  return result;
 }
 
 export async function prepareAIConversationRegeneration(
@@ -1776,7 +909,7 @@ function validateRegenerationTarget(
   }
   const target = input.targetMessageId
     ? document.messages.find((message) => message.id === input.targetMessageId)
-    : document.messages.at(-1);
+    : document.messages.findLast((message) => message.role === "assistant");
   if (!target) {
     throw new AIConversationError(
       "message_id_conflict",
@@ -1790,8 +923,7 @@ function validateRegenerationTarget(
 export async function commitAIConversationRegeneration(
   input: CommitAIConversationRegenerationInput
 ): Promise<StoredConversation> {
-  let stagedAttachments: DeletingAIAttachment[] = [];
-  const result = await withConversationLock({
+  return withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1809,7 +941,6 @@ export async function commitAIConversationRegeneration(
           "Conversation turn is no longer active"
         );
       }
-      const attachmentsBefore = getConversationAttachmentIds(document);
       const target = validateRegenerationTarget(document, input);
       document.messages = document.messages.filter((message) =>
         target.role === "assistant"
@@ -1818,23 +949,6 @@ export async function commitAIConversationRegeneration(
       );
       assertMessageRole(input.responseMessage, "assistant");
       mergeConversationMessages(document, [input.responseMessage]);
-      const attachmentsAfter = getConversationAttachmentIds(document);
-      const attachmentClaims = await prepareNewAttachmentClaims({
-        redis: input.redis,
-        username: input.username,
-        before: attachmentsBefore,
-        after: attachmentsAfter,
-      });
-      const deletionPlan = await prepareRemovedAttachmentDeletions({
-        redis: input.redis,
-        username: input.username,
-        document,
-        candidateIds: getRemovedAttachmentIds(
-          attachmentsBefore,
-          attachmentsAfter
-        ),
-      });
-      stagedAttachments = deletionPlan.attachments;
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
       document.pendingTurnId = null;
@@ -1845,18 +959,11 @@ export async function commitAIConversationRegeneration(
         input.redis,
         input.username,
         document,
-        lockToken,
-        [...attachmentClaims, ...deletionPlan.claims]
+        lockToken
       );
       return document;
     },
   });
-  await finishStagedAIAttachmentDeletions({
-    redis: input.redis,
-    username: input.username,
-    attachments: stagedAttachments,
-  });
-  return result;
 }
 
 interface ConversationCursor {
@@ -1917,9 +1024,6 @@ export async function getAIConversationPage({
     username,
     channel,
   });
-  await cleanupStaleAIAttachments({ redis, username }).catch((error) => {
-    console.error("[ai-conversation] Failed to retry attachment cleanup", error);
-  });
   const normalizedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
   let beforeSeq = Number.POSITIVE_INFINITY;
 
@@ -1968,7 +1072,11 @@ export function getAIConversationSummary(
 
 export function getAIConversationModelMessages(
   document: StoredConversation
-): UIMessage[] {
+): Array<{
+  id: string;
+  role: "user" | "assistant";
+  parts: AIConversationPart[];
+}> {
   return document.messages.map((message) => ({
     id: message.id,
     role: message.role,
@@ -1976,27 +1084,19 @@ export function getAIConversationModelMessages(
   }));
 }
 
-export function getAIConversationActionMessage(
-  document: StoredConversation,
-  messageId: string
-): UIMessage | undefined {
-  const message = document.messages.find((candidate) => candidate.id === messageId);
-  return message
-    ? {
-        id: message.id,
-        role: message.role,
-        parts: message.parts,
-      }
-    : undefined;
-}
-
 export function getAIConversationRegenerationModelMessages(
   document: StoredConversation,
   targetMessageId?: string
-): UIMessage[] {
+): Array<{
+  id: string;
+  role: "user" | "assistant";
+  parts: AIConversationPart[];
+}> {
   const targetIndex = targetMessageId
     ? document.messages.findIndex((message) => message.id === targetMessageId)
-    : document.messages.length - 1;
+    : document.messages.findLastIndex(
+        (message) => message.role === "assistant"
+      );
   if (targetIndex < 0) return [];
   const target = document.messages[targetIndex];
   const retained =
@@ -2017,8 +1117,9 @@ export async function deleteAIConversationKeys(
   await redis.set(redisKeys.chat.aiConversationTombstone(username), "1");
   return redis.del(
     redisKeys.chat.aiConversation(username, "chat"),
+    redisKeys.chat.aiConversationLock(username, "chat"),
     redisKeys.chat.aiConversation(username, "assistant"),
-    redisKeys.chat.aiConversationLock(username)
+    redisKeys.chat.aiConversationLock(username, "assistant")
   );
 }
 

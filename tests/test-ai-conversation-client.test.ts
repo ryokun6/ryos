@@ -86,7 +86,14 @@ describe("AI conversation client", () => {
             id: "u1",
             seq: 1,
             role: "user",
-            parts: [{ type: "text", text: "hello" }],
+            parts: [
+              { type: "text", text: "hello" },
+              {
+                type: "file",
+                mediaType: "image/png",
+                url: "/api/ai/attachments/11111111-1111-4111-8111-111111111111.png",
+              },
+            ],
             createdAt: "2026-07-06T00:00:00.000Z",
           },
         ],
@@ -100,6 +107,7 @@ describe("AI conversation client", () => {
     });
     expect(loaded.owner).toBe("alice");
     expect(loaded.messages[0]?.metadata?.createdAt).toBeInstanceOf(Date);
+    expect(loaded.messages[0]?.parts[1]?.type).toBe("file");
 
     const context = await getAIConversationRequestContext({
       channel: "chat",
@@ -110,71 +118,6 @@ describe("AI conversation client", () => {
     expect(context?.revision).toBe(1);
     expect(context?.operationId).toBeString();
     expect(requestCount).toBe(1);
-  });
-
-  test("hydrates persisted image, source, and tool parts", async () => {
-    globalThis.fetch = async () =>
-      pageResponse({
-        revision: 1,
-        messages: [
-          {
-            id: "a-rich",
-            seq: 1,
-            role: "assistant",
-            parts: [
-              { type: "text", text: "Here it is" },
-              { type: "step-start" },
-              {
-                type: "tool-generateHtml",
-                toolCallId: "call-1",
-                state: "output-available",
-                input: { html: "<main>Synced</main>" },
-                output: { html: "<main>Synced</main>" },
-              },
-              {
-                type: "source-url",
-                sourceId: "source-1",
-                url: "https://example.com",
-                title: "Example",
-              },
-              {
-                type: "file",
-                mediaType: "image/png",
-                url: "/api/ai/attachments/33333333-3333-4333-8333-333333333333",
-              },
-            ],
-            createdAt: "2026-07-06T00:00:00.000Z",
-          },
-        ],
-      });
-
-    const loaded = await loadAIConversation({
-      channel: "chat",
-      username: "alice",
-      localMessages: [],
-    });
-    expect(loaded.messages[0]?.parts).toEqual([
-      { type: "text", text: "Here it is" },
-      { type: "step-start" },
-      {
-        type: "tool-generateHtml",
-        toolCallId: "call-1",
-        state: "output-available",
-        input: { html: "<main>Synced</main>" },
-        output: { html: "<main>Synced</main>" },
-      },
-      {
-        type: "source-url",
-        sourceId: "source-1",
-        url: "https://example.com",
-        title: "Example",
-      },
-      {
-        type: "file",
-        mediaType: "image/png",
-        url: "/api/ai/attachments/33333333-3333-4333-8333-333333333333",
-      },
-    ]);
   });
 
   test("imports an owned local transcript only when the server is empty", async () => {
@@ -283,48 +226,12 @@ describe("AI conversation client", () => {
     expect(context?.id).toBe(RESET_ID);
   });
 
-  test("refreshes a reset session after another device clears it", async () => {
-    let getCount = 0;
-    globalThis.fetch = async (_input, init) => {
-      if (init?.method === "POST") {
-        return Response.json(
-          { error: "conversation_changed" },
-          { status: 409 }
-        );
-      }
-      getCount += 1;
-      return getCount === 1
-        ? pageResponse({
-            revision: 1,
-            messages: [
-              {
-                id: "u1",
-                seq: 1,
-                role: "user",
-                parts: [{ type: "text", text: "hello" }],
-                createdAt: "2026-07-06T00:00:00.000Z",
-              },
-            ],
-          })
-        : pageResponse({ id: RESET_ID, canImportLegacy: false });
-    };
-
-    const reset = await resetAIConversationSession({
-      channel: "chat",
-      username: "alice",
-      localMessages: [message("u1", "user", "hello")],
-    });
-    expect(reset.id).toBe(RESET_ID);
-    expect(getCount).toBe(2);
-  });
-
-  test("projects rich message parts for legacy import", () => {
+  test("projects completed tool state with visible text", () => {
     const richMessage: AIChatMessage = {
       id: "a1",
       role: "assistant",
       parts: [
         { type: "text", text: "Visible" },
-        { type: "step-start" },
         {
           type: "tool-launchApp",
           toolCallId: "tool-1",
@@ -340,17 +247,7 @@ describe("AI conversation client", () => {
       {
         id: "a1",
         role: "assistant",
-        parts: [
-          { type: "text", text: "Visible" },
-          { type: "step-start" },
-          {
-            type: "tool-launchApp",
-            toolCallId: "tool-1",
-            state: "output-available",
-            input: { id: "finder" },
-            output: { veryLarge: "payload" },
-          },
-        ],
+        parts: richMessage.parts,
         metadata: { createdAt: "2026-07-06T00:00:00.000Z" },
       },
     ]);

@@ -36,6 +36,7 @@ import {
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
 import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
+import { isAssistantGreetingRequest } from "../src/shared/assistantGreeting.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   type AIConversationRequestContext,
@@ -45,16 +46,13 @@ import {
   beginAIConversationTurnWithStatus,
   commitAIConversationRegeneration,
   completeAIConversationTurn,
-  getAIConversationActionMessage,
   getAIConversationModelMessages,
   getAIConversationRegenerationModelMessages,
+  prepareAIConversationRegeneration,
   releaseAIConversationTurn,
   type BeginAIConversationTurnInput,
 } from "./ai/conversations/_helpers/store.js";
-import {
-  resolveAIAttachmentsForModel,
-  validateAIAttachmentReferences,
-} from "./ai/attachments/_helpers/store.js";
+import { resolveAIAttachmentsForModel } from "./ai/attachments/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
 
 const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
@@ -68,17 +66,6 @@ function normalizeChatModel(model: string): string {
 type ConversationContextParseResult =
   | { ok: true; value: AIConversationRequestContext | null }
   | { ok: false };
-
-type AIGenerationRateLimitResult = Awaited<
-  ReturnType<typeof checkAndIncrementAIMessageCount>
->;
-
-class AIGenerationRateLimitError extends Error {
-  constructor(readonly result: AIGenerationRateLimitResult) {
-    super("AI generation rate limit exceeded");
-    this.name = "AIGenerationRateLimitError";
-  }
-}
 
 function parseConversationContext(
   value: unknown
@@ -272,11 +259,6 @@ export default apiHandler<{
       res.status(401).json({ error: "conversation_auth_required" });
       return;
     }
-    if (isProactiveGreeting && (!isAuthenticated || !username)) {
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "proactive_greeting_auth_required" });
-      return;
-    }
 
     const rawMessages = Array.isArray(messages) ? messages : null;
     let clientConversationMessages: UIMessage[] = [];
@@ -309,45 +291,47 @@ export default apiHandler<{
     const requestMessages = clientActionMessage
       ? [clientActionMessage]
       : clientConversationMessages;
-    const conversationOperationId =
-      parsedConversationContext.value?.operationId ?? crypto.randomUUID();
 
-    // Authenticated tool continuations are already covered by the user turn.
-    // Every other model invocation consumes quota.
+    // Only check rate limits for user messages (not system messages).
+    // Automatic desktop-assistant greetings are exempt so opening the bubble
+    // does not burn the anonymous daily AI budget.
+    const isAssistantGreeting =
+      conversationChannel === "assistant" &&
+      isAssistantGreetingRequest(
+        requestMessages,
+        { persona: "assistant" }
+      );
     const isNewUserTurn =
       normalizedTrigger === "submit-message" &&
       requestMessages.at(-1)?.role === "user";
-    const isBillableGeneration =
-      Boolean(isProactiveGreeting) ||
-      !isAuthenticated ||
-      isNewUserTurn ||
-      normalizedTrigger === "regenerate-message";
-    const consumeGenerationQuota = async (): Promise<void> => {
-      if (!isBillableGeneration) return;
-      const result = await checkAndIncrementAIMessageCount(
+    if (isNewUserTurn && !isAssistantGreeting) {
+      const rateLimitResult = await checkAndIncrementAIMessageCount(
         identifier,
         isAuthenticated,
         authToken
       );
-      if (!result.allowed) {
-        throw new AIGenerationRateLimitError(result);
+
+      if (!rateLimitResult.allowed) {
+        log(
+          `Rate limit exceeded: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
+        );
+
+        const errorResponse = {
+          error: "rate_limit_exceeded",
+          isAuthenticated,
+          count: rateLimitResult.count,
+          limit: rateLimitResult.limit,
+          message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
+        };
+
+        res.status(429).json(errorResponse);
+        return;
       }
+
       log(
-        `Rate limit check passed: ${identifier} (${result.count}/${result.limit})`
+        `Rate limit check passed: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
       );
-    };
-    const respondToRateLimit = (result: AIGenerationRateLimitResult): void => {
-      log(
-        `Rate limit exceeded: ${identifier} (${result.count}/${result.limit})`
-      );
-      res.status(429).json({
-        error: "rate_limit_exceeded",
-        isAuthenticated,
-        count: result.count,
-        limit: result.limit,
-        message: `You've hit your limit of ${result.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
-      });
-    };
+    }
 
     log(
       `Using model: ${model || DEFAULT_MODEL} (${
@@ -360,42 +344,35 @@ export default apiHandler<{
       return;
     }
 
+    const conversationOperationId =
+      parsedConversationContext.value?.operationId ?? crypto.randomUUID();
     let storedConversation: Awaited<
       ReturnType<typeof beginAIConversationTurnWithStatus>
     >["document"] | null = null;
-    if ((!isAuthenticated || isProactiveGreeting) && isBillableGeneration) {
-      try {
-        await consumeGenerationQuota();
-      } catch (error) {
-        if (error instanceof AIGenerationRateLimitError) {
-          respondToRateLimit(error.result);
-          return;
-        }
-        throw error;
-      }
-    }
     if (isAuthenticated && username && !isProactiveGreeting) {
       try {
-        if (
-          clientActionMessage &&
-          !(await validateAIAttachmentReferences({
+        if (normalizedTrigger === "regenerate-message") {
+          await prepareAIConversationRegeneration({
             redis,
             username,
-            messages: [clientActionMessage],
-          }))
-        ) {
-          logger.response(422, Date.now() - startTime);
-          res.status(422).json({ error: "attachment_not_found" });
-          return;
-        }
-        let action: BeginAIConversationTurnInput["action"];
-        if (normalizedTrigger === "regenerate-message") {
-          action = {
-            kind: "regenerate",
+            channel: conversationChannel,
+            operationId: conversationOperationId,
+            ...(parsedConversationContext.value
+              ? {
+                  expectedConversationId:
+                    parsedConversationContext.value.id,
+                  expectedRevision:
+                    parsedConversationContext.value.revision,
+                }
+              : {}),
             ...(typeof messageId === "string" && messageId
               ? { targetMessageId: messageId }
               : {}),
-          };
+          });
+        }
+        let action: BeginAIConversationTurnInput["action"];
+        if (normalizedTrigger === "regenerate-message") {
+          action = { kind: "regenerate" };
         } else if (clientActionMessage?.role === "user") {
           action = { kind: "user-message", message: clientActionMessage };
         } else if (clientActionMessage?.role === "assistant") {
@@ -413,12 +390,9 @@ export default apiHandler<{
           redis,
           username,
           channel: conversationChannel,
-          operationId: `request:${conversationOperationId}`,
+          operationId: conversationOperationId,
           turnId: conversationOperationId,
           action,
-          ...(isBillableGeneration
-            ? { beforeCommit: consumeGenerationQuota }
-            : {}),
           ...(parsedConversationContext.value
             ? {
                 expectedConversationId:
@@ -440,10 +414,6 @@ export default apiHandler<{
           id: conversationOperationId,
         };
       } catch (error) {
-        if (error instanceof AIGenerationRateLimitError) {
-          respondToRateLimit(error.result);
-          return;
-        }
         if (error instanceof AIConversationError) {
           logger.response(error.status, Date.now() - startTime);
           res.status(error.status).json({ error: error.code });
@@ -593,12 +563,6 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
 
     let modelConversationMessages = clientConversationMessages;
     if (storedConversation) {
-      const canonicalAction = clientActionMessage
-        ? getAIConversationActionMessage(
-            storedConversation,
-            clientActionMessage.id
-          )
-        : undefined;
       const canonicalMessages =
         normalizedTrigger === "regenerate-message"
           ? getAIConversationRegenerationModelMessages(
@@ -611,14 +575,13 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
           ? canonicalMessages
           : overlayConversationAction(
               canonicalMessages,
-              canonicalAction
+              clientActionMessage
             );
     }
-    if (isAuthenticated && username) {
+    if (storedConversation && username) {
       modelConversationMessages = await resolveAIAttachmentsForModel({
-        redis,
         username,
-        messages: ensureUIMessageFormat(modelConversationMessages),
+        messages: modelConversationMessages,
       });
     }
     const preparedConversation = await prepareRyoConversationModelInput({
@@ -706,7 +669,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               username,
               channel: conversationChannel,
               responseMessage,
-              operationId: `response:${conversationOperationId}`,
+              operationId: responseMessage.id,
               turnId: conversationOperationId,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
@@ -720,7 +683,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               username,
               channel: conversationChannel,
               responseMessage,
-              operationId: `response:${conversationOperationId}`,
+              operationId: responseMessage.id,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
               turnId: conversationOperationId,

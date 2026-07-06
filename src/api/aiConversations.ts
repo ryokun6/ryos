@@ -1,5 +1,4 @@
 import type { AIChatMessage } from "@/types/chat";
-import type { ToolUIPart as AIToolUIPart } from "ai";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
@@ -7,15 +6,14 @@ import {
   type AIConversation,
   type AIConversationChannel,
   type AIConversationMessage,
-  type AIConversationPart,
   type AIConversationPage,
+  type AIConversationPart,
   type AIConversationRequestContext,
 } from "@/shared/contracts/aiConversation";
 import {
   AI_ATTACHMENT_MAX_BYTES,
-  getAIAttachmentIdFromUrl,
-  getAIAttachmentUrl,
   isAIAttachmentMediaType,
+  parseAIAttachmentUrl,
 } from "@/shared/contracts/aiAttachment";
 
 interface ConversationSession {
@@ -43,82 +41,6 @@ const activeOwners = new Map<AIConversationChannel, string>();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isApproval(value: unknown, approved?: boolean): boolean {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    (approved === undefined || value.approved === approved) &&
-    (value.reason === undefined || typeof value.reason === "string")
-  );
-}
-
-function isAIConversationPart(value: unknown): value is AIConversationPart {
-  if (!isRecord(value) || typeof value.type !== "string") return false;
-  if (value.type === "text") {
-    return (
-      typeof value.text === "string" &&
-      (value.state === undefined ||
-        value.state === "streaming" ||
-        value.state === "done")
-    );
-  }
-  if (value.type === "file") {
-    return (
-      typeof value.mediaType === "string" &&
-      typeof value.url === "string" &&
-      (value.filename === undefined || typeof value.filename === "string")
-    );
-  }
-  if (value.type === "source-url") {
-    return (
-      typeof value.sourceId === "string" &&
-      typeof value.url === "string" &&
-      (value.title === undefined || typeof value.title === "string")
-    );
-  }
-  if (value.type === "source-document") {
-    return (
-      typeof value.sourceId === "string" &&
-      typeof value.mediaType === "string" &&
-      typeof value.title === "string" &&
-      (value.filename === undefined || typeof value.filename === "string")
-    );
-  }
-  if (value.type === "step-start") {
-    return true;
-  }
-  if (
-    !value.type.startsWith("tool-") ||
-    typeof value.toolCallId !== "string" ||
-    typeof value.state !== "string"
-  ) {
-    return false;
-  }
-  switch (value.state) {
-    case "input-streaming":
-      return true;
-    case "input-available":
-      return "input" in value;
-    case "approval-requested":
-      return "input" in value && isApproval(value.approval);
-    case "approval-responded":
-      return (
-        "input" in value &&
-        isRecord(value.approval) &&
-        typeof value.approval.approved === "boolean" &&
-        isApproval(value.approval, value.approval.approved)
-      );
-    case "output-available":
-      return "input" in value && "output" in value;
-    case "output-error":
-      return typeof value.errorText === "string";
-    case "output-denied":
-      return "input" in value && isApproval(value.approval, false);
-    default:
-      return false;
-  }
 }
 
 function sessionKey(username: string, channel: AIConversationChannel): string {
@@ -188,7 +110,11 @@ function parseMessage(value: unknown): AIConversationMessage {
     throw new Error("Invalid conversation message response");
   }
 
-  if (!value.parts.every(isAIConversationPart)) {
+  if (
+    !value.parts.every(
+      (part) => isRecord(part) && typeof part.type === "string"
+    )
+  ) {
     throw new Error("Invalid conversation message part");
   }
 
@@ -196,7 +122,7 @@ function parseMessage(value: unknown): AIConversationMessage {
     id: value.id,
     seq: value.seq,
     role: value.role,
-    parts: value.parts,
+    parts: value.parts as AIConversationPart[],
     createdAt: value.createdAt,
   };
 }
@@ -233,16 +159,11 @@ function toAIChatMessage(message: AIConversationMessage): AIChatMessage {
   return {
     id: message.id,
     role: message.role,
-    parts: message.parts.map((part) => {
-      if (part.type !== "file") return part;
-      const attachmentId = getAIAttachmentIdFromUrl(part.url);
-      return attachmentId
-        ? {
-            ...part,
-            url: getApiUrl(getAIAttachmentUrl(attachmentId)),
-          }
-        : part;
-    }),
+    parts: message.parts.map((part) =>
+      part.type === "file" && parseAIAttachmentUrl(part.url)
+        ? { ...part, url: getApiUrl(part.url) }
+        : part
+    ),
     metadata: { createdAt: timestamp },
   };
 }
@@ -322,75 +243,44 @@ function normalizeCreatedAt(value: unknown): string {
   return new Date().toISOString();
 }
 
-function isToolPart(
-  part: AIChatMessage["parts"][number]
-): part is AIToolUIPart {
-  return part.type.startsWith("tool-");
-}
-
 export async function uploadAIConversationImage(
-  dataUrl: string,
-  filename?: string
+  dataUrl: string
 ): Promise<{ mediaType: string; url: string }> {
-  const dataUrlMatch = /^data:([^;,]+);base64,/.exec(dataUrl);
-  if (!dataUrlMatch || !isAIAttachmentMediaType(dataUrlMatch[1])) {
+  const match = /^data:([^;,]+);base64,/.exec(dataUrl);
+  const mediaType = match?.[1];
+  if (!isAIAttachmentMediaType(mediaType)) {
     throw new Error("Unsupported AI conversation image type");
   }
-
-  const imageResponse = await fetch(dataUrl);
-  const blob = await imageResponse.blob();
-  const mediaType = dataUrlMatch[1];
+  const blob = await (await fetch(dataUrl)).blob();
   if (blob.size <= 0 || blob.size > AI_ATTACHMENT_MAX_BYTES) {
     throw new Error("AI conversation image exceeds the upload limit");
   }
-  const attachmentUrl = filename
-    ? `/api/ai/attachments?${new URLSearchParams({ filename }).toString()}`
-    : "/api/ai/attachments";
-  const uploadResponse = await abortableFetch(
-    getApiUrl(attachmentUrl),
-    {
-      method: "POST",
-      headers: { "Content-Type": mediaType },
-      body: blob,
-      timeout: 30_000,
-    }
-  );
-  const completed: unknown = await uploadResponse.json();
+
+  const response = await abortableFetch(getApiUrl("/api/ai/attachments"), {
+    method: "POST",
+    headers: { "Content-Type": mediaType },
+    body: blob,
+    timeout: 30_000,
+  });
+  const result: unknown = await response.json();
   if (
-    !isRecord(completed) ||
-    typeof completed.url !== "string" ||
-    typeof completed.mediaType !== "string"
+    !isRecord(result) ||
+    typeof result.url !== "string" ||
+    result.mediaType !== mediaType
   ) {
-    throw new Error("Invalid AI attachment completion response");
+    throw new Error("Invalid AI attachment response");
   }
-  return {
-    mediaType: completed.mediaType,
-    url: getApiUrl(completed.url),
-  };
+  return { mediaType, url: getApiUrl(result.url) };
 }
 
-function projectRichPart(part: AIChatMessage["parts"][number]): AIConversationPart[] {
-  if (
-    part.type === "text" ||
-    part.type === "file" ||
-    part.type === "source-url" ||
-    part.type === "source-document" ||
-    part.type === "step-start"
-  ) {
-    return [part];
-  }
-  if (!isToolPart(part)) return [];
-
+function cloneConversationPart(
+  part: AIChatMessage["parts"][number]
+): AIConversationPart | null {
   try {
-    const serialized = JSON.stringify(part);
-    if (serialized.length <= 512 * 1024) {
-      return [JSON.parse(serialized) as AIConversationPart];
-    }
+    return JSON.parse(JSON.stringify(part)) as AIConversationPart;
   } catch {
-    return [];
+    return null;
   }
-
-  return [];
 }
 
 export function projectAIConversationMessages(
@@ -403,7 +293,9 @@ export function projectAIConversationMessages(
 }> {
   return messages.flatMap((message) => {
     if (message.role !== "user" && message.role !== "assistant") return [];
-    const parts = message.parts.flatMap(projectRichPart);
+    const parts = message.parts
+      .map(cloneConversationPart)
+      .filter((part): part is AIConversationPart => part !== null);
     if (parts.length === 0) return [];
     return [
       {
@@ -416,6 +308,29 @@ export function projectAIConversationMessages(
       },
     ];
   });
+}
+
+async function externalizeLocalImages(
+  messages: readonly AIChatMessage[]
+): Promise<AIChatMessage[]> {
+  const uploads = new Map<string, Promise<{ mediaType: string; url: string }>>();
+  return Promise.all(
+    messages.map(async (message) => ({
+      ...message,
+      parts: await Promise.all(
+        message.parts.map(async (part) => {
+          if (part.type !== "file" || !part.url.startsWith("data:")) return part;
+          let upload = uploads.get(part.url);
+          if (!upload) {
+            upload = uploadAIConversationImage(part.url);
+            uploads.set(part.url, upload);
+          }
+          const stored = await upload;
+          return { ...part, ...stored };
+        })
+      ),
+    }))
+  );
 }
 
 export function buildAIConversationRequestBody({
@@ -453,59 +368,14 @@ export function buildAIConversationRequestBody({
   return { ...common, conversation, message };
 }
 
-async function externalizeLocalConversationImages(
-  messages: readonly AIChatMessage[]
-): Promise<AIChatMessage[]> {
-  const uploads = new Map<string, Promise<{ mediaType: string; url: string }>>();
-  return Promise.all(
-    messages.map(async (message) => ({
-      ...message,
-      parts: (
-        await Promise.all(
-          message.parts.map(async (part) => {
-            if (
-              part.type !== "file" ||
-              !part.url.startsWith("data:")
-            ) {
-              return part;
-            }
-            let upload = uploads.get(part.url);
-            if (!upload) {
-              upload = uploadAIConversationImage(part.url, part.filename);
-              uploads.set(part.url, upload);
-            }
-            try {
-              const stored = await upload;
-              return {
-                ...part,
-                mediaType: stored.mediaType,
-                url: stored.url,
-              };
-            } catch (error) {
-              console.warn(
-                "[AI conversation] Skipping a legacy image that could not be uploaded",
-                error
-              );
-              return null;
-            }
-          })
-        )
-      ).filter(
-        (
-          part
-        ): part is AIChatMessage["parts"][number] => part !== null
-      ),
-    }))
-  );
-}
-
 async function importLocalConversation(
   channel: AIConversationChannel,
   conversation: AIConversation,
   messages: readonly AIChatMessage[]
 ): Promise<void> {
-  const externalized = await externalizeLocalConversationImages(messages);
-  const projected = projectAIConversationMessages(externalized);
+  const projected = projectAIConversationMessages(
+    await externalizeLocalImages(messages)
+  );
   if (!projected.some((message) => message.role === "user")) return;
 
   const response = await abortableFetch(
@@ -639,41 +509,24 @@ export async function resetAIConversationSession({
     localMessages,
   });
   const generation = incrementGeneration(key);
-  const sendReset = (conversationId: string) =>
-    abortableFetch(getApiUrl(`/api/ai/conversations/${channel}/reset`), {
+
+  const response = await abortableFetch(
+    getApiUrl(`/api/ai/conversations/${channel}/reset`),
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        conversationId,
+        conversationId: session.conversation.id,
         operationId: crypto.randomUUID(),
       }),
       timeout: 15_000,
       throwOnHttpError: false,
-    });
-
-  let response = await sendReset(session.conversation.id);
+    }
+  );
   if (!response.ok) {
-    const code = await readErrorCode(response);
-    if (code !== "conversation_changed") {
-      throw new Error(`Conversation reset failed: ${code}`);
-    }
-    invalidateAIConversationSession(channel, owner);
-    const current = await loadAIConversation({
-      channel,
-      username: owner,
-      localMessages: [],
-      force: true,
-      importLocalIfEmpty: false,
-    });
-    if (current.messages.length === 0) {
-      return current.conversation;
-    }
-    response = await sendReset(current.conversation.id);
-    if (!response.ok) {
-      throw new Error(
-        `Conversation reset failed: ${await readErrorCode(response)}`
-      );
-    }
+    throw new Error(
+      `Conversation reset failed: ${await readErrorCode(response)}`
+    );
   }
 
   const value: unknown = await response.json();

@@ -66,12 +66,7 @@ interface ParsedBody {
 const MAX_STANDALONE_BODY_BYTES = 55 * 1024 * 1024;
 const MAX_AI_CONVERSATION_REQUEST_BYTES = 8 * 1024 * 1024;
 
-class StandaloneRequestBodyTooLargeError extends Error {
-  constructor() {
-    super("Request body is too large");
-    this.name = "StandaloneRequestBodyTooLargeError";
-  }
-}
+class StandaloneRequestBodyTooLargeError extends Error {}
 
 class BunRequestShim extends Readable {
   method: string;
@@ -499,17 +494,11 @@ function buildHeaderMap(
 }
 
 function getRequestBodyLimit(pathname: string): number {
-  const normalizedPathname =
-    pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  if (normalizedPathname === "/api/ai/attachments") {
-    return AI_ATTACHMENT_MAX_BYTES;
-  }
+  if (pathname === "/api/ai/attachments") return AI_ATTACHMENT_MAX_BYTES;
   if (
-    normalizedPathname === "/api/chat" ||
-    normalizedPathname === "/api/ai/extract-memories" ||
-    /^\/api\/ai\/conversations\/(?:chat|assistant)\/import$/.test(
-      normalizedPathname
-    )
+    pathname === "/api/chat" ||
+    pathname === "/api/ai/extract-memories" ||
+    /^\/api\/ai\/conversations\/(?:chat|assistant)\/import$/.test(pathname)
   ) {
     return MAX_AI_CONVERSATION_REQUEST_BYTES;
   }
@@ -520,43 +509,15 @@ async function readRequestBytes(
   request: Request,
   maximumSizeInBytes: number
 ): Promise<Uint8Array> {
-  const declaredLength = Number.parseInt(
-    request.headers.get("content-length") ?? "",
-    10
-  );
-  if (
-    Number.isFinite(declaredLength) &&
-    declaredLength > maximumSizeInBytes
-  ) {
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maximumSizeInBytes) {
     throw new StandaloneRequestBodyTooLargeError();
   }
-  if (!request.body) return new Uint8Array();
-
-  const chunks: Uint8Array[] = [];
-  let totalLength = 0;
-  const reader = request.body.getReader();
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      totalLength += value.byteLength;
-      if (totalLength > maximumSizeInBytes) {
-        await reader.cancel();
-        throw new StandaloneRequestBodyTooLargeError();
-      }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.byteLength > maximumSizeInBytes) {
+    throw new StandaloneRequestBodyTooLargeError();
   }
-
-  const body = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    body.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return body;
+  return bytes;
 }
 
 async function parseBody(
@@ -1053,10 +1014,7 @@ async function bootstrap(): Promise<void> {
 
       let parsedBody: ParsedBody;
       try {
-        parsedBody = await parseBody(
-          request,
-          getRequestBodyLimit(pathname)
-        );
+        parsedBody = await parseBody(request, getRequestBodyLimit(pathname));
       } catch (error) {
         if (error instanceof StandaloneRequestBodyTooLargeError) {
           return jsonResponse({ error: "Payload too large" }, 413);

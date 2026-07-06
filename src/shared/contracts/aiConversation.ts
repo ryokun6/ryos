@@ -1,11 +1,4 @@
-import type {
-  FileUIPart,
-  SourceDocumentUIPart,
-  SourceUrlUIPart,
-  StepStartUIPart,
-  TextUIPart,
-  ToolUIPart,
-} from "ai";
+import type { UIMessage } from "ai";
 
 export const AI_CONVERSATION_CHANNELS = ["chat", "assistant"] as const;
 export const AI_CONVERSATION_OPERATION_ID_MAX_LENGTH = 128;
@@ -19,15 +12,7 @@ export function isAIConversationChannel(
   return value === "chat" || value === "assistant";
 }
 
-export type AIConversationTextPart = TextUIPart;
-
-export type AIConversationPart =
-  | AIConversationTextPart
-  | FileUIPart
-  | ToolUIPart
-  | StepStartUIPart
-  | SourceUrlUIPart
-  | SourceDocumentUIPart;
+export type AIConversationPart = UIMessage["parts"][number];
 
 export interface AIConversationMessage {
   id: string;

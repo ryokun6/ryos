@@ -57,11 +57,9 @@ graph LR
 | Endpoint | Purpose |
 |----------|---------|
 | `/api/chat` | Main AI chat with tool calling |
-| `/api/ai/conversations/:channel` | Paginated server history for Chat and Assistant |
-| `/api/ai/conversations/:channel/import` | One-time legacy conversation import |
-| `/api/ai/conversations/:channel/reset` | Idempotent server conversation reset |
-| `/api/ai/attachments` | Private image upload for synced conversations |
-| `/api/ai/attachments/:id` | Authenticated private image download |
+| `/api/ai/conversations/:channel` | Synced Chat and Assistant history |
+| `/api/ai/conversations/:channel/reset` | Clear synced history and process memories |
+| `/api/ai/attachments/:id` | Private synced chat images |
 | `/api/applet-ai` | Applet text + image generation |
 | `/api/ie-generate` | Time-travel page generation |
 | `/api/parse-title` | Music metadata extraction |

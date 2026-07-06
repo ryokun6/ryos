@@ -121,10 +121,5 @@ export function isUploadPathOwnedByUser(
 ): boolean {
   const syncPrefix = `sync/${username}/blobs/`;
   const backupPath = `backups/${username}/backup.gz`;
-  const aiAttachmentPrefix = `ai/${username}/attachments/`;
-  return (
-    pathname.startsWith(syncPrefix) ||
-    pathname === backupPath ||
-    pathname.startsWith(aiAttachmentPrefix)
-  );
+  return pathname.startsWith(syncPrefix) || pathname === backupPath;
 }

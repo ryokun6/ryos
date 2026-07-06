@@ -43,10 +43,7 @@ export async function purgeUserAccount(
   // best-effort: returning success while private transcripts remain would
   // violate the account-deletion contract.
   deletedCount += await deleteAIConversationKeys(redis, normalized);
-  deletedCount += await deleteAllAIAttachments({
-    redis,
-    username: normalized,
-  });
+  deletedCount += await deleteAllAIAttachments(redis, normalized);
   deletedCount += await deleteAllUserMemories(redis, normalized);
 
   // Recovery email reverse index.

@@ -151,7 +151,7 @@ export default async function handler(
 
   const redis = createRedis();
   const username = TELEGRAM_HEARTBEAT_TARGET_USERNAME;
-  const accountRecord = await getStoredUserRecord(redis, username);
+  const account = await getStoredUserRecord(redis, username);
   const userTimeZone =
     (await getStoredUserTimeZone(redis, username)) || TELEGRAM_HEARTBEAT_TIME_ZONE;
   const linkedAccount = await getLinkedTelegramAccountByUsername(redis, username);
@@ -245,7 +245,7 @@ export default async function handler(
 
   if (
     newTelegramConversation.length > 0 &&
-    typeof accountRecord?.createdAt === "number"
+    typeof account?.createdAt === "number"
   ) {
     try {
       const extractionResult = await extractMemoriesFromConversation({
@@ -261,7 +261,7 @@ export default async function handler(
         timeZone: userTimeZone,
         storeLongTermMemories: false,
         markTodayProcessed: false,
-        accountCreatedAt: accountRecord.createdAt,
+        accountCreatedAt: account.createdAt,
         log: (...args: unknown[]) => logger.info("[TelegramHeartbeatChatDelta]", args),
         logError: (...args: unknown[]) =>
           logger.error("[TelegramHeartbeatChatDelta]", args),

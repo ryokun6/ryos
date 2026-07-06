@@ -25,7 +25,6 @@ import {
   setUserEmailIndex,
   getUsernameByEmail,
 } from "../api/_utils/auth/_user-record";
-import { headStoredObject } from "../api/_utils/storage";
 
 const redis = createRedis();
 
@@ -130,51 +129,6 @@ describe("Account Deletion API", () => {
     });
     await setUserEmailIndex(redis, email, username);
     await redis.set(redisKeys.sync.v2Kv(username), JSON.stringify({ a: 1 }));
-    const imageBytes = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-      "base64"
-    );
-    const upload = await fetchWithAuth(
-      `${BASE_URL}/api/ai/attachments`,
-      username,
-      token,
-      {
-        method: "POST",
-        headers: {
-          ...makeRateLimitBypassHeaders(),
-          "Content-Type": "image/png",
-        },
-        body: imageBytes,
-      }
-    );
-    expect(upload.status).toBe(201);
-    const uploadResult: unknown = await upload.json();
-    if (
-      !uploadResult ||
-      typeof uploadResult !== "object" ||
-      Array.isArray(uploadResult) ||
-      typeof Reflect.get(uploadResult, "attachmentId") !== "string"
-    ) {
-      throw new Error("Attachment upload returned an invalid response");
-    }
-    const attachmentId = Reflect.get(uploadResult, "attachmentId");
-    const rawAttachment = await redis.get(
-      redisKeys.chat.aiAttachment(username, attachmentId)
-    );
-    const storedAttachment =
-      typeof rawAttachment === "string"
-        ? JSON.parse(rawAttachment)
-        : rawAttachment;
-    if (
-      !storedAttachment ||
-      typeof storedAttachment !== "object" ||
-      Array.isArray(storedAttachment) ||
-      typeof Reflect.get(storedAttachment, "storageUrl") !== "string"
-    ) {
-      throw new Error("Attachment metadata was not stored");
-    }
-    const attachmentStorageUrl = Reflect.get(storedAttachment, "storageUrl");
-    expect(await headStoredObject(attachmentStorageUrl)).not.toBeNull();
     await redis.set(
       redisKeys.chat.aiConversation(username, "chat"),
       JSON.stringify({ seeded: true })
@@ -183,27 +137,10 @@ describe("Account Deletion API", () => {
       redisKeys.chat.aiConversation(username, "assistant"),
       JSON.stringify({ seeded: true })
     );
-    const memoryDate = new Date().toISOString().slice(0, 10);
-    await redis.set(
-      redisKeys.memory.index(username),
-      JSON.stringify({
-        version: 1,
-        memories: [{ key: "preferences", summary: "Prefers privacy" }],
-      })
+    await redis.sadd(
+      redisKeys.chat.aiAttachments(username),
+      "s3://missing/test-attachment"
     );
-    await redis.set(
-      redisKeys.memory.detail(username, "preferences"),
-      JSON.stringify({
-        key: "preferences",
-        summary: "Prefers privacy",
-        content: "Private account memory",
-      })
-    );
-    await redis.set(
-      redisKeys.memory.daily(username, memoryDate),
-      JSON.stringify({ date: memoryDate, entries: [] })
-    );
-    await redis.set(redisKeys.memory.processingLock(username), "locked");
 
     expect(await getUsernameByEmail(redis, email)).toBe(username);
 
@@ -237,20 +174,9 @@ describe("Account Deletion API", () => {
     expect(
       await redis.get(redisKeys.chat.aiConversation(username, "assistant"))
     ).toBeNull();
-    expect(
-      await redis.get(redisKeys.chat.aiAttachment(username, attachmentId))
-    ).toBeNull();
-    expect(await redis.get(redisKeys.chat.aiAttachmentIds(username))).toBeNull();
-    expect(await redis.get(redisKeys.chat.aiAttachmentBytes(username))).toBeNull();
-    expect(await headStoredObject(attachmentStorageUrl)).toBeNull();
-    expect(await redis.get(redisKeys.memory.index(username))).toBeNull();
-    expect(
-      await redis.get(redisKeys.memory.detail(username, "preferences"))
-    ).toBeNull();
-    expect(
-      await redis.get(redisKeys.memory.daily(username, memoryDate))
-    ).toBeNull();
-    expect(await redis.get(redisKeys.memory.processingLock(username))).toBeNull();
+    expect(await redis.smembers(redisKeys.chat.aiAttachments(username))).toEqual(
+      []
+    );
 
     // Old token invalid.
     const tokenCheck = await fetchWithAuth(
