@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
+  buildAIConversationRequestBody,
   clearAIConversationSessionCache,
   getAIConversationRequestContext,
   loadAIConversation,
@@ -241,6 +242,60 @@ describe("AI conversation client", () => {
         metadata: { createdAt: "2026-07-06T00:00:00.000Z" },
       },
     ]);
+  });
+
+  test("sends only the current authenticated action", () => {
+    const messages = [
+      message("u1", "user", "old"),
+      message("a1", "assistant", "reply"),
+      message("u2", "user", "new"),
+    ];
+    const conversation = {
+      id: CHAT_ID,
+      revision: 4,
+      operationId: "operation-1",
+    };
+
+    expect(
+      buildAIConversationRequestBody({
+        body: { model: "gemini-3-flash" },
+        id: "sdk-chat",
+        messages,
+        trigger: "submit-message",
+        conversation,
+      })
+    ).toEqual({
+      model: "gemini-3-flash",
+      id: "sdk-chat",
+      trigger: "submit-message",
+      conversation,
+      message: messages[2],
+    });
+    expect(
+      buildAIConversationRequestBody({
+        id: "sdk-chat",
+        messages,
+        trigger: "regenerate-message",
+        messageId: "a1",
+        conversation,
+      })
+    ).toEqual({
+      id: "sdk-chat",
+      trigger: "regenerate-message",
+      messageId: "a1",
+      conversation,
+    });
+    expect(
+      buildAIConversationRequestBody({
+        id: "sdk-chat",
+        messages,
+        trigger: "submit-message",
+      })
+    ).toEqual({
+      id: "sdk-chat",
+      trigger: "submit-message",
+      messages,
+    });
   });
 
   test("rejects a cookie owner mismatch before importing local messages", async () => {

@@ -268,6 +268,41 @@ export function projectAIConversationMessages(
   });
 }
 
+export function buildAIConversationRequestBody({
+  body,
+  id,
+  messages,
+  trigger,
+  messageId,
+  conversation,
+}: {
+  body?: Record<string, unknown>;
+  id: string;
+  messages: readonly AIChatMessage[];
+  trigger: "submit-message" | "regenerate-message";
+  messageId?: string;
+  conversation?: AIConversationRequestContext;
+}): Record<string, unknown> {
+  const common = {
+    ...body,
+    id,
+    trigger,
+    ...(messageId ? { messageId } : {}),
+  };
+  if (!conversation) {
+    return { ...common, messages };
+  }
+  if (trigger === "regenerate-message") {
+    return { ...common, conversation };
+  }
+
+  const message = messages.at(-1);
+  if (!message) {
+    throw new Error("Conversation action is missing its current message");
+  }
+  return { ...common, conversation, message };
+}
+
 async function importLocalConversation(
   channel: AIConversationChannel,
   conversation: AIConversation,

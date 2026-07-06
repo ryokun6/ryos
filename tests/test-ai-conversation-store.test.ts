@@ -1,15 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import {
   AIConversationError,
+  beginAIConversationTurn,
   commitAIConversationRegeneration,
   clearAIConversationTombstone,
+  completeAIConversationTurn,
   deleteAIConversationKeys,
   getAIConversationPage,
+  importAIConversationMessages,
   prepareAIConversationRegeneration,
   releaseAIConversationTurn,
   resetAIConversation,
   sanitizeAIConversationMessages,
-  syncAIConversationMessages,
   type AIConversationRedis,
 } from "../api/ai/conversations/_helpers/store";
 import { ASSISTANT_SUMMON_MESSAGE } from "../src/shared/assistantGreeting";
@@ -125,42 +127,63 @@ describe("AI conversation store", () => {
       limit: 10,
     });
 
-    const first = await syncAIConversationMessages({
+    const first = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       expectedConversationId: initial.conversation.id,
       expectedRevision: 0,
-      operationId: "turn-1",
-      messages: [
-        message("u1", "user", "one"),
-        message("a1", "assistant", "two"),
-      ],
+      operationId: "request-turn-1",
+      turnId: "turn-1",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "one"),
+      },
     });
     expect(first.revision).toBe(1);
 
-    const replay = await syncAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      expectedConversationId: initial.conversation.id,
-      expectedRevision: 0,
-      operationId: "turn-1",
-      messages: [message("u1", "user", "different replay payload")],
-    });
-    expect(replay.revision).toBe(1);
-    expect(replay.messages).toHaveLength(2);
-
-    const second = await syncAIConversationMessages({
+    const completed = await completeAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       expectedConversationId: initial.conversation.id,
       expectedRevision: 1,
-      operationId: "turn-2",
-      messages: [message("u2", "user", "three")],
+      operationId: "response-turn-1",
+      turnId: "turn-1",
+      responseMessage: message("a1", "assistant", "two"),
     });
-    expect(second.revision).toBe(2);
+    expect(completed.revision).toBe(2);
+
+    const replay = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 0,
+      operationId: "request-turn-1",
+      turnId: "turn-1",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "different replay payload"),
+      },
+    });
+    expect(replay.revision).toBe(2);
+    expect(replay.messages).toHaveLength(2);
+
+    const second = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 2,
+      operationId: "request-turn-2",
+      turnId: "turn-2",
+      action: {
+        kind: "user-message",
+        message: message("u2", "user", "three"),
+      },
+    });
+    expect(second.revision).toBe(3);
 
     const newest = await getAIConversationPage({
       redis,
@@ -190,39 +213,58 @@ describe("AI conversation store", () => {
       channel: "chat",
       limit: 10,
     });
-    await syncAIConversationMessages({
+    await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       expectedConversationId: initial.conversation.id,
       expectedRevision: 0,
-      operationId: "first",
-      messages: [message("u1", "user", "original")],
+      operationId: "request-first",
+      turnId: "first",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "original"),
+      },
     });
 
     await expect(
-      syncAIConversationMessages({
+      beginAIConversationTurn({
         redis,
         username: "alice",
         channel: "chat",
         expectedConversationId: initial.conversation.id,
         expectedRevision: 0,
-        operationId: "stale",
-        messages: [message("u2", "user", "stale")],
+        operationId: "request-stale",
+        turnId: "stale",
+        action: {
+          kind: "user-message",
+          message: message("u2", "user", "stale"),
+        },
       })
     ).rejects.toMatchObject({
       code: "revision_conflict",
       status: 409,
     });
 
+    await releaseAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      turnId: "first",
+    });
     await expect(
-      syncAIConversationMessages({
+      beginAIConversationTurn({
         redis,
         username: "alice",
         channel: "chat",
         expectedConversationId: initial.conversation.id,
-        operationId: "reuse",
-        messages: [message("u1", "user", "mutated")],
+        expectedRevision: 1,
+        operationId: "request-reuse",
+        turnId: "reuse",
+        action: {
+          kind: "user-message",
+          message: message("u1", "user", "mutated"),
+        },
       })
     ).rejects.toBeInstanceOf(AIConversationError);
   });
@@ -235,7 +277,7 @@ describe("AI conversation store", () => {
       channel: "assistant",
       limit: 10,
     });
-    await syncAIConversationMessages({
+    await importAIConversationMessages({
       redis,
       username: "alice",
       channel: "assistant",
@@ -253,6 +295,7 @@ describe("AI conversation store", () => {
     expect(reset.reset).toBe(true);
     expect(reset.document.id).not.toBe(initial.conversation.id);
     expect(reset.document.messages).toEqual([]);
+    expect(reset.clearedMessages.map((entry) => entry.id)).toEqual(["u1"]);
 
     const replay = await resetAIConversation({
       redis,
@@ -263,9 +306,10 @@ describe("AI conversation store", () => {
     });
     expect(replay.reset).toBe(false);
     expect(replay.document.id).toBe(reset.document.id);
+    expect(replay.clearedMessages).toEqual([]);
 
     await expect(
-      syncAIConversationMessages({
+      importAIConversationMessages({
         redis,
         username: "alice",
         channel: "assistant",
@@ -273,14 +317,13 @@ describe("AI conversation store", () => {
         expectedRevision: 0,
         operationId: "stale-import",
         messages: [message("old", "user", "resurrected")],
-        requireEmpty: true,
       })
     ).rejects.toMatchObject({ code: "conversation_not_empty" });
   });
 
   test("regeneration removes the selected assistant branch", async () => {
     const redis = new MemoryConversationRedis();
-    const seeded = await syncAIConversationMessages({
+    const seeded = await importAIConversationMessages({
       redis,
       username: "alice",
       channel: "chat",
@@ -305,15 +348,15 @@ describe("AI conversation store", () => {
       "a1",
       "u2",
     ]);
-    await syncAIConversationMessages({
+    await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       operationId: "request-regenerate-a1",
       expectedConversationId: seeded.id,
       expectedRevision: seeded.revision,
-      messages: [],
-      turn: { id: "turn-regenerate-a1", action: "begin" },
+      turnId: "turn-regenerate-a1",
+      action: { kind: "regenerate" },
     });
 
     const replacement = await commitAIConversationRegeneration({
@@ -325,10 +368,88 @@ describe("AI conversation store", () => {
       expectedRevision: seeded.revision,
       targetMessageId: "a1",
       turnId: "turn-regenerate-a1",
-      messages: [message("a2", "assistant", "new answer")],
+      responseMessage: message("a2", "assistant", "new answer"),
     });
     expect(replacement.messages.map((entry) => entry.id)).toEqual(["u1", "a2"]);
     expect(replacement.messages.map((entry) => entry.seq)).toEqual([1, 4]);
+  });
+
+  test("accepts one action per turn and updates an assistant continuation", async () => {
+    const redis = new MemoryConversationRedis();
+    const started = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "request-one",
+      turnId: "one",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "open Finder"),
+      },
+    });
+    const firstResponse = await completeAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "response-one",
+      expectedConversationId: started.id,
+      expectedRevision: started.revision,
+      turnId: "one",
+      responseMessage: message("a1", "assistant", "Opening Finder"),
+    });
+
+    const continuation = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "request-two",
+      expectedConversationId: firstResponse.id,
+      expectedRevision: firstResponse.revision,
+      turnId: "two",
+      action: {
+        kind: "assistant-continuation",
+        message: {
+          ...message("a1", "assistant", "Opening Finder"),
+          parts: [
+            { type: "text", text: "Opening Finder" },
+            {
+              type: "tool-launchApp",
+              toolCallId: "tool-1",
+              state: "output-available",
+              input: { id: "finder" },
+              output: { success: true },
+            },
+          ],
+        },
+      },
+    });
+    const completed = await completeAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "response-two",
+      expectedConversationId: continuation.id,
+      expectedRevision: continuation.revision,
+      turnId: "two",
+      responseMessage: message("a1", "assistant", "Finder is open"),
+    });
+
+    expect(completed.messages.map((entry) => entry.id)).toEqual(["u1", "a1"]);
+    expect(completed.messages[1]?.parts[0]?.text).toBe("Finder is open");
+
+    await expect(
+      beginAIConversationTurn({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "wrong-role",
+        turnId: "wrong-role",
+        action: {
+          kind: "user-message",
+          message: message("a2", "assistant", "not a user"),
+        },
+      })
+    ).rejects.toMatchObject({ code: "message_id_conflict", status: 422 });
   });
 
   test("bounds retained history without resetting sequence numbers", async () => {
@@ -337,7 +458,7 @@ describe("AI conversation store", () => {
       message(`u${index}`, "user", `message ${index}`)
     );
 
-    const document = await syncAIConversationMessages({
+    const document = await importAIConversationMessages({
       redis,
       username: "alice",
       channel: "chat",
@@ -353,25 +474,31 @@ describe("AI conversation store", () => {
 
   test("rejects a concurrent turn until the active turn completes", async () => {
     const redis = new MemoryConversationRedis();
-    const first = await syncAIConversationMessages({
+    const first = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       operationId: "request-a",
-      messages: [message("u1", "user", "first")],
-      turn: { id: "turn-a", action: "begin" },
+      turnId: "turn-a",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "first"),
+      },
     });
 
     await expect(
-      syncAIConversationMessages({
+      beginAIConversationTurn({
         redis,
         username: "alice",
         channel: "chat",
         operationId: "request-b",
         expectedConversationId: first.id,
         expectedRevision: first.revision,
-        messages: [message("u2", "user", "second")],
-        turn: { id: "turn-b", action: "begin" },
+        turnId: "turn-b",
+        action: {
+          kind: "user-message",
+          message: message("u2", "user", "second"),
+        },
       })
     ).rejects.toMatchObject({
       code: "conversation_busy",
@@ -384,22 +511,25 @@ describe("AI conversation store", () => {
       channel: "chat",
       turnId: "turn-a",
     });
-    const second = await syncAIConversationMessages({
+    const second = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       operationId: "request-b",
       expectedConversationId: first.id,
       expectedRevision: first.revision,
-      messages: [message("u2", "user", "second")],
-      turn: { id: "turn-b", action: "begin" },
+      turnId: "turn-b",
+      action: {
+        kind: "user-message",
+        message: message("u2", "user", "second"),
+      },
     });
     expect(second.messages.map((entry) => entry.id)).toEqual(["u1", "u2"]);
   });
 
   test("account deletion tombstones reject in-flight and future writes", async () => {
     const redis = new MemoryConversationRedis();
-    await syncAIConversationMessages({
+    await importAIConversationMessages({
       redis,
       username: "alice",
       channel: "chat",
@@ -409,22 +539,27 @@ describe("AI conversation store", () => {
 
     await deleteAIConversationKeys(redis, "alice");
     await expect(
-      syncAIConversationMessages({
+      completeAIConversationTurn({
         redis,
         username: "alice",
         channel: "chat",
         operationId: "late-finish",
-        messages: [message("a1", "assistant", "late")],
+        turnId: "deleted-turn",
+        responseMessage: message("a1", "assistant", "late"),
       })
     ).rejects.toMatchObject({ code: "account_deleted" });
 
     await clearAIConversationTombstone(redis, "alice");
-    const recreated = await syncAIConversationMessages({
+    const recreated = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       operationId: "new-account",
-      messages: [message("u2", "user", "new")],
+      turnId: "new-account",
+      action: {
+        kind: "user-message",
+        message: message("u2", "user", "new"),
+      },
     });
     expect(recreated.messages.map((entry) => entry.id)).toEqual(["u2"]);
   });

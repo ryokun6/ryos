@@ -250,14 +250,13 @@ describe("AI conversation API", () => {
             revision: initial.conversation.revision,
             operationId: crypto.randomUUID(),
           },
-          messages: [
-            {
-              id: userMessageId,
-              role: "user",
-              parts: [{ type: "text", text: "Reply with exactly SYNC_OK." }],
-              metadata: { createdAt: new Date().toISOString() },
-            },
-          ],
+          trigger: "submit-message",
+          message: {
+            id: userMessageId,
+            role: "user",
+            parts: [{ type: "text", text: "Reply with exactly SYNC_OK." }],
+            metadata: { createdAt: new Date().toISOString() },
+          },
         }),
       }
     );
@@ -305,15 +304,13 @@ describe("AI conversation API", () => {
             revision: persisted.conversation.revision,
             operationId: crypto.randomUUID(),
           },
-          messages: [
-            ...persisted.messages,
-            {
-              id: secondUserId,
-              role: "user",
-              parts: [{ type: "text", text: "Reply with exactly SECOND_OK." }],
-              metadata: { createdAt: new Date().toISOString() },
-            },
-          ],
+          trigger: "submit-message",
+          message: {
+            id: secondUserId,
+            role: "user",
+            parts: [{ type: "text", text: "Reply with exactly SECOND_OK." }],
+            metadata: { createdAt: new Date().toISOString() },
+          },
         }),
       }
     );
@@ -347,7 +344,6 @@ describe("AI conversation API", () => {
             revision: twoTurns.conversation.revision,
             operationId: crypto.randomUUID(),
           },
-          messages: twoTurns.messages.slice(0, -1),
         }),
       }
     );

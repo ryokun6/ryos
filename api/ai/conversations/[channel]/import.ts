@@ -3,7 +3,7 @@ import { apiHandler } from "../../../_utils/api-handler.js";
 import {
   AIConversationError,
   getAIConversationSummary,
-  syncAIConversationMessages,
+  importAIConversationMessages,
 } from "../_helpers/store.js";
 import { isAIConversationChannel } from "../../../../src/shared/contracts/aiConversation.js";
 
@@ -33,7 +33,7 @@ export default apiHandler(
     }
 
     try {
-      const document = await syncAIConversationMessages({
+      const document = await importAIConversationMessages({
         redis,
         username: user!.username,
         channel,
@@ -41,7 +41,6 @@ export default apiHandler(
         expectedRevision: body!.expectedRevision,
         operationId: body!.operationId,
         messages: body!.messages,
-        requireEmpty: true,
       });
       logger.response(201, Date.now() - startTime);
       res.status(201).json({

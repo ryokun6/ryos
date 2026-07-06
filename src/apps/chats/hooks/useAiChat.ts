@@ -30,8 +30,8 @@ import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { getSystemState } from "../utils/systemState";
 import { dispatchToolCall } from "../tools/dispatchToolCall";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
-import { processConversationMemories } from "@/utils/processConversationMemories";
 import {
+  buildAIConversationRequestBody,
   getAIConversationRequestContext,
   invalidateAIConversationSession,
   loadAIConversation,
@@ -160,14 +160,14 @@ function getSharedAiChat(): Chat<AIChatMessage> {
           }
           sharedRequestOwner = owner;
           return {
-            body: {
-              ...body,
+            body: buildAIConversationRequestBody({
+              body,
               id,
               messages,
               trigger,
               messageId,
-              ...(conversation ? { conversation } : {}),
-            },
+              conversation,
+            }),
           };
         },
       }),
@@ -855,9 +855,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [handleDirectMessageSubmit, t]);
 
   const clearChats = useCallback(async () => {
-    const messagesToAnalyze = [...getSharedAiChat().messages];
+    const liveMessages = [...getSharedAiChat().messages];
     log.debug("Clearing AI chats", {
-      messageCount: messagesToAnalyze.length,
+      messageCount: liveMessages.length,
     });
 
     // Stop any in-flight stream first. Otherwise the AI SDK keeps appending to
@@ -871,7 +871,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         await resetAIConversationSession({
           channel: "chat",
           username,
-          localMessages: messagesToAnalyze,
+          localMessages: liveMessages,
         });
       } catch (resetError) {
         log.error("Failed to reset server conversation", resetError);
@@ -881,12 +881,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         return;
       }
     }
-
-    void processConversationMemories({
-      messages: messagesToAnalyze,
-      isAuthenticated: Boolean(username && isAuthenticated),
-      source: "chats",
-    });
 
     // Clear the AI SDK error state (e.g. the inline red error / retry block).
     // Without this, a previous failed turn's error stays visible after clearing.

@@ -33,8 +33,8 @@ import type { AssistantToolActivity } from "./assistantAnimation";
 import { createClientLogger } from "@/utils/logger";
 import i18n from "@/lib/i18n";
 import { ASSISTANT_SUMMON_MESSAGE } from "@/shared/assistantGreeting";
-import { processConversationMemories } from "@/utils/processConversationMemories";
 import {
+  buildAIConversationRequestBody,
   getAIConversationRequestContext,
   invalidateAIConversationSession,
   loadAIConversation,
@@ -310,14 +310,14 @@ export function useAssistantChat(): AssistantChatHandle {
             }
             requestOwnerRef.current = owner;
             return {
-              body: {
-                ...body,
+              body: buildAIConversationRequestBody({
+                body,
                 id,
                 messages,
                 trigger,
                 messageId,
-                ...(conversation ? { conversation } : {}),
-              },
+                conversation,
+              }),
             };
           },
         }),
@@ -614,25 +614,20 @@ export function useAssistantChat(): AssistantChatHandle {
   }, [chat, setMessages]);
 
   const clearConversationInternal = useCallback(async (): Promise<boolean> => {
-    const messagesToAnalyze = [...chat.messages] as AIChatMessage[];
+    const liveMessages = [...chat.messages];
     sdkStop();
     if (username && isAuthenticated) {
       try {
         await resetAIConversationSession({
           channel: "assistant",
           username,
-          localMessages: messagesToAnalyze,
+          localMessages: liveMessages,
         });
       } catch (resetError) {
         log.warn("Failed to reset server conversation", { error: resetError });
         return false;
       }
     }
-    void processConversationMemories({
-      messages: messagesToAnalyze,
-      isAuthenticated: Boolean(username && isAuthenticated),
-      source: "assistant",
-    });
     clearError();
     setMessages([]);
     useAssistantStore.getState().clearMessages();

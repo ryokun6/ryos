@@ -77,7 +77,7 @@ export class AIConversationError extends Error {
   }
 }
 
-export interface SyncAIConversationInput {
+interface WriteAIConversationMessagesInput {
   redis: AIConversationRedis;
   username: string;
   channel: AIConversationChannel;
@@ -90,6 +90,34 @@ export interface SyncAIConversationInput {
     id: string;
     action: "begin" | "complete";
   };
+}
+
+interface ConversationWriteContext {
+  redis: AIConversationRedis;
+  username: string;
+  channel: AIConversationChannel;
+  operationId: string;
+  expectedConversationId?: string;
+  expectedRevision?: number;
+}
+
+export interface BeginAIConversationTurnInput extends ConversationWriteContext {
+  turnId: string;
+  action:
+    | { kind: "user-message"; message: unknown }
+    | { kind: "assistant-continuation"; message: unknown }
+    | { kind: "regenerate" };
+}
+
+export interface CompleteAIConversationTurnInput
+  extends ConversationWriteContext {
+  turnId: string;
+  responseMessage: unknown;
+}
+
+export interface ImportAIConversationMessagesInput
+  extends ConversationWriteContext {
+  messages: readonly unknown[];
 }
 
 export interface ResetAIConversationInput {
@@ -112,7 +140,7 @@ export interface RegenerateAIConversationInput {
 
 export interface CommitAIConversationRegenerationInput
   extends RegenerateAIConversationInput {
-  messages: readonly unknown[];
+  responseMessage: unknown;
   turnId: string;
 }
 
@@ -501,8 +529,21 @@ function mergeConversationMessages(
   return changed;
 }
 
-export async function syncAIConversationMessages(
-  input: SyncAIConversationInput
+function assertMessageRole(
+  message: unknown,
+  expectedRole: "user" | "assistant"
+): void {
+  if (!isRecord(message) || message.role !== expectedRole) {
+    throw new AIConversationError(
+      "message_id_conflict",
+      422,
+      `Conversation action requires a ${expectedRole} message`
+    );
+  }
+}
+
+async function writeAIConversationMessages(
+  input: WriteAIConversationMessagesInput
 ): Promise<StoredConversation> {
   if (!input.operationId.trim() || input.operationId.length > 160) {
     throw new AIConversationError(
@@ -608,6 +649,63 @@ export async function syncAIConversationMessages(
   });
 }
 
+export async function beginAIConversationTurn(
+  input: BeginAIConversationTurnInput
+): Promise<StoredConversation> {
+  let messages: readonly unknown[] = [];
+  if (input.action.kind === "user-message") {
+    assertMessageRole(input.action.message, "user");
+    messages = [input.action.message];
+  } else if (input.action.kind === "assistant-continuation") {
+    assertMessageRole(input.action.message, "assistant");
+    messages = [input.action.message];
+  }
+
+  return writeAIConversationMessages({
+    redis: input.redis,
+    username: input.username,
+    channel: input.channel,
+    operationId: input.operationId,
+    messages,
+    turn: { id: input.turnId, action: "begin" },
+    ...(input.expectedConversationId
+      ? { expectedConversationId: input.expectedConversationId }
+      : {}),
+    ...(input.expectedRevision === undefined
+      ? {}
+      : { expectedRevision: input.expectedRevision }),
+  });
+}
+
+export async function completeAIConversationTurn(
+  input: CompleteAIConversationTurnInput
+): Promise<StoredConversation> {
+  assertMessageRole(input.responseMessage, "assistant");
+  return writeAIConversationMessages({
+    redis: input.redis,
+    username: input.username,
+    channel: input.channel,
+    operationId: input.operationId,
+    messages: [input.responseMessage],
+    turn: { id: input.turnId, action: "complete" },
+    ...(input.expectedConversationId
+      ? { expectedConversationId: input.expectedConversationId }
+      : {}),
+    ...(input.expectedRevision === undefined
+      ? {}
+      : { expectedRevision: input.expectedRevision }),
+  });
+}
+
+export async function importAIConversationMessages(
+  input: ImportAIConversationMessagesInput
+): Promise<StoredConversation> {
+  return writeAIConversationMessages({
+    ...input,
+    requireEmpty: true,
+  });
+}
+
 export async function releaseAIConversationTurn({
   redis,
   username,
@@ -635,7 +733,11 @@ export async function releaseAIConversationTurn({
 
 export async function resetAIConversation(
   input: ResetAIConversationInput
-): Promise<{ document: StoredConversation; reset: boolean }> {
+): Promise<{
+  document: StoredConversation;
+  reset: boolean;
+  clearedMessages: AIConversationMessage[];
+}> {
   return withConversationLock({
     redis: input.redis,
     username: input.username,
@@ -646,7 +748,7 @@ export async function resetAIConversation(
         createConversation(input.channel);
 
       if (current.lastResetOperationId === input.operationId) {
-        return { document: current, reset: false };
+        return { document: current, reset: false, clearedMessages: [] };
       }
       if (current.id !== input.conversationId) {
         throw new AIConversationError(
@@ -660,13 +762,17 @@ export async function resetAIConversation(
       replacement.legacyImportAllowed = false;
       replacement.lastResetOperationId = input.operationId;
       replacement.recentOperationIds = [input.operationId];
+      const clearedMessages = current.messages.map((message) => ({
+        ...message,
+        parts: message.parts.map((part) => ({ ...part })),
+      }));
       await saveConversation(
         input.redis,
         input.username,
         replacement,
         lockToken
       );
-      return { document: replacement, reset: true };
+      return { document: replacement, reset: true, clearedMessages };
     },
   });
 }
@@ -743,7 +849,8 @@ export async function commitAIConversationRegeneration(
           ? message.seq < target.seq
           : message.seq <= target.seq
       );
-      mergeConversationMessages(document, input.messages);
+      assertMessageRole(input.responseMessage, "assistant");
+      mergeConversationMessages(document, [input.responseMessage]);
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
       document.pendingTurnId = null;

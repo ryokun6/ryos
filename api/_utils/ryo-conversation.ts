@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import type { Redis } from "./redis.js";
 import {
   convertToModelMessages,
+  validateUIMessages,
   type LanguageModel,
   type ModelMessage,
   type ToolSet,
@@ -897,7 +898,10 @@ export async function prepareRyoConversationModelInput(
       : {}),
   };
 
-  const uiMessages = ensureUIMessageFormat(messages);
+  const uiMessages = await validateUIMessages({
+    messages: ensureUIMessageFormat(messages),
+    tools,
+  });
   const modelMessages = await convertToModelMessages(uiMessages, {
     tools,
   });

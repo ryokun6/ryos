@@ -1,5 +1,8 @@
 import { z } from "zod";
+import { waitUntil } from "@vercel/functions";
 import { apiHandler } from "../../../_utils/api-handler.js";
+import { getStoredUserTimeZone } from "../../../_utils/auth/_user-record.js";
+import { extractMemoriesFromConversation } from "../../extract-memories.js";
 import {
   AIConversationError,
   getAIConversationSummary,
@@ -8,7 +11,7 @@ import {
 import { isAIConversationChannel } from "../../../../src/shared/contracts/aiConversation.js";
 
 export const runtime = "nodejs";
-export const maxDuration = 10;
+export const maxDuration = 60;
 
 const resetConversationSchema = z.object({
   conversationId: z.string().uuid(),
@@ -38,6 +41,34 @@ export default apiHandler(
         conversationId: body!.conversationId,
         operationId: body!.operationId,
       });
+      if (
+        result.reset &&
+        result.clearedMessages.some((message) => message.role === "user")
+      ) {
+        const extraction = getStoredUserTimeZone(redis, user!.username)
+          .then((timeZone) =>
+            extractMemoriesFromConversation({
+              redis,
+              username: user!.username,
+              messages: result.clearedMessages.map((message) => ({
+                role: message.role,
+                parts: message.parts,
+                metadata: { createdAt: message.createdAt },
+              })),
+              timeZone: timeZone ?? undefined,
+              storeLongTermMemories: true,
+              markTodayProcessed: true,
+              log: (...args: unknown[]) =>
+                logger.info(String(args[0]), args[1]),
+              logError: (...args: unknown[]) =>
+                logger.error(String(args[0]), args[1]),
+            })
+          )
+          .catch((error) => {
+            logger.error("Cleared conversation memory extraction failed", error);
+          });
+        waitUntil(extraction);
+      }
       logger.response(200, Date.now() - startTime);
       res.status(200).json({
         owner: user!.username,
