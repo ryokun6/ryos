@@ -11,7 +11,12 @@ import {
   ResponseChecksumValidation,
 } from "@aws-sdk/middleware-flexible-checksums";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { del as deleteBlob, head as headBlob } from "@vercel/blob";
+import {
+  del as deleteBlob,
+  get as getBlob,
+  head as headBlob,
+  put as putBlob,
+} from "@vercel/blob";
 import { signStorageUploadToken } from "./storage-upload-token.js";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
@@ -335,58 +340,99 @@ function isMissingObjectError(error: unknown): boolean {
   );
 }
 
-async function readResponseBody(body: unknown): Promise<Uint8Array> {
+function assertDownloadWithinLimit(
+  size: number,
+  maximumSizeInBytes: number | undefined
+): void {
+  if (
+    maximumSizeInBytes !== undefined &&
+    size > maximumSizeInBytes
+  ) {
+    throw new Error("Stored object exceeds the allowed download size.");
+  }
+}
+
+function combineDownloadChunks(
+  chunks: readonly Uint8Array[],
+  totalLength: number
+): Uint8Array {
+  const combined = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return combined;
+}
+
+async function readResponseBody(
+  body: unknown,
+  maximumSizeInBytes?: number
+): Promise<Uint8Array> {
   if (!body) {
     return new Uint8Array();
   }
 
   if (body instanceof Uint8Array) {
+    assertDownloadWithinLimit(body.byteLength, maximumSizeInBytes);
     return body;
   }
 
   if (body instanceof ArrayBuffer) {
+    assertDownloadWithinLimit(body.byteLength, maximumSizeInBytes);
     return new Uint8Array(body);
   }
 
   if (body instanceof Blob) {
+    assertDownloadWithinLimit(body.size, maximumSizeInBytes);
     return new Uint8Array(await body.arrayBuffer());
   }
 
   if (body instanceof ReadableStream) {
-    return new Uint8Array(await new Response(body).arrayBuffer());
-  }
-
-  const maybeTransformingBody = body as {
-    transformToByteArray?: () => Promise<Uint8Array>;
-  };
-
-  if (typeof maybeTransformingBody.transformToByteArray === "function") {
-    return await maybeTransformingBody.transformToByteArray();
+    const chunks: Uint8Array[] = [];
+    let totalLength = 0;
+    const reader = body.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalLength += value.byteLength;
+        assertDownloadWithinLimit(totalLength, maximumSizeInBytes);
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    return combineDownloadChunks(chunks, totalLength);
   }
 
   const maybeAsyncIterable = body as AsyncIterable<Uint8Array | Buffer | string>;
   if (Symbol.asyncIterator in Object(body)) {
     const chunks: Uint8Array[] = [];
+    let totalLength = 0;
 
     for await (const chunk of maybeAsyncIterable) {
-      if (typeof chunk === "string") {
-        chunks.push(new TextEncoder().encode(chunk));
-        continue;
-      }
-
-      chunks.push(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
+      const bytes =
+        typeof chunk === "string"
+          ? new TextEncoder().encode(chunk)
+          : chunk instanceof Uint8Array
+            ? chunk
+            : new Uint8Array(chunk);
+      totalLength += bytes.byteLength;
+      assertDownloadWithinLimit(totalLength, maximumSizeInBytes);
+      chunks.push(bytes);
     }
 
-    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
+    return combineDownloadChunks(chunks, totalLength);
+  }
 
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return combined;
+  const maybeTransformingBody = body as {
+    transformToByteArray?: () => Promise<Uint8Array>;
+  };
+  if (typeof maybeTransformingBody.transformToByteArray === "function") {
+    const bytes = await maybeTransformingBody.transformToByteArray();
+    assertDownloadWithinLimit(bytes.byteLength, maximumSizeInBytes);
+    return bytes;
   }
 
   throw new Error("Unsupported storage download body type.");
@@ -524,7 +570,7 @@ export async function uploadStoredObject(options: {
   const pathname = normalizePathname(options.pathname);
   const config = getS3Config();
   if (!config) {
-    throw new Error("Missing S3-compatible storage configuration.");
+    throw new Error("Missing object-storage configuration.");
   }
 
   await getS3Client().send(
@@ -535,6 +581,45 @@ export async function uploadStoredObject(options: {
       ContentType: options.contentType,
     })
   );
+}
+
+export async function uploadPrivateStoredObject(options: {
+  pathname: string;
+  contentType: string;
+  body: Uint8Array | Buffer;
+  maximumSizeInBytes: number;
+}): Promise<string> {
+  const pathname = normalizePathname(options.pathname);
+  assertDownloadWithinLimit(
+    options.body.byteLength,
+    options.maximumSizeInBytes
+  );
+
+  if (getStorageBackend() === "vercel-blob") {
+    const uploaded = await putBlob(pathname, options.body, {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: false,
+      contentType: options.contentType,
+      maximumSizeInBytes: options.maximumSizeInBytes,
+    });
+    return uploaded.url;
+  }
+
+  const config = getS3Config();
+  if (!config) {
+    throw new Error("Missing object-storage configuration.");
+  }
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: pathname,
+      Body: options.body,
+      ContentType: options.contentType,
+      IfNoneMatch: "*",
+    })
+  );
+  return toS3StorageUrl(pathname);
 }
 
 export function getStorageUploadDebugInfo(
@@ -628,6 +713,18 @@ export async function deleteStoredObject(storageUrl: string): Promise<void> {
   await deleteBlob(storageUrl);
 }
 
+export async function deleteStoredObjectByPathname(
+  pathname: string,
+  provider: StorageBackend
+): Promise<void> {
+  const normalized = normalizePathname(pathname);
+  if (provider === "s3") {
+    await deleteStoredObject(toS3StorageUrl(normalized));
+    return;
+  }
+  await deleteBlob(normalized);
+}
+
 export async function downloadStoredObject(
   storageUrl: string
 ): Promise<Uint8Array> {
@@ -648,6 +745,35 @@ export async function downloadStoredObject(
   }
 
   return new Uint8Array(await response.arrayBuffer());
+}
+
+export async function downloadPrivateStoredObject(
+  storageUrl: string,
+  maximumSizeInBytes: number
+): Promise<Uint8Array> {
+  if (storageUrl.startsWith("s3://")) {
+    const { bucket, key } = parseS3StorageUrl(storageUrl);
+    const result = await getS3Client().send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      })
+    );
+    if (
+      typeof result.ContentLength === "number" &&
+      result.ContentLength > maximumSizeInBytes
+    ) {
+      throw new Error("Stored object exceeds the allowed download size.");
+    }
+    return await readResponseBody(result.Body, maximumSizeInBytes);
+  }
+
+  const result = await getBlob(storageUrl, { access: "private" });
+  if (!result || result.statusCode !== 200) {
+    throw new Error("Stored object was not found.");
+  }
+  assertDownloadWithinLimit(result.blob.size, maximumSizeInBytes);
+  return await readResponseBody(result.stream, maximumSizeInBytes);
 }
 
 export async function createSignedDownloadUrl(

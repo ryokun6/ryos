@@ -1,45 +1,75 @@
-import { z } from "zod";
 import { apiHandler } from "../../_utils/api-handler.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
 import {
-  AI_ATTACHMENT_MAX_BYTES,
-  AI_ATTACHMENT_MEDIA_TYPES,
-  getAIAttachmentUrl,
-} from "../../../src/shared/contracts/aiAttachment.js";
+  readRequestBodyBuffer,
+  RequestBodyTooLargeError,
+} from "../../_utils/request-body.js";
 import {
-  completeAIAttachmentUpload,
-  prepareAIAttachmentUpload,
-} from "./_helpers/store.js";
+  AI_ATTACHMENT_MAX_BYTES,
+  getAIAttachmentUrl,
+  isAIAttachmentMediaType,
+} from "../../../src/shared/contracts/aiAttachment.js";
+import { createAIAttachment } from "./_helpers/store.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const RATE_LIMIT_WINDOW_SECONDS = 60;
-const RATE_LIMIT_MAX = 30;
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-const attachmentRequestSchema = z.discriminatedUnion("action", [
-  z.object({
-    action: z.literal("prepare"),
-    mediaType: z.enum(AI_ATTACHMENT_MEDIA_TYPES),
-    size: z.number().int().positive().max(AI_ATTACHMENT_MAX_BYTES),
-    sha256: z.string().regex(/^[0-9a-f]{64}$/),
-    filename: z.string().min(1).max(160).optional(),
-  }),
-  z.object({
-    action: z.literal("complete"),
-    attachmentId: z.string().uuid(),
-    storageUrl: z.string().min(1).max(2_048),
-  }),
-]);
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+const RATE_LIMIT_MAX = 15;
 
 export default apiHandler(
   {
     methods: ["POST"],
     auth: "required",
-    bodySchema: attachmentRequestSchema,
+    contentType: null,
   },
-  async ({ res, redis, user, body, logger, startTime }) => {
+  async ({ req, res, redis, user, logger, startTime }) => {
     const username = user!.username;
+    const contentTypeHeader = req.headers["content-type"];
+    const mediaType = (
+      Array.isArray(contentTypeHeader)
+        ? contentTypeHeader[0]
+        : contentTypeHeader
+    )
+      ?.split(";")[0]
+      ?.trim()
+      .toLowerCase();
+    if (!isAIAttachmentMediaType(mediaType)) {
+      logger.response(415, Date.now() - startTime);
+      res.status(415).json({ error: "attachment_media_type_unsupported" });
+      return;
+    }
+
+    const contentLengthHeader = req.headers["content-length"];
+    const contentLength = Number.parseInt(
+      Array.isArray(contentLengthHeader)
+        ? contentLengthHeader[0] ?? ""
+        : contentLengthHeader ?? "",
+      10
+    );
+    if (
+      Number.isFinite(contentLength) &&
+      (contentLength <= 0 || contentLength > AI_ATTACHMENT_MAX_BYTES)
+    ) {
+      logger.response(413, Date.now() - startTime);
+      res.status(413).json({ error: "attachment_too_large" });
+      return;
+    }
+
+    const rawFilename = Array.isArray(req.query.filename)
+      ? req.query.filename[0]
+      : req.query.filename;
+    const filename =
+      typeof rawFilename === "string" && rawFilename.trim()
+        ? rawFilename.trim().slice(0, 160)
+        : undefined;
+
     const rateLimitKey = makeKey([
       "rl",
       "ai-attachment",
@@ -52,53 +82,50 @@ export default apiHandler(
     }
     if (requestCount > RATE_LIMIT_MAX) {
       logger.response(429, Date.now() - startTime);
-      res
-        .status(429)
-        .json({ error: "attachment_rate_limit_exceeded" });
+      res.status(429).json({ error: "attachment_rate_limit_exceeded" });
       return;
     }
 
     try {
-      if (body!.action === "prepare") {
-        const prepared = await prepareAIAttachmentUpload({
-          redis,
-          username,
-          mediaType: body!.mediaType,
-          size: body!.size,
-          sha256: body!.sha256,
-          ...(body!.filename ? { filename: body!.filename } : {}),
-        });
-        logger.response(200, Date.now() - startTime);
-        res.status(200).json({
-          attachmentId: prepared.attachmentId,
-          upload: prepared.upload,
-        });
-        return;
-      }
-
-      const record = await completeAIAttachmentUpload({
+      const bytes = await readRequestBodyBuffer(
+        req,
+        AI_ATTACHMENT_MAX_BYTES
+      );
+      const record = await createAIAttachment({
         redis,
         username,
-        attachmentId: body!.attachmentId,
-        storageUrl: body!.storageUrl,
+        mediaType,
+        bytes,
+        ...(filename ? { filename } : {}),
       });
-      logger.response(200, Date.now() - startTime);
-      res.status(200).json({
+      logger.response(201, Date.now() - startTime);
+      res.status(201).json({
         attachmentId: record.id,
         mediaType: record.mediaType,
         size: record.size,
         url: getAIAttachmentUrl(record.id),
       });
     } catch (error) {
+      if (error instanceof RequestBodyTooLargeError) {
+        logger.response(413, Date.now() - startTime);
+        res.status(413).json({ error: "attachment_too_large" });
+        return;
+      }
       const code =
         error instanceof Error ? error.message : "attachment_upload_failed";
-      if (
-        code === "attachment_upload_not_pending" ||
-        code === "attachment_storage_url_mismatch" ||
-        code === "attachment_upload_invalid"
-      ) {
+      if (code === "attachment_upload_invalid") {
         logger.response(422, Date.now() - startTime);
         res.status(422).json({ error: code });
+        return;
+      }
+      if (code === "account_deleted") {
+        logger.response(409, Date.now() - startTime);
+        res.status(409).json({ error: code });
+        return;
+      }
+      if (code === "attachment_quota_exceeded") {
+        logger.response(429, Date.now() - startTime);
+        res.status(429).json({ error: code });
         return;
       }
       throw error;

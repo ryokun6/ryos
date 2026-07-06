@@ -1,5 +1,7 @@
-export const AI_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
-export const AI_ATTACHMENT_TTL_SECONDS = 365 * 24 * 60 * 60;
+export const AI_ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024;
+export const AI_ATTACHMENT_MAX_COUNT_PER_USER = 128;
+export const AI_ATTACHMENT_MAX_TOTAL_BYTES_PER_USER = 256 * 1024 * 1024;
+export const AI_ATTACHMENT_UNATTACHED_GRACE_MS = 60 * 60 * 1000;
 export const AI_ATTACHMENT_MEDIA_TYPES = [
   "image/jpeg",
   "image/png",

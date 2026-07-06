@@ -390,6 +390,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       console.error("AI Chat Error:", err);
+      if (sharedRequestOwner) {
+        invalidateAIConversationSession("chat", sharedRequestOwner);
+      }
 
       // Helper function to handle authentication errors consistently
       const handleAuthError = (message?: string) => {
@@ -1066,12 +1069,37 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [setSdkMessages]
   );
 
+  const handleRetry = useCallback(() => {
+    const lastMessage = currentSdkMessagesRef.current.at(-1);
+    if (!lastMessage) return;
+    clearError();
+    const requestOptions = { body: buildChatRequestBody() };
+    if (lastMessage.role === "user") {
+      void sendMessage(
+        {
+          role: "user",
+          parts: lastMessage.parts,
+          metadata: lastMessage.metadata,
+          messageId: lastMessage.id,
+        },
+        requestOptions
+      );
+      return;
+    }
+    if (lastMessage.role === "assistant") {
+      void regenerate({
+        messageId: lastMessage.id,
+        ...requestOptions,
+      });
+    }
+  }, [clearError, regenerate, sendMessage]);
+
   return {
     // AI Chat State & Actions
     messages: messagesWithTimestamps, // Return messages with timestamps
     handleSubmitMessage,
     isLoading,
-    regenerate,
+    regenerate: handleRetry,
     error,
     stop,
     sendMessage,

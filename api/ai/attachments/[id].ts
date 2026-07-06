@@ -1,7 +1,6 @@
 import { apiHandler } from "../../_utils/api-handler.js";
-import { createSignedDownloadUrl } from "../../_utils/storage.js";
 import { isAIAttachmentId } from "../../../src/shared/contracts/aiAttachment.js";
-import { getAIAttachmentRecord } from "./_helpers/store.js";
+import { getAIAttachmentContent } from "./_helpers/store.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -21,21 +20,29 @@ export default apiHandler(
       return;
     }
 
-    const record = await getAIAttachmentRecord({
+    const attachment = await getAIAttachmentContent({
       redis,
       username: user!.username,
       attachmentId,
     });
-    if (!record) {
+    if (!attachment) {
       logger.response(404, Date.now() - startTime);
       res.status(404).json({ error: "attachment_not_found" });
       return;
     }
 
-    const downloadUrl = await createSignedDownloadUrl(record.storageUrl);
     res.setHeader("Cache-Control", "private, no-store");
-    res.setHeader("Location", downloadUrl);
-    logger.response(302, Date.now() - startTime);
-    res.status(302).end();
+    res.setHeader("Content-Type", attachment.record.mediaType);
+    res.setHeader("Content-Length", String(attachment.bytes.byteLength));
+    if (attachment.record.filename) {
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename*=UTF-8''${encodeURIComponent(
+          attachment.record.filename
+        )}`
+      );
+    }
+    logger.response(200, Date.now() - startTime);
+    res.status(200).send(Buffer.from(attachment.bytes));
   }
 );

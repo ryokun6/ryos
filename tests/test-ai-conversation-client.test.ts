@@ -271,6 +271,41 @@ describe("AI conversation client", () => {
     expect(context?.id).toBe(RESET_ID);
   });
 
+  test("refreshes a reset session after another device clears it", async () => {
+    let getCount = 0;
+    globalThis.fetch = async (_input, init) => {
+      if (init?.method === "POST") {
+        return Response.json(
+          { error: "conversation_changed" },
+          { status: 409 }
+        );
+      }
+      getCount += 1;
+      return getCount === 1
+        ? pageResponse({
+            revision: 1,
+            messages: [
+              {
+                id: "u1",
+                seq: 1,
+                role: "user",
+                parts: [{ type: "text", text: "hello" }],
+                createdAt: "2026-07-06T00:00:00.000Z",
+              },
+            ],
+          })
+        : pageResponse({ id: RESET_ID, canImportLegacy: false });
+    };
+
+    const reset = await resetAIConversationSession({
+      channel: "chat",
+      username: "alice",
+      localMessages: [message("u1", "user", "hello")],
+    });
+    expect(reset.id).toBe(RESET_ID);
+    expect(getCount).toBe(2);
+  });
+
   test("projects rich message parts for legacy import", () => {
     const richMessage: AIChatMessage = {
       id: "a1",

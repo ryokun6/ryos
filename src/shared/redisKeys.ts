@@ -120,8 +120,8 @@ export const redisKeys = {
       redisKeyCaseSensitive("chat", "rooms", roomId, "presence"),
     aiConversation: (username: string, channel: AIConversationChannel) =>
       redisKey("chat", "ai", "user", username, channel, "conversation"),
-    aiConversationLock: (username: string, channel: AIConversationChannel) =>
-      redisKey("chat", "ai", "user", username, channel, "lock"),
+    aiConversationLock: (username: string) =>
+      redisKey("chat", "ai", "user", username, "conversation-lock"),
     aiConversationTombstone: (username: string) =>
       redisKey("chat", "ai", "user", username, "deleted"),
     aiAttachment: (username: string, attachmentId: string) =>
@@ -135,6 +135,8 @@ export const redisKeys = {
       ),
     aiAttachmentIds: (username: string) =>
       redisKey("chat", "ai", "user", username, "attachment-ids"),
+    aiAttachmentBytes: (username: string) =>
+      redisKey("chat", "ai", "user", username, "attachment-bytes"),
   },
   sync: {
     v2Seq: (username: string) => redisKey("sync", "v2", "user", username, "seq"),

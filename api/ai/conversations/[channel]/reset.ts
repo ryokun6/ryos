@@ -8,10 +8,6 @@ import {
   getAIConversationSummary,
   resetAIConversation,
 } from "../_helpers/store.js";
-import {
-  collectAIAttachmentIds,
-  deleteAIAttachments,
-} from "../../attachments/_helpers/store.js";
 import { isAIConversationChannel } from "../../../../src/shared/contracts/aiConversation.js";
 
 export const runtime = "nodejs";
@@ -76,23 +72,6 @@ export default apiHandler(
                   error
                 );
               })
-          );
-        }
-        const attachmentIds = collectAIAttachmentIds(
-          result.clearedMessages
-        );
-        if (attachmentIds.length > 0) {
-          backgroundTasks.push(
-            deleteAIAttachments({
-              redis,
-              username: user!.username,
-              attachmentIds,
-            }).catch((error) => {
-              logger.error(
-                "Cleared conversation attachment cleanup failed",
-                error
-              );
-            })
           );
         }
         if (backgroundTasks.length > 0) {

@@ -23,6 +23,18 @@ export const AI_LIMIT_ANON_PER_DAY = 3;
 export const AI_WINDOW_AUTHENTICATED = 5 * 60 * 60; // 5 hours in seconds
 export const AI_WINDOW_ANONYMOUS = 24 * 60 * 60; // 24 hours in seconds
 
+const INCREMENT_AI_LIMIT_SCRIPT = `
+if redis.call("EXISTS", KEYS[2]) == 1 then
+  return {tonumber(redis.call("GET", KEYS[1]) or "0"), 1}
+end
+local count = redis.call("INCR", KEYS[1])
+if count == 1 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+redis.call("SET", KEYS[2], "1", "EX", ARGV[1])
+return {count, 0}
+`;
+
 // Helper function to get rate limit key for a user
 export const getAIRateLimitKey = (identifier: string): string => {
   const scope = identifier.startsWith("anon:") ? "anon" : "user";
@@ -39,7 +51,8 @@ interface AIRateLimitResult {
 export async function checkAndIncrementAIMessageCount(
   identifier: string,
   isAuthenticated: boolean,
-  authToken: string | null = null
+  authToken: string | null = null,
+  operationId: string | null = null
 ): Promise<AIRateLimitResult> {
   const key = getAIRateLimitKey(identifier);
 
@@ -84,13 +97,26 @@ export async function checkAndIncrementAIMessageCount(
     };
   }
 
-  // ATOMIC rate limit check: increment first, then check
-  // This prevents race conditions where two requests read the same count
-  const newCount = await getRedis().incr(key);
-
-  // Set TTL only if this is the first increment (count became 1)
-  if (newCount === 1) {
-    await getRedis().expire(key, ttlSeconds);
+  let newCount: number;
+  if (operationId) {
+    const scope = isAnonymous ? "anon" : "user";
+    const operationKey = makeCanonicalRateKey([
+      "ai-operation",
+      scope,
+      identifier,
+      operationId,
+    ]);
+    [newCount] = await getRedis().eval<[number, number]>(
+      INCREMENT_AI_LIMIT_SCRIPT,
+      [key, operationKey],
+      [ttlSeconds]
+    );
+  } else {
+    // Increment first so concurrent requests cannot both pass the same limit.
+    newCount = await getRedis().incr(key);
+    if (newCount === 1) {
+      await getRedis().expire(key, ttlSeconds);
+    }
   }
 
   // Check if the NEW count exceeds the limit

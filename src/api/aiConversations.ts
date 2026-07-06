@@ -12,14 +12,11 @@ import {
   type AIConversationRequestContext,
 } from "@/shared/contracts/aiConversation";
 import {
+  AI_ATTACHMENT_MAX_BYTES,
   getAIAttachmentIdFromUrl,
   getAIAttachmentUrl,
   isAIAttachmentMediaType,
 } from "@/shared/contracts/aiAttachment";
-import {
-  uploadBlobWithStorageInstruction,
-  type StorageUploadInstruction,
-} from "@/utils/storageUpload";
 
 interface ConversationSession {
   owner: string;
@@ -322,41 +319,10 @@ function normalizeCreatedAt(value: unknown): string {
   return new Date().toISOString();
 }
 
-function isStorageUploadInstruction(
-  value: unknown
-): value is StorageUploadInstruction {
-  if (
-    !isRecord(value) ||
-    (value.provider !== "vercel-blob" && value.provider !== "s3") ||
-    typeof value.pathname !== "string" ||
-    typeof value.contentType !== "string" ||
-    typeof value.maximumSizeInBytes !== "number"
-  ) {
-    return false;
-  }
-  if (value.uploadMethod === "vercel-client-token") {
-    return value.provider === "vercel-blob" && typeof value.clientToken === "string";
-  }
-  return (
-    value.provider === "s3" &&
-    (value.uploadMethod === "presigned-put" ||
-      value.uploadMethod === "api-proxy-put") &&
-    typeof value.uploadUrl === "string" &&
-    typeof value.storageUrl === "string"
-  );
-}
-
 function isToolPart(
   part: AIChatMessage["parts"][number]
 ): part is AIToolUIPart {
   return part.type.startsWith("tool-");
-}
-
-async function sha256Blob(blob: Blob): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("");
 }
 
 export async function uploadAIConversationImage(
@@ -371,45 +337,22 @@ export async function uploadAIConversationImage(
   const imageResponse = await fetch(dataUrl);
   const blob = await imageResponse.blob();
   const mediaType = dataUrlMatch[1];
-  const prepareResponse = await abortableFetch(
-    getApiUrl("/api/ai/attachments"),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "prepare",
-        mediaType,
-        size: blob.size,
-        sha256: await sha256Blob(blob),
-        ...(filename ? { filename } : {}),
-      }),
-      timeout: 30_000,
-    }
-  );
-  const prepared: unknown = await prepareResponse.json();
-  if (
-    !isRecord(prepared) ||
-    typeof prepared.attachmentId !== "string" ||
-    !isStorageUploadInstruction(prepared.upload)
-  ) {
-    throw new Error("Invalid AI attachment upload response");
+  if (blob.size <= 0 || blob.size > AI_ATTACHMENT_MAX_BYTES) {
+    throw new Error("AI conversation image exceeds the upload limit");
   }
-
-  const uploaded = await uploadBlobWithStorageInstruction(blob, prepared.upload);
-  const completeResponse = await abortableFetch(
-    getApiUrl("/api/ai/attachments"),
+  const attachmentUrl = filename
+    ? `/api/ai/attachments?${new URLSearchParams({ filename }).toString()}`
+    : "/api/ai/attachments";
+  const uploadResponse = await abortableFetch(
+    getApiUrl(attachmentUrl),
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "complete",
-        attachmentId: prepared.attachmentId,
-        storageUrl: uploaded.storageUrl,
-      }),
+      headers: { "Content-Type": mediaType },
+      body: blob,
       timeout: 30_000,
     }
   );
-  const completed: unknown = await completeResponse.json();
+  const completed: unknown = await uploadResponse.json();
   if (
     !isRecord(completed) ||
     typeof completed.url !== "string" ||
@@ -703,24 +646,41 @@ export async function resetAIConversationSession({
     localMessages,
   });
   const generation = incrementGeneration(key);
-
-  const response = await abortableFetch(
-    getApiUrl(`/api/ai/conversations/${channel}/reset`),
-    {
+  const sendReset = (conversationId: string) =>
+    abortableFetch(getApiUrl(`/api/ai/conversations/${channel}/reset`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        conversationId: session.conversation.id,
+        conversationId,
         operationId: crypto.randomUUID(),
       }),
       timeout: 15_000,
       throwOnHttpError: false,
-    }
-  );
+    });
+
+  let response = await sendReset(session.conversation.id);
   if (!response.ok) {
-    throw new Error(
-      `Conversation reset failed: ${await readErrorCode(response)}`
-    );
+    const code = await readErrorCode(response);
+    if (code !== "conversation_changed") {
+      throw new Error(`Conversation reset failed: ${code}`);
+    }
+    invalidateAIConversationSession(channel, owner);
+    const current = await loadAIConversation({
+      channel,
+      username: owner,
+      localMessages: [],
+      force: true,
+      importLocalIfEmpty: false,
+    });
+    if (current.messages.length === 0) {
+      return current.conversation;
+    }
+    response = await sendReset(current.conversation.id);
+    if (!response.ok) {
+      throw new Error(
+        `Conversation reset failed: ${await readErrorCode(response)}`
+      );
+    }
   }
 
   const value: unknown = await response.json();

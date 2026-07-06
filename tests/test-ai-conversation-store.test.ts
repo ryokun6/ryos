@@ -7,6 +7,7 @@ import {
   completeAIConversationTurn,
   deleteAIConversationKeys,
   getAIConversationPage,
+  getAIConversationRegenerationModelMessages,
   importAIConversationMessages,
   prepareAIConversationRegeneration,
   releaseAIConversationTurn,
@@ -43,7 +44,18 @@ class MemoryConversationRedis implements AIConversationRedis {
     return deleted;
   }
 
+  async exists(...keys: string[]): Promise<number> {
+    return keys.reduce(
+      (count, key) => count + (this.values.has(key) ? 1 : 0),
+      0
+    );
+  }
+
   async expire(key: string, _seconds: number): Promise<number> {
+    return this.values.has(key) ? 1 : 0;
+  }
+
+  async persist(key: string): Promise<number> {
     return this.values.has(key) ? 1 : 0;
   }
 
@@ -147,7 +159,7 @@ describe("AI conversation store", () => {
   });
 
   test("preserves long text, owned images, sources, and bounded tool state", () => {
-    const longText = "x".repeat(64_000);
+    const longText = "x".repeat(128_000);
     const attachmentUrl =
       "/api/ai/attachments/33333333-3333-4333-8333-333333333333";
     const [user, assistant] = sanitizeAIConversationMessages([
@@ -488,6 +500,11 @@ describe("AI conversation store", () => {
         message("u2", "user", "later branch"),
       ],
     });
+    expect(
+      getAIConversationRegenerationModelMessages(seeded).map(
+        (entry) => entry.id
+      )
+    ).toEqual(["u1", "a1", "u2"]);
 
     const prepared = await prepareAIConversationRegeneration({
       redis,
@@ -549,8 +566,47 @@ describe("AI conversation store", () => {
       expectedConversationId: started.id,
       expectedRevision: started.revision,
       turnId: "one",
-      responseMessage: message("a1", "assistant", "Opening Finder"),
+      responseMessage: {
+        ...message("a1", "assistant", "Opening Finder"),
+        parts: [
+          { type: "text", text: "Opening Finder" },
+          {
+            type: "tool-launchApp",
+            toolCallId: "tool-1",
+            state: "input-available",
+            input: { id: "finder" },
+          },
+        ],
+      },
     });
+
+    await expect(
+      beginAIConversationTurn({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "request-mutated-continuation",
+        expectedConversationId: firstResponse.id,
+        expectedRevision: firstResponse.revision,
+        turnId: "mutated-continuation",
+        action: {
+          kind: "assistant-continuation",
+          message: {
+            ...message("a1", "assistant", "Changed text"),
+            parts: [
+              { type: "text", text: "Changed text" },
+              {
+                type: "tool-launchApp",
+                toolCallId: "tool-1",
+                state: "output-available",
+                input: { id: "finder" },
+                output: { success: true },
+              },
+            ],
+          },
+        },
+      })
+    ).rejects.toMatchObject({ code: "message_id_conflict", status: 409 });
 
     const continuation = await beginAIConversationTurn({
       redis,
@@ -577,6 +633,34 @@ describe("AI conversation store", () => {
         },
       },
     });
+    await expect(
+      beginAIConversationTurn({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "request-replayed-continuation",
+        expectedConversationId: continuation.id,
+        expectedRevision: continuation.revision,
+        turnId: "replayed-continuation",
+        action: {
+          kind: "assistant-continuation",
+          message: {
+            ...message("a1", "assistant", "Opening Finder"),
+            parts: [
+              { type: "text", text: "Opening Finder" },
+              {
+                type: "tool-launchApp",
+                toolCallId: "tool-1",
+                state: "output-available",
+                input: { id: "finder" },
+                output: { success: true },
+              },
+            ],
+          },
+        },
+      })
+    ).rejects.toMatchObject({ code: "message_id_conflict", status: 409 });
+
     const completed = await completeAIConversationTurn({
       redis,
       username: "alice",

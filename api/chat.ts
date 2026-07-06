@@ -36,13 +36,13 @@ import {
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
 import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
-import { isAssistantGreetingRequest } from "../src/shared/assistantGreeting.js";
 import type { AIConversationRequestContext } from "../src/shared/contracts/aiConversation.js";
 import {
   AIConversationError,
-  beginAIConversationTurn,
+  beginAIConversationTurnWithStatus,
   commitAIConversationRegeneration,
   completeAIConversationTurn,
+  getAIConversationActionMessage,
   getAIConversationModelMessages,
   getAIConversationRegenerationModelMessages,
   prepareAIConversationRegeneration,
@@ -67,6 +67,8 @@ type ConversationContextParseResult =
   | { ok: true; value: AIConversationRequestContext | null }
   | { ok: false };
 
+const MAX_CHAT_OPERATION_ID_LENGTH = 128;
+
 function parseConversationContext(
   value: unknown
 ): ConversationContextParseResult {
@@ -86,7 +88,7 @@ function parseConversationContext(
     ) ||
     typeof operationId !== "string" ||
     operationId.length < 1 ||
-    operationId.length > 160 ||
+    operationId.length > MAX_CHAT_OPERATION_ID_LENGTH ||
     typeof revision !== "number" ||
     !Number.isSafeInteger(revision) ||
     revision < 0
@@ -244,7 +246,7 @@ export default apiHandler<{
     log(`Request origin: ${validOrigin}, IP: ${ip}`);
 
     const username = user?.username ?? null;
-    const authToken: string | undefined = user?.token;
+    const authToken = user?.token ?? null;
     const isAuthenticated = !!user;
     const identifier = isAuthenticated && username ? username : `anon:${ip}`;
 
@@ -257,6 +259,11 @@ export default apiHandler<{
     if (parsedConversationContext.value && (!isAuthenticated || !username)) {
       logger.response(401, Date.now() - startTime);
       res.status(401).json({ error: "conversation_auth_required" });
+      return;
+    }
+    if (isProactiveGreeting && (!isAuthenticated || !username)) {
+      logger.response(401, Date.now() - startTime);
+      res.status(401).json({ error: "proactive_greeting_auth_required" });
       return;
     }
 
@@ -291,24 +298,25 @@ export default apiHandler<{
     const requestMessages = clientActionMessage
       ? [clientActionMessage]
       : clientConversationMessages;
+    const conversationOperationId =
+      parsedConversationContext.value?.operationId ?? crypto.randomUUID();
 
-    // Only check rate limits for user messages (not system messages).
-    // Automatic desktop-assistant greetings are exempt so opening the bubble
-    // does not burn the anonymous daily AI budget.
-    const isAssistantGreeting =
-      conversationChannel === "assistant" &&
-      isAssistantGreetingRequest(
-        requestMessages,
-        { persona: "assistant" }
-      );
+    // Authenticated tool continuations are already covered by the user turn.
+    // Every other model invocation consumes quota.
     const isNewUserTurn =
       normalizedTrigger === "submit-message" &&
       requestMessages.at(-1)?.role === "user";
-    if (isNewUserTurn && !isAssistantGreeting) {
+    const isBillableGeneration =
+      Boolean(isProactiveGreeting) ||
+      !isAuthenticated ||
+      isNewUserTurn ||
+      normalizedTrigger === "regenerate-message";
+    if (isBillableGeneration) {
       const rateLimitResult = await checkAndIncrementAIMessageCount(
         identifier,
         isAuthenticated,
-        authToken
+        authToken,
+        isAuthenticated ? conversationOperationId : null
       );
 
       if (!rateLimitResult.allowed) {
@@ -344,11 +352,9 @@ export default apiHandler<{
       return;
     }
 
-    const conversationOperationId =
-      parsedConversationContext.value?.operationId ?? crypto.randomUUID();
     let storedConversation: Awaited<
-      ReturnType<typeof beginAIConversationTurn>
-    > | null = null;
+      ReturnType<typeof beginAIConversationTurnWithStatus>
+    >["document"] | null = null;
     if (isAuthenticated && username && !isProactiveGreeting) {
       try {
         if (
@@ -398,7 +404,7 @@ export default apiHandler<{
           return;
         }
 
-        storedConversation = await beginAIConversationTurn({
+        const beginResult = await beginAIConversationTurnWithStatus({
           redis,
           username,
           channel: conversationChannel,
@@ -414,6 +420,12 @@ export default apiHandler<{
               }
             : {}),
         });
+        if (!beginResult.operationApplied) {
+          logger.response(409, Date.now() - startTime);
+          res.status(409).json({ error: "operation_replayed" });
+          return;
+        }
+        storedConversation = beginResult.document;
         activeConversationTurn = {
           username,
           channel: conversationChannel,
@@ -569,6 +581,12 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
 
     let modelConversationMessages = clientConversationMessages;
     if (storedConversation) {
+      const canonicalAction = clientActionMessage
+        ? getAIConversationActionMessage(
+            storedConversation,
+            clientActionMessage.id
+          )
+        : undefined;
       const canonicalMessages =
         normalizedTrigger === "regenerate-message"
           ? getAIConversationRegenerationModelMessages(
@@ -581,10 +599,10 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
           ? canonicalMessages
           : overlayConversationAction(
               canonicalMessages,
-              clientActionMessage
+              canonicalAction
             );
     }
-    if (isAuthenticated) {
+    if (isAuthenticated && username) {
       modelConversationMessages = await resolveAIAttachmentsForModel({
         redis,
         username,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { FileUIPart, TextUIPart, ToolUIPart } from "ai";
+import type { FileUIPart, TextUIPart, ToolUIPart, UIMessage } from "ai";
 import type { RedisLike } from "../../../_utils/redis.js";
 import { redisKeys } from "../../../../src/shared/redisKeys.js";
 import {
@@ -12,12 +12,18 @@ import {
 import { ASSISTANT_SUMMON_MESSAGE } from "../../../../src/shared/assistantGreeting.js";
 import {
   canonicalizeAIAttachmentUrl,
+  cleanupStaleAIAttachments,
   collectAIAttachmentIds,
-  deleteAIAttachments,
+  finishStagedAIAttachmentDeletions,
+  prepareAIAttachmentClaims,
+  stageUnreferencedAIAttachments,
+  type AIAttachmentClaim,
+  type DeletingAIAttachment,
 } from "../../attachments/_helpers/store.js";
 
 const CONVERSATION_TTL_SECONDS = 365 * 24 * 60 * 60;
 const LOCK_TTL_SECONDS = 60;
+const LOCK_REFRESH_MS = 20_000;
 const LOCK_ATTEMPTS = 40;
 const LOCK_RETRY_MS = 25;
 const MAX_MESSAGES = 200;
@@ -206,7 +212,9 @@ export type AIConversationRedis = Pick<
   | "get"
   | "set"
   | "del"
+  | "exists"
   | "expire"
+  | "persist"
   | "eval"
   | "sadd"
   | "srem"
@@ -218,6 +226,7 @@ export type AIConversationErrorCode =
   | "conversation_changed"
   | "revision_conflict"
   | "message_id_conflict"
+  | "attachment_not_found"
   | "conversation_not_empty"
   | "invalid_cursor"
   | "conversation_corrupt"
@@ -243,10 +252,16 @@ interface WriteAIConversationMessagesInput {
   expectedConversationId?: string;
   expectedRevision?: number;
   requireEmpty?: boolean;
+  assistantContinuationId?: string;
   turn?: {
     id: string;
     action: "begin" | "complete";
   };
+}
+
+export interface AIConversationWriteResult {
+  document: StoredConversation;
+  operationApplied: boolean;
 }
 
 interface ConversationWriteContext {
@@ -869,12 +884,30 @@ end
 return 0
 `;
 
+const REFRESH_LOCK_SCRIPT = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("EXPIRE", KEYS[1], ARGV[2])
+end
+return 0
+`;
+
 const SAVE_CONVERSATION_SCRIPT = `
 if redis.call("GET", KEYS[1]) ~= ARGV[1] then
   return -1
 end
 if redis.call("EXISTS", KEYS[2]) == 1 then
   return -2
+end
+local claimCount = tonumber(ARGV[4])
+for index = 1, claimCount do
+  local expectedIndex = 3 + index * 2
+  if redis.call("GET", KEYS[3 + index]) ~= ARGV[expectedIndex] then
+    return -3
+  end
+end
+for index = 1, claimCount do
+  local nextIndex = 4 + index * 2
+  redis.call("SET", KEYS[3 + index], ARGV[nextIndex])
 end
 redis.call("SET", KEYS[3], ARGV[2], "EX", ARGV[3])
 return 1
@@ -883,7 +916,6 @@ return 1
 async function withConversationLock<T>({
   redis,
   username,
-  channel,
   task,
 }: {
   redis: AIConversationRedis;
@@ -891,7 +923,7 @@ async function withConversationLock<T>({
   channel: AIConversationChannel;
   task: (lockToken: string) => Promise<T>;
 }): Promise<T> {
-  const key = redisKeys.chat.aiConversationLock(username, channel);
+  const key = redisKeys.chat.aiConversationLock(username);
   const token = crypto.randomUUID();
 
   for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt += 1) {
@@ -900,6 +932,16 @@ async function withConversationLock<T>({
       ex: LOCK_TTL_SECONDS,
     });
     if (claimed !== null && claimed !== undefined) {
+      const refreshTimer = setInterval(() => {
+        void redis
+          .eval<number>(
+            REFRESH_LOCK_SCRIPT,
+            [key],
+            [token, LOCK_TTL_SECONDS]
+          )
+          .catch(() => 0);
+      }, LOCK_REFRESH_MS);
+      refreshTimer.unref?.();
       try {
         const tombstone = await redis.get(
           redisKeys.chat.aiConversationTombstone(username)
@@ -913,6 +955,7 @@ async function withConversationLock<T>({
         }
         return await task(token);
       } finally {
+        clearInterval(refreshTimer);
         await redis
           .eval<number>(RELEASE_LOCK_SCRIPT, [key], [token])
           .catch(() => 0);
@@ -943,16 +986,27 @@ async function saveConversation(
   redis: AIConversationRedis,
   username: string,
   document: StoredConversation,
-  lockToken: string
+  lockToken: string,
+  attachmentClaims: readonly AIAttachmentClaim[] = []
 ): Promise<void> {
   const result = await redis.eval<number>(
     SAVE_CONVERSATION_SCRIPT,
     [
-      redisKeys.chat.aiConversationLock(username, document.channel),
+      redisKeys.chat.aiConversationLock(username),
       redisKeys.chat.aiConversationTombstone(username),
       redisKeys.chat.aiConversation(username, document.channel),
+      ...attachmentClaims.map((claim) => claim.key),
     ],
-    [lockToken, JSON.stringify(document), CONVERSATION_TTL_SECONDS]
+    [
+      lockToken,
+      JSON.stringify(document),
+      CONVERSATION_TTL_SECONDS,
+      attachmentClaims.length,
+      ...attachmentClaims.flatMap((claim) => [
+        claim.expectedValue,
+        claim.nextValue,
+      ]),
+    ]
   );
   if (result === -2) {
     throw new AIConversationError(
@@ -962,6 +1016,13 @@ async function saveConversation(
     );
   }
   if (result !== 1) {
+    if (result === -3) {
+      throw new AIConversationError(
+        "attachment_not_found",
+        422,
+        "Attachment changed before it could be linked"
+      );
+    }
     throw new AIConversationError(
       "conversation_busy",
       503,
@@ -1050,13 +1111,12 @@ function sameMessageContent(
 function mergeConversationMessages(
   document: StoredConversation,
   messages: readonly unknown[]
-): { changed: boolean; removedAttachmentIds: string[] } {
+): { changed: boolean } {
   const incomingMessages = sanitizeAIConversationMessages(messages);
   const byId = new Map(
     document.messages.map((message) => [message.id, message])
   );
   let changed = false;
-  const removedAttachmentIds = new Set<string>();
 
   for (const incoming of incomingMessages) {
     const existing = byId.get(incoming.id);
@@ -1081,35 +1141,84 @@ function mergeConversationMessages(
       );
     }
 
-    const incomingAttachmentIds = new Set(
-      collectAIAttachmentIds([{ parts: incoming.parts }])
-    );
-    for (const attachmentId of collectAIAttachmentIds([
-      { parts: existing.parts },
-    ])) {
-      if (!incomingAttachmentIds.has(attachmentId)) {
-        removedAttachmentIds.add(attachmentId);
-      }
-    }
     existing.parts = incoming.parts;
     changed = true;
   }
 
   document.messages.sort((left, right) => left.seq - right.seq);
-  for (const removed of trimConversation(document)) {
-    for (const attachmentId of collectAIAttachmentIds([removed])) {
-      removedAttachmentIds.add(attachmentId);
-    }
+  trimConversation(document);
+  return { changed };
+}
+
+function getConversationAttachmentIds(
+  document: StoredConversation
+): Set<string> {
+  return new Set(collectAIAttachmentIds(document.messages));
+}
+
+function getRemovedAttachmentIds(
+  before: ReadonlySet<string>,
+  after: ReadonlySet<string>
+): string[] {
+  return [...before].filter((attachmentId) => !after.has(attachmentId));
+}
+
+async function prepareNewAttachmentClaims({
+  redis,
+  username,
+  before,
+  after,
+}: {
+  redis: AIConversationRedis;
+  username: string;
+  before: ReadonlySet<string>;
+  after: ReadonlySet<string>;
+}): Promise<AIAttachmentClaim[]> {
+  const added = [...after].filter((attachmentId) => !before.has(attachmentId));
+  if (added.length === 0) return [];
+  const claims = await prepareAIAttachmentClaims({
+    redis,
+    username,
+    attachmentIds: added,
+  });
+  if (!claims) {
+    throw new AIConversationError(
+      "attachment_not_found",
+      422,
+      "Attachment was not found"
+    );
   }
-  const retainedAttachmentIds = new Set(
-    collectAIAttachmentIds(document.messages)
-  );
-  return {
-    changed,
-    removedAttachmentIds: [...removedAttachmentIds].filter(
-      (attachmentId) => !retainedAttachmentIds.has(attachmentId)
-    ),
-  };
+  return claims;
+}
+
+async function stageRemovedAttachments({
+  redis,
+  username,
+  document,
+  candidateIds,
+  lockToken,
+}: {
+  redis: AIConversationRedis;
+  username: string;
+  document: StoredConversation;
+  candidateIds: readonly string[];
+  lockToken: string;
+}): Promise<DeletingAIAttachment[]> {
+  if (candidateIds.length === 0) return [];
+  const otherChannel: AIConversationChannel =
+    document.channel === "chat" ? "assistant" : "chat";
+  const other = await readConversation(redis, username, otherChannel);
+  const referencedIds = getConversationAttachmentIds(document);
+  for (const attachmentId of other ? getConversationAttachmentIds(other) : []) {
+    referencedIds.add(attachmentId);
+  }
+  return stageUnreferencedAIAttachments({
+    redis,
+    username,
+    candidateIds,
+    referencedIds,
+    lockToken,
+  });
 }
 
 function assertMessageRole(
@@ -1125,9 +1234,111 @@ function assertMessageRole(
   }
 }
 
+function isAllowedToolContinuation(
+  existing: ToolUIPart,
+  incoming: ToolUIPart
+): boolean {
+  if (
+    existing.type !== incoming.type ||
+    existing.toolCallId !== incoming.toolCallId ||
+    existing.title !== incoming.title ||
+    existing.providerExecuted !== incoming.providerExecuted
+  ) {
+    return false;
+  }
+  const existingInput = "input" in existing ? existing.input : undefined;
+  const incomingInput = "input" in incoming ? incoming.input : undefined;
+  if (JSON.stringify(existingInput) !== JSON.stringify(incomingInput)) {
+    return false;
+  }
+
+  if (existing.state === "input-available") {
+    return (
+      incoming.state === "output-available" ||
+      incoming.state === "output-error"
+    );
+  }
+  if (existing.state === "approval-requested") {
+    return (
+      incoming.state === "approval-responded" ||
+      incoming.state === "output-denied"
+    );
+  }
+  if (existing.state === "approval-responded") {
+    return (
+      existing.approval.approved &&
+      (incoming.state === "output-available" ||
+        incoming.state === "output-error")
+    );
+  }
+  return false;
+}
+
+function assertAssistantContinuation(
+  document: StoredConversation,
+  messageId: string,
+  messages: readonly unknown[]
+): void {
+  const existing = document.messages.at(-1);
+  const [incoming] = sanitizeAIConversationMessages(messages);
+  if (
+    !existing ||
+    existing.role !== "assistant" ||
+    existing.id !== messageId ||
+    incoming?.id !== messageId ||
+    incoming.role !== "assistant" ||
+    incoming.parts.length !== existing.parts.length
+  ) {
+    throw new AIConversationError(
+      "message_id_conflict",
+      409,
+      "Assistant continuation does not match the active tool call"
+    );
+  }
+
+  let transitionedTool = false;
+  for (let index = 0; index < existing.parts.length; index += 1) {
+    const existingPart = existing.parts[index];
+    const incomingPart = incoming.parts[index];
+    if (!existingPart || !incomingPart) {
+      transitionedTool = false;
+      break;
+    }
+    const existingIsTool = isToolConversationPart(existingPart);
+    const incomingIsTool = isToolConversationPart(incomingPart);
+    if (existingIsTool !== incomingIsTool) {
+      transitionedTool = false;
+      break;
+    }
+    if (!existingIsTool || !incomingIsTool) {
+      if (JSON.stringify(existingPart) !== JSON.stringify(incomingPart)) {
+        transitionedTool = false;
+        break;
+      }
+      continue;
+    }
+    if (JSON.stringify(existingPart) === JSON.stringify(incomingPart)) {
+      continue;
+    }
+    if (!isAllowedToolContinuation(existingPart, incomingPart)) {
+      transitionedTool = false;
+      break;
+    }
+    transitionedTool = true;
+  }
+
+  if (!transitionedTool) {
+    throw new AIConversationError(
+      "message_id_conflict",
+      409,
+      "Assistant continuation does not advance an active tool call"
+    );
+  }
+}
+
 async function writeAIConversationMessages(
   input: WriteAIConversationMessagesInput
-): Promise<StoredConversation> {
+): Promise<AIConversationWriteResult> {
   if (!input.operationId.trim() || input.operationId.length > 160) {
     throw new AIConversationError(
       "message_id_conflict",
@@ -1136,8 +1347,8 @@ async function writeAIConversationMessages(
     );
   }
 
-  let removedAttachmentIds: string[] = [];
-  const document = await withConversationLock({
+  let stagedAttachments: DeletingAIAttachment[] = [];
+  const result = await withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1147,7 +1358,7 @@ async function writeAIConversationMessages(
         createConversation(input.channel);
 
       if (document.recentOperationIds.includes(input.operationId)) {
-        return document;
+        return { document, operationApplied: false };
       }
       if (
         input.expectedConversationId &&
@@ -1183,6 +1394,13 @@ async function writeAIConversationMessages(
           "Legacy import is no longer allowed"
         );
       }
+      if (input.assistantContinuationId) {
+        assertAssistantContinuation(
+          document,
+          input.assistantContinuationId,
+          input.messages
+        );
+      }
 
       if (input.turn) {
         const pendingIsStale =
@@ -1211,8 +1429,15 @@ async function writeAIConversationMessages(
         }
       }
 
+      const attachmentsBefore = getConversationAttachmentIds(document);
       const merged = mergeConversationMessages(document, input.messages);
-      removedAttachmentIds = merged.removedAttachmentIds;
+      const attachmentsAfter = getConversationAttachmentIds(document);
+      const attachmentClaims = await prepareNewAttachmentClaims({
+        redis: input.redis,
+        username: input.username,
+        before: attachmentsBefore,
+        after: attachmentsAfter,
+      });
       if (input.turn?.action === "complete") {
         document.pendingTurnId = null;
         document.pendingTurnStartedAt = null;
@@ -1227,31 +1452,64 @@ async function writeAIConversationMessages(
         input.redis,
         input.username,
         document,
-        lockToken
+        lockToken,
+        attachmentClaims
       );
-      return document;
+      try {
+        stagedAttachments = await stageRemovedAttachments({
+          redis: input.redis,
+          username: input.username,
+          document,
+          candidateIds: getRemovedAttachmentIds(
+            attachmentsBefore,
+            attachmentsAfter
+          ),
+          lockToken,
+        });
+      } catch (error) {
+        console.error(
+          "[ai-conversation] Failed to stage removed attachments",
+          error
+        );
+      }
+      return { document, operationApplied: true };
     },
   });
-  if (removedAttachmentIds.length > 0) {
-    await deleteAIAttachments({
-      redis: input.redis,
-      username: input.username,
-      attachmentIds: removedAttachmentIds,
-    }).catch(() => 0);
-  }
-  return document;
+  await finishStagedAIAttachmentDeletions({
+    redis: input.redis,
+    username: input.username,
+    attachments: stagedAttachments,
+  });
+  return result;
 }
 
 export async function beginAIConversationTurn(
   input: BeginAIConversationTurnInput
 ): Promise<StoredConversation> {
+  return (await beginAIConversationTurnWithStatus(input)).document;
+}
+
+export async function beginAIConversationTurnWithStatus(
+  input: BeginAIConversationTurnInput
+): Promise<AIConversationWriteResult> {
   let messages: readonly unknown[] = [];
+  let assistantContinuationId: string | undefined;
   if (input.action.kind === "user-message") {
     assertMessageRole(input.action.message, "user");
     messages = [input.action.message];
   } else if (input.action.kind === "assistant-continuation") {
     assertMessageRole(input.action.message, "assistant");
     messages = [input.action.message];
+    assistantContinuationId = isRecord(input.action.message)
+      ? getString(input.action.message.id)?.trim() || undefined
+      : undefined;
+    if (!assistantContinuationId) {
+      throw new AIConversationError(
+        "message_id_conflict",
+        422,
+        "Assistant continuation requires a message id"
+      );
+    }
   }
 
   return writeAIConversationMessages({
@@ -1260,6 +1518,7 @@ export async function beginAIConversationTurn(
     channel: input.channel,
     operationId: input.operationId,
     messages,
+    ...(assistantContinuationId ? { assistantContinuationId } : {}),
     turn: { id: input.turnId, action: "begin" },
     ...(input.expectedConversationId
       ? { expectedConversationId: input.expectedConversationId }
@@ -1274,7 +1533,8 @@ export async function completeAIConversationTurn(
   input: CompleteAIConversationTurnInput
 ): Promise<StoredConversation> {
   assertMessageRole(input.responseMessage, "assistant");
-  return writeAIConversationMessages({
+  return (
+    await writeAIConversationMessages({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1287,16 +1547,19 @@ export async function completeAIConversationTurn(
     ...(input.expectedRevision === undefined
       ? {}
       : { expectedRevision: input.expectedRevision }),
-  });
+    })
+  ).document;
 }
 
 export async function importAIConversationMessages(
   input: ImportAIConversationMessagesInput
 ): Promise<StoredConversation> {
-  return writeAIConversationMessages({
-    ...input,
-    requireEmpty: true,
-  });
+  return (
+    await writeAIConversationMessages({
+      ...input,
+      requireEmpty: true,
+    })
+  ).document;
 }
 
 export async function releaseAIConversationTurn({
@@ -1331,7 +1594,8 @@ export async function resetAIConversation(
   reset: boolean;
   clearedMessages: AIConversationMessage[];
 }> {
-  return withConversationLock({
+  let stagedAttachments: DeletingAIAttachment[] = [];
+  const result = await withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1355,6 +1619,9 @@ export async function resetAIConversation(
       replacement.legacyImportAllowed = false;
       replacement.lastResetOperationId = input.operationId;
       replacement.recentOperationIds = [input.operationId];
+      const removedAttachmentIds = [
+        ...getConversationAttachmentIds(current),
+      ];
       const clearedMessages = current.messages.map((message) => ({
         ...message,
         parts: message.parts.map((part) => ({ ...part })),
@@ -1365,9 +1632,29 @@ export async function resetAIConversation(
         replacement,
         lockToken
       );
+      try {
+        stagedAttachments = await stageRemovedAttachments({
+          redis: input.redis,
+          username: input.username,
+          document: replacement,
+          candidateIds: removedAttachmentIds,
+          lockToken,
+        });
+      } catch (error) {
+        console.error(
+          "[ai-conversation] Failed to stage reset attachments",
+          error
+        );
+      }
       return { document: replacement, reset: true, clearedMessages };
     },
   });
+  await finishStagedAIAttachmentDeletions({
+    redis: input.redis,
+    username: input.username,
+    attachments: stagedAttachments,
+  });
+  return result;
 }
 
 export async function prepareAIConversationRegeneration(
@@ -1404,7 +1691,7 @@ function validateRegenerationTarget(
   }
   const target = input.targetMessageId
     ? document.messages.find((message) => message.id === input.targetMessageId)
-    : document.messages.findLast((message) => message.role === "assistant");
+    : document.messages.at(-1);
   if (!target) {
     throw new AIConversationError(
       "message_id_conflict",
@@ -1418,7 +1705,7 @@ function validateRegenerationTarget(
 export async function commitAIConversationRegeneration(
   input: CommitAIConversationRegenerationInput
 ): Promise<StoredConversation> {
-  let removedAttachmentIds: string[] = [];
+  let stagedAttachments: DeletingAIAttachment[] = [];
   const result = await withConversationLock({
     redis: input.redis,
     username: input.username,
@@ -1437,30 +1724,22 @@ export async function commitAIConversationRegeneration(
           "Conversation turn is no longer active"
         );
       }
+      const attachmentsBefore = getConversationAttachmentIds(document);
       const target = validateRegenerationTarget(document, input);
-      const removedMessages = document.messages.filter((message) =>
-        target.role === "assistant"
-          ? message.seq >= target.seq
-          : message.seq > target.seq
-      );
       document.messages = document.messages.filter((message) =>
         target.role === "assistant"
           ? message.seq < target.seq
           : message.seq <= target.seq
       );
       assertMessageRole(input.responseMessage, "assistant");
-      const merged = mergeConversationMessages(document, [
-        input.responseMessage,
-      ]);
-      const retainedAttachmentIds = new Set(
-        collectAIAttachmentIds(document.messages)
-      );
-      removedAttachmentIds = [
-        ...new Set([
-          ...collectAIAttachmentIds(removedMessages),
-          ...merged.removedAttachmentIds,
-        ]),
-      ].filter((attachmentId) => !retainedAttachmentIds.has(attachmentId));
+      mergeConversationMessages(document, [input.responseMessage]);
+      const attachmentsAfter = getConversationAttachmentIds(document);
+      const attachmentClaims = await prepareNewAttachmentClaims({
+        redis: input.redis,
+        username: input.username,
+        before: attachmentsBefore,
+        after: attachmentsAfter,
+      });
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
       document.pendingTurnId = null;
@@ -1471,18 +1750,34 @@ export async function commitAIConversationRegeneration(
         input.redis,
         input.username,
         document,
-        lockToken
+        lockToken,
+        attachmentClaims
       );
+      try {
+        stagedAttachments = await stageRemovedAttachments({
+          redis: input.redis,
+          username: input.username,
+          document,
+          candidateIds: getRemovedAttachmentIds(
+            attachmentsBefore,
+            attachmentsAfter
+          ),
+          lockToken,
+        });
+      } catch (error) {
+        console.error(
+          "[ai-conversation] Failed to stage regenerated attachments",
+          error
+        );
+      }
       return document;
     },
   });
-  if (removedAttachmentIds.length > 0) {
-    await deleteAIAttachments({
-      redis: input.redis,
-      username: input.username,
-      attachmentIds: removedAttachmentIds,
-    }).catch(() => 0);
-  }
+  await finishStagedAIAttachmentDeletions({
+    redis: input.redis,
+    username: input.username,
+    attachments: stagedAttachments,
+  });
   return result;
 }
 
@@ -1543,6 +1838,9 @@ export async function getAIConversationPage({
     redis,
     username,
     channel,
+  });
+  await cleanupStaleAIAttachments({ redis, username }).catch((error) => {
+    console.error("[ai-conversation] Failed to retry attachment cleanup", error);
   });
   const normalizedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
   let beforeSeq = Number.POSITIVE_INFINITY;
@@ -1608,6 +1906,20 @@ export function getAIConversationModelMessages(
   });
 }
 
+export function getAIConversationActionMessage(
+  document: StoredConversation,
+  messageId: string
+): UIMessage | undefined {
+  const message = document.messages.find((candidate) => candidate.id === messageId);
+  return message
+    ? {
+        id: message.id,
+        role: message.role,
+        parts: message.parts,
+      }
+    : undefined;
+}
+
 export function getAIConversationRegenerationModelMessages(
   document: StoredConversation,
   targetMessageId?: string
@@ -1618,9 +1930,7 @@ export function getAIConversationRegenerationModelMessages(
 }> {
   const targetIndex = targetMessageId
     ? document.messages.findIndex((message) => message.id === targetMessageId)
-    : document.messages.findLastIndex(
-        (message) => message.role === "assistant"
-      );
+    : document.messages.length - 1;
   if (targetIndex < 0) return [];
   const target = document.messages[targetIndex];
   const retained =
@@ -1645,9 +1955,8 @@ export async function deleteAIConversationKeys(
   await redis.set(redisKeys.chat.aiConversationTombstone(username), "1");
   return redis.del(
     redisKeys.chat.aiConversation(username, "chat"),
-    redisKeys.chat.aiConversationLock(username, "chat"),
     redisKeys.chat.aiConversation(username, "assistant"),
-    redisKeys.chat.aiConversationLock(username, "assistant")
+    redisKeys.chat.aiConversationLock(username)
   );
 }
 
