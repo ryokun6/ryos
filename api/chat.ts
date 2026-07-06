@@ -1,4 +1,8 @@
-import { generateText, smoothStream } from "ai";
+import {
+  consumeStream,
+  generateText,
+  smoothStream,
+} from "ai";
 import { geolocation } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
 import {
@@ -12,6 +16,7 @@ import {
 import {
   loadRyoMemoryContext,
   prepareRyoConversationModelInput,
+  ensureUIMessageFormat,
   type RyoConversationSystemState,
   type SimpleConversationMessage,
 } from "./_utils/ryo-conversation.js";
@@ -30,6 +35,12 @@ import {
 } from "./_utils/auth/_user-record.js";
 import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
 import { isAssistantGreetingRequest } from "../src/shared/assistantGreeting.js";
+import type { AIConversationRequestContext } from "../src/shared/contracts/aiConversation.js";
+import {
+  AIConversationError,
+  getAIConversationModelMessages,
+  syncAIConversationMessages,
+} from "./ai/conversations/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
 
 const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
@@ -38,6 +49,48 @@ const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
 
 function normalizeChatModel(model: string): string {
   return CHAT_MODEL_ALIASES[model] ?? model;
+}
+
+type ConversationContextParseResult =
+  | { ok: true; value: AIConversationRequestContext | null }
+  | { ok: false };
+
+function parseConversationContext(
+  value: unknown
+): ConversationContextParseResult {
+  if (value === undefined || value === null) {
+    return { ok: true, value: null };
+  }
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return { ok: false };
+  }
+  const id = Reflect.get(value, "id");
+  const operationId = Reflect.get(value, "operationId");
+  if (
+    typeof id !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id) ||
+    typeof operationId !== "string" ||
+    operationId.length < 1 ||
+    operationId.length > 160
+  ) {
+    return { ok: false };
+  }
+  return { ok: true, value: { id, operationId } };
+}
+
+function requiresRichClientContext(messages: readonly unknown[]): boolean {
+  const last = messages.at(-1);
+  if (!last || typeof last !== "object" || Array.isArray(last)) return false;
+  const role = Reflect.get(last, "role");
+  const parts = Reflect.get(last, "parts");
+  if (!Array.isArray(parts)) return false;
+
+  return parts.some((part) => {
+    if (!part || typeof part !== "object" || Array.isArray(part)) return false;
+    const type = Reflect.get(part, "type");
+    if (typeof type !== "string") return false;
+    return role === "user" ? type !== "text" : type.startsWith("tool-");
+  });
 }
 
 
@@ -54,6 +107,7 @@ export default apiHandler<{
   assistantName?: string;
   assistantResponseStyle?: string;
   assistantInstructions?: string;
+  conversation?: unknown;
 }>(
   {
     methods: ["POST"],
@@ -79,6 +133,7 @@ export default apiHandler<{
       assistantName,
       assistantResponseStyle,
       assistantInstructions,
+      conversation,
     } = req.body as {
       messages: unknown[];
       systemState?: SystemState;
@@ -88,6 +143,7 @@ export default apiHandler<{
       assistantName?: string;
       assistantResponseStyle?: string;
       assistantInstructions?: string;
+      conversation?: unknown;
     };
 
     // "assistant" switches to the desktop-assistant persona (no Ryo identity,
@@ -171,6 +227,48 @@ export default apiHandler<{
       log(
         `Rate limit check passed: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
       );
+    }
+
+    const parsedConversationContext = parseConversationContext(conversation);
+    if (!parsedConversationContext.ok) {
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "invalid_conversation_context" });
+      return;
+    }
+    if (parsedConversationContext.value && (!isAuthenticated || !username)) {
+      logger.response(401, Date.now() - startTime);
+      res.status(401).json({ error: "conversation_auth_required" });
+      return;
+    }
+
+    const conversationOperationId =
+      parsedConversationContext.value?.operationId ?? crypto.randomUUID();
+    let storedConversation: Awaited<
+      ReturnType<typeof syncAIConversationMessages>
+    > | null = null;
+    if (isAuthenticated && username && !isProactiveGreeting) {
+      try {
+        storedConversation = await syncAIConversationMessages({
+          redis,
+          username,
+          channel: conversationChannel,
+          messages,
+          operationId: `request:${conversationOperationId}`,
+          ...(parsedConversationContext.value
+            ? {
+                expectedConversationId:
+                  parsedConversationContext.value.id,
+              }
+            : {}),
+        });
+      } catch (error) {
+        if (error instanceof AIConversationError) {
+          logger.response(error.status, Date.now() - startTime);
+          res.status(error.status).json({ error: error.code });
+          return;
+        }
+        throw error;
+      }
     }
 
     log(
@@ -324,9 +422,14 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       }
     }
 
+    const clientConversationMessages = messages as SimpleConversationMessage[];
+    const modelConversationMessages =
+      storedConversation && !requiresRichClientContext(messages)
+        ? getAIConversationModelMessages(storedConversation)
+        : clientConversationMessages;
     const preparedConversation = await prepareRyoConversationModelInput({
       channel: conversationChannel,
-      messages: messages as SimpleConversationMessage[],
+      messages: modelConversationMessages,
       systemState,
       username: isAuthenticated ? username : null,
       model: model as SupportedModel,
@@ -357,13 +460,13 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     const approxTokens = staticSystemPrompt.length / 4;
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
-    // Log all messages right before model call (as per user preference)
+    // Log message structure without retaining transcript content.
     enrichedMessages.forEach((msg, index) => {
       const contentStr =
         typeof msg.content === "string"
           ? msg.content
           : JSON.stringify(msg.content);
-      log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
+      log(`Message ${index} [${msg.role}], ${contentStr.length} chars`);
     });
 
     const agent = createRyoToolLoopAgent({
@@ -379,9 +482,34 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     });
 
     res.setHeader("Access-Control-Allow-Origin", validOrigin);
-    
+    const originalMessages = ensureUIMessageFormat(clientConversationMessages);
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
+      originalMessages,
+      consumeSseStream: consumeStream,
+      onFinish: async ({ messages: completedMessages, isAborted }) => {
+        if (
+          isAborted ||
+          !storedConversation ||
+          !isAuthenticated ||
+          !username
+        ) {
+          return;
+        }
+
+        try {
+          await syncAIConversationMessages({
+            redis,
+            username,
+            channel: conversationChannel,
+            messages: completedMessages,
+            operationId: `response:${conversationOperationId}`,
+            expectedConversationId: storedConversation.id,
+          });
+        } catch (error) {
+          logError("Failed to persist completed conversation response", error);
+        }
+      },
     });
   } catch (error) {
     logger.error("Chat API error", error);
