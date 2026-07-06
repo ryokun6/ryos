@@ -15,6 +15,7 @@ import {
 } from "./_user-record.js";
 import { unlinkTelegramAccountByUsername } from "../telegram-link.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
+import { deleteAIConversationKeys } from "../../ai/conversations/_helpers/store.js";
 
 export interface PurgeAccountResult {
   /** Approximate number of Redis keys removed. */
@@ -69,6 +70,11 @@ export async function purgeUserAccount(
       redisKeys.sync.autoSyncPreference(normalized)
     )
     .catch(() => 0);
+
+  // Personal Ryo and desktop-assistant conversation history.
+  deletedCount += await deleteAIConversationKeys(redis, normalized).catch(
+    () => 0
+  );
 
   return { deletedCount };
 }

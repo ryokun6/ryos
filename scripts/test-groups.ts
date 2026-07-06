@@ -4,6 +4,7 @@ import { join } from "node:path";
 export const API_TEST_FILES = [
   "tests/test-account-delete.test.ts",
   "tests/test-admin.test.ts",
+  "tests/test-ai-conversation-api.test.ts",
   "tests/test-ai.test.ts",
   "tests/test-api-validation.test.ts",
   "tests/test-auth-ban-lockout.test.ts",
