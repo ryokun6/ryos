@@ -4,6 +4,8 @@
  * Legacy key patterns for the migration CLI live in `./redisLegacyPatterns.ts`.
  */
 
+import type { AIConversationChannel } from "./contracts/aiConversation";
+
 export {
   LEGACY_REDIS_SCAN_PATTERNS,
   type LegacyRedisScanPattern,
@@ -116,6 +118,10 @@ export const redisKeys = {
       redisKeyCaseSensitive("chat", "rooms", roomId, "messages"),
     roomPresence: (roomId: string) =>
       redisKeyCaseSensitive("chat", "rooms", roomId, "presence"),
+    aiConversation: (username: string, channel: AIConversationChannel) =>
+      redisKey("chat", "ai", "user", username, channel, "conversation"),
+    aiConversationLock: (username: string, channel: AIConversationChannel) =>
+      redisKey("chat", "ai", "user", username, channel, "lock"),
   },
   sync: {
     v2Seq: (username: string) => redisKey("sync", "v2", "user", username, "seq"),

@@ -1,0 +1,54 @@
+export const AI_CONVERSATION_CHANNELS = ["chat", "assistant"] as const;
+
+export type AIConversationChannel =
+  (typeof AI_CONVERSATION_CHANNELS)[number];
+
+export function isAIConversationChannel(
+  value: unknown
+): value is AIConversationChannel {
+  return value === "chat" || value === "assistant";
+}
+
+export interface AIConversationTextPart {
+  type: "text";
+  text: string;
+}
+
+export interface AIConversationMessage {
+  id: string;
+  seq: number;
+  role: "user" | "assistant";
+  parts: AIConversationTextPart[];
+  createdAt: string;
+}
+
+export interface AIConversation {
+  id: string;
+  channel: AIConversationChannel;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  oldestSeq: number | null;
+  newestSeq: number | null;
+  historyTruncated: boolean;
+}
+
+export interface AIConversationPage {
+  conversation: AIConversation;
+  messages: AIConversationMessage[];
+  page: {
+    nextCursor: string | null;
+    hasMore: boolean;
+  };
+}
+
+export interface AIConversationRequestContext {
+  id: string;
+  operationId: string;
+}
+
+export interface AIConversationResetResult {
+  conversation: AIConversation;
+  reset: boolean;
+}
