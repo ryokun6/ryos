@@ -118,6 +118,74 @@ describe("AI conversation store", () => {
     ]);
   });
 
+  test("preserves long text, owned images, sources, and bounded tool state", () => {
+    const longText = "x".repeat(64_000);
+    const attachmentUrl =
+      "/api/ai/attachments/33333333-3333-4333-8333-333333333333";
+    const [user, assistant] = sanitizeAIConversationMessages([
+      {
+        id: "user-rich",
+        role: "user",
+        parts: [
+          { type: "text", text: longText },
+          { type: "file", mediaType: "image/png", url: attachmentUrl },
+        ],
+      },
+      {
+        id: "assistant-rich",
+        role: "assistant",
+        parts: [
+          { type: "text", text: "Done" },
+          {
+            type: "tool-generateHtml",
+            toolCallId: "call-html",
+            state: "output-available",
+            input: { prompt: "Make a page" },
+            output: { html: "<main>Hello</main>", title: "Hello" },
+          },
+          {
+            type: "tool-read",
+            toolCallId: "call-read",
+            state: "output-available",
+            input: { path: "/secret.txt" },
+            output: "private contents",
+          },
+          {
+            type: "source-url",
+            sourceId: "source-1",
+            url: "https://example.com/source",
+            title: "Example",
+          },
+          { type: "reasoning", text: "private chain of thought" },
+        ],
+      },
+    ]);
+
+    expect(user?.parts[0]).toEqual({ type: "text", text: longText });
+    expect(user?.parts[1]).toEqual({
+      type: "file",
+      mediaType: "image/png",
+      url: attachmentUrl,
+    });
+    expect(assistant?.parts[1]).toMatchObject({
+      type: "tool-generateHtml",
+      state: "output-available",
+      output: { html: "<main>Hello</main>", title: "Hello" },
+    });
+    expect(assistant?.parts[2]).toMatchObject({
+      type: "tool-read",
+      state: "output-available",
+      output: { synced: false, reason: "private" },
+    });
+    expect(assistant?.parts[3]).toEqual({
+      type: "source-url",
+      sourceId: "source-1",
+      url: "https://example.com/source",
+      title: "Example",
+    });
+    expect(assistant?.parts).toHaveLength(4);
+  });
+
   test("appends idempotently with revisions and stable cursor pagination", async () => {
     const redis = new MemoryConversationRedis();
     const initial = await getAIConversationPage({

@@ -61,9 +61,21 @@ describe("storage upload token", () => {
     expect(verifyStorageUploadToken(`${payload}.invalid`)).toBe(null);
   });
 
-  test("restricts proxy uploads to sync blobs and the user's backup object", () => {
+  test("restricts proxy uploads to user-owned storage paths", () => {
     expect(isUploadPathOwnedByUser("sync/alice/blobs/abc.gz", "alice")).toBe(true);
     expect(isUploadPathOwnedByUser("backups/alice/backup.gz", "alice")).toBe(true);
+    expect(
+      isUploadPathOwnedByUser(
+        "ai/alice/attachments/33333333-3333-4333-8333-333333333333",
+        "alice"
+      )
+    ).toBe(true);
+    expect(
+      isUploadPathOwnedByUser(
+        "ai/alice/attachments/33333333-3333-4333-8333-333333333333",
+        "bob"
+      )
+    ).toBe(false);
     expect(isUploadPathOwnedByUser("backups/alice/backup.gz", "bob")).toBe(false);
     expect(isUploadPathOwnedByUser("sync/alice/files/foo.gz", "alice")).toBe(false);
   });

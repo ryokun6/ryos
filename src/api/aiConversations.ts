@@ -1,4 +1,5 @@
 import type { AIChatMessage } from "@/types/chat";
+import type { ToolUIPart as AIToolUIPart } from "ai";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
@@ -6,9 +7,19 @@ import {
   type AIConversation,
   type AIConversationChannel,
   type AIConversationMessage,
+  type AIConversationPart,
   type AIConversationPage,
   type AIConversationRequestContext,
 } from "@/shared/contracts/aiConversation";
+import {
+  getAIAttachmentIdFromUrl,
+  getAIAttachmentUrl,
+  isAIAttachmentMediaType,
+} from "@/shared/contracts/aiAttachment";
+import {
+  uploadBlobWithStorageInstruction,
+  type StorageUploadInstruction,
+} from "@/utils/storageUpload";
 
 interface ConversationSession {
   owner: string;
@@ -35,6 +46,79 @@ const activeOwners = new Map<AIConversationChannel, string>();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isApproval(value: unknown, approved?: boolean): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    (approved === undefined || value.approved === approved) &&
+    (value.reason === undefined || typeof value.reason === "string")
+  );
+}
+
+function isAIConversationPart(value: unknown): value is AIConversationPart {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (value.type === "text") {
+    return (
+      typeof value.text === "string" &&
+      (value.state === undefined ||
+        value.state === "streaming" ||
+        value.state === "done")
+    );
+  }
+  if (value.type === "file") {
+    return (
+      typeof value.mediaType === "string" &&
+      typeof value.url === "string" &&
+      (value.filename === undefined || typeof value.filename === "string")
+    );
+  }
+  if (value.type === "source-url") {
+    return (
+      typeof value.sourceId === "string" &&
+      typeof value.url === "string" &&
+      (value.title === undefined || typeof value.title === "string")
+    );
+  }
+  if (value.type === "source-document") {
+    return (
+      typeof value.sourceId === "string" &&
+      typeof value.mediaType === "string" &&
+      typeof value.title === "string" &&
+      (value.filename === undefined || typeof value.filename === "string")
+    );
+  }
+  if (
+    !value.type.startsWith("tool-") ||
+    typeof value.toolCallId !== "string" ||
+    typeof value.state !== "string"
+  ) {
+    return false;
+  }
+  switch (value.state) {
+    case "input-streaming":
+      return true;
+    case "input-available":
+      return "input" in value;
+    case "approval-requested":
+      return "input" in value && isApproval(value.approval);
+    case "approval-responded":
+      return (
+        "input" in value &&
+        isRecord(value.approval) &&
+        typeof value.approval.approved === "boolean" &&
+        isApproval(value.approval, value.approval.approved)
+      );
+    case "output-available":
+      return "input" in value && "output" in value;
+    case "output-error":
+      return typeof value.errorText === "string";
+    case "output-denied":
+      return "input" in value && isApproval(value.approval, false);
+    default:
+      return false;
+  }
 }
 
 function sessionKey(username: string, channel: AIConversationChannel): string {
@@ -104,22 +188,15 @@ function parseMessage(value: unknown): AIConversationMessage {
     throw new Error("Invalid conversation message response");
   }
 
-  const parts = value.parts.map((part) => {
-    if (
-      !isRecord(part) ||
-      part.type !== "text" ||
-      typeof part.text !== "string"
-    ) {
-      throw new Error("Invalid conversation message part");
-    }
-    return { type: "text" as const, text: part.text };
-  });
+  if (!value.parts.every(isAIConversationPart)) {
+    throw new Error("Invalid conversation message part");
+  }
 
   return {
     id: value.id,
     seq: value.seq,
     role: value.role,
-    parts,
+    parts: value.parts,
     createdAt: value.createdAt,
   };
 }
@@ -156,7 +233,16 @@ function toAIChatMessage(message: AIConversationMessage): AIChatMessage {
   return {
     id: message.id,
     role: message.role,
-    parts: message.parts,
+    parts: message.parts.map((part) => {
+      if (part.type !== "file") return part;
+      const attachmentId = getAIAttachmentIdFromUrl(part.url);
+      return attachmentId
+        ? {
+            ...part,
+            url: getApiUrl(getAIAttachmentUrl(attachmentId)),
+          }
+        : part;
+    }),
     metadata: { createdAt: timestamp },
   };
 }
@@ -236,30 +322,158 @@ function normalizeCreatedAt(value: unknown): string {
   return new Date().toISOString();
 }
 
+function isStorageUploadInstruction(
+  value: unknown
+): value is StorageUploadInstruction {
+  if (
+    !isRecord(value) ||
+    (value.provider !== "vercel-blob" && value.provider !== "s3") ||
+    typeof value.pathname !== "string" ||
+    typeof value.contentType !== "string" ||
+    typeof value.maximumSizeInBytes !== "number"
+  ) {
+    return false;
+  }
+  if (value.uploadMethod === "vercel-client-token") {
+    return value.provider === "vercel-blob" && typeof value.clientToken === "string";
+  }
+  return (
+    value.provider === "s3" &&
+    (value.uploadMethod === "presigned-put" ||
+      value.uploadMethod === "api-proxy-put") &&
+    typeof value.uploadUrl === "string" &&
+    typeof value.storageUrl === "string"
+  );
+}
+
+function isToolPart(
+  part: AIChatMessage["parts"][number]
+): part is AIToolUIPart {
+  return part.type.startsWith("tool-");
+}
+
+async function sha256Blob(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+}
+
+export async function uploadAIConversationImage(
+  dataUrl: string,
+  filename?: string
+): Promise<{ mediaType: string; url: string }> {
+  const dataUrlMatch = /^data:([^;,]+);base64,/.exec(dataUrl);
+  if (!dataUrlMatch || !isAIAttachmentMediaType(dataUrlMatch[1])) {
+    throw new Error("Unsupported AI conversation image type");
+  }
+
+  const imageResponse = await fetch(dataUrl);
+  const blob = await imageResponse.blob();
+  const mediaType = dataUrlMatch[1];
+  const prepareResponse = await abortableFetch(
+    getApiUrl("/api/ai/attachments"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "prepare",
+        mediaType,
+        size: blob.size,
+        sha256: await sha256Blob(blob),
+        ...(filename ? { filename } : {}),
+      }),
+      timeout: 30_000,
+    }
+  );
+  const prepared: unknown = await prepareResponse.json();
+  if (
+    !isRecord(prepared) ||
+    typeof prepared.attachmentId !== "string" ||
+    !isStorageUploadInstruction(prepared.upload)
+  ) {
+    throw new Error("Invalid AI attachment upload response");
+  }
+
+  const uploaded = await uploadBlobWithStorageInstruction(blob, prepared.upload);
+  const completeResponse = await abortableFetch(
+    getApiUrl("/api/ai/attachments"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "complete",
+        attachmentId: prepared.attachmentId,
+        storageUrl: uploaded.storageUrl,
+      }),
+      timeout: 30_000,
+    }
+  );
+  const completed: unknown = await completeResponse.json();
+  if (
+    !isRecord(completed) ||
+    typeof completed.url !== "string" ||
+    typeof completed.mediaType !== "string"
+  ) {
+    throw new Error("Invalid AI attachment completion response");
+  }
+  return {
+    mediaType: completed.mediaType,
+    url: getApiUrl(completed.url),
+  };
+}
+
+function projectRichPart(part: AIChatMessage["parts"][number]): AIConversationPart[] {
+  if (
+    part.type === "text" ||
+    part.type === "file" ||
+    part.type === "source-url" ||
+    part.type === "source-document"
+  ) {
+    return [part];
+  }
+  if (!isToolPart(part)) return [];
+
+  try {
+    const serialized = JSON.stringify(part);
+    if (serialized.length <= 512 * 1024) {
+      return [JSON.parse(serialized) as AIConversationPart];
+    }
+  } catch {
+    return [];
+  }
+
+  if (part.state === "output-available") {
+    return [
+      {
+        type: part.type,
+        toolCallId: part.toolCallId,
+        state: "output-available",
+        input: { synced: false, reason: "too_large" },
+        output: { synced: false, reason: "too_large" },
+      },
+    ];
+  }
+  return [];
+}
+
 export function projectAIConversationMessages(
   messages: readonly AIChatMessage[]
 ): Array<{
   id: string;
   role: "user" | "assistant";
-  parts: Array<{ type: "text"; text: string }>;
+  parts: AIConversationPart[];
   metadata: { createdAt: string };
 }> {
   return messages.flatMap((message) => {
     if (message.role !== "user" && message.role !== "assistant") return [];
-    const text = message.parts
-      .flatMap((part) =>
-        part.type === "text" && typeof part.text === "string"
-          ? [part.text]
-          : []
-      )
-      .join("\n")
-      .trim();
-    if (!text) return [];
+    const parts = message.parts.flatMap(projectRichPart);
+    if (parts.length === 0) return [];
     return [
       {
         id: message.id,
         role: message.role,
-        parts: [{ type: "text" as const, text }],
+        parts,
         metadata: {
           createdAt: normalizeCreatedAt(message.metadata?.createdAt),
         },
@@ -303,12 +517,59 @@ export function buildAIConversationRequestBody({
   return { ...common, conversation, message };
 }
 
+async function externalizeLocalConversationImages(
+  messages: readonly AIChatMessage[]
+): Promise<AIChatMessage[]> {
+  const uploads = new Map<string, Promise<{ mediaType: string; url: string }>>();
+  return Promise.all(
+    messages.map(async (message) => ({
+      ...message,
+      parts: (
+        await Promise.all(
+          message.parts.map(async (part) => {
+            if (
+              part.type !== "file" ||
+              !part.url.startsWith("data:")
+            ) {
+              return part;
+            }
+            let upload = uploads.get(part.url);
+            if (!upload) {
+              upload = uploadAIConversationImage(part.url, part.filename);
+              uploads.set(part.url, upload);
+            }
+            try {
+              const stored = await upload;
+              return {
+                ...part,
+                mediaType: stored.mediaType,
+                url: stored.url,
+              };
+            } catch (error) {
+              console.warn(
+                "[AI conversation] Skipping a legacy image that could not be uploaded",
+                error
+              );
+              return null;
+            }
+          })
+        )
+      ).filter(
+        (
+          part
+        ): part is AIChatMessage["parts"][number] => part !== null
+      ),
+    }))
+  );
+}
+
 async function importLocalConversation(
   channel: AIConversationChannel,
   conversation: AIConversation,
   messages: readonly AIChatMessage[]
 ): Promise<void> {
-  const projected = projectAIConversationMessages(messages);
+  const externalized = await externalizeLocalConversationImages(messages);
+  const projected = projectAIConversationMessages(externalized);
   if (!projected.some((message) => message.role === "user")) return;
 
   const response = await abortableFetch(

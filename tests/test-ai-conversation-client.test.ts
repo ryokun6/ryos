@@ -8,6 +8,7 @@ import {
   resetAIConversationSession,
 } from "../src/api/aiConversations";
 import type { AIChatMessage } from "../src/types/chat";
+import type { AIConversationPart } from "../src/shared/contracts/aiConversation";
 
 const originalFetch = globalThis.fetch;
 const CHAT_ID = "11111111-1111-4111-8111-111111111111";
@@ -41,7 +42,7 @@ function pageResponse({
     id: string;
     seq: number;
     role: "user" | "assistant";
-    parts: Array<{ type: "text"; text: string }>;
+    parts: AIConversationPart[];
     createdAt: string;
   }>;
 } = {}): Response {
@@ -109,6 +110,59 @@ describe("AI conversation client", () => {
     expect(context?.revision).toBe(1);
     expect(context?.operationId).toBeString();
     expect(requestCount).toBe(1);
+  });
+
+  test("hydrates persisted image, source, and tool parts", async () => {
+    globalThis.fetch = async () =>
+      pageResponse({
+        revision: 1,
+        messages: [
+          {
+            id: "a-rich",
+            seq: 1,
+            role: "assistant",
+            parts: [
+              { type: "text", text: "Here it is" },
+              {
+                type: "tool-generateHtml",
+                toolCallId: "call-1",
+                state: "output-available",
+                input: { prompt: "page" },
+                output: { html: "<main>Synced</main>" },
+              },
+              {
+                type: "source-url",
+                sourceId: "source-1",
+                url: "https://example.com",
+                title: "Example",
+              },
+            ],
+            createdAt: "2026-07-06T00:00:00.000Z",
+          },
+        ],
+      });
+
+    const loaded = await loadAIConversation({
+      channel: "chat",
+      username: "alice",
+      localMessages: [],
+    });
+    expect(loaded.messages[0]?.parts).toEqual([
+      { type: "text", text: "Here it is" },
+      {
+        type: "tool-generateHtml",
+        toolCallId: "call-1",
+        state: "output-available",
+        input: { prompt: "page" },
+        output: { html: "<main>Synced</main>" },
+      },
+      {
+        type: "source-url",
+        sourceId: "source-1",
+        url: "https://example.com",
+        title: "Example",
+      },
+    ]);
   });
 
   test("imports an owned local transcript only when the server is empty", async () => {
@@ -217,7 +271,7 @@ describe("AI conversation client", () => {
     expect(context?.id).toBe(RESET_ID);
   });
 
-  test("projects text without tool payloads", () => {
+  test("projects rich message parts for legacy import", () => {
     const richMessage: AIChatMessage = {
       id: "a1",
       role: "assistant",
@@ -238,7 +292,16 @@ describe("AI conversation client", () => {
       {
         id: "a1",
         role: "assistant",
-        parts: [{ type: "text", text: "Visible" }],
+        parts: [
+          { type: "text", text: "Visible" },
+          {
+            type: "tool-launchApp",
+            toolCallId: "tool-1",
+            state: "output-available",
+            input: { id: "finder" },
+            output: { veryLarge: "payload" },
+          },
+        ],
         metadata: { createdAt: "2026-07-06T00:00:00.000Z" },
       },
     ]);

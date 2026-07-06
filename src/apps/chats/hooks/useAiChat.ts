@@ -36,6 +36,7 @@ import {
   invalidateAIConversationSession,
   loadAIConversation,
   resetAIConversationSession,
+  uploadAIConversationImage,
 } from "@/api/aiConversations";
 
 
@@ -739,9 +740,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Build message content - text and optionally image
       if (imageContent) {
-        // Extract media type from data URL (e.g., "data:image/png;base64,..." -> "image/png")
-        const mediaTypeMatch = imageContent.match(/^data:([^;]+);base64,/);
-        const mediaType = mediaTypeMatch ? mediaTypeMatch[1] : "image/png";
+        let image = {
+          mediaType:
+            imageContent.match(/^data:([^;]+);base64,/)?.[1] ?? "image/png",
+          url: imageContent,
+        };
+        if (username && isAuthenticated) {
+          try {
+            image = await uploadAIConversationImage(imageContent);
+          } catch (uploadError) {
+            log.error("Failed to upload chat image", uploadError);
+            toast.error(i18n.t("apps.chats.toasts.aiError"), {
+              description: i18n.t("apps.chats.toasts.failedToGetResponse"),
+            });
+            return false;
+          }
+        }
         
         // Send message with image attachment using files array
         sendMessage(
@@ -750,8 +764,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             files: [
               {
                 type: "file" as const,
-                mediaType,
-                url: imageContent, // Data URL is accepted
+                mediaType: image.mediaType,
+                url: image.url,
               },
             ],
             metadata: {

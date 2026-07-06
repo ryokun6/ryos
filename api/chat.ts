@@ -49,6 +49,10 @@ import {
   releaseAIConversationTurn,
   type BeginAIConversationTurnInput,
 } from "./ai/conversations/_helpers/store.js";
+import {
+  resolveAIAttachmentsForModel,
+  validateAIAttachmentReferences,
+} from "./ai/attachments/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
 
 const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
@@ -347,6 +351,18 @@ export default apiHandler<{
     > | null = null;
     if (isAuthenticated && username && !isProactiveGreeting) {
       try {
+        if (
+          clientActionMessage &&
+          !(await validateAIAttachmentReferences({
+            redis,
+            username,
+            messages: [clientActionMessage],
+          }))
+        ) {
+          logger.response(422, Date.now() - startTime);
+          res.status(422).json({ error: "attachment_not_found" });
+          return;
+        }
         if (normalizedTrigger === "regenerate-message") {
           await prepareAIConversationRegeneration({
             redis,
@@ -567,6 +583,13 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               canonicalMessages,
               clientActionMessage
             );
+    }
+    if (isAuthenticated) {
+      modelConversationMessages = await resolveAIAttachmentsForModel({
+        redis,
+        username,
+        messages: ensureUIMessageFormat(modelConversationMessages),
+      });
     }
     const preparedConversation = await prepareRyoConversationModelInput({
       channel: conversationChannel,

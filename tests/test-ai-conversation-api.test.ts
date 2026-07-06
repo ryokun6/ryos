@@ -32,6 +32,197 @@ describe("AI conversation API", () => {
     expect(response.status).toBe(401);
   });
 
+  test("round-trips long text, an uploaded image, and tool state", async () => {
+    const username = uniqueTestUsername("airich");
+    const token = await ensureUserAuth(username, password);
+    expect(token).not.toBeNull();
+    if (!token) throw new Error("Failed to authenticate test user");
+
+    const imageBytes = Uint8Array.from([
+      137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0,
+    ]);
+    const digest = await crypto.subtle.digest("SHA-256", imageBytes);
+    const sha256 = Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, "0")
+    ).join("");
+    const prepareResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/attachments`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          action: "prepare",
+          mediaType: "image/png",
+          size: imageBytes.byteLength,
+          sha256,
+        }),
+      }
+    );
+    if (prepareResponse.status === 500) {
+      console.warn("Skipping object-storage round trip: storage is not configured");
+      return;
+    }
+    expect(prepareResponse.status).toBe(200);
+    const prepared = (await prepareResponse.json()) as {
+      attachmentId: string;
+      upload:
+        | {
+            provider: "vercel-blob";
+            uploadMethod: "vercel-client-token";
+            pathname: string;
+            contentType: string;
+            clientToken: string;
+          }
+        | {
+            provider: "s3";
+            uploadMethod: "presigned-put" | "api-proxy-put";
+            uploadUrl: string;
+            storageUrl: string;
+            headers: Record<string, string>;
+          };
+    };
+
+    let storageUrl: string;
+    if (prepared.upload.uploadMethod === "vercel-client-token") {
+      const { put } = await import("@vercel/blob/client");
+      const uploaded = await put(
+        prepared.upload.pathname,
+        new Blob([imageBytes], { type: "image/png" }),
+        {
+          access: "public",
+          token: prepared.upload.clientToken,
+          contentType: prepared.upload.contentType,
+        }
+      );
+      storageUrl = uploaded.url;
+    } else if (prepared.upload.uploadMethod === "api-proxy-put") {
+      const uploadResponse = await fetchWithAuth(
+        `${BASE_URL}${prepared.upload.uploadUrl}`,
+        username,
+        token,
+        {
+          method: "PUT",
+          headers: prepared.upload.headers,
+          body: imageBytes,
+        }
+      );
+      expect(uploadResponse.status).toBe(204);
+      storageUrl = prepared.upload.storageUrl;
+    } else {
+      const uploadResponse = await fetch(prepared.upload.uploadUrl, {
+        method: "PUT",
+        headers: prepared.upload.headers,
+        body: imageBytes,
+      });
+      expect(uploadResponse.ok).toBe(true);
+      storageUrl = prepared.upload.storageUrl;
+    }
+
+    const completeResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/attachments`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          action: "complete",
+          attachmentId: prepared.attachmentId,
+          storageUrl,
+        }),
+      }
+    );
+    expect(completeResponse.status).toBe(200);
+    const completed = (await completeResponse.json()) as { url: string };
+
+    const initialResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    expect(initialResponse.status).toBe(200);
+    const initial = (await initialResponse.json()) as AIConversationPage;
+    const longText = "long ".repeat(20_000);
+    const importResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat/import`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          conversationId: initial.conversation.id,
+          expectedRevision: 0,
+          operationId: crypto.randomUUID(),
+          messages: [
+            {
+              id: "u-rich",
+              role: "user",
+              parts: [
+                { type: "text", text: longText },
+                {
+                  type: "file",
+                  mediaType: "image/png",
+                  url: completed.url,
+                },
+              ],
+              metadata: { createdAt: new Date().toISOString() },
+            },
+            {
+              id: "a-rich",
+              role: "assistant",
+              parts: [
+                { type: "text", text: "Built it" },
+                {
+                  type: "tool-generateHtml",
+                  toolCallId: "call-html",
+                  state: "output-available",
+                  input: { prompt: "page" },
+                  output: { html: "<main>Synced</main>" },
+                },
+              ],
+              metadata: { createdAt: new Date().toISOString() },
+            },
+          ],
+        }),
+      }
+    );
+    expect(importResponse.status).toBe(201);
+
+    const pageResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat?limit=10`,
+      username,
+      token
+    );
+    expect(pageResponse.status).toBe(200);
+    const page = (await pageResponse.json()) as AIConversationPage;
+    expect(page.messages[0]?.parts[0]).toEqual({
+      type: "text",
+      text: longText,
+    });
+    expect(page.messages[0]?.parts[1]).toMatchObject({
+      type: "file",
+      mediaType: "image/png",
+      url: completed.url,
+    });
+    expect(page.messages[1]?.parts[1]).toMatchObject({
+      type: "tool-generateHtml",
+      state: "output-available",
+      output: { html: "<main>Synced</main>" },
+    });
+
+    const imageResponse = await fetchWithAuth(
+      `${BASE_URL}${completed.url}`,
+      username,
+      token,
+      { redirect: "manual" }
+    );
+    expect(imageResponse.status).toBe(302);
+    expect(imageResponse.headers.get("location")).toBeTruthy();
+  }, 60_000);
+
   test("imports, paginates, isolates channels, and resets idempotently", async () => {
     const username = uniqueTestUsername("aic");
     const token = await ensureUserAuth(username, password);

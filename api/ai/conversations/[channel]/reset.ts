@@ -8,6 +8,10 @@ import {
   getAIConversationSummary,
   resetAIConversation,
 } from "../_helpers/store.js";
+import {
+  collectAIAttachmentIds,
+  deleteAIAttachments,
+} from "../../attachments/_helpers/store.js";
 import { isAIConversationChannel } from "../../../../src/shared/contracts/aiConversation.js";
 
 export const runtime = "nodejs";
@@ -41,33 +45,59 @@ export default apiHandler(
         conversationId: body!.conversationId,
         operationId: body!.operationId,
       });
-      if (
-        result.reset &&
-        result.clearedMessages.some((message) => message.role === "user")
-      ) {
-        const extraction = getStoredUserTimeZone(redis, user!.username)
-          .then((timeZone) =>
-            extractMemoriesFromConversation({
+      if (result.reset) {
+        const backgroundTasks: Promise<unknown>[] = [];
+        if (
+          result.clearedMessages.some((message) => message.role === "user")
+        ) {
+          backgroundTasks.push(
+            getStoredUserTimeZone(redis, user!.username)
+              .then((timeZone) =>
+                extractMemoriesFromConversation({
+                  redis,
+                  username: user!.username,
+                  messages: result.clearedMessages.map((message) => ({
+                    role: message.role,
+                    parts: message.parts,
+                    metadata: { createdAt: message.createdAt },
+                  })),
+                  timeZone: timeZone ?? undefined,
+                  storeLongTermMemories: true,
+                  markTodayProcessed: true,
+                  log: (...args: unknown[]) =>
+                    logger.info(String(args[0]), args[1]),
+                  logError: (...args: unknown[]) =>
+                    logger.error(String(args[0]), args[1]),
+                })
+              )
+              .catch((error) => {
+                logger.error(
+                  "Cleared conversation memory extraction failed",
+                  error
+                );
+              })
+          );
+        }
+        const attachmentIds = collectAIAttachmentIds(
+          result.clearedMessages
+        );
+        if (attachmentIds.length > 0) {
+          backgroundTasks.push(
+            deleteAIAttachments({
               redis,
               username: user!.username,
-              messages: result.clearedMessages.map((message) => ({
-                role: message.role,
-                parts: message.parts,
-                metadata: { createdAt: message.createdAt },
-              })),
-              timeZone: timeZone ?? undefined,
-              storeLongTermMemories: true,
-              markTodayProcessed: true,
-              log: (...args: unknown[]) =>
-                logger.info(String(args[0]), args[1]),
-              logError: (...args: unknown[]) =>
-                logger.error(String(args[0]), args[1]),
+              attachmentIds,
+            }).catch((error) => {
+              logger.error(
+                "Cleared conversation attachment cleanup failed",
+                error
+              );
             })
-          )
-          .catch((error) => {
-            logger.error("Cleared conversation memory extraction failed", error);
-          });
-        waitUntil(extraction);
+          );
+        }
+        if (backgroundTasks.length > 0) {
+          waitUntil(Promise.all(backgroundTasks));
+        }
       }
       logger.response(200, Date.now() - startTime);
       res.status(200).json({

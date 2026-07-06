@@ -124,6 +124,17 @@ export const redisKeys = {
       redisKey("chat", "ai", "user", username, channel, "lock"),
     aiConversationTombstone: (username: string) =>
       redisKey("chat", "ai", "user", username, "deleted"),
+    aiAttachment: (username: string, attachmentId: string) =>
+      redisKeyCaseSensitive(
+        "chat",
+        "ai",
+        "user",
+        username.toLowerCase(),
+        "attachment",
+        attachmentId.toLowerCase()
+      ),
+    aiAttachmentIds: (username: string) =>
+      redisKey("chat", "ai", "user", username, "attachment-ids"),
   },
   sync: {
     v2Seq: (username: string) => redisKey("sync", "v2", "user", username, "seq"),

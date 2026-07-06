@@ -1,3 +1,11 @@
+import type {
+  FileUIPart,
+  SourceDocumentUIPart,
+  SourceUrlUIPart,
+  TextUIPart,
+  ToolUIPart,
+} from "ai";
+
 export const AI_CONVERSATION_CHANNELS = ["chat", "assistant"] as const;
 
 export type AIConversationChannel =
@@ -9,16 +17,20 @@ export function isAIConversationChannel(
   return value === "chat" || value === "assistant";
 }
 
-export interface AIConversationTextPart {
-  type: "text";
-  text: string;
-}
+export type AIConversationTextPart = TextUIPart;
+
+export type AIConversationPart =
+  | AIConversationTextPart
+  | FileUIPart
+  | ToolUIPart
+  | SourceUrlUIPart
+  | SourceDocumentUIPart;
 
 export interface AIConversationMessage {
   id: string;
   seq: number;
   role: "user" | "assistant";
-  parts: AIConversationTextPart[];
+  parts: AIConversationPart[];
   createdAt: string;
 }
 

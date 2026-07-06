@@ -16,6 +16,7 @@ import {
 import { unlinkTelegramAccountByUsername } from "../telegram-link.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 import { deleteAIConversationKeys } from "../../ai/conversations/_helpers/store.js";
+import { deleteAllAIAttachments } from "../../ai/attachments/_helpers/store.js";
 
 export interface PurgeAccountResult {
   /** Approximate number of Redis keys removed. */
@@ -41,6 +42,10 @@ export async function purgeUserAccount(
   // best-effort: returning success while private transcripts remain would
   // violate the account-deletion contract.
   deletedCount += await deleteAIConversationKeys(redis, normalized);
+  deletedCount += await deleteAllAIAttachments({
+    redis,
+    username: normalized,
+  });
 
   // Recovery email reverse index.
   if (record?.email) {
