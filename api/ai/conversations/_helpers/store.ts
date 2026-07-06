@@ -122,7 +122,7 @@ function getMessageTimestamp(message: Record<string, unknown>): string {
 
 function normalizeText(text: string): string {
   return text
-    .replace(/\u0000/g, "")
+    .replaceAll("\0", "")
     .replace(/\r\n?/g, "\n")
     .slice(0, MAX_MESSAGE_TEXT_LENGTH)
     .trim();
