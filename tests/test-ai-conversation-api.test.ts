@@ -24,6 +24,16 @@ function apiMessage(id: string, role: "user" | "assistant", text: string) {
   };
 }
 
+function getPersistedMessageText(
+  message: AIConversationPage["messages"][number] | undefined
+): string {
+  return (
+    message?.parts
+      .flatMap((part) => (part.type === "text" ? [part.text] : []))
+      .join("\n") ?? ""
+  );
+}
+
 describe("AI conversation API", () => {
   test("requires authentication", async () => {
     const response = await fetchWithOrigin(
@@ -144,7 +154,7 @@ describe("AI conversation API", () => {
     );
     expect(initialResponse.status).toBe(200);
     const initial = (await initialResponse.json()) as AIConversationPage;
-    const longText = "long ".repeat(20_000);
+    const longText = "long ".repeat(20_000).trim();
     const importResponse = await fetchWithAuth(
       `${BASE_URL}/api/ai/conversations/chat/import`,
       username,
@@ -481,7 +491,7 @@ describe("AI conversation API", () => {
       "assistant",
     ]);
     expect(persisted?.messages[0]?.id).toBe(userMessageId);
-    expect(persisted?.messages[1]?.parts[0]?.text).toContain("SYNC_OK");
+    expect(getPersistedMessageText(persisted?.messages[1])).toContain("SYNC_OK");
 
     if (!persisted) throw new Error("First streamed turn was not persisted");
     const firstAssistantId = persisted.messages[1]?.id;
@@ -573,7 +583,7 @@ describe("AI conversation API", () => {
         (message) => message.id === oldSecondAssistantId
       )
     ).toBe(false);
-    expect(regenerated.messages[3]?.parts[0]?.text).toContain(
+    expect(getPersistedMessageText(regenerated.messages[3])).toContain(
       "SERVER_CONTEXT_OK"
     );
   }, 90_000);
