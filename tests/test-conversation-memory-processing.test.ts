@@ -33,15 +33,20 @@ describe("conversation memory processing", () => {
       resolve(process.cwd(), "src/components/assistant/useAssistantChat.ts"),
       "utf8"
     );
+    const chatRoute = readFileSync(
+      resolve(process.cwd(), "api/chat.ts"),
+      "utf8"
+    );
 
-    expect(resetRoute).toContain("result.clearedMessages");
-    expect(resetRoute).toContain("extractMemoriesFromConversation");
-    expect(resetRoute).toContain("waitUntil(extraction)");
+    expect(resetRoute).toContain("extractPendingAIConversationResetMemory");
+    expect(resetRoute).toContain("waitUntil(memoryProcessing)");
+    expect(chatRoute).toContain("extractPendingAIConversationResetMemory");
+    expect(chatRoute).toContain("waitUntil(pendingResetMemoryRetry)");
     expect(chatsSource).not.toContain("processConversationMemories");
     expect(assistantSource).not.toContain("processConversationMemories");
   });
 
-  test("identity changes clear the device-local Assistant transcript", async () => {
+  test("first login preserves anonymous Chat and Assistant transcripts, then account switching clears them", async () => {
     const [{ useChatsStore }, { useAssistantStore }] = await Promise.all([
       import("../src/stores/useChatsStore"),
       import("../src/stores/useAssistantStore"),
@@ -51,20 +56,30 @@ describe("conversation memory processing", () => {
 
     try {
       useChatsStore.setState({
-        username: "alice",
-        isAuthenticated: true,
+        username: null,
+        isAuthenticated: false,
         rooms: [],
         aiMessages: [
-          textMessage("private-chat", "user", "Alice's private Ryo chat"),
+          textMessage("anonymous-chat", "user", "Anonymous Ryo chat"),
         ],
       });
       useAssistantStore.setState({
         messages: [
-          textMessage("private", "user", "Alice's private conversation"),
+          textMessage("anonymous-assistant", "user", "Anonymous assistant chat"),
         ],
         lastInteractionAt: Date.now(),
         bubbleDismissedAt: Date.now(),
       });
+
+      useChatsStore.getState().setUsername("alice");
+      useChatsStore.getState().setAuthenticated(true);
+
+      expect(useChatsStore.getState().aiMessages.map((entry) => entry.id)).toEqual([
+        "anonymous-chat",
+      ]);
+      expect(
+        useAssistantStore.getState().messages.map((entry) => entry.id)
+      ).toEqual(["anonymous-assistant"]);
 
       useChatsStore.getState().setUsername("bob");
 
@@ -92,13 +107,9 @@ describe("conversation memory processing", () => {
       resolve(process.cwd(), "src/stores/useChatsStore.ts"),
       "utf8"
     );
-    expect(chatsStoreSource).toMatch(
-      /setUsername: \(username\) => \{[\s\S]*?previousUsername !== username[\s\S]*?useAssistantStore\.getState\(\)\.clearMessages\(\)/
+    expect(chatsStoreSource).toContain(
+      "shouldClearAIHistoryForUsernameChange"
     );
-    expect(
-      chatsStoreSource.match(
-        /useAssistantStore\.getState\(\)\.clearMessages\(\)/g
-      )
-    ).toHaveLength(5);
+    expect(chatsStoreSource).toContain("return previousOwner !== null");
   });
 });

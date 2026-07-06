@@ -177,6 +177,18 @@ const getUsernameFromRecovery = (): string | null => {
   return raw;
 };
 
+function shouldClearAIHistoryForUsernameChange(
+  previousUsername: string | null,
+  nextUsername: string | null
+): boolean {
+  const previousOwner = previousUsername?.toLowerCase() ?? null;
+  const nextOwner = nextUsername?.toLowerCase() ?? null;
+  if (previousOwner === nextOwner) return false;
+  // Anonymous history is intentionally carried into the first authenticated
+  // identity so the one-time legacy import can move it server-side.
+  return previousOwner !== null;
+}
+
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
 const ROOMS_FETCH_TTL_MS = 1_500;
@@ -491,15 +503,21 @@ export const useChatsStore = create<ChatsStoreState>()(
         setAiMessages: (messages) => set({ aiMessages: messages }),
         setUsername: (username) => {
           const previousUsername = get().username;
+          const clearAIHistory = shouldClearAIHistoryForUsernameChange(
+            previousUsername,
+            username
+          );
           if (previousUsername !== username) {
             resetRoomsFetchCache();
+          }
+          if (clearAIHistory) {
             useAssistantStore.getState().clearMessages();
             clearAIConversationSessionCache();
           }
           saveUsernameToRecovery(username);
           set({
             username,
-            ...(previousUsername !== username
+            ...(clearAIHistory
               ? { aiMessages: [getInitialAiMessage()] }
               : {}),
           });
@@ -525,8 +543,18 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
         },
         setAuthenticated: (authenticated) => {
-          if (get().isAuthenticated !== authenticated) {
+          const wasAuthenticated = get().isAuthenticated;
+          if (wasAuthenticated !== authenticated) {
             resetRoomsFetchCache();
+          }
+          if (wasAuthenticated && !authenticated) {
+            useAssistantStore.getState().clearMessages();
+            clearAIConversationSessionCache();
+            set({
+              isAuthenticated: false,
+              aiMessages: [getInitialAiMessage()],
+            });
+            return;
           }
           set({ isAuthenticated: authenticated });
         },
@@ -1246,14 +1274,19 @@ export const useChatsStore = create<ChatsStoreState>()(
               password,
             });
             if (data.user) {
-              if (get().username !== data.user.username) {
+              const previousUsername = get().username;
+              const clearAIHistory = shouldClearAIHistoryForUsernameChange(
+                previousUsername,
+                data.user.username
+              );
+              if (clearAIHistory) {
                 useAssistantStore.getState().clearMessages();
                 clearAIConversationSessionCache();
               }
               set({
                 username: data.user.username,
                 isAuthenticated: true,
-                ...(get().username !== data.user.username
+                ...(clearAIHistory
                   ? { aiMessages: [getInitialAiMessage()] }
                   : {}),
               });

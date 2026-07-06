@@ -53,7 +53,7 @@ export function useChatsAppController({
     messages,
     handleSubmitMessage: submitAiMessage,
     isLoading,
-    regenerate,
+    retryLastUserMessage,
     error,
     stop,
     isSpeaking,
@@ -142,6 +142,15 @@ export function useChatsAppController({
     null
   );
   const [inputResetTrigger, setInputResetTrigger] = useState(0);
+  const composerIdentity = `${
+    isAuthenticated ? "authenticated" : "unauthenticated"
+  }:${username?.toLowerCase() ?? ""}`;
+  const previousComposerIdentityRef = useRef(composerIdentity);
+  useEffect(() => {
+    if (previousComposerIdentityRef.current === composerIdentity) return;
+    previousComposerIdentityRef.current = composerIdentity;
+    setInputResetTrigger((previous) => previous + 1);
+  }, [composerIdentity]);
 
   const handleConfirmClearChats = useCallback(() => {
     confirmClearChats();
@@ -583,7 +592,7 @@ export function useChatsAppController({
     isLoading,
     isRyoLoading,
     error,
-    regenerate,
+    retryLastUserMessage,
     handleMessageDeleted,
     fontSize,
     scrollToBottomTrigger,

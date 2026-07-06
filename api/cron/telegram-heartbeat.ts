@@ -207,7 +207,8 @@ export default async function handler(
       username,
       (...args: unknown[]) => logger.info("[TelegramHeartbeatDailyNotes]", args),
       (...args: unknown[]) => logger.error("[TelegramHeartbeatDailyNotes]", args),
-      userTimeZone
+      userTimeZone,
+      account?.createdAt
     );
     if (processedNotes.processed > 0 || processedNotes.skippedDates.length > 0) {
       logger.info("Telegram heartbeat processed past daily notes", {
@@ -380,6 +381,7 @@ export default async function handler(
     channel: "telegram",
     messages: conversationMessages,
     username,
+    accountCreatedAt: account?.createdAt,
     redis,
     model: telegramModel,
     timeZone: userTimeZone,

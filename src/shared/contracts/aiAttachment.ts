@@ -9,13 +9,16 @@ export const AI_ATTACHMENT_MEDIA_TYPES = {
 export type AIAttachmentMediaType = keyof typeof AI_ATTACHMENT_MEDIA_TYPES;
 
 const ATTACHMENT_PATTERN =
-  /^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.(jpg|png|webp)$/i;
+  /^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?:\.(jpg|png|webp))?$/i;
 const ATTACHMENT_URL_PREFIX = "/api/ai/attachments/";
 
 export function isAIAttachmentMediaType(
   value: unknown
 ): value is AIAttachmentMediaType {
-  return typeof value === "string" && value in AI_ATTACHMENT_MEDIA_TYPES;
+  return (
+    typeof value === "string" &&
+    Object.hasOwn(AI_ATTACHMENT_MEDIA_TYPES, value)
+  );
 }
 
 export function createAIAttachmentName(
@@ -27,7 +30,7 @@ export function createAIAttachmentName(
 
 export function parseAIAttachmentName(value: unknown): {
   name: string;
-  mediaType: AIAttachmentMediaType;
+  mediaType: AIAttachmentMediaType | null;
 } | null {
   if (typeof value !== "string") return null;
   const match = ATTACHMENT_PATTERN.exec(value);
@@ -38,7 +41,9 @@ export function parseAIAttachmentName(value: unknown): {
       ? "image/jpeg"
       : extension === "png"
         ? "image/png"
-        : "image/webp";
+        : extension === "webp"
+          ? "image/webp"
+          : null;
   return { name: value.toLowerCase(), mediaType };
 }
 
@@ -48,7 +53,7 @@ export function getAIAttachmentUrl(name: string): string {
 
 export function parseAIAttachmentUrl(value: unknown): {
   name: string;
-  mediaType: AIAttachmentMediaType;
+  mediaType: AIAttachmentMediaType | null;
 } | null {
   if (typeof value !== "string" || value.length > 2_048) return null;
   try {

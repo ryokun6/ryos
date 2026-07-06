@@ -5,7 +5,7 @@ import {
   validateUIMessages,
   type UIMessage,
 } from "ai";
-import { geolocation } from "@vercel/functions";
+import { geolocation, waitUntil } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
 import {
   DEFAULT_MODEL,
@@ -32,6 +32,7 @@ import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
 import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
 import {
+  getStoredUserRecord,
   getStoredUserTimeZone,
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
@@ -48,10 +49,12 @@ import {
   completeAIConversationTurn,
   getAIConversationModelMessages,
   getAIConversationRegenerationModelMessages,
+  getAIConversationTurnCompletionOperationId,
   prepareAIConversationRegeneration,
   releaseAIConversationTurn,
   type BeginAIConversationTurnInput,
 } from "./ai/conversations/_helpers/store.js";
+import { extractPendingAIConversationResetMemory } from "./ai/conversations/_helpers/reset-memory.js";
 import { resolveAIAttachmentsForModel } from "./ai/attachments/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
 
@@ -171,6 +174,12 @@ export default apiHandler<{
       channel: "chat" | "assistant";
       id: string;
     } | null = null;
+    let removeGenerationAbortListeners: (() => void) | null = null;
+    const clearGenerationAbortListeners = () => {
+      const removeListeners = removeGenerationAbortListeners;
+      removeGenerationAbortListeners = null;
+      removeListeners?.();
+    };
     try {
     // Parse query string to get model parameter
     // Handle both full URLs and relative paths (vercel dev uses relative paths)
@@ -247,6 +256,11 @@ export default apiHandler<{
     const authToken = user?.token ?? null;
     const isAuthenticated = !!user;
     const identifier = isAuthenticated && username ? username : `anon:${ip}`;
+    const requestAccount =
+      isAuthenticated && username
+        ? await getStoredUserRecord(redis, username)
+        : null;
+    const accountCreatedAt = requestAccount?.createdAt;
 
     const parsedConversationContext = parseConversationContext(conversation);
     if (!parsedConversationContext.ok) {
@@ -292,11 +306,13 @@ export default apiHandler<{
       ? [clientActionMessage]
       : clientConversationMessages;
 
-    // Only check rate limits for user messages (not system messages).
-    // Automatic desktop-assistant greetings are exempt so opening the bubble
-    // does not burn the anonymous daily AI budget.
+    // Charge every regeneration and every anonymous generation except the
+    // exact desktop-assistant greeting. Authenticated proactive greetings and
+    // store-validated client-tool continuations retain their exemptions.
     const isAssistantGreeting =
       conversationChannel === "assistant" &&
+      normalizedTrigger === "submit-message" &&
+      requestMessages.length === 1 &&
       isAssistantGreetingRequest(
         requestMessages,
         { persona: "assistant" }
@@ -304,7 +320,14 @@ export default apiHandler<{
     const isNewUserTurn =
       normalizedTrigger === "submit-message" &&
       requestMessages.at(-1)?.role === "user";
-    if (isNewUserTurn && !isAssistantGreeting) {
+    const isAuthenticatedProactiveGreeting =
+      isAuthenticated && isProactiveGreeting === true;
+    const shouldRateLimit =
+      normalizedTrigger === "regenerate-message" ||
+      (!isAssistantGreeting &&
+        !isAuthenticatedProactiveGreeting &&
+        (!isAuthenticated || isNewUserTurn));
+    if (shouldRateLimit) {
       const rateLimitResult = await checkAndIncrementAIMessageCount(
         identifier,
         isAuthenticated,
@@ -343,9 +366,24 @@ export default apiHandler<{
       res.status(400).send(`Unsupported model: ${model}`);
       return;
     }
+    if (isAuthenticated && username) {
+      const pendingResetMemoryRetry =
+        extractPendingAIConversationResetMemory({
+          redis,
+          username,
+          channel: conversationChannel,
+          log,
+          logError,
+        }).catch((error) => {
+          logError("Pending reset memory extraction failed", error);
+        });
+      waitUntil(pendingResetMemoryRetry);
+    }
 
     const conversationOperationId =
       parsedConversationContext.value?.operationId ?? crypto.randomUUID();
+    const conversationCompletionOperationId =
+      getAIConversationTurnCompletionOperationId(conversationOperationId);
     let storedConversation: Awaited<
       ReturnType<typeof beginAIConversationTurnWithStatus>
     >["document"] | null = null;
@@ -423,6 +461,64 @@ export default apiHandler<{
       }
     }
 
+    const generationAbortController = new AbortController();
+    let abortReleasePromise: Promise<void> | null = null;
+    const releaseTurnAfterClientAbort = async () => {
+      const turn = activeConversationTurn;
+      if (!turn) return;
+      let released = false;
+      try {
+        await releaseAIConversationTurn({
+          redis,
+          username: turn.username,
+          channel: turn.channel,
+          turnId: turn.id,
+        });
+        released = true;
+      } catch (error) {
+        logError("Failed to release disconnected conversation turn", error);
+      } finally {
+        if (released && activeConversationTurn === turn) {
+          activeConversationTurn = null;
+        }
+      }
+    };
+    const abortGeneration = () => {
+      if (generationAbortController.signal.aborted) return;
+      log("Client disconnected; aborting generation");
+      generationAbortController.abort();
+      clearGenerationAbortListeners();
+      abortReleasePromise = releaseTurnAfterClientAbort();
+    };
+    const handleResponseClose = () => {
+      if (res.writableEnded) {
+        clearGenerationAbortListeners();
+        return;
+      }
+      abortGeneration();
+    };
+    const requestSocket = req.socket;
+    req.once("aborted", abortGeneration);
+    res.once("close", handleResponseClose);
+    requestSocket?.once("close", abortGeneration);
+    removeGenerationAbortListeners = () => {
+      req.off("aborted", abortGeneration);
+      res.off("close", handleResponseClose);
+      requestSocket?.off("close", abortGeneration);
+    };
+    if (
+      req.aborted ||
+      res.destroyed ||
+      req.socket?.destroyed ||
+      res.socket?.destroyed
+    ) {
+      abortGeneration();
+    }
+    if (generationAbortController.signal.aborted) {
+      await abortReleasePromise;
+      return;
+    }
+
     // --- Geolocation ---
     // 1) Try Vercel's `geolocation()` first — instant, no outbound call.
     //    Requires Web Request headers, so this throws in `vercel dev` and any
@@ -484,7 +580,14 @@ export default apiHandler<{
           if (unprocessedNotes.length > 0) {
             log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
             const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
-            processDailyNotesForUser(redis, username, log, logError, effectiveUserTimeZone).catch((err: unknown) => {
+            processDailyNotesForUser(
+              redis,
+              username,
+              log,
+              logError,
+              effectiveUserTimeZone,
+              accountCreatedAt
+            ).catch((err: unknown) => {
               logError("[DailyNotes] Background processing failed (non-blocking):", err);
             });
           }
@@ -589,6 +692,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       messages: modelConversationMessages,
       systemState,
       username: isAuthenticated ? username : null,
+      accountCreatedAt,
       model: model as SupportedModel,
       redis: isAuthenticated ? redis : undefined,
       log,
@@ -633,6 +737,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
 
     const result = await agent.stream({
       messages: enrichedMessages,
+      abortSignal: generationAbortController.signal,
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,
       }),
@@ -646,30 +751,22 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       generateMessageId: () => crypto.randomUUID(),
       consumeSseStream: consumeStream,
       onFinish: async ({ responseMessage, isAborted, finishReason }) => {
-        if (!storedConversation || !isAuthenticated || !username) {
-          return;
-        }
-        if (isAborted || finishReason === "error") {
-          await releaseAIConversationTurn({
-            redis,
-            username,
-            channel: conversationChannel,
-            turnId: conversationOperationId,
-          }).catch((error) => {
-            logError("Failed to release aborted conversation turn", error);
-          });
-          activeConversationTurn = null;
-          return;
-        }
-
         try {
+          if (!storedConversation || !isAuthenticated || !username) {
+            return;
+          }
+          if (isAborted || finishReason === "error") {
+            await releaseTurnAfterClientAbort();
+            return;
+          }
+
           if (normalizedTrigger === "regenerate-message") {
             await commitAIConversationRegeneration({
               redis,
               username,
               channel: conversationChannel,
               responseMessage,
-              operationId: responseMessage.id,
+              operationId: conversationCompletionOperationId,
               turnId: conversationOperationId,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
@@ -683,7 +780,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               username,
               channel: conversationChannel,
               responseMessage,
-              operationId: responseMessage.id,
+              operationId: conversationCompletionOperationId,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
               turnId: conversationOperationId,
@@ -699,11 +796,13 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
             turnId: conversationOperationId,
           }).catch(() => {});
           activeConversationTurn = null;
-          throw error;
+        } finally {
+          clearGenerationAbortListeners();
         }
       },
     });
   } catch (error) {
+    clearGenerationAbortListeners();
     if (activeConversationTurn) {
       await releaseAIConversationTurn({
         redis,

@@ -6,6 +6,9 @@
 import type { Redis } from "../api/_utils/redis.js";
 import {
   appendDailyNote,
+  deleteAllUserMemories,
+  getDailyNoteDatesIndexKey,
+  getDailyNoteKey,
   getDailyNote,
   getTodayDateString,
   getRecentDateStrings,
@@ -15,13 +18,19 @@ import {
   getMemoryDetail,
   saveMemoryIndex,
   cleanupStaleTemporaryMemories,
+  upsertMemory,
+  DAILY_NOTES_TTL_SECONDS,
 } from "../api/_utils/_memory.js";
 import { describe, test, expect } from "bun:test";
+import { redisKeys } from "../src/shared/redisKeys.js";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 class FakeRedis {
   private readonly store = new Map<string, unknown>();
+  private readonly expirations = new Map<string, number>();
+  readonly scanPatterns: string[] = [];
+  onBlockedSet: ((key: string) => void) | null = null;
 
   async get<T = unknown>(key: string): Promise<T | null> {
     return (this.store.has(key) ? this.store.get(key) : null) as T | null;
@@ -30,17 +39,100 @@ class FakeRedis {
   async set(
     key: string,
     value: unknown,
-    options?: { nx?: boolean }
+    options?: { nx?: boolean; ex?: number }
   ): Promise<"OK" | null> {
     if (options?.nx && this.store.has(key)) {
+      this.onBlockedSet?.(key);
       return null;
     }
     this.store.set(key, value);
+    if (options?.ex !== undefined) {
+      this.expirations.set(key, options.ex);
+    }
     return "OK";
   }
 
-  async del(key: string): Promise<number> {
-    return this.store.delete(key) ? 1 : 0;
+  async del(...keys: string[]): Promise<number> {
+    let deleted = 0;
+    for (const key of keys) {
+      if (this.store.delete(key)) deleted += 1;
+      this.expirations.delete(key);
+    }
+    return deleted;
+  }
+
+  async sadd(key: string, ...members: string[]): Promise<number> {
+    const existing = this.store.get(key);
+    const values =
+      existing instanceof Set ? existing : new Set<string>();
+    const sizeBefore = values.size;
+    for (const member of members) values.add(member);
+    this.store.set(key, values);
+    return values.size - sizeBefore;
+  }
+
+  async smembers<T = string[]>(key: string): Promise<T> {
+    const existing = this.store.get(key);
+    return (
+      existing instanceof Set ? [...existing] : []
+    ) as T;
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    if (!this.store.has(key)) return 0;
+    this.expirations.set(key, seconds);
+    return 1;
+  }
+
+  async scan(
+    cursor: number | string,
+    options?: { match?: string; count?: number }
+  ): Promise<[string | number, string[]]> {
+    const pattern = options?.match ?? "*";
+    this.scanPatterns.push(pattern);
+    const prefix = pattern.endsWith("*") ? pattern.slice(0, -1) : pattern;
+    const matches = [...this.store.keys()]
+      .filter((key) => key.startsWith(prefix))
+      .sort();
+    const offset = Number(cursor);
+    const keys = matches.slice(offset, offset + 1);
+    const nextCursor = offset + keys.length < matches.length
+      ? offset + keys.length
+      : 0;
+    return [nextCursor, keys];
+  }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<T> {
+    if (script.includes('redis.call("SET", KEYS[2], ARGV[2])')) {
+      this.store.set(keys[0] ?? "", String(args[0]));
+      this.store.set(keys[1] ?? "", String(args[1]));
+      return 1 as T;
+    }
+    if (script.includes('redis.call("SADD"')) {
+      const noteKey = keys[0] ?? "";
+      const indexKey = keys[1] ?? "";
+      const ttl = Number(args[1]);
+      this.store.set(noteKey, String(args[0]));
+      this.expirations.set(noteKey, ttl);
+      await this.sadd(indexKey, String(args[2]));
+      this.expirations.set(indexKey, ttl);
+      return 1 as T;
+    }
+    if (
+      script.includes('redis.call("GET", KEYS[1]) == ARGV[1]') &&
+      this.store.get(keys[0] ?? "") === args[0]
+    ) {
+      return (await this.del(keys[0] ?? "")) as T;
+    }
+    return 0 as T;
+  }
+
+  getExpiration(key: string): number | null {
+    return this.expirations.get(key) ?? null;
   }
 }
 
@@ -117,6 +209,109 @@ describe("Memory System Timestamp Tests", () => {
       expect(entry.timeZone).toBe(tz);
     });
 
+    test("purge deletes indexed notes written today for old source dates", async () => {
+      const fakeRedis = new FakeRedis();
+      const redis = fakeRedis as unknown as Redis;
+      const username = "old_source_purge_user";
+      const now = Date.UTC(2026, 6, 6, 12);
+      const oldSourceTimestamp = now - 90 * DAY_IN_MS;
+      const oldDate = new Date(oldSourceTimestamp).toISOString().slice(0, 10);
+      const recentDate = new Date(now).toISOString().slice(0, 10);
+
+      const result = await appendDailyNote(
+        redis,
+        username,
+        "Remember this old event",
+        { timeZone: "UTC", timestamp: oldSourceTimestamp }
+      );
+      expect(result.date).toBe(oldDate);
+      expect(
+        await fakeRedis.smembers(getDailyNoteDatesIndexKey(username))
+      ).toEqual([oldDate]);
+      expect(
+        fakeRedis.getExpiration(getDailyNoteDatesIndexKey(username))
+      ).toBe(DAILY_NOTES_TTL_SECONDS);
+
+      await fakeRedis.set(
+        getDailyNoteKey(username, recentDate),
+        JSON.stringify({
+          date: recentDate,
+          timeZone: "UTC",
+          entries: [],
+          processedForMemories: false,
+          updatedAt: now,
+        })
+      );
+
+      await deleteAllUserMemories(redis, username, now);
+
+      expect(await getDailyNote(redis, username, oldDate)).toBeNull();
+      expect(await getDailyNote(redis, username, recentDate)).toBeNull();
+      expect(
+        await fakeRedis.smembers(getDailyNoteDatesIndexKey(username))
+      ).toEqual([]);
+    });
+
+    test("purge scans and deletes unindexed historical daily-note keys", async () => {
+      const fakeRedis = new FakeRedis();
+      const redis = fakeRedis as unknown as Redis;
+      const username = "scan_purge_user";
+      const dates = ["1998-04-03", "2001-09-12"];
+
+      for (const date of dates) {
+        await fakeRedis.set(
+          getDailyNoteKey(username, date),
+          JSON.stringify({
+            date,
+            timeZone: "UTC",
+            entries: [],
+            processedForMemories: false,
+            updatedAt: Date.now(),
+          }),
+          { ex: DAILY_NOTES_TTL_SECONDS }
+        );
+      }
+      await fakeRedis.set(
+        getDailyNoteKey("other_scan_user", dates[0]),
+        JSON.stringify({
+          date: dates[0],
+          timeZone: "UTC",
+          entries: [],
+          processedForMemories: false,
+          updatedAt: Date.now(),
+        }),
+        { ex: DAILY_NOTES_TTL_SECONDS }
+      );
+      expect(
+        await fakeRedis.smembers(getDailyNoteDatesIndexKey(username))
+      ).toEqual([]);
+
+      await deleteAllUserMemories(redis, username);
+
+      for (const date of dates) {
+        expect(await getDailyNote(redis, username, date)).toBeNull();
+      }
+      expect(
+        await getDailyNote(redis, "other_scan_user", dates[0])
+      ).not.toBeNull();
+      expect(fakeRedis.scanPatterns).toEqual([
+        "memory:user:scan_purge_user:daily:*",
+        "memory:user:scan_purge_user:daily:*",
+      ]);
+    });
+
+    test("purge does not delete a processing lock owned by another job", async () => {
+      const fakeRedis = new FakeRedis();
+      const redis = fakeRedis as unknown as Redis;
+      const username = "active_processor_user";
+      const lockKey = redisKeys.memory.processingLock(username);
+      await fakeRedis.set(lockKey, "active-processor-token", { ex: 120 });
+
+      await deleteAllUserMemories(redis, username);
+
+      expect(await fakeRedis.get(lockKey)).toBe("active-processor-token");
+    });
+
     test("getRecentDateStrings returns unique descending dates", async () => {
       const tz = "America/Los_Angeles";
       const dates = getRecentDateStrings(5, tz);
@@ -170,6 +365,72 @@ describe("Memory System Timestamp Tests", () => {
 
       const removedDetail = await getMemoryDetail(redis, username, "context");
       expect(removedDetail).toBe(null);
+    });
+  });
+
+  describe("reset-memory operation idempotency", () => {
+    test("a partial reset snapshot retry does not duplicate daily or long-term writes", async () => {
+      const redis = makeRedis();
+      const username = "reset_retry_user";
+      const snapshotId = "11111111-1111-4111-8111-111111111111";
+      const timestamp = Date.UTC(2026, 6, 6, 12);
+      const dailyOperationId = `${snapshotId}:daily:0`;
+      const longTermOperationId = `${snapshotId}:long_term:0`;
+
+      const firstDaily = await appendDailyNote(
+        redis,
+        username,
+        "User is moving to Lisbon.",
+        {
+          timeZone: "UTC",
+          timestamp,
+          operationId: dailyOperationId,
+        }
+      );
+      const firstLongTerm = await upsertMemory(
+        redis,
+        username,
+        "location",
+        "User is moving to Lisbon",
+        "The user plans to move to Lisbon.",
+        "add",
+        { operationId: longTermOperationId }
+      );
+      expect(firstDaily.applied).not.toBe(false);
+      expect(firstLongTerm.applied).not.toBe(false);
+
+      // Simulate retrying the still-pending snapshot after a later write failed.
+      const retryDaily = await appendDailyNote(
+        redis,
+        username,
+        "User is moving to Lisbon.",
+        {
+          timeZone: "UTC",
+          timestamp,
+          operationId: dailyOperationId,
+        }
+      );
+      const retryLongTerm = await upsertMemory(
+        redis,
+        username,
+        "location",
+        "Retry output must not overwrite the first result",
+        "Duplicate retry content",
+        "update",
+        { operationId: longTermOperationId }
+      );
+
+      expect(retryDaily.applied).toBe(false);
+      expect(retryLongTerm.applied).toBe(false);
+      const dailyNote = await getDailyNote(redis, username, firstDaily.date!);
+      expect(dailyNote?.entries).toHaveLength(1);
+      expect(dailyNote?.entries[0]?.operationId).toBe(dailyOperationId);
+      const detail = await getMemoryDetail(redis, username, "location");
+      expect(detail?.content).toBe("The user plans to move to Lisbon.");
+      expect(detail?.recentOperationIds).toContain(longTermOperationId);
+      expect(
+        detail?.content.match(/Lisbon/g)?.length
+      ).toBe(1);
     });
   });
 });

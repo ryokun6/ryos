@@ -52,7 +52,7 @@ type HeaderValue = string | number | string[];
 type HeaderMap = Record<string, string | string[] | undefined>;
 type RouteHandler = (
   req: BunRequestShim,
-  res: BunResponseShim
+  res: BunResponseShim,
 ) => Promise<unknown> | unknown;
 
 type RouteDefinition = ApiRouteManifestEntry;
@@ -64,9 +64,9 @@ interface ParsedBody {
 }
 
 const MAX_STANDALONE_BODY_BYTES = 55 * 1024 * 1024;
-const MAX_AI_CONVERSATION_REQUEST_BYTES = 8 * 1024 * 1024;
+export const MAX_AI_CONVERSATION_REQUEST_BYTES = 8 * 1024 * 1024;
 
-class StandaloneRequestBodyTooLargeError extends Error {}
+export class StandaloneRequestBodyTooLargeError extends Error {}
 
 class BunRequestShim extends Readable {
   method: string;
@@ -171,7 +171,7 @@ class BunResponseShim extends EventEmitter {
     if (Array.isArray(value)) {
       this.headerStore.set(
         normalizedName,
-        value.map((entry) => String(entry))
+        value.map((entry) => String(entry)),
       );
       return this;
     }
@@ -195,7 +195,7 @@ class BunResponseShim extends EventEmitter {
   writeHead(
     statusCode: number,
     statusMessageOrHeaders?: string | Record<string, HeaderValue>,
-    maybeHeaders?: Record<string, HeaderValue>
+    maybeHeaders?: Record<string, HeaderValue>,
   ): this {
     this.statusCode = statusCode;
 
@@ -373,7 +373,7 @@ function parseEnvLine(line: string): { key: string; value: string } | null {
   if (!trimmed || trimmed.startsWith("#")) return null;
 
   const match = trimmed.match(
-    /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/
+    /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/,
   );
   if (!match) return null;
 
@@ -466,10 +466,7 @@ function buildQueryMap(url: URL): QueryMap {
 // clients cannot spoof it.
 const PEER_IP_HEADER_NAME = "x-ryos-peer-ip";
 
-function buildHeaderMap(
-  request: Request,
-  peerIp: string | null
-): HeaderMap {
+function buildHeaderMap(request: Request, peerIp: string | null): HeaderMap {
   const headers: HeaderMap = {};
 
   for (const [name, value] of request.headers.entries()) {
@@ -493,36 +490,66 @@ function buildHeaderMap(
   return headers;
 }
 
-function getRequestBodyLimit(pathname: string): number {
-  if (pathname === "/api/ai/attachments") return AI_ATTACHMENT_MAX_BYTES;
+export function getRequestBodyLimit(pathname: string): number {
+  const normalizedPathname =
+    pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (normalizedPathname === "/api/ai/attachments") {
+    return AI_ATTACHMENT_MAX_BYTES;
+  }
   if (
-    pathname === "/api/chat" ||
-    pathname === "/api/ai/extract-memories" ||
-    /^\/api\/ai\/conversations\/(?:chat|assistant)\/import$/.test(pathname)
+    normalizedPathname === "/api/chat" ||
+    normalizedPathname === "/api/ai/extract-memories" ||
+    /^\/api\/ai\/conversations\/(?:chat|assistant)\/import$/.test(
+      normalizedPathname,
+    )
   ) {
     return MAX_AI_CONVERSATION_REQUEST_BYTES;
   }
   return MAX_STANDALONE_BODY_BYTES;
 }
 
-async function readRequestBytes(
+export async function readRequestBytes(
   request: Request,
-  maximumSizeInBytes: number
+  maximumSizeInBytes: number,
 ): Promise<Uint8Array> {
   const declared = Number(request.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maximumSizeInBytes) {
     throw new StandaloneRequestBodyTooLargeError();
   }
-  const bytes = new Uint8Array(await request.arrayBuffer());
-  if (bytes.byteLength > maximumSizeInBytes) {
-    throw new StandaloneRequestBodyTooLargeError();
+
+  const reader = request.body?.getReader();
+  if (!reader) return new Uint8Array();
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maximumSizeInBytes) {
+        const error = new StandaloneRequestBodyTooLargeError();
+        await reader.cancel(error).catch(() => {});
+        throw error;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
   }
   return bytes;
 }
 
 async function parseBody(
   request: Request,
-  maximumSizeInBytes: number
+  maximumSizeInBytes: number,
 ): Promise<ParsedBody> {
   const method = request.method.toUpperCase();
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
@@ -541,7 +568,7 @@ async function parseBody(
     contentType.includes("+json")
   ) {
     const text = new TextDecoder().decode(
-      await readRequestBytes(request, maximumSizeInBytes)
+      await readRequestBytes(request, maximumSizeInBytes),
     );
     if (text.length === 0) {
       return { bodyValue: undefined, bodyError: null, rawBody: null };
@@ -560,7 +587,7 @@ async function parseBody(
 
   if (contentType.includes("application/x-www-form-urlencoded")) {
     const text = new TextDecoder().decode(
-      await readRequestBytes(request, maximumSizeInBytes)
+      await readRequestBytes(request, maximumSizeInBytes),
     );
     const params = new URLSearchParams(text);
     const body: QueryMap = {};
@@ -586,7 +613,7 @@ async function parseBody(
 
 function matchRoute(
   pathname: string,
-  routes: RouteDefinition[]
+  routes: RouteDefinition[],
 ): { route: RouteDefinition; params: Record<string, string> } | null {
   for (const route of routes) {
     const match = route.matcher.exec(pathname);
@@ -612,7 +639,7 @@ async function getHandler(route: RouteDefinition): Promise<RouteHandler> {
   const routeModule = await import(pathToFileURL(route.filePath).href);
   if (typeof routeModule.default !== "function") {
     throw new Error(
-      `Route "${route.relativePath}" does not export a default handler`
+      `Route "${route.relativePath}" does not export a default handler`,
     );
   }
 
@@ -647,7 +674,7 @@ function isPathInsideRoot(rootPath: string, candidatePath: string): boolean {
 
 async function getStaticFileResponse(
   absolutePath: string,
-  options?: { headers?: Record<string, string> }
+  options?: { headers?: Record<string, string> },
 ): Promise<Response | null> {
   if (!isPathInsideRoot(DIST_ROOT, absolutePath)) {
     return null;
@@ -668,7 +695,7 @@ async function getStaticFileResponse(
 
 async function serveDistPath(
   relativePath: string,
-  options?: { headers?: Record<string, string> }
+  options?: { headers?: Record<string, string> },
 ): Promise<Response | null> {
   const sanitized = relativePath.replace(/^\/+/, "");
   let decodedPath = sanitized;
@@ -700,7 +727,7 @@ async function serveSpaIndex(): Promise<Response> {
       error: "Frontend build output not found",
       hint: "Run `bun run build` before starting the standalone production server.",
     },
-    503
+    503,
   );
 }
 
@@ -713,7 +740,7 @@ function shouldServeSpaFallback(pathname: string): boolean {
 
 function buildAppConfigScript(origin: string): string {
   return `window.__RYOS_RUNTIME_CONFIG__ = ${JSON.stringify(
-    buildClientRuntimeConfig(origin)
+    buildClientRuntimeConfig(origin),
   )};`;
 }
 
@@ -802,7 +829,10 @@ function validateEnv(): void {
         ];
 
   const optional: { name: string; description: string }[] = [
-    { name: "OPENAI_API_KEY", description: "OpenAI API key (AI + transcription)" },
+    {
+      name: "OPENAI_API_KEY",
+      description: "OpenAI API key (AI + transcription)",
+    },
     { name: "ELEVENLABS_API_KEY", description: "ElevenLabs API key (TTS)" },
     { name: "YOUTUBE_API_KEY", description: "YouTube Data API key" },
   ];
@@ -812,11 +842,14 @@ function validateEnv(): void {
       { name: "PUSHER_CLUSTER", description: "Pusher cluster" },
       { name: "PUSHER_SECRET", description: "Pusher secret" },
       { name: "PUSHER_KEY", description: "Pusher key" },
-      { name: "PUSHER_APP_ID", description: "Pusher app ID (real-time features)" }
+      {
+        name: "PUSHER_APP_ID",
+        description: "Pusher app ID (real-time features)",
+      },
     );
   } else if (redisBackend !== "redis-url") {
     console.warn(
-      "[api-standalone] REALTIME_PROVIDER=local works best with REDIS_URL so websocket broadcasts can fan out across multiple instances. Falling back to in-process delivery only."
+      "[api-standalone] REALTIME_PROVIDER=local works best with REDIS_URL so websocket broadcasts can fan out across multiple instances. Falling back to in-process delivery only.",
     );
   }
 
@@ -826,14 +859,16 @@ function validateEnv(): void {
   if (missingOptional.length > 0) {
     console.warn(
       `[api-standalone] Optional env vars not set (some features will be unavailable):\n` +
-        missingOptional.map((v) => `  - ${v.name}: ${v.description}`).join("\n")
+        missingOptional
+          .map((v) => `  - ${v.name}: ${v.description}`)
+          .join("\n"),
     );
   }
 
   if (missing.length > 0) {
     console.error(
       `[api-standalone] Required env vars missing:\n` +
-        missing.map((v) => `  - ${v.name}: ${v.description}`).join("\n")
+        missing.map((v) => `  - ${v.name}: ${v.description}`).join("\n"),
     );
     process.exit(1);
   }
@@ -890,7 +925,7 @@ async function bootstrap(): Promise<void> {
             realtimeProvider: getRealtimeProvider(),
             redisBackend: getRedisBackend(),
           },
-          200
+          200,
         );
       }
 
@@ -913,7 +948,10 @@ async function bootstrap(): Promise<void> {
           try {
             socketUsername = await consumeRealtimeTicket(createRedis(), ticket);
           } catch (error) {
-            console.warn("[api-standalone] Failed to consume realtime ticket", error);
+            console.warn(
+              "[api-standalone] Failed to consume realtime ticket",
+              error,
+            );
           }
         }
 
@@ -945,7 +983,7 @@ async function bootstrap(): Promise<void> {
             runtime: "standalone-bun-serve",
             routeCount: routes.length,
           },
-          200
+          200,
         );
       }
 
@@ -1057,7 +1095,7 @@ async function bootstrap(): Promise<void> {
           handlerPromise.catch((error) => {
             console.error(
               `[api-standalone] Handler error in ${matched.route.routePath} (${matched.route.relativePath})`,
-              error
+              error,
             );
             if (!resShim.writableEnded) {
               resShim.end();
@@ -1073,7 +1111,7 @@ async function bootstrap(): Promise<void> {
       } catch (error) {
         console.error(
           `[api-standalone] Handler error in ${matched.route.routePath} (${matched.route.relativePath})`,
-          error
+          error,
         );
         if (!resShim.headersSent) {
           return jsonResponse({ error: "Internal server error" }, 500);
@@ -1141,7 +1179,7 @@ async function bootstrap(): Promise<void> {
                 });
                 try {
                   socket.send(
-                    JSON.stringify({ type: "subscription_error", channel })
+                    JSON.stringify({ type: "subscription_error", channel }),
                   );
                 } catch {
                   // socket may have closed; ignore
@@ -1151,7 +1189,7 @@ async function bootstrap(): Promise<void> {
             .catch((error) => {
               console.warn(
                 "[api-standalone] Realtime subscribe authorization failed",
-                error
+                error,
               );
             });
           return;
@@ -1175,16 +1213,18 @@ async function bootstrap(): Promise<void> {
   });
 
   console.log(
-    `[api-standalone] Listening on http://${API_HOST}:${API_PORT} (${routes.length} routes)`
+    `[api-standalone] Listening on http://${API_HOST}:${API_PORT} (${routes.length} routes)`,
   );
   for (const route of routes) {
     console.log(`  ${route.routePath}  ->  api/${route.relativePath}`);
   }
 }
 
-try {
-  await bootstrap();
-} catch (error) {
-  console.error("[api-standalone] Failed to start server", error);
-  process.exit(1);
+if (import.meta.main) {
+  try {
+    await bootstrap();
+  } catch (error) {
+    console.error("[api-standalone] Failed to start server", error);
+    process.exit(1);
+  }
 }

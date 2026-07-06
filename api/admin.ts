@@ -12,7 +12,17 @@ import {
   setStoredUserRecord,
 } from "./_utils/auth/_user-record.js";
 import { apiHandler } from "./_utils/api-handler.js";
-import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
+import {
+  getMemoryIndex,
+  getMemoryDetail,
+  getRecentDailyNotes,
+  clearAllMemories,
+  resetDailyNotesProcessedFlag,
+  isValidMemoryAccountCreatedAt,
+  withCurrentAccountMemoryMutation,
+  type MemoryEntry,
+  type DailyNote,
+} from "./_utils/_memory.js";
 import { getRecentHeartbeatRecords, type HeartbeatRecord } from "./_utils/heartbeats.js";
 import { processDailyNotesForUser } from "./ai/process-daily-notes.js";
 import {
@@ -1073,7 +1083,29 @@ export default apiHandler<AdminRequest>(
             return;
           }
           try {
-            const memResult = await clearAllMemories(redis, targetUsername.toLowerCase());
+            const normalizedTarget = targetUsername.toLowerCase();
+            const targetAccount = await getStoredUserRecord(
+              redis,
+              normalizedTarget
+            );
+            const accountCreatedAt = targetAccount?.createdAt;
+            if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
+              logger.response(409, Date.now() - startTime);
+              res.status(409).json({ error: "account_changed" });
+              return;
+            }
+            const clearMutation = await withCurrentAccountMemoryMutation({
+              redis,
+              username: normalizedTarget,
+              accountCreatedAt,
+              mutation: () => clearAllMemories(redis, normalizedTarget),
+            });
+            if (clearMutation.status === "account_changed") {
+              logger.response(409, Date.now() - startTime);
+              res.status(409).json({ error: "account_changed" });
+              return;
+            }
+            const memResult = clearMutation.value;
             logger.info("User memories cleared", {
               targetUsername,
               deletedCount: memResult.deletedCount,
@@ -1168,7 +1200,29 @@ export default apiHandler<AdminRequest>(
           }
           try {
             const normalizedTarget = targetUsername.toLowerCase();
-            const resetResult = await resetDailyNotesProcessedFlag(redis, normalizedTarget, 30);
+            const targetAccount = await getStoredUserRecord(
+              redis,
+              normalizedTarget
+            );
+            const accountCreatedAt = targetAccount?.createdAt;
+            if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
+              logger.response(409, Date.now() - startTime);
+              res.status(409).json({ error: "account_changed" });
+              return;
+            }
+            const resetMutation = await withCurrentAccountMemoryMutation({
+              redis,
+              username: normalizedTarget,
+              accountCreatedAt,
+              mutation: () =>
+                resetDailyNotesProcessedFlag(redis, normalizedTarget, 30),
+            });
+            if (resetMutation.status === "account_changed") {
+              logger.response(409, Date.now() - startTime);
+              res.status(409).json({ error: "account_changed" });
+              return;
+            }
+            const resetResult = resetMutation.value;
             logger.info("Daily notes reset for reprocessing", {
               targetUsername,
               resetCount: resetResult.resetCount,
@@ -1179,7 +1233,14 @@ export default apiHandler<AdminRequest>(
               normalizedTarget,
               (...args: unknown[]) => logger.info(String(args[0]), args[1]),
               (...args: unknown[]) => logger.error(String(args[0]), args[1]),
+              targetAccount?.timeZone,
+              accountCreatedAt,
             );
+            if (processResult.skippedReason === "account_changed") {
+              logger.response(409, Date.now() - startTime);
+              res.status(409).json({ error: "account_changed" });
+              return;
+            }
 
             const skippedCount = processResult.skippedDates?.length || 0;
             logger.info("Force process daily notes complete", {

@@ -36,7 +36,9 @@ export function normalizeRedisSegment(segment: string | number): string {
   return encodeURIComponent(String(segment).trim().toLowerCase());
 }
 
-export function normalizeCaseSensitiveRedisSegment(segment: string | number): string {
+export function normalizeCaseSensitiveRedisSegment(
+  segment: string | number,
+): string {
   return encodeURIComponent(String(segment).trim());
 }
 
@@ -46,7 +48,9 @@ export function redisKey(
   return segments
     .filter(
       (segment): segment is string | number =>
-        segment !== null && segment !== undefined && String(segment).trim() !== ""
+        segment !== null &&
+        segment !== undefined &&
+        String(segment).trim() !== "",
     )
     .map(normalizeRedisSegment)
     .join(REDIS_KEY_SEPARATOR);
@@ -58,7 +62,9 @@ export function redisKeyCaseSensitive(
   return segments
     .filter(
       (segment): segment is string | number =>
-        segment !== null && segment !== undefined && String(segment).trim() !== ""
+        segment !== null &&
+        segment !== undefined &&
+        String(segment).trim() !== "",
     )
     .map(normalizeCaseSensitiveRedisSegment)
     .join(REDIS_KEY_SEPARATOR);
@@ -74,10 +80,10 @@ function songKey(songId: string, facet: "meta" | "content"): string {
 export async function sha256RedisIdentifier(value: string): Promise<string> {
   const digest = await globalThis.crypto.subtle.digest(
     "SHA-256",
-    new TextEncoder().encode(value)
+    new TextEncoder().encode(value),
   );
   return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
+    byte.toString(16).padStart(2, "0"),
   ).join("");
 }
 
@@ -101,8 +107,7 @@ export const redisKeys = {
     lastSession: (username: string) =>
       redisKey("auth", "user", username, "last-session"),
     /** Reverse index: hashed email address -> username (for recovery lookups). */
-    emailIndex: (emailHash: string) =>
-      redisKey("auth", "email", emailHash),
+    emailIndex: (emailHash: string) => redisKey("auth", "email", emailHash),
     /** Pending email-verification code (hashed) + meta for a user. */
     emailVerify: (username: string) =>
       redisKey("auth", "user", username, "email-verify"),
@@ -122,19 +127,45 @@ export const redisKeys = {
       redisKey("chat", "ai", "user", username, channel, "conversation"),
     aiConversationLock: (username: string, channel: AIConversationChannel) =>
       redisKey("chat", "ai", "user", username, channel, "lock"),
+    aiConversationResetMemory: (
+      username: string,
+      channel: AIConversationChannel,
+    ) => redisKey("chat", "ai", "user", username, channel, "reset-memory"),
+    aiConversationResetMemoryLock: (
+      username: string,
+      channel: AIConversationChannel,
+    ) =>
+      redisKey("chat", "ai", "user", username, channel, "reset-memory", "lock"),
     aiConversationTombstone: (username: string) =>
       redisKey("chat", "ai", "user", username, "deleted"),
     aiAttachments: (username: string) =>
       redisKey("chat", "ai", "user", username, "attachments"),
+    aiAttachmentsLock: (username: string) =>
+      redisKey("chat", "ai", "user", username, "attachments", "lock"),
+    legacyAIAttachmentMetadata: (username: string, attachmentId: string) =>
+      redisKeyCaseSensitive(
+        "chat",
+        "ai",
+        "user",
+        username.toLowerCase(),
+        "attachment",
+        attachmentId.toLowerCase(),
+      ),
+    legacyAIAttachmentIds: (username: string) =>
+      redisKey("chat", "ai", "user", username, "attachment-ids"),
+    legacyAIAttachmentBytes: (username: string) =>
+      redisKey("chat", "ai", "user", username, "attachment-bytes"),
   },
   sync: {
-    v2Seq: (username: string) => redisKey("sync", "v2", "user", username, "seq"),
+    v2Seq: (username: string) =>
+      redisKey("sync", "v2", "user", username, "seq"),
     v2Kv: (username: string) => redisKey("sync", "v2", "user", username, "kv"),
     v2Journal: (username: string) =>
       redisKey("sync", "v2", "user", username, "journal"),
     v2Blobs: (username: string) =>
       redisKey("sync", "v2", "user", username, "blobs"),
-    v2Lock: (username: string) => redisKey("sync", "v2", "user", username, "lock"),
+    v2Lock: (username: string) =>
+      redisKey("sync", "v2", "user", username, "lock"),
     v2TtlTouched: (username: string) =>
       redisKey("sync", "v2", "user", username, "ttl-touched"),
     maintenanceCursor: () => redisKey("sync", "maintenance", "cursor"),
@@ -142,8 +173,12 @@ export const redisKeys = {
       redisKey("sync", "preference", "user", username, "auto-sync"),
   },
   rate: {
-    counter: (feature: string, window: string, scope: string, identifierHash: string) =>
-      redisKey("rate", feature, window, scope, identifierHash),
+    counter: (
+      feature: string,
+      window: string,
+      scope: string,
+      identifierHash: string,
+    ) => redisKey("rate", feature, window, scope, identifierHash),
     block: (feature: string, scope: string, identifierHash: string) =>
       redisKey("rate", "block", feature, scope, identifierHash),
   },
@@ -176,6 +211,10 @@ export const redisKeys = {
       redisKey("memory", "user", username, "detail", key),
     daily: (username: string, date: string) =>
       redisKey("memory", "user", username, "daily", date),
+    dailyDates: (username: string) =>
+      redisKey("memory", "user", username, "daily", "dates"),
+    mutationLock: (username: string) =>
+      redisKey("memory", "user", username, "mutation-lock"),
     processingLock: (username: string) =>
       redisKey("memory", "user", username, "processing-lock"),
   },
@@ -188,7 +227,13 @@ export const redisKeys = {
     telegramPendingLink: (username: string) =>
       redisKey("integration", "telegram", "link", "user", username),
     telegramAccountByTelegramUser: (telegramUserId: string) =>
-      redisKey("integration", "telegram", "account", "telegram-user", telegramUserId),
+      redisKey(
+        "integration",
+        "telegram",
+        "account",
+        "telegram-user",
+        telegramUserId,
+      ),
     telegramAccountByUsername: (username: string) =>
       redisKey("integration", "telegram", "account", "user", username),
     telegramHistory: (chatId: string) =>

@@ -21,6 +21,7 @@ const importConversationSchema = z.object({
     .min(1)
     .max(AI_CONVERSATION_OPERATION_ID_MAX_LENGTH),
   messages: z.array(z.unknown()).min(1).max(200),
+  historyTruncated: z.boolean().optional().default(false),
 });
 
 export default apiHandler(
@@ -47,6 +48,7 @@ export default apiHandler(
         expectedRevision: body!.expectedRevision,
         operationId: body!.operationId,
         messages: body!.messages,
+        historyTruncated: body!.historyTruncated,
       });
       logger.response(201, Date.now() - startTime);
       res.status(201).json({

@@ -2,12 +2,13 @@ import { z } from "zod";
 import { waitUntil } from "@vercel/functions";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { getStoredUserRecord } from "../../../_utils/auth/_user-record.js";
-import { extractMemoriesFromConversation } from "../../extract-memories.js";
+import { isValidMemoryAccountCreatedAt } from "../../../_utils/_memory.js";
 import {
   AIConversationError,
   getAIConversationSummary,
   resetAIConversation,
 } from "../_helpers/store.js";
+import { extractPendingAIConversationResetMemory } from "../_helpers/reset-memory.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
@@ -18,10 +19,7 @@ export const maxDuration = 60;
 
 const resetConversationSchema = z.object({
   conversationId: z.string().uuid(),
-  operationId: z
-    .string()
-    .min(1)
-    .max(AI_CONVERSATION_OPERATION_ID_MAX_LENGTH),
+  operationId: z.string().min(1).max(AI_CONVERSATION_OPERATION_ID_MAX_LENGTH),
 });
 
 export default apiHandler(
@@ -39,7 +37,7 @@ export default apiHandler(
       return;
     }
     const account = await getStoredUserRecord(redis, user!.username);
-    if (typeof account?.createdAt !== "number") {
+    if (!isValidMemoryAccountCreatedAt(account?.createdAt)) {
       logger.response(409, Date.now() - startTime);
       res.status(409).json({ error: "account_changed" });
       return;
@@ -52,33 +50,20 @@ export default apiHandler(
         channel,
         conversationId: body!.conversationId,
         operationId: body!.operationId,
+        accountCreatedAt: account.createdAt,
+        ...(account.timeZone ? { timeZone: account.timeZone } : {}),
       });
-      if (
-        result.reset &&
-        result.clearedMessages.some((message) => message.role === "user")
-      ) {
-        const extraction = extractMemoriesFromConversation({
-          redis,
-          username: user!.username,
-          messages: result.clearedMessages.map((message) => ({
-            role: message.role,
-            parts: message.parts,
-            metadata: { createdAt: message.createdAt },
-          })),
-          timeZone: account.timeZone,
-          storeLongTermMemories: true,
-          markTodayProcessed: true,
-          accountCreatedAt: account.createdAt,
-          log: (...args: unknown[]) =>
-            logger.info(String(args[0]), args[1]),
-          logError: (...args: unknown[]) =>
-            logger.error(String(args[0]), args[1]),
-        })
-          .catch((error) => {
-            logger.error("Cleared conversation memory extraction failed", error);
-          });
-        waitUntil(extraction);
-      }
+      const memoryProcessing = extractPendingAIConversationResetMemory({
+        redis,
+        username: user!.username,
+        channel,
+        log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
+        logError: (...args: unknown[]) =>
+          logger.error(String(args[0]), args[1]),
+      }).catch((error) => {
+        logger.error("Cleared conversation memory extraction failed", error);
+      });
+      waitUntil(memoryProcessing);
       logger.response(200, Date.now() - startTime);
       res.status(200).json({
         owner: user!.username,
@@ -93,5 +78,5 @@ export default apiHandler(
       }
       throw error;
     }
-  }
+  },
 );

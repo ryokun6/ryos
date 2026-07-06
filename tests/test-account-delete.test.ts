@@ -137,6 +137,29 @@ describe("Account Deletion API", () => {
       redisKeys.chat.aiConversation(username, "assistant"),
       JSON.stringify({ seeded: true })
     );
+    await redis.set(
+      redisKeys.chat.aiConversationResetMemory(username, "chat"),
+      "v1:pending-reset-memory"
+    );
+    await redis.set(
+      redisKeys.chat.aiConversationResetMemoryLock(username, "assistant"),
+      "in-flight"
+    );
+    const unindexedHistoricalDailyNoteKey = redisKeys.memory.daily(
+      username,
+      "1999-12-31"
+    );
+    await redis.set(
+      unindexedHistoricalDailyNoteKey,
+      JSON.stringify({
+        date: "1999-12-31",
+        timeZone: "UTC",
+        entries: [],
+        processedForMemories: false,
+        updatedAt: Date.now(),
+      }),
+      { ex: 30 * 24 * 60 * 60 }
+    );
 
     expect(await getUsernameByEmail(redis, email)).toBe(username);
 
@@ -169,6 +192,20 @@ describe("Account Deletion API", () => {
     ).toBeNull();
     expect(
       await redis.get(redisKeys.chat.aiConversation(username, "assistant"))
+    ).toBeNull();
+    expect(
+      await redis.get(
+        redisKeys.chat.aiConversationResetMemory(username, "chat")
+      )
+    ).toBeNull();
+    expect(
+      await redis.get(
+        redisKeys.chat.aiConversationResetMemoryLock(username, "assistant")
+      )
+    ).toBeNull();
+    expect(await redis.get(unindexedHistoricalDailyNoteKey)).toBeNull();
+    expect(
+      await redis.get(redisKeys.memory.mutationLock(username))
     ).toBeNull();
 
     // Old token invalid.

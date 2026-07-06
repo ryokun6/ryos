@@ -18,6 +18,7 @@
 
 import type { Redis } from "./redis.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
+import { getStoredUserRecord } from "./auth/_user-record.js";
 
 // ============================================================================
 // Constants
@@ -57,6 +58,12 @@ export const DEFAULT_MEMORY_TIME_ZONE = "UTC";
 export const TEMPORARY_MEMORY_RETENTION_DAYS = 7;
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const MEMORY_MUTATION_LOCK_TTL_SECONDS = 120;
+const MEMORY_MUTATION_LOCK_ATTEMPTS = 400;
+const MEMORY_MUTATION_LOCK_RETRY_MS = 25;
+const MEMORY_PURGE_DELETE_BATCH_SIZE = 500;
+const MAX_RECENT_MEMORY_OPERATION_IDS = 32;
+const MAX_MEMORY_OPERATION_ID_LENGTH = 200;
 
 const TEMPORARY_MEMORY_KEY_HINTS = new Set(["context", "current_focus"]);
 
@@ -123,6 +130,122 @@ export const getMemoryDetailKey = (username: string, key: string): string =>
  */
 export const getDailyNoteKey = (username: string, date: string): string =>
   redisKeys.memory.daily(username, date);
+
+/**
+ * Get the owner-scoped index of daily-note dates.
+ */
+export const getDailyNoteDatesIndexKey = (username: string): string =>
+  redisKeys.memory.dailyDates(username);
+
+const RELEASE_MEMORY_MUTATION_LOCK_SCRIPT = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+end
+return 0
+`;
+
+function sleep(durationMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, durationMs));
+}
+
+export async function withUserMemoryMutationLock<T>(
+  redis: Redis,
+  username: string,
+  task: () => Promise<T>
+): Promise<T> {
+  const key = redisKeys.memory.mutationLock(username);
+  const token = crypto.randomUUID();
+
+  for (
+    let attempt = 0;
+    attempt < MEMORY_MUTATION_LOCK_ATTEMPTS;
+    attempt += 1
+  ) {
+    const claimed = await redis.set(key, token, {
+      nx: true,
+      ex: MEMORY_MUTATION_LOCK_TTL_SECONDS,
+    });
+    if (claimed !== null && claimed !== undefined) {
+      try {
+        return await task();
+      } finally {
+        await redis
+          .eval<number>(RELEASE_MEMORY_MUTATION_LOCK_SCRIPT, [key], [token])
+          .catch(() => 0);
+      }
+    }
+    await sleep(MEMORY_MUTATION_LOCK_RETRY_MS);
+  }
+
+  throw new Error("memory_mutation_busy");
+}
+
+export function isValidMemoryAccountCreatedAt(
+  accountCreatedAt: unknown
+): accountCreatedAt is number {
+  return (
+    typeof accountCreatedAt === "number" &&
+    Number.isFinite(accountCreatedAt) &&
+    accountCreatedAt > 0
+  );
+}
+
+export async function isCurrentMemoryAccount({
+  redis,
+  username,
+  accountCreatedAt,
+}: {
+  redis: Redis;
+  username: string;
+  accountCreatedAt: unknown;
+}): Promise<boolean> {
+  if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
+    return false;
+  }
+
+  const [tombstone, account] = await Promise.all([
+    redis.get(redisKeys.chat.aiConversationTombstone(username)),
+    getStoredUserRecord(redis, username),
+  ]);
+  return (
+    tombstone === null &&
+    isValidMemoryAccountCreatedAt(account?.createdAt) &&
+    account.createdAt === accountCreatedAt
+  );
+}
+
+export type CurrentAccountMemoryMutationResult<T> =
+  | { status: "applied"; value: T }
+  | { status: "account_changed" };
+
+export async function withCurrentAccountMemoryMutation<T>({
+  redis,
+  username,
+  accountCreatedAt,
+  mutation,
+}: {
+  redis: Redis;
+  username: string;
+  accountCreatedAt: unknown;
+  mutation: () => Promise<T>;
+}): Promise<CurrentAccountMemoryMutationResult<T>> {
+  if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
+    return { status: "account_changed" };
+  }
+
+  return withUserMemoryMutationLock(redis, username, async () => {
+    if (
+      !(await isCurrentMemoryAccount({
+        redis,
+        username,
+        accountCreatedAt,
+      }))
+    ) {
+      return { status: "account_changed" };
+    }
+    return { status: "applied", value: await mutation() };
+  });
+}
 
 /**
  * Get today's date in YYYY-MM-DD format (in user's approximate timezone, defaults to UTC)
@@ -274,6 +397,8 @@ export interface MemoryDetail {
   createdAt: number;
   /** Unix timestamp of last update */
   updatedAt: number;
+  /** Recent idempotency identifiers for scoped memory mutations */
+  recentOperationIds?: string[];
 }
 
 /**
@@ -283,6 +408,12 @@ export interface MemoryOperationResult {
   success: boolean;
   message: string;
   entry?: MemoryEntry;
+  /** False when an already-applied operation was safely ignored */
+  applied?: boolean;
+}
+
+export interface MemoryMutationOptions {
+  operationId?: string;
 }
 
 // --- Daily Notes Types ---
@@ -303,6 +434,8 @@ export interface DailyNoteEntry {
   timeZone?: string;
   /** The note content (observation, context, detail) */
   content: string;
+  /** Optional idempotency identifier for the append operation */
+  operationId?: string;
 }
 
 /**
@@ -329,6 +462,8 @@ export interface DailyNoteOperationResult {
   message: string;
   date?: string;
   entryCount?: number;
+  /** False when an already-applied operation was safely ignored */
+  applied?: boolean;
 }
 
 export interface DailyNoteAppendOptions {
@@ -336,6 +471,55 @@ export interface DailyNoteAppendOptions {
   timeZone?: string;
   /** Source event timestamp to preserve instead of using ingestion time */
   timestamp?: number;
+  /** Optional idempotency identifier for this append */
+  operationId?: string;
+}
+
+function normalizeMemoryOperationId(operationId?: string): string | undefined {
+  if (typeof operationId !== "string") {
+    return undefined;
+  }
+  const normalized = operationId.trim();
+  if (!normalized) {
+    return undefined;
+  }
+  return normalized.slice(0, MAX_MEMORY_OPERATION_ID_LENGTH);
+}
+
+function getRecentMemoryOperationIds(
+  detail: MemoryDetail | null
+): string[] {
+  if (!Array.isArray(detail?.recentOperationIds)) {
+    return [];
+  }
+  return detail.recentOperationIds.filter(
+    (operationId): operationId is string =>
+      typeof operationId === "string" && operationId.length > 0
+  );
+}
+
+function hasMemoryOperation(
+  detail: MemoryDetail | null,
+  operationId?: string
+): boolean {
+  return (
+    operationId !== undefined &&
+    getRecentMemoryOperationIds(detail).includes(operationId)
+  );
+}
+
+function appendMemoryOperation(
+  detail: MemoryDetail | null,
+  operationId?: string
+): string[] | undefined {
+  const existing = getRecentMemoryOperationIds(detail);
+  if (!operationId) {
+    return existing.length > 0 ? existing : undefined;
+  }
+  return [
+    ...existing.filter((candidate) => candidate !== operationId),
+    operationId,
+  ].slice(-MAX_RECENT_MEMORY_OPERATION_IDS);
 }
 
 // ============================================================================
@@ -462,6 +646,25 @@ export async function saveMemoryDetail(
   await redis.set(key, JSON.stringify(detail));
 }
 
+const SAVE_MEMORY_RECORD_SCRIPT = `
+redis.call("SET", KEYS[1], ARGV[1])
+redis.call("SET", KEYS[2], ARGV[2])
+return 1
+`;
+
+async function saveMemoryRecord(
+  redis: Redis,
+  username: string,
+  index: MemoryIndex,
+  detail: MemoryDetail
+): Promise<void> {
+  await redis.eval(
+    SAVE_MEMORY_RECORD_SCRIPT,
+    [getMemoryIndexKey(username), getMemoryDetailKey(username, detail.key)],
+    [JSON.stringify(index), JSON.stringify(detail)]
+  );
+}
+
 /**
  * Delete memory detail
  */
@@ -486,9 +689,11 @@ export async function addMemory(
   username: string,
   memoryKey: string,
   summary: string,
-  content: string
+  content: string,
+  options: MemoryMutationOptions = {}
 ): Promise<MemoryOperationResult> {
   const normalizedKey = normalizeMemoryKey(memoryKey);
+  const operationId = normalizeMemoryOperationId(options.operationId);
 
   // Validate key
   if (!isValidMemoryKey(normalizedKey)) {
@@ -519,6 +724,27 @@ export async function addMemory(
 
   // Check if key already exists
   const existingIdx = index.memories.findIndex((m) => m.key === normalizedKey);
+  const existingDetail = operationId
+    ? await getMemoryDetail(redis, username, normalizedKey)
+    : null;
+  if (hasMemoryOperation(existingDetail, operationId)) {
+    let entry = index.memories[existingIdx];
+    if (!entry) {
+      entry = {
+        key: normalizedKey,
+        summary: summary.trim(),
+        updatedAt: existingDetail?.updatedAt ?? Date.now(),
+      };
+      index.memories.push(entry);
+      await saveMemoryIndex(redis, username, index);
+    }
+    return {
+      success: true,
+      message: `Memory "${normalizedKey}" operation was already applied.`,
+      entry,
+      applied: false,
+    };
+  }
   if (existingIdx !== -1) {
     return {
       success: false,
@@ -542,6 +768,7 @@ export async function addMemory(
     summary: summary.trim(),
     updatedAt: now,
   };
+  const recentOperationIds = appendMemoryOperation(null, operationId);
 
   // Create detail
   const detail: MemoryDetail = {
@@ -549,12 +776,11 @@ export async function addMemory(
     content: content.trim(),
     createdAt: now,
     updatedAt: now,
+    ...(recentOperationIds ? { recentOperationIds } : {}),
   };
 
-  // Save both
   index.memories.push(entry);
-  await saveMemoryIndex(redis, username, index);
-  await saveMemoryDetail(redis, username, detail);
+  await saveMemoryRecord(redis, username, index, detail);
 
   return {
     success: true,
@@ -571,9 +797,11 @@ export async function updateMemory(
   username: string,
   memoryKey: string,
   summary: string,
-  content: string
+  content: string,
+  options: MemoryMutationOptions = {}
 ): Promise<MemoryOperationResult> {
   const normalizedKey = normalizeMemoryKey(memoryKey);
+  const operationId = normalizeMemoryOperationId(options.operationId);
 
   // Validate key
   if (!isValidMemoryKey(normalizedKey)) {
@@ -612,6 +840,7 @@ export async function updateMemory(
   }
 
   const now = Date.now();
+  const existingDetail = await getMemoryDetail(redis, username, normalizedKey);
 
   // Update entry
   const entry: MemoryEntry = {
@@ -620,9 +849,20 @@ export async function updateMemory(
     updatedAt: now,
   };
 
-  // Get existing detail for createdAt
-  const existingDetail = await getMemoryDetail(redis, username, normalizedKey);
+  if (hasMemoryOperation(existingDetail, operationId)) {
+    return {
+      success: true,
+      message: `Memory "${normalizedKey}" operation was already applied.`,
+      entry: index.memories[existingIdx],
+      applied: false,
+    };
+  }
+
   const createdAt = existingDetail?.createdAt || now;
+  const recentOperationIds = appendMemoryOperation(
+    existingDetail,
+    operationId
+  );
 
   // Update detail
   const detail: MemoryDetail = {
@@ -630,12 +870,11 @@ export async function updateMemory(
     content: content.trim(),
     createdAt,
     updatedAt: now,
+    ...(recentOperationIds ? { recentOperationIds } : {}),
   };
 
-  // Save both
   index.memories[existingIdx] = entry;
-  await saveMemoryIndex(redis, username, index);
-  await saveMemoryDetail(redis, username, detail);
+  await saveMemoryRecord(redis, username, index, detail);
 
   return {
     success: true,
@@ -652,9 +891,11 @@ export async function mergeMemory(
   username: string,
   memoryKey: string,
   summary: string,
-  content: string
+  content: string,
+  options: MemoryMutationOptions = {}
 ): Promise<MemoryOperationResult> {
   const normalizedKey = normalizeMemoryKey(memoryKey);
+  const operationId = normalizeMemoryOperationId(options.operationId);
 
   // Validate key
   if (!isValidMemoryKey(normalizedKey)) {
@@ -672,11 +913,19 @@ export async function mergeMemory(
 
   if (existingIdx === -1) {
     // Key doesn't exist - create new
-    return addMemory(redis, username, memoryKey, summary, content);
+    return addMemory(redis, username, memoryKey, summary, content, options);
   }
 
   // Key exists - merge content
   const existingDetail = await getMemoryDetail(redis, username, normalizedKey);
+  if (hasMemoryOperation(existingDetail, operationId)) {
+    return {
+      success: true,
+      message: `Memory "${normalizedKey}" operation was already applied.`,
+      entry: index.memories[existingIdx],
+      applied: false,
+    };
+  }
   const existingContent = existingDetail?.content || "";
   const mergedContent = existingContent
     ? `${existingContent}\n\n---\n\n${content.trim()}`
@@ -706,6 +955,10 @@ export async function mergeMemory(
     summary: summary.trim(),
     updatedAt: now,
   };
+  const recentOperationIds = appendMemoryOperation(
+    existingDetail,
+    operationId
+  );
 
   // Update detail with merged content
   const detail: MemoryDetail = {
@@ -713,12 +966,11 @@ export async function mergeMemory(
     content: mergedContent,
     createdAt: existingDetail?.createdAt || now,
     updatedAt: now,
+    ...(recentOperationIds ? { recentOperationIds } : {}),
   };
 
-  // Save both
   index.memories[existingIdx] = entry;
-  await saveMemoryIndex(redis, username, index);
-  await saveMemoryDetail(redis, username, detail);
+  await saveMemoryRecord(redis, username, index, detail);
 
   return {
     success: true,
@@ -771,15 +1023,16 @@ export async function upsertMemory(
   memoryKey: string,
   summary: string,
   content: string,
-  mode: "add" | "update" | "merge" = "add"
+  mode: "add" | "update" | "merge" = "add",
+  options: MemoryMutationOptions = {}
 ): Promise<MemoryOperationResult> {
   switch (mode) {
     case "add":
-      return addMemory(redis, username, memoryKey, summary, content);
+      return addMemory(redis, username, memoryKey, summary, content, options);
     case "update":
-      return updateMemory(redis, username, memoryKey, summary, content);
+      return updateMemory(redis, username, memoryKey, summary, content, options);
     case "merge":
-      return mergeMemory(redis, username, memoryKey, summary, content);
+      return mergeMemory(redis, username, memoryKey, summary, content, options);
     default:
       return {
         success: false,
@@ -823,6 +1076,13 @@ export async function getMemorySummariesForPrompt(
 // Daily Notes Operations
 // ============================================================================
 
+const SAVE_DAILY_NOTE_SCRIPT = `
+redis.call("SET", KEYS[1], ARGV[1], "EX", ARGV[2])
+redis.call("SADD", KEYS[2], ARGV[3])
+redis.call("EXPIRE", KEYS[2], ARGV[2])
+return 1
+`;
+
 /**
  * Get a daily note for a specific date
  */
@@ -858,7 +1118,12 @@ export async function saveDailyNote(
   note: DailyNote
 ): Promise<void> {
   const key = getDailyNoteKey(username, note.date);
-  await redis.set(key, JSON.stringify(note), { ex: DAILY_NOTES_TTL_SECONDS });
+  const datesIndexKey = getDailyNoteDatesIndexKey(username);
+  await redis.eval(
+    SAVE_DAILY_NOTE_SCRIPT,
+    [key, datesIndexKey],
+    [JSON.stringify(note), DAILY_NOTES_TTL_SECONDS, note.date]
+  );
 }
 
 /**
@@ -870,6 +1135,8 @@ export async function appendDailyNote(
   content: string,
   options: DailyNoteAppendOptions = {}
 ): Promise<DailyNoteOperationResult> {
+  const operationId = normalizeMemoryOperationId(options.operationId);
+
   // Validate content length
   if (!content || content.trim().length === 0) {
     return {
@@ -905,9 +1172,23 @@ export async function appendDailyNote(
     localTime: timestampMetadata.localTime,
     timeZone: timestampMetadata.timeZone,
     content: content.trim(),
+    ...(operationId ? { operationId } : {}),
   };
 
   if (existing) {
+    if (
+      operationId &&
+      existing.entries.some((candidate) => candidate.operationId === operationId)
+    ) {
+      return {
+        success: true,
+        message: `Daily note operation for ${noteDate} was already applied.`,
+        date: noteDate,
+        entryCount: existing.entries.length,
+        applied: false,
+      };
+    }
+
     // Check entry count limit
     if (existing.entries.length >= MAX_DAILY_NOTE_ENTRIES) {
       return {
@@ -1112,20 +1393,56 @@ export async function deleteAllUserMemories(
   username: string,
   now = Date.now()
 ): Promise<number> {
-  const index = await getMemoryIndex(redis, username);
-  const dailyDates = Array.from({ length: 34 }, (_, index) =>
-    new Date(now - (index - 1) * DAY_IN_MS).toISOString().slice(0, 10)
-  );
-  return redis.del(
-    ...new Set([
-      getMemoryIndexKey(username),
-      redisKeys.memory.processingLock(username),
-      ...(index?.memories ?? []).map((entry) =>
-        getMemoryDetailKey(username, entry.key)
-      ),
-      ...dailyDates.map((date) => getDailyNoteKey(username, date)),
-    ])
-  );
+  return withUserMemoryMutationLock(redis, username, async () => {
+    const dailyDatesIndexKey = getDailyNoteDatesIndexKey(username);
+    const dailyNoteScanPattern = redisKeys.memory.daily(username, "*");
+    const scannedDailyNoteKeys: string[] = [];
+    let cursor: string | number = 0;
+
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: dailyNoteScanPattern,
+        count: 100,
+      });
+      scannedDailyNoteKeys.push(...keys);
+      cursor = nextCursor;
+    } while (String(cursor) !== "0");
+
+    const [index, indexedDailyDates] = await Promise.all([
+      getMemoryIndex(redis, username),
+      redis.smembers<string[]>(dailyDatesIndexKey),
+    ]);
+    const recentDailyDates = Array.from({ length: 34 }, (_, index) =>
+      new Date(now - (index - 1) * DAY_IN_MS).toISOString().slice(0, 10)
+    );
+    const keysToDelete = [
+      ...new Set([
+        getMemoryIndexKey(username),
+        dailyDatesIndexKey,
+        ...(index?.memories ?? []).map((entry) =>
+          getMemoryDetailKey(username, entry.key)
+        ),
+        ...indexedDailyDates.map((date) => getDailyNoteKey(username, date)),
+        ...recentDailyDates.map((date) => getDailyNoteKey(username, date)),
+        ...scannedDailyNoteKeys,
+      ]),
+    ];
+
+    let deletedCount = 0;
+    for (
+      let offset = 0;
+      offset < keysToDelete.length;
+      offset += MEMORY_PURGE_DELETE_BATCH_SIZE
+    ) {
+      deletedCount += await redis.del(
+        ...keysToDelete.slice(
+          offset,
+          offset + MEMORY_PURGE_DELETE_BATCH_SIZE
+        )
+      );
+    }
+    return deletedCount;
+  });
 }
 
 /**

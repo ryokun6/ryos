@@ -111,6 +111,29 @@ function buildChatRequestBody(
   };
 }
 
+type ChatSubmissionIdentity = {
+  username: string | null;
+  isAuthenticated: boolean;
+};
+
+function captureChatSubmissionIdentity(): ChatSubmissionIdentity {
+  const { username, isAuthenticated } = useChatsStore.getState();
+  return {
+    username: username ? username.toLowerCase() : null,
+    isAuthenticated,
+  };
+}
+
+function isChatSubmissionIdentityCurrent(
+  identity: ChatSubmissionIdentity
+): boolean {
+  const current = captureChatSubmissionIdentity();
+  return (
+    current.username === identity.username &&
+    current.isAuthenticated === identity.isAuthenticated
+  );
+}
+
 function createInitialChatMessage(): AIChatMessage {
   return {
     id: "1",
@@ -241,7 +264,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     clearError,
     setMessages: setSdkMessages,
     sendMessage,
-    regenerate,
+    regenerate: sdkRegenerate,
     addToolOutput,
   } = useChat<AIChatMessage>({
     chat: getSharedAiChat(),
@@ -648,6 +671,32 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [username, isAuthenticated, hydrateServerConversation]);
 
   const isLoading = status === "streaming" || status === "submitted";
+  const retryLastUserMessage = useCallback((): Promise<void> => {
+    const messages = getSharedAiChat().messages;
+    let latestUserMessage: AIChatMessage | undefined;
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      if (messages[index]?.role === "user") {
+        latestUserMessage = messages[index];
+        break;
+      }
+    }
+    if (!latestUserMessage) return Promise.resolve();
+
+    const identity = captureChatSubmissionIdentity();
+    const owner = identity.isAuthenticated ? identity.username : null;
+    if (owner) {
+      invalidateAIConversationSession("chat", owner);
+    }
+    return sendMessage(
+      {
+        role: "user",
+        parts: latestUserMessage.parts,
+        metadata: latestUserMessage.metadata,
+        messageId: latestUserMessage.id,
+      },
+      { body: buildChatRequestBody() }
+    );
+  }, [sendMessage]);
   const {
     highlightSegment,
     isSpeaking,
@@ -675,10 +724,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   // --- Action Handlers ---
   const handleSubmitMessage = useCallback(
     async (messageContent: string, imageContent: string | null = null) => {
+      const submissionIdentity = captureChatSubmissionIdentity();
       if (!messageContent.trim() && !imageContent) return false; // Don't submit empty messages
 
       // Check if user needs to set username before submitting
-      if (needsUsername && !username) {
+      if (needsUsername && !submissionIdentity.username) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -687,7 +737,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       // Check if user is authenticated (cookies handle auth automatically)
-      if (username && !isAuthenticated) {
+      if (
+        submissionIdentity.username &&
+        !submissionIdentity.isAuthenticated
+      ) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -745,7 +798,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             imageContent.match(/^data:([^;]+);base64,/)?.[1] ?? "image/png",
           url: imageContent,
         };
-        if (username && isAuthenticated) {
+        if (
+          submissionIdentity.username &&
+          submissionIdentity.isAuthenticated
+        ) {
+          if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+            return false;
+          }
           try {
             image = await uploadAIConversationImage(imageContent);
           } catch (error) {
@@ -755,6 +814,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             });
             return false;
           }
+        }
+        if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+          return false;
         }
 
         // Send message with image attachment using files array
@@ -778,6 +840,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         );
       } else {
         // Send text-only message
+        if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+          return false;
+        }
         sendMessage(
           {
             text: messageContent,
@@ -795,8 +860,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [
       sendMessage,
       needsUsername,
-      username,
-      isAuthenticated,
       aiModel,
       t,
     ],
@@ -804,10 +867,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const handleDirectMessageSubmit = useCallback(
     async (message: string) => {
+      const submissionIdentity = captureChatSubmissionIdentity();
       if (!message.trim()) return; // Don't submit empty messages
 
       // Check if user needs to set username before submitting
-      if (needsUsername && !username) {
+      if (needsUsername && !submissionIdentity.username) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -816,7 +880,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       // Check if user is authenticated (cookies handle auth automatically)
-      if (username && !isAuthenticated) {
+      if (
+        submissionIdentity.username &&
+        !submissionIdentity.isAuthenticated
+      ) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -848,6 +915,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
         return;
       }
+      if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+        return;
+      }
       sendMessage(
         {
           text: message,
@@ -860,7 +930,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         },
       );
     },
-    [sendMessage, needsUsername, username, isAuthenticated, aiModel],
+    [sendMessage, needsUsername, aiModel],
   );
 
   const handleNudge = useCallback(() => {
@@ -1071,7 +1141,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     messages: messagesWithTimestamps, // Return messages with timestamps
     handleSubmitMessage,
     isLoading,
-    regenerate,
+    retryLastUserMessage,
+    regenerateAssistantMessage: sdkRegenerate,
     error,
     stop,
     sendMessage,

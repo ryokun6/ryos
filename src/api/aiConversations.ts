@@ -34,10 +34,43 @@ interface LoadAIConversationInput {
   importLocalIfEmpty?: boolean;
 }
 
+type ProjectedAIConversationMessage = {
+  id: string;
+  role: "user" | "assistant";
+  parts: AIConversationPart[];
+  metadata: { createdAt: string };
+};
+
+export interface AIConversationImportRequestBody {
+  conversationId: string;
+  expectedRevision: 0;
+  operationId: string;
+  messages: ProjectedAIConversationMessage[];
+  historyTruncated: boolean;
+}
+
+const LEGACY_IMPORT_MAX_MESSAGES = 200;
+const LEGACY_IMPORT_MAX_MESSAGE_BYTES = 700 * 1024;
+const LEGACY_IMPORT_MAX_PARTS_PER_MESSAGE = 48;
+const LEGACY_IMPORT_MAX_TEXT_CODE_POINTS = 128_000;
+const LEGACY_TOOL_PAYLOAD_MAX_BYTES = 256 * 1024;
+const LEGACY_TOOL_PAYLOAD_FIELDS = ["input", "output", "rawInput"] as const;
+const VERCEL_AI_CONVERSATION_REQUEST_BYTES = 4 * 1024 * 1024;
+export const AI_CONVERSATION_REQUEST_MAX_BYTES =
+  VERCEL_AI_CONVERSATION_REQUEST_BYTES - 64 * 1024;
+export const AI_CONVERSATION_IMPORT_REQUEST_MAX_BYTES =
+  AI_CONVERSATION_REQUEST_MAX_BYTES;
+export const AI_CONVERSATION_TOOL_PAYLOAD_OMISSION = {
+  omitted: true,
+  reason: "oversized_legacy_tool_payload",
+} as const;
+
 const sessions = new Map<AIConversationChannel, ConversationSession>();
 const pendingLoads = new Map<string, Promise<AIConversationHydration>>();
 const generations = new Map<string, number>();
 const activeOwners = new Map<AIConversationChannel, string>();
+let cacheEpoch = 0;
+const utf8Encoder = new TextEncoder();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -180,6 +213,16 @@ async function readErrorCode(response: Response): Promise<string> {
   return `http_${response.status}`;
 }
 
+class AIConversationPageError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string
+  ) {
+    super(`Conversation request failed: ${code}`);
+    this.name = "AIConversationPageError";
+  }
+}
+
 async function requestConversationPage(
   channel: AIConversationChannel,
   cursor?: string
@@ -194,8 +237,9 @@ async function requestConversationPage(
     }
   );
   if (!response.ok) {
-    throw new Error(
-      `Conversation request failed: ${await readErrorCode(response)}`
+    throw new AIConversationPageError(
+      response.status,
+      await readErrorCode(response)
     );
   }
   return parsePage(await response.json());
@@ -208,28 +252,51 @@ async function fetchCompleteConversation(
   conversation: AIConversation;
   messages: AIChatMessage[];
 }> {
-  const newest = await requestConversationPage(channel);
-  const pages: AIConversationMessage[][] = [newest.messages];
-  let cursor = newest.page.nextCursor;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const newest = await requestConversationPage(channel);
+    const pages: AIConversationMessage[][] = [newest.messages];
+    let cursor = newest.page.nextCursor;
+    let changedWhilePaging = false;
 
-  while (cursor) {
-    const older = await requestConversationPage(channel, cursor);
-    if (
-      older.owner !== newest.owner ||
-      older.conversation.id !== newest.conversation.id ||
-      older.conversation.revision !== newest.conversation.revision
-    ) {
-      throw new Error("Conversation changed while loading");
+    while (cursor) {
+      let older: AIConversationPage;
+      try {
+        older = await requestConversationPage(channel, cursor);
+      } catch (error) {
+        if (
+          attempt === 0 &&
+          error instanceof AIConversationPageError &&
+          error.status === 409 &&
+          (error.code === "conversation_changed" ||
+            error.code === "revision_conflict")
+        ) {
+          changedWhilePaging = true;
+          break;
+        }
+        throw error;
+      }
+      if (
+        older.owner !== newest.owner ||
+        older.conversation.id !== newest.conversation.id ||
+        older.conversation.revision !== newest.conversation.revision
+      ) {
+        changedWhilePaging = true;
+        break;
+      }
+      pages.unshift(older.messages);
+      cursor = older.page.nextCursor;
     }
-    pages.unshift(older.messages);
-    cursor = older.page.nextCursor;
+
+    if (!changedWhilePaging) {
+      return {
+        owner: newest.owner,
+        conversation: newest.conversation,
+        messages: pages.flat().map(toAIChatMessage),
+      };
+    }
   }
 
-  return {
-    owner: newest.owner,
-    conversation: newest.conversation,
-    messages: pages.flat().map(toAIChatMessage),
-  };
+  throw new Error("Conversation changed while loading");
 }
 
 function normalizeCreatedAt(value: unknown): string {
@@ -277,37 +344,231 @@ function cloneConversationPart(
   part: AIChatMessage["parts"][number]
 ): AIConversationPart | null {
   try {
-    return JSON.parse(JSON.stringify(part)) as AIConversationPart;
+    const cloned: unknown = JSON.parse(JSON.stringify(part));
+    return isRecord(cloned) && typeof cloned.type === "string"
+      ? (cloned as AIConversationPart)
+      : null;
   } catch {
     return null;
   }
 }
 
+function projectAIConversationMessagesWithStatus(
+  messages: readonly AIChatMessage[]
+): {
+  messages: ProjectedAIConversationMessage[];
+  historyTruncated: boolean;
+} {
+  const projected: ProjectedAIConversationMessage[] = [];
+  let historyTruncated = false;
+  for (const message of messages) {
+    if (message.role !== "user" && message.role !== "assistant") {
+      historyTruncated = true;
+      continue;
+    }
+    const clonedParts = message.parts.map(cloneConversationPart);
+    const parts = clonedParts.filter(
+      (part): part is AIConversationPart => part !== null
+    );
+    if (parts.length !== clonedParts.length) historyTruncated = true;
+    if (parts.length === 0) {
+      historyTruncated = true;
+      continue;
+    }
+    projected.push({
+      id: message.id,
+      role: message.role,
+      parts,
+      metadata: {
+        createdAt: normalizeCreatedAt(message.metadata?.createdAt),
+      },
+    });
+  }
+  return { messages: projected, historyTruncated };
+}
+
 export function projectAIConversationMessages(
   messages: readonly AIChatMessage[]
-): Array<{
-  id: string;
-  role: "user" | "assistant";
-  parts: AIConversationPart[];
-  metadata: { createdAt: string };
-}> {
-  return messages.flatMap((message) => {
-    if (message.role !== "user" && message.role !== "assistant") return [];
-    const parts = message.parts
-      .map(cloneConversationPart)
-      .filter((part): part is AIConversationPart => part !== null);
-    if (parts.length === 0) return [];
-    return [
-      {
-        id: message.id,
-        role: message.role,
-        parts,
-        metadata: {
-          createdAt: normalizeCreatedAt(message.metadata?.createdAt),
-        },
-      },
-    ];
+): ProjectedAIConversationMessage[] {
+  return projectAIConversationMessagesWithStatus(messages).messages;
+}
+
+function jsonByteLength(value: unknown): number {
+  try {
+    const serialized = JSON.stringify(value);
+    return serialized === undefined
+      ? Number.POSITIVE_INFINITY
+      : utf8Encoder.encode(serialized).byteLength;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+function isToolPart(part: AIConversationPart): boolean {
+  return part.type === "dynamic-tool" || part.type.startsWith("tool-");
+}
+
+function createToolPayloadOmission(): typeof AI_CONVERSATION_TOOL_PAYLOAD_OMISSION {
+  return { ...AI_CONVERSATION_TOOL_PAYLOAD_OMISSION };
+}
+
+function compactLegacyImportMessage(
+  message: ProjectedAIConversationMessage
+): {
+  message: ProjectedAIConversationMessage;
+  payloadTruncated: boolean;
+  fitsMessageBudget: boolean;
+} {
+  const payloads: Array<{
+    part: Record<string, unknown>;
+    field: (typeof LEGACY_TOOL_PAYLOAD_FIELDS)[number];
+    bytes: number;
+    omitted: boolean;
+  }> = [];
+  let payloadTruncated = false;
+
+  const parts = message.parts.map((part) => {
+    if (!isToolPart(part)) return part;
+    const cloned: Record<string, unknown> = { ...part };
+    for (const field of LEGACY_TOOL_PAYLOAD_FIELDS) {
+      if (!Object.hasOwn(cloned, field)) continue;
+      if (cloned[field] === undefined) continue;
+      const bytes = jsonByteLength(cloned[field]);
+      const payload = { part: cloned, field, bytes, omitted: false };
+      payloads.push(payload);
+      if (bytes > LEGACY_TOOL_PAYLOAD_MAX_BYTES) {
+        cloned[field] = createToolPayloadOmission();
+        payload.omitted = true;
+        payloadTruncated = true;
+      }
+    }
+    return cloned as AIConversationPart;
   });
+
+  let partsBytes = jsonByteLength(parts);
+  if (partsBytes > LEGACY_IMPORT_MAX_MESSAGE_BYTES) {
+    const remainingPayloads = payloads
+      .filter((payload) => !payload.omitted)
+      .sort((left, right) => right.bytes - left.bytes);
+    for (const payload of remainingPayloads) {
+      payload.part[payload.field] = createToolPayloadOmission();
+      payloadTruncated = true;
+      partsBytes = jsonByteLength(parts);
+      if (partsBytes <= LEGACY_IMPORT_MAX_MESSAGE_BYTES) break;
+    }
+  }
+
+  const text = parts
+    .flatMap((part) =>
+      part.type === "text" && typeof part.text === "string" ? [part.text] : []
+    )
+    .join("\n");
+  const fitsMessageBudget =
+    parts.length <= LEGACY_IMPORT_MAX_PARTS_PER_MESSAGE &&
+    [...text].length <= LEGACY_IMPORT_MAX_TEXT_CODE_POINTS &&
+    partsBytes <= LEGACY_IMPORT_MAX_MESSAGE_BYTES;
+  return {
+    message: { ...message, parts },
+    payloadTruncated,
+    fitsMessageBudget,
+  };
+}
+
+function groupLegacyImportTurns(
+  messages: readonly ProjectedAIConversationMessage[]
+): ProjectedAIConversationMessage[][] {
+  const turns: ProjectedAIConversationMessage[][] = [];
+  let current: ProjectedAIConversationMessage[] = [];
+  for (const message of messages) {
+    if (message.role === "user" && current.length > 0) {
+      turns.push(current);
+      current = [];
+    }
+    current.push(message);
+  }
+  if (current.length > 0) turns.push(current);
+  return turns;
+}
+
+export function buildAIConversationImportRequest({
+  conversationId,
+  operationId,
+  messages,
+  requestByteLimit = AI_CONVERSATION_IMPORT_REQUEST_MAX_BYTES,
+}: {
+  conversationId: string;
+  operationId: string;
+  messages: readonly AIChatMessage[];
+  requestByteLimit?: number;
+}): AIConversationImportRequestBody {
+  const projection = projectAIConversationMessagesWithStatus(messages);
+  const projected = projection.messages;
+  const turns = groupLegacyImportTurns(projected).map((turn) => {
+    const compacted = turn.map(compactLegacyImportMessage);
+    return {
+      messages: compacted.map((entry) => entry.message),
+      payloadTruncated: compacted.some((entry) => entry.payloadTruncated),
+      fitsMessageBudget: compacted.every((entry) => entry.fitsMessageBudget),
+    };
+  });
+
+  let selected: ProjectedAIConversationMessage[] = [];
+  let selectedPayloadTruncated = false;
+  let omittedHistory = false;
+
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+    if (!turn.fitsMessageBudget) {
+      omittedHistory = true;
+      break;
+    }
+
+    const candidateMessages = [...turn.messages, ...selected];
+    const candidatePayloadTruncated: boolean =
+      projection.historyTruncated ||
+      selectedPayloadTruncated ||
+      turn.payloadTruncated;
+    const candidate: AIConversationImportRequestBody = {
+      conversationId,
+      expectedRevision: 0,
+      operationId,
+      messages: candidateMessages,
+      historyTruncated: candidatePayloadTruncated,
+    };
+    if (
+      candidateMessages.length > LEGACY_IMPORT_MAX_MESSAGES ||
+      jsonByteLength(candidate) > requestByteLimit
+    ) {
+      omittedHistory = true;
+      break;
+    }
+
+    selected = candidateMessages;
+    selectedPayloadTruncated = candidatePayloadTruncated;
+  }
+
+  const historyTruncated =
+    projection.historyTruncated ||
+    selectedPayloadTruncated ||
+    omittedHistory ||
+    selected.length !== projected.length;
+  const request: AIConversationImportRequestBody = {
+    conversationId,
+    expectedRevision: 0,
+    operationId,
+    messages: selected,
+    historyTruncated,
+  };
+  if (jsonByteLength(request) > requestByteLimit) {
+    throw new Error("Conversation import envelope exceeds its request limit");
+  }
+  if (
+    messages.some((message) => message.role === "user") &&
+    !request.messages.some((message) => message.role === "user")
+  ) {
+    throw new Error("Conversation import could not retain a user turn");
+  }
+  return request;
 }
 
 async function externalizeLocalImages(
@@ -333,6 +594,61 @@ async function externalizeLocalImages(
   );
 }
 
+function buildLegacyAIConversationRequestBody({
+  common,
+  messages,
+}: {
+  common: Record<string, unknown>;
+  messages: readonly AIChatMessage[];
+}): Record<string, unknown> {
+  const projected = projectAIConversationMessagesWithStatus(messages).messages;
+  const turns = groupLegacyImportTurns(
+    projected.map((message) => compactLegacyImportMessage(message).message)
+  );
+  let requiredUser: AIChatMessage | undefined;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "user") {
+      requiredUser = message;
+      break;
+    }
+  }
+  const newestTurn = turns.at(-1);
+
+  if (
+    requiredUser &&
+    !newestTurn?.some((message) => message.id === requiredUser.id)
+  ) {
+    throw new Error("Current user turn could not be prepared safely");
+  }
+
+  if (!newestTurn) {
+    const request = { ...common, messages: [] };
+    if (jsonByteLength(request) > AI_CONVERSATION_REQUEST_MAX_BYTES) {
+      throw new Error("AI conversation request exceeds the safe request limit");
+    }
+    return request;
+  }
+
+  let selectedMessages = [...newestTurn];
+  let request = { ...common, messages: selectedMessages };
+  if (jsonByteLength(request) > AI_CONVERSATION_REQUEST_MAX_BYTES) {
+    throw new Error(
+      "Current conversation turn exceeds the safe AI request limit"
+    );
+  }
+
+  for (let index = turns.length - 2; index >= 0; index -= 1) {
+    const candidateMessages = [...turns[index], ...selectedMessages];
+    const candidate = { ...common, messages: candidateMessages };
+    if (jsonByteLength(candidate) > AI_CONVERSATION_REQUEST_MAX_BYTES) break;
+    selectedMessages = candidateMessages;
+    request = candidate;
+  }
+
+  return request;
+}
+
 export function buildAIConversationRequestBody({
   body,
   id,
@@ -355,7 +671,7 @@ export function buildAIConversationRequestBody({
     ...(messageId ? { messageId } : {}),
   };
   if (!conversation) {
-    return { ...common, messages };
+    return buildLegacyAIConversationRequestBody({ common, messages });
   }
   if (trigger === "regenerate-message") {
     return { ...common, conversation };
@@ -373,22 +689,19 @@ async function importLocalConversation(
   conversation: AIConversation,
   messages: readonly AIChatMessage[]
 ): Promise<void> {
-  const projected = projectAIConversationMessages(
-    await externalizeLocalImages(messages)
-  );
-  if (!projected.some((message) => message.role === "user")) return;
+  const request = buildAIConversationImportRequest({
+    conversationId: conversation.id,
+    operationId: crypto.randomUUID(),
+    messages: await externalizeLocalImages(messages),
+  });
+  if (!request.messages.some((message) => message.role === "user")) return;
 
   const response = await abortableFetch(
     getApiUrl(`/api/ai/conversations/${channel}/import`),
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        conversationId: conversation.id,
-        expectedRevision: 0,
-        operationId: crypto.randomUUID(),
-        messages: projected.slice(-200),
-      }),
+      body: JSON.stringify(request),
       timeout: 15_000,
       throwOnHttpError: false,
     }
@@ -421,10 +734,21 @@ export async function loadAIConversation(
   if (existingLoad) return existingLoad;
 
   const generation = getGeneration(key);
+  const loadEpoch = cacheEpoch;
   const load = (async (): Promise<AIConversationHydration> => {
     let loaded = await fetchCompleteConversation(input.channel);
     if (loaded.owner !== owner) {
       throw new Error("Authenticated conversation owner changed");
+    }
+    if (
+      loadEpoch !== cacheEpoch ||
+      generation !== getGeneration(key) ||
+      activeOwners.get(input.channel) !== owner
+    ) {
+      const current = sessions.get(input.channel);
+      return current?.owner === owner
+        ? { ...current, stale: true }
+        : { ...loaded, stale: true };
     }
     if (
       input.importLocalIfEmpty !== false &&
@@ -449,6 +773,7 @@ export async function loadAIConversation(
       messages: loaded.messages,
     };
     if (
+      loadEpoch !== cacheEpoch ||
       generation !== getGeneration(key) ||
       activeOwners.get(input.channel) !== owner
     ) {
@@ -503,52 +828,81 @@ export async function resetAIConversationSession({
 }): Promise<AIConversation> {
   const owner = username.toLowerCase();
   const key = sessionKey(owner, channel);
-  const session = await loadAIConversation({
+  let session = await loadAIConversation({
     channel,
     username: owner,
     localMessages,
   });
-  const generation = incrementGeneration(key);
-
-  const response = await abortableFetch(
-    getApiUrl(`/api/ai/conversations/${channel}/reset`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        conversationId: session.conversation.id,
-        operationId: crypto.randomUUID(),
-      }),
-      timeout: 15_000,
-      throwOnHttpError: false,
-    }
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Conversation reset failed: ${await readErrorCode(response)}`
-    );
-  }
-
-  const value: unknown = await response.json();
-  if (
-    !isRecord(value) ||
-    typeof value.owner !== "string" ||
-    value.owner.toLowerCase() !== owner
-  ) {
-    throw new Error("Invalid conversation reset response");
-  }
-  const conversation = parseConversation(value.conversation);
-  if (generation !== getGeneration(key)) {
+  if (session.stale) {
     throw new Error("Conversation changed while resetting");
   }
-  sessions.set(channel, { owner, conversation, messages: [] });
-  return conversation;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const requestEpoch = cacheEpoch;
+    const requestGeneration = incrementGeneration(key);
+    const response = await abortableFetch(
+      getApiUrl(`/api/ai/conversations/${channel}/reset`),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: session.conversation.id,
+          operationId: crypto.randomUUID(),
+        }),
+        timeout: 15_000,
+        throwOnHttpError: false,
+      }
+    );
+    if (!response.ok) {
+      const code = await readErrorCode(response);
+      if (
+        attempt === 0 &&
+        (code === "conversation_changed" || code === "revision_conflict")
+      ) {
+        invalidateAIConversationSession(channel, owner);
+        session = await loadAIConversation({
+          channel,
+          username: owner,
+          localMessages: [],
+          force: true,
+          importLocalIfEmpty: false,
+        });
+        if (session.stale) {
+          throw new Error("Conversation changed while resetting");
+        }
+        continue;
+      }
+      throw new Error(`Conversation reset failed: ${code}`);
+    }
+
+    const value: unknown = await response.json();
+    if (
+      !isRecord(value) ||
+      typeof value.owner !== "string" ||
+      value.owner.toLowerCase() !== owner
+    ) {
+      throw new Error("Invalid conversation reset response");
+    }
+    const conversation = parseConversation(value.conversation);
+    if (
+      requestEpoch !== cacheEpoch ||
+      requestGeneration !== getGeneration(key) ||
+      activeOwners.get(channel) !== owner
+    ) {
+      throw new Error("Conversation changed while resetting");
+    }
+    incrementGeneration(key);
+    sessions.set(channel, { owner, conversation, messages: [] });
+    return conversation;
+  }
+
+  throw new Error("Conversation reset failed after refreshing");
 }
 
 export function clearAIConversationSessionCache(): void {
+  cacheEpoch += 1;
   sessions.clear();
   pendingLoads.clear();
-  generations.clear();
   activeOwners.clear();
 }
 
@@ -557,6 +911,16 @@ export function invalidateAIConversationSession(
   username?: string | null
 ): void {
   const session = sessions.get(channel);
+  const owner =
+    username?.toLowerCase() ??
+    session?.owner ??
+    activeOwners.get(channel) ??
+    null;
+  if (owner) {
+    const key = sessionKey(owner, channel);
+    incrementGeneration(key);
+    pendingLoads.delete(key);
+  }
   if (
     !session ||
     !username ||

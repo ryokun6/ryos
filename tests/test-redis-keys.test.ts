@@ -86,6 +86,18 @@ describe("canonical Redis key registry", () => {
     expect(redisKeys.integration.ircServer("libera")).toBe(
       "integration:irc:server:libera"
     );
+    expect(redisKeys.memory.dailyDates("Ryo")).toBe(
+      "memory:user:ryo:daily:dates"
+    );
+    expect(redisKeys.memory.mutationLock("Ryo")).toBe(
+      "memory:user:ryo:mutation-lock"
+    );
+    expect(redisKeys.chat.aiConversationResetMemory("Ryo", "chat")).toBe(
+      "chat:ai:user:ryo:chat:reset-memory"
+    );
+    expect(redisKeys.chat.aiConversationResetMemoryLock("Ryo", "assistant")).toBe(
+      "chat:ai:user:ryo:assistant:reset-memory:lock"
+    );
     expect(redisKeys.realtime.ticket("tickethash")).toBe("realtime:ticket:tickethash");
     expect(redisKeys.presence.globalOnline()).toBe("presence:global:online");
   });
