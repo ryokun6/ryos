@@ -13,6 +13,7 @@ import type {
 } from "../src/shared/contracts/aiConversation";
 
 const password = "testtest123";
+const CHAT_ID = "11111111-1111-4111-8111-111111111111";
 
 function apiMessage(id: string, role: "user" | "assistant", text: string) {
   return {
@@ -246,6 +247,7 @@ describe("AI conversation API", () => {
           model: "gemini-3-flash",
           conversation: {
             id: initial.conversation.id,
+            revision: initial.conversation.revision,
             operationId: crypto.randomUUID(),
           },
           messages: [
@@ -285,5 +287,122 @@ describe("AI conversation API", () => {
     ]);
     expect(persisted?.messages[0]?.id).toBe(userMessageId);
     expect(persisted?.messages[1]?.parts[0]?.text).toContain("SYNC_OK");
+
+    if (!persisted) throw new Error("First streamed turn was not persisted");
+    const firstAssistantId = persisted.messages[1]?.id;
+    const secondUserId = crypto.randomUUID();
+    const secondResponse = await fetchWithAuth(
+      `${BASE_URL}/api/chat`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          model: "gemini-3-flash",
+          conversation: {
+            id: persisted.conversation.id,
+            revision: persisted.conversation.revision,
+            operationId: crypto.randomUUID(),
+          },
+          messages: [
+            ...persisted.messages,
+            {
+              id: secondUserId,
+              role: "user",
+              parts: [{ type: "text", text: "Reply with exactly SECOND_OK." }],
+              metadata: { createdAt: new Date().toISOString() },
+            },
+          ],
+        }),
+      }
+    );
+    expect(secondResponse.status).toBe(200);
+    expect(await secondResponse.text()).toContain("SECOND_OK");
+
+    const twoTurnsResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    const twoTurns = (await twoTurnsResponse.json()) as AIConversationPage;
+    expect(twoTurns.messages).toHaveLength(4);
+    expect(twoTurns.messages[1]?.id).toBe(firstAssistantId);
+    expect(new Set(twoTurns.messages.map((message) => message.id)).size).toBe(4);
+
+    const oldSecondAssistantId = twoTurns.messages[3]?.id;
+    const regenerateResponse = await fetchWithAuth(
+      `${BASE_URL}/api/chat`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          model: "gemini-3-flash",
+          trigger: "regenerate-message",
+          messageId: oldSecondAssistantId,
+          conversation: {
+            id: twoTurns.conversation.id,
+            revision: twoTurns.conversation.revision,
+            operationId: crypto.randomUUID(),
+          },
+          messages: twoTurns.messages.slice(0, -1),
+        }),
+      }
+    );
+    expect(regenerateResponse.status).toBe(200);
+    expect(await regenerateResponse.text()).toContain("SECOND_OK");
+
+    const regeneratedResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    const regenerated =
+      (await regeneratedResponse.json()) as AIConversationPage;
+    expect(regenerated.messages).toHaveLength(4);
+    expect(
+      regenerated.messages.some(
+        (message) => message.id === oldSecondAssistantId
+      )
+    ).toBe(false);
+    expect(regenerated.messages[3]?.parts[0]?.text).toContain("SECOND_OK");
   }, 90_000);
+
+  test("validates chat conversation envelopes before generation", async () => {
+    const invalid = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: makeRateLimitBypassHeaders(),
+      body: JSON.stringify({
+        messages: [],
+        conversation: {
+          id: CHAT_ID,
+          revision: -1,
+          operationId: crypto.randomUUID(),
+        },
+      }),
+    });
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toEqual({
+      error: "invalid_conversation_context",
+    });
+
+    const anonymous = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: makeRateLimitBypassHeaders(),
+      body: JSON.stringify({
+        messages: [],
+        conversation: {
+          id: CHAT_ID,
+          revision: 0,
+          operationId: crypto.randomUUID(),
+        },
+      }),
+    });
+    expect(anonymous.status).toBe(401);
+    expect(await anonymous.json()).toEqual({
+      error: "conversation_auth_required",
+    });
+  });
 });

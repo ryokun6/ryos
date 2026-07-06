@@ -33,6 +33,7 @@ import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 import { processConversationMemories } from "@/utils/processConversationMemories";
 import {
   getAIConversationRequestContext,
+  invalidateAIConversationSession,
   loadAIConversation,
   resetAIConversationSession,
 } from "@/api/aiConversations";
@@ -97,24 +98,15 @@ const resolveSharedHandlers = (): SharedAiChatHandlers | null =>
     ?.current ?? null;
 
 let sharedAiChat: Chat<AIChatMessage> | null = null;
+let sharedRequestOwner: string | null = null;
 
-async function buildChatRequestBody(
+function buildChatRequestBody(
   systemState = getSystemState(),
   model = useAppStore.getState().aiModel
 ) {
-  const chats = useChatsStore.getState();
-  const conversation =
-    chats.username && chats.isAuthenticated
-      ? await getAIConversationRequestContext({
-          channel: "chat",
-          username: chats.username,
-          localMessages: chats.aiMessages,
-        })
-      : undefined;
   return {
     systemState,
     model,
-    ...(conversation ? { conversation } : {}),
   };
 }
 
@@ -139,6 +131,45 @@ function getSharedAiChat(): Chat<AIChatMessage> {
         api: getApiUrl("/api/chat"),
         headers: getBrowserTimeZoneHeaders,
         body: async () => buildChatRequestBody(),
+        prepareSendMessagesRequest: async ({
+          body,
+          id,
+          messages,
+          trigger,
+          messageId,
+        }) => {
+          const chats = useChatsStore.getState();
+          const owner =
+            chats.username && chats.isAuthenticated
+              ? chats.username.toLowerCase()
+              : null;
+          const conversation = owner
+            ? await getAIConversationRequestContext({
+                channel: "chat",
+                username: owner,
+                localMessages: messages,
+              })
+            : undefined;
+          const current = useChatsStore.getState();
+          const currentOwner =
+            current.username && current.isAuthenticated
+              ? current.username.toLowerCase()
+              : null;
+          if (currentOwner !== owner) {
+            throw new Error("Chat identity changed while preparing request");
+          }
+          sharedRequestOwner = owner;
+          return {
+            body: {
+              ...body,
+              id,
+              messages,
+              trigger,
+              messageId,
+              ...(conversation ? { conversation } : {}),
+            },
+          };
+        },
       }),
 
       // Automatically submit when all tool outputs are available
@@ -216,6 +247,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     experimental_throttle: 50,
   });
 
+  const chatIdentity =
+    username && isAuthenticated ? username.toLowerCase() : null;
+  const previousChatIdentityRef = useRef(chatIdentity);
+  useEffect(() => {
+    if (previousChatIdentityRef.current === chatIdentity) return;
+    previousChatIdentityRef.current = chatIdentity;
+    sharedRequestOwner = null;
+    sdkStop();
+    clearError();
+    setSdkMessages(useChatsStore.getState().aiMessages);
+  }, [chatIdentity, sdkStop, clearError, setSdkMessages]);
+
   // --- Shared chat lifecycle handlers -------------------------------------
   // Defined as plain closures (not useCallback) and snapshotted into
   // handlersRef on every render, so the shared chat always invokes the
@@ -240,6 +283,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
 
   const handleSharedFinish: SharedOnFinish = ({ messages, isError }) => {
+      const currentAuth = useChatsStore.getState();
+      const currentOwner =
+        currentAuth.username && currentAuth.isAuthenticated
+          ? currentAuth.username.toLowerCase()
+          : null;
+      if (sharedRequestOwner !== currentOwner) {
+        log.debug("Ignoring response from a previous chat identity");
+        return;
+      }
+      if (sharedRequestOwner) {
+        invalidateAIConversationSession("chat", sharedRequestOwner);
+      }
+
       // Ensure all messages have metadata with createdAt. Prefer the
       // timestamp pinned while the message was streaming so it doesn't jump
       // to the finish time.
@@ -528,14 +584,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   });
 
   const hydrateServerConversation = useCallback(
-    async (force = false) => {
+    async (force = false, importLocalIfEmpty = !force) => {
       if (!username || !isAuthenticated) return;
       const loaded = await loadAIConversation({
         channel: "chat",
         username,
         localMessages: useChatsStore.getState().aiMessages,
         force,
-        importLocalIfEmpty: !force,
+        importLocalIfEmpty,
       });
       const currentAuth = useChatsStore.getState();
       if (
@@ -560,7 +616,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   useEffect(() => {
     if (!username || !isAuthenticated) return;
     let cancelled = false;
-    void hydrateServerConversation().catch((hydrationError) => {
+    void hydrateServerConversation(true, true).catch((hydrationError) => {
       if (!cancelled) {
         log.error("Failed to hydrate server conversation", hydrationError);
       }

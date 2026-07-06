@@ -36,6 +36,7 @@ import { ASSISTANT_SUMMON_MESSAGE } from "@/shared/assistantGreeting";
 import { processConversationMemories } from "@/utils/processConversationMemories";
 import {
   getAIConversationRequestContext,
+  invalidateAIConversationSession,
   loadAIConversation,
   resetAIConversationSession,
 } from "@/api/aiConversations";
@@ -46,18 +47,9 @@ export { ASSISTANT_SUMMON_MESSAGE };
 
 /** Request body shared by every assistant `/api/chat` call. Reads the store
  * at call time so settings changes apply to the very next message. */
-async function buildAssistantRequestBody() {
+function buildAssistantRequestBody() {
   const assistant = useAssistantStore.getState();
-  const chats = useChatsStore.getState();
   const customInstructions = assistant.customInstructions.trim();
-  const conversation =
-    chats.username && chats.isAuthenticated
-      ? await getAIConversationRequestContext({
-          channel: "assistant",
-          username: chats.username,
-          localMessages: assistant.messages,
-        })
-      : undefined;
   return {
     systemState: getSystemState(),
     model: useAppStore.getState().aiModel,
@@ -69,7 +61,6 @@ async function buildAssistantRequestBody() {
     ...(customInstructions
       ? { assistantInstructions: customInstructions }
       : {}),
-    ...(conversation ? { conversation } : {}),
   };
 }
 
@@ -246,6 +237,7 @@ export function useAssistantChat(): AssistantChatHandle {
   const toolRequestSequenceRef = useRef(0);
   const latestOpenAttemptSequenceRef = useRef(0);
   const latestOpenSequenceRef = useRef(0);
+  const requestOwnerRef = useRef<string | null>(null);
 
   const recordOpenAttempt = useCallback((requestSequence: number) => {
     if (requestSequence <= latestOpenAttemptSequenceRef.current) return;
@@ -287,6 +279,47 @@ export function useAssistantChat(): AssistantChatHandle {
           api: getApiUrl("/api/chat"),
           headers: getBrowserTimeZoneHeaders,
           body: async () => buildAssistantRequestBody(),
+          prepareSendMessagesRequest: async ({
+            body,
+            id,
+            messages,
+            trigger,
+            messageId,
+          }) => {
+            const chats = useChatsStore.getState();
+            const owner =
+              chats.username && chats.isAuthenticated
+                ? chats.username.toLowerCase()
+                : null;
+            const conversation = owner
+              ? await getAIConversationRequestContext({
+                  channel: "assistant",
+                  username: owner,
+                  localMessages: messages,
+                })
+              : undefined;
+            const current = useChatsStore.getState();
+            const currentOwner =
+              current.username && current.isAuthenticated
+                ? current.username.toLowerCase()
+                : null;
+            if (currentOwner !== owner) {
+              throw new Error(
+                "Assistant identity changed while preparing request"
+              );
+            }
+            requestOwnerRef.current = owner;
+            return {
+              body: {
+                ...body,
+                id,
+                messages,
+                trigger,
+                messageId,
+                ...(conversation ? { conversation } : {}),
+              },
+            };
+          },
         }),
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
         async onToolCall(options) {
@@ -313,15 +346,27 @@ export function useAssistantChat(): AssistantChatHandle {
     error,
   } = useChat<AIChatMessage>({ chat, experimental_throttle: 60 });
 
+  const assistantIdentity =
+    username && isAuthenticated ? username.toLowerCase() : null;
+  const previousAssistantIdentityRef = useRef(assistantIdentity);
+  useEffect(() => {
+    if (previousAssistantIdentityRef.current === assistantIdentity) return;
+    previousAssistantIdentityRef.current = assistantIdentity;
+    requestOwnerRef.current = null;
+    sdkStop();
+    clearError();
+    setMessages(useAssistantStore.getState().messages);
+  }, [assistantIdentity, sdkStop, clearError, setMessages]);
+
   const hydrateServerConversation = useCallback(
-    async (force = false) => {
+    async (force = false, importLocalIfEmpty = !force) => {
       if (!username || !isAuthenticated) return;
       const loaded = await loadAIConversation({
         channel: "assistant",
         username,
         localMessages: useAssistantStore.getState().messages,
         force,
-        importLocalIfEmpty: !force,
+        importLocalIfEmpty,
       });
       const currentAuth = useChatsStore.getState();
       if (
@@ -344,7 +389,7 @@ export function useAssistantChat(): AssistantChatHandle {
 
   useEffect(() => {
     if (!username || !isAuthenticated) return;
-    void hydrateServerConversation().catch((hydrationError) => {
+    void hydrateServerConversation(true, true).catch((hydrationError) => {
       log.warn("Failed to hydrate server conversation", {
         error: hydrationError,
       });
@@ -377,6 +422,21 @@ export function useAssistantChat(): AssistantChatHandle {
       toolCall: { toolName: string; toolCallId: string; input: unknown };
     }): Promise<void> => {},
     onFinish: ({ messages: finished }: { messages: AIChatMessage[] }) => {
+      const currentAuth = useChatsStore.getState();
+      const currentOwner =
+        currentAuth.username && currentAuth.isAuthenticated
+          ? currentAuth.username.toLowerCase()
+          : null;
+      if (requestOwnerRef.current !== currentOwner) {
+        log.debug("Ignoring response from a previous assistant identity");
+        return;
+      }
+      if (requestOwnerRef.current) {
+        invalidateAIConversationSession(
+          "assistant",
+          requestOwnerRef.current
+        );
+      }
       const stamped = finished.map(
         (msg) =>
           ({
@@ -528,18 +588,10 @@ export function useAssistantChat(): AssistantChatHandle {
       if (!text.trim()) return;
       clearError();
       useAssistantStore.getState().markInteraction();
-      void buildAssistantRequestBody()
-        .then((body) =>
-          sendMessage(
-            { text, metadata: { createdAt: new Date() } },
-            { body }
-          )
-        )
-        .catch((requestError) => {
-          log.warn("Failed to prepare server conversation", {
-            error: requestError,
-          });
-        });
+      sendMessage(
+        { text, metadata: { createdAt: new Date() } },
+        { body: buildAssistantRequestBody() }
+      );
     },
     [sendMessage, clearError]
   );

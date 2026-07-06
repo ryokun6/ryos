@@ -32,9 +32,11 @@ export interface AIConversation {
   oldestSeq: number | null;
   newestSeq: number | null;
   historyTruncated: boolean;
+  canImportLegacy: boolean;
 }
 
 export interface AIConversationPage {
+  owner: string;
   conversation: AIConversation;
   messages: AIConversationMessage[];
   page: {
@@ -45,10 +47,12 @@ export interface AIConversationPage {
 
 export interface AIConversationRequestContext {
   id: string;
+  revision: number;
   operationId: string;
 }
 
 export interface AIConversationResetResult {
+  owner: string;
   conversation: AIConversation;
   reset: boolean;
 }

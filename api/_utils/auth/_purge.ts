@@ -37,6 +37,11 @@ export async function purgeUserAccount(
   // Read the profile first so we can clean up the email reverse-index.
   const record = await getStoredUserRecord(redis, normalized).catch(() => null);
 
+  // Block in-flight AI writers before removing auth. This deletion is not
+  // best-effort: returning success while private transcripts remain would
+  // violate the account-deletion contract.
+  deletedCount += await deleteAIConversationKeys(redis, normalized);
+
   // Recovery email reverse index.
   if (record?.email) {
     await deleteUserEmailIndex(redis, record.email).catch(() => {});
@@ -70,11 +75,6 @@ export async function purgeUserAccount(
       redisKeys.sync.autoSyncPreference(normalized)
     )
     .catch(() => 0);
-
-  // Personal Ryo and desktop-assistant conversation history.
-  deletedCount += await deleteAIConversationKeys(redis, normalized).catch(
-    () => 0
-  );
 
   return { deletedCount };
 }

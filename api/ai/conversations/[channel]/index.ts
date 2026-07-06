@@ -45,7 +45,7 @@ export default apiHandler(
       });
       res.setHeader("Cache-Control", "no-store");
       logger.response(200, Date.now() - startTime);
-      res.status(200).json(page);
+      res.status(200).json({ owner: user!.username, ...page });
     } catch (error) {
       if (error instanceof AIConversationError) {
         logger.response(error.status, Date.now() - startTime);

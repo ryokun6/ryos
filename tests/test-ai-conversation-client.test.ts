@@ -29,9 +29,13 @@ function pageResponse({
   id = CHAT_ID,
   revision = 0,
   messages = [],
+  owner = "alice",
+  canImportLegacy = revision === 0 && messages.length === 0,
 }: {
   id?: string;
   revision?: number;
+  owner?: string;
+  canImportLegacy?: boolean;
   messages?: Array<{
     id: string;
     seq: number;
@@ -41,6 +45,7 @@ function pageResponse({
   }>;
 } = {}): Response {
   return Response.json({
+    owner,
     conversation: {
       id,
       channel: "chat",
@@ -51,6 +56,7 @@ function pageResponse({
       oldestSeq: messages[0]?.seq ?? null,
       newestSeq: messages.at(-1)?.seq ?? null,
       historyTruncated: false,
+      canImportLegacy,
     },
     messages,
     page: { nextCursor: null, hasMore: false },
@@ -99,6 +105,7 @@ describe("AI conversation client", () => {
       localMessages: [],
     });
     expect(context?.id).toBe(CHAT_ID);
+    expect(context?.revision).toBe(1);
     expect(context?.operationId).toBeString();
     expect(requestCount).toBe(1);
   });
@@ -164,6 +171,7 @@ describe("AI conversation client", () => {
     globalThis.fetch = async (_input, init) => {
       if (init?.method === "POST") {
         return Response.json({
+          owner: "alice",
           conversation: {
             id: RESET_ID,
             channel: "chat",
@@ -174,6 +182,7 @@ describe("AI conversation client", () => {
             oldestSeq: null,
             newestSeq: null,
             historyTruncated: false,
+            canImportLegacy: false,
           },
           reset: true,
         });
@@ -232,5 +241,40 @@ describe("AI conversation client", () => {
         metadata: { createdAt: "2026-07-06T00:00:00.000Z" },
       },
     ]);
+  });
+
+  test("rejects a cookie owner mismatch before importing local messages", async () => {
+    const methods: string[] = [];
+    globalThis.fetch = async (_input, init) => {
+      methods.push(init?.method ?? "GET");
+      return pageResponse({ owner: "bob" });
+    };
+
+    await expect(
+      loadAIConversation({
+        channel: "chat",
+        username: "alice",
+        localMessages: [message("u1", "user", "Alice private")],
+      })
+    ).rejects.toThrow("Authenticated conversation owner changed");
+    expect(methods).toEqual(["GET"]);
+  });
+
+  test("does not re-import local history after a server reset", async () => {
+    const methods: string[] = [];
+    globalThis.fetch = async (_input, init) => {
+      methods.push(init?.method ?? "GET");
+      return pageResponse({ id: RESET_ID, canImportLegacy: false });
+    };
+
+    const loaded = await loadAIConversation({
+      channel: "chat",
+      username: "alice",
+      localMessages: [message("u1", "user", "cleared private history")],
+      force: true,
+      importLocalIfEmpty: true,
+    });
+    expect(loaded.messages).toEqual([]);
+    expect(methods).toEqual(["GET"]);
   });
 });

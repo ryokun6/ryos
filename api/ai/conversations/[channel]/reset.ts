@@ -40,6 +40,7 @@ export default apiHandler(
       });
       logger.response(200, Date.now() - startTime);
       res.status(200).json({
+        owner: user!.username,
         conversation: getAIConversationSummary(result.document),
         reset: result.reset,
       });

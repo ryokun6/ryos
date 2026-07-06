@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   AIConversationError,
+  commitAIConversationRegeneration,
+  clearAIConversationTombstone,
+  deleteAIConversationKeys,
   getAIConversationPage,
   prepareAIConversationRegeneration,
   resetAIConversation,
@@ -38,6 +41,30 @@ class MemoryConversationRedis implements AIConversationRedis {
 
   async expire(key: string, _seconds: number): Promise<number> {
     return this.values.has(key) ? 1 : 0;
+  }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<T> {
+    let result: number;
+    if (script.includes('redis.call("EXISTS", KEYS[2])')) {
+      if (this.values.get(keys[0] ?? "") !== args[0]) {
+        result = -1;
+      } else if (this.values.has(keys[1] ?? "")) {
+        result = -2;
+      } else {
+        this.values.set(keys[2] ?? "", String(args[1]));
+        result = 1;
+      }
+    } else if (this.values.get(keys[0] ?? "") === args[0]) {
+      this.values.delete(keys[0] ?? "");
+      result = 1;
+    } else {
+      result = 0;
+    }
+    return result as T;
   }
 }
 
@@ -235,6 +262,19 @@ describe("AI conversation store", () => {
     });
     expect(replay.reset).toBe(false);
     expect(replay.document.id).toBe(reset.document.id);
+
+    await expect(
+      syncAIConversationMessages({
+        redis,
+        username: "alice",
+        channel: "assistant",
+        expectedConversationId: reset.document.id,
+        expectedRevision: 0,
+        operationId: "stale-import",
+        messages: [message("old", "user", "resurrected")],
+        requireEmpty: true,
+      })
+    ).rejects.toMatchObject({ code: "conversation_not_empty" });
   });
 
   test("regeneration removes the selected assistant branch", async () => {
@@ -251,7 +291,7 @@ describe("AI conversation store", () => {
       ],
     });
 
-    const regenerated = await prepareAIConversationRegeneration({
+    const prepared = await prepareAIConversationRegeneration({
       redis,
       username: "alice",
       channel: "chat",
@@ -259,15 +299,23 @@ describe("AI conversation store", () => {
       operationId: "regenerate-a1",
       targetMessageId: "a1",
     });
-    expect(regenerated.messages.map((entry) => entry.id)).toEqual(["u1"]);
+    expect(prepared.messages.map((entry) => entry.id)).toEqual([
+      "u1",
+      "a1",
+      "u2",
+    ]);
 
-    const replacement = await syncAIConversationMessages({
+    const replacement = await commitAIConversationRegeneration({
       redis,
       username: "alice",
       channel: "chat",
-      operationId: "replacement",
+      operationId: "regenerate-a1",
+      expectedConversationId: seeded.id,
+      expectedRevision: seeded.revision,
+      targetMessageId: "a1",
       messages: [message("a2", "assistant", "new answer")],
     });
+    expect(replacement.messages.map((entry) => entry.id)).toEqual(["u1", "a2"]);
     expect(replacement.messages.map((entry) => entry.seq)).toEqual([1, 4]);
   });
 
@@ -289,5 +337,37 @@ describe("AI conversation store", () => {
     expect(document.messages[0]?.seq).toBe(6);
     expect(document.messages.at(-1)?.seq).toBe(205);
     expect(document.historyTruncated).toBe(true);
+  });
+
+  test("account deletion tombstones reject in-flight and future writes", async () => {
+    const redis = new MemoryConversationRedis();
+    await syncAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "seed",
+      messages: [message("u1", "user", "private")],
+    });
+
+    await deleteAIConversationKeys(redis, "alice");
+    await expect(
+      syncAIConversationMessages({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "late-finish",
+        messages: [message("a1", "assistant", "late")],
+      })
+    ).rejects.toMatchObject({ code: "account_deleted" });
+
+    await clearAIConversationTombstone(redis, "alice");
+    const recreated = await syncAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "new-account",
+      messages: [message("u2", "user", "new")],
+    });
+    expect(recreated.messages.map((entry) => entry.id)).toEqual(["u2"]);
   });
 });

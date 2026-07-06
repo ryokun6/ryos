@@ -122,6 +122,8 @@ export const redisKeys = {
       redisKey("chat", "ai", "user", username, channel, "conversation"),
     aiConversationLock: (username: string, channel: AIConversationChannel) =>
       redisKey("chat", "ai", "user", username, channel, "lock"),
+    aiConversationTombstone: (username: string) =>
+      redisKey("chat", "ai", "user", username, "deleted"),
   },
   sync: {
     v2Seq: (username: string) => redisKey("sync", "v2", "user", username, "seq"),

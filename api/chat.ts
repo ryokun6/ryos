@@ -38,7 +38,9 @@ import { isAssistantGreetingRequest } from "../src/shared/assistantGreeting.js";
 import type { AIConversationRequestContext } from "../src/shared/contracts/aiConversation.js";
 import {
   AIConversationError,
+  commitAIConversationRegeneration,
   getAIConversationModelMessages,
+  getAIConversationRegenerationModelMessages,
   prepareAIConversationRegeneration,
   syncAIConversationMessages,
 } from "./ai/conversations/_helpers/store.js";
@@ -66,17 +68,23 @@ function parseConversationContext(
     return { ok: false };
   }
   const id = Reflect.get(value, "id");
+  const revision = Reflect.get(value, "revision");
   const operationId = Reflect.get(value, "operationId");
   if (
     typeof id !== "string" ||
-    !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id) ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id
+    ) ||
     typeof operationId !== "string" ||
     operationId.length < 1 ||
-    operationId.length > 160
+    operationId.length > 160 ||
+    typeof revision !== "number" ||
+    !Number.isSafeInteger(revision) ||
+    revision < 0
   ) {
     return { ok: false };
   }
-  return { ok: true, value: { id, operationId } };
+  return { ok: true, value: { id, revision, operationId } };
 }
 
 function requiresRichClientContext(messages: readonly unknown[]): boolean {
@@ -115,7 +123,6 @@ export default apiHandler<{
   {
     methods: ["POST"],
     auth: "optional",
-    allowExpiredAuth: true,
     parseJsonBody: true,
     contentType: null,
   },
@@ -236,6 +243,17 @@ export default apiHandler<{
       );
     }
 
+    log(
+      `Using model: ${model || DEFAULT_MODEL} (${
+        queryModel ? "from query" : model ? "from body" : "using default"
+      })`
+    );
+    if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {
+      logError(`400 Error: Unsupported model - ${model}`);
+      res.status(400).send(`Unsupported model: ${model}`);
+      return;
+    }
+
     const parsedConversationContext = parseConversationContext(conversation);
     if (!parsedConversationContext.ok) {
       logger.response(400, Date.now() - startTime);
@@ -256,7 +274,7 @@ export default apiHandler<{
     if (isAuthenticated && username && !isProactiveGreeting) {
       try {
         if (trigger === "regenerate-message") {
-          await prepareAIConversationRegeneration({
+          storedConversation = await prepareAIConversationRegeneration({
             redis,
             username,
             channel: conversationChannel,
@@ -265,26 +283,31 @@ export default apiHandler<{
               ? {
                   expectedConversationId:
                     parsedConversationContext.value.id,
+                  expectedRevision:
+                    parsedConversationContext.value.revision,
                 }
               : {}),
             ...(typeof messageId === "string" && messageId
               ? { targetMessageId: messageId }
               : {}),
           });
+        } else {
+          storedConversation = await syncAIConversationMessages({
+            redis,
+            username,
+            channel: conversationChannel,
+            messages,
+            operationId: `request:${conversationOperationId}`,
+            ...(parsedConversationContext.value
+              ? {
+                  expectedConversationId:
+                    parsedConversationContext.value.id,
+                  expectedRevision:
+                    parsedConversationContext.value.revision,
+                }
+              : {}),
+          });
         }
-        storedConversation = await syncAIConversationMessages({
-          redis,
-          username,
-          channel: conversationChannel,
-          messages,
-          operationId: `request:${conversationOperationId}`,
-          ...(parsedConversationContext.value
-            ? {
-                expectedConversationId:
-                  parsedConversationContext.value.id,
-              }
-            : {}),
-        });
       } catch (error) {
         if (error instanceof AIConversationError) {
           logger.response(error.status, Date.now() - startTime);
@@ -293,19 +316,6 @@ export default apiHandler<{
         }
         throw error;
       }
-    }
-
-    log(
-      `Using model: ${model || DEFAULT_MODEL} (${
-        queryModel ? "from query" : model ? "from body" : "using default"
-      })`
-    );
-
-    // Additional validation for model
-    if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {
-      logError(`400 Error: Unsupported model - ${model}`);
-      res.status(400).send(`Unsupported model: ${model}`);
-      return;
     }
 
     // --- Geolocation ---
@@ -447,10 +457,27 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     }
 
     const clientConversationMessages = messages as SimpleConversationMessage[];
-    const modelConversationMessages =
-      storedConversation && !requiresRichClientContext(messages)
-        ? getAIConversationModelMessages(storedConversation)
-        : clientConversationMessages;
+    let modelConversationMessages = clientConversationMessages;
+    if (storedConversation && !requiresRichClientContext(messages)) {
+      modelConversationMessages =
+        trigger === "regenerate-message"
+          ? getAIConversationRegenerationModelMessages(
+              storedConversation,
+              typeof messageId === "string" ? messageId : undefined
+            )
+          : getAIConversationModelMessages(storedConversation);
+      const latestClientMessage = clientConversationMessages.at(-1);
+      const latestStoredMessage = modelConversationMessages.at(-1);
+      if (
+        latestClientMessage?.role === "user" &&
+        latestStoredMessage?.id === latestClientMessage.id
+      ) {
+        modelConversationMessages = [
+          ...modelConversationMessages.slice(0, -1),
+          latestClientMessage,
+        ];
+      }
+    }
     const preparedConversation = await prepareRyoConversationModelInput({
       channel: conversationChannel,
       messages: modelConversationMessages,
@@ -510,6 +537,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       originalMessages,
+      generateMessageId: () => crypto.randomUUID(),
       consumeSseStream: consumeStream,
       onFinish: async ({ messages: completedMessages, isAborted }) => {
         if (
@@ -522,14 +550,30 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
         }
 
         try {
-          await syncAIConversationMessages({
-            redis,
-            username,
-            channel: conversationChannel,
-            messages: completedMessages,
-            operationId: `response:${conversationOperationId}`,
-            expectedConversationId: storedConversation.id,
-          });
+          if (trigger === "regenerate-message") {
+            await commitAIConversationRegeneration({
+              redis,
+              username,
+              channel: conversationChannel,
+              messages: completedMessages,
+              operationId: `response:${conversationOperationId}`,
+              expectedConversationId: storedConversation.id,
+              expectedRevision: storedConversation.revision,
+              ...(typeof messageId === "string" && messageId
+                ? { targetMessageId: messageId }
+                : {}),
+            });
+          } else {
+            await syncAIConversationMessages({
+              redis,
+              username,
+              channel: conversationChannel,
+              messages: completedMessages,
+              operationId: `response:${conversationOperationId}`,
+              expectedConversationId: storedConversation.id,
+              expectedRevision: storedConversation.revision,
+            });
+          }
         } catch (error) {
           logError("Failed to persist completed conversation response", error);
         }

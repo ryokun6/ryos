@@ -45,6 +45,7 @@ export default apiHandler(
       });
       logger.response(201, Date.now() - startTime);
       res.status(201).json({
+        owner: user!.username,
         conversation: getAIConversationSummary(document),
         imported: document.messages.length,
       });

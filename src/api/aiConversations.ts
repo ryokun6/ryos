@@ -70,7 +70,8 @@ function parseConversation(value: unknown): AIConversation {
     (value.newestSeq !== null &&
       (typeof value.newestSeq !== "number" ||
         !Number.isSafeInteger(value.newestSeq))) ||
-    typeof value.historyTruncated !== "boolean"
+    typeof value.historyTruncated !== "boolean" ||
+    typeof value.canImportLegacy !== "boolean"
   ) {
     throw new Error("Invalid conversation response");
   }
@@ -85,6 +86,7 @@ function parseConversation(value: unknown): AIConversation {
     oldestSeq: value.oldestSeq,
     newestSeq: value.newestSeq,
     historyTruncated: value.historyTruncated,
+    canImportLegacy: value.canImportLegacy,
   };
 }
 
@@ -125,6 +127,7 @@ function parseMessage(value: unknown): AIConversationMessage {
 function parsePage(value: unknown): AIConversationPage {
   if (
     !isRecord(value) ||
+    typeof value.owner !== "string" ||
     !Array.isArray(value.messages) ||
     !isRecord(value.page) ||
     (value.page.nextCursor !== null &&
@@ -135,6 +138,7 @@ function parsePage(value: unknown): AIConversationPage {
   }
 
   return {
+    owner: value.owner.toLowerCase(),
     conversation: parseConversation(value.conversation),
     messages: value.messages.map(parseMessage),
     page: {
@@ -193,6 +197,7 @@ async function requestConversationPage(
 async function fetchCompleteConversation(
   channel: AIConversationChannel
 ): Promise<{
+  owner: string;
   conversation: AIConversation;
   messages: AIChatMessage[];
 }> {
@@ -202,7 +207,11 @@ async function fetchCompleteConversation(
 
   while (cursor) {
     const older = await requestConversationPage(channel, cursor);
-    if (older.conversation.id !== newest.conversation.id) {
+    if (
+      older.owner !== newest.owner ||
+      older.conversation.id !== newest.conversation.id ||
+      older.conversation.revision !== newest.conversation.revision
+    ) {
       throw new Error("Conversation changed while loading");
     }
     pages.unshift(older.messages);
@@ -210,6 +219,7 @@ async function fetchCompleteConversation(
   }
 
   return {
+    owner: newest.owner,
     conversation: newest.conversation,
     messages: pages.flat().map(toAIChatMessage),
   };
@@ -311,8 +321,12 @@ export async function loadAIConversation(
   const generation = getGeneration(key);
   const load = (async (): Promise<AIConversationHydration> => {
     let loaded = await fetchCompleteConversation(input.channel);
+    if (loaded.owner !== owner) {
+      throw new Error("Authenticated conversation owner changed");
+    }
     if (
       input.importLocalIfEmpty !== false &&
+      loaded.conversation.canImportLegacy &&
       loaded.conversation.revision === 0 &&
       loaded.messages.length === 0
     ) {
@@ -322,6 +336,9 @@ export async function loadAIConversation(
         input.localMessages
       );
       loaded = await fetchCompleteConversation(input.channel);
+    }
+    if (loaded.owner !== owner) {
+      throw new Error("Authenticated conversation owner changed");
     }
 
     const session: ConversationSession = {
@@ -368,6 +385,7 @@ export async function getAIConversationRequestContext({
   }
   return {
     id: session.conversation.id,
+    revision: session.conversation.revision,
     operationId: crypto.randomUUID(),
   };
 }
@@ -410,7 +428,13 @@ export async function resetAIConversationSession({
   }
 
   const value: unknown = await response.json();
-  if (!isRecord(value)) throw new Error("Invalid conversation reset response");
+  if (
+    !isRecord(value) ||
+    typeof value.owner !== "string" ||
+    value.owner.toLowerCase() !== owner
+  ) {
+    throw new Error("Invalid conversation reset response");
+  }
   const conversation = parseConversation(value.conversation);
   if (generation !== getGeneration(key)) {
     throw new Error("Conversation changed while resetting");
@@ -424,4 +448,18 @@ export function clearAIConversationSessionCache(): void {
   pendingLoads.clear();
   generations.clear();
   activeOwners.clear();
+}
+
+export function invalidateAIConversationSession(
+  channel: AIConversationChannel,
+  username?: string | null
+): void {
+  const session = sessions.get(channel);
+  if (
+    !session ||
+    !username ||
+    session.owner === username.toLowerCase()
+  ) {
+    sessions.delete(channel);
+  }
 }
