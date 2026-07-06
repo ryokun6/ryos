@@ -46,6 +46,33 @@ class MemoryConversationRedis implements AIConversationRedis {
     return this.values.has(key) ? 1 : 0;
   }
 
+  async sadd(key: string, ...members: string[]): Promise<number> {
+    const existing = this.values.get(key);
+    const values = existing instanceof Set ? existing : new Set<string>();
+    let added = 0;
+    for (const member of members) {
+      if (!values.has(member)) added += 1;
+      values.add(member);
+    }
+    this.values.set(key, values);
+    return added;
+  }
+
+  async srem(key: string, ...members: string[]): Promise<number> {
+    const existing = this.values.get(key);
+    if (!(existing instanceof Set)) return 0;
+    let removed = 0;
+    for (const member of members) {
+      if (existing.delete(member)) removed += 1;
+    }
+    return removed;
+  }
+
+  async smembers<T = string[]>(key: string): Promise<T> {
+    const existing = this.values.get(key);
+    return (existing instanceof Set ? [...existing] : []) as T;
+  }
+
   async eval<T = unknown>(
     script: string,
     keys: string[],

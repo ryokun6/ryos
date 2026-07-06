@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { UIMessage } from "ai";
+import { createHash } from "node:crypto";
 import type { RedisLike } from "../../../_utils/redis.js";
 import {
   createStorageUploadDescriptor,
@@ -20,6 +21,8 @@ import { redisKeys } from "../../../../src/shared/redisKeys.js";
 
 const PENDING_ATTACHMENT_TTL_SECONDS = 10 * 60;
 const MAX_FILENAME_LENGTH = 160;
+const MAX_MODEL_IMAGES = 4;
+const MAX_MODEL_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const attachmentRecordSchema = z.object({
   version: z.literal(1),
@@ -86,6 +89,24 @@ function isExpectedVercelBlobUrl(
   }
 }
 
+function hasExpectedImageSignature(
+  bytes: Uint8Array,
+  mediaType: AIAttachmentMediaType
+): boolean {
+  if (mediaType === "image/png") {
+    const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+    return signature.every((byte, index) => bytes[index] === byte);
+  }
+  if (mediaType === "image/jpeg") {
+    return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  }
+  return (
+    bytes.length >= 12 &&
+    Buffer.from(bytes.subarray(0, 4)).toString("ascii") === "RIFF" &&
+    Buffer.from(bytes.subarray(8, 12)).toString("ascii") === "WEBP"
+  );
+}
+
 export async function prepareAIAttachmentUpload({
   redis,
   username,
@@ -149,9 +170,12 @@ export async function completeAIAttachmentUpload({
   storageUrl: string;
 }): Promise<AIAttachmentRecord> {
   const key = redisKeys.chat.aiAttachment(username, attachmentId);
-  const pending = pendingAttachmentSchema.safeParse(
-    parseStoredValue(await redis.get(key))
-  );
+  const storedValue = parseStoredValue(await redis.get(key));
+  const existing = attachmentRecordSchema.safeParse(storedValue);
+  if (existing.success && existing.data.storageUrl === storageUrl) {
+    return existing.data;
+  }
+  const pending = pendingAttachmentSchema.safeParse(storedValue);
   if (!pending.success || pending.data.id !== attachmentId) {
     throw new Error("attachment_upload_not_pending");
   }
@@ -165,13 +189,20 @@ export async function completeAIAttachmentUpload({
     throw new Error("attachment_storage_url_mismatch");
   }
 
-  const metadata = await headStoredObject(storageUrl);
+  const [metadata, bytes] = await Promise.all([
+    headStoredObject(storageUrl),
+    downloadStoredObject(storageUrl),
+  ]);
+  const digest = createHash("sha256").update(bytes).digest("hex");
   if (
     !metadata ||
     metadata.size !== pending.data.size ||
+    bytes.byteLength !== pending.data.size ||
     metadata.size > AI_ATTACHMENT_MAX_BYTES ||
     metadata.contentType?.split(";")[0]?.trim().toLowerCase() !==
-      pending.data.mediaType
+      pending.data.mediaType ||
+    digest !== pending.data.sha256 ||
+    !hasExpectedImageSignature(bytes, pending.data.mediaType)
   ) {
     throw new Error("attachment_upload_invalid");
   }
@@ -307,38 +338,66 @@ export async function resolveAIAttachmentsForModel({
   username: string;
   messages: UIMessage[];
 }): Promise<UIMessage[]> {
-  return Promise.all(
-    messages.map(async (message) => ({
-      ...message,
-      parts: await Promise.all(
-        message.parts.map(async (part) => {
-          if (part.type !== "file") return part;
-          const attachmentId = getAIAttachmentIdFromUrl(part.url);
-          if (!attachmentId) return part;
-          const record = await getAIAttachmentRecord({
-            redis,
-            username,
-            attachmentId,
-          });
-          if (!record) {
-            throw new Error("attachment_not_found");
-          }
-          const bytes = await downloadStoredObject(record.storageUrl);
-          if (bytes.byteLength !== record.size) {
-            throw new Error("attachment_size_changed");
-          }
-          return {
-            ...part,
-            mediaType: record.mediaType,
-            ...(record.filename ? { filename: record.filename } : {}),
-            url: `data:${record.mediaType};base64,${Buffer.from(bytes).toString(
-              "base64"
-            )}`,
-          };
-        })
-      ),
-    }))
-  );
+  const selected = new Map<
+    string,
+    { record: AIAttachmentRecord; bytes: Uint8Array }
+  >();
+  let selectedBytes = 0;
+
+  for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
+    const message = messages[messageIndex];
+    if (!message) continue;
+    for (
+      let partIndex = message.parts.length - 1;
+      partIndex >= 0;
+      partIndex -= 1
+    ) {
+      if (selected.size >= MAX_MODEL_IMAGES) break;
+      const part = message.parts[partIndex];
+      if (!part || part.type !== "file") continue;
+      const attachmentId = getAIAttachmentIdFromUrl(part.url);
+      if (!attachmentId || selected.has(attachmentId)) continue;
+      const record = await getAIAttachmentRecord({
+        redis,
+        username,
+        attachmentId,
+      });
+      if (
+        !record ||
+        selectedBytes + record.size > MAX_MODEL_IMAGE_BYTES
+      ) {
+        continue;
+      }
+      const bytes = await downloadStoredObject(record.storageUrl);
+      if (bytes.byteLength !== record.size) continue;
+      selected.set(attachmentId, { record, bytes });
+      selectedBytes += record.size;
+    }
+    if (selected.size >= MAX_MODEL_IMAGES) break;
+  }
+
+  return messages.flatMap((message) => {
+    const parts = message.parts.flatMap((part) => {
+      if (part.type !== "file") return [part];
+      const attachmentId = getAIAttachmentIdFromUrl(part.url);
+      if (!attachmentId) return [part];
+      const attachment = selected.get(attachmentId);
+      if (!attachment) return [];
+      return [
+        {
+          ...part,
+          mediaType: attachment.record.mediaType,
+          ...(attachment.record.filename
+            ? { filename: attachment.record.filename }
+            : {}),
+          url: `data:${attachment.record.mediaType};base64,${Buffer.from(
+            attachment.bytes
+          ).toString("base64")}`,
+        },
+      ];
+    });
+    return parts.length > 0 ? [{ ...message, parts }] : [];
+  });
 }
 
 export function canonicalizeAIAttachmentUrl(value: unknown): string | null {

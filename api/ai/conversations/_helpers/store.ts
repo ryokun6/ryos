@@ -10,7 +10,11 @@ import {
   type AIConversationPage,
 } from "../../../../src/shared/contracts/aiConversation.js";
 import { ASSISTANT_SUMMON_MESSAGE } from "../../../../src/shared/assistantGreeting.js";
-import { canonicalizeAIAttachmentUrl } from "../../attachments/_helpers/store.js";
+import {
+  canonicalizeAIAttachmentUrl,
+  collectAIAttachmentIds,
+  deleteAIAttachments,
+} from "../../attachments/_helpers/store.js";
 
 const CONVERSATION_TTL_SECONDS = 365 * 24 * 60 * 60;
 const LOCK_TTL_SECONDS = 60;
@@ -199,7 +203,14 @@ interface StoredConversation {
 }
 export type AIConversationRedis = Pick<
   RedisLike,
-  "get" | "set" | "del" | "expire" | "eval"
+  | "get"
+  | "set"
+  | "del"
+  | "expire"
+  | "eval"
+  | "sadd"
+  | "srem"
+  | "smembers"
 >;
 
 export type AIConversationErrorCode =
@@ -1003,12 +1014,14 @@ function appendOperation(
   ].slice(-MAX_RECENT_OPERATIONS);
 }
 
-function trimConversation(document: StoredConversation): void {
+function trimConversation(
+  document: StoredConversation
+): AIConversationMessage[] {
   let totalBytes = document.messages.reduce(
     (total, message) => total + jsonByteLength(message.parts),
     0
   );
-  let removed = false;
+  const removed: AIConversationMessage[] = [];
 
   while (
     document.messages.length > MAX_MESSAGES ||
@@ -1017,10 +1030,11 @@ function trimConversation(document: StoredConversation): void {
     const oldest = document.messages.shift();
     if (!oldest) break;
     totalBytes -= jsonByteLength(oldest.parts);
-    removed = true;
+    removed.push(oldest);
   }
 
-  if (removed) document.historyTruncated = true;
+  if (removed.length > 0) document.historyTruncated = true;
+  return removed;
 }
 
 function sameMessageContent(
@@ -1036,12 +1050,13 @@ function sameMessageContent(
 function mergeConversationMessages(
   document: StoredConversation,
   messages: readonly unknown[]
-): boolean {
+): { changed: boolean; removedAttachmentIds: string[] } {
   const incomingMessages = sanitizeAIConversationMessages(messages);
   const byId = new Map(
     document.messages.map((message) => [message.id, message])
   );
   let changed = false;
+  const removedAttachmentIds = new Set<string>();
 
   for (const incoming of incomingMessages) {
     const existing = byId.get(incoming.id);
@@ -1066,13 +1081,35 @@ function mergeConversationMessages(
       );
     }
 
+    const incomingAttachmentIds = new Set(
+      collectAIAttachmentIds([{ parts: incoming.parts }])
+    );
+    for (const attachmentId of collectAIAttachmentIds([
+      { parts: existing.parts },
+    ])) {
+      if (!incomingAttachmentIds.has(attachmentId)) {
+        removedAttachmentIds.add(attachmentId);
+      }
+    }
     existing.parts = incoming.parts;
     changed = true;
   }
 
   document.messages.sort((left, right) => left.seq - right.seq);
-  trimConversation(document);
-  return changed;
+  for (const removed of trimConversation(document)) {
+    for (const attachmentId of collectAIAttachmentIds([removed])) {
+      removedAttachmentIds.add(attachmentId);
+    }
+  }
+  const retainedAttachmentIds = new Set(
+    collectAIAttachmentIds(document.messages)
+  );
+  return {
+    changed,
+    removedAttachmentIds: [...removedAttachmentIds].filter(
+      (attachmentId) => !retainedAttachmentIds.has(attachmentId)
+    ),
+  };
 }
 
 function assertMessageRole(
@@ -1099,7 +1136,8 @@ async function writeAIConversationMessages(
     );
   }
 
-  return withConversationLock({
+  let removedAttachmentIds: string[] = [];
+  const document = await withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1173,14 +1211,15 @@ async function writeAIConversationMessages(
         }
       }
 
-      const changed = mergeConversationMessages(document, input.messages);
+      const merged = mergeConversationMessages(document, input.messages);
+      removedAttachmentIds = merged.removedAttachmentIds;
       if (input.turn?.action === "complete") {
         document.pendingTurnId = null;
         document.pendingTurnStartedAt = null;
       }
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
-      if (changed) {
+      if (merged.changed) {
         document.revision += 1;
         document.updatedAt = new Date().toISOString();
       }
@@ -1193,6 +1232,14 @@ async function writeAIConversationMessages(
       return document;
     },
   });
+  if (removedAttachmentIds.length > 0) {
+    await deleteAIAttachments({
+      redis: input.redis,
+      username: input.username,
+      attachmentIds: removedAttachmentIds,
+    }).catch(() => 0);
+  }
+  return document;
 }
 
 export async function beginAIConversationTurn(
@@ -1371,7 +1418,8 @@ function validateRegenerationTarget(
 export async function commitAIConversationRegeneration(
   input: CommitAIConversationRegenerationInput
 ): Promise<StoredConversation> {
-  return withConversationLock({
+  let removedAttachmentIds: string[] = [];
+  const result = await withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
@@ -1390,13 +1438,29 @@ export async function commitAIConversationRegeneration(
         );
       }
       const target = validateRegenerationTarget(document, input);
+      const removedMessages = document.messages.filter((message) =>
+        target.role === "assistant"
+          ? message.seq >= target.seq
+          : message.seq > target.seq
+      );
       document.messages = document.messages.filter((message) =>
         target.role === "assistant"
           ? message.seq < target.seq
           : message.seq <= target.seq
       );
       assertMessageRole(input.responseMessage, "assistant");
-      mergeConversationMessages(document, [input.responseMessage]);
+      const merged = mergeConversationMessages(document, [
+        input.responseMessage,
+      ]);
+      const retainedAttachmentIds = new Set(
+        collectAIAttachmentIds(document.messages)
+      );
+      removedAttachmentIds = [
+        ...new Set([
+          ...collectAIAttachmentIds(removedMessages),
+          ...merged.removedAttachmentIds,
+        ]),
+      ].filter((attachmentId) => !retainedAttachmentIds.has(attachmentId));
       appendOperation(document, input.operationId);
       document.legacyImportAllowed = false;
       document.pendingTurnId = null;
@@ -1412,6 +1476,14 @@ export async function commitAIConversationRegeneration(
       return document;
     },
   });
+  if (removedAttachmentIds.length > 0) {
+    await deleteAIAttachments({
+      redis: input.redis,
+      username: input.username,
+      attachmentIds: removedAttachmentIds,
+    }).catch(() => 0);
+  }
+  return result;
 }
 
 interface ConversationCursor {
