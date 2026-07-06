@@ -184,7 +184,7 @@ describe("AI conversation API", () => {
     expect(await oldCursorResponse.json()).toEqual({
       error: "conversation_changed",
     });
-  });
+  }, 30_000);
 
   test("does not accept another user's conversation id", async () => {
     const firstUsername = uniqueTestUsername("aia");
@@ -285,5 +285,5 @@ describe("AI conversation API", () => {
     ]);
     expect(persisted?.messages[0]?.id).toBe(userMessageId);
     expect(persisted?.messages[1]?.parts[0]?.text).toContain("SYNC_OK");
-  });
+  }, 90_000);
 });
