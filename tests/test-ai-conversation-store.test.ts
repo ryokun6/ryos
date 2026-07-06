@@ -431,7 +431,9 @@ describe("AI conversation store", () => {
         version: 1,
         status: "unattached",
         id: attachmentId,
-        storageUrl: `s3://private/${attachmentId}`,
+        storageUrl:
+          `https://store.private.blob.vercel-storage.com/` +
+          `ai/alice/attachments/${attachmentId}`,
         mediaType: "image/png",
         size: 68,
         sha256: "a".repeat(64),
