@@ -358,6 +358,9 @@ function parseStoredConversation(
     }
   }
 
+  if (isRecord(value) && value.version === 2) {
+    value = { ...value, version: 1 };
+  }
   const parsed = storedConversationSchema.safeParse(value);
   if (!parsed.success || parsed.data.channel !== channel) {
     throw new AIConversationError(

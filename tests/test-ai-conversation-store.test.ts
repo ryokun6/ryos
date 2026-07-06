@@ -16,6 +16,7 @@ import {
   type AIConversationRedis,
 } from "../api/ai/conversations/_helpers/store";
 import { ASSISTANT_SUMMON_MESSAGE } from "../src/shared/assistantGreeting";
+import { redisKeys } from "../src/shared/redisKeys";
 
 class MemoryConversationRedis implements AIConversationRedis {
   private readonly values = new Map<string, unknown>();
@@ -157,6 +158,120 @@ describe("AI conversation store", () => {
       type: "file",
       mediaType: "image/png",
       url: "/api/ai/attachments/11111111-1111-4111-8111-111111111111.png",
+    });
+  });
+
+  test("reads version 2 rich history and rewrites it on the next write", async () => {
+    const redis = new MemoryConversationRedis();
+    const key = redisKeys.chat.aiConversation("alice", "chat");
+    const richMessages = [
+      {
+        id: "legacy-user",
+        seq: 1,
+        role: "user",
+        parts: [
+          { type: "text", text: "Keep this image" },
+          {
+            type: "file",
+            mediaType: "image/png",
+            url: "/api/ai/attachments/33333333-3333-4333-8333-333333333333",
+          },
+        ],
+        createdAt: "2026-07-06T10:00:00.000Z",
+      },
+      {
+        id: "legacy-assistant",
+        seq: 2,
+        role: "assistant",
+        parts: [
+          { type: "step-start" },
+          {
+            type: "tool-write",
+            toolCallId: "write-call",
+            state: "output-available",
+            input: { path: "/Documents/synced.md", content: "exact content" },
+            output: "saved",
+          },
+          {
+            type: "source-url",
+            sourceId: "source-1",
+            url: "https://example.com/source",
+            title: "Example",
+          },
+        ],
+        createdAt: "2026-07-06T10:01:00.000Z",
+      },
+    ];
+    await redis.set(
+      key,
+      JSON.stringify({
+        version: 2,
+        id: "44444444-4444-4444-8444-444444444444",
+        channel: "chat",
+        revision: 7,
+        nextSeq: 3,
+        createdAt: "2026-07-06T10:00:00.000Z",
+        updatedAt: "2026-07-06T10:01:00.000Z",
+        historyTruncated: false,
+        legacyImportAllowed: false,
+        messages: richMessages,
+        recentOperationIds: ["legacy-operation"],
+        lastResetOperationId: null,
+        pendingTurnId: null,
+        pendingTurnStartedAt: null,
+      })
+    );
+
+    const page = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+    expect(page.conversation).toMatchObject({
+      id: "44444444-4444-4444-8444-444444444444",
+      revision: 7,
+      messageCount: 2,
+      oldestSeq: 1,
+      newestSeq: 2,
+      canImportLegacy: false,
+    });
+    expect(page.messages).toEqual(richMessages);
+
+    const updated = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: page.conversation.id,
+      expectedRevision: page.conversation.revision,
+      operationId: "new-operation",
+      turnId: "new-turn",
+      action: {
+        kind: "user-message",
+        message: message("new-user", "user", "new text"),
+      },
+    });
+    expect(updated.messages.slice(0, 2)).toEqual(richMessages);
+    expect(updated.messages[2]?.seq).toBe(3);
+    expect(updated.revision).toBe(8);
+
+    const stored = await redis.get<string>(key);
+    expect(JSON.parse(stored ?? "{}")).toMatchObject({
+      version: 1,
+      revision: 8,
+      nextSeq: 4,
+      messages: [
+        ...richMessages,
+        {
+          id: "new-user",
+          seq: 3,
+          role: "user",
+          parts: [{ type: "text", text: "new text" }],
+          createdAt: "2026-07-06T00:00:00.000Z",
+        },
+      ],
+      recentOperationIds: ["legacy-operation", "new-operation"],
+      pendingTurnId: "new-turn",
     });
   });
 
