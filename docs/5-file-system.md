@@ -63,6 +63,7 @@ graph TB
 |--------|---------|
 | `FileMetadataService` | Metadata lookups backed by `useFilesStore` |
 | `FileContentRepository` | IndexedDB read/write by path or UUID |
+| `pathPolicy` | Writable-path rules, protected system roots, root-folder name validation, and save-location directory listing |
 | `virtualTrees` | Virtual `/Music` and `/Videos` directory builders |
 | `useVfsFileOperations` | Thin cross-app wrapper for file writes |
 
@@ -83,6 +84,30 @@ graph TB
 | `/Trash` | Special | Deleted items (restorable) |
 | `/Downloads` | Physical | User downloads (AirDrop and similar) |
 | `/Desktop` | Physical | Shortcuts and aliases |
+| `/{name}` | Physical (user) | User-created root folders (e.g. `/MyStuff`); fully writable, renamable, and trashable |
+
+### Path Policy
+
+Root-level folders fall into three categories (see `src/services/vfs/pathPolicy.ts`):
+
+| Category | Examples | Writable inside? | Rename / trash root? |
+|----------|----------|------------------|----------------------|
+| Virtual roots | `/Applications`, `/Music`, `/Videos`, `/Sites` | No | No (not in metadata) |
+| System roots | `/Documents`, `/Images`, `/Books`, `/Downloads`, `/Applets`, `/Trash`, `/Desktop` | Yes for `/Documents`, `/Images`, `/Books`, `/Downloads` (and their subtrees); `/Applets` is import-only | No |
+| User roots | Any folder created at `/` (e.g. `/Projects`) | Yes (full subtree) | Yes |
+
+Users can create new root-level folders from Finder at `/` (File → New Folder). Names must not collide (case-insensitively) with system or virtual root names. System-managed root folders cannot be renamed or moved to Trash; user-created root folders can.
+
+Writable paths include `/` (for new root folders and root-level files), writable system subtrees, and any user root subtree. Virtual roots, `/Trash`, `/Desktop`, and `/Applets` are not general-purpose write targets.
+
+### Save Anywhere
+
+Apps that save user files (TextEdit, Paint, Preview, and similar) use `SaveFileDialog`, which lists all writable directories depth-first via `listWritableDirectories()` — system folders plus user-created folders. Files can be saved to any writable path, not only the default folders.
+
+Content IndexedDB routing (`getStoreForFile` in `src/utils/indexedDBOperations.ts`):
+
+- Fixed prefixes: `/Documents/*` → `documents`, `/Images/*` → `images`, `/Books/*` → `books`, `/Applets/*` → `applets`
+- Everything else under a writable path (including `/Downloads`, user root folders, and root-level files) routes by file extension/type to the same stores (e.g. `/MyStuff/photo.png` → `images`, `/MyStuff/notes.md` → `documents`). Routing depends only on the filename so cloud sync resolves identically on every device.
 
 ```mermaid
 graph TD
@@ -223,8 +248,9 @@ const {
 
 ### Save File Example
 ```typescript
+// Any writable path works — not limited to /Documents
 await saveFile({
-  path: "/Documents/note.md",
+  path: "/MyStuff/note.md",
   name: "note.md",
   content: "# My Note\nContent here",
   type: "markdown",
@@ -232,15 +258,19 @@ await saveFile({
 });
 ```
 
+Cross-app Save As flows pick the directory via `SaveFileDialog` (`src/components/dialogs/SaveFileDialog.tsx`), which offers every writable folder in the VFS.
+
 ### Move to Trash Flow
 1. Mark item as `status: "trashed"` in metadata
 2. Store `originalPath` and `deletedAt` timestamp
-3. For Documents/Images files, move content from original store to `trash` store in IndexedDB
+3. For files with IndexedDB content (any writable path — documents, images, books, applets), move content from the source store to the `trash` store
 4. Update Trash folder icon (`trash-full.png`)
+
+System-managed root folders and virtual items cannot be moved to Trash; user-created root folders can.
 
 ### Restore from Trash Flow
 1. Reset `status` to `"active"`, clear `originalPath` and `deletedAt`
-2. For Documents/Images files, move content back from `trash` store to original store
+2. For files with IndexedDB content, move content back from the `trash` store to the store resolved for `originalPath` (extension-based routing applies)
 3. Update Trash folder icon if empty
 
 ## Lazy Loading
@@ -332,6 +362,8 @@ function getFileTypeFromExtension(fileName: string): string {
 ```
 
 ## Supported File Types
+
+Paths under `/Documents`, `/Images`, `/Books`, and `/Applets` use fixed store prefixes. The same extensions in other writable locations (user root folders, `/Downloads`, or root-level files) route to the matching IndexedDB store by extension.
 
 | Extension | Type | Opens With | Storage |
 |-----------|------|------------|---------|

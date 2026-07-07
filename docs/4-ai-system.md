@@ -40,7 +40,9 @@ graph TD
 | `generateHtml` | Create HTML applets with title and emoji icon |
 | `aquarium` | Render interactive emoji aquarium in chat |
 | `list` | List VFS items: `/Applets`, `/Documents` (includes document names), `/Applications`, `/Music`, `/Applets Store` |
-| `mapsSearchPlaces` | Server-side Apple MapKit place search; chat shows an inline card — tapping a result opens **Maps** in ryOS with that place selected; external link opens Apple Maps |
+| `mapsSearchPlaces` | Server-side Apple MapKit place search; chat shows an inline card — tapping a result opens **Maps** in ryOS with that place selected; external link opens Apple Maps. For "near me" queries, call `getPreciseLocation` first and pass coordinates as `near`; otherwise the server biases to IP geolocation |
+| `getWeather` | Server-side Open-Meteo current weather + 5-day forecast (same live data as the weather widget and weather wallpaper); resolves location from place name, coordinates (e.g. from `getPreciseLocation`), or IP geolocation fallback |
+| `getPreciseLocation` | Request precise device location via in-chat Allow / Don't Allow permission card (client, approval-gated); returns coordinates and locality for `getWeather` or `mapsSearchPlaces` (`near`); web chat only |
 | `open` | Open files/apps/media from virtual file system |
 | `read` | Read file contents (applets, documents, Applets Store items) |
 | `write` | Create/modify markdown documents (overwrite/append/prepend modes) |
@@ -59,6 +61,7 @@ graph TD
 | `web_search` | OpenAI provider web search (GPT-5.5 only, authenticated users, with geolocation context) |
 | `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
 | `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized) |
+| `runJs` | Run pure JavaScript (ES2023) in a server-side QuickJS WASM sandbox; returns captured console output and the completion value (no network, timers, or DOM) |
 | `cursorCloudAgent` | Async Cursor Cloud repo-agent runs against `ryokun6/ryos` (owner account + `CURSOR_API_KEY`): live stream card, PR link, follow-up turns |
 | `listCursorCloudAgentRuns` | List recent Cursor Cloud agent runs with dashboard URLs (owner account + `CURSOR_API_KEY`) |
 
@@ -116,18 +119,21 @@ Backend tool registry lives in `api/chat/tools/`:
 
 - `api/chat/tools/types.ts` - Tool constants and TypeScript contracts
 - `api/chat/tools/schemas.ts` - Zod input schemas and action-specific validation
-- `api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory, documents, webFetch, song library)
+- `api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory, documents, `webFetch`, `runJs`, song library)
+- `api/chat/tools/weather-executor.ts` - Server-side `getWeather` executor (Open-Meteo + Nominatim)
+- `api/chat/tools/js-sandbox.ts` - QuickJS WASM sandbox used by `runJs`
 - `api/chat/tools/app-state-executors.ts` - Server-side calendar, stickies, and contacts executors used by Telegram/app-state tool paths
 - `api/chat/tools/index.ts` - `createChatTools()` registry with profile-based filtering (`all`, `memory`, `telegram`)
 
 Tool profiles control which tools are available per channel:
 - `all` (web chat): Client app/VFS/media tools plus server tools registered for the web channel; search and cursor tools are merged dynamically when model/user/env gates pass
-- `telegram`: Server-side subset — `webFetch`, `mapsSearchPlaces`, memory, documents, calendar, stickies, contacts, and `songLibraryControl` via Redis/sync state; cursor tools are owner-only when configured
+- `telegram`: Server-side subset — `webFetch`, `runJs`, `getWeather`, `mapsSearchPlaces`, memory, documents, calendar, stickies, contacts, and `songLibraryControl` via Redis/sync state; no `getPreciseLocation` (requires browser geolocation + approval UI); cursor tools are owner-only when configured
 - `memory`: Memory tools only
 
 Client execution is split across two layers:
 
-- `src/apps/chats/hooks/useAiChat.ts` — primary `onToolCall` switch for app/VFS tools (`launchApp`, `closeApp`, `list`, `open`, `read`, `write`, `edit`, `aquarium`, …)
+- `src/apps/chats/tools/dispatchToolCall.ts` — shared client tool dispatch (Chats app + desktop assistant); server-executed tools are skipped client-side
+- `src/apps/chats/hooks/useAiChat.ts` — wires `onToolCall` to `dispatchToolCall`
 - `src/apps/chats/tools/` — registered handlers for media/settings/app-state tools:
 
 - `appHandlers.ts` - Launch/close app execution
@@ -138,6 +144,8 @@ Client execution is split across two layers:
 - `settingsHandler.ts` - System settings updates
 - `stickiesHandler.ts` - Sticky note operations
 - `infiniteMacHandler.ts` - Infinite Mac control bridge
+- `preciseLocationHandler.ts` - Browser geolocation execution after user approval
+- `toolApprovals.ts` - Approval-gated tool plumbing (Allow / Don't Allow cards, auto-send coordination)
 
 Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 
@@ -154,6 +162,9 @@ Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
   - `long_term` (default): key-based memory operations
   - `daily`: journal-style per-day operations
 - `infiniteMacControl` supports multimodal screen inspection by returning screen captures that can be converted into model-readable image content.
+- `getPreciseLocation` is approval-gated (`needsApproval`): the chat UI shows an Allow / Don't Allow card; the client handler runs only after approval. If declined, fall back to IP-based broad location for `getWeather` / `mapsSearchPlaces`.
+- `getWeather` resolves location in order: explicit coordinates → place-name search → IP geolocation.
+- `runJs` runs ES2023 in a QuickJS WASM sandbox with timeout and memory limits; each invocation is stateless (no network, timers, or DOM).
 
 ## System Prompts
 
