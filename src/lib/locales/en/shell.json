@@ -825,6 +825,18 @@
           "fetched": "Read {{siteName}}",
           "fetchedPage": "Read \"{{title}}\""
         },
+        "runJs": {
+          "running": "Running script…",
+          "ran": "Script ran in {{duration}}",
+          "failed": "Script failed",
+          "failedWithError": "Script failed: {{error}}",
+          "truncated": "(output truncated)",
+          "showCode": "Show Code",
+          "hideCode": "Hide Code",
+          "save": "Save",
+          "saved": "Saved",
+          "noOutput": "(no output)"
+        },
         "cursorCloudAgent": {
           "starting": "Starting Cursor Cloud agent…",
           "panelTitle": "Cursor Cloud agent",

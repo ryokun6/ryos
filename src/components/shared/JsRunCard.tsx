@@ -94,10 +94,12 @@ export function JsRunCard({ code, run, className }: JsRunCardProps) {
         className
       )}
     >
-      {/* Header: status + duration, code/save actions */}
+      {/* Header: status + duration, code/save actions. flex-wrap + the
+          status label's minimum basis push the buttons onto a second row in
+          narrow chat bubbles instead of crushing the status text. */}
       <div
         className={cn(
-          "flex items-center gap-1.5 px-2.5 py-1.5 text-[11px]",
+          "flex flex-wrap items-center gap-x-1.5 gap-y-1 px-2.5 py-1.5 text-[11px]",
           "border-b border-black/10 os-mac-aqua-dark:border-[color:var(--os-color-separator)]"
         )}
       >
@@ -117,7 +119,7 @@ export function JsRunCard({ code, run, className }: JsRunCardProps) {
             aria-hidden
           />
         )}
-        <span className="min-w-0 flex-1 truncate text-os-text-secondary">
+        <span className="min-w-24 flex-1 truncate text-os-text-secondary">
           {run.success
             ? t("apps.chats.toolCalls.runJs.ran", {
                 defaultValue: "Script ran in {{duration}}",
@@ -132,52 +134,54 @@ export function JsRunCard({ code, run, className }: JsRunCardProps) {
               })}`
             : ""}
         </span>
-        <button
-          type="button"
-          onClick={() => setCodeVisible((visible) => !visible)}
-          className={cn(
-            "flex h-6 shrink-0 items-center gap-1 rounded px-1.5",
-            "focus:outline-none focus-visible:ring-1",
-            osSubtleIconButtonClassName(),
-            codeVisible && "bg-black/10 os-mac-aqua-dark:bg-white/15"
-          )}
-          aria-pressed={codeVisible}
-        >
-          <Code size={13} weight="bold" aria-hidden />
-          <span>
-            {codeVisible
-              ? t("apps.chats.toolCalls.runJs.hideCode", {
-                  defaultValue: "Hide Code",
-                })
-              : t("apps.chats.toolCalls.runJs.showCode", {
-                  defaultValue: "Show Code",
-                })}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={savedPath !== null}
-          className={cn(
-            "flex h-6 shrink-0 items-center gap-1 rounded px-1.5",
-            "focus:outline-none focus-visible:ring-1",
-            osSubtleIconButtonClassName(),
-            savedPath !== null && "opacity-60"
-          )}
-        >
-          {savedPath !== null ? (
-            <Check size={13} weight="bold" aria-hidden />
-          ) : (
-            <FloppyDisk size={13} weight="bold" aria-hidden />
-          )}
-          <span>
-            {savedPath !== null
-              ? t("apps.chats.toolCalls.runJs.saved", {
-                  defaultValue: "Saved",
-                })
-              : t("apps.chats.toolCalls.runJs.save", { defaultValue: "Save" })}
-          </span>
-        </button>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setCodeVisible((visible) => !visible)}
+            className={cn(
+              "flex h-6 shrink-0 items-center gap-1 rounded px-1.5",
+              "focus:outline-none focus-visible:ring-1",
+              osSubtleIconButtonClassName(),
+              codeVisible && "bg-black/10 os-mac-aqua-dark:bg-white/15"
+            )}
+            aria-pressed={codeVisible}
+          >
+            <Code size={13} weight="bold" aria-hidden />
+            <span>
+              {codeVisible
+                ? t("apps.chats.toolCalls.runJs.hideCode", {
+                    defaultValue: "Hide Code",
+                  })
+                : t("apps.chats.toolCalls.runJs.showCode", {
+                    defaultValue: "Show Code",
+                  })}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={savedPath !== null}
+            className={cn(
+              "flex h-6 shrink-0 items-center gap-1 rounded px-1.5",
+              "focus:outline-none focus-visible:ring-1",
+              osSubtleIconButtonClassName(),
+              savedPath !== null && "opacity-60"
+            )}
+          >
+            {savedPath !== null ? (
+              <Check size={13} weight="bold" aria-hidden />
+            ) : (
+              <FloppyDisk size={13} weight="bold" aria-hidden />
+            )}
+            <span>
+              {savedPath !== null
+                ? t("apps.chats.toolCalls.runJs.saved", {
+                    defaultValue: "Saved",
+                  })
+                : t("apps.chats.toolCalls.runJs.save", { defaultValue: "Save" })}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Collapsible source */}
