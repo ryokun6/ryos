@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -21,10 +28,12 @@ import {
   adminCursorAgentRunningSelectedRowClass,
   adminCursorAgentSelectedRowClass,
   adminCursorAgentsPanelClass,
+  adminLoadMoreBtnClass,
   adminSurfaceClass,
   adminTableRowClass,
   adminToolbarClass,
 } from "../utils/adminStyles";
+import { partitionCursorAgentRunsByRecency } from "../utils/cursorAgentRunVisibility";
 import type { AdminInitialData } from "../types";
 
 export interface AdminCursorAgentRunRow {
@@ -174,6 +183,16 @@ export function CursorAgentsPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [showOlderRuns, setShowOlderRuns] = useState(false);
+
+  const { recent: recentRuns, older: olderRuns } = useMemo(
+    () => partitionCursorAgentRunsByRecency(runs),
+    [runs],
+  );
+  const visibleRuns = showOlderRuns
+    ? [...recentRuns, ...olderRuns]
+    : recentRuns;
+  const hiddenOlderCount = showOlderRuns ? 0 : olderRuns.length;
 
   const selectedRun = runs.find((r) => r.runId === selectedRunId) ?? null;
   const selectedHeaderTitle =
@@ -187,6 +206,7 @@ export function CursorAgentsPanel({
     try {
       const data = await getAdminCursorAgentRuns<CursorAgentsResponse>(80);
       setRuns(data.runs ?? []);
+      setShowOlderRuns(false);
       setTruncated(!!data.truncated);
       setScanIncomplete(!!data.scanIncomplete);
       onTotalCountChange?.(data.totalCount ?? data.runs?.length ?? 0);
@@ -207,6 +227,15 @@ export function CursorAgentsPanel({
   useEffect(() => {
     fetchRuns();
   }, [fetchRuns, refreshSignal]);
+
+  useEffect(() => {
+    if (
+      selectedRunId &&
+      olderRuns.some((run) => run.runId === selectedRunId)
+    ) {
+      setShowOlderRuns(true);
+    }
+  }, [selectedRunId, olderRuns]);
 
   const handleRefreshClick = () => {
     void fetchRuns();
@@ -376,7 +405,7 @@ export function CursorAgentsPanel({
         <div className="min-h-0 min-w-0 overflow-auto">
       <Table>
         <TableBody className="text-[11px]">
-          {runs.map((run) => {
+          {visibleRuns.map((run) => {
             const summaryLine =
               run.summaryPreview ||
               run.errorPreview ||
@@ -491,6 +520,18 @@ export function CursorAgentsPanel({
           })}
         </TableBody>
       </Table>
+      {hiddenOlderCount > 0 ? (
+        <div className="pt-2 pb-1 flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowOlderRuns(true)}
+            className={adminLoadMoreBtnClass}
+          >
+            {t("apps.admin.loadMore", { remaining: hiddenOlderCount })}
+          </Button>
+        </div>
+      ) : null}
         </div>
         {selectedRunId ? (
           <div className={cn("flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-l border-os-separator", adminSurfaceClass)}>
