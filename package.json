@@ -186,7 +186,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@happy-dom/global-registrator": "^20.10.6",
     "@tailwindcss/typography": "^0.5.20",
     "@types/d3-geo": "^3.1.0",
@@ -199,9 +199,9 @@
     "electron": "github:castlabs/electron-releases#v42.5.2+wvcus",
     "electron-builder": "^26.15.3",
     "esbuild": "0.28.1",
-    "eslint": "^9.39.4",
+    "eslint": "^10.6.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.7.0",
