@@ -14,6 +14,7 @@ import {
   loadRyoMemoryContext,
   prepareRyoConversationModelInput,
   ensureUIMessageFormat,
+  normalizeExecutedToolApprovals,
   type RyoConversationSystemState,
   type SimpleConversationMessage,
 } from "./_utils/ryo-conversation.js";
@@ -120,8 +121,12 @@ function isSimpleConversationMessage(
 }
 
 async function validateChatUIMessages(
-  messages: readonly unknown[]
+  rawMessages: readonly unknown[]
 ): Promise<UIMessage[]> {
+  // Executed tool parts can arrive with their approval response stripped by
+  // a client hydration race; execution implies approval, so repair instead
+  // of rejecting the whole request as invalid_messages.
+  const messages = normalizeExecutedToolApprovals(rawMessages);
   try {
     return await validateUIMessages({ messages });
   } catch (error) {

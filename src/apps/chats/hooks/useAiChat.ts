@@ -26,6 +26,7 @@ import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { getSystemState } from "../utils/systemState";
 import { dispatchToolCall } from "../tools/dispatchToolCall";
 import {
+  hasUnsettledApprovalGatedActivity,
   registerToolApprovalSurface,
   sendAutomaticallyWhenApprovalsSettled,
 } from "../tools/toolApprovals";
@@ -649,7 +650,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     channel: "chat",
     username,
     isAuthenticated,
-    isChatReady: () => getSharedAiChat().status === "ready",
+    // Not "ready" while an approval-gated tool is being settled: hydration
+    // would overwrite the locally recorded Allow with the server's stale
+    // approval-requested snapshot, corrupting the eventual tool output part.
+    isChatReady: () =>
+      getSharedAiChat().status === "ready" &&
+      !hasUnsettledApprovalGatedActivity(getSharedAiChat().messages),
     applyMessages: applyServerMessages,
     onError: (error, context) => {
       log.error(`Failed to sync server conversation (${context})`, error);

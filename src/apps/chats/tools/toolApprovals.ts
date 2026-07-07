@@ -126,6 +126,35 @@ function decideAutoSend(options: { messages: UIMessage[] }): {
 }
 
 /**
+ * True while the last assistant message has approval-gated activity that the
+ * user/client hasn't finished settling: a permission card awaiting the user's
+ * decision, or an approved client tool whose handler hasn't reported output
+ * yet. Server-conversation hydration must NOT overwrite the live messages
+ * during this window — the server's canonical snapshot still has the part in
+ * `approval-requested` (approval without `approved`), and stomping the local
+ * state would make the eventual `addToolOutput` produce an `output-available`
+ * part whose approval lacks `approved: true`, which fails
+ * `validateUIMessages` on the next request ("invalid messages").
+ */
+export function hasUnsettledApprovalGatedActivity(
+  messages: readonly UIMessage[]
+): boolean {
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "assistant" || !Array.isArray(last.parts)) {
+    return false;
+  }
+  return (last.parts as ApprovalToolPart[]).some((part) => {
+    if (!APPROVAL_GATED_TOOL_NAME_SET.has(approvalPartToolName(part))) {
+      return false;
+    }
+    if (part.state === "approval-requested") return true;
+    return (
+      part.state === "approval-responded" && part.approval?.approved === true
+    );
+  });
+}
+
+/**
  * True when the surface's LAST message still has this tool call pending
  * approval. `addToolApprovalResponse` / `addToolOutput` only mutate the last
  * message, so older (stale) approval cards are not actionable — the server

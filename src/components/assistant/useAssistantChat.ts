@@ -16,6 +16,7 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { getSystemState } from "@/apps/chats/utils/systemState";
 import { dispatchToolCall } from "@/apps/chats/tools/dispatchToolCall";
 import {
+  hasUnsettledApprovalGatedActivity,
   registerToolApprovalSurface,
   sendAutomaticallyWhenApprovalsSettled,
 } from "@/apps/chats/tools/toolApprovals";
@@ -398,7 +399,12 @@ export function useAssistantChat(): AssistantChatHandle {
     channel: "assistant",
     username,
     isAuthenticated,
-    isChatReady: () => chat.status === "ready",
+    // Not "ready" while an approval-gated tool is being settled: hydration
+    // would overwrite the locally recorded Allow with the server's stale
+    // approval-requested snapshot, corrupting the eventual tool output part.
+    isChatReady: () =>
+      chat.status === "ready" &&
+      !hasUnsettledApprovalGatedActivity(chat.messages),
     applyMessages: applyServerMessages,
     onError: (error, context) => {
       log.warn(`Failed to sync server conversation (${context})`, { error });

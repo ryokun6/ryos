@@ -4,14 +4,20 @@ import {
   getWeatherSchema,
 } from "../api/chat/tools/schemas.js";
 import { createChatTools, TOOL_DESCRIPTIONS } from "../api/chat/tools/index.js";
-import { resolveStaleToolApprovals } from "../api/_utils/ryo-conversation.js";
+import {
+  normalizeExecutedToolApprovals,
+  resolveStaleToolApprovals,
+} from "../api/_utils/ryo-conversation.js";
 import {
   celsiusToFahrenheit,
   describeWeatherCode,
 } from "../src/shared/tools/weather.js";
 import { APPROVAL_GATED_TOOL_NAME_SET } from "../src/shared/tools/approvalGated.js";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "../src/shared/tools/serverExecuted.js";
-import { sendAutomaticallyWhenApprovalsSettled } from "../src/apps/chats/tools/toolApprovals.js";
+import {
+  hasUnsettledApprovalGatedActivity,
+  sendAutomaticallyWhenApprovalsSettled,
+} from "../src/apps/chats/tools/toolApprovals.js";
 import {
   summarizeChatPart,
   summarizeChatMessages,
@@ -291,6 +297,182 @@ describe("resolveStaleToolApprovals", () => {
     ];
     const [sanitized] = resolveStaleToolApprovals(original);
     expect(sanitized).toBe(original[0]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Server-side repair of executed tool parts with a lost approval response
+// ---------------------------------------------------------------------------
+
+describe("normalizeExecutedToolApprovals", () => {
+  test("restores approved:true on an executed part whose response was lost", () => {
+    const [normalized] = normalizeExecutedToolApprovals([
+      assistantMessage([
+        {
+          type: "tool-getPreciseLocation",
+          toolCallId: "call-1",
+          state: "output-available",
+          input: {},
+          output: { success: true },
+          // Hydration race stripped the recorded Allow: id survives,
+          // approved does not.
+          approval: { id: "appr-1" },
+        },
+      ]),
+    ]) as Array<{ parts: Array<Record<string, unknown>> }>;
+    expect(normalized.parts[0].approval).toMatchObject({
+      id: "appr-1",
+      approved: true,
+    });
+  });
+
+  test("repairs output-error parts the same way", () => {
+    const [normalized] = normalizeExecutedToolApprovals([
+      assistantMessage([
+        {
+          type: "tool-getPreciseLocation",
+          toolCallId: "call-1",
+          state: "output-error",
+          input: {},
+          errorText: "Timed out while resolving the device position.",
+          approval: { id: "appr-1" },
+        },
+      ]),
+    ]) as Array<{ parts: Array<Record<string, unknown>> }>;
+    expect(normalized.parts[0].approval).toMatchObject({
+      id: "appr-1",
+      approved: true,
+    });
+  });
+
+  test("leaves pending approvals, denials, and responded parts untouched", () => {
+    const original = [
+      assistantMessage([
+        {
+          type: "tool-getPreciseLocation",
+          toolCallId: "call-1",
+          state: "approval-requested",
+          input: {},
+          approval: { id: "appr-1" },
+        },
+        {
+          type: "tool-getPreciseLocation",
+          toolCallId: "call-2",
+          state: "output-denied",
+          input: {},
+          approval: { id: "appr-2", approved: false },
+        },
+        {
+          type: "tool-getPreciseLocation",
+          toolCallId: "call-3",
+          state: "output-available",
+          input: {},
+          output: { success: true },
+          approval: { id: "appr-3", approved: true },
+        },
+        { type: "text", text: "hello" },
+      ]),
+    ];
+    const [normalized] = normalizeExecutedToolApprovals(original);
+    expect(normalized).toBe(original[0]);
+  });
+
+  test("ignores executed tool parts without an approval", () => {
+    const original = [
+      assistantMessage([
+        {
+          type: "tool-mapsSearchPlaces",
+          toolCallId: "call-1",
+          state: "output-available",
+          input: { query: "coffee" },
+          output: { results: [] },
+        },
+      ]),
+    ];
+    const [normalized] = normalizeExecutedToolApprovals(original);
+    expect(normalized).toBe(original[0]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hydration guard while an approval is being settled
+// ---------------------------------------------------------------------------
+
+describe("hasUnsettledApprovalGatedActivity", () => {
+  test("true while the permission card awaits the user's decision", () => {
+    expect(
+      hasUnsettledApprovalGatedActivity([
+        assistantMessage([
+          {
+            type: "tool-getPreciseLocation",
+            toolCallId: "call-1",
+            state: "approval-requested",
+            input: {},
+            approval: { id: "appr-1" },
+          },
+        ]) as UIMessage,
+      ])
+    ).toBe(true);
+  });
+
+  test("true while an approved client tool awaits its output", () => {
+    expect(
+      hasUnsettledApprovalGatedActivity([
+        assistantMessage([
+          {
+            type: "tool-getPreciseLocation",
+            toolCallId: "call-1",
+            state: "approval-responded",
+            input: {},
+            approval: { id: "appr-1", approved: true },
+          },
+        ]) as UIMessage,
+      ])
+    ).toBe(true);
+  });
+
+  test("false once the output landed or the approval was denied", () => {
+    expect(
+      hasUnsettledApprovalGatedActivity([
+        assistantMessage([
+          {
+            type: "tool-getPreciseLocation",
+            toolCallId: "call-1",
+            state: "output-available",
+            input: {},
+            output: { success: true },
+            approval: { id: "appr-1", approved: true },
+          },
+          {
+            type: "tool-getPreciseLocation",
+            toolCallId: "call-2",
+            state: "approval-responded",
+            input: {},
+            approval: { id: "appr-2", approved: false },
+          },
+        ]) as UIMessage,
+      ])
+    ).toBe(false);
+  });
+
+  test("false for non-approval-gated tools and non-assistant messages", () => {
+    expect(
+      hasUnsettledApprovalGatedActivity([
+        assistantMessage([
+          {
+            type: "tool-mapsSearchPlaces",
+            toolCallId: "call-1",
+            state: "input-available",
+            input: { query: "coffee" },
+          },
+        ]) as UIMessage,
+        {
+          id: "u1",
+          role: "user",
+          parts: [{ type: "text", text: "hi" }],
+        } as UIMessage,
+      ])
+    ).toBe(false);
   });
 });
 
