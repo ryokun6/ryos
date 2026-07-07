@@ -20,11 +20,20 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 ## July 2026
 
 <div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-07-weather-location-16x9.webp" alt="Weather and location tools in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Weather &amp; location tools</h3><p>Ryo fetches live forecasts and asks for precise location with an in-chat Allow / Don't Allow card.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-07-save-anywhere-16x9.webp" alt="Save anywhere VFS in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Save anywhere</h3><p>Create root folders in Finder and save documents to any writable path across apps.</p></div></article>
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-06-desktop-assistant-16x9.webp" alt="Desktop Assistant in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Desktop Assistant</h3><p>Clippy, Rover, and friends float on the desktop with AI chat, speech, and custom behaviors.</p></div></article>
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books library</h3><p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p></div></article>
 </div>
 <details>
-<summary>More from this month (20)</summary>
+<summary>More from this month (26)</summary>
+
+- Add **runJs** chat tool: a QuickJS WASM sandbox runs pure ES2023 on the server and returns console output plus the completion value.
+- Add **getWeather** and **getPreciseLocation** AI tools with Open-Meteo forecasts and an approval-gated location permission card in web chat.
+- Allow user-created root folders and save-anywhere VFS: Finder can create folders at `/`, and Save dialogs list every writable directory.
+- Fix AI analytics over-counting and a per-render conversation re-fetch loop in Chats.
+- Remove Vercel-specific deployment code; production is Coolify-only with S3 storage and a standalone Bun server.
+- Replace the Chats mobile room sheet with a dropdown menu switcher.
 
 - **Server-owned AI conversations**: Ryo chat history lives on the server with delta reads and a single write path, streams updates to other signed-in devices in realtime, and delivers the proactive greeting as a server-owned message.
 - Assistant polish: window-aware bubble placement with 4-side popping that never clips off-screen, per-character accent-colored speech bubbles, shimmer thinking states, compact map/HTML/Cursor tool embeds, browser text-to-speech with character voice defaults, and character names localized across all 11 locales.
@@ -561,4 +570,4 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-07-03*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-07-07*
