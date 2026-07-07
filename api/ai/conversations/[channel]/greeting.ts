@@ -154,6 +154,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
         model: google("gemini-3-flash-preview"),
         temperature: 1,
         maxOutputTokens: 2000,
+        allowSystemInMessages: true,
         messages: [
           { role: "system" as const, content: PROACTIVE_GREETING_INSTRUCTIONS },
           { role: "system" as const, content: greetingDynamicContext },

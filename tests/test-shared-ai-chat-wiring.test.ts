@@ -154,15 +154,15 @@ describe("server AI chat lifecycle wiring", () => {
   });
 
   test("logs late persistence failures without rethrowing", () => {
-    const start = source.indexOf("onFinish: async");
+    const start = source.indexOf("onEnd: async");
     const end = source.indexOf("\n      },\n    });", start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
-    const onFinish = source.slice(start, end);
-    expect(onFinish).toContain(
+    const onEnd = source.slice(start, end);
+    expect(onEnd).toContain(
       'logError("Failed to persist completed conversation response", error)'
     );
-    expect(onFinish).not.toContain("throw error");
-    expect(onFinish).toContain("clearGenerationAbortListeners()");
+    expect(onEnd).not.toContain("throw error");
+    expect(onEnd).toContain("clearGenerationAbortListeners()");
   });
 });

@@ -92,10 +92,10 @@
     "test:realtime-ws-local": "bun test tests/test-realtime-ws-local.test.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.94",
-    "@ai-sdk/google": "^3.0.89",
-    "@ai-sdk/openai": "^3.0.81",
-    "@ai-sdk/react": "^3.0.222",
+    "@ai-sdk/anthropic": "^4.0.8",
+    "@ai-sdk/google": "^4.0.8",
+    "@ai-sdk/openai": "^4.0.8",
+    "@ai-sdk/react": "^4.0.17",
     "@aws-sdk/client-s3": "^3.1081.0",
     "@aws-sdk/s3-request-presigner": "^3.1081.0",
     "@cursor/sdk": "1.0.23",
@@ -132,7 +132,7 @@
     "@tiptap/suggestion": "^2.27.2",
     "@types/three": "^0.176.0",
     "@upstash/redis": "^1.38.0",
-    "ai": "^6.0.220",
+    "ai": "^7.0.16",
     "audio-buffer-utils": "^5.1.2",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",

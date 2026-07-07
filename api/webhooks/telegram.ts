@@ -706,7 +706,7 @@ export default async function handler(
 
     const result = await agent.stream({
       messages: finalMessages,
-      onStepFinish: async (stepResult) => {
+      onStepEnd: async (stepResult) => {
         if (stepResult.toolResults.length > 0) {
           await statusReporter.markThinking();
         }
@@ -714,7 +714,7 @@ export default async function handler(
     });
 
     const textStream = textStreamFromFullStream(
-      result.fullStream,
+      result.stream,
       async (chunk) => {
         if (chunk.type === "tool-result") {
           const toolMessage = extractTelegramToolResultMessage(

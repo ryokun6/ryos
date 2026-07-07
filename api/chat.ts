@@ -573,7 +573,7 @@ export default apiHandler<{
       originalMessages,
       generateMessageId: () => crypto.randomUUID(),
       consumeSseStream: consumeStream,
-      onFinish: async ({ responseMessage, isAborted, finishReason }) => {
+      onEnd: async ({ responseMessage, isAborted, finishReason }) => {
         try {
           if (!storedConversation || !isAuthenticated || !username) {
             return;

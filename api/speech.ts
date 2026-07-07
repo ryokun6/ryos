@@ -1,4 +1,4 @@
-import { experimental_generateSpeech as generateSpeech } from "ai";
+import { generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";

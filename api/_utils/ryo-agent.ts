@@ -1,7 +1,7 @@
 import {
   NoSuchToolError,
   ToolLoopAgent,
-  stepCountIs,
+  isStepCount,
   type TextStreamPart,
   type ToolCallRepairFunction,
   type ToolSet,
@@ -102,7 +102,7 @@ export function createRyoToolLoopAgent({
     allowSystemInMessages: true,
     temperature,
     maxOutputTokens: agentPreset.maxOutputTokens,
-    stopWhen: stepCountIs(agentPreset.stopAfterSteps),
+    stopWhen: isStepCount(agentPreset.stopAfterSteps),
     experimental_repairToolCall: repairRyoToolCall,
     ...(headers ? { headers } : {}),
     ...(providerOptions ? { providerOptions } : {}),

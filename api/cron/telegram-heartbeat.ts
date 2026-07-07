@@ -397,7 +397,7 @@ export default async function handler(
 
   const result = await agent.generate({
     messages: enrichedMessages,
-    onStepFinish: async (stepResult) => {
+    onStepEnd: async (stepResult) => {
       if (stepResult.toolResults.length > 0) {
         logger.info("Telegram heartbeat completed tool step", {
           username,

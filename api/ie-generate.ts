@@ -305,12 +305,13 @@ export default apiHandler<IEGenerateRequestBody>(
     const result = streamText({
       model: selectedModel,
       messages: enrichedMessages,
+      allowSystemInMessages: true,
       // We assume prompt/messages already include necessary system/user details
       temperature: 0.7,
       maxOutputTokens: 4000,
       experimental_transform: smoothStream(),
       providerOptions: getOpenAIProviderOptions(model),
-      onFinish: async ({ text }) => {
+      onEnd: async ({ text }) => {
         if (!cacheKey) {
           logger.info("No cacheKey available, skipping cache save");
           return;
