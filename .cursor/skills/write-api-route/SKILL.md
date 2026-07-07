@@ -5,21 +5,20 @@ description: Create or modify ryOS backend API routes under api/ using the share
 
 # Writing ryOS API Routes
 
-ryOS API routes are Node-style handlers under `api/`. They run on Vercel **and** the standalone Bun server (`scripts/api-standalone-server.ts`). The canonical reference is `docs/8.10-api-design-guide.md` — read it for the full contract. This skill is the practical checklist.
+ryOS API routes are Node-style handlers under `api/`, served by the standalone Bun server (`scripts/api-standalone-server.ts`). The canonical reference is `docs/8.10-api-design-guide.md` — read it for the full contract. This skill is the practical checklist.
 
 ## Quick Start Checklist
 
 ```
 - [ ] 1. Pick the path: api/<feature>/index.ts (collection) or api/<feature>/[id].ts (item)
-- [ ] 2. Declare runtime + maxDuration
-- [ ] 3. Wrap the handler in apiHandler({ methods, auth, ... })
-- [ ] 4. Validate input (Zod via bodySchema, or _utils/_validation.ts helpers)
-- [ ] 5. Rate-limit public / expensive routes (_utils/_rate-limit.ts)
-- [ ] 6. Use shared constants/keys (_utils/constants.ts, REDIS_PREFIXES)
-- [ ] 7. Return explicit JSON; errors as { error: "..." }
-- [ ] 8. Add structured logs (logger.info / branch decisions)
-- [ ] 9. Write/extend an integration test in tests/ (requires `bun run dev:api`)
-- [ ] 10. Update the matching docs/8.*.md if the contract changed
+- [ ] 2. Wrap the handler in apiHandler({ methods, auth, ... })
+- [ ] 3. Validate input (Zod via bodySchema, or _utils/_validation.ts helpers)
+- [ ] 4. Rate-limit public / expensive routes (_utils/_rate-limit.ts)
+- [ ] 5. Use shared constants/keys (_utils/constants.ts, REDIS_PREFIXES)
+- [ ] 6. Return explicit JSON; errors as { error: "..." }
+- [ ] 7. Add structured logs (logger.info / branch decisions)
+- [ ] 8. Write/extend an integration test in tests/ (requires `bun run dev:api`)
+- [ ] 9. Update the matching docs/8.*.md if the contract changed
 ```
 
 ## File & Naming Conventions
@@ -37,7 +36,7 @@ api/
 - `_utils/` = global utilities; feature `_helpers/` = domain-specific internals.
 - `_*.ts` / `_helpers/` are private modules (not routes).
 - Use `index.ts` for collections, `[id].ts` and nested folders for path params.
-- **Import shared modules with the `.js` extension** (e.g. `from "../_utils/api-handler.js"`) — required for the Node/Vercel ESM build even though the source is `.ts`.
+- **Import shared modules with the `.js` extension** (e.g. `from "../_utils/api-handler.js"`) — required for Node-style ESM resolution even though the source is `.ts`.
 
 ## Primary Pattern: `apiHandler`
 
@@ -46,9 +45,6 @@ Prefer `apiHandler` for all new JSON endpoints. It centralizes CORS/preflight, o
 ```typescript
 import { apiHandler } from "../_utils/api-handler.js";
 import { z } from "zod";
-
-export const runtime = "nodejs";
-export const maxDuration = 30; // seconds; tune per endpoint
 
 const bodySchema = z.object({
   name: z.string().min(1).max(100),
@@ -119,7 +115,7 @@ if (!result.allowed) {
 }
 ```
 
-`getClientIp` respects `TRUSTED_PROXY_COUNT` on non-Vercel deploys. Prefer tiers from `RATE_LIMIT_TIERS` in `_utils/constants.ts` over magic numbers.
+`getClientIp` respects `TRUSTED_PROXY_COUNT` when the API sits behind a reverse proxy. Prefer tiers from `RATE_LIMIT_TIERS` in `_utils/constants.ts` over magic numbers.
 
 ## Response & Error Shape
 
@@ -136,7 +132,7 @@ if (!result.allowed) {
 | `_utils/_ssrf.ts` | `validatePublicUrl()`, `safeFetchWithRedirects()` for untrusted URLs |
 | `_utils/_sse.ts` | SSE streaming helpers |
 | `_utils/redis.ts` | `createRedis()` client factory |
-| `_utils/storage.ts` | switchable object storage (Vercel Blob / S3) |
+| `_utils/storage.ts` | S3-compatible object storage adapter | <!-- pragma: allowlist secret -->
 | `_utils/constants.ts` | `REDIS_PREFIXES`, `TTL`, `RATE_LIMIT_TIERS`, `PASSWORD`, `VALIDATION`, `TOKEN` |
 | `_utils/_logging.ts` | `initLogger()` (only needed for manual handlers) |
 

@@ -11,8 +11,6 @@ import { validateAuth } from "../../_utils/auth/index.js";
 import { apiHandler } from "../../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../../_utils/_cookie.js";
 
-export const runtime = "nodejs";
-
 interface VerifyRequest {
   username: string;
   token: string;

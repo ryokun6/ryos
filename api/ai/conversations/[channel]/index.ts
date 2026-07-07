@@ -5,9 +5,6 @@ import {
 } from "../_helpers/store.js";
 import { isAIConversationChannel } from "../../../../src/shared/contracts/aiConversation.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler(
   {
     methods: ["GET"],

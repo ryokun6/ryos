@@ -1,7 +1,6 @@
 .git
 .github
 .cursor
-.vercel
 node_modules
 dist
 coverage

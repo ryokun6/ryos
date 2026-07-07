@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { waitUntil } from "@vercel/functions";
+import { waitUntil } from "../../../_utils/_background.js";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { getStoredUserRecord } from "../../../_utils/auth/_user-record.js";
 import {
@@ -14,9 +14,6 @@ import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
 } from "../../../../src/shared/contracts/aiConversation.js";
-
-export const runtime = "nodejs";
-export const maxDuration = 60;
 
 const resetConversationSchema = z.object({
   conversationId: z.string().uuid(),

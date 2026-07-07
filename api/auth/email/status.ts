@@ -9,9 +9,6 @@ import { apiHandler } from "../../_utils/api-handler.js";
 import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
 import { isEmailConfigured } from "../../_utils/email.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 function maskEmail(email: string): string {
   const at = email.indexOf("@");
   if (at <= 0) return email;

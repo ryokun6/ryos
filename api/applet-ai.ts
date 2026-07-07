@@ -15,9 +15,6 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 60;
-
 // ============================================================================
 // Constants and Schemas
 // ============================================================================

@@ -2,7 +2,7 @@
  * Generates a version.json file with build information
  * Format: MAJOR.MINOR (e.g., 10.1) + commit SHA
  * 
- * Commit SHA from: VERCEL_GIT_COMMIT_SHA (Vercel), SOURCE_COMMIT (Coolify), GIT_COMMIT_SHA (generic CI), or git rev-parse; falls back to 'dev' if none available.
+ * Commit SHA from: SOURCE_COMMIT (Coolify), GIT_COMMIT_SHA (generic CI), or git rev-parse; falls back to 'dev' if none available.
  * Run manually with `bun run version:bump` to increment MAJOR/MINOR.
  * Desktop app version is read from package.json so generated download links
  * match electron-builder artifact names.
@@ -50,9 +50,8 @@ if (isManualBump) {
 }
 
 // Get commit SHA from environment or git
-// VERCEL_GIT_COMMIT_SHA: Vercel | SOURCE_COMMIT: Coolify | GIT_COMMIT_SHA: generic CI
+// SOURCE_COMMIT: Coolify | GIT_COMMIT_SHA: generic CI
 const commitSha =
-  process.env.VERCEL_GIT_COMMIT_SHA ||
   process.env.SOURCE_COMMIT ||
   process.env.GIT_COMMIT_SHA ||
   (() => {

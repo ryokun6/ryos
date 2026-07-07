@@ -23,9 +23,6 @@ import {
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { apiHandler } from "./_utils/api-handler.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 80;
-
 // ============================================================================
 // Constants and Types
 // ============================================================================

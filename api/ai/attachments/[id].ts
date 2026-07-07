@@ -5,9 +5,6 @@ import {
   parseAIAttachmentName,
 } from "../../../src/shared/contracts/aiAttachment.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 export default apiHandler(
   {
     methods: ["GET"],

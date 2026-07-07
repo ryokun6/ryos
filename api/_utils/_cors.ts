@@ -1,50 +1,35 @@
 // Shared CORS utilities for API routes (Node.js runtime only)
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "./api-types.js";
 import { getConfiguredPublicOrigin } from "./runtime-config.js";
 import { getHeader } from "./request-helpers.js";
 
-type RuntimeEnv = "production" | "preview" | "development";
+type RuntimeEnv = "production" | "development";
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
 const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 const LOCALHOST_PORTS = new Set(["80", "443", "3000", "3001", "5173"]);
 
-// Allowed Vercel preview URL prefixes for this project
-// Vercel preview URLs follow patterns like:
-// - {project}-{random}.vercel.app
-// - {project}-git-{branch}-{username}.vercel.app
-// Only allow previews from this specific project to prevent other Vercel apps from accessing the API
-const ALLOWED_VERCEL_PREVIEW_PREFIXES = [
-  "ryos-",      // Main project name
-  "ryo-lu-",    // Username-based prefix
-  "os-ryo-",    // Alternative naming
-];
-
 function normalizeEnv(env: string | undefined): RuntimeEnv | null {
-  if (env === "production" || env === "preview" || env === "development") {
+  if (env === "production" || env === "development") {
     return env;
   }
   return null;
 }
 
 /**
- * Resolve runtime environment in non-Vercel contexts too.
+ * Resolve the runtime environment.
  *
  * Priority:
  * 1) API_RUNTIME_ENV / API_ENV (self-host explicit override)
- * 2) VERCEL_ENV (Vercel deployments)
- * 3) NODE_ENV=production
- * 4) development fallback
+ * 2) NODE_ENV=production
+ * 3) development fallback
  */
 export function getRuntimeEnv(): RuntimeEnv {
   const explicitApiEnv = normalizeEnv(
     process.env.API_RUNTIME_ENV || process.env.API_ENV
   );
   if (explicitApiEnv) return explicitApiEnv;
-
-  const vercelEnv = normalizeEnv(process.env.VERCEL_ENV);
-  if (vercelEnv) return vercelEnv;
 
   if (process.env.NODE_ENV === "production") {
     return "production";
@@ -67,22 +52,6 @@ function isLocalhostOrigin(origin: string): boolean {
   if (!LOCALHOST_HOSTNAMES.has(parsed.hostname)) return false;
   const port = parsed.port || (parsed.protocol === "https:" ? "443" : "80");
   return LOCALHOST_PORTS.has(port);
-}
-
-function isVercelPreviewOrigin(origin: string): boolean {
-  const parsed = parseOrigin(origin);
-  if (!parsed) return false;
-  
-  const hostname = parsed.hostname.toLowerCase();
-  
-  // Must end with .vercel.app
-  if (!hostname.endsWith(".vercel.app")) return false;
-  
-  // Must start with one of the allowed project prefixes
-  // This prevents other Vercel-deployed apps from accessing the API
-  return ALLOWED_VERCEL_PREVIEW_PREFIXES.some(prefix => 
-    hostname.startsWith(prefix)
-  );
 }
 
 function isTailscaleOrigin(origin: string): boolean {
@@ -136,7 +105,7 @@ function getConfiguredAllowedOrigins(): ConfiguredAllowedOrigins {
   return { allowAll: false, origins, subdomainSuffixes };
 }
 
-export function getEffectiveOrigin(req: VercelRequest): string | null {
+export function getEffectiveOrigin(req: ApiRequest): string | null {
   try {
     const origin = getHeader(req, "origin");
     if (origin) return origin;
@@ -196,15 +165,12 @@ export function isAllowedOrigin(origin: string | null): boolean {
       normalizedOrigin === (getConfiguredPublicOrigin() || PROD_ALLOWED_ORIGIN)
     );
   }
-  if (env === "preview") {
-    return isVercelPreviewOrigin(normalizedOrigin);
-  }
   // Development is default fallback
   return isLocalhostOrigin(normalizedOrigin);
 }
 
 /**
- * Set CORS headers on a VercelResponse for Node.js runtime handlers.
+ * Set CORS headers on an ApiResponse.
  */
 export interface SetCorsHeadersOptions {
   methods?: string[];
@@ -217,7 +183,7 @@ const DEFAULT_CORS_METHODS = ["GET", "POST", "OPTIONS"];
 const DEFAULT_CORS_HEADERS = ["Content-Type", "Authorization", "X-Username"];
 
 export function setCorsHeaders(
-  res: VercelResponse,
+  res: ApiResponse,
   origin: string | null | undefined,
   options: SetCorsHeadersOptions = {}
 ): void {

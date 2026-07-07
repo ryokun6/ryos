@@ -15,8 +15,6 @@ import { apiHandler } from "../_utils/api-handler.js";
 import { issueRealtimeTicket } from "../_utils/realtime-auth.js";
 import { getRealtimeProvider } from "../_utils/runtime-config.js";
 
-export const runtime = "nodejs";
-
 export default apiHandler(
   {
     methods: ["POST"],

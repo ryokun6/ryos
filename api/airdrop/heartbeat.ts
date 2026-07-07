@@ -2,9 +2,6 @@ import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 const AIRDROP_PRESENCE_TTL_SECONDS = 60;
 const AIRDROP_LOBBY_CHANNEL = "airdrop-lobby";
 

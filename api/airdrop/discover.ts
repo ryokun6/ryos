@@ -2,9 +2,6 @@ import { apiHandler } from "../_utils/api-handler.js";
 import { AIRDROP_PRESENCE_TTL_SECONDS } from "./heartbeat.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler(
   { methods: ["GET"], auth: "required" },
   async ({ res, user, redis }) => {

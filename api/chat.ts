@@ -4,7 +4,7 @@ import {
   validateUIMessages,
   type UIMessage,
 } from "ai";
-import { geolocation, waitUntil } from "@vercel/functions";
+import { waitUntil } from "./_utils/_background.js";
 import {
   DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
@@ -132,10 +132,7 @@ async function validateChatUIMessages(
   }
 }
 
-
 // Node.js runtime configuration
-export const runtime = "nodejs";
-export const maxDuration = 80;
 
 export default apiHandler<{
   messages?: unknown[];
@@ -166,7 +163,7 @@ export default apiHandler<{
     };
     try {
     // Parse query string to get model parameter
-    // Handle both full URLs and relative paths (vercel dev uses relative paths)
+    // Handle both full URLs and relative paths
     const url = new URL(req.url || "/", "http://localhost");
     const queryModel = url.searchParams.get("model") as SupportedModel | null;
 
@@ -451,27 +448,17 @@ export default apiHandler<{
     }
 
     // --- Geolocation ---
-    // 1) Try Vercel's `geolocation()` first — instant, no outbound call.
-    //    Requires Web Request headers, so this throws in `vercel dev` and any
-    //    non-Vercel host (Coolify, Docker, plain Bun, etc.).
-    // 2) Fall back to a free IP-geolocation provider (`ipwho.is` by default,
-    //    overridable via `IP_GEOLOCATION_URL_TEMPLATE`). Results are cached in
-    //    Redis for 24h so we don't hammer the provider per chat turn.
-    let geo: ReturnType<typeof geolocation> = {};
-    try {
-      geo = geolocation(req as unknown as Request);
-    } catch {
-      geo = {};
-    }
-
+    // Resolve an approximate location from the client IP via a free
+    // IP-geolocation provider (`ipwho.is` by default, overridable via
+    // `IP_GEOLOCATION_URL_TEMPLATE`). Results are cached in Redis for 24h so
+    // we don't hammer the provider per chat turn.
     const resolvedGeo =
       (await resolveIpGeolocation({
         ip,
         redis,
-        existing: geo,
         log,
         logError,
-      })) ?? geo;
+      })) ?? {};
 
     // Attach geolocation info to system state that will be sent to the prompt
     const systemState: SystemState | undefined = incomingSystemState

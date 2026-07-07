@@ -22,9 +22,6 @@ import {
 import { sendEmail } from "../../_utils/email.js";
 import { getClientIp, makeKey } from "../../_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface RecoveryRequestBody {
   identifier: string;
 }

@@ -304,8 +304,7 @@
         "configured": "구성됨",
         "deployment": {
           "coolify": "쿨리파이",
-          "dev": "개발",
-          "vercel": "버셀"
+          "dev": "개발"
         },
         "deploymentLabel": "배포",
         "loading": "서버 정보 로드 중…",

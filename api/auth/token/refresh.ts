@@ -19,8 +19,6 @@ import { apiHandler } from "../../_utils/api-handler.js";
 import { buildSetAuthCookie, parseAuthCookie } from "../../_utils/_cookie.js";
 import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
 
-export const runtime = "nodejs";
-
 interface RefreshRequest {
   username: string;
   oldToken: string;

@@ -33,9 +33,6 @@ import {
   updateStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface LoginRequest {
   username: string;
   password: string;

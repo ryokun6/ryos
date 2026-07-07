@@ -5,9 +5,6 @@ import {
   signMapKitJwt,
 } from "./_utils/_mapkit-jwt.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default createAppleJwtTokenHandler({
   label: "MapKit",
   notConfiguredError: "MapKit not configured",

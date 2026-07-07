@@ -8,9 +8,6 @@ import { getUserTokens } from "../_utils/auth/index.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 export default apiHandler(
   {
     methods: ["GET"],

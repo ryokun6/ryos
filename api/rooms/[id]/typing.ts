@@ -9,9 +9,6 @@ import { getRoom } from "../_helpers/_redis.js";
 import { getRoomWriteAccessError } from "../_helpers/_access.js";
 import { broadcastTypingIndicator } from "../_helpers/_pusher.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 5;
-
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
   async ({ req, res, redis, logger, startTime, user }) => {

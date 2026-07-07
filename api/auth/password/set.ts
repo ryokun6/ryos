@@ -21,9 +21,6 @@ import {
 import { apiHandler } from "../../_utils/api-handler.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface SetPasswordRequest {
   /** New password to store. Required. */
   password: string;

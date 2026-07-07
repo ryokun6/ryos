@@ -9,9 +9,6 @@ import {
   youtubeSearch,
 } from "./_utils/youtube-client.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 const YouTubeSearchRequestSchema = z.object({
   query: z.string().min(1, "Query is required"),
   maxResults: z.number().min(1).max(25).optional().default(10),
@@ -31,7 +28,6 @@ export default apiHandler<YouTubeSearchRequest>(
       effectiveOrigin: origin,
       youtubeKeyCount: apiKeys.length,
       runtimeEnv: getRuntimeEnv(),
-      vercelEnv: process.env.VERCEL_ENV || "not set",
       nodeEnv: process.env.NODE_ENV || "not set",
     });
 

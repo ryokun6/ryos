@@ -30,9 +30,6 @@ import {
   withMemoryAccountMutation,
 } from "../_utils/_memory.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 60;
-
 const extractionSchema = z.object({
   dailyNotes: z
     .array(

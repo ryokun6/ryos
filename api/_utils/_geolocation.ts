@@ -3,9 +3,8 @@ import { isPrivateOrReservedIp } from "./_ip.js";
 import { redisKeys, sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
 
 /**
- * IP-based geolocation fallback for non-Vercel deployments (Coolify, Docker,
- * plain Bun, etc.) where `geolocation()` from `@vercel/functions` returns an
- * empty object.
+ * IP-based geolocation for self-hosted deployments (Coolify, Docker, plain
+ * Bun, etc.).
  *
  * Resolution order:
  *   1. Skip any private/reserved/local IP (returns null).
@@ -162,8 +161,8 @@ export interface ResolveIpGeolocationOptions {
   log?: (...args: unknown[]) => void;
   logError?: (...args: unknown[]) => void;
   /**
-   * Existing geolocation (e.g. from Vercel's `geolocation()` helper). When
-   * present and complete enough to be useful, returned as-is and we skip the
+   * Existing geolocation (e.g. already resolved by the caller). When present
+   * and complete enough to be useful, returned as-is and we skip the
    * outbound provider call entirely.
    */
   existing?: IpGeolocation | null;

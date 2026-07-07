@@ -4,8 +4,8 @@ import { getApiUrl } from "@/utils/platform";
  * First-party analytics SDK and centralized analytics event constants.
  *
  * Events are batched to /api/analytics/events and aggregated server-side in
- * Redis. The public `track(event, props)` API intentionally mirrors the old
- * Vercel Analytics helper so existing app code can stay simple.
+ * Redis. The public `track(event, props)` API is intentionally a simple
+ * (event, props) call so app code can stay simple.
  */
 
 // Core application events

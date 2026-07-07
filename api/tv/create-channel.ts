@@ -33,9 +33,6 @@ import {
   youtubeSearch,
 } from "../_utils/youtube-client.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 45;
-
 const RequestSchema = z.object({
   description: z
     .string()

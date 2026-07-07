@@ -115,7 +115,7 @@ export function recordAnalyticsEvent(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Product/app event analytics — first-party replacement for Vercel Analytics
+// Product/app event analytics — first-party event tracking
 // ────────────────────────────────────────────────────────────────────────────
 
 const MAX_PRODUCT_EVENTS_PER_BATCH = 25;

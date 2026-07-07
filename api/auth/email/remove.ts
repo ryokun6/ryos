@@ -14,9 +14,6 @@ import {
 } from "../../_utils/auth/_user-record.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler(
   {
     methods: ["POST"],

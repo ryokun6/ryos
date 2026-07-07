@@ -304,8 +304,7 @@
         "configured": "已配置",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "开发",
-          "vercel": "Vercel"
+          "dev": "开发"
         },
         "deploymentLabel": "部署",
         "loading": "正在加载服务器信息…",

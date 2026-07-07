@@ -9,8 +9,6 @@ import { getActiveUsersInRoom } from "../_helpers/_presence.js";
 import { getRoom } from "../_helpers/_redis.js";
 import { getRoomReadAccessError } from "../_helpers/_access.js";
 
-export const runtime = "nodejs";
-
 export default apiHandler(
   { methods: ["GET"], auth: "optional" },
   async ({ req, res, redis, logger, startTime, user }) => {

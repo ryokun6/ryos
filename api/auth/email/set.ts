@@ -23,9 +23,6 @@ import { issueRecoveryCode } from "../../_utils/auth/_recovery.js";
 import { isEmailConfigured, sendEmail } from "../../_utils/email.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface SetEmailRequest {
   email: string;
 }

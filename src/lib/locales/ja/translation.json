@@ -304,8 +304,7 @@
         "configured": "設定済み",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "開発",
-          "vercel": "Vercel"
+          "dev": "開発"
         },
         "deploymentLabel": "デプロイ",
         "loading": "サーバー情報を読み込み中…",

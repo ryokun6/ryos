@@ -29,8 +29,6 @@ import { getRoomReadAccessError, getRoomWriteAccessError } from "../_helpers/_ac
 import { broadcastNewMessage } from "../_helpers/_pusher.js";
 import { getIrcBridge, isIrcBridgeEnabled } from "../../_utils/irc/_bridge.js";
 
-export const runtime = "nodejs";
-
 export default apiHandler(
   { methods: ["GET", "POST"], auth: "optional" },
   async ({ req, res, redis, logger, startTime, user }) => {

@@ -15,9 +15,6 @@ import {
   syncRoomBindingForPresence,
 } from "../_utils/irc/_bridge.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface SwitchRequest {
   previousRoomId?: string;
   nextRoomId?: string;
