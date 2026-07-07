@@ -383,6 +383,12 @@ export function useAssistantChat(): AssistantChatHandle {
 
   const applyServerMessages = useCallback(
     (loadedMessages: AIChatMessage[]) => {
+      // Hydration replaces the live SDK messages wholesale — log it so races
+      // with in-flight tool approvals are visible in debug traces.
+      log.debug(
+        "Applying server conversation snapshot (assistant)",
+        summarizeChatMessages(loadedMessages)
+      );
       setMessages(loadedMessages);
       if (loadedMessages.length > 0) {
         useAssistantStore.getState().hydrateMessages(loadedMessages);

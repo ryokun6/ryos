@@ -637,6 +637,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     (messages: AIChatMessage[]) => {
       const nextMessages =
         messages.length > 0 ? messages : [createInitialChatMessage()];
+      // Hydration replaces the live SDK messages wholesale — log it so races
+      // with in-flight tool approvals are visible in debug traces.
+      log.debug(
+        "Applying server conversation snapshot",
+        summarizeChatMessages(nextMessages)
+      );
       setAiMessages(nextMessages);
       setSdkMessages(nextMessages);
     },
