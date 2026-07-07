@@ -8,6 +8,8 @@ import {
   type AIConversationPart,
   type AIConversationPage,
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
+  AI_PROACTIVE_GREETING_STALE_AFTER_MS,
+  isAIProactiveGreetingMessageId,
 } from "../../../../src/shared/contracts/aiConversation.js";
 import {
   getAIAttachmentUrl,
@@ -140,6 +142,14 @@ interface WriteAIConversationMessagesInput {
   expectedRevision?: number;
   requireEmpty?: boolean;
   requireAssistantContinuation?: boolean;
+  /** Reject the write while another conversation turn is still pending. */
+  requireNoPendingTurn?: boolean;
+  /**
+   * Keep `legacyImportAllowed` untouched. Used for proactive greetings so a
+   * server-generated greeting on an otherwise-empty conversation does not
+   * permanently block a legacy device from importing its local history.
+   */
+  preserveLegacyImport?: boolean;
   historyTruncated?: boolean;
   turn?: {
     id: string;
@@ -172,6 +182,11 @@ export interface CompleteAIConversationTurnInput extends ConversationWriteContex
 export interface ImportAIConversationMessagesInput extends ConversationWriteContext {
   messages: readonly unknown[];
   historyTruncated?: boolean;
+}
+
+export interface AppendAIConversationAssistantMessageInput
+  extends ConversationWriteContext {
+  message: unknown;
 }
 
 export interface ResetAIConversationInput {
@@ -1003,7 +1018,21 @@ async function writeAIConversationMessages(
                 "Conversation revision changed",
               );
             }
-            if (input.requireEmpty && document.messages.length > 0) {
+            // A legacy import may replace a conversation whose only content is
+            // server-generated proactive greetings: the greeting is disposable
+            // while the device-local history it would otherwise block is not.
+            const existingAreOnlyProactiveGreetings =
+              document.messages.length > 0 &&
+              document.messages.every(
+                (message) =>
+                  message.role === "assistant" &&
+                  isAIProactiveGreetingMessageId(message.id),
+              );
+            if (
+              input.requireEmpty &&
+              document.messages.length > 0 &&
+              !existingAreOnlyProactiveGreetings
+            ) {
               throw new AIConversationError(
                 "conversation_not_empty",
                 409,
@@ -1021,11 +1050,28 @@ async function writeAIConversationMessages(
               assertValidAssistantContinuation(document, input.messages[0]);
             }
 
+            const pendingIsStale =
+              document.pendingTurnStartedAt !== null &&
+              Date.now() - document.pendingTurnStartedAt > PENDING_TURN_TTL_MS;
+            if (
+              input.requireNoPendingTurn &&
+              document.pendingTurnId &&
+              !pendingIsStale
+            ) {
+              throw new AIConversationError(
+                "conversation_busy",
+                409,
+                "Another conversation turn is still running",
+              );
+            }
+
+            let droppedProactiveGreetings = false;
+            if (input.requireEmpty && existingAreOnlyProactiveGreetings) {
+              document.messages = [];
+              droppedProactiveGreetings = true;
+            }
+
             if (input.turn) {
-              const pendingIsStale =
-                document.pendingTurnStartedAt !== null &&
-                Date.now() - document.pendingTurnStartedAt >
-                  PENDING_TURN_TTL_MS;
               if (input.turn.action === "begin") {
                 if (
                   document.pendingTurnId &&
@@ -1063,8 +1109,14 @@ async function writeAIConversationMessages(
               document.pendingTurnStartedAt = null;
             }
             appendOperation(document, input.operationId);
-            document.legacyImportAllowed = false;
-            if (messagesChanged || truncationChanged) {
+            if (!input.preserveLegacyImport) {
+              document.legacyImportAllowed = false;
+            }
+            if (
+              messagesChanged ||
+              truncationChanged ||
+              droppedProactiveGreetings
+            ) {
               document.revision += 1;
               document.updatedAt = new Date().toISOString();
             }
@@ -1164,6 +1216,34 @@ export async function importAIConversationMessages(
       requireEmpty: true,
     })
   ).document;
+}
+
+/**
+ * Append a standalone assistant message (e.g. a proactive greeting) outside a
+ * regular user turn. The write is optimistic: it fails cleanly when a turn is
+ * pending or when the conversation moved past the caller's snapshot, and it
+ * keeps `legacyImportAllowed` intact so a greeting never blocks a legacy
+ * device from importing its local history later.
+ */
+export async function appendAIConversationAssistantMessage(
+  input: AppendAIConversationAssistantMessageInput,
+): Promise<{ document: StoredConversation; operationApplied: boolean }> {
+  assertMessageRole(input.message, "assistant");
+  return writeAIConversationMessages({
+    redis: input.redis,
+    username: input.username,
+    channel: input.channel,
+    operationId: input.operationId,
+    messages: [input.message],
+    requireNoPendingTurn: true,
+    preserveLegacyImport: true,
+    ...(input.expectedConversationId
+      ? { expectedConversationId: input.expectedConversationId }
+      : {}),
+    ...(input.expectedRevision === undefined
+      ? {}
+      : { expectedRevision: input.expectedRevision }),
+  });
 }
 
 export async function releaseAIConversationTurn({
@@ -1543,6 +1623,53 @@ export function getAIConversationSummary(
   document: StoredConversation,
 ): AIConversation {
   return summarizeConversation(document);
+}
+
+export type AIProactiveGreetingEligibility =
+  | { eligible: true; mode: "fresh" | "stale" }
+  | {
+      eligible: false;
+      reason: "turn_in_progress" | "already_greeted" | "conversation_active";
+    };
+
+export interface AIProactiveGreetingConversationState {
+  messages: ReadonlyArray<Pick<AIConversationMessage, "id" | "createdAt">>;
+  pendingTurnId: string | null;
+  pendingTurnStartedAt: number | null;
+}
+
+/**
+ * Server-side decision for proactive greetings, evaluated against the
+ * canonical conversation: greet when the thread is brand new ("fresh") or has
+ * been idle for a while ("stale"), and never greet twice in a row, mid-turn,
+ * or while the user is actively chatting.
+ */
+export function getAIProactiveGreetingEligibility(
+  document: AIProactiveGreetingConversationState,
+  now = Date.now(),
+): AIProactiveGreetingEligibility {
+  const pendingIsStale =
+    document.pendingTurnStartedAt !== null &&
+    now - document.pendingTurnStartedAt > PENDING_TURN_TTL_MS;
+  if (document.pendingTurnId && !pendingIsStale) {
+    return { eligible: false, reason: "turn_in_progress" };
+  }
+  if (document.messages.length === 0) {
+    return { eligible: true, mode: "fresh" };
+  }
+
+  const last = document.messages[document.messages.length - 1];
+  if (isAIProactiveGreetingMessageId(last.id)) {
+    return { eligible: false, reason: "already_greeted" };
+  }
+  const lastTimestamp = new Date(last.createdAt).getTime();
+  if (
+    !Number.isFinite(lastTimestamp) ||
+    now - lastTimestamp < AI_PROACTIVE_GREETING_STALE_AFTER_MS
+  ) {
+    return { eligible: false, reason: "conversation_active" };
+  }
+  return { eligible: true, mode: "stale" };
 }
 
 export function getAIConversationModelMessages(
