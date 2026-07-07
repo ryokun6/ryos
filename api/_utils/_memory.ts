@@ -665,6 +665,31 @@ async function saveMemoryRecord(
   );
 }
 
+const SAVE_MEMORY_INDEX_AND_DELETE_DETAILS_SCRIPT = `
+redis.call("SET", KEYS[1], ARGV[1])
+local deletedCount = 0
+for index = 2, #KEYS do
+  deletedCount = deletedCount + redis.call("DEL", KEYS[index])
+end
+return deletedCount
+`;
+
+async function saveMemoryIndexAndDeleteDetails(
+  redis: Redis,
+  username: string,
+  index: MemoryIndex,
+  memoryKeys: readonly string[]
+): Promise<number> {
+  return redis.eval<number>(
+    SAVE_MEMORY_INDEX_AND_DELETE_DETAILS_SCRIPT,
+    [
+      getMemoryIndexKey(username),
+      ...memoryKeys.map((key) => getMemoryDetailKey(username, key)),
+    ],
+    [JSON.stringify(index)]
+  );
+}
+
 /**
  * Delete memory detail
  */
@@ -1003,10 +1028,7 @@ export async function deleteMemory(
 
   // Remove from index
   index.memories.splice(existingIdx, 1);
-  await saveMemoryIndex(redis, username, index);
-
-  // Delete detail
-  await deleteMemoryDetail(redis, username, normalizedKey);
+  await saveMemoryIndexAndDeleteDetails(redis, username, index, [normalizedKey]);
 
   return {
     success: true,
@@ -1373,19 +1395,34 @@ export async function clearAllMemories(
 
   const count = index.memories.length;
 
-  // Delete all detail keys
-  for (const entry of index.memories) {
-    await deleteMemoryDetail(redis, username, entry.key);
-  }
-
-  // Clear the index
   const emptyIndex: MemoryIndex = {
     memories: [],
     version: MEMORY_SCHEMA_VERSION,
   };
-  await saveMemoryIndex(redis, username, emptyIndex);
+  await saveMemoryIndexAndDeleteDetails(
+    redis,
+    username,
+    emptyIndex,
+    index.memories.map((entry) => entry.key)
+  );
 
   return { deletedCount: count };
+}
+
+async function scanMemoryKeys(redis: Redis, pattern: string): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor: string | number = 0;
+
+  do {
+    const [nextCursor, scannedKeys] = await redis.scan(cursor, {
+      match: pattern,
+      count: 100,
+    });
+    keys.push(...scannedKeys);
+    cursor = nextCursor;
+  } while (String(cursor) !== "0");
+
+  return keys;
 }
 
 export async function deleteAllUserMemories(
@@ -1395,23 +1432,13 @@ export async function deleteAllUserMemories(
 ): Promise<number> {
   return withUserMemoryMutationLock(redis, username, async () => {
     const dailyDatesIndexKey = getDailyNoteDatesIndexKey(username);
-    const dailyNoteScanPattern = redisKeys.memory.daily(username, "*");
-    const scannedDailyNoteKeys: string[] = [];
-    let cursor: string | number = 0;
-
-    do {
-      const [nextCursor, keys] = await redis.scan(cursor, {
-        match: dailyNoteScanPattern,
-        count: 100,
-      });
-      scannedDailyNoteKeys.push(...keys);
-      cursor = nextCursor;
-    } while (String(cursor) !== "0");
-
-    const [index, indexedDailyDates] = await Promise.all([
-      getMemoryIndex(redis, username),
-      redis.smembers<string[]>(dailyDatesIndexKey),
-    ]);
+    const [index, indexedDailyDates, scannedDailyNoteKeys, scannedDetailKeys] =
+      await Promise.all([
+        getMemoryIndex(redis, username),
+        redis.smembers<string[]>(dailyDatesIndexKey),
+        scanMemoryKeys(redis, redisKeys.memory.daily(username, "*")),
+        scanMemoryKeys(redis, redisKeys.memory.detail(username, "*")),
+      ]);
     const recentDailyDates = Array.from({ length: 34 }, (_, index) =>
       new Date(now - (index - 1) * DAY_IN_MS).toISOString().slice(0, 10)
     );
@@ -1425,6 +1452,7 @@ export async function deleteAllUserMemories(
         ...indexedDailyDates.map((date) => getDailyNoteKey(username, date)),
         ...recentDailyDates.map((date) => getDailyNoteKey(username, date)),
         ...scannedDailyNoteKeys,
+        ...scannedDetailKeys,
       ]),
     ];
 
@@ -1588,9 +1616,11 @@ export async function cleanupStaleTemporaryMemories(
     memories: index.memories.filter((entry) => !keysToRemove.has(entry.key)),
   };
 
-  await saveMemoryIndex(redis, username, filteredIndex);
-  await Promise.all(
-    removedKeys.map((key) => deleteMemoryDetail(redis, username, key))
+  await saveMemoryIndexAndDeleteDetails(
+    redis,
+    username,
+    filteredIndex,
+    removedKeys
   );
 
   return {

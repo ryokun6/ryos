@@ -60,6 +60,7 @@ import {
   appendDailyNote,
   getDailyNote,
   getTodayDateString,
+  normalizeMemoryKey,
   withCurrentAccountMemoryMutation,
 } from "../../_utils/_memory.js";
 
@@ -1211,9 +1212,11 @@ export async function executeMemoryRead(
 
     context.log(`[memoryRead:long_term] Reading memory "${key}"`);
 
-    const detail = await getMemoryDetail(context.redis, context.username, key);
+    const normalizedKey = normalizeMemoryKey(key);
+    const index = await getMemoryIndex(context.redis, context.username);
+    const entry = index?.memories.find((memory) => memory.key === normalizedKey);
 
-    if (!detail) {
+    if (!entry) {
       context.log(`[memoryRead:long_term] Memory "${key}" not found`);
       return {
         success: false,
@@ -1224,17 +1227,33 @@ export async function executeMemoryRead(
       };
     }
 
-    const index = await getMemoryIndex(context.redis, context.username);
-    const entry = index?.memories.find((m) => m.key === key.toLowerCase());
+    const detail = await getMemoryDetail(
+      context.redis,
+      context.username,
+      normalizedKey
+    );
 
-    context.log(`[memoryRead:long_term] Found memory "${key}" (${detail.content.length} chars)`);
+    if (!detail) {
+      context.log(`[memoryRead:long_term] Memory "${key}" has no detail`);
+      return {
+        success: false,
+        message: `Memory "${key}" not found.`,
+        key,
+        content: null,
+        summary: null,
+      };
+    }
+
+    context.log(
+      `[memoryRead:long_term] Found memory "${key}" (${detail.content.length} chars)`
+    );
 
     return {
       success: true,
       message: `Retrieved memory "${key}".`,
       key,
       content: detail.content,
-      summary: entry?.summary || null,
+      summary: entry.summary,
     };
   } catch (error) {
     context.logError("[memoryRead] Unexpected error:", error);

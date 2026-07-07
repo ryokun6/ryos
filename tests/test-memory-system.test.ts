@@ -21,6 +21,7 @@ import {
   upsertMemory,
   DAILY_NOTES_TTL_SECONDS,
 } from "../api/_utils/_memory.js";
+import { executeMemoryRead } from "../api/chat/tools/executors.js";
 import { describe, test, expect } from "bun:test";
 import { redisKeys } from "../src/shared/redisKeys.js";
 
@@ -107,6 +108,14 @@ class FakeRedis {
     keys: string[],
     args: Array<string | number>
   ): Promise<T> {
+    if (script.includes("local deletedCount = 0")) {
+      this.store.set(keys[0] ?? "", String(args[0]));
+      let deletedCount = 0;
+      for (const key of keys.slice(1)) {
+        deletedCount += await this.del(key);
+      }
+      return deletedCount as T;
+    }
     if (script.includes('redis.call("SET", KEYS[2], ARGV[2])')) {
       this.store.set(keys[0] ?? "", String(args[0]));
       this.store.set(keys[1] ?? "", String(args[1]));
@@ -294,10 +303,56 @@ describe("Memory System Timestamp Tests", () => {
       expect(
         await getDailyNote(redis, "other_scan_user", dates[0])
       ).not.toBeNull();
-      expect(fakeRedis.scanPatterns).toEqual([
-        "memory:user:scan_purge_user:daily:*",
-        "memory:user:scan_purge_user:daily:*",
-      ]);
+      expect(
+        fakeRedis.scanPatterns.filter(
+          (pattern) => pattern === "memory:user:scan_purge_user:daily:*"
+        )
+      ).toHaveLength(2);
+      expect(fakeRedis.scanPatterns).toContain(
+        "memory:user:scan_purge_user:detail:*"
+      );
+    });
+
+    test("purge scans and deletes orphaned long-term memory details", async () => {
+      const fakeRedis = new FakeRedis();
+      const redis = fakeRedis as unknown as Redis;
+      const username = "orphan_detail_purge_user";
+      const orphanKey = redisKeys.memory.detail(username, "private_history");
+      const otherKey = redisKeys.memory.detail(
+        "other_orphan_detail_user",
+        "private_history"
+      );
+
+      await fakeRedis.set(
+        orphanKey,
+        JSON.stringify({
+          key: "private_history",
+          content: "private old-account data",
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        })
+      );
+      await fakeRedis.set(otherKey, "other-user-data");
+
+      const orphanRead = await executeMemoryRead(
+        { type: "long_term", key: "private_history" },
+        {
+          redis,
+          username,
+          env: {},
+          log: () => {},
+          logError: () => {},
+        }
+      );
+      expect(orphanRead.success).toBe(false);
+
+      await deleteAllUserMemories(redis, username);
+
+      expect(await fakeRedis.get(orphanKey)).toBeNull();
+      expect(await fakeRedis.get(otherKey)).toBe("other-user-data");
+      expect(fakeRedis.scanPatterns).toContain(
+        "memory:user:orphan_detail_purge_user:detail:*"
+      );
     });
 
     test("purge does not delete a processing lock owned by another job", async () => {
