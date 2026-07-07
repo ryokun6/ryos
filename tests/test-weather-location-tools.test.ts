@@ -233,6 +233,59 @@ describe("sendAutomaticallyWhenApprovalsSettled", () => {
     ];
     expect(sendAutomaticallyWhenApprovalsSettled({ messages })).toBe(true);
   });
+
+  test("does not send when only a provider-executed web_search tool completed", () => {
+    const messages = [
+      assistantMessage([
+        { type: "step-start" },
+        {
+          type: "tool-web_search",
+          toolCallId: "ws_abc",
+          state: "output-available",
+          providerExecuted: true,
+          output: { sources: [] },
+        },
+      ]),
+    ];
+    expect(sendAutomaticallyWhenApprovalsSettled({ messages })).toBe(false);
+  });
+
+  test("does not send when only a server-executed tool completed", () => {
+    const messages = [
+      assistantMessage([
+        {
+          type: "tool-getWeather",
+          toolCallId: "weather-1",
+          state: "output-available",
+          input: { location: "San Francisco" },
+          output: { temperature: 65 },
+        },
+      ]),
+    ];
+    expect(sendAutomaticallyWhenApprovalsSettled({ messages })).toBe(false);
+  });
+
+  test("still sends when a client tool completed alongside provider tools", () => {
+    const messages = [
+      assistantMessage([
+        {
+          type: "tool-web_search",
+          toolCallId: "ws_abc",
+          state: "output-available",
+          providerExecuted: true,
+          output: { sources: [] },
+        },
+        {
+          type: "tool-stickiesControl",
+          toolCallId: "sticky-1",
+          state: "output-available",
+          input: { action: "list" },
+          output: "No stickies",
+        },
+      ]),
+    ];
+    expect(sendAutomaticallyWhenApprovalsSettled({ messages })).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

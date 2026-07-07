@@ -40,6 +40,7 @@ import {
   buildAIConversationRequestBody,
   getAIConversationRequestContext,
   invalidateAIConversationSession,
+  loadAIConversation,
   resetAIConversationSession,
 } from "@/api/aiConversations";
 import { useServerAIConversation } from "@/hooks/useServerAIConversation";
@@ -398,6 +399,8 @@ export function useAssistantChat(): AssistantChatHandle {
     },
     [setMessages]
   );
+  const applyServerMessagesRef = useRef(applyServerMessages);
+  applyServerMessagesRef.current = applyServerMessages;
 
   // Server conversation sync for the assistant thread: hydration on sign-in,
   // focus/visibility refresh, and realtime cross-device updates.
@@ -457,6 +460,41 @@ export function useAssistantChat(): AssistantChatHandle {
         message.includes("AI_TypeValidationError") ||
         message.includes("Type validation failed")
       ) {
+        return;
+      }
+      if (message.includes("message_id_conflict")) {
+        const owner = requestOwnerRef.current;
+        log.warn(
+          "Assistant conversation rejected an invalid continuation; re-syncing from server",
+          { owner }
+        );
+        if (owner) {
+          invalidateAIConversationSession("assistant", owner);
+          void loadAIConversation({
+            channel: "assistant",
+            username: owner,
+            force: true,
+          })
+            .then((loaded) => {
+              if (
+                loaded.stale ||
+                useChatsStore.getState().username?.toLowerCase() !==
+                  loaded.owner ||
+                !useChatsStore.getState().isAuthenticated ||
+                chat.status === "streaming" ||
+                chat.status === "submitted"
+              ) {
+                return;
+              }
+              applyServerMessagesRef.current(loaded.messages);
+              clearError();
+            })
+            .catch((syncError) => {
+              log.warn("Failed to recover assistant conversation", {
+                error: syncError,
+              });
+            });
+        }
         return;
       }
       // Always-printed context for bug reports: the failing message states
