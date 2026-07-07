@@ -277,7 +277,10 @@ export default apiHandler<{
     let clientConversationMessages: UIMessage[] = [];
     let clientActionMessage: UIMessage | undefined;
     try {
-      if (isAuthenticated && !isProactiveGreeting) {
+      if (isAuthenticated && isProactiveGreeting) {
+        // Proactive greetings ignore client messages entirely: the server
+        // decides against the canonical conversation.
+      } else if (isAuthenticated) {
         if (normalizedTrigger !== "regenerate-message") {
           const actionCandidate = message ?? rawMessages?.at(-1);
           if (!actionCandidate) {
