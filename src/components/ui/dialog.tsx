@@ -115,19 +115,36 @@ const DialogContent = (
   const hasMeasuredAnchor =
     sheetAnchor !== null && sheetAnchor !== "unavailable";
 
+  // Only commit state when the measurement actually changed: Radix recomposes
+  // its internal ref chain on every render (detach + reattach), so this
+  // callback fires repeatedly and an unconditional set would loop forever.
+  const updateSheetAnchor = React.useCallback(() => {
+    if (!parentWindowInstanceId) return;
+    const next = measureSheetAnchor(parentWindowInstanceId) ?? "unavailable";
+    setSheetAnchor((prev) => {
+      if (prev === next) return prev;
+      if (
+        typeof prev === "object" &&
+        prev !== null &&
+        typeof next === "object" &&
+        prev.left === next.left &&
+        prev.top === next.top &&
+        prev.width === next.width
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [parentWindowInstanceId]);
+
   // Measure the parent window when the (portaled) content mounts. The ref
   // callback runs before paint, so the pre-measure hidden frame never shows.
   const measureRef = React.useCallback(
     (node: HTMLDivElement | null) => {
-      if (!node) {
-        // Content unmounted (dialog closed) — re-measure on next open.
-        setSheetAnchor(null);
-        return;
-      }
-      if (!wantsSheet || !parentWindowInstanceId) return;
-      setSheetAnchor(measureSheetAnchor(parentWindowInstanceId) ?? "unavailable");
+      if (!node || !wantsSheet) return;
+      updateSheetAnchor();
     },
-    [wantsSheet, parentWindowInstanceId]
+    [wantsSheet, updateSheetAnchor]
   );
 
   const composedContentRef = React.useCallback(
@@ -144,15 +161,10 @@ const DialogContent = (
 
   // Keep the sheet attached if the viewport (and thus window layout) changes.
   React.useEffect(() => {
-    if (!hasMeasuredAnchor || !parentWindowInstanceId) return;
-    const remeasure = () => {
-      setSheetAnchor(
-        measureSheetAnchor(parentWindowInstanceId) ?? "unavailable"
-      );
-    };
-    window.addEventListener("resize", remeasure);
-    return () => window.removeEventListener("resize", remeasure);
-  }, [hasMeasuredAnchor, parentWindowInstanceId]);
+    if (!hasMeasuredAnchor) return;
+    window.addEventListener("resize", updateSheetAnchor);
+    return () => window.removeEventListener("resize", updateSheetAnchor);
+  }, [hasMeasuredAnchor, updateSheetAnchor]);
 
   // Fall back to the centered modal when the parent window can't be found.
   const isSheet = wantsSheet && sheetAnchor !== "unavailable";
