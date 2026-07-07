@@ -2515,12 +2515,15 @@
         "appletImported": "小程序已导入！",
         "appletImportedDesc": "{{name}} 已保存到 /Applets{{iconText}}",
         "appletImportedIconText": "，图标为 {{icon}}",
+        "folderExists": "已存在名为“{{name}}”的项目。",
         "importFailed": "导入失败",
         "importFailedAppletDesc": "无法导入小程序文件。",
         "importFailedDesc": "无法导入文件。",
         "invalidFileType": "无效的文件类型",
         "invalidFileTypeDesc": "只有 .app、.gz 和 .html 文件可以导入 Applets",
-        "loading": "加载中…"
+        "invalidFolderName": "不能使用该名称。请尝试使用其他名称。",
+        "loading": "加载中…",
+        "reservedFolderName": "“{{name}}”是保留名称。请选取其他名称。"
       },
       "name": "Finder",
       "placeholders": {
@@ -4757,7 +4760,8 @@
       "version": "版本",
       "viewChangelog": "更新日志",
       "viewDocs": "查看文档",
-      "welcomeTo": "欢迎使用{{appName}}"
+      "welcomeTo": "欢迎使用{{appName}}",
+      "where": "位置："
     },
     "dock": {
       "addToDock": "添加到程序坞",

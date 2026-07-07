@@ -2517,12 +2517,15 @@
         "appletImported": "Applet importado!",
         "appletImportedDesc": "{{name}} guardado en /Applets{{iconText}}",
         "appletImportedIconText": " con {{icon}} icono",
+        "folderExists": "Ya existe un ítem llamado \"{{name}}\".",
         "importFailed": "Importación fallida",
         "importFailedAppletDesc": "No se pudo importar el archivo de applet.",
         "importFailedDesc": "No se pudo importar el archivo.",
         "invalidFileType": "Tipo de archivo no válido",
         "invalidFileTypeDesc": "Solo se pueden importar archivos .app, .gz y .html a Applets",
-        "loading": "Cargando…"
+        "invalidFolderName": "No se puede utilizar ese nombre. Prueba con otro.",
+        "loading": "Cargando…",
+        "reservedFolderName": "\"{{name}}\" es un nombre reservado. Elige otro nombre."
       },
       "name": "Finder",
       "placeholders": {
@@ -4761,7 +4764,8 @@
       "version": "Versión",
       "viewChangelog": "Registro de cambios",
       "viewDocs": "Ver documentación",
-      "welcomeTo": "Bienvenido a {{appName}}"
+      "welcomeTo": "Bienvenido a {{appName}}",
+      "where": "Dónde:"
     },
     "dock": {
       "addToDock": "Añadir al Dock",

@@ -283,7 +283,7 @@ export function usePreviewLogic({
   }, [content, currentPath, t]);
 
   const handleSaveAsSubmit = useCallback(
-    async (requestedName: string) => {
+    async (requestedName: string, directoryPath?: string) => {
       if (content === null) return;
       const trimmedName = requestedName.trim().replace(/[\\/]/g, "-");
       if (!trimmedName) return;
@@ -293,8 +293,10 @@ export function usePreviewLogic({
         currentExtension && !getFileExtension(trimmedName)
           ? `${trimmedName}.${currentExtension}`
           : trimmedName;
-      const directory = kind === "image" ? "/Images" : "/Documents";
-      const path = `${directory}/${fileName}`;
+      const directory =
+        directoryPath || (kind === "image" ? "/Images" : "/Documents");
+      const basePath = directory === "/" ? "" : directory;
+      const path = `${basePath}/${fileName}`;
 
       setIsSaving(true);
       try {

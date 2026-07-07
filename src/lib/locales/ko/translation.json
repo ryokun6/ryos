@@ -2515,12 +2515,15 @@
         "appletImported": "애플릿 가져오기 완료!",
         "appletImportedDesc": "{{name}}이(가) /Applets에 저장되었습니다{{iconText}}",
         "appletImportedIconText": " {{icon}} 아이콘으로",
+        "folderExists": "\"{{name}}\"(이)라는 이름의 항목이 이미 있습니다.",
         "importFailed": "가져오기 실패",
         "importFailedAppletDesc": "애플릿 파일을 가져올 수 없습니다.",
         "importFailedDesc": "파일을 가져올 수 없습니다.",
         "invalidFileType": "잘못된 파일 형식",
         "invalidFileTypeDesc": ".app, .gz, .html 파일만 Applets로 가져올 수 있습니다.",
-        "loading": "로드 중…"
+        "invalidFolderName": "이 이름은 사용할 수 없습니다. 다른 이름을 사용해 보십시오.",
+        "loading": "로드 중…",
+        "reservedFolderName": "\"{{name}}\"은(는) 예약된 이름입니다. 다른 이름을 선택하십시오."
       },
       "name": "Finder",
       "placeholders": {
@@ -4757,7 +4760,8 @@
       "version": "버전",
       "viewChangelog": "변경 내역",
       "viewDocs": "문서 보기",
-      "welcomeTo": "{{appName}}에 오신 것을 환영합니다"
+      "welcomeTo": "{{appName}}에 오신 것을 환영합니다",
+      "where": "위치:"
     },
     "dock": {
       "addToDock": "Dock에 추가",

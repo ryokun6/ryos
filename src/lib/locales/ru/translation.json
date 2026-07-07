@@ -2522,12 +2522,15 @@
         "appletImported": "Апплет импортирован!",
         "appletImportedDesc": "{{name}} сохранено в /Applets{{iconText}}",
         "appletImportedIconText": " с {{icon}} значком",
+        "folderExists": "Объект с именем «{{name}}» уже существует.",
         "importFailed": "Импорт не удался",
         "importFailedAppletDesc": "Не удалось импортировать файл апплета.",
         "importFailedDesc": "Не удалось импортировать файл.",
         "invalidFileType": "Недопустимый тип файла",
         "invalidFileTypeDesc": "Только файлы .app, .gz и .html можно импортировать в Апплеты",
-        "loading": "Загрузка…"
+        "invalidFolderName": "Это имя нельзя использовать. Попробуйте другое имя.",
+        "loading": "Загрузка…",
+        "reservedFolderName": "«{{name}}» — зарезервированное имя. Выберите другое имя."
       },
       "name": "Finder",
       "placeholders": {
@@ -4768,7 +4771,8 @@
       "version": "Версия",
       "viewChangelog": "Журнал изменений",
       "viewDocs": "Смотреть документацию",
-      "welcomeTo": "Добро пожаловать в {{appName}}"
+      "welcomeTo": "Добро пожаловать в {{appName}}",
+      "where": "Где:"
     },
     "dock": {
       "addToDock": "Добавить в Dock",

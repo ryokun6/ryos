@@ -8,7 +8,7 @@ import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppProps, PaintInitialData } from "../../base/types";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { InputDialog } from "@/components/dialogs/InputDialog";
+import { SaveFileDialog } from "@/components/dialogs/SaveFileDialog";
 import { appMetadata } from "..";
 import { usePaintLogic } from "../hooks/usePaintLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
@@ -133,7 +133,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
       }}
       trailing={
         <>
-          <InputDialog
+          <SaveFileDialog
             isOpen={isSaveDialogOpen}
             onOpenChange={setIsSaveDialogOpen}
             onSubmit={handleSaveSubmit}
@@ -141,6 +141,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
             description="Enter a name for your image"
             value={saveFileName}
             onChange={setSaveFileName}
+            defaultDirectory="/Images"
           />
           <AppHelpAboutDialogs
             appId="paint"

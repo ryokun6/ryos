@@ -2515,12 +2515,15 @@
         "appletImported": "小程式已匯入！",
         "appletImportedDesc": "{{name}} 已儲存至 /Applets{{iconText}}",
         "appletImportedIconText": "附有 {{icon}} 圖示",
+        "folderExists": "名稱為「{{name}}」的項目已存在。",
         "importFailed": "匯入失敗",
         "importFailedAppletDesc": "無法匯入小程式檔案。",
         "importFailedDesc": "無法匯入檔案。",
         "invalidFileType": "無效的檔案類型",
         "invalidFileTypeDesc": "只有 .app、.gz 和 .html 檔案可以匯入到 Applets",
-        "loading": "載入中⋯"
+        "invalidFolderName": "無法使用該名稱。請嘗試使用其他名稱。",
+        "loading": "載入中⋯",
+        "reservedFolderName": "「{{name}}」是保留名稱。請選擇其他名稱。"
       },
       "name": "Finder",
       "placeholders": {
@@ -4757,7 +4760,8 @@
       "version": "版本",
       "viewChangelog": "更新日誌",
       "viewDocs": "查看文檔",
-      "welcomeTo": "歡迎使用{{appName}}"
+      "welcomeTo": "歡迎使用{{appName}}",
+      "where": "位置："
     },
     "dock": {
       "addToDock": "加入Dock中",

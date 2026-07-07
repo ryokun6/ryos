@@ -9,7 +9,7 @@ import type {
 import { useTranslation } from "react-i18next";
 import { ViewType, SortType } from "../components/FinderMenuBar";
 import { useFileSystem, DocumentContent } from "./useFileSystem";
-import { STORES, dbOperations } from "@/utils/indexedDB";
+import { dbOperations } from "@/utils/indexedDB";
 import {
   calculateStorageSpace,
   estimateStorageSpace,
@@ -47,6 +47,12 @@ import {
 import { useAirDropStore } from "@/stores/useAirDropStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { createClientLogger } from "@/utils/logger";
+import {
+  isWritablePath,
+  isProtectedSystemPath,
+  validateNewRootFolderName,
+} from "@/services/vfs/pathPolicy";
+import { getStoreForFile } from "@/utils/indexedDBOperations";
 
 const log = createClientLogger("Finder");
 
@@ -573,8 +579,8 @@ export function useFinderLogic({
       return;
     }
 
-    // Only allow drops in the Documents directory
-    if (currentPath !== "/Documents") {
+    // Only allow drops in writable directories
+    if (!isWritablePath(currentPath)) {
       return;
     }
 
@@ -592,7 +598,8 @@ export function useFinderLogic({
                 type: file.type || undefined,
               })
             : await file.text();
-        const filePath = `/Documents/${file.name}`;
+        const basePath = currentPath === "/" ? "" : currentPath;
+        const filePath = `${basePath}/${file.name}`;
 
         await saveFile({
           name: file.name,
@@ -903,7 +910,12 @@ export function useFinderLogic({
               })
             : await file.text();
           const fileName = file.name;
-          const basePath = currentPath === "/" ? "" : currentPath;
+          // Import into the current directory when writable; otherwise fall
+          // back to /Documents (e.g. importing while viewing /Music).
+          const targetDir = isWritablePath(currentPath)
+            ? currentPath
+            : "/Documents";
+          const basePath = targetDir === "/" ? "" : targetDir;
           const filePath = `${basePath}/${fileName}`;
 
           await saveFile({
@@ -911,6 +923,10 @@ export function useFinderLogic({
             path: filePath,
             content,
           });
+
+          if (targetDir !== currentPath) {
+            navigateToPath(targetDir);
+          }
 
           // Notify file was added
           emitFileUpdated({
@@ -942,6 +958,24 @@ export function useFinderLogic({
     const trimmedNewName = newName.trim();
     if (selectedFile.name === trimmedNewName) {
       setIsRenameDialogOpen(false);
+      return;
+    }
+
+    // Renamed root folders must not collide with system/virtual root names
+    if (currentPath === "/" && selectedFile.isDirectory) {
+      const validation = validateNewRootFolderName(trimmedNewName);
+      if (!validation.ok) {
+        toast.error(
+          validation.reason === "reserved"
+            ? t("apps.finder.messages.reservedFolderName", {
+                name: trimmedNewName,
+              })
+            : t("apps.finder.messages.invalidFolderName")
+        );
+        return;
+      }
+    } else if (trimmedNewName.includes("/")) {
+      toast.error(t("apps.finder.messages.invalidFolderName"));
       return;
     }
 
@@ -1001,11 +1035,10 @@ export function useFinderLogic({
       // Fetch content for the selected file using UUID
       let contentToCopy: string | Blob | undefined;
       // Determine store based on selectedFile.path, not currentPath
-      const storeName = selectedFile.path.startsWith("/Documents/")
-        ? STORES.DOCUMENTS
-        : selectedFile.path.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const storeName = getStoreForFile(selectedFile.path, {
+        name: selectedFile.name,
+        type: selectedFile.type,
+      });
       if (storeName) {
         const contentData = await dbOperations.get<DocumentContent>(
           storeName,
@@ -1063,8 +1096,34 @@ export function useFinderLogic({
   const handleNewFolderSubmit = (name: string) => {
     if (!name || !name.trim()) return;
     const trimmedName = name.trim();
+
+    // Root-level folders must not collide with system/virtual root names
+    if (currentPath === "/") {
+      const validation = validateNewRootFolderName(trimmedName);
+      if (!validation.ok) {
+        toast.error(
+          validation.reason === "reserved"
+            ? t("apps.finder.messages.reservedFolderName", {
+                name: trimmedName,
+              })
+            : t("apps.finder.messages.invalidFolderName")
+        );
+        return;
+      }
+    } else if (trimmedName.includes("/")) {
+      toast.error(t("apps.finder.messages.invalidFolderName"));
+      return;
+    }
+
     const basePath = currentPath === "/" ? "" : currentPath;
     const newPath = `${basePath}/${trimmedName}`;
+
+    if (getFileItem(newPath)) {
+      toast.error(
+        t("apps.finder.messages.folderExists", { name: trimmedName })
+      );
+      return;
+    }
 
     // Use the createFolder function from the hook
     createFolder({ path: newPath, name: trimmedName });
@@ -1072,14 +1131,10 @@ export function useFinderLogic({
     setIsNewFolderDialogOpen(false);
   };
 
-  // Determine if folder creation (and thus file movement) is allowed in the current path
-  const canCreateFolder =
-    currentPath === "/Documents" ||
-    currentPath === "/Images" ||
-    currentPath === "/Books" ||
-    currentPath.startsWith("/Documents/") ||
-    currentPath.startsWith("/Images/") ||
-    currentPath.startsWith("/Books/");
+  // Determine if folder creation (and thus file movement) is allowed in the
+  // current path. Writable paths include "/" (user-created root folders),
+  // the writable system subtrees, and any user root folder subtree.
+  const canCreateFolder = isWritablePath(currentPath);
 
   // Get all root folders for the Go menu using fileStore
   // This will always show root folders regardless of current path
@@ -1105,20 +1160,8 @@ export function useFinderLogic({
     // Only allow rename in paths where file creation is allowed
     if (!canCreateFolder) return;
 
-    // Prevent renaming virtual files and special folders
-    if (
-      file.type?.includes("virtual") ||
-      file.path === "/Documents" ||
-      file.path === "/Desktop" ||
-      file.path === "/Downloads" ||
-      file.path === "/Images" ||
-      file.path === "/Books" ||
-      file.path === "/Applications" ||
-      file.path === "/Trash" ||
-      file.path === "/Music" ||
-      file.path === "/Videos" ||
-      file.path === "/Sites"
-    ) {
+    // Prevent renaming virtual files and system-managed folders
+    if (file.type?.includes("virtual") || isProtectedSystemPath(file.path)) {
       return;
     }
 
@@ -1204,6 +1247,7 @@ export function useFinderLogic({
               type: "item" as const,
               label: t("apps.finder.contextMenu.newFolder"),
               onSelect: handleNewFolder,
+              disabled: !isWritablePath(currentPath),
             },
           ]),
     ],
@@ -1457,10 +1501,9 @@ export function useFinderLogic({
             onSelect: () => trackedMoveToTrash(file),
             disabled:
               file.path.startsWith("/Trash") ||
-              file.path === "/Documents" ||
-              file.path === "/Images" ||
-              file.path === "/Books" ||
-              file.path === "/Applications",
+              file.path.startsWith("/Applications/") ||
+              file.type?.includes("virtual") ||
+              isProtectedSystemPath(file.path),
           },
     ];
   };
@@ -1482,13 +1525,10 @@ export function useFinderLogic({
 
       let content: string = "";
       if (fileMetadata.uuid) {
-        const storeName = filePath.startsWith("/Documents")
-          ? STORES.DOCUMENTS
-          : filePath.startsWith("/Images")
-            ? STORES.IMAGES
-            : filePath.startsWith("/Applets")
-              ? STORES.APPLETS
-              : null;
+        const storeName = getStoreForFile(filePath, {
+          name: fileMetadata.name,
+          type: fileMetadata.type,
+        });
         if (storeName) {
           const doc = await dbOperations.get<DocumentContent>(
             storeName,
