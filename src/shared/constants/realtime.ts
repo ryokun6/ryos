@@ -9,6 +9,10 @@ export const PRIVATE_CHAT_ROOM_CHANNEL_PREFIX = "private-room-";
 // Per-user cross-device sync channel. Carries the user's documents/state, so it
 // MUST be an authorized channel.
 export const SYNC_CHANNEL_PREFIX = "private-sync-";
+// Per-user AI conversation channel. Carries `ai-conversation-updated` events
+// for the user's server-owned Ryo/assistant threads, so it MUST be an
+// authorized channel.
+export const AI_CONVERSATION_CHANNEL_PREFIX = "private-ai-";
 export const LISTEN_SESSION_CHANNEL_PREFIX = "listen-";
 export const GLOBAL_PRESENCE_CHANNEL = "presence-global";
 
@@ -57,6 +61,12 @@ export function getSyncChannelName(username: string): string {
   return `${SYNC_CHANNEL_PREFIX}${sanitizeUsernameForRealtimeChannel(username)}`;
 }
 
+export function getAIConversationRealtimeChannelName(
+  username: string
+): string {
+  return `${AI_CONVERSATION_CHANNEL_PREFIX}${sanitizeUsernameForRealtimeChannel(username)}`;
+}
+
 export function getListenSessionChannelName(sessionId: string): string {
   return `${LISTEN_SESSION_CHANNEL_PREFIX}${sessionId}`;
 }
@@ -100,6 +110,13 @@ export function classifyRealtimeChannel(
 
   if (name.startsWith(SYNC_CHANNEL_PREFIX)) {
     return { kind: "user", target: name.slice(SYNC_CHANNEL_PREFIX.length) };
+  }
+
+  if (name.startsWith(AI_CONVERSATION_CHANNEL_PREFIX)) {
+    return {
+      kind: "user",
+      target: name.slice(AI_CONVERSATION_CHANNEL_PREFIX.length),
+    };
   }
 
   if (name.startsWith(PRIVATE_CHAT_ROOM_CHANNEL_PREFIX)) {

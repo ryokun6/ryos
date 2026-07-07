@@ -8,6 +8,7 @@ import {
   resetAIConversation,
 } from "../_helpers/store.js";
 import { extractPendingAIConversationResetMemory } from "../_helpers/reset-memory.js";
+import { broadcastAIConversationUpdate } from "../_helpers/realtime.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
@@ -57,6 +58,18 @@ export default apiHandler(
         logger.error("Cleared conversation memory extraction failed", error);
       });
       waitUntil(memoryProcessing);
+      if (result.reset) {
+        waitUntil(
+          broadcastAIConversationUpdate({
+            username: user!.username,
+            channel,
+            conversationId: result.document.id,
+            revision: result.document.revision,
+            reason: "reset",
+            operationId: body!.operationId,
+          })
+        );
+      }
       logger.response(200, Date.now() - startTime);
       res.status(200).json({
         owner: user!.username,

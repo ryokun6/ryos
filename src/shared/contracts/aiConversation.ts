@@ -76,3 +76,74 @@ export interface AIConversationResetResult {
   conversation: AIConversation;
   reset: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Realtime cross-device updates
+// ---------------------------------------------------------------------------
+
+/**
+ * Event emitted on the owner's `private-ai-…` realtime channel whenever the
+ * canonical server conversation changes, so other signed-in devices can
+ * re-hydrate live instead of waiting for the next focus refresh.
+ */
+export const AI_CONVERSATION_UPDATED_REALTIME_EVENT =
+  "ai-conversation-updated";
+
+export const AI_CONVERSATION_UPDATE_REASONS = [
+  "turn-begin",
+  "turn-complete",
+  "greeting",
+  "import",
+  "reset",
+] as const;
+
+export type AIConversationUpdateReason =
+  (typeof AI_CONVERSATION_UPDATE_REASONS)[number];
+
+export interface AIConversationUpdatedRealtimeEvent {
+  channel: AIConversationChannel;
+  conversationId: string;
+  revision: number;
+  reason: AIConversationUpdateReason;
+  /**
+   * The operation that produced this update. Turn events carry the
+   * client-minted operation id, letting the originating device recognize and
+   * skip its own echo.
+   */
+  operationId: string;
+}
+
+export function parseAIConversationUpdatedRealtimeEvent(
+  value: unknown
+): AIConversationUpdatedRealtimeEvent | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+  const channel = Reflect.get(value, "channel");
+  const conversationId = Reflect.get(value, "conversationId");
+  const revision = Reflect.get(value, "revision");
+  const reason = Reflect.get(value, "reason");
+  const operationId = Reflect.get(value, "operationId");
+  if (
+    !isAIConversationChannel(channel) ||
+    typeof conversationId !== "string" ||
+    conversationId.length === 0 ||
+    typeof revision !== "number" ||
+    !Number.isSafeInteger(revision) ||
+    revision < 0 ||
+    !AI_CONVERSATION_UPDATE_REASONS.includes(
+      reason as AIConversationUpdateReason
+    ) ||
+    typeof operationId !== "string" ||
+    operationId.length === 0
+  ) {
+    return null;
+  }
+  return {
+    channel,
+    conversationId,
+    revision,
+    reason: reason as AIConversationUpdateReason,
+    operationId,
+  };
+}

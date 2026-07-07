@@ -59,6 +59,7 @@ import {
   type BeginAIConversationTurnInput,
 } from "./ai/conversations/_helpers/store.js";
 import { extractPendingAIConversationResetMemory } from "./ai/conversations/_helpers/reset-memory.js";
+import { broadcastAIConversationUpdate } from "./ai/conversations/_helpers/realtime.js";
 import { resolveAIAttachmentsForModel } from "./ai/attachments/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
 
@@ -453,6 +454,19 @@ export default apiHandler<{
           channel: conversationChannel,
           id: conversationOperationId,
         };
+        // Regeneration doesn't change stored content until it completes.
+        if (normalizedTrigger !== "regenerate-message") {
+          waitUntil(
+            broadcastAIConversationUpdate({
+              username,
+              channel: conversationChannel,
+              conversationId: beginResult.document.id,
+              revision: beginResult.document.revision,
+              reason: "turn-begin",
+              operationId: conversationOperationId,
+            })
+          );
+        }
       } catch (error) {
         if (error instanceof AIConversationError) {
           logger.response(error.status, Date.now() - startTime);
@@ -702,12 +716,13 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
         let appended: Awaited<
           ReturnType<typeof appendAIConversationAssistantMessage>
         >;
+        const greetingOperationId = crypto.randomUUID();
         try {
           appended = await appendAIConversationAssistantMessage({
             redis,
             username,
             channel: "chat",
-            operationId: crypto.randomUUID(),
+            operationId: greetingOperationId,
             message: greetingMessage,
             expectedConversationId: greetingConversation.id,
             expectedRevision: greetingConversation.revision,
@@ -726,6 +741,16 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
           respondGreetingSkipped("persist_failed");
           return;
         }
+        waitUntil(
+          broadcastAIConversationUpdate({
+            username,
+            channel: "chat",
+            conversationId: appended.document.id,
+            revision: appended.document.revision,
+            reason: "greeting",
+            operationId: greetingOperationId,
+          })
+        );
 
         res.status(200).json({
           greeting,
@@ -835,8 +860,9 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
             return;
           }
 
+          let completedDocument;
           if (normalizedTrigger === "regenerate-message") {
-            await commitAIConversationRegeneration({
+            completedDocument = await commitAIConversationRegeneration({
               redis,
               username,
               channel: conversationChannel,
@@ -850,7 +876,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
                 : {}),
             });
           } else {
-            await completeAIConversationTurn({
+            completedDocument = await completeAIConversationTurn({
               redis,
               username,
               channel: conversationChannel,
@@ -862,6 +888,16 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
             });
           }
           activeConversationTurn = null;
+          waitUntil(
+            broadcastAIConversationUpdate({
+              username,
+              channel: conversationChannel,
+              conversationId: completedDocument.id,
+              revision: completedDocument.revision,
+              reason: "turn-complete",
+              operationId: conversationOperationId,
+            })
+          );
         } catch (error) {
           logError("Failed to persist completed conversation response", error);
           await releaseAIConversationTurn({

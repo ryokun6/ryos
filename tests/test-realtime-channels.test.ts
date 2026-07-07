@@ -3,6 +3,7 @@ import {
   CHATS_PUBLIC_CHANNEL,
   GLOBAL_PRESENCE_CHANNEL,
   classifyRealtimeChannel,
+  getAIConversationRealtimeChannelName,
   getChatRoomChannelName,
   getChatsGlobalChannelName,
   getChatsUserChannelName,
@@ -43,6 +44,13 @@ describe("realtime channel constants", () => {
     expect(GLOBAL_PRESENCE_CHANNEL).toBe("presence-global");
   });
 
+  test("builds per-user AI conversation channels", () => {
+    expect(getAIConversationRealtimeChannelName("Ryo")).toBe("private-ai-ryo");
+    expect(getAIConversationRealtimeChannelName("User/Name")).toBe(
+      "private-ai-user_name"
+    );
+  });
+
   test("classifies channels for authorization", () => {
     expect(classifyRealtimeChannel(CHATS_PUBLIC_CHANNEL)).toEqual({
       kind: "public",
@@ -55,6 +63,10 @@ describe("realtime channel constants", () => {
       target: "ryo",
     });
     expect(classifyRealtimeChannel("private-sync-ryo")).toEqual({
+      kind: "user",
+      target: "ryo",
+    });
+    expect(classifyRealtimeChannel("private-ai-ryo")).toEqual({
       kind: "user",
       target: "ryo",
     });
@@ -74,6 +86,7 @@ describe("realtime channel constants", () => {
     expect(realtimeChannelRequiresAuth("room-123")).toBe(false);
     expect(realtimeChannelRequiresAuth(CHATS_PUBLIC_CHANNEL)).toBe(false);
     expect(realtimeChannelRequiresAuth("private-chats-ryo")).toBe(true);
+    expect(realtimeChannelRequiresAuth("private-ai-ryo")).toBe(true);
     expect(realtimeChannelRequiresAuth("private-room-abc")).toBe(true);
     expect(realtimeChannelRequiresAuth("presence-global")).toBe(true);
   });

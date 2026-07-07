@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { waitUntil } from "@vercel/functions";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import {
   AIConversationError,
   getAIConversationSummary,
   importAIConversationMessages,
 } from "../_helpers/store.js";
+import { broadcastAIConversationUpdate } from "../_helpers/realtime.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
@@ -52,6 +54,16 @@ export default apiHandler(
         messages: body!.messages,
         historyTruncated: body!.historyTruncated,
       });
+      waitUntil(
+        broadcastAIConversationUpdate({
+          username: user!.username,
+          channel,
+          conversationId: document.id,
+          revision: document.revision,
+          reason: "import",
+          operationId: body!.operationId,
+        })
+      );
       logger.response(201, Date.now() - startTime);
       res.status(201).json({
         owner: user!.username,

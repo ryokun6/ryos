@@ -40,6 +40,7 @@ import {
   loadAIConversation,
   resetAIConversationSession,
 } from "@/api/aiConversations";
+import { useAIConversationRealtime } from "@/hooks/useAIConversationRealtime";
 
 const log = createClientLogger("Assistant");
 
@@ -414,6 +415,21 @@ export function useAssistantChat(): AssistantChatHandle {
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [username, isAuthenticated, chat, hydrateServerConversation]);
+
+  // Live cross-device updates for the assistant thread: re-hydrate as soon
+  // as another signed-in device changes the canonical conversation.
+  useAIConversationRealtime({
+    channel: "assistant",
+    username: assistantIdentity,
+    onRemoteUpdate: () => {
+      if (chat.status !== "ready") return;
+      void hydrateServerConversation(true).catch((hydrationError) => {
+        log.warn("Failed to apply realtime conversation update", {
+          error: hydrationError,
+        });
+      });
+    },
+  });
 
   const handlersRef = useRef({
     // Placeholder; replaced with a fresh closure on every render below so the
