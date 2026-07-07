@@ -27,7 +27,7 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
 - **[Audio System](/docs/audio-system):** Synthesizer, soundboard, TTS, and UI sounds
 - **[Component Library](/docs/component-library):** shadcn/ui + custom components with i18n
-- **[Cloud Sync](/docs/api-architecture):** Journal-based Cloud Sync v2 with per-key documents, realtime sync ops, lazy legacy import, and switchable blob storage (Vercel Blob / S3-compatible) <!-- pragma: allowlist secret -->
+- **[Cloud Sync](/docs/api-architecture):** Journal-based Cloud Sync v2 with per-key documents, realtime sync ops, lazy legacy import, and S3-compatible blob storage <!-- pragma: allowlist secret -->
 - **[Unified API Layer](/docs/api-architecture):** Shared `apiHandler` + middleware utilities for consistent CORS, method routing, auth, and error handling
 - **Usage Analytics:** Lightweight per-day API analytics with admin dashboard
 - **Runtime Reliability & Performance:** App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing
@@ -41,21 +41,20 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 | Audio | Tone.js, WaveSurfer.js, Web Audio API |
 | 3D | Three.js (shaders) |
 | Text Editor | TipTap |
-| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob and compatible object storage backends |
-| API Runtime | Vercel Node.js handlers + standalone Bun server |
+| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), S3 compatible object storage |
+| API Runtime | Standalone Bun server (Node-style handlers) |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
 | Package Manager | Bun (`bun@1.3.5` in `package.json`; CI/Docker currently use Bun 1.3.9) |
 | Build | Vite, Bun |
 | Desktop | Electron + electron-builder (macOS and Windows release builds; Linux AppImage target configured) |
-| Deployment | Vercel (web), standalone Bun API (self-hosted), Docker / Coolify, Electron releases |
+| Deployment | Docker / Coolify (standalone Bun server), Electron releases |
 
 ## Project Structure
 
 ```
-├── api/              # Node-style API endpoints (Vercel + standalone Bun server)
+├── api/              # Node-style API endpoints (standalone Bun server)
 │   └── _utils/       # Shared API utilities (api-handler, request-auth, redis, storage, realtime, analytics, etc.)
-├── middleware.ts     # Vercel edge middleware (OG share for SPA routes)
 ├── index.html        # Vite entry / app shell
 ├── electron/         # Electron main/preload/menu/updater
 ├── public/           # Static assets

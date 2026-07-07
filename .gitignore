@@ -29,7 +29,6 @@ version.json
 *.njsproj
 *.sln
 *.sw?
-.vercel
 .env*.local
 package-lock.json
 

@@ -23,9 +23,7 @@ import {
 } from "./_utils/_ie-live.js";
 import { resolveRequestAuth } from "./_utils/request-auth.js";
 import type { Redis } from "./_utils/redis.js";
-import type { VercelRequest } from "@vercel/node";
-
-export const runtime = "nodejs";
+import type { ApiRequest } from "./_utils/api-types.js";
 
 // Request headers that are safe to forward from the embedded page to the
 // upstream origin when re-proxying a sub-resource (fetch/XHR). We deliberately
@@ -58,7 +56,7 @@ const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * path adds no extra Redis round-trip.
  */
 async function isIeDebugCallerPermitted(
-  req: VercelRequest,
+  req: ApiRequest,
   redis: Redis
 ): Promise<boolean> {
   if (req.query.dbg === "1" || req.query.dbg === "true") return true;
@@ -72,13 +70,12 @@ async function isIeDebugCallerPermitted(
 
 /**
  * Read the raw request body so it can be forwarded verbatim to the upstream
- * origin. Works across both runtimes: on Vercel the body stream is intact
- * (this route does not pre-parse it), while the standalone Bun server may have
- * already parsed JSON / urlencoded bodies into `req.body` (leaving the stream
- * empty), so we reconstruct from the parsed value as a fallback.
+ * origin. The standalone Bun server may have already parsed JSON / urlencoded
+ * bodies into `req.body` (leaving the stream empty), so we reconstruct from
+ * the parsed value as a fallback when the stream yields nothing.
  */
 async function readForwardBody(
-  req: VercelRequest
+  req: ApiRequest
 ): Promise<Buffer | string | undefined> {
   const method = (req.method || "GET").toUpperCase();
   if (!BODY_METHODS.has(method)) return undefined;
@@ -292,9 +289,9 @@ async function resolveClosestWaybackSnapshot(
 }
 
 /**
- * Stream an undici/web `ReadableStream` response body to the Node/Vercel
- * response without buffering the whole payload in memory. Works on both the
- * standalone Bun server (custom response shim with `write`/`end`) and Vercel's
+ * Stream an undici/web `ReadableStream` response body to the Node-style
+ * response without buffering the whole payload in memory. Works with the
+ * standalone Bun server's response shim (`write`/`end`) as well as a plain
  * Node `ServerResponse`. Returns true if streaming succeeded.
  */
 async function streamBodyToResponse(

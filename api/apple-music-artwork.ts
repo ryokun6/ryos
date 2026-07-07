@@ -3,9 +3,6 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { redisKeys } from "../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 /**
  * Resolve Apple Music catalog artwork (and basic metadata) for an `am:`
  * catalog song id using Apple's public iTunes Lookup API (no auth required).

@@ -60,11 +60,7 @@ function isFalsy(value: string | undefined): boolean {
 }
 
 export function isDevLikeRuntime(): boolean {
-  return (
-    process.env.NODE_ENV !== "production" ||
-    process.env.VERCEL_ENV === "development" ||
-    process.env.VERCEL_ENV === "preview"
-  );
+  return process.env.NODE_ENV !== "production";
 }
 
 export function getConfiguredPublicOrigin(): string | null {

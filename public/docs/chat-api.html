@@ -337,7 +337,7 @@
   <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
     <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
-    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify (without Vercel)</a>
+    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -858,9 +858,6 @@ function ChatComponent() {
 // 2. If not found, call searchSongs({ query: "Never Gonna Give You Up" })
 // 3. Call mediaControl({ action: "addAndPlay", id: "dQw4w9WgXcQ" })</code></pre>
 <h2>Configuration</h2>
-<h3>Runtime Settings</h3>
-<pre><code>export const runtime = "nodejs";   // Node.js runtime
-export const maxDuration = 80;     // Max duration (seconds)</code></pre>
 <h3>Model Configuration</h3>
 <pre><code>const result = streamText({
   model: selectedModel,

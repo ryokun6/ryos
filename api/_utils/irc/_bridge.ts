@@ -12,10 +12,10 @@
  * Outbound (ryOS → IRC):
  *   sendMessageToIrc(room, username, content) → client.say(channel, text)
  *
- * Serverless / Vercel note: this bridge is designed to run inside the
- * long-lived Bun standalone API server. On Vercel serverless, the outbound
- * path falls back to a short-lived "fire-and-forget" connection which sends
- * a single PRIVMSG and disconnects.
+ * This bridge is designed to run inside the long-lived Bun standalone API
+ * server. If no persistent connection exists yet when a message is sent, the
+ * room binding is (re)created and the message is delivered once the
+ * connection becomes ready.
  */
 
 import EventEmitter from "node:events";

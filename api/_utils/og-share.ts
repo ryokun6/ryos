@@ -270,13 +270,13 @@ async function createSongRedisClient(): Promise<{
 } | null> {
   // Delegate to the canonical Redis factory so the OG read path resolves the
   // exact same backend (Upstash REST vs standard REDIS_URL) that the song API
-  // writes to. Picking a backend independently here used to silently diverge on
-  // non-Vercel deploys — e.g. when REDIS_URL (and/or REDIS_PROVIDER=redis-url)
-  // is set but stale Upstash vars also linger — causing reads to hit an empty
-  // store and previews to always fall back. The dynamic import keeps the
-  // standard-Redis (ioredis) dependency out of edge bundles that only use
-  // Upstash REST. `createRedis` throws when nothing is configured, which the
-  // caller treats as "no metadata".
+  // writes to. Picking a backend independently here used to silently diverge
+  // — e.g. when REDIS_URL (and/or REDIS_PROVIDER=redis-url) is set but stale
+  // Upstash vars also linger — causing reads to hit an empty store and
+  // previews to always fall back. The dynamic import keeps the standard-Redis
+  // (ioredis) dependency out of bundles that only use Upstash REST.
+  // `createRedis` throws when nothing is configured, which the caller treats
+  // as "no metadata".
   const { createRedis } = await import("./redis.js");
   return createRedis();
 }

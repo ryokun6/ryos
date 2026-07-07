@@ -17,11 +17,7 @@ import {
   getActiveSessionIds,
   getSession,
 } from "../_helpers/_redis.js";
-import {
-  LISTEN_SESSION_MAX_USERS,
-  runtime,
-  maxDuration,
-} from "../_helpers/_constants.js";
+import { LISTEN_SESSION_MAX_USERS } from "../_helpers/_constants.js";
 import type {
   CreateSessionRequest,
   ListenSession,
@@ -29,8 +25,6 @@ import type {
 } from "../_helpers/_types.js";
 import { normalizeClientInstanceId } from "../_helpers/_client-instance.js";
 import { broadcastUserJoined } from "../_helpers/_pusher.js";
-
-export { runtime, maxDuration };
 
 export default apiHandler(
   { methods: ["GET", "POST"] },

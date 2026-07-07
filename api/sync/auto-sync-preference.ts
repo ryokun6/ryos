@@ -4,9 +4,6 @@
 import { apiHandler } from "../_utils/api-handler.js";
 import { autoSyncPreferenceKey } from "./_keys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 interface PrefBody {
   enabled?: unknown;
 }

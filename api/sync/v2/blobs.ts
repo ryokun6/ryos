@@ -2,14 +2,10 @@ import { apiHandler } from "../../_utils/api-handler.js";
 import {
   createSignedDownloadUrl,
   createStorageUploadDescriptor,
-  getStorageBackend,
 } from "../../_utils/storage.js";
 import type { BlobUploadResultItem } from "../../../src/shared/sync2/types.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
 import { lookupSyncBlobs } from "./_core.js";
-
-export const runtime = "nodejs";
-export const maxDuration = 15;
 
 const MAX_BLOB_SIZE = 50 * 1024 * 1024;
 const MAX_UPLOAD_ITEMS = 200;
@@ -143,9 +139,7 @@ export default apiHandler<PostBlobsBody>(
                   sha256,
                   exists: false,
                   upload: descriptor,
-                  ...(getStorageBackend() === "s3" && "storageUrl" in descriptor
-                    ? { storageUrl: descriptor.storageUrl }
-                    : {}),
+                  storageUrl: descriptor.storageUrl,
                 };
               })
           );

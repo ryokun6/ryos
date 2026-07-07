@@ -7,9 +7,6 @@ import { resolveRequestAuth } from "./_utils/request-auth.js";
 import { getAppPublicOrigin } from "./_utils/runtime-config.js";
 import { redisKeys } from "../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 // Rate limiting configuration
 const RATE_LIMITS = {
   list: { windowSeconds: 60, limit: 60 },

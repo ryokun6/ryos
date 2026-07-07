@@ -15,7 +15,7 @@
  * captured for the specific target host is sent.
  */
 import { randomUUID } from "node:crypto";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "./api-types.js";
 import type { Redis } from "./redis.js";
 import { redisKey, sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
 
@@ -28,7 +28,7 @@ export function areIeProxySessionsEnabled(): boolean {
   return raw === "1" || raw === "true";
 }
 
-function readCookie(req: VercelRequest, name: string): string | null {
+function readCookie(req: ApiRequest, name: string): string | null {
   const header = req.headers["cookie"];
   const cookieHeader = Array.isArray(header) ? header.join("; ") : header;
   if (!cookieHeader) return null;
@@ -43,7 +43,7 @@ function readCookie(req: VercelRequest, name: string): string | null {
 }
 
 /** Read the existing proxy-session id from the request, if any. */
-export function readIeSessionId(req: VercelRequest): string | null {
+export function readIeSessionId(req: ApiRequest): string | null {
   const value = readCookie(req, COOKIE_NAME);
   // Basic shape guard so a malicious cookie can't be used to read arbitrary
   // Redis keys (we hash it anyway, but keep it tidy).
@@ -53,8 +53,8 @@ export function readIeSessionId(req: VercelRequest): string | null {
 
 /** Mint a new session id and set it as a first-party HttpOnly cookie. */
 export function ensureIeSessionCookie(
-  req: VercelRequest,
-  res: VercelResponse
+  req: ApiRequest,
+  res: ApiResponse
 ): string {
   const existing = readIeSessionId(req);
   if (existing) return existing;

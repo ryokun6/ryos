@@ -11,9 +11,6 @@ import {
   getIrcServer,
 } from "../../_utils/irc/_servers.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler(
   { methods: ["DELETE"], auth: "required" },
   async ({ req, res, logger, startTime, user }) => {

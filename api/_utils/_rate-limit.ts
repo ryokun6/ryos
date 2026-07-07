@@ -253,8 +253,6 @@ function getHeaderValue(
 export const PEER_IP_HEADER = "x-ryos-peer-ip";
 
 interface ClientIpSources {
-  /** Vercel-managed (always trusted on Vercel deployments). */
-  vercel: string;
   /** Standalone Bun server-injected from socket peer (always trusted). */
   peer: string;
   /** Cloudflare-managed (always trusted behind Cloudflare). */
@@ -269,7 +267,6 @@ function readClientIpSources(
   headers: Record<string, string | string[] | undefined>
 ): ClientIpSources {
   return {
-    vercel: getHeaderValue(headers, "x-vercel-forwarded-for"),
     peer: getHeaderValue(headers, PEER_IP_HEADER),
     cloudflare: getHeaderValue(headers, "cf-connecting-ip"),
     forwarded: getHeaderValue(headers, "x-forwarded-for"),
@@ -282,10 +279,10 @@ function readClientIpSources(
  * `TRUSTED_PROXY_COUNT` environment variable.
  *
  * - `0` (default): do NOT trust client-supplied `X-Forwarded-For` /
- *   `X-Real-IP`. Use only platform-managed sources (Vercel, Cloudflare,
- *   the standalone Bun server's peer header). This is the safe default
- *   for non-Vercel deployments where clients can otherwise spoof their
- *   IP and bypass rate limits.
+ *   `X-Real-IP`. Use only platform-managed sources (Cloudflare, the
+ *   standalone Bun server's peer header). This is the safe default for
+ *   deployments where clients can otherwise spoof their IP and bypass
+ *   rate limits.
  * - `N >= 1`: read the N-th-from-the-right entry of `X-Forwarded-For`,
  *   which is the IP one beyond your trusted reverse proxies. Use this on
  *   Render / Fly.io / nginx-fronted setups where you control the proxy
@@ -317,12 +314,11 @@ function pickFromForwardedFor(value: string, trustedHops: number): string {
  * Extract a best-effort client IP for rate-limiting purposes.
  *
  * Trust order (first non-empty wins):
- *   1. `x-vercel-forwarded-for` — set by the Vercel edge, not spoofable.
- *   2. `x-ryos-peer-ip` — set by the standalone Bun server from the socket
+ *   1. `x-forwarded-for` (Nth-from-right) — only if TRUSTED_PROXY_COUNT > 0.
+ *   2. `x-real-ip` — only if TRUSTED_PROXY_COUNT > 0.
+ *   3. `x-ryos-peer-ip` — set by the standalone Bun server from the socket
  *      peer; the server overwrites any client-supplied value.
- *   3. `cf-connecting-ip` — set by Cloudflare, not spoofable behind it.
- *   4. `x-forwarded-for` (Nth-from-right) — only if TRUSTED_PROXY_COUNT > 0.
- *   5. `x-real-ip` — only if TRUSTED_PROXY_COUNT > 0.
+ *   4. `cf-connecting-ip` — set by Cloudflare, not spoofable behind it.
  *
  * If none of the above match, returns `"untrusted-shared-ip"`. All requests
  * from untrusted sources share one rate-limit bucket so an attacker cannot
@@ -339,9 +335,7 @@ export function getClientIp(
     const trustedHops = getTrustedProxyCount();
 
     let raw = "";
-    if (sources.vercel) {
-      raw = sources.vercel;
-    } else if (trustedHops > 0) {
+    if (trustedHops > 0) {
       // Operator opted in to trusting a known proxy chain — honour it ahead
       // of the socket peer (which is just the proxy itself in that setup).
       raw =
@@ -386,7 +380,7 @@ export function getClientIp(
     // Also normalise when there's no IP source at all but the request
     // looks like it came from a localhost browser — preserves the legacy
     // behaviour for local dev where the standalone server isn't running.
-    if (!sources.peer && !sources.vercel && !sources.cloudflare) {
+    if (!sources.peer && !sources.cloudflare) {
       const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
       if (isLocalOrigin && trustedHops === 0) {
         return "localhost-dev";

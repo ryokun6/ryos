@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "./api-types.js";
 import type { Redis } from "./redis.js";
 import { initLogger } from "./_logging.js";
 import { getEffectiveOrigin, isAllowedOrigin, setCorsHeaders } from "./_cors.js";
@@ -50,8 +50,8 @@ export interface ApiHandlerOptions<TBody = unknown> {
 }
 
 export interface ApiHandlerContext<TBody = unknown> {
-  req: VercelRequest;
-  res: VercelResponse;
+  req: ApiRequest;
+  res: ApiResponse;
   redis: Redis;
   logger: ReturnType<typeof initLogger>["logger"];
   startTime: number;
@@ -62,10 +62,10 @@ export interface ApiHandlerContext<TBody = unknown> {
 
 type WrappedApiHandler<TBody = unknown> = (
   context: ApiHandlerContext<TBody>
-) => Promise<void | VercelResponse>;
+) => Promise<void | ApiResponse>;
 
 function sendJsonError(
-  res: VercelResponse,
+  res: ApiResponse,
   status: number,
   error: string
 ): void {
@@ -103,7 +103,7 @@ function describeBodyShape(body: unknown): Record<string, unknown> {
 export function apiHandler<TBody = unknown>(
   options: ApiHandlerOptions<TBody>,
   handler: WrappedApiHandler<TBody>
-): (req: VercelRequest, res: VercelResponse) => Promise<void> {
+): (req: ApiRequest, res: ApiResponse) => Promise<void> {
   const {
     methods,
     auth = "none",
@@ -115,7 +115,7 @@ export function apiHandler<TBody = unknown>(
   } = options;
   const shouldReadBody = parseJsonBody || !!bodySchema;
 
-  return async (req: VercelRequest, res: VercelResponse): Promise<void> => {
+  return async (req: ApiRequest, res: ApiResponse): Promise<void> => {
     const { logger } = initLogger();
     const startTime = Date.now();
     const origin = getEffectiveOrigin(req);

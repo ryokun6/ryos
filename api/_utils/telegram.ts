@@ -132,10 +132,7 @@ export function getTelegramBotUsername(): string {
     return explicit;
   }
 
-  const apiEnv =
-    process.env.API_RUNTIME_ENV ||
-    process.env.API_ENV ||
-    process.env.VERCEL_ENV;
+  const apiEnv = process.env.API_RUNTIME_ENV || process.env.API_ENV;
 
   if (apiEnv === "production" || process.env.NODE_ENV === "production") {
     return "ryos_ryobot";

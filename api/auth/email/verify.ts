@@ -18,9 +18,6 @@ import { redisKeys } from "../../../src/shared/redisKeys.js";
 import { consumeRecoveryCode } from "../../_utils/auth/_recovery.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface VerifyEmailRequest {
   code: string;
 }

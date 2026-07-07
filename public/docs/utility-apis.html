@@ -337,7 +337,7 @@
   <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
     <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
-    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify (without Vercel)</a>
+    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -824,7 +824,7 @@ const { quotes, chart } = await response.json();</code></pre>
 }</code></pre>
 <p>Response: per-digest <code>{ exists: true, url }</code> (skip upload) or <code>{ exists: false, upload: { …storage instruction… } }</code>, plus signed <code>downloads</code> aligned with the request array (null for foreign URLs).</p>
 <h3>GET /api/cron/sync-maintenance</h3>
-<p>Scheduled maintenance (daily via <code>vercel.json</code> crons; authenticated with <code>Authorization: Bearer ${CRON_SECRET}</code>, like the Telegram heartbeat cron). Each run processes a bounded batch of users, walking the whole user base across runs via a scan cursor persisted at <code>sync:maintenance:cursor</code>: <ol><li><strong>Blob garbage collection</strong> — content-addressed blobs whose digest is no</li></ol>    longer referenced by any KV document are deleted via mark-and-sweep: a    blob must stay unreferenced across runs spanning a 24h grace window    before its storage object is removed (re-referencing clears the mark). <ol><li><strong>User record healing</strong> — user records persist forever; stale</li></ol>    TTLs left by the removed expire-on-room-message path are cleared.</p>
+<p>Scheduled maintenance (daily via an external scheduler such as a Coolify cron task; authenticated with <code>Authorization: Bearer ${CRON_SECRET}</code>, like the Telegram heartbeat cron). Each run processes a bounded batch of users, walking the whole user base across runs via a scan cursor persisted at <code>sync:maintenance:cursor</code>: <ol><li><strong>Blob garbage collection</strong> — content-addressed blobs whose digest is no</li></ol>    longer referenced by any KV document are deleted via mark-and-sweep: a    blob must stay unreferenced across runs spanning a 24h grace window    before its storage object is removed (re-referencing clears the mark). <ol><li><strong>User record healing</strong> — user records persist forever; stale</li></ol>    TTLs left by the removed expire-on-room-message path are cleared.</p>
 <p>Response:</p>
 <pre><code>{
   "success": true,

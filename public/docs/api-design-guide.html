@@ -337,7 +337,7 @@
   <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
     <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
-    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify (without Vercel)</a>
+    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -478,7 +478,7 @@
 │   ├── api-handler.ts      # Primary route wrapper
 │   ├── request-auth.ts     # Unified auth extraction + token validation
 │   ├── redis.ts            # Redis client factory (Upstash REST + standard Redis backends)
-│   ├── storage.ts          # Switchable object storage (Vercel Blob / S3)
+│   ├── storage.ts          # S3 compatible object storage adapter
 │   ├── contacts.ts         # Contacts state read/write helpers
 │   ├── _cors.ts            # Origin policy + CORS helpers
 │   ├── _rate-limit.ts      # Counter-based rate limit utilities
@@ -499,10 +499,7 @@
 <h3>Naming Conventions</h3>
 <ul><li><code>_helpers/</code> for domain-specific internal helpers</li></ul><ul><li><code>_utils/</code> for globally shared API utilities</li><li><code>_*.ts</code> files for internal/private modules</li><li><code>index.ts</code> for collection routes</li><li><code>[id].ts</code> and nested dynamic route folders for path params</li></ul>
 <h2>Common Patterns</h2>
-<h3>1. Runtime Declaration</h3>
-<pre><code>export const runtime = "nodejs";
-export const maxDuration = 30; // endpoint-dependent</code></pre>
-<h3>2. <code>apiHandler</code> Wrapper (Primary Pattern)</h3>
+<h3>1. <code>apiHandler</code> Wrapper (Primary Pattern)</h3>
 <pre><code>import { apiHandler } from "../_utils/api-handler.js";
 import { z } from "zod";
 
@@ -527,13 +524,13 @@ export default apiHandler&lt;z.infer&lt;typeof RequestSchema&gt;&gt;(
 );</code></pre>
 <code>apiHandler</code> provides:
 <ul><li><code>OPTIONS</code> handling (<code>204</code>) with endpoint-specific method list</li></ul><ul><li>consistent <code>403</code> for disallowed origins</li><li>consistent <code>405</code> for unsupported methods</li><li>Redis client injection via <code>createRedis()</code></li><li>auth resolution via <code>resolveRequestAuth()</code></li><li>fallback <code>500</code> JSON error guard</li></ul>
-<h3>3. Endpoint Function Signature</h3>
+<h3>2. Endpoint Function Signature</h3>
 <p>When using <code>apiHandler</code>, handlers receive: <ul><li><code>req</code>, <code>res</code></li></ul><ul><li><code>redis</code></li><li><code>logger</code>, <code>startTime</code></li><li><code>origin</code></li><li><code>user</code> (<code>null</code> or resolved auth user)</li><li><code>body</code> (<code>null</code> or parsed JSON when <code>parseJsonBody: true</code>)</li></ul></p>
-<h3>4. Auth Boundaries via <code>request-auth</code></h3>
+<h3>3. Auth Boundaries via <code>request-auth</code></h3>
 <code>resolveRequestAuth()</code> enforces a shared policy:
 <ul><li>required auth endpoints need <strong>both</strong> headers:<ul><li><code>Authorization: Bearer &lt;token&gt;</code></li><li><code>X-Username: &lt;username&gt;</code></li></ul></li></ul><ul><li>required endpoints return <code>400</code> for partial credentials and <code>401</code> for invalid token/username pairs</li><li>optional-auth endpoints allow anonymous requests; partial, stale, or invalid credentials are ignored and resolve to <code>user: null</code></li></ul>
 <p>For non-<code>apiHandler</code> routes (legacy/multipart), call <code>resolveRequestAuth()</code> directly to keep behavior aligned.</p>
-<h3>5. Rate Limiting</h3>
+<h3>4. Rate Limiting</h3>
 <p>Use <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_rate-limit.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">_utils/_rate-limit.ts</a></code> primitives:</p>
 <pre><code>import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
@@ -554,13 +551,13 @@ if (!result.allowed) {
     retryAfter: result.resetSeconds,
   });
 }</code></pre>
-<h3>6. Response & Error Handling</h3>
+<h3>5. Response & Error Handling</h3>
 <p>The preferred API shape is JSON for standard requests and SSE for streaming endpoints. <ul><li>success: explicit payloads (<code>{ success: true }</code>, <code>{ data: ... }</code>, etc.)</li></ul><ul><li>client errors: <code>400/401/403/404/405/429</code> with JSON <code>{ error: "..." }</code></li><li>server errors: <code>500</code> with JSON <code>{ error: "..." }</code></li></ul></p>
 <p>For SSE endpoints, set stream headers explicitly and send structured events (<code>start</code>, <code>line</code>, <code>complete</code>, <code>error</code>, etc.).</p>
-<h3>7. Manual Handlers (When Needed)</h3>
+<h3>6. Manual Handlers (When Needed)</h3>
 <p>Some endpoints intentionally keep explicit handlers (for example multipart uploads such as <code>/api/audio-transcribe</code>).</p>
 <p>When writing a manual handler, still mirror shared behavior: <ul><li><code>getEffectiveOrigin()</code> + <code>isAllowedOrigin()</code> + <code>setCorsHeaders()</code></li></ul><ul><li>method checks and <code>OPTIONS</code> handling</li><li><code>initLogger()</code> + status timing logs</li><li><code>resolveRequestAuth()</code> for authenticated routes</li></ul></p>
-<h3>8. Logging</h3>
+<h3>7. Logging</h3>
 <p>Use request-scoped logger utilities from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_logging.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">_utils/_logging.ts</a></code>:</p>
 <pre><code>import { initLogger } from "../_utils/_logging.js";
 
@@ -568,7 +565,7 @@ const { logger } = initLogger();
 logger.request(req.method || "GET", req.url || "/api/example");
 logger.info("Processing request", { user: "alice" });
 logger.response(200, Date.now() - startTime);</code></pre>
-<h3>9. Utility Modules</h3>
+<h3>8. Utility Modules</h3>
 <ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_validation.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">_utils/_validation.ts</a></code>: username/room/message validation, profanity filtering, HTML escaping</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_ssrf.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">_utils/_ssrf.ts</a></code>: <code>validatePublicUrl()</code> and <code>safeFetchWithRedirects()</code> for outbound URL safety</li><li>SSE endpoints set stream headers explicitly and emit structured events (no shared SSE module)</li></ul>
 <h2>Constants</h2>
 <p>Use shared constants instead of hardcoding values: <ul><li>Runtime-neutral, frontend-shared constants live in <code>src/shared/</code> (for example <code><a href="https://github.com/ryokun6/ryos/blob/main/src/shared/validation.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/shared/validation.ts</a></code> for password/message bounds, <code><a href="https://github.com/ryokun6/ryos/blob/main/src/shared/redisKeys.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/shared/redisKeys.ts</a></code> for canonical Redis key prefixes, <code><a href="https://github.com/ryokun6/ryos/blob/main/src/shared/constants/realtime.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/shared/constants/realtime.ts</a></code> for realtime channels).</li></ul><ul><li>Auth/session constants (token length, TTLs, grace period, rate-limit windows) live in <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/auth/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/auth/_constants.ts</a></code>.</li><li>Feature-specific constants stay in feature helper modules (for example <code><a href="https://github.com/ryokun6/ryos/blob/main/src/rooms/_helpers/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">rooms/_helpers/_constants.ts</a></code>, <code><a href="https://github.com/ryokun6/ryos/blob/main/src/listen/_helpers/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">listen/_helpers/_constants.ts</a></code>, <code><a href="https://github.com/ryokun6/ryos/blob/main/src/songs/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">songs/_constants.ts</a></code>).</li></ul></p>

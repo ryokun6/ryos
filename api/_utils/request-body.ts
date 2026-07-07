@@ -1,4 +1,4 @@
-import type { VercelRequest } from "@vercel/node";
+import type { ApiRequest } from "./api-types.js";
 
 function isBodyBuffer(value: unknown): value is Buffer {
   return Buffer.isBuffer(value);
@@ -25,7 +25,7 @@ function assertWithinLimit(size: number, maxBytes: number | undefined): void {
  * When `maxBytes` is set, rejects payloads that exceed the limit while streaming.
  */
 export async function readRequestBodyBuffer(
-  req: VercelRequest,
+  req: ApiRequest,
   maxBytes?: number
 ): Promise<Buffer> {
   if (isBodyBuffer(req.body)) {

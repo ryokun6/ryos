@@ -23,9 +23,6 @@ import {
 } from "../_utils/irc/_types.js";
 import { getIrcServer } from "../_utils/irc/_servers.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 export default apiHandler(
   { methods: ["GET", "POST"], auth: "optional" },
   async ({ req, res, redis, logger, startTime, user }) => {

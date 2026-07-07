@@ -9,10 +9,6 @@ import {
   isAIAttachmentMediaType,
 } from "../../../src/shared/contracts/aiAttachment.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-export const config = { api: { bodyParser: false } };
-
 export default apiHandler(
   {
     methods: ["POST"],

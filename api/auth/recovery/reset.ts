@@ -26,9 +26,6 @@ import { apiHandler } from "../../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../../_utils/_cookie.js";
 import { getClientIp, makeKey } from "../../_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface ResetRequestBody {
   /** Username or verified recovery email. */
   identifier: string;

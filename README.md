@@ -62,7 +62,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ## Project Structure
 
 ```
-├── api/              # API route handlers (Vercel-compatible serverless functions)
+├── api/              # API route handlers (Node-style, served by the standalone Bun server)
 ├── electron/         # Electron shell, menu, preload, and updater
 ├── public/           # Static assets (icons, wallpapers, sounds, fonts)
 ├── scripts/          # Build + maintenance + standalone API runner
@@ -95,10 +95,10 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **Storage:** IndexedDB, LocalStorage, Redis (Upstash REST or `REDIS_URL`)
 - **AI:** OpenAI, Anthropic, Google via Vercel AI SDK
 - **Real-time:** Pusher or local WebSocket
-- **API Runtime:** Vercel Node handlers + standalone Bun server
+- **API Runtime:** Standalone Bun server (Node-style handlers)
 - **Build:** Vite, Bun
 - **Desktop:** Electron + electron-updater
-- **Deployment:** Vercel, Docker/GHCR + Coolify, Electron desktop releases
+- **Deployment:** Docker/GHCR + Coolify, Electron desktop releases
 
 ## Scripts
 
@@ -115,7 +115,7 @@ bun run electron:dev # Bundle and launch the Electron shell for local Vite
 bun run electron:build # Build desktop artifacts with electron-builder
 ```
 
-For local development, `bun run dev` starts both the standalone Bun API server and the Vite dev server with an `/api` proxy — no Vercel CLI required.
+For local development, `bun run dev` starts both the standalone Bun API server and the Vite dev server with an `/api` proxy.
 
 ## Running the API Separately
 
@@ -179,7 +179,7 @@ REDIS_URL="redis://default:password@redis:6379/0"
 or:
 
 ```bash
-# Upstash REST (existing Vercel-style path)
+# Upstash REST
 REDIS_KV_REST_API_URL="https://..."
 REDIS_KV_REST_API_TOKEN="..."
 ```

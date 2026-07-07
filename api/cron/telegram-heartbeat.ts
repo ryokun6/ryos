@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "../_utils/api-types.js";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import { getDailyNote, getMemoryIndex, getTodayDateString } from "../_utils/_memory.js";
@@ -45,15 +45,12 @@ import { getHeader } from "../_utils/request-helpers.js";
 import { createRyoToolLoopAgent } from "../_utils/ryo-agent.js";
 import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 80;
-
-function setResponseHeaders(res: VercelResponse): void {
+function setResponseHeaders(res: ApiResponse): void {
   res.setHeader("Content-Type", "application/json");
 }
 
 function sendJson(
-  res: VercelResponse,
+  res: ApiResponse,
   status: number,
   payload: Record<string, unknown>
 ): void {
@@ -100,8 +97,8 @@ async function appendHeartbeatLog(
 }
 
 export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
+  req: ApiRequest,
+  res: ApiResponse
 ): Promise<void> {
   const { logger } = initLogger();
   const startTime = Date.now();

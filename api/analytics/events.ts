@@ -16,9 +16,6 @@ import { getClientIp } from "../_utils/_rate-limit.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import { resolveIpGeolocation } from "../_utils/_geolocation.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 // Permissive on purpose: the only hard requirement is that `events` is an
 // array. Individual events are validated/sanitized per-event downstream
 // (`recordProductAnalyticsEvents` drops malformed events and caps the batch),
@@ -42,9 +39,8 @@ export default apiHandler<ProductAnalyticsBatch>(
 
     // Resolve a coarse country bucket for the request so the admin
     // dashboard can show a top-countries breakdown. We never persist the
-    // raw IP, only the resolved country code/name. Use Vercel's edge
-    // headers when available, then fall back to the cached IP-geo provider
-    // (24h cache) so this stays fast and rate-limit-friendly.
+    // raw IP, only the resolved country code/name. Uses the cached IP-geo
+    // provider (24h cache) so this stays fast and rate-limit-friendly.
     let country: string | null = null;
     try {
       const resolved = await resolveIpGeolocation({ ip, redis });

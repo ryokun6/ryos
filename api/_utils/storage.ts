@@ -11,16 +11,9 @@ import {
   ResponseChecksumValidation,
 } from "@aws-sdk/middleware-flexible-checksums";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import {
-  del as deleteBlob,
-  get as getBlob,
-  head as headBlob,
-  put as putBlob,
-} from "@vercel/blob";
 import { signStorageUploadToken } from "./storage-upload-token.js";
-import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
-export type StorageBackend = "vercel-blob" | "s3";
+export type StorageBackend = "s3";
 
 export interface StorageObjectMetadata {
   size: number;
@@ -42,12 +35,6 @@ interface BaseStorageUploadDescriptor {
   maximumSizeInBytes: number;
 }
 
-export interface VercelBlobUploadDescriptor extends BaseStorageUploadDescriptor {
-  provider: "vercel-blob";
-  uploadMethod: "vercel-client-token";
-  clientToken: string;
-}
-
 export interface S3UploadDescriptor extends BaseStorageUploadDescriptor {
   provider: "s3";
   uploadMethod: "presigned-put" | "api-proxy-put";
@@ -56,8 +43,7 @@ export interface S3UploadDescriptor extends BaseStorageUploadDescriptor {
   headers: Record<string, string>;
 }
 
-export type StorageUploadDescriptor =
-  VercelBlobUploadDescriptor | S3UploadDescriptor;
+export type StorageUploadDescriptor = S3UploadDescriptor;
 
 export interface StorageUploadDebugInfo {
   provider: StorageBackend;
@@ -91,10 +77,6 @@ const s3ClientCache = globalThis as typeof globalThis & {
   __ryosS3ClientCacheKey?: string;
   __ryosS3PresignClientCacheKey?: string;
 };
-
-function getBlobReadWriteToken(): string | null {
-  return process.env.BLOB_READ_WRITE_TOKEN?.trim() || null;
-}
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/^\/+/, "");
@@ -397,64 +379,28 @@ export function getStorageBackend(): StorageBackend {
   const explicit = normalizeExplicitProvider();
 
   if (
-    explicit === "vercel-blob" ||
-    explicit === "vercel" ||
-    explicit === "blob"
+    explicit &&
+    explicit !== "s3" &&
+    explicit !== "s3-compatible" && // pragma: allowlist secret
+    explicit !== "minio" &&
+    explicit !== "r2"
   ) {
-    if (!getBlobReadWriteToken()) {
-      throw new Error(
-        "STORAGE_PROVIDER requests Vercel Blob, but BLOB_READ_WRITE_TOKEN is not set.",
-      );
-    }
-    return "vercel-blob";
+    throw new Error(
+      `Unsupported STORAGE_PROVIDER "${explicit}"; only S3 compatible storage is supported.`,
+    );
   }
 
-  if (
-    explicit === "s3" ||
-    explicit === "s3-compatible" ||
-    explicit === "minio" ||
-    explicit === "r2"
-  ) {
-    if (!getS3Config()) {
-      throw new Error("The configured object-storage backend is unavailable.");
-    }
-    return "s3";
+  if (!getS3Config()) {
+    throw new Error("Missing object-storage configuration.");
   }
 
-  if (getBlobReadWriteToken()) {
-    return "vercel-blob";
-  }
-
-  if (getS3Config()) {
-    return "s3";
-  }
-
-  throw new Error("Missing object-storage configuration.");
+  return "s3";
 }
 
 export async function createStorageUploadDescriptor(
   options: StorageUploadOptions,
 ): Promise<StorageUploadDescriptor> {
   const pathname = normalizePathname(options.pathname);
-
-  if (getStorageBackend() === "vercel-blob") {
-    const clientToken = await generateClientTokenFromReadWriteToken({
-      pathname,
-      allowedContentTypes: options.allowedContentTypes || [options.contentType],
-      maximumSizeInBytes: options.maximumSizeInBytes,
-      addRandomSuffix: false,
-      allowOverwrite: options.allowOverwrite ?? true,
-    });
-
-    return {
-      provider: "vercel-blob",
-      uploadMethod: "vercel-client-token",
-      pathname,
-      contentType: options.contentType,
-      maximumSizeInBytes: options.maximumSizeInBytes,
-      clientToken,
-    };
-  }
 
   if (getStorageClientUploadMode() === "proxy") {
     return createS3ProxyUploadDescriptor(options);
@@ -548,17 +494,6 @@ export async function uploadPrivateStoredObject(options: {
   }
 
   const pathname = normalizePathname(options.pathname);
-  if (getStorageBackend() === "vercel-blob") {
-    const result = await putBlob(pathname, options.body, {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: false,
-      contentType: options.contentType,
-      maximumSizeInBytes: options.maximumSizeInBytes,
-    });
-    return result.url;
-  }
-
   const config = getS3Config();
   if (!config) throw new Error("Missing object-storage configuration.");
   await getS3Client().send(
@@ -578,17 +513,6 @@ export async function downloadPrivateStoredObjectByPathname(
   maximumSizeInBytes: number,
 ): Promise<Uint8Array> {
   const normalized = normalizePathname(pathname);
-  if (getStorageBackend() === "vercel-blob") {
-    const result = await getBlob(normalized, { access: "private" });
-    if (!result || result.statusCode !== 200) {
-      throw new Error("Stored object was not found.");
-    }
-    if (result.blob.size > maximumSizeInBytes) {
-      throw new Error("Stored object exceeds the download limit.");
-    }
-    return readResponseBody(result.stream);
-  }
-
   const config = getS3Config();
   if (!config) throw new Error("Missing object-storage configuration.");
   const result = await getS3Client().send(
@@ -611,11 +535,6 @@ export async function deletePrivateStoredObjectByPathname(
   pathname: string,
 ): Promise<void> {
   const normalized = normalizePathname(pathname);
-  if (getStorageBackend() === "vercel-blob") {
-    await deleteBlob(normalized);
-    return;
-  }
-
   const config = getS3Config();
   if (!config) throw new Error("Missing object-storage configuration.");
   await getS3Client().send(
@@ -629,16 +548,6 @@ export async function deletePrivateStoredObjectByPathname(
 export function getStorageUploadDebugInfo(
   descriptor: StorageUploadDescriptor,
 ): StorageUploadDebugInfo {
-  if (descriptor.provider === "vercel-blob") {
-    return {
-      provider: descriptor.provider,
-      uploadMethod: descriptor.uploadMethod,
-      pathname: descriptor.pathname,
-      maximumSizeInBytes: descriptor.maximumSizeInBytes,
-      contentType: descriptor.contentType,
-    };
-  }
-
   const config = getS3Config();
 
   return {
@@ -688,18 +597,9 @@ export async function headStoredObject(
     }
   }
 
-  try {
-    const blobInfo = await headBlob(storageUrl);
-    return {
-      size: blobInfo.size,
-      contentType: blobInfo.contentType || null,
-    };
-  } catch (error) {
-    if (isMissingObjectError(error)) {
-      return null;
-    }
-    return null;
-  }
+  // Legacy non-S3 storage URLs (e.g. from a retired hosted-blob backend) are
+  // no longer resolvable; treat them as missing.
+  return null;
 }
 
 export async function deleteStoredObject(storageUrl: string): Promise<void> {
@@ -714,7 +614,9 @@ export async function deleteStoredObject(storageUrl: string): Promise<void> {
     return;
   }
 
-  await deleteBlob(storageUrl);
+  // Legacy non-S3 storage URLs (e.g. from a retired hosted-blob backend)
+  // cannot be deleted here; treat the delete as a no-op so cleanup sweeps
+  // over old records don't fail.
 }
 
 export async function downloadStoredObject(

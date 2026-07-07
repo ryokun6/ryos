@@ -304,8 +304,7 @@
         "configured": "Configurato",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "Sviluppo",
-          "vercel": "Vercel"
+          "dev": "Sviluppo"
         },
         "deploymentLabel": "Distribuzione",
         "loading": "Carico informazioni server…",

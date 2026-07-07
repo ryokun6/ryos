@@ -20,7 +20,7 @@ interface VersionInfo {
 }
 
 interface ServerInfo {
-  deployment: "dev" | "vercel" | "coolify";
+  deployment: "dev" | "coolify";
   redis: { backend: string; healthy: boolean };
   websocket: { provider: "local" | "pusher"; configured: boolean };
 }
@@ -126,11 +126,9 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
   }, [fetchData, reloadKey]);
 
   const deploymentLabel =
-    serverInfo?.deployment === "vercel"
-      ? t("apps.admin.server.deployment.vercel", "Vercel")
-      : serverInfo?.deployment === "coolify"
-        ? t("apps.admin.server.deployment.coolify", "Coolify")
-        : t("apps.admin.server.deployment.dev", "Development");
+    serverInfo?.deployment === "coolify"
+      ? t("apps.admin.server.deployment.coolify", "Coolify")
+      : t("apps.admin.server.deployment.dev", "Development");
 
   const commitLabel =
     versionInfo?.buildNumber ?? versionInfo?.commitSha ?? "—";

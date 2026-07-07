@@ -13,8 +13,6 @@ import {
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { broadcastMessageDeleted } from "../../_helpers/_pusher.js";
 
-export const runtime = "nodejs";
-
 export default apiHandler(
   {
     methods: ["DELETE"],

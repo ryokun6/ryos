@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 // Detect dev mode for memory optimizations. `vite build` may evaluate this
 // config before NODE_ENV is set to "production", so also key off the command.
 const isBuildCommand = process.argv.includes("build");
-const isDev = !isBuildCommand && process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+const isDev = !isBuildCommand && process.env.NODE_ENV !== 'production';
 const standaloneApiProxyTarget = process.env.STANDALONE_API_PROXY_TARGET?.trim();
 
 // Browserslist warns if caniuse-lite is stale; suppress when up-to-date
@@ -187,8 +187,6 @@ export default defineConfig({
   envPrefix: ['VITE_'],
   define: {
     'import.meta.env.VITE_BUILD_NUMBER': JSON.stringify(ryosBuildNumber),
-    // Expose VERCEL_ENV to the client for environment detection
-    'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(process.env.VERCEL_ENV || ''),
     // Expose Pusher public key/cluster so the client connects to the correct app in dev
     'import.meta.env.VITE_PUSHER_KEY': JSON.stringify(process.env.PUSHER_KEY || ''),
     'import.meta.env.VITE_PUSHER_CLUSTER': JSON.stringify(process.env.PUSHER_CLUSTER || ''),
@@ -228,7 +226,6 @@ export default defineConfig({
       ignored: [
         "**/.terminals/**",
         "**/dist/**",
-        "**/.vercel/**",
         "**/dist-electron/**",
         "**/electron/**",
         "**/api/**",
@@ -289,7 +286,7 @@ export default defineConfig({
     ],
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened
-    // Note: AI SDK removed from exclude to fix ESM/CJS compatibility with @vercel/oidc
+    // Note: AI SDK stays out of exclude to avoid ESM/CJS pre-bundling issues
     exclude: isDev ? [
       // Audio libs - only needed when Soundboard/iPod/Synth/Karaoke opens
       "tone",
@@ -397,7 +394,7 @@ export default defineConfig({
             req.url = htmlPath;
             return next();
           }
-          // Redirect .html URLs to clean URLs (match Vercel behavior)
+          // Redirect .html URLs to clean URLs (match the production server)
           if (url.startsWith('/docs/') && url.endsWith('.html')) {
             const cleanUrl = url.replace(/\.html$/, '');
             res.writeHead(308, { Location: cleanUrl });
@@ -410,7 +407,7 @@ export default defineConfig({
     },
     // Serve cross-origin-isolated embed wrappers in dev
     // (e.g. /embed/infinite-mac, /embed/pc).
-    // Vercel applies COEP/COOP headers via vercel.json + rewrites in prod;
+    // The standalone Bun server applies COEP/COOP headers + rewrites in prod;
     // this plugin mirrors that behavior for the Vite dev server.
     {
       name: 'serve-coep-embeds',

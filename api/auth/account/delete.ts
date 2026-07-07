@@ -20,9 +20,6 @@ import { verifyPassword, getUserPasswordHash } from "../../_utils/auth/_password
 import { buildClearAuthCookie } from "../../_utils/_cookie.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 20;
-
 interface DeleteAccountRequest {
   confirm: boolean;
   confirmUsername: string;

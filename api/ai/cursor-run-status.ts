@@ -10,8 +10,6 @@ import {
 } from "../chat/tools/cursor-repo-agent.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
-export const runtime = "nodejs";
-
 /** Upstash may return objects for JSON-looking strings; parse string-or-object safely */
 function parseStoredJson<T>(raw: unknown): T | null {
   if (raw === null || raw === undefined) return null;

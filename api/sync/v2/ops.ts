@@ -7,9 +7,6 @@ import {
 } from "./_core.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 const RATE_LIMIT_WINDOW = 60;
 const RATE_LIMIT_MAX = 240;
 

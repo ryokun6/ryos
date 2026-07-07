@@ -9,9 +9,6 @@ import { getMessages, getRoom } from "../rooms/_helpers/_redis.js";
 import { getRoomReadAccessError } from "../rooms/_helpers/_access.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 export default apiHandler(
   { methods: ["GET"], auth: "optional" },
   async ({ req, res, redis, logger, startTime, user }) => {

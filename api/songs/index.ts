@@ -40,9 +40,6 @@ import { fetchCoverUrl } from "./_kugou.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-
-
 // ============================================================================
 // Rate limiting configuration
 // ============================================================================

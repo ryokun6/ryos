@@ -10,7 +10,6 @@ import {
   isProfaneUsername,
 } from "../../../_utils/_validation.js";
 import { getCurrentTimestamp, getSession } from "../../_helpers/_redis.js";
-import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type {
   ListenRemoteCommandAction,
   RemoteCommandRequest,
@@ -20,8 +19,6 @@ import {
   normalizeClientInstanceId,
 } from "../../_helpers/_client-instance.js";
 import { broadcastRemoteCommand } from "../../_helpers/_pusher.js";
-
-export { runtime, maxDuration };
 
 const VALID_ACTIONS: ListenRemoteCommandAction[] = [
   "play",

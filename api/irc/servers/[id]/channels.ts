@@ -15,9 +15,6 @@ import {
   isIrcBridgeEnabled,
 } from "../../../_utils/irc/_bridge.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 export default apiHandler(
   { methods: ["GET"], auth: "required" },
   async ({ req, res, logger, startTime }) => {

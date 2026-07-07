@@ -3,9 +3,6 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { crossRateFromUsdRates } from "./_utils/currency-cross-rate.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 const RL_BURST_WINDOW = 60;
 const RL_DAILY_WINDOW = 60 * 60 * 24;
 

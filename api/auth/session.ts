@@ -15,9 +15,6 @@ import {
   getStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler(
   {
     methods: ["GET"],

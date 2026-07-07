@@ -55,7 +55,7 @@ describe("standalone static cache policy", () => {
     }
   });
 
-  test("static asset folders mirror vercel.json immutable caching", () => {
+  test("static asset folders get immutable caching", () => {
     for (const file of [
       "wallpapers/photos/foo.jpg",
       "wallpapers/tiles/bar.png",

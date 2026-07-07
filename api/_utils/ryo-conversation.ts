@@ -816,7 +816,6 @@ export async function prepareRyoConversationModelInput(
     username,
   });
 
-
   const baseTools: ToolSet = createChatTools(
     {
       log,

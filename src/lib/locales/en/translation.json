@@ -4188,7 +4188,6 @@
         "deploymentLabel": "Deployment",
         "deployment": {
           "dev": "Development",
-          "vercel": "Vercel",
           "coolify": "Coolify"
         },
         "services": "Services",

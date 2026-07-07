@@ -12,8 +12,6 @@ import { authorizePusherChannel } from "../_utils/realtime.js";
 import { getRealtimeProvider } from "../_utils/runtime-config.js";
 import { GLOBAL_PRESENCE_CHANNEL } from "../../src/shared/constants/realtime.js";
 
-export const runtime = "nodejs";
-
 interface PusherAuthRequest {
   socket_id?: string;
   channel_name?: string;

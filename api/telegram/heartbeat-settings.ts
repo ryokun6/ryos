@@ -8,9 +8,6 @@ interface TelegramHeartbeatSettingsBody {
   instructions?: unknown;
 }
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler<TelegramHeartbeatSettingsBody>(
   {
     methods: ["GET", "POST"],

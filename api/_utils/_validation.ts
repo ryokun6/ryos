@@ -253,5 +253,3 @@ export function isValidUsernameLength(username: string): boolean {
   );
 }
 
-
-

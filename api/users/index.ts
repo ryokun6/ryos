@@ -8,9 +8,6 @@ import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { handleGetUsers } from "../rooms/_helpers/_users.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 const RL_BURST_WINDOW = 60;
 const RL_DAILY_WINDOW = 60 * 60 * 24;
 const MIN_QUERY_LENGTH = 2;

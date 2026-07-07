@@ -1,9 +1,6 @@
 import { apiHandler } from "../../_utils/api-handler.js";
 import { readSyncChanges } from "./_core.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler(
   {
     methods: ["GET"],

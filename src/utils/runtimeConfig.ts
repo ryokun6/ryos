@@ -82,11 +82,7 @@ function getBuildTimeRealtimeProvider(): RealtimeProvider {
 }
 
 function isDevLikeEnvironment(): boolean {
-  return (
-    import.meta.env.DEV ||
-    import.meta.env.VITE_VERCEL_ENV === "development" ||
-    import.meta.env.VITE_VERCEL_ENV === "preview"
-  );
+  return import.meta.env.DEV;
 }
 
 export function getClientRuntimeConfig(): ClientRuntimeConfig {

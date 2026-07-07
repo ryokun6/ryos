@@ -19,7 +19,6 @@ import {
   setSession,
   deleteSession,
 } from "../../_helpers/_redis.js";
-import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { LeaveSessionRequest } from "../../_helpers/_types.js";
 import {
   migrateSessionClientIds,
@@ -31,8 +30,6 @@ import {
   broadcastSessionEnded,
   broadcastUserLeft,
 } from "../../_helpers/_pusher.js";
-
-export { runtime, maxDuration };
 
 export default apiHandler(
   { methods: ["POST"] },

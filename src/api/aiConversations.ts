@@ -53,9 +53,10 @@ const ANON_MAX_PARTS_PER_MESSAGE = 48;
 const ANON_MAX_TEXT_CODE_POINTS = 128_000;
 const ANON_TOOL_PAYLOAD_MAX_BYTES = 256 * 1024;
 const ANON_TOOL_PAYLOAD_FIELDS = ["input", "output", "rawInput"] as const;
-const VERCEL_AI_CONVERSATION_REQUEST_BYTES = 4 * 1024 * 1024;
+// Server-side request body limit for /api/chat, minus headroom for headers.
+const AI_CONVERSATION_REQUEST_BYTES = 4 * 1024 * 1024;
 export const AI_CONVERSATION_REQUEST_MAX_BYTES =
-  VERCEL_AI_CONVERSATION_REQUEST_BYTES - 64 * 1024;
+  AI_CONVERSATION_REQUEST_BYTES - 64 * 1024;
 export const AI_CONVERSATION_TOOL_PAYLOAD_OMISSION = {
   omitted: true,
   reason: "oversized_legacy_tool_payload",
