@@ -1459,6 +1459,18 @@
         "preparingHtmlPreview": "Vorbereiten …",
         "read": "{{fileName}} gelesen",
         "readingFile": "Datei wird gelesen …",
+        "runJs": {
+          "failed": "Skript fehlgeschlagen",
+          "failedWithError": "Skript fehlgeschlagen: {{error}}",
+          "hideCode": "Code ausblenden",
+          "noOutput": "(keine Ausgabe)",
+          "ran": "Skript in {{duration}} ausgeführt",
+          "running": "Skript wird ausgeführt …",
+          "save": "Sichern",
+          "saved": "Gesichert",
+          "showCode": "Code einblenden",
+          "truncated": "(Ausgabe gekürzt)"
+        },
         "running": "{{toolName}} wird ausgeführt …",
         "searchedWeb": "Im Web gesucht",
         "searchedWebFor": "Im Web nach {{query}} gesucht",

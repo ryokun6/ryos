@@ -1459,6 +1459,18 @@
         "preparingHtmlPreview": "HTML プレビューを準備中…",
         "read": "{{fileName}}を読み取りました",
         "readingFile": "ファイルを読み取り中…",
+        "runJs": {
+          "failed": "スクリプトが失敗しました",
+          "failedWithError": "スクリプトが失敗しました: {{error}}",
+          "hideCode": "コードを非表示",
+          "noOutput": "(出力なし)",
+          "ran": "スクリプトを{{duration}}で実行しました",
+          "running": "スクリプトを実行中…",
+          "save": "保存",
+          "saved": "保存済み",
+          "showCode": "コードを表示",
+          "truncated": "(出力を省略)"
+        },
         "running": "{{toolName}}を実行中…",
         "searchedWeb": "ウェブを検索しました",
         "searchedWebFor": "「{{query}}」をウェブで検索しました",

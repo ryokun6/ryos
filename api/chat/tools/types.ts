@@ -606,5 +606,26 @@ export interface WebFetchOutput {
 }
 
 // ============================================================================
+// Run JS (QuickJS sandbox) Tool Types
+// ============================================================================
+
+export interface RunJsInput {
+  code: string;
+  timeoutSeconds?: number;
+}
+
+export interface RunJsOutput {
+  success: boolean;
+  /** Captured console output, newline-joined. */
+  logs: string;
+  /** Stringified completion value of the script (absent when undefined). */
+  result?: string;
+  error?: string;
+  durationMs: number;
+  truncated: boolean;
+  message: string;
+}
+
+// ============================================================================
 // App State Types (for server-side calendar/stickies executors)
 // ============================================================================

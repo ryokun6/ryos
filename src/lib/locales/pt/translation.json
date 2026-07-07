@@ -1461,6 +1461,18 @@
         "preparingHtmlPreview": "Preparando pré-visualização HTML…",
         "read": "Lido {{fileName}}",
         "readingFile": "Lendo arquivo…",
+        "runJs": {
+          "failed": "Falha no script",
+          "failedWithError": "Falha no script: {{error}}",
+          "hideCode": "Ocultar Código",
+          "noOutput": "(sem saída)",
+          "ran": "Script executado em {{duration}}",
+          "running": "Executando script…",
+          "save": "Salvar",
+          "saved": "Salvo",
+          "showCode": "Mostrar Código",
+          "truncated": "(saída truncada)"
+        },
         "running": "Executando {{toolName}}…",
         "searchedWeb": "Pesquisou na web",
         "searchedWebFor": "Pesquisou na web por {{query}}",

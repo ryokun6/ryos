@@ -1463,6 +1463,18 @@
         "preparingHtmlPreview": "Подготовка предварительного просмотра HTML…",
         "read": "Прочитать {{fileName}}",
         "readingFile": "Чтение файла…",
+        "runJs": {
+          "failed": "Сбой скрипта",
+          "failedWithError": "Сбой скрипта: {{error}}",
+          "hideCode": "Скрыть код",
+          "noOutput": "(нет вывода)",
+          "ran": "Скрипт выполнен за {{duration}}",
+          "running": "Выполнение скрипта…",
+          "save": "Сохранить",
+          "saved": "Сохранено",
+          "showCode": "Показать код",
+          "truncated": "(вывод сокращен)"
+        },
         "running": "Выполнение {{toolName}}…",
         "searchedWeb": "Выполнен поиск в интернете",
         "searchedWebFor": "Выполнен поиск в интернете по запросу {{query}}",
