@@ -1420,9 +1420,9 @@
           "dontAllow": "不允許",
           "failed": "無法取得你的位置",
           "gettingLocation": "正在取得你的位置⋯",
-          "permissionBody": "Ryo 想要使用你的目前位置來回答此要求。",
-          "permissionReason": "Ryo 想要取得你的位置以{{reason}}。",
-          "permissionTitle": "要使用你的位置嗎？",
+          "permissionBody": "Ryo 想使用您的精確位置來回應此要求。",
+          "permissionReason": "Ryo 想取得您的精確位置以{{reason}}。",
+          "permissionTitle": "要使用您的精確位置嗎？",
           "requesting": "正在要求位置⋯",
           "shared": "已分享位置：{{city}}",
           "sharedNoCity": "已分享你的位置"

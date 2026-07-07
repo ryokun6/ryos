@@ -47,9 +47,9 @@ export type {
   GetWeatherOutput,
 } from "../../../src/shared/tools/weather.js";
 export type {
-  GetLocationInput,
-  GetLocationOutput,
-} from "../../../src/shared/tools/location.js";
+  GetPreciseLocationInput,
+  GetPreciseLocationOutput,
+} from "../../../src/shared/tools/preciseLocation.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;

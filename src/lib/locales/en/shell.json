@@ -1043,9 +1043,9 @@
         },
         "location": {
           "requesting": "Requesting location…",
-          "permissionTitle": "Use your location?",
-          "permissionBody": "Ryo wants to use your current location to answer this request.",
-          "permissionReason": "Ryo wants your location {{reason}}.",
+          "permissionTitle": "Use your precise location?",
+          "permissionBody": "Ryo wants to use your precise location to answer this request.",
+          "permissionReason": "Ryo wants your precise location {{reason}}.",
           "allow": "Allow",
           "dontAllow": "Don’t Allow",
           "gettingLocation": "Getting your location…",

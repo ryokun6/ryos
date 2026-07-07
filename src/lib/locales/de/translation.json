@@ -1420,9 +1420,9 @@
           "dontAllow": "Nicht erlauben",
           "failed": "Standort konnte nicht ermittelt werden",
           "gettingLocation": "Standort wird ermittelt …",
-          "permissionBody": "Ryo möchte deinen aktuellen Standort verwenden, um diese Anfrage zu beantworten.",
-          "permissionReason": "Ryo möchte deinen Standort {{reason}}.",
-          "permissionTitle": "Deinen Standort verwenden?",
+          "permissionBody": "Ryo möchte deinen genauen Standort verwenden, um diese Anfrage zu beantworten.",
+          "permissionReason": "Ryo möchte deinen genauen Standort {{reason}}.",
+          "permissionTitle": "Deinen genauen Standort verwenden?",
           "requesting": "Standort wird angefordert …",
           "shared": "Geteilter Standort: {{city}}",
           "sharedNoCity": "Standort geteilt"

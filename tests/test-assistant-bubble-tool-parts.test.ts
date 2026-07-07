@@ -78,7 +78,7 @@ describe("getAssistantBubbleToolParts", () => {
     expect([...ASSISTANT_BUBBLE_TOOL_NAMES].sort()).toEqual([
       "cursorCloudAgent",
       "generateHtml",
-      "getLocation",
+      "getPreciseLocation",
       "listCursorCloudAgentRuns",
       "mapsSearchPlaces",
     ]);

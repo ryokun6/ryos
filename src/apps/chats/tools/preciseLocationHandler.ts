@@ -1,5 +1,5 @@
 /**
- * Client-side handler for the approval-gated `getLocation` tool.
+ * Client-side handler for the approval-gated `getPreciseLocation` tool.
  *
  * Runs only after the user approves the in-chat permission card. Uses the
  * browser Geolocation API, reuses the weather module's Nominatim client for
@@ -10,13 +10,13 @@
 import i18n from "@/lib/i18n";
 import { reverseGeocodeCity } from "@/lib/weather/openMeteo";
 import { useWeatherStore } from "@/stores/useWeatherStore";
-import type { GetLocationOutput } from "@/shared/tools/location";
+import type { GetPreciseLocationOutput } from "@/shared/tools/preciseLocation";
 import type { ToolOutputPayload } from "./types";
 
 const GEOLOCATION_TIMEOUT_MS = 15_000;
 const GEOLOCATION_MAX_AGE_MS = 5 * 60 * 1000;
 
-export interface GetLocationInput {
+export interface GetPreciseLocationInput {
   reason?: string;
 }
 
@@ -53,8 +53,8 @@ function describeGeolocationError(error: unknown): string {
     : i18n.t("apps.chats.toolCalls.unknownError");
 }
 
-export async function handleGetLocation(
-  _input: GetLocationInput,
+export async function handleGetPreciseLocation(
+  _input: GetPreciseLocationInput,
   toolCallId: string,
   context: { addToolOutput: (result: ToolOutputPayload) => void }
 ): Promise<void> {
@@ -63,7 +63,7 @@ export async function handleGetLocation(
     position = await getCurrentPosition();
   } catch (error) {
     context.addToolOutput({
-      tool: "getLocation",
+      tool: "getPreciseLocation",
       toolCallId,
       state: "output-error",
       errorText: describeGeolocationError(error),
@@ -86,7 +86,7 @@ export async function handleGetLocation(
     i18n.language
   ).catch(() => null);
 
-  const output: GetLocationOutput = {
+  const output: GetPreciseLocationOutput = {
     success: true,
     message: city
       ? `User location: ${city} (${latitude.toFixed(4)}, ${longitude.toFixed(4)}).`
@@ -98,7 +98,7 @@ export async function handleGetLocation(
   };
 
   context.addToolOutput({
-    tool: "getLocation",
+    tool: "getPreciseLocation",
     toolCallId,
     output,
   });

@@ -1420,9 +1420,9 @@
           "dontAllow": "허용 안 함",
           "failed": "사용자의 위치를 가져올 수 없음",
           "gettingLocation": "사용자의 위치를 가져오는 중...",
-          "permissionBody": "Ryo가 이 요청에 답변하기 위해 사용자의 현재 위치를 사용하려고 합니다.",
-          "permissionReason": "Ryo가 {{reason}}을(를) 위해 사용자의 위치를 사용하려고 합니다.",
-          "permissionTitle": "사용자의 위치를 사용하겠습니까?",
+          "permissionBody": "Ryo가 이 요청에 응답하기 위해 사용자의 정확한 위치를 사용하고자 합니다.",
+          "permissionReason": "Ryo가 {{reason}}을(를) 위해 사용자의 정확한 위치를 사용하고자 합니다.",
+          "permissionTitle": "정확한 위치를 사용하시겠습니까?",
           "requesting": "위치 요청 중...",
           "shared": "공유된 위치: {{city}}",
           "sharedNoCity": "사용자의 위치를 공유함"

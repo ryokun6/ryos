@@ -7,7 +7,7 @@
  * surfaces do.
  *
  * Location resolution order:
- *   1. Explicit `latitude`/`longitude` input (e.g. from the `getLocation` tool)
+ *   1. Explicit `latitude`/`longitude` input (e.g. from the `getPreciseLocation` tool)
  *   2. `location` place-name search via Nominatim
  *   3. The request's IP-derived geolocation (`context.requestGeo`)
  */
@@ -120,7 +120,7 @@ async function resolveLocation(
   return {
     error: "no_location",
     message:
-      "No location available: pass a 'location' name, pass coordinates, or call getLocation to request the user's precise location.",
+      "No location available: pass a 'location' name, pass coordinates, or call getPreciseLocation to request the user's precise location.",
   };
 }
 

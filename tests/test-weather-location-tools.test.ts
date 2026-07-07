@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 import {
-  getLocationSchema,
+  getPreciseLocationSchema,
   getWeatherSchema,
 } from "../api/chat/tools/schemas.js";
 import { createChatTools, TOOL_DESCRIPTIONS } from "../api/chat/tools/index.js";
@@ -62,13 +62,13 @@ describe("getWeatherSchema", () => {
   });
 });
 
-describe("getLocationSchema", () => {
+describe("getPreciseLocationSchema", () => {
   test("accepts empty input", () => {
-    expect(getLocationSchema.safeParse({}).success).toBe(true);
+    expect(getPreciseLocationSchema.safeParse({}).success).toBe(true);
   });
 
   test("accepts a short reason", () => {
-    const parsed = getLocationSchema.safeParse({
+    const parsed = getPreciseLocationSchema.safeParse({
       reason: "to check the weather near you",
     });
     expect(parsed.success).toBe(true);
@@ -79,7 +79,7 @@ describe("getLocationSchema", () => {
 
   test("rejects an oversized reason", () => {
     expect(
-      getLocationSchema.safeParse({ reason: "x".repeat(201) }).success
+      getPreciseLocationSchema.safeParse({ reason: "x".repeat(201) }).success
     ).toBe(false);
   });
 });
@@ -105,13 +105,13 @@ describe("weather helpers", () => {
 });
 
 describe("tool execution metadata", () => {
-  test("getWeather is server-executed; getLocation is not", () => {
+  test("getWeather is server-executed; getPreciseLocation is not", () => {
     expect(SERVER_EXECUTED_TOOL_NAME_SET.has("getWeather")).toBe(true);
-    expect(SERVER_EXECUTED_TOOL_NAME_SET.has("getLocation")).toBe(false);
+    expect(SERVER_EXECUTED_TOOL_NAME_SET.has("getPreciseLocation")).toBe(false);
   });
 
-  test("getLocation is approval-gated; getWeather is not", () => {
-    expect(APPROVAL_GATED_TOOL_NAME_SET.has("getLocation")).toBe(true);
+  test("getPreciseLocation is approval-gated; getWeather is not", () => {
+    expect(APPROVAL_GATED_TOOL_NAME_SET.has("getPreciseLocation")).toBe(true);
     expect(APPROVAL_GATED_TOOL_NAME_SET.has("getWeather")).toBe(false);
   });
 });
@@ -129,7 +129,7 @@ describe("createChatTools weather/location registration", () => {
     timeZone: "America/Los_Angeles",
   };
 
-  test("all profile registers getWeather (server execute) and getLocation (needsApproval, client)", () => {
+  test("all profile registers getWeather (server execute) and getPreciseLocation (needsApproval, client)", () => {
     const tools = createChatTools(context, { profile: "all" }) as Record<
       string,
       { description?: string; execute?: unknown; needsApproval?: boolean }
@@ -138,19 +138,19 @@ describe("createChatTools weather/location registration", () => {
     expect(typeof tools.getWeather.execute).toBe("function");
     expect(tools.getWeather.description).toBe(TOOL_DESCRIPTIONS.getWeather);
 
-    expect(tools.getLocation).toBeDefined();
-    expect(tools.getLocation.needsApproval).toBe(true);
+    expect(tools.getPreciseLocation).toBeDefined();
+    expect(tools.getPreciseLocation.needsApproval).toBe(true);
     // Client-executed after user approval — the server must not execute it.
-    expect(tools.getLocation.execute).toBeUndefined();
+    expect(tools.getPreciseLocation.execute).toBeUndefined();
   });
 
-  test("telegram profile keeps getWeather but omits getLocation (no browser geolocation)", () => {
+  test("telegram profile keeps getWeather but omits getPreciseLocation (no browser geolocation)", () => {
     const tools = createChatTools(context, { profile: "telegram" }) as Record<
       string,
       unknown
     >;
     expect(tools.getWeather).toBeDefined();
-    expect(tools.getLocation).toBeUndefined();
+    expect(tools.getPreciseLocation).toBeUndefined();
   });
 });
 
@@ -167,7 +167,7 @@ describe("sendAutomaticallyWhenApprovalsSettled", () => {
     const messages = [
       assistantMessage([
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-1",
           state: "approval-requested",
           input: {},
@@ -178,11 +178,11 @@ describe("sendAutomaticallyWhenApprovalsSettled", () => {
     expect(sendAutomaticallyWhenApprovalsSettled({ messages })).toBe(false);
   });
 
-  test("holds the send for an APPROVED getLocation until the client posts output", () => {
+  test("holds the send for an APPROVED getPreciseLocation until the client posts output", () => {
     const messages = [
       assistantMessage([
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-1",
           state: "approval-responded",
           input: {},
@@ -197,7 +197,7 @@ describe("sendAutomaticallyWhenApprovalsSettled", () => {
     const messages = [
       assistantMessage([
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-1",
           state: "output-available",
           input: {},
@@ -213,7 +213,7 @@ describe("sendAutomaticallyWhenApprovalsSettled", () => {
     const messages = [
       assistantMessage([
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-1",
           state: "approval-responded",
           input: {},
@@ -234,7 +234,7 @@ describe("resolveStaleToolApprovals", () => {
     const [sanitized] = resolveStaleToolApprovals([
       assistantMessage([
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-1",
           state: "approval-requested",
           input: {},
@@ -251,7 +251,7 @@ describe("resolveStaleToolApprovals", () => {
     const [sanitized] = resolveStaleToolApprovals([
       assistantMessage([
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-1",
           state: "approval-responded",
           input: {},
@@ -268,7 +268,7 @@ describe("resolveStaleToolApprovals", () => {
     const original = [
       assistantMessage([
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-1",
           state: "output-available",
           input: {},
@@ -276,7 +276,7 @@ describe("resolveStaleToolApprovals", () => {
           approval: { id: "appr-1", approved: true },
         },
         {
-          type: "tool-getLocation",
+          type: "tool-getPreciseLocation",
           toolCallId: "call-2",
           state: "approval-responded",
           input: {},

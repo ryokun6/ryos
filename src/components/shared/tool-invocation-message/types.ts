@@ -7,7 +7,7 @@ export interface ToolInvocationPart {
     | "input-available"
     | "output-available"
     | "output-error"
-    // Tool-approval flow (needsApproval tools, e.g. getLocation)
+    // Tool-approval flow (needsApproval tools, e.g. getPreciseLocation)
     | "approval-requested"
     | "approval-responded"
     | "output-denied";

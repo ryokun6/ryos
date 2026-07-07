@@ -1422,9 +1422,9 @@
           "dontAllow": "No permitir",
           "failed": "No se ha podido obtener tu ubicación",
           "gettingLocation": "Obteniendo tu ubicación…",
-          "permissionBody": "Ryo quiere usar tu ubicación actual para responder a esta solicitud.",
-          "permissionReason": "Ryo quiere tu ubicación {{reason}}.",
-          "permissionTitle": "¿Usar tu ubicación?",
+          "permissionBody": "Ryo quiere usar tu ubicación exacta para responder a esta solicitud.",
+          "permissionReason": "Ryo quiere tu ubicación exacta {{reason}}.",
+          "permissionTitle": "¿Usar tu ubicación exacta?",
           "requesting": "Solicitando ubicación…",
           "shared": "Ubicación compartida: {{city}}",
           "sharedNoCity": "Has compartido tu ubicación"

@@ -1148,7 +1148,7 @@ export const getWeatherSchema = z
       .max(90)
       .optional()
       .describe(
-        "Latitude in decimal degrees. Provide together with longitude for precise coordinates (e.g. from getLocation)."
+        "Latitude in decimal degrees. Provide together with longitude for precise coordinates (e.g. from getPreciseLocation)."
       ),
     longitude: z
       .number()
@@ -1177,10 +1177,10 @@ export const getWeatherSchema = z
   });
 
 // ============================================================================
-// Location Tool Schema
+// Precise Location Tool Schema
 // ============================================================================
 
-export const getLocationSchema = z.object({
+export const getPreciseLocationSchema = z.object({
   reason: z.preprocess(
     normalizeOptionalString,
     z

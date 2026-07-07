@@ -12,7 +12,7 @@ import type { ToolInvocationPart } from "./types";
 
 /**
  * Full lifecycle renderer for approval-gated client tools (currently
- * `getLocation`): the in-chat Allow / Don't Allow permission card, the
+ * `getPreciseLocation`): the in-chat Allow / Don't Allow permission card, the
  * running / shared / declined status rows, and error states.
  *
  * Rendered from `tryRenderToolInvocationSpecialContent`, so it appears in
@@ -166,18 +166,18 @@ export function ToolApprovalCard({
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-semibold leading-tight text-os-text-primary">
               {t("apps.chats.toolCalls.location.permissionTitle", {
-                defaultValue: "Use your location?",
+                defaultValue: "Use your precise location?",
               })}
             </div>
             <div className="mt-0.5 text-[11px] leading-snug text-os-text-secondary">
               {reason
                 ? t("apps.chats.toolCalls.location.permissionReason", {
-                    defaultValue: "Ryo wants your location {{reason}}.",
+                    defaultValue: "Ryo wants your precise location {{reason}}.",
                     reason,
                   })
                 : t("apps.chats.toolCalls.location.permissionBody", {
                     defaultValue:
-                      "Ryo wants to use your current location to answer this request.",
+                      "Ryo wants to use your precise location to answer this request.",
                   })}
             </div>
           </div>

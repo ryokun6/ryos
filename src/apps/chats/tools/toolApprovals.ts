@@ -29,7 +29,10 @@ import {
 } from "ai";
 import { APPROVAL_GATED_TOOL_NAME_SET } from "@/shared/tools/approvalGated";
 import { aiChatLog as log } from "../logging";
-import { handleGetLocation, type GetLocationInput } from "./locationHandler";
+import {
+  handleGetPreciseLocation,
+  type GetPreciseLocationInput,
+} from "./preciseLocationHandler";
 import type { ToolOutputPayload } from "./types";
 
 export interface ToolApprovalSurface {
@@ -165,9 +168,9 @@ export async function respondToToolApproval({
   await surface.addToolApprovalResponse({ id: approvalId, approved: true });
   try {
     switch (toolName) {
-      case "getLocation":
-        await handleGetLocation(
-          (input ?? {}) as GetLocationInput,
+      case "getPreciseLocation":
+        await handleGetPreciseLocation(
+          (input ?? {}) as GetPreciseLocationInput,
           toolCallId,
           { addToolOutput: surface.addToolOutput }
         );

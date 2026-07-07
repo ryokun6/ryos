@@ -84,7 +84,7 @@ const TOOL_STATUS_KEYS: Record<string, string> = {
   settings: "apps.chats.toolCalls.changingSettings",
   songLibraryControl: "apps.chats.toolCalls.loadingMusicLibrary",
   getWeather: "apps.chats.toolCalls.weather.checking",
-  getLocation: "apps.chats.toolCalls.location.requesting",
+  getPreciseLocation: "apps.chats.toolCalls.location.requesting",
 };
 
 export function parseAssistantRateLimitState(
@@ -349,7 +349,7 @@ export function useAssistantChat(): AssistantChatHandle {
   } = useChat<AIChatMessage>({ chat, experimental_throttle: 60 });
 
   // Route in-chat Allow / Don't Allow decisions for approval-gated tools
-  // (e.g. getLocation) rendered in the assistant bubble to this chat.
+  // (e.g. getPreciseLocation) rendered in the assistant bubble to this chat.
   useEffect(
     () =>
       registerToolApprovalSurface({

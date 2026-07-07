@@ -8,7 +8,7 @@
  * approves (see `src/apps/chats/tools/toolApprovals.ts`).
  */
 
-export const APPROVAL_GATED_TOOL_NAMES = ["getLocation"] as const;
+export const APPROVAL_GATED_TOOL_NAMES = ["getPreciseLocation"] as const;
 
 export type ApprovalGatedToolName = (typeof APPROVAL_GATED_TOOL_NAMES)[number];
 

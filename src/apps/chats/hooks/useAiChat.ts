@@ -211,7 +211,7 @@ function getSharedAiChat(): Chat<AIChatMessage> {
     });
 
     // Route in-chat Allow / Don't Allow decisions for approval-gated tools
-    // (e.g. getLocation) to this chat. Module-level singleton — registered
+    // (e.g. getPreciseLocation) to this chat. Module-level singleton — registered
     // once for the app's lifetime.
     const chat = sharedAiChat;
     registerToolApprovalSurface({

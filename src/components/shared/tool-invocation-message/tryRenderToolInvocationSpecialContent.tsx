@@ -78,7 +78,7 @@ export function tryRenderToolInvocationSpecialContent(
     ? "tool-inline-card-compact !shadow-none"
     : undefined;
 
-  // Approval-gated client tools (getLocation): the permission card and its
+  // Approval-gated client tools (getPreciseLocation): the permission card and its
   // running / shared / declined states are all owned by ToolApprovalCard.
   if (APPROVAL_GATED_TOOL_NAME_SET.has(toolName)) {
     return (

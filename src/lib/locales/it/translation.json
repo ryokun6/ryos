@@ -1422,9 +1422,9 @@
           "dontAllow": "Non consentire",
           "failed": "Impossibile ottenere la tua posizione",
           "gettingLocation": "Recupero della posizione in corso…",
-          "permissionBody": "Ryo desidera utilizzare la tua posizione attuale per rispondere a questa richiesta.",
-          "permissionReason": "Ryo desidera conoscere la tua posizione {{reason}}.",
-          "permissionTitle": "Vuoi utilizzare la tua posizione?",
+          "permissionBody": "Ryo desidera utilizzare la tua posizione esatta per rispondere a questa richiesta.",
+          "permissionReason": "Ryo desidera la tua posizione esatta {{reason}}.",
+          "permissionTitle": "Utilizzare la tua posizione esatta?",
           "requesting": "Richiesta posizione in corso…",
           "shared": "Posizione condivisa: {{city}}",
           "sharedNoCity": "Hai condiviso la tua posizione"

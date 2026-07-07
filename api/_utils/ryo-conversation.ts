@@ -327,7 +327,7 @@ function createGoogleSearchTool(): ReturnType<typeof google.tools.googleSearch> 
 /**
  * Resolve stale, unresolved tool-approval parts before model conversion.
  *
- * Approval-gated client tools (e.g. `getLocation`) wait indefinitely for the
+ * Approval-gated client tools (e.g. `getPreciseLocation`) wait indefinitely for the
  * user's Allow / Don't Allow decision. If the user just types a new message
  * instead, the history still contains an `approval-requested` part (or an
  * approved one whose client handler never reported output). Those would make

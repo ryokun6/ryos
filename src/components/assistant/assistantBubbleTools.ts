@@ -12,8 +12,8 @@ export const ASSISTANT_BUBBLE_TOOL_NAMES: ReadonlySet<string> = new Set([
   "cursorCloudAgent",
   "listCursorCloudAgentRuns",
   // Approval-gated: the Allow / Don't Allow permission card must render in
-  // the bubble, otherwise a getLocation request dead-ends there.
-  "getLocation",
+  // the bubble, otherwise a getPreciseLocation request dead-ends there.
+  "getPreciseLocation",
 ]);
 
 /** Message shape needed to extract bubble tool parts (subset of AIChatMessage). */

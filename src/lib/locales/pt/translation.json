@@ -1422,9 +1422,9 @@
           "dontAllow": "Não Permitir",
           "failed": "Não foi possível obter sua localização",
           "gettingLocation": "Obtendo sua localização…",
-          "permissionBody": "O Ryo deseja usar sua localização atual para responder a esta solicitação.",
-          "permissionReason": "O Ryo deseja sua localização {{reason}}.",
-          "permissionTitle": "Usar sua localização?",
+          "permissionBody": "O Ryo deseja usar sua localização precisa para responder a esta solicitação.",
+          "permissionReason": "O Ryo deseja sua localização precisa {{reason}}.",
+          "permissionTitle": "Usar sua localização precisa?",
           "requesting": "Solicitando localização…",
           "shared": "Localização compartilhada: {{city}}",
           "sharedNoCity": "Compartilhou sua localização"

@@ -467,17 +467,18 @@ Use \`mediaControl\` with \`target: "tv"\` to manage the TV app's channel lineup
 ## MAPS / PLACES SEARCH
 Use \`mapsSearchPlaces\` whenever the user asks to find a place, look up an address, browse nearby POIs, or otherwise wants real geographic data (restaurants, cafes, addresses, landmarks, businesses, neighborhoods).
 - Pass the user's intent verbatim as \`query\` (e.g. \`"best ramen near Shibuya"\`, \`"350 Sutter St San Francisco"\`).
-- The server **automatically biases the search to the user's approximate IP location** (from request \`requestGeo\`) when you don't pass \`near\`, so unqualified queries like "coffee" already return nearby hits. Only pass \`near: { latitude, longitude }\` when you have a *better* anchor than IP geolocation — e.g. the user named a different city, you're searching around an address they just mentioned, or the user shared their precise coordinates.
+- For "near me" / "nearby" / "around here" queries where accuracy matters, call \`getPreciseLocation\` first and pass the returned coordinates as \`near: { latitude, longitude }\`. If the user declines, fall back to the IP-based broad location by simply omitting \`near\` — the server **automatically biases the search to the user's approximate IP location** (from request \`requestGeo\`), so unqualified queries like "coffee" still return nearby hits.
+- Also pass \`near: { latitude, longitude }\` when you have a *better* anchor than IP geolocation — e.g. the user named a different city or you're searching around an address they just mentioned.
 - The tool only accepts a point anchor (\`near\`); there is no bounding-region parameter — keep all location intent in the \`query\` string when you don't have a coordinate.
 - Default \`limit\` is 5; bump up to 10 only when the user clearly wants a long list. Apple's daily quota is shared with MapKit JS.
 - The client renders a rich place card with the POI icon, title, and address — tapping it opens the place plotted in the ryOS Maps app. Don't paste raw lat/lng into your chat reply; let the card do the work and just refer to results by name + city.
 
 ## WEATHER & LOCATION
 Use \`getWeather\` when the user asks about weather, temperature, rain, or forecasts (same live Open-Meteo data as the ryOS weather widget/wallpaper).
-- Pass \`location\` when the user names a place; pass \`latitude\`/\`longitude\` when you have precise coordinates (e.g. from \`getLocation\`).
-- With neither, the server falls back to the user's approximate IP location — try that first for "weather here" questions.
+- Pass \`location\` when the user names a place; pass \`latitude\`/\`longitude\` when you have precise coordinates (e.g. from \`getPreciseLocation\`).
+- For "weather here" questions, call \`getPreciseLocation\` first; if the user declines, call \`getWeather\` with no location — the server falls back to their approximate IP-based broad location.
 - Output includes °C and °F; reply with the unit that fits the user's locale.
-Use \`getLocation\` ONLY when precise coordinates genuinely improve the answer and IP-based fallbacks are insufficient. It shows the user an in-chat Allow / Don't Allow permission card — pass a short \`reason\` so they know why you're asking. If declined, continue gracefully without their location and never re-request in the same turn.
+Use \`getPreciseLocation\` to request the user's precise device location when it improves the answer (local weather, nearby places). It shows the user an in-chat Allow / Don't Allow permission card — pass a short \`reason\` so they know why you're asking. If declined, fall back to the IP-based broad location, continue gracefully, and never re-request in the same turn.
 
 </tool_usage_instructions>
 `;
