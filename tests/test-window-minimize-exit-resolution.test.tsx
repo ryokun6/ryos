@@ -70,16 +70,20 @@ test("motion resolves the lazy minimize exit when the window unmounts", async ()
     },
   });
 
+  // Mirror WindowFrame's structure: the exit definition lives on a nested
+  // motion div, not on the direct AnimatePresence child.
   function Harness({ show }: { show: boolean }) {
     return (
       <AnimatePresence>
         {show && (
-          <motion.div
-            data-testid="window"
-            initial={false}
-            animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
-            exit={exitDefinition}
-          />
+          <motion.div key="pos" initial={false} animate={{ x: 10, y: 10 }}>
+            <motion.div
+              data-testid="window"
+              initial={false}
+              animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+              exit={exitDefinition}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
     );
