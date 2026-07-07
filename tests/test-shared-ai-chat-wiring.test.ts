@@ -67,7 +67,7 @@ describe("shared AI chat wiring", () => {
     expect(retry).toContain("parts: latestUserMessage.parts");
     expect(retry).toContain("metadata: latestUserMessage.metadata");
     expect(retry).toContain("messageId: latestUserMessage.id");
-    expect(retry).toContain("return sendMessage(");
+    expect(retry).toContain("return guardedSendMessage(");
     expect(retry).not.toContain("sdkRegenerate");
     expect(source).toContain("regenerateAssistantMessage: sdkRegenerate");
 
@@ -86,7 +86,7 @@ describe("shared AI chat wiring", () => {
     const imageUpload = source.indexOf(
       "image = await uploadAIConversationImage(imageContent)"
     );
-    const imageSend = source.indexOf("sendMessage(", imageUpload);
+    const imageSend = source.indexOf("guardedSendMessage(", imageUpload);
     const postUpload = source.slice(imageUpload, imageSend);
     expect(imageUpload).toBeGreaterThan(-1);
     expect(postUpload).toContain(
