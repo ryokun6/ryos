@@ -459,7 +459,10 @@ export function useAssistantChat(): AssistantChatHandle {
     () => ({
       getStatus: () => chat.status,
       getMessages: () => chat.messages,
-      setMessages: (nextMessages) => setMessages(nextMessages),
+      setMessages: (nextMessages) => {
+        setMessages(nextMessages);
+        useAssistantStore.getState().setMessages(nextMessages);
+      },
       load: async () => {
         const loaded = await loadServerConversation(true, false);
         if (!loaded) throw new Error("Conversation owner is unavailable");
@@ -664,7 +667,7 @@ export function useAssistantChat(): AssistantChatHandle {
 
   const sendUserMessage = useCallback(
     (text: string) => {
-      if (!text.trim()) return;
+      if (!text.trim() || isRemoteStreaming) return;
       clearError();
       useAssistantStore.getState().markInteraction();
       sendMessage(
@@ -672,7 +675,7 @@ export function useAssistantChat(): AssistantChatHandle {
         { body: buildAssistantRequestBody() }
       );
     },
-    [sendMessage, clearError]
+    [sendMessage, clearError, isRemoteStreaming]
   );
 
   const appendLocalGreeting = useCallback(() => {
@@ -725,7 +728,13 @@ export function useAssistantChat(): AssistantChatHandle {
   }, [clearConversationInternal]);
 
   const triggerGreeting = useCallback(() => {
-    if (chat.status === "streaming" || chat.status === "submitted") return;
+    if (
+      chat.status === "streaming" ||
+      chat.status === "submitted" ||
+      isRemoteStreaming
+    ) {
+      return;
+    }
 
     if (username && isAuthenticated) {
       log.debug("Requesting AI greeting");
@@ -739,6 +748,7 @@ export function useAssistantChat(): AssistantChatHandle {
     chat.status,
     username,
     isAuthenticated,
+    isRemoteStreaming,
     sendUserMessage,
     appendLocalGreeting,
   ]);
@@ -758,7 +768,13 @@ export function useAssistantChat(): AssistantChatHandle {
     if (decision === "none") return;
     // Never greet over an in-flight turn (e.g. a quick close/reopen while a
     // reply is still streaming).
-    if (chat.status === "streaming" || chat.status === "submitted") return;
+    if (
+      chat.status === "streaming" ||
+      chat.status === "submitted" ||
+      isRemoteStreaming
+    ) {
+      return;
+    }
 
     if (decision === "fresh-greet") {
       log.debug("Bubble dismissed long enough — starting a fresh conversation");
@@ -773,7 +789,12 @@ export function useAssistantChat(): AssistantChatHandle {
     if (!store.greetOnSummon) return;
 
     triggerGreeting();
-  }, [chat.status, clearConversationInternal, triggerGreeting]);
+  }, [
+    chat.status,
+    clearConversationInternal,
+    isRemoteStreaming,
+    triggerGreeting,
+  ]);
 
   const startNewConversation = useCallback(() => {
     void clearConversationInternal().then((cleared) => {

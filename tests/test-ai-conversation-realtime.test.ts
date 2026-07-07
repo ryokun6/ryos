@@ -14,6 +14,10 @@ import {
   AIConversationRealtimeService,
   type AIConversationRealtimeController,
 } from "../src/services/ai/AIConversationRealtimeService";
+import {
+  clearAIConversationSessionCache,
+  getAIConversationRequestContext,
+} from "../src/api/aiConversations";
 import { forwardAIConversationRealtimeStream } from "../api/ai/conversations/_helpers/realtime";
 import type { AIChatMessage } from "../src/types/chat";
 import type {
@@ -100,6 +104,13 @@ describe("AI conversation realtime contract", () => {
         conversationId: turn.conversationId,
         revision: 0,
         operationId: "op",
+      })
+    ).toBeNull();
+    expect(
+      parseAIConversationRealtimeEvent({
+        kind: "turn-started",
+        ...turn,
+        trigger: "regenerate-message",
       })
     ).toBeNull();
   });
@@ -289,6 +300,60 @@ describe("server AI conversation stream forwarding", () => {
     ).toBe("streamed live");
     expect(JSON.stringify(published)).not.toContain("not-forwarded");
   });
+
+  test("flushes paused text promptly and keeps escaped payloads bounded", async () => {
+    const published: Array<{
+      event: AIConversationRealtimeEvent;
+      at: number;
+    }> = [];
+    let sourceClosedAt = 0;
+    const source = new ReadableStream<string>({
+      start(controller) {
+        controller.enqueue(
+          'data: {"type":"start","messageId":"assistant-escaped"}\n\n'
+        );
+        controller.enqueue(
+          'data: {"type":"text-start","id":"text-escaped"}\n\n'
+        );
+        controller.enqueue(
+          `data: ${JSON.stringify({
+            type: "text-delta",
+            id: "text-escaped",
+            delta: "\u0000".repeat(
+              AI_CONVERSATION_REALTIME_MAX_DELTA_CODE_POINTS
+            ),
+          })}\n\n`
+        );
+        setTimeout(() => {
+          sourceClosedAt = Date.now();
+          controller.close();
+        }, 500);
+      },
+    });
+
+    await forwardAIConversationRealtimeStream({
+      stream: source,
+      turn,
+      getTerminalEvent: () => null,
+      publish: async (event) => {
+        published.push({ event, at: Date.now() });
+      },
+    });
+
+    const textEvent = published.find(
+      ({ event }) =>
+        event.kind === "stream-chunks" &&
+        event.chunks.some((chunk) => chunk.kind === "text-delta")
+    );
+    expect(textEvent).toBeDefined();
+    expect(textEvent?.at).toBeLessThan(sourceClosedAt);
+    const encoder = new TextEncoder();
+    for (const { event } of published) {
+      expect(encoder.encode(JSON.stringify(event)).byteLength).toBeLessThanOrEqual(
+        7 * 1024
+      );
+    }
+  }, 2_000);
 });
 
 class FakeRealtimeConnection implements RealtimeConnection {
@@ -370,20 +435,29 @@ class FakeRealtimeClient implements RealtimeClient {
   }
 }
 
+function installFakeRealtimeClient(fakeClient: FakeRealtimeClient): () => void {
+  const globalRealtime = globalThis as typeof globalThis & {
+    __pusherClient?: RealtimeClient;
+    __pusherChannelRefCounts?: Record<string, number>;
+    __pusherConnectionObservable?: unknown;
+  };
+  const previousClient = globalRealtime.__pusherClient;
+  const previousCounts = globalRealtime.__pusherChannelRefCounts;
+  const previousObservable = globalRealtime.__pusherConnectionObservable;
+  globalRealtime.__pusherClient = fakeClient;
+  globalRealtime.__pusherChannelRefCounts = {};
+  globalRealtime.__pusherConnectionObservable = undefined;
+  return () => {
+    globalRealtime.__pusherClient = previousClient;
+    globalRealtime.__pusherChannelRefCounts = previousCounts;
+    globalRealtime.__pusherConnectionObservable = previousObservable;
+  };
+}
+
 describe("AI conversation realtime client service", () => {
   test("uses one subscription and replaces partial text with the committed snapshot", async () => {
-    const globalRealtime = globalThis as typeof globalThis & {
-      __pusherClient?: RealtimeClient;
-      __pusherChannelRefCounts?: Record<string, number>;
-      __pusherConnectionObservable?: unknown;
-    };
-    const previousClient = globalRealtime.__pusherClient;
-    const previousCounts = globalRealtime.__pusherChannelRefCounts;
-    const previousObservable = globalRealtime.__pusherConnectionObservable;
     const fakeClient = new FakeRealtimeClient();
-    globalRealtime.__pusherClient = fakeClient;
-    globalRealtime.__pusherChannelRefCounts = {};
-    globalRealtime.__pusherConnectionObservable = undefined;
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
 
     const service = new AIConversationRealtimeService("chat");
     let liveMessages = [textMessage("user-1", "user", "hello")];
@@ -473,14 +547,288 @@ describe("AI conversation realtime client service", () => {
         { type: "text", text: "committed" },
       ]);
 
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "stream-chunks",
+        ...turn,
+        sequence: 1,
+        chunks: [{ kind: "text-delta", id: "text-live", delta: " stale" }],
+      });
+      expect(service.getSnapshot()).toBe(false);
+      expect(liveMessages.at(-1)?.parts).toEqual([
+        { type: "text", text: "committed" },
+      ]);
+
       unregisterPrimary();
       unregisterSecondary();
       expect(fakeClient.unsubscribeCount).toBe(1);
     } finally {
       service.destroy();
-      globalRealtime.__pusherClient = previousClient;
-      globalRealtime.__pusherChannelRefCounts = previousCounts;
-      globalRealtime.__pusherConnectionObservable = previousObservable;
+      restoreRealtime();
     }
   });
+
+  test("reloads canonical state after a missing sequence deadline", async () => {
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    let liveMessages = [textMessage("user-1", "user", "hello")];
+    let canonicalMessages = [...liveMessages];
+    let canonicalRevision = turn.revision;
+    let loadCount = 0;
+    const controller: AIConversationRealtimeController = {
+      getStatus: () => "ready",
+      getMessages: () => liveMessages,
+      setMessages: (messages) => {
+        liveMessages = messages;
+      },
+      load: async () => {
+        loadCount += 1;
+        return {
+          owner: "alice",
+          conversation: {
+            id: turn.conversationId,
+            channel: "chat",
+            revision: canonicalRevision,
+            createdAt: turn.startedAt,
+            updatedAt: turn.startedAt,
+            messageCount: canonicalMessages.length,
+            oldestSeq: canonicalMessages.length > 0 ? 1 : null,
+            newestSeq:
+              canonicalMessages.length > 0 ? canonicalMessages.length : null,
+            historyTruncated: false,
+            canImportLegacy: false,
+          },
+          messages: canonicalMessages,
+          stale: false,
+        };
+      },
+      commit: (loaded) => {
+        liveMessages = loaded.messages;
+        return true;
+      },
+      stop: () => undefined,
+    };
+
+    try {
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      const channel = fakeClient.channels.get("private-chats-alice");
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "turn-started",
+        ...turn,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(loadCount).toBe(1);
+
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "stream-chunks",
+        ...turn,
+        sequence: 1,
+        chunks: [{ kind: "text-delta", id: "text-live", delta: "late" }],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+      expect(loadCount).toBeGreaterThanOrEqual(2);
+      expect(service.getSnapshot()).toBe(true);
+
+      canonicalRevision += 1;
+      canonicalMessages = [
+        textMessage("user-1", "user", "hello"),
+        textMessage("assistant-live", "assistant", "canonical"),
+      ];
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "turn-finished",
+        ...turn,
+        revision: canonicalRevision,
+        outcome: "completed",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(service.getSnapshot()).toBe(false);
+      expect(liveMessages.at(-1)?.parts).toEqual([
+        { type: "text", text: "canonical" },
+      ]);
+
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+    }
+  }, 3_000);
+
+  test("applies reset updates even when the operation originated locally", async () => {
+    const previousFetch = globalThis.fetch;
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    const replacementConversationId = "22222222-2222-4222-8222-222222222222";
+    let stopCount = 0;
+    let liveMessages = [textMessage("user-1", "user", "old")];
+    clearAIConversationSessionCache();
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          owner: "alice",
+          conversation: {
+            id: turn.conversationId,
+            channel: "chat",
+            revision: turn.revision,
+            createdAt: turn.startedAt,
+            updatedAt: turn.startedAt,
+            messageCount: 0,
+            oldestSeq: null,
+            newestSeq: null,
+            historyTruncated: false,
+            canImportLegacy: false,
+          },
+          messages: [],
+          page: { nextCursor: null, hasMore: false },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+
+    try {
+      const requestContext = await getAIConversationRequestContext({
+        channel: "chat",
+        username: "alice",
+        localMessages: [],
+      });
+      expect(requestContext).toBeDefined();
+      if (!requestContext) throw new Error("Missing local request context");
+      const controller: AIConversationRealtimeController = {
+        getStatus: () => "ready",
+        getMessages: () => liveMessages,
+        setMessages: (messages) => {
+          liveMessages = messages;
+        },
+        load: async () => ({
+          owner: "alice",
+          conversation: {
+            id: replacementConversationId,
+            channel: "chat",
+            revision: 0,
+            createdAt: turn.startedAt,
+            updatedAt: turn.startedAt,
+            messageCount: 0,
+            oldestSeq: null,
+            newestSeq: null,
+            historyTruncated: false,
+            canImportLegacy: false,
+          },
+          messages: [],
+          stale: false,
+        }),
+        commit: (loaded) => {
+          liveMessages = loaded.messages;
+          return true;
+        },
+        stop: () => {
+          stopCount += 1;
+        },
+      };
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      fakeClient.channels.get("private-chats-alice")?.emit(
+        AI_CONVERSATION_REALTIME_EVENT,
+        {
+          kind: "conversation-updated",
+          reason: "reset",
+          channel: "chat",
+          conversationId: replacementConversationId,
+          revision: 0,
+          operationId: requestContext.operationId,
+        }
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(stopCount).toBe(1);
+      expect(liveMessages).toEqual([]);
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+      globalThis.fetch = previousFetch;
+      clearAIConversationSessionCache();
+    }
+  });
+
+  test("retries a failed base hydration without waiting for focus", async () => {
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    let liveMessages = [textMessage("user-1", "user", "hello")];
+    let loadCount = 0;
+    const controller: AIConversationRealtimeController = {
+      getStatus: () => "ready",
+      getMessages: () => liveMessages,
+      setMessages: (messages) => {
+        liveMessages = messages;
+      },
+      load: async () => {
+        loadCount += 1;
+        if (loadCount === 1) throw new Error("temporary load failure");
+        return {
+          owner: "alice",
+          conversation: {
+            id: turn.conversationId,
+            channel: "chat",
+            revision: turn.revision,
+            createdAt: turn.startedAt,
+            updatedAt: turn.startedAt,
+            messageCount: 1,
+            oldestSeq: 1,
+            newestSeq: 1,
+            historyTruncated: false,
+            canImportLegacy: false,
+          },
+          messages: [textMessage("user-1", "user", "hello")],
+          stale: false,
+        };
+      },
+      commit: (loaded) => {
+        liveMessages = loaded.messages;
+        return true;
+      },
+      stop: () => undefined,
+    };
+
+    try {
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      const channel = fakeClient.channels.get("private-chats-alice");
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "turn-started",
+        ...turn,
+      });
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "stream-chunks",
+        ...turn,
+        sequence: 0,
+        chunks: [
+          { kind: "start", messageId: "assistant-retried" },
+          { kind: "text-start", id: "text-retried" },
+          { kind: "text-delta", id: "text-retried", delta: "recovered" },
+        ],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      expect(loadCount).toBeGreaterThanOrEqual(2);
+      expect(liveMessages.at(-1)?.parts).toEqual([
+        { type: "text", text: "recovered" },
+      ]);
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+    }
+  }, 2_000);
 });

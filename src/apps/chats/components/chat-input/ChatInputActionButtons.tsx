@@ -10,6 +10,7 @@ type Props = Pick<
   | "isMacTheme"
   | "isWindowsTheme"
   | "isLoading"
+  | "isRemoteStreaming"
   | "isOffline"
   | "isRecording"
   | "isSpeechPlaying"
@@ -186,6 +187,7 @@ export function ChatInputActionButtons(props: Props) {
     input,
     selectedImage,
     isLoading,
+    isRemoteStreaming,
     isSpeechPlaying,
     isRecording,
     isOffline,
@@ -195,6 +197,7 @@ export function ChatInputActionButtons(props: Props) {
   } = props;
 
   if (isLoading || isSpeechPlaying || isRecording) {
+    if (isRemoteStreaming && !isSpeechPlaying && !isRecording) return null;
     return (
       <ChatInputStopButton
         isMacTheme={isMacTheme}

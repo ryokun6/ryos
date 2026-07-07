@@ -94,6 +94,10 @@ function parseTurn(
     value.startedAt.length === 0 ||
     value.startedAt.length > MAX_STARTED_AT_LENGTH ||
     !Number.isFinite(Date.parse(value.startedAt)) ||
+    (value.trigger === "regenerate-message" &&
+      !isBoundedIdentifier(value.targetMessageId)) ||
+    (value.trigger === "submit-message" &&
+      value.targetMessageId !== undefined) ||
     (value.targetMessageId !== undefined &&
       !isBoundedIdentifier(value.targetMessageId))
   ) {

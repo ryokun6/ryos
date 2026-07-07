@@ -191,6 +191,8 @@ describe("server AI chat lifecycle wiring", () => {
     expect(source).toContain("forwardAIConversationRealtimeStream({");
     expect(source).toContain("kind: \"turn-started\"");
     expect(source).toContain("kind: \"turn-finished\"");
+    expect(source).toContain("regenerationTargetMessageId");
+    expect(source).toContain("preparedConversation.messages.findLast");
     expect(source).toContain("waitUntil(forwarding)");
   });
 });

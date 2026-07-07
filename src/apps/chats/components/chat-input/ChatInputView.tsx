@@ -118,6 +118,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
               isMacTheme={vm.isMacTheme}
               isWindowsTheme={vm.isWindowsTheme}
               isLoading={vm.isLoading}
+              isRemoteStreaming={vm.isRemoteStreaming}
               isOffline={vm.isOffline}
               isRecording={vm.isRecording}
               isSpeechPlaying={vm.isSpeechPlaying}

@@ -406,10 +406,11 @@ export default apiHandler<{
     let storedConversation: Awaited<
       ReturnType<typeof beginAIConversationTurnWithStatus>
     >["document"] | null = null;
+    let regenerationTargetMessageId: string | undefined;
     if (isAuthenticated && username && !isProactiveGreeting) {
       try {
         if (normalizedTrigger === "regenerate-message") {
-          await prepareAIConversationRegeneration({
+          const preparedConversation = await prepareAIConversationRegeneration({
             redis,
             username,
             channel: conversationChannel,
@@ -426,6 +427,12 @@ export default apiHandler<{
               ? { targetMessageId: messageId }
               : {}),
           });
+          regenerationTargetMessageId =
+            typeof messageId === "string" && messageId
+              ? messageId
+              : preparedConversation.messages.findLast(
+                  (candidate) => candidate.role === "assistant"
+                )?.id;
         }
         let action: BeginAIConversationTurnInput["action"];
         if (normalizedTrigger === "regenerate-message") {
@@ -477,9 +484,8 @@ export default apiHandler<{
           operationId: conversationOperationId,
           trigger: normalizedTrigger,
           ...(normalizedTrigger === "regenerate-message" &&
-          typeof messageId === "string" &&
-          messageId
-            ? { targetMessageId: messageId }
+          regenerationTargetMessageId
+            ? { targetMessageId: regenerationTargetMessageId }
             : {}),
           startedAt: new Date().toISOString(),
         };
@@ -709,7 +715,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
         normalizedTrigger === "regenerate-message"
           ? getAIConversationRegenerationModelMessages(
               storedConversation,
-              typeof messageId === "string" ? messageId : undefined
+              regenerationTargetMessageId
             )
           : getAIConversationModelMessages(storedConversation);
       modelConversationMessages =
@@ -839,8 +845,8 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               turnId: conversationOperationId,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
-              ...(typeof messageId === "string" && messageId
-                ? { targetMessageId: messageId }
+              ...(regenerationTargetMessageId
+                ? { targetMessageId: regenerationTargetMessageId }
                 : {}),
             });
           } else {

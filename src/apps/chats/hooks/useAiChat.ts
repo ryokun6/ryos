@@ -709,7 +709,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     () => ({
       getStatus: () => getSharedAiChat().status,
       getMessages: () => getSharedAiChat().messages,
-      setMessages: (messages) => setSdkMessages(messages),
+      setMessages: (messages) => {
+        setAiMessages(messages);
+        setSdkMessages(messages);
+      },
       load: async () => {
         const loaded = await loadServerConversation(true, false);
         if (!loaded) throw new Error("Conversation owner is unavailable");
@@ -721,6 +724,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [
       commitServerConversation,
       loadServerConversation,
+      setAiMessages,
       setSdkMessages,
       sdkStop,
     ]
@@ -745,6 +749,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const isLoading =
     status === "streaming" || status === "submitted" || isRemoteStreaming;
   const retryLastUserMessage = useCallback((): Promise<void> => {
+    if (chatConversationRealtime.getSnapshot()) return Promise.resolve();
     const messages = getSharedAiChat().messages;
     let latestUserMessage: AIChatMessage | undefined;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -797,6 +802,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   // --- Action Handlers ---
   const handleSubmitMessage = useCallback(
     async (messageContent: string, imageContent: string | null = null) => {
+      if (chatConversationRealtime.getSnapshot()) return false;
       const submissionIdentity = captureChatSubmissionIdentity();
       if (!messageContent.trim() && !imageContent) return false; // Don't submit empty messages
 
@@ -940,6 +946,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const handleDirectMessageSubmit = useCallback(
     async (message: string) => {
+      if (chatConversationRealtime.getSnapshot()) return;
       const submissionIdentity = captureChatSubmissionIdentity();
       if (!message.trim()) return; // Don't submit empty messages
 
@@ -1214,6 +1221,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     messages: messagesWithTimestamps, // Return messages with timestamps
     handleSubmitMessage,
     isLoading,
+    isRemoteStreaming,
     retryLastUserMessage,
     regenerateAssistantMessage: sdkRegenerate,
     error,

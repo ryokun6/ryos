@@ -1,5 +1,6 @@
 export interface ChatInputProps {
   isLoading: boolean;
+  isRemoteStreaming?: boolean;
   isForeground?: boolean;
   onSubmitMessage: (
     message: string,

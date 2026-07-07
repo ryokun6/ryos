@@ -42,25 +42,25 @@ function jsonByteLength(value: unknown): number {
   }
 }
 
-function splitTextDelta(delta: string): string[] {
+function splitTextDelta(id: string, delta: string): string[] {
   const pieces: string[] = [];
   let current = "";
-  let currentBytes = 0;
+  let currentCodePoints = 0;
 
   for (const codePoint of delta) {
-    const codePointBytes = encoder.encode(codePoint).byteLength;
+    const candidate = `${current}${codePoint}`;
     if (
       current &&
-      (currentBytes + codePointBytes > REALTIME_DELTA_MAX_BYTES ||
-        [...current].length >=
-          AI_CONVERSATION_REALTIME_MAX_DELTA_CODE_POINTS)
+      (currentCodePoints >= AI_CONVERSATION_REALTIME_MAX_DELTA_CODE_POINTS ||
+        jsonByteLength({ kind: "text-delta", id, delta: candidate }) >
+          REALTIME_DELTA_MAX_BYTES)
     ) {
       pieces.push(current);
       current = "";
-      currentBytes = 0;
+      currentCodePoints = 0;
     }
     current += codePoint;
-    currentBytes += codePointBytes;
+    currentCodePoints += 1;
   }
   if (current) pieces.push(current);
   return pieces;
@@ -107,7 +107,7 @@ function toRealtimeChunks(
       ) {
         return [];
       }
-      return splitTextDelta(chunk.delta).map((delta) => ({
+      return splitTextDelta(chunk.id, chunk.delta).map((delta) => ({
         kind: "text-delta",
         id: chunk.id,
         delta,
@@ -160,17 +160,26 @@ export async function forwardAIConversationRealtimeStream({
   const reader = stream.getReader();
   let chunks: AIConversationRealtimeChunk[] = [];
   let sequence = 0;
-  let lastFlushAt = Date.now();
+  let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingTimedFlush: Promise<void> | null = null;
+  let publishChain = Promise.resolve();
 
-  const safePublish = async (event: AIConversationRealtimeEvent) => {
-    try {
-      await publish(event);
-    } catch (error) {
-      onError?.(error);
-    }
+  const safePublish = (event: AIConversationRealtimeEvent): Promise<void> => {
+    publishChain = publishChain
+      .then(() => publish(event))
+      .catch((error) => {
+        onError?.(error);
+      });
+    return publishChain;
+  };
+
+  const clearFlushTimer = () => {
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = null;
   };
 
   const flush = async () => {
+    clearFlushTimer();
     if (chunks.length === 0) return;
     const event: AIConversationRealtimeEvent = {
       kind: "stream-chunks",
@@ -179,9 +188,24 @@ export async function forwardAIConversationRealtimeStream({
       chunks,
     };
     chunks = [];
+    if (jsonByteLength(event) > REALTIME_BATCH_MAX_BYTES) {
+      onError?.(new Error("Realtime conversation batch exceeds payload limit"));
+      return;
+    }
     sequence += 1;
-    lastFlushAt = Date.now();
     await safePublish(event);
+  };
+
+  const scheduleFlush = () => {
+    if (flushTimer) return;
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      const timedFlush = flush();
+      pendingTimedFlush = timedFlush;
+      void timedFlush.finally(() => {
+        if (pendingTimedFlush === timedFlush) pendingTimedFlush = null;
+      });
+    }, REALTIME_FLUSH_INTERVAL_MS);
   };
 
   const queueChunk = async (chunk: AIConversationRealtimeChunk) => {
@@ -198,6 +222,18 @@ export async function forwardAIConversationRealtimeStream({
         jsonByteLength(candidate) > REALTIME_BATCH_MAX_BYTES)
     ) {
       await flush();
+      const singletonEvent: AIConversationRealtimeEvent = {
+        kind: "stream-chunks",
+        ...turn,
+        sequence,
+        chunks: [chunk],
+      };
+      if (jsonByteLength(singletonEvent) > REALTIME_BATCH_MAX_BYTES) {
+        onError?.(
+          new Error("Realtime conversation chunk exceeds payload limit")
+        );
+        return;
+      }
       chunks = [chunk];
     } else if (
       chunks.length === 0 &&
@@ -211,10 +247,11 @@ export async function forwardAIConversationRealtimeStream({
 
     if (
       chunk.kind === "start" ||
-      chunk.kind === "text-end" ||
-      Date.now() - lastFlushAt >= REALTIME_FLUSH_INTERVAL_MS
+      chunk.kind === "text-end"
     ) {
       await flush();
+    } else {
+      scheduleFlush();
     }
   };
 
@@ -235,7 +272,11 @@ export async function forwardAIConversationRealtimeStream({
     reader.releaseLock();
   }
 
+  clearFlushTimer();
+  const timedFlush = pendingTimedFlush;
+  if (timedFlush) await timedFlush;
   await flush();
+  await publishChain;
   await safePublish(
     getTerminalEvent() ?? {
       kind: "turn-finished",
