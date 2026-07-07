@@ -56,9 +56,13 @@ For each section, launch a Task with:
 
 Featured cards need an exactly **1280×720 WebP** in `public/docs-assets/changelog/`, named `YYYY-MM-NN-slug-16x9.webp`. Capture from the running app:
 
-1. Start `bun run dev`, then screenshot with Playwright (`playwright-core` is in node_modules; Chrome at `/usr/bin/google-chrome-stable`) using a `1280x720` viewport, `deviceScaleFactor: 1`. Stage a good shot: relevant app/pane open (`http://localhost:5173/<app-id>` launches an app directly), wait ~20s for boot + entrance animations.
-2. Convert: `sharp(png).webp({ quality: 80 }).toFile(...)` and verify metadata is 1280×720.
-3. The Vite watcher ignores `public/**` — restart the dev server before visually verifying new assets, or they 200 with the SPA HTML fallback.
+1. Start `bun run dev`, then screenshot with Playwright (`playwright-core` is in node_modules; Chrome at `/usr/bin/google-chrome-stable`) using a `1280x720` viewport, `deviceScaleFactor: 1`. Open the relevant app/pane (`http://localhost:5173/<app-id>` launches an app directly) and wait ~20s for boot + entrance animations.
+2. Stage the shot deliberately:
+   - **Center the main window** in the frame. Drag its title bar with `page.mouse` — the window root is `[data-window-instance-id]` and the drag handle is its `.title-bar` child; compute the delta from the window's `getBoundingClientRect()` to `(1280 - width) / 2` horizontally and centered below the ~30px menubar vertically, and move in ~10 steps so the drag registers.
+   - **Keep the desktop clean**: no extra windows, dialogs, or launch toasts (let them time out before capturing). Default desktop icons and the dock are fine.
+   - **Pin a calm wallpaper** — the default is a shuffle category and can land on something busy. Seed localStorage in an init script before load, e.g. `localStorage.setItem("ryos:display-settings", JSON.stringify({ state: { currentWallpaper: wp, wallpaperSource: wp }, version: 2 }))` with `wp = "/wallpapers/photos/aqua/0-aqua-blue.jpg"` (check the current version in `useDisplaySettingsStore.ts`).
+3. Convert: `sharp(png).webp({ quality: 80 }).toFile(...)` and verify metadata is 1280×720.
+4. The Vite watcher ignores `public/**` — restart the dev server before visually verifying new assets, or they 200 with the SPA HTML fallback.
 
 ### 4. Generate HTML
 
