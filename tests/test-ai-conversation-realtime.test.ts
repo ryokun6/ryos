@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  AI_CONVERSATION_REALTIME_EVENT,
   AI_CONVERSATION_REALTIME_MAX_DELTA_CODE_POINTS,
   parseAIConversationRealtimeEvent,
   type AIConversationRealtimeEvent,
