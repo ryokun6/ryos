@@ -75,6 +75,7 @@
       "adding": "Adding…",
       "saveFile": "Save File",
       "enterFileName": "Enter a name for your file",
+      "where": "Where:",
       "discardChanges": "Discard Changes",
       "discardChangesDesc": "Do you want to discard your changes and create a new file?",
       "keepNewDocument": "Keep New Document",
@@ -527,7 +528,10 @@
         "importFailedDesc": "Couldn't import the file.",
         "importFailedAppletDesc": "Couldn't import the applet file.",
         "invalidFileType": "Invalid file type",
-        "invalidFileTypeDesc": "Only .app, .gz, and .html files can be imported to Applets"
+        "invalidFileTypeDesc": "Only .app, .gz, and .html files can be imported to Applets",
+        "reservedFolderName": "\"{{name}}\" is a reserved name. Choose another name.",
+        "invalidFolderName": "That name can't be used. Try a different name.",
+        "folderExists": "An item named \"{{name}}\" already exists."
       },
       "tableHeaders": {
         "name": "Name",

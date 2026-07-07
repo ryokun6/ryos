@@ -15,6 +15,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedFolderName } from "@/utils/i18n";
 import { useTranslation } from "react-i18next";
 import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
+import { isProtectedSystemPath } from "@/services/vfs/pathPolicy";
 
 export type ViewType = "small" | "large" | "list";
 export type SortType = "name" | "date" | "size" | "kind";
@@ -97,9 +98,11 @@ export function FinderMenuBar({
     selectedFile &&
     selectedFile.path !== "/Trash" &&
     !selectedFile.path.startsWith("/Trash/") &&
-    // Prevent root folders from being moved to trash
-    selectedFile.path !== "/Applications" &&
-    selectedFile.path !== "/Documents" &&
+    // Prevent system-managed root folders from being moved to trash
+    // (user-created root folders remain trashable)
+    !isProtectedSystemPath(selectedFile.path) &&
+    // Prevent virtual items (apps, songs, sites) from being moved to trash
+    !selectedFile.type?.includes("virtual") &&
     // Prevent applications from being moved to trash
     !selectedFile.path.startsWith("/Applications/");
 

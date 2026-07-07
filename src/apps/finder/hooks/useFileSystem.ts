@@ -17,6 +17,7 @@ import { useVideoStoreShallow } from "@/stores/useVideoStore";
 import { listVirtualMusicOrVideosPath } from "@/services/vfs/virtualTrees";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getStoreForFile, type StoredContent } from "@/utils/indexedDBOperations";
+import { isWritablePath } from "@/services/vfs/pathPolicy";
 import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
@@ -603,12 +604,18 @@ export function useFileSystem(
           modifiedAt: item.modifiedAt ? new Date(item.modifiedAt) : undefined,
         }));
 
-        // --- START EDIT: Fetch content URLs for /Images path and its subdirectories ---
-        if (currentPath === "/Images" || currentPath.startsWith("/Images/")) {
+        // --- START EDIT: Fetch content URLs for image files (any writable path) ---
+        const resolvesToImagesStore = (item: FileSystemItem) =>
+          !item.isDirectory &&
+          getStoreForFile(item.path, {
+            name: item.name,
+            type: item.type,
+          }) === STORES.IMAGES;
+        if (itemsMetadata.some(resolvesToImagesStore)) {
           displayFiles = await Promise.all(
             itemsMetadata.map(async (item) => {
               let contentUrl: string | undefined;
-              if (!item.isDirectory && item.uuid) {
+              if (!item.isDirectory && item.uuid && resolvesToImagesStore(item)) {
                 try {
                   log.debug("Fetching image content for display", {
                     name: item.name,
@@ -1077,10 +1084,12 @@ export function useFileSystem(
       const nextApplied = state.categoryStatus.files.lastAppliedRemoteAt;
       const prevApplied = prevState.categoryStatus.files.lastAppliedRemoteAt;
 
+      // Refresh writable directories so image thumbnails pick up remotely
+      // synced content (blob URLs are only created during loadFiles).
       if (
         nextApplied &&
         nextApplied !== prevApplied &&
-        (currentPath === "/Images" || currentPath.startsWith("/Images/"))
+        isWritablePath(currentPath)
       ) {
         loadFiles();
       }
@@ -1385,6 +1394,13 @@ export function useFileSystem(
             );
             // Delete from source store
             await dbOperations.delete(sourceStoreName, sourceFile.uuid);
+            const sourceDeletionBucket =
+              getCloudSyncDeletionBucketForContentStore(sourceStoreName);
+            if (sourceDeletionBucket) {
+              useCloudSyncStore
+                .getState()
+                .markDeletedKeys(sourceDeletionBucket, [sourceFile.uuid]);
+            }
             const sourceSyncDomain =
               getCloudSyncDomainForContentStore(sourceStoreName);
             const targetSyncDomain =
@@ -1445,29 +1461,57 @@ export function useFileSystem(
         ...getFinderAnalyticsPathInfo(newPath, itemToRename.type),
       });
 
-      // 2. Update content metadata (name field) in IndexedDB if it's a file with content
+      // 2. Update content metadata (name field) in IndexedDB if it's a file with content.
+      // If the rename changes the resolved content store (e.g. extension
+      // change in an extension-routed folder), move the content across stores.
       if (!itemToRename.isDirectory && itemToRename.uuid) {
         const storeName = getStoreForFile(oldPath, {
           name: itemToRename.name,
           type: itemToRename.type,
         });
+        const newStoreName = getStoreForFile(newPath, {
+          name: newName,
+          type: itemToRename.type,
+        });
         if (storeName) {
+          const targetStoreName = newStoreName || storeName;
           try {
             const content = await dbOperations.get<DocumentContent>(
               storeName,
               itemToRename.uuid // Use UUID
             );
             if (content) {
-              // Update the name field in the content
+              // Write (with updated name) to the resolved target store
               await dbOperations.put<DocumentContent>(
-                storeName,
+                targetStoreName,
                 {
                   ...content,
                   name: newName,
                 },
                 itemToRename.uuid
               ); // Keep same UUID
-              const syncDomain = getCloudSyncDomainForContentStore(storeName);
+              if (targetStoreName !== storeName) {
+                await dbOperations.delete(storeName, itemToRename.uuid);
+                const sourceDeletionBucket =
+                  getCloudSyncDeletionBucketForContentStore(storeName);
+                if (sourceDeletionBucket) {
+                  useCloudSyncStore
+                    .getState()
+                    .markDeletedKeys(sourceDeletionBucket, [
+                      itemToRename.uuid,
+                    ]);
+                }
+                const sourceSyncDomain =
+                  getCloudSyncDomainForContentStore(storeName);
+                if (sourceSyncDomain) {
+                  emitCloudSyncContentChange(
+                    sourceSyncDomain,
+                    itemToRename.uuid
+                  );
+                }
+              }
+              const syncDomain =
+                getCloudSyncDomainForContentStore(targetStoreName);
               if (syncDomain) {
                 emitCloudSyncContentChange(syncDomain, itemToRename.uuid);
               }

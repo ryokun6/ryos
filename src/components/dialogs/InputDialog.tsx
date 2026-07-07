@@ -10,6 +10,13 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -32,6 +39,11 @@ interface InputDialogProps {
   }>;
   submitLabel?: string;
   showCancel?: boolean;
+  // Optional select rendered below the input (e.g. save-location picker)
+  selectLabel?: string;
+  selectOptions?: Array<{ label: string; value: string }>;
+  selectValue?: string;
+  onSelectChange?: (value: string) => void;
 }
 
 export function InputDialog({
@@ -47,6 +59,10 @@ export function InputDialog({
   additionalActions = [],
   submitLabel,
   showCancel = true,
+  selectLabel,
+  selectOptions,
+  selectValue,
+  onSelectChange,
 }: InputDialogProps) {
   const { t } = useTranslation();
   const {
@@ -117,6 +133,51 @@ export function InputDialog({
         }}
         disabled={isLoading}
       />
+      {selectOptions && onSelectChange && (
+        <div className="mt-2 flex items-center gap-2">
+          {selectLabel && (
+            <span
+              className={cn(
+                "text-neutral-500 shrink-0",
+                isWindowsTheme
+                  ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                  : "font-geneva-12 text-[12px]"
+              )}
+              style={{
+                fontFamily: isWindowsTheme
+                  ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                  : undefined,
+                fontSize: isWindowsTheme ? "11px" : undefined,
+              }}
+            >
+              {selectLabel}
+            </span>
+          )}
+          <Select
+            value={selectValue}
+            onValueChange={onSelectChange}
+            disabled={isLoading}
+          >
+            <SelectTrigger
+              className={cn(
+                "flex-1 min-w-0",
+                isWindowsTheme
+                  ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px] h-7"
+                  : "font-geneva-12 text-[12px] h-7"
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {selectOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {errorMessage && (
         <p className="text-red-600 text-sm mt-1">{errorMessage}</p>
       )}

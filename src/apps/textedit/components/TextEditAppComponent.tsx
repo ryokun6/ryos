@@ -455,9 +455,9 @@ function TextEditContent({
     }
   };
 
-  const handleSaveSubmit = async (fileName: string) => {
+  const handleSaveSubmit = async (fileName: string, directoryPath?: string) => {
     try {
-      await handleSaveAs(fileName);
+      await handleSaveAs(fileName, directoryPath);
       dialogControls?.closeSaveDialog();
     } catch (error) {
       console.error("Save failed:", error);
@@ -547,12 +547,12 @@ function TextEditContent({
     );
   };
 
-  const handleCloseSave = async (fileName: string) => {
+  const handleCloseSave = async (fileName: string, directoryPath?: string) => {
     try {
       if (currentFilePath) {
         await handleSave();
       } else {
-        await handleSaveAs(fileName);
+        await handleSaveAs(fileName, directoryPath);
       }
       dialogControls?.closeCloseSaveDialog();
       window.dispatchEvent(

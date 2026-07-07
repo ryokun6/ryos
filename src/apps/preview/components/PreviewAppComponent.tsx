@@ -4,7 +4,7 @@ import type { AppProps } from "@/apps/base/types";
 import type { PreviewInitialData } from "..";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
-import { InputDialog } from "@/components/dialogs/InputDialog";
+import { SaveFileDialog } from "@/components/dialogs/SaveFileDialog";
 import { cn } from "@/lib/utils";
 import { PREVIEW_FILE_ACCEPT } from "@/utils/fileAssociations";
 import { appMetadata } from "../metadata";
@@ -262,14 +262,17 @@ export function PreviewAppComponent({
       }
       trailing={
         <>
-          <InputDialog
+          <SaveFileDialog
             isOpen={isSaveAsDialogOpen}
             onOpenChange={setIsSaveAsDialogOpen}
-            onSubmit={(value) => void handleSaveAsSubmit(value)}
+            onSubmit={(value, directoryPath) =>
+              void handleSaveAsSubmit(value, directoryPath)
+            }
             title={t("apps.preview.saveAs.title")}
             description={t("apps.preview.saveAs.description")}
             value={saveAsFileName}
             onChange={setSaveAsFileName}
+            defaultDirectory={isImage ? "/Images" : "/Documents"}
             isLoading={isSaving}
           />
           <AppHelpAboutDialogs

@@ -266,12 +266,16 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     }
   };
 
-  const handleSaveSubmit = async (fileName: string) => {
+  const handleSaveSubmit = async (
+    fileName: string,
+    directoryPath: string = "/Images"
+  ) => {
     if (!canvasRef.current) return;
 
     try {
       const blob = await canvasRef.current.exportCanvas();
-      const filePath = `/Images/${fileName}${
+      const basePath = directoryPath === "/" ? "" : directoryPath;
+      const filePath = `${basePath}/${fileName}${
         fileName.endsWith(".png") ? "" : ".png"
       }`;
 

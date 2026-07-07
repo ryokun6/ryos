@@ -67,10 +67,14 @@ export function useFileOperations({
   }, [editor, currentFilePath, saveFile, onSaveSuccess]);
 
   const handleSaveAs = useCallback(
-    async (fileName: string): Promise<string> => {
+    async (
+      fileName: string,
+      directoryPath: string = "/Documents"
+    ): Promise<string> => {
       if (!editor) throw new Error("Editor not available");
 
-      const filePath = `/Documents/${fileName}${
+      const basePath = directoryPath === "/" ? "" : directoryPath;
+      const filePath = `${basePath}/${fileName}${
         fileName.endsWith(".md") ? "" : ".md"
       }`;
 

@@ -32,7 +32,6 @@ export function useFileList({
   onFileDrop,
   onDropToCurrentDirectory,
   canDropFiles = false,
-  currentPath = "/",
   onRenameRequest,
   onItemContextMenu,
 }: FileListProps) {
@@ -410,14 +409,10 @@ export function useFileList({
   }, []);
 
   const handleContainerDragOver = useCallback((e: React.DragEvent<HTMLElement>) => {
-    if (
-      canDropFiles &&
-      draggedFileRef.current &&
-      (currentPath === "/Documents" || currentPath === "/Images")
-    ) {
+    if (canDropFiles && draggedFileRef.current) {
       e.preventDefault();
     }
-  }, [canDropFiles, currentPath]);
+  }, [canDropFiles]);
 
   const handleContainerDragLeave = useCallback(() => {}, []);
 
@@ -429,16 +424,12 @@ export function useFileList({
       return;
     }
 
-    if (
-      draggedFileRef.current &&
-      onDropToCurrentDirectory &&
-      (currentPath === "/Documents" || currentPath === "/Images")
-    ) {
+    if (draggedFileRef.current && onDropToCurrentDirectory && canDropFiles) {
       onDropToCurrentDirectory(draggedFileRef.current);
     }
 
     draggedFileRef.current = null;
-  }, [currentPath, dropTargetPath, onDropToCurrentDirectory]);
+  }, [canDropFiles, dropTargetPath, onDropToCurrentDirectory]);
 
   const getDisplayName = useCallback(
     (file: FileItem): string => getFinderDisplayName(file),
