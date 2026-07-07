@@ -470,9 +470,11 @@ export function useAssistantChat(): AssistantChatHandle {
       },
       commit: commitServerConversation,
       stop: sdkStop,
+      clearError,
     }),
     [
       chat,
+      clearError,
       commitServerConversation,
       loadServerConversation,
       setMessages,

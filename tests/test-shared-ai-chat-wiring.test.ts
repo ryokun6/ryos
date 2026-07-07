@@ -100,6 +100,14 @@ describe("shared AI chat wiring", () => {
     );
     expect(finalIdentityCheck).toBeGreaterThan(imageUpload);
     expect(source.slice(finalIdentityCheck, imageSend)).not.toContain("await ");
+    expect(source.slice(finalIdentityCheck, imageSend)).toContain(
+      "chatConversationRealtime.getSnapshot()"
+    );
+    expect(
+      source.match(
+        /if \(chatConversationRealtime\.getSnapshot\(\)\) return false;/g
+      ) ?? []
+    ).toHaveLength(3);
 
     const chatsController = readSource(
       "src/apps/chats/components/chats-app/useChatsAppController.tsx"

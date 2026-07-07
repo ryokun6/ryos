@@ -13,6 +13,7 @@ import {
   type AIConversationHydration,
 } from "@/api/aiConversations";
 import {
+  refreshRealtimeAuthentication,
   subscribePusherChannel,
   subscribeRealtimeConnection,
   unsubscribePusherChannel,
@@ -41,6 +42,7 @@ export interface AIConversationRealtimeController {
   load: () => Promise<AIConversationHydration>;
   commit: (loaded: AIConversationHydration) => boolean;
   stop: () => void;
+  clearError: () => void;
 }
 
 interface Registration {
@@ -87,6 +89,7 @@ export class AIConversationRealtimeService {
   private remoteStreaming = false;
   private turnWatchdog: ReturnType<typeof setTimeout> | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private subscriptionCatchUpTimer: ReturnType<typeof setTimeout> | null = null;
   private recoveryTimer: ReturnType<typeof setTimeout> | null = null;
   private recoveryAttempt = 0;
   private authoritativeConversationId: string | null = null;
@@ -140,7 +143,13 @@ export class AIConversationRealtimeService {
 
   notifyStatusChanged(): void {
     const registration = this.activeRegistration;
-    if (!registration || registration.controller.getStatus() !== "ready") return;
+    if (
+      !registration ||
+      (!this.activeRemoteTurn && !this.pendingRefresh) ||
+      !this.prepareControllerForRemoteUpdate(registration)
+    ) {
+      return;
+    }
     if (this.activeRemoteTurn) {
       if (this.activeRemoteTurn.gapped) {
         void this.refreshCanonical();
@@ -182,6 +191,36 @@ export class AIConversationRealtimeService {
     this.remoteStreaming = value;
     this.listeners.forEach((listener) => listener());
   }
+
+  private prepareControllerForRemoteUpdate(
+    registration: Registration
+  ): boolean {
+    const status = registration.controller.getStatus();
+    if (status === "error") {
+      registration.controller.clearError();
+      return true;
+    }
+    return status === "ready";
+  }
+
+  private scheduleSubscriptionCatchUp(delay = 0): void {
+    if (this.subscriptionCatchUpTimer) {
+      clearTimeout(this.subscriptionCatchUpTimer);
+    }
+    this.subscriptionCatchUpTimer = setTimeout(() => {
+      this.subscriptionCatchUpTimer = null;
+      const active = this.activeRemoteTurn;
+      if (active && !active.baseReady && !active.gapped) {
+        void this.hydrateRemoteBase(active);
+        return;
+      }
+      void this.refreshCanonical();
+    }, delay);
+  }
+
+  private readonly handleSubscriptionSucceeded = (): void => {
+    this.scheduleSubscriptionCatchUp();
+  };
 
   private resetRecoveryRetry(): void {
     if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
@@ -308,15 +347,20 @@ export class AIConversationRealtimeService {
     }
 
     this.disconnectRealtimeChannel();
+    refreshRealtimeAuthentication();
     const channelName = getChatsUserChannelName(preferred.owner);
     const realtimeChannel = subscribePusherChannel(channelName);
     realtimeChannel.bind(
       AI_CONVERSATION_REALTIME_EVENT,
       this.handleRealtimePayload
     );
+    realtimeChannel.bind(
+      "pusher:subscription_succeeded",
+      this.handleSubscriptionSucceeded
+    );
     this.realtimeChannel = realtimeChannel;
     this.unsubscribeConnection = subscribeRealtimeConnection((state) => {
-      if (state === "disconnected" && this.activeRemoteTurn) {
+      if (state !== "connected" && this.activeRemoteTurn) {
         this.markActiveRemoteTurnGapped(this.activeRemoteTurn);
         return;
       }
@@ -337,12 +381,17 @@ export class AIConversationRealtimeService {
         }, RECONNECT_CATCH_UP_DELAY_MS);
       }
     });
+    this.scheduleSubscriptionCatchUp(RECONNECT_CATCH_UP_DELAY_MS);
   }
 
   private disconnectRealtimeChannel(): void {
     this.refreshGeneration += 1;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
+    if (this.subscriptionCatchUpTimer) {
+      clearTimeout(this.subscriptionCatchUpTimer);
+    }
+    this.subscriptionCatchUpTimer = null;
     this.resetRecoveryRetry();
     this.unsubscribeConnection?.();
     this.unsubscribeConnection = null;
@@ -351,6 +400,10 @@ export class AIConversationRealtimeService {
       realtimeChannel.unbind(
         AI_CONVERSATION_REALTIME_EVENT,
         this.handleRealtimePayload
+      );
+      realtimeChannel.unbind(
+        "pusher:subscription_succeeded",
+        this.handleSubscriptionSucceeded
       );
       unsubscribePusherChannel(realtimeChannel.name);
     }
@@ -559,7 +612,7 @@ export class AIConversationRealtimeService {
       return;
     }
     if (!this.shouldAcceptTurn(event)) return;
-    if (registration.controller.getStatus() !== "ready") {
+    if (!this.prepareControllerForRemoteUpdate(registration)) {
       this.pendingRefresh = true;
       return;
     }
@@ -571,7 +624,7 @@ export class AIConversationRealtimeService {
   private handleStreamChunks(event: AIConversationRealtimeStreamEvent): void {
     const registration = this.activeRegistration;
     if (!registration) return;
-    if (registration.controller.getStatus() !== "ready") {
+    if (!this.prepareControllerForRemoteUpdate(registration)) {
       this.pendingRefresh = true;
       return;
     }
@@ -697,7 +750,7 @@ export class AIConversationRealtimeService {
       void this.refreshCanonical();
       return;
     }
-    if (registration.controller.getStatus() !== "ready") {
+    if (!this.prepareControllerForRemoteUpdate(registration)) {
       this.scheduleRecoveryRetry();
       return;
     }
@@ -789,7 +842,7 @@ export class AIConversationRealtimeService {
   private async refreshCanonical(): Promise<boolean> {
     const registration = this.activeRegistration;
     if (!registration) return false;
-    if (registration.controller.getStatus() !== "ready") {
+    if (!this.prepareControllerForRemoteUpdate(registration)) {
       this.scheduleRecoveryRetry();
       return false;
     }

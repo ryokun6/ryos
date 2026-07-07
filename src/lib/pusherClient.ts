@@ -33,6 +33,7 @@ export interface RealtimeClient {
   subscribe(channelName: string): RealtimeChannel;
   unsubscribe(channelName: string): void;
   channel(channelName: string): RealtimeChannel | undefined;
+  refreshAuthentication?(): void;
 }
 
 const globalWithPusher = globalThis as typeof globalThis & {
@@ -422,7 +423,7 @@ const HEARTBEAT_TIMEOUT_MS = 10_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const INITIAL_RECONNECT_DELAY_MS = 1_000;
 
-class LocalRealtimeClient implements RealtimeClient {
+export class LocalRealtimeClient implements RealtimeClient {
   readonly connection = new LocalRealtimeConnection();
 
   private socket: WebSocket | null = null;
@@ -435,6 +436,7 @@ class LocalRealtimeClient implements RealtimeClient {
   private heartbeatTimeoutTimer: number | null = null;
   private boundVisibilityHandler: (() => void) | null = null;
   private boundOnlineHandler: (() => void) | null = null;
+  private authenticationRefreshQueued = false;
 
   private isConnecting = false;
 
@@ -466,6 +468,22 @@ class LocalRealtimeClient implements RealtimeClient {
 
   channel(channelName: string): RealtimeChannel | undefined {
     return this.channels.get(channelName);
+  }
+
+  refreshAuthentication(): void {
+    if (
+      typeof window === "undefined" ||
+      this.destroyed ||
+      this.authenticationRefreshQueued
+    ) {
+      return;
+    }
+    this.authenticationRefreshQueued = true;
+    queueMicrotask(() => {
+      this.authenticationRefreshQueued = false;
+      if (this.destroyed) return;
+      this.restartSocketForAuthentication();
+    });
   }
 
   destroy(): void {
@@ -522,6 +540,21 @@ class LocalRealtimeClient implements RealtimeClient {
     } else if (this.socket.readyState === WebSocket.OPEN) {
       this.sendPing();
     }
+  }
+
+  private restartSocketForAuthentication(): void {
+    const previousSocket = this.socket;
+    this.socketId += 1;
+    this.socket = null;
+    this.isConnecting = false;
+    this.stopHeartbeat();
+    this.cancelPendingReconnect();
+    this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
+
+    if (previousSocket && previousSocket.readyState <= WebSocket.OPEN) {
+      previousSocket.close();
+    }
+    this.connect();
   }
 
   private cancelPendingReconnect(): void {
@@ -632,7 +665,6 @@ class LocalRealtimeClient implements RealtimeClient {
     }
 
     if (!isCurrentSocket()) {
-      this.isConnecting = false;
       return;
     }
 
@@ -681,6 +713,21 @@ class LocalRealtimeClient implements RealtimeClient {
             window.clearTimeout(this.heartbeatTimeoutTimer);
             this.heartbeatTimeoutTimer = null;
           }
+          return;
+        }
+
+        if (
+          (payload.type === "subscription_succeeded" ||
+            payload.type === "subscription_error") &&
+          payload.channel
+        ) {
+          const eventName =
+            payload.type === "subscription_succeeded"
+              ? "pusher:subscription_succeeded"
+              : "pusher:subscription_error";
+          this.channels
+            .get(payload.channel)
+            ?.emit(eventName, payload.data ?? {});
           return;
         }
 
@@ -769,6 +816,10 @@ export function getPusherClient(): RealtimeClient {
     }
   }
   return globalWithPusher.__pusherClient;
+}
+
+export function refreshRealtimeAuthentication(): void {
+  globalWithPusher.__pusherClient?.refreshAuthentication?.();
 }
 
 export function getRealtimeConnectionState(): RealtimeConnectionState {

@@ -1173,6 +1173,16 @@ async function bootstrap(): Promise<void> {
                   username: getRealtimeSocketUser(socket),
                 });
                 subscribeRealtimeSocket(socket, channel);
+                try {
+                  socket.send(
+                    JSON.stringify({
+                      type: "subscription_succeeded",
+                      channel,
+                    }),
+                  );
+                } catch {
+                  // socket may have closed; ignore
+                }
               } else {
                 console.warn("[api-standalone] Denied realtime subscribe", {
                   channel,

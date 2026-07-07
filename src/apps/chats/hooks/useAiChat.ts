@@ -720,8 +720,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       },
       commit: commitServerConversation,
       stop: sdkStop,
+      clearError,
     }),
     [
+      clearError,
       commitServerConversation,
       loadServerConversation,
       setAiMessages,
@@ -913,6 +915,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
 
         // Send message with image attachment using files array
+        if (chatConversationRealtime.getSnapshot()) return false;
         guardedSendMessage(
           {
             text: messageContent.trim() || t("apps.chats.status.describeThisImage"),
@@ -936,6 +939,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
           return false;
         }
+        if (chatConversationRealtime.getSnapshot()) return false;
         guardedSendMessage(
           {
             text: messageContent,

@@ -377,6 +377,10 @@ class FakeRealtimeConnection implements RealtimeConnection {
     }
     this.handlers.get(eventName)?.delete(handler);
   }
+
+  emit(eventName: string): void {
+    this.handlers.get(eventName)?.forEach((handler) => handler());
+  }
 }
 
 class FakeRealtimeChannel implements RealtimeChannel {
@@ -417,6 +421,7 @@ class FakeRealtimeClient implements RealtimeClient {
   readonly channels = new Map<string, FakeRealtimeChannel>();
   subscribeCount = 0;
   unsubscribeCount = 0;
+  authenticationRefreshCount = 0;
 
   subscribe(channelName: string): FakeRealtimeChannel {
     this.subscribeCount += 1;
@@ -432,6 +437,10 @@ class FakeRealtimeClient implements RealtimeClient {
 
   channel(channelName: string): FakeRealtimeChannel | undefined {
     return this.channels.get(channelName);
+  }
+
+  refreshAuthentication(): void {
+    this.authenticationRefreshCount += 1;
   }
 }
 
@@ -492,6 +501,7 @@ describe("AI conversation realtime client service", () => {
         return true;
       },
       stop: () => undefined,
+      clearError: () => undefined,
     };
 
     try {
@@ -506,6 +516,7 @@ describe("AI conversation realtime client service", () => {
         controller,
       });
       expect(fakeClient.subscribeCount).toBe(1);
+      expect(fakeClient.authenticationRefreshCount).toBe(1);
 
       const channel = fakeClient.channels.get("private-chats-alice");
       expect(channel).toBeDefined();
@@ -567,6 +578,220 @@ describe("AI conversation realtime client service", () => {
     }
   });
 
+  test("catches up canonically when the private subscription becomes active", async () => {
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    let liveMessages = [textMessage("user-old", "user", "old")];
+    const canonicalMessages = [
+      textMessage("user-new", "user", "new"),
+      textMessage("assistant-new", "assistant", "synced"),
+    ];
+    let loadCount = 0;
+    const controller: AIConversationRealtimeController = {
+      getStatus: () => "ready",
+      getMessages: () => liveMessages,
+      setMessages: (messages) => {
+        liveMessages = messages;
+      },
+      load: async () => {
+        loadCount += 1;
+        return {
+          owner: "alice",
+          conversation: {
+            id: turn.conversationId,
+            channel: "chat",
+            revision: turn.revision + 1,
+            createdAt: turn.startedAt,
+            updatedAt: turn.startedAt,
+            messageCount: canonicalMessages.length,
+            oldestSeq: 1,
+            newestSeq: canonicalMessages.length,
+            historyTruncated: false,
+            canImportLegacy: false,
+          },
+          messages: canonicalMessages,
+          stale: false,
+        };
+      },
+      commit: (loaded) => {
+        liveMessages = loaded.messages;
+        return true;
+      },
+      stop: () => undefined,
+      clearError: () => undefined,
+    };
+
+    try {
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      fakeClient.channels
+        .get("private-chats-alice")
+        ?.emit("pusher:subscription_succeeded", {});
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await Promise.resolve();
+
+      expect(loadCount).toBe(1);
+      expect(liveMessages).toEqual(canonicalMessages);
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+    }
+  });
+
+  test("clears an SDK error before applying a remote canonical update", async () => {
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    let status: "error" | "ready" = "error";
+    let clearErrorCount = 0;
+    let liveMessages = [textMessage("user-old", "user", "old")];
+    const canonicalMessages = [
+      textMessage("user-new", "user", "new"),
+      textMessage("assistant-new", "assistant", "recovered"),
+    ];
+    const controller: AIConversationRealtimeController = {
+      getStatus: () => status,
+      getMessages: () => liveMessages,
+      setMessages: (messages) => {
+        liveMessages = messages;
+      },
+      load: async () => ({
+        owner: "alice",
+        conversation: {
+          id: turn.conversationId,
+          channel: "chat",
+          revision: turn.revision + 1,
+          createdAt: turn.startedAt,
+          updatedAt: turn.startedAt,
+          messageCount: canonicalMessages.length,
+          oldestSeq: 1,
+          newestSeq: canonicalMessages.length,
+          historyTruncated: false,
+          canImportLegacy: false,
+        },
+        messages: canonicalMessages,
+        stale: false,
+      }),
+      commit: (loaded) => {
+        liveMessages = loaded.messages;
+        return true;
+      },
+      stop: () => undefined,
+      clearError: () => {
+        clearErrorCount += 1;
+        status = "ready";
+      },
+    };
+
+    try {
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      fakeClient.channels.get("private-chats-alice")?.emit(
+        AI_CONVERSATION_REALTIME_EVENT,
+        {
+          kind: "conversation-updated",
+          reason: "imported",
+          channel: "chat",
+          conversationId: turn.conversationId,
+          revision: turn.revision + 1,
+          operationId: "op-import-remote",
+        }
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(clearErrorCount).toBe(1);
+      expect(status).toBe("ready");
+      expect(liveMessages).toEqual(canonicalMessages);
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+    }
+  });
+
+  test("recovers an active stream as soon as reconnecting exposes a gap", async () => {
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    let liveMessages = [textMessage("user-1", "user", "hello")];
+    let canonicalRevision = turn.revision;
+    let canonicalMessages = [...liveMessages];
+    const controller: AIConversationRealtimeController = {
+      getStatus: () => "ready",
+      getMessages: () => liveMessages,
+      setMessages: (messages) => {
+        liveMessages = messages;
+      },
+      load: async () => ({
+        owner: "alice",
+        conversation: {
+          id: turn.conversationId,
+          channel: "chat",
+          revision: canonicalRevision,
+          createdAt: turn.startedAt,
+          updatedAt: turn.startedAt,
+          messageCount: canonicalMessages.length,
+          oldestSeq: canonicalMessages.length > 0 ? 1 : null,
+          newestSeq:
+            canonicalMessages.length > 0 ? canonicalMessages.length : null,
+          historyTruncated: false,
+          canImportLegacy: false,
+        },
+        messages: canonicalMessages,
+        stale: false,
+      }),
+      commit: (loaded) => {
+        liveMessages = loaded.messages;
+        return true;
+      },
+      stop: () => undefined,
+      clearError: () => undefined,
+    };
+
+    try {
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      fakeClient.channels.get("private-chats-alice")?.emit(
+        AI_CONVERSATION_REALTIME_EVENT,
+        {
+          kind: "turn-started",
+          ...turn,
+        }
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(service.getSnapshot()).toBe(true);
+
+      canonicalRevision += 1;
+      canonicalMessages = [
+        textMessage("user-1", "user", "hello"),
+        textMessage("assistant-live", "assistant", "finished while offline"),
+      ];
+      fakeClient.connection.emit("connecting");
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(service.getSnapshot()).toBe(false);
+      expect(liveMessages).toEqual(canonicalMessages);
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+    }
+  });
+
   test("reloads canonical state after a missing sequence deadline", async () => {
     const fakeClient = new FakeRealtimeClient();
     const restoreRealtime = installFakeRealtimeClient(fakeClient);
@@ -607,6 +832,7 @@ describe("AI conversation realtime client service", () => {
         return true;
       },
       stop: () => undefined,
+      clearError: () => undefined,
     };
 
     try {
@@ -728,6 +954,7 @@ describe("AI conversation realtime client service", () => {
         stop: () => {
           stopCount += 1;
         },
+        clearError: () => undefined,
       };
       const unregister = service.register({
         owner: "alice",
@@ -802,6 +1029,7 @@ describe("AI conversation realtime client service", () => {
         return true;
       },
       stop: () => undefined,
+      clearError: () => undefined,
     };
 
     try {
@@ -876,6 +1104,7 @@ describe("AI conversation realtime client service", () => {
         return true;
       },
       stop: () => undefined,
+      clearError: () => undefined,
     };
 
     try {
