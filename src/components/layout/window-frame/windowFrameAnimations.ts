@@ -1,3 +1,5 @@
+import type { TargetAndTransition } from "motion/react";
+
 export const shakeTransition = {
   duration: 0.4,
   ease: "easeInOut" as const,
@@ -37,9 +39,9 @@ export function getInitialAnimation(params: {
 
 export function getExitAnimation(params: {
   keepMountedWhenMinimized: boolean;
-  dockIconOffset: DockIconOffset;
-}) {
-  const { keepMountedWhenMinimized, dockIconOffset } = params;
+  getDockIconOffset: () => DockIconOffset;
+}): TargetAndTransition {
+  const { keepMountedWhenMinimized, getDockIconOffset } = params;
   if (keepMountedWhenMinimized) {
     return {
       scale: 0.95,
@@ -49,13 +51,23 @@ export function getExitAnimation(params: {
       transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const },
     };
   }
-  return {
-    scale: 0.1,
-    opacity: 0,
-    x: dockIconOffset.x,
-    y: dockIconOffset.y,
-    transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const },
+  // Motion resolves function-valued exit definitions when the exit animation
+  // starts (see motion-dom's resolveVariantFromProps), so the dock icon is
+  // measured at minimize time — icons shift as apps open/close and the dock
+  // re-centers, and the icon may not even exist yet when the window mounts.
+  const resolveMinimizeExit = () => {
+    const dockIconOffset = getDockIconOffset();
+    return {
+      scale: 0.1,
+      opacity: 0,
+      x: dockIconOffset.x,
+      y: dockIconOffset.y,
+      transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const },
+    };
   };
+  // The public `exit` prop type doesn't include lazy resolvers even though
+  // the runtime supports them, hence the cast.
+  return resolveMinimizeExit as unknown as TargetAndTransition;
 }
 
 export function getAnimateState(params: {

@@ -198,12 +198,13 @@ export function WindowFrame({
     updateInstanceWindowState,
   });
 
-  const { dockIconOffset, launchOriginOffset } = useWindowFrameDockOffsets({
-    appId,
-    instanceId,
-    windowPosition,
-    windowSize,
-  });
+  const { dockIconOffset, getDockIconOffset, launchOriginOffset } =
+    useWindowFrameDockOffsets({
+      appId,
+      instanceId,
+      windowPosition,
+      windowSize,
+    });
 
   const exposeTransform = useWindowFrameExposeTransform({
     exposeMode,
@@ -338,7 +339,7 @@ export function WindowFrame({
               }}
               exit={getExitAnimation({
                 keepMountedWhenMinimized,
-                dockIconOffset,
+                getDockIconOffset,
               })}
               className={cn(
                 "size-full select-none",
