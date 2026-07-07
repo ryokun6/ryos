@@ -109,6 +109,26 @@ describe("shared AI chat wiring", () => {
       "setInputResetTrigger((previous) => previous + 1)"
     );
   });
+
+  test("subscribes the shared chat once and includes remote streams in loading state", () => {
+    expect(source).toContain(
+      'new AIConversationRealtimeService("chat")'
+    );
+    expect(source).toContain("chatConversationRealtime.register({");
+    expect(source).toContain(
+      'priority: sharedHandlerRole === "primary" ? 1 : 0'
+    );
+    expect(source).toContain("isRemoteStreaming");
+
+    const assistant = readSource(
+      "src/components/assistant/useAssistantChat.ts"
+    );
+    expect(assistant).toContain(
+      'new AIConversationRealtimeService(\n  "assistant"\n)'
+    );
+    expect(assistant).toContain("assistantConversationRealtime.register({");
+    expect(assistant).toContain("isRemoteStreaming");
+  });
 });
 
 describe("server AI chat lifecycle wiring", () => {
@@ -145,9 +165,10 @@ describe("server AI chat lifecycle wiring", () => {
     expect(source).toMatch(
       /agent\.stream\(\{\s*messages: enrichedMessages,\s*abortSignal: generationAbortController\.signal/
     );
-    expect(source).toContain("consumeSseStream: consumeStream");
+    expect(source).toContain("consumeSseStream: consumeResponseStream");
+    expect(source).toContain(": consumeStream;");
     expect(source).toMatch(
-      /if \(isAborted \|\| finishReason === "error"\) \{\s*await releaseTurnAfterClientAbort\(\)/
+      /if \(isAborted \|\| !finishReason \|\| finishReason === "error"\) \{\s*await releaseTurnAfterClientAbort\(\)/
     );
   });
 
@@ -163,5 +184,13 @@ describe("server AI chat lifecycle wiring", () => {
     expect(onFinish).toContain("await releaseAIConversationTurn");
     expect(onFinish).not.toContain("throw error");
     expect(onFinish).toContain("clearGenerationAbortListeners()");
+  });
+
+  test("broadcasts turn lifecycle and forwards the visible response stream", () => {
+    expect(source).toContain("broadcastAIConversationRealtimeEvent(username");
+    expect(source).toContain("forwardAIConversationRealtimeStream({");
+    expect(source).toContain("kind: \"turn-started\"");
+    expect(source).toContain("kind: \"turn-finished\"");
+    expect(source).toContain("waitUntil(forwarding)");
   });
 });

@@ -69,6 +69,8 @@ const sessions = new Map<AIConversationChannel, ConversationSession>();
 const pendingLoads = new Map<string, Promise<AIConversationHydration>>();
 const generations = new Map<string, number>();
 const activeOwners = new Map<AIConversationChannel, string>();
+const localOperationIds = new Map<string, string[]>();
+const MAX_LOCAL_OPERATION_IDS = 64;
 let cacheEpoch = 0;
 const utf8Encoder = new TextEncoder();
 
@@ -88,6 +90,33 @@ function incrementGeneration(key: string): number {
   const next = getGeneration(key) + 1;
   generations.set(key, next);
   return next;
+}
+
+function createLocalOperationId(
+  owner: string,
+  channel: AIConversationChannel
+): string {
+  const operationId = crypto.randomUUID();
+  const key = sessionKey(owner, channel);
+  localOperationIds.set(
+    key,
+    [...(localOperationIds.get(key) ?? []), operationId].slice(
+      -MAX_LOCAL_OPERATION_IDS
+    )
+  );
+  return operationId;
+}
+
+export function isLocalAIConversationOperation(
+  channel: AIConversationChannel,
+  username: string,
+  operationId: string
+): boolean {
+  return (
+    localOperationIds
+      .get(sessionKey(username.toLowerCase(), channel))
+      ?.includes(operationId) ?? false
+  );
 }
 
 function parseConversation(value: unknown): AIConversation {
@@ -686,12 +715,14 @@ export function buildAIConversationRequestBody({
 
 async function importLocalConversation(
   channel: AIConversationChannel,
+  owner: string,
   conversation: AIConversation,
   messages: readonly AIChatMessage[]
 ): Promise<void> {
+  const operationId = createLocalOperationId(owner, channel);
   const request = buildAIConversationImportRequest({
     conversationId: conversation.id,
-    operationId: crypto.randomUUID(),
+    operationId,
     messages: await externalizeLocalImages(messages),
   });
   if (!request.messages.some((message) => message.role === "user")) return;
@@ -758,6 +789,7 @@ export async function loadAIConversation(
     ) {
       await importLocalConversation(
         input.channel,
+        owner,
         loaded.conversation,
         input.localMessages
       );
@@ -810,10 +842,11 @@ export async function getAIConversationRequestContext({
   if (session.stale) {
     throw new Error("Conversation changed while preparing the request");
   }
+  const operationId = createLocalOperationId(username.toLowerCase(), channel);
   return {
     id: session.conversation.id,
     revision: session.conversation.revision,
-    operationId: crypto.randomUUID(),
+    operationId,
   };
 }
 
@@ -840,6 +873,7 @@ export async function resetAIConversationSession({
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const requestEpoch = cacheEpoch;
     const requestGeneration = incrementGeneration(key);
+    const operationId = createLocalOperationId(owner, channel);
     const response = await abortableFetch(
       getApiUrl(`/api/ai/conversations/${channel}/reset`),
       {
@@ -847,7 +881,7 @@ export async function resetAIConversationSession({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId: session.conversation.id,
-          operationId: crypto.randomUUID(),
+          operationId,
         }),
         timeout: 15_000,
         throwOnHttpError: false,
@@ -904,6 +938,7 @@ export function clearAIConversationSessionCache(): void {
   sessions.clear();
   pendingLoads.clear();
   activeOwners.clear();
+  localOperationIds.clear();
 }
 
 export function invalidateAIConversationSession(

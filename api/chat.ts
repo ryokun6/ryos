@@ -42,6 +42,10 @@ import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   type AIConversationRequestContext,
 } from "../src/shared/contracts/aiConversation.js";
+import type {
+  AIConversationRealtimeEvent,
+  AIConversationRealtimeTurn,
+} from "../src/shared/contracts/aiConversationRealtime.js";
 import {
   AIConversationError,
   beginAIConversationTurnWithStatus,
@@ -55,6 +59,10 @@ import {
   type BeginAIConversationTurnInput,
 } from "./ai/conversations/_helpers/store.js";
 import { extractPendingAIConversationResetMemory } from "./ai/conversations/_helpers/reset-memory.js";
+import {
+  broadcastAIConversationRealtimeEvent,
+  forwardAIConversationRealtimeStream,
+} from "./ai/conversations/_helpers/realtime.js";
 import { resolveAIAttachmentsForModel } from "./ai/attachments/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
 
@@ -174,6 +182,17 @@ export default apiHandler<{
       channel: "chat" | "assistant";
       id: string;
     } | null = null;
+    let realtimeTurn: AIConversationRealtimeTurn | null = null;
+    let realtimeTerminalEvent: AIConversationRealtimeEvent | null = null;
+    let realtimeStreamConsumerAttached = false;
+    const markRealtimeTurnFailed = () => {
+      if (!realtimeTurn || realtimeTerminalEvent) return;
+      realtimeTerminalEvent = {
+        kind: "turn-finished",
+        ...realtimeTurn,
+        outcome: "failed",
+      };
+    };
     let removeGenerationAbortListeners: (() => void) | null = null;
     const clearGenerationAbortListeners = () => {
       const removeListeners = removeGenerationAbortListeners;
@@ -451,6 +470,25 @@ export default apiHandler<{
           channel: conversationChannel,
           id: conversationOperationId,
         };
+        realtimeTurn = {
+          channel: conversationChannel,
+          conversationId: storedConversation.id,
+          revision: storedConversation.revision,
+          operationId: conversationOperationId,
+          trigger: normalizedTrigger,
+          ...(normalizedTrigger === "regenerate-message" &&
+          typeof messageId === "string" &&
+          messageId
+            ? { targetMessageId: messageId }
+            : {}),
+          startedAt: new Date().toISOString(),
+        };
+        await broadcastAIConversationRealtimeEvent(username, {
+          kind: "turn-started",
+          ...realtimeTurn,
+        }).catch((error) => {
+          logger.error("Failed to broadcast conversation turn start", error);
+        });
       } catch (error) {
         if (error instanceof AIConversationError) {
           logger.response(error.status, Date.now() - startTime);
@@ -478,6 +516,7 @@ export default apiHandler<{
       } catch (error) {
         logError("Failed to release disconnected conversation turn", error);
       } finally {
+        markRealtimeTurnFailed();
         if (released && activeConversationTurn === turn) {
           activeConversationTurn = null;
         }
@@ -745,23 +784,53 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
 
     res.setHeader("Access-Control-Allow-Origin", validOrigin);
     const originalMessages = modelConversationMessages;
+    const activeRealtimeTurn = realtimeTurn;
+    const consumeResponseStream =
+      activeRealtimeTurn && username
+        ? ({ stream }: { stream: ReadableStream<string> }) => {
+            realtimeStreamConsumerAttached = true;
+            const forwarding = forwardAIConversationRealtimeStream({
+              stream,
+              turn: activeRealtimeTurn,
+              getTerminalEvent: () => realtimeTerminalEvent,
+              publish: (event) =>
+                broadcastAIConversationRealtimeEvent(username, event),
+              onError: (error) => {
+                logger.error(
+                  "Failed to forward conversation realtime stream",
+                  error
+                );
+              },
+              onStreamError: async () => {
+                await releaseTurnAfterClientAbort();
+                markRealtimeTurnFailed();
+              },
+            });
+            waitUntil(forwarding);
+            return forwarding;
+          }
+        : consumeStream;
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       originalMessages,
       generateMessageId: () => crypto.randomUUID(),
-      consumeSseStream: consumeStream,
+      consumeSseStream: consumeResponseStream,
       onFinish: async ({ responseMessage, isAborted, finishReason }) => {
         try {
           if (!storedConversation || !isAuthenticated || !username) {
             return;
           }
-          if (isAborted || finishReason === "error") {
+          if (isAborted || !finishReason || finishReason === "error") {
             await releaseTurnAfterClientAbort();
+            markRealtimeTurnFailed();
             return;
           }
 
+          let completedConversation: Awaited<
+            ReturnType<typeof completeAIConversationTurn>
+          >;
           if (normalizedTrigger === "regenerate-message") {
-            await commitAIConversationRegeneration({
+            completedConversation = await commitAIConversationRegeneration({
               redis,
               username,
               channel: conversationChannel,
@@ -775,7 +844,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
                 : {}),
             });
           } else {
-            await completeAIConversationTurn({
+            completedConversation = await completeAIConversationTurn({
               redis,
               username,
               channel: conversationChannel,
@@ -786,6 +855,15 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               turnId: conversationOperationId,
             });
           }
+          if (realtimeTurn) {
+            realtimeTerminalEvent = {
+              kind: "turn-finished",
+              ...realtimeTurn,
+              conversationId: completedConversation.id,
+              revision: completedConversation.revision,
+              outcome: "completed",
+            };
+          }
           activeConversationTurn = null;
         } catch (error) {
           logError("Failed to persist completed conversation response", error);
@@ -795,6 +873,7 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
             channel: conversationChannel,
             turnId: conversationOperationId,
           }).catch(() => {});
+          markRealtimeTurnFailed();
           activeConversationTurn = null;
         } finally {
           clearGenerationAbortListeners();
@@ -811,6 +890,22 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
         turnId: activeConversationTurn.id,
       }).catch(() => {});
       activeConversationTurn = null;
+    }
+    markRealtimeTurnFailed();
+    if (
+      !realtimeStreamConsumerAttached &&
+      realtimeTerminalEvent &&
+      username
+    ) {
+      await broadcastAIConversationRealtimeEvent(
+        username,
+        realtimeTerminalEvent
+      ).catch((broadcastError) => {
+        logger.error(
+          "Failed to broadcast conversation turn failure",
+          broadcastError
+        );
+      });
     }
     logger.error("Chat API error", error);
 

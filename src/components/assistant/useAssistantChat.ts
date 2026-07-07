@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Chat, useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -40,8 +47,21 @@ import {
   loadAIConversation,
   resetAIConversationSession,
 } from "@/api/aiConversations";
+import {
+  AIConversationRealtimeService,
+  type AIConversationRealtimeController,
+} from "@/services/ai/AIConversationRealtimeService";
 
 const log = createClientLogger("Assistant");
+const assistantConversationRealtime = new AIConversationRealtimeService(
+  "assistant"
+);
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    assistantConversationRealtime.destroy();
+  });
+}
 
 export { ASSISTANT_SUMMON_MESSAGE };
 
@@ -358,16 +378,23 @@ export function useAssistantChat(): AssistantChatHandle {
     setMessages(useAssistantStore.getState().messages);
   }, [assistantIdentity, sdkStop, clearError, setMessages]);
 
-  const hydrateServerConversation = useCallback(
+  const loadServerConversation = useCallback(
     async (force = false, importLocalIfEmpty = !force) => {
-      if (!username || !isAuthenticated) return;
-      const loaded = await loadAIConversation({
+      if (!username || !isAuthenticated) return null;
+      return loadAIConversation({
         channel: "assistant",
         username,
         localMessages: useAssistantStore.getState().messages,
         force,
         importLocalIfEmpty,
       });
+    },
+    [username, isAuthenticated]
+  );
+  const commitServerConversation = useCallback<
+    AIConversationRealtimeController["commit"]
+  >(
+    (loaded) => {
       const currentAuth = useChatsStore.getState();
       if (
         loaded.stale ||
@@ -375,7 +402,7 @@ export function useAssistantChat(): AssistantChatHandle {
         !currentAuth.isAuthenticated ||
         chat.status !== "ready"
       ) {
-        return;
+        return false;
       }
       setMessages(loaded.messages);
       if (loaded.messages.length > 0) {
@@ -383,8 +410,17 @@ export function useAssistantChat(): AssistantChatHandle {
       } else {
         useAssistantStore.getState().clearMessages();
       }
+      return true;
     },
-    [username, isAuthenticated, chat, setMessages]
+    [chat, setMessages]
+  );
+  const hydrateServerConversation = useCallback(
+    async (force = false, importLocalIfEmpty = !force) => {
+      const loaded = await loadServerConversation(force, importLocalIfEmpty);
+      if (!loaded || !commitServerConversation(loaded)) return null;
+      return loaded;
+    },
+    [commitServerConversation, loadServerConversation]
   );
 
   useEffect(() => {
@@ -399,7 +435,11 @@ export function useAssistantChat(): AssistantChatHandle {
   useEffect(() => {
     if (!username || !isAuthenticated) return;
     const refresh = () => {
-      if (document.visibilityState === "visible" && chat.status === "ready") {
+      if (
+        document.visibilityState === "visible" &&
+        chat.status === "ready" &&
+        !assistantConversationRealtime.getSnapshot()
+      ) {
         void hydrateServerConversation(true).catch((hydrationError) => {
           log.warn("Failed to refresh server conversation", {
             error: hydrationError,
@@ -414,6 +454,44 @@ export function useAssistantChat(): AssistantChatHandle {
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [username, isAuthenticated, chat, hydrateServerConversation]);
+
+  const realtimeController = useMemo<AIConversationRealtimeController>(
+    () => ({
+      getStatus: () => chat.status,
+      getMessages: () => chat.messages,
+      setMessages: (nextMessages) => setMessages(nextMessages),
+      load: async () => {
+        const loaded = await loadServerConversation(true, false);
+        if (!loaded) throw new Error("Conversation owner is unavailable");
+        return loaded;
+      },
+      commit: commitServerConversation,
+      stop: sdkStop,
+    }),
+    [
+      chat,
+      commitServerConversation,
+      loadServerConversation,
+      setMessages,
+      sdkStop,
+    ]
+  );
+  const isRemoteStreaming = useSyncExternalStore(
+    assistantConversationRealtime.subscribe,
+    assistantConversationRealtime.getSnapshot,
+    assistantConversationRealtime.getSnapshot
+  );
+  useEffect(() => {
+    if (!assistantIdentity) return;
+    return assistantConversationRealtime.register({
+      owner: assistantIdentity,
+      priority: 0,
+      controller: realtimeController,
+    });
+  }, [assistantIdentity, realtimeController]);
+  useEffect(() => {
+    assistantConversationRealtime.notifyStatusChanged();
+  }, [status]);
 
   const handlersRef = useRef({
     // Placeholder; replaced with a fresh closure on every render below so the
@@ -479,7 +557,8 @@ export function useAssistantChat(): AssistantChatHandle {
     recordOpenResult(result, requestSequence, toolStartedAt);
   };
 
-  const isLoading = status === "streaming" || status === "submitted";
+  const isLoading =
+    status === "streaming" || status === "submitted" || isRemoteStreaming;
 
   // Stabilize by value: `messages` gets a new identity on every streamed
   // chunk, which would otherwise produce a fresh toolActivity object each

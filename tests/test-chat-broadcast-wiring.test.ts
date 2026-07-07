@@ -45,6 +45,25 @@ describe("Chat Broadcast Wiring Tests", () => {
     });
   });
 
+  describe("AI conversation routes", () => {
+    test("legacy import emits a per-user conversation update", () => {
+      const source = readRoute(
+        "api/ai/conversations/[channel]/import.ts"
+      );
+      assertHasCall(source, "broadcastAIConversationRealtimeEvent");
+      expect(source).toContain('reason: "imported"');
+    });
+
+    test("conversation reset emits only when a reset is applied", () => {
+      const source = readRoute(
+        "api/ai/conversations/[channel]/reset.ts"
+      );
+      assertHasCall(source, "broadcastAIConversationRealtimeEvent");
+      expect(source).toContain("if (result.reset)");
+      expect(source).toContain('reason: "reset"');
+    });
+  });
+
   describe("Presence and membership routes", () => {
     test("presence switch route emits room-updated", async () => {
       const source = readRoute("api/presence/switch.ts");

@@ -15,6 +15,12 @@
 
 import { describe, test, expect, beforeAll } from "bun:test";
 import { getAuthCookieHeader } from "./test-utils";
+import {
+  AI_CONVERSATION_REALTIME_EVENT,
+  parseAIConversationRealtimeEvent,
+  type AIConversationRealtimeEvent,
+} from "../src/shared/contracts/aiConversationRealtime";
+import type { AIConversationPage } from "../src/shared/contracts/aiConversation";
 
 const LOCAL_URL = process.env.REALTIME_LOCAL_URL || "";
 const PASSWORD = "testpassword123";
@@ -50,6 +56,13 @@ async function getTicket(cookie: string): Promise<string | null> {
 interface SubscribeResult {
   authorized: boolean;
   message?: unknown;
+}
+
+interface RealtimeEnvelope {
+  type?: string;
+  channel?: string;
+  event?: string;
+  data?: unknown;
 }
 
 /**
@@ -122,6 +135,103 @@ function subscribeOnce(
     });
 
     ws.addEventListener("error", () => finish({ authorized: false }));
+  });
+}
+
+function subscribeAndCollect(
+  ticket: string,
+  channel: string,
+  {
+    triggerAfterSubscribe,
+    until,
+    timeoutMs = 60_000,
+  }: {
+    triggerAfterSubscribe: () => Promise<void>;
+    until: (message: RealtimeEnvelope) => boolean;
+    timeoutMs?: number;
+  }
+): Promise<RealtimeEnvelope[]> {
+  return new Promise<RealtimeEnvelope[]>((resolve, reject) => {
+    const ws = new WebSocket(
+      `${wsOrigin}/ws?ticket=${encodeURIComponent(ticket)}`
+    );
+    const messages: RealtimeEnvelope[] = [];
+    let settled = false;
+    let triggerCompleted = false;
+    let terminalReceived = false;
+    const timer = setTimeout(() => {
+      finish(new Error(`Timed out waiting for realtime event on ${channel}`));
+    }, timeoutMs);
+
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        ws.close();
+      } catch {
+        // ignore
+      }
+      if (error) {
+        reject(error);
+      } else {
+        resolve(messages);
+      }
+    };
+
+    ws.addEventListener("open", () => {
+      ws.send(JSON.stringify({ type: "subscribe", channel }));
+      setTimeout(() => {
+        void triggerAfterSubscribe()
+          .then(() => {
+            triggerCompleted = true;
+            if (terminalReceived) finish();
+          })
+          .catch((error) => {
+            finish(
+              error instanceof Error
+                ? error
+                : new Error("Realtime trigger failed")
+            );
+          });
+      }, 300);
+    });
+    ws.addEventListener("message", (event) => {
+      try {
+        const message: unknown = JSON.parse(String(event.data));
+        if (
+          typeof message !== "object" ||
+          message === null ||
+          Array.isArray(message)
+        ) {
+          return;
+        }
+        const envelope: RealtimeEnvelope = {
+          type: Reflect.get(message, "type"),
+          channel: Reflect.get(message, "channel"),
+          event: Reflect.get(message, "event"),
+          data: Reflect.get(message, "data"),
+        };
+        if (
+          envelope.type === "subscription_error" &&
+          envelope.channel === channel
+        ) {
+          finish(new Error(`Subscription denied for ${channel}`));
+          return;
+        }
+        if (envelope.type !== "event") return;
+        messages.push(envelope);
+        if (until(envelope)) {
+          terminalReceived = true;
+          if (triggerCompleted) finish();
+        }
+      } catch {
+        // ignore non-JSON frames
+      }
+    });
+    ws.addEventListener("error", () => {
+      finish(new Error(`WebSocket failed for ${channel}`));
+    });
   });
 }
 
@@ -219,4 +329,96 @@ maybeDescribe("local WebSocket realtime authorization", () => {
 
     void outsiderTicket;
   });
+
+  test("streams an authenticated AI turn to another connection", async () => {
+    const streamUser = `wsai_${Date.now()}`;
+    const streamCookie = (await register(streamUser)).cookie;
+    if (!streamCookie) throw new Error("Failed to register AI stream user");
+    const streamTicket = await getTicket(streamCookie);
+    if (!streamTicket) throw new Error("Failed to mint AI stream ticket");
+
+    const initialResponse = await fetch(
+      `${origin}/api/ai/conversations/chat`,
+      {
+        headers: { Origin: origin, Cookie: streamCookie },
+      }
+    );
+    expect(initialResponse.status).toBe(200);
+    const initial = (await initialResponse.json()) as AIConversationPage;
+    const operationId = crypto.randomUUID();
+    const userMessageId = crypto.randomUUID();
+
+    const envelopes = await subscribeAndCollect(
+      streamTicket,
+      `private-chats-${streamUser}`,
+      {
+        triggerAfterSubscribe: async () => {
+          const response = await fetch(`${origin}/api/chat`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Origin: origin,
+              Cookie: streamCookie,
+              "X-Forwarded-For": `10.8.${Date.now() % 255}.${Math.floor(
+                Math.random() * 255
+              )}`,
+            },
+            body: JSON.stringify({
+              model: "gemini-3-flash",
+              conversation: {
+                id: initial.conversation.id,
+                revision: initial.conversation.revision,
+                operationId,
+              },
+              trigger: "submit-message",
+              message: {
+                id: userMessageId,
+                role: "user",
+                parts: [
+                  {
+                    type: "text",
+                    text: "Reply with exactly REALTIME_OK.",
+                  },
+                ],
+                metadata: { createdAt: new Date().toISOString() },
+              },
+            }),
+          });
+          const body = await response.text();
+          if (!response.ok) {
+            throw new Error(`AI stream request failed (${response.status})`);
+          }
+          expect(body).toContain("REALTIME_OK");
+        },
+        until: (envelope) => {
+          if (envelope.event !== AI_CONVERSATION_REALTIME_EVENT) return false;
+          const event = parseAIConversationRealtimeEvent(envelope.data);
+          return (
+            event?.kind === "turn-finished" &&
+            event.operationId === operationId
+          );
+        },
+      }
+    );
+
+    const events = envelopes
+      .filter(
+        (envelope) => envelope.event === AI_CONVERSATION_REALTIME_EVENT
+      )
+      .map((envelope) => parseAIConversationRealtimeEvent(envelope.data))
+      .filter((event): event is AIConversationRealtimeEvent => event !== null)
+      .filter((event) => event.operationId === operationId);
+    expect(events[0]?.kind).toBe("turn-started");
+    expect(events.at(-1)).toMatchObject({
+      kind: "turn-finished",
+      outcome: "completed",
+    });
+    const streamedText = events
+      .flatMap((event) =>
+        event.kind === "stream-chunks" ? event.chunks : []
+      )
+      .flatMap((chunk) => (chunk.kind === "text-delta" ? [chunk.delta] : []))
+      .join("");
+    expect(streamedText).toContain("REALTIME_OK");
+  }, 90_000);
 });

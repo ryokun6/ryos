@@ -9,6 +9,7 @@ import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
 } from "../../../../src/shared/contracts/aiConversation.js";
+import { broadcastAIConversationRealtimeEvent } from "../_helpers/realtime.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -49,6 +50,16 @@ export default apiHandler(
         operationId: body!.operationId,
         messages: body!.messages,
         historyTruncated: body!.historyTruncated,
+      });
+      await broadcastAIConversationRealtimeEvent(user!.username, {
+        kind: "conversation-updated",
+        reason: "imported",
+        channel,
+        conversationId: document.id,
+        revision: document.revision,
+        operationId: body!.operationId,
+      }).catch((error) => {
+        logger.error("Failed to broadcast conversation import", error);
       });
       logger.response(201, Date.now() - startTime);
       res.status(201).json({

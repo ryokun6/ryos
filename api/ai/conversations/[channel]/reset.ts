@@ -13,6 +13,7 @@ import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
 } from "../../../../src/shared/contracts/aiConversation.js";
+import { broadcastAIConversationRealtimeEvent } from "../_helpers/realtime.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -64,6 +65,18 @@ export default apiHandler(
         logger.error("Cleared conversation memory extraction failed", error);
       });
       waitUntil(memoryProcessing);
+      if (result.reset) {
+        await broadcastAIConversationRealtimeEvent(user!.username, {
+          kind: "conversation-updated",
+          reason: "reset",
+          channel,
+          conversationId: result.document.id,
+          revision: result.document.revision,
+          operationId: body!.operationId,
+        }).catch((error) => {
+          logger.error("Failed to broadcast conversation reset", error);
+        });
+      }
       logger.response(200, Date.now() - startTime);
       res.status(200).json({
         owner: user!.username,

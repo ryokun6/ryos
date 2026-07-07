@@ -7,6 +7,7 @@ import {
   buildAIConversationImportRequest,
   clearAIConversationSessionCache,
   getAIConversationRequestContext,
+  isLocalAIConversationOperation,
   loadAIConversation,
   projectAIConversationMessages,
   resetAIConversationSession,
@@ -143,6 +144,14 @@ describe("AI conversation client", () => {
     expect(context?.id).toBe(CHAT_ID);
     expect(context?.revision).toBe(1);
     expect(context?.operationId).toBeString();
+    expect(
+      context &&
+        isLocalAIConversationOperation(
+          "chat",
+          "alice",
+          context.operationId
+        )
+    ).toBe(true);
     expect(requestCount).toBe(1);
   });
 

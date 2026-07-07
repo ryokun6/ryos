@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import { Chat, useChat, type UIMessage } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -38,6 +45,10 @@ import {
   resetAIConversationSession,
   uploadAIConversationImage,
 } from "@/api/aiConversations";
+import {
+  AIConversationRealtimeService,
+  type AIConversationRealtimeController,
+} from "@/services/ai/AIConversationRealtimeService";
 
 
 // Helper to check if chats app is currently in the foreground
@@ -100,6 +111,13 @@ const resolveSharedHandlers = (): SharedAiChatHandlers | null =>
 
 let sharedAiChat: Chat<AIChatMessage> | null = null;
 let sharedRequestOwner: string | null = null;
+const chatConversationRealtime = new AIConversationRealtimeService("chat");
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    chatConversationRealtime.destroy();
+  });
+}
 
 function buildChatRequestBody(
   systemState = getSystemState(),
@@ -607,16 +625,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setMessages: setSdkMessages as (messages: AIChatMessage[]) => void,
   });
 
-  const hydrateServerConversation = useCallback(
+  const loadServerConversation = useCallback(
     async (force = false, importLocalIfEmpty = !force) => {
-      if (!username || !isAuthenticated) return;
-      const loaded = await loadAIConversation({
+      if (!username || !isAuthenticated) return null;
+      return loadAIConversation({
         channel: "chat",
         username,
         localMessages: useChatsStore.getState().aiMessages,
         force,
         importLocalIfEmpty,
       });
+    },
+    [username, isAuthenticated]
+  );
+  const commitServerConversation = useCallback<
+    AIConversationRealtimeController["commit"]
+  >(
+    (loaded) => {
       const currentAuth = useChatsStore.getState();
       if (
         loaded.stale ||
@@ -624,7 +649,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         !currentAuth.isAuthenticated ||
         getSharedAiChat().status !== "ready"
       ) {
-        return;
+        return false;
       }
 
       const nextMessages =
@@ -633,8 +658,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           : [createInitialChatMessage()];
       setAiMessages(nextMessages);
       setSdkMessages(nextMessages);
+      return true;
     },
-    [username, isAuthenticated, setAiMessages, setSdkMessages]
+    [setAiMessages, setSdkMessages]
+  );
+  const hydrateServerConversation = useCallback(
+    async (force = false, importLocalIfEmpty = !force) => {
+      const loaded = await loadServerConversation(force, importLocalIfEmpty);
+      if (!loaded || !commitServerConversation(loaded)) return null;
+      return loaded;
+    },
+    [commitServerConversation, loadServerConversation]
   );
 
   useEffect(() => {
@@ -655,7 +689,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     const refresh = () => {
       if (
         document.visibilityState === "visible" &&
-        getSharedAiChat().status === "ready"
+        getSharedAiChat().status === "ready" &&
+        !chatConversationRealtime.getSnapshot()
       ) {
         void hydrateServerConversation(true).catch((hydrationError) => {
           log.error("Failed to refresh server conversation", hydrationError);
@@ -670,7 +705,45 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     };
   }, [username, isAuthenticated, hydrateServerConversation]);
 
-  const isLoading = status === "streaming" || status === "submitted";
+  const realtimeController = useMemo<AIConversationRealtimeController>(
+    () => ({
+      getStatus: () => getSharedAiChat().status,
+      getMessages: () => getSharedAiChat().messages,
+      setMessages: (messages) => setSdkMessages(messages),
+      load: async () => {
+        const loaded = await loadServerConversation(true, false);
+        if (!loaded) throw new Error("Conversation owner is unavailable");
+        return loaded;
+      },
+      commit: commitServerConversation,
+      stop: sdkStop,
+    }),
+    [
+      commitServerConversation,
+      loadServerConversation,
+      setSdkMessages,
+      sdkStop,
+    ]
+  );
+  const isRemoteStreaming = useSyncExternalStore(
+    chatConversationRealtime.subscribe,
+    chatConversationRealtime.getSnapshot,
+    chatConversationRealtime.getSnapshot
+  );
+  useEffect(() => {
+    if (!chatIdentity) return;
+    return chatConversationRealtime.register({
+      owner: chatIdentity,
+      priority: sharedHandlerRole === "primary" ? 1 : 0,
+      controller: realtimeController,
+    });
+  }, [chatIdentity, realtimeController, sharedHandlerRole]);
+  useEffect(() => {
+    chatConversationRealtime.notifyStatusChanged();
+  }, [status]);
+
+  const isLoading =
+    status === "streaming" || status === "submitted" || isRemoteStreaming;
   const retryLastUserMessage = useCallback((): Promise<void> => {
     const messages = getSharedAiChat().messages;
     let latestUserMessage: AIChatMessage | undefined;
