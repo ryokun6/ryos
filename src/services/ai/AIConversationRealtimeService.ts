@@ -8,6 +8,7 @@ import {
 import { getChatsUserChannelName } from "@/shared/constants/realtime";
 import type { AIChatMessage } from "@/types/chat";
 import {
+  getCachedAIConversationIdentity,
   invalidateAIConversationSession,
   isLocalAIConversationOperation,
   type AIConversationHydration,
@@ -110,6 +111,7 @@ export class AIConversationRealtimeService {
   private quarantinedEvents: AIConversationRealtimeTurnEvent[] = [];
   private quarantineRefreshPending = false;
   private pendingRefreshCanClearError = false;
+  private canonicalCommitDeferredByError = false;
 
   constructor(
     private readonly channel: AIConversationRealtimeTurn["channel"]
@@ -195,6 +197,7 @@ export class AIConversationRealtimeService {
     this.clearActiveRemoteTurn();
     this.pendingRefresh = false;
     this.pendingRefreshCanClearError = false;
+    this.canonicalCommitDeferredByError = false;
   }
 
   destroy(): void {
@@ -222,23 +225,25 @@ export class AIConversationRealtimeService {
     return status === "ready";
   }
 
-  private canonicalStateChanged(
+  private compareCanonicalState(
     registration: Registration,
     loaded: AIConversationHydration
-  ): boolean {
+  ): "changed" | "current" | "unknown" {
     if (this.authoritativeConversationId) {
       return (
         loaded.conversation.id !== this.authoritativeConversationId ||
         loaded.conversation.revision > this.authoritativeRevision
-      );
+      )
+        ? "changed"
+        : "current";
     }
-    if (registration.controller.isCanonicalStateCurrent) {
-      return !registration.controller.isCanonicalStateCurrent(loaded);
-    }
-    return !areAIConversationMessagesEquivalent(
-      registration.controller.getMessages(),
-      loaded.messages
-    );
+    const isCurrent = registration.controller.isCanonicalStateCurrent
+      ? registration.controller.isCanonicalStateCurrent(loaded)
+      : areAIConversationMessagesEquivalent(
+          registration.controller.getMessages(),
+          loaded.messages
+        );
+    return isCurrent ? "current" : "unknown";
   }
 
   private scheduleSubscriptionCatchUp(delay = 0): void {
@@ -455,6 +460,7 @@ export class AIConversationRealtimeService {
     this.quarantineRefreshPending = false;
     this.pendingRefresh = false;
     this.pendingRefreshCanClearError = false;
+    this.canonicalCommitDeferredByError = false;
   }
 
   private disconnect(): void {
@@ -885,6 +891,18 @@ export class AIConversationRealtimeService {
   private async refreshCanonical(): Promise<boolean> {
     const registration = this.activeRegistration;
     if (!registration) return false;
+    if (!this.authoritativeConversationId) {
+      const cachedIdentity = getCachedAIConversationIdentity(
+        this.channel,
+        registration.owner
+      );
+      if (cachedIdentity) {
+        this.setAuthoritativeConversation(
+          cachedIdentity.id,
+          cachedIdentity.revision
+        );
+      }
+    }
     const allowErrorClear =
       this.pendingRefreshCanClearError || Boolean(this.activeRemoteTurn);
     const status = registration.controller.getStatus();
@@ -921,12 +939,16 @@ export class AIConversationRealtimeService {
         return false;
       }
       if (preserveUnrelatedError) {
-        if (!this.canonicalStateChanged(registration, loaded)) {
+        const comparison = this.compareCanonicalState(registration, loaded);
+        if (comparison !== "changed") {
           this.setAuthoritativeConversation(
             loaded.conversation.id,
             loaded.conversation.revision
           );
-          this.pendingRefresh = false;
+          if (comparison === "unknown") {
+            this.canonicalCommitDeferredByError = true;
+          }
+          this.pendingRefresh = this.canonicalCommitDeferredByError;
           this.resetRecoveryRetry();
           return true;
         }
@@ -976,6 +998,7 @@ export class AIConversationRealtimeService {
       }
       if (!this.activeRemoteTurn) {
         this.pendingRefreshCanClearError = false;
+        this.canonicalCommitDeferredByError = false;
       }
       return true;
     } catch (error) {

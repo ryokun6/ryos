@@ -809,6 +809,91 @@ describe("AI conversation realtime client service", () => {
     }
   });
 
+  test("defers an unknown-baseline catch-up until the local SDK error is cleared", async () => {
+    clearAIConversationSessionCache();
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    let status: "error" | "ready" = "error";
+    let clearErrorCount = 0;
+    let commitCount = 0;
+    let loadCount = 0;
+    let liveMessages = [
+      textMessage("assistant-greeting", "assistant", "hello"),
+      textMessage("failed-user", "user", "rate limited"),
+    ];
+    const controller: AIConversationRealtimeController = {
+      getStatus: () => status,
+      getMessages: () => liveMessages,
+      setMessages: (messages) => {
+        liveMessages = messages;
+      },
+      load: async () => {
+        loadCount += 1;
+        return {
+          owner: "alice",
+          conversation: {
+            id: turn.conversationId,
+            channel: "chat",
+            revision: 0,
+            createdAt: turn.startedAt,
+            updatedAt: turn.startedAt,
+            messageCount: 0,
+            oldestSeq: null,
+            newestSeq: null,
+            historyTruncated: false,
+            canImportLegacy: false,
+          },
+          messages: [],
+          stale: false,
+        };
+      },
+      commit: (loaded) => {
+        commitCount += 1;
+        liveMessages = loaded.messages;
+        return true;
+      },
+      isCanonicalStateCurrent: () => false,
+      stop: () => undefined,
+      clearError: () => {
+        clearErrorCount += 1;
+        status = "ready";
+      },
+    };
+
+    try {
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      fakeClient.channels
+        .get("private-chats-alice")
+        ?.emit("pusher:subscription_succeeded", {});
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(loadCount).toBe(1);
+      expect(commitCount).toBe(0);
+      expect(clearErrorCount).toBe(0);
+      expect(status).toBe("error");
+      expect(liveMessages.at(-1)?.id).toBe("failed-user");
+
+      status = "ready";
+      service.notifyStatusChanged();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(loadCount).toBe(2);
+      expect(commitCount).toBe(1);
+      expect(liveMessages).toEqual([]);
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+      clearAIConversationSessionCache();
+    }
+  });
+
   test("recovers an active stream as soon as reconnecting exposes a gap", async () => {
     const fakeClient = new FakeRealtimeClient();
     const restoreRealtime = installFakeRealtimeClient(fakeClient);

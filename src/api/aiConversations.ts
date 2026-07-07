@@ -119,6 +119,18 @@ export function isLocalAIConversationOperation(
   );
 }
 
+export function getCachedAIConversationIdentity(
+  channel: AIConversationChannel,
+  username: string
+): Pick<AIConversation, "id" | "revision"> | null {
+  const session = sessions.get(channel);
+  if (!session || session.owner !== username.toLowerCase()) return null;
+  return {
+    id: session.conversation.id,
+    revision: session.conversation.revision,
+  };
+}
+
 function parseConversation(value: unknown): AIConversation {
   if (
     !isRecord(value) ||
