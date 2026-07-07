@@ -97,6 +97,7 @@ export class AIConversationRealtimeService {
   private readonly rejectedConversationIds = new Set<string>();
   private quarantinedEvents: AIConversationRealtimeTurnEvent[] = [];
   private quarantineRefreshPending = false;
+  private pendingRefreshCanClearError = false;
 
   constructor(
     private readonly channel: AIConversationRealtimeTurn["channel"]
@@ -146,7 +147,10 @@ export class AIConversationRealtimeService {
     if (
       !registration ||
       (!this.activeRemoteTurn && !this.pendingRefresh) ||
-      !this.prepareControllerForRemoteUpdate(registration)
+      !this.prepareControllerForRemoteUpdate(
+        registration,
+        this.pendingRefreshCanClearError || Boolean(this.activeRemoteTurn)
+      )
     ) {
       return;
     }
@@ -178,6 +182,7 @@ export class AIConversationRealtimeService {
     this.resetRecoveryRetry();
     this.clearActiveRemoteTurn();
     this.pendingRefresh = false;
+    this.pendingRefreshCanClearError = false;
   }
 
   destroy(): void {
@@ -193,10 +198,12 @@ export class AIConversationRealtimeService {
   }
 
   private prepareControllerForRemoteUpdate(
-    registration: Registration
+    registration: Registration,
+    allowErrorClear = false
   ): boolean {
     const status = registration.controller.getStatus();
     if (status === "error") {
+      if (!allowErrorClear) return false;
       registration.controller.clearError();
       return true;
     }
@@ -416,6 +423,7 @@ export class AIConversationRealtimeService {
     this.quarantinedEvents = [];
     this.quarantineRefreshPending = false;
     this.pendingRefresh = false;
+    this.pendingRefreshCanClearError = false;
   }
 
   private disconnect(): void {
@@ -612,8 +620,9 @@ export class AIConversationRealtimeService {
       return;
     }
     if (!this.shouldAcceptTurn(event)) return;
-    if (!this.prepareControllerForRemoteUpdate(registration)) {
+    if (!this.prepareControllerForRemoteUpdate(registration, true)) {
       this.pendingRefresh = true;
+      this.pendingRefreshCanClearError = true;
       return;
     }
 
@@ -624,8 +633,9 @@ export class AIConversationRealtimeService {
   private handleStreamChunks(event: AIConversationRealtimeStreamEvent): void {
     const registration = this.activeRegistration;
     if (!registration) return;
-    if (!this.prepareControllerForRemoteUpdate(registration)) {
+    if (!this.prepareControllerForRemoteUpdate(registration, true)) {
       this.pendingRefresh = true;
+      this.pendingRefreshCanClearError = true;
       return;
     }
 
@@ -653,6 +663,7 @@ export class AIConversationRealtimeService {
       this.activeRemoteTurn !== null &&
       isSameRemoteAIConversationTurn(this.activeRemoteTurn.stream, event);
     if (!matchesActive && !this.shouldAcceptTurn(event, true)) return;
+    this.pendingRefreshCanClearError = true;
     this.updateTurnWatermark(event, true);
     this.resetRecoveryRetry();
     if (matchesActive && this.activeRemoteTurn) {
@@ -678,6 +689,7 @@ export class AIConversationRealtimeService {
     if (event.reason === "reset") {
       this.activeRegistration?.controller.stop();
     }
+    this.pendingRefreshCanClearError = true;
     this.setAuthoritativeConversation(event.conversationId, event.revision);
     this.latestTurnWatermark = null;
     this.resetRecoveryRetry();
@@ -750,7 +762,7 @@ export class AIConversationRealtimeService {
       void this.refreshCanonical();
       return;
     }
-    if (!this.prepareControllerForRemoteUpdate(registration)) {
+    if (!this.prepareControllerForRemoteUpdate(registration, true)) {
       this.scheduleRecoveryRetry();
       return;
     }
@@ -842,8 +854,15 @@ export class AIConversationRealtimeService {
   private async refreshCanonical(): Promise<boolean> {
     const registration = this.activeRegistration;
     if (!registration) return false;
-    if (!this.prepareControllerForRemoteUpdate(registration)) {
-      this.scheduleRecoveryRetry();
+    const allowErrorClear =
+      this.pendingRefreshCanClearError || Boolean(this.activeRemoteTurn);
+    if (
+      !this.prepareControllerForRemoteUpdate(registration, allowErrorClear)
+    ) {
+      this.pendingRefresh = true;
+      if (registration.controller.getStatus() !== "error") {
+        this.scheduleRecoveryRetry();
+      }
       return false;
     }
     const generation = ++this.refreshGeneration;
@@ -910,6 +929,9 @@ export class AIConversationRealtimeService {
         this.scheduleRecoveryRetry();
       } else {
         this.resetRecoveryRetry();
+      }
+      if (!this.activeRemoteTurn) {
+        this.pendingRefreshCanClearError = false;
       }
       return true;
     } catch (error) {

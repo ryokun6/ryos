@@ -649,6 +649,7 @@ describe("AI conversation realtime client service", () => {
     const service = new AIConversationRealtimeService("chat");
     let status: "error" | "ready" = "error";
     let clearErrorCount = 0;
+    let loadCount = 0;
     let liveMessages = [textMessage("user-old", "user", "old")];
     const canonicalMessages = [
       textMessage("user-new", "user", "new"),
@@ -660,23 +661,26 @@ describe("AI conversation realtime client service", () => {
       setMessages: (messages) => {
         liveMessages = messages;
       },
-      load: async () => ({
-        owner: "alice",
-        conversation: {
-          id: turn.conversationId,
-          channel: "chat",
-          revision: turn.revision + 1,
-          createdAt: turn.startedAt,
-          updatedAt: turn.startedAt,
-          messageCount: canonicalMessages.length,
-          oldestSeq: 1,
-          newestSeq: canonicalMessages.length,
-          historyTruncated: false,
-          canImportLegacy: false,
-        },
-        messages: canonicalMessages,
-        stale: false,
-      }),
+      load: async () => {
+        loadCount += 1;
+        return {
+          owner: "alice",
+          conversation: {
+            id: turn.conversationId,
+            channel: "chat",
+            revision: turn.revision + 1,
+            createdAt: turn.startedAt,
+            updatedAt: turn.startedAt,
+            messageCount: canonicalMessages.length,
+            oldestSeq: 1,
+            newestSeq: canonicalMessages.length,
+            historyTruncated: false,
+            canImportLegacy: false,
+          },
+          messages: canonicalMessages,
+          stale: false,
+        };
+      },
       commit: (loaded) => {
         liveMessages = loaded.messages;
         return true;
@@ -694,6 +698,14 @@ describe("AI conversation realtime client service", () => {
         priority: 1,
         controller,
       });
+      fakeClient.channels
+        .get("private-chats-alice")
+        ?.emit("pusher:subscription_succeeded", {});
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(clearErrorCount).toBe(0);
+      expect(loadCount).toBe(0);
+      expect(status).toBe("error");
+
       fakeClient.channels.get("private-chats-alice")?.emit(
         AI_CONVERSATION_REALTIME_EVENT,
         {
@@ -709,6 +721,7 @@ describe("AI conversation realtime client service", () => {
       await Promise.resolve();
 
       expect(clearErrorCount).toBe(1);
+      expect(loadCount).toBe(1);
       expect(status).toBe("ready");
       expect(liveMessages).toEqual(canonicalMessages);
       unregister();
