@@ -15,7 +15,9 @@ export const maxDuration = 10;
 
 const importConversationSchema = z.object({
   conversationId: z.string().uuid(),
-  expectedRevision: z.literal(0),
+  // Revision 0 for a truly empty conversation; higher when the only server
+  // content is a proactive greeting the import is allowed to replace.
+  expectedRevision: z.number().int().nonnegative(),
   operationId: z
     .string()
     .min(1)

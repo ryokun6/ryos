@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   AIConversationError,
+  appendAIConversationAssistantMessage,
   beginAIConversationTurn,
   beginAIConversationTurnWithStatus,
   commitAIConversationRegeneration,
@@ -8,6 +9,7 @@ import {
   completeAIConversationTurn,
   deleteAIConversationKeys,
   getAIConversationPage,
+  getAIProactiveGreetingEligibility,
   getPendingAIConversationResetMemory,
   getAIConversationTurnCompletionOperationId,
   importAIConversationMessages,
@@ -1147,5 +1149,173 @@ describe("AI conversation store", () => {
       },
     });
     expect(recreated.messages.map((entry) => entry.id)).toEqual(["u2"]);
+  });
+
+  test("persists proactive greetings outside a turn and keeps legacy import open", async () => {
+    const redis = new MemoryConversationRedis();
+    const initial = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+    expect(
+      getAIProactiveGreetingEligibility({
+        messages: [],
+        pendingTurnId: null,
+        pendingTurnStartedAt: null,
+      }),
+    ).toEqual({ eligible: true, mode: "fresh" });
+
+    const appended = await appendAIConversationAssistantMessage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "greet-op-1",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 0,
+      message: message("proactive-greeting-1", "assistant", "hey, welcome back"),
+    });
+    expect(appended.operationApplied).toBe(true);
+    expect(appended.document.revision).toBe(1);
+    expect(appended.document.pendingTurnId).toBeNull();
+    expect(
+      appended.document.messages.map((entry) => [entry.id, entry.seq]),
+    ).toEqual([["proactive-greeting-1", 1]]);
+    // The greeting alone must not lock out a legacy device's history import.
+    expect(appended.document.legacyImportAllowed).toBe(true);
+
+    expect(getAIProactiveGreetingEligibility(appended.document)).toEqual({
+      eligible: false,
+      reason: "already_greeted",
+    });
+
+    const imported = await importAIConversationMessages({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "legacy-import",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: appended.document.revision,
+      messages: [
+        message("legacy-user", "user", "old question"),
+        message("legacy-assistant", "assistant", "old answer"),
+      ],
+    });
+    expect(imported.messages.map((entry) => entry.id)).toEqual([
+      "legacy-user",
+      "legacy-assistant",
+    ]);
+    expect(imported.legacyImportAllowed).toBe(false);
+    expect(imported.revision).toBe(2);
+  });
+
+  test("drops proactive greetings that lose the race against a turn", async () => {
+    const redis = new MemoryConversationRedis();
+    const initial = await getAIConversationPage({
+      redis,
+      username: "alice",
+      channel: "chat",
+      limit: 10,
+    });
+
+    const started = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      expectedConversationId: initial.conversation.id,
+      expectedRevision: 0,
+      operationId: "turn-op",
+      turnId: "turn-1",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "hello"),
+      },
+    });
+    expect(getAIProactiveGreetingEligibility(started)).toEqual({
+      eligible: false,
+      reason: "turn_in_progress",
+    });
+
+    // Snapshot taken before the user's turn began → revision conflict.
+    await expect(
+      appendAIConversationAssistantMessage({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "greet-stale",
+        expectedConversationId: initial.conversation.id,
+        expectedRevision: 0,
+        message: message("proactive-stale", "assistant", "late greeting"),
+      }),
+    ).rejects.toMatchObject({ code: "revision_conflict", status: 409 });
+
+    // Even with a fresh snapshot, a pending turn blocks the append.
+    await expect(
+      appendAIConversationAssistantMessage({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "greet-mid-turn",
+        expectedConversationId: initial.conversation.id,
+        expectedRevision: started.revision,
+        message: message("proactive-mid-turn", "assistant", "mid-turn greeting"),
+      }),
+    ).rejects.toMatchObject({ code: "conversation_busy", status: 409 });
+  });
+
+  test("decides proactive greeting eligibility for stale and active threads", () => {
+    const now = Date.parse("2026-07-07T12:00:00.000Z");
+    const staleThread = {
+      messages: [
+        { id: "u1", createdAt: "2026-07-07T11:00:00.000Z" },
+        { id: "a1", createdAt: "2026-07-07T11:01:00.000Z" },
+      ],
+      pendingTurnId: null,
+      pendingTurnStartedAt: null,
+    };
+    expect(getAIProactiveGreetingEligibility(staleThread, now)).toEqual({
+      eligible: true,
+      mode: "stale",
+    });
+
+    const activeThread = {
+      ...staleThread,
+      messages: [{ id: "a1", createdAt: "2026-07-07T11:58:00.000Z" }],
+    };
+    expect(getAIProactiveGreetingEligibility(activeThread, now)).toEqual({
+      eligible: false,
+      reason: "conversation_active",
+    });
+
+    const invalidTimestampThread = {
+      ...staleThread,
+      messages: [{ id: "a1", createdAt: "not a date" }],
+    };
+    expect(
+      getAIProactiveGreetingEligibility(invalidTimestampThread, now),
+    ).toEqual({ eligible: false, reason: "conversation_active" });
+
+    const greetedThread = {
+      ...staleThread,
+      messages: [
+        ...staleThread.messages,
+        { id: "proactive-old", createdAt: "2026-07-07T11:02:00.000Z" },
+      ],
+    };
+    expect(getAIProactiveGreetingEligibility(greetedThread, now)).toEqual({
+      eligible: false,
+      reason: "already_greeted",
+    });
+
+    // A stale pending turn no longer blocks greetings.
+    const abandonedTurnThread = {
+      messages: [],
+      pendingTurnId: "abandoned",
+      pendingTurnStartedAt: now - 10 * 60 * 1000,
+    };
+    expect(getAIProactiveGreetingEligibility(abandonedTurnThread, now)).toEqual(
+      { eligible: true, mode: "fresh" },
+    );
   });
 });
