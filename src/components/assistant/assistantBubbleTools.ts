@@ -2,12 +2,13 @@ import type { ToolInvocationPart } from "@/components/shared/tool-invocation-mes
 
 /**
  * Tool calls that get a rich inline embed inside the assistant's speech
- * bubble (the same cards the Chats app renders): map place results, HTML
- * preview applets, and Cursor cloud-agent runs. Other tools keep their
- * ticker-only treatment.
+ * bubble (the same cards the Chats app renders): map place results, weather
+ * cards, HTML preview applets, and Cursor cloud-agent runs. Other tools keep
+ * their ticker-only treatment.
  */
 export const ASSISTANT_BUBBLE_TOOL_NAMES: ReadonlySet<string> = new Set([
   "mapsSearchPlaces",
+  "getWeather",
   "generateHtml",
   "cursorCloudAgent",
   "listCursorCloudAgentRuns",
