@@ -18,7 +18,7 @@ export function ToolInvocationMessage({
 }: ToolInvocationMessageProps) {
   const { t } = useTranslation();
   const toolName = getToolName(part);
-  const { state, input, output } = part;
+  const { state, input, output, toolCallId, approval } = part;
 
   const displayCallMessage = getToolInvocationCallMessage({
     toolName,
@@ -42,9 +42,11 @@ export function ToolInvocationMessage({
 
   const specialContent = tryRenderToolInvocationSpecialContent({
     toolName,
+    toolCallId,
     state,
     input,
     output,
+    approval,
     partKey,
     t,
     formatToolName,

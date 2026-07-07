@@ -74,10 +74,11 @@ describe("getAssistantBubbleToolParts", () => {
     expect(getAssistantBubbleToolParts(undefined)).toEqual([]);
   });
 
-  test("covers exactly the map, HTML preview, and Cursor tools", () => {
+  test("covers exactly the map, HTML preview, Cursor, and approval-gated tools", () => {
     expect([...ASSISTANT_BUBBLE_TOOL_NAMES].sort()).toEqual([
       "cursorCloudAgent",
       "generateHtml",
+      "getPreciseLocation",
       "listCursorCloudAgentRuns",
       "mapsSearchPlaces",
     ]);

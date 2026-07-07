@@ -6,7 +6,11 @@ export interface ToolInvocationPart {
     | "input-streaming"
     | "input-available"
     | "output-available"
-    | "output-error";
+    | "output-error"
+    // Tool-approval flow (needsApproval tools, e.g. getPreciseLocation)
+    | "approval-requested"
+    | "approval-responded"
+    | "output-denied";
   input?: {
     id?: string;
     url?: string;
@@ -17,6 +21,12 @@ export interface ToolInvocationPart {
   };
   output?: unknown;
   errorText?: string;
+  /** Present on approval-gated tool parts (AI SDK tool-approval flow). */
+  approval?: {
+    id: string;
+    approved?: boolean;
+    reason?: string;
+  };
 }
 
 export interface ToolInvocationMessageProps {

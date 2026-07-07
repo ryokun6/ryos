@@ -43,6 +43,7 @@ import {
   type VfsEditInput,
 } from "./vfsHandlers";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
+import { APPROVAL_GATED_TOOL_NAME_SET } from "@/shared/tools/approvalGated";
 import {
   createToolOpenResultTracker,
   type DispatchToolCallResult,
@@ -111,6 +112,15 @@ export async function dispatchToolCall(
       log.debug("Server-side tool call observed", {
         toolName: toolCall.toolName,
         input: toolCall.input,
+      });
+      return openResultTracker.getResult();
+    }
+
+    if (APPROVAL_GATED_TOOL_NAME_SET.has(toolCall.toolName)) {
+      // Approval-gated tools execute from the in-chat permission card after
+      // the user approves (see toolApprovals.ts) — never from onToolCall.
+      log.debug("Approval-gated tool call observed; awaiting user decision", {
+        toolName: toolCall.toolName,
       });
       return openResultTracker.getResult();
     }

@@ -8,6 +8,7 @@ export const TOOL_EXECUTION_METADATA = [
   { name: "cursorCloudAgent", execution: "server" },
   { name: "listCursorCloudAgentRuns", execution: "server" },
   { name: "mapsSearchPlaces", execution: "server" },
+  { name: "getWeather", execution: "server" },
   { name: "runJs", execution: "server" },
 ] as const;
 

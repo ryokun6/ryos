@@ -1413,6 +1413,19 @@
         "listingApplications": "列出应用程序…",
         "listingSharedApplets": "列出共享小程序…",
         "loadingMusicLibrary": "正在加载音乐库…",
+        "location": {
+          "allow": "允许",
+          "denied": "位置请求已拒绝",
+          "dontAllow": "不允许",
+          "failed": "无法获取您的位置",
+          "gettingLocation": "正在获取您的位置…",
+          "permissionBody": "Ryo 想使用您的精确位置来回答此请求。",
+          "permissionReason": "Ryo 想获取您的精确位置以{{reason}}。",
+          "permissionTitle": "使用您的精确位置？",
+          "requesting": "正在请求位置…",
+          "shared": "已共享位置：{{city}}",
+          "sharedNoCity": "已共享您的位置"
+        },
         "maps": {
           "foundMany": "找到 {{count}} 个与“{{query}}”相关的位置。",
           "foundOne": "找到 1 个与“{{query}}”相关的位置。",
@@ -1547,6 +1560,12 @@
         "unhandledTool": "未处理的工具：{{toolName}}",
         "unknownError": "未知错误",
         "updatedDocument": "文件已更新：{{path}}",
+        "weather": {
+          "checking": "正在检查天气…",
+          "checkingIn": "正在检查{{location}}的天气…",
+          "result": "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+          "resultNoCity": "{{tempC}}°C / {{tempF}}°F · {{condition}}"
+        },
         "webFetch": {
           "fetched": "阅读 {{siteName}}",
           "fetchedPage": "阅读「{{title}}」",

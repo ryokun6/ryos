@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chat, useChat } from "@ai-sdk/react";
-import {
-  DefaultChatTransport,
-  lastAssistantMessageIsCompleteWithToolCalls,
-} from "ai";
+import { DefaultChatTransport } from "ai";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import {
@@ -18,6 +15,12 @@ import { AppId } from "@/config/appIds";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { getSystemState } from "@/apps/chats/utils/systemState";
 import { dispatchToolCall } from "@/apps/chats/tools/dispatchToolCall";
+import {
+  hasUnsettledApprovalGatedActivity,
+  registerToolApprovalSurface,
+  sendAutomaticallyWhenApprovalsSettled,
+} from "@/apps/chats/tools/toolApprovals";
+import { summarizeChatMessages } from "@/apps/chats/tools/chatDebug";
 import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
@@ -82,6 +85,8 @@ const TOOL_STATUS_KEYS: Record<string, string> = {
   edit: "apps.chats.toolCalls.editingFile",
   settings: "apps.chats.toolCalls.changingSettings",
   songLibraryControl: "apps.chats.toolCalls.loadingMusicLibrary",
+  getWeather: "apps.chats.toolCalls.weather.checking",
+  getPreciseLocation: "apps.chats.toolCalls.location.requesting",
 };
 
 export function parseAssistantRateLimitState(
@@ -308,6 +313,13 @@ export function useAssistantChat(): AssistantChatHandle {
               );
             }
             requestOwnerRef.current = owner;
+            log.debug("Preparing /api/chat request (assistant)", {
+              trigger,
+              messageId,
+              owner,
+              conversation,
+              ...summarizeChatMessages(messages),
+            });
             return {
               body: buildAIConversationRequestBody({
                 body,
@@ -320,7 +332,7 @@ export function useAssistantChat(): AssistantChatHandle {
             };
           },
         }),
-        sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+        sendAutomaticallyWhen: sendAutomaticallyWhenApprovalsSettled,
         async onToolCall(options) {
           await handlersRef.current.onToolCall(options);
         },
@@ -345,6 +357,18 @@ export function useAssistantChat(): AssistantChatHandle {
     error,
   } = useChat<AIChatMessage>({ chat, experimental_throttle: 60 });
 
+  // Route in-chat Allow / Don't Allow decisions for approval-gated tools
+  // (e.g. getPreciseLocation) rendered in the assistant bubble to this chat.
+  useEffect(
+    () =>
+      registerToolApprovalSurface({
+        getMessages: () => chat.messages,
+        addToolApprovalResponse: (args) => chat.addToolApprovalResponse(args),
+        addToolOutput: (payload) => chat.addToolOutput(payload),
+      }),
+    [chat]
+  );
+
   const assistantIdentity =
     username && isAuthenticated ? username.toLowerCase() : null;
   const previousAssistantIdentityRef = useRef(assistantIdentity);
@@ -359,6 +383,12 @@ export function useAssistantChat(): AssistantChatHandle {
 
   const applyServerMessages = useCallback(
     (loadedMessages: AIChatMessage[]) => {
+      // Hydration replaces the live SDK messages wholesale — log it so races
+      // with in-flight tool approvals are visible in debug traces.
+      log.debug(
+        "Applying server conversation snapshot (assistant)",
+        summarizeChatMessages(loadedMessages)
+      );
       setMessages(loadedMessages);
       if (loadedMessages.length > 0) {
         useAssistantStore.getState().hydrateMessages(loadedMessages);
@@ -375,7 +405,12 @@ export function useAssistantChat(): AssistantChatHandle {
     channel: "assistant",
     username,
     isAuthenticated,
-    isChatReady: () => chat.status === "ready",
+    // Not "ready" while an approval-gated tool is being settled: hydration
+    // would overwrite the locally recorded Allow with the server's stale
+    // approval-requested snapshot, corrupting the eventual tool output part.
+    isChatReady: () =>
+      chat.status === "ready" &&
+      !hasUnsettledApprovalGatedActivity(chat.messages),
     applyMessages: applyServerMessages,
     onError: (error, context) => {
       log.warn(`Failed to sync server conversation (${context})`, { error });
@@ -424,7 +459,12 @@ export function useAssistantChat(): AssistantChatHandle {
       ) {
         return;
       }
-      log.debug("Assistant chat error", { message });
+      // Always-printed context for bug reports: the failing message states
+      // usually explain server-side 400s (e.g. invalid_messages).
+      log.error("Assistant chat request failed", {
+        error: err,
+        ...summarizeChatMessages(chat.messages),
+      });
     },
   });
   handlersRef.current.onToolCall = async ({ toolCall }) => {

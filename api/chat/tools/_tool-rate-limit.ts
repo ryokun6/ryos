@@ -19,6 +19,7 @@ export type RateLimitedToolName =
   | "webFetch"
   | "searchSongs"
   | "mapsSearchPlaces"
+  | "getWeather"
   | "runJs";
 
 const TOOL_RATE_LIMITS: Record<
@@ -28,6 +29,7 @@ const TOOL_RATE_LIMITS: Record<
   webFetch: { limit: 50, windowSeconds: 60 * 60 },
   searchSongs: { limit: 30, windowSeconds: 60 * 60 },
   mapsSearchPlaces: { limit: 50, windowSeconds: 60 * 60 },
+  getWeather: { limit: 30, windowSeconds: 60 * 60 },
   // Each run is CPU-bounded (15s max) but still burns server compute.
   runJs: { limit: 60, windowSeconds: 60 * 60 },
 };

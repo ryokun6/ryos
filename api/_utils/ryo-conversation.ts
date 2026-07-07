@@ -324,6 +324,107 @@ function createGoogleSearchTool(): ReturnType<typeof google.tools.googleSearch> 
   return google.tools.googleSearch({});
 }
 
+/**
+ * Resolve stale, unresolved tool-approval parts before model conversion.
+ *
+ * Approval-gated client tools (e.g. `getPreciseLocation`) wait indefinitely for the
+ * user's Allow / Don't Allow decision. If the user just types a new message
+ * instead, the history still contains an `approval-requested` part (or an
+ * approved one whose client handler never reported output). Those would make
+ * `convertToModelMessages` produce a dangling tool call and fail the request,
+ * so treat them as implicitly declined.
+ */
+/**
+ * Repair executed tool parts whose approval response was lost client-side.
+ *
+ * `validateUIMessages` requires `output-available` / `output-error` tool
+ * parts that carry an `approval` to have `approved: true`. A client race
+ * (e.g. a conversation hydration overwriting the live message between the
+ * user's Allow and the handler's `addToolOutput`) can strip the recorded
+ * response, leaving `approval: { id }` with no `approved`. Execution implies
+ * approval — denied tools never execute (they end at `output-denied`) — so
+ * restore `approved: true` instead of failing the request.
+ */
+export function normalizeExecutedToolApprovals(
+  messages: readonly unknown[]
+): unknown[] {
+  return messages.map((message) => {
+    if (!message || typeof message !== "object") return message;
+    const candidate = message as { role?: unknown; parts?: unknown };
+    if (candidate.role !== "assistant" || !Array.isArray(candidate.parts)) {
+      return message;
+    }
+    let changed = false;
+    const parts = candidate.parts.map((part) => {
+      if (!part || typeof part !== "object") return part;
+      const toolPart = part as {
+        type?: unknown;
+        state?: unknown;
+        approval?: { id?: unknown; approved?: unknown; reason?: unknown };
+      };
+      const isToolPart =
+        typeof toolPart.type === "string" &&
+        (toolPart.type.startsWith("tool-") ||
+          toolPart.type === "dynamic-tool");
+      const isExecuted =
+        toolPart.state === "output-available" ||
+        toolPart.state === "output-error";
+      const approval = toolPart.approval;
+      const isMissingResponse =
+        !!approval &&
+        typeof approval === "object" &&
+        typeof approval.id === "string" &&
+        approval.approved === undefined;
+      if (!isToolPart || !isExecuted || !isMissingResponse) return part;
+      changed = true;
+      return {
+        ...(part as Record<string, unknown>),
+        approval: { ...approval, approved: true },
+      };
+    });
+    return changed ? { ...(message as object), parts } : message;
+  });
+}
+
+export function resolveStaleToolApprovals(messages: UIMessage[]): UIMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "assistant" || !Array.isArray(message.parts)) {
+      return message;
+    }
+    let changed = false;
+    const parts = message.parts.map((part) => {
+      const candidate = part as {
+        type?: unknown;
+        state?: unknown;
+        approval?: { id: string; approved?: boolean };
+      };
+      const isToolPart =
+        typeof candidate.type === "string" &&
+        (candidate.type.startsWith("tool-") ||
+          candidate.type === "dynamic-tool");
+      const isUnresolvedApproval =
+        candidate.state === "approval-requested" ||
+        (candidate.state === "approval-responded" &&
+          candidate.approval?.approved === true);
+      if (!isToolPart || !isUnresolvedApproval || !candidate.approval?.id) {
+        return part;
+      }
+      changed = true;
+      return {
+        ...(part as Record<string, unknown>),
+        state: "output-denied",
+        approval: {
+          id: candidate.approval.id,
+          approved: false,
+          reason:
+            "The user continued without responding to the permission request.",
+        },
+      } as typeof part;
+    });
+    return changed ? { ...message, parts } : message;
+  });
+}
+
 export function ensureUIMessageFormat(
   messages: SimpleConversationMessage[]
 ): UIMessage[] {
@@ -898,7 +999,11 @@ export async function prepareRyoConversationModelInput(
   };
 
   const uiMessages = await validateUIMessages({
-    messages: ensureUIMessageFormat(messages),
+    messages: resolveStaleToolApprovals(
+      normalizeExecutedToolApprovals(
+        ensureUIMessageFormat(messages)
+      ) as UIMessage[]
+    ),
     tools,
   });
   const modelMessages = await convertToModelMessages(uiMessages, {

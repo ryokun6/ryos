@@ -1413,6 +1413,19 @@
         "listingApplications": "アプリケーションを一覧表示中…",
         "listingSharedApplets": "共有アプレットを一覧表示中…",
         "loadingMusicLibrary": "音楽ライブラリを読み込み中…",
+        "location": {
+          "allow": "許可",
+          "denied": "位置情報の要求が拒否されました",
+          "dontAllow": "許可しない",
+          "failed": "現在地を取得できませんでした",
+          "gettingLocation": "現在地を取得中…",
+          "permissionBody": "Ryoがこのリクエストに回答するために、あなたの正確な位置情報の使用を求めています。",
+          "permissionReason": "Ryoが{{reason}}ため、正確な位置情報を求めています。",
+          "permissionTitle": "正確な位置情報を使用しますか？",
+          "requesting": "位置情報を要求中…",
+          "shared": "位置情報を共有しました: {{city}}",
+          "sharedNoCity": "位置情報を共有しました"
+        },
         "maps": {
           "foundMany": "\"{{query}}\"の場所が{{count}}件見つかりました。",
           "foundOne": "\"{{query}}\"の場所が1件見つかりました。",
@@ -1547,6 +1560,12 @@
         "unhandledTool": "未処理のツール: {{toolName}}",
         "unknownError": "不明なエラー",
         "updatedDocument": "ドキュメントを更新しました: {{path}}",
+        "weather": {
+          "checking": "天気を確認中…",
+          "checkingIn": "{{location}}の天気を確認中…",
+          "result": "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+          "resultNoCity": "{{tempC}}°C / {{tempF}}°F · {{condition}}"
+        },
         "webFetch": {
           "fetched": "{{siteName}}を読む",
           "fetchedPage": "「{{title}}」を読む",

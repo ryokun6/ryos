@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Chat, useChat, type UIMessage } from "@ai-sdk/react";
-import {
-  DefaultChatTransport,
-  lastAssistantMessageIsCompleteWithToolCalls,
-  type ChatInit,
-} from "ai";
+import { DefaultChatTransport, type ChatInit } from "ai";
 import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
@@ -29,6 +25,12 @@ import { useChatSpeechSync } from "./useChatSpeechSync";
 import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { getSystemState } from "../utils/systemState";
 import { dispatchToolCall } from "../tools/dispatchToolCall";
+import {
+  hasUnsettledApprovalGatedActivity,
+  registerToolApprovalSurface,
+  sendAutomaticallyWhenApprovalsSettled,
+} from "../tools/toolApprovals";
+import { summarizeChatMessages } from "../tools/chatDebug";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 import {
   buildAIConversationRequestBody,
@@ -182,6 +184,13 @@ function getSharedAiChat(): Chat<AIChatMessage> {
             throw new Error("Chat identity changed while preparing request");
           }
           sharedRequestOwner = owner;
+          log.debug("Preparing /api/chat request", {
+            trigger,
+            messageId,
+            owner,
+            conversation,
+            ...summarizeChatMessages(messages),
+          });
           return {
             body: buildAIConversationRequestBody({
               body,
@@ -195,8 +204,9 @@ function getSharedAiChat(): Chat<AIChatMessage> {
         },
       }),
 
-      // Automatically submit when all tool outputs are available
-      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+      // Automatically submit when all tool outputs are available, or when
+      // the user has responded to every pending tool approval (deny path).
+      sendAutomaticallyWhen: sendAutomaticallyWhenApprovalsSettled,
 
       async onToolCall(options) {
         await resolveSharedHandlers()?.onToolCall(options);
@@ -207,6 +217,16 @@ function getSharedAiChat(): Chat<AIChatMessage> {
       onError(error) {
         resolveSharedHandlers()?.onError(error);
       },
+    });
+
+    // Route in-chat Allow / Don't Allow decisions for approval-gated tools
+    // (e.g. getPreciseLocation) to this chat. Module-level singleton — registered
+    // once for the app's lifetime.
+    const chat = sharedAiChat;
+    registerToolApprovalSurface({
+      getMessages: () => chat.messages,
+      addToolApprovalResponse: (args) => chat.addToolApprovalResponse(args),
+      addToolOutput: (payload) => chat.addToolOutput(payload),
     });
   }
   return sharedAiChat;
@@ -335,7 +355,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }) as AIChatMessage,
       );
       log.debug("AI finished, syncing messages", {
-        messageCount: finalMessages.length,
+        isError,
+        ...summarizeChatMessages(finalMessages),
       });
       setAiMessages(finalMessages);
 
@@ -412,6 +433,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       console.error("AI Chat Error:", err);
+      // Structured context for the Debug console overlay: the failing message
+      // states usually explain server-side 400s (e.g. invalid_messages).
+      log.error(
+        "AI chat request failed",
+        summarizeChatMessages(getSharedAiChat().messages)
+      );
 
       // Helper function to handle authentication errors consistently
       const handleAuthError = (message?: string) => {
@@ -610,6 +637,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     (messages: AIChatMessage[]) => {
       const nextMessages =
         messages.length > 0 ? messages : [createInitialChatMessage()];
+      // Hydration replaces the live SDK messages wholesale — log it so races
+      // with in-flight tool approvals are visible in debug traces.
+      log.debug(
+        "Applying server conversation snapshot",
+        summarizeChatMessages(nextMessages)
+      );
       setAiMessages(nextMessages);
       setSdkMessages(nextMessages);
     },
@@ -623,7 +656,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     channel: "chat",
     username,
     isAuthenticated,
-    isChatReady: () => getSharedAiChat().status === "ready",
+    // Not "ready" while an approval-gated tool is being settled: hydration
+    // would overwrite the locally recorded Allow with the server's stale
+    // approval-requested snapshot, corrupting the eventual tool output part.
+    isChatReady: () =>
+      getSharedAiChat().status === "ready" &&
+      !hasUnsettledApprovalGatedActivity(getSharedAiChat().messages),
     applyMessages: applyServerMessages,
     onError: (error, context) => {
       log.error(`Failed to sync server conversation (${context})`, error);

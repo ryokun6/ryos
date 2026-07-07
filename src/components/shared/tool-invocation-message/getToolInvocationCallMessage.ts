@@ -146,6 +146,19 @@ export function getToolInvocationCallMessage(
             });
         break;
       }
+      case "getWeather": {
+        const location =
+          typeof input?.location === "string" ? input.location : "";
+        displayCallMessage = location
+          ? t("apps.chats.toolCalls.weather.checkingIn", {
+              defaultValue: "Checking weather in {{location}}…",
+              location,
+            })
+          : t("apps.chats.toolCalls.weather.checking", {
+              defaultValue: "Checking weather…",
+            });
+        break;
+      }
       case "memoryWrite":
         displayCallMessage = t("apps.chats.toolCalls.memory.saving");
         break;

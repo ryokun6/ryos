@@ -40,6 +40,7 @@ import type {
   WebFetchInput,
   RunJsInput,
   MapsSearchPlacesInput,
+  GetWeatherInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
 import type {
@@ -67,6 +68,7 @@ import {
   executeStickiesControl,
 } from "./app-state-executors.js";
 import { executeMapsSearchPlaces } from "./maps-executor.js";
+import { executeGetWeather } from "./weather-executor.js";
 
 // Re-export types and schemas for external use
 export * from "./types.js";
@@ -89,6 +91,7 @@ export {
   executeStickiesControl,
 } from "./app-state-executors.js";
 export { executeMapsSearchPlaces } from "./maps-executor.js";
+export { executeGetWeather } from "./weather-executor.js";
 
 const MEMORY_TOOL_NAMES = [
   "memoryWrite",
@@ -106,6 +109,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "contactsControl",
   "songLibraryControl",
   "mapsSearchPlaces",
+  "getWeather",
   "runJs",
 ] as const;
 
@@ -241,8 +245,10 @@ export const TOOL_DESCRIPTIONS = {
     "look up an address, get directions to a venue, plan a route, or otherwise wants real geographic data. " +
     "Returns a small list of place cards with name, formatted address, MapKit POI category, lat/lng, and an Apple Maps URL. " +
     "When you don't pass 'near', the server automatically biases the search to the user's approximate IP location, " +
-    "so unqualified queries like 'coffee' or 'pharmacy' already return nearby hits. Only override with an explicit " +
-    "'near: { latitude, longitude }' when you have a better anchor than IP geolocation (a different city the user named, " +
+    "so unqualified queries like 'coffee' or 'pharmacy' already return nearby hits. " +
+    "For 'near me' / 'nearby' / 'around here' queries where accuracy matters (walking distance, closest branch), call getPreciseLocation first " +
+    "and pass the returned coordinates as 'near: { latitude, longitude }'; if the user declines, fall back to the IP-based broad location (just omit 'near'). " +
+    "Also pass an explicit 'near' when you have a better anchor than IP geolocation (a different city the user named, " +
     "an address they just mentioned, etc.). The tool only accepts a point anchor — there is no separate region/bounding-box " +
     "parameter. When you reference a result in chat, mention it by name + city — the client renders the rich card automatically.",
 
@@ -251,6 +257,22 @@ export const TOOL_DESCRIPTIONS = {
     "Each result includes 'appleMapsUrl' (https://maps.apple.com/...). There is no rich place card in Telegram — you MUST paste " +
     "the exact appleMapsUrl for every place you mention in your reply (plain URL text, one per line is fine). " +
     "Do not invent URLs; only use appleMapsUrl values from this tool's JSON output.",
+
+  getWeather:
+    "Get current weather conditions and a 5-day forecast (Open-Meteo — the same live data as the ryOS weather widget and weather wallpaper). " +
+    "Use when the user asks about weather, temperature, rain, or forecasts. " +
+    "Location resolution: pass 'location' with a place name the user mentioned (e.g. 'Tokyo'); or pass 'latitude'/'longitude' when you have precise coordinates. " +
+    "For 'weather here' questions, call getPreciseLocation first and pass the returned coordinates; if the user declines the permission, " +
+    "call getWeather with no location at all — the server falls back to the user's approximate IP-based broad location. " +
+    "If no location can be resolved either way, the result tells you to ask for a city. " +
+    "Output includes both °C and °F — use whichever fits the user's locale/region.",
+
+  getPreciseLocation:
+    "Request the user's precise device location (browser geolocation). This prompts the user with an Allow / Don't Allow permission card in chat — " +
+    "the user may decline, in which case fall back to the IP-based broad location (getWeather with no location, mapsSearchPlaces without 'near') and continue gracefully. " +
+    "Pass a short 'reason' so the user knows why you're asking (e.g. 'to find restaurants near you'). " +
+    "Use when precise coordinates improve the answer — local weather ('weather here'), nearby places ('coffee near me') — before falling back to IP geolocation. " +
+    "Returns latitude/longitude, accuracy, and the locality name. You can then pass the coordinates to getWeather or mapsSearchPlaces ('near').",
 
   webFetch:
     "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +
@@ -407,6 +429,17 @@ export function createChatTools(
     },
 
     // ============================================================================
+    // Weather Tool (Server-side execution)
+    // ============================================================================
+    getWeather: {
+      description: TOOL_DESCRIPTIONS.getWeather,
+      inputSchema: schemas.getWeatherSchema,
+      execute: async (input: GetWeatherInput) => {
+        return executeGetWeather(input, context);
+      },
+    },
+
+    // ============================================================================
     // Run JS Tool (Server-side execution — QuickJS WASM sandbox)
     // ============================================================================
     runJs: {
@@ -415,6 +448,18 @@ export function createChatTools(
       execute: async (input: RunJsInput) => {
         return executeRunJs(input, context);
       },
+    },
+
+    // ============================================================================
+    // Precise Location Tool (Client-side execution, approval-gated)
+    // The user must approve via the in-chat permission card before the
+    // browser geolocation handler runs (see src/apps/chats/tools).
+    // ============================================================================
+    getPreciseLocation: {
+      description: TOOL_DESCRIPTIONS.getPreciseLocation,
+      inputSchema: schemas.getPreciseLocationSchema,
+      needsApproval: true,
+      // No execute - handled client-side after user approval
     },
 
     // ============================================================================
@@ -594,6 +639,9 @@ export function createChatTools(
         ...allTools.mapsSearchPlaces,
         description: TOOL_DESCRIPTIONS.mapsSearchPlacesTelegram,
       },
+      // No getPreciseLocation in Telegram (requires browser geolocation +
+      // approval UI); getWeather still works via place names or coordinates.
+      getWeather: allTools.getWeather,
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;
   }
 

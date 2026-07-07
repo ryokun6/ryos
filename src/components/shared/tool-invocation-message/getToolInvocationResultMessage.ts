@@ -356,6 +356,39 @@ export function getToolInvocationResultMessage(
           displayResultMessage = out.message;
         }
       }
+    } else if (toolName === "getWeather") {
+      const out = output as
+        | {
+            success?: boolean;
+            message?: string;
+            location?: { city?: string | null };
+            current?: {
+              temperatureC?: number;
+              temperatureF?: number;
+              condition?: string;
+            };
+          }
+        | undefined;
+      if (out?.success && out.current) {
+        const city = out.location?.city ?? null;
+        const values = {
+          tempC: Math.round(out.current.temperatureC ?? 0),
+          tempF: Math.round(out.current.temperatureF ?? 0),
+          condition: out.current.condition ?? "",
+        };
+        displayResultMessage = city
+          ? t("apps.chats.toolCalls.weather.result", {
+              defaultValue: "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+              city,
+              ...values,
+            })
+          : t("apps.chats.toolCalls.weather.resultNoCity", {
+              defaultValue: "{{tempC}}°C / {{tempF}}°F · {{condition}}",
+              ...values,
+            });
+      } else if (out?.message) {
+        displayResultMessage = out.message;
+      }
     } else if (toolName === "webFetch") {
       const out = output as { success?: boolean; message?: string; title?: string; siteName?: string } | undefined;
       if (out?.success) {
