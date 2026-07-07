@@ -38,6 +38,7 @@ import {
   resetAIConversationSession,
   uploadAIConversationImage,
 } from "@/api/aiConversations";
+import { useAIConversationRealtime } from "@/hooks/useAIConversationRealtime";
 
 
 // Helper to check if chats app is currently in the foreground
@@ -669,6 +670,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [username, isAuthenticated, hydrateServerConversation]);
+
+  // Live cross-device updates: when another signed-in device changes the
+  // canonical conversation (turn committed, greeting, import, clear), pull
+  // the fresh server state immediately instead of waiting for a focus event.
+  useAIConversationRealtime({
+    channel: "chat",
+    username: chatIdentity,
+    onRemoteUpdate: () => {
+      if (getSharedAiChat().status !== "ready") return;
+      void hydrateServerConversation(true).catch((hydrationError) => {
+        log.error(
+          "Failed to apply realtime conversation update",
+          hydrationError
+        );
+      });
+    },
+  });
 
   const isLoading = status === "streaming" || status === "submitted";
   const retryLastUserMessage = useCallback((): Promise<void> => {

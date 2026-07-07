@@ -188,6 +188,74 @@ maybeDescribe("local WebSocket realtime authorization", () => {
     expect(result.authorized).toBe(false);
   });
 
+  test("private-ai channel: owner authorized, outsider denied", async () => {
+    if (!memberCookie || !outsiderCookie) return;
+    const ownTicket = await getTicket(memberCookie);
+    const allowed = await subscribeOnce(ownTicket, `private-ai-${memberUser}`);
+    expect(allowed.authorized).toBe(true);
+
+    const foreignTicket = await getTicket(outsiderCookie);
+    const denied = await subscribeOnce(
+      foreignTicket,
+      `private-ai-${memberUser}`
+    );
+    expect(denied.authorized).toBe(false);
+  });
+
+  test("conversation import broadcasts ai-conversation-updated to the owner", async () => {
+    if (!memberCookie) return;
+
+    // Read (and lazily create) the canonical conversation to get its id.
+    const conversationRes = await fetch(
+      `${origin}/api/ai/conversations/chat?limit=1`,
+      { headers: { Origin: origin, Cookie: memberCookie } }
+    );
+    expect(conversationRes.status).toBe(200);
+    const page = (await conversationRes.json()) as {
+      conversation: { id: string; revision: number };
+    };
+
+    const freshTicket = await getTicket(memberCookie);
+    const result = await subscribeOnce(freshTicket, `private-ai-${memberUser}`, {
+      waitMs: 2500,
+      triggerAfterSubscribe: async () => {
+        await fetch(`${origin}/api/ai/conversations/chat/import`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: origin,
+            Cookie: memberCookie as string,
+          },
+          body: JSON.stringify({
+            conversationId: page.conversation.id,
+            expectedRevision: page.conversation.revision,
+            operationId: crypto.randomUUID(),
+            messages: [
+              {
+                id: "u-realtime",
+                role: "user",
+                parts: [{ type: "text", text: "hello from another device" }],
+                metadata: { createdAt: new Date().toISOString() },
+              },
+            ],
+          }),
+        });
+      },
+    });
+    expect(result.authorized).toBe(true);
+    expect(result.message).toBeDefined();
+    const delivered = result.message as {
+      event?: string;
+      data?: { channel?: string; reason?: string; revision?: number };
+    };
+    expect(delivered.event).toBe("ai-conversation-updated");
+    expect(delivered.data?.channel).toBe("chat");
+    expect(delivered.data?.reason).toBe("import");
+    expect(delivered.data?.revision).toBeGreaterThan(
+      page.conversation.revision
+    );
+  });
+
   test("private room: member authorized + receives messages, outsider denied", async () => {
     if (!privateRoomId || !memberCookie) return;
 

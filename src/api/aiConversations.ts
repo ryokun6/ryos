@@ -73,6 +73,26 @@ const activeOwners = new Map<AIConversationChannel, string>();
 let cacheEpoch = 0;
 const utf8Encoder = new TextEncoder();
 
+// Operation ids minted by this device. Realtime `ai-conversation-updated`
+// events echo the originating operation id, so tracking ours lets the sender
+// skip re-hydrating for changes it already has (insertion order = age).
+const MAX_TRACKED_LOCAL_OPERATIONS = 64;
+const localOperationIds = new Set<string>();
+
+function trackLocalAIConversationOperation(operationId: string): void {
+  localOperationIds.delete(operationId);
+  localOperationIds.add(operationId);
+  while (localOperationIds.size > MAX_TRACKED_LOCAL_OPERATIONS) {
+    const oldest = localOperationIds.values().next().value;
+    if (oldest === undefined) break;
+    localOperationIds.delete(oldest);
+  }
+}
+
+export function isLocalAIConversationOperation(operationId: string): boolean {
+  return localOperationIds.has(operationId);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -692,10 +712,12 @@ async function importLocalConversation(
   conversation: AIConversation,
   messages: readonly AIChatMessage[]
 ): Promise<void> {
+  const importOperationId = crypto.randomUUID();
+  trackLocalAIConversationOperation(importOperationId);
   const request = buildAIConversationImportRequest({
     conversationId: conversation.id,
     expectedRevision: conversation.revision,
-    operationId: crypto.randomUUID(),
+    operationId: importOperationId,
     messages: await externalizeLocalImages(messages),
   });
   if (!request.messages.some((message) => message.role === "user")) return;
@@ -820,10 +842,12 @@ export async function getAIConversationRequestContext({
   if (session.stale) {
     throw new Error("Conversation changed while preparing the request");
   }
+  const operationId = crypto.randomUUID();
+  trackLocalAIConversationOperation(operationId);
   return {
     id: session.conversation.id,
     revision: session.conversation.revision,
-    operationId: crypto.randomUUID(),
+    operationId,
   };
 }
 
@@ -850,6 +874,8 @@ export async function resetAIConversationSession({
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const requestEpoch = cacheEpoch;
     const requestGeneration = incrementGeneration(key);
+    const resetOperationId = crypto.randomUUID();
+    trackLocalAIConversationOperation(resetOperationId);
     const response = await abortableFetch(
       getApiUrl(`/api/ai/conversations/${channel}/reset`),
       {
@@ -857,7 +883,7 @@ export async function resetAIConversationSession({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId: session.conversation.id,
-          operationId: crypto.randomUUID(),
+          operationId: resetOperationId,
         }),
         timeout: 15_000,
         throwOnHttpError: false,
@@ -907,6 +933,14 @@ export async function resetAIConversationSession({
   }
 
   throw new Error("Conversation reset failed after refreshing");
+}
+
+export function getAIConversationSessionSnapshot(
+  channel: AIConversationChannel
+): { owner: string; conversation: AIConversation } | null {
+  const session = sessions.get(channel);
+  if (!session) return null;
+  return { owner: session.owner, conversation: session.conversation };
 }
 
 export function clearAIConversationSessionCache(): void {
