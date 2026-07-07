@@ -78,6 +78,9 @@ async function testChatInvalidJson(): Promise<void> {
 }
 
 async function testChatInvalidAuthToken(): Promise<void> {
+  // /api/chat uses optional auth: invalid (stale-cookie) credentials are
+  // ignored and the request proceeds anonymously, so it succeeds or hits the
+  // anonymous rate limit — it must not 401.
   const res = await fetchWithAuth(
     `${BASE_URL}/api/chat`,
     "testuser",
@@ -90,7 +93,7 @@ async function testChatInvalidAuthToken(): Promise<void> {
       }),
     }
   );
-  expect(res.status).toBe(401);
+  expect([200, 429]).toContain(res.status);
 }
 
 async function testChatBasicRequest(): Promise<void> {
@@ -200,6 +203,7 @@ async function testAppletAiInvalidJson(): Promise<void> {
 }
 
 async function testAppletAiInvalidAuthToken(): Promise<void> {
+  // Optional auth: invalid credentials fall back to anonymous instead of 401.
   const res = await fetchWithAuth(
     `${BASE_URL}/api/applet-ai`,
     "testuser",
@@ -210,7 +214,7 @@ async function testAppletAiInvalidAuthToken(): Promise<void> {
       body: JSON.stringify({ prompt: "Hello" }),
     }
   );
-  expect(res.status).toBe(401);
+  expect([200, 429]).toContain(res.status);
 }
 
 async function testAppletAiBasicTextRequest(): Promise<void> {

@@ -84,7 +84,6 @@ const {
   cleanupStaleAIAttachments,
   createAIAttachment,
   deleteAllAIAttachments,
-  deleteUnreferencedAIAttachmentsForNames,
   getAIAttachmentPath,
   readAIAttachment,
   resolveAIAttachmentsForModel,
@@ -190,27 +189,6 @@ class UpstashShapedAttachmentRedis extends AttachmentRedis {
         return member;
       }
     }) as T;
-  }
-}
-
-class LockOrderAttachmentRedis extends AttachmentRedis {
-  observeConversationLocks = false;
-  readonly attachmentHeldAtConversationLock: boolean[] = [];
-
-  override async set(
-    key: string,
-    value: unknown,
-    options?: { ex?: number; nx?: boolean },
-  ): Promise<unknown> {
-    const isConversationLock =
-      key === redisKeys.chat.aiConversationLock(USERNAME, "chat") ||
-      key === redisKeys.chat.aiConversationLock(USERNAME, "assistant");
-    if (this.observeConversationLocks && isConversationLock) {
-      this.attachmentHeldAtConversationLock.push(
-        this.kv.has(redisKeys.chat.aiAttachmentsLock(USERNAME)),
-      );
-    }
-    return super.set(key, value, options);
   }
 }
 
@@ -886,130 +864,65 @@ describe("AI attachment locking and quota", () => {
 });
 
 describe("AI attachment cleanup", () => {
-  test("uses ready owner-indexed metadata without reading object storage", async () => {
-    const { getAIConversationPage, importAIConversationMessages } =
-      await import("../api/ai/conversations/_helpers/store");
+  test("conversation writes accept attachment references without reading object storage", async () => {
+    const { beginAIConversationTurn } = await import(
+      "../api/ai/conversations/_helpers/store"
+    );
     const redis = new AttachmentRedis();
     await seedAccount(redis);
-    const initial = await getAIConversationPage({
-      redis,
-      username: USERNAME,
-      channel: "chat",
-      limit: 10,
-    });
     const created = await createPng(redis);
     const name = created.url.split("/").at(-1)!;
 
-    await importAIConversationMessages({
+    const begun = await beginAIConversationTurn({
       redis,
       username: USERNAME,
       channel: "chat",
-      expectedConversationId: initial.conversation.id,
-      expectedRevision: 0,
-      operationId: "ready-index-only",
-      messages: [fileMessage("ready-index-only", [name])],
+      operationId: "write-with-attachment",
+      action: {
+        kind: "user-message",
+        message: fileMessage("write-with-attachment", [name]),
+      },
     });
 
+    expect(begun.document.revision).toBe(1);
     expect(downloadPrivateStoredObjectByPathname).not.toHaveBeenCalled();
     expect(downloadedPathnames).toEqual([]);
   });
 
-  test("finishes legacy object verification before claiming the conversation lock", async () => {
-    const { getAIConversationPage, importAIConversationMessages } =
-      await import("../api/ai/conversations/_helpers/store");
-    const redis = new LockOrderAttachmentRedis();
-    const initial = await getAIConversationPage({
-      redis,
-      username: USERNAME,
-      channel: "assistant",
-      limit: 10,
-    });
-    redis.observeConversationLocks = true;
-    const pathname = getAIAttachmentPath(USERNAME, LEGACY_NAME);
-    storedObjects.set(pathname, PNG_1X1);
-    let markVerificationStarted: () => void = () => {};
-    const verificationStarted = new Promise<void>((resolve) => {
-      markVerificationStarted = resolve;
-    });
-    let releaseVerification: () => void = () => {};
-    const verificationReleased = new Promise<void>((resolve) => {
-      releaseVerification = resolve;
-    });
-    beforeDownload = async () => {
-      markVerificationStarted();
-      await verificationReleased;
-    };
-
-    const importing = importAIConversationMessages({
-      redis,
-      username: USERNAME,
-      channel: "assistant",
-      expectedConversationId: initial.conversation.id,
-      expectedRevision: 0,
-      operationId: "verify-before-conversation-lock",
-      messages: [
-        {
-          id: "legacy-file",
-          role: "user",
-          parts: [
-            {
-              type: "file",
-              mediaType: "image/png",
-              url: getAIAttachmentUrl(LEGACY_NAME),
-            },
-          ],
-        },
-      ],
-    });
-    await verificationStarted;
-    try {
-      expect(
-        await redis.get(redisKeys.chat.aiAttachmentsLock(USERNAME)),
-      ).not.toBeNull();
-      expect(
-        await redis.get(
-          redisKeys.chat.aiConversationLock(USERNAME, "assistant"),
-        ),
-      ).toBeNull();
-      expect(redis.attachmentHeldAtConversationLock).toEqual([]);
-    } finally {
-      releaseVerification();
-    }
-
-    await expect(importing).resolves.toMatchObject({ revision: 1 });
-    expect(redis.attachmentHeldAtConversationLock).toEqual([true]);
-    expect(downloadedPathnames).toEqual([pathname]);
-  });
-
-  test("reset cleanup removes cleared-only names while preserving cross-channel and unrelated uploads", async () => {
+  test("post-reset sweep removes stale unreferenced uploads and preserves referenced or fresh ones", async () => {
     const redis = new AttachmentRedis();
     const indexKey = redisKeys.chat.aiAttachments(USERNAME);
+    const now = Date.now();
     const clearedOnlyName = "66666666-6666-4666-8666-666666666666.png";
     const sharedName = "77777777-7777-4777-8777-777777777777.png";
-    const unrelatedName = "88888888-8888-4888-8888-888888888888.png";
+    const freshName = "88888888-8888-4888-8888-888888888888.png";
     const clearedOnlyUrl = storageUrlForPath(
       getAIAttachmentPath(USERNAME, clearedOnlyName),
     );
     const sharedUrl = storageUrlForPath(
       getAIAttachmentPath(USERNAME, sharedName),
     );
-    const unrelatedUrl = storageUrlForPath(
-      getAIAttachmentPath(USERNAME, unrelatedName),
-    );
+    const freshUrl = storageUrlForPath(getAIAttachmentPath(USERNAME, freshName));
+    const clearedOnlyMember = indexEntry({
+      name: clearedOnlyName,
+      storageUrl: clearedOnlyUrl,
+      createdAt: now - AI_ATTACHMENT_ORPHAN_GRACE_MS - 1,
+    });
     const sharedMember = indexEntry({
       name: sharedName,
       storageUrl: sharedUrl,
-      createdAt: Date.now() - AI_ATTACHMENT_ORPHAN_GRACE_MS - 1,
+      createdAt: now - AI_ATTACHMENT_ORPHAN_GRACE_MS - 1,
     });
-    const unrelatedMember = indexEntry({
-      name: unrelatedName,
-      storageUrl: unrelatedUrl,
-      createdAt: Date.now(),
+    const freshMember = indexEntry({
+      name: freshName,
+      storageUrl: freshUrl,
+      createdAt: now,
     });
-    await redis.sadd(indexKey, clearedOnlyUrl, sharedMember, unrelatedMember);
+    await redis.sadd(indexKey, clearedOnlyMember, sharedMember, freshMember);
     seedStoredObject(clearedOnlyUrl);
     seedStoredObject(sharedUrl);
-    seedStoredObject(unrelatedUrl);
+    seedStoredObject(freshUrl);
+    // The chat thread was just reset; assistant still references sharedName.
     await redis.set(
       redisKeys.chat.aiConversation(USERNAME, "chat"),
       JSON.stringify({ messages: [] }),
@@ -1019,10 +932,10 @@ describe("AI attachment cleanup", () => {
       JSON.stringify({ messages: [fileMessage("shared", [sharedName])] }),
     );
 
-    const removed = await deleteUnreferencedAIAttachmentsForNames({
+    const removed = await cleanupStaleAIAttachments({
       redis,
       username: USERNAME,
-      names: [clearedOnlyName, sharedName],
+      now,
     });
 
     expect(removed).toBe(1);
@@ -1031,9 +944,7 @@ describe("AI attachment cleanup", () => {
     expect(retained).toHaveLength(2);
     expect(retained.every((member) => member.startsWith("v1:"))).toBe(true);
     expect(retained.some((member) => member.includes(sharedName))).toBe(true);
-    expect(retained.some((member) => member.includes(unrelatedName))).toBe(
-      true,
-    );
+    expect(retained.some((member) => member.includes(freshName))).toBe(true);
 
     const purgeOnlyName = "99999999-9999-4999-8999-999999999999";
     const purgeOnlyUrl = storageUrlForPath(
@@ -1042,206 +953,47 @@ describe("AI attachment cleanup", () => {
     await redis.sadd(indexKey, purgeOnlyUrl);
     seedStoredObject(purgeOnlyUrl);
     await deleteAllAIAttachments(redis, USERNAME);
-    expect(deletedStorageUrls).toEqual([
-      clearedOnlyUrl,
-      sharedUrl,
-      unrelatedUrl,
-      purgeOnlyUrl,
-    ]);
+    expect(deletedStorageUrls).toEqual(
+      expect.arrayContaining([clearedOnlyUrl, sharedUrl, freshUrl, purgeOnlyUrl]),
+    );
     expect(await redis.smembers(indexKey)).toEqual([]);
   });
 
-  test("orders cleanup and attachment-bearing writes without dangling references", async () => {
-    const { getAIConversationPage, importAIConversationMessages } =
-      await import("../api/ai/conversations/_helpers/store");
+  test("keeps a stale orphan indexed when object deletion fails and reclaims it on the next sweep", async () => {
     const redis = new AttachmentRedis();
-    await seedAccount(redis);
-    const initial = await getAIConversationPage({
-      redis,
-      username: USERNAME,
-      channel: "chat",
-      limit: 10,
-    });
-    const cleanedFirst = await createPng(redis);
-    const cleanedFirstName = cleanedFirst.url.split("/").at(-1)!;
-
-    expect(
-      await deleteUnreferencedAIAttachmentsForNames({
-        redis,
-        username: USERNAME,
-        names: [cleanedFirstName],
-      }),
-    ).toBe(1);
-    await expect(
-      importAIConversationMessages({
-        redis,
-        username: USERNAME,
-        channel: "chat",
-        expectedConversationId: initial.conversation.id,
-        expectedRevision: 0,
-        operationId: "cleanup-first",
-        messages: [fileMessage("cleanup-first", [cleanedFirstName])],
-      }),
-    ).rejects.toMatchObject({ code: "attachment_not_found" });
-
-    const writtenFirst = await createPng(redis);
-    const writtenFirstName = writtenFirst.url.split("/").at(-1)!;
-    await importAIConversationMessages({
-      redis,
-      username: USERNAME,
-      channel: "chat",
-      expectedConversationId: initial.conversation.id,
-      expectedRevision: 0,
-      operationId: "write-first",
-      messages: [fileMessage("write-first", [writtenFirstName])],
-    });
-    expect(
-      await deleteUnreferencedAIAttachmentsForNames({
-        redis,
-        username: USERNAME,
-        names: [writtenFirstName],
-      }),
-    ).toBe(0);
-    expect(
-      storedObjects.has(getAIAttachmentPath(USERNAME, writtenFirstName)),
-    ).toBe(true);
-  });
-
-  test("verifies and backfills an unindexed legacy reference before import", async () => {
-    const { getAIConversationPage, importAIConversationMessages } =
-      await import("../api/ai/conversations/_helpers/store");
-    const redis = new AttachmentRedis();
-    const initial = await getAIConversationPage({
-      redis,
-      username: USERNAME,
-      channel: "assistant",
-      limit: 10,
-    });
-    const pathname = getAIAttachmentPath(USERNAME, LEGACY_NAME);
-    storedObjects.set(pathname, PNG_1X1);
-
-    await importAIConversationMessages({
-      redis,
-      username: USERNAME,
-      channel: "assistant",
-      expectedConversationId: initial.conversation.id,
-      expectedRevision: 0,
-      operationId: "legacy-backfill",
-      messages: [
-        {
-          id: "legacy-file",
-          role: "user",
-          parts: [
-            {
-              type: "file",
-              mediaType: "image/png",
-              url: getAIAttachmentUrl(LEGACY_NAME),
-            },
-          ],
-        },
-      ],
-    });
-
-    const members = await redis.smembers<string[]>(
-      redisKeys.chat.aiAttachments(USERNAME),
+    const indexKey = redisKeys.chat.aiAttachments(USERNAME);
+    const now = Date.now();
+    const orphanName = "aaaaaaaa-1111-4111-8111-111111111111.png";
+    const orphanUrl = storageUrlForPath(
+      getAIAttachmentPath(USERNAME, orphanName),
     );
-    expect(members).toHaveLength(1);
-    expect(members[0]).toStartWith("v1:");
-    expect(members[0]).toContain(LEGACY_NAME);
-  });
-
-  test("retains reset attachment cleanup after failure and retries it", async () => {
-    const {
-      getAIConversationPage,
-      getPendingAIConversationResetMemory,
-      importAIConversationMessages,
-      resetAIConversation,
-    } = await import("../api/ai/conversations/_helpers/store");
-    const { extractPendingAIConversationResetMemory } =
-      await import("../api/ai/conversations/_helpers/reset-memory");
-    const redis = new AttachmentRedis();
-    await seedAccount(redis);
-    const initial = await getAIConversationPage({
-      redis,
-      username: USERNAME,
-      channel: "assistant",
-      limit: 10,
+    const orphanMember = indexEntry({
+      name: orphanName,
+      storageUrl: orphanUrl,
+      createdAt: now - AI_ATTACHMENT_ORPHAN_GRACE_MS - 1,
     });
-    const created = await createPng(redis);
-    const name = created.url.split("/").at(-1)!;
-    await importAIConversationMessages({
-      redis,
-      username: USERNAME,
-      channel: "assistant",
-      expectedConversationId: initial.conversation.id,
-      expectedRevision: 0,
-      operationId: "seed-reset-attachment",
-      messages: [
-        {
-          id: "assistant-file",
-          role: "assistant",
-          parts: [
-            {
-              type: "file",
-              mediaType: "image/png",
-              url: created.url,
-            },
-          ],
-        },
-      ],
-    });
-    await resetAIConversation({
-      redis,
-      username: USERNAME,
-      channel: "assistant",
-      conversationId: initial.conversation.id,
-      operationId: "reset-with-attachment",
-    });
-    expect(
-      (
-        await getPendingAIConversationResetMemory({
-          redis,
-          username: USERNAME,
-          channel: "assistant",
-        })
-      )?.attachmentNames,
-    ).toEqual([name]);
+    await redis.sadd(indexKey, orphanMember);
+    seedStoredObject(orphanUrl);
 
     deleteStorageError = new Error("transient storage failure");
-    await expect(
-      extractPendingAIConversationResetMemory({
-        redis,
-        username: USERNAME,
-        channel: "assistant",
-      }),
-    ).rejects.toThrow("transient storage failure");
     expect(
-      await getPendingAIConversationResetMemory({
-        redis,
-        username: USERNAME,
-        channel: "assistant",
-      }),
-    ).not.toBeNull();
+      await cleanupStaleAIAttachments({ redis, username: USERNAME, now }),
+    ).toBe(0);
+    const retained = await redis.smembers<string[]>(indexKey);
+    expect(retained).toHaveLength(1);
+    expect(retained[0]).toContain(orphanName);
 
     deleteStorageError = null;
-    await expect(
-      extractPendingAIConversationResetMemory({
-        redis,
-        username: USERNAME,
-        channel: "assistant",
-      }),
-    ).resolves.toMatchObject({ status: "processed" });
     expect(
-      await getPendingAIConversationResetMemory({
-        redis,
-        username: USERNAME,
-        channel: "assistant",
-      }),
-    ).toBeNull();
-    expect(storedObjects.has(getAIAttachmentPath(USERNAME, name))).toBe(false);
+      await cleanupStaleAIAttachments({ redis, username: USERNAME, now }),
+    ).toBe(1);
+    expect(await redis.smembers(indexKey)).toEqual([]);
+    expect(storedObjects.has(getAIAttachmentPath(USERNAME, orphanName))).toBe(
+      false,
+    );
   });
 
-  test("wires durable reset cleanup", () => {
+  test("wires the post-reset sweep and inline memory extraction", () => {
     const resetRoute = readFileSync(
       join(import.meta.dir, "../api/ai/conversations/[channel]/reset.ts"),
       "utf8",
@@ -1255,16 +1007,10 @@ describe("AI attachment cleanup", () => {
       "utf8",
     );
     expect(attachmentStore).toContain("ATTACHMENT_LOCK_TTL_SECONDS = 120");
-    expect(resetRoute).not.toContain(
-      "deleteUnreferencedAIAttachmentsForMessages",
-    );
-    expect(resetMemoryHelper).toContain(
-      "deleteUnreferencedAIAttachmentsForNames",
-    );
-    expect(
-      resetMemoryHelper.indexOf("deleteUnreferencedAIAttachmentsForNames"),
-    ).toBeLessThan(
-      resetMemoryHelper.indexOf("extractMemoriesFromConversation({"),
-    );
+    expect(resetRoute).toContain("cleanupStaleAIAttachments");
+    expect(resetRoute).toContain("processClearedAIConversationMemory");
+    expect(resetRoute).not.toContain("deleteUnreferencedAIAttachments");
+    expect(resetMemoryHelper).toContain("extractMemoriesFromConversation");
+    expect(resetMemoryHelper).not.toContain("PendingAIConversationResetMemory");
   });
 });

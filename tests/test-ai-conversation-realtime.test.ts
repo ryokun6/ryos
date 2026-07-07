@@ -54,7 +54,6 @@ describe("ai-conversation-updated event contract", () => {
       "turn-begin",
       "turn-complete",
       "greeting",
-      "import",
       "reset",
     ]) {
       expect(
@@ -104,15 +103,20 @@ describe("ai-conversation-updated event contract", () => {
 });
 
 describe("AI conversation realtime broadcast wiring", () => {
-  test("chat route broadcasts turn begin/complete and greeting updates", () => {
+  test("chat route broadcasts turn begin/complete updates", () => {
     const source = readSource("api/chat.ts");
     assertHasCall(source, "broadcastAIConversationUpdate");
-    // turn-begin, turn-complete, greeting
+    // turn-begin, turn-complete
     expect(
       countCalls(source, "broadcastAIConversationUpdate")
-    ).toBeGreaterThanOrEqual(3);
+    ).toBeGreaterThanOrEqual(2);
     expect(source).toContain('reason: "turn-begin"');
     expect(source).toContain('reason: "turn-complete"');
+  });
+
+  test("greeting route broadcasts a greeting update", () => {
+    const source = readSource("api/ai/conversations/[channel]/greeting.ts");
+    assertHasCall(source, "broadcastAIConversationUpdate");
     expect(source).toContain('reason: "greeting"');
   });
 
@@ -120,12 +124,6 @@ describe("AI conversation realtime broadcast wiring", () => {
     const source = readSource("api/ai/conversations/[channel]/reset.ts");
     assertHasCall(source, "broadcastAIConversationUpdate");
     expect(source).toContain('reason: "reset"');
-  });
-
-  test("import route broadcasts an import update", () => {
-    const source = readSource("api/ai/conversations/[channel]/import.ts");
-    assertHasCall(source, "broadcastAIConversationUpdate");
-    expect(source).toContain('reason: "import"');
   });
 
   test("broadcast helper targets the per-user private-ai channel", () => {
@@ -147,24 +145,30 @@ describe("AI conversation realtime client wiring", () => {
     expect(source).toContain("AI_CONVERSATION_UPDATED_REALTIME_EVENT");
   });
 
+  test("shared server-conversation hook drives realtime re-hydration", () => {
+    const source = readSource("src/hooks/useServerAIConversation.ts");
+    assertHasCall(source, "useAIConversationRealtime");
+    assertHasCall(source, "loadAIConversation");
+  });
+
   test("Chats AI hook reacts to remote conversation updates", () => {
     const source = readSource("src/apps/chats/hooks/useAiChat.ts");
-    assertHasCall(source, "useAIConversationRealtime");
+    assertHasCall(source, "useServerAIConversation");
     expect(source).toContain('channel: "chat"');
   });
 
   test("desktop assistant hook reacts to remote conversation updates", () => {
     const source = readSource("src/components/assistant/useAssistantChat.ts");
-    assertHasCall(source, "useAIConversationRealtime");
+    assertHasCall(source, "useServerAIConversation");
     expect(source).toContain('channel: "assistant"');
   });
 
   test("client session tracks locally minted operation ids", () => {
     const source = readSource("src/api/aiConversations.ts");
     assertHasCall(source, "trackLocalAIConversationOperation");
-    // Sends, resets, and legacy imports each mint (and track) an operation id.
+    // Sends and resets each mint (and track) an operation id.
     expect(
       countCalls(source, "trackLocalAIConversationOperation")
-    ).toBeGreaterThanOrEqual(3);
+    ).toBeGreaterThanOrEqual(2);
   });
 });

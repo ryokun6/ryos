@@ -1,7 +1,7 @@
 import { apiHandler } from "../../../_utils/api-handler.js";
 import {
   AIConversationError,
-  getAIConversationPage,
+  getAIConversationSnapshot,
 } from "../_helpers/store.js";
 import { isAIConversationChannel } from "../../../../src/shared/contracts/aiConversation.js";
 
@@ -22,30 +22,33 @@ export default apiHandler(
       return;
     }
 
-    const rawLimit = Array.isArray(req.query.limit)
-      ? req.query.limit[0]
-      : req.query.limit;
-    const limit = rawLimit === undefined ? 50 : Number(rawLimit);
-    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "invalid_limit" });
-      return;
+    // Delta reads: `afterSeq` returns only messages with a greater `seq`.
+    // Content updates re-mint `seq`, so in-place assistant updates are
+    // included; clients verify the returned summary to detect structural
+    // changes (reset / regeneration / trim) and fall back to a full read.
+    const rawAfterSeq = Array.isArray(req.query.afterSeq)
+      ? req.query.afterSeq[0]
+      : req.query.afterSeq;
+    let afterSeq: number | undefined;
+    if (rawAfterSeq !== undefined) {
+      afterSeq = Number(rawAfterSeq);
+      if (!Number.isSafeInteger(afterSeq) || afterSeq < 0) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "invalid_after_seq" });
+        return;
+      }
     }
-    const rawCursor = Array.isArray(req.query.cursor)
-      ? req.query.cursor[0]
-      : req.query.cursor;
 
     try {
-      const page = await getAIConversationPage({
+      const snapshot = await getAIConversationSnapshot({
         redis,
         username: user!.username,
         channel,
-        limit,
-        ...(rawCursor ? { cursor: rawCursor } : {}),
+        ...(afterSeq === undefined ? {} : { afterSeq }),
       });
       res.setHeader("Cache-Control", "no-store");
       logger.response(200, Date.now() - startTime);
-      res.status(200).json({ owner: user!.username, ...page });
+      res.status(200).json({ owner: user!.username, ...snapshot });
     } catch (error) {
       if (error instanceof AIConversationError) {
         logger.response(error.status, Date.now() - startTime);

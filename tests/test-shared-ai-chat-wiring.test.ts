@@ -146,12 +146,14 @@ describe("server AI chat lifecycle wiring", () => {
       /agent\.stream\(\{\s*messages: enrichedMessages,\s*abortSignal: generationAbortController\.signal/
     );
     expect(source).toContain("consumeSseStream: consumeStream");
+    // An aborted or failed turn simply skips persistence: the begun user
+    // message stays in place and there is no turn state to release.
     expect(source).toMatch(
-      /if \(isAborted \|\| finishReason === "error"\) \{\s*await releaseTurnAfterClientAbort\(\)/
+      /if \(isAborted \|\| finishReason === "error"\) \{\s*return;/
     );
   });
 
-  test("logs and releases late persistence failures without rethrowing", () => {
+  test("logs late persistence failures without rethrowing", () => {
     const start = source.indexOf("onFinish: async");
     const end = source.indexOf("\n      },\n    });", start);
     expect(start).toBeGreaterThan(-1);
@@ -160,7 +162,6 @@ describe("server AI chat lifecycle wiring", () => {
     expect(onFinish).toContain(
       'logError("Failed to persist completed conversation response", error)'
     );
-    expect(onFinish).toContain("await releaseAIConversationTurn");
     expect(onFinish).not.toContain("throw error");
     expect(onFinish).toContain("clearGenerationAbortListeners()");
   });

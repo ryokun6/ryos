@@ -37,10 +37,9 @@ import {
   buildAIConversationRequestBody,
   getAIConversationRequestContext,
   invalidateAIConversationSession,
-  loadAIConversation,
   resetAIConversationSession,
 } from "@/api/aiConversations";
-import { useAIConversationRealtime } from "@/hooks/useAIConversationRealtime";
+import { useServerAIConversation } from "@/hooks/useServerAIConversation";
 
 const log = createClientLogger("Assistant");
 
@@ -296,7 +295,6 @@ export function useAssistantChat(): AssistantChatHandle {
               ? await getAIConversationRequestContext({
                   channel: "assistant",
                   username: owner,
-                  localMessages: messages,
                 })
               : undefined;
             const current = useChatsStore.getState();
@@ -359,75 +357,28 @@ export function useAssistantChat(): AssistantChatHandle {
     setMessages(useAssistantStore.getState().messages);
   }, [assistantIdentity, sdkStop, clearError, setMessages]);
 
-  const hydrateServerConversation = useCallback(
-    async (force = false, importLocalIfEmpty = !force) => {
-      if (!username || !isAuthenticated) return;
-      const loaded = await loadAIConversation({
-        channel: "assistant",
-        username,
-        localMessages: useAssistantStore.getState().messages,
-        force,
-        importLocalIfEmpty,
-      });
-      const currentAuth = useChatsStore.getState();
-      if (
-        loaded.stale ||
-        currentAuth.username?.toLowerCase() !== loaded.owner ||
-        !currentAuth.isAuthenticated ||
-        chat.status !== "ready"
-      ) {
-        return;
-      }
-      setMessages(loaded.messages);
-      if (loaded.messages.length > 0) {
-        useAssistantStore.getState().hydrateMessages(loaded.messages);
+  const applyServerMessages = useCallback(
+    (loadedMessages: AIChatMessage[]) => {
+      setMessages(loadedMessages);
+      if (loadedMessages.length > 0) {
+        useAssistantStore.getState().hydrateMessages(loadedMessages);
       } else {
         useAssistantStore.getState().clearMessages();
       }
     },
-    [username, isAuthenticated, chat, setMessages]
+    [setMessages]
   );
 
-  useEffect(() => {
-    if (!username || !isAuthenticated) return;
-    void hydrateServerConversation(true, true).catch((hydrationError) => {
-      log.warn("Failed to hydrate server conversation", {
-        error: hydrationError,
-      });
-    });
-  }, [username, isAuthenticated, hydrateServerConversation]);
-
-  useEffect(() => {
-    if (!username || !isAuthenticated) return;
-    const refresh = () => {
-      if (document.visibilityState === "visible" && chat.status === "ready") {
-        void hydrateServerConversation(true).catch((hydrationError) => {
-          log.warn("Failed to refresh server conversation", {
-            error: hydrationError,
-          });
-        });
-      }
-    };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [username, isAuthenticated, chat, hydrateServerConversation]);
-
-  // Live cross-device updates for the assistant thread: re-hydrate as soon
-  // as another signed-in device changes the canonical conversation.
-  useAIConversationRealtime({
+  // Server conversation sync for the assistant thread: hydration on sign-in,
+  // focus/visibility refresh, and realtime cross-device updates.
+  useServerAIConversation({
     channel: "assistant",
-    username: assistantIdentity,
-    onRemoteUpdate: () => {
-      if (chat.status !== "ready") return;
-      void hydrateServerConversation(true).catch((hydrationError) => {
-        log.warn("Failed to apply realtime conversation update", {
-          error: hydrationError,
-        });
-      });
+    username,
+    isAuthenticated,
+    isChatReady: () => chat.status === "ready",
+    applyMessages: applyServerMessages,
+    onError: (error, context) => {
+      log.warn(`Failed to sync server conversation (${context})`, { error });
     },
   });
 
@@ -630,14 +581,12 @@ export function useAssistantChat(): AssistantChatHandle {
   }, [chat, setMessages]);
 
   const clearConversationInternal = useCallback(async (): Promise<boolean> => {
-    const liveMessages = [...chat.messages];
     sdkStop();
     if (username && isAuthenticated) {
       try {
         await resetAIConversationSession({
           channel: "assistant",
           username,
-          localMessages: liveMessages,
         });
       } catch (resetError) {
         log.warn("Failed to reset server conversation", { error: resetError });
@@ -649,7 +598,6 @@ export function useAssistantChat(): AssistantChatHandle {
     useAssistantStore.getState().clearMessages();
     return true;
   }, [
-    chat,
     username,
     isAuthenticated,
     sdkStop,

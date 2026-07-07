@@ -7,8 +7,9 @@ import {
   getAIConversationSummary,
   resetAIConversation,
 } from "../_helpers/store.js";
-import { extractPendingAIConversationResetMemory } from "../_helpers/reset-memory.js";
+import { processClearedAIConversationMemory } from "../_helpers/reset-memory.js";
 import { broadcastAIConversationUpdate } from "../_helpers/realtime.js";
+import { cleanupStaleAIAttachments } from "../../attachments/_helpers/store.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   isAIConversationChannel,
@@ -45,20 +46,32 @@ export default apiHandler(
         channel,
         conversationId: body!.conversationId,
         operationId: body!.operationId,
-        ...(account?.timeZone ? { timeZone: account.timeZone } : {}),
       });
-      const memoryProcessing = extractPendingAIConversationResetMemory({
-        redis,
-        username: user!.username,
-        channel,
-        log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
-        logError: (...args: unknown[]) =>
-          logger.error(String(args[0]), args[1]),
-      }).catch((error) => {
-        logger.error("Cleared conversation memory extraction failed", error);
-      });
-      waitUntil(memoryProcessing);
       if (result.reset) {
+        waitUntil(
+          processClearedAIConversationMemory({
+            redis,
+            username: user!.username,
+            messages: result.clearedMessages,
+            operationId: body!.operationId,
+            ...(account?.timeZone ? { timeZone: account.timeZone } : {}),
+            log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
+            logError: (...args: unknown[]) =>
+              logger.error(String(args[0]), args[1]),
+          }).catch((error) => {
+            logger.error("Cleared conversation memory extraction failed", error);
+          }),
+        );
+        // Attachments referenced only by the cleared thread become
+        // unreferenced; sweep the ones already past the orphan grace period.
+        waitUntil(
+          cleanupStaleAIAttachments({
+            redis,
+            username: user!.username,
+          }).catch((error) => {
+            logger.error("Post-reset attachment sweep failed", error);
+          }),
+        );
         waitUntil(
           broadcastAIConversationUpdate({
             username: user!.username,

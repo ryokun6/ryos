@@ -202,16 +202,15 @@ maybeDescribe("local WebSocket realtime authorization", () => {
     expect(denied.authorized).toBe(false);
   });
 
-  test("conversation import broadcasts ai-conversation-updated to the owner", async () => {
+  test("conversation reset broadcasts ai-conversation-updated to the owner", async () => {
     if (!memberCookie) return;
 
     // Read (and lazily create) the canonical conversation to get its id.
-    const conversationRes = await fetch(
-      `${origin}/api/ai/conversations/chat?limit=1`,
-      { headers: { Origin: origin, Cookie: memberCookie } }
-    );
+    const conversationRes = await fetch(`${origin}/api/ai/conversations/chat`, {
+      headers: { Origin: origin, Cookie: memberCookie },
+    });
     expect(conversationRes.status).toBe(200);
-    const page = (await conversationRes.json()) as {
+    const snapshot = (await conversationRes.json()) as {
       conversation: { id: string; revision: number };
     };
 
@@ -219,7 +218,7 @@ maybeDescribe("local WebSocket realtime authorization", () => {
     const result = await subscribeOnce(freshTicket, `private-ai-${memberUser}`, {
       waitMs: 2500,
       triggerAfterSubscribe: async () => {
-        await fetch(`${origin}/api/ai/conversations/chat/import`, {
+        await fetch(`${origin}/api/ai/conversations/chat/reset`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -227,17 +226,8 @@ maybeDescribe("local WebSocket realtime authorization", () => {
             Cookie: memberCookie as string,
           },
           body: JSON.stringify({
-            conversationId: page.conversation.id,
-            expectedRevision: page.conversation.revision,
+            conversationId: snapshot.conversation.id,
             operationId: crypto.randomUUID(),
-            messages: [
-              {
-                id: "u-realtime",
-                role: "user",
-                parts: [{ type: "text", text: "hello from another device" }],
-                metadata: { createdAt: new Date().toISOString() },
-              },
-            ],
           }),
         });
       },
@@ -250,10 +240,7 @@ maybeDescribe("local WebSocket realtime authorization", () => {
     };
     expect(delivered.event).toBe("ai-conversation-updated");
     expect(delivered.data?.channel).toBe("chat");
-    expect(delivered.data?.reason).toBe("import");
-    expect(delivered.data?.revision).toBeGreaterThan(
-      page.conversation.revision
-    );
+    expect(delivered.data?.reason).toBe("reset");
   });
 
   test("private room: member authorized + receives messages, outsider denied", async () => {

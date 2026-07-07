@@ -3,21 +3,16 @@ import {
   AIConversationError,
   appendAIConversationAssistantMessage,
   beginAIConversationTurn,
-  beginAIConversationTurnWithStatus,
   commitAIConversationRegeneration,
   clearAIConversationTombstone,
   completeAIConversationTurn,
   deleteAIConversationKeys,
-  getAIConversationPage,
+  getAIConversationSnapshot,
   getAIProactiveGreetingEligibility,
-  getPendingAIConversationResetMemory,
   getAIConversationTurnCompletionOperationId,
-  importAIConversationMessages,
-  prepareAIConversationRegeneration,
-  processPendingAIConversationResetMemory,
-  releaseAIConversationTurn,
   resetAIConversation,
   sanitizeAIConversationMessages,
+  toPlainAIConversationMessages,
   type AIConversationRedis,
 } from "../api/ai/conversations/_helpers/store";
 import { ASSISTANT_SUMMON_MESSAGE } from "../src/shared/assistantGreeting";
@@ -90,9 +85,6 @@ class MemoryConversationRedis implements AIConversationRedis {
       } else if (this.values.has(keys[1] ?? "")) {
         result = -2;
       } else {
-        if (script.includes("KEYS[4]") && args[3] !== "") {
-          this.values.set(keys[3] ?? "", String(args[3]));
-        }
         this.values.set(keys[2] ?? "", String(args[1]));
         result = 1;
       }
@@ -118,6 +110,35 @@ function message(
     parts: [{ type: "text", text }],
     metadata: { createdAt },
   };
+}
+
+async function seedTurn(
+  redis: AIConversationRedis,
+  username: string,
+  channel: "chat" | "assistant",
+  turnId: string,
+  userText: string,
+  assistantText?: string,
+) {
+  const begun = await beginAIConversationTurn({
+    redis,
+    username,
+    channel,
+    operationId: turnId,
+    action: {
+      kind: "user-message",
+      message: message(`${turnId}-user`, "user", userText),
+    },
+  });
+  if (assistantText === undefined) return begun.document;
+  return completeAIConversationTurn({
+    redis,
+    username,
+    channel,
+    operationId: getAIConversationTurnCompletionOperationId(turnId),
+    expectedConversationId: begun.document.id,
+    responseMessage: message(`${turnId}-assistant`, "assistant", assistantText),
+  });
 }
 
 describe("AI conversation store", () => {
@@ -204,7 +225,31 @@ describe("AI conversation store", () => {
     });
   });
 
-  test("reads version 2 rich history and rewrites it on the next write", async () => {
+  test("projects stored messages to plain text records", () => {
+    expect(
+      toPlainAIConversationMessages([
+        {
+          id: "u1",
+          seq: 1,
+          role: "user",
+          parts: [
+            { type: "reasoning", text: "hidden" },
+            { type: "text", text: "hello" },
+            { type: "text", text: "there" },
+          ],
+          createdAt: "2026-07-06T00:00:00.000Z",
+        },
+      ]),
+    ).toEqual([
+      {
+        role: "user",
+        content: "hello\nthere",
+        createdAt: "2026-07-06T00:00:00.000Z",
+      },
+    ]);
+  });
+
+  test("reads pre-simplification documents and rewrites them on the next write", async () => {
     const redis = new MemoryConversationRedis();
     const key = redisKeys.chat.aiConversation("alice", "chat");
     const richMessages = [
@@ -245,6 +290,9 @@ describe("AI conversation store", () => {
         createdAt: "2026-07-06T10:01:00.000Z",
       },
     ];
+    // Documents written before the simplification carry version 2 plus
+    // `legacyImportAllowed` / `pendingTurnId` fields; they parse and the
+    // stale fields disappear on the next save.
     await redis.set(
       key,
       JSON.stringify({
@@ -260,46 +308,43 @@ describe("AI conversation store", () => {
         messages: richMessages,
         recentOperationIds: ["legacy-operation"],
         lastResetOperationId: null,
-        pendingTurnId: null,
-        pendingTurnStartedAt: null,
+        pendingTurnId: "stale-turn",
+        pendingTurnStartedAt: 12345,
       }),
     );
 
-    const page = await getAIConversationPage({
+    const snapshot = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "chat",
-      limit: 10,
     });
-    expect(page.conversation).toMatchObject({
+    expect(snapshot.conversation).toMatchObject({
       id: "44444444-4444-4444-8444-444444444444",
       revision: 7,
       messageCount: 2,
       oldestSeq: 1,
       newestSeq: 2,
-      canImportLegacy: false,
     });
-    expect(page.messages).toEqual(richMessages);
+    expect(snapshot.messages).toEqual(richMessages);
 
     const updated = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
-      expectedConversationId: page.conversation.id,
-      expectedRevision: page.conversation.revision,
+      expectedConversationId: snapshot.conversation.id,
+      expectedRevision: snapshot.conversation.revision,
       operationId: "new-operation",
-      turnId: "new-turn",
       action: {
         kind: "user-message",
         message: message("new-user", "user", "new text"),
       },
     });
-    expect(updated.messages.slice(0, 2)).toEqual(richMessages);
-    expect(updated.messages[2]?.seq).toBe(3);
-    expect(updated.revision).toBe(8);
+    expect(updated.document.messages.slice(0, 2)).toEqual(richMessages);
+    expect(updated.document.messages[2]?.seq).toBe(3);
+    expect(updated.document.revision).toBe(8);
 
-    const stored = await redis.get<string>(key);
-    expect(JSON.parse(stored ?? "{}")).toMatchObject({
+    const stored = JSON.parse((await redis.get<string>(key)) ?? "{}");
+    expect(stored).toMatchObject({
       version: 1,
       revision: 8,
       nextSeq: 4,
@@ -314,17 +359,20 @@ describe("AI conversation store", () => {
         },
       ],
       recentOperationIds: ["legacy-operation", "new-operation"],
-      pendingTurnId: "new-turn",
     });
+    expect(stored).not.toContainKeys([
+      "pendingTurnId",
+      "pendingTurnStartedAt",
+      "legacyImportAllowed",
+    ]);
   });
 
-  test("appends idempotently with revisions and stable cursor pagination", async () => {
+  test("appends idempotently with revisions and serves afterSeq deltas", async () => {
     const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
+    const initial = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "chat",
-      limit: 10,
     });
 
     const first = await beginAIConversationTurn({
@@ -334,34 +382,31 @@ describe("AI conversation store", () => {
       expectedConversationId: initial.conversation.id,
       expectedRevision: 0,
       operationId: "request-turn-1",
-      turnId: "turn-1",
       action: {
         kind: "user-message",
         message: message("u1", "user", "one"),
       },
     });
-    expect(first.revision).toBe(1);
+    expect(first.operationApplied).toBe(true);
+    expect(first.document.revision).toBe(1);
 
     const completed = await completeAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       expectedConversationId: initial.conversation.id,
-      expectedRevision: 1,
-      operationId: getAIConversationTurnCompletionOperationId("turn-1"),
-      turnId: "turn-1",
+      operationId: getAIConversationTurnCompletionOperationId("request-turn-1"),
       responseMessage: message("a1", "assistant", "two"),
     });
     expect(completed.revision).toBe(2);
 
-    const replay = await beginAIConversationTurnWithStatus({
+    const replay = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       expectedConversationId: initial.conversation.id,
       expectedRevision: 0,
       operationId: "request-turn-1",
-      turnId: "turn-1",
       action: {
         kind: "user-message",
         message: message("u1", "user", "different replay payload"),
@@ -378,41 +423,127 @@ describe("AI conversation store", () => {
       expectedConversationId: initial.conversation.id,
       expectedRevision: 2,
       operationId: "request-turn-2",
-      turnId: "turn-2",
       action: {
         kind: "user-message",
         message: message("u2", "user", "three"),
       },
     });
-    expect(second.revision).toBe(3);
+    expect(second.document.revision).toBe(3);
 
-    const newest = await getAIConversationPage({
+    const full = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "chat",
-      limit: 2,
     });
-    expect(newest.messages.map((entry) => entry.id)).toEqual(["a1", "u2"]);
-    expect(newest.page.hasMore).toBe(true);
+    expect(full.messages.map((entry) => entry.id)).toEqual(["u1", "a1", "u2"]);
+    expect(full.conversation).toMatchObject({
+      messageCount: 3,
+      oldestSeq: 1,
+      newestSeq: 3,
+    });
 
-    const older = await getAIConversationPage({
+    const delta = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "chat",
-      limit: 2,
-      cursor: newest.page.nextCursor ?? undefined,
+      afterSeq: 1,
     });
-    expect(older.messages.map((entry) => entry.id)).toEqual(["u1"]);
-    expect(older.page.hasMore).toBe(false);
+    expect(delta.messages.map((entry) => entry.id)).toEqual(["a1", "u2"]);
+    expect(delta.conversation).toEqual(full.conversation);
+
+    const empty = await getAIConversationSnapshot({
+      redis,
+      username: "alice",
+      channel: "chat",
+      afterSeq: 3,
+    });
+    expect(empty.messages).toEqual([]);
+  });
+
+  test("re-mints seq when an assistant message is updated in place", async () => {
+    const redis = new MemoryConversationRedis();
+    const started = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "one",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "open Finder"),
+      },
+    });
+    const firstResponse = await completeAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: getAIConversationTurnCompletionOperationId("one"),
+      expectedConversationId: started.document.id,
+      responseMessage: {
+        ...message("a1", "assistant", "Opening Finder"),
+        parts: [
+          { type: "text", text: "Opening Finder" },
+          {
+            type: "tool-launchApp",
+            toolCallId: "tool-1",
+            state: "input-available",
+            input: { id: "finder" },
+          },
+        ],
+      },
+    });
+    expect(firstResponse.messages.map((entry) => entry.seq)).toEqual([1, 2]);
+
+    const continuation = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "two",
+      expectedConversationId: firstResponse.id,
+      expectedRevision: firstResponse.revision,
+      action: {
+        kind: "assistant-continuation",
+        message: {
+          ...message("a1", "assistant", "Opening Finder"),
+          parts: [
+            { type: "text", text: "Opening Finder" },
+            {
+              type: "tool-launchApp",
+              toolCallId: "tool-1",
+              state: "output-available",
+              input: { id: "finder" },
+              output: { success: true },
+            },
+          ],
+        },
+      },
+    });
+
+    // The update re-mints the message onto a fresh seq so `afterSeq` delta
+    // readers pick it up.
+    expect(
+      continuation.document.messages.map((entry) => [entry.id, entry.seq]),
+    ).toEqual([
+      ["u1", 1],
+      ["a1", 3],
+    ]);
+    const delta = await getAIConversationSnapshot({
+      redis,
+      username: "alice",
+      channel: "chat",
+      afterSeq: 2,
+    });
+    expect(delta.messages.map((entry) => entry.id)).toEqual(["a1"]);
+    expect(delta.messages[0]?.parts.at(-1)).toMatchObject({
+      state: "output-available",
+    });
   });
 
   test("rejects stale revisions and user-message id reuse", async () => {
     const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
+    const initial = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "chat",
-      limit: 10,
     });
     await beginAIConversationTurn({
       redis,
@@ -421,7 +552,6 @@ describe("AI conversation store", () => {
       expectedConversationId: initial.conversation.id,
       expectedRevision: 0,
       operationId: "request-first",
-      turnId: "first",
       action: {
         kind: "user-message",
         message: message("u1", "user", "original"),
@@ -436,7 +566,6 @@ describe("AI conversation store", () => {
         expectedConversationId: initial.conversation.id,
         expectedRevision: 0,
         operationId: "request-stale",
-        turnId: "stale",
         action: {
           kind: "user-message",
           message: message("u2", "user", "stale"),
@@ -447,12 +576,6 @@ describe("AI conversation store", () => {
       status: 409,
     });
 
-    await releaseAIConversationTurn({
-      redis,
-      username: "alice",
-      channel: "chat",
-      turnId: "first",
-    });
     await expect(
       beginAIConversationTurn({
         redis,
@@ -461,7 +584,6 @@ describe("AI conversation store", () => {
         expectedConversationId: initial.conversation.id,
         expectedRevision: 1,
         operationId: "request-reuse",
-        turnId: "reuse",
         action: {
           kind: "user-message",
           message: message("u1", "user", "mutated"),
@@ -470,21 +592,75 @@ describe("AI conversation store", () => {
     ).rejects.toBeInstanceOf(AIConversationError);
   });
 
+  test("allows concurrent turns to append independently", async () => {
+    const redis = new MemoryConversationRedis();
+    const first = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "request-a",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "first"),
+      },
+    });
+
+    // A second device's turn appends immediately — there is no turn lock.
+    const second = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "request-b",
+      expectedConversationId: first.document.id,
+      expectedRevision: first.document.revision,
+      action: {
+        kind: "user-message",
+        message: message("u2", "user", "second"),
+      },
+    });
+    expect(second.document.messages.map((entry) => entry.id)).toEqual([
+      "u1",
+      "u2",
+    ]);
+
+    // Both completions land as ordinary appends.
+    const completedFirst = await completeAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: getAIConversationTurnCompletionOperationId("request-a"),
+      expectedConversationId: first.document.id,
+      responseMessage: message("a1", "assistant", "first reply"),
+    });
+    const completedSecond = await completeAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: getAIConversationTurnCompletionOperationId("request-b"),
+      expectedConversationId: first.document.id,
+      responseMessage: message("a2", "assistant", "second reply"),
+    });
+    expect(completedFirst.messages.map((entry) => entry.id)).toEqual([
+      "u1",
+      "u2",
+      "a1",
+    ]);
+    expect(completedSecond.messages.map((entry) => entry.id)).toEqual([
+      "u1",
+      "u2",
+      "a1",
+      "a2",
+    ]);
+  });
+
   test("rotates conversation ids and makes reset idempotent", async () => {
     const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
+    const initial = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "assistant",
-      limit: 10,
     });
-    await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "assistant",
-      operationId: "seed",
-      messages: [message("u1", "user", "hello")],
-    });
+    await seedTurn(redis, "alice", "assistant", "seed", "hello");
 
     const reset = await resetAIConversation({
       redis,
@@ -492,29 +668,20 @@ describe("AI conversation store", () => {
       channel: "assistant",
       conversationId: initial.conversation.id,
       operationId: "reset-1",
-      timeZone: "Europe/London",
     });
     expect(reset.reset).toBe(true);
     expect(reset.document.id).not.toBe(initial.conversation.id);
     expect(reset.document.messages).toEqual([]);
-    expect(reset.clearedMessages.map((entry) => entry.id)).toEqual(["u1"]);
-    expect(
-      await getPendingAIConversationResetMemory({
-        redis,
-        username: "alice",
-        channel: "assistant",
-      }),
-    ).toMatchObject({
-      channel: "assistant",
-      timeZone: "Europe/London",
-      messages: [
-        {
-          role: "user",
-          content: "hello",
-          createdAt: "2026-07-06T00:00:00.000Z",
-        },
-      ],
-    });
+    expect(reset.clearedMessages.map((entry) => entry.id)).toEqual([
+      "seed-user",
+    ]);
+    expect(toPlainAIConversationMessages(reset.clearedMessages)).toEqual([
+      {
+        role: "user",
+        content: "hello",
+        createdAt: "2026-07-06T00:00:00.000Z",
+      },
+    ]);
 
     const replay = await resetAIConversation({
       redis,
@@ -522,293 +689,52 @@ describe("AI conversation store", () => {
       channel: "assistant",
       conversationId: initial.conversation.id,
       operationId: "reset-1",
-      timeZone: "Europe/London",
     });
     expect(replay.reset).toBe(false);
     expect(replay.document.id).toBe(reset.document.id);
     expect(replay.clearedMessages).toEqual([]);
 
     await expect(
-      importAIConversationMessages({
+      resetAIConversation({
         redis,
         username: "alice",
         channel: "assistant",
-        expectedConversationId: reset.document.id,
-        expectedRevision: 0,
-        operationId: "stale-import",
-        messages: [message("old", "user", "resurrected")],
+        conversationId: initial.conversation.id,
+        operationId: "reset-2",
       }),
-    ).rejects.toMatchObject({ code: "conversation_not_empty" });
-  });
-
-  test("defaults attachment candidates for pre-attachment reset snapshots", async () => {
-    const redis = new MemoryConversationRedis();
-    await redis.set(
-      redisKeys.chat.aiConversationResetMemory("alice", "chat"),
-      `v1:${JSON.stringify({
-        version: 1,
-        id: "11111111-1111-4111-8111-111111111111",
-        channel: "chat",
-        accountCreatedAt: Date.UTC(2026, 0, 1),
-        timeZone: null,
-        createdAt: "2026-07-06T00:00:00.000Z",
-        messages: [
-          {
-            role: "user",
-            content: "legacy pending snapshot",
-            createdAt: "2026-07-06T00:00:00.000Z",
-          },
-        ],
-      })}`,
-    );
-
-    expect(
-      (
-        await getPendingAIConversationResetMemory({
-          redis,
-          username: "alice",
-          channel: "chat",
-        })
-      )?.attachmentNames,
-    ).toEqual([]);
-  });
-
-  test("keeps the pending snapshot id when a later reset merges into it", async () => {
-    const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
-      redis,
-      username: "alice",
-      channel: "chat",
-      limit: 10,
-    });
-    await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "seed-first-reset",
-      messages: [message("first-user", "user", "First reset memory")],
-    });
-    const firstReset = await resetAIConversation({
-      redis,
-      username: "alice",
-      channel: "chat",
-      conversationId: initial.conversation.id,
-      operationId: "first-reset",
-    });
-    const firstPending = await getPendingAIConversationResetMemory({
-      redis,
-      username: "alice",
-      channel: "chat",
-    });
-    expect(firstPending).not.toBeNull();
-
-    const secondTurn = await beginAIConversationTurn({
-      redis,
-      username: "alice",
-      channel: "chat",
-      expectedConversationId: firstReset.document.id,
-      expectedRevision: firstReset.document.revision,
-      operationId: "second-reset-turn",
-      turnId: "second-reset-turn",
-      action: {
-        kind: "user-message",
-        message: message("second-user", "user", "Second reset memory"),
-      },
-    });
-    await resetAIConversation({
-      redis,
-      username: "alice",
-      channel: "chat",
-      conversationId: secondTurn.id,
-      operationId: "second-reset",
-    });
-
-    const mergedPending = await getPendingAIConversationResetMemory({
-      redis,
-      username: "alice",
-      channel: "chat",
-    });
-    expect(mergedPending?.id).toBe(firstPending?.id);
-    expect(mergedPending?.messages.map((entry) => entry.content)).toEqual([
-      "First reset memory",
-      "Second reset memory",
-    ]);
-  });
-
-  test("retains a pending reset snapshot on extraction failure and deletes it after a later success", async () => {
-    const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
-      redis,
-      username: "alice",
-      channel: "chat",
-      limit: 10,
-    });
-    await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "seed-retry",
-      messages: [
-        message("retry-user", "user", "I am moving to Lisbon next month"),
-        message("retry-assistant", "assistant", "I will remember that"),
-      ],
-    });
-    await resetAIConversation({
-      redis,
-      username: "alice",
-      channel: "chat",
-      conversationId: initial.conversation.id,
-      operationId: "reset-retry",
-      timeZone: "Europe/Lisbon",
-    });
-
-    const pendingBefore = await getPendingAIConversationResetMemory({
-      redis,
-      username: "alice",
-      channel: "chat",
-    });
-    expect(pendingBefore).not.toBeNull();
-
-    await expect(
-      processPendingAIConversationResetMemory({
-        redis,
-        username: "alice",
-        channel: "chat",
-        processSnapshot: async () => {
-          throw new Error("transient provider failure");
-        },
-      }),
-    ).rejects.toThrow("transient provider failure");
-    expect(
-      (
-        await getPendingAIConversationResetMemory({
-          redis,
-          username: "alice",
-          channel: "chat",
-        })
-      )?.id,
-    ).toBe(pendingBefore?.id);
-
-    let retriedSnapshotId: string | null = null;
-    const retry = await processPendingAIConversationResetMemory({
-      redis,
-      username: "alice",
-      channel: "chat",
-      processSnapshot: async (snapshot) => {
-        retriedSnapshotId = snapshot.id;
-        return { skippedReason: "conversation-too-short" };
-      },
-    });
-    expect(retry).toEqual({
-      status: "processed",
-      snapshotId: pendingBefore?.id,
-    });
-    expect(retriedSnapshotId).toBe(pendingBefore?.id);
-    expect(
-      await getPendingAIConversationResetMemory({
-        redis,
-        username: "alice",
-        channel: "chat",
-      }),
-    ).toBeNull();
-  });
-
-  test("allows only one concurrent pending reset-memory processor", async () => {
-    const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
-      redis,
-      username: "alice",
-      channel: "chat",
-      limit: 10,
-    });
-    await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "seed-lock",
-      messages: [message("lock-user", "user", "Remember my new job")],
-    });
-    await resetAIConversation({
-      redis,
-      username: "alice",
-      channel: "chat",
-      conversationId: initial.conversation.id,
-      operationId: "reset-lock",
-    });
-
-    let releaseProcessor = () => {};
-    const processorGate = new Promise<void>((resolve) => {
-      releaseProcessor = resolve;
-    });
-    let markProcessorStarted = () => {};
-    const processorStarted = new Promise<void>((resolve) => {
-      markProcessorStarted = resolve;
-    });
-    let processCount = 0;
-    const first = processPendingAIConversationResetMemory({
-      redis,
-      username: "alice",
-      channel: "chat",
-      processSnapshot: async () => {
-        processCount += 1;
-        markProcessorStarted();
-        await processorGate;
-      },
-    });
-    await processorStarted;
-
-    const concurrent = await processPendingAIConversationResetMemory({
-      redis,
-      username: "alice",
-      channel: "chat",
-      processSnapshot: async () => {
-        processCount += 1;
-      },
-    });
-    expect(concurrent).toEqual({ status: "busy" });
-
-    releaseProcessor();
-    expect((await first).status).toBe("processed");
-    expect(processCount).toBe(1);
+    ).rejects.toMatchObject({ code: "conversation_changed", status: 409 });
   });
 
   test("regeneration removes the selected assistant branch", async () => {
     const redis = new MemoryConversationRedis();
-    const seeded = await importAIConversationMessages({
+    await seedTurn(redis, "alice", "chat", "seed-1", "question", "old answer");
+    const seeded = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
-      operationId: "seed",
-      messages: [
-        message("u1", "user", "question"),
-        message("a1", "assistant", "old answer"),
-        message("u2", "user", "later branch"),
-      ],
+      operationId: "seed-2",
+      action: {
+        kind: "user-message",
+        message: message("u2", "user", "later branch"),
+      },
     });
 
-    const prepared = await prepareAIConversationRegeneration({
+    const begun = await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
-      expectedConversationId: seeded.id,
       operationId: "turn-regenerate-a1",
-      targetMessageId: "a1",
+      expectedConversationId: seeded.document.id,
+      expectedRevision: seeded.document.revision,
+      action: { kind: "regenerate", targetMessageId: "seed-1-assistant" },
     });
-    expect(prepared.messages.map((entry) => entry.id)).toEqual([
-      "u1",
-      "a1",
+    // Validation-only: content is unchanged until the commit.
+    expect(begun.document.revision).toBe(seeded.document.revision);
+    expect(begun.document.messages.map((entry) => entry.id)).toEqual([
+      "seed-1-user",
+      "seed-1-assistant",
       "u2",
     ]);
-    await beginAIConversationTurn({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "turn-regenerate-a1",
-      expectedConversationId: seeded.id,
-      expectedRevision: seeded.revision,
-      turnId: "turn-regenerate-a1",
-      action: { kind: "regenerate" },
-    });
 
     const replacement = await commitAIConversationRegeneration({
       redis,
@@ -816,19 +742,69 @@ describe("AI conversation store", () => {
       channel: "chat",
       operationId:
         getAIConversationTurnCompletionOperationId("turn-regenerate-a1"),
-      expectedConversationId: seeded.id,
-      expectedRevision: seeded.revision,
-      targetMessageId: "a1",
-      turnId: "turn-regenerate-a1",
+      expectedConversationId: seeded.document.id,
+      expectedRevision: begun.document.revision,
+      targetMessageId: "seed-1-assistant",
       responseMessage: message("a2", "assistant", "new answer"),
     });
-    expect(replacement.messages.map((entry) => entry.id)).toEqual(["u1", "a2"]);
+    expect(replacement.messages.map((entry) => entry.id)).toEqual([
+      "seed-1-user",
+      "a2",
+    ]);
     expect(replacement.messages.map((entry) => entry.seq)).toEqual([1, 4]);
     expect(replacement.recentOperationIds).toEqual([
-      "seed",
+      "seed-1",
+      "seed-1:complete",
+      "seed-2",
       "turn-regenerate-a1",
       "turn-regenerate-a1:complete",
     ]);
+  });
+
+  test("drops a regeneration whose conversation changed before the commit", async () => {
+    const redis = new MemoryConversationRedis();
+    const seeded = await seedTurn(
+      redis,
+      "alice",
+      "chat",
+      "seed",
+      "question",
+      "old answer",
+    );
+
+    const begun = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "regen",
+      expectedConversationId: seeded.id,
+      expectedRevision: seeded.revision,
+      action: { kind: "regenerate" },
+    });
+
+    // Another device appends mid-regeneration → the truncating commit loses.
+    await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "racer",
+      action: {
+        kind: "user-message",
+        message: message("u2", "user", "raced you"),
+      },
+    });
+
+    await expect(
+      commitAIConversationRegeneration({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: getAIConversationTurnCompletionOperationId("regen"),
+        expectedConversationId: seeded.id,
+        expectedRevision: begun.document.revision,
+        responseMessage: message("a2", "assistant", "new answer"),
+      }),
+    ).rejects.toMatchObject({ code: "revision_conflict", status: 409 });
   });
 
   test("accepts only a stored client-tool continuation and reuses its assistant id", async () => {
@@ -838,7 +814,6 @@ describe("AI conversation store", () => {
       username: "alice",
       channel: "chat",
       operationId: "one",
-      turnId: "one",
       action: {
         kind: "user-message",
         message: message("u1", "user", "open Finder"),
@@ -849,9 +824,7 @@ describe("AI conversation store", () => {
       username: "alice",
       channel: "chat",
       operationId: getAIConversationTurnCompletionOperationId("one"),
-      expectedConversationId: started.id,
-      expectedRevision: started.revision,
-      turnId: "one",
+      expectedConversationId: started.document.id,
       responseMessage: {
         ...message("a1", "assistant", "Opening Finder"),
         parts: [
@@ -884,7 +857,6 @@ describe("AI conversation store", () => {
         operationId: "fresh-assistant",
         expectedConversationId: firstResponse.id,
         expectedRevision: firstResponse.revision,
-        turnId: "fresh-assistant",
         action: {
           kind: "assistant-continuation",
           message: {
@@ -903,7 +875,6 @@ describe("AI conversation store", () => {
         operationId: "mutated-assistant",
         expectedConversationId: firstResponse.id,
         expectedRevision: firstResponse.revision,
-        turnId: "mutated-assistant",
         action: {
           kind: "assistant-continuation",
           message: {
@@ -925,7 +896,6 @@ describe("AI conversation store", () => {
         operationId: "unchanged-assistant",
         expectedConversationId: firstResponse.id,
         expectedRevision: firstResponse.revision,
-        turnId: "unchanged-assistant",
         action: {
           kind: "assistant-continuation",
           message: firstResponse.messages.at(-1),
@@ -940,7 +910,6 @@ describe("AI conversation store", () => {
       operationId: "two",
       expectedConversationId: firstResponse.id,
       expectedRevision: firstResponse.revision,
-      turnId: "two",
       action: {
         kind: "assistant-continuation",
         message: {
@@ -954,9 +923,7 @@ describe("AI conversation store", () => {
       username: "alice",
       channel: "chat",
       operationId: getAIConversationTurnCompletionOperationId("two"),
-      expectedConversationId: continuation.id,
-      expectedRevision: continuation.revision,
-      turnId: "two",
+      expectedConversationId: continuation.document.id,
       responseMessage: {
         ...message("a1", "assistant", "Finder is open"),
         parts: [
@@ -981,7 +948,6 @@ describe("AI conversation store", () => {
         username: "alice",
         channel: "chat",
         operationId: "wrong-role",
-        turnId: "wrong-role",
         action: {
           kind: "user-message",
           message: message("a2", "assistant", "not a user"),
@@ -992,17 +958,21 @@ describe("AI conversation store", () => {
 
   test("bounds retained history without resetting sequence numbers", async () => {
     const redis = new MemoryConversationRedis();
-    const messages = Array.from({ length: 205 }, (_, index) =>
-      message(`u${index}`, "user", `message ${index}`),
-    );
-
-    const document = await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "bulk-import",
-      messages,
-    });
+    let document = await seedTurn(redis, "alice", "chat", "turn-0", "message 0");
+    for (let index = 1; index < 205; index += 1) {
+      document = (
+        await beginAIConversationTurn({
+          redis,
+          username: "alice",
+          channel: "chat",
+          operationId: `turn-${index}`,
+          action: {
+            kind: "user-message",
+            message: message(`u${index}`, "user", `message ${index}`),
+          },
+        })
+      ).document;
+    }
 
     expect(document.messages).toHaveLength(200);
     expect(document.messages[0]?.seq).toBe(6);
@@ -1010,120 +980,13 @@ describe("AI conversation store", () => {
     expect(document.historyTruncated).toBe(true);
   });
 
-  test("records client-side legacy import truncation", async () => {
-    const redis = new MemoryConversationRedis();
-    const document = await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "truncated-client-import",
-      messages: [message("u1", "user", "newest retained turn")],
-      historyTruncated: true,
-    });
-
-    expect(document.historyTruncated).toBe(true);
-    expect(document.revision).toBe(1);
-  });
-
-  test("rejects a concurrent turn until the active turn completes", async () => {
-    const redis = new MemoryConversationRedis();
-    const first = await beginAIConversationTurn({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "request-a",
-      turnId: "turn-a",
-      action: {
-        kind: "user-message",
-        message: message("u1", "user", "first"),
-      },
-    });
-
-    await expect(
-      beginAIConversationTurn({
-        redis,
-        username: "alice",
-        channel: "chat",
-        operationId: "request-b",
-        expectedConversationId: first.id,
-        expectedRevision: first.revision,
-        turnId: "turn-b",
-        action: {
-          kind: "user-message",
-          message: message("u2", "user", "second"),
-        },
-      }),
-    ).rejects.toMatchObject({
-      code: "conversation_busy",
-      status: 409,
-    });
-
-    await releaseAIConversationTurn({
-      redis,
-      username: "alice",
-      channel: "chat",
-      turnId: "turn-a",
-    });
-    const second = await beginAIConversationTurn({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "request-b",
-      expectedConversationId: first.id,
-      expectedRevision: first.revision,
-      turnId: "turn-b",
-      action: {
-        kind: "user-message",
-        message: message("u2", "user", "second"),
-      },
-    });
-    expect(second.messages.map((entry) => entry.id)).toEqual(["u1", "u2"]);
-  });
-
   test("account deletion tombstones reject in-flight and future writes", async () => {
     const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
-      redis,
-      username: "alice",
-      channel: "chat",
-      limit: 10,
-    });
-    await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "seed",
-      messages: [message("u1", "user", "private")],
-    });
-    await resetAIConversation({
-      redis,
-      username: "alice",
-      channel: "chat",
-      conversationId: initial.conversation.id,
-      operationId: "reset-before-delete",
-    });
-    await redis.set(
-      redisKeys.chat.aiConversationResetMemoryLock("alice", "chat"),
-      "in-flight",
-    );
-    expect(
-      await getPendingAIConversationResetMemory({
-        redis,
-        username: "alice",
-        channel: "chat",
-      }),
-    ).not.toBeNull();
+    await seedTurn(redis, "alice", "chat", "seed", "private");
 
     await deleteAIConversationKeys(redis, "alice");
     expect(
-      await redis.get(
-        redisKeys.chat.aiConversationResetMemory("alice", "chat"),
-      ),
-    ).toBeNull();
-    expect(
-      await redis.get(
-        redisKeys.chat.aiConversationResetMemoryLock("alice", "chat"),
-      ),
+      await redis.get(redisKeys.chat.aiConversation("alice", "chat")),
     ).toBeNull();
     await expect(
       completeAIConversationTurn({
@@ -1131,7 +994,6 @@ describe("AI conversation store", () => {
         username: "alice",
         channel: "chat",
         operationId: getAIConversationTurnCompletionOperationId("deleted-turn"),
-        turnId: "deleted-turn",
         responseMessage: message("a1", "assistant", "late"),
       }),
     ).rejects.toMatchObject({ code: "account_deleted" });
@@ -1142,30 +1004,27 @@ describe("AI conversation store", () => {
       username: "alice",
       channel: "chat",
       operationId: "new-account",
-      turnId: "new-account",
       action: {
         kind: "user-message",
         message: message("u2", "user", "new"),
       },
     });
-    expect(recreated.messages.map((entry) => entry.id)).toEqual(["u2"]);
+    expect(recreated.document.messages.map((entry) => entry.id)).toEqual([
+      "u2",
+    ]);
   });
 
-  test("persists proactive greetings outside a turn and keeps legacy import open", async () => {
+  test("persists proactive greetings outside a turn", async () => {
     const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
+    const initial = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "chat",
-      limit: 10,
     });
-    expect(
-      getAIProactiveGreetingEligibility({
-        messages: [],
-        pendingTurnId: null,
-        pendingTurnStartedAt: null,
-      }),
-    ).toEqual({ eligible: true, mode: "fresh" });
+    expect(getAIProactiveGreetingEligibility({ messages: [] })).toEqual({
+      eligible: true,
+      mode: "fresh",
+    });
 
     const appended = await appendAIConversationAssistantMessage({
       redis,
@@ -1178,63 +1037,35 @@ describe("AI conversation store", () => {
     });
     expect(appended.operationApplied).toBe(true);
     expect(appended.document.revision).toBe(1);
-    expect(appended.document.pendingTurnId).toBeNull();
     expect(
       appended.document.messages.map((entry) => [entry.id, entry.seq]),
     ).toEqual([["proactive-greeting-1", 1]]);
-    // The greeting alone must not lock out a legacy device's history import.
-    expect(appended.document.legacyImportAllowed).toBe(true);
 
     expect(getAIProactiveGreetingEligibility(appended.document)).toEqual({
       eligible: false,
       reason: "already_greeted",
     });
-
-    const imported = await importAIConversationMessages({
-      redis,
-      username: "alice",
-      channel: "chat",
-      operationId: "legacy-import",
-      expectedConversationId: initial.conversation.id,
-      expectedRevision: appended.document.revision,
-      messages: [
-        message("legacy-user", "user", "old question"),
-        message("legacy-assistant", "assistant", "old answer"),
-      ],
-    });
-    expect(imported.messages.map((entry) => entry.id)).toEqual([
-      "legacy-user",
-      "legacy-assistant",
-    ]);
-    expect(imported.legacyImportAllowed).toBe(false);
-    expect(imported.revision).toBe(2);
   });
 
   test("drops proactive greetings that lose the race against a turn", async () => {
     const redis = new MemoryConversationRedis();
-    const initial = await getAIConversationPage({
+    const initial = await getAIConversationSnapshot({
       redis,
       username: "alice",
       channel: "chat",
-      limit: 10,
     });
 
-    const started = await beginAIConversationTurn({
+    await beginAIConversationTurn({
       redis,
       username: "alice",
       channel: "chat",
       expectedConversationId: initial.conversation.id,
       expectedRevision: 0,
       operationId: "turn-op",
-      turnId: "turn-1",
       action: {
         kind: "user-message",
         message: message("u1", "user", "hello"),
       },
-    });
-    expect(getAIProactiveGreetingEligibility(started)).toEqual({
-      eligible: false,
-      reason: "turn_in_progress",
     });
 
     // Snapshot taken before the user's turn began → revision conflict.
@@ -1249,19 +1080,6 @@ describe("AI conversation store", () => {
         message: message("proactive-stale", "assistant", "late greeting"),
       }),
     ).rejects.toMatchObject({ code: "revision_conflict", status: 409 });
-
-    // Even with a fresh snapshot, a pending turn blocks the append.
-    await expect(
-      appendAIConversationAssistantMessage({
-        redis,
-        username: "alice",
-        channel: "chat",
-        operationId: "greet-mid-turn",
-        expectedConversationId: initial.conversation.id,
-        expectedRevision: started.revision,
-        message: message("proactive-mid-turn", "assistant", "mid-turn greeting"),
-      }),
-    ).rejects.toMatchObject({ code: "conversation_busy", status: 409 });
   });
 
   test("decides proactive greeting eligibility for stale and active threads", () => {
@@ -1271,8 +1089,6 @@ describe("AI conversation store", () => {
         { id: "u1", createdAt: "2026-07-07T11:00:00.000Z" },
         { id: "a1", createdAt: "2026-07-07T11:01:00.000Z" },
       ],
-      pendingTurnId: null,
-      pendingTurnStartedAt: null,
     };
     expect(getAIProactiveGreetingEligibility(staleThread, now)).toEqual({
       eligible: true,
@@ -1280,7 +1096,6 @@ describe("AI conversation store", () => {
     });
 
     const activeThread = {
-      ...staleThread,
       messages: [{ id: "a1", createdAt: "2026-07-07T11:58:00.000Z" }],
     };
     expect(getAIProactiveGreetingEligibility(activeThread, now)).toEqual({
@@ -1289,7 +1104,6 @@ describe("AI conversation store", () => {
     });
 
     const invalidTimestampThread = {
-      ...staleThread,
       messages: [{ id: "a1", createdAt: "not a date" }],
     };
     expect(
@@ -1297,7 +1111,6 @@ describe("AI conversation store", () => {
     ).toEqual({ eligible: false, reason: "conversation_active" });
 
     const greetedThread = {
-      ...staleThread,
       messages: [
         ...staleThread.messages,
         { id: "proactive-old", createdAt: "2026-07-07T11:02:00.000Z" },
@@ -1307,15 +1120,5 @@ describe("AI conversation store", () => {
       eligible: false,
       reason: "already_greeted",
     });
-
-    // A stale pending turn no longer blocks greetings.
-    const abandonedTurnThread = {
-      messages: [],
-      pendingTurnId: "abandoned",
-      pendingTurnStartedAt: now - 10 * 60 * 1000,
-    };
-    expect(getAIProactiveGreetingEligibility(abandonedTurnThread, now)).toEqual(
-      { eligible: true, mode: "fresh" },
-    );
   });
 });

@@ -34,11 +34,10 @@ import {
   buildAIConversationRequestBody,
   getAIConversationRequestContext,
   invalidateAIConversationSession,
-  loadAIConversation,
   resetAIConversationSession,
   uploadAIConversationImage,
 } from "@/api/aiConversations";
-import { useAIConversationRealtime } from "@/hooks/useAIConversationRealtime";
+import { useServerAIConversation } from "@/hooks/useServerAIConversation";
 
 
 // Helper to check if chats app is currently in the foreground
@@ -172,7 +171,6 @@ function getSharedAiChat(): Chat<AIChatMessage> {
             ? await getAIConversationRequestContext({
                 channel: "chat",
                 username: owner,
-                localMessages: messages,
               })
             : undefined;
           const current = useChatsStore.getState();
@@ -608,83 +606,27 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setMessages: setSdkMessages as (messages: AIChatMessage[]) => void,
   });
 
-  const hydrateServerConversation = useCallback(
-    async (force = false, importLocalIfEmpty = !force) => {
-      if (!username || !isAuthenticated) return;
-      const loaded = await loadAIConversation({
-        channel: "chat",
-        username,
-        localMessages: useChatsStore.getState().aiMessages,
-        force,
-        importLocalIfEmpty,
-      });
-      const currentAuth = useChatsStore.getState();
-      if (
-        loaded.stale ||
-        currentAuth.username?.toLowerCase() !== loaded.owner ||
-        !currentAuth.isAuthenticated ||
-        getSharedAiChat().status !== "ready"
-      ) {
-        return;
-      }
-
+  const applyServerMessages = useCallback(
+    (messages: AIChatMessage[]) => {
       const nextMessages =
-        loaded.messages.length > 0
-          ? loaded.messages
-          : [createInitialChatMessage()];
+        messages.length > 0 ? messages : [createInitialChatMessage()];
       setAiMessages(nextMessages);
       setSdkMessages(nextMessages);
     },
-    [username, isAuthenticated, setAiMessages, setSdkMessages]
+    [setAiMessages, setSdkMessages]
   );
 
-  useEffect(() => {
-    if (!username || !isAuthenticated) return;
-    let cancelled = false;
-    void hydrateServerConversation(true, true).catch((hydrationError) => {
-      if (!cancelled) {
-        log.error("Failed to hydrate server conversation", hydrationError);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [username, isAuthenticated, hydrateServerConversation]);
-
-  useEffect(() => {
-    if (!username || !isAuthenticated) return;
-    const refresh = () => {
-      if (
-        document.visibilityState === "visible" &&
-        getSharedAiChat().status === "ready"
-      ) {
-        void hydrateServerConversation(true).catch((hydrationError) => {
-          log.error("Failed to refresh server conversation", hydrationError);
-        });
-      }
-    };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [username, isAuthenticated, hydrateServerConversation]);
-
-  // Live cross-device updates: when another signed-in device changes the
-  // canonical conversation (turn committed, greeting, import, clear), pull
-  // the fresh server state immediately instead of waiting for a focus event.
-  useAIConversationRealtime({
+  // Server conversation sync: hydration on sign-in, focus/visibility
+  // refresh, and realtime cross-device updates (turn committed, greeting,
+  // clear) — all applied through applyServerMessages.
+  useServerAIConversation({
     channel: "chat",
-    username: chatIdentity,
-    onRemoteUpdate: () => {
-      if (getSharedAiChat().status !== "ready") return;
-      void hydrateServerConversation(true).catch((hydrationError) => {
-        log.error(
-          "Failed to apply realtime conversation update",
-          hydrationError
-        );
-      });
+    username,
+    isAuthenticated,
+    isChatReady: () => getSharedAiChat().status === "ready",
+    applyMessages: applyServerMessages,
+    onError: (error, context) => {
+      log.error(`Failed to sync server conversation (${context})`, error);
     },
   });
 
@@ -973,7 +915,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         await resetAIConversationSession({
           channel: "chat",
           username,
-          localMessages: liveMessages,
         });
       } catch (resetError) {
         log.error("Failed to reset server conversation", resetError);

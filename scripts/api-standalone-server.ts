@@ -498,10 +498,7 @@ export function getRequestBodyLimit(pathname: string): number {
   }
   if (
     normalizedPathname === "/api/chat" ||
-    normalizedPathname === "/api/ai/extract-memories" ||
-    /^\/api\/ai\/conversations\/(?:chat|assistant)\/import$/.test(
-      normalizedPathname,
-    )
+    normalizedPathname === "/api/ai/extract-memories"
   ) {
     return MAX_AI_CONVERSATION_REQUEST_BYTES;
   }
