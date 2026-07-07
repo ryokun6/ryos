@@ -94,10 +94,15 @@ const NETWORK_FILTER_VALUES = [
 type NetworkFilter = (typeof NETWORK_FILTER_VALUES)[number];
 type DebugPanelTab = "logs" | "live" | "network" | "idb";
 
+// The neutral (off) backgrounds are scoped to data-[state=off] — a bare
+// `os-mac-aqua-dark:bg-white/5` selector has higher specificity than
+// `data-[state=on]:bg-os-selection-bg` and would swallow the accent fill of
+// the selected pill in dark mode.
 const quickFilterPillClassName = cn(
   "flex h-5 items-center gap-1 rounded-full border px-1.5 font-os-ui text-[10px] leading-none",
-  "border-[color:var(--os-color-separator)] bg-black/5 text-os-text-secondary hover:bg-black/10",
-  "os-mac-aqua-dark:bg-white/5 os-mac-aqua-dark:hover:bg-white/10",
+  "border-[color:var(--os-color-separator)] text-os-text-secondary",
+  "data-[state=off]:bg-black/5 data-[state=off]:hover:bg-black/10",
+  "os-mac-aqua-dark:data-[state=off]:bg-white/5 os-mac-aqua-dark:data-[state=off]:hover:bg-white/10",
   "data-[state=on]:border-transparent data-[state=on]:bg-os-selection-bg data-[state=on]:text-os-selection-text",
   "data-[state=on]:[text-shadow:var(--os-color-selection-text-shadow)]"
 );
