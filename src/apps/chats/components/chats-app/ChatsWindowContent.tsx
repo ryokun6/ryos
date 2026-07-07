@@ -1,10 +1,10 @@
 import type { CSSProperties } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { ChatRoomSidebar } from "../ChatRoomSidebar";
+import { ChatRoomDropdown } from "../ChatRoomDropdown";
 import { ChatMessages } from "../ChatMessages";
 import { ChatInput } from "../ChatInput";
 import type { ChatsAppController } from "./useChatsAppController";
@@ -26,7 +26,6 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     sidebarVisibleBool,
     isFrameNarrow,
     toggleSidebarVisibility,
-    handleMobileRoomSelect,
     rooms,
     currentRoom,
     handlePromptDeleteRoom,
@@ -102,77 +101,6 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
         isWindowsTheme ? "border-t border-[#919b9c]" : ""
       }`}
     >
-      <AnimatePresence>
-        {sidebarVisibleBool && isFrameNarrow && (
-          <motion.div
-            className="absolute inset-0 z-20"
-            style={{ perspective: "2000px" }}
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              exit={{ opacity: 0 }}
-              transition={{
-                duration: 0.2,
-                ease: [0.4, 0, 0.2, 1],
-              }}
-              className="absolute inset-0 bg-black"
-              onClick={toggleSidebarVisibility}
-            />
-
-            <motion.div
-              initial={{
-                rotateX: -60,
-                y: "-30%",
-                scale: 0.9,
-                opacity: 0,
-                transformOrigin: "top center",
-              }}
-              animate={{
-                rotateX: 0,
-                y: "0%",
-                scale: 1,
-                opacity: 1,
-                transformOrigin: "top center",
-              }}
-              exit={{
-                rotateX: -60,
-                y: "-30%",
-                scale: 0.9,
-                opacity: 0,
-                transformOrigin: "top center",
-              }}
-              transition={{
-                type: "spring",
-                damping: 40,
-                stiffness: 300,
-                mass: 1,
-              }}
-              className="relative z-10 flex w-full flex-col overflow-hidden bg-neutral-100"
-              style={{
-                transformPerspective: "2000px",
-                backfaceVisibility: "hidden",
-                willChange: "transform",
-                maxHeight: "calc(100% - 44px)",
-              }}
-            >
-              <ChatRoomSidebar
-                rooms={rooms}
-                currentRoom={currentRoom ?? null}
-                onRoomSelect={handleMobileRoomSelect}
-                onAddRoom={promptAddRoom}
-                onDeleteRoom={handlePromptDeleteRoom}
-                isVisible={true}
-                isAdmin={isAdmin}
-                username={username}
-                isOverlay={true}
-                onlineUsers={globalOnlineUsers}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div
         className={`flex h-full ${isFrameNarrow ? "flex-col" : "flex-row"}`}
       >
@@ -227,23 +155,53 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
               }`}
               style={isAquaGlass ? aquaGlassIslandStyle : undefined}
             >
-              <Button
-                variant="ghost"
-                onClick={toggleSidebarVisibility}
-                className="flex items-center gap-0.5 px-2 py-1 h-7"
-              >
-                <h2 className="font-geneva-12 text-[12px] font-medium truncate">
-                  {currentRoom
-                    ? currentRoom.type === "private"
-                      ? getPrivateRoomDisplayName(currentRoom, username)
-                      : `#${currentRoom.name}`
-                    : "@ryo"}
-                </h2>
-                <CaretDown
-                  className="size-2.5 transform transition-transform duration-200 text-neutral-400"
-                  weight="bold"
-                />
-              </Button>
+              {isFrameNarrow ? (
+                // Narrow frames swap the sidebar for a dropdown room switcher
+                // anchored to the header title.
+                <ChatRoomDropdown
+                  rooms={rooms}
+                  currentRoom={currentRoom ?? null}
+                  onRoomSelect={handleMenuRoomSelect}
+                  onAddRoom={promptAddRoom}
+                  username={username}
+                  onlineUsers={globalOnlineUsers}
+                >
+                  <Button
+                    variant="ghost"
+                    className="group flex items-center gap-0.5 px-2 py-1 h-7"
+                  >
+                    <h2 className="font-geneva-12 text-[12px] font-medium truncate">
+                      {currentRoom
+                        ? currentRoom.type === "private"
+                          ? getPrivateRoomDisplayName(currentRoom, username)
+                          : `#${currentRoom.name}`
+                        : "@ryo"}
+                    </h2>
+                    <CaretDown
+                      className="size-2.5 transform transition-transform duration-200 text-neutral-400 group-data-[state=open]:rotate-180"
+                      weight="bold"
+                    />
+                  </Button>
+                </ChatRoomDropdown>
+              ) : (
+                <Button
+                  variant="ghost"
+                  onClick={toggleSidebarVisibility}
+                  className="flex items-center gap-0.5 px-2 py-1 h-7"
+                >
+                  <h2 className="font-geneva-12 text-[12px] font-medium truncate">
+                    {currentRoom
+                      ? currentRoom.type === "private"
+                        ? getPrivateRoomDisplayName(currentRoom, username)
+                        : `#${currentRoom.name}`
+                      : "@ryo"}
+                  </h2>
+                  <CaretDown
+                    className="size-2.5 transform transition-transform duration-200 text-neutral-400"
+                    weight="bold"
+                  />
+                </Button>
+              )}
 
               {currentRoom &&
                 currentRoom.type !== "private" &&
