@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { waitUntil } from "@vercel/functions";
 import { apiHandler } from "../../../_utils/api-handler.js";
-import { getStoredUserRecord } from "../../../_utils/auth/_user-record.js";
+import { ensureStoredUserCreatedAt } from "../../../_utils/auth/_user-record.js";
 import { isValidMemoryAccountCreatedAt } from "../../../_utils/_memory.js";
 import {
   AIConversationError,
@@ -36,7 +36,7 @@ export default apiHandler(
       res.status(404).json({ error: "conversation_channel_not_found" });
       return;
     }
-    const account = await getStoredUserRecord(redis, user!.username);
+    const account = await ensureStoredUserCreatedAt(redis, user!.username);
     if (!isValidMemoryAccountCreatedAt(account?.createdAt)) {
       logger.response(409, Date.now() - startTime);
       res.status(409).json({ error: "account_changed" });

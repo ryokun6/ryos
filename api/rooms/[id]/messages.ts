@@ -22,7 +22,15 @@ import {
 } from "../_helpers/_constants.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
 import { ensureUserExists } from "../_helpers/_users.js";
-import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, setUser } from "../_helpers/_redis.js";
+import {
+  addMessage,
+  generateId,
+  getCurrentTimestamp,
+  getLastMessage,
+  getMessages,
+  getRoom,
+  updateUserLastActive,
+} from "../_helpers/_redis.js";
 import { setRoomPresence } from "../_helpers/_presence.js";
 import type { Message } from "../_helpers/_types.js";
 import { getRoomReadAccessError, getRoomWriteAccessError } from "../_helpers/_access.js";
@@ -227,10 +235,7 @@ export default apiHandler(
 
       await addMessage(roomId, message, redis);
 
-      // setUser's plain SET clears any legacy TTL: user records persist
-      // forever (an old expire call here used to attach one on each send).
-      const updatedUser = { ...userData, lastActive: getCurrentTimestamp() };
-      await setUser(username, updatedUser, redis);
+      await updateUserLastActive(username, getCurrentTimestamp(), redis);
       await setRoomPresence(roomId, username, redis);
 
       await broadcastNewMessage(roomId, message, roomData);

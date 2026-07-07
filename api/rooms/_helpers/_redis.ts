@@ -13,8 +13,9 @@ import {
 } from "../../_utils/redis-helpers.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 import {
+  createStoredUserIfNotExists,
   getStoredUserRecord,
-  setStoredUserRecord,
+  updateStoredUserLastActive,
 } from "../../_utils/auth/_user-record.js";
 
 // Export for direct usage in endpoints and feature helpers.
@@ -174,14 +175,14 @@ export async function getUser(
 }
 
 /**
- * Set a user (user records persist forever)
+ * Patch a user's activity timestamp without replacing account metadata.
  */
-export async function setUser(
+export async function updateUserLastActive(
   username: string,
-  user: User,
+  lastActive: number,
   client: Redis = createRedisClient()
-): Promise<void> {
-  await setStoredUserRecord(client, username, user);
+): Promise<boolean> {
+  return updateStoredUserLastActive(client, username, lastActive);
 }
 
 /**
@@ -193,10 +194,7 @@ export async function createUserIfNotExists(
   user: User,
   client: Redis = createRedisClient()
 ): Promise<boolean> {
-  const existing = await getStoredUserRecord(client, username);
-  if (existing) return false;
-  await setStoredUserRecord(client, username, user);
-  return true;
+  return createStoredUserIfNotExists(client, username, user);
 }
 
 /**

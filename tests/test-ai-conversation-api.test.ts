@@ -7,11 +7,22 @@ import {
   makeRateLimitBypassHeaders,
   uniqueTestUsername,
 } from "./test-utils";
+import { createRedis } from "../api/_utils/redis";
+import {
+  createStoredUserIfNotExists,
+  ensureStoredUserCreatedAt,
+  getStoredUserRecord,
+  setStoredUserRecord,
+  updateStoredUserLastActive,
+  updateStoredUserTimeZone,
+} from "../api/_utils/auth/_user-record";
+import { redisKeys } from "../src/shared/redisKeys";
 import type {
   AIConversationPage,
   AIConversationResetResult,
 } from "../src/shared/contracts/aiConversation";
 
+const redis = createRedis();
 const password = "testtest123";
 const CHAT_ID = "11111111-1111-4111-8111-111111111111";
 const PNG_1X1 = Buffer.from(
@@ -44,6 +55,209 @@ describe("AI conversation API", () => {
       `${BASE_URL}/api/ai/conversations/chat`
     );
     expect(response.status).toBe(401);
+  });
+
+  test("resets legacy accounts missing createdAt and preserves their profile", async () => {
+    const username = uniqueTestUsername("ailegacy");
+    const token = await ensureUserAuth(username, password);
+    if (!token) throw new Error("Failed to authenticate legacy-profile test user");
+
+    const initialResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    expect(initialResponse.status).toBe(200);
+    const initial = (await initialResponse.json()) as AIConversationPage;
+
+    const account = await getStoredUserRecord(redis, username);
+    if (typeof account?.lastActive !== "number") {
+      throw new Error("Registered test user is missing lastActive");
+    }
+    const legacyAccount = {
+      ...account,
+      timeZone: "Europe/London",
+      timeZoneUpdatedAt: account.lastActive,
+    };
+    delete legacyAccount.createdAt;
+    await setStoredUserRecord(redis, username, legacyAccount);
+
+    const importResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat/import`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          conversationId: initial.conversation.id,
+          expectedRevision: initial.conversation.revision,
+          operationId: crypto.randomUUID(),
+          messages: [apiMessage("legacy-user-message", "user", "clear me")],
+        }),
+      }
+    );
+    expect(importResponse.status).toBe(201);
+
+    const populatedResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    expect(populatedResponse.status).toBe(200);
+    const populated = (await populatedResponse.json()) as AIConversationPage;
+    expect(populated.messages.map((message) => message.id)).toEqual([
+      "legacy-user-message",
+    ]);
+
+    const resetResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat/reset`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          conversationId: initial.conversation.id,
+          operationId: crypto.randomUUID(),
+        }),
+      }
+    );
+    expect(resetResponse.status).toBe(200);
+    const reset = (await resetResponse.json()) as AIConversationResetResult;
+    expect(reset.reset).toBe(true);
+    expect(reset.conversation.id).not.toBe(initial.conversation.id);
+
+    const clearedResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    expect(clearedResponse.status).toBe(200);
+    const cleared = (await clearedResponse.json()) as AIConversationPage;
+    expect(cleared.conversation.id).toBe(reset.conversation.id);
+    expect(cleared.messages).toEqual([]);
+
+    expect(await getStoredUserRecord(redis, username)).toEqual({
+      ...legacyAccount,
+      createdAt: account.lastActive,
+    });
+
+    const timeZoneUpdatedAt = account.lastActive + 1;
+    expect(
+      await updateStoredUserTimeZone(
+        redis,
+        username,
+        "Asia/Tokyo",
+        timeZoneUpdatedAt
+      )
+    ).toEqual({
+      ...legacyAccount,
+      createdAt: account.lastActive,
+      timeZone: "Asia/Tokyo",
+      timeZoneUpdatedAt,
+    });
+  });
+
+  test("does not backfill during deletion or replace a new account generation", async () => {
+    const username = uniqueTestUsername("aifence");
+    const token = await ensureUserAuth(username, password);
+    if (!token) throw new Error("Failed to authenticate account-fence test user");
+
+    const initialResponse = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat`,
+      username,
+      token
+    );
+    expect(initialResponse.status).toBe(200);
+    const initial = (await initialResponse.json()) as AIConversationPage;
+
+    const account = await getStoredUserRecord(redis, username);
+    if (typeof account?.lastActive !== "number") {
+      throw new Error("Registered test user is missing lastActive");
+    }
+    const legacyAccount = { ...account };
+    delete legacyAccount.createdAt;
+    await setStoredUserRecord(redis, username, legacyAccount);
+
+    const tombstoneKey = redisKeys.chat.aiConversationTombstone(username);
+    await redis.set(tombstoneKey, "1");
+    const blockedReset = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat/reset`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          conversationId: initial.conversation.id,
+          operationId: crypto.randomUUID(),
+        }),
+      }
+    );
+    expect(blockedReset.status).toBe(409);
+    expect(await blockedReset.json()).toEqual({ error: "account_changed" });
+    expect(await getStoredUserRecord(redis, username)).toEqual(legacyAccount);
+
+    await redis.del(redisKeys.auth.userProfile(username));
+    expect(
+      await createStoredUserIfNotExists(redis, username, legacyAccount)
+    ).toBe(false);
+    expect(await ensureStoredUserCreatedAt(redis, username)).toBeNull();
+    expect(await getStoredUserRecord(redis, username)).toBeNull();
+
+    const replacementCreatedAt = account.lastActive + 1;
+    const replacementAccount = {
+      username,
+      createdAt: replacementCreatedAt,
+      lastActive: replacementCreatedAt + 1,
+      timeZone: "UTC",
+    };
+    await setStoredUserRecord(redis, username, replacementAccount);
+    expect(
+      await updateStoredUserLastActive(
+        redis,
+        username,
+        replacementAccount.lastActive + 1
+      )
+    ).toBe(false);
+    expect(await ensureStoredUserCreatedAt(redis, username)).toEqual(
+      replacementAccount
+    );
+    expect(await getStoredUserRecord(redis, username)).toEqual(
+      replacementAccount
+    );
+
+    await redis.del(tombstoneKey);
+    expect(
+      await createStoredUserIfNotExists(redis, username, legacyAccount)
+    ).toBe(false);
+    expect(
+      await updateStoredUserLastActive(
+        redis,
+        username,
+        replacementAccount.lastActive - 1
+      )
+    ).toBe(true);
+    expect(await getStoredUserRecord(redis, username)).toEqual(
+      replacementAccount
+    );
+    const nextLastActive = replacementAccount.lastActive + 2;
+    expect(
+      await updateStoredUserLastActive(redis, username, nextLastActive)
+    ).toBe(true);
+    expect(await ensureStoredUserCreatedAt(redis, username)).toEqual(
+      {
+        ...replacementAccount,
+        lastActive: nextLastActive,
+      }
+    );
+    expect(await getStoredUserRecord(redis, username)).toEqual(
+      {
+        ...replacementAccount,
+        lastActive: nextLastActive,
+      }
+    );
   });
 
   test("round-trips long text, an owned image, and tool state", async () => {

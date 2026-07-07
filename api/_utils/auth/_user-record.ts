@@ -28,8 +28,138 @@ export interface StoredUserRecord {
   emailUpdatedAt?: number;
 }
 
+export type StoredUserRecordWithCreatedAt = StoredUserRecord & {
+  createdAt: number;
+};
+
 /** Basic email shape check. Intentionally permissive (server is not an MX validator). */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const ENSURE_STORED_USER_CREATED_AT_SCRIPT = `
+local raw = redis.call("GET", KEYS[1])
+if not raw then
+  return false
+end
+
+local decoded, account = pcall(cjson.decode, raw)
+if not decoded or type(account) ~= "table" then
+  return false
+end
+
+local createdAt = account["createdAt"]
+if type(createdAt) == "number" and createdAt > 0 and createdAt < math.huge then
+  return raw
+end
+if createdAt ~= nil then
+  return false
+end
+
+if redis.call("EXISTS", KEYS[2]) == 1 then
+  return false
+end
+
+local lastActive = account["lastActive"]
+if type(lastActive) ~= "number"
+  or lastActive ~= lastActive
+  or lastActive <= 0
+  or lastActive >= math.huge
+then
+  return false
+end
+
+local ttl = redis.call("PTTL", KEYS[1])
+account["createdAt"] = lastActive
+local encoded, updated = pcall(cjson.encode, account)
+if not encoded then
+  return false
+end
+redis.call("SET", KEYS[1], updated)
+if ttl >= 0 then
+  redis.call("PEXPIRE", KEYS[1], math.max(ttl, 1))
+end
+return updated
+`;
+
+const CREATE_STORED_USER_IF_NOT_EXISTS_SCRIPT = `
+if redis.call("EXISTS", KEYS[2]) == 1 or redis.call("EXISTS", KEYS[1]) == 1 then
+  return 0
+end
+
+redis.call("SET", KEYS[1], ARGV[1])
+return 1
+`;
+
+const UPDATE_STORED_USER_LAST_ACTIVE_SCRIPT = `
+if redis.call("EXISTS", KEYS[2]) == 1 then
+  return 0
+end
+
+local raw = redis.call("GET", KEYS[1])
+if not raw then
+  return 0
+end
+
+local decoded, account = pcall(cjson.decode, raw)
+if not decoded or type(account) ~= "table" then
+  return 0
+end
+
+local lastActive = tonumber(ARGV[1])
+if not lastActive
+  or lastActive ~= lastActive
+  or lastActive <= 0
+  or lastActive >= math.huge
+then
+  return 0
+end
+
+local currentLastActive = account["lastActive"]
+if type(currentLastActive) == "number"
+  and currentLastActive == currentLastActive
+  and currentLastActive > lastActive
+  and currentLastActive < math.huge
+then
+  lastActive = currentLastActive
+end
+
+account["lastActive"] = lastActive
+local encoded, updated = pcall(cjson.encode, account)
+if not encoded then
+  return 0
+end
+
+redis.call("SET", KEYS[1], updated)
+return 1
+`;
+
+const UPDATE_STORED_USER_TIME_ZONE_SCRIPT = `
+if redis.call("EXISTS", KEYS[2]) == 1 then
+  return false
+end
+
+local raw = redis.call("GET", KEYS[1])
+if not raw then
+  return false
+end
+
+local decoded, account = pcall(cjson.decode, raw)
+if not decoded or type(account) ~= "table" then
+  return false
+end
+if account["timeZone"] == ARGV[1] then
+  return raw
+end
+
+account["timeZone"] = ARGV[1]
+account["timeZoneUpdatedAt"] = tonumber(ARGV[2])
+local encoded, updated = pcall(cjson.encode, account)
+if not encoded then
+  return false
+end
+
+redis.call("SET", KEYS[1], updated)
+return updated
+`;
 
 export function normalizeEmail(email: string | null | undefined): string | null {
   if (!email || typeof email !== "string") return null;
@@ -96,6 +226,90 @@ export async function getStoredUserRecord(
   );
 }
 
+/**
+ * Return an account-generation timestamp for current and legacy profiles.
+ *
+ * Historical profiles may predate `createdAt`. Their existing `lastActive`
+ * value is the only stable timestamp available for an account-generation
+ * fence. The Lua script backfills it atomically and preserves the record's TTL.
+ * A deletion tombstone blocks backfills until registration establishes a new
+ * account generation.
+ */
+export async function ensureStoredUserCreatedAt(
+  redis: Redis,
+  username: string
+): Promise<StoredUserRecordWithCreatedAt | null> {
+  const normalizedUsername = username.toLowerCase();
+  const result = await redis.eval<unknown>(
+    ENSURE_STORED_USER_CREATED_AT_SCRIPT,
+    [
+      redisKeys.auth.userProfile(normalizedUsername),
+      redisKeys.chat.aiConversationTombstone(normalizedUsername),
+    ],
+    []
+  );
+  const record = parseStoredUser(result);
+  if (
+    !record ||
+    typeof record.createdAt !== "number" ||
+    !Number.isFinite(record.createdAt) ||
+    record.createdAt <= 0
+  ) {
+    return null;
+  }
+  return { ...record, createdAt: record.createdAt };
+}
+
+/**
+ * Update activity without replacing the rest of the profile.
+ *
+ * Room-message requests can overlap profile migrations, account deletion, and
+ * re-registration. An atomic field patch prevents a stale request from
+ * erasing `createdAt` or recreating a deleted profile.
+ */
+export async function updateStoredUserLastActive(
+  redis: Redis,
+  username: string,
+  lastActive: number
+): Promise<boolean> {
+  if (!Number.isFinite(lastActive) || lastActive <= 0) {
+    return false;
+  }
+
+  const normalizedUsername = username.toLowerCase();
+  const result = await redis.eval<number>(
+    UPDATE_STORED_USER_LAST_ACTIVE_SCRIPT,
+    [
+      redisKeys.auth.userProfile(normalizedUsername),
+      redisKeys.chat.aiConversationTombstone(normalizedUsername),
+    ],
+    [lastActive]
+  );
+  return result === 1;
+}
+
+/**
+ * Create a profile only when neither an account nor a deletion tombstone
+ * exists. This keeps stale room requests from recreating deleted accounts or
+ * overwriting a concurrent registration.
+ */
+export async function createStoredUserIfNotExists(
+  redis: Redis,
+  username: string,
+  record: StoredUserRecord
+): Promise<boolean> {
+  const normalizedUsername = username.toLowerCase();
+  const result = await redis.eval<number>(
+    CREATE_STORED_USER_IF_NOT_EXISTS_SCRIPT,
+    [
+      redisKeys.auth.userProfile(normalizedUsername),
+      redisKeys.chat.aiConversationTombstone(normalizedUsername),
+    ],
+    [JSON.stringify(record)]
+  );
+  return result === 1;
+}
+
 export async function setStoredUserRecord(
   redis: Redis,
   username: string,
@@ -129,24 +343,20 @@ export async function updateStoredUserTimeZone(
   if (!normalizedTimeZone) {
     return null;
   }
-
-  const key = redisKeys.auth.userProfile(username.toLowerCase());
-  const existingRecord = await getStoredUserRecord(redis, username);
-  if (!existingRecord) {
+  if (!Number.isFinite(now) || now <= 0) {
     return null;
   }
 
-  if (existingRecord.timeZone === normalizedTimeZone) {
-    return existingRecord;
-  }
-
-  const updatedRecord: StoredUserRecord = {
-    ...existingRecord,
-    timeZone: normalizedTimeZone,
-    timeZoneUpdatedAt: now,
-  };
-  await redis.set(key, JSON.stringify(updatedRecord));
-  return updatedRecord;
+  const normalizedUsername = username.toLowerCase();
+  const result = await redis.eval<unknown>(
+    UPDATE_STORED_USER_TIME_ZONE_SCRIPT,
+    [
+      redisKeys.auth.userProfile(normalizedUsername),
+      redisKeys.chat.aiConversationTombstone(normalizedUsername),
+    ],
+    [normalizedTimeZone, now]
+  );
+  return parseStoredUser(result);
 }
 
 /**

@@ -21,6 +21,31 @@ class FakeRedis {
     this.store.set(key, value);
     return "OK";
   }
+
+  async eval(
+    _script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<unknown> {
+    if (this.store.has(keys[1])) return false;
+
+    const raw = this.store.get(keys[0]);
+    if (!raw) return false;
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return false;
+    }
+    if (Reflect.get(parsed, "timeZone") === args[0]) return raw;
+
+    const updated = {
+      ...parsed,
+      timeZone: args[0],
+      timeZoneUpdatedAt: Number(args[1]),
+    };
+    const serialized = JSON.stringify(updated);
+    this.store.set(keys[0], serialized);
+    return serialized;
+  }
 }
 
 function makeRedis(): Redis {
