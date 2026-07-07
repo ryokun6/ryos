@@ -89,7 +89,6 @@ const pendingResetMemorySnapshotSchema = z.object({
   version: z.literal(1),
   id: z.string().uuid(),
   channel: z.enum(["chat", "assistant"]),
-  accountCreatedAt: z.number().finite().positive(),
   timeZone: z.string().max(100).nullable(),
   createdAt: z.string(),
   messages: z.array(pendingResetMemoryMessageSchema).max(MAX_MESSAGES),
@@ -181,7 +180,6 @@ export interface ResetAIConversationInput {
   channel: AIConversationChannel;
   conversationId: string;
   operationId: string;
-  accountCreatedAt: number;
   timeZone?: string;
 }
 
@@ -343,18 +341,14 @@ function buildPendingResetMemory({
   current,
   existing,
   channel,
-  accountCreatedAt,
   timeZone,
 }: {
   current: StoredConversation;
   existing: PendingAIConversationResetMemory | null;
   channel: AIConversationChannel;
-  accountCreatedAt: number;
   timeZone?: string;
 }): PendingAIConversationResetMemory | null {
-  const canRetainExisting =
-    existing?.channel === channel &&
-    existing.accountCreatedAt === accountCreatedAt;
+  const canRetainExisting = existing?.channel === channel;
   const retainedExistingMessages =
     canRetainExisting && existing ? existing.messages : [];
   const currentMessages = current.messages.map((message) => ({
@@ -372,7 +366,6 @@ function buildPendingResetMemory({
     version: 1,
     id: canRetainExisting && existing ? existing.id : crypto.randomUUID(),
     channel,
-    accountCreatedAt,
     timeZone: timeZone?.trim().slice(0, 100) || null,
     createdAt:
       canRetainExisting && existing
@@ -1316,7 +1309,6 @@ export async function resetAIConversation(
         current,
         existing: existingPending,
         channel: input.channel,
-        accountCreatedAt: input.accountCreatedAt,
         timeZone: input.timeZone,
       });
       await saveResetConversation({

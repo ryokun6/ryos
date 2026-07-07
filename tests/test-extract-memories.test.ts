@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../api/_utils/redis";
-import { withUserMemoryMutationLock } from "../api/_utils/_memory";
+import {
+  withMemoryAccountMutation,
+  withUserMemoryMutationLock,
+} from "../api/_utils/_memory";
 import {
   getChatMessageTimestamp,
   getDailyNoteDatesToMarkProcessed,
   resolveDailyNoteSourceTimestamp,
-  withCurrentAccountMemoryMutation,
   type NormalizedConversationMessage,
 } from "../api/ai/extract-memories";
 import { processDailyNotesForUser } from "../api/ai/process-daily-notes";
@@ -155,50 +157,38 @@ describe("extract memories helpers", () => {
     ).toEqual(["2026-01-16"]);
   });
 
-  test("an old extraction skips its write after same-name re-registration wins the mutation fence", async () => {
+  test("an in-flight extraction skips its write after the account is deleted mid-mutation", async () => {
     const fakeRedis = new MemoryMutationRedis();
     const redis = fakeRedis as unknown as Redis;
     const username = "memory_race_user";
-    const oldAccountCreatedAt = 100;
-    const newAccountCreatedAt = 200;
     await fakeRedis.set(
       redisKeys.auth.userProfile(username),
       JSON.stringify({
         username,
-        createdAt: oldAccountCreatedAt,
-        lastActive: oldAccountCreatedAt,
+        createdAt: 100,
+        lastActive: 100,
       })
     );
 
-    let releaseIdentityChange = () => {};
-    const identityChangeAllowed = new Promise<void>((resolve) => {
-      releaseIdentityChange = resolve;
+    let releaseDeletion = () => {};
+    const deletionAllowed = new Promise<void>((resolve) => {
+      releaseDeletion = resolve;
     });
     let markLockHeld = () => {};
     const lockHeld = new Promise<void>((resolve) => {
       markLockHeld = resolve;
     });
-    const identityChange = withUserMemoryMutationLock(
+    const deletion = withUserMemoryMutationLock(
       redis,
       username,
       async () => {
         markLockHeld();
-        await identityChangeAllowed;
+        await deletionAllowed;
         await fakeRedis.set(
           redisKeys.chat.aiConversationTombstone(username),
           "1"
         );
-        await fakeRedis.set(
-          redisKeys.auth.userProfile(username),
-          JSON.stringify({
-            username,
-            createdAt: newAccountCreatedAt,
-            lastActive: newAccountCreatedAt,
-          })
-        );
-        await fakeRedis.del(
-          redisKeys.chat.aiConversationTombstone(username)
-        );
+        await fakeRedis.del(redisKeys.auth.userProfile(username));
       }
     );
     await lockHeld;
@@ -213,10 +203,9 @@ describe("extract memories helpers", () => {
       }
     };
     let wroteMemory = false;
-    const oldExtractionMutation = withCurrentAccountMemoryMutation({
+    const oldExtractionMutation = withMemoryAccountMutation({
       redis,
       username,
-      accountCreatedAt: oldAccountCreatedAt,
       mutation: async () => {
         wroteMemory = true;
         await fakeRedis.set(
@@ -227,11 +216,11 @@ describe("extract memories helpers", () => {
     });
     await oldExtractionBlocked;
 
-    releaseIdentityChange();
-    await identityChange;
+    releaseDeletion();
+    await deletion;
     const result = await oldExtractionMutation;
 
-    expect(result).toEqual({ status: "account_changed" });
+    expect(result).toEqual({ status: "account_deleted" });
     expect(wroteMemory).toBe(false);
     expect(
       await fakeRedis.get(
@@ -240,31 +229,12 @@ describe("extract memories helpers", () => {
     ).toBeNull();
   });
 
-  test("an old-generation chat memory tool cannot recreate memory after re-registration", async () => {
+  test("a chat memory tool cannot recreate memory after the account is deleted", async () => {
     const fakeRedis = new MemoryMutationRedis();
     const redis = fakeRedis as unknown as Redis;
     const username = "tool_generation_user";
-    const oldAccountCreatedAt = 100;
-    const newAccountCreatedAt = 200;
-    await fakeRedis.set(
-      redisKeys.auth.userProfile(username),
-      JSON.stringify({
-        username,
-        createdAt: oldAccountCreatedAt,
-        lastActive: oldAccountCreatedAt,
-      })
-    );
     await fakeRedis.set(redisKeys.chat.aiConversationTombstone(username), "1");
     await fakeRedis.del(redisKeys.memory.index(username));
-    await fakeRedis.set(
-      redisKeys.auth.userProfile(username),
-      JSON.stringify({
-        username,
-        createdAt: newAccountCreatedAt,
-        lastActive: newAccountCreatedAt,
-      })
-    );
-    await fakeRedis.del(redisKeys.chat.aiConversationTombstone(username));
 
     const result = await executeMemoryWrite(
       {
@@ -277,7 +247,6 @@ describe("extract memories helpers", () => {
       {
         redis,
         username,
-        accountCreatedAt: oldAccountCreatedAt,
         env: {},
         log: () => {},
         logError: () => {},
@@ -291,27 +260,18 @@ describe("extract memories helpers", () => {
     ).toBeNull();
   });
 
-  test("an old-generation daily-note processor cannot write into a re-registered account", async () => {
+  test("the daily-note processor cannot write into a deleted account", async () => {
     const fakeRedis = new MemoryMutationRedis();
     const redis = fakeRedis as unknown as Redis;
     const username = "processor_generation_user";
-    const oldAccountCreatedAt = 300;
-    const newAccountCreatedAt = 400;
     const noteDate = "2026-07-05";
-    await fakeRedis.set(
-      redisKeys.auth.userProfile(username),
-      JSON.stringify({
-        username,
-        createdAt: newAccountCreatedAt,
-        lastActive: newAccountCreatedAt,
-      })
-    );
+    await fakeRedis.set(redisKeys.chat.aiConversationTombstone(username), "1");
     await fakeRedis.set(
       redisKeys.memory.daily(username, noteDate),
       JSON.stringify({
         date: noteDate,
         timeZone: "UTC",
-        entries: [{ timestamp: Date.UTC(2026, 6, 5), content: "New account note" }],
+        entries: [{ timestamp: Date.UTC(2026, 6, 5), content: "Deleted account note" }],
         processedForMemories: false,
         updatedAt: Date.UTC(2026, 6, 5),
       })
@@ -322,11 +282,10 @@ describe("extract memories helpers", () => {
       username,
       () => {},
       () => {},
-      "UTC",
-      oldAccountCreatedAt
+      "UTC"
     );
 
-    expect(result.skippedReason).toBe("account_changed");
+    expect(result.skippedReason).toBe("account_deleted");
     expect(await fakeRedis.get(redisKeys.memory.index(username))).toBeNull();
     const storedNote = await fakeRedis.get<string>(
       redisKeys.memory.daily(username, noteDate)
@@ -338,15 +297,14 @@ describe("extract memories helpers", () => {
     const fakeRedis = new MemoryMutationRedis();
     const redis = fakeRedis as unknown as Redis;
     const username = "processor_lock_owner_user";
-    const accountCreatedAt = 500;
     const processLockKey = redisKeys.memory.processingLock(username);
     const tombstoneKey = redisKeys.chat.aiConversationTombstone(username);
     await fakeRedis.set(
       redisKeys.auth.userProfile(username),
       JSON.stringify({
         username,
-        createdAt: accountCreatedAt,
-        lastActive: accountCreatedAt,
+        createdAt: 500,
+        lastActive: 500,
       })
     );
 
@@ -364,8 +322,7 @@ describe("extract memories helpers", () => {
       username,
       () => {},
       () => {},
-      "UTC",
-      accountCreatedAt
+      "UTC"
     );
 
     expect(await fakeRedis.get(processLockKey)).toBe("replacement-owner");

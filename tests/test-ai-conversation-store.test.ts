@@ -490,7 +490,6 @@ describe("AI conversation store", () => {
       channel: "assistant",
       conversationId: initial.conversation.id,
       operationId: "reset-1",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
       timeZone: "Europe/London",
     });
     expect(reset.reset).toBe(true);
@@ -505,7 +504,6 @@ describe("AI conversation store", () => {
       }),
     ).toMatchObject({
       channel: "assistant",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
       timeZone: "Europe/London",
       messages: [
         {
@@ -522,7 +520,6 @@ describe("AI conversation store", () => {
       channel: "assistant",
       conversationId: initial.conversation.id,
       operationId: "reset-1",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
       timeZone: "Europe/London",
     });
     expect(replay.reset).toBe(false);
@@ -595,7 +592,6 @@ describe("AI conversation store", () => {
       channel: "chat",
       conversationId: initial.conversation.id,
       operationId: "first-reset",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
     });
     const firstPending = await getPendingAIConversationResetMemory({
       redis,
@@ -623,7 +619,6 @@ describe("AI conversation store", () => {
       channel: "chat",
       conversationId: secondTurn.id,
       operationId: "second-reset",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
     });
 
     const mergedPending = await getPendingAIConversationResetMemory({
@@ -662,7 +657,6 @@ describe("AI conversation store", () => {
       channel: "chat",
       conversationId: initial.conversation.id,
       operationId: "reset-retry",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
       timeZone: "Europe/Lisbon",
     });
 
@@ -738,7 +732,6 @@ describe("AI conversation store", () => {
       channel: "chat",
       conversationId: initial.conversation.id,
       operationId: "reset-lock",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
     });
 
     let releaseProcessor = () => {};
@@ -1106,7 +1099,6 @@ describe("AI conversation store", () => {
       channel: "chat",
       conversationId: initial.conversation.id,
       operationId: "reset-before-delete",
-      accountCreatedAt: Date.UTC(2026, 0, 1),
     });
     await redis.set(
       redisKeys.chat.aiConversationResetMemoryLock("alice", "chat"),

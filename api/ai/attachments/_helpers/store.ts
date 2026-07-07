@@ -1,6 +1,5 @@
 import type { UIMessage } from "ai";
 import type { RedisLike } from "../../../_utils/redis.js";
-import { parseStoredUser } from "../../../_utils/auth/_user-record.js";
 import {
   deletePrivateStoredObjectByPathname,
   deleteStoredObject,
@@ -741,26 +740,18 @@ async function reclaimStaleUnreferencedAIAttachments({
   );
 }
 
-async function assertCurrentAccountGeneration({
+async function assertAccountNotDeleted({
   redis,
   username,
-  accountCreatedAt,
 }: {
   redis: AIAttachmentRedis;
   username: string;
-  accountCreatedAt: number;
 }): Promise<void> {
-  const [tombstone, rawAccount] = await Promise.all([
-    redis.get(redisKeys.chat.aiConversationTombstone(username)),
-    redis.get(redisKeys.auth.userProfile(username)),
-  ]);
-  const account = parseStoredUser(rawAccount);
-  if (
-    tombstone !== null ||
-    typeof account?.createdAt !== "number" ||
-    account.createdAt !== accountCreatedAt
-  ) {
-    throw new Error("account_changed");
+  const tombstone = await redis.get(
+    redisKeys.chat.aiConversationTombstone(username),
+  );
+  if (tombstone !== null) {
+    throw new Error("account_deleted");
   }
 }
 
@@ -798,13 +789,11 @@ async function removePendingAIAttachmentReservation({
 export async function createAIAttachment({
   redis,
   username,
-  accountCreatedAt,
   mediaType,
   bytes,
 }: {
   redis: AIAttachmentRedis;
   username: string;
-  accountCreatedAt: number;
   mediaType: unknown;
   bytes: Uint8Array;
 }): Promise<{ mediaType: AIAttachmentMediaType; url: string }> {
@@ -821,11 +810,7 @@ export async function createAIAttachment({
     redis,
     username,
     task: async (lockToken) => {
-      await assertCurrentAccountGeneration({
-        redis,
-        username,
-        accountCreatedAt,
-      });
+      await assertAccountNotDeleted({ redis, username });
 
       const now = Date.now();
       const indexKey = redisKeys.chat.aiAttachments(username);
@@ -870,7 +855,7 @@ export async function createAIAttachment({
         [lockToken, pendingMember, MAX_STORED_ATTACHMENTS],
       );
       if (reserved === -1) throw new Error("attachment_busy");
-      if (reserved === -2) throw new Error("account_changed");
+      if (reserved === -2) throw new Error("account_deleted");
       if (reserved !== 1) {
         throw new Error("attachment_quota_exceeded");
       }
@@ -907,11 +892,7 @@ export async function createAIAttachment({
       redis,
       username,
       task: async (lockToken) => {
-        await assertCurrentAccountGeneration({
-          redis,
-          username,
-          accountCreatedAt,
-        });
+        await assertAccountNotDeleted({ redis, username });
         const readyMember = serializeReadyAIAttachment({
           name: reservation.name,
           storageUrl,
@@ -927,7 +908,7 @@ export async function createAIAttachment({
           [lockToken, reservation.pendingMember, readyMember],
         );
         if (finalized === -1) throw new Error("attachment_busy");
-        if (finalized !== 1) throw new Error("account_changed");
+        if (finalized !== 1) throw new Error("account_deleted");
       },
     });
   } catch (error) {

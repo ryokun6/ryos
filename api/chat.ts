@@ -32,7 +32,6 @@ import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
 import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
 import {
-  getStoredUserRecord,
   getStoredUserTimeZone,
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
@@ -256,11 +255,6 @@ export default apiHandler<{
     const authToken = user?.token ?? null;
     const isAuthenticated = !!user;
     const identifier = isAuthenticated && username ? username : `anon:${ip}`;
-    const requestAccount =
-      isAuthenticated && username
-        ? await getStoredUserRecord(redis, username)
-        : null;
-    const accountCreatedAt = requestAccount?.createdAt;
 
     const parsedConversationContext = parseConversationContext(conversation);
     if (!parsedConversationContext.ok) {
@@ -585,8 +579,7 @@ export default apiHandler<{
               username,
               log,
               logError,
-              effectiveUserTimeZone,
-              accountCreatedAt
+              effectiveUserTimeZone
             ).catch((err: unknown) => {
               logError("[DailyNotes] Background processing failed (non-blocking):", err);
             });
@@ -692,7 +685,6 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
       messages: modelConversationMessages,
       systemState,
       username: isAuthenticated ? username : null,
-      accountCreatedAt,
       model: model as SupportedModel,
       redis: isAuthenticated ? redis : undefined,
       log,
