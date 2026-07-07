@@ -27,7 +27,7 @@ describe("cursorAgentRunVisibility", () => {
       runId: "recent",
       updatedAt: cutoff + 1,
     });
-    expect(isCursorAgentRunRecent(run, cutoff, now)).toBe(true);
+    expect(isCursorAgentRunRecent(run, cutoff)).toBe(true);
   });
 
   test("treats runs older than a week as not recent", () => {
@@ -35,7 +35,7 @@ describe("cursorAgentRunVisibility", () => {
       runId: "old",
       updatedAt: cutoff - 1,
     });
-    expect(isCursorAgentRunRecent(run, cutoff, now)).toBe(false);
+    expect(isCursorAgentRunRecent(run, cutoff)).toBe(false);
   });
 
   test("always keeps running agents visible even when old", () => {
@@ -44,7 +44,7 @@ describe("cursorAgentRunVisibility", () => {
       status: "running",
       updatedAt: cutoff - 10_000,
     });
-    expect(isCursorAgentRunRecent(run, cutoff, now)).toBe(true);
+    expect(isCursorAgentRunRecent(run, cutoff)).toBe(true);
   });
 
   test("falls back to createdAt when updatedAt is missing", () => {
@@ -53,12 +53,12 @@ describe("cursorAgentRunVisibility", () => {
       createdAt: cutoff + 5,
       updatedAt: null,
     });
-    expect(isCursorAgentRunRecent(run, cutoff, now)).toBe(true);
+    expect(isCursorAgentRunRecent(run, cutoff)).toBe(true);
   });
 
   test("shows runs with unknown timestamps by default", () => {
     const run = makeRun({ runId: "unknown-age" });
-    expect(isCursorAgentRunRecent(run, cutoff, now)).toBe(true);
+    expect(isCursorAgentRunRecent(run, cutoff)).toBe(true);
   });
 
   test("partitions runs into recent and older buckets", () => {

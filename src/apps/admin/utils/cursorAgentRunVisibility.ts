@@ -9,7 +9,6 @@ function runActivityTimestamp(run: AdminCursorAgentRunRow): number | null {
 export function isCursorAgentRunRecent(
   run: AdminCursorAgentRunRow,
   cutoffMs: number,
-  now = Date.now(),
 ): boolean {
   if (run.status.toLowerCase() === "running") return true;
   const ts = runActivityTimestamp(run);
@@ -27,7 +26,7 @@ export function partitionCursorAgentRunsByRecency(
   const older: AdminCursorAgentRunRow[] = [];
 
   for (const run of runs) {
-    if (isCursorAgentRunRecent(run, cutoffMs, now)) {
+    if (isCursorAgentRunRecent(run, cutoffMs)) {
       recent.push(run);
     } else {
       older.push(run);
