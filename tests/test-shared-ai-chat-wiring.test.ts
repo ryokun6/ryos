@@ -69,7 +69,9 @@ describe("shared AI chat wiring", () => {
     expect(retry).toContain("messageId: latestUserMessage.id");
     expect(retry).toContain("return guardedSendMessage(");
     expect(retry).not.toContain("sdkRegenerate");
-    expect(source).toContain("regenerateAssistantMessage: sdkRegenerate");
+    expect(source).toContain(
+      "regenerateAssistantMessage: guardedRegenerate"
+    );
 
     const chatsWindow = readSource(
       "src/apps/chats/components/chats-app/ChatsWindowContent.tsx"
