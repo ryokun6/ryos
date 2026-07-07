@@ -97,6 +97,55 @@ export function canPathHaveContent(path: string): boolean {
   return !NON_WRITABLE_ROOTS.has(root);
 }
 
+export interface WritableDirectoryEntry {
+  path: string;
+  name: string;
+  depth: number;
+}
+
+interface DirectoryLikeItem {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+  status?: string;
+}
+
+/**
+ * List all writable directories depth-first (an indented tree), given the
+ * files-store items map. Used by save-location pickers.
+ */
+export function listWritableDirectories(
+  items: Record<string, DirectoryLikeItem>
+): WritableDirectoryEntry[] {
+  const result: WritableDirectoryEntry[] = [];
+  const directories = Object.values(items).filter(
+    (item) =>
+      item.isDirectory &&
+      item.status !== "trashed" &&
+      // The root "/" is its own parent; exclude it so the walk terminates.
+      item.path !== "/"
+  );
+
+  const parentOf = (path: string): string => {
+    const lastSlash = path.lastIndexOf("/");
+    return lastSlash <= 0 ? "/" : path.substring(0, lastSlash);
+  };
+
+  const walk = (parent: string, depth: number) => {
+    const children = directories
+      .filter((item) => parentOf(item.path) === parent)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    for (const child of children) {
+      if (!isWritablePath(child.path)) continue;
+      result.push({ path: child.path, name: child.name, depth });
+      walk(child.path, depth + 1);
+    }
+  };
+
+  walk("/", 0);
+  return result;
+}
+
 export type RootFolderNameValidation =
   | { ok: true }
   | { ok: false; reason: "empty" | "invalid" | "reserved" };

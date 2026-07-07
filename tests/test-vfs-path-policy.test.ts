@@ -10,6 +10,7 @@ import {
   isProtectedSystemPath,
   canPathHaveContent,
   validateNewRootFolderName,
+  listWritableDirectories,
 } from "@/services/vfs/pathPolicy";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
 import { STORES } from "@/utils/indexedDB";
@@ -223,6 +224,51 @@ describe("getStoreForFile routing", () => {
       name: "photo.png",
     });
     expect(saveTime).toBe(readTime);
+  });
+});
+
+describe("pathPolicy.listWritableDirectories", () => {
+  const dir = (path: string, name: string) => ({
+    path,
+    name,
+    isDirectory: true,
+    status: "active",
+  });
+
+  test("lists writable directories depth-first with depths", () => {
+    const items = {
+      "/": dir("/", "Macintosh HD"),
+      "/Documents": dir("/Documents", "Documents"),
+      "/Documents/Notes": dir("/Documents/Notes", "Notes"),
+      "/Music": dir("/Music", "Music"),
+      "/MyStuff": dir("/MyStuff", "MyStuff"),
+      "/MyStuff/Photos": dir("/MyStuff/Photos", "Photos"),
+      "/Trash": dir("/Trash", "Trash"),
+    };
+    const result = listWritableDirectories(items);
+    expect(result).toEqual([
+      { path: "/Documents", name: "Documents", depth: 0 },
+      { path: "/Documents/Notes", name: "Notes", depth: 1 },
+      { path: "/MyStuff", name: "MyStuff", depth: 0 },
+      { path: "/MyStuff/Photos", name: "Photos", depth: 1 },
+    ]);
+  });
+
+  test("does not recurse infinitely on the root item (its own parent)", () => {
+    // Regression: "/" is its own parent path, which previously caused a
+    // "Maximum call stack size exceeded" crash in the save dialog.
+    const items = { "/": dir("/", "Macintosh HD") };
+    expect(listWritableDirectories(items)).toEqual([]);
+  });
+
+  test("skips trashed directories", () => {
+    const items = {
+      "/Old": { ...dir("/Old", "Old"), status: "trashed" },
+      "/Kept": dir("/Kept", "Kept"),
+    };
+    expect(listWritableDirectories(items)).toEqual([
+      { path: "/Kept", name: "Kept", depth: 0 },
+    ]);
   });
 });
 

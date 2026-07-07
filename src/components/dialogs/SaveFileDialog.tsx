@@ -1,49 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { isWritablePath } from "@/services/vfs/pathPolicy";
+import { listWritableDirectories } from "@/services/vfs/pathPolicy";
+
 import { getTranslatedFolderName } from "@/utils/i18n";
 import { useTranslation } from "react-i18next";
-
-interface WritableDirectory {
-  path: string;
-  name: string;
-  depth: number;
-}
-
-const getParentPath = (path: string): string => {
-  if (path === "/") return "/";
-  const lastSlash = path.lastIndexOf("/");
-  return lastSlash <= 0 ? "/" : path.substring(0, lastSlash);
-};
 
 /**
  * All writable directories in the VFS, depth-first, so the list reads like an
  * indented tree (system folders like /Documents plus user-created folders).
  */
-export function useWritableDirectories(): WritableDirectory[] {
+function useWritableDirectories() {
   const items = useFilesStore((state) => state.items);
-
-  return useMemo(() => {
-    const result: WritableDirectory[] = [];
-    const directories = Object.values(items).filter(
-      (item) => item.isDirectory && item.status === "active"
-    );
-
-    const walk = (parent: string, depth: number) => {
-      const children = directories
-        .filter((item) => getParentPath(item.path) === parent)
-        .sort((a, b) => a.name.localeCompare(b.name));
-      for (const child of children) {
-        if (!isWritablePath(child.path)) continue;
-        result.push({ path: child.path, name: child.name, depth });
-        walk(child.path, depth + 1);
-      }
-    };
-
-    walk("/", 0);
-    return result;
-  }, [items]);
+  return useMemo(() => listWritableDirectories(items), [items]);
 }
 
 interface SaveFileDialogProps {
