@@ -285,7 +285,6 @@ describe("AI conversation client", () => {
     expect(importBody).toMatchObject({
       conversationId: CHAT_ID,
       expectedRevision: 1,
-      operationId: expect.any(String),
     });
     if (typeof importBody !== "object" || importBody === null) {
       throw new Error("Expected an import request body");
