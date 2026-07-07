@@ -471,7 +471,15 @@
 <p>The main AI chat endpoint for ryOS that powers the Chats application. This endpoint handles conversational AI interactions with the "Ryo" persona, supports multiple AI providers, and includes extensive tool calling capabilities for controlling the ryOS system.</p>
 <p>This endpoint is implemented with the shared <code>apiHandler</code> utility and optional auth via <code>request-auth</code>.</p>
 <h2>Endpoint</h2>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/chat</code></td><td>Main AI chat with streaming responses and tool calling</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/chat</code></td><td>Main AI chat with streaming responses and tool calling</td></tr><tr><td>GET</td><td><code>/api/ai/conversations/:channel</code></td><td>Read the authenticated user's paginated <code>chat</code> or <code>assistant</code> history</td></tr><tr><td>POST</td><td><code>/api/ai/conversations/:channel/import</code></td><td>One-time import into an empty server conversation</td></tr><tr><td>POST</td><td><code>/api/ai/conversations/:channel/reset</code></td><td>Clear history and rotate to a new conversation ID</td></tr><tr><td>POST</td><td><code>/api/ai/attachments</code></td><td>Upload an authenticated chat image</td></tr><tr><td>GET</td><td><code>/api/ai/attachments/:id</code></td><td>Read an authenticated chat image</td></tr></tbody></table>
+<h2>Server conversation history</h2>
+<p>Authenticated <code>chat</code> and floating <code>assistant</code> conversations are stored separately. The server is the canonical history: a normal authenticated request appends one user action, loads prior messages from Redis, streams one response, then commits only the assembled assistant message. Clients do not resend or overwrite the stored transcript. The server assigns sequence numbers, maintains a monotonic revision, and keeps at most 200 messages within a 4 MiB history budget. Completed AI SDK message parts are retained, including text, tool state, sources, and private image references. A message may contain up to 128,000 text characters and 768 KiB of serialized parts.</p>
+<code>GET /api/ai/conversations/:channel</code> accepts <code>limit</code> (1–100) and an opaque
+<code>cursor</code>. Pages contain chronological messages and a <code>nextCursor</code>. A cursor
+from a cleared conversation returns <code>409 conversation_changed</code>.
+<p>Import and reset requests use operation IDs for idempotency. Import additionally requires the current conversation ID and revision <code>0</code>; it is rejected once the server conversation contains messages or after that conversation has been reset. Reset requires the current conversation ID and returns a new ID. It also schedules memory extraction from the cleared server snapshot exactly once for that reset operation. Conversation records are removed by account deletion.</p>
+<h3>Realtime cross-device updates</h3>
+<p>Every canonical conversation write is announced on the owner's authorized <code>private-ai-{username}</code> realtime channel as an <code>ai-conversation-updated</code> event carrying <code>{ channel, conversationId, revision, reason, operationId }</code> with <code>reason</code> one of <code>turn-begin</code>, <code>turn-complete</code>, <code>greeting</code>, <code>import</code>, or <code>reset</code>. Other signed-in devices listening on the channel re-hydrate the conversation immediately (the user's message appears at <code>turn-begin</code>, the assistant reply at <code>turn-complete</code>); the originating device recognizes its own <code>operationId</code> and skips the echo. Delivery is best-effort — the focus/visibility refresh remains the catch-up path.</p>
 <h2>Request</h2>
 <h3>Headers</h3>
 <table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Yes<em></td><td>Bearer token (<code>Bearer {token}</code>)</td></tr><tr><td><code>X-Username</code></td><td>Yes</em></td><td>Username paired with the token</td></tr><tr><td><code>Content-Type</code></td><td>Yes</td><td>Must be <code>application/json</code></td></tr></tbody></table>
@@ -481,9 +489,6 @@
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>model</code></td><td>string</td><td>No</td><td>Override the AI model (takes precedence over body parameter)</td></tr></tbody></table>
 <h3>Body</h3>
 <pre><code>interface ChatRequest {
-  // Array of conversation messages
-  messages: UIMessage[];
-  
   // AI model to use (optional, defaults to "gpt-5.5")
   model?: SupportedModel;
   
@@ -492,6 +497,25 @@
 
   // System state context (optional but recommended)
   systemState?: SystemState;
+
+  // Required for server-synced authenticated turns. Obtain these values from
+  // GET /api/ai/conversations/:channel and use a new operationId per request.
+  conversation?: {
+    id: string;
+    revision: number;
+    operationId: string;
+  };
+
+  // Supplied by AI SDK clients when replacing an assistant response.
+  trigger?: "submit-message" | "regenerate-message";
+  messageId?: string;
+
+  // Authenticated submit: only the current user message or assistant tool
+  // continuation. Omit for regeneration.
+  message?: UIMessage;
+
+  // Anonymous requests only: the complete local history.
+  messages?: UIMessage[];
 }
 
 interface UIMessage {
@@ -587,8 +611,20 @@ interface TrackInfo {
 }</code></pre>
 <h2>Response</h2>
 <p>The endpoint returns a <strong>Server-Sent Events (SSE)</strong> stream using the Vercel AI SDK's UI message stream format.</p>
-<p>If <code>proactiveGreeting</code> is <code>true</code>, the endpoint returns JSON instead of SSE:</p>
-<pre><code>{ "greeting": "..." }</code></pre>
+<p>If <code>proactiveGreeting</code> is <code>true</code> (authenticated only), the endpoint returns JSON instead of SSE. The greeting is <strong>server-owned</strong>: eligibility is decided against the canonical conversation (empty thread, or last message idle for 5+ minutes and not already a greeting, and no turn in flight), and the generated greeting is persisted as a real conversation message (<code>proactive-&lt;uuid&gt;</code> id) so it survives hydration and syncs across devices.</p>
+<pre><code>{
+  "greeting": "hey, how's the cursor roadmap coming along?",
+  "message": {
+    "id": "proactive-6f0f…",
+    "seq": 12,
+    "role": "assistant",
+    "parts": [{ "type": "text", "text": "hey, how's the cursor roadmap coming along?" }],
+    "createdAt": "2026-07-07T05:00:00.000Z"
+  },
+  "conversation": { "id": "…", "revision": 4, "…": "…" }
+}</code></pre>
+<p>When the greeting is skipped (not eligible, no memories, generation failure, or a conflicting write won the race), the response is:</p>
+<pre><code>{ "greeting": null, "reason": "conversation_active" }</code></pre>
 <h3>Stream Format</h3>
 <p>The response uses <code>Content-Type: text/event-stream</code> and streams data in the following format:</p>
 <pre><code>data: {"type":"text-delta","textDelta":"Hello"}
@@ -597,7 +633,7 @@ data: {"type":"tool-call","toolCallId":"...","toolName":"launchApp","args":{...}
 data: {"type":"tool-result","toolCallId":"...","result":{...}}
 data: {"type":"finish","finishReason":"stop"}</code></pre>
 <h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Messages array is missing or malformed</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Requested model is not supported</td></tr><tr><td>400</td><td><code>Invalid JSON</code></td><td>Request body is not valid JSON</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Request origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Only POST requests are accepted</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded for the user</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Server-side error</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>invalid_messages</code></td><td>The current action or anonymous message array is missing or malformed</td></tr><tr><td>400</td><td><code>invalid_chat_trigger</code></td><td><code>trigger</code> is not an AI SDK submit or regenerate action</td></tr><tr><td>400</td><td><code>invalid_conversation_action</code></td><td>An authenticated submit is not a user message or assistant continuation</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Requested model is not supported</td></tr><tr><td>400</td><td><code>Invalid JSON</code></td><td>Request body is not valid JSON</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Request origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Only POST requests are accepted</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded for the user</td></tr><tr><td>400</td><td><code>invalid_conversation_context</code></td><td>Conversation ID, revision, or operation ID is malformed</td></tr><tr><td>401</td><td><code>conversation_auth_required</code></td><td>An anonymous request supplied authenticated conversation context</td></tr><tr><td>409</td><td><code>conversation_changed</code></td><td>The conversation was reset on another client</td></tr><tr><td>409</td><td><code>revision_conflict</code></td><td>Another client committed a newer turn</td></tr><tr><td>409</td><td><code>message_id_conflict</code></td><td>A message ID was reused with different content</td></tr><tr><td>409</td><td><code>operation_replayed</code></td><td>The same chat operation was already accepted</td></tr><tr><td>422</td><td><code>message_too_large</code></td><td>A message exceeds its text or serialized size limit</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Server-side error</td></tr></tbody></table>
 <p>Authentication is optional. Partial, stale, or invalid credentials are treated as anonymous rather than blocking the chat request.</p>
 <h4>Rate Limit Error Response</h4>
 <pre><code>interface RateLimitError {
@@ -743,7 +779,14 @@ Render an emoji aquarium in the chat bubble.
 <pre><code>{}  // No parameters</code></pre>
 <h2>Example Usage</h2>
 <h3>Basic Chat Request</h3>
-<pre><code>const response = await fetch('/api/chat', {
+<pre><code>const history = await fetch('/api/ai/conversations/chat', {
+  headers: {
+    'Authorization': `Bearer ${authToken}`,
+    'X-Username': 'myusername'
+  }
+}).then(response =&gt; response.json());
+
+const response = await fetch('/api/chat', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -751,10 +794,18 @@ Render an emoji aquarium in the chat bubble.
     'X-Username': 'myusername'
   },
   body: JSON.stringify({
-    messages: [
-      { role: 'user', content: 'Hello, Ryo!' }
-    ],
-      model: 'sonnet-4.6',
+    conversation: {
+      id: history.conversation.id,
+      revision: history.conversation.revision,
+      operationId: crypto.randomUUID()
+    },
+    trigger: 'submit-message',
+    message: {
+      id: crypto.randomUUID(),
+      role: 'user',
+      parts: [{ type: 'text', text: 'Hello, Ryo!' }]
+    },
+    model: 'sonnet-4.6',
     systemState: {
       username: 'myusername',
       locale: 'en',
