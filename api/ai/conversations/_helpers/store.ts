@@ -585,6 +585,24 @@ const PENDING_CLIENT_TOOL_STATES = new Set([
   "approval-responded",
 ]);
 
+/**
+ * JSON.stringify with recursively sorted object keys. The server-persisted
+ * copy of a message part and the client's streamed copy are built by
+ * different code paths, so plain JSON.stringify equality is sensitive to
+ * harmless key-order drift.
+ */
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, entry: unknown) => {
+    if (!isRecord(entry)) return entry;
+    return Object.keys(entry)
+      .sort()
+      .reduce<Record<string, unknown>>((sorted, key) => {
+        sorted[key] = entry[key];
+        return sorted;
+      }, {});
+  });
+}
+
 function getClientToolPart(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value)) return null;
   const type = getString(value.type);
@@ -597,6 +615,23 @@ function getClientToolPart(value: unknown): Record<string, unknown> | null {
     return null;
   }
   return value;
+}
+
+/**
+ * Provider-executed tool parts (e.g. OpenAI `web_search`) run inside the
+ * model provider; the client can never legitimately change them, but its
+ * streamed copy routinely differs from the server-persisted one (provider
+ * metadata, field presence). Continuations tolerate that drift and keep the
+ * stored copy canonical.
+ */
+function isProviderExecutedToolPart(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  const type = getString(value.type);
+  return (
+    (type === "dynamic-tool" || !!type?.startsWith("tool-")) &&
+    typeof value.toolCallId === "string" &&
+    value.providerExecuted === true
+  );
 }
 
 function isTerminalClientToolPart(part: Record<string, unknown>): boolean {
@@ -625,10 +660,18 @@ function getClientToolIdentity(part: Record<string, unknown>): unknown {
   };
 }
 
-function assertValidAssistantContinuation(
+/**
+ * Validate an assistant continuation against the stored latest assistant
+ * message and return the canonical merged message: stored parts stay
+ * authoritative everywhere except for valid pending→terminal client tool
+ * transitions, which adopt the incoming part. Benign drift in
+ * provider-executed tool parts is tolerated (stored copy kept); any other
+ * content change is rejected so a client cannot rewrite assistant content.
+ */
+function buildValidatedAssistantContinuation(
   document: StoredConversation,
   message: unknown,
-): void {
+): Omit<AIConversationMessage, "seq"> {
   const [incoming] = sanitizeAIConversationMessages([message]);
   const latest = document.messages.at(-1);
   if (
@@ -647,10 +690,11 @@ function assertValidAssistantContinuation(
   }
 
   let advancedClientTool = false;
-  for (let index = 0; index < latest.parts.length; index += 1) {
-    const existingPart = latest.parts[index];
+  const mergedParts = latest.parts.map((existingPart, index) => {
     const incomingPart = incoming.parts[index];
-    if (JSON.stringify(existingPart) === JSON.stringify(incomingPart)) continue;
+    if (stableStringify(existingPart) === stableStringify(incomingPart)) {
+      return existingPart;
+    }
 
     const existingTool = getClientToolPart(existingPart);
     const incomingTool = getClientToolPart(incomingPart);
@@ -660,17 +704,28 @@ function assertValidAssistantContinuation(
       PENDING_CLIENT_TOOL_STATES.has(String(existingTool.state)) &&
       isTerminalClientToolPart(incomingTool) &&
       incomingTool.preliminary !== true &&
-      JSON.stringify(getClientToolIdentity(existingTool)) ===
-        JSON.stringify(getClientToolIdentity(incomingTool));
-    if (!transitionIsValid) {
-      throw new AIConversationError(
-        "message_id_conflict",
-        422,
-        "Assistant continuation may only complete pending client tool calls",
-      );
+      stableStringify(getClientToolIdentity(existingTool)) ===
+        stableStringify(getClientToolIdentity(incomingTool));
+    if (transitionIsValid) {
+      advancedClientTool = true;
+      return incomingPart;
     }
-    advancedClientTool = true;
-  }
+
+    if (
+      isProviderExecutedToolPart(existingPart) &&
+      isProviderExecutedToolPart(incomingPart) &&
+      Reflect.get(existingPart, "toolCallId") ===
+        Reflect.get(incomingPart, "toolCallId")
+    ) {
+      return existingPart;
+    }
+
+    throw new AIConversationError(
+      "message_id_conflict",
+      422,
+      "Assistant continuation may only complete pending client tool calls",
+    );
+  });
 
   if (!advancedClientTool) {
     throw new AIConversationError(
@@ -679,6 +734,13 @@ function assertValidAssistantContinuation(
       "Assistant continuation must complete a pending client tool call",
     );
   }
+
+  return {
+    id: latest.id,
+    role: latest.role,
+    parts: mergedParts,
+    createdAt: latest.createdAt,
+  };
 }
 
 /**
@@ -810,13 +872,16 @@ async function writeAIConversationMessages(
         return { document, operationApplied: false };
       }
       assertExpectedDocument(document, input);
+      let messagesToMerge = input.messages;
       if (input.requireAssistantContinuation) {
-        assertValidAssistantContinuation(document, input.messages[0]);
+        messagesToMerge = [
+          buildValidatedAssistantContinuation(document, input.messages[0]),
+        ];
       }
 
       const messagesChanged = mergeConversationMessages(
         document,
-        input.messages,
+        messagesToMerge,
       );
       appendOperation(document, input.operationId);
       if (messagesChanged) {
