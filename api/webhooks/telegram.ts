@@ -44,8 +44,6 @@ import {
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
 } from "../_utils/voice.js";
-import { getStoredUserRecord } from "../_utils/auth/_user-record.js";
-
 export const runtime = "nodejs";
 export const maxDuration = 80;
 const TELEGRAM_STOP_COMMANDS = ["stop", "cancel"];
@@ -442,12 +440,6 @@ export default async function handler(
     sendJson(res, 200, { success: true, linked: false, reason: "not-linked" });
     return;
   }
-  const linkedUserAccount = await getStoredUserRecord(
-    redis,
-    linkedAccount.username
-  );
-  const accountCreatedAt = linkedUserAccount?.createdAt;
-
   if (matchesTelegramCommand(parsedUpdate.text, TELEGRAM_STOP_COMMANDS)) {
     await handleTelegramCommandUpdate({
       botToken,
@@ -655,7 +647,6 @@ export default async function handler(
     channel: "telegram",
     messages: conversationMessages,
     username: linkedAccount.username,
-    accountCreatedAt,
     redis,
     model: telegramModel,
     cursorRepoAgentNotifyTelegram: {

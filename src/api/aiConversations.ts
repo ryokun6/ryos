@@ -3,6 +3,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
   isAIConversationChannel,
+  isAIProactiveGreetingMessageId,
   type AIConversation,
   type AIConversationChannel,
   type AIConversationMessage,
@@ -43,7 +44,7 @@ type ProjectedAIConversationMessage = {
 
 export interface AIConversationImportRequestBody {
   conversationId: string;
-  expectedRevision: 0;
+  expectedRevision: number;
   operationId: string;
   messages: ProjectedAIConversationMessage[];
   historyTruncated: boolean;
@@ -533,11 +534,13 @@ function groupLegacyImportTurns(
 
 export function buildAIConversationImportRequest({
   conversationId,
+  expectedRevision = 0,
   operationId,
   messages,
   requestByteLimit = AI_CONVERSATION_IMPORT_REQUEST_MAX_BYTES,
 }: {
   conversationId: string;
+  expectedRevision?: number;
   operationId: string;
   messages: readonly AIChatMessage[];
   requestByteLimit?: number;
@@ -571,7 +574,7 @@ export function buildAIConversationImportRequest({
       turn.payloadTruncated;
     const candidate: AIConversationImportRequestBody = {
       conversationId,
-      expectedRevision: 0,
+      expectedRevision,
       operationId,
       messages: candidateMessages,
       historyTruncated: candidatePayloadTruncated,
@@ -595,7 +598,7 @@ export function buildAIConversationImportRequest({
     selected.length !== projected.length;
   const request: AIConversationImportRequestBody = {
     conversationId,
-    expectedRevision: 0,
+    expectedRevision,
     operationId,
     messages: selected,
     historyTruncated,
@@ -734,6 +737,7 @@ async function importLocalConversation(
   const operationId = createLocalOperationId(owner, channel);
   const request = buildAIConversationImportRequest({
     conversationId: conversation.id,
+    expectedRevision: conversation.revision,
     operationId,
     messages: await externalizeLocalImages(messages),
   });
@@ -793,11 +797,17 @@ export async function loadAIConversation(
         ? { ...current, stale: true }
         : { ...loaded, stale: true };
     }
+    // Legacy import is allowed while the server has no real content: an empty
+    // conversation, or one whose only messages are server-generated proactive
+    // greetings (the server drops those in favor of the imported history).
     if (
       input.importLocalIfEmpty !== false &&
       loaded.conversation.canImportLegacy &&
-      loaded.conversation.revision === 0 &&
-      loaded.messages.length === 0
+      loaded.messages.every(
+        (message) =>
+          message.role === "assistant" &&
+          isAIProactiveGreetingMessageId(message.id)
+      )
     ) {
       await importLocalConversation(
         input.channel,

@@ -46,7 +46,6 @@ export async function extractPendingAIConversationResetMemory({
         ...(snapshot.timeZone ? { timeZone: snapshot.timeZone } : {}),
         storeLongTermMemories: true,
         markTodayProcessed: true,
-        accountCreatedAt: snapshot.accountCreatedAt,
         operationScopeId: snapshot.id,
         ...(log ? { log } : {}),
         ...(logError ? { logError } : {}),

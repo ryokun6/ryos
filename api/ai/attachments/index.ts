@@ -3,7 +3,6 @@ import {
   readRequestBodyBuffer,
   RequestBodyTooLargeError,
 } from "../../_utils/request-body.js";
-import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
 import { createAIAttachment } from "./_helpers/store.js";
 import {
   AI_ATTACHMENT_MAX_BYTES,
@@ -32,18 +31,10 @@ export default apiHandler(
       return;
     }
 
-    const account = await getStoredUserRecord(redis, user!.username);
-    if (typeof account?.createdAt !== "number") {
-      logger.response(409, Date.now() - startTime);
-      res.status(409).json({ error: "account_changed" });
-      return;
-    }
-
     try {
       const attachment = await createAIAttachment({
         redis,
         username: user!.username,
-        accountCreatedAt: account.createdAt,
         mediaType,
         bytes: await readRequestBodyBuffer(req, AI_ATTACHMENT_MAX_BYTES),
       });
@@ -63,7 +54,7 @@ export default apiHandler(
         res.status(429).json({ error: error.message });
         return;
       }
-      if (error instanceof Error && error.message === "account_changed") {
+      if (error instanceof Error && error.message === "account_deleted") {
         logger.response(409, Date.now() - startTime);
         res.status(409).json({ error: error.message });
         return;

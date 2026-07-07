@@ -43,10 +43,7 @@ import {
 } from "../_utils/_aiModels.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import { createRyoToolLoopAgent } from "../_utils/ryo-agent.js";
-import {
-  getStoredUserRecord,
-  getStoredUserTimeZone,
-} from "../_utils/auth/_user-record.js";
+import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -151,7 +148,6 @@ export default async function handler(
 
   const redis = createRedis();
   const username = TELEGRAM_HEARTBEAT_TARGET_USERNAME;
-  const account = await getStoredUserRecord(redis, username);
   const userTimeZone =
     (await getStoredUserTimeZone(redis, username)) || TELEGRAM_HEARTBEAT_TIME_ZONE;
   const linkedAccount = await getLinkedTelegramAccountByUsername(redis, username);
@@ -207,8 +203,7 @@ export default async function handler(
       username,
       (...args: unknown[]) => logger.info("[TelegramHeartbeatDailyNotes]", args),
       (...args: unknown[]) => logger.error("[TelegramHeartbeatDailyNotes]", args),
-      userTimeZone,
-      account?.createdAt
+      userTimeZone
     );
     if (processedNotes.processed > 0 || processedNotes.skippedDates.length > 0) {
       logger.info("Telegram heartbeat processed past daily notes", {
@@ -244,10 +239,7 @@ export default async function handler(
     heartbeatHistoryContext.latestHeartbeatTimestamp
   );
 
-  if (
-    newTelegramConversation.length > 0 &&
-    typeof account?.createdAt === "number"
-  ) {
+  if (newTelegramConversation.length > 0) {
     try {
       const extractionResult = await extractMemoriesFromConversation({
         redis,
@@ -262,7 +254,6 @@ export default async function handler(
         timeZone: userTimeZone,
         storeLongTermMemories: false,
         markTodayProcessed: false,
-        accountCreatedAt: account.createdAt,
         log: (...args: unknown[]) => logger.info("[TelegramHeartbeatChatDelta]", args),
         logError: (...args: unknown[]) =>
           logger.error("[TelegramHeartbeatChatDelta]", args),
@@ -381,7 +372,6 @@ export default async function handler(
     channel: "telegram",
     messages: conversationMessages,
     username,
-    accountCreatedAt: account?.createdAt,
     redis,
     model: telegramModel,
     timeZone: userTimeZone,

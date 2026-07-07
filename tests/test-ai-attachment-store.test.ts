@@ -305,14 +305,10 @@ function seedStoredObject(storageUrl: string, bytes = PNG_1X1): void {
   storedObjects.set(pathnameFromStorageUrl(storageUrl), new Uint8Array(bytes));
 }
 
-function createPng(
-  redis: AttachmentRedis,
-  accountCreatedAt = ACCOUNT_CREATED_AT,
-) {
+function createPng(redis: AttachmentRedis) {
   return createAIAttachment({
     redis,
     username: USERNAME,
-    accountCreatedAt,
     mediaType: "image/png",
     bytes: PNG_1X1,
   });
@@ -698,20 +694,22 @@ describe("AI attachment locking and quota", () => {
     ).toEqual([]);
 
     releaseUpload();
-    await expect(creation).rejects.toThrow("account_changed");
+    await expect(creation).rejects.toThrow("account_deleted");
     expect(deletedPathnames).toContain(uploadPathname);
     expect(
       await redis.smembers(redisKeys.chat.aiAttachments(USERNAME)),
     ).toEqual([]);
 
     beforeUpload = null;
-    await expect(createPng(redis)).rejects.toThrow("account_changed");
-    await redis.del(redisKeys.chat.aiConversationTombstone(USERNAME));
-    await seedAccount(redis, ACCOUNT_CREATED_AT + 1);
-    await expect(createPng(redis, ACCOUNT_CREATED_AT)).rejects.toThrow(
-      "account_changed",
-    );
+    await expect(createPng(redis)).rejects.toThrow("account_deleted");
     expect(uploadPrivateStoredObject).toHaveBeenCalledTimes(1);
+
+    await redis.del(redisKeys.chat.aiConversationTombstone(USERNAME));
+    await seedAccount(redis);
+    await expect(createPng(redis)).resolves.toMatchObject({
+      mediaType: "image/png",
+    });
+    expect(uploadPrivateStoredObject).toHaveBeenCalledTimes(2);
   });
 
   test("cannot resurrect an object when purge wins after upload", async () => {
@@ -731,7 +729,7 @@ describe("AI attachment locking and quota", () => {
     await deleteAllAIAttachments(redis, USERNAME);
     redis.allowFinalization();
 
-    await expect(creation).rejects.toThrow("account_changed");
+    await expect(creation).rejects.toThrow("account_deleted");
     expect(storedObjects.size).toBe(0);
     expect(
       await redis.smembers(redisKeys.chat.aiAttachments(USERNAME)),
@@ -1198,7 +1196,6 @@ describe("AI attachment cleanup", () => {
       channel: "assistant",
       conversationId: initial.conversation.id,
       operationId: "reset-with-attachment",
-      accountCreatedAt: ACCOUNT_CREATED_AT,
     });
     expect(
       (
@@ -1244,11 +1241,7 @@ describe("AI attachment cleanup", () => {
     expect(storedObjects.has(getAIAttachmentPath(USERNAME, name))).toBe(false);
   });
 
-  test("wires account generation into upload and durable reset cleanup", () => {
-    const uploadRoute = readFileSync(
-      join(import.meta.dir, "../api/ai/attachments/index.ts"),
-      "utf8",
-    );
+  test("wires durable reset cleanup", () => {
     const resetRoute = readFileSync(
       join(import.meta.dir, "../api/ai/conversations/[channel]/reset.ts"),
       "utf8",
@@ -1261,7 +1254,6 @@ describe("AI attachment cleanup", () => {
       join(import.meta.dir, "../api/ai/attachments/_helpers/store.ts"),
       "utf8",
     );
-    expect(uploadRoute).toContain("accountCreatedAt: account.createdAt");
     expect(attachmentStore).toContain("ATTACHMENT_LOCK_TTL_SECONDS = 120");
     expect(resetRoute).not.toContain(
       "deleteUnreferencedAIAttachmentsForMessages",

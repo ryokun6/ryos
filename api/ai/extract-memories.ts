@@ -26,14 +26,8 @@ import {
   normalizeTimeZone,
   markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
-  isCurrentMemoryAccount,
-  isValidMemoryAccountCreatedAt,
-  withCurrentAccountMemoryMutation,
-} from "../_utils/_memory.js";
-
-export {
-  withCurrentAccountMemoryMutation,
-  type CurrentAccountMemoryMutationResult,
+  isMemoryAccountActive,
+  withMemoryAccountMutation,
 } from "../_utils/_memory.js";
 
 export const runtime = "nodejs";
@@ -118,7 +112,6 @@ export interface ExtractMemoriesFromConversationOptions {
   timeZone?: string;
   storeLongTermMemories?: boolean;
   markTodayProcessed?: boolean;
-  accountCreatedAt: number;
   operationScopeId?: string;
   log?: LogFn;
   logError?: LogFn;
@@ -129,7 +122,7 @@ export interface ExtractMemoriesFromConversationResult {
   dailyNotes: number;
   analyzed: number;
   message: string;
-  skippedReason?: "empty-messages" | "conversation-too-short" | "account_changed";
+  skippedReason?: "empty-messages" | "conversation-too-short" | "account_deleted";
 }
 
 export function getChatMessageTimestamp(msg: ChatMessage): number | null {
@@ -249,7 +242,6 @@ export async function extractMemoriesFromConversation({
   timeZone,
   storeLongTermMemories = true,
   markTodayProcessed = true,
-  accountCreatedAt,
   operationScopeId,
   log = console.log,
   logError = console.error,
@@ -264,16 +256,16 @@ export async function extractMemoriesFromConversation({
     };
   }
 
-  const accountIsCurrent = (): Promise<boolean> =>
-    isCurrentMemoryAccount({ redis, username, accountCreatedAt });
-  const accountChanged = (): ExtractMemoriesFromConversationResult => ({
+  const accountIsActive = (): Promise<boolean> =>
+    isMemoryAccountActive(redis, username);
+  const accountDeleted = (): ExtractMemoriesFromConversationResult => ({
     extracted: 0,
     dailyNotes: 0,
     analyzed: 0,
-    message: "Account changed before memory extraction completed",
-    skippedReason: "account_changed",
+    message: "Account was deleted before memory extraction completed",
+    skippedReason: "account_deleted",
   });
-  if (!(await accountIsCurrent())) return accountChanged();
+  if (!(await accountIsActive())) return accountDeleted();
 
   const userTimeZone = normalizeTimeZone(timeZone);
   const conversationMessages = messages.reduce<
@@ -370,7 +362,7 @@ export async function extractMemoriesFromConversation({
       `Extract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
     temperature: 0.3,
   });
-  if (!(await accountIsCurrent())) return accountChanged();
+  if (!(await accountIsActive())) return accountDeleted();
 
   log("[extractMemories] Extraction complete", {
     username,
@@ -378,10 +370,9 @@ export async function extractMemoriesFromConversation({
     longTermMemories: result.longTermMemories.length,
   });
 
-  const dailyNotesMutation = await withCurrentAccountMemoryMutation({
+  const dailyNotesMutation = await withMemoryAccountMutation({
     redis,
     username,
-    accountCreatedAt,
     mutation: async () => {
       let stored = 0;
       const dates = new Set<string>();
@@ -419,8 +410,8 @@ export async function extractMemoriesFromConversation({
       return { stored, dates };
     },
   });
-  if (dailyNotesMutation.status === "account_changed") {
-    return accountChanged();
+  if (dailyNotesMutation.status === "account_deleted") {
+    return accountDeleted();
   }
   const dailyNotesStored = dailyNotesMutation.value.stored;
   const touchedDates = dailyNotesMutation.value.dates;
@@ -480,10 +471,9 @@ export async function extractMemoriesFromConversation({
       }
 
       const mode = targetKeyExists ? "update" : "add";
-      const memoryMutation = await withCurrentAccountMemoryMutation({
+      const memoryMutation = await withMemoryAccountMutation({
         redis,
         username,
-        accountCreatedAt,
         mutation: async () => {
           const storeResult = await upsertMemory(
             redis,
@@ -516,8 +506,8 @@ export async function extractMemoriesFromConversation({
           return { storeResult, deletedKeys };
         },
       });
-      if (memoryMutation.status === "account_changed") {
-        return accountChanged();
+      if (memoryMutation.status === "account_deleted") {
+        return accountDeleted();
       }
       const { storeResult, deletedKeys } = memoryMutation.value;
 
@@ -557,10 +547,9 @@ export async function extractMemoriesFromConversation({
     });
     if (datesToMarkProcessed.length > 0) {
       const markProcessedMutation =
-        await withCurrentAccountMemoryMutation({
+        await withMemoryAccountMutation({
           redis,
           username,
-          accountCreatedAt,
           mutation: async () => {
             await Promise.all(
               datesToMarkProcessed.map((date) =>
@@ -569,8 +558,8 @@ export async function extractMemoriesFromConversation({
             );
           },
         });
-      if (markProcessedMutation.status === "account_changed") {
-        return accountChanged();
+      if (markProcessedMutation.status === "account_deleted") {
+        return accountDeleted();
       }
     }
   }
@@ -607,13 +596,8 @@ export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
       ? headerTimeZoneRaw[0]
       : headerTimeZoneRaw;
     const account = await getStoredUserRecord(redis, username);
-    if (!isValidMemoryAccountCreatedAt(account?.createdAt)) {
-      logger.response(409, Date.now() - startTime);
-      res.status(409).json({ error: "account_changed" });
-      return;
-    }
     const userTimeZone = normalizeTimeZone(
-      bodyTimeZone || headerTimeZone || account.timeZone
+      bodyTimeZone || headerTimeZone || account?.timeZone
     );
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -631,7 +615,6 @@ export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
         timeZone: userTimeZone,
         storeLongTermMemories: true,
         markTodayProcessed: true,
-        accountCreatedAt: account.createdAt,
         log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
         logError: (...args: unknown[]) => logger.error(String(args[0]), args[1]),
       });

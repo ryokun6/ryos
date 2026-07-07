@@ -2,7 +2,6 @@ import { z } from "zod";
 import { waitUntil } from "@vercel/functions";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { getStoredUserRecord } from "../../../_utils/auth/_user-record.js";
-import { isValidMemoryAccountCreatedAt } from "../../../_utils/_memory.js";
 import {
   AIConversationError,
   getAIConversationSummary,
@@ -38,11 +37,6 @@ export default apiHandler(
       return;
     }
     const account = await getStoredUserRecord(redis, user!.username);
-    if (!isValidMemoryAccountCreatedAt(account?.createdAt)) {
-      logger.response(409, Date.now() - startTime);
-      res.status(409).json({ error: "account_changed" });
-      return;
-    }
 
     try {
       const result = await resetAIConversation({
@@ -51,8 +45,7 @@ export default apiHandler(
         channel,
         conversationId: body!.conversationId,
         operationId: body!.operationId,
-        accountCreatedAt: account.createdAt,
-        ...(account.timeZone ? { timeZone: account.timeZone } : {}),
+        ...(account?.timeZone ? { timeZone: account.timeZone } : {}),
       });
       const memoryProcessing = extractPendingAIConversationResetMemory({
         redis,

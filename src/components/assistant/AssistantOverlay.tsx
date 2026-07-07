@@ -1715,7 +1715,7 @@ function AssistantOverlayInner() {
             )}
           >
             <div
-              className="relative rounded-[8px] border px-3 pt-1.5 pb-1 shadow-[2px_2px_0_rgba(0,0,0,0.35)] font-geneva-12 text-[12px] leading-snug text-black"
+              className="relative rounded-[8px] border px-3 pt-1.5 pb-1 shadow-[2px_2px_0_rgba(0,0,0,0.35)] font-geneva-12 text-[13px] leading-snug text-black"
               style={{
                 backgroundColor: character.accent.bubbleBg,
                 borderColor: character.accent.bubbleBorder,
@@ -1786,7 +1786,7 @@ function AssistantOverlayInner() {
                     onCompositionEnd={handleInputCompositionEnd}
                     placeholder={t("common.assistant.inputPlaceholder")}
                     aria-label={t("common.assistant.inputPlaceholder")}
-                    className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-[12px] leading-tight font-geneva-12 placeholder:text-black/45 focus:outline-none focus:ring-0"
+                    className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-[13px] leading-tight font-geneva-12 placeholder:text-black/45 focus:outline-none focus:ring-0"
                   />
                   <button
                     type="submit"
