@@ -17,12 +17,20 @@ describe("standalone API request body limits", () => {
     expect(getRequestBodyLimit("/api/ai/attachments/")).toBe(
       AI_ATTACHMENT_MAX_BYTES,
     );
-    expect(getRequestBodyLimit("/api/ai/conversations/chat/import/")).toBe(
+    expect(getRequestBodyLimit("/api/chat/")).toBe(
       MAX_AI_CONVERSATION_REQUEST_BYTES,
     );
-    expect(
-      getRequestBodyLimit("/api/ai/conversations/assistant/import///"),
-    ).toBe(MAX_AI_CONVERSATION_REQUEST_BYTES);
+    expect(getRequestBodyLimit("/api/ai/extract-memories///")).toBe(
+      MAX_AI_CONVERSATION_REQUEST_BYTES,
+    );
+    // The legacy import route is gone; conversation routes use the default
+    // standalone body limit (55 MiB) rather than a dedicated AI limit.
+    expect(getRequestBodyLimit("/api/ai/conversations/chat/import/")).toBe(
+      55 * MEBIBYTE,
+    );
+    expect(getRequestBodyLimit("/api/ai/conversations/chat")).toBe(
+      55 * MEBIBYTE,
+    );
   });
 
   test("rejects an oversized declared Content-Length before reading", async () => {

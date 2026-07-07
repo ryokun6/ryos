@@ -1,18 +1,20 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
-  AI_CONVERSATION_IMPORT_REQUEST_MAX_BYTES,
   AI_CONVERSATION_REQUEST_MAX_BYTES,
   AI_CONVERSATION_TOOL_PAYLOAD_OMISSION,
   buildAIConversationRequestBody,
-  buildAIConversationImportRequest,
   clearAIConversationSessionCache,
   getAIConversationRequestContext,
+  invalidateAIConversationSession,
   loadAIConversation,
-  projectAIConversationMessages,
+  mergeAIConversationDelta,
   resetAIConversationSession,
 } from "../src/api/aiConversations";
 import type { AIChatMessage } from "../src/types/chat";
-import type { AIConversationPart } from "../src/shared/contracts/aiConversation";
+import type {
+  AIConversationMessage,
+  AIConversationPart,
+} from "../src/shared/contracts/aiConversation";
 
 const originalFetch = globalThis.fetch;
 const CHAT_ID = "11111111-1111-4111-8111-111111111111";
@@ -32,28 +34,46 @@ function message(
   };
 }
 
-function pageResponse({
+function serverMessage(
+  id: string,
+  seq: number,
+  role: "user" | "assistant",
+  parts: AIConversationPart[]
+): AIConversationMessage {
+  return {
+    id,
+    seq,
+    role,
+    parts,
+    createdAt: `2026-07-06T00:00:0${Math.min(seq, 9)}.000Z`,
+  };
+}
+
+function textServerMessage(
+  id: string,
+  seq: number,
+  role: "user" | "assistant",
+  text: string
+): AIConversationMessage {
+  return serverMessage(id, seq, role, [{ type: "text", text }]);
+}
+
+function snapshotResponse({
   id = CHAT_ID,
   revision = 0,
-  messages = [],
   owner = "alice",
-  canImportLegacy = revision === 0 && messages.length === 0,
-  nextCursor = null,
   historyTruncated = false,
+  messages = [],
+  summaryMessages = messages,
 }: {
   id?: string;
   revision?: number;
   owner?: string;
-  canImportLegacy?: boolean;
-  nextCursor?: string | null;
   historyTruncated?: boolean;
-  messages?: Array<{
-    id: string;
-    seq: number;
-    role: "user" | "assistant";
-    parts: AIConversationPart[];
-    createdAt: string;
-  }>;
+  /** Messages returned in this response (full snapshot or delta slice). */
+  messages?: AIConversationMessage[];
+  /** Messages backing the summary counters (the full canonical thread). */
+  summaryMessages?: AIConversationMessage[];
 } = {}): Response {
   return Response.json({
     owner,
@@ -63,14 +83,30 @@ function pageResponse({
       revision,
       createdAt: "2026-07-06T00:00:00.000Z",
       updatedAt: "2026-07-06T00:00:00.000Z",
-      messageCount: messages.length,
-      oldestSeq: messages[0]?.seq ?? null,
-      newestSeq: messages.at(-1)?.seq ?? null,
+      messageCount: summaryMessages.length,
+      oldestSeq: summaryMessages[0]?.seq ?? null,
+      newestSeq: summaryMessages.at(-1)?.seq ?? null,
       historyTruncated,
-      canImportLegacy,
     },
     messages,
-    page: { nextCursor, hasMore: nextCursor !== null },
+  });
+}
+
+function resetResponse(id = RESET_ID): Response {
+  return Response.json({
+    owner: "alice",
+    conversation: {
+      id,
+      channel: "chat",
+      revision: 0,
+      createdAt: "2026-07-06T00:01:00.000Z",
+      updatedAt: "2026-07-06T00:01:00.000Z",
+      messageCount: 0,
+      oldestSeq: null,
+      newestSeq: null,
+      historyTruncated: false,
+    },
+    reset: true,
   });
 }
 
@@ -105,23 +141,17 @@ describe("AI conversation client", () => {
     let requestCount = 0;
     globalThis.fetch = async () => {
       requestCount += 1;
-      return pageResponse({
+      return snapshotResponse({
         revision: 1,
         messages: [
-          {
-            id: "u1",
-            seq: 1,
-            role: "user",
-            parts: [
-              { type: "text", text: "hello" },
-              {
-                type: "file",
-                mediaType: "image/png",
-                url: "/api/ai/attachments/11111111-1111-4111-8111-111111111111.png",
-              },
-            ],
-            createdAt: "2026-07-06T00:00:00.000Z",
-          },
+          serverMessage("u1", 1, "user", [
+            { type: "text", text: "hello" },
+            {
+              type: "file",
+              mediaType: "image/png",
+              url: "/api/ai/attachments/11111111-1111-4111-8111-111111111111.png",
+            },
+          ]),
         ],
       });
     };
@@ -129,7 +159,6 @@ describe("AI conversation client", () => {
     const loaded = await loadAIConversation({
       channel: "chat",
       username: "Alice",
-      localMessages: [],
     });
     expect(loaded.owner).toBe("alice");
     expect(loaded.messages[0]?.metadata?.createdAt).toBeInstanceOf(Date);
@@ -138,7 +167,6 @@ describe("AI conversation client", () => {
     const context = await getAIConversationRequestContext({
       channel: "chat",
       username: "Alice",
-      localMessages: [],
     });
     expect(context?.id).toBe(CHAT_ID);
     expect(context?.revision).toBe(1);
@@ -146,116 +174,150 @@ describe("AI conversation client", () => {
     expect(requestCount).toBe(1);
   });
 
-  test("imports an owned local transcript only when the server is empty", async () => {
-    const requests: Array<{ method: string; body: unknown }> = [];
-    let getCount = 0;
-    globalThis.fetch = async (_input, init) => {
-      const method = init?.method ?? "GET";
-      requests.push({
-        method,
-        body: typeof init?.body === "string" ? JSON.parse(init.body) : null,
-      });
-      if (method === "POST") {
-        return Response.json({ imported: 2 }, { status: 201 });
+  test("revalidates an invalidated session with an afterSeq delta read", async () => {
+    const urls: string[] = [];
+    const base = [
+      textServerMessage("u1", 1, "user", "hello"),
+      textServerMessage("a1", 2, "assistant", "hi"),
+    ];
+    const appended = textServerMessage("u2", 3, "user", "second turn");
+    globalThis.fetch = async (input) => {
+      urls.push(String(input));
+      if (urls.length === 1) {
+        return snapshotResponse({ revision: 2, messages: base });
       }
-      getCount += 1;
-      return getCount === 1
-        ? pageResponse()
-        : pageResponse({
-            revision: 1,
-            messages: [
-              {
-                id: "u1",
-                seq: 1,
-                role: "user",
-                parts: [{ type: "text", text: "hello" }],
-                createdAt: "2026-07-06T00:00:00.000Z",
-              },
-              {
-                id: "a1",
-                seq: 2,
-                role: "assistant",
-                parts: [{ type: "text", text: "hi" }],
-                createdAt: "2026-07-06T00:00:01.000Z",
-              },
-            ],
-          });
+      return snapshotResponse({
+        revision: 3,
+        messages: [appended],
+        summaryMessages: [...base, appended],
+      });
     };
 
-    const loaded = await loadAIConversation({
+    const first = await loadAIConversation({
       channel: "chat",
       username: "alice",
-      localMessages: [
-        message("u1", "user", "hello"),
-        message("a1", "assistant", "hi"),
-      ],
+    });
+    expect(first.messages.map((entry) => entry.id)).toEqual(["u1", "a1"]);
+
+    invalidateAIConversationSession("chat", "alice");
+    const second = await loadAIConversation({
+      channel: "chat",
+      username: "alice",
     });
 
-    expect(loaded.messages.map((entry) => entry.id)).toEqual(["u1", "a1"]);
-    expect(requests.map((request) => request.method)).toEqual([
-      "GET",
-      "POST",
-      "GET",
+    expect(second.messages.map((entry) => entry.id)).toEqual([
+      "u1",
+      "a1",
+      "u2",
     ]);
-    expect(requests[1]?.body).toMatchObject({
-      conversationId: CHAT_ID,
-      expectedRevision: 0,
-      historyTruncated: false,
+    expect(second.conversation.revision).toBe(3);
+    expect(urls).toHaveLength(2);
+    expect(urls[0]).not.toContain("afterSeq=");
+    expect(urls[1]).toContain("afterSeq=2");
+  });
+
+  test("falls back to one full fetch when the delta no longer lines up", async () => {
+    const urls: string[] = [];
+    globalThis.fetch = async (input) => {
+      urls.push(String(input));
+      if (urls.length === 1) {
+        return snapshotResponse({
+          revision: 2,
+          messages: [
+            textServerMessage("u1", 1, "user", "hello"),
+            textServerMessage("a1", 2, "assistant", "hi"),
+          ],
+        });
+      }
+      if (urls.length === 2) {
+        // Same conversation id, but a regeneration dropped a message: the
+        // merged list can no longer satisfy the summary counters.
+        return snapshotResponse({
+          revision: 3,
+          messages: [],
+          summaryMessages: [textServerMessage("u1", 1, "user", "hello")],
+        });
+      }
+      return snapshotResponse({
+        revision: 3,
+        messages: [textServerMessage("u1", 1, "user", "hello")],
+      });
+    };
+
+    await loadAIConversation({ channel: "chat", username: "alice" });
+    invalidateAIConversationSession("chat", "alice");
+    const reloaded = await loadAIConversation({
+      channel: "chat",
+      username: "alice",
     });
+
+    expect(reloaded.messages.map((entry) => entry.id)).toEqual(["u1"]);
+    expect(urls).toHaveLength(3);
+    expect(urls[1]).toContain("afterSeq=2");
+    expect(urls[2]).not.toContain("afterSeq=");
+  });
+
+  test("merges delta updates that re-minted an existing message's seq", () => {
+    const existing = [
+      textServerMessage("u1", 1, "user", "open Finder"),
+      textServerMessage("a1", 2, "assistant", "opening"),
+    ];
+    const updatedAssistant = textServerMessage(
+      "a1",
+      3,
+      "assistant",
+      "opened Finder"
+    );
+
+    const merged = mergeAIConversationDelta(existing, {
+      owner: "alice",
+      conversation: {
+        id: CHAT_ID,
+        channel: "chat",
+        revision: 3,
+        createdAt: "2026-07-06T00:00:00.000Z",
+        updatedAt: "2026-07-06T00:00:00.000Z",
+        messageCount: 2,
+        oldestSeq: 1,
+        newestSeq: 3,
+        historyTruncated: false,
+      },
+      messages: [updatedAssistant],
+    });
+
+    expect(merged?.map((entry) => entry.id)).toEqual(["u1", "a1"]);
+    expect(merged?.at(-1)).toEqual(updatedAssistant);
   });
 
   test("resets to the server-returned conversation id", async () => {
     globalThis.fetch = async (_input, init) => {
       if (init?.method === "POST") {
-        return Response.json({
-          owner: "alice",
-          conversation: {
-            id: RESET_ID,
-            channel: "chat",
-            revision: 0,
-            createdAt: "2026-07-06T00:01:00.000Z",
-            updatedAt: "2026-07-06T00:01:00.000Z",
-            messageCount: 0,
-            oldestSeq: null,
-            newestSeq: null,
-            historyTruncated: false,
-            canImportLegacy: false,
-          },
-          reset: true,
-        });
+        return resetResponse();
       }
-      return pageResponse({
+      return snapshotResponse({
         revision: 1,
-        messages: [
-          {
-            id: "u1",
-            seq: 1,
-            role: "user",
-            parts: [{ type: "text", text: "hello" }],
-            createdAt: "2026-07-06T00:00:00.000Z",
-          },
-        ],
+        messages: [textServerMessage("u1", 1, "user", "hello")],
       });
     };
 
     const reset = await resetAIConversationSession({
       channel: "chat",
       username: "alice",
-      localMessages: [message("u1", "user", "hello")],
     });
     expect(reset.id).toBe(RESET_ID);
 
     const context = await getAIConversationRequestContext({
       channel: "chat",
       username: "alice",
-      localMessages: [],
     });
     expect(context?.id).toBe(RESET_ID);
   });
 
   test("refreshes once after a reset conflict and keeps repeated resets on the current conversation", async () => {
-    const requests: Array<{ method: string; body: Record<string, unknown> | null }> =
-      [];
+    const requests: Array<{
+      method: string;
+      body: Record<string, unknown> | null;
+    }> = [];
     let getCount = 0;
     let postCount = 0;
     globalThis.fetch = async (_input, init) => {
@@ -269,59 +331,34 @@ describe("AI conversation client", () => {
       if (method === "GET") {
         getCount += 1;
         return getCount === 1
-          ? pageResponse({
+          ? snapshotResponse({
               id: CHAT_ID,
               revision: 2,
-              messages: [
-                {
-                  id: "u1",
-                  seq: 1,
-                  role: "user",
-                  parts: [{ type: "text", text: "stale local turn" }],
-                  createdAt: "2026-07-06T00:00:00.000Z",
-                },
-              ],
+              messages: [textServerMessage("u1", 1, "user", "stale turn")],
             })
-          : pageResponse({ id: CURRENT_ID });
+          : snapshotResponse({ id: CURRENT_ID });
       }
 
       postCount += 1;
       if (postCount === 1) {
         return Response.json({ error: "revision_conflict" }, { status: 409 });
       }
-      return Response.json({
-        owner: "alice",
-        conversation: {
-          id: RESET_ID,
-          channel: "chat",
-          revision: 0,
-          createdAt: "2026-07-06T00:01:00.000Z",
-          updatedAt: "2026-07-06T00:01:00.000Z",
-          messageCount: 0,
-          oldestSeq: null,
-          newestSeq: null,
-          historyTruncated: false,
-          canImportLegacy: false,
-        },
-        reset: true,
-      });
+      return resetResponse();
     };
 
-    await loadAIConversation({
-      channel: "chat",
-      username: "alice",
-      localMessages: [],
-    });
+    await loadAIConversation({ channel: "chat", username: "alice" });
     const reset = await resetAIConversationSession({
       channel: "chat",
       username: "alice",
-      localMessages: [message("local-private", "user", "do not reimport")],
     });
 
     expect(reset.id).toBe(RESET_ID);
+    // The refresh after the conflict tries a delta read first, sees a new
+    // conversation id, and falls back to a full snapshot.
     expect(requests.map((request) => request.method)).toEqual([
       "GET",
       "POST",
+      "GET",
       "GET",
       "POST",
     ]);
@@ -337,22 +374,10 @@ describe("AI conversation client", () => {
     const context = await getAIConversationRequestContext({
       channel: "chat",
       username: "alice",
-      localMessages: [],
     });
     expect(context?.id).toBe(RESET_ID);
 
-    await resetAIConversationSession({
-      channel: "chat",
-      username: "alice",
-      localMessages: [],
-    });
-    expect(requests.map((request) => request.method)).toEqual([
-      "GET",
-      "POST",
-      "GET",
-      "POST",
-      "POST",
-    ]);
+    await resetAIConversationSession({ channel: "chat", username: "alice" });
     expect(
       requests
         .filter((request) => request.method === "POST")
@@ -361,9 +386,7 @@ describe("AI conversation client", () => {
   });
 
   test("keeps cache-cleared same-owner loads from overwriting a new session", async () => {
-    let resolveFirst:
-      | ((response: Response) => void)
-      | undefined;
+    let resolveFirst: ((response: Response) => void) | undefined;
     let requestCount = 0;
     globalThis.fetch = async () => {
       requestCount += 1;
@@ -372,17 +395,12 @@ describe("AI conversation client", () => {
           resolveFirst = resolve;
         });
       }
-      return pageResponse({
-        id: CURRENT_ID,
-        revision: 4,
-        canImportLegacy: false,
-      });
+      return snapshotResponse({ id: CURRENT_ID, revision: 4 });
     };
 
     const staleLoad = loadAIConversation({
       channel: "chat",
       username: "alice",
-      localMessages: [],
     });
     expect(resolveFirst).toBeFunction();
 
@@ -390,293 +408,32 @@ describe("AI conversation client", () => {
     const currentLoad = await loadAIConversation({
       channel: "chat",
       username: "alice",
-      localMessages: [],
     });
     expect(currentLoad.conversation.id).toBe(CURRENT_ID);
 
-    resolveFirst?.(
-      pageResponse({
-        id: CHAT_ID,
-        revision: 1,
-        canImportLegacy: false,
-      })
-    );
+    resolveFirst?.(snapshotResponse({ id: CHAT_ID, revision: 1 }));
     const staleResult = await staleLoad;
     expect(staleResult.stale).toBe(true);
 
     const context = await getAIConversationRequestContext({
       channel: "chat",
       username: "alice",
-      localMessages: [],
     });
     expect(context?.id).toBe(CURRENT_ID);
     expect(requestCount).toBe(2);
   });
 
-  test("restarts multi-page hydration once when the revision changes", async () => {
-    const urls: string[] = [];
-    let requestCount = 0;
-    globalThis.fetch = async (input) => {
-      urls.push(String(input));
-      requestCount += 1;
-      if (requestCount === 1) {
-        return pageResponse({
-          id: CHAT_ID,
-          revision: 1,
-          nextCursor: "older-page",
-          canImportLegacy: false,
-          messages: [
-            {
-              id: "newest-stale",
-              seq: 2,
-              role: "assistant",
-              parts: [{ type: "text", text: "stale" }],
-              createdAt: "2026-07-06T00:00:02.000Z",
-            },
-          ],
-        });
-      }
-      if (requestCount === 2) {
-        return pageResponse({
-          id: CHAT_ID,
-          revision: 2,
-          canImportLegacy: false,
-          messages: [
-            {
-              id: "older-raced",
-              seq: 1,
-              role: "user",
-              parts: [{ type: "text", text: "raced" }],
-              createdAt: "2026-07-06T00:00:01.000Z",
-            },
-          ],
-        });
-      }
-      return pageResponse({
-        id: CHAT_ID,
-        revision: 2,
-        canImportLegacy: false,
-        messages: [
-          {
-            id: "fresh",
-            seq: 3,
-            role: "assistant",
-            parts: [{ type: "text", text: "fresh snapshot" }],
-            createdAt: "2026-07-06T00:00:03.000Z",
-          },
-        ],
-      });
-    };
-
-    const loaded = await loadAIConversation({
-      channel: "chat",
-      username: "alice",
-      localMessages: [],
-    });
-    expect(loaded.conversation.revision).toBe(2);
-    expect(loaded.messages.map((entry) => entry.id)).toEqual(["fresh"]);
-    expect(urls[0]).not.toContain("cursor=");
-    expect(urls[1]).toContain("cursor=older-page");
-    expect(urls[2]).not.toContain("cursor=");
-  });
-
-  test("restarts multi-page hydration once after an older page returns a 409", async () => {
-    const urls: string[] = [];
-    let requestCount = 0;
-    globalThis.fetch = async (input) => {
-      urls.push(String(input));
-      requestCount += 1;
-      if (requestCount === 1) {
-        return pageResponse({
-          id: CHAT_ID,
-          revision: 1,
-          nextCursor: "stale-older-page",
-          canImportLegacy: false,
-          messages: [
-            {
-              id: "newest-stale",
-              seq: 2,
-              role: "assistant",
-              parts: [{ type: "text", text: "stale" }],
-              createdAt: "2026-07-06T00:00:02.000Z",
-            },
-          ],
-        });
-      }
-      if (requestCount === 2) {
-        return Response.json(
-          { error: "conversation_changed" },
-          { status: 409 }
-        );
-      }
-      return pageResponse({
-        id: CURRENT_ID,
-        revision: 2,
-        canImportLegacy: false,
-        messages: [
-          {
-            id: "fresh",
-            seq: 1,
-            role: "user",
-            parts: [{ type: "text", text: "fresh snapshot" }],
-            createdAt: "2026-07-06T00:00:03.000Z",
-          },
-        ],
-      });
-    };
-
-    const loaded = await loadAIConversation({
-      channel: "chat",
-      username: "alice",
-      localMessages: [],
-    });
-    expect(loaded.conversation.id).toBe(CURRENT_ID);
-    expect(loaded.messages.map((entry) => entry.id)).toEqual(["fresh"]);
-    expect(urls[0]).not.toContain("cursor=");
-    expect(urls[1]).toContain("cursor=stale-older-page");
-    expect(urls[2]).not.toContain("cursor=");
-  });
-
-  test("projects completed tool state with visible text", () => {
-    const richMessage: AIChatMessage = {
-      id: "a1",
-      role: "assistant",
-      parts: [
-        { type: "text", text: "Visible" },
-        {
-          type: "tool-launchApp",
-          toolCallId: "tool-1",
-          state: "output-available",
-          input: { id: "finder" },
-          output: { veryLarge: "payload" },
-        },
-      ],
-      metadata: { createdAt: new Date("2026-07-06T00:00:00.000Z") },
-    };
-
-    expect(projectAIConversationMessages([richMessage])).toEqual([
-      {
-        id: "a1",
-        role: "assistant",
-        parts: richMessage.parts,
-        metadata: { createdAt: "2026-07-06T00:00:00.000Z" },
-      },
-    ]);
-  });
-
-  test("compacts oversized tool payloads and budgets complete newest turns", () => {
-    expect(AI_CONVERSATION_REQUEST_MAX_BYTES).toBe(
-      4 * 1024 * 1024 - 64 * 1024
-    );
-    expect(AI_CONVERSATION_IMPORT_REQUEST_MAX_BYTES).toBe(
-      AI_CONVERSATION_REQUEST_MAX_BYTES
-    );
-    const oversizedToolMessage: AIChatMessage = {
-      id: "a1",
-      role: "assistant",
-      parts: [
-        {
-          type: "tool-read",
-          toolCallId: "read-1",
-          state: "output-available",
-          input: { path: "/Documents/normal.txt" },
-          output: { content: "x".repeat(3 * 1024 * 1024) },
-        },
-        {
-          type: "tool-write",
-          toolCallId: "write-1",
-          state: "output-available",
-          input: { content: "y".repeat(3 * 1024 * 1024) },
-          output: { saved: true },
-        },
-      ],
-      metadata: { createdAt: new Date("2026-07-06T00:00:01.000Z") },
-    };
-    const compacted = buildAIConversationImportRequest({
-      conversationId: CHAT_ID,
-      operationId: "import-large-tool",
-      messages: [
-        message("u1", "user", "read this"),
-        oversizedToolMessage,
-        message("u2", "user", "thanks"),
-        message("a2", "assistant", "done"),
-      ],
-    });
-    const toolPart = compacted.messages[1]?.parts[0];
-    const inputToolPart = compacted.messages[1]?.parts[1];
-
-    expect(new TextEncoder().encode(JSON.stringify(compacted)).byteLength).toBeLessThan(
-      AI_CONVERSATION_IMPORT_REQUEST_MAX_BYTES
-    );
-    expect(toolPart).toMatchObject({
-      type: "tool-read",
-      toolCallId: "read-1",
-      state: "output-available",
-      input: { path: "/Documents/normal.txt" },
-      output: AI_CONVERSATION_TOOL_PAYLOAD_OMISSION,
-    });
-    expect(inputToolPart).toMatchObject({
-      type: "tool-write",
-      toolCallId: "write-1",
-      state: "output-available",
-      input: AI_CONVERSATION_TOOL_PAYLOAD_OMISSION,
-      output: { saved: true },
-    });
-    expect(compacted.historyTruncated).toBe(true);
-
-    const budgeted = buildAIConversationImportRequest({
-      conversationId: CHAT_ID,
-      operationId: "import-budgeted",
-      messages: [
-        message("u-old", "user", "o".repeat(400)),
-        message("a-old", "assistant", "o".repeat(400)),
-        message("u-new", "user", "n".repeat(400)),
-        message("a-new", "assistant", "n".repeat(400)),
-      ],
-      requestByteLimit: 1_300,
-    });
-    expect(budgeted.messages.map((entry) => entry.id)).toEqual([
-      "u-new",
-      "a-new",
-    ]);
-    expect(budgeted.historyTruncated).toBe(true);
-    expect(new TextEncoder().encode(JSON.stringify(budgeted)).byteLength).toBeLessThanOrEqual(
-      1_300
-    );
-  });
-
-  test("refuses an import when no user turn fits the request", async () => {
-    const requests: string[] = [];
-    const oversizedNewestAssistant: AIChatMessage = {
-      id: "a-large",
-      role: "assistant",
-      parts: [
-        {
-          type: "tool-read",
-          toolCallId: "read-large",
-          state: "output-error",
-          input: { path: "/Documents/large.txt" },
-          errorText: "x".repeat(800 * 1024),
-        },
-      ],
-      metadata: { createdAt: new Date("2026-07-06T00:00:01.000Z") },
-    };
+  test("rejects a cookie owner mismatch", async () => {
+    const methods: string[] = [];
     globalThis.fetch = async (_input, init) => {
-      requests.push(init?.method ?? "GET");
-      return pageResponse();
+      methods.push(init?.method ?? "GET");
+      return snapshotResponse({ owner: "bob" });
     };
 
     await expect(
-      loadAIConversation({
-        channel: "chat",
-        username: "alice",
-        localMessages: [
-          message("u-large", "user", "read the oversized result"),
-          oversizedNewestAssistant,
-        ],
-      })
-    ).rejects.toThrow("Conversation import could not retain a user turn");
-    expect(requests).toEqual(["GET"]);
+      loadAIConversation({ channel: "chat", username: "alice" })
+    ).rejects.toThrow("Authenticated conversation owner changed");
+    expect(methods).toEqual(["GET"]);
   });
 
   test("sends only the current authenticated action", () => {
@@ -720,20 +477,26 @@ describe("AI conversation client", () => {
       messageId: "a1",
       conversation,
     });
-    expect(
-      buildAIConversationRequestBody({
-        id: "sdk-chat",
-        messages,
-        trigger: "submit-message",
-      })
-    ).toEqual({
+
+    const anonymous = buildAIConversationRequestBody({
       id: "sdk-chat",
+      messages,
       trigger: "submit-message",
-      messages: projectAIConversationMessages(messages),
+    });
+    expect(requestMessageIds(anonymous)).toEqual(["u1", "a1", "u2"]);
+    if (!Array.isArray(anonymous.messages)) {
+      throw new Error("Expected anonymous request messages");
+    }
+    expect(anonymous.messages[0]).toMatchObject({
+      id: "u1",
+      role: "user",
+      parts: [{ type: "text", text: "old" }],
+      metadata: { createdAt: "2026-07-06T00:00:00.000Z" },
     });
   });
 
-  test("compacts a legacy history over 4 MiB and drops oldest whole turns", () => {
+  test("compacts anonymous tool payloads and drops over-budget older turns", () => {
+    expect(AI_CONVERSATION_REQUEST_MAX_BYTES).toBe(4 * 1024 * 1024 - 64 * 1024);
     const recentToolMessage: AIChatMessage = {
       id: "a-recent",
       role: "assistant",
@@ -749,15 +512,14 @@ describe("AI conversation client", () => {
       metadata: { createdAt: new Date("2026-07-06T00:00:01.000Z") },
     };
     const messages = [
-      message("u-old", "user", "o".repeat(2 * 1024 * 1024)),
+      // Over the anonymous per-message text budget: this whole turn is
+      // dropped, and inclusion stops there even though earlier turns fit.
+      message("u-old", "user", "o".repeat(200_000)),
       message("a-old", "assistant", "old answer"),
-      message("u-recent", "user", "r".repeat(2 * 1024 * 1024)),
+      message("u-recent", "user", "read the recent file"),
       recentToolMessage,
       message("u-current", "user", "keep this current turn"),
     ];
-    expect(
-      new TextEncoder().encode(JSON.stringify({ messages })).byteLength
-    ).toBeGreaterThan(4 * 1024 * 1024);
 
     const request = buildAIConversationRequestBody({
       body: { model: "gemini-3-flash" },
@@ -810,7 +572,7 @@ describe("AI conversation client", () => {
     ).toBeLessThan(AI_CONVERSATION_REQUEST_MAX_BYTES);
   });
 
-  test("rejects a legacy request when the current turn alone is oversized", () => {
+  test("rejects an anonymous request when the current turn alone is oversized", () => {
     expect(() =>
       buildAIConversationRequestBody({
         id: "sdk-chat",
@@ -824,40 +586,5 @@ describe("AI conversation client", () => {
         trigger: "submit-message",
       })
     ).toThrow("Current conversation turn exceeds the safe AI request limit");
-  });
-
-  test("rejects a cookie owner mismatch before importing local messages", async () => {
-    const methods: string[] = [];
-    globalThis.fetch = async (_input, init) => {
-      methods.push(init?.method ?? "GET");
-      return pageResponse({ owner: "bob" });
-    };
-
-    await expect(
-      loadAIConversation({
-        channel: "chat",
-        username: "alice",
-        localMessages: [message("u1", "user", "Alice private")],
-      })
-    ).rejects.toThrow("Authenticated conversation owner changed");
-    expect(methods).toEqual(["GET"]);
-  });
-
-  test("does not re-import local history after a server reset", async () => {
-    const methods: string[] = [];
-    globalThis.fetch = async (_input, init) => {
-      methods.push(init?.method ?? "GET");
-      return pageResponse({ id: RESET_ID, canImportLegacy: false });
-    };
-
-    const loaded = await loadAIConversation({
-      channel: "chat",
-      username: "alice",
-      localMessages: [message("u1", "user", "cleared private history")],
-      force: true,
-      importLocalIfEmpty: true,
-    });
-    expect(loaded.messages).toEqual([]);
-    expect(methods).toEqual(["GET"]);
   });
 });

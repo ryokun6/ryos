@@ -38,10 +38,13 @@ describe("conversation memory processing", () => {
       "utf8"
     );
 
-    expect(resetRoute).toContain("extractPendingAIConversationResetMemory");
-    expect(resetRoute).toContain("waitUntil(memoryProcessing)");
-    expect(chatRoute).toContain("extractPendingAIConversationResetMemory");
-    expect(chatRoute).toContain("waitUntil(pendingResetMemoryRetry)");
+    expect(resetRoute).toContain("processClearedAIConversationMemory");
+    expect(resetRoute).toMatch(
+      /waitUntil\(\s*processClearedAIConversationMemory\(/
+    );
+    // Extraction runs inline from the reset endpoint; the chat hot path no
+    // longer retries pending reset-memory snapshots.
+    expect(chatRoute).not.toContain("ResetMemory");
     expect(chatsSource).not.toContain("processConversationMemories");
     expect(assistantSource).not.toContain("processConversationMemories");
   });

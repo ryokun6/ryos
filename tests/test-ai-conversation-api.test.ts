@@ -8,8 +8,8 @@ import {
   uniqueTestUsername,
 } from "./test-utils";
 import type {
-  AIConversationPage,
   AIConversationResetResult,
+  AIConversationSnapshot,
 } from "../src/shared/contracts/aiConversation";
 
 const password = "testtest123";
@@ -29,13 +29,27 @@ function apiMessage(id: string, role: "user" | "assistant", text: string) {
 }
 
 function messageText(
-  message: AIConversationPage["messages"][number] | undefined
+  message: AIConversationSnapshot["messages"][number] | undefined
 ): string {
   return (
     message?.parts
       .flatMap((part) => (part.type === "text" ? [part.text] : []))
       .join("") ?? ""
   );
+}
+
+async function fetchSnapshot(
+  username: string,
+  token: string,
+  query = ""
+): Promise<AIConversationSnapshot> {
+  const response = await fetchWithAuth(
+    `${BASE_URL}/api/ai/conversations/chat${query}`,
+    username,
+    token
+  );
+  expect(response.status).toBe(200);
+  return (await response.json()) as AIConversationSnapshot;
 }
 
 describe("AI conversation API", () => {
@@ -46,219 +60,37 @@ describe("AI conversation API", () => {
     expect(response.status).toBe(401);
   });
 
-  test("round-trips long text, an owned image, and tool state", async () => {
-    const username = uniqueTestUsername("airich");
-    const otherUsername = uniqueTestUsername("airichother");
-    const [token, otherToken] = await Promise.all([
-      ensureUserAuth(username, password),
-      ensureUserAuth(otherUsername, password),
-    ]);
-    if (!token || !otherToken) throw new Error("Failed to authenticate test users");
+  test("rejects a malformed afterSeq", async () => {
+    const username = uniqueTestUsername("aiseq");
+    const token = await ensureUserAuth(username, password);
+    if (!token) throw new Error("Failed to authenticate test user");
 
-    const upload = await fetchWithAuth(
-      `${BASE_URL}/api/ai/attachments`,
-      username,
-      token,
-      {
-        method: "POST",
-        headers: { "Content-Type": "image/png" },
-        body: PNG_1X1,
-      }
-    );
-    expect(upload.status).toBe(201);
-    const attachment = (await upload.json()) as {
-      mediaType: string;
-      url: string;
-    };
-
-    const initial = (await (
-      await fetchWithAuth(
-        `${BASE_URL}/api/ai/conversations/chat`,
-        username,
-        token
-      )
-    ).json()) as AIConversationPage;
-    const longText = "long ".repeat(20_000).trim();
-    const imported = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat/import`,
-      username,
-      token,
-      {
-        method: "POST",
-        headers: makeRateLimitBypassHeaders(),
-        body: JSON.stringify({
-          conversationId: initial.conversation.id,
-          expectedRevision: 0,
-          operationId: crypto.randomUUID(),
-          messages: [
-            {
-              ...apiMessage("u-rich", "user", longText),
-              parts: [
-                { type: "text", text: longText },
-                {
-                  type: "file",
-                  mediaType: attachment.mediaType,
-                  url: attachment.url,
-                },
-              ],
-            },
-            {
-              ...apiMessage("a-rich", "assistant", "Saved"),
-              parts: [
-                { type: "text", text: "Saved" },
-                {
-                  type: "tool-write",
-                  toolCallId: "tool-1",
-                  state: "output-available",
-                  input: { path: "/Desktop/note.txt", content: "hello" },
-                  output: "saved",
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
-    expect(imported.status).toBe(201);
-
-    const hydrated = (await (
-      await fetchWithAuth(
-        `${BASE_URL}/api/ai/conversations/chat`,
-        username,
-        token
-      )
-    ).json()) as AIConversationPage;
-    expect(hydrated.messages[0]?.parts).toEqual([
-      { type: "text", text: longText },
-      {
-        type: "file",
-        mediaType: "image/png",
-        url: attachment.url,
-      },
-    ]);
-    expect(hydrated.messages[1]?.parts[1]).toMatchObject({
-      type: "tool-write",
-      state: "output-available",
-      output: "saved",
-    });
-
-    const image = await fetchWithAuth(
-      `${BASE_URL}${attachment.url}`,
+    const response = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat?afterSeq=nope`,
       username,
       token
     );
-    expect(image.status).toBe(200);
-    expect(Buffer.from(await image.arrayBuffer())).toEqual(PNG_1X1);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_after_seq" });
+  });
 
-    const isolated = await fetchWithAuth(
-      `${BASE_URL}${attachment.url}`,
-      otherUsername,
-      otherToken
-    );
-    expect(isolated.status).toBe(404);
-  }, 30_000);
-
-  test("imports, paginates, isolates channels, and resets idempotently", async () => {
+  test("isolates channels and resets idempotently", async () => {
     const username = uniqueTestUsername("aic");
     const token = await ensureUserAuth(username, password);
     expect(token).not.toBeNull();
     if (!token) throw new Error("Failed to authenticate test user");
 
-    const initialResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat?limit=2`,
-      username,
-      token
-    );
-    expect(initialResponse.status).toBe(200);
-    const initial = (await initialResponse.json()) as AIConversationPage;
+    const initial = await fetchSnapshot(username, token);
     expect(initial.conversation.revision).toBe(0);
     expect(initial.messages).toEqual([]);
-
-    const operationId = crypto.randomUUID();
-    const importResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat/import`,
-      username,
-      token,
-      {
-        method: "POST",
-        headers: makeRateLimitBypassHeaders(),
-        body: JSON.stringify({
-          conversationId: initial.conversation.id,
-          expectedRevision: 0,
-          operationId,
-          messages: [
-            apiMessage("u1", "user", "one"),
-            apiMessage("a1", "assistant", "two"),
-            apiMessage("u2", "user", "three"),
-          ],
-        }),
-      }
-    );
-    expect(importResponse.status).toBe(201);
-
-    const replayResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat/import`,
-      username,
-      token,
-      {
-        method: "POST",
-        headers: makeRateLimitBypassHeaders(),
-        body: JSON.stringify({
-          conversationId: initial.conversation.id,
-          expectedRevision: 0,
-          operationId,
-          messages: [apiMessage("different", "user", "ignored replay")],
-        }),
-      }
-    );
-    expect(replayResponse.status).toBe(201);
-
-    const duplicateImportResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat/import`,
-      username,
-      token,
-      {
-        method: "POST",
-        headers: makeRateLimitBypassHeaders(),
-        body: JSON.stringify({
-          conversationId: initial.conversation.id,
-          expectedRevision: 0,
-          operationId: crypto.randomUUID(),
-          messages: [apiMessage("u3", "user", "four")],
-        }),
-      }
-    );
-    expect(duplicateImportResponse.status).toBe(409);
-    expect(await duplicateImportResponse.json()).toEqual({
-      error: "revision_conflict",
-    });
-
-    const newestResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat?limit=2`,
-      username,
-      token
-    );
-    const newest = (await newestResponse.json()) as AIConversationPage;
-    expect(newest.messages.map((message) => message.id)).toEqual(["a1", "u2"]);
-    expect(newest.page.hasMore).toBe(true);
-    expect(newest.page.nextCursor).not.toBeNull();
-
-    const olderResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat?limit=2&cursor=${encodeURIComponent(
-        newest.page.nextCursor ?? ""
-      )}`,
-      username,
-      token
-    );
-    const older = (await olderResponse.json()) as AIConversationPage;
-    expect(older.messages.map((message) => message.id)).toEqual(["u1"]);
 
     const assistantResponse = await fetchWithAuth(
       `${BASE_URL}/api/ai/conversations/assistant`,
       username,
       token
     );
-    const assistant = (await assistantResponse.json()) as AIConversationPage;
+    const assistant =
+      (await assistantResponse.json()) as AIConversationSnapshot;
     expect(assistant.messages).toEqual([]);
     expect(assistant.conversation.id).not.toBe(initial.conversation.id);
 
@@ -300,18 +132,27 @@ describe("AI conversation API", () => {
     expect(resetReplay.reset).toBe(false);
     expect(resetReplay.conversation.id).toBe(reset.conversation.id);
 
-    const oldCursorResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat?cursor=${encodeURIComponent(
-        newest.page.nextCursor ?? ""
-      )}`,
+    // A reset with the id of the already-replaced conversation conflicts.
+    const staleReset = await fetchWithAuth(
+      `${BASE_URL}/api/ai/conversations/chat/reset`,
       username,
-      token
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          conversationId: initial.conversation.id,
+          operationId: crypto.randomUUID(),
+        }),
+      }
     );
-    expect(oldCursorResponse.status).toBe(409);
-    expect(await oldCursorResponse.json()).toEqual({
-      error: "conversation_changed",
-    });
-  }, 30_000);
+    expect(staleReset.status).toBe(409);
+    expect(await staleReset.json()).toEqual({ error: "conversation_changed" });
+
+    const afterReset = await fetchSnapshot(username, token);
+    expect(afterReset.conversation.id).toBe(reset.conversation.id);
+    expect(afterReset.messages).toEqual([]);
+  });
 
   test("does not accept another user's conversation id", async () => {
     const firstUsername = uniqueTestUsername("aia");
@@ -324,12 +165,7 @@ describe("AI conversation API", () => {
       throw new Error("Failed to authenticate isolation test users");
     }
 
-    const firstResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat`,
-      firstUsername,
-      firstToken
-    );
-    const first = (await firstResponse.json()) as AIConversationPage;
+    const first = await fetchSnapshot(firstUsername, firstToken);
 
     const crossUserReset = await fetchWithAuth(
       `${BASE_URL}/api/ai/conversations/chat/reset`,
@@ -350,17 +186,33 @@ describe("AI conversation API", () => {
     });
   });
 
-  test("persists an authenticated streamed turn on the server", async () => {
-    const username = uniqueTestUsername("aistream");
-    const token = await ensureUserAuth(username, password);
-    if (!token) throw new Error("Failed to authenticate stream test user");
+  test("round-trips an owned image through a streamed turn", async () => {
+    const username = uniqueTestUsername("airich");
+    const otherUsername = uniqueTestUsername("airichother");
+    const [token, otherToken] = await Promise.all([
+      ensureUserAuth(username, password),
+      ensureUserAuth(otherUsername, password),
+    ]);
+    if (!token || !otherToken)
+      throw new Error("Failed to authenticate test users");
 
-    const initialResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat`,
+    const upload = await fetchWithAuth(
+      `${BASE_URL}/api/ai/attachments`,
       username,
-      token
+      token,
+      {
+        method: "POST",
+        headers: { "Content-Type": "image/png" },
+        body: PNG_1X1,
+      }
     );
-    const initial = (await initialResponse.json()) as AIConversationPage;
+    expect(upload.status).toBe(201);
+    const attachment = (await upload.json()) as {
+      mediaType: string;
+      url: string;
+    };
+
+    const initial = await fetchSnapshot(username, token);
     const userMessageId = crypto.randomUUID();
     const chatResponse = await fetchWithAuth(
       `${BASE_URL}/api/chat`,
@@ -381,9 +233,11 @@ describe("AI conversation API", () => {
             id: userMessageId,
             role: "user",
             parts: [
+              { type: "text", text: "Reply with exactly IMAGE_OK." },
               {
-                type: "text",
-                text: "Remember the passphrase SERVER_CONTEXT_OK. Reply with exactly SYNC_OK.",
+                type: "file",
+                mediaType: attachment.mediaType,
+                url: attachment.url,
               },
             ],
             metadata: { createdAt: new Date().toISOString() },
@@ -392,33 +246,134 @@ describe("AI conversation API", () => {
       }
     );
     expect(chatResponse.status).toBe(200);
+    expect(await chatResponse.text()).toContain("IMAGE_OK");
+
+    let persisted: AIConversationSnapshot | null = null;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const snapshot = await fetchSnapshot(username, token);
+      if (snapshot.messages.some((message) => message.role === "assistant")) {
+        persisted = snapshot;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!persisted) throw new Error("Streamed turn was not persisted");
+
+    expect(persisted.messages[0]?.id).toBe(userMessageId);
+    expect(persisted.messages[0]?.parts).toEqual([
+      { type: "text", text: "Reply with exactly IMAGE_OK." },
+      { type: "file", mediaType: "image/png", url: attachment.url },
+    ]);
+
+    const image = await fetchWithAuth(
+      `${BASE_URL}${attachment.url}`,
+      username,
+      token
+    );
+    expect(image.status).toBe(200);
+    expect(Buffer.from(await image.arrayBuffer())).toEqual(PNG_1X1);
+
+    const isolated = await fetchWithAuth(
+      `${BASE_URL}${attachment.url}`,
+      otherUsername,
+      otherToken
+    );
+    expect(isolated.status).toBe(404);
+  }, 60_000);
+
+  test("persists authenticated streamed turns and serves afterSeq deltas", async () => {
+    const username = uniqueTestUsername("aistream");
+    const token = await ensureUserAuth(username, password);
+    if (!token) throw new Error("Failed to authenticate stream test user");
+
+    const initial = await fetchSnapshot(username, token);
+    const firstOperationId = crypto.randomUUID();
+    const userMessageId = crypto.randomUUID();
+    const firstBody = JSON.stringify({
+      model: "gemini-3-flash",
+      conversation: {
+        id: initial.conversation.id,
+        revision: initial.conversation.revision,
+        operationId: firstOperationId,
+      },
+      trigger: "submit-message",
+      message: {
+        id: userMessageId,
+        role: "user",
+        parts: [
+          {
+            type: "text",
+            text: "Remember the passphrase SERVER_CONTEXT_OK. Reply with exactly SYNC_OK.",
+          },
+        ],
+        metadata: { createdAt: new Date().toISOString() },
+      },
+    });
+    const chatResponse = await fetchWithAuth(
+      `${BASE_URL}/api/chat`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: firstBody,
+      }
+    );
+    expect(chatResponse.status).toBe(200);
     const streamBody = await chatResponse.text();
     expect(streamBody).toContain("SYNC_OK");
 
-    let persisted: AIConversationPage | null = null;
+    let persisted: AIConversationSnapshot | null = null;
     for (let attempt = 0; attempt < 20; attempt += 1) {
-      const response = await fetchWithAuth(
-        `${BASE_URL}/api/ai/conversations/chat`,
-        username,
-        token
-      );
-      const page = (await response.json()) as AIConversationPage;
-      if (page.messages.some((message) => message.role === "assistant")) {
-        persisted = page;
+      const snapshot = await fetchSnapshot(username, token);
+      if (snapshot.messages.some((message) => message.role === "assistant")) {
+        persisted = snapshot;
         break;
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     expect(persisted).not.toBeNull();
-    expect(persisted?.messages.map((message) => message.role)).toEqual([
+    if (!persisted) throw new Error("First streamed turn was not persisted");
+    expect(persisted.messages.map((message) => message.role)).toEqual([
       "user",
       "assistant",
     ]);
-    expect(persisted?.messages[0]?.id).toBe(userMessageId);
-    expect(messageText(persisted?.messages[1])).toContain("SYNC_OK");
+    expect(persisted.messages[0]?.id).toBe(userMessageId);
+    expect(messageText(persisted.messages[1])).toContain("SYNC_OK");
 
-    if (!persisted) throw new Error("First streamed turn was not persisted");
+    // Replaying the same operation must not append a duplicate turn.
+    const replay = await fetchWithAuth(
+      `${BASE_URL}/api/chat`,
+      username,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: firstBody,
+      }
+    );
+    expect(replay.status).toBe(409);
+    expect(await replay.json()).toEqual({ error: "operation_replayed" });
+
+    // A fresh operation with a stale revision conflicts before generation.
+    const stale = await fetchWithAuth(`${BASE_URL}/api/chat`, username, token, {
+      method: "POST",
+      headers: makeRateLimitBypassHeaders(),
+      body: JSON.stringify({
+        model: "gemini-3-flash",
+        conversation: {
+          id: initial.conversation.id,
+          revision: initial.conversation.revision,
+          operationId: crypto.randomUUID(),
+        },
+        trigger: "submit-message",
+        message: apiMessage(crypto.randomUUID(), "user", "stale write"),
+      }),
+    });
+    expect(stale.status).toBe(409);
+    expect(await stale.json()).toEqual({ error: "revision_conflict" });
+
     const firstAssistantId = persisted.messages[1]?.id;
     const secondUserId = crypto.randomUUID();
     const secondResponse = await fetchWithAuth(
@@ -462,15 +417,32 @@ describe("AI conversation API", () => {
     expect(secondStream).toContain("SERVER_CONTEXT_OK");
     expect(secondStream).not.toContain("CLIENT_PREFIX_WRONG");
 
-    const twoTurnsResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat`,
-      username,
-      token
-    );
-    const twoTurns = (await twoTurnsResponse.json()) as AIConversationPage;
+    const twoTurns = await fetchSnapshot(username, token);
     expect(twoTurns.messages).toHaveLength(4);
     expect(twoTurns.messages[1]?.id).toBe(firstAssistantId);
-    expect(new Set(twoTurns.messages.map((message) => message.id)).size).toBe(4);
+    expect(new Set(twoTurns.messages.map((message) => message.id)).size).toBe(
+      4
+    );
+
+    // Delta read: only messages newer than the first turn come back, while
+    // the summary still describes the whole thread.
+    const firstTurnNewestSeq = persisted.conversation.newestSeq;
+    expect(firstTurnNewestSeq).not.toBeNull();
+    const delta = await fetchSnapshot(
+      username,
+      token,
+      `?afterSeq=${firstTurnNewestSeq}`
+    );
+    expect(delta.conversation).toEqual(twoTurns.conversation);
+    expect(delta.messages.map((message) => message.id)).toEqual(
+      twoTurns.messages.slice(2).map((message) => message.id)
+    );
+    const emptyDelta = await fetchSnapshot(
+      username,
+      token,
+      `?afterSeq=${twoTurns.conversation.newestSeq}`
+    );
+    expect(emptyDelta.messages).toEqual([]);
 
     const oldSecondAssistantId = twoTurns.messages[3]?.id;
     const regenerateResponse = await fetchWithAuth(
@@ -495,20 +467,16 @@ describe("AI conversation API", () => {
     expect(regenerateResponse.status).toBe(200);
     expect(await regenerateResponse.text()).toContain("SERVER_CONTEXT_OK");
 
-    const regeneratedResponse = await fetchWithAuth(
-      `${BASE_URL}/api/ai/conversations/chat`,
-      username,
-      token
-    );
-    const regenerated =
-      (await regeneratedResponse.json()) as AIConversationPage;
+    const regenerated = await fetchSnapshot(username, token);
     expect(regenerated.messages).toHaveLength(4);
     expect(
       regenerated.messages.some(
         (message) => message.id === oldSecondAssistantId
       )
     ).toBe(false);
-    expect(messageText(regenerated.messages[3])).toContain("SERVER_CONTEXT_OK");
+    expect(messageText(regenerated.messages[3])).toContain(
+      "SERVER_CONTEXT_OK"
+    );
   }, 90_000);
 
   test("validates chat conversation envelopes before generation", async () => {
