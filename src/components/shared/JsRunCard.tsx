@@ -139,47 +139,63 @@ export function JsRunCard({ code, run, className }: JsRunCardProps) {
             type="button"
             onClick={() => setCodeVisible((visible) => !visible)}
             className={cn(
-              "flex h-6 shrink-0 items-center gap-1 rounded px-1.5",
+              "flex size-6 shrink-0 items-center justify-center rounded",
               "focus:outline-none focus-visible:ring-1",
               osSubtleIconButtonClassName(),
               codeVisible && "bg-black/10 os-mac-aqua-dark:bg-white/15"
             )}
             aria-pressed={codeVisible}
-          >
-            <Code size={13} weight="bold" aria-hidden />
-            <span>
-              {codeVisible
+            aria-label={
+              codeVisible
                 ? t("apps.chats.toolCalls.runJs.hideCode", {
                     defaultValue: "Hide Code",
                   })
                 : t("apps.chats.toolCalls.runJs.showCode", {
                     defaultValue: "Show Code",
-                  })}
-            </span>
+                  })
+            }
+            title={
+              codeVisible
+                ? t("apps.chats.toolCalls.runJs.hideCode", {
+                    defaultValue: "Hide Code",
+                  })
+                : t("apps.chats.toolCalls.runJs.showCode", {
+                    defaultValue: "Show Code",
+                  })
+            }
+          >
+            <Code size={13} weight="bold" aria-hidden />
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={savedPath !== null}
             className={cn(
-              "flex h-6 shrink-0 items-center gap-1 rounded px-1.5",
+              "flex size-6 shrink-0 items-center justify-center rounded",
               "focus:outline-none focus-visible:ring-1",
               osSubtleIconButtonClassName(),
               savedPath !== null && "opacity-60"
             )}
+            aria-label={
+              savedPath !== null
+                ? t("apps.chats.toolCalls.runJs.saved", {
+                    defaultValue: "Saved",
+                  })
+                : t("apps.chats.toolCalls.runJs.save", { defaultValue: "Save" })
+            }
+            title={
+              savedPath !== null
+                ? t("apps.chats.toolCalls.runJs.saved", {
+                    defaultValue: "Saved",
+                  })
+                : t("apps.chats.toolCalls.runJs.save", { defaultValue: "Save" })
+            }
           >
             {savedPath !== null ? (
               <Check size={13} weight="bold" aria-hidden />
             ) : (
               <FloppyDisk size={13} weight="bold" aria-hidden />
             )}
-            <span>
-              {savedPath !== null
-                ? t("apps.chats.toolCalls.runJs.saved", {
-                    defaultValue: "Saved",
-                  })
-                : t("apps.chats.toolCalls.runJs.save", { defaultValue: "Save" })}
-            </span>
           </button>
         </div>
       </div>
