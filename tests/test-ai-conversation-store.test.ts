@@ -956,6 +956,124 @@ describe("AI conversation store", () => {
     ).rejects.toMatchObject({ code: "message_id_conflict", status: 422 });
   });
 
+  test("continuation tolerates benign drift in provider-executed and reordered parts", async () => {
+    const redis = new MemoryConversationRedis();
+    const started = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "one",
+      action: {
+        kind: "user-message",
+        message: message("u1", "user", "search then open Finder"),
+      },
+    });
+    // Server-persisted turn: a provider-executed web_search (already
+    // complete) plus a pending client launchApp call.
+    const firstResponse = await completeAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: getAIConversationTurnCompletionOperationId("one"),
+      expectedConversationId: started.document.id,
+      responseMessage: {
+        ...message("a1", "assistant", "Opening Finder"),
+        parts: [
+          {
+            type: "tool-web_search",
+            toolCallId: "ws_1",
+            state: "output-available",
+            providerExecuted: true,
+            input: { query: "ryOS" },
+            output: { status: "completed" },
+            callProviderMetadata: { openai: { itemId: "ws_1" } },
+          },
+          { type: "text", text: "Opening Finder" },
+          {
+            type: "tool-launchApp",
+            toolCallId: "tool-1",
+            state: "input-available",
+            input: { id: "finder" },
+          },
+        ],
+      },
+    });
+
+    // The client's copy of the same message drifts in ways it cannot
+    // control: reordered keys on the text part and a provider-executed part
+    // whose metadata differs from what the server persisted.
+    const continuation = await beginAIConversationTurn({
+      redis,
+      username: "alice",
+      channel: "chat",
+      operationId: "two",
+      expectedConversationId: firstResponse.id,
+      expectedRevision: firstResponse.revision,
+      action: {
+        kind: "assistant-continuation",
+        message: {
+          ...message("a1", "assistant", "Opening Finder"),
+          parts: [
+            {
+              type: "tool-web_search",
+              toolCallId: "ws_1",
+              state: "output-available",
+              providerExecuted: true,
+              input: { query: "ryOS" },
+              output: { status: "completed", extraClientField: true },
+            },
+            { text: "Opening Finder", type: "text" },
+            {
+              type: "tool-launchApp",
+              toolCallId: "tool-1",
+              state: "output-available",
+              input: { id: "finder" },
+              output: { success: true },
+            },
+          ],
+        },
+      },
+    });
+
+    const merged = continuation.document.messages.at(-1);
+    // The client tool transition is adopted…
+    expect(merged?.parts[2]).toMatchObject({
+      state: "output-available",
+      output: { success: true },
+    });
+    // …while the stored provider-executed part stays canonical (the client's
+    // drifted copy is discarded).
+    expect(merged?.parts[0]).toEqual({
+      type: "tool-web_search",
+      toolCallId: "ws_1",
+      state: "output-available",
+      providerExecuted: true,
+      input: { query: "ryOS" },
+      output: { status: "completed" },
+      callProviderMetadata: { openai: { itemId: "ws_1" } },
+    });
+
+    // Drift in a provider-executed part alone is not a continuation: with no
+    // pending client tool completed, the request is still rejected.
+    await expect(
+      beginAIConversationTurn({
+        redis,
+        username: "alice",
+        channel: "chat",
+        operationId: "drift-only",
+        action: {
+          kind: "assistant-continuation",
+          message: {
+            ...message("a1", "assistant", "Opening Finder"),
+            parts: merged?.parts.map((part, index) =>
+              index === 0 ? { ...part, output: { status: "tampered" } } : part,
+            ),
+          },
+        },
+      }),
+    ).rejects.toMatchObject({ code: "message_id_conflict", status: 422 });
+  });
+
   test("bounds retained history without resetting sequence numbers", async () => {
     const redis = new MemoryConversationRedis();
     let document = await seedTurn(redis, "alice", "chat", "turn-0", "message 0");

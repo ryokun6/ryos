@@ -24,10 +24,10 @@
 
 import {
   lastAssistantMessageIsCompleteWithApprovalResponses,
+  lastAssistantMessageIsCompleteWithToolCalls,
   type UIMessage,
 } from "ai";
 import { APPROVAL_GATED_TOOL_NAME_SET } from "@/shared/tools/approvalGated";
-import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 import { aiChatLog as log } from "../logging";
 import { summarizeChatMessage } from "./chatDebug";
 import {
@@ -70,51 +70,6 @@ function approvalPartToolName(part: ApprovalToolPart): string {
   return part.type.startsWith("tool-") ? part.type.slice(5) : part.type;
 }
 
-const TERMINAL_CLIENT_TOOL_STATES = new Set([
-  "output-available",
-  "output-error",
-  "output-denied",
-]);
-
-function isClientExecutedToolPart(part: ApprovalToolPart): boolean {
-  if (
-    typeof part.type !== "string" ||
-    (!part.type.startsWith("tool-") && part.type !== "dynamic-tool")
-  ) {
-    return false;
-  }
-  if (
-    (part as { providerExecuted?: boolean }).providerExecuted === true
-  ) {
-    return false;
-  }
-  return !SERVER_EXECUTED_TOOL_NAME_SET.has(approvalPartToolName(part));
-}
-
-/**
- * True when the last assistant message has finished all client-executed tool
- * calls. Provider-executed tools (e.g. OpenAI `web_search`) and server-side
- * tools complete inside `/api/chat`, so they must not trigger the follow-up
- * auto-send that posts an assistant continuation to the conversation store.
- */
-function lastAssistantMessageIsCompleteWithClientToolCalls(options: {
-  messages: UIMessage[];
-}): boolean {
-  const message = options.messages[options.messages.length - 1];
-  if (!message || message.role !== "assistant" || !Array.isArray(message.parts)) {
-    return false;
-  }
-  const clientToolParts = (message.parts as ApprovalToolPart[]).filter(
-    isClientExecutedToolPart
-  );
-  if (clientToolParts.length === 0) return false;
-  return clientToolParts.every(
-    (part) =>
-      typeof part.state === "string" &&
-      TERMINAL_CLIENT_TOOL_STATES.has(part.state)
-  );
-}
-
 /**
  * `sendAutomaticallyWhen` predicate for chats hosting approval-gated tools:
  * auto-send when all tool calls completed (the standard behavior) OR when
@@ -149,8 +104,8 @@ function decideAutoSend(options: { messages: UIMessage[] }): {
   send: boolean;
   reason: string;
 } {
-  if (lastAssistantMessageIsCompleteWithClientToolCalls(options)) {
-    return { send: true, reason: "client tool calls complete" };
+  if (lastAssistantMessageIsCompleteWithToolCalls(options)) {
+    return { send: true, reason: "all tool calls complete" };
   }
   if (!lastAssistantMessageIsCompleteWithApprovalResponses(options)) {
     return { send: false, reason: "approvals or tool outputs still pending" };

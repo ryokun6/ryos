@@ -1006,8 +1006,14 @@ export async function prepareRyoConversationModelInput(
     ),
     tools,
   });
+  // `ignoreIncompleteToolCalls` drops dangling client tool calls that never
+  // received their output (e.g. the user typed a new message instead, or the
+  // completing continuation request failed). Without it, one dangling
+  // `input-available` part in the stored history makes every subsequent
+  // model call throw AI_MissingToolResultsError, bricking the conversation.
   const modelMessages = await convertToModelMessages(uiMessages, {
     tools,
+    ignoreIncompleteToolCalls: true,
   });
 
   // Three-tier system message structure for optimal prompt caching:

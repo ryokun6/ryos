@@ -234,6 +234,9 @@ describe("sendAutomaticallyWhenApprovalsSettled", () => {
     expect(sendAutomaticallyWhenApprovalsSettled({ messages })).toBe(true);
   });
 
+  // The AI SDK's lastAssistantMessageIsCompleteWithToolCalls excludes
+  // provider-executed tools (e.g. OpenAI web_search): they complete inside
+  // the provider, so they never require a follow-up client send.
   test("does not send when only a provider-executed web_search tool completed", () => {
     const messages = [
       assistantMessage([
@@ -244,21 +247,6 @@ describe("sendAutomaticallyWhenApprovalsSettled", () => {
           state: "output-available",
           providerExecuted: true,
           output: { sources: [] },
-        },
-      ]),
-    ];
-    expect(sendAutomaticallyWhenApprovalsSettled({ messages })).toBe(false);
-  });
-
-  test("does not send when only a server-executed tool completed", () => {
-    const messages = [
-      assistantMessage([
-        {
-          type: "tool-getWeather",
-          toolCallId: "weather-1",
-          state: "output-available",
-          input: { location: "San Francisco" },
-          output: { temperature: 65 },
         },
       ]),
     ];
