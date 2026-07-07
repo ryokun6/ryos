@@ -18,8 +18,6 @@
 
 import type { Redis } from "./redis.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
-import { getStoredUserRecord } from "./auth/_user-record.js";
-
 // ============================================================================
 // Constants
 // ============================================================================
@@ -180,68 +178,38 @@ export async function withUserMemoryMutationLock<T>(
   throw new Error("memory_mutation_busy");
 }
 
-export function isValidMemoryAccountCreatedAt(
-  accountCreatedAt: unknown
-): accountCreatedAt is number {
-  return (
-    typeof accountCreatedAt === "number" &&
-    Number.isFinite(accountCreatedAt) &&
-    accountCreatedAt > 0
+/**
+ * Whether the account still exists (no deletion tombstone). Account deletion
+ * sets a tombstone before wiping data, so in-flight background jobs (memory
+ * extraction, daily-note processing) check this to avoid resurrecting data
+ * for a deleted account.
+ */
+export async function isMemoryAccountActive(
+  redis: Redis,
+  username: string
+): Promise<boolean> {
+  const tombstone = await redis.get(
+    redisKeys.chat.aiConversationTombstone(username)
   );
+  return tombstone === null;
 }
 
-export async function isCurrentMemoryAccount({
-  redis,
-  username,
-  accountCreatedAt,
-}: {
-  redis: Redis;
-  username: string;
-  accountCreatedAt: unknown;
-}): Promise<boolean> {
-  if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
-    return false;
-  }
-
-  const [tombstone, account] = await Promise.all([
-    redis.get(redisKeys.chat.aiConversationTombstone(username)),
-    getStoredUserRecord(redis, username),
-  ]);
-  return (
-    tombstone === null &&
-    isValidMemoryAccountCreatedAt(account?.createdAt) &&
-    account.createdAt === accountCreatedAt
-  );
-}
-
-export type CurrentAccountMemoryMutationResult<T> =
+export type MemoryAccountMutationResult<T> =
   | { status: "applied"; value: T }
-  | { status: "account_changed" };
+  | { status: "account_deleted" };
 
-export async function withCurrentAccountMemoryMutation<T>({
+export async function withMemoryAccountMutation<T>({
   redis,
   username,
-  accountCreatedAt,
   mutation,
 }: {
   redis: Redis;
   username: string;
-  accountCreatedAt: unknown;
   mutation: () => Promise<T>;
-}): Promise<CurrentAccountMemoryMutationResult<T>> {
-  if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
-    return { status: "account_changed" };
-  }
-
+}): Promise<MemoryAccountMutationResult<T>> {
   return withUserMemoryMutationLock(redis, username, async () => {
-    if (
-      !(await isCurrentMemoryAccount({
-        redis,
-        username,
-        accountCreatedAt,
-      }))
-    ) {
-      return { status: "account_changed" };
+    if (!(await isMemoryAccountActive(redis, username))) {
+      return { status: "account_deleted" };
     }
     return { status: "applied", value: await mutation() };
   });

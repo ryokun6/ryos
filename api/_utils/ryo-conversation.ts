@@ -160,8 +160,6 @@ export interface PrepareRyoConversationOptions {
   messages: SimpleConversationMessage[];
   systemState?: RyoConversationSystemState;
   username?: string | null;
-  /** Account generation captured when the request or job began */
-  accountCreatedAt?: number;
   model?: SupportedModel;
   redis?: Redis;
   log?: (...args: unknown[]) => void;
@@ -739,7 +737,6 @@ export async function prepareRyoConversationModelInput(
     messages,
     systemState,
     username,
-    accountCreatedAt,
     model = DEFAULT_MODEL,
     redis,
     log = defaultLog,
@@ -835,7 +832,6 @@ export async function prepareRyoConversationModelInput(
         ? { requestGeo: effectiveSystemState.requestGeo }
         : {}),
       ...toolContextOverrides,
-      accountCreatedAt,
     },
     { profile: toolProfile }
   );

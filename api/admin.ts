@@ -18,8 +18,7 @@ import {
   getRecentDailyNotes,
   clearAllMemories,
   resetDailyNotesProcessedFlag,
-  isValidMemoryAccountCreatedAt,
-  withCurrentAccountMemoryMutation,
+  withMemoryAccountMutation,
   type MemoryEntry,
   type DailyNote,
 } from "./_utils/_memory.js";
@@ -1084,25 +1083,14 @@ export default apiHandler<AdminRequest>(
           }
           try {
             const normalizedTarget = targetUsername.toLowerCase();
-            const targetAccount = await getStoredUserRecord(
-              redis,
-              normalizedTarget
-            );
-            const accountCreatedAt = targetAccount?.createdAt;
-            if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
-              logger.response(409, Date.now() - startTime);
-              res.status(409).json({ error: "account_changed" });
-              return;
-            }
-            const clearMutation = await withCurrentAccountMemoryMutation({
+            const clearMutation = await withMemoryAccountMutation({
               redis,
               username: normalizedTarget,
-              accountCreatedAt,
               mutation: () => clearAllMemories(redis, normalizedTarget),
             });
-            if (clearMutation.status === "account_changed") {
+            if (clearMutation.status === "account_deleted") {
               logger.response(409, Date.now() - startTime);
-              res.status(409).json({ error: "account_changed" });
+              res.status(409).json({ error: "account_deleted" });
               return;
             }
             const memResult = clearMutation.value;
@@ -1204,22 +1192,15 @@ export default apiHandler<AdminRequest>(
               redis,
               normalizedTarget
             );
-            const accountCreatedAt = targetAccount?.createdAt;
-            if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
-              logger.response(409, Date.now() - startTime);
-              res.status(409).json({ error: "account_changed" });
-              return;
-            }
-            const resetMutation = await withCurrentAccountMemoryMutation({
+            const resetMutation = await withMemoryAccountMutation({
               redis,
               username: normalizedTarget,
-              accountCreatedAt,
               mutation: () =>
                 resetDailyNotesProcessedFlag(redis, normalizedTarget, 30),
             });
-            if (resetMutation.status === "account_changed") {
+            if (resetMutation.status === "account_deleted") {
               logger.response(409, Date.now() - startTime);
-              res.status(409).json({ error: "account_changed" });
+              res.status(409).json({ error: "account_deleted" });
               return;
             }
             const resetResult = resetMutation.value;
@@ -1234,11 +1215,10 @@ export default apiHandler<AdminRequest>(
               (...args: unknown[]) => logger.info(String(args[0]), args[1]),
               (...args: unknown[]) => logger.error(String(args[0]), args[1]),
               targetAccount?.timeZone,
-              accountCreatedAt,
             );
-            if (processResult.skippedReason === "account_changed") {
+            if (processResult.skippedReason === "account_deleted") {
               logger.response(409, Date.now() - startTime);
-              res.status(409).json({ error: "account_changed" });
+              res.status(409).json({ error: "account_deleted" });
               return;
             }
 

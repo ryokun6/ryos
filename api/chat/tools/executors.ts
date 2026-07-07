@@ -61,7 +61,7 @@ import {
   getDailyNote,
   getTodayDateString,
   normalizeMemoryKey,
-  withCurrentAccountMemoryMutation,
+  withMemoryAccountMutation,
 } from "../../_utils/_memory.js";
 
 /**
@@ -1007,7 +1007,6 @@ export interface MemoryToolContext extends ServerToolContext {
   username?: string | null;
   redis?: Redis;
   timeZone?: string;
-  accountCreatedAt?: number;
 }
 
 /**
@@ -1044,10 +1043,9 @@ export async function executeMemoryWrite(
     // Route to the appropriate handler
     if (type === "daily") {
       context.log(`[memoryWrite:daily] Logging daily note (${content.length} chars)`);
-      const mutation = await withCurrentAccountMemoryMutation({
+      const mutation = await withMemoryAccountMutation({
         redis,
         username,
-        accountCreatedAt: context.accountCreatedAt,
         mutation: () =>
           appendDailyNote(
             redis,
@@ -1056,10 +1054,10 @@ export async function executeMemoryWrite(
             { timeZone: context.timeZone },
           ),
       });
-      if (mutation.status === "account_changed") {
+      if (mutation.status === "account_deleted") {
         return {
           success: false,
-          message: "Memory write rejected because the account changed. Please retry.",
+          message: "Memory write rejected because the account was deleted.",
         };
       }
       const result = mutation.value;
@@ -1088,10 +1086,9 @@ export async function executeMemoryWrite(
 
     context.log(`[memoryWrite:long_term] Writing "${key}" with mode "${mode}"`);
 
-    const mutation = await withCurrentAccountMemoryMutation({
+    const mutation = await withMemoryAccountMutation({
       redis,
       username,
-      accountCreatedAt: context.accountCreatedAt,
       mutation: async () => {
         const result = await upsertMemory(
           redis,
@@ -1112,10 +1109,10 @@ export async function executeMemoryWrite(
         };
       },
     });
-    if (mutation.status === "account_changed") {
+    if (mutation.status === "account_deleted") {
       return {
         success: false,
-        message: "Memory write rejected because the account changed. Please retry.",
+        message: "Memory write rejected because the account was deleted.",
       };
     }
     const { result, currentMemories } = mutation.value;
@@ -1297,16 +1294,15 @@ export async function executeMemoryDelete(
   const username = context.username;
 
   try {
-    const mutation = await withCurrentAccountMemoryMutation({
+    const mutation = await withMemoryAccountMutation({
       redis,
       username,
-      accountCreatedAt: context.accountCreatedAt,
       mutation: () => deleteMemory(redis, username, key),
     });
-    if (mutation.status === "account_changed") {
+    if (mutation.status === "account_deleted") {
       return {
         success: false,
-        message: "Memory delete rejected because the account changed. Please retry.",
+        message: "Memory delete rejected because the account was deleted.",
       };
     }
     const result = mutation.value;
