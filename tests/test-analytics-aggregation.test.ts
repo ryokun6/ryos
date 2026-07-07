@@ -2,7 +2,10 @@
 
 import { describe, expect, test } from "bun:test";
 import {
+  getAnalyticsSummary,
   getProductAnalyticsDetail,
+  isAIEndpoint,
+  recordAnalyticsEvent,
   recordProductAnalyticsEvents,
   sanitizeProductAnalyticsEvent,
 } from "../api/_utils/_analytics";
@@ -84,6 +87,68 @@ class FakeRedis {
     return new FakePipeline(this);
   }
 }
+
+describe("API analytics AI classification", () => {
+  test("counts only model-invoking endpoints as AI", () => {
+    // Real AI-generation endpoints.
+    expect(isAIEndpoint("/api/chat")).toBe(true);
+    expect(isAIEndpoint("/api/applet-ai")).toBe(true);
+    expect(isAIEndpoint("/api/ie-generate")).toBe(true);
+    expect(isAIEndpoint("/api/speech")).toBe(true);
+    expect(isAIEndpoint("/api/audio-transcribe")).toBe(true);
+    expect(isAIEndpoint("/api/ai/ryo-reply")).toBe(true);
+    expect(isAIEndpoint("/api/ai/extract-memories")).toBe(true);
+    expect(isAIEndpoint("/api/ai/process-daily-notes")).toBe(true);
+    expect(isAIEndpoint("/api/ai/conversations/chat/greeting")).toBe(true);
+    expect(isAIEndpoint("/api/ai/conversations/assistant/greeting")).toBe(true);
+
+    // Server-owned conversation plumbing: hydration reads fire on every
+    // sign-in / focus / realtime event and must not count as AI usage.
+    expect(isAIEndpoint("/api/ai/conversations/chat")).toBe(false);
+    expect(isAIEndpoint("/api/ai/conversations/assistant")).toBe(false);
+    expect(isAIEndpoint("/api/ai/conversations/chat?afterSeq=42")).toBe(false);
+    expect(isAIEndpoint("/api/ai/conversations/chat/reset")).toBe(false);
+    expect(isAIEndpoint("/api/ai/attachments")).toBe(false);
+    expect(isAIEndpoint("/api/ai/attachments/some-id")).toBe(false);
+    expect(isAIEndpoint("/api/ai/cursor-run-status?runId=x")).toBe(false);
+    expect(isAIEndpoint("/api/ai/cursor-run-followup")).toBe(false);
+
+    // Non-AI endpoints stay non-AI.
+    expect(isAIEndpoint("/api/presence/heartbeat")).toBe(false);
+    expect(isAIEndpoint("/api/rooms")).toBe(false);
+  });
+
+  test("conversation hydration reads do not inflate the daily AI total", async () => {
+    const redis = new FakeRedis();
+    const base = {
+      method: "GET",
+      status: 200,
+      latencyMs: 5,
+      ip: "8.8.8.8",
+      username: "alice",
+    };
+
+    recordAnalyticsEvent(redis as unknown as Redis, {
+      ...base,
+      path: "/api/ai/conversations/chat?afterSeq=10",
+    });
+    recordAnalyticsEvent(redis as unknown as Redis, {
+      ...base,
+      path: "/api/ai/conversations/assistant",
+    });
+    recordAnalyticsEvent(redis as unknown as Redis, {
+      ...base,
+      path: "/api/chat",
+      method: "POST",
+    });
+
+    await Promise.resolve();
+
+    const summary = await getAnalyticsSummary(redis as unknown as Redis, 1);
+    expect(summary.totals.calls).toBe(3);
+    expect(summary.totals.ai).toBe(1);
+  });
+});
 
 describe("product analytics aggregation", () => {
   test("sanitizes sensitive properties and invalid dimensions", () => {

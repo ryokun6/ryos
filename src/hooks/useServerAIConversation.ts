@@ -1,9 +1,18 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { loadAIConversation } from "@/api/aiConversations";
 import { useAIConversationRealtime } from "@/hooks/useAIConversationRealtime";
 import type { AIConversationChannel } from "@/shared/contracts/aiConversation";
 import type { AIChatMessage } from "@/types/chat";
+
+/**
+ * Minimum time between focus/visibility-triggered revalidations. Realtime
+ * events already push genuine cross-device updates the moment they happen,
+ * so the focus refresh is only a safety net for missed events — it doesn't
+ * need to fire on every alt-tab (and `focus` + `visibilitychange` both fire
+ * on the same tab activation).
+ */
+export const FOCUS_REFRESH_MIN_INTERVAL_MS = 30_000;
 
 export interface UseServerAIConversationInput {
   channel: AIConversationChannel;
@@ -35,9 +44,25 @@ export function useServerAIConversation({
   const identity =
     username && isAuthenticated ? username.toLowerCase() : null;
 
+  // Callers pass inline closures for these; route them through refs so
+  // `hydrate` stays referentially stable across renders. Otherwise the
+  // hydration effect below re-runs — and re-fetches the conversation — on
+  // every render of the calling component.
+  const isChatReadyRef = useRef(isChatReady);
+  isChatReadyRef.current = isChatReady;
+  const applyMessagesRef = useRef(applyMessages);
+  applyMessagesRef.current = applyMessages;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
+  const lastRefreshAtRef = useRef(0);
+
   const hydrate = useCallback(
     async (force = false) => {
       if (!identity) return;
+      // Every hydration counts as a refresh: push the next focus-triggered
+      // revalidation out by the full interval.
+      lastRefreshAtRef.current = Date.now();
       const loaded = await loadAIConversation({
         channel,
         username: identity,
@@ -48,33 +73,38 @@ export function useServerAIConversation({
         loaded.stale ||
         currentAuth.username?.toLowerCase() !== loaded.owner ||
         !currentAuth.isAuthenticated ||
-        !isChatReady()
+        !isChatReadyRef.current()
       ) {
         return;
       }
-      applyMessages(loaded.messages);
+      applyMessagesRef.current(loaded.messages);
     },
-    [channel, identity, isChatReady, applyMessages]
+    [channel, identity]
   );
 
   useEffect(() => {
     if (!identity) return;
     let cancelled = false;
     void hydrate(true).catch((error) => {
-      if (!cancelled) onError(error, "hydrate");
+      if (!cancelled) onErrorRef.current(error, "hydrate");
     });
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity, hydrate]);
 
   useEffect(() => {
     if (!identity) return;
     const refresh = () => {
-      if (document.visibilityState === "visible" && isChatReady()) {
-        void hydrate(true).catch((error) => onError(error, "refresh"));
+      if (document.visibilityState !== "visible" || !isChatReadyRef.current()) {
+        return;
       }
+      const now = Date.now();
+      if (now - lastRefreshAtRef.current < FOCUS_REFRESH_MIN_INTERVAL_MS) {
+        return;
+      }
+      lastRefreshAtRef.current = now;
+      void hydrate(true).catch((error) => onErrorRef.current(error, "refresh"));
     };
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
@@ -82,8 +112,7 @@ export function useServerAIConversation({
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [identity, hydrate, isChatReady]);
+  }, [identity, hydrate]);
 
   // Live cross-device updates: re-hydrate as soon as another signed-in
   // device changes the canonical conversation.
@@ -91,8 +120,8 @@ export function useServerAIConversation({
     channel,
     username: identity,
     onRemoteUpdate: () => {
-      if (!isChatReady()) return;
-      void hydrate(true).catch((error) => onError(error, "realtime"));
+      if (!isChatReadyRef.current()) return;
+      void hydrate(true).catch((error) => onErrorRef.current(error, "realtime"));
     },
   });
 

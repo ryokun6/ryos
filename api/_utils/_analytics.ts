@@ -38,17 +38,32 @@ function pk(suffix: string, date: string): string {
   return redisKeys.analytics.productMetric(suffix, date);
 }
 
+// Only endpoints that actually invoke an AI model. `/api/ai/…` also hosts
+// non-AI plumbing — conversation snapshot/delta reads (fired on every
+// hydration/focus event), attachments, cursor-run polling — which must NOT
+// count as AI usage or they dwarf the real numbers in the admin dashboard.
 const AI_PATH_PREFIXES = [
   "/api/chat",
   "/api/applet-ai",
   "/api/ie-generate",
-  "/api/ai/",
   "/api/speech",
   "/api/audio-transcribe",
+  "/api/ai/ryo-reply",
+  "/api/ai/extract-memories",
+  "/api/ai/process-daily-notes",
 ];
 
-function isAIEndpoint(path: string): boolean {
-  return AI_PATH_PREFIXES.some((prefix) => path.startsWith(prefix));
+// Proactive greeting generation is the one model-invoking route under
+// `/api/ai/conversations/…`.
+const AI_CONVERSATION_GREETING_RE =
+  /^\/api\/ai\/conversations\/[^/]+\/greeting$/;
+
+export function isAIEndpoint(rawPath: string): boolean {
+  const path = rawPath.split("?")[0];
+  return (
+    AI_PATH_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
+    AI_CONVERSATION_GREETING_RE.test(path)
+  );
 }
 
 function normaliseEndpoint(rawPath: string): string {
