@@ -7,7 +7,8 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "baseUrl": ".",
+    // TS 6.0 defaults `types` to []; list ambient global packages explicitly.
+    "types": ["youtube", "node"],
     "paths": {
       "@/*": ["./src/*"]
     },
@@ -20,7 +21,6 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "downlevelIteration": true,
 
     /* Linting */
     "strict": true,
