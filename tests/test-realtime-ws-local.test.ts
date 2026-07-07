@@ -55,6 +55,7 @@ async function getTicket(cookie: string): Promise<string | null> {
 
 interface SubscribeResult {
   authorized: boolean;
+  acknowledged?: boolean;
   message?: unknown;
 }
 
@@ -86,7 +87,15 @@ function subscribeOnce(
     const ws = new WebSocket(url);
     let settled = false;
     let receivedMessage: unknown;
+    let subscriptionAcknowledged = false;
+    let triggerStarted = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const startTrigger = () => {
+      if (!triggerAfterSubscribe || triggerStarted) return;
+      triggerStarted = true;
+      void triggerAfterSubscribe();
+    };
 
     const finish = (result: SubscribeResult) => {
       if (settled) return;
@@ -104,14 +113,12 @@ function subscribeOnce(
       ws.send(JSON.stringify({ type: "subscribe", channel }));
       // Assume authorized unless a subscription_error arrives within waitMs.
       timer = setTimeout(() => {
-        finish({ authorized: true, message: receivedMessage });
+        finish({
+          authorized: true,
+          acknowledged: subscriptionAcknowledged,
+          message: receivedMessage,
+        });
       }, waitMs);
-      if (triggerAfterSubscribe) {
-        // Give the subscription a moment to register before triggering.
-        setTimeout(() => {
-          void triggerAfterSubscribe();
-        }, 300);
-      }
     });
 
     ws.addEventListener("message", (event) => {
@@ -124,6 +131,14 @@ function subscribeOnce(
         };
         if (payload.type === "subscription_error" && payload.channel === channel) {
           finish({ authorized: false });
+          return;
+        }
+        if (
+          payload.type === "subscription_succeeded" &&
+          payload.channel === channel
+        ) {
+          subscriptionAcknowledged = true;
+          startTrigger();
           return;
         }
         if (payload.type === "event") {
@@ -157,6 +172,7 @@ function subscribeAndCollect(
     );
     const messages: RealtimeEnvelope[] = [];
     let settled = false;
+    let triggerStarted = false;
     let triggerCompleted = false;
     let terminalReceived = false;
     const timer = setTimeout(() => {
@@ -179,22 +195,25 @@ function subscribeAndCollect(
       }
     };
 
+    const startTrigger = () => {
+      if (triggerStarted) return;
+      triggerStarted = true;
+      void triggerAfterSubscribe()
+        .then(() => {
+          triggerCompleted = true;
+          if (terminalReceived) finish();
+        })
+        .catch((error) => {
+          finish(
+            error instanceof Error
+              ? error
+              : new Error("Realtime trigger failed")
+          );
+        });
+    };
+
     ws.addEventListener("open", () => {
       ws.send(JSON.stringify({ type: "subscribe", channel }));
-      setTimeout(() => {
-        void triggerAfterSubscribe()
-          .then(() => {
-            triggerCompleted = true;
-            if (terminalReceived) finish();
-          })
-          .catch((error) => {
-            finish(
-              error instanceof Error
-                ? error
-                : new Error("Realtime trigger failed")
-            );
-          });
-      }, 300);
     });
     ws.addEventListener("message", (event) => {
       try {
@@ -217,6 +236,13 @@ function subscribeAndCollect(
           envelope.channel === channel
         ) {
           finish(new Error(`Subscription denied for ${channel}`));
+          return;
+        }
+        if (
+          envelope.type === "subscription_succeeded" &&
+          envelope.channel === channel
+        ) {
+          startTrigger();
           return;
         }
         if (envelope.type !== "event") return;
@@ -289,6 +315,7 @@ maybeDescribe("local WebSocket realtime authorization", () => {
   test("ticket authorizes the owner's per-user channel", async () => {
     const result = await subscribeOnce(memberTicket, `private-chats-${memberUser}`);
     expect(result.authorized).toBe(true);
+    expect(result.acknowledged).toBe(true);
   });
 
   test("ticket does not authorize another user's channel", async () => {
