@@ -34,8 +34,14 @@ import {
   cleanupStaleTemporaryMemories,
   MAX_MEMORIES_PER_USER,
   CANONICAL_MEMORY_KEYS,
+  isCurrentMemoryAccount,
+  isValidMemoryAccountCreatedAt,
+  withCurrentAccountMemoryMutation,
 } from "../_utils/_memory.js";
-import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
+import {
+  getStoredUserRecord,
+  getStoredUserTimeZone,
+} from "../_utils/auth/_user-record.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
 export const runtime = "nodejs";
@@ -98,6 +104,35 @@ RULES:
 
 type LogFn = (...args: unknown[]) => void;
 
+export interface ProcessDailyNotesResult {
+  processed: number;
+  created: number;
+  updated: number;
+  dates: string[];
+  skippedDates: string[];
+  skippedReason?: "account_changed";
+}
+
+function emptyProcessResult(
+  skippedReason?: ProcessDailyNotesResult["skippedReason"]
+): ProcessDailyNotesResult {
+  return {
+    processed: 0,
+    created: 0,
+    updated: 0,
+    dates: [],
+    skippedDates: [],
+    ...(skippedReason ? { skippedReason } : {}),
+  };
+}
+
+const RELEASE_PROCESSING_LOCK_SCRIPT = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+end
+return 0
+`;
+
 // ============================================================================
 // Core Processing Logic (reusable — called from handler and chat endpoint)
 // ============================================================================
@@ -116,29 +151,49 @@ export async function processDailyNotesForUser(
   log: LogFn = console.log,
   logError: LogFn = console.error,
   timeZone?: string,
-): Promise<{
-  processed: number;
-  created: number;
-  updated: number;
-  dates: string[];
-  skippedDates: string[];
-}> {
-  const EMPTY = { processed: 0, created: 0, updated: 0, dates: [] as string[], skippedDates: [] as string[] };
+  accountCreatedAt?: number,
+): Promise<ProcessDailyNotesResult> {
+  const EMPTY = emptyProcessResult();
+  if (
+    !(await isCurrentMemoryAccount({
+      redis,
+      username,
+      accountCreatedAt,
+    }))
+  ) {
+    log("[processDailyNotes] Skipping because account generation changed", {
+      username,
+    });
+    return emptyProcessResult("account_changed");
+  }
 
   // Acquire a short-lived lock to prevent concurrent processing for the same user.
   // If another request is already processing, we skip (the other run will handle it).
   const lockKey = redisKeys.memory.processingLock(username);
-  const acquired = await redis.set(lockKey, "1", { nx: true, ex: 120 }); // 2-min TTL
+  const lockToken = crypto.randomUUID();
+  const acquired = await redis.set(lockKey, lockToken, { nx: true, ex: 120 }); // 2-min TTL
   if (!acquired) {
     log("[processDailyNotes] Skipping — another run already in progress", { username });
     return EMPTY;
   }
 
   try {
-    return await _processDailyNotesForUserInner(redis, username, log, logError, timeZone);
+    return await _processDailyNotesForUserInner(
+      redis,
+      username,
+      log,
+      logError,
+      timeZone,
+      accountCreatedAt
+    );
   } finally {
-    // Release lock when done (or on error)
-    await redis.del(lockKey).catch(() => {});
+    await redis
+      .eval<number>(
+        RELEASE_PROCESSING_LOCK_SCRIPT,
+        [lockKey],
+        [lockToken]
+      )
+      .catch(() => 0);
   }
 }
 
@@ -189,18 +244,22 @@ async function _processDailyNotesForUserInner(
   log: LogFn,
   logError: LogFn,
   timeZone?: string,
-): Promise<{
-  processed: number;
-  created: number;
-  updated: number;
-  dates: string[];
-  skippedDates: string[];
-}> {
+  accountCreatedAt?: number,
+): Promise<ProcessDailyNotesResult> {
   const startTime = Date.now();
-  const EMPTY = { processed: 0, created: 0, updated: 0, dates: [] as string[], skippedDates: [] as string[] };
+  const EMPTY = emptyProcessResult();
 
   // 0. Cleanup stale temporary memories before extracting new long-term facts.
-  const cleanupResult = await cleanupStaleTemporaryMemories(redis, username);
+  const cleanupMutation = await withCurrentAccountMemoryMutation({
+    redis,
+    username,
+    accountCreatedAt,
+    mutation: () => cleanupStaleTemporaryMemories(redis, username),
+  });
+  if (cleanupMutation.status === "account_changed") {
+    return emptyProcessResult("account_changed");
+  }
+  const cleanupResult = cleanupMutation.value;
   if (cleanupResult.removed > 0) {
     log("[processDailyNotes] Removed stale temporary memories", {
       username,
@@ -262,15 +321,54 @@ async function _processDailyNotesForUserInner(
 
     try {
       const batchResult = await _processSingleDayBatch(
-        redis, username, note, log, logError,
+        redis,
+        username,
+        note,
+        log,
+        logError,
+        accountCreatedAt,
       );
-
-      totalCreated += batchResult.created;
-      totalUpdated += batchResult.updated;
+      if (batchResult.status === "account_changed") {
+        skippedDates.push(
+          ...unprocessedNotes
+            .filter((dailyNote) => !processedDateSet.has(dailyNote.date))
+            .map((dailyNote) => dailyNote.date)
+        );
+        return {
+          processed: totalProcessed,
+          created: totalCreated,
+          updated: totalUpdated,
+          dates: processedDates,
+          skippedDates: [...new Set(skippedDates)],
+          skippedReason: "account_changed",
+        };
+      }
 
       // Mark this day as processed immediately — progress is preserved even if
       // a later day fails or we run out of time
-      await markDailyNoteProcessed(redis, username, note.date);
+      const markProcessedMutation = await withCurrentAccountMemoryMutation({
+        redis,
+        username,
+        accountCreatedAt,
+        mutation: () => markDailyNoteProcessed(redis, username, note.date),
+      });
+      if (markProcessedMutation.status === "account_changed") {
+        skippedDates.push(
+          ...unprocessedNotes
+            .filter((dailyNote) => !processedDateSet.has(dailyNote.date))
+            .map((dailyNote) => dailyNote.date)
+        );
+        return {
+          processed: totalProcessed,
+          created: totalCreated,
+          updated: totalUpdated,
+          dates: processedDates,
+          skippedDates: [...new Set(skippedDates)],
+          skippedReason: "account_changed",
+        };
+      }
+      totalCreated += batchResult.created;
+      totalUpdated += batchResult.updated;
       totalProcessed++;
       processedDates.push(note.date);
       processedDateSet.add(note.date);
@@ -324,7 +422,11 @@ async function _processSingleDayBatch(
   note: { date: string; entries: { timestamp: number; content: string }[] },
   log: LogFn,
   logError: LogFn,
-): Promise<{ created: number; updated: number }> {
+  accountCreatedAt?: number,
+): Promise<
+  | { status: "applied"; created: number; updated: number }
+  | { status: "account_changed" }
+> {
   // 1. Build text for this day only, truncating if too many entries
   const dailyNotesText = (() => {
     let entries = note.entries;
@@ -466,7 +568,35 @@ async function _processSingleDayBatch(
     const mode = targetKeyExists
       ? (didConsolidate ? "update" : "merge")
       : "add";
-    const storeResult = await upsertMemory(redis, username, key, finalSummary, finalContent, mode);
+    const memoryMutation = await withCurrentAccountMemoryMutation({
+      redis,
+      username,
+      accountCreatedAt,
+      mutation: async () => {
+        const storeResult = await upsertMemory(
+          redis,
+          username,
+          key,
+          finalSummary,
+          finalContent,
+          mode
+        );
+        const deletedKeys: string[] = [];
+        if (storeResult.success) {
+          for (const oldKey of keysToDelete) {
+            const deleteResult = await deleteMemory(redis, username, oldKey);
+            if (deleteResult.success) {
+              deletedKeys.push(oldKey);
+            }
+          }
+        }
+        return { storeResult, deletedKeys };
+      },
+    });
+    if (memoryMutation.status === "account_changed") {
+      return { status: "account_changed" };
+    }
+    const { storeResult, deletedKeys } = memoryMutation.value;
 
     if (storeResult.success) {
       if (mode === "update" || mode === "merge") {
@@ -476,18 +606,23 @@ async function _processSingleDayBatch(
       }
       log("[processDailyNotes] Stored memory", { username, key, confidence: mem.confidence, mode, date: note.date });
 
-      for (const oldKey of keysToDelete) {
-        const deleteResult = await deleteMemory(redis, username, oldKey);
-        if (deleteResult.success) {
-          log("[processDailyNotes] Deleted merged key", { username, oldKey, mergedInto: key });
-        }
+      for (const oldKey of deletedKeys) {
+        log("[processDailyNotes] Deleted merged key", {
+          username,
+          oldKey,
+          mergedInto: key,
+        });
       }
     } else {
       logError("[processDailyNotes] Failed to store memory", { username, key, error: storeResult.message });
     }
   }
 
-  return { created: longTermStored, updated: longTermUpdated };
+  return {
+    status: "applied",
+    created: longTermStored,
+    updated: longTermUpdated,
+  };
 }
 
 // ============================================================================
@@ -507,6 +642,13 @@ export default apiHandler<{ timeZone?: string }>(
     const headerTimeZone = Array.isArray(headerTimeZoneRaw)
       ? headerTimeZoneRaw[0]
       : headerTimeZoneRaw;
+    const account = await getStoredUserRecord(redis, username);
+    const accountCreatedAt = account?.createdAt;
+    if (!isValidMemoryAccountCreatedAt(accountCreatedAt)) {
+      logger.response(409, Date.now() - startTime);
+      res.status(409).json({ error: "account_changed" });
+      return;
+    }
     const storedTimeZone = await getStoredUserTimeZone(redis, username);
 
     try {
@@ -516,7 +658,14 @@ export default apiHandler<{ timeZone?: string }>(
         (...args: unknown[]) => logger.info(String(args[0]), args[1]),
         (...args: unknown[]) => logger.error(String(args[0]), args[1]),
         requestTimeZone || headerTimeZone || storedTimeZone,
+        accountCreatedAt,
       );
+
+      if (result.skippedReason === "account_changed") {
+        logger.response(409, Date.now() - startTime);
+        res.status(409).json({ error: "account_changed" });
+        return;
+      }
 
       const totalExtracted = result.created + result.updated;
 

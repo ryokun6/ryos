@@ -129,6 +129,37 @@ describe("Account Deletion API", () => {
     });
     await setUserEmailIndex(redis, email, username);
     await redis.set(redisKeys.sync.v2Kv(username), JSON.stringify({ a: 1 }));
+    await redis.set(
+      redisKeys.chat.aiConversation(username, "chat"),
+      JSON.stringify({ seeded: true })
+    );
+    await redis.set(
+      redisKeys.chat.aiConversation(username, "assistant"),
+      JSON.stringify({ seeded: true })
+    );
+    await redis.set(
+      redisKeys.chat.aiConversationResetMemory(username, "chat"),
+      "v1:pending-reset-memory"
+    );
+    await redis.set(
+      redisKeys.chat.aiConversationResetMemoryLock(username, "assistant"),
+      "in-flight"
+    );
+    const unindexedHistoricalDailyNoteKey = redisKeys.memory.daily(
+      username,
+      "1999-12-31"
+    );
+    await redis.set(
+      unindexedHistoricalDailyNoteKey,
+      JSON.stringify({
+        date: "1999-12-31",
+        timeZone: "UTC",
+        entries: [],
+        processedForMemories: false,
+        updatedAt: Date.now(),
+      }),
+      { ex: 30 * 24 * 60 * 60 }
+    );
 
     expect(await getUsernameByEmail(redis, email)).toBe(username);
 
@@ -155,6 +186,27 @@ describe("Account Deletion API", () => {
     expect(await getUsernameByEmail(redis, email)).toBeNull();
     // Sync data gone.
     expect(await redis.get(redisKeys.sync.v2Kv(username))).toBeNull();
+    // Personal AI conversation data gone.
+    expect(
+      await redis.get(redisKeys.chat.aiConversation(username, "chat"))
+    ).toBeNull();
+    expect(
+      await redis.get(redisKeys.chat.aiConversation(username, "assistant"))
+    ).toBeNull();
+    expect(
+      await redis.get(
+        redisKeys.chat.aiConversationResetMemory(username, "chat")
+      )
+    ).toBeNull();
+    expect(
+      await redis.get(
+        redisKeys.chat.aiConversationResetMemoryLock(username, "assistant")
+      )
+    ).toBeNull();
+    expect(await redis.get(unindexedHistoricalDailyNoteKey)).toBeNull();
+    expect(
+      await redis.get(redisKeys.memory.mutationLock(username))
+    ).toBeNull();
 
     // Old token invalid.
     const tokenCheck = await fetchWithAuth(

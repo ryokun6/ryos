@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import type { Redis } from "./redis.js";
 import {
   convertToModelMessages,
+  validateUIMessages,
   type LanguageModel,
   type ModelMessage,
   type ToolSet,
@@ -159,6 +160,8 @@ export interface PrepareRyoConversationOptions {
   messages: SimpleConversationMessage[];
   systemState?: RyoConversationSystemState;
   username?: string | null;
+  /** Account generation captured when the request or job began */
+  accountCreatedAt?: number;
   model?: SupportedModel;
   redis?: Redis;
   log?: (...args: unknown[]) => void;
@@ -736,6 +739,7 @@ export async function prepareRyoConversationModelInput(
     messages,
     systemState,
     username,
+    accountCreatedAt,
     model = DEFAULT_MODEL,
     redis,
     log = defaultLog,
@@ -831,6 +835,7 @@ export async function prepareRyoConversationModelInput(
         ? { requestGeo: effectiveSystemState.requestGeo }
         : {}),
       ...toolContextOverrides,
+      accountCreatedAt,
     },
     { profile: toolProfile }
   );
@@ -897,7 +902,10 @@ export async function prepareRyoConversationModelInput(
       : {}),
   };
 
-  const uiMessages = ensureUIMessageFormat(messages);
+  const uiMessages = await validateUIMessages({
+    messages: ensureUIMessageFormat(messages),
+    tools,
+  });
   const modelMessages = await convertToModelMessages(uiMessages, {
     tools,
   });

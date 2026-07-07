@@ -15,6 +15,9 @@ import {
 } from "./_user-record.js";
 import { unlinkTelegramAccountByUsername } from "../telegram-link.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
+import { deleteAIConversationKeys } from "../../ai/conversations/_helpers/store.js";
+import { deleteAllAIAttachments } from "../../ai/attachments/_helpers/store.js";
+import { deleteAllUserMemories } from "../_memory.js";
 
 export interface PurgeAccountResult {
   /** Approximate number of Redis keys removed. */
@@ -35,6 +38,13 @@ export async function purgeUserAccount(
 
   // Read the profile first so we can clean up the email reverse-index.
   const record = await getStoredUserRecord(redis, normalized).catch(() => null);
+
+  // Block in-flight AI writers before removing auth. This deletion is not
+  // best-effort: returning success while private transcripts remain would
+  // violate the account-deletion contract.
+  deletedCount += await deleteAIConversationKeys(redis, normalized);
+  deletedCount += await deleteAllAIAttachments(redis, normalized);
+  deletedCount += await deleteAllUserMemories(redis, normalized);
 
   // Recovery email reverse index.
   if (record?.email) {

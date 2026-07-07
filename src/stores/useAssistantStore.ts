@@ -57,6 +57,7 @@ interface AssistantStoreState {
   setCustomInstructions: (customInstructions: string) => void;
   setPosition: (position: AssistantPosition | null) => void;
   setMessages: (messages: AIChatMessage[]) => void;
+  hydrateMessages: (messages: AIChatMessage[]) => void;
   clearMessages: () => void;
   markInteraction: () => void;
   markBubbleDismissed: () => void;
@@ -100,6 +101,8 @@ export const useAssistantStore = create<AssistantStoreState>()(
           messages: messages.slice(-MAX_PERSISTED_MESSAGES),
           lastInteractionAt: Date.now(),
         }),
+      hydrateMessages: (messages) =>
+        set({ messages: messages.slice(-MAX_PERSISTED_MESSAGES) }),
       clearMessages: () =>
         set({ messages: [], lastInteractionAt: null, bubbleDismissedAt: null }),
       markInteraction: () => set({ lastInteractionAt: Date.now() }),

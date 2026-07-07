@@ -41,6 +41,8 @@ import {
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
+import { useAssistantStore } from "@/stores/useAssistantStore";
+import { clearAIConversationSessionCache } from "@/api/aiConversations";
 
 const chatsStoreLog = createClientLogger("ChatsStore");
 const debug = chatsStoreLog.debug;
@@ -175,6 +177,18 @@ const getUsernameFromRecovery = (): string | null => {
   return raw;
 };
 
+function shouldClearAIHistoryForUsernameChange(
+  previousUsername: string | null,
+  nextUsername: string | null
+): boolean {
+  const previousOwner = previousUsername?.toLowerCase() ?? null;
+  const nextOwner = nextUsername?.toLowerCase() ?? null;
+  if (previousOwner === nextOwner) return false;
+  // Anonymous history is intentionally carried into the first authenticated
+  // identity so the one-time legacy import can move it server-side.
+  return previousOwner !== null;
+}
+
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
 const ROOMS_FETCH_TTL_MS = 1_500;
@@ -212,7 +226,10 @@ function forceLogoutOnUnauthorized() {
   if (!store.username) return;
   debug("Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
+  useAssistantStore.getState().clearMessages();
+  clearAIConversationSessionCache();
   useChatsStore.setState({
+    aiMessages: [getInitialAiMessage()],
     username: null,
     isAuthenticated: false,
     currentRoomId: null,
@@ -434,8 +451,10 @@ const mergeChatsState = (
     >
   >
 ): ChatsPersistedState => {
+  const expectedOwner = metadata.username?.toLowerCase() ?? "anonymous";
   const aiMessages = (rows[STORES.CHATS_AI_MESSAGES] ?? [])
     .flatMap((row) => {
+      if (row.value.owner !== expectedOwner) return [];
       const message = row.value.message;
       if (!message || typeof message !== "object" || Array.isArray(message)) {
         return [];
@@ -455,6 +474,7 @@ const mergeChatsState = (
 
   const roomMessages: Record<string, ChatMessage[]> = {};
   for (const row of rows[STORES.CHATS_ROOM_MESSAGES] ?? []) {
+    if (row.value.owner !== expectedOwner) continue;
     const messages = row.value.messages;
     if (Array.isArray(messages)) {
       roomMessages[row.key] = messages as ChatMessage[];
@@ -482,11 +502,25 @@ export const useChatsStore = create<ChatsStoreState>()(
         // --- Actions ---
         setAiMessages: (messages) => set({ aiMessages: messages }),
         setUsername: (username) => {
-          if (get().username !== username) {
+          const previousUsername = get().username;
+          const clearAIHistory = shouldClearAIHistoryForUsernameChange(
+            previousUsername,
+            username
+          );
+          if (previousUsername !== username) {
             resetRoomsFetchCache();
           }
+          if (clearAIHistory) {
+            useAssistantStore.getState().clearMessages();
+            clearAIConversationSessionCache();
+          }
           saveUsernameToRecovery(username);
-          set({ username });
+          set({
+            username,
+            ...(clearAIHistory
+              ? { aiMessages: [getInitialAiMessage()] }
+              : {}),
+          });
 
           // Re-filter rooms: drop private rooms the new identity cannot see.
           // IRC rooms remain visible to everyone.
@@ -509,8 +543,18 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
         },
         setAuthenticated: (authenticated) => {
-          if (get().isAuthenticated !== authenticated) {
+          const wasAuthenticated = get().isAuthenticated;
+          if (wasAuthenticated !== authenticated) {
             resetRoomsFetchCache();
+          }
+          if (wasAuthenticated && !authenticated) {
+            useAssistantStore.getState().clearMessages();
+            clearAIConversationSessionCache();
+            set({
+              isAuthenticated: false,
+              aiMessages: [getInitialAiMessage()],
+            });
+            return;
           }
           set({ isAuthenticated: authenticated });
         },
@@ -800,6 +844,8 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           resetRoomsFetchCache();
+          useAssistantStore.getState().clearMessages();
+          clearAIConversationSessionCache();
 
           set((state) => ({
             ...state,
@@ -851,6 +897,8 @@ export const useChatsStore = create<ChatsStoreState>()(
           track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           resetRoomsFetchCache();
+          useAssistantStore.getState().clearMessages();
+          clearAIConversationSessionCache();
 
           set((state) => ({
             ...state,
@@ -1226,7 +1274,22 @@ export const useChatsStore = create<ChatsStoreState>()(
               password,
             });
             if (data.user) {
-              set({ username: data.user.username, isAuthenticated: true });
+              const previousUsername = get().username;
+              const clearAIHistory = shouldClearAIHistoryForUsernameChange(
+                previousUsername,
+                data.user.username
+              );
+              if (clearAIHistory) {
+                useAssistantStore.getState().clearMessages();
+                clearAIConversationSessionCache();
+              }
+              set({
+                username: data.user.username,
+                isAuthenticated: true,
+                ...(clearAIHistory
+                  ? { aiMessages: [getInitialAiMessage()] }
+                  : {}),
+              });
 
               track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
 

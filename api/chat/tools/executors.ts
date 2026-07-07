@@ -60,6 +60,8 @@ import {
   appendDailyNote,
   getDailyNote,
   getTodayDateString,
+  normalizeMemoryKey,
+  withCurrentAccountMemoryMutation,
 } from "../../_utils/_memory.js";
 
 /**
@@ -1005,6 +1007,7 @@ export interface MemoryToolContext extends ServerToolContext {
   username?: string | null;
   redis?: Redis;
   timeZone?: string;
+  accountCreatedAt?: number;
 }
 
 /**
@@ -1034,17 +1037,32 @@ export async function executeMemoryWrite(
       message: "Memory storage not available.",
     };
   }
+  const redis = context.redis;
+  const username = context.username;
 
   try {
     // Route to the appropriate handler
     if (type === "daily") {
       context.log(`[memoryWrite:daily] Logging daily note (${content.length} chars)`);
-      const result = await appendDailyNote(
-        context.redis,
-        context.username,
-        content,
-        { timeZone: context.timeZone },
-      );
+      const mutation = await withCurrentAccountMemoryMutation({
+        redis,
+        username,
+        accountCreatedAt: context.accountCreatedAt,
+        mutation: () =>
+          appendDailyNote(
+            redis,
+            username,
+            content,
+            { timeZone: context.timeZone },
+          ),
+      });
+      if (mutation.status === "account_changed") {
+        return {
+          success: false,
+          message: "Memory write rejected because the account changed. Please retry.",
+        };
+      }
+      const result = mutation.value;
 
       context.log(
         `[memoryWrite:daily] Result: ${result.success ? "success" : "failed"} - ${result.message}`
@@ -1070,21 +1088,37 @@ export async function executeMemoryWrite(
 
     context.log(`[memoryWrite:long_term] Writing "${key}" with mode "${mode}"`);
 
-    const result = await upsertMemory(
-      context.redis,
-      context.username,
-      key,
-      summary,
-      content,
-      mode
-    );
-
-    // Get updated memory list
-    const index = await getMemoryIndex(context.redis, context.username);
-    const currentMemories = index?.memories.map((m) => ({
-      key: m.key,
-      summary: m.summary,
-    })) || [];
+    const mutation = await withCurrentAccountMemoryMutation({
+      redis,
+      username,
+      accountCreatedAt: context.accountCreatedAt,
+      mutation: async () => {
+        const result = await upsertMemory(
+          redis,
+          username,
+          key,
+          summary,
+          content,
+          mode
+        );
+        const index = await getMemoryIndex(redis, username);
+        return {
+          result,
+          currentMemories:
+            index?.memories.map((memory) => ({
+              key: memory.key,
+              summary: memory.summary,
+            })) || [],
+        };
+      },
+    });
+    if (mutation.status === "account_changed") {
+      return {
+        success: false,
+        message: "Memory write rejected because the account changed. Please retry.",
+      };
+    }
+    const { result, currentMemories } = mutation.value;
 
     context.log(
       `[memoryWrite:long_term] Result: ${result.success ? "success" : "failed"} - ${result.message}`
@@ -1178,9 +1212,11 @@ export async function executeMemoryRead(
 
     context.log(`[memoryRead:long_term] Reading memory "${key}"`);
 
-    const detail = await getMemoryDetail(context.redis, context.username, key);
+    const normalizedKey = normalizeMemoryKey(key);
+    const index = await getMemoryIndex(context.redis, context.username);
+    const entry = index?.memories.find((memory) => memory.key === normalizedKey);
 
-    if (!detail) {
+    if (!entry) {
       context.log(`[memoryRead:long_term] Memory "${key}" not found`);
       return {
         success: false,
@@ -1191,17 +1227,33 @@ export async function executeMemoryRead(
       };
     }
 
-    const index = await getMemoryIndex(context.redis, context.username);
-    const entry = index?.memories.find((m) => m.key === key.toLowerCase());
+    const detail = await getMemoryDetail(
+      context.redis,
+      context.username,
+      normalizedKey
+    );
 
-    context.log(`[memoryRead:long_term] Found memory "${key}" (${detail.content.length} chars)`);
+    if (!detail) {
+      context.log(`[memoryRead:long_term] Memory "${key}" has no detail`);
+      return {
+        success: false,
+        message: `Memory "${key}" not found.`,
+        key,
+        content: null,
+        summary: null,
+      };
+    }
+
+    context.log(
+      `[memoryRead:long_term] Found memory "${key}" (${detail.content.length} chars)`
+    );
 
     return {
       success: true,
       message: `Retrieved memory "${key}".`,
       key,
       content: detail.content,
-      summary: entry?.summary || null,
+      summary: entry.summary,
     };
   } catch (error) {
     context.logError("[memoryRead] Unexpected error:", error);
@@ -1241,9 +1293,23 @@ export async function executeMemoryDelete(
       message: "Memory storage not available.",
     };
   }
+  const redis = context.redis;
+  const username = context.username;
 
   try {
-    const result = await deleteMemory(context.redis, context.username, key);
+    const mutation = await withCurrentAccountMemoryMutation({
+      redis,
+      username,
+      accountCreatedAt: context.accountCreatedAt,
+      mutation: () => deleteMemory(redis, username, key),
+    });
+    if (mutation.status === "account_changed") {
+      return {
+        success: false,
+        message: "Memory delete rejected because the account changed. Please retry.",
+      };
+    }
+    const result = mutation.value;
 
     context.log(
       `[memoryDelete] Result: ${result.success ? "success" : "failed"} - ${result.message}`

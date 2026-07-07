@@ -33,6 +33,7 @@ import {
   setStoredUserRecord,
   updateStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
+import { clearAIConversationTombstone } from "../ai/conversations/_helpers/store.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -177,6 +178,7 @@ export default apiHandler(
         : {}),
     };
     await setStoredUserRecord(redis, username, userData);
+    await clearAIConversationTombstone(redis, username);
 
     // Hash and store password
     const passwordHash = await hashPassword(password);

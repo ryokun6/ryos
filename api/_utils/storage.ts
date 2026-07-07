@@ -11,7 +11,12 @@ import {
   ResponseChecksumValidation,
 } from "@aws-sdk/middleware-flexible-checksums";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { del as deleteBlob, head as headBlob } from "@vercel/blob";
+import {
+  del as deleteBlob,
+  get as getBlob,
+  head as headBlob,
+  put as putBlob,
+} from "@vercel/blob";
 import { signStorageUploadToken } from "./storage-upload-token.js";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
@@ -52,8 +57,7 @@ export interface S3UploadDescriptor extends BaseStorageUploadDescriptor {
 }
 
 export type StorageUploadDescriptor =
-  | VercelBlobUploadDescriptor
-  | S3UploadDescriptor;
+  VercelBlobUploadDescriptor | S3UploadDescriptor;
 
 export interface StorageUploadDebugInfo {
   provider: StorageBackend;
@@ -134,8 +138,7 @@ function getS3Config(): S3Config | null {
   const bucket = process.env.S3_BUCKET?.trim();
   const region = process.env.S3_REGION?.trim();
   const endpoint = process.env.S3_ENDPOINT?.trim();
-  const publicEndpoint =
-    process.env.S3_PUBLIC_ENDPOINT?.trim() || endpoint;
+  const publicEndpoint = process.env.S3_PUBLIC_ENDPOINT?.trim() || endpoint;
   const accessKeyId =
     process.env.S3_ACCESS_KEY_ID?.trim() ||
     process.env.AWS_ACCESS_KEY_ID?.trim();
@@ -195,9 +198,7 @@ export function logStorageDebug(message: string, details?: unknown): void {
 function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
   const config = getS3Config();
   if (!config) {
-    throw new Error(
-      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
-    );
+    throw new Error("Missing object-storage configuration.");
   }
 
   const clientConfig: S3ClientConfig = {
@@ -220,12 +221,13 @@ function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
   return new S3Client(clientConfig);
 }
 
-function getS3ClientCacheKey(endpoint: string, forcePathStyle: boolean): string {
+function getS3ClientCacheKey(
+  endpoint: string,
+  forcePathStyle: boolean,
+): string {
   const config = getS3Config();
   if (!config) {
-    throw new Error(
-      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
-    );
+    throw new Error("Missing object-storage configuration.");
   }
 
   return JSON.stringify({
@@ -241,9 +243,7 @@ function getS3ClientCacheKey(endpoint: string, forcePathStyle: boolean): string 
 function getS3Client(): S3Client {
   const config = getS3Config();
   if (!config) {
-    throw new Error(
-      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
-    );
+    throw new Error("Missing object-storage configuration.");
   }
 
   const cacheKey = getS3ClientCacheKey(config.endpoint, config.forcePathStyle);
@@ -253,7 +253,7 @@ function getS3Client(): S3Client {
   ) {
     s3ClientCache.__ryosS3Client = createS3Client(
       config.endpoint,
-      config.forcePathStyle
+      config.forcePathStyle,
     );
     s3ClientCache.__ryosS3ClientCacheKey = cacheKey;
   }
@@ -264,14 +264,12 @@ function getS3Client(): S3Client {
 function getS3PresignClient(): S3Client {
   const config = getS3Config();
   if (!config) {
-    throw new Error(
-      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
-    );
+    throw new Error("Missing object-storage configuration.");
   }
 
   const cacheKey = getS3ClientCacheKey(
     config.publicEndpoint,
-    config.forcePathStyle
+    config.forcePathStyle,
   );
   if (
     !s3ClientCache.__ryosS3PresignClient ||
@@ -279,7 +277,7 @@ function getS3PresignClient(): S3Client {
   ) {
     s3ClientCache.__ryosS3PresignClient = createS3Client(
       config.publicEndpoint,
-      config.forcePathStyle
+      config.forcePathStyle,
     );
     s3ClientCache.__ryosS3PresignClientCacheKey = cacheKey;
   }
@@ -290,15 +288,16 @@ function getS3PresignClient(): S3Client {
 function toS3StorageUrl(pathname: string): string {
   const config = getS3Config();
   if (!config) {
-    throw new Error(
-      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
-    );
+    throw new Error("Missing object-storage configuration.");
   }
 
   return `s3://${config.bucket}/${normalizePathname(pathname)}`;
 }
 
-function parseS3StorageUrl(storageUrl: string): { bucket: string; key: string } {
+function parseS3StorageUrl(storageUrl: string): {
+  bucket: string;
+  key: string;
+} {
   if (!storageUrl.startsWith("s3://")) {
     throw new Error(`Invalid S3 storage URL: ${storageUrl}`);
   }
@@ -364,7 +363,9 @@ async function readResponseBody(body: unknown): Promise<Uint8Array> {
     return await maybeTransformingBody.transformToByteArray();
   }
 
-  const maybeAsyncIterable = body as AsyncIterable<Uint8Array | Buffer | string>;
+  const maybeAsyncIterable = body as AsyncIterable<
+    Uint8Array | Buffer | string
+  >;
   if (Symbol.asyncIterator in Object(body)) {
     const chunks: Uint8Array[] = [];
 
@@ -402,7 +403,7 @@ export function getStorageBackend(): StorageBackend {
   ) {
     if (!getBlobReadWriteToken()) {
       throw new Error(
-        "STORAGE_PROVIDER requests Vercel Blob, but BLOB_READ_WRITE_TOKEN is not set."
+        "STORAGE_PROVIDER requests Vercel Blob, but BLOB_READ_WRITE_TOKEN is not set.",
       );
     }
     return "vercel-blob";
@@ -415,9 +416,7 @@ export function getStorageBackend(): StorageBackend {
     explicit === "r2"
   ) {
     if (!getS3Config()) {
-      throw new Error(
-        "STORAGE_PROVIDER requests S3-compatible storage, but S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY are not all set."
-      );
+      throw new Error("The configured object-storage backend is unavailable.");
     }
     return "s3";
   }
@@ -430,13 +429,11 @@ export function getStorageBackend(): StorageBackend {
     return "s3";
   }
 
-  throw new Error(
-    "Missing storage configuration. Set BLOB_READ_WRITE_TOKEN for Vercel Blob or S3_BUCKET + S3_REGION + S3_ENDPOINT + S3_ACCESS_KEY_ID + S3_SECRET_ACCESS_KEY for S3-compatible storage."
-  );
+  throw new Error("Missing object-storage configuration.");
 }
 
 export async function createStorageUploadDescriptor(
-  options: StorageUploadOptions
+  options: StorageUploadOptions,
 ): Promise<StorageUploadDescriptor> {
   const pathname = normalizePathname(options.pathname);
 
@@ -470,7 +467,7 @@ export async function createStorageUploadDescriptor(
       Key: pathname,
       ContentType: options.contentType,
     }),
-    { expiresIn: 60 }
+    { expiresIn: 60 },
   );
 
   return {
@@ -488,7 +485,7 @@ export async function createStorageUploadDescriptor(
 }
 
 async function createS3ProxyUploadDescriptor(
-  options: StorageUploadOptions
+  options: StorageUploadOptions,
 ): Promise<S3UploadDescriptor> {
   const pathname = normalizePathname(options.pathname);
   const token = await signStorageUploadToken({
@@ -524,7 +521,7 @@ export async function uploadStoredObject(options: {
   const pathname = normalizePathname(options.pathname);
   const config = getS3Config();
   if (!config) {
-    throw new Error("Missing S3-compatible storage configuration.");
+    throw new Error("Missing object-storage configuration.");
   }
 
   await getS3Client().send(
@@ -533,12 +530,104 @@ export async function uploadStoredObject(options: {
       Key: pathname,
       Body: options.body,
       ContentType: options.contentType,
-    })
+    }),
+  );
+}
+
+export async function uploadPrivateStoredObject(options: {
+  pathname: string;
+  contentType: string;
+  body: Uint8Array | Buffer;
+  maximumSizeInBytes: number;
+}): Promise<string> {
+  if (
+    options.body.byteLength <= 0 ||
+    options.body.byteLength > options.maximumSizeInBytes
+  ) {
+    throw new Error("Invalid private object size.");
+  }
+
+  const pathname = normalizePathname(options.pathname);
+  if (getStorageBackend() === "vercel-blob") {
+    const result = await putBlob(pathname, options.body, {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: false,
+      contentType: options.contentType,
+      maximumSizeInBytes: options.maximumSizeInBytes,
+    });
+    return result.url;
+  }
+
+  const config = getS3Config();
+  if (!config) throw new Error("Missing object-storage configuration.");
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: pathname,
+      Body: options.body,
+      ContentType: options.contentType,
+      IfNoneMatch: "*",
+    }),
+  );
+  return toS3StorageUrl(pathname);
+}
+
+export async function downloadPrivateStoredObjectByPathname(
+  pathname: string,
+  maximumSizeInBytes: number,
+): Promise<Uint8Array> {
+  const normalized = normalizePathname(pathname);
+  if (getStorageBackend() === "vercel-blob") {
+    const result = await getBlob(normalized, { access: "private" });
+    if (!result || result.statusCode !== 200) {
+      throw new Error("Stored object was not found.");
+    }
+    if (result.blob.size > maximumSizeInBytes) {
+      throw new Error("Stored object exceeds the download limit.");
+    }
+    return readResponseBody(result.stream);
+  }
+
+  const config = getS3Config();
+  if (!config) throw new Error("Missing object-storage configuration.");
+  const result = await getS3Client().send(
+    new GetObjectCommand({ Bucket: config.bucket, Key: normalized }),
+  );
+  if (
+    typeof result.ContentLength === "number" &&
+    result.ContentLength > maximumSizeInBytes
+  ) {
+    throw new Error("Stored object exceeds the download limit.");
+  }
+  const body = await readResponseBody(result.Body);
+  if (body.byteLength > maximumSizeInBytes) {
+    throw new Error("Stored object exceeds the download limit.");
+  }
+  return body;
+}
+
+export async function deletePrivateStoredObjectByPathname(
+  pathname: string,
+): Promise<void> {
+  const normalized = normalizePathname(pathname);
+  if (getStorageBackend() === "vercel-blob") {
+    await deleteBlob(normalized);
+    return;
+  }
+
+  const config = getS3Config();
+  if (!config) throw new Error("Missing object-storage configuration.");
+  await getS3Client().send(
+    new DeleteObjectCommand({
+      Bucket: config.bucket,
+      Key: normalized,
+    }),
   );
 }
 
 export function getStorageUploadDebugInfo(
-  descriptor: StorageUploadDescriptor
+  descriptor: StorageUploadDescriptor,
 ): StorageUploadDebugInfo {
   if (descriptor.provider === "vercel-blob") {
     return {
@@ -575,7 +664,7 @@ export function getStorageUploadDebugInfo(
 }
 
 export async function headStoredObject(
-  storageUrl: string
+  storageUrl: string,
 ): Promise<StorageObjectMetadata | null> {
   if (storageUrl.startsWith("s3://")) {
     try {
@@ -584,7 +673,7 @@ export async function headStoredObject(
         new HeadObjectCommand({
           Bucket: bucket,
           Key: key,
-        })
+        }),
       );
 
       return {
@@ -620,7 +709,7 @@ export async function deleteStoredObject(storageUrl: string): Promise<void> {
       new DeleteObjectCommand({
         Bucket: bucket,
         Key: key,
-      })
+      }),
     );
     return;
   }
@@ -629,7 +718,7 @@ export async function deleteStoredObject(storageUrl: string): Promise<void> {
 }
 
 export async function downloadStoredObject(
-  storageUrl: string
+  storageUrl: string,
 ): Promise<Uint8Array> {
   if (storageUrl.startsWith("s3://")) {
     const { bucket, key } = parseS3StorageUrl(storageUrl);
@@ -637,7 +726,7 @@ export async function downloadStoredObject(
       new GetObjectCommand({
         Bucket: bucket,
         Key: key,
-      })
+      }),
     );
     return await readResponseBody(result.Body);
   }
@@ -651,7 +740,7 @@ export async function downloadStoredObject(
 }
 
 export async function createSignedDownloadUrl(
-  storageUrl: string
+  storageUrl: string,
 ): Promise<string> {
   if (!storageUrl.startsWith("s3://")) {
     return storageUrl;
@@ -664,6 +753,6 @@ export async function createSignedDownloadUrl(
       Bucket: bucket,
       Key: key,
     }),
-    { expiresIn: 300 }
+    { expiresIn: 300 },
   );
 }

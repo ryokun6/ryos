@@ -26,8 +26,15 @@ import {
   normalizeTimeZone,
   markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
+  isCurrentMemoryAccount,
+  isValidMemoryAccountCreatedAt,
+  withCurrentAccountMemoryMutation,
 } from "../_utils/_memory.js";
-import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
+
+export {
+  withCurrentAccountMemoryMutation,
+  type CurrentAccountMemoryMutationResult,
+} from "../_utils/_memory.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -111,6 +118,8 @@ export interface ExtractMemoriesFromConversationOptions {
   timeZone?: string;
   storeLongTermMemories?: boolean;
   markTodayProcessed?: boolean;
+  accountCreatedAt: number;
+  operationScopeId?: string;
   log?: LogFn;
   logError?: LogFn;
 }
@@ -120,7 +129,7 @@ export interface ExtractMemoriesFromConversationResult {
   dailyNotes: number;
   analyzed: number;
   message: string;
-  skippedReason?: "empty-messages" | "conversation-too-short";
+  skippedReason?: "empty-messages" | "conversation-too-short" | "account_changed";
 }
 
 export function getChatMessageTimestamp(msg: ChatMessage): number | null {
@@ -223,6 +232,16 @@ RULES:
 - confidence "high" = user directly stated, "medium" = strong inference
 - Return empty arrays if nothing qualifies`;
 
+function getScopedMemoryOperationId(
+  operationScopeId: string | undefined,
+  type: "daily" | "long_term",
+  itemId: string | number
+): string | undefined {
+  return operationScopeId
+    ? `${operationScopeId}:${type}:${itemId}`
+    : undefined;
+}
+
 export async function extractMemoriesFromConversation({
   redis,
   username,
@@ -230,6 +249,8 @@ export async function extractMemoriesFromConversation({
   timeZone,
   storeLongTermMemories = true,
   markTodayProcessed = true,
+  accountCreatedAt,
+  operationScopeId,
   log = console.log,
   logError = console.error,
 }: ExtractMemoriesFromConversationOptions): Promise<ExtractMemoriesFromConversationResult> {
@@ -242,6 +263,17 @@ export async function extractMemoriesFromConversation({
       skippedReason: "empty-messages",
     };
   }
+
+  const accountIsCurrent = (): Promise<boolean> =>
+    isCurrentMemoryAccount({ redis, username, accountCreatedAt });
+  const accountChanged = (): ExtractMemoriesFromConversationResult => ({
+    extracted: 0,
+    dailyNotes: 0,
+    analyzed: 0,
+    message: "Account changed before memory extraction completed",
+    skippedReason: "account_changed",
+  });
+  if (!(await accountIsCurrent())) return accountChanged();
 
   const userTimeZone = normalizeTimeZone(timeZone);
   const conversationMessages = messages.reduce<
@@ -338,6 +370,7 @@ export async function extractMemoriesFromConversation({
       `Extract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
     temperature: 0.3,
   });
+  if (!(await accountIsCurrent())) return accountChanged();
 
   log("[extractMemories] Extraction complete", {
     username,
@@ -345,24 +378,52 @@ export async function extractMemoriesFromConversation({
     longTermMemories: result.longTermMemories.length,
   });
 
-  let dailyNotesStored = 0;
-  const touchedDates = new Set<string>();
-  for (const note of result.dailyNotes) {
-    const sourceTimestamp = resolveDailyNoteSourceTimestamp(
-      conversationMessages,
-      note.sourceMessageIndex
-    );
-    const storeResult = await appendDailyNote(redis, username, note.content, {
-      timeZone: userTimeZone,
-      ...(typeof sourceTimestamp === "number" ? { timestamp: sourceTimestamp } : {}),
-    });
-    if (storeResult.success) {
-      dailyNotesStored++;
-      if (storeResult.date) {
-        touchedDates.add(storeResult.date);
+  const dailyNotesMutation = await withCurrentAccountMemoryMutation({
+    redis,
+    username,
+    accountCreatedAt,
+    mutation: async () => {
+      let stored = 0;
+      const dates = new Set<string>();
+      for (const [noteIndex, note] of result.dailyNotes.entries()) {
+        const operationId = getScopedMemoryOperationId(
+          operationScopeId,
+          "daily",
+          noteIndex
+        );
+        const sourceTimestamp = resolveDailyNoteSourceTimestamp(
+          conversationMessages,
+          note.sourceMessageIndex
+        );
+        const storeResult = await appendDailyNote(
+          redis,
+          username,
+          note.content,
+          {
+            timeZone: userTimeZone,
+            ...(typeof sourceTimestamp === "number"
+              ? { timestamp: sourceTimestamp }
+              : {}),
+            ...(operationId ? { operationId } : {}),
+          }
+        );
+        if (storeResult.success) {
+          if (storeResult.applied !== false) {
+            stored += 1;
+          }
+          if (storeResult.date) {
+            dates.add(storeResult.date);
+          }
+        }
       }
-    }
+      return { stored, dates };
+    },
+  });
+  if (dailyNotesMutation.status === "account_changed") {
+    return accountChanged();
   }
+  const dailyNotesStored = dailyNotesMutation.value.stored;
+  const touchedDates = dailyNotesMutation.value.dates;
 
   let longTermStored = 0;
   if (storeLongTermMemories && maxLongTerm > 0) {
@@ -419,17 +480,51 @@ export async function extractMemoriesFromConversation({
       }
 
       const mode = targetKeyExists ? "update" : "add";
-      const storeResult = await upsertMemory(
+      const memoryMutation = await withCurrentAccountMemoryMutation({
         redis,
         username,
-        key,
-        finalSummary,
-        finalContent,
-        mode
-      );
+        accountCreatedAt,
+        mutation: async () => {
+          const storeResult = await upsertMemory(
+            redis,
+            username,
+            key,
+            finalSummary,
+            finalContent,
+            mode,
+            {
+              operationId: getScopedMemoryOperationId(
+                operationScopeId,
+                "long_term",
+                key
+              ),
+            }
+          );
+          const deletedKeys: string[] = [];
+          if (storeResult.success) {
+            for (const oldKey of keysToDelete) {
+              const deleteResult = await deleteMemory(
+                redis,
+                username,
+                oldKey
+              );
+              if (deleteResult.success) {
+                deletedKeys.push(oldKey);
+              }
+            }
+          }
+          return { storeResult, deletedKeys };
+        },
+      });
+      if (memoryMutation.status === "account_changed") {
+        return accountChanged();
+      }
+      const { storeResult, deletedKeys } = memoryMutation.value;
 
       if (storeResult.success) {
-        longTermStored++;
+        if (storeResult.applied !== false) {
+          longTermStored++;
+        }
         log("[extractMemories] Stored memory", {
           username,
           key,
@@ -437,15 +532,12 @@ export async function extractMemoriesFromConversation({
           mode,
         });
 
-        for (const oldKey of keysToDelete) {
-          const deleteResult = await deleteMemory(redis, username, oldKey);
-          if (deleteResult.success) {
-            log("[extractMemories] Deleted merged key", {
-              username,
-              oldKey,
-              mergedInto: key,
-            });
-          }
+        for (const oldKey of deletedKeys) {
+          log("[extractMemories] Deleted merged key", {
+            username,
+            oldKey,
+            mergedInto: key,
+          });
         }
       } else {
         logError("[extractMemories] Failed to store memory", {
@@ -463,9 +555,24 @@ export async function extractMemoriesFromConversation({
       touchedDates,
       hasExistingDailyEntries,
     });
-    await Promise.all(
-      datesToMarkProcessed.map((date) => markDailyNoteProcessed(redis, username, date))
-    );
+    if (datesToMarkProcessed.length > 0) {
+      const markProcessedMutation =
+        await withCurrentAccountMemoryMutation({
+          redis,
+          username,
+          accountCreatedAt,
+          mutation: async () => {
+            await Promise.all(
+              datesToMarkProcessed.map((date) =>
+                markDailyNoteProcessed(redis, username, date)
+              )
+            );
+          },
+        });
+      if (markProcessedMutation.status === "account_changed") {
+        return accountChanged();
+      }
+    }
   }
 
   log("[extractMemories] Done", {
@@ -499,9 +606,14 @@ export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
     const headerTimeZone = Array.isArray(headerTimeZoneRaw)
       ? headerTimeZoneRaw[0]
       : headerTimeZoneRaw;
-    const storedTimeZone = await getStoredUserTimeZone(redis, username);
+    const account = await getStoredUserRecord(redis, username);
+    if (!isValidMemoryAccountCreatedAt(account?.createdAt)) {
+      logger.response(409, Date.now() - startTime);
+      res.status(409).json({ error: "account_changed" });
+      return;
+    }
     const userTimeZone = normalizeTimeZone(
-      bodyTimeZone || headerTimeZone || storedTimeZone
+      bodyTimeZone || headerTimeZone || account.timeZone
     );
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -519,6 +631,7 @@ export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
         timeZone: userTimeZone,
         storeLongTermMemories: true,
         markTodayProcessed: true,
+        accountCreatedAt: account.createdAt,
         log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
         logError: (...args: unknown[]) => logger.error(String(args[0]), args[1]),
       });

@@ -23,6 +23,14 @@ export const AI_LIMIT_ANON_PER_DAY = 3;
 export const AI_WINDOW_AUTHENTICATED = 5 * 60 * 60; // 5 hours in seconds
 export const AI_WINDOW_ANONYMOUS = 24 * 60 * 60; // 24 hours in seconds
 
+const INCREMENT_WITH_TTL_SCRIPT = `
+local count = redis.call("INCR", KEYS[1])
+if count == 1 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+return count
+`;
+
 // Helper function to get rate limit key for a user
 export const getAIRateLimitKey = (identifier: string): string => {
   const scope = identifier.startsWith("anon:") ? "anon" : "user";
@@ -84,14 +92,11 @@ export async function checkAndIncrementAIMessageCount(
     };
   }
 
-  // ATOMIC rate limit check: increment first, then check
-  // This prevents race conditions where two requests read the same count
-  const newCount = await getRedis().incr(key);
-
-  // Set TTL only if this is the first increment (count became 1)
-  if (newCount === 1) {
-    await getRedis().expire(key, ttlSeconds);
-  }
+  const newCount = await getRedis().eval<number>(
+    INCREMENT_WITH_TTL_SCRIPT,
+    [key],
+    [ttlSeconds]
+  );
 
   // Check if the NEW count exceeds the limit
   if (newCount > limit) {

@@ -102,6 +102,33 @@ export const getMessageText = (message: {
   }, []).join("");
 };
 
+export const hasAssistantResponseStarted = (message: {
+  parts?: Array<{ type: string; text?: string }>;
+}): boolean =>
+  getMessageText(message).trim().length > 0 ||
+  message.parts?.some((part) => part.type.startsWith("tool-")) === true;
+
+export const shouldShowAssistantTypingDots = ({
+  message,
+  isStreamingMessage,
+  isLoadingGreeting,
+  isRoomView,
+  isStaticGreeting,
+}: {
+  message: {
+    role: string;
+    parts?: Array<{ type: string; text?: string }>;
+  };
+  isStreamingMessage: boolean;
+  isLoadingGreeting: boolean;
+  isRoomView: boolean;
+  isStaticGreeting: boolean;
+}): boolean =>
+  (isLoadingGreeting && !isRoomView && isStaticGreeting) ||
+  (isStreamingMessage &&
+    message.role === "assistant" &&
+    !hasAssistantResponseStarted(message));
+
 /** React list keys for synthetic greeting messages (not persisted server IDs). */
 export const SYNTHETIC_GREETING_KEY_PREFIX = "synthetic:greeting:";
 

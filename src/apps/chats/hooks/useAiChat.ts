@@ -9,7 +9,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { getBrowserTimeZone, getBrowserTimeZoneHeaders } from "@/api/core";
+import { getBrowserTimeZoneHeaders } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -20,7 +20,6 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { aiChatLog as log } from "../logging";
 import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
@@ -31,6 +30,14 @@ import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { getSystemState } from "../utils/systemState";
 import { dispatchToolCall } from "../tools/dispatchToolCall";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
+import {
+  buildAIConversationRequestBody,
+  getAIConversationRequestContext,
+  invalidateAIConversationSession,
+  loadAIConversation,
+  resetAIConversationSession,
+  uploadAIConversationImage,
+} from "@/api/aiConversations";
 
 
 // Helper to check if chats app is currently in the foreground
@@ -92,6 +99,49 @@ const resolveSharedHandlers = (): SharedAiChatHandlers | null =>
     ?.current ?? null;
 
 let sharedAiChat: Chat<AIChatMessage> | null = null;
+let sharedRequestOwner: string | null = null;
+
+function buildChatRequestBody(
+  systemState = getSystemState(),
+  model = useAppStore.getState().aiModel
+) {
+  return {
+    systemState,
+    model,
+  };
+}
+
+type ChatSubmissionIdentity = {
+  username: string | null;
+  isAuthenticated: boolean;
+};
+
+function captureChatSubmissionIdentity(): ChatSubmissionIdentity {
+  const { username, isAuthenticated } = useChatsStore.getState();
+  return {
+    username: username ? username.toLowerCase() : null,
+    isAuthenticated,
+  };
+}
+
+function isChatSubmissionIdentityCurrent(
+  identity: ChatSubmissionIdentity
+): boolean {
+  const current = captureChatSubmissionIdentity();
+  return (
+    current.username === identity.username &&
+    current.isAuthenticated === identity.isAuthenticated
+  );
+}
+
+function createInitialChatMessage(): AIChatMessage {
+  return {
+    id: "1",
+    role: "assistant",
+    parts: [{ type: "text", text: i18n.t("apps.chats.messages.greeting") }],
+    metadata: { createdAt: new Date() },
+  };
+}
 
 function getSharedAiChat(): Chat<AIChatMessage> {
   if (!sharedAiChat) {
@@ -104,10 +154,46 @@ function getSharedAiChat(): Chat<AIChatMessage> {
       transport: new DefaultChatTransport({
         api: getApiUrl("/api/chat"),
         headers: getBrowserTimeZoneHeaders,
-        body: async () => ({
-          systemState: getSystemState(),
-          model: useAppStore.getState().aiModel,
-        }),
+        body: async () => buildChatRequestBody(),
+        prepareSendMessagesRequest: async ({
+          body,
+          id,
+          messages,
+          trigger,
+          messageId,
+        }) => {
+          const chats = useChatsStore.getState();
+          const owner =
+            chats.username && chats.isAuthenticated
+              ? chats.username.toLowerCase()
+              : null;
+          const conversation = owner
+            ? await getAIConversationRequestContext({
+                channel: "chat",
+                username: owner,
+                localMessages: messages,
+              })
+            : undefined;
+          const current = useChatsStore.getState();
+          const currentOwner =
+            current.username && current.isAuthenticated
+              ? current.username.toLowerCase()
+              : null;
+          if (currentOwner !== owner) {
+            throw new Error("Chat identity changed while preparing request");
+          }
+          sharedRequestOwner = owner;
+          return {
+            body: buildAIConversationRequestBody({
+              body,
+              id,
+              messages,
+              trigger,
+              messageId,
+              conversation,
+            }),
+          };
+        },
       }),
 
       // Automatically submit when all tool outputs are available
@@ -178,12 +264,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     clearError,
     setMessages: setSdkMessages,
     sendMessage,
-    regenerate,
+    regenerate: sdkRegenerate,
     addToolOutput,
   } = useChat<AIChatMessage>({
     chat: getSharedAiChat(),
     experimental_throttle: 50,
   });
+
+  const chatIdentity =
+    username && isAuthenticated ? username.toLowerCase() : null;
+  const previousChatIdentityRef = useRef(chatIdentity);
+  useEffect(() => {
+    if (previousChatIdentityRef.current === chatIdentity) return;
+    previousChatIdentityRef.current = chatIdentity;
+    sharedRequestOwner = null;
+    sdkStop();
+    clearError();
+    setSdkMessages(useChatsStore.getState().aiMessages);
+  }, [chatIdentity, sdkStop, clearError, setSdkMessages]);
 
   // --- Shared chat lifecycle handlers -------------------------------------
   // Defined as plain closures (not useCallback) and snapshotted into
@@ -209,6 +307,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
 
   const handleSharedFinish: SharedOnFinish = ({ messages, isError }) => {
+      const currentAuth = useChatsStore.getState();
+      const currentOwner =
+        currentAuth.username && currentAuth.isAuthenticated
+          ? currentAuth.username.toLowerCase()
+          : null;
+      if (sharedRequestOwner !== currentOwner) {
+        log.debug("Ignoring response from a previous chat identity");
+        return;
+      }
+      if (sharedRequestOwner) {
+        invalidateAIConversationSession("chat", sharedRequestOwner);
+      }
+
       // Ensure all messages have metadata with createdAt. Prefer the
       // timestamp pinned while the message was streaming so it doesn't jump
       // to the finish time.
@@ -496,7 +607,96 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setMessages: setSdkMessages as (messages: AIChatMessage[]) => void,
   });
 
+  const hydrateServerConversation = useCallback(
+    async (force = false, importLocalIfEmpty = !force) => {
+      if (!username || !isAuthenticated) return;
+      const loaded = await loadAIConversation({
+        channel: "chat",
+        username,
+        localMessages: useChatsStore.getState().aiMessages,
+        force,
+        importLocalIfEmpty,
+      });
+      const currentAuth = useChatsStore.getState();
+      if (
+        loaded.stale ||
+        currentAuth.username?.toLowerCase() !== loaded.owner ||
+        !currentAuth.isAuthenticated ||
+        getSharedAiChat().status !== "ready"
+      ) {
+        return;
+      }
+
+      const nextMessages =
+        loaded.messages.length > 0
+          ? loaded.messages
+          : [createInitialChatMessage()];
+      setAiMessages(nextMessages);
+      setSdkMessages(nextMessages);
+    },
+    [username, isAuthenticated, setAiMessages, setSdkMessages]
+  );
+
+  useEffect(() => {
+    if (!username || !isAuthenticated) return;
+    let cancelled = false;
+    void hydrateServerConversation(true, true).catch((hydrationError) => {
+      if (!cancelled) {
+        log.error("Failed to hydrate server conversation", hydrationError);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [username, isAuthenticated, hydrateServerConversation]);
+
+  useEffect(() => {
+    if (!username || !isAuthenticated) return;
+    const refresh = () => {
+      if (
+        document.visibilityState === "visible" &&
+        getSharedAiChat().status === "ready"
+      ) {
+        void hydrateServerConversation(true).catch((hydrationError) => {
+          log.error("Failed to refresh server conversation", hydrationError);
+        });
+      }
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [username, isAuthenticated, hydrateServerConversation]);
+
   const isLoading = status === "streaming" || status === "submitted";
+  const retryLastUserMessage = useCallback((): Promise<void> => {
+    const messages = getSharedAiChat().messages;
+    let latestUserMessage: AIChatMessage | undefined;
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      if (messages[index]?.role === "user") {
+        latestUserMessage = messages[index];
+        break;
+      }
+    }
+    if (!latestUserMessage) return Promise.resolve();
+
+    const identity = captureChatSubmissionIdentity();
+    const owner = identity.isAuthenticated ? identity.username : null;
+    if (owner) {
+      invalidateAIConversationSession("chat", owner);
+    }
+    return sendMessage(
+      {
+        role: "user",
+        parts: latestUserMessage.parts,
+        metadata: latestUserMessage.metadata,
+        messageId: latestUserMessage.id,
+      },
+      { body: buildChatRequestBody() }
+    );
+  }, [sendMessage]);
   const {
     highlightSegment,
     isSpeaking,
@@ -524,10 +724,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   // --- Action Handlers ---
   const handleSubmitMessage = useCallback(
     async (messageContent: string, imageContent: string | null = null) => {
+      const submissionIdentity = captureChatSubmissionIdentity();
       if (!messageContent.trim() && !imageContent) return false; // Don't submit empty messages
 
       // Check if user needs to set username before submitting
-      if (needsUsername && !username) {
+      if (needsUsername && !submissionIdentity.username) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -536,7 +737,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       // Check if user is authenticated (cookies handle auth automatically)
-      if (username && !isAuthenticated) {
+      if (
+        submissionIdentity.username &&
+        !submissionIdentity.isAuthenticated
+      ) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -576,12 +780,45 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
       }
 
+      let requestBody: Awaited<ReturnType<typeof buildChatRequestBody>>;
+      try {
+        requestBody = await buildChatRequestBody(freshSystemState, aiModel);
+      } catch (requestError) {
+        log.error("Failed to prepare server conversation", requestError);
+        toast.error(i18n.t("apps.chats.toasts.aiError"), {
+          description: i18n.t("apps.chats.toasts.failedToGetResponse"),
+        });
+        return false;
+      }
+
       // Build message content - text and optionally image
       if (imageContent) {
-        // Extract media type from data URL (e.g., "data:image/png;base64,..." -> "image/png")
-        const mediaTypeMatch = imageContent.match(/^data:([^;]+);base64,/);
-        const mediaType = mediaTypeMatch ? mediaTypeMatch[1] : "image/png";
-        
+        let image = {
+          mediaType:
+            imageContent.match(/^data:([^;]+);base64,/)?.[1] ?? "image/png",
+          url: imageContent,
+        };
+        if (
+          submissionIdentity.username &&
+          submissionIdentity.isAuthenticated
+        ) {
+          if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+            return false;
+          }
+          try {
+            image = await uploadAIConversationImage(imageContent);
+          } catch (error) {
+            log.error("Failed to upload chat image", error);
+            toast.error(i18n.t("apps.chats.toasts.aiError"), {
+              description: i18n.t("apps.chats.toasts.failedToGetResponse"),
+            });
+            return false;
+          }
+        }
+        if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+          return false;
+        }
+
         // Send message with image attachment using files array
         sendMessage(
           {
@@ -589,8 +826,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             files: [
               {
                 type: "file" as const,
-                mediaType,
-                url: imageContent, // Data URL is accepted
+                mediaType: image.mediaType,
+                url: image.url,
               },
             ],
             metadata: {
@@ -598,14 +835,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             },
           },
           {
-            body: {
-              systemState: freshSystemState,
-              model: aiModel,
-            },
+            body: requestBody,
           },
         );
       } else {
         // Send text-only message
+        if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+          return false;
+        }
         sendMessage(
           {
             text: messageContent,
@@ -614,10 +851,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             },
           },
           {
-            body: {
-              systemState: freshSystemState,
-              model: aiModel,
-            },
+            body: requestBody,
           },
         );
       }
@@ -626,8 +860,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [
       sendMessage,
       needsUsername,
-      username,
-      isAuthenticated,
       aiModel,
       t,
     ],
@@ -635,10 +867,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const handleDirectMessageSubmit = useCallback(
     async (message: string) => {
+      const submissionIdentity = captureChatSubmissionIdentity();
       if (!message.trim()) return; // Don't submit empty messages
 
       // Check if user needs to set username before submitting
-      if (needsUsername && !username) {
+      if (needsUsername && !submissionIdentity.username) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -647,7 +880,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       // Check if user is authenticated (cookies handle auth automatically)
-      if (username && !isAuthenticated) {
+      if (
+        submissionIdentity.username &&
+        !submissionIdentity.isAuthenticated
+      ) {
         toast.error(i18n.t("apps.chats.toasts.loginRequired"), {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
@@ -669,6 +905,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Proceed with the actual submission using useChat v5
       log.debug("Sending direct message to AI chat", { model: aiModel });
+      let requestBody: Awaited<ReturnType<typeof buildChatRequestBody>>;
+      try {
+        requestBody = await buildChatRequestBody(getSystemState(), aiModel);
+      } catch (requestError) {
+        log.error("Failed to prepare server conversation", requestError);
+        toast.error(i18n.t("apps.chats.toasts.aiError"), {
+          description: i18n.t("apps.chats.toasts.failedToGetResponse"),
+        });
+        return;
+      }
+      if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+        return;
+      }
       sendMessage(
         {
           text: message,
@@ -677,14 +926,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           },
         },
         {
-          body: {
-            systemState: getSystemState(),
-            model: aiModel,
-          },
+          body: requestBody,
         },
       );
     },
-    [sendMessage, needsUsername, username, isAuthenticated, aiModel],
+    [sendMessage, needsUsername, aiModel],
   );
 
   const handleNudge = useCallback(() => {
@@ -692,68 +938,33 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Consider adding shake effect trigger here if needed
   }, [handleDirectMessageSubmit, t]);
 
-  const clearChats = useCallback(() => {
-    log.debug("Clearing AI chats", { messageCount: aiMessages.length });
-
-    // --- Extract memories before clearing (async, fire and forget) ---
-    // Capture current messages before we clear them
-    const messagesToAnalyze = [...aiMessages];
-    const currentUsername = username;
-    const currentTimeZone = getBrowserTimeZone() || "UTC";
-
-    // Only extract if user is logged in and there are messages worth analyzing
-    if (currentUsername && isAuthenticated && messagesToAnalyze.length > 2) {
-      log.debug("Triggering async memory extraction", {
-        messageCount: messagesToAnalyze.length,
-      });
-
-      abortableFetch(getApiUrl("/api/ai/extract-memories"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Timezone": currentTimeZone,
-        },
-        body: JSON.stringify({
-          timeZone: currentTimeZone,
-          messages: messagesToAnalyze.map(msg => ({
-            role: msg.role,
-            parts: msg.parts,
-            metadata: msg.metadata?.createdAt
-              ? {
-                  createdAt:
-                    msg.metadata.createdAt instanceof Date
-                      ? msg.metadata.createdAt.toISOString()
-                      : msg.metadata.createdAt,
-                }
-              : undefined,
-          })),
-        }),
-        timeout: 65000,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.extracted > 0) {
-            log.debug("Extracted memories from conversation", {
-              extracted: data.extracted,
-            });
-          } else {
-            log.debug("No memories extracted", {
-              hasMessage: Boolean(data.message),
-            });
-          }
-        })
-        .catch(err => {
-          console.warn("[clearChats] Memory extraction failed (non-blocking):", err);
-        });
-
-    }
+  const clearChats = useCallback(async () => {
+    const liveMessages = [...getSharedAiChat().messages];
+    log.debug("Clearing AI chats", {
+      messageCount: liveMessages.length,
+    });
 
     // Stop any in-flight stream first. Otherwise the AI SDK keeps appending to
     // its message list after we reset it below, and `useSyncedAiMessages`
     // refuses to overwrite a longer SDK list with the cleared store snapshot —
     // making the old conversation reappear right after "Clear Chat".
     sdkStop();
+
+    if (username && isAuthenticated) {
+      try {
+        await resetAIConversationSession({
+          channel: "chat",
+          username,
+          localMessages: liveMessages,
+        });
+      } catch (resetError) {
+        log.error("Failed to reset server conversation", resetError);
+        toast.error(i18n.t("apps.chats.toasts.aiError"), {
+          description: i18n.t("apps.chats.toasts.failedToGetResponse"),
+        });
+        return;
+      }
+    }
 
     // Clear the AI SDK error state (e.g. the inline red error / retry block).
     // Without this, a previous failed turn's error stays visible after clearing.
@@ -768,14 +979,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     resetSpeechState();
 
     // Define the initial message and mark it as fully processed so it is never spoken
-    const initialMessage: AIChatMessage = {
-      id: "1", // Ensure consistent ID for the initial message
-      role: "assistant",
-      parts: [{ type: "text", text: i18n.t("apps.chats.messages.greeting") }],
-      metadata: {
-        createdAt: new Date(),
-      },
-    };
+    const initialMessage = createInitialChatMessage();
     markAssistantMessageProcessed(initialMessage);
 
     // Update both the Zustand store and the SDK state directly
@@ -790,7 +994,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setNeedsUsername,
     resetSpeechState,
     markAssistantMessageProcessed,
-    aiMessages,
     username,
     isAuthenticated,
   ]);
@@ -799,7 +1002,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setIsClearDialogOpen(false);
     // Add small delay for dialog close animation
     setTimeout(() => {
-      clearChats();
+      void clearChats();
     }, 100);
   }, [clearChats]);
 
@@ -938,7 +1141,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     messages: messagesWithTimestamps, // Return messages with timestamps
     handleSubmitMessage,
     isLoading,
-    regenerate,
+    retryLastUserMessage,
+    regenerateAssistantMessage: sdkRegenerate,
     error,
     stop,
     sendMessage,

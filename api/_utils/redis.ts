@@ -102,6 +102,11 @@ export interface RedisLike {
     stop: number
   ): Promise<RedisSortedSetEntry[]>;
   zcard(key: string): Promise<number>;
+  eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<T>;
 }
 
 const redisClientCache = globalThis as typeof globalThis & {
@@ -513,6 +518,19 @@ class StandardRedisAdapter implements RedisLike {
 
   async zcard(key: string): Promise<number> {
     return await this.client.zcard(key);
+  }
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<T> {
+    return (await this.client.eval(
+      script,
+      keys.length,
+      ...keys,
+      ...args.map(String)
+    )) as T;
   }
 }
 
