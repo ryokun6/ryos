@@ -30,7 +30,10 @@ import type {
   SongLibraryLyricsSource,
   WebFetchInput,
   WebFetchOutput,
+  RunJsInput,
+  RunJsOutput,
 } from "./types.js";
+import { runJsInSandbox, JS_SANDBOX_MAX_TIMEOUT_MS } from "./js-sandbox.js";
 import {
   readFilesMetadataToolState,
   writeFilesMetadataToolState,
@@ -364,6 +367,60 @@ export async function executeWebFetch(
       message: isTimeout
         ? "Request timed out — the page took too long to respond."
         : `Failed to fetch: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+}
+
+// ============================================================================
+// Run JS (QuickJS sandbox) Tool Executor
+// ============================================================================
+
+export async function executeRunJs(
+  input: RunJsInput,
+  context: ServerToolContext & { username?: string | null; redis?: Redis }
+): Promise<RunJsOutput> {
+  const { code, timeoutSeconds } = input;
+
+  context.log(
+    `[runJs] Executing script (${code.length} chars${timeoutSeconds ? `, timeout ${timeoutSeconds}s` : ""})`
+  );
+
+  const rateLimit = await checkToolRateLimit("runJs", context);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      logs: "",
+      durationMs: 0,
+      truncated: false,
+      error: rateLimit.message!,
+      message: rateLimit.message!,
+    };
+  }
+
+  try {
+    const run = await runJsInSandbox(code, {
+      timeoutMs: timeoutSeconds
+        ? Math.min(timeoutSeconds * 1000, JS_SANDBOX_MAX_TIMEOUT_MS)
+        : undefined,
+    });
+
+    const message = run.success
+      ? `Script ran in ${run.durationMs}ms${run.truncated ? " (output truncated)" : ""}`
+      : `Script failed: ${run.error}`;
+    context.log(`[runJs] ${message}`);
+
+    return { ...run, message };
+  } catch (error) {
+    // Unexpected sandbox failure (e.g. WASM init) — not a script error.
+    context.logError("[runJs] Sandbox failure", error);
+    const message = `Sandbox failed to run: ${error instanceof Error ? error.message : "Unknown error"}`;
+    return {
+      success: false,
+      logs: "",
+      durationMs: 0,
+      truncated: false,
+      error: message,
+      message,
     };
   }
 }

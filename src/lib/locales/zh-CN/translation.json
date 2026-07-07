@@ -1459,6 +1459,18 @@
         "preparingHtmlPreview": "准备 HTML 预览…",
         "read": "已读取 {{fileName}}",
         "readingFile": "正在读取文件…",
+        "runJs": {
+          "failed": "脚本失败",
+          "failedWithError": "脚本失败：{{error}}",
+          "hideCode": "隐藏代码",
+          "noOutput": "(无输出)",
+          "ran": "脚本运行用时 {{duration}}",
+          "running": "正在运行脚本…",
+          "save": "保存",
+          "saved": "已保存",
+          "showCode": "显示代码",
+          "truncated": "(输出已截断)"
+        },
         "running": "执行 {{toolName}}…",
         "searchedWeb": "已搜索网络",
         "searchedWebFor": "已在网络上搜索 {{query}}",

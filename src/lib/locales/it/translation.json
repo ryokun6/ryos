@@ -1461,6 +1461,18 @@
         "preparingHtmlPreview": "Preparo anteprima HTML…",
         "read": "Letto {{fileName}}",
         "readingFile": "Lettura file…",
+        "runJs": {
+          "failed": "Script non riuscito",
+          "failedWithError": "Script non riuscito: {{error}}",
+          "hideCode": "Nascondi codice",
+          "noOutput": "(nessun output)",
+          "ran": "Script eseguito in {{duration}}",
+          "running": "Esecuzione script…",
+          "save": "Salva",
+          "saved": "Salvato",
+          "showCode": "Mostra codice",
+          "truncated": "(output troncato)"
+        },
         "running": "Esecuzione {{toolName}}…",
         "searchedWeb": "Cercato sul web",
         "searchedWebFor": "Cercato sul web per {{query}}",

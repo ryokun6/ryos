@@ -160,6 +160,7 @@
     "pusher": "^5.3.4",
     "pusher-js": "^8.5.0",
     "qrcode.react": "^4.2.0",
+    "quickjs-emscripten": "^0.32.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-i18next": "^16.6.6",

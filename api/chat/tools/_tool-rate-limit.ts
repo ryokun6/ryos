@@ -18,7 +18,8 @@ import { checkCounterLimit } from "../../_utils/_rate-limit.js";
 export type RateLimitedToolName =
   | "webFetch"
   | "searchSongs"
-  | "mapsSearchPlaces";
+  | "mapsSearchPlaces"
+  | "runJs";
 
 const TOOL_RATE_LIMITS: Record<
   RateLimitedToolName,
@@ -27,6 +28,8 @@ const TOOL_RATE_LIMITS: Record<
   webFetch: { limit: 50, windowSeconds: 60 * 60 },
   searchSongs: { limit: 30, windowSeconds: 60 * 60 },
   mapsSearchPlaces: { limit: 50, windowSeconds: 60 * 60 },
+  // Each run is CPU-bounded (15s max) but still burns server compute.
+  runJs: { limit: 60, windowSeconds: 60 * 60 },
 };
 
 export interface ToolRateLimitResult {

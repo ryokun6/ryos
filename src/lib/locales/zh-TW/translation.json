@@ -1459,6 +1459,18 @@
         "preparingHtmlPreview": "準備 HTML 預覽⋯",
         "read": "已讀取 {{fileName}}",
         "readingFile": "讀取檔案⋯",
+        "runJs": {
+          "failed": "腳本失敗",
+          "failedWithError": "腳本失敗：{{error}}",
+          "hideCode": "隱藏程式碼",
+          "noOutput": "(無輸出)",
+          "ran": "腳本執行耗時 {{duration}}",
+          "running": "正在執行腳本…",
+          "save": "儲存",
+          "saved": "已儲存",
+          "showCode": "顯示程式碼",
+          "truncated": "(輸出已截斷)"
+        },
         "running": "執行 {{toolName}}⋯",
         "searchedWeb": "已搜尋網路",
         "searchedWebFor": "已搜尋網路尋找 {{query}}",

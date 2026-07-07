@@ -38,6 +38,7 @@ import type {
   MemoryReadInput,
   MemoryDeleteInput,
   WebFetchInput,
+  RunJsInput,
   MapsSearchPlacesInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
@@ -57,6 +58,7 @@ import {
   executeMemoryDelete,
   executeDocumentsControl,
   executeWebFetch,
+  executeRunJs,
   type MemoryToolContext,
 } from "./executors.js";
 import {
@@ -78,6 +80,7 @@ export {
   executeMemoryDelete,
   executeDocumentsControl,
   executeWebFetch,
+  executeRunJs,
   type MemoryToolContext,
 } from "./executors.js";
 export {
@@ -103,6 +106,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "contactsControl",
   "songLibraryControl",
   "mapsSearchPlaces",
+  "runJs",
 ] as const;
 
 export type ChatToolProfile = "all" | "memory" | "telegram";
@@ -257,6 +261,17 @@ export const TOOL_DESCRIPTIONS = {
     "For JS-heavy single-page apps, content may be limited. " +
     "Optionally pass a CSS selector to extract a specific section.",
 
+  runJs:
+    "Run pure JavaScript (ES2023) in a secure server-side sandbox and get back console output plus the completion value. " +
+    "ALWAYS use this instead of computing in your head for: arithmetic beyond trivial sums, percentages, compound interest, " +
+    "date/unit conversions, counting, loops, sorting/filtering lists, statistics, string/text processing, parsing JSON, and any multi-step calculation. " +
+    "COMBINE WITH OTHER TOOLS: paste data from webFetch/searchSongs/other tool results into the script as string or object literals, then compute over it " +
+    "(e.g. fetch a page, then count words or extract numbers here). " +
+    "RULES: write self-contained scripts (each run starts fresh — no state persists between calls); console.log intermediate values and make the final expression the answer; " +
+    "use BigInt (e.g. 2n ** 100n) for exact large-integer math; " +
+    "the sandbox has NO fetch/network, NO timers (setTimeout), NO DOM, and NO Node/Bun APIs — inline all needed data as literals. " +
+    "Synchronous async/await works, but promises that rely on timers or I/O never settle.",
+
   // Unified Memory Tools
   memoryWrite:
     "Write to user memory. Supports two types via the 'type' parameter:\n" +
@@ -388,6 +403,17 @@ export function createChatTools(
       inputSchema: schemas.webFetchSchema,
       execute: async (input: WebFetchInput) => {
         return executeWebFetch(input, context);
+      },
+    },
+
+    // ============================================================================
+    // Run JS Tool (Server-side execution — QuickJS WASM sandbox)
+    // ============================================================================
+    runJs: {
+      description: TOOL_DESCRIPTIONS.runJs,
+      inputSchema: schemas.runJsSchema,
+      execute: async (input: RunJsInput) => {
+        return executeRunJs(input, context);
       },
     },
 
@@ -525,6 +551,7 @@ export function createChatTools(
   if (profile === "telegram") {
     return {
       webFetch: allTools.webFetch,
+      runJs: allTools.runJs,
       memoryWrite: allTools.memoryWrite,
       memoryRead: allTools.memoryRead,
       memoryDelete: allTools.memoryDelete,

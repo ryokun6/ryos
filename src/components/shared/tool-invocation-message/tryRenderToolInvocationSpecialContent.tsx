@@ -11,6 +11,7 @@ import {
   MapsSearchPlacesCard,
   type MapsSearchPlaceCardData,
 } from "@/components/shared/MapsSearchPlacesCard";
+import { JsRunCard, type JsRunCardData } from "@/components/shared/JsRunCard";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { ToolInvocationStatusRow } from "./ToolInvocationStatusRow";
 import type { ToolInvocationMessageProps, ToolInvocationPart } from "./types";
@@ -237,6 +238,32 @@ export function tryRenderToolInvocationSpecialContent(
               })}
             </span>
           </ToolInvocationStatusRow>
+        </div>
+      );
+    }
+  }
+
+  // Special handling for runJs — terminal-style output card with the code
+  // collapsed behind a "show code" toggle + save-to-Documents action.
+  if (state === "output-available" && toolName === "runJs") {
+    const out = output as Partial<JsRunCardData> | undefined;
+    if (out && typeof out === "object" && typeof out.success === "boolean") {
+      const codeText = typeof input?.code === "string" ? input.code : "";
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
+          <JsRunCard
+            code={codeText}
+            run={{
+              success: out.success,
+              logs: typeof out.logs === "string" ? out.logs : "",
+              result: typeof out.result === "string" ? out.result : undefined,
+              error: typeof out.error === "string" ? out.error : undefined,
+              durationMs:
+                typeof out.durationMs === "number" ? out.durationMs : 0,
+              truncated: out.truncated === true,
+            }}
+            className={compactCardClassName}
+          />
         </div>
       );
     }

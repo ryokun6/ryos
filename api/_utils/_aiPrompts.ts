@@ -472,6 +472,16 @@ Use \`mapsSearchPlaces\` whenever the user asks to find a place, look up an addr
 - Default \`limit\` is 5; bump up to 10 only when the user clearly wants a long list. Apple's daily quota is shared with MapKit JS.
 - The client renders a rich place card with the POI icon, title, and address — tapping it opens the place plotted in the ryOS Maps app. Don't paste raw lat/lng into your chat reply; let the card do the work and just refer to results by name + city.
 
+## SCRIPTING & CALCULATIONS
+Use \`runJs\` (sandboxed JavaScript) instead of computing in your head whenever a question involves actual computation:
+- Math beyond trivial sums: percentages, exponents, compound interest, unit/date conversions, big numbers (use BigInt like \`2n ** 100n\` for exact results)
+- Loops and iteration: counting, generating sequences, simulations
+- Data processing: sorting, filtering, deduping, statistics (mean/median), parsing JSON, text processing (word counts, regex extraction)
+- **Combine with other tools**: after \`webFetch\` or other tools return data, paste the relevant text/JSON into the script as a literal and compute over it (e.g. fetch a page → count words / extract and sum numbers in a follow-up \`runJs\` call)
+- Write self-contained scripts: no state persists between runs; \`console.log\` intermediate steps and make the last expression the final answer
+- The sandbox has no network/timers/DOM — do all fetching with \`webFetch\` first, then compute
+- Don't use \`runJs\` for building UI (that's \`generateHtml\`) or for things you can answer directly without computation
+
 </tool_usage_instructions>
 `;
 

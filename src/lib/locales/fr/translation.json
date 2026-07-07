@@ -1461,6 +1461,18 @@
         "preparingHtmlPreview": "Préparation de l’aperçu HTML…",
         "read": "{{fileName}} lu",
         "readingFile": "Lecture du fichier…",
+        "runJs": {
+          "failed": "Échec du script",
+          "failedWithError": "Échec du script : {{error}}",
+          "hideCode": "Masquer le code",
+          "noOutput": "(aucune sortie)",
+          "ran": "Script exécuté en {{duration}}",
+          "running": "Exécution du script…",
+          "save": "Enregistrer",
+          "saved": "Enregistré",
+          "showCode": "Afficher le code",
+          "truncated": "(sortie tronquée)"
+        },
         "running": "Exécution de {{toolName}}…",
         "searchedWeb": "Recherché sur le web",
         "searchedWebFor": "Recherché sur le web pour {{query}}",
