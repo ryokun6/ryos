@@ -12,6 +12,8 @@ import {
   type MapsSearchPlaceCardData,
 } from "@/components/shared/MapsSearchPlacesCard";
 import { JsRunCard, type JsRunCardData } from "@/components/shared/JsRunCard";
+import { WeatherToolCard } from "@/components/shared/WeatherToolCard";
+import type { GetWeatherOutput } from "@/shared/tools/weather";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { APPROVAL_GATED_TOOL_NAME_SET } from "@/shared/tools/approvalGated";
 import { ToolApprovalCard } from "./ToolApprovalCard";
@@ -260,6 +262,25 @@ export function tryRenderToolInvocationSpecialContent(
               })}
             </span>
           </ToolInvocationStatusRow>
+        </div>
+      );
+    }
+  }
+
+  // Special handling for getWeather — sky-gradient weather card (current
+  // conditions + upcoming forecast). Failures keep the default status row,
+  // whose result message already surfaces the tool's error text.
+  if (state === "output-available" && toolName === "getWeather") {
+    const out = output as Partial<GetWeatherOutput> | undefined;
+    if (out && out.success === true && out.current) {
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
+          <WeatherToolCard
+            location={out.location}
+            current={out.current}
+            forecast={out.forecast}
+            className={compactCardClassName}
+          />
         </div>
       );
     }

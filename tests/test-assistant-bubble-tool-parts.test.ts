@@ -74,11 +74,12 @@ describe("getAssistantBubbleToolParts", () => {
     expect(getAssistantBubbleToolParts(undefined)).toEqual([]);
   });
 
-  test("covers exactly the map, HTML preview, Cursor, and approval-gated tools", () => {
+  test("covers exactly the map, weather, HTML preview, Cursor, and approval-gated tools", () => {
     expect([...ASSISTANT_BUBBLE_TOOL_NAMES].sort()).toEqual([
       "cursorCloudAgent",
       "generateHtml",
       "getPreciseLocation",
+      "getWeather",
       "listCursorCloudAgentRuns",
       "mapsSearchPlaces",
     ]);
