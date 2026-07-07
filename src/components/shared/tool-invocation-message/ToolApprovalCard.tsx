@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { respondToToolApproval } from "@/apps/chats/tools/toolApprovals";
+import { aiChatLog as log } from "@/apps/chats/logging";
 import { toolInlineCardShellClassName } from "@/components/shared/toolInlineCardShell";
 import { cn } from "@/lib/utils";
 import { ToolInvocationStatusRow } from "./ToolInvocationStatusRow";
@@ -128,7 +129,14 @@ export function ToolApprovalCard({
         approved,
       })
         .then((handled) => {
-          if (!handled) setStale(true);
+          if (!handled) {
+            log.warn("Approval card is stale; rendering as declined", {
+              toolName,
+              toolCallId,
+              approvalId,
+            });
+            setStale(true);
+          }
         })
         .finally(() => setResponding(false));
     };

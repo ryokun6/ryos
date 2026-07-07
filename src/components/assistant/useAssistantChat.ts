@@ -19,6 +19,7 @@ import {
   registerToolApprovalSurface,
   sendAutomaticallyWhenApprovalsSettled,
 } from "@/apps/chats/tools/toolApprovals";
+import { summarizeChatMessages } from "@/apps/chats/tools/chatDebug";
 import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
@@ -311,6 +312,13 @@ export function useAssistantChat(): AssistantChatHandle {
               );
             }
             requestOwnerRef.current = owner;
+            log.debug("Preparing /api/chat request (assistant)", {
+              trigger,
+              messageId,
+              owner,
+              conversation,
+              ...summarizeChatMessages(messages),
+            });
             return {
               body: buildAIConversationRequestBody({
                 body,
@@ -439,7 +447,12 @@ export function useAssistantChat(): AssistantChatHandle {
       ) {
         return;
       }
-      log.debug("Assistant chat error", { message });
+      // Always-printed context for bug reports: the failing message states
+      // usually explain server-side 400s (e.g. invalid_messages).
+      log.error("Assistant chat request failed", {
+        error: err,
+        ...summarizeChatMessages(chat.messages),
+      });
     },
   });
   handlersRef.current.onToolCall = async ({ toolCall }) => {

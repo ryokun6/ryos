@@ -11,6 +11,7 @@ import i18n from "@/lib/i18n";
 import { reverseGeocodeCity } from "@/lib/weather/openMeteo";
 import { useWeatherStore } from "@/stores/useWeatherStore";
 import type { GetPreciseLocationOutput } from "@/shared/tools/preciseLocation";
+import { aiChatLog as log } from "../logging";
 import type { ToolOutputPayload } from "./types";
 
 const GEOLOCATION_TIMEOUT_MS = 15_000;
@@ -58,10 +59,12 @@ export async function handleGetPreciseLocation(
   toolCallId: string,
   context: { addToolOutput: (result: ToolOutputPayload) => void }
 ): Promise<void> {
+  log.debug("Resolving device geolocation", { toolCallId });
   let position: GeolocationPosition;
   try {
     position = await getCurrentPosition();
   } catch (error) {
+    log.warn("Geolocation failed", { toolCallId, error });
     context.addToolOutput({
       tool: "getPreciseLocation",
       toolCallId,
@@ -72,6 +75,13 @@ export async function handleGetPreciseLocation(
   }
 
   const { latitude, longitude, accuracy } = position.coords;
+  // Coarsen coordinates in logs (~1km) — debug output is meant to be shared.
+  log.debug("Geolocation resolved", {
+    toolCallId,
+    latitude: latitude.toFixed(2),
+    longitude: longitude.toFixed(2),
+    accuracyMeters: Number.isFinite(accuracy) ? Math.round(accuracy) : null,
+  });
 
   // Share the fresh device position with the weather store (the same source
   // the dashboard widget and weather wallpaper read from).
@@ -84,7 +94,13 @@ export async function handleGetPreciseLocation(
     latitude,
     longitude,
     i18n.language
-  ).catch(() => null);
+  ).catch((error) => {
+    log.debug("Reverse geocode failed; continuing without a city", {
+      toolCallId,
+      error,
+    });
+    return null;
+  });
 
   const output: GetPreciseLocationOutput = {
     success: true,
@@ -97,6 +113,10 @@ export async function handleGetPreciseLocation(
     city: city ?? null,
   };
 
+  log.debug("Reporting location tool output", {
+    toolCallId,
+    city: city ?? null,
+  });
   context.addToolOutput({
     tool: "getPreciseLocation",
     toolCallId,

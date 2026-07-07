@@ -29,6 +29,7 @@ import {
 } from "ai";
 import { APPROVAL_GATED_TOOL_NAME_SET } from "@/shared/tools/approvalGated";
 import { aiChatLog as log } from "../logging";
+import { summarizeChatMessage } from "./chatDebug";
 import {
   handleGetPreciseLocation,
   type GetPreciseLocationInput,
@@ -81,19 +82,47 @@ function approvalPartToolName(part: ApprovalToolPart): string {
 export function sendAutomaticallyWhenApprovalsSettled(options: {
   messages: UIMessage[];
 }): boolean {
-  if (lastAssistantMessageIsCompleteWithToolCalls(options)) return true;
+  const decision = decideAutoSend(options);
+  const message = options.messages[options.messages.length - 1];
+  const hasApprovalGatedPart =
+    message?.role === "assistant" &&
+    Array.isArray(message.parts) &&
+    (message.parts as ApprovalToolPart[]).some((part) =>
+      APPROVAL_GATED_TOOL_NAME_SET.has(approvalPartToolName(part))
+    );
+  // Only trace turns that involve an approval-gated tool; this predicate
+  // runs after every message mutation and would be noisy otherwise.
+  if (hasApprovalGatedPart) {
+    log.debug(`Auto-send decision: ${decision.send} (${decision.reason})`, {
+      lastMessageSummary: summarizeChatMessage(message),
+    });
+  }
+  return decision.send;
+}
+
+function decideAutoSend(options: { messages: UIMessage[] }): {
+  send: boolean;
+  reason: string;
+} {
+  if (lastAssistantMessageIsCompleteWithToolCalls(options)) {
+    return { send: true, reason: "all tool calls complete" };
+  }
   if (!lastAssistantMessageIsCompleteWithApprovalResponses(options)) {
-    return false;
+    return { send: false, reason: "approvals or tool outputs still pending" };
   }
   const message = options.messages[options.messages.length - 1];
-  if (!message || !Array.isArray(message.parts)) return false;
+  if (!message || !Array.isArray(message.parts)) {
+    return { send: false, reason: "no last message parts" };
+  }
   const awaitingClientExecution = (message.parts as ApprovalToolPart[]).some(
     (part) =>
       part.state === "approval-responded" &&
       part.approval?.approved === true &&
       APPROVAL_GATED_TOOL_NAME_SET.has(approvalPartToolName(part))
   );
-  return !awaitingClientExecution;
+  return awaitingClientExecution
+    ? { send: false, reason: "approved client tool awaiting output" }
+    : { send: true, reason: "approvals settled" };
 }
 
 /**
@@ -140,6 +169,13 @@ export async function respondToToolApproval({
   input,
   approved,
 }: RespondToToolApprovalArgs): Promise<boolean> {
+  log.debug("Tool approval decision received", {
+    toolName,
+    toolCallId,
+    approvalId,
+    approved,
+    surfaceCount: surfaces.size,
+  });
   const surface = [...surfaces].find((candidate) =>
     surfaceHasPendingApproval(candidate, toolCallId)
   );
@@ -147,25 +183,46 @@ export async function respondToToolApproval({
     log.warn("No chat surface has this tool call pending approval", {
       toolName,
       toolCallId,
+      approvalId,
+      surfaces: [...surfaces].map((candidate) => {
+        const last = candidate.getMessages().at(-1);
+        return last ? summarizeChatMessage(last) : "(empty)";
+      }),
     });
     return false;
   }
 
   if (!approved) {
-    log.debug("User denied tool approval", { toolName, toolCallId });
+    log.debug("User denied tool approval; recording denial", {
+      toolName,
+      toolCallId,
+      approvalId,
+    });
     await surface.addToolApprovalResponse({
       id: approvalId,
       approved: false,
       reason: "User declined the permission request.",
     });
+    log.debug("Denial recorded", {
+      toolCallId,
+      lastMessageSummary: summarizeChatMessage(surface.getMessages().at(-1)),
+    });
     return true;
   }
 
-  log.debug("User approved tool call", { toolName, toolCallId });
+  log.debug("User approved tool call; recording approval", {
+    toolName,
+    toolCallId,
+    approvalId,
+  });
   // Record the approval first (keeps the part schema-valid), then execute the
   // client handler. sendAutomaticallyWhenApprovalsSettled holds the auto-send
   // until the handler reports its output via addToolOutput.
   await surface.addToolApprovalResponse({ id: approvalId, approved: true });
+  log.debug("Approval recorded; running client handler", {
+    toolCallId,
+    lastMessageSummary: summarizeChatMessage(surface.getMessages().at(-1)),
+  });
   try {
     switch (toolName) {
       case "getPreciseLocation":
@@ -185,6 +242,11 @@ export async function respondToToolApproval({
         break;
     }
   } catch (error) {
+    log.warn("Approval-gated client handler threw", {
+      toolName,
+      toolCallId,
+      error,
+    });
     await surface.addToolOutput({
       tool: toolName,
       toolCallId,
@@ -193,5 +255,9 @@ export async function respondToToolApproval({
         error instanceof Error ? error.message : "Tool execution failed",
     });
   }
+  log.debug("Client handler finished", {
+    toolCallId,
+    lastMessageSummary: summarizeChatMessage(surface.getMessages().at(-1)),
+  });
   return true;
 }

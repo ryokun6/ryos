@@ -12,6 +12,10 @@ import {
 import { APPROVAL_GATED_TOOL_NAME_SET } from "../src/shared/tools/approvalGated.js";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "../src/shared/tools/serverExecuted.js";
 import { sendAutomaticallyWhenApprovalsSettled } from "../src/apps/chats/tools/toolApprovals.js";
+import {
+  summarizeChatPart,
+  summarizeChatMessages,
+} from "../src/apps/chats/tools/chatDebug.js";
 import type { UIMessage } from "ai";
 
 // ---------------------------------------------------------------------------
@@ -287,5 +291,49 @@ describe("resolveStaleToolApprovals", () => {
     ];
     const [sanitized] = resolveStaleToolApprovals(original);
     expect(sanitized).toBe(original[0]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Debug-log summaries (shared with the Debug console overlay)
+// ---------------------------------------------------------------------------
+
+describe("chatDebug summaries", () => {
+  test("summarizes tool parts without leaking payloads", () => {
+    const summary = summarizeChatPart({
+      type: "tool-getPreciseLocation",
+      toolCallId: "call-1",
+      state: "output-available",
+      input: { reason: "secret reason" },
+      output: { latitude: 1.23456, longitude: 2.34567 },
+      approval: { id: "appr-1", approved: true },
+    });
+    expect(summary).toBe(
+      "tool-getPreciseLocation state=output-available call=call-1 approval(id=appr-1, approved=true) hasOutput"
+    );
+    expect(summary).not.toContain("secret");
+    expect(summary).not.toContain("1.23456");
+  });
+
+  test("summarizes text parts as lengths only", () => {
+    expect(summarizeChatPart({ type: "text", text: "hello world" })).toBe(
+      "text len=11"
+    );
+  });
+
+  test("summarizes a trailing window of messages", () => {
+    const summary = summarizeChatMessages(
+      [
+        { id: "u1", role: "user", parts: [{ type: "text", text: "one" }] },
+        { id: "a1", role: "assistant", parts: [{ type: "text", text: "two" }] },
+        { id: "u2", role: "user", parts: [{ type: "text", text: "three" }] },
+      ],
+      2
+    );
+    expect(summary.messageCount).toBe(3);
+    expect(summary.lastMessages).toEqual([
+      "assistant#a1: text len=3",
+      "user#u2: text len=5",
+    ]);
   });
 });

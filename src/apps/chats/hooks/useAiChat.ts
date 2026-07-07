@@ -29,6 +29,7 @@ import {
   registerToolApprovalSurface,
   sendAutomaticallyWhenApprovalsSettled,
 } from "../tools/toolApprovals";
+import { summarizeChatMessages } from "../tools/chatDebug";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 import {
   buildAIConversationRequestBody,
@@ -182,6 +183,13 @@ function getSharedAiChat(): Chat<AIChatMessage> {
             throw new Error("Chat identity changed while preparing request");
           }
           sharedRequestOwner = owner;
+          log.debug("Preparing /api/chat request", {
+            trigger,
+            messageId,
+            owner,
+            conversation,
+            ...summarizeChatMessages(messages),
+          });
           return {
             body: buildAIConversationRequestBody({
               body,
@@ -346,7 +354,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }) as AIChatMessage,
       );
       log.debug("AI finished, syncing messages", {
-        messageCount: finalMessages.length,
+        isError,
+        ...summarizeChatMessages(finalMessages),
       });
       setAiMessages(finalMessages);
 
@@ -423,6 +432,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       console.error("AI Chat Error:", err);
+      // Structured context for the Debug console overlay: the failing message
+      // states usually explain server-side 400s (e.g. invalid_messages).
+      log.error(
+        "AI chat request failed",
+        summarizeChatMessages(getSharedAiChat().messages)
+      );
 
       // Helper function to handle authentication errors consistently
       const handleAuthError = (message?: string) => {
