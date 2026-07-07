@@ -462,11 +462,21 @@ export function useAssistantChat(): AssistantChatHandle {
       ) {
         return;
       }
-      if (message.includes("message_id_conflict")) {
+      // Self-heal rejected assistant continuations (auto-sends after client
+      // tool calls): the server keeps its canonical state, so re-sync it and
+      // clear the error instead of surfacing it. User-message sends are NOT
+      // recovered this way — silently replacing the thread would eat the
+      // message the user just typed.
+      if (
+        (message.includes("message_id_conflict") ||
+          message.includes("revision_conflict") ||
+          message.includes("conversation_changed")) &&
+        chat.messages.at(-1)?.role === "assistant"
+      ) {
         const owner = requestOwnerRef.current;
         log.warn(
-          "Assistant conversation rejected an invalid continuation; re-syncing from server",
-          { owner }
+          "Assistant continuation rejected as out of sync; re-syncing from server",
+          { owner, error: message }
         );
         if (owner) {
           invalidateAIConversationSession("assistant", owner);
