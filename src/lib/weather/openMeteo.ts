@@ -1,5 +1,4 @@
 import {
-  localizePlaceName,
   pickNominatimAddressName,
   resolveGeocodeLocale,
   resolveNominatimPlaceName,
@@ -139,7 +138,7 @@ export async function searchCities(
     );
 
   return Promise.all(
-    filtered.map(async (city) => ({
+    filtered.map(async (city: CityResult) => ({
       ...city,
       name: await resolveNominatimPlaceName(city.name, locale),
       state: city.state
