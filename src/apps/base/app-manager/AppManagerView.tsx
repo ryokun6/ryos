@@ -12,6 +12,7 @@ import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import { useAssistantStore } from "@/stores/useAssistantStore";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
+import { DialogParentWindowContext } from "@/components/shared/DialogParentWindowContext";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { isTextEditInitialData } from "@/types/appInitialData";
 import {
@@ -280,20 +281,22 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
         }}
       >
         {shouldMount ? (
-          <ManagedAppRoot
-            AppComponent={AppComponent}
-            isWindowOpen={instance.isOpen}
-            isForeground={effectiveIsForeground}
-            onClose={handleClose}
-            className="pointer-events-auto"
-            helpItems={app?.helpItems}
-            skipInitialSound={isInitialMount}
-            initialData={instance.initialData}
-            instanceId={instance.instanceId}
-            title={instance.title}
-            onNavigateNext={handleNavigateNext}
-            onNavigatePrevious={handleNavigatePrevious}
-          />
+          <DialogParentWindowContext.Provider value={instance.instanceId}>
+            <ManagedAppRoot
+              AppComponent={AppComponent}
+              isWindowOpen={instance.isOpen}
+              isForeground={effectiveIsForeground}
+              onClose={handleClose}
+              className="pointer-events-auto"
+              helpItems={app?.helpItems}
+              skipInitialSound={isInitialMount}
+              initialData={instance.initialData}
+              instanceId={instance.instanceId}
+              title={instance.title}
+              onNavigateNext={handleNavigateNext}
+              onNavigatePrevious={handleNavigatePrevious}
+            />
+          </DialogParentWindowContext.Provider>
         ) : null}
       </AppErrorBoundary>
     </div>

@@ -2216,6 +2216,62 @@
   border-radius: 7.2px 7.2px 0px 0px !important;
 }
 
+/* Mac OS X sheet dialogs — slide out from under the parent window titlebar */
+:root[data-os-theme="macosx"] .macosx-sheet-body.macosx-dialog {
+  border-radius: 0 0 7.2px 7.2px !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-os-theme="macosx"] .macosx-sheet-body .macosx-dialog-header {
+  border-radius: 0 !important;
+}
+
+@keyframes macosx-sheet-in {
+  from {
+    transform: translateY(-101%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes macosx-sheet-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-101%);
+  }
+}
+
+/* No-op animation on the Radix content element so it waits for the sheet
+   retract animation (running on the child) before unmounting. */
+@keyframes macosx-sheet-hold {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-os-theme="macosx"] .macosx-sheet-strip[data-state="closed"] {
+  animation: macosx-sheet-hold 260ms linear;
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="open"]
+  .macosx-sheet-body {
+  animation: macosx-sheet-in 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="closed"]
+  .macosx-sheet-body {
+  animation: macosx-sheet-out 260ms cubic-bezier(0.55, 0.06, 0.68, 0.19)
+    forwards;
+}
+
 /* macOS Aqua Tab Styles */
 .aqua-tab {
   position: relative;
