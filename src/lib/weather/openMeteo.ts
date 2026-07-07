@@ -1,3 +1,8 @@
+import {
+  pickNominatimAddressName,
+  resolveGeocodeLocale,
+  resolveNominatimPlaceName,
+} from "./geocodeLocale";
 import type { CityResult, WeatherSnapshot } from "./types";
 
 export function getWeatherEmoji(code: number, isDay = true): string {
@@ -29,7 +34,8 @@ function geocodeHeaders(
   opts?: GeocodeRequestOptions
 ): HeadersInit | undefined {
   const headers: Record<string, string> = {};
-  if (locale) headers["Accept-Language"] = locale;
+  const { acceptLanguage } = resolveGeocodeLocale(locale);
+  if (acceptLanguage) headers["Accept-Language"] = acceptLanguage;
   if (opts?.userAgent) headers["User-Agent"] = opts.userAgent;
   return Object.keys(headers).length > 0 ? headers : undefined;
 }
@@ -75,13 +81,9 @@ export async function reverseGeocodeCity(
     );
     if (!res.ok) return null;
     const data = await res.json();
-    return (
-      data?.address?.city ||
-      data?.address?.town ||
-      data?.address?.village ||
-      data?.address?.county ||
-      null
-    );
+    const raw = pickNominatimAddressName(data?.address ?? {});
+    if (!raw) return null;
+    return resolveNominatimPlaceName(raw, locale);
   } catch {
     return null;
   }
@@ -102,7 +104,7 @@ export async function searchCities(
   );
   if (!res.ok) return [];
   const data = await res.json();
-  return data
+  const filtered = data
     .filter(
       (r: { type: string; class: string }) =>
         ["city", "town", "village", "administrative"].includes(r.type) ||
@@ -134,4 +136,14 @@ export async function searchCities(
         lon: parseFloat(r.lon),
       })
     );
+
+  return Promise.all(
+    filtered.map(async (city: CityResult) => ({
+      ...city,
+      name: await resolveNominatimPlaceName(city.name, locale),
+      state: city.state
+        ? await resolveNominatimPlaceName(city.state, locale)
+        : city.state,
+    }))
+  );
 }

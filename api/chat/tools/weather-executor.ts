@@ -17,6 +17,7 @@ import {
   reverseGeocodeCity,
   searchCities,
 } from "../../../src/lib/weather/openMeteo.js";
+import { localizePlaceName } from "../../../src/lib/weather/geocodeLocale.js";
 import {
   celsiusToFahrenheit,
   describeWeatherCode,
@@ -170,6 +171,8 @@ export async function executeGetWeather(
     } catch {
       city = null;
     }
+  } else if (input.language) {
+    city = await localizePlaceName(city, input.language);
   }
 
   const condition = describeWeatherCode(payload.weatherCode);
