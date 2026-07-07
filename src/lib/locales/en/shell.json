@@ -75,6 +75,7 @@
       "adding": "Adding…",
       "saveFile": "Save File",
       "enterFileName": "Enter a name for your file",
+      "where": "Where:",
       "discardChanges": "Discard Changes",
       "discardChangesDesc": "Do you want to discard your changes and create a new file?",
       "keepNewDocument": "Keep New Document",
