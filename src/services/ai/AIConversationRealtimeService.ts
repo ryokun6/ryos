@@ -67,6 +67,11 @@ interface TurnWatermark
   terminal: boolean;
 }
 
+type AIConversationRealtimeTurnEvent = Exclude<
+  AIConversationRealtimeEvent,
+  { kind: "conversation-updated" }
+>;
+
 export class AIConversationRealtimeService {
   private readonly registrations = new Map<symbol, Registration>();
   private readonly listeners = new Set<() => void>();
@@ -84,6 +89,11 @@ export class AIConversationRealtimeService {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private recoveryTimer: ReturnType<typeof setTimeout> | null = null;
   private recoveryAttempt = 0;
+  private authoritativeConversationId: string | null = null;
+  private authoritativeRevision = 0;
+  private readonly rejectedConversationIds = new Set<string>();
+  private quarantinedEvents: AIConversationRealtimeTurnEvent[] = [];
+  private quarantineRefreshPending = false;
 
   constructor(
     private readonly channel: AIConversationRealtimeTurn["channel"]
@@ -146,6 +156,21 @@ export class AIConversationRealtimeService {
     }
   }
 
+  notifyLocalReset(conversation: {
+    id: string;
+    revision: number;
+  }): void {
+    this.activeRegistration?.controller.stop();
+    this.setAuthoritativeConversation(
+      conversation.id,
+      conversation.revision
+    );
+    this.latestTurnWatermark = null;
+    this.resetRecoveryRetry();
+    this.clearActiveRemoteTurn();
+    this.pendingRefresh = false;
+  }
+
   destroy(): void {
     this.registrations.clear();
     this.disconnect();
@@ -174,6 +199,10 @@ export class AIConversationRealtimeService {
     this.recoveryAttempt += 1;
     this.recoveryTimer = setTimeout(() => {
       this.recoveryTimer = null;
+      if (this.quarantinedEvents.length > 0) {
+        this.requestQuarantineValidation();
+        return;
+      }
       const active = this.activeRemoteTurn;
       if (active && !active.baseReady && !active.gapped) {
         void this.hydrateRemoteBase(active);
@@ -181,6 +210,62 @@ export class AIConversationRealtimeService {
         void this.refreshCanonical();
       }
     }, delay);
+  }
+
+  private setAuthoritativeConversation(id: string, revision: number): void {
+    const previousId = this.authoritativeConversationId;
+    if (previousId && previousId !== id) {
+      this.rejectedConversationIds.add(previousId);
+    }
+    this.authoritativeConversationId = id;
+    this.authoritativeRevision =
+      previousId === id ? Math.max(this.authoritativeRevision, revision) : revision;
+    this.rejectedConversationIds.delete(id);
+    while (this.rejectedConversationIds.size > 16) {
+      const oldest = this.rejectedConversationIds.values().next().value;
+      if (typeof oldest !== "string") break;
+      this.rejectedConversationIds.delete(oldest);
+    }
+  }
+
+  private quarantineCrossConversationEvent(
+    event: AIConversationRealtimeTurnEvent
+  ): void {
+    if (this.rejectedConversationIds.has(event.conversationId)) return;
+    if (this.quarantinedEvents.length >= MAX_QUEUED_STREAM_EVENTS) {
+      this.quarantinedEvents.shift();
+    }
+    this.quarantinedEvents.push(event);
+    this.requestQuarantineValidation();
+  }
+
+  private requestQuarantineValidation(): void {
+    if (
+      this.quarantineRefreshPending ||
+      this.quarantinedEvents.length === 0
+    ) {
+      return;
+    }
+    this.quarantineRefreshPending = true;
+    void this.refreshCanonical().then((refreshed) => {
+      this.quarantineRefreshPending = false;
+      if (!refreshed) {
+        if (this.activeRegistration && this.quarantinedEvents.length > 0) {
+          this.scheduleRecoveryRetry();
+        }
+        return;
+      }
+      const authoritativeId = this.authoritativeConversationId;
+      const queued = this.quarantinedEvents;
+      this.quarantinedEvents = [];
+      for (const event of queued) {
+        if (event.conversationId === authoritativeId) {
+          this.dispatchRealtimeEvent(event);
+        } else {
+          this.rejectedConversationIds.add(event.conversationId);
+        }
+      }
+    });
   }
 
   private getPreferredRegistration(): Registration | null {
@@ -272,6 +357,11 @@ export class AIConversationRealtimeService {
     this.realtimeChannel = null;
     this.clearActiveRemoteTurn();
     this.latestTurnWatermark = null;
+    this.authoritativeConversationId = null;
+    this.authoritativeRevision = 0;
+    this.rejectedConversationIds.clear();
+    this.quarantinedEvents = [];
+    this.quarantineRefreshPending = false;
     this.pendingRefresh = false;
   }
 
@@ -413,7 +503,6 @@ export class AIConversationRealtimeService {
       return;
     }
     if (
-      !(event.kind === "conversation-updated" && event.reason === "reset") &&
       isLocalAIConversationOperation(
         this.channel,
         registration.owner,
@@ -423,6 +512,23 @@ export class AIConversationRealtimeService {
       return;
     }
 
+    if (event.kind !== "conversation-updated") {
+      const expectedConversationId =
+        this.authoritativeConversationId ??
+        this.activeRemoteTurn?.stream.turn.conversationId ??
+        null;
+      if (
+        expectedConversationId &&
+        event.conversationId !== expectedConversationId
+      ) {
+        this.quarantineCrossConversationEvent(event);
+        return;
+      }
+    }
+    this.dispatchRealtimeEvent(event);
+  };
+
+  private dispatchRealtimeEvent(event: AIConversationRealtimeEvent): void {
     switch (event.kind) {
       case "turn-started":
         this.handleTurnStarted(event);
@@ -441,7 +547,7 @@ export class AIConversationRealtimeService {
         return exhaustive;
       }
     }
-  };
+  }
 
   private handleTurnStarted(event: AIConversationRealtimeTurn): void {
     const registration = this.activeRegistration;
@@ -519,6 +625,7 @@ export class AIConversationRealtimeService {
     if (event.reason === "reset") {
       this.activeRegistration?.controller.stop();
     }
+    this.setAuthoritativeConversation(event.conversationId, event.revision);
     this.latestTurnWatermark = null;
     this.resetRecoveryRetry();
     this.clearActiveRemoteTurn();
@@ -620,6 +727,10 @@ export class AIConversationRealtimeService {
           return;
         }
         this.resetRecoveryRetry();
+        this.setAuthoritativeConversation(
+          loaded.conversation.id,
+          loaded.conversation.revision
+        );
         this.latestTurnWatermark = {
           ...active.stream.turn,
           conversationId: loaded.conversation.id,
@@ -638,6 +749,10 @@ export class AIConversationRealtimeService {
         return;
       }
       this.resetRecoveryRetry();
+      this.setAuthoritativeConversation(
+        loaded.conversation.id,
+        loaded.conversation.revision
+      );
       active.baseReady = true;
       this.replayQueuedEvents(active);
     } catch (error) {
@@ -652,12 +767,31 @@ export class AIConversationRealtimeService {
     }
   }
 
-  private async refreshCanonical(): Promise<void> {
+  private minimumCanonicalRevision(conversationId: string): number {
+    let minimum =
+      this.authoritativeConversationId === conversationId
+        ? this.authoritativeRevision
+        : 0;
+    const active = this.activeRemoteTurn;
+    if (active?.stream.turn.conversationId === conversationId) {
+      minimum = Math.max(minimum, active.stream.turn.revision);
+    }
+    const watermark = this.latestTurnWatermark;
+    if (
+      watermark?.terminal &&
+      watermark.conversationId === conversationId
+    ) {
+      minimum = Math.max(minimum, watermark.revision);
+    }
+    return minimum;
+  }
+
+  private async refreshCanonical(): Promise<boolean> {
     const registration = this.activeRegistration;
-    if (!registration) return;
+    if (!registration) return false;
     if (registration.controller.getStatus() !== "ready") {
       this.scheduleRecoveryRetry();
-      return;
+      return false;
     }
     const generation = ++this.refreshGeneration;
     this.pendingRefresh = false;
@@ -668,20 +802,19 @@ export class AIConversationRealtimeService {
         generation !== this.refreshGeneration ||
         this.activeRegistration !== registration
       ) {
-        return;
+        return false;
       }
       if (loaded.stale) {
         this.scheduleRecoveryRetry();
-        return;
+        return false;
       }
       const active = this.activeRemoteTurn;
       if (
-        active &&
-        loaded.conversation.id === active.stream.turn.conversationId &&
-        loaded.conversation.revision < active.stream.turn.revision
+        loaded.conversation.revision <
+        this.minimumCanonicalRevision(loaded.conversation.id)
       ) {
         this.scheduleRecoveryRetry();
-        return;
+        return false;
       }
       if (
         active &&
@@ -691,13 +824,21 @@ export class AIConversationRealtimeService {
         loaded.conversation.id === active.stream.turn.conversationId &&
         loaded.conversation.revision === active.stream.turn.revision
       ) {
+        this.setAuthoritativeConversation(
+          loaded.conversation.id,
+          loaded.conversation.revision
+        );
         this.resetRecoveryRetry();
-        return;
+        return true;
       }
       if (!registration.controller.commit(loaded)) {
         this.scheduleRecoveryRetry();
-        return;
+        return false;
       }
+      this.setAuthoritativeConversation(
+        loaded.conversation.id,
+        loaded.conversation.revision
+      );
       if (
         active &&
         (active.terminalReceived ||
@@ -717,6 +858,7 @@ export class AIConversationRealtimeService {
       } else {
         this.resetRecoveryRetry();
       }
+      return true;
     } catch (error) {
       if (
         generation === this.refreshGeneration &&
@@ -725,6 +867,7 @@ export class AIConversationRealtimeService {
         this.scheduleRecoveryRetry();
       }
       this.log.warn("Failed to refresh the realtime conversation", { error });
+      return false;
     }
   }
 }

@@ -700,11 +700,12 @@ export function useAssistantChat(): AssistantChatHandle {
     sdkStop();
     if (username && isAuthenticated) {
       try {
-        await resetAIConversationSession({
+        const resetConversation = await resetAIConversationSession({
           channel: "assistant",
           username,
           localMessages: liveMessages,
         });
+        assistantConversationRealtime.notifyLocalReset(resetConversation);
       } catch (resetError) {
         log.warn("Failed to reset server conversation", { error: resetError });
         return false;

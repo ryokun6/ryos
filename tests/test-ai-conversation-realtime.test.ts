@@ -659,7 +659,7 @@ describe("AI conversation realtime client service", () => {
     }
   }, 3_000);
 
-  test("applies reset updates even when the operation originated locally", async () => {
+  test("defers a local reset echo until the HTTP reset commits", async () => {
     const previousFetch = globalThis.fetch;
     const fakeClient = new FakeRealtimeClient();
     const restoreRealtime = installFakeRealtimeClient(fakeClient);
@@ -747,8 +747,14 @@ describe("AI conversation realtime client service", () => {
       );
       await Promise.resolve();
       await Promise.resolve();
+      expect(stopCount).toBe(0);
+      expect(liveMessages.at(-1)?.id).toBe("user-1");
+
+      service.notifyLocalReset({
+        id: replacementConversationId,
+        revision: 0,
+      });
       expect(stopCount).toBe(1);
-      expect(liveMessages).toEqual([]);
       unregister();
     } finally {
       service.destroy();
@@ -831,4 +837,123 @@ describe("AI conversation realtime client service", () => {
       restoreRealtime();
     }
   }, 2_000);
+
+  test("ignores retired conversation events after a reset barrier", async () => {
+    const fakeClient = new FakeRealtimeClient();
+    const restoreRealtime = installFakeRealtimeClient(fakeClient);
+    const service = new AIConversationRealtimeService("chat");
+    const replacementConversationId = "33333333-3333-4333-8333-333333333333";
+    let canonicalConversationId = turn.conversationId;
+    let canonicalRevision = turn.revision;
+    let canonicalMessages = [textMessage("user-1", "user", "old")];
+    let liveMessages = [...canonicalMessages];
+    const controller: AIConversationRealtimeController = {
+      getStatus: () => "ready",
+      getMessages: () => liveMessages,
+      setMessages: (messages) => {
+        liveMessages = messages;
+      },
+      load: async () => ({
+        owner: "alice",
+        conversation: {
+          id: canonicalConversationId,
+          channel: "chat",
+          revision: canonicalRevision,
+          createdAt: turn.startedAt,
+          updatedAt: turn.startedAt,
+          messageCount: canonicalMessages.length,
+          oldestSeq: canonicalMessages.length > 0 ? 1 : null,
+          newestSeq:
+            canonicalMessages.length > 0 ? canonicalMessages.length : null,
+          historyTruncated: false,
+          canImportLegacy: false,
+        },
+        messages: canonicalMessages,
+        stale: false,
+      }),
+      commit: (loaded) => {
+        liveMessages = loaded.messages;
+        return true;
+      },
+      stop: () => undefined,
+    };
+
+    try {
+      const unregister = service.register({
+        owner: "alice",
+        priority: 1,
+        controller,
+      });
+      const channel = fakeClient.channels.get("private-chats-alice");
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "turn-started",
+        ...turn,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      canonicalConversationId = replacementConversationId;
+      canonicalRevision = 0;
+      canonicalMessages = [];
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "conversation-updated",
+        reason: "reset",
+        channel: "chat",
+        conversationId: replacementConversationId,
+        revision: 0,
+        operationId: "op-reset-remote",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const replacementTurn: AIConversationRealtimeTurn = {
+        ...turn,
+        conversationId: replacementConversationId,
+        revision: 0,
+        operationId: "op-new",
+        startedAt: "2026-07-07T00:01:00.000Z",
+      };
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "turn-started",
+        ...replacementTurn,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(service.getSnapshot()).toBe(true);
+
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "stream-chunks",
+        ...turn,
+        sequence: 0,
+        chunks: [{ kind: "start", messageId: "assistant-retired" }],
+      });
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "turn-finished",
+        ...turn,
+        revision: turn.revision + 1,
+        outcome: "completed",
+      });
+      expect(service.getSnapshot()).toBe(true);
+
+      canonicalRevision = 1;
+      canonicalMessages = [
+        textMessage("user-new", "user", "new"),
+        textMessage("assistant-new", "assistant", "current"),
+      ];
+      channel?.emit(AI_CONVERSATION_REALTIME_EVENT, {
+        kind: "turn-finished",
+        ...replacementTurn,
+        revision: canonicalRevision,
+        outcome: "completed",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(service.getSnapshot()).toBe(false);
+      expect(liveMessages.at(-1)?.id).toBe("assistant-new");
+      unregister();
+    } finally {
+      service.destroy();
+      restoreRealtime();
+    }
+  });
 });

@@ -748,6 +748,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const isLoading =
     status === "streaming" || status === "submitted" || isRemoteStreaming;
+  const guardedSendMessage = useCallback<typeof sendMessage>(
+    (message, options) => {
+      if (chatConversationRealtime.getSnapshot()) return Promise.resolve();
+      return sendMessage(message, options);
+    },
+    [sendMessage]
+  );
+  const guardedRegenerate = useCallback<typeof sdkRegenerate>(
+    (options) => {
+      if (chatConversationRealtime.getSnapshot()) return Promise.resolve();
+      return sdkRegenerate(options);
+    },
+    [sdkRegenerate]
+  );
   const retryLastUserMessage = useCallback((): Promise<void> => {
     if (chatConversationRealtime.getSnapshot()) return Promise.resolve();
     const messages = getSharedAiChat().messages;
@@ -765,7 +779,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     if (owner) {
       invalidateAIConversationSession("chat", owner);
     }
-    return sendMessage(
+    return guardedSendMessage(
       {
         role: "user",
         parts: latestUserMessage.parts,
@@ -774,7 +788,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       },
       { body: buildChatRequestBody() }
     );
-  }, [sendMessage]);
+  }, [guardedSendMessage]);
   const {
     highlightSegment,
     isSpeaking,
@@ -899,7 +913,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
 
         // Send message with image attachment using files array
-        sendMessage(
+        guardedSendMessage(
           {
             text: messageContent.trim() || t("apps.chats.status.describeThisImage"),
             files: [
@@ -922,7 +936,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
           return false;
         }
-        sendMessage(
+        guardedSendMessage(
           {
             text: messageContent,
             metadata: {
@@ -937,7 +951,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       return true;
     },
     [
-      sendMessage,
+      guardedSendMessage,
       needsUsername,
       aiModel,
       t,
@@ -998,7 +1012,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
         return;
       }
-      sendMessage(
+      guardedSendMessage(
         {
           text: message,
           metadata: {
@@ -1010,7 +1024,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         },
       );
     },
-    [sendMessage, needsUsername, aiModel],
+    [guardedSendMessage, needsUsername, aiModel],
   );
 
   const handleNudge = useCallback(() => {
@@ -1032,11 +1046,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
     if (username && isAuthenticated) {
       try {
-        await resetAIConversationSession({
+        const resetConversation = await resetAIConversationSession({
           channel: "chat",
           username,
           localMessages: liveMessages,
         });
+        chatConversationRealtime.notifyLocalReset(resetConversation);
       } catch (resetError) {
         log.error("Failed to reset server conversation", resetError);
         toast.error(i18n.t("apps.chats.toasts.aiError"), {
@@ -1223,10 +1238,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     isLoading,
     isRemoteStreaming,
     retryLastUserMessage,
-    regenerateAssistantMessage: sdkRegenerate,
+    regenerateAssistantMessage: guardedRegenerate,
     error,
     stop,
-    sendMessage,
+    sendMessage: guardedSendMessage,
     handleDirectMessageSubmit,
     handleNudge,
     clearChats, // Expose the action

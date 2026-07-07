@@ -119,6 +119,10 @@ describe("shared AI chat wiring", () => {
       'priority: sharedHandlerRole === "primary" ? 1 : 0'
     );
     expect(source).toContain("isRemoteStreaming");
+    expect(source).toContain("sendMessage: guardedSendMessage");
+    expect(source).toContain(
+      "regenerateAssistantMessage: guardedRegenerate"
+    );
 
     const assistant = readSource(
       "src/components/assistant/useAssistantChat.ts"

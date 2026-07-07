@@ -363,7 +363,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                 )
               ) : (
                 <ChatInput
-                  isLoading={isLoading || isRyoLoading}
+                  isLoading={currentRoom ? isRyoLoading : isLoading}
                   isRemoteStreaming={!currentRoom && isRemoteStreaming}
                   isForeground={isForeground}
                   onSubmitMessage={handleSubmit}
