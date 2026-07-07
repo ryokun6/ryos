@@ -218,6 +218,87 @@ describe("AI conversation client", () => {
     });
   });
 
+  test("imports over a proactive greeting with its revision and tracked operation", async () => {
+    const requests: Array<{ method: string; body: unknown }> = [];
+    let getCount = 0;
+    globalThis.fetch = async (_input, init) => {
+      const method = init?.method ?? "GET";
+      requests.push({
+        method,
+        body: typeof init?.body === "string" ? JSON.parse(init.body) : null,
+      });
+      if (method === "POST") {
+        return Response.json({ imported: 2 }, { status: 201 });
+      }
+      getCount += 1;
+      return getCount === 1
+        ? pageResponse({
+            revision: 1,
+            canImportLegacy: true,
+            messages: [
+              {
+                id: "proactive-greeting-1",
+                seq: 1,
+                role: "assistant",
+                parts: [{ type: "text", text: "welcome back" }],
+                createdAt: "2026-07-06T00:00:00.000Z",
+              },
+            ],
+          })
+        : pageResponse({
+            revision: 2,
+            messages: [
+              {
+                id: "u1",
+                seq: 1,
+                role: "user",
+                parts: [{ type: "text", text: "hello" }],
+                createdAt: "2026-07-06T00:00:01.000Z",
+              },
+              {
+                id: "a1",
+                seq: 2,
+                role: "assistant",
+                parts: [{ type: "text", text: "hi" }],
+                createdAt: "2026-07-06T00:00:02.000Z",
+              },
+            ],
+          });
+    };
+
+    const loaded = await loadAIConversation({
+      channel: "chat",
+      username: "alice",
+      localMessages: [
+        message("u1", "user", "hello"),
+        message("a1", "assistant", "hi"),
+      ],
+    });
+
+    expect(loaded.messages.map((entry) => entry.id)).toEqual(["u1", "a1"]);
+    expect(requests.map((request) => request.method)).toEqual([
+      "GET",
+      "POST",
+      "GET",
+    ]);
+    const importBody = requests[1]?.body;
+    expect(importBody).toMatchObject({
+      conversationId: CHAT_ID,
+      expectedRevision: 1,
+      operationId: expect.any(String),
+    });
+    if (typeof importBody !== "object" || importBody === null) {
+      throw new Error("Expected an import request body");
+    }
+    const operationId = Reflect.get(importBody, "operationId");
+    if (typeof operationId !== "string") {
+      throw new Error("Expected an import operation ID");
+    }
+    expect(
+      isLocalAIConversationOperation("chat", "alice", operationId)
+    ).toBe(true);
+  });
+
   test("resets to the server-returned conversation id", async () => {
     globalThis.fetch = async (_input, init) => {
       if (init?.method === "POST") {
