@@ -20,9 +20,6 @@ import { broadcastRoomDeleted, broadcastRoomUpdated } from "./_helpers/_pusher.j
 import type { Room } from "./_helpers/_types.js";
 import { notifyRoomBindingChange, isIrcBridgeEnabled } from "../_utils/irc/_bridge.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 export default apiHandler(
   { methods: ["GET", "DELETE"], auth: "optional" },
   async ({ req, res, redis, logger, startTime, user }) => {

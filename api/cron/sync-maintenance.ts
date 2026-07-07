@@ -1,14 +1,12 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "../_utils/api-types.js";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import { runSyncMaintenance } from "../sync/v2/_maintenance.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 60;
-
 /**
- * Cloud Sync v2 maintenance cron (see vercel.json `crons`):
+ * Cloud Sync v2 maintenance cron (trigger via an external scheduler, e.g. a
+ * Coolify scheduled task or system cron hitting this endpoint):
  * garbage-collects unreferenced content-addressed blobs (mark-and-sweep with
  * a grace period) and heals user records. Bounded per run; successive runs
  * walk the user base via a persisted scan cursor.
@@ -16,8 +14,8 @@ export const maxDuration = 60;
  * Auth matches the telegram heartbeat cron: `Authorization: Bearer ${CRON_SECRET}`.
  */
 export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
+  req: ApiRequest,
+  res: ApiResponse
 ): Promise<void> {
   const { logger } = initLogger();
   const startTime = Date.now();

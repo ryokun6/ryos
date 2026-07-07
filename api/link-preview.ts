@@ -4,9 +4,6 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 interface LinkMetadata {
   title?: string;
   description?: string;

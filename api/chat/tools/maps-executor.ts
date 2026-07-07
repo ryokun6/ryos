@@ -93,9 +93,9 @@ function buildResult(
 
 /**
  * Resolve a fallback search anchor from the request's IP-derived geolocation
- * when the model didn't pass an explicit `near`. Apple's `requestGeo` ships
- * latitude/longitude as strings on Vercel; we coerce to numbers and reject
- * obviously bogus values (NaN, out-of-range) so we don't make Apple complain.
+ * when the model didn't pass an explicit `near`. `requestGeo` ships
+ * latitude/longitude as strings; we coerce to numbers and reject obviously
+ * bogus values (NaN, out-of-range) so we don't make Apple complain.
  */
 function resolveFallbackNear(
   context: ServerToolContext
@@ -107,9 +107,9 @@ function resolveFallbackNear(
   if (typeof lat !== "number" || typeof lng !== "number") return null;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-  // Treat a 0,0 anchor (Null Island) as "no signal" — Vercel sometimes ships
-  // exactly that for unknown IPs and biasing every search toward the Gulf of
-  // Guinea is worse than no bias at all.
+  // Treat a 0,0 anchor (Null Island) as "no signal" — geo providers sometimes
+  // ship exactly that for unknown IPs and biasing every search toward the
+  // Gulf of Guinea is worse than no bias at all.
   if (lat === 0 && lng === 0) return null;
   return { latitude: lat, longitude: lng };
 }

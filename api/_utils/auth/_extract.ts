@@ -6,7 +6,7 @@
  *   2. Authorization header + X-Username header   (programmatic API clients)
  */
 
-import type { VercelRequest } from "@vercel/node";
+import type { ApiRequest } from "../api-types.js";
 import type { ExtractedAuth } from "./_types.js";
 import { parseAuthCookie } from "../_cookie.js";
 import { getHeader } from "../request-helpers.js";
@@ -17,7 +17,7 @@ import { getHeader } from "../request-helpers.js";
  * Primary: httpOnly `ryos_auth` cookie (all browser clients).
  * Fallback: Authorization header for programmatic API clients.
  */
-export function extractAuth(request: VercelRequest): ExtractedAuth {
+export function extractAuth(request: ApiRequest): ExtractedAuth {
   const cookieAuth = parseAuthCookie(request.headers.cookie);
   if (cookieAuth) {
     return { username: cookieAuth.username, token: cookieAuth.token };
@@ -38,7 +38,7 @@ export function extractAuth(request: VercelRequest): ExtractedAuth {
 /**
  * Extract auth with normalized username (lowercase)
  */
-export function extractAuthNormalized(request: VercelRequest): ExtractedAuth {
+export function extractAuthNormalized(request: ApiRequest): ExtractedAuth {
   const { username, token } = extractAuth(request);
   return {
     username: username?.toLowerCase() ?? null,

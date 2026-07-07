@@ -3,9 +3,6 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { parseYouTubeTitleWithAI } from "./_utils/parse-youtube-title.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 interface ParseTitleRequest {
   title: string;
   author_name?: string;

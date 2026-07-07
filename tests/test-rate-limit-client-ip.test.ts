@@ -2,10 +2,10 @@
  * Unit tests for the trust-aware client IP resolver used by rate limiting.
  *
  * These cover the regression that motivated the change:
- *   - Self-hosted (non-Vercel, non-Cloudflare) deployments must NOT trust
+ *   - Self-hosted (non-Cloudflare) deployments must NOT trust
  *     client-supplied X-Forwarded-For unless TRUSTED_PROXY_COUNT is set,
  *     otherwise an attacker can rotate spoofed IPs to defeat rate limits.
- *   - Vercel and Cloudflare-managed headers stay authoritative.
+ *   - Cloudflare-managed headers stay authoritative.
  *   - The standalone Bun server's PEER_IP_HEADER is trusted unconditionally.
  */
 
@@ -30,15 +30,15 @@ afterEach(() => {
 });
 
 describe("getClientIp", () => {
-  test("trusts x-vercel-forwarded-for unconditionally", () => {
+  test("ignores x-vercel-forwarded-for now that Vercel is not a deployment target", () => {
+    setTrustedProxyCount(undefined);
     const ip = getClientIp(
       reqWith({
         "x-vercel-forwarded-for": "203.0.113.42",
-        // attacker-controlled values are ignored when Vercel header is present
         "x-forwarded-for": "1.2.3.4",
       })
     );
-    expect(ip).toBe("203.0.113.42");
+    expect(ip).toBe("untrusted-shared-ip");
   });
 
   test("trusts the standalone-server peer IP header", () => {
@@ -51,7 +51,7 @@ describe("getClientIp", () => {
     expect(ip).toBe("198.51.100.7");
   });
 
-  test("trusts cf-connecting-ip when no Vercel/peer header is present", () => {
+  test("trusts cf-connecting-ip when no peer header is present", () => {
     const ip = getClientIp(
       reqWith({
         "cf-connecting-ip": "203.0.113.50",

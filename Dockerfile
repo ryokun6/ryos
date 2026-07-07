@@ -34,7 +34,6 @@ COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/src ./src
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/index.html ./index.html
-COPY --from=build /app/middleware.ts ./middleware.ts
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/tsconfig.node.json ./tsconfig.node.json
 COPY --from=build /app/tsconfig.app.json ./tsconfig.app.json

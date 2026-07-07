@@ -1218,6 +1218,29 @@ export const webFetchSchema = z.object({
 });
 
 // ============================================================================
+// Run JS (QuickJS sandbox) Tool Schema
+// ============================================================================
+
+export const runJsSchema = z.object({
+  code: z
+    .string()
+    .min(1)
+    .max(20_000)
+    .describe(
+      "Pure JavaScript (ES2023) to execute. The completion value of the last expression is returned, " +
+      "and console.log/info/warn/error output is captured. Use BigInt (e.g. 2n ** 100n) for exact large-integer math. " +
+      "No fetch, timers, DOM, or Node/Bun APIs exist — inline any needed data as literals."
+    ),
+  timeoutSeconds: z
+    .number()
+    .int()
+    .min(1)
+    .max(15)
+    .optional()
+    .describe("Optional execution time limit in seconds (default 5, max 15)."),
+});
+
+// ============================================================================
 // Unified Media Control Schema (MediaCore)
 // ============================================================================
 

@@ -158,33 +158,3 @@ export async function discoverApiRouteManifest(
 
   return routeDefinitions.sort(compareRoutes);
 }
-
-export interface ViteApiRewrite {
-  source: string;
-  destination: string;
-}
-
-/**
- * For index-backed routes (e.g. api/songs/index.ts), Vercel plugin rewrites
- * /api/songs -> /api/songs/index in dev.
- */
-export function buildViteApiRewrites(
-  manifest: ApiRouteManifestEntry[]
-): ViteApiRewrite[] {
-  return manifest.reduce<ViteApiRewrite[]>((acc, route) => {
-    if (
-      !route.isIndexRoute ||
-      route.routePath.includes(":") ||
-      route.routePath === "/api"
-    ) {
-      return acc;
-    }
-    acc.push({
-      source: route.routePath,
-      destination: `${route.routePath}/index`,
-    });
-    return acc;
-  }, [])
-    .sort((a, b) => b.source.length - a.source.length || a.source.localeCompare(b.source));
-}
-

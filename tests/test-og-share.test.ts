@@ -5,7 +5,6 @@ import {
   resolveSongShareId,
 } from "../api/_utils/og-share";
 import { UpdateSongSchema } from "../api/songs/_constants";
-import { config as middlewareConfig } from "../middleware";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -75,8 +74,6 @@ describe("og share response", () => {
     ];
 
     for (const app of appCases) {
-      expect(middlewareConfig.matcher).toContain(`/${app.id}`);
-
       const response = await createOgShareResponse(
         new Request(`https://os.example.com/${app.id}`)
       );

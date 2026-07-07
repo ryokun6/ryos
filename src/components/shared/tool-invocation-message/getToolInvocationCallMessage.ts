@@ -129,6 +129,11 @@ export function getToolInvocationCallMessage(
         displayCallMessage = t("apps.chats.toolCalls.webFetch.fetching", { hostname: hostname || url });
         break;
       }
+      case "runJs":
+        displayCallMessage = t("apps.chats.toolCalls.runJs.running", {
+          defaultValue: "Running script…",
+        });
+        break;
       case "mapsSearchPlaces": {
         const query = typeof input?.query === "string" ? input.query : "";
         displayCallMessage = query

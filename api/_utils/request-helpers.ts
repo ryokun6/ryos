@@ -1,6 +1,6 @@
-import type { VercelRequest } from "@vercel/node";
+import type { ApiRequest } from "./api-types.js";
 
-export function getHeader(req: VercelRequest, name: string): string | null {
+export function getHeader(req: ApiRequest, name: string): string | null {
   const value = req.headers[name.toLowerCase()];
   if (Array.isArray(value)) {
     return value[0] || null;

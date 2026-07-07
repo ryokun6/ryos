@@ -13,12 +13,10 @@ describe("wallpaper quality safeguards", () => {
       )
     ) as Record<string, unknown>;
     const packageJson = readFileSync(path.join(ROOT, "package.json"), "utf8");
-    const vercelConfig = readFileSync(path.join(ROOT, "vercel.json"), "utf8");
 
     expect(manifest.version).toBe(1);
     expect(manifest).not.toHaveProperty("photoRender");
     expect(packageJson).not.toContain("generate:wallpaper-variants");
-    expect(vercelConfig).not.toContain("/wallpapers/variants/");
     expect(
       existsSync(path.join(ROOT, "public/wallpapers/variants"))
     ).toBe(false);

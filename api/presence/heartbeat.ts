@@ -12,9 +12,6 @@ import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import { GLOBAL_PRESENCE_CHANNEL } from "../../src/shared/constants/realtime.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 const GLOBAL_PRESENCE_TTL_SECONDS = 90;
 
 export default apiHandler(

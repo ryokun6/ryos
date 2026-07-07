@@ -2,9 +2,6 @@ import { apiHandler } from "./_utils/api-handler.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 const RL_BURST_WINDOW = 60;
 const RL_DAILY_WINDOW = 60 * 60 * 24;
 

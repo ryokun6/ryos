@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "../_utils/api-types.js";
 import { type ModelMessage, type ToolSet } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
@@ -44,8 +44,6 @@ import {
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
 } from "../_utils/voice.js";
-export const runtime = "nodejs";
-export const maxDuration = 80;
 const TELEGRAM_STOP_COMMANDS = ["stop", "cancel"];
 const TELEGRAM_CLEAR_COMMANDS = [
   "clear",
@@ -54,12 +52,12 @@ const TELEGRAM_CLEAR_COMMANDS = [
   "clear-history",
 ];
 
-function setResponseHeaders(res: VercelResponse): void {
+function setResponseHeaders(res: ApiResponse): void {
   res.setHeader("Content-Type", "application/json");
 }
 
 function sendJson(
-  res: VercelResponse,
+  res: ApiResponse,
   status: number,
   payload: Record<string, unknown>
 ): void {
@@ -92,7 +90,7 @@ function buildTelegramRateLimitMessage(
   return `you've hit the limit of ${rateLimit.limit} messages in ${windowText}. try again in about ${retryText}.`;
 }
 
-function getTelegramWebhookSecret(req: VercelRequest): string | null {
+function getTelegramWebhookSecret(req: ApiRequest): string | null {
   const value = req.headers["x-telegram-bot-api-secret-token"];
   if (Array.isArray(value)) {
     return value[0] || null;
@@ -124,7 +122,7 @@ async function handleTelegramRateLimitedUpdate(args: {
     "count" | "limit" | "windowSeconds" | "resetSeconds"
   >;
   redis: ReturnType<typeof createRedis>;
-  res: VercelResponse;
+  res: ApiResponse;
   startTime: number;
   logger: ReturnType<typeof initLogger>["logger"];
   scope: "user-burst" | "account-window";
@@ -153,7 +151,7 @@ async function handleTelegramCommandUpdate(args: {
   replyToMessageId: number;
   updateId: number;
   redis: ReturnType<typeof createRedis>;
-  res: VercelResponse;
+  res: ApiResponse;
   startTime: number;
   logger: ReturnType<typeof initLogger>["logger"];
   text: string;
@@ -309,8 +307,8 @@ export function getTelegramProviderStatusToolCall(
 }
 
 export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
+  req: ApiRequest,
+  res: ApiResponse
 ): Promise<void> {
   const { logger } = initLogger();
   const startTime = Date.now();

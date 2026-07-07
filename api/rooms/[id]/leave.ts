@@ -25,9 +25,6 @@ import {
   syncRoomBindingForPresence,
 } from "../../_utils/irc/_bridge.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
   async ({ req, res, redis, logger, startTime, user }) => {

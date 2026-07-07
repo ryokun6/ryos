@@ -304,8 +304,7 @@
         "configured": "Configurado",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "Desenvolvimento",
-          "vercel": "Vercel"
+          "dev": "Desenvolvimento"
         },
         "deploymentLabel": "Implantação",
         "loading": "Carregando informações do servidor…",
@@ -1474,6 +1473,18 @@
         "preparingHtmlPreview": "Preparando pré-visualização HTML…",
         "read": "Lido {{fileName}}",
         "readingFile": "Lendo arquivo…",
+        "runJs": {
+          "failed": "Falha no script",
+          "failedWithError": "Falha no script: {{error}}",
+          "hideCode": "Ocultar Código",
+          "noOutput": "(sem saída)",
+          "ran": "Script executado em {{duration}}",
+          "running": "Executando script…",
+          "save": "Salvar",
+          "saved": "Salvo",
+          "showCode": "Mostrar Código",
+          "truncated": "(saída truncada)"
+        },
         "running": "Executando {{toolName}}…",
         "searchedWeb": "Pesquisou na web",
         "searchedWebFor": "Pesquisou na web por {{query}}",
@@ -2536,12 +2547,15 @@
         "appletImported": "Applet importado!",
         "appletImportedDesc": "{{name}} salvo em /Applets{{iconText}}",
         "appletImportedIconText": " com o ícone {{icon}}",
+        "folderExists": "Já existe um item chamado \"{{name}}\".",
         "importFailed": "Falha na importação",
         "importFailedAppletDesc": "Não foi possível importar o arquivo do applet.",
         "importFailedDesc": "Não foi possível importar o arquivo.",
         "invalidFileType": "Tipo de arquivo inválido",
         "invalidFileTypeDesc": "Apenas arquivos .app, .gz e .html podem ser importados para Applets",
-        "loading": "Carregando…"
+        "invalidFolderName": "Este nome não pode ser usado. Tente usar outro nome.",
+        "loading": "Carregando…",
+        "reservedFolderName": "\"{{name}}\" é um nome reservado. Escolha outro nome."
       },
       "name": "Finder",
       "placeholders": {
@@ -4780,7 +4794,8 @@
       "version": "Versão",
       "viewChangelog": "Registro de alterações",
       "viewDocs": "Ver documentação",
-      "welcomeTo": "Bem-vindo ao {{appName}}"
+      "welcomeTo": "Bem-vindo ao {{appName}}",
+      "where": "Onde:"
     },
     "dock": {
       "addToDock": "Adicionar ao Dock",

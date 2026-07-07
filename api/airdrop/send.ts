@@ -3,9 +3,6 @@ import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import { AIRDROP_PRESENCE_TTL_SECONDS } from "./heartbeat.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 const TRANSFER_TTL_SECONDS = 300;
 const MAX_CONTENT_SIZE = 2 * 1024 * 1024; // 2MB
 

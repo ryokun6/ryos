@@ -112,8 +112,8 @@ export interface ServerToolContext {
   };
   /**
    * Approximate IP-derived geolocation for the current request, when known.
-   * Provided by `geolocation()` in `api/chat.ts`; absent for non-edge contexts
-   * (e.g. Telegram webhook). Used as a fallback location bias by tools like
+   * Resolved in `api/chat.ts`; absent for non-HTTP contexts (e.g. Telegram
+   * webhook). Used as a fallback location bias by tools like
    * `mapsSearchPlaces` when the model doesn't pass an explicit anchor.
    */
   requestGeo?: {
@@ -612,6 +612,27 @@ export interface WebFetchOutput {
   siteName?: string;
   content: string;
   contentLength: number;
+  truncated: boolean;
+  message: string;
+}
+
+// ============================================================================
+// Run JS (QuickJS sandbox) Tool Types
+// ============================================================================
+
+export interface RunJsInput {
+  code: string;
+  timeoutSeconds?: number;
+}
+
+export interface RunJsOutput {
+  success: boolean;
+  /** Captured console output, newline-joined. */
+  logs: string;
+  /** Stringified completion value of the script (absent when undefined). */
+  result?: string;
+  error?: string;
+  durationMs: number;
   truncated: boolean;
   message: string;
 }

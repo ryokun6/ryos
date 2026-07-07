@@ -6,9 +6,6 @@
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { assertValidRoomId } from "../../../_utils/_validation.js";
 import { getSession, touchSession } from "../../_helpers/_redis.js";
-import { runtime, maxDuration } from "../../_helpers/_constants.js";
-
-export { runtime, maxDuration };
 
 export default apiHandler(
   { methods: ["GET"] },

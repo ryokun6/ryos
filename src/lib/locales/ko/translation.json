@@ -304,8 +304,7 @@
         "configured": "구성됨",
         "deployment": {
           "coolify": "쿨리파이",
-          "dev": "개발",
-          "vercel": "버셀"
+          "dev": "개발"
         },
         "deploymentLabel": "배포",
         "loading": "서버 정보 로드 중…",
@@ -1472,6 +1471,18 @@
         "preparingHtmlPreview": "HTML 미리보기 준비 중…",
         "read": "{{fileName}} 읽음",
         "readingFile": "파일 읽는 중…",
+        "runJs": {
+          "failed": "스크립트 실패",
+          "failedWithError": "스크립트 실패: {{error}}",
+          "hideCode": "코드 가리기",
+          "noOutput": "(출력 없음)",
+          "ran": "{{duration}} 동안 스크립트 실행됨",
+          "running": "스크립트 실행 중…",
+          "save": "저장",
+          "saved": "저장됨",
+          "showCode": "코드 보기",
+          "truncated": "(출력 생략됨)"
+        },
         "running": "{{toolName}} 실행 중…",
         "searchedWeb": "웹을 검색했습니다",
         "searchedWebFor": "웹에서 '{{query}}'을(를) 검색했습니다",
@@ -2534,12 +2545,15 @@
         "appletImported": "애플릿 가져오기 완료!",
         "appletImportedDesc": "{{name}}이(가) /Applets에 저장되었습니다{{iconText}}",
         "appletImportedIconText": " {{icon}} 아이콘으로",
+        "folderExists": "\"{{name}}\"(이)라는 이름의 항목이 이미 있습니다.",
         "importFailed": "가져오기 실패",
         "importFailedAppletDesc": "애플릿 파일을 가져올 수 없습니다.",
         "importFailedDesc": "파일을 가져올 수 없습니다.",
         "invalidFileType": "잘못된 파일 형식",
         "invalidFileTypeDesc": ".app, .gz, .html 파일만 Applets로 가져올 수 있습니다.",
-        "loading": "로드 중…"
+        "invalidFolderName": "이 이름은 사용할 수 없습니다. 다른 이름을 사용해 보십시오.",
+        "loading": "로드 중…",
+        "reservedFolderName": "\"{{name}}\"은(는) 예약된 이름입니다. 다른 이름을 선택하십시오."
       },
       "name": "Finder",
       "placeholders": {
@@ -4776,7 +4790,8 @@
       "version": "버전",
       "viewChangelog": "변경 내역",
       "viewDocs": "문서 보기",
-      "welcomeTo": "{{appName}}에 오신 것을 환영합니다"
+      "welcomeTo": "{{appName}}에 오신 것을 환영합니다",
+      "where": "위치:"
     },
     "dock": {
       "addToDock": "Dock에 추가",

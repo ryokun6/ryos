@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
-import { InputDialog } from "@/components/dialogs/InputDialog";
+import { SaveFileDialog } from "@/components/dialogs/SaveFileDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata, helpItems } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -26,8 +26,8 @@ interface DialogManagerProps {
   setSaveFileName: (name: string) => void;
   closeSaveFileName: string;
   setCloseSaveFileName: (name: string) => void;
-  onSaveSubmit: (fileName: string) => Promise<void>;
-  onCloseSave: (fileName: string) => Promise<void>;
+  onSaveSubmit: (fileName: string, directoryPath: string) => Promise<void>;
+  onCloseSave: (fileName: string, directoryPath: string) => Promise<void>;
   onCloseDelete: () => void;
   onConfirmNew: () => void;
   onCancelConfirmNew: () => void;
@@ -89,7 +89,7 @@ export function DialogManager({
 
   return (
     <>
-      <InputDialog
+      <SaveFileDialog
         isOpen={isSaveDialogOpen}
         onOpenChange={setIsSaveDialogOpen}
         onSubmit={onSaveSubmit}
@@ -97,6 +97,7 @@ export function DialogManager({
         description={t("apps.textedit.dialogs.enterANameForYourFile")}
         value={saveFileName}
         onChange={setSaveFileName}
+        defaultDirectory="/Documents"
       />
 
       <ConfirmDialog
@@ -113,7 +114,7 @@ export function DialogManager({
         description={t("apps.textedit.dialogs.doYouWantToDiscardYourChangesAndCreateANewFile")}
       />
 
-      <InputDialog
+      <SaveFileDialog
         isOpen={isCloseSaveDialogOpen}
         onOpenChange={setIsCloseSaveDialogOpen}
         onSubmit={onCloseSave}
@@ -125,6 +126,7 @@ export function DialogManager({
         }
         value={closeSaveFileName}
         onChange={setCloseSaveFileName}
+        defaultDirectory="/Documents"
         submitLabel={t("common.dialog.save")}
         additionalActions={[
           {

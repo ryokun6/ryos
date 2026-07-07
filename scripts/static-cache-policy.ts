@@ -2,20 +2,17 @@
  * Cache-Control policy for static files served from `dist/` by the
  * standalone Bun server (Coolify / Docker / plain-Bun deploys).
  *
- * On Vercel these headers come from `vercel.json`; the standalone server must
- * emit them itself. Without an explicit Cache-Control, CDNs in front of the
- * origin (e.g. Cloudflare) apply their extension-based default TTL (~4h) to
- * `.js` files — including `sw.js`. A stale edge-cached `sw.js` references
- * hashed assets that no longer exist after a deploy, which makes the Workbox
- * precache install fail (404 → service worker goes redundant) and breaks
- * offline support for every client until the edge entry expires.
- *
- * Mirrors the `headers` section of `vercel.json`.
+ * Without an explicit Cache-Control, CDNs in front of the origin (e.g.
+ * Cloudflare) apply their extension-based default TTL (~4h) to `.js` files —
+ * including `sw.js`. A stale edge-cached `sw.js` references hashed assets
+ * that no longer exist after a deploy, which makes the Workbox precache
+ * install fail (404 → service worker goes redundant) and breaks offline
+ * support for every client until the edge entry expires.
  */
 
 const NO_CACHE = "no-cache, no-store, must-revalidate";
 const IMMUTABLE = "public, max-age=31536000, immutable";
-/** Vercel's default for static files: cache in the browser but revalidate. */
+/** Default for static files: cache in the browser but revalidate. */
 const DEFAULT = "public, max-age=0, must-revalidate";
 
 /**

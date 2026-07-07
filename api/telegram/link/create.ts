@@ -10,9 +10,6 @@ import {
 } from "../../_utils/telegram.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 export default apiHandler(
   {
     methods: ["POST"],

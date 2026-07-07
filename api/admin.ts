@@ -38,9 +38,6 @@ import {
 } from "./chat/tools/cursor-repo-agent.js";
 import { redisKeys } from "../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 30;
-
 interface AdminRequest {
   action: string;
   targetUsername?: string;
@@ -280,10 +277,7 @@ async function unbanUser(redis: Redis, targetUsername: string): Promise<{ succes
   }
 }
 
-function getDeployment(): "dev" | "vercel" | "coolify" {
-  if (process.env.VERCEL === "1" || process.env.VERCEL_ENV) {
-    return "vercel";
-  }
+function getDeployment(): "dev" | "coolify" {
   if (
     process.env.COOLIFY_SERVICE_ID ||
     process.env.COOLIFY_APP_ID ||
@@ -300,7 +294,7 @@ function getDeployment(): "dev" | "vercel" | "coolify" {
 }
 
 async function getServerInfo(redis: Redis): Promise<{
-  deployment: "dev" | "vercel" | "coolify";
+  deployment: "dev" | "coolify";
   redis: { backend: string; healthy: boolean };
   websocket: { provider: "local" | "pusher"; configured: boolean };
 }> {

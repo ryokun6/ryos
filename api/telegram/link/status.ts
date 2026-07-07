@@ -9,9 +9,6 @@ import {
 } from "../../_utils/telegram.js";
 import { getTelegramHeartbeatSettings } from "../../_utils/telegram-heartbeat.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 export default apiHandler(
   {
     methods: ["GET"],

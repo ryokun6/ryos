@@ -7,7 +7,7 @@
  * Pure config / parsing / jar logic; no API server or real Redis required.
  */
 import { describe, test, expect, afterEach } from "bun:test";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "../api/_utils/api-types";
 import type { Redis } from "../api/_utils/redis.ts";
 import {
   isIeLiveBrowserConfigured,
@@ -40,10 +40,10 @@ function makeFakeRedis(): Redis {
   } as unknown as Redis;
 }
 
-function makeReq(cookieHeader?: string): VercelRequest {
+function makeReq(cookieHeader?: string): ApiRequest {
   return {
     headers: cookieHeader ? { cookie: cookieHeader } : {},
-  } as unknown as VercelRequest;
+  } as unknown as ApiRequest;
 }
 
 function makeRes() {
@@ -53,7 +53,7 @@ function makeRes() {
     setHeader: (name: string, value: string | string[]) => {
       headers.set(name, value);
     },
-  } as unknown as VercelResponse;
+  } as unknown as ApiResponse;
   return { res, headers };
 }
 

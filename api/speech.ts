@@ -14,9 +14,6 @@ import {
   type ElevenLabsVoiceSettings,
 } from "./_utils/voice.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 60;
-
 interface SpeechRequest {
   text: string;
   voice?: string | null;

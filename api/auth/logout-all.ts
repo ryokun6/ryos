@@ -8,9 +8,6 @@ import { deleteAllUserTokens } from "../_utils/auth/index.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { buildClearAuthCookie } from "../_utils/_cookie.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 export default apiHandler(
   {
     methods: ["POST"],

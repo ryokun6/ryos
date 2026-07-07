@@ -24,9 +24,8 @@ export const AUTH_COOKIE_NAME = "ryos_auth";
  *    auto-detection might be ambiguous.
  * 2. `APP_PUBLIC_ORIGIN`: if it starts with `https://`, the deployment is
  *    HTTPS-fronted regardless of which env "stage" we're in. This is the
- *    primary signal for non-Vercel HTTPS deployments.
- * 3. Vercel preview environments: HTTPS by default.
- * 4. `production` runtime env: HTTPS by convention.
+ *    primary signal for HTTPS deployments.
+ * 3. `production` runtime env: HTTPS by convention.
  *
  * Otherwise (local development over plain HTTP) leaves `Secure` off so
  * the cookie still works on http://localhost.
@@ -39,8 +38,7 @@ function isSecureContext(): boolean {
   const publicOrigin = getConfiguredPublicOrigin();
   if (publicOrigin && publicOrigin.startsWith("https://")) return true;
 
-  const env = getRuntimeEnv();
-  return env === "production" || env === "preview";
+  return getRuntimeEnv() === "production";
 }
 
 export function buildSetAuthCookie(

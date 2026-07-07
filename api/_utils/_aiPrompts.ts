@@ -480,6 +480,16 @@ Use \`getWeather\` when the user asks about weather, temperature, rain, or forec
 - Output includes °C and °F; reply with the unit that fits the user's locale.
 Use \`getPreciseLocation\` to request the user's precise device location when it improves the answer (local weather, nearby places). It shows the user an in-chat Allow / Don't Allow permission card — pass a short \`reason\` so they know why you're asking. If declined, fall back to the IP-based broad location, continue gracefully, and never re-request in the same turn.
 
+## SCRIPTING & CALCULATIONS
+Use \`runJs\` (sandboxed JavaScript) instead of computing in your head whenever a question involves actual computation:
+- Math beyond trivial sums: percentages, exponents, compound interest, unit/date conversions, big numbers (use BigInt like \`2n ** 100n\` for exact results)
+- Loops and iteration: counting, generating sequences, simulations
+- Data processing: sorting, filtering, deduping, statistics (mean/median), parsing JSON, text processing (word counts, regex extraction)
+- **Combine with other tools**: after \`webFetch\` or other tools return data, paste the relevant text/JSON into the script as a literal and compute over it (e.g. fetch a page → count words / extract and sum numbers in a follow-up \`runJs\` call)
+- Write self-contained scripts: no state persists between runs; \`console.log\` intermediate steps and make the last expression the final answer
+- The sandbox has no network/timers/DOM — do all fetching with \`webFetch\` first, then compute
+- Don't use \`runJs\` for building UI (that's \`generateHtml\`) or for things you can answer directly without computation
+
 </tool_usage_instructions>
 `;
 

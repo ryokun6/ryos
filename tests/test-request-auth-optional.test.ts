@@ -3,12 +3,12 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { VercelRequest } from "@vercel/node";
+import type { ApiRequest } from "../api/_utils/api-types";
 import type { Redis } from "../api/_utils/redis.js";
 import { resolveRequestAuth } from "../api/_utils/request-auth.js";
 
-function mockRequest(headers: Record<string, string>): VercelRequest {
-  return { headers } as VercelRequest;
+function mockRequest(headers: Record<string, string>): ApiRequest {
+  return { headers } as ApiRequest;
 }
 
 /** Minimal Redis stub — invalid tokens never match canonical/grace lookups. */

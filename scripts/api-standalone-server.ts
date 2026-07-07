@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * Standalone API server for running `api/*` routes without Vercel CLI.
+ * Standalone API server for serving the `api/*` routes.
  *
  * Uses Bun's native HTTP server (`Bun.serve`) and adapts requests/responses
- * to the Vercel Node handler shape used in `api`.
+ * to the Node-style handler shape used in `api`.
  */
 
 import { readFile } from "node:fs/promises";
@@ -460,10 +460,10 @@ function buildQueryMap(url: URL): QueryMap {
 }
 
 // Header name kept in sync with `PEER_IP_HEADER` in `api/_utils/_rate-limit.ts`.
-// Rate limiter trusts this header unconditionally as the client IP source for
-// non-Vercel / non-Cloudflare deployments. Standalone server STRIPS any
-// incoming value and replaces it with the actual TCP socket peer address so
-// clients cannot spoof it.
+// Rate limiter trusts this header unconditionally as the client IP source
+// (unless Cloudflare's cf-connecting-ip is present). Standalone server STRIPS
+// any incoming value and replaces it with the actual TCP socket peer address
+// so clients cannot spoof it.
 const PEER_IP_HEADER_NAME = "x-ryos-peer-ip";
 
 function buildHeaderMap(request: Request, peerIp: string | null): HeaderMap {
@@ -702,10 +702,10 @@ async function serveDistPath(
     return null;
   }
   const absolutePath = path.resolve(DIST_ROOT, decodedPath);
-  // Explicit Cache-Control on every static response. Vercel gets these from
-  // vercel.json; here they also stop CDNs (e.g. Cloudflare in front of a
-  // Coolify deploy) from edge-caching sw.js/index.html past a deploy, which
-  // breaks service-worker installs and, with them, offline support.
+  // Explicit Cache-Control on every static response. These also stop CDNs
+  // (e.g. Cloudflare in front of a Coolify deploy) from edge-caching
+  // sw.js/index.html past a deploy, which breaks service-worker installs
+  // and, with them, offline support.
   const headers = {
     ...getStaticCacheHeaders(decodedPath.split(path.sep).join("/")),
     ...options?.headers,

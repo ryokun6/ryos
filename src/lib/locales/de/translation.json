@@ -304,8 +304,7 @@
         "configured": "Konfiguriert",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "Entwicklung",
-          "vercel": "Vercel"
+          "dev": "Entwicklung"
         },
         "deploymentLabel": "Deployment",
         "loading": "Laden …",
@@ -1472,6 +1471,18 @@
         "preparingHtmlPreview": "Vorbereiten …",
         "read": "{{fileName}} gelesen",
         "readingFile": "Datei wird gelesen …",
+        "runJs": {
+          "failed": "Skript fehlgeschlagen",
+          "failedWithError": "Skript fehlgeschlagen: {{error}}",
+          "hideCode": "Code ausblenden",
+          "noOutput": "(keine Ausgabe)",
+          "ran": "Skript in {{duration}} ausgeführt",
+          "running": "Skript wird ausgeführt …",
+          "save": "Sichern",
+          "saved": "Gesichert",
+          "showCode": "Code einblenden",
+          "truncated": "(Ausgabe gekürzt)"
+        },
         "running": "{{toolName}} wird ausgeführt …",
         "searchedWeb": "Im Web gesucht",
         "searchedWebFor": "Im Web nach {{query}} gesucht",
@@ -2534,12 +2545,15 @@
         "appletImported": "Applet importiert!",
         "appletImportedDesc": "{{name}} wurde in /Applets gespeichert{{iconText}}",
         "appletImportedIconText": " mit dem Symbol {{icon}}",
+        "folderExists": "Ein Objekt mit dem Namen „{{name}}“ existiert bereits.",
         "importFailed": "Import fehlgeschlagen",
         "importFailedAppletDesc": "Die Applet-Datei konnte nicht importiert werden.",
         "importFailedDesc": "Die Datei konnte nicht importiert werden.",
         "invalidFileType": "Ungültiger Dateityp",
         "invalidFileTypeDesc": "Nur .app-, .gz- und .html-Dateien können in Applets importiert werden",
-        "loading": "Laden …"
+        "invalidFolderName": "Dieser Name kann nicht verwendet werden. Versuche es mit einem anderen Namen.",
+        "loading": "Laden …",
+        "reservedFolderName": "„{{name}}“ ist ein reservierter Name. Wähle einen anderen Namen."
       },
       "name": "Finder",
       "placeholders": {
@@ -4776,7 +4790,8 @@
       "version": "Version",
       "viewChangelog": "Änderungsprotokoll",
       "viewDocs": "Dokumentation anzeigen",
-      "welcomeTo": "Willkommen bei {{appName}}"
+      "welcomeTo": "Willkommen bei {{appName}}",
+      "where": "Ort:"
     },
     "dock": {
       "addToDock": "Zum Dock hinzufügen",

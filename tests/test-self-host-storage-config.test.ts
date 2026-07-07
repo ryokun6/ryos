@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 describe("self-host storage backend selection", () => {
-  test("prefers Vercel Blob when both storage backends are configured", () => {
+  test("ignores a legacy blob token and selects S3", () => {
     process.env.BLOB_READ_WRITE_TOKEN = "blob-token";
     process.env.S3_BUCKET = "bucket";
     process.env.S3_REGION = "us-east-1";
@@ -28,10 +28,10 @@ describe("self-host storage backend selection", () => {
     process.env.S3_SECRET_ACCESS_KEY = "secret";
     delete process.env.STORAGE_PROVIDER;
 
-    expect(getStorageBackend()).toBe("vercel-blob");
+    expect(getStorageBackend()).toBe("s3");
   });
 
-  test("falls back to S3 when blob storage is not configured", () => {
+  test("selects S3 when configured", () => {
     delete process.env.BLOB_READ_WRITE_TOKEN;
     process.env.S3_BUCKET = "bucket";
     process.env.S3_REGION = "us-east-1";
@@ -55,12 +55,28 @@ describe("self-host storage backend selection", () => {
     expect(getStorageBackend()).toBe("s3");
   });
 
-  test("throws when explicit provider configuration is incomplete", () => {
+  test("throws for unsupported explicit providers", () => {
     process.env.STORAGE_PROVIDER = "vercel-blob";
     delete process.env.BLOB_READ_WRITE_TOKEN;
 
     expect(() => getStorageBackend()).toThrow(
-      "STORAGE_PROVIDER requests Vercel Blob"
+      'Unsupported STORAGE_PROVIDER "vercel-blob"'
+    );
+  });
+
+  test("throws when S3 configuration is missing", () => {
+    delete process.env.STORAGE_PROVIDER;
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    delete process.env.S3_BUCKET;
+    delete process.env.S3_REGION;
+    delete process.env.S3_ENDPOINT;
+    delete process.env.S3_ACCESS_KEY_ID;
+    delete process.env.S3_SECRET_ACCESS_KEY;
+    delete process.env.AWS_ACCESS_KEY_ID;
+    delete process.env.AWS_SECRET_ACCESS_KEY;
+
+    expect(() => getStorageBackend()).toThrow(
+      "Missing object-storage configuration."
     );
   });
 

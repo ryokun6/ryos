@@ -6,6 +6,7 @@
  */
 
 import { ensureIndexedDBInitialized, STORES } from "./indexedDB";
+import { canPathHaveContent } from "@/services/vfs/pathPolicy";
 
 // Structure for content stored in IndexedDB
 export interface StoredContent {
@@ -233,8 +234,14 @@ export function getStoreForFile(
   if (filePath.startsWith("/Images/")) return STORES.IMAGES;
   if (filePath.startsWith("/Books/")) return STORES.BOOKS;
   if (filePath.startsWith("/Applets/")) return STORES.APPLETS;
-  if (!filePath.startsWith("/Downloads/")) return null;
+  // Virtual/special subtrees (/Applications, /Music, /Videos, /Sites,
+  // /Trash, /Desktop, ...) carry no user content.
+  if (!canPathHaveContent(filePath)) return null;
 
+  // Everything else (/Downloads, user-created root folders, root-level
+  // files) routes by extension/MIME type. This routing depends only on the
+  // filename, so it resolves identically on every device (cloud sync reads
+  // content back through this same function).
   const extension = getExtension(options.name || filePath);
   const normalizedType = options.type?.toLowerCase() || "";
 

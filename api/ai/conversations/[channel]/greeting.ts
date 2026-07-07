@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { waitUntil } from "@vercel/functions";
+import { waitUntil } from "../../../_utils/_background.js";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { loadRyoMemoryContext } from "../../../_utils/ryo-conversation.js";
 import { PROACTIVE_GREETING_INSTRUCTIONS } from "../../../_utils/_aiPrompts.js";
@@ -20,9 +20,6 @@ import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   AI_PROACTIVE_GREETING_MESSAGE_ID_PREFIX,
 } from "../../../../src/shared/contracts/aiConversation.js";
-
-export const runtime = "nodejs";
-export const maxDuration = 30;
 
 const greetingRequestSchema = z.object({
   operationId: z

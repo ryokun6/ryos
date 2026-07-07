@@ -40,9 +40,6 @@ import {
 import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 60;
-
 // ============================================================================
 // Schemas
 // ============================================================================
@@ -191,7 +188,6 @@ export async function processDailyNotesForUser(
 
 /**
  * Maximum time (ms) to spend processing before stopping gracefully.
- * Leaves headroom below the 60s Vercel function limit.
  */
 const PROCESSING_TIME_BUDGET_MS = 50_000;
 

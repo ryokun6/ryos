@@ -304,8 +304,7 @@
         "configured": "設定済み",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "開発",
-          "vercel": "Vercel"
+          "dev": "開発"
         },
         "deploymentLabel": "デプロイ",
         "loading": "サーバー情報を読み込み中…",
@@ -1472,6 +1471,18 @@
         "preparingHtmlPreview": "HTML プレビューを準備中…",
         "read": "{{fileName}}を読み取りました",
         "readingFile": "ファイルを読み取り中…",
+        "runJs": {
+          "failed": "スクリプトが失敗しました",
+          "failedWithError": "スクリプトが失敗しました: {{error}}",
+          "hideCode": "コードを非表示",
+          "noOutput": "(出力なし)",
+          "ran": "スクリプトを{{duration}}で実行しました",
+          "running": "スクリプトを実行中…",
+          "save": "保存",
+          "saved": "保存済み",
+          "showCode": "コードを表示",
+          "truncated": "(出力を省略)"
+        },
         "running": "{{toolName}}を実行中…",
         "searchedWeb": "ウェブを検索しました",
         "searchedWebFor": "「{{query}}」をウェブで検索しました",
@@ -2534,12 +2545,15 @@
         "appletImported": "アプレットをインポートしました！",
         "appletImportedDesc": "{{name}}は /Applets に保存されました{{iconText}}",
         "appletImportedIconText": "{{icon}}アイコン付き",
+        "folderExists": "“{{name}}”という名前の項目がすでに存在します。",
         "importFailed": "インポートに失敗しました",
         "importFailedAppletDesc": "アプレットファイルをインポートできませんでした。",
         "importFailedDesc": "ファイルをインポートできませんでした。",
         "invalidFileType": "無効なファイルタイプ",
         "invalidFileTypeDesc": "アプレットにインポートできるのは、.app、.gz、.htmlファイルのみです。",
-        "loading": "読み込み中…"
+        "invalidFolderName": "その名前は使用できません。別の名前を使用してください。",
+        "loading": "読み込み中…",
+        "reservedFolderName": "“{{name}}”は予約済みの名前です。別の名前を選択してください。"
       },
       "name": "Finder",
       "placeholders": {
@@ -4776,7 +4790,8 @@
       "version": "バージョン",
       "viewChangelog": "変更履歴",
       "viewDocs": "ドキュメント",
-      "welcomeTo": "{{appName}}へようこそ"
+      "welcomeTo": "{{appName}}へようこそ",
+      "where": "場所:"
     },
     "dock": {
       "addToDock": "Dockに追加",

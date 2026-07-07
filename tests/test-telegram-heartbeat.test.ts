@@ -746,15 +746,11 @@ describe("telegram heartbeat helpers", () => {
   });
 });
 
-describe("vercel cron wiring", () => {
-  test("registers the telegram heartbeat cron every 30 minutes", async () => {
-    const config = await Bun.file(new URL("../vercel.json", import.meta.url)).json();
-    expect(config).toHaveProperty("crons");
-
-    const crons = Array.isArray(config.crons) ? config.crons : [];
-    expect(crons).toContainEqual({
-      path: TELEGRAM_HEARTBEAT_CRON_PATH,
-      schedule: TELEGRAM_HEARTBEAT_CRON_SCHEDULE,
-    });
+describe("cron wiring", () => {
+  test("pins the telegram heartbeat cron endpoint and 30-minute schedule", () => {
+    // Crons are triggered by an external scheduler (e.g. a Coolify scheduled
+    // task) hitting the endpoint; these constants are its contract.
+    expect(TELEGRAM_HEARTBEAT_CRON_PATH).toBe("/api/cron/telegram-heartbeat");
+    expect(TELEGRAM_HEARTBEAT_CRON_SCHEDULE).toBe("*/30 * * * *");
   });
 });

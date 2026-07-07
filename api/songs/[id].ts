@@ -19,7 +19,7 @@
  * - POST with action=search-lyrics: Search for lyrics matches
  */
 
-import type { VercelResponse } from "@vercel/node";
+import type { ApiResponse } from "../_utils/api-types.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import { apiHandler } from "../_utils/api-handler.js";
@@ -101,11 +101,8 @@ import {
 import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 
-export const runtime = "nodejs";
-export const maxDuration = 120;
-
-// Helper for SSE responses with Node.js VercelResponse
-function sendSSEResponse(res: VercelResponse, origin: string | null, data: unknown): void {
+// Helper for SSE responses with Node.js ApiResponse
+function sendSSEResponse(res: ApiResponse, origin: string | null, data: unknown): void {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");

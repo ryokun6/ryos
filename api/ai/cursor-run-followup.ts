@@ -12,8 +12,6 @@
 import { sendCursorAgentFollowup } from "../chat/tools/cursor-repo-agent.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
-export const runtime = "nodejs";
-
 interface CursorRunFollowupBody {
   runId?: unknown;
   prompt?: unknown;

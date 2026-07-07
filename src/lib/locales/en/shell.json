@@ -75,6 +75,7 @@
       "adding": "Adding…",
       "saveFile": "Save File",
       "enterFileName": "Enter a name for your file",
+      "where": "Where:",
       "discardChanges": "Discard Changes",
       "discardChangesDesc": "Do you want to discard your changes and create a new file?",
       "keepNewDocument": "Keep New Document",
@@ -824,6 +825,18 @@
           "fetching": "Reading {{hostname}}…",
           "fetched": "Read {{siteName}}",
           "fetchedPage": "Read \"{{title}}\""
+        },
+        "runJs": {
+          "running": "Running script…",
+          "ran": "Script ran in {{duration}}",
+          "failed": "Script failed",
+          "failedWithError": "Script failed: {{error}}",
+          "truncated": "(output truncated)",
+          "showCode": "Show Code",
+          "hideCode": "Hide Code",
+          "save": "Save",
+          "saved": "Saved",
+          "noOutput": "(no output)"
         },
         "cursorCloudAgent": {
           "starting": "Starting Cursor Cloud agent…",

@@ -20,7 +20,6 @@ describe("CORS localhost allowlist", () => {
     delete process.env.API_ALLOWED_ORIGINS;
     delete process.env.API_RUNTIME_ENV;
     delete process.env.API_ENV;
-    delete process.env.VERCEL_ENV;
     delete process.env.NODE_ENV;
 
     expect(isAllowedOrigin("http://localhost:3001")).toBe(true);
@@ -30,7 +29,6 @@ describe("CORS localhost allowlist", () => {
     delete process.env.API_ALLOWED_ORIGINS;
     delete process.env.API_RUNTIME_ENV;
     delete process.env.API_ENV;
-    delete process.env.VERCEL_ENV;
     delete process.env.NODE_ENV;
 
     expect(isAllowedOrigin("http://localhost:3999")).toBe(false);

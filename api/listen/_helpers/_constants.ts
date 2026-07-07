@@ -17,5 +17,3 @@ export const LISTEN_SESSION_MAX_USERS = 10;
 // API Configuration
 // ============================================================================
 
-export const runtime = "nodejs";
-export const maxDuration = 15;

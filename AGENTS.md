@@ -4,7 +4,7 @@
 
 ## Development Environment
 
-This project uses **Bun** as the package manager and runtime. Local API testing should use the standalone Bun server + Vite proxy, while production deployment can still target **Vercel**.
+This project uses **Bun** as the package manager and runtime. Local API testing should use the standalone Bun server + Vite proxy; production runs the same standalone Bun server via Docker on **Coolify** (self-hosted cloud).
 
 ### Package Manager
 
@@ -78,15 +78,15 @@ The following environment variables are required for full functionality:
 - `OPENAI_API_KEY` - OpenAI API (for audio transcription)
 - `MAPKIT_TEAM_ID` / `MAPKIT_KEY_ID` / `MAPKIT_PRIVATE_KEY` / `MAPKIT_ORIGIN` - Apple MapKit (powers the Maps app + the AI's `mapsSearchPlaces` tool via the Apple Maps Server API)
 - `MUSICKIT_TEAM_ID` / `MUSICKIT_KEY_ID` / `MUSICKIT_PRIVATE_KEY` / `MUSICKIT_ORIGIN` - MusicKit JS v3 (Apple Music) used by the iPod's "Apple Music" library mode. Reuse the same `.p8` key as MapKit if both services are enabled on the key — the signer falls back to `MAPKIT_TEAM_ID` / `MAPKIT_KEY_ID` / `MAPKIT_PRIVATE_KEY` when the `MUSICKIT_*` variants are unset.
-- `IP_GEOLOCATION_URL_TEMPLATE` - Optional override for the IP-geolocation provider used as a fallback when Vercel's `geolocation()` returns nothing (defaults to `https://ipwho.is/{ip}`). Use this on Coolify / Docker / plain Bun deploys, or to switch to a paid provider. Use `{ip}` as the placeholder.
+- `IP_GEOLOCATION_URL_TEMPLATE` - Optional override for the IP-geolocation provider (defaults to `https://ipwho.is/{ip}`). Use to switch to a paid provider. Use `{ip}` as the placeholder.
 - `IP_GEOLOCATION_DISABLED` - Set to `1`/`true` to disable the IP-geolocation fallback entirely (no outbound calls).
 
-### Non-Vercel Deployment Hardening
+### Deployment Hardening
 
-These knobs only matter when the API is **not** running on Vercel (i.e. Coolify, Docker, plain Bun). On Vercel, the platform-managed `X-Vercel-Forwarded-For` is trusted automatically and these are unused.
+These knobs apply to Coolify / Docker / plain-Bun deployments.
 
 - `TRUSTED_PROXY_COUNT` - Number of trusted reverse-proxy hops in front of the API. **Defaults to `0`**, meaning client-supplied `X-Forwarded-For` / `X-Real-IP` are NOT trusted (the standalone Bun server's socket peer IP is used instead). Set to `1` if you have one trusted reverse proxy (nginx, Caddy, Render's edge, Fly.io's edge, etc.) injecting the client IP into the right-most XFF entry; set to `2`+ for chained proxies. Tests (`bun run dev:api`) export `TRUSTED_PROXY_COUNT=1` because integration tests use spoofed XFF to exercise per-IP rate limits. `bun run dev:api` also defaults `TELEGRAM_BOT_API_BASE_URL` to the local Telegram mock used by the webhook integration suite.
-- `AUTH_COOKIE_SECURE` - Force the `Secure` flag on/off for the auth cookie. Set to `1`/`true` on any HTTPS-fronted self-hosted deployment if auto-detection is wrong. Auto-detection enables `Secure` whenever `APP_PUBLIC_ORIGIN` starts with `https://` or the runtime env is `production`/`preview`.
+- `AUTH_COOKIE_SECURE` - Force the `Secure` flag on/off for the auth cookie. Set to `1`/`true` on any HTTPS-fronted self-hosted deployment if auto-detection is wrong. Auto-detection enables `Secure` whenever `APP_PUBLIC_ORIGIN` starts with `https://` or the runtime env is `production`.
 
 ### Localization / Scripts
 - `GOOGLE_GENERATIVE_AI_API_KEY` - Google Generative AI (for machine translation of locale files)
@@ -118,7 +118,7 @@ bun run i18n:translate
 
 ## Project Structure
 
-- `api/` - Node-style API route handlers (Vercel-compatible, also used by standalone Bun server)
+- `api/` - Node-style API route handlers served by the standalone Bun server
 - `src/apps/` - Individual application modules (Finder, TextEdit, Chats, etc.)
 - `public/` - Static assets (fonts, icons, wallpapers, sounds)
 - `scripts/` - Build and maintenance scripts
@@ -205,8 +205,7 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 - **Linter warnings**: The codebase has pre-existing linter warnings for unused variables. These are not blockers.
 - **Linting**: `bun run lint` may still report pre-existing issues unrelated to your change. Check the current output before treating a lint failure as a regression.
 - **API endpoints**: API routes are Node-style handlers under `api/` and require Redis for caching/storage.
-- **Build process**: `bun run build` writes Vite output and generated service worker files (`sw.js`, `workbox-*.js`) to `dist/`; Vercel packaging may copy them into `.vercel/output/static/`.
-- **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
+- **Build process**: `bun run build` writes Vite output and generated service worker files (`sw.js`, `workbox-*.js`) to `dist/`.
 - **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run dev:api` and adjust proxy target accordingly.
 
 ## Cursor Cloud specific instructions

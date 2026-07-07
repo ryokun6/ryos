@@ -3,9 +3,6 @@ import { createRedis } from "../_utils/redis.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface RespondBody {
   transferId: string;
   accept: boolean;

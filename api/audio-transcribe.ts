@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { ApiRequest, ApiResponse } from "./_utils/api-types.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
@@ -6,16 +6,6 @@ import { initLogger } from "./_utils/_logging.js";
 import { transcribeAudioBuffer } from "./_utils/voice.js";
 import formidable from "formidable";
 import fs from "fs";
-
-export const runtime = "nodejs";
-export const maxDuration = 60;
-
-// Disable body parsing for file uploads
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 interface OpenAIError {
   status: number;
@@ -28,7 +18,7 @@ interface OpenAIError {
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB limit imposed by OpenAI
 
 // Helper to parse form data
-function parseForm(req: VercelRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
+function parseForm(req: ApiRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
   return new Promise((resolve, reject) => {
     const form = formidable({
       maxFileSize: MAX_FILE_SIZE_BYTES,
@@ -41,8 +31,8 @@ function parseForm(req: VercelRequest): Promise<{ fields: formidable.Fields; fil
 }
 
 export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
+  req: ApiRequest,
+  res: ApiResponse
 ): Promise<void> {
   const { requestId: _requestId, logger } = initLogger();
   const startTime = Date.now();

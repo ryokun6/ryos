@@ -20,11 +20,23 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 ## July 2026
 
 <div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-06-desktop-assistant-16x9.webp" alt="Desktop Assistant in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Desktop Assistant</h3><p>Clippy, Rover, and friends float on the desktop with AI chat, speech, and custom behaviors.</p></div></article>
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books library</h3><p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p></div></article>
 </div>
 <details>
-<summary>More from this month (11)</summary>
+<summary>More from this month (20)</summary>
 
+- **Server-owned AI conversations**: Ryo chat history lives on the server with delta reads and a single write path, streams updates to other signed-in devices in realtime, and delivers the proactive greeting as a server-owned message.
+- Assistant polish: window-aware bubble placement with 4-side popping that never clips off-screen, per-character accent-colored speech bubbles, shimmer thinking states, compact map/HTML/Cursor tool embeds, browser text-to-speech with character voice defaults, and character names localized across all 11 locales.
+- Add a Behavior tab to Assistant settings with customizable behaviors and more response-style presets (detailed, friendly, professional, playful); sync assistant settings via cloud sync.
+- Improve the AI tool system with an expanded settings tool, tool-call repair, per-tool rate limits, and strict payload guardrails against junk settings updates.
+- Make the AI wallpaper tool predictable with exact names, shuffle categories, and dynamic wallpaper support.
+- Move client persistence and Sync v2 state to IndexedDB and prune stale markers.
+- Add an IndexedDB viewer tab to the debug panel and entry/exit animations for the debug console overlay.
+- Show the filename while fetching files in the cloud sync indicator; fix a crash when persisted deletion-marker buckets are missing.
+- Fix chat clear failing after account changes; show a sign-in button when the assistant bubble is rate limited.
+- Replace the docs home diagram with latest changelog cards and retake historical changelog screenshots.
+- Clean up legacy code: drop AI SDK v4 aliases, remove dead exports and duplicate debug loggers, and unify duration formatting and log summarizer helpers.
 - Cut boot-critical JavaScript by about 44% through code splitting and startup work.
 - Add offline empty states for network-dependent apps and explicit standalone-server cache headers.
 - Restore Preview windows with their last document paths so reopened sessions load documents without persisting file contents.

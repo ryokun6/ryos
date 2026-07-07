@@ -13,15 +13,6 @@ import {
 } from "../../_utils/storage-upload-token.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 60;
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 /** Keep in sync with `MAX_UPLOAD_ITEMS` in `api/sync/v2/blobs.ts`. */
 const MAX_UPLOAD_ITEMS = 200;
 const MAX_BLOB_SIZE = 50 * 1024 * 1024;

@@ -304,8 +304,7 @@
         "configured": "Настроено",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "Разработка",
-          "vercel": "Vercel"
+          "dev": "Разработка"
         },
         "deploymentLabel": "Развертывание",
         "loading": "Загрузка информации о сервере…",
@@ -1476,6 +1475,18 @@
         "preparingHtmlPreview": "Подготовка предварительного просмотра HTML…",
         "read": "Прочитать {{fileName}}",
         "readingFile": "Чтение файла…",
+        "runJs": {
+          "failed": "Сбой скрипта",
+          "failedWithError": "Сбой скрипта: {{error}}",
+          "hideCode": "Скрыть код",
+          "noOutput": "(нет вывода)",
+          "ran": "Скрипт выполнен за {{duration}}",
+          "running": "Выполнение скрипта…",
+          "save": "Сохранить",
+          "saved": "Сохранено",
+          "showCode": "Показать код",
+          "truncated": "(вывод сокращен)"
+        },
         "running": "Выполнение {{toolName}}…",
         "searchedWeb": "Выполнен поиск в интернете",
         "searchedWebFor": "Выполнен поиск в интернете по запросу {{query}}",
@@ -2541,12 +2552,15 @@
         "appletImported": "Апплет импортирован!",
         "appletImportedDesc": "{{name}} сохранено в /Applets{{iconText}}",
         "appletImportedIconText": " с {{icon}} значком",
+        "folderExists": "Объект с именем «{{name}}» уже существует.",
         "importFailed": "Импорт не удался",
         "importFailedAppletDesc": "Не удалось импортировать файл апплета.",
         "importFailedDesc": "Не удалось импортировать файл.",
         "invalidFileType": "Недопустимый тип файла",
         "invalidFileTypeDesc": "Только файлы .app, .gz и .html можно импортировать в Апплеты",
-        "loading": "Загрузка…"
+        "invalidFolderName": "Это имя нельзя использовать. Попробуйте другое имя.",
+        "loading": "Загрузка…",
+        "reservedFolderName": "«{{name}}» — зарезервированное имя. Выберите другое имя."
       },
       "name": "Finder",
       "placeholders": {
@@ -4787,7 +4801,8 @@
       "version": "Версия",
       "viewChangelog": "Журнал изменений",
       "viewDocs": "Смотреть документацию",
-      "welcomeTo": "Добро пожаловать в {{appName}}"
+      "welcomeTo": "Добро пожаловать в {{appName}}",
+      "where": "Где:"
     },
     "dock": {
       "addToDock": "Добавить в Dock",

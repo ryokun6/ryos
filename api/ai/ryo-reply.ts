@@ -14,8 +14,6 @@ import type { Message } from "../rooms/_helpers/_types.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { CHAT_ROOM_REPLY_INSTRUCTIONS } from "../_utils/_aiPrompts.js";
 
-export const runtime = "nodejs";
-
 interface RyoReplyRequest {
   roomId: string;
   prompt: string;

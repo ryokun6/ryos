@@ -7,31 +7,21 @@ export interface StorageUploadProgress {
 }
 
 interface BaseStorageUploadInstruction {
-  provider: "vercel-blob" | "s3";
+  provider: "s3";
   uploadMethod: string;
   pathname: string;
   contentType: string;
   maximumSizeInBytes: number;
 }
 
-export interface VercelBlobUploadInstruction
-  extends BaseStorageUploadInstruction {
-  provider: "vercel-blob";
-  uploadMethod: "vercel-client-token";
-  clientToken: string;
-}
-
 export interface S3UploadInstruction extends BaseStorageUploadInstruction {
-  provider: "s3";
   uploadMethod: "presigned-put" | "api-proxy-put";
   uploadUrl: string;
   storageUrl: string;
   headers?: Record<string, string>;
 }
 
-export type StorageUploadInstruction =
-  | VercelBlobUploadInstruction
-  | S3UploadInstruction;
+export type StorageUploadInstruction = S3UploadInstruction;
 
 function uploadWithXhr(
   uploadUrl: string,
@@ -88,19 +78,6 @@ export async function uploadBlobWithStorageInstruction(
   instruction: StorageUploadInstruction,
   onProgress?: (progress: StorageUploadProgress) => void
 ): Promise<{ storageUrl: string }> {
-  if (instruction.uploadMethod === "vercel-client-token") {
-    const { put } = await import("@vercel/blob/client");
-    const result = await put(instruction.pathname, blob, {
-      access: "public",
-      token: instruction.clientToken,
-      contentType: instruction.contentType,
-      multipart: blob.size > 4 * 1024 * 1024,
-      ...(onProgress ? { onUploadProgress: onProgress } : {}),
-    });
-
-    return { storageUrl: result.url };
-  }
-
   if (instruction.uploadMethod === "api-proxy-put") {
     await uploadWithXhr(
       getApiUrl(instruction.uploadUrl),

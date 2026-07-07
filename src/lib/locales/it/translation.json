@@ -304,8 +304,7 @@
         "configured": "Configurato",
         "deployment": {
           "coolify": "Coolify",
-          "dev": "Sviluppo",
-          "vercel": "Vercel"
+          "dev": "Sviluppo"
         },
         "deploymentLabel": "Distribuzione",
         "loading": "Carico informazioni server…",
@@ -1474,6 +1473,18 @@
         "preparingHtmlPreview": "Preparo anteprima HTML…",
         "read": "Letto {{fileName}}",
         "readingFile": "Lettura file…",
+        "runJs": {
+          "failed": "Script non riuscito",
+          "failedWithError": "Script non riuscito: {{error}}",
+          "hideCode": "Nascondi codice",
+          "noOutput": "(nessun output)",
+          "ran": "Script eseguito in {{duration}}",
+          "running": "Esecuzione script…",
+          "save": "Salva",
+          "saved": "Salvato",
+          "showCode": "Mostra codice",
+          "truncated": "(output troncato)"
+        },
         "running": "Esecuzione {{toolName}}…",
         "searchedWeb": "Cercato sul web",
         "searchedWebFor": "Cercato sul web per {{query}}",
@@ -2536,12 +2547,15 @@
         "appletImported": "Applet importata!",
         "appletImportedDesc": "{{name}} salvato in /Applets{{iconText}}",
         "appletImportedIconText": " con icona {{icon}}",
+        "folderExists": "Esiste già un elemento con il nome \"{{name}}\".",
         "importFailed": "Importazione non riuscita",
         "importFailedAppletDesc": "Impossibile importare il file applet.",
         "importFailedDesc": "Impossibile importare il file.",
         "invalidFileType": "Tipo di file non valido",
         "invalidFileTypeDesc": "Solo i file .app, .gz e .html possono essere importati in Applet",
-        "loading": "Carico…"
+        "invalidFolderName": "Non puoi utilizzare questo nome. Prova a usarne un altro.",
+        "loading": "Carico…",
+        "reservedFolderName": "\"{{name}}\" è un nome riservato. Scegline un altro."
       },
       "name": "Finder",
       "placeholders": {
@@ -4780,7 +4794,8 @@
       "version": "Versione",
       "viewChangelog": "Registro modifiche",
       "viewDocs": "Visualizza documentazione",
-      "welcomeTo": "Benvenuto in {{appName}}"
+      "welcomeTo": "Benvenuto in {{appName}}",
+      "where": "Situato in:"
     },
     "dock": {
       "addToDock": "Aggiungi al Dock",

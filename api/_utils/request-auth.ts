@@ -7,7 +7,7 @@
  * - required vs optional auth semantics
  */
 
-import type { VercelRequest } from "@vercel/node";
+import type { ApiRequest } from "./api-types.js";
 import type { Redis } from "./redis.js";
 import { extractAuthNormalized, validateAuth } from "./auth/index.js";
 
@@ -50,7 +50,7 @@ function hasAnyAuthCredential(
  * - partial auth   -> returns 400 only when auth is required
  */
 export async function resolveRequestAuth(
-  req: VercelRequest,
+  req: ApiRequest,
   redis: Redis,
   options: ResolveRequestAuthOptions = {}
 ): Promise<RequestAuthResolution> {

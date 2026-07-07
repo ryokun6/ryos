@@ -97,7 +97,6 @@ const IGNORE_DIRS = [
   "node_modules",
   "dist",
   ".git",
-  ".vercel",
   "dev-dist",
 ];
 const IGNORE_DIR_SET = new Set(IGNORE_DIRS);

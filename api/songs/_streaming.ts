@@ -1,4 +1,4 @@
-import type { VercelResponse } from "@vercel/node";
+import type { ApiResponse } from "../_utils/api-types.js";
 
 export type SseEventSender = (
   eventType: string,
@@ -15,7 +15,7 @@ export type SseEventSender = (
  * object. This contract is shared verbatim by all three streaming actions.
  */
 export function startLyricsSseResponse(
-  res: VercelResponse,
+  res: ApiResponse,
   effectiveOrigin: string | null | undefined
 ): SseEventSender {
   res.setHeader("Content-Type", "text/event-stream");

@@ -398,6 +398,22 @@ export function getToolInvocationResultMessage(
       } else if (out?.message) {
         displayResultMessage = out.message;
       }
+    } else if (toolName === "runJs") {
+      const out = output as { success?: boolean; durationMs?: number; error?: string } | undefined;
+      if (out?.success) {
+        const durationMs = typeof out.durationMs === "number" ? out.durationMs : 0;
+        const duration =
+          durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(1)}s`;
+        displayResultMessage = t("apps.chats.toolCalls.runJs.ran", {
+          defaultValue: "Script ran in {{duration}}",
+          duration,
+        });
+      } else if (out?.error) {
+        displayResultMessage = t("apps.chats.toolCalls.runJs.failedWithError", {
+          defaultValue: "Script failed: {{error}}",
+          error: out.error,
+        });
+      }
     } else if (toolName === "infiniteMacControl") {
       const action = input?.action;
       const x = input?.x;

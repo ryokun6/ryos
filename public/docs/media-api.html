@@ -337,7 +337,7 @@
   <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
     <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
-    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify (without Vercel)</a>
+    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -469,7 +469,7 @@
       <article>
         <h1>Media API</h1>
 <p>The Media API provides endpoints for text-to-speech synthesis, audio transcription, and YouTube music search. These endpoints power the audio-related features in ryOS applications like iPod, Karaoke, and voice input.</p>
-<p>All endpoints run on Vercel Node.js runtime and implement rate limiting to prevent abuse.</p>
+<p>All endpoints run on the standalone Bun server and implement rate limiting to prevent abuse.</p>
 <code>/api/speech</code> is implemented with the shared <code>apiHandler</code> utility. <code>/api/audio-transcribe</code> is a multipart upload route and still uses explicit body-parser/CORS handling.
 <hr>
 <h2>Text-to-Speech</h2>

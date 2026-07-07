@@ -35,9 +35,6 @@ import {
 } from "../_utils/auth/_user-record.js";
 import { clearAIConversationTombstone } from "../ai/conversations/_helpers/store.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 15;
-
 interface RegisterRequest {
   username: string;
   password: string;

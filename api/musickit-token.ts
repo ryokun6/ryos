@@ -5,9 +5,6 @@ import {
   signMusicKitJwt,
 } from "./_utils/_musickit-jwt.js";
 
-export const runtime = "nodejs";
-export const maxDuration = 10;
-
 // MusicKit dev tokens may live up to 6 months. We use 7 days here to limit
 // blast radius if a token leaks; the in-memory cache prevents excess signing.
 export default createAppleJwtTokenHandler({
