@@ -46,6 +46,7 @@ import {
   uploadAIConversationImage,
 } from "@/api/aiConversations";
 import {
+  areAIConversationMessagesEquivalent,
   AIConversationRealtimeService,
   type AIConversationRealtimeController,
 } from "@/services/ai/AIConversationRealtimeService";
@@ -719,6 +720,26 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         return loaded;
       },
       commit: commitServerConversation,
+      isCanonicalStateCurrent: (loaded) => {
+        const current = getSharedAiChat().messages;
+        if (loaded.messages.length === 0) {
+          const onlyMessage = current[0];
+          const onlyPart = onlyMessage?.parts[0];
+          return (
+            current.length === 0 ||
+            (current.length === 1 &&
+              onlyMessage?.id === "1" &&
+              onlyMessage.role === "assistant" &&
+              onlyMessage.parts.length === 1 &&
+              onlyPart?.type === "text" &&
+              onlyPart.text === i18n.t("apps.chats.messages.greeting"))
+          );
+        }
+        return areAIConversationMessagesEquivalent(
+          current,
+          loaded.messages
+        );
+      },
       stop: sdkStop,
       clearError,
     }),

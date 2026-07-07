@@ -41,6 +41,7 @@ export interface AIConversationRealtimeController {
   setMessages: (messages: AIChatMessage[]) => void;
   load: () => Promise<AIConversationHydration>;
   commit: (loaded: AIConversationHydration) => boolean;
+  isCanonicalStateCurrent?: (loaded: AIConversationHydration) => boolean;
   stop: () => void;
   clearError: () => void;
 }
@@ -73,6 +74,17 @@ type AIConversationRealtimeTurnEvent = Exclude<
   AIConversationRealtimeEvent,
   { kind: "conversation-updated" }
 >;
+
+export function areAIConversationMessagesEquivalent(
+  left: readonly AIChatMessage[],
+  right: readonly AIChatMessage[]
+): boolean {
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
+}
 
 export class AIConversationRealtimeService {
   private readonly registrations = new Map<symbol, Registration>();
@@ -208,6 +220,25 @@ export class AIConversationRealtimeService {
       return true;
     }
     return status === "ready";
+  }
+
+  private canonicalStateChanged(
+    registration: Registration,
+    loaded: AIConversationHydration
+  ): boolean {
+    if (this.authoritativeConversationId) {
+      return (
+        loaded.conversation.id !== this.authoritativeConversationId ||
+        loaded.conversation.revision > this.authoritativeRevision
+      );
+    }
+    if (registration.controller.isCanonicalStateCurrent) {
+      return !registration.controller.isCanonicalStateCurrent(loaded);
+    }
+    return !areAIConversationMessagesEquivalent(
+      registration.controller.getMessages(),
+      loaded.messages
+    );
   }
 
   private scheduleSubscriptionCatchUp(delay = 0): void {
@@ -856,13 +887,14 @@ export class AIConversationRealtimeService {
     if (!registration) return false;
     const allowErrorClear =
       this.pendingRefreshCanClearError || Boolean(this.activeRemoteTurn);
+    const status = registration.controller.getStatus();
+    const preserveUnrelatedError = status === "error" && !allowErrorClear;
     if (
+      !preserveUnrelatedError &&
       !this.prepareControllerForRemoteUpdate(registration, allowErrorClear)
     ) {
       this.pendingRefresh = true;
-      if (registration.controller.getStatus() !== "error") {
-        this.scheduleRecoveryRetry();
-      }
+      this.scheduleRecoveryRetry();
       return false;
     }
     const generation = ++this.refreshGeneration;
@@ -887,6 +919,18 @@ export class AIConversationRealtimeService {
       ) {
         this.scheduleRecoveryRetry();
         return false;
+      }
+      if (preserveUnrelatedError) {
+        if (!this.canonicalStateChanged(registration, loaded)) {
+          this.setAuthoritativeConversation(
+            loaded.conversation.id,
+            loaded.conversation.revision
+          );
+          this.pendingRefresh = false;
+          this.resetRecoveryRetry();
+          return true;
+        }
+        registration.controller.clearError();
       }
       if (
         active &&

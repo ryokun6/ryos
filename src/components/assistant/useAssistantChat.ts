@@ -48,6 +48,7 @@ import {
   resetAIConversationSession,
 } from "@/api/aiConversations";
 import {
+  areAIConversationMessagesEquivalent,
   AIConversationRealtimeService,
   type AIConversationRealtimeController,
 } from "@/services/ai/AIConversationRealtimeService";
@@ -469,6 +470,8 @@ export function useAssistantChat(): AssistantChatHandle {
         return loaded;
       },
       commit: commitServerConversation,
+      isCanonicalStateCurrent: (loaded) =>
+        areAIConversationMessagesEquivalent(chat.messages, loaded.messages),
       stop: sdkStop,
       clearError,
     }),
