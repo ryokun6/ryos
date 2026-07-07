@@ -195,7 +195,7 @@ export function mergeEditorContent(
   const dispatchFullReplace = () => {
     // Fallback: rebuild the document but keep the caret near its old offset.
     const { from, to } = state.selection;
-    editor.commands.setContent(content, false);
+    editor.commands.setContent(content, { emitUpdate: false });
     if (preserveSelection) {
       try {
         const nextDoc = editor.state.doc;

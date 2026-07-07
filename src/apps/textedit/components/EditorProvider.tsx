@@ -1,14 +1,8 @@
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import Table from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
-import Underline from "@tiptap/extension-underline";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
 import "../textedit.css";
 import { MarkdownPaste } from "../extensions/MarkdownPaste";
 import { SlashCommands } from "../extensions/SlashCommands";
@@ -22,11 +16,12 @@ interface EditorProviderProps {
 export function EditorProvider({ children }: EditorProviderProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Link.configure({
-        openOnClick: false,
+      // StarterKit v3 bundles Link and Underline.
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+        },
       }),
-      Underline,
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),

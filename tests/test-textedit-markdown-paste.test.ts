@@ -3,11 +3,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { Editor } from "@tiptap/core";
-import Link from "@tiptap/extension-link";
-import Table from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import StarterKit from "@tiptap/starter-kit";
 import { ensureTestLocalStorage } from "./setup";
 import { handleMarkdownPaste } from "../src/apps/textedit/extensions/MarkdownPaste";
@@ -134,9 +130,9 @@ const ready = true;
   test("inserts parsed Markdown through the TipTap paste handler", () => {
     const editor = new Editor({
       content: "<p>Before</p>",
+      // StarterKit v3 bundles Link.
       extensions: [
         StarterKit,
-        Link,
         Table,
         TableRow,
         TableHeader,
@@ -161,7 +157,7 @@ const ready = true;
   test("keeps a Markdown link inline at the current cursor", () => {
     const editor = new Editor({
       content: "<p>Visit:</p>",
-      extensions: [StarterKit, Link],
+      extensions: [StarterKit],
     });
 
     try {

@@ -118,7 +118,7 @@ export function useFileOperations({
       } else if (file.name.endsWith(".md")) {
         const parsed = parseRichMarkdown(text);
         if (parsed.editorJson) {
-          editor.commands.setContent(parsed.editorJson, false);
+          editor.commands.setContent(parsed.editorJson, { emitUpdate: false });
           editorContent = "";
         } else {
           editorContent = markdownToSafeHtml(parsed.markdown);
@@ -128,7 +128,7 @@ export function useFileOperations({
       }
 
       if (editorContent) {
-        editor.commands.setContent(editorContent, false);
+        editor.commands.setContent(editorContent, { emitUpdate: false });
       }
 
       // Always save in markdown format with rich metadata
@@ -225,7 +225,7 @@ export function useFileOperations({
         }
       }
 
-      editor.commands.setContent(editorContent, false);
+      editor.commands.setContent(editorContent, { emitUpdate: false });
       onLoadSuccess?.(path);
     },
     [editor, onLoadSuccess]
@@ -256,7 +256,7 @@ export function useFileOperations({
           }
 
           if (editorContent) {
-            editor.commands.setContent(editorContent, false);
+            editor.commands.setContent(editorContent, { emitUpdate: false });
             onLoadSuccess?.(filePath);
             log.debug("Loaded content from file", { path: filePath });
             return true;

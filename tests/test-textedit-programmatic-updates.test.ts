@@ -58,7 +58,7 @@ describe("TextEdit programmatic editor updates", () => {
   test("device imports load cleanly after saving", () => {
     expect(FILE_OPERATIONS).not.toContain("editor.commands.setContent(editorContent);");
     expect(FILE_OPERATIONS).toContain(
-      "editor.commands.setContent(editorContent, false);"
+      "editor.commands.setContent(editorContent, { emitUpdate: false });"
     );
   });
 
