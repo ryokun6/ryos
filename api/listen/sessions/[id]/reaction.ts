@@ -17,11 +17,8 @@ import {
   getSession,
   setSession,
 } from "../../_helpers/_redis.js";
-import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { ReactionRequest } from "../../_helpers/_types.js";
 import { broadcastReaction } from "../../_helpers/_pusher.js";
-
-export { runtime, maxDuration };
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },

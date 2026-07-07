@@ -19,11 +19,7 @@ import {
   getSession,
   setSession,
 } from "../../_helpers/_redis.js";
-import {
-  LISTEN_SESSION_MAX_USERS,
-  runtime,
-  maxDuration,
-} from "../../_helpers/_constants.js";
+import { LISTEN_SESSION_MAX_USERS } from "../../_helpers/_constants.js";
 import type {
   JoinSessionRequest,
   ListenSessionUser,
@@ -34,8 +30,6 @@ import {
   normalizeClientInstanceId,
 } from "../../_helpers/_client-instance.js";
 import { broadcastUserJoined } from "../../_helpers/_pusher.js";
-
-export { runtime, maxDuration };
 
 const MAX_ANONYMOUS_LISTENERS = 50;
 
