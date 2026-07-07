@@ -54,6 +54,13 @@ describe("weather tool card wiring", () => {
     expect(weatherCardSource).toContain("getWeatherEmoji");
   });
 
+  test("card inherits the themed font from the card shell (no hardcoded stacks)", () => {
+    // The shell's font-geneva-12 resolves per theme (Lucida Grande on Aqua,
+    // Geneva/Chicago pixel fonts elsewhere); the card must not override it.
+    expect(weatherCardSource).not.toContain("Helvetica");
+    expect(weatherCardSource).not.toContain("fontFamily");
+  });
+
   test("card localizes the condition by weather-code family", () => {
     expect(weatherCardSource).toContain("weatherCodeToFamily");
     expect(weatherCardSource).toContain("apps.dashboard.weather.conditions.");

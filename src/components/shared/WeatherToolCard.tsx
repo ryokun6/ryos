@@ -22,8 +22,6 @@ export interface WeatherToolCardProps {
 }
 
 const HERO_TEXT_SHADOW = "0 1px 3px rgba(0,0,0,0.4)";
-const HERO_FONT =
-  "'Helvetica Neue', Helvetica, Arial, sans-serif" as const;
 
 /**
  * Inline chat card rendered when the assistant calls `getWeather`.
@@ -77,7 +75,6 @@ export function WeatherToolCard({
         className="relative flex items-center gap-3 px-3 py-2.5 text-white"
         style={{
           background: getSkyGradient(current.weatherCode, current.isDay),
-          fontFamily: HERO_FONT,
         }}
       >
         <Emoji
