@@ -1414,6 +1414,19 @@
         "listingApplications": "列出應用程式⋯",
         "listingSharedApplets": "列出共享小程式⋯",
         "loadingMusicLibrary": "載入資料庫⋯",
+        "location": {
+          "allow": "允許",
+          "denied": "已拒絕位置要求",
+          "dontAllow": "不允許",
+          "failed": "無法取得你的位置",
+          "gettingLocation": "正在取得你的位置⋯",
+          "permissionBody": "Ryo 想要使用你的目前位置來回答此要求。",
+          "permissionReason": "Ryo 想要取得你的位置以{{reason}}。",
+          "permissionTitle": "要使用你的位置嗎？",
+          "requesting": "正在要求位置⋯",
+          "shared": "已分享位置：{{city}}",
+          "sharedNoCity": "已分享你的位置"
+        },
         "maps": {
           "foundMany": "找到 {{count}} 個「{{query}}」的地點。",
           "foundOne": "找到 1 個「{{query}}」的地點。",
@@ -1536,6 +1549,12 @@
         "unhandledTool": "未處理的工具：{{toolName}}",
         "unknownError": "未知的錯誤",
         "updatedDocument": "文件已更新：{{path}}",
+        "weather": {
+          "checking": "正在檢查天氣⋯",
+          "checkingIn": "正在檢查{{location}}的天氣⋯",
+          "result": "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+          "resultNoCity": "{{tempC}}°C / {{tempF}}°F · {{condition}}"
+        },
         "webFetch": {
           "fetched": "閱讀 {{siteName}}",
           "fetchedPage": "閱讀「{{title}}」",

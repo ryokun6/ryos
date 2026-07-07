@@ -39,6 +39,7 @@ import type {
   MemoryDeleteInput,
   WebFetchInput,
   MapsSearchPlacesInput,
+  GetWeatherInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
 import type {
@@ -65,6 +66,7 @@ import {
   executeStickiesControl,
 } from "./app-state-executors.js";
 import { executeMapsSearchPlaces } from "./maps-executor.js";
+import { executeGetWeather } from "./weather-executor.js";
 
 // Re-export types and schemas for external use
 export * from "./types.js";
@@ -86,6 +88,7 @@ export {
   executeStickiesControl,
 } from "./app-state-executors.js";
 export { executeMapsSearchPlaces } from "./maps-executor.js";
+export { executeGetWeather } from "./weather-executor.js";
 
 const MEMORY_TOOL_NAMES = [
   "memoryWrite",
@@ -103,6 +106,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "contactsControl",
   "songLibraryControl",
   "mapsSearchPlaces",
+  "getWeather",
 ] as const;
 
 export type ChatToolProfile = "all" | "memory" | "telegram";
@@ -248,6 +252,21 @@ export const TOOL_DESCRIPTIONS = {
     "the exact appleMapsUrl for every place you mention in your reply (plain URL text, one per line is fine). " +
     "Do not invent URLs; only use appleMapsUrl values from this tool's JSON output.",
 
+  getWeather:
+    "Get current weather conditions and a 5-day forecast (Open-Meteo — the same live data as the ryOS weather widget and weather wallpaper). " +
+    "Use when the user asks about weather, temperature, rain, or forecasts. " +
+    "Location resolution: pass 'location' with a place name the user mentioned (e.g. 'Tokyo'); or pass 'latitude'/'longitude' when you have precise coordinates (e.g. from getLocation). " +
+    "When you pass neither, the server falls back to the user's approximate IP-derived location — good enough for most 'weather here' questions, so try that first. " +
+    "If no location can be resolved, the result tells you to either ask for a city or call getLocation to request the user's precise location. " +
+    "Output includes both °C and °F — use whichever fits the user's locale/region.",
+
+  getLocation:
+    "Request the user's precise location (browser geolocation). This prompts the user with an Allow / Don't Allow permission card in chat — " +
+    "the user may decline, in which case continue gracefully without their location. " +
+    "Pass a short 'reason' so the user knows why you're asking (e.g. 'to find restaurants near you'). " +
+    "Use ONLY when precise coordinates genuinely improve the answer (nearby places, precise local weather) and IP-based fallbacks are insufficient. " +
+    "Returns latitude/longitude, accuracy, and the locality name. You can then pass the coordinates to getWeather or mapsSearchPlaces ('near').",
+
   webFetch:
     "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +
     "read an article, check a website, get information from a URL, or when you need live/current data from the web. " +
@@ -389,6 +408,29 @@ export function createChatTools(
       execute: async (input: WebFetchInput) => {
         return executeWebFetch(input, context);
       },
+    },
+
+    // ============================================================================
+    // Weather Tool (Server-side execution)
+    // ============================================================================
+    getWeather: {
+      description: TOOL_DESCRIPTIONS.getWeather,
+      inputSchema: schemas.getWeatherSchema,
+      execute: async (input: GetWeatherInput) => {
+        return executeGetWeather(input, context);
+      },
+    },
+
+    // ============================================================================
+    // Location Tool (Client-side execution, approval-gated)
+    // The user must approve via the in-chat permission card before the
+    // browser geolocation handler runs (see src/apps/chats/tools).
+    // ============================================================================
+    getLocation: {
+      description: TOOL_DESCRIPTIONS.getLocation,
+      inputSchema: schemas.getLocationSchema,
+      needsApproval: true,
+      // No execute - handled client-side after user approval
     },
 
     // ============================================================================
@@ -567,6 +609,9 @@ export function createChatTools(
         ...allTools.mapsSearchPlaces,
         description: TOOL_DESCRIPTIONS.mapsSearchPlacesTelegram,
       },
+      // No getLocation in Telegram (requires browser geolocation + approval UI);
+      // getWeather still works via place names or coordinates in the message.
+      getWeather: allTools.getWeather,
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;
   }
 

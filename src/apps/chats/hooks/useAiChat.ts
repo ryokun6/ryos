@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Chat, useChat, type UIMessage } from "@ai-sdk/react";
-import {
-  DefaultChatTransport,
-  lastAssistantMessageIsCompleteWithToolCalls,
-  type ChatInit,
-} from "ai";
+import { DefaultChatTransport, type ChatInit } from "ai";
 import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
@@ -29,6 +25,10 @@ import { useChatSpeechSync } from "./useChatSpeechSync";
 import { useSyncedAiMessages } from "./useSyncedAiMessages";
 import { getSystemState } from "../utils/systemState";
 import { dispatchToolCall } from "../tools/dispatchToolCall";
+import {
+  registerToolApprovalSurface,
+  sendAutomaticallyWhenApprovalsSettled,
+} from "../tools/toolApprovals";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 import {
   buildAIConversationRequestBody,
@@ -195,8 +195,9 @@ function getSharedAiChat(): Chat<AIChatMessage> {
         },
       }),
 
-      // Automatically submit when all tool outputs are available
-      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+      // Automatically submit when all tool outputs are available, or when
+      // the user has responded to every pending tool approval (deny path).
+      sendAutomaticallyWhen: sendAutomaticallyWhenApprovalsSettled,
 
       async onToolCall(options) {
         await resolveSharedHandlers()?.onToolCall(options);
@@ -207,6 +208,16 @@ function getSharedAiChat(): Chat<AIChatMessage> {
       onError(error) {
         resolveSharedHandlers()?.onError(error);
       },
+    });
+
+    // Route in-chat Allow / Don't Allow decisions for approval-gated tools
+    // (e.g. getLocation) to this chat. Module-level singleton — registered
+    // once for the app's lifetime.
+    const chat = sharedAiChat;
+    registerToolApprovalSurface({
+      getMessages: () => chat.messages,
+      addToolApprovalResponse: (args) => chat.addToolApprovalResponse(args),
+      addToolOutput: (payload) => chat.addToolOutput(payload),
     });
   }
   return sharedAiChat;

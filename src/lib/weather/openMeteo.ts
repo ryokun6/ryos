@@ -15,8 +15,23 @@ export function getWeatherEmoji(code: number, isDay = true): string {
 
 type WeatherPayload = Omit<WeatherSnapshot, "city" | "cityLocale">;
 
-function languageHeaders(locale?: string): HeadersInit | undefined {
-  return locale ? { "Accept-Language": locale } : undefined;
+/**
+ * Extra request options for the Nominatim geocoding calls. Browsers send
+ * their own User-Agent; server-side callers (the `getWeather` chat tool)
+ * pass an explicit one to comply with the Nominatim usage policy.
+ */
+export interface GeocodeRequestOptions {
+  userAgent?: string;
+}
+
+function geocodeHeaders(
+  locale?: string,
+  opts?: GeocodeRequestOptions
+): HeadersInit | undefined {
+  const headers: Record<string, string> = {};
+  if (locale) headers["Accept-Language"] = locale;
+  if (opts?.userAgent) headers["User-Agent"] = opts.userAgent;
+  return Object.keys(headers).length > 0 ? headers : undefined;
 }
 
 export async function fetchWeatherPayload(
@@ -50,12 +65,13 @@ export async function fetchWeatherPayload(
 export async function reverseGeocodeCity(
   lat: number,
   lon: number,
-  locale?: string
+  locale?: string,
+  opts?: GeocodeRequestOptions
 ): Promise<string | null> {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`,
-      { headers: languageHeaders(locale) }
+      { headers: geocodeHeaders(locale, opts) }
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -74,14 +90,15 @@ export async function reverseGeocodeCity(
 export async function searchCities(
   query: string,
   signal?: AbortSignal,
-  locale?: string
+  locale?: string,
+  opts?: GeocodeRequestOptions
 ): Promise<CityResult[]> {
   if (query.length < 2) return [];
   const res = await fetch(
     `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       query
     )}&format=json&limit=6&addressdetails=1&featuretype=city`,
-    { signal, headers: languageHeaders(locale) }
+    { signal, headers: geocodeHeaders(locale, opts) }
   );
   if (!res.ok) return [];
   const data = await res.json();

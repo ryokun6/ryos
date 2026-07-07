@@ -1416,6 +1416,19 @@
         "listingApplications": "Elenco applicazioni…",
         "listingSharedApplets": "Elenco applet condivise…",
         "loadingMusicLibrary": "Carico libreria musicale…",
+        "location": {
+          "allow": "Consenti",
+          "denied": "Richiesta posizione rifiutata",
+          "dontAllow": "Non consentire",
+          "failed": "Impossibile ottenere la tua posizione",
+          "gettingLocation": "Recupero della posizione in corso…",
+          "permissionBody": "Ryo desidera utilizzare la tua posizione attuale per rispondere a questa richiesta.",
+          "permissionReason": "Ryo desidera conoscere la tua posizione {{reason}}.",
+          "permissionTitle": "Vuoi utilizzare la tua posizione?",
+          "requesting": "Richiesta posizione in corso…",
+          "shared": "Posizione condivisa: {{city}}",
+          "sharedNoCity": "Hai condiviso la tua posizione"
+        },
         "maps": {
           "foundMany": "Trovati {{count}} luoghi per \"{{query}}\".",
           "foundOne": "Trovato 1 luogo per \"{{query}}\".",
@@ -1538,6 +1551,12 @@
         "unhandledTool": "Strumento non gestito: {{toolName}}",
         "unknownError": "Errore sconosciuto",
         "updatedDocument": "Documento aggiornato: {{path}}",
+        "weather": {
+          "checking": "Controllo meteo in corso…",
+          "checkingIn": "Controllo meteo a {{location}} in corso…",
+          "result": "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+          "resultNoCity": "{{tempC}}°C / {{tempF}}°F · {{condition}}"
+        },
         "webFetch": {
           "fetched": "Leggi {{siteName}}",
           "fetchedPage": "Leggi \"{{title}}\"",

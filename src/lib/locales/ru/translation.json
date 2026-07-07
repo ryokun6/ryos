@@ -1418,6 +1418,19 @@
         "listingApplications": "Перечисление приложений…",
         "listingSharedApplets": "Перечисление общих апплетов…",
         "loadingMusicLibrary": "Загрузка музыкальной библиотеки…",
+        "location": {
+          "allow": "Разрешить",
+          "denied": "Запрос геопозиции отклонен",
+          "dontAllow": "Не разрешать",
+          "failed": "Не удалось определить вашу геопозицию",
+          "gettingLocation": "Определение вашей геопозиции…",
+          "permissionBody": "Ryo хочет использовать вашу текущую геопозицию, чтобы ответить на этот запрос.",
+          "permissionReason": "Ryo запрашивает вашу геопозицию, чтобы {{reason}}.",
+          "permissionTitle": "Использовать вашу геопозицию?",
+          "requesting": "Запрос геопозиции…",
+          "shared": "Геопозиция отправлена: {{city}}",
+          "sharedNoCity": "Ваша геопозиция отправлена"
+        },
         "maps": {
           "foundMany": "Найдено {{count}} мест по запросу «{{query}}».",
           "foundOne": "Найдено 1 место по запросу «{{query}}».",
@@ -1540,6 +1553,12 @@
         "unhandledTool": "Необработанный инструмент: {{toolName}}",
         "unknownError": "Неизвестная ошибка",
         "updatedDocument": "Документ обновлен: {{path}}",
+        "weather": {
+          "checking": "Проверка погоды…",
+          "checkingIn": "Проверка погоды в: {{location}}…",
+          "result": "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+          "resultNoCity": "{{tempC}}°C / {{tempF}}°F · {{condition}}"
+        },
         "webFetch": {
           "fetched": "Читать {{siteName}}",
           "fetchedPage": "Читать \"{{title}}\"",

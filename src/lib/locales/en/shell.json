@@ -1035,6 +1035,25 @@
           "openInMaps": "Open {{name}} in Maps",
           "openInAppleMaps": "Open in Apple Maps"
         },
+        "weather": {
+          "checking": "Checking weather…",
+          "checkingIn": "Checking weather in {{location}}…",
+          "result": "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+          "resultNoCity": "{{tempC}}°C / {{tempF}}°F · {{condition}}"
+        },
+        "location": {
+          "requesting": "Requesting location…",
+          "permissionTitle": "Use your location?",
+          "permissionBody": "Ryo wants to use your current location to answer this request.",
+          "permissionReason": "Ryo wants your location {{reason}}.",
+          "allow": "Allow",
+          "dontAllow": "Don’t Allow",
+          "gettingLocation": "Getting your location…",
+          "shared": "Shared location: {{city}}",
+          "sharedNoCity": "Shared your location",
+          "denied": "Location request declined",
+          "failed": "Couldn’t get your location"
+        },
         "memory": {
           "saving": "Saving memory…",
           "recalling": "Recalling memories…",

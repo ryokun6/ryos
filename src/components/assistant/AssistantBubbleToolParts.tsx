@@ -28,9 +28,11 @@ export function AssistantBubbleToolParts({
     .map((part, index) =>
       tryRenderToolInvocationSpecialContent({
         toolName: getToolName(part),
+        toolCallId: part.toolCallId,
         state: part.state,
         input: part.input,
         output: part.output,
+        approval: part.approval,
         partKey: `assistant-bubble-tool-${part.toolCallId ?? index}`,
         t,
         formatToolName,

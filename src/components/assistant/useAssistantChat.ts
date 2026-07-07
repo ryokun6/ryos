@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chat, useChat } from "@ai-sdk/react";
-import {
-  DefaultChatTransport,
-  lastAssistantMessageIsCompleteWithToolCalls,
-} from "ai";
+import { DefaultChatTransport } from "ai";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import {
@@ -18,6 +15,10 @@ import { AppId } from "@/config/appIds";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { getSystemState } from "@/apps/chats/utils/systemState";
 import { dispatchToolCall } from "@/apps/chats/tools/dispatchToolCall";
+import {
+  registerToolApprovalSurface,
+  sendAutomaticallyWhenApprovalsSettled,
+} from "@/apps/chats/tools/toolApprovals";
 import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
@@ -82,6 +83,8 @@ const TOOL_STATUS_KEYS: Record<string, string> = {
   edit: "apps.chats.toolCalls.editingFile",
   settings: "apps.chats.toolCalls.changingSettings",
   songLibraryControl: "apps.chats.toolCalls.loadingMusicLibrary",
+  getWeather: "apps.chats.toolCalls.weather.checking",
+  getLocation: "apps.chats.toolCalls.location.requesting",
 };
 
 export function parseAssistantRateLimitState(
@@ -320,7 +323,7 @@ export function useAssistantChat(): AssistantChatHandle {
             };
           },
         }),
-        sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+        sendAutomaticallyWhen: sendAutomaticallyWhenApprovalsSettled,
         async onToolCall(options) {
           await handlersRef.current.onToolCall(options);
         },
@@ -344,6 +347,18 @@ export function useAssistantChat(): AssistantChatHandle {
     clearError,
     error,
   } = useChat<AIChatMessage>({ chat, experimental_throttle: 60 });
+
+  // Route in-chat Allow / Don't Allow decisions for approval-gated tools
+  // (e.g. getLocation) rendered in the assistant bubble to this chat.
+  useEffect(
+    () =>
+      registerToolApprovalSurface({
+        getMessages: () => chat.messages,
+        addToolApprovalResponse: (args) => chat.addToolApprovalResponse(args),
+        addToolOutput: (payload) => chat.addToolOutput(payload),
+      }),
+    [chat]
+  );
 
   const assistantIdentity =
     username && isAuthenticated ? username.toLowerCase() : null;

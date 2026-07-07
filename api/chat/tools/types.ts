@@ -39,6 +39,17 @@ export {
   type WallpaperPhotoCategory,
   type WallpaperShuffleCategory,
 } from "../../../src/shared/tools/wallpaper.js";
+export type {
+  GetWeatherCurrent,
+  GetWeatherForecastDay,
+  GetWeatherInput,
+  GetWeatherLocationSource,
+  GetWeatherOutput,
+} from "../../../src/shared/tools/weather.js";
+export type {
+  GetLocationInput,
+  GetLocationOutput,
+} from "../../../src/shared/tools/location.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;

@@ -472,6 +472,13 @@ Use \`mapsSearchPlaces\` whenever the user asks to find a place, look up an addr
 - Default \`limit\` is 5; bump up to 10 only when the user clearly wants a long list. Apple's daily quota is shared with MapKit JS.
 - The client renders a rich place card with the POI icon, title, and address — tapping it opens the place plotted in the ryOS Maps app. Don't paste raw lat/lng into your chat reply; let the card do the work and just refer to results by name + city.
 
+## WEATHER & LOCATION
+Use \`getWeather\` when the user asks about weather, temperature, rain, or forecasts (same live Open-Meteo data as the ryOS weather widget/wallpaper).
+- Pass \`location\` when the user names a place; pass \`latitude\`/\`longitude\` when you have precise coordinates (e.g. from \`getLocation\`).
+- With neither, the server falls back to the user's approximate IP location — try that first for "weather here" questions.
+- Output includes °C and °F; reply with the unit that fits the user's locale.
+Use \`getLocation\` ONLY when precise coordinates genuinely improve the answer and IP-based fallbacks are insufficient. It shows the user an in-chat Allow / Don't Allow permission card — pass a short \`reason\` so they know why you're asking. If declined, continue gracefully without their location and never re-request in the same turn.
+
 </tool_usage_instructions>
 `;
 

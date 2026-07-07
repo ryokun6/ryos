@@ -1414,6 +1414,19 @@
         "listingApplications": "Anwendungen werden aufgelistet …",
         "listingSharedApplets": "Geteilte Applets werden aufgelistet …",
         "loadingMusicLibrary": "Musikbibliothek wird geladen …",
+        "location": {
+          "allow": "Erlauben",
+          "denied": "Standortanfrage abgelehnt",
+          "dontAllow": "Nicht erlauben",
+          "failed": "Standort konnte nicht ermittelt werden",
+          "gettingLocation": "Standort wird ermittelt …",
+          "permissionBody": "Ryo möchte deinen aktuellen Standort verwenden, um diese Anfrage zu beantworten.",
+          "permissionReason": "Ryo möchte deinen Standort {{reason}}.",
+          "permissionTitle": "Deinen Standort verwenden?",
+          "requesting": "Standort wird angefordert …",
+          "shared": "Geteilter Standort: {{city}}",
+          "sharedNoCity": "Standort geteilt"
+        },
         "maps": {
           "foundMany": "{{count}} Orte für „{{query}}“ gefunden.",
           "foundOne": "1 Ort für „{{query}}“ gefunden.",
@@ -1536,6 +1549,12 @@
         "unhandledTool": "Nicht verarbeitetes Tool: {{toolName}}",
         "unknownError": "Unbekannter Fehler",
         "updatedDocument": "Dokument aktualisiert: {{path}}",
+        "weather": {
+          "checking": "Wetter wird geprüft …",
+          "checkingIn": "Wetter in {{location}} wird geprüft …",
+          "result": "{{city}} · {{tempC}}°C / {{tempF}}°F · {{condition}}",
+          "resultNoCity": "{{tempC}}°C / {{tempF}}°F · {{condition}}"
+        },
         "webFetch": {
           "fetched": "{{siteName}} lesen",
           "fetchedPage": "\"{{title}}\" lesen",

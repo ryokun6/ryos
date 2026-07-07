@@ -12,6 +12,8 @@ import {
   type MapsSearchPlaceCardData,
 } from "@/components/shared/MapsSearchPlacesCard";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { APPROVAL_GATED_TOOL_NAME_SET } from "@/shared/tools/approvalGated";
+import { ToolApprovalCard } from "./ToolApprovalCard";
 import { ToolInvocationStatusRow } from "./ToolInvocationStatusRow";
 import type { ToolInvocationMessageProps, ToolInvocationPart } from "./types";
 
@@ -25,9 +27,12 @@ export type ToolInvocationSpecialRenderProps = Pick<
   | "formatToolName"
 > & {
   toolName: string;
+  toolCallId: string;
   state: ToolInvocationPart["state"];
   input?: ToolInvocationPart["input"];
   output?: unknown;
+  /** Present on approval-gated tool parts (AI SDK tool-approval flow). */
+  approval?: ToolInvocationPart["approval"];
   t: ReturnType<typeof useTranslation>["t"];
   /**
    * Compact rendering for narrow hosts (the desktop assistant's speech
@@ -41,9 +46,11 @@ export function tryRenderToolInvocationSpecialContent(
 ): ReactNode | null {
   const {
     toolName,
+    toolCallId,
     state,
     input,
     output,
+    approval,
     partKey,
     t,
     formatToolName,
@@ -70,6 +77,21 @@ export function tryRenderToolInvocationSpecialContent(
   const compactCardClassName = compact
     ? "tool-inline-card-compact !shadow-none"
     : undefined;
+
+  // Approval-gated client tools (getLocation): the permission card and its
+  // running / shared / declined states are all owned by ToolApprovalCard.
+  if (APPROVAL_GATED_TOOL_NAME_SET.has(toolName)) {
+    return (
+      <ToolApprovalCard
+        key={partKey}
+        toolName={toolName}
+        part={{ state, toolCallId, input, output, approval }}
+        partKey={partKey}
+        compact={compact}
+        className={compactCardClassName}
+      />
+    );
+  }
 
   // Async Cursor Cloud agent — server streams events to Redis; UI polls /api/ai/cursor-run-status
   if (

@@ -324,6 +324,55 @@ function createGoogleSearchTool(): ReturnType<typeof google.tools.googleSearch> 
   return google.tools.googleSearch({});
 }
 
+/**
+ * Resolve stale, unresolved tool-approval parts before model conversion.
+ *
+ * Approval-gated client tools (e.g. `getLocation`) wait indefinitely for the
+ * user's Allow / Don't Allow decision. If the user just types a new message
+ * instead, the history still contains an `approval-requested` part (or an
+ * approved one whose client handler never reported output). Those would make
+ * `convertToModelMessages` produce a dangling tool call and fail the request,
+ * so treat them as implicitly declined.
+ */
+export function resolveStaleToolApprovals(messages: UIMessage[]): UIMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "assistant" || !Array.isArray(message.parts)) {
+      return message;
+    }
+    let changed = false;
+    const parts = message.parts.map((part) => {
+      const candidate = part as {
+        type?: unknown;
+        state?: unknown;
+        approval?: { id: string; approved?: boolean };
+      };
+      const isToolPart =
+        typeof candidate.type === "string" &&
+        (candidate.type.startsWith("tool-") ||
+          candidate.type === "dynamic-tool");
+      const isUnresolvedApproval =
+        candidate.state === "approval-requested" ||
+        (candidate.state === "approval-responded" &&
+          candidate.approval?.approved === true);
+      if (!isToolPart || !isUnresolvedApproval || !candidate.approval?.id) {
+        return part;
+      }
+      changed = true;
+      return {
+        ...(part as Record<string, unknown>),
+        state: "output-denied",
+        approval: {
+          id: candidate.approval.id,
+          approved: false,
+          reason:
+            "The user continued without responding to the permission request.",
+        },
+      } as typeof part;
+    });
+    return changed ? { ...message, parts } : message;
+  });
+}
+
 export function ensureUIMessageFormat(
   messages: SimpleConversationMessage[]
 ): UIMessage[] {
@@ -899,7 +948,7 @@ export async function prepareRyoConversationModelInput(
   };
 
   const uiMessages = await validateUIMessages({
-    messages: ensureUIMessageFormat(messages),
+    messages: resolveStaleToolApprovals(ensureUIMessageFormat(messages)),
     tools,
   });
   const modelMessages = await convertToModelMessages(uiMessages, {

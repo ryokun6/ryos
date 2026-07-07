@@ -1127,6 +1127,73 @@ export const mapsSearchPlacesSchema = z.object({
 });
 
 // ============================================================================
+// Weather Tool Schema
+// ============================================================================
+
+export const getWeatherSchema = z
+  .object({
+    location: z.preprocess(
+      normalizeOptionalString,
+      z
+        .string()
+        .max(120)
+        .optional()
+        .describe(
+          "Place name to look up (e.g. 'Tokyo', 'Paris, France'). Omit together with latitude/longitude to use the user's approximate location."
+        )
+    ),
+    latitude: z
+      .number()
+      .min(-90)
+      .max(90)
+      .optional()
+      .describe(
+        "Latitude in decimal degrees. Provide together with longitude for precise coordinates (e.g. from getLocation)."
+      ),
+    longitude: z
+      .number()
+      .min(-180)
+      .max(180)
+      .optional()
+      .describe("Longitude in decimal degrees. Provide together with latitude."),
+    language: z
+      .string()
+      .max(20)
+      .optional()
+      .describe(
+        "Optional BCP-47 language tag for localized place names (e.g. 'en', 'ja', 'zh-Hant')."
+      ),
+  })
+  .superRefine((data, ctx) => {
+    const hasLat = data.latitude !== undefined;
+    const hasLon = data.longitude !== undefined;
+    if (hasLat !== hasLon) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide both 'latitude' and 'longitude', or neither.",
+        path: [hasLat ? "longitude" : "latitude"],
+      });
+    }
+  });
+
+// ============================================================================
+// Location Tool Schema
+// ============================================================================
+
+export const getLocationSchema = z.object({
+  reason: z.preprocess(
+    normalizeOptionalString,
+    z
+      .string()
+      .max(200)
+      .optional()
+      .describe(
+        "Short reason shown to the user in the permission prompt (e.g. 'to check the weather near you')."
+      )
+  ),
+});
+
+// ============================================================================
 // Web Fetch Tool Schema
 // ============================================================================
 
