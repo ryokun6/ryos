@@ -256,16 +256,6 @@ export function useChatsAppController({
 
   const sidebarVisibleBool = isSidebarVisible ?? false;
 
-  const handleMobileRoomSelect = useCallback(
-    (room: ChatRoom | null) => {
-      handleRoomSelectWithScroll(room ? room.id : null);
-      if (sidebarVisibleBool) {
-        toggleSidebarVisibility();
-      }
-    },
-    [handleRoomSelectWithScroll, sidebarVisibleBool, toggleSidebarVisibility]
-  );
-
   const handleSubmit = useCallback(
     async (messageText: string, imageData: string | null) => {
       if (checkOfflineAndShowError(t("apps.chats.status.chatRequiresInternet"))) {
@@ -576,7 +566,6 @@ export function useChatsAppController({
     isFrameNarrow,
     sidebarVisibleBool,
     toggleSidebarVisibility,
-    handleMobileRoomSelect,
     handleMenuRoomSelect,
     handlePromptDeleteRoom,
     rooms,

@@ -29,7 +29,6 @@ interface ChatRoomSidebarProps {
   onDeleteRoom?: (room: ChatRoom) => void;
   isVisible: boolean;
   isAdmin: boolean;
-  isOverlay?: boolean;
   username?: string | null;
   onlineUsers?: string[];
 }
@@ -149,7 +148,6 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   onDeleteRoom,
   isVisible,
   isAdmin,
-  isOverlay = false,
   username,
   onlineUsers = [],
 }: ChatRoomSidebarProps) {
@@ -228,19 +226,11 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           isAquaGlass,
         },
         {
-          layout: isOverlay ? "overlay" : "side",
-          className: isOverlay ? "min-h-0 overflow-hidden" : undefined,
+          layout: "side",
         }
       )}
     >
-      <div
-        className={cn(
-          "pt-3 flex flex-col",
-          isOverlay
-            ? "min-h-0 flex-1 overflow-hidden pb-3"
-            : "flex-1 overflow-hidden"
-        )}
-      >
+      <div className="pt-3 flex flex-col flex-1 overflow-hidden">
         <div className="os-app-sidebar-header flex justify-between items-center mb-2 flex-shrink-0 px-3">
           <div className="flex items-baseline gap-1.5">
             <h2 className="text-[14px] pl-1">{t("apps.chats.sidebar.chats")}</h2>
@@ -266,12 +256,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           )}
         </div>
         <div
-          className={cn(
-            "os-app-sidebar-list space-y-1 overscroll-contain w-full",
-            isOverlay
-              ? "flex-1 overflow-y-auto min-h-0"
-              : "flex-1 overflow-y-auto min-h-0"
-          )}
+          className="os-app-sidebar-list space-y-1 overscroll-contain w-full flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {/* Ryo (@ryo) Chat Selection */}
