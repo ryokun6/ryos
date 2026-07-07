@@ -170,16 +170,6 @@ redis.call("SADD", KEYS[3], ARGV[3])
 return 1
 `;
 
-const ADD_ATTACHMENT_INDEX_MEMBER_SCRIPT = `
-if redis.call("GET", KEYS[1]) ~= ARGV[1] then
-  return -1
-end
-if redis.call("EXISTS", KEYS[2]) == 1 then
-  return -2
-end
-return redis.call("SADD", KEYS[3], ARGV[2])
-`;
-
 export async function withAIAttachmentLock<T>({
   redis,
   username,
@@ -631,15 +621,6 @@ function collectAttachmentNamesFromMessages(
     : null;
 }
 
-export function collectAIAttachmentNamesFromMessages(
-  messages: readonly unknown[],
-): string[] {
-  const references = collectAIAttachmentReferences(messages, false);
-  return references
-    ? [...new Set([...references.values()].map((reference) => reference.name))]
-    : [];
-}
-
 async function getReferencedAIAttachmentNames(
   redis: AIAttachmentRedis,
   username: string,
@@ -952,100 +933,6 @@ export async function readAIAttachment({
   return { bytes, mediaType };
 }
 
-export class AIAttachmentReferenceError extends Error {
-  constructor() {
-    super("attachment_not_found");
-    this.name = "AIAttachmentReferenceError";
-  }
-}
-
-export async function withAIAttachmentReferenceLock<T>({
-  redis,
-  username,
-  messages,
-  task,
-}: {
-  redis: AIAttachmentRedis;
-  username: string;
-  messages: readonly unknown[];
-  task: () => Promise<T>;
-}): Promise<T> {
-  const references = collectAIAttachmentReferences(messages, false);
-  if (!references || references.size === 0) {
-    return task();
-  }
-
-  return withAIAttachmentLock({
-    redis,
-    username,
-    task: async (lockToken) => {
-      const tombstone = await redis.get(
-        redisKeys.chat.aiConversationTombstone(username),
-      );
-      if (tombstone !== null) throw new AIAttachmentReferenceError();
-
-      const index = await loadAndMigrateAIAttachmentIndex({
-        redis,
-        username,
-        lockToken,
-        now: Date.now(),
-      });
-      for (const reference of references.values()) {
-        const ready = index.entries.find(
-          (entry): entry is ReadyIndexedAIAttachment =>
-            entry.state === "ready" && entry.name === reference.name,
-        );
-        if (ready && !reference.legacyName) continue;
-        if (!reference.legacyName) {
-          throw new AIAttachmentReferenceError();
-        }
-
-        let bytes: Uint8Array;
-        try {
-          bytes = await downloadPrivateStoredObjectByPathname(
-            getAIAttachmentPath(username, reference.name),
-            AI_ATTACHMENT_MAX_BYTES,
-          );
-        } catch {
-          throw new AIAttachmentReferenceError();
-        }
-        if (getImageSignatureMediaType(bytes) !== reference.mediaType) {
-          throw new AIAttachmentReferenceError();
-        }
-        if (ready) continue;
-
-        const createdAt = Date.now();
-        const member = serializeReadyAIAttachment({
-          name: reference.name,
-          storageUrl: null,
-          createdAt,
-        });
-        const added = await redis.eval<number>(
-          ADD_ATTACHMENT_INDEX_MEMBER_SCRIPT,
-          [
-            redisKeys.chat.aiAttachmentsLock(username),
-            redisKeys.chat.aiConversationTombstone(username),
-            redisKeys.chat.aiAttachments(username),
-          ],
-          [lockToken, member],
-        );
-        if (added === -1) throw new Error("attachment_busy");
-        if (added === -2) throw new AIAttachmentReferenceError();
-        index.entries.push({
-          state: "ready",
-          member,
-          name: reference.name,
-          storageUrl: null,
-          createdAt,
-          needsMigration: false,
-          legacyMetadata: false,
-        });
-      }
-      return task();
-    },
-  });
-}
-
 export async function resolveAIAttachmentsForModel({
   username,
   messages,
@@ -1142,66 +1029,13 @@ export async function deleteAllAIAttachments(
   });
 }
 
-export async function deleteUnreferencedAIAttachmentsForNames({
-  redis,
-  username,
-  names,
-}: {
-  redis: AIAttachmentRedis;
-  username: string;
-  names: readonly string[];
-}): Promise<number> {
-  const candidates = new Set(
-    names.flatMap((name) => {
-      const attachment = parseAIAttachmentName(name);
-      return attachment ? [attachment.name] : [];
-    }),
-  );
-  if (candidates.size === 0) return 0;
-
-  return withAIAttachmentLock({
-    redis,
-    username,
-    task: async (lockToken) => {
-      const referenced = await getReferencedAIAttachmentNames(redis, username);
-      if (!referenced) {
-        throw new Error("attachment_reference_check_failed");
-      }
-      const indexKey = redisKeys.chat.aiAttachments(username);
-      const index = await loadAndMigrateAIAttachmentIndex({
-        redis,
-        username,
-        lockToken,
-        now: Date.now(),
-      });
-      let removed = 0;
-      for (const name of candidates) {
-        if (referenced.has(name)) continue;
-        const entries = index.entries.filter(
-          (
-            entry,
-          ): entry is PendingIndexedAIAttachment | ReadyIndexedAIAttachment =>
-            entry.state !== "invalid" && entry.name === name,
-        );
-        if (entries.length === 0) {
-          await deletePrivateStoredObjectByPathname(
-            getAIAttachmentPath(username, name),
-          );
-          continue;
-        }
-        removed += await deleteIndexedAIAttachments(
-          redis,
-          username,
-          indexKey,
-          entries,
-          true,
-        );
-      }
-      return removed;
-    },
-  });
-}
-
+/**
+ * Sweep-style garbage collection: delete indexed attachments that are no
+ * longer referenced by either canonical conversation and are older than the
+ * orphan grace period. Runs opportunistically (after conversation resets and
+ * under quota pressure) instead of synchronously refcounting references on
+ * every conversation write.
+ */
 export async function cleanupStaleAIAttachments({
   redis,
   username,

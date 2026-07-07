@@ -52,17 +52,17 @@ export interface AIConversation {
   oldestSeq: number | null;
   newestSeq: number | null;
   historyTruncated: boolean;
-  canImportLegacy: boolean;
 }
 
-export interface AIConversationPage {
+/**
+ * Full or delta view of the canonical conversation. When requested with
+ * `afterSeq`, `messages` contains only messages whose `seq` is greater than
+ * the requested value (content updates re-mint `seq`, so they are included).
+ */
+export interface AIConversationSnapshot {
   owner: string;
   conversation: AIConversation;
   messages: AIConversationMessage[];
-  page: {
-    nextCursor: string | null;
-    hasMore: boolean;
-  };
 }
 
 export interface AIConversationRequestContext {
@@ -93,7 +93,6 @@ export const AI_CONVERSATION_UPDATE_REASONS = [
   "turn-begin",
   "turn-complete",
   "greeting",
-  "import",
   "reset",
 ] as const;
 

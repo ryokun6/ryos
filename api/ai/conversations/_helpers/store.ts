@@ -6,7 +6,6 @@ import {
   type AIConversationChannel,
   type AIConversationMessage,
   type AIConversationPart,
-  type AIConversationPage,
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   AI_PROACTIVE_GREETING_STALE_AFTER_MS,
   isAIProactiveGreetingMessageId,
@@ -14,15 +13,9 @@ import {
 import {
   getAIAttachmentUrl,
   isAIAttachmentMediaType,
-  parseAIAttachmentName,
   parseAIAttachmentUrl,
 } from "../../../../src/shared/contracts/aiAttachment.js";
 import { ASSISTANT_SUMMON_MESSAGE } from "../../../../src/shared/assistantGreeting.js";
-import {
-  AIAttachmentReferenceError,
-  collectAIAttachmentNamesFromMessages,
-  withAIAttachmentReferenceLock,
-} from "../../attachments/_helpers/store.js";
 
 const CONVERSATION_TTL_SECONDS = 365 * 24 * 60 * 60;
 const LOCK_TTL_SECONDS = 60;
@@ -35,11 +28,6 @@ const MAX_MESSAGE_TEXT_LENGTH = 128_000;
 const MAX_PARTS_PER_MESSAGE = 48;
 const MAX_RECENT_OPERATIONS = 48;
 const MAX_MESSAGE_ID_LENGTH = 160;
-const PENDING_TURN_TTL_MS = 2 * 60 * 1000;
-const RESET_MEMORY_PENDING_TTL_SECONDS = 7 * 24 * 60 * 60;
-const RESET_MEMORY_LOCK_TTL_SECONDS = 120;
-const MAX_RESET_MEMORY_SNAPSHOT_BYTES = 5 * 1024 * 1024;
-const RESET_MEMORY_VALUE_PREFIX = "v1:";
 const TURN_COMPLETION_OPERATION_SUFFIX = ":complete";
 
 export function getAIConversationTurnCompletionOperationId(
@@ -64,6 +52,9 @@ const storedMessageSchema = z.object({
   createdAt: z.string(),
 });
 
+// Documents written before the append-log simplification carry extra fields
+// (`legacyImportAllowed`, `pendingTurnId`, `pendingTurnStartedAt`); zod strips
+// unknown keys, so they are dropped on the next save.
 const storedConversationSchema = z.object({
   version: z.literal(1),
   id: z.string().uuid(),
@@ -73,37 +64,12 @@ const storedConversationSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   historyTruncated: z.boolean(),
-  legacyImportAllowed: z.boolean(),
   messages: z.array(storedMessageSchema),
   recentOperationIds: z.array(z.string()),
   lastResetOperationId: z.string().nullable(),
-  pendingTurnId: z.string().nullable(),
-  pendingTurnStartedAt: z.number().int().nonnegative().nullable(),
-});
-
-const pendingResetMemoryMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string(),
-  createdAt: z.string(),
-});
-
-const pendingResetMemorySnapshotSchema = z.object({
-  version: z.literal(1),
-  id: z.string().uuid(),
-  channel: z.enum(["chat", "assistant"]),
-  timeZone: z.string().max(100).nullable(),
-  createdAt: z.string(),
-  messages: z.array(pendingResetMemoryMessageSchema).max(MAX_MESSAGES),
-  attachmentNames: z
-    .array(z.string().refine((name) => parseAIAttachmentName(name) !== null))
-    .max(512)
-    .default([]),
 });
 
 type StoredConversation = z.infer<typeof storedConversationSchema>;
-export type PendingAIConversationResetMemory = z.infer<
-  typeof pendingResetMemorySnapshotSchema
->;
 export type AIConversationRedis = Pick<
   RedisLike,
   "get" | "set" | "del" | "expire" | "eval" | "smembers" | "sadd" | "srem"
@@ -114,10 +80,7 @@ export type AIConversationErrorCode =
   | "conversation_changed"
   | "revision_conflict"
   | "message_id_conflict"
-  | "conversation_not_empty"
   | "message_too_large"
-  | "attachment_not_found"
-  | "invalid_cursor"
   | "conversation_corrupt"
   | "account_deleted";
 
@@ -132,31 +95,6 @@ export class AIConversationError extends Error {
   }
 }
 
-interface WriteAIConversationMessagesInput {
-  redis: AIConversationRedis;
-  username: string;
-  channel: AIConversationChannel;
-  messages: readonly unknown[];
-  operationId: string;
-  expectedConversationId?: string;
-  expectedRevision?: number;
-  requireEmpty?: boolean;
-  requireAssistantContinuation?: boolean;
-  /** Reject the write while another conversation turn is still pending. */
-  requireNoPendingTurn?: boolean;
-  /**
-   * Keep `legacyImportAllowed` untouched. Used for proactive greetings so a
-   * server-generated greeting on an otherwise-empty conversation does not
-   * permanently block a legacy device from importing its local history.
-   */
-  preserveLegacyImport?: boolean;
-  historyTruncated?: boolean;
-  turn?: {
-    id: string;
-    action: "begin" | "complete";
-  };
-}
-
 interface ConversationWriteContext {
   redis: AIConversationRedis;
   username: string;
@@ -167,21 +105,15 @@ interface ConversationWriteContext {
 }
 
 export interface BeginAIConversationTurnInput extends ConversationWriteContext {
-  turnId: string;
   action:
     | { kind: "user-message"; message: unknown }
     | { kind: "assistant-continuation"; message: unknown }
-    | { kind: "regenerate" };
+    | { kind: "regenerate"; targetMessageId?: string };
 }
 
-export interface CompleteAIConversationTurnInput extends ConversationWriteContext {
-  turnId: string;
+export interface CompleteAIConversationTurnInput
+  extends ConversationWriteContext {
   responseMessage: unknown;
-}
-
-export interface ImportAIConversationMessagesInput extends ConversationWriteContext {
-  messages: readonly unknown[];
-  historyTruncated?: boolean;
 }
 
 export interface AppendAIConversationAssistantMessageInput
@@ -195,22 +127,12 @@ export interface ResetAIConversationInput {
   channel: AIConversationChannel;
   conversationId: string;
   operationId: string;
-  timeZone?: string;
 }
 
-export interface RegenerateAIConversationInput {
-  redis: AIConversationRedis;
-  username: string;
-  channel: AIConversationChannel;
-  operationId: string;
-  expectedConversationId?: string;
-  expectedRevision?: number;
-  targetMessageId?: string;
-}
-
-export interface CommitAIConversationRegenerationInput extends RegenerateAIConversationInput {
+export interface CommitAIConversationRegenerationInput
+  extends ConversationWriteContext {
   responseMessage: unknown;
-  turnId: string;
+  targetMessageId?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -316,93 +238,18 @@ function getPartsText(parts: readonly AIConversationPart[]): string {
     .join("\n");
 }
 
-function serializePendingResetMemory(
-  snapshot: PendingAIConversationResetMemory,
-): string {
-  return `${RESET_MEMORY_VALUE_PREFIX}${JSON.stringify(snapshot)}`;
-}
-
-function parsePendingResetMemory(
-  raw: unknown,
-): PendingAIConversationResetMemory | null {
-  if (raw === null || raw === undefined) return null;
-  if (typeof raw !== "string" || !raw.startsWith(RESET_MEMORY_VALUE_PREFIX)) {
-    throw new Error("Stored reset memory snapshot is invalid");
-  }
-
-  let value: unknown;
-  try {
-    value = JSON.parse(raw.slice(RESET_MEMORY_VALUE_PREFIX.length));
-  } catch {
-    throw new Error("Stored reset memory snapshot is invalid");
-  }
-  const parsed = pendingResetMemorySnapshotSchema.safeParse(value);
-  if (!parsed.success) {
-    throw new Error("Stored reset memory snapshot is invalid");
-  }
-  return parsed.data;
-}
-
-function removeOldestResetMemoryTurn(
-  messages: PendingAIConversationResetMemory["messages"],
-): void {
-  const nextUserMessage = messages.findIndex(
-    (message, index) => index > 0 && message.role === "user",
-  );
-  messages.splice(0, nextUserMessage > 0 ? nextUserMessage : 1);
-}
-
-function buildPendingResetMemory({
-  current,
-  existing,
-  channel,
-  timeZone,
-}: {
-  current: StoredConversation;
-  existing: PendingAIConversationResetMemory | null;
-  channel: AIConversationChannel;
-  timeZone?: string;
-}): PendingAIConversationResetMemory | null {
-  const canRetainExisting = existing?.channel === channel;
-  const retainedExistingMessages =
-    canRetainExisting && existing ? existing.messages : [];
-  const currentMessages = current.messages.map((message) => ({
+/**
+ * Project stored conversation messages to plain `{role, content, createdAt}`
+ * records (e.g. for memory extraction after a conversation reset).
+ */
+export function toPlainAIConversationMessages(
+  messages: readonly AIConversationMessage[],
+): Array<{ role: "user" | "assistant"; content: string; createdAt: string }> {
+  return messages.map((message) => ({
     role: message.role,
     content: getPartsText(message.parts),
     createdAt: message.createdAt,
   }));
-  const attachmentNames = [
-    ...new Set([
-      ...(canRetainExisting && existing ? existing.attachmentNames : []),
-      ...collectAIAttachmentNamesFromMessages(current.messages),
-    ]),
-  ].slice(0, 512);
-  const snapshot: PendingAIConversationResetMemory = {
-    version: 1,
-    id: canRetainExisting && existing ? existing.id : crypto.randomUUID(),
-    channel,
-    timeZone: timeZone?.trim().slice(0, 100) || null,
-    createdAt:
-      canRetainExisting && existing
-        ? existing.createdAt
-        : new Date().toISOString(),
-    messages: [...retainedExistingMessages, ...currentMessages],
-    attachmentNames,
-  };
-
-  while (
-    snapshot.messages.length > MAX_MESSAGES ||
-    (snapshot.messages.length > 1 &&
-      Buffer.byteLength(serializePendingResetMemory(snapshot), "utf8") >
-        MAX_RESET_MEMORY_SNAPSHOT_BYTES)
-  ) {
-    removeOldestResetMemoryTurn(snapshot.messages);
-  }
-
-  return snapshot.messages.some((message) => message.role === "user") ||
-    snapshot.attachmentNames.length > 0
-    ? snapshot
-    : null;
 }
 
 function isSyntheticMessage(
@@ -482,12 +329,9 @@ function createConversation(
     createdAt: now,
     updatedAt: now,
     historyTruncated: false,
-    legacyImportAllowed: true,
     messages: [],
     recentOperationIds: [],
     lastResetOperationId: null,
-    pendingTurnId: null,
-    pendingTurnStartedAt: null,
   };
 }
 
@@ -526,7 +370,10 @@ function parseStoredConversation(
 
 function summarizeConversation(document: StoredConversation): AIConversation {
   const oldest = document.messages[0]?.seq ?? null;
-  const newest = document.messages.at(-1)?.seq ?? null;
+  const newest = document.messages.reduce(
+    (max, message) => (message.seq > (max ?? 0) ? message.seq : max),
+    null as number | null,
+  );
   return {
     id: document.id,
     channel: document.channel,
@@ -537,7 +384,6 @@ function summarizeConversation(document: StoredConversation): AIConversation {
     oldestSeq: oldest,
     newestSeq: newest,
     historyTruncated: document.historyTruncated,
-    canImportLegacy: document.legacyImportAllowed,
   };
 }
 
@@ -561,27 +407,6 @@ if redis.call("EXISTS", KEYS[2]) == 1 then
 end
 redis.call("SET", KEYS[3], ARGV[2], "EX", ARGV[3])
 return 1
-`;
-
-const SAVE_RESET_CONVERSATION_SCRIPT = `
-if redis.call("GET", KEYS[1]) ~= ARGV[1] then
-  return -1
-end
-if redis.call("EXISTS", KEYS[2]) == 1 then
-  return -2
-end
-if ARGV[4] ~= "" then
-  redis.call("SET", KEYS[4], ARGV[4], "EX", ARGV[5])
-end
-redis.call("SET", KEYS[3], ARGV[2], "EX", ARGV[3])
-return 1
-`;
-
-const DELETE_IF_UNCHANGED_SCRIPT = `
-if redis.call("GET", KEYS[1]) == ARGV[1] then
-  return redis.call("DEL", KEYS[1])
-end
-return 0
 `;
 
 async function withConversationLock<T>({
@@ -655,51 +480,6 @@ async function saveConversation(
       redisKeys.chat.aiConversation(username, document.channel),
     ],
     [lockToken, JSON.stringify(document), CONVERSATION_TTL_SECONDS],
-  );
-  if (result === -2) {
-    throw new AIConversationError(
-      "account_deleted",
-      409,
-      "Account was deleted",
-    );
-  }
-  if (result !== 1) {
-    throw new AIConversationError(
-      "conversation_busy",
-      503,
-      "Conversation lock expired",
-    );
-  }
-}
-
-async function saveResetConversation({
-  redis,
-  username,
-  document,
-  lockToken,
-  pendingResetMemory,
-}: {
-  redis: AIConversationRedis;
-  username: string;
-  document: StoredConversation;
-  lockToken: string;
-  pendingResetMemory: PendingAIConversationResetMemory | null;
-}): Promise<void> {
-  const result = await redis.eval<number>(
-    SAVE_RESET_CONVERSATION_SCRIPT,
-    [
-      redisKeys.chat.aiConversationLock(username, document.channel),
-      redisKeys.chat.aiConversationTombstone(username),
-      redisKeys.chat.aiConversation(username, document.channel),
-      redisKeys.chat.aiConversationResetMemory(username, document.channel),
-    ],
-    [
-      lockToken,
-      JSON.stringify(document),
-      CONVERSATION_TTL_SECONDS,
-      pendingResetMemory ? serializePendingResetMemory(pendingResetMemory) : "",
-      RESET_MEMORY_PENDING_TTL_SECONDS,
-    ],
   );
   if (result === -2) {
     throw new AIConversationError(
@@ -901,6 +681,11 @@ function assertValidAssistantContinuation(
   }
 }
 
+/**
+ * Merge incoming messages into the document. New ids append with a fresh
+ * `seq`; an assistant message whose content changed is updated in place but
+ * re-minted onto a fresh `seq` so `afterSeq` delta reads pick the update up.
+ */
 function mergeConversationMessages(
   document: StoredConversation,
   messages: readonly unknown[],
@@ -935,6 +720,8 @@ function mergeConversationMessages(
     }
 
     existing.parts = incoming.parts;
+    existing.seq = document.nextSeq;
+    document.nextSeq += 1;
     changed = true;
   }
 
@@ -956,232 +743,154 @@ function assertMessageRole(
   }
 }
 
-async function writeAIConversationMessages(
-  input: WriteAIConversationMessagesInput,
-): Promise<{ document: StoredConversation; operationApplied: boolean }> {
-  const maxOperationIdLength =
-    input.turn?.action === "complete" &&
-    input.operationId ===
-      getAIConversationTurnCompletionOperationId(input.turn.id)
-      ? AI_CONVERSATION_OPERATION_ID_MAX_LENGTH +
-        TURN_COMPLETION_OPERATION_SUFFIX.length
-      : AI_CONVERSATION_OPERATION_ID_MAX_LENGTH;
-  if (
-    !input.operationId.trim() ||
-    input.operationId.length > maxOperationIdLength
-  ) {
+function assertOperationId(operationId: string, allowSuffix = false): void {
+  const maxLength = allowSuffix
+    ? AI_CONVERSATION_OPERATION_ID_MAX_LENGTH +
+      TURN_COMPLETION_OPERATION_SUFFIX.length
+    : AI_CONVERSATION_OPERATION_ID_MAX_LENGTH;
+  if (!operationId.trim() || operationId.length > maxLength) {
     throw new AIConversationError(
       "message_id_conflict",
       422,
       "Invalid operation id",
     );
   }
+}
 
-  try {
-    return await withAIAttachmentReferenceLock({
-      redis: input.redis,
-      username: input.username,
-      messages: input.messages,
-      task: () =>
-        withConversationLock({
-          redis: input.redis,
-          username: input.username,
-          channel: input.channel,
-          task: async (lockToken) => {
-            const document =
-              (await readConversation(
-                input.redis,
-                input.username,
-                input.channel,
-              )) ?? createConversation(input.channel);
-
-            if (document.recentOperationIds.includes(input.operationId)) {
-              return { document, operationApplied: false };
-            }
-            if (
-              input.expectedConversationId &&
-              input.expectedConversationId !== document.id
-            ) {
-              throw new AIConversationError(
-                "conversation_changed",
-                409,
-                "Conversation changed",
-              );
-            }
-            if (
-              input.expectedRevision !== undefined &&
-              input.expectedRevision !== document.revision
-            ) {
-              throw new AIConversationError(
-                "revision_conflict",
-                409,
-                "Conversation revision changed",
-              );
-            }
-            // A legacy import may replace a conversation whose only content is
-            // server-generated proactive greetings: the greeting is disposable
-            // while the device-local history it would otherwise block is not.
-            const existingAreOnlyProactiveGreetings =
-              document.messages.length > 0 &&
-              document.messages.every(
-                (message) =>
-                  message.role === "assistant" &&
-                  isAIProactiveGreetingMessageId(message.id),
-              );
-            if (
-              input.requireEmpty &&
-              document.messages.length > 0 &&
-              !existingAreOnlyProactiveGreetings
-            ) {
-              throw new AIConversationError(
-                "conversation_not_empty",
-                409,
-                "Conversation already has messages",
-              );
-            }
-            if (input.requireEmpty && !document.legacyImportAllowed) {
-              throw new AIConversationError(
-                "conversation_not_empty",
-                409,
-                "Legacy import is no longer allowed",
-              );
-            }
-            if (input.requireAssistantContinuation) {
-              assertValidAssistantContinuation(document, input.messages[0]);
-            }
-
-            const pendingIsStale =
-              document.pendingTurnStartedAt !== null &&
-              Date.now() - document.pendingTurnStartedAt > PENDING_TURN_TTL_MS;
-            if (
-              input.requireNoPendingTurn &&
-              document.pendingTurnId &&
-              !pendingIsStale
-            ) {
-              throw new AIConversationError(
-                "conversation_busy",
-                409,
-                "Another conversation turn is still running",
-              );
-            }
-
-            let droppedProactiveGreetings = false;
-            if (input.requireEmpty && existingAreOnlyProactiveGreetings) {
-              document.messages = [];
-              droppedProactiveGreetings = true;
-            }
-
-            if (input.turn) {
-              if (input.turn.action === "begin") {
-                if (
-                  document.pendingTurnId &&
-                  document.pendingTurnId !== input.turn.id &&
-                  !pendingIsStale
-                ) {
-                  throw new AIConversationError(
-                    "conversation_busy",
-                    409,
-                    "Another conversation turn is still running",
-                  );
-                }
-                document.pendingTurnId = input.turn.id;
-                document.pendingTurnStartedAt = Date.now();
-              } else if (document.pendingTurnId !== input.turn.id) {
-                throw new AIConversationError(
-                  "revision_conflict",
-                  409,
-                  "Conversation turn is no longer active",
-                );
-              }
-            }
-
-            const messagesChanged = mergeConversationMessages(
-              document,
-              input.messages,
-            );
-            const truncationChanged =
-              input.historyTruncated === true && !document.historyTruncated;
-            if (input.historyTruncated) {
-              document.historyTruncated = true;
-            }
-            if (input.turn?.action === "complete") {
-              document.pendingTurnId = null;
-              document.pendingTurnStartedAt = null;
-            }
-            appendOperation(document, input.operationId);
-            if (!input.preserveLegacyImport) {
-              document.legacyImportAllowed = false;
-            }
-            if (
-              messagesChanged ||
-              truncationChanged ||
-              droppedProactiveGreetings
-            ) {
-              document.revision += 1;
-              document.updatedAt = new Date().toISOString();
-            }
-            await saveConversation(
-              input.redis,
-              input.username,
-              document,
-              lockToken,
-            );
-            return { document, operationApplied: true };
-          },
-        }),
-    });
-  } catch (error) {
-    if (error instanceof AIAttachmentReferenceError) {
-      throw new AIConversationError(
-        "attachment_not_found",
-        422,
-        "Referenced attachment is missing",
-      );
-    }
-    if (error instanceof Error && error.message === "attachment_busy") {
-      throw new AIConversationError(
-        "conversation_busy",
-        503,
-        "Attachment index is busy",
-      );
-    }
-    throw error;
+function assertExpectedDocument(
+  document: StoredConversation,
+  input: Pick<
+    ConversationWriteContext,
+    "expectedConversationId" | "expectedRevision"
+  >,
+): void {
+  if (
+    input.expectedConversationId &&
+    input.expectedConversationId !== document.id
+  ) {
+    throw new AIConversationError(
+      "conversation_changed",
+      409,
+      "Conversation changed",
+    );
+  }
+  if (
+    input.expectedRevision !== undefined &&
+    input.expectedRevision !== document.revision
+  ) {
+    throw new AIConversationError(
+      "revision_conflict",
+      409,
+      "Conversation revision changed",
+    );
   }
 }
 
-export async function beginAIConversationTurn(
-  input: BeginAIConversationTurnInput,
-): Promise<StoredConversation> {
-  return (await beginAIConversationTurnWithStatus(input)).document;
+interface WriteAIConversationMessagesInput extends ConversationWriteContext {
+  messages: readonly unknown[];
+  requireAssistantContinuation?: boolean;
+  allowCompletionOperationSuffix?: boolean;
 }
 
-export async function beginAIConversationTurnWithStatus(
-  input: BeginAIConversationTurnInput,
+async function writeAIConversationMessages(
+  input: WriteAIConversationMessagesInput,
 ): Promise<{ document: StoredConversation; operationApplied: boolean }> {
-  let messages: readonly unknown[] = [];
-  if (input.action.kind === "user-message") {
-    assertMessageRole(input.action.message, "user");
-    messages = [input.action.message];
-  } else if (input.action.kind === "assistant-continuation") {
-    assertMessageRole(input.action.message, "assistant");
-    messages = [input.action.message];
-  }
+  assertOperationId(input.operationId, input.allowCompletionOperationSuffix);
 
-  return writeAIConversationMessages({
+  return withConversationLock({
     redis: input.redis,
     username: input.username,
     channel: input.channel,
-    operationId: input.operationId,
-    messages,
-    requireAssistantContinuation:
-      input.action.kind === "assistant-continuation",
-    turn: { id: input.turnId, action: "begin" },
-    ...(input.expectedConversationId
-      ? { expectedConversationId: input.expectedConversationId }
-      : {}),
-    ...(input.expectedRevision === undefined
-      ? {}
-      : { expectedRevision: input.expectedRevision }),
+    task: async (lockToken) => {
+      const document =
+        (await readConversation(input.redis, input.username, input.channel)) ??
+        createConversation(input.channel);
+
+      if (document.recentOperationIds.includes(input.operationId)) {
+        return { document, operationApplied: false };
+      }
+      assertExpectedDocument(document, input);
+      if (input.requireAssistantContinuation) {
+        assertValidAssistantContinuation(document, input.messages[0]);
+      }
+
+      const messagesChanged = mergeConversationMessages(
+        document,
+        input.messages,
+      );
+      appendOperation(document, input.operationId);
+      if (messagesChanged) {
+        document.revision += 1;
+        document.updatedAt = new Date().toISOString();
+      }
+      await saveConversation(input.redis, input.username, document, lockToken);
+      return { document, operationApplied: true };
+    },
+  });
+}
+
+function validateRegenerationTarget(
+  document: StoredConversation,
+  targetMessageId: string | undefined,
+): AIConversationMessage {
+  const target = targetMessageId
+    ? document.messages.find((message) => message.id === targetMessageId)
+    : document.messages.findLast((message) => message.role === "assistant");
+  if (!target) {
+    throw new AIConversationError(
+      "message_id_conflict",
+      409,
+      "Regeneration target was not found",
+    );
+  }
+  return target;
+}
+
+/**
+ * Record the start of a conversation turn. For user messages and assistant
+ * continuations this appends/updates the message; for regenerations it only
+ * validates the target and records the operation id (content changes at
+ * commit time). There is no turn lock: concurrent turns append independently
+ * and the operation id makes retries idempotent.
+ */
+export async function beginAIConversationTurn(
+  input: BeginAIConversationTurnInput,
+): Promise<{ document: StoredConversation; operationApplied: boolean }> {
+  if (input.action.kind === "user-message") {
+    assertMessageRole(input.action.message, "user");
+    return writeAIConversationMessages({
+      ...input,
+      messages: [input.action.message],
+    });
+  }
+  if (input.action.kind === "assistant-continuation") {
+    assertMessageRole(input.action.message, "assistant");
+    return writeAIConversationMessages({
+      ...input,
+      messages: [input.action.message],
+      requireAssistantContinuation: true,
+    });
+  }
+
+  const targetMessageId = input.action.targetMessageId;
+  assertOperationId(input.operationId);
+  return withConversationLock({
+    redis: input.redis,
+    username: input.username,
+    channel: input.channel,
+    task: async (lockToken) => {
+      const document =
+        (await readConversation(input.redis, input.username, input.channel)) ??
+        createConversation(input.channel);
+      if (document.recentOperationIds.includes(input.operationId)) {
+        return { document, operationApplied: false };
+      }
+      assertExpectedDocument(document, input);
+      validateRegenerationTarget(document, targetMessageId);
+      appendOperation(document, input.operationId);
+      await saveConversation(input.redis, input.username, document, lockToken);
+      return { document, operationApplied: true };
+    },
   });
 }
 
@@ -1196,34 +905,18 @@ export async function completeAIConversationTurn(
       channel: input.channel,
       operationId: input.operationId,
       messages: [input.responseMessage],
-      turn: { id: input.turnId, action: "complete" },
+      allowCompletionOperationSuffix: true,
       ...(input.expectedConversationId
         ? { expectedConversationId: input.expectedConversationId }
         : {}),
-      ...(input.expectedRevision === undefined
-        ? {}
-        : { expectedRevision: input.expectedRevision }),
-    })
-  ).document;
-}
-
-export async function importAIConversationMessages(
-  input: ImportAIConversationMessagesInput,
-): Promise<StoredConversation> {
-  return (
-    await writeAIConversationMessages({
-      ...input,
-      requireEmpty: true,
     })
   ).document;
 }
 
 /**
  * Append a standalone assistant message (e.g. a proactive greeting) outside a
- * regular user turn. The write is optimistic: it fails cleanly when a turn is
- * pending or when the conversation moved past the caller's snapshot, and it
- * keeps `legacyImportAllowed` intact so a greeting never blocks a legacy
- * device from importing its local history later.
+ * regular user turn. The optimistic revision guard makes a racing user turn
+ * win: any conversation change since the caller's snapshot rejects the write.
  */
 export async function appendAIConversationAssistantMessage(
   input: AppendAIConversationAssistantMessageInput,
@@ -1235,8 +928,6 @@ export async function appendAIConversationAssistantMessage(
     channel: input.channel,
     operationId: input.operationId,
     messages: [input.message],
-    requireNoPendingTurn: true,
-    preserveLegacyImport: true,
     ...(input.expectedConversationId
       ? { expectedConversationId: input.expectedConversationId }
       : {}),
@@ -1244,105 +935,6 @@ export async function appendAIConversationAssistantMessage(
       ? {}
       : { expectedRevision: input.expectedRevision }),
   });
-}
-
-export async function releaseAIConversationTurn({
-  redis,
-  username,
-  channel,
-  turnId,
-}: {
-  redis: AIConversationRedis;
-  username: string;
-  channel: AIConversationChannel;
-  turnId: string;
-}): Promise<void> {
-  await withConversationLock({
-    redis,
-    username,
-    channel,
-    task: async (lockToken) => {
-      const document = await readConversation(redis, username, channel);
-      if (!document || document.pendingTurnId !== turnId) return;
-      document.pendingTurnId = null;
-      document.pendingTurnStartedAt = null;
-      await saveConversation(redis, username, document, lockToken);
-    },
-  });
-}
-
-export async function getPendingAIConversationResetMemory({
-  redis,
-  username,
-  channel,
-}: {
-  redis: AIConversationRedis;
-  username: string;
-  channel: AIConversationChannel;
-}): Promise<PendingAIConversationResetMemory | null> {
-  const raw = await redis.get(
-    redisKeys.chat.aiConversationResetMemory(username, channel),
-  );
-  return parsePendingResetMemory(raw);
-}
-
-export type ProcessPendingAIConversationResetMemoryResult =
-  | { status: "none" }
-  | { status: "busy" }
-  | { status: "processed"; snapshotId: string }
-  | { status: "superseded"; snapshotId: string };
-
-export async function processPendingAIConversationResetMemory({
-  redis,
-  username,
-  channel,
-  processSnapshot,
-}: {
-  redis: AIConversationRedis;
-  username: string;
-  channel: AIConversationChannel;
-  processSnapshot: (
-    snapshot: PendingAIConversationResetMemory,
-  ) => Promise<unknown>;
-}): Promise<ProcessPendingAIConversationResetMemoryResult> {
-  const pendingKey = redisKeys.chat.aiConversationResetMemory(
-    username,
-    channel,
-  );
-  const lockKey = redisKeys.chat.aiConversationResetMemoryLock(
-    username,
-    channel,
-  );
-  const lockToken = crypto.randomUUID();
-  const claimed = await redis.set(lockKey, lockToken, {
-    nx: true,
-    ex: RESET_MEMORY_LOCK_TTL_SECONDS,
-  });
-  if (claimed === null || claimed === undefined) {
-    return { status: "busy" };
-  }
-
-  try {
-    const raw = await redis.get(pendingKey);
-    const snapshot = parsePendingResetMemory(raw);
-    if (!snapshot || typeof raw !== "string") {
-      return { status: "none" };
-    }
-
-    await processSnapshot(snapshot);
-    const deleted = await redis.eval<number>(
-      DELETE_IF_UNCHANGED_SCRIPT,
-      [pendingKey],
-      [raw],
-    );
-    return deleted === 1
-      ? { status: "processed", snapshotId: snapshot.id }
-      : { status: "superseded", snapshotId: snapshot.id };
-  } finally {
-    await redis
-      .eval<number>(RELEASE_LOCK_SCRIPT, [lockKey], [lockToken])
-      .catch(() => 0);
-  }
 }
 
 export async function resetAIConversation(
@@ -1373,249 +965,92 @@ export async function resetAIConversation(
       }
 
       const replacement = createConversation(input.channel);
-      replacement.legacyImportAllowed = false;
       replacement.lastResetOperationId = input.operationId;
       replacement.recentOperationIds = [input.operationId];
       const clearedMessages = current.messages.map((message) => ({
         ...message,
         parts: message.parts.map((part) => ({ ...part })),
       }));
-      const existingPending = await getPendingAIConversationResetMemory({
-        redis: input.redis,
-        username: input.username,
-        channel: input.channel,
-      });
-      const pendingResetMemory = buildPendingResetMemory({
-        current,
-        existing: existingPending,
-        channel: input.channel,
-        timeZone: input.timeZone,
-      });
-      await saveResetConversation({
-        redis: input.redis,
-        username: input.username,
-        document: replacement,
+      await saveConversation(
+        input.redis,
+        input.username,
+        replacement,
         lockToken,
-        pendingResetMemory,
-      });
+      );
       return { document: replacement, reset: true, clearedMessages };
     },
   });
 }
 
-export async function prepareAIConversationRegeneration(
-  input: RegenerateAIConversationInput,
-): Promise<StoredConversation> {
-  const document = await getOrCreateAIConversation(input);
-  validateRegenerationTarget(document, input);
-  return document;
-}
-
-function validateRegenerationTarget(
-  document: StoredConversation,
-  input: RegenerateAIConversationInput,
-): AIConversationMessage {
-  if (
-    input.expectedConversationId &&
-    input.expectedConversationId !== document.id
-  ) {
-    throw new AIConversationError(
-      "conversation_changed",
-      409,
-      "Conversation changed",
-    );
-  }
-  if (
-    input.expectedRevision !== undefined &&
-    input.expectedRevision !== document.revision
-  ) {
-    throw new AIConversationError(
-      "revision_conflict",
-      409,
-      "Conversation revision changed",
-    );
-  }
-  const target = input.targetMessageId
-    ? document.messages.find((message) => message.id === input.targetMessageId)
-    : document.messages.findLast((message) => message.role === "assistant");
-  if (!target) {
-    throw new AIConversationError(
-      "message_id_conflict",
-      409,
-      "Regeneration target was not found",
-    );
-  }
-  return target;
-}
-
 export async function commitAIConversationRegeneration(
   input: CommitAIConversationRegenerationInput,
 ): Promise<StoredConversation> {
-  try {
-    return await withAIAttachmentReferenceLock({
-      redis: input.redis,
-      username: input.username,
-      messages: [input.responseMessage],
-      task: () =>
-        withConversationLock({
-          redis: input.redis,
-          username: input.username,
-          channel: input.channel,
-          task: async (lockToken) => {
-            const document =
-              (await readConversation(
-                input.redis,
-                input.username,
-                input.channel,
-              )) ?? createConversation(input.channel);
-            if (document.recentOperationIds.includes(input.operationId)) {
-              return document;
-            }
-            if (document.pendingTurnId !== input.turnId) {
-              throw new AIConversationError(
-                "revision_conflict",
-                409,
-                "Conversation turn is no longer active",
-              );
-            }
-            const target = validateRegenerationTarget(document, input);
-            assertMessageRole(input.responseMessage, "assistant");
-            document.messages = document.messages.filter((message) =>
-              target.role === "assistant"
-                ? message.seq < target.seq
-                : message.seq <= target.seq,
-            );
-            mergeConversationMessages(document, [input.responseMessage]);
-            appendOperation(document, input.operationId);
-            document.legacyImportAllowed = false;
-            document.pendingTurnId = null;
-            document.pendingTurnStartedAt = null;
-            document.revision += 1;
-            document.updatedAt = new Date().toISOString();
-            await saveConversation(
-              input.redis,
-              input.username,
-              document,
-              lockToken,
-            );
-            return document;
-          },
-        }),
-    });
-  } catch (error) {
-    if (error instanceof AIAttachmentReferenceError) {
-      throw new AIConversationError(
-        "attachment_not_found",
-        422,
-        "Referenced attachment is missing",
+  assertOperationId(input.operationId, true);
+  return withConversationLock({
+    redis: input.redis,
+    username: input.username,
+    channel: input.channel,
+    task: async (lockToken) => {
+      const document =
+        (await readConversation(input.redis, input.username, input.channel)) ??
+        createConversation(input.channel);
+      if (document.recentOperationIds.includes(input.operationId)) {
+        return document;
+      }
+      assertExpectedDocument(document, input);
+      const target = validateRegenerationTarget(
+        document,
+        input.targetMessageId,
       );
-    }
-    if (error instanceof Error && error.message === "attachment_busy") {
-      throw new AIConversationError(
-        "conversation_busy",
-        503,
-        "Attachment index is busy",
+      assertMessageRole(input.responseMessage, "assistant");
+      document.messages = document.messages.filter((message) =>
+        target.role === "assistant"
+          ? message.seq < target.seq
+          : message.seq <= target.seq,
       );
-    }
-    throw error;
-  }
+      mergeConversationMessages(document, [input.responseMessage]);
+      appendOperation(document, input.operationId);
+      document.revision += 1;
+      document.updatedAt = new Date().toISOString();
+      await saveConversation(input.redis, input.username, document, lockToken);
+      return document;
+    },
+  });
 }
 
-interface ConversationCursor {
-  version: 1;
-  conversationId: string;
-  revision: number;
-  beforeSeq: number;
-}
-
-function encodeCursor(cursor: ConversationCursor): string {
-  return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
-}
-
-function decodeCursor(value: string): ConversationCursor {
-  try {
-    const decoded: unknown = JSON.parse(
-      Buffer.from(value, "base64url").toString("utf8"),
-    );
-    if (
-      !isRecord(decoded) ||
-      decoded.version !== 1 ||
-      typeof decoded.conversationId !== "string" ||
-      typeof decoded.revision !== "number" ||
-      !Number.isSafeInteger(decoded.revision) ||
-      decoded.revision < 0 ||
-      typeof decoded.beforeSeq !== "number" ||
-      !Number.isSafeInteger(decoded.beforeSeq) ||
-      decoded.beforeSeq < 1
-    ) {
-      throw new Error("invalid");
-    }
-    return {
-      version: 1,
-      conversationId: decoded.conversationId,
-      revision: decoded.revision,
-      beforeSeq: decoded.beforeSeq,
-    };
-  } catch {
-    throw new AIConversationError("invalid_cursor", 422, "Invalid cursor");
-  }
-}
-
-export async function getAIConversationPage({
+/**
+ * Read the canonical conversation, optionally as a delta: with `afterSeq`
+ * only messages whose `seq` is greater are returned. Content updates re-mint
+ * `seq`, so deltas include in-place assistant updates; structural changes
+ * (reset, regeneration, trimming) are detectable client-side from the
+ * returned summary (`messageCount` / `oldestSeq` / conversation id).
+ */
+export async function getAIConversationSnapshot({
   redis,
   username,
   channel,
-  limit,
-  cursor,
+  afterSeq,
 }: {
   redis: AIConversationRedis;
   username: string;
   channel: AIConversationChannel;
-  limit: number;
-  cursor?: string;
-}): Promise<AIConversationPage> {
+  afterSeq?: number;
+}): Promise<{
+  conversation: AIConversation;
+  messages: AIConversationMessage[];
+}> {
   const document = await getOrCreateAIConversation({
     redis,
     username,
     channel,
   });
-  const normalizedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
-  let beforeSeq = Number.POSITIVE_INFINITY;
-
-  if (cursor) {
-    const decoded = decodeCursor(cursor);
-    if (
-      decoded.conversationId !== document.id ||
-      decoded.revision !== document.revision
-    ) {
-      throw new AIConversationError(
-        "conversation_changed",
-        409,
-        "Conversation changed",
-      );
-    }
-    beforeSeq = decoded.beforeSeq;
-  }
-
-  const eligible = document.messages.filter(
-    (message) => message.seq < beforeSeq,
-  );
-  const messages = eligible.slice(-normalizedLimit);
-  const hasMore = eligible.length > messages.length;
-  const nextCursor =
-    hasMore && messages[0]
-      ? encodeCursor({
-          version: 1,
-          conversationId: document.id,
-          revision: document.revision,
-          beforeSeq: messages[0].seq,
-        })
-      : null;
-
+  const messages =
+    afterSeq === undefined
+      ? document.messages
+      : document.messages.filter((message) => message.seq > afterSeq);
   return {
     conversation: summarizeConversation(document),
-    messages,
-    page: { nextCursor, hasMore },
+    messages: [...messages].sort((left, right) => left.seq - right.seq),
   };
 }
 
@@ -1629,31 +1064,24 @@ export type AIProactiveGreetingEligibility =
   | { eligible: true; mode: "fresh" | "stale" }
   | {
       eligible: false;
-      reason: "turn_in_progress" | "already_greeted" | "conversation_active";
+      reason: "already_greeted" | "conversation_active";
     };
 
 export interface AIProactiveGreetingConversationState {
   messages: ReadonlyArray<Pick<AIConversationMessage, "id" | "createdAt">>;
-  pendingTurnId: string | null;
-  pendingTurnStartedAt: number | null;
 }
 
 /**
  * Server-side decision for proactive greetings, evaluated against the
  * canonical conversation: greet when the thread is brand new ("fresh") or has
- * been idle for a while ("stale"), and never greet twice in a row, mid-turn,
- * or while the user is actively chatting.
+ * been idle for a while ("stale"), and never greet twice in a row or while
+ * the user is actively chatting. A turn racing the greeting is caught by the
+ * optimistic revision guard when the greeting is appended.
  */
 export function getAIProactiveGreetingEligibility(
   document: AIProactiveGreetingConversationState,
   now = Date.now(),
 ): AIProactiveGreetingEligibility {
-  const pendingIsStale =
-    document.pendingTurnStartedAt !== null &&
-    now - document.pendingTurnStartedAt > PENDING_TURN_TTL_MS;
-  if (document.pendingTurnId && !pendingIsStale) {
-    return { eligible: false, reason: "turn_in_progress" };
-  }
   if (document.messages.length === 0) {
     return { eligible: true, mode: "fresh" };
   }
@@ -1717,6 +1145,8 @@ export async function deleteAIConversationKeys(
   username: string,
 ): Promise<number> {
   await redis.set(redisKeys.chat.aiConversationTombstone(username), "1");
+  // The reset-memory keys are no longer written but may exist from before the
+  // pending-snapshot machinery was removed; delete them on purge regardless.
   return redis.del(
     redisKeys.chat.aiConversation(username, "chat"),
     redisKeys.chat.aiConversationLock(username, "chat"),

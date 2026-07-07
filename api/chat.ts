@@ -1,20 +1,15 @@
 import {
   consumeStream,
-  generateText,
   smoothStream,
   validateUIMessages,
   type UIMessage,
 } from "ai";
 import { geolocation, waitUntil } from "@vercel/functions";
-import { google } from "@ai-sdk/google";
 import {
   DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
   type SupportedModel,
 } from "./_utils/_aiModels.js";
-import {
-  getUnprocessedDailyNotesExcludingToday,
-} from "./_utils/_memory.js";
 import {
   loadRyoMemoryContext,
   prepareRyoConversationModelInput,
@@ -22,7 +17,6 @@ import {
   type RyoConversationSystemState,
   type SimpleConversationMessage,
 } from "./_utils/ryo-conversation.js";
-import { PROACTIVE_GREETING_INSTRUCTIONS } from "./_utils/_aiPrompts.js";
 import {
   checkAndIncrementAIMessageCount,
   getClientIp,
@@ -35,30 +29,21 @@ import {
   getStoredUserTimeZone,
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
-import { buildUserLocalTimeContext } from "./_utils/user-time-context.js";
 import { isAssistantGreetingRequest } from "../src/shared/assistantGreeting.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
-  AI_PROACTIVE_GREETING_MESSAGE_ID_PREFIX,
   type AIConversationRequestContext,
 } from "../src/shared/contracts/aiConversation.js";
 import {
   AIConversationError,
-  appendAIConversationAssistantMessage,
-  beginAIConversationTurnWithStatus,
+  beginAIConversationTurn,
   commitAIConversationRegeneration,
   completeAIConversationTurn,
   getAIConversationModelMessages,
   getAIConversationRegenerationModelMessages,
-  getAIConversationSummary,
   getAIConversationTurnCompletionOperationId,
-  getAIProactiveGreetingEligibility,
-  getOrCreateAIConversation,
-  prepareAIConversationRegeneration,
-  releaseAIConversationTurn,
   type BeginAIConversationTurnInput,
 } from "./ai/conversations/_helpers/store.js";
-import { extractPendingAIConversationResetMemory } from "./ai/conversations/_helpers/reset-memory.js";
 import { broadcastAIConversationUpdate } from "./ai/conversations/_helpers/realtime.js";
 import { resolveAIAttachmentsForModel } from "./ai/attachments/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
@@ -157,7 +142,6 @@ export default apiHandler<{
   message?: unknown;
   systemState?: SystemState;
   model?: string;
-  proactiveGreeting?: boolean;
   persona?: string;
   assistantName?: string;
   assistantResponseStyle?: string;
@@ -174,11 +158,6 @@ export default apiHandler<{
   },
   async ({ req, res, redis, logger, startTime, origin, user }) => {
     const validOrigin = origin || "http://localhost";
-    let activeConversationTurn: {
-      username: string;
-      channel: "chat" | "assistant";
-      id: string;
-    } | null = null;
     let removeGenerationAbortListeners: (() => void) | null = null;
     const clearGenerationAbortListeners = () => {
       const removeListeners = removeGenerationAbortListeners;
@@ -195,7 +174,6 @@ export default apiHandler<{
       messages,
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
-      proactiveGreeting: isProactiveGreeting,
       persona,
       assistantName,
       assistantResponseStyle,
@@ -208,7 +186,6 @@ export default apiHandler<{
       messages?: unknown[];
       systemState?: SystemState;
       model?: string;
-      proactiveGreeting?: boolean;
       persona?: string;
       assistantName?: string;
       assistantResponseStyle?: string;
@@ -278,10 +255,7 @@ export default apiHandler<{
     let clientConversationMessages: UIMessage[] = [];
     let clientActionMessage: UIMessage | undefined;
     try {
-      if (isAuthenticated && isProactiveGreeting) {
-        // Proactive greetings ignore client messages entirely: the server
-        // decides against the canonical conversation.
-      } else if (isAuthenticated) {
+      if (isAuthenticated) {
         if (normalizedTrigger !== "regenerate-message") {
           const actionCandidate = message ?? rawMessages?.at(-1);
           if (!actionCandidate) {
@@ -310,8 +284,8 @@ export default apiHandler<{
       : clientConversationMessages;
 
     // Charge every regeneration and every anonymous generation except the
-    // exact desktop-assistant greeting. Authenticated proactive greetings and
-    // store-validated client-tool continuations retain their exemptions.
+    // exact desktop-assistant greeting. Store-validated client-tool
+    // continuations retain their exemption.
     const isAssistantGreeting =
       conversationChannel === "assistant" &&
       normalizedTrigger === "submit-message" &&
@@ -323,13 +297,9 @@ export default apiHandler<{
     const isNewUserTurn =
       normalizedTrigger === "submit-message" &&
       requestMessages.at(-1)?.role === "user";
-    const isAuthenticatedProactiveGreeting =
-      isAuthenticated && isProactiveGreeting === true;
     const shouldRateLimit =
       normalizedTrigger === "regenerate-message" ||
-      (!isAssistantGreeting &&
-        !isAuthenticatedProactiveGreeting &&
-        (!isAuthenticated || isNewUserTurn));
+      (!isAssistantGreeting && (!isAuthenticated || isNewUserTurn));
     if (shouldRateLimit) {
       const rateLimitResult = await checkAndIncrementAIMessageCount(
         identifier,
@@ -369,51 +339,24 @@ export default apiHandler<{
       res.status(400).send(`Unsupported model: ${model}`);
       return;
     }
-    if (isAuthenticated && username) {
-      const pendingResetMemoryRetry =
-        extractPendingAIConversationResetMemory({
-          redis,
-          username,
-          channel: conversationChannel,
-          log,
-          logError,
-        }).catch((error) => {
-          logError("Pending reset memory extraction failed", error);
-        });
-      waitUntil(pendingResetMemoryRetry);
-    }
 
     const conversationOperationId =
       parsedConversationContext.value?.operationId ?? crypto.randomUUID();
     const conversationCompletionOperationId =
       getAIConversationTurnCompletionOperationId(conversationOperationId);
     let storedConversation: Awaited<
-      ReturnType<typeof beginAIConversationTurnWithStatus>
+      ReturnType<typeof beginAIConversationTurn>
     >["document"] | null = null;
-    if (isAuthenticated && username && !isProactiveGreeting) {
+    if (isAuthenticated && username) {
       try {
+        let action: BeginAIConversationTurnInput["action"];
         if (normalizedTrigger === "regenerate-message") {
-          await prepareAIConversationRegeneration({
-            redis,
-            username,
-            channel: conversationChannel,
-            operationId: conversationOperationId,
-            ...(parsedConversationContext.value
-              ? {
-                  expectedConversationId:
-                    parsedConversationContext.value.id,
-                  expectedRevision:
-                    parsedConversationContext.value.revision,
-                }
-              : {}),
+          action = {
+            kind: "regenerate",
             ...(typeof messageId === "string" && messageId
               ? { targetMessageId: messageId }
               : {}),
-          });
-        }
-        let action: BeginAIConversationTurnInput["action"];
-        if (normalizedTrigger === "regenerate-message") {
-          action = { kind: "regenerate" };
+          };
         } else if (clientActionMessage?.role === "user") {
           action = { kind: "user-message", message: clientActionMessage };
         } else if (clientActionMessage?.role === "assistant") {
@@ -427,12 +370,11 @@ export default apiHandler<{
           return;
         }
 
-        const beginResult = await beginAIConversationTurnWithStatus({
+        const beginResult = await beginAIConversationTurn({
           redis,
           username,
           channel: conversationChannel,
           operationId: conversationOperationId,
-          turnId: conversationOperationId,
           action,
           ...(parsedConversationContext.value
             ? {
@@ -449,11 +391,6 @@ export default apiHandler<{
           return;
         }
         storedConversation = beginResult.document;
-        activeConversationTurn = {
-          username,
-          channel: conversationChannel,
-          id: conversationOperationId,
-        };
         // Regeneration doesn't change stored content until it completes.
         if (normalizedTrigger !== "regenerate-message") {
           waitUntil(
@@ -477,34 +414,15 @@ export default apiHandler<{
       }
     }
 
+    // Stop token generation as soon as the client goes away. There is no
+    // conversation turn state to release: an aborted turn simply leaves the
+    // already-persisted user message in place.
     const generationAbortController = new AbortController();
-    let abortReleasePromise: Promise<void> | null = null;
-    const releaseTurnAfterClientAbort = async () => {
-      const turn = activeConversationTurn;
-      if (!turn) return;
-      let released = false;
-      try {
-        await releaseAIConversationTurn({
-          redis,
-          username: turn.username,
-          channel: turn.channel,
-          turnId: turn.id,
-        });
-        released = true;
-      } catch (error) {
-        logError("Failed to release disconnected conversation turn", error);
-      } finally {
-        if (released && activeConversationTurn === turn) {
-          activeConversationTurn = null;
-        }
-      }
-    };
     const abortGeneration = () => {
       if (generationAbortController.signal.aborted) return;
       log("Client disconnected; aborting generation");
       generationAbortController.abort();
       clearGenerationAbortListeners();
-      abortReleasePromise = releaseTurnAfterClientAbort();
     };
     const handleResponseClose = () => {
       if (res.writableEnded) {
@@ -529,9 +447,6 @@ export default apiHandler<{
       res.socket?.destroyed
     ) {
       abortGeneration();
-    }
-    if (generationAbortController.signal.aborted) {
-      await abortReleasePromise;
       return;
     }
 
@@ -580,190 +495,6 @@ export default apiHandler<{
       log,
       logError,
     });
-
-    // -------------------------------------------------------------
-    // Proactive greeting mode – JSON response
-    // Only for authenticated users with memories available. The greeting is
-    // server-owned: eligibility is decided against the canonical conversation
-    // and the generated greeting is persisted as a real conversation message,
-    // so it survives client hydration and syncs across devices.
-    // -------------------------------------------------------------
-    if (isProactiveGreeting && username && isAuthenticated) {
-      log("Proactive greeting requested");
-      res.setHeader("Access-Control-Allow-Origin", validOrigin);
-      const respondGreetingSkipped = (reason: string) => {
-        log(`Proactive greeting skipped: ${reason}`);
-        res.status(200).json({ greeting: null, reason });
-      };
-
-      let greetingConversation: Awaited<
-        ReturnType<typeof getOrCreateAIConversation>
-      >;
-      try {
-        greetingConversation = await getOrCreateAIConversation({
-          redis,
-          username,
-          channel: "chat",
-        });
-      } catch (error) {
-        if (error instanceof AIConversationError) {
-          respondGreetingSkipped(error.code);
-          return;
-        }
-        throw error;
-      }
-      const greetingEligibility = getAIProactiveGreetingEligibility(
-        greetingConversation
-      );
-      if (!greetingEligibility.eligible) {
-        respondGreetingSkipped(greetingEligibility.reason);
-        return;
-      }
-
-      // Background: process past daily notes into long-term memory (fire-and-forget)
-      // Only triggered on proactive greetings (once per session) to avoid
-      // redundant checks on every chat message.
-      try {
-        getUnprocessedDailyNotesExcludingToday(redis, username, 7, effectiveUserTimeZone).then(async (unprocessedNotes) => {
-          if (unprocessedNotes.length > 0) {
-            log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
-            const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
-            processDailyNotesForUser(
-              redis,
-              username,
-              log,
-              logError,
-              effectiveUserTimeZone
-            ).catch((err: unknown) => {
-              logError("[DailyNotes] Background processing failed (non-blocking):", err);
-            });
-          }
-        }).catch(() => {});
-      } catch { /* non-blocking */ }
-
-      // Build memory context
-      let greetingMemoryContext = "";
-      if (
-        loadedMemoryContext.userMemories &&
-        loadedMemoryContext.userMemories.memories.length > 0
-      ) {
-        greetingMemoryContext += "## User's long-term memories:\n";
-        for (const mem of loadedMemoryContext.userMemories.memories) {
-          greetingMemoryContext += `- ${mem.key}: ${mem.summary}\n`;
-        }
-      }
-      if (loadedMemoryContext.dailyNotesText) {
-        greetingMemoryContext += `\n## Recent daily notes:\n${loadedMemoryContext.dailyNotesText}\n`;
-      }
-
-      // If no memories, return null (client will keep the generic greeting)
-      if (!greetingMemoryContext) {
-        respondGreetingSkipped("no memories available");
-        return;
-      }
-
-      const now = new Date();
-      const localTimeContext =
-        buildUserLocalTimeContext(effectiveUserTimeZone, now) ||
-        buildUserLocalTimeContext("America/Los_Angeles", now);
-      const timeContext = localTimeContext
-        ? `${localTimeContext.dateString} ${localTimeContext.timeString} (${localTimeContext.timeZone})`
-        : now.toISOString();
-
-      try {
-        const greetingDynamicContext = `It's ${timeContext}. The user's name is "${username}".
-
-${greetingMemoryContext}
-
-Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.`;
-
-        const { text, finishReason } = await generateText({
-          model: google("gemini-3-flash-preview"),
-          temperature: 1,
-          maxOutputTokens: 2000,
-          messages: [
-            {
-              role: "system" as const,
-              content: PROACTIVE_GREETING_INSTRUCTIONS,
-            },
-            {
-              role: "system" as const,
-              content: greetingDynamicContext,
-            },
-            {
-              role: "user" as const,
-              content: "Generate a proactive greeting.",
-            },
-          ],
-        });
-
-        const greeting = text.trim();
-        if (!greeting) {
-          respondGreetingSkipped("generation failed");
-          return;
-        }
-        log(`Generated proactive greeting (${greeting.length} chars, finishReason=${finishReason}): "${greeting}"`);
-
-        // Persist the greeting to the canonical conversation. The optimistic
-        // guards (snapshot revision + no pending turn) make sure a user
-        // message that raced the generation wins and the greeting is dropped.
-        const greetingMessage = {
-          id: `${AI_PROACTIVE_GREETING_MESSAGE_ID_PREFIX}${crypto.randomUUID()}`,
-          role: "assistant" as const,
-          parts: [{ type: "text" as const, text: greeting }],
-          metadata: { createdAt: new Date().toISOString() },
-        };
-        let appended: Awaited<
-          ReturnType<typeof appendAIConversationAssistantMessage>
-        >;
-        const greetingOperationId = crypto.randomUUID();
-        try {
-          appended = await appendAIConversationAssistantMessage({
-            redis,
-            username,
-            channel: "chat",
-            operationId: greetingOperationId,
-            message: greetingMessage,
-            expectedConversationId: greetingConversation.id,
-            expectedRevision: greetingConversation.revision,
-          });
-        } catch (persistError) {
-          if (persistError instanceof AIConversationError) {
-            respondGreetingSkipped(persistError.code);
-            return;
-          }
-          throw persistError;
-        }
-        const storedGreeting = appended.document.messages.find(
-          (message) => message.id === greetingMessage.id
-        );
-        if (!storedGreeting) {
-          respondGreetingSkipped("persist_failed");
-          return;
-        }
-        waitUntil(
-          broadcastAIConversationUpdate({
-            username,
-            channel: "chat",
-            conversationId: appended.document.id,
-            revision: appended.document.revision,
-            reason: "greeting",
-            operationId: greetingOperationId,
-          })
-        );
-
-        res.status(200).json({
-          greeting,
-          message: storedGreeting,
-          conversation: getAIConversationSummary(appended.document),
-        });
-        return;
-      } catch (greetingErr) {
-        logError("Failed to generate proactive greeting", greetingErr);
-        res.status(200).json({ greeting: null, reason: "generation failed" });
-        return;
-      }
-    }
 
     let modelConversationMessages = clientConversationMessages;
     if (storedConversation) {
@@ -856,7 +587,6 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
             return;
           }
           if (isAborted || finishReason === "error") {
-            await releaseTurnAfterClientAbort();
             return;
           }
 
@@ -868,7 +598,6 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               channel: conversationChannel,
               responseMessage,
               operationId: conversationCompletionOperationId,
-              turnId: conversationOperationId,
               expectedConversationId: storedConversation.id,
               expectedRevision: storedConversation.revision,
               ...(typeof messageId === "string" && messageId
@@ -883,11 +612,8 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
               responseMessage,
               operationId: conversationCompletionOperationId,
               expectedConversationId: storedConversation.id,
-              expectedRevision: storedConversation.revision,
-              turnId: conversationOperationId,
             });
           }
-          activeConversationTurn = null;
           waitUntil(
             broadcastAIConversationUpdate({
               username,
@@ -900,13 +626,6 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
           );
         } catch (error) {
           logError("Failed to persist completed conversation response", error);
-          await releaseAIConversationTurn({
-            redis,
-            username,
-            channel: conversationChannel,
-            turnId: conversationOperationId,
-          }).catch(() => {});
-          activeConversationTurn = null;
         } finally {
           clearGenerationAbortListeners();
         }
@@ -914,15 +633,6 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
     });
   } catch (error) {
     clearGenerationAbortListeners();
-    if (activeConversationTurn) {
-      await releaseAIConversationTurn({
-        redis,
-        username: activeConversationTurn.username,
-        channel: activeConversationTurn.channel,
-        turnId: activeConversationTurn.id,
-      }).catch(() => {});
-      activeConversationTurn = null;
-    }
     logger.error("Chat API error", error);
 
     if (validOrigin) {

@@ -5,6 +5,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import {
   invalidateAIConversationSession,
   loadAIConversation,
+  trackLocalAIConversationOperation,
 } from "@/api/aiConversations";
 import {
   applyServerProactiveGreeting,
@@ -82,26 +83,29 @@ export function useProactiveGreeting({
     const owner = username.toLowerCase();
     try {
       // Wait for the canonical conversation first. This shares the pending
-      // hydration (and one-time legacy import) from useAiChat, so greeting
-      // decisions never race the initial server sync.
+      // hydration from useAiChat, so greeting decisions never race the
+      // initial server sync.
       const session = await loadAIConversation({
         channel: "chat",
         username: owner,
-        localMessages: useChatsStore.getState().aiMessages,
       });
       if (controller.signal.aborted || session.stale) return;
       if (!isConversationGreetable(session.messages)) return;
 
-      const response = await abortableFetch(getApiUrl("/api/chat"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [],
-          proactiveGreeting: true,
-        }),
-        timeout: 20000,
-        signal: controller.signal,
-      });
+      // Mint the operation id locally so the realtime echo of our own
+      // greeting doesn't trigger a redundant re-hydration.
+      const operationId = crypto.randomUUID();
+      trackLocalAIConversationOperation(operationId);
+      const response = await abortableFetch(
+        getApiUrl("/api/ai/conversations/chat/greeting"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ operationId }),
+          timeout: 20000,
+          signal: controller.signal,
+        }
+      );
 
       if (controller.signal.aborted) return;
 
