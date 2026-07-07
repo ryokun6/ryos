@@ -782,13 +782,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // esbuild options for faster dev transforms
-  esbuild: {
-    // Remove legal comments to reduce memory overhead
-    legalComments: 'none',
-    // Target modern browsers for faster transforms
-    target: 'es2022',
-  },
   build: {
     // Target modern browsers for smaller bundles
     target: 'es2022',
