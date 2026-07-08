@@ -229,7 +229,8 @@ export function apiHandler<TBody = unknown>(
       if (user) {
         const timeZoneHeader = getHeader(req, "x-user-timezone");
         if (timeZoneHeader) {
-          await updateStoredUserTimeZone(redis, user.username, timeZoneHeader).catch(
+          // Best-effort side effect — don't block the response on a Redis write.
+          void updateStoredUserTimeZone(redis, user.username, timeZoneHeader).catch(
             (error) => {
               logger.warn("Failed to update user timezone from request header", {
                 username: user?.username,
