@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from "react";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -9,6 +10,10 @@ import { cn } from "@/lib/utils";
 import {
   WindowFrameDrawerContext,
 } from "@/components/shared/WindowFrameDrawerContext";
+import {
+  isSheetWindowPinned,
+  subscribeSheetWindowPins,
+} from "@/components/shared/sheetWindowPin";
 import { motion, AnimatePresence } from "motion/react";
 import { selectExposeWindow } from "@/utils/appEventBus";
 import { selectOpenInstanceCount } from "@/apps/base/app-manager/instanceHelpers";
@@ -129,12 +134,25 @@ export function WindowFrame({
   const effectiveTransparentBackground =
     isMacOSTheme ? true : isTransparent;
 
+  // When a sheet is attached to this window, keep the immersive titlebar
+  // visible for the sheet's lifetime (ignore auto-hide).
+  const isSheetPinned = useSyncExternalStore(
+    subscribeSheetWindowPins,
+    () => isSheetWindowPinned(instanceId),
+    () => false
+  );
+  const effectiveDisableTitlebarAutoHide =
+    disableTitlebarAutoHide || (isNoTitlebar && isSheetPinned);
+
   const { isTitlebarHovered, showTitlebarWithAutoHide, hideTitlebar } =
-    useWindowFrameTitlebarAutoHide(isNoTitlebar, disableTitlebarAutoHide);
+    useWindowFrameTitlebarAutoHide(
+      isNoTitlebar,
+      effectiveDisableTitlebarAutoHide
+    );
 
   const noTitlebarMouseHandlers = useWindowFrameNoTitlebarMouseHandlers(
     isNoTitlebar,
-    disableTitlebarAutoHide,
+    effectiveDisableTitlebarAutoHide,
     showTitlebarWithAutoHide,
     hideTitlebar
   );
@@ -414,7 +432,7 @@ export function WindowFrame({
                     isWinXp={isWinXp}
                     isForeground={isForeground}
                     isNoTitlebar={isNoTitlebar}
-                    disableTitlebarAutoHide={disableTitlebarAutoHide}
+                    disableTitlebarAutoHide={effectiveDisableTitlebarAutoHide}
                     isTitlebarHovered={isTitlebarHovered}
                     effectiveTransparentBackground={
                       effectiveTransparentBackground

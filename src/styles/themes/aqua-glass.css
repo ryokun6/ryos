@@ -1581,6 +1581,11 @@
   border-radius: 0 0 var(--os-glass-r-dialog) var(--os-glass-r-dialog) !important;
 }
 
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .macosx-sheet-window-scrim {
+  border-radius: 0 0 var(--os-glass-r-dialog) var(--os-glass-r-dialog);
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog-header {
   border-radius: var(--os-glass-r-dialog) var(--os-glass-r-dialog) 0 0 !important;
 }
