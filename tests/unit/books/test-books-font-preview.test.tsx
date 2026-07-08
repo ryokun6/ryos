@@ -5,13 +5,13 @@ import {
   beforeEach,
   describe,
   expect,
-  mock,
   test,
 } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import i18next from "i18next";
+import { I18nextProvider, initReactI18next } from "react-i18next";
 
 let registeredDomForSuite = false;
 if (typeof document === "undefined") {
@@ -40,19 +40,6 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 
 const i18n = i18next.createInstance();
 
-// Pin a complete useTranslation shape before importing the panel. A prior
-// suite (boot-screen-accent) may leave a sticky react-i18next mock that
-// omits `i18n`, which crashes BooksCustomizePanel in the aggregate run.
-const actualReactI18next = { ...(await import("react-i18next")) };
-mock.module("react-i18next", () => ({
-  ...actualReactI18next,
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n,
-  }),
-}));
-
-const { I18nextProvider, initReactI18next } = await import("react-i18next");
 
 const { BooksCustomizePanel } = await import(
   "../../../src/apps/books/components/BooksCustomizePanel"
@@ -81,7 +68,6 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  // Prior suites (e.g. boot-screen-accent) may leave a non-macosx theme;
   // Aqua pill / metal-inset classes are macosx-only.
   useThemeStore.setState({ current: "macosx" });
 });
@@ -97,7 +83,6 @@ afterEach(async () => {
 });
 
 afterAll(() => {
-  mock.module("react-i18next", () => actualReactI18next);
   Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   // Only tear down the DOM this suite created: unregistering a DOM another
   // suite registered (and still relies on) crashes React work later in the
