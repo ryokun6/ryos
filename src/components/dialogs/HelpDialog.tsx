@@ -246,6 +246,9 @@ export function HelpDialog({
           isWindowsTheme && "p-0"
         )}
         style={isWindowsTheme ? { fontSize: "11px" } : undefined}
+        // Help is a reference panel, not an in-window action sheet — always
+        // present as a centered modal even on Aqua.
+        disableSheet
       >
         {isWindowsTheme ? (
           <>

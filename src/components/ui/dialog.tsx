@@ -8,6 +8,10 @@ import { useVibration } from "@/hooks/useVibration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 import { DialogParentWindowContext } from "@/components/shared/DialogParentWindowContext";
+import {
+  pinSheetWindow,
+  unpinSheetWindow,
+} from "@/components/shared/sheetWindowPin";
 
 const Dialog = ({
   children,
@@ -66,11 +70,13 @@ interface DialogContentProps
   disableSheet?: boolean;
 }
 
-/** Viewport-space anchor line a sheet slides out from (parent titlebar). */
+/** Viewport-space anchor for a sheet: titlebar bottom edge + window body. */
 interface SheetAnchor {
   left: number;
   top: number;
   width: number;
+  /** Height of the window body below the titlebar (for the dismiss scrim). */
+  height: number;
 }
 
 /**
@@ -91,7 +97,21 @@ function measureSheetAnchor(parentInstanceId: string): SheetAnchor | null {
   if (rect.width <= 0 || rect.height <= 0) return null;
   const titleBar = chrome.querySelector<HTMLElement>(":scope > .title-bar");
   const top = titleBar ? titleBar.getBoundingClientRect().bottom : rect.top;
-  return { left: rect.left, top, width: rect.width };
+  return {
+    left: rect.left,
+    top,
+    width: rect.width,
+    height: Math.max(0, rect.bottom - top),
+  };
+}
+
+function sheetAnchorsEqual(a: SheetAnchor, b: SheetAnchor): boolean {
+  return (
+    a.left === b.left &&
+    a.top === b.top &&
+    a.width === b.width &&
+    a.height === b.height
+  );
 }
 
 const DialogContent = (
@@ -134,9 +154,7 @@ const DialogContent = (
         typeof prev === "object" &&
         prev !== null &&
         typeof next === "object" &&
-        prev.left === next.left &&
-        prev.top === next.top &&
-        prev.width === next.width
+        sheetAnchorsEqual(prev, next)
       ) {
         return prev;
       }
@@ -175,6 +193,13 @@ const DialogContent = (
 
   // Fall back to the centered modal when the parent window can't be found.
   const isSheet = wantsSheet && sheetAnchor !== "unavailable";
+
+  // Pin the parent no-titlebar chrome visible for the life of the sheet.
+  React.useEffect(() => {
+    if (!isSheet || !hasMeasuredAnchor || !parentWindowInstanceId) return;
+    pinSheetWindow(parentWindowInstanceId);
+    return () => unpinSheetWindow(parentWindowInstanceId);
+  }, [isSheet, hasMeasuredAnchor, parentWindowInstanceId]);
 
   // Function to clean up pointer-events
   const cleanupPointerEvents = React.useCallback(() => {
@@ -219,10 +244,24 @@ const DialogContent = (
     const anchor = hasMeasuredAnchor ? (sheetAnchor as SheetAnchor) : null;
     return (
       <DialogPortal>
-        {/* Sheets don't dim the desktop; the overlay only blocks interaction */}
+        {/* Sheets don't dim the desktop; the overlay only blocks interaction
+            outside the parent window. A separate window-local scrim dims the
+            area under the titlebar to hint that clicking dismisses. */}
         <DialogPrimitive.Overlay
           className={cn("fixed inset-0 z-50 bg-transparent", overlayClassName)}
         />
+        {anchor && anchor.height > 0 ? (
+          <div
+            aria-hidden
+            className="macosx-sheet-window-scrim fixed z-50 pointer-events-none"
+            style={{
+              left: anchor.left,
+              top: anchor.top,
+              width: anchor.width,
+              height: anchor.height,
+            }}
+          />
+        ) : null}
         {/* Full-window-width strip below the titlebar; overflow-hidden clips
             the sheet while it slides out from behind the titlebar. Pointer
             events pass through the strip padding to the overlay. */}
