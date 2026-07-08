@@ -1423,7 +1423,23 @@ function AssistantOverlayInner() {
   // Pick the side of the character (above/below/left/right) where the bubble
   // stays inside the viewport and covers the least amount of open windows, so
   // a character docked next to a window pops its bubble away from the window.
-  const windowInstances = useAppStore((state) => state.instances);
+  // Signature of open/minimized + geometry only — title/loading writes and
+  // focus-only updates must not recompute placement or re-render the overlay.
+  const windowObstaclesSignature = useAppStore((state) =>
+    Object.values(state.instances)
+      .map((inst) =>
+        [
+          inst.instanceId,
+          inst.isOpen ? "1" : "0",
+          inst.isMinimized ? "1" : "0",
+          inst.position?.x ?? "",
+          inst.position?.y ?? "",
+          inst.size?.width ?? "",
+          inst.size?.height ?? "",
+        ].join("\u001f")
+      )
+      .join("\u001e")
+  );
   const bubblePlacement = useMemo(() => {
     const insets = computeInsets();
     // Prefer the rendered window frames: on mobile the store keeps numeric
@@ -1437,6 +1453,7 @@ function AssistantOverlayInner() {
       if (instanceId) frameByInstanceId.set(instanceId, element);
     }
     const obstacles: AssistantBubbleRect[] = [];
+    const windowInstances = useAppStore.getState().instances;
     for (const [instanceId, instance] of Object.entries(windowInstances)) {
       if (!instance.isOpen || instance.isMinimized) continue;
       const frameBounds = frameByInstanceId
@@ -1479,7 +1496,7 @@ function AssistantOverlayInner() {
       obstacles,
     });
   }, [
-    windowInstances,
+    windowObstaclesSignature,
     position,
     character.width,
     character.height,

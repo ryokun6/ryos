@@ -44,6 +44,10 @@ import {
   getDockInstancesSignature,
   getDockInstancesSnapshot,
 } from "./dockInstancesSnapshot";
+import {
+  getFinderInstancesSignature,
+  getFinderInstancesSnapshot,
+} from "./finderInstancesSnapshot";
 
 export function MacDock() {
   const { t } = useTranslation();
@@ -79,7 +83,15 @@ export function MacDock() {
   const trashIcon = useFilesStore(
     (s) => s.items["/Trash"]?.icon || "/icons/trash-empty.png"
   );
-  const finderInstances = useFinderStore((s) => s.instances);
+  // Path-only signature: Finder view/selection writes must not re-render the dock.
+  const finderInstancesSignature = useFinderStore((s) =>
+    getFinderInstancesSignature(s.instances)
+  );
+  const finderInstances = useMemo(
+    () => getFinderInstancesSnapshot(useFinderStore.getState().instances),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [finderInstancesSignature]
+  );
   
   const isAdmin = useIsRyoAdmin();
   
@@ -626,11 +638,12 @@ export function MacDock() {
     (targetPath: string, initialData?: unknown, launchOrigin?: LaunchOriginRect) => {
       const { instances: currentInstances, instanceOrder } =
         useAppStore.getState();
+      const currentFinderInstances = useFinderStore.getState().instances;
       for (let i = instanceOrder.length - 1; i >= 0; i--) {
         const id = instanceOrder[i];
         const inst = currentInstances[id];
         if (inst && inst.appId === "finder" && inst.isOpen) {
-          const fi = finderInstances[id];
+          const fi = currentFinderInstances[id];
           if (
             fi &&
             (fi.currentPath === targetPath ||
@@ -652,12 +665,7 @@ export function MacDock() {
         launchOrigin,
       });
     },
-    [
-      finderInstances,
-      bringInstanceToForeground,
-      restoreInstance,
-      launchApp,
-    ]
+    [bringInstanceToForeground, restoreInstance, launchApp]
   );
 
   const {

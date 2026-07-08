@@ -7,6 +7,7 @@ import {
   type CSSProperties,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { useShallow } from "zustand/react/shallow";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import { useSpotlightSearch } from "@/hooks/useSpotlightSearch";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
@@ -21,8 +22,24 @@ import {
 
 export function useSpotlightSearchController() {
   const { t } = useTranslation();
-  const { isOpen, query, selectedIndex, setQuery, setSelectedIndex, reset } =
-    useSpotlightStore();
+  // Narrow subscription: actions are stable; only open/query/index need to
+  // trigger controller re-renders (Spotlight stays mounted while closed).
+  const { isOpen, query, selectedIndex } = useSpotlightStore(
+    useShallow((s) => ({
+      isOpen: s.isOpen,
+      query: s.query,
+      selectedIndex: s.selectedIndex,
+    }))
+  );
+  const setQuery = useCallback(
+    (q: string) => useSpotlightStore.getState().setQuery(q),
+    []
+  );
+  const setSelectedIndex = useCallback(
+    (i: number) => useSpotlightStore.getState().setSelectedIndex(i),
+    []
+  );
+  const reset = useCallback(() => useSpotlightStore.getState().reset(), []);
   const { results, isSearching } = useSpotlightSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);

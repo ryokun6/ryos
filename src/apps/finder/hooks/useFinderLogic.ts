@@ -233,7 +233,11 @@ export function useFinderLogic({
   const createFinderInstance = useFinderStore((state) => state.createInstance);
   const removeFinderInstance = useFinderStore((state) => state.removeInstance);
   const updateFinderInstance = useFinderStore((state) => state.updateInstance);
-  const finderInstances = useFinderStore((state) => state.instances);
+  // Only this window's Finder instance — sibling path/view writes must not
+  // re-run this god hook's effects and memos.
+  const currentFinderInstance = useFinderStore((state) =>
+    instanceId ? state.instances[instanceId] ?? null : null
+  );
   const setViewTypeForPath = useFinderStore(
     (state) => state.setViewTypeForPath
   );
@@ -243,8 +247,7 @@ export function useFinderLogic({
     if (!instanceId) return;
 
     // Check if instance already exists (from persisted state)
-    const existingInstance = finderInstances[instanceId];
-    if (existingInstance) {
+    if (currentFinderInstance) {
       // Instance already exists from persisted state, don't recreate
       return;
     }
@@ -271,7 +274,7 @@ export function useFinderLogic({
     instanceId,
     createFinderInstance,
     initialData,
-    finderInstances,
+    currentFinderInstance,
     setViewTypeForPath,
     updateFinderInstance,
   ]);
@@ -301,7 +304,7 @@ export function useFinderLogic({
   }, [instanceId, removeFinderInstance]);
 
   // Get current instance data
-  const currentInstance = instanceId ? finderInstances[instanceId] : null;
+  const currentInstance = currentFinderInstance;
 
   // Instance state
   const viewType = currentInstance?.viewType || "list";
@@ -320,9 +323,9 @@ export function useFinderLogic({
   // Use the persisted path from the instance, or initialData path, or root
   // Important: Check if instance exists from persisted state first
   const initialFileSystemPath =
-    instanceId && finderInstances[instanceId]
-      ? finderInstances[instanceId].currentPath
-      : (initialData as FinderInitialData | undefined)?.path || "/";
+    currentInstance?.currentPath ||
+    (initialData as FinderInitialData | undefined)?.path ||
+    "/";
 
   const {
     currentPath,
