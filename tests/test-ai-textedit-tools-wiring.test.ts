@@ -26,12 +26,13 @@ describe("AI TextEdit tool wiring", () => {
     expect(vfsHandlersSource).not.toContain("markdownToHtml(");
   });
 
-  test("AI edits to an open document become a pending save, not a silent disk write", () => {
-    expect(vfsHandlersSource).toContain("hasUnsavedChanges: true");
-    // The edit tool must source content from the live buffer when the doc is
-    // open so consecutive AI edits and unsaved user edits are not clobbered.
-    expect(vfsHandlersSource).toContain("getInstanceIdByPath(path)");
-    expect(vfsHandlersSource).toContain("generateHtmlFromJson");
+  test("AI edits always persist to disk immediately", () => {
+    // Pending-save is reserved for user keystrokes. AI edits write through
+    // persistChatDocument and clear the dirty flag on any open instance.
+    expect(vfsHandlersSource).toContain("persistChatDocument({");
+    expect(vfsHandlersSource).toContain("hasUnsavedChanges: false");
+    expect(vfsHandlersSource).not.toContain("hasUnsavedChanges: true");
+    expect(vfsHandlersSource).not.toContain("generateHtmlFromJson");
   });
 
   test("AI tool reads strip the rich-markdown metadata comment", () => {
@@ -39,19 +40,17 @@ describe("AI TextEdit tool wiring", () => {
     expect(vfsHandlersSource).toContain("parseRichMarkdown");
   });
 
-  test("store-driven merges preserve the unsaved flag set by the updater", () => {
-    // The contentJson sync effect must not force hasUnsavedChanges(false),
-    // otherwise the AI edit tool's pending-save state is immediately cleared.
+  test("store-driven merges clear the dirty flag for already-persisted AI updates", () => {
     const effectStart = textEditAppSource.indexOf(
       "// Sync editor when contentJson is externally updated"
     );
     expect(effectStart).toBeGreaterThan(-1);
     const effectSource = textEditAppSource.slice(
       effectStart,
-      textEditAppSource.indexOf("}, [contentJson, editor]", effectStart)
+      textEditAppSource.indexOf("}, [contentJson, editor", effectStart)
     );
     expect(effectSource).toContain("mergeEditorContent(editor, contentJson)");
-    expect(effectSource).not.toContain("setHasUnsavedChanges");
+    expect(effectSource).toContain("setHasUnsavedChanges(false)");
   });
 
   test("TextEdit links open on click", () => {

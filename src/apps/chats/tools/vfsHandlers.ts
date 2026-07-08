@@ -32,13 +32,9 @@ import {
   type IpodLibrarySelection,
   useIpodStore,
 } from "@/stores/useIpodStore";
-import { htmlToMarkdown } from "@/utils/markdown";
 import { markdownToSafeHtml } from "@/apps/textedit/utils/markdownPaste";
 import { parseRichMarkdown } from "@/apps/textedit/utils/richMarkdown";
-import {
-  generateHtmlFromJson,
-  generateJsonFromHtml,
-} from "@/utils/tiptapHtml";
+import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
@@ -980,47 +976,19 @@ export async function handleVfsEdit(
         );
       }
 
-      // When the document is open in TextEdit, edit the live editor buffer so
-      // the change composes with the user's unsaved edits (and with earlier AI
-      // edits that have not been saved yet). Otherwise read from disk.
-      const textEditState = useTextEditStore.getState();
-      const appState = useAppStore.getState();
-      let openInstanceId = textEditState.getInstanceIdByPath(path);
-      if (openInstanceId && !appState.instances[openInstanceId]) {
-        // Stale instance reference - clean it up
-        textEditState.removeInstance(openInstanceId);
-        openInstanceId = null;
-      }
-      const openInstance = openInstanceId
-        ? textEditState.instances[openInstanceId]
-        : null;
-
-      let existingContent: string | null = null;
-      if (openInstance?.contentJson) {
-        try {
-          const bufferHtml = await generateHtmlFromJson(
-            openInstance.contentJson
-          );
-          existingContent = htmlToMarkdown(bufferHtml);
-        } catch (err) {
-          console.error(
-            "Failed to serialize open TextEdit buffer, falling back to disk:",
-            err
-          );
-        }
+      // Read existing content from IndexedDB (AI edits always persist
+      // immediately; pending-save is reserved for user keystrokes).
+      const contentData = await dbOperations.get<DocumentContent>(
+        STORES.DOCUMENTS,
+        fileItem.uuid
+      );
+      if (!contentData?.content) {
+        throw new Error(`Failed to read document content: ${path}`);
       }
 
-      if (existingContent == null) {
-        // Read existing content from IndexedDB
-        const contentData = await dbOperations.get<DocumentContent>(
-          STORES.DOCUMENTS,
-          fileItem.uuid
-        );
-        if (!contentData?.content) {
-          throw new Error(`Failed to read document content: ${path}`);
-        }
-        existingContent = await storedDocumentToMarkdown(contentData.content);
-      }
+      const existingContent = await storedDocumentToMarkdown(
+        contentData.content
+      );
 
       // Normalize existing content
       const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
@@ -1057,24 +1025,31 @@ export async function handleVfsEdit(
         normalizedNewString
       );
 
+      await persistChatDocument({
+        saveFile,
+        path,
+        fileName: fileItem.name,
+        content: updatedContent,
+        icon: fileItem.icon || "📄",
+      });
+
+      // If the document is open in TextEdit, refresh the editor from the
+      // newly persisted content (already saved — clear any dirty flag).
+      const textEditState = useTextEditStore.getState();
+      const appState = useAppStore.getState();
+      let openInstanceId = textEditState.getInstanceIdByPath(path);
+      if (openInstanceId && !appState.instances[openInstanceId]) {
+        textEditState.removeInstance(openInstanceId);
+        openInstanceId = null;
+      }
+
       if (openInstanceId) {
-        // Apply the edit to the open editor as a pending (unsaved) change so
-        // the user can review it and save explicitly. Convert through the
-        // GFM-aware pipeline so tables and links render as rich content.
         const updatedHtml = markdownToSafeHtml(updatedContent);
         const updatedJson = await generateJsonFromHtml(updatedHtml);
 
         textEditState.updateInstance(openInstanceId, {
           contentJson: updatedJson,
-          hasUnsavedChanges: true,
-        });
-      } else {
-        await persistChatDocument({
-          saveFile,
-          path,
-          fileName: fileItem.name,
-          content: updatedContent,
-          icon: fileItem.icon || "📄",
+          hasUnsavedChanges: false,
         });
       }
 

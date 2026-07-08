@@ -244,10 +244,9 @@ Visit the [ryOS site](https://os.ryo.lu) for more.`;
     expect(json).toContain("https://os.ryo.lu");
   });
 
-  test("open-buffer edits round-trip through markdown for string matching", async () => {
-    // The AI edit tool serializes the live buffer (JSON -> HTML -> markdown),
-    // applies old_string/new_string on the markdown, and converts back. The
-    // serialization must reproduce the text the AI saw in the system state.
+  test("GFM markdown round-trips through the editor HTML pipeline", async () => {
+    // Edit/write tools convert markdown -> HTML -> JSON for the editor, and
+    // htmlToMarkdown must preserve tables/links when content is re-serialized.
     const editorJson = await generateJsonFromHtml(
       markdownToSafeHtml(AI_MARKDOWN)
     );
