@@ -76,6 +76,23 @@ describe("proactive greeting apply", () => {
       applyFreshProactiveGreeting([userMessage], proactiveGreeting)
     ).toBeNull();
   });
+
+  test("patches only the default greeting in a longer live SDK list", () => {
+    const sdkMessages: AIChatMessage[] = [
+      defaultGreeting,
+      userMessage,
+      assistantStream,
+    ];
+
+    const patched = applyFreshProactiveGreeting(sdkMessages, proactiveGreeting);
+
+    expect(patched).toEqual([
+      proactiveGreeting,
+      sdkMessages[1],
+      sdkMessages[2],
+    ]);
+    expect(patched?.length).toBe(sdkMessages.length);
+  });
 });
 
 describe("cleared chat detection", () => {

@@ -2,7 +2,8 @@
  * Guardrail tests for chat store API response/cooldown wiring.
  *
  * Ensures useChatsStore keeps its cooldown + availability-gate pattern
- * so frontend-only mode doesn't spam failing requests.
+ * so frontend-only mode doesn't spam failing requests, and that auth HTTP
+ * goes through src/api/auth (no inline /api/auth/* or legacy token migration).
  */
 
 import "fake-indexeddb/auto";
@@ -10,6 +11,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, test, expect, mock } from "bun:test";
 import type { ChatRoom } from "../../../src/types/chat";
+import * as authApi from "../../../src/api/auth";
 
 const readStoreSource = (): string =>
   readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8");
@@ -196,6 +198,41 @@ describe("Chat Store Guard Wiring Tests", () => {
       expect(source).toContain("Promise.all([");
       expect(source).toContain("roomsPromise,");
       expect(source).toContain("cachedMessagesPromise,");
+    });
+  });
+
+  describe("Auth API wiring", () => {
+    test("routes auth HTTP calls through src/api/auth", () => {
+      const storeSource = readStoreSource();
+      expect(storeSource).toContain('from "@/api/auth"');
+      for (const symbol of [
+        "getAuthSession",
+        "logoutUserSafe",
+        "registerUser",
+        "setUserPassword",
+      ]) {
+        expect(storeSource).toContain(symbol);
+      }
+
+      expect(storeSource).not.toContain("/api/auth/password/check");
+      expect(storeSource).not.toContain("/api/auth/password/set");
+      expect(storeSource).not.toContain("/api/auth/logout");
+      expect(storeSource).not.toContain("/api/auth/register");
+      expect(storeSource).not.toContain("/api/auth/session");
+    });
+
+    test("keeps legacy token migration helpers out of the store", () => {
+      const storeSource = readStoreSource();
+      expect(storeSource).not.toContain("@/utils/legacyAuthTokenMigration");
+      expect(storeSource).not.toContain("LEGACY_AUTH_TOKEN_RECOVERY_KEY");
+      expect(storeSource).not.toContain("legacyToken");
+    });
+
+    test("auth API exports session helper and omits password check helper", () => {
+      for (const symbol of ["getAuthSession", "logoutUserSafe"] as const) {
+        expect(typeof authApi[symbol]).toBe("function");
+      }
+      expect("checkUserPassword" in authApi).toBe(false);
     });
   });
 });

@@ -186,6 +186,21 @@ describe("desktop chat notification policy", () => {
     );
   });
 
+  test("background and foreground hooks share shouldNotifyForRoomMessage", () => {
+    const assertUsesSharedNotificationGate = (source: string): void => {
+      expect(source).toMatch(/from\s+["']@\/utils\/chatNotifications["']/);
+      expect(source).toMatch(/shouldNotifyForRoomMessage/);
+      expect(source).toMatch(/shouldNotifyForRoomMessage\s*\(\s*\{/);
+    };
+
+    assertUsesSharedNotificationGate(
+      readSource("src/hooks/useBackgroundChatNotifications.ts")
+    );
+    assertUsesSharedNotificationGate(
+      readSource("src/apps/chats/hooks/useChatRoom.ts")
+    );
+  });
+
   test("renderer fallback stays active until main is ready", () => {
     expect(
       shouldUseRendererChatNotificationFallback({
