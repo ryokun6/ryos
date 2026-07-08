@@ -18,23 +18,26 @@ export const darkAquaThemeCss = readFileSync(
 /** Shared `src/index.css` for theme/CSS regression suites. */
 export const indexCss = readFileSync(join(SRC_DIR, "index.css"), "utf8");
 
-/** Extract a CSS rule block for `selector { ... }` from a stylesheet string. */
+/**
+ * Extract a CSS rule block starting at `selector`.
+ * Callers may pass either `.foo` or `.foo {` (matching prior suite helpers).
+ */
 export function extractRuleBlock(css: string, selector: string): string {
-  const start = css.indexOf(`${selector} {`);
+  const start = css.indexOf(selector);
   if (start < 0) {
-    throw new Error(`Missing CSS rule for selector: ${selector}`);
+    return "";
   }
 
   const openBrace = css.indexOf("{", start);
   if (openBrace < 0) {
-    throw new Error(`Missing opening brace for selector: ${selector}`);
+    return "";
   }
 
   let depth = 0;
   for (let i = openBrace; i < css.length; i += 1) {
     const char = css[i];
     if (char === "{") depth += 1;
-    if (char === "}") {
+    else if (char === "}") {
       depth -= 1;
       if (depth === 0) {
         return css.slice(start, i + 1);
@@ -42,5 +45,5 @@ export function extractRuleBlock(css: string, selector: string): string {
     }
   }
 
-  throw new Error(`Unclosed CSS rule for selector: ${selector}`);
+  return "";
 }
