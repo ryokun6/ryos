@@ -2271,6 +2271,55 @@
     forwards;
 }
 
+/* Shadow cast by the titlebar onto the sheet sliding out beneath it.
+   Absolutely positioned at the strip top (the titlebar's bottom edge),
+   spanning the full window width, painted above the sheet body. */
+:root[data-os-theme="macosx"] .macosx-sheet-titlebar-shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  z-index: 10;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.12) 45%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+@keyframes macosx-sheet-shadow-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes macosx-sheet-shadow-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="open"]
+  .macosx-sheet-titlebar-shadow {
+  animation: macosx-sheet-shadow-in 200ms ease-out;
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="closed"]
+  .macosx-sheet-titlebar-shadow {
+  animation: macosx-sheet-shadow-out 220ms ease-in forwards;
+}
+
 /* macOS Aqua Tab Styles */
 .aqua-tab {
   position: relative;

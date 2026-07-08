@@ -250,6 +250,10 @@ const DialogContent = (
           onCloseAutoFocus={cleanupPointerEvents}
           {...props}
         >
+          {/* Shadow the titlebar casts onto the emerging sheet — painted
+              above the window frame and the sheet so the sheet reads as
+              sliding out of a slot under the titlebar. */}
+          <div aria-hidden className="macosx-sheet-titlebar-shadow" />
           <div
             className={cn(
               "macosx-sheet-body pointer-events-auto grid w-full min-w-0 max-w-lg gap-4 border bg-os-window-bg p-0 overflow-hidden",
