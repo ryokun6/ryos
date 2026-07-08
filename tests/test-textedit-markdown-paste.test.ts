@@ -3,11 +3,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { Editor } from "@tiptap/core";
-import Link from "@tiptap/extension-link";
-import Table from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import StarterKit from "@tiptap/starter-kit";
 import { ensureTestLocalStorage } from "./setup";
 import { handleMarkdownPaste } from "../src/apps/textedit/extensions/MarkdownPaste";
@@ -134,9 +130,9 @@ const ready = true;
   test("inserts parsed Markdown through the TipTap paste handler", () => {
     const editor = new Editor({
       content: "<p>Before</p>",
+      // StarterKit v3 bundles Link.
       extensions: [
         StarterKit,
-        Link,
         Table,
         TableRow,
         TableHeader,
@@ -161,7 +157,7 @@ const ready = true;
   test("keeps a Markdown link inline at the current cursor", () => {
     const editor = new Editor({
       content: "<p>Visit:</p>",
-      extensions: [StarterKit, Link],
+      extensions: [StarterKit],
     });
 
     try {
@@ -220,5 +216,53 @@ describe("TextEdit Markdown paste security and persistence", () => {
     expect(exportedMarkdown).toContain(
       "| Metric | Value |\n| --- | --- |\n| Log buffer | 41 / 1000 |"
     );
+  });
+});
+
+describe("AI tool markdown-to-editor pipeline", () => {
+  // The AI write/edit tools convert markdown through markdownToSafeHtml +
+  // generateJsonFromHtml before pushing it into an open TextEdit instance.
+  // GFM tables and links must survive that conversion so AI-authored content
+  // renders as rich content instead of raw markdown text.
+  const AI_MARKDOWN = `# Notes
+
+| Name | Age |
+| --- | --- |
+| Alice | 30 |
+
+Visit the [ryOS site](https://os.ryo.lu) for more.`;
+
+  test("AI markdown renders tables and links as rich editor content", async () => {
+    const editorJson = await generateJsonFromHtml(
+      markdownToSafeHtml(AI_MARKDOWN)
+    );
+
+    expect(hasNodeType(editorJson, "table")).toBe(true);
+
+    const json = JSON.stringify(editorJson);
+    expect(json).toContain('"type":"link"');
+    expect(json).toContain("https://os.ryo.lu");
+  });
+
+  test("GFM markdown round-trips through the editor HTML pipeline", async () => {
+    // Edit/write tools convert markdown -> HTML -> JSON for the editor, and
+    // htmlToMarkdown must preserve tables/links when content is re-serialized.
+    const editorJson = await generateJsonFromHtml(
+      markdownToSafeHtml(AI_MARKDOWN)
+    );
+
+    const { generateHtmlFromJson } = await import("../src/utils/tiptapHtml");
+    const bufferMarkdown = htmlToMarkdown(await generateHtmlFromJson(editorJson));
+
+    expect(bufferMarkdown).toContain("| Name | Age |");
+    expect(bufferMarkdown).toContain("[ryOS site](https://os.ryo.lu)");
+
+    const updatedMarkdown = bufferMarkdown.replace("Alice", "Bob");
+    const updatedJson = await generateJsonFromHtml(
+      markdownToSafeHtml(updatedMarkdown)
+    );
+
+    expect(hasNodeType(updatedJson, "table")).toBe(true);
+    expect(JSON.stringify(updatedJson)).toContain("Bob");
   });
 });

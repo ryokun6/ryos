@@ -16,40 +16,27 @@ function loadModules(): Promise<TipTapModules> {
   _loading = Promise.all([
     import("@tiptap/core"),
     import("@tiptap/starter-kit"),
-    import("@tiptap/extension-link"),
     import("@tiptap/extension-table"),
-    import("@tiptap/extension-table-cell"),
-    import("@tiptap/extension-table-header"),
-    import("@tiptap/extension-table-row"),
-    import("@tiptap/extension-underline"),
     import("@tiptap/extension-text-align"),
-    import("@tiptap/extension-task-list"),
-    import("@tiptap/extension-task-item"),
+    import("@tiptap/extension-list"),
   ]).then(
     ([
       { generateHTML, generateJSON },
       { default: StarterKit },
-      { default: Link },
-      { default: Table },
-      { default: TableCell },
-      { default: TableHeader },
-      { default: TableRow },
-      { default: Underline },
+      { Table, TableRow, TableHeader, TableCell },
       { default: TextAlign },
-      { default: TaskList },
-      { default: TaskItem },
+      { TaskList, TaskItem },
     ]) => {
       _cache = {
         generateHTML,
         generateJSON,
         extensions: [
-          StarterKit,
-          Link.configure({ openOnClick: false }),
+          // StarterKit v3 bundles Link and Underline.
+          StarterKit.configure({ link: { openOnClick: false } }),
           Table.configure({ resizable: false }),
           TableRow,
           TableHeader,
           TableCell,
-          Underline,
           TextAlign.configure({ types: ["heading", "paragraph"] }),
           TaskList,
           TaskItem.configure({ nested: true }),
@@ -68,6 +55,14 @@ function loadModules(): Promise<TipTapModules> {
 export async function generateJsonFromHtml(html: string): Promise<JSONContent> {
   const { generateJSON, extensions } = await loadModules();
   return generateJSON(html, extensions);
+}
+
+/**
+ * Async version — always works, triggers lazy load on first call.
+ */
+export async function generateHtmlFromJson(json: JSONContent): Promise<string> {
+  const { generateHTML, extensions } = await loadModules();
+  return generateHTML(json, extensions);
 }
 
 /**

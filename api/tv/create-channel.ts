@@ -190,6 +190,7 @@ export default apiHandler<CreateChannelRequest>(
     try {
       const { output } = await generateText({
         model: google("gemini-3-flash-preview"),
+        allowSystemInMessages: true,
         output: Output.object({
           schema: ChannelPlanSchema,
           name: "channel_plan",

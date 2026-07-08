@@ -165,15 +165,10 @@ const MANUAL_CHUNK_BY_PACKAGE: Record<string, string> = {
   "@tiptap/core": "tiptap",
   "@tiptap/react": "tiptap",
   "@tiptap/starter-kit": "tiptap",
-  "@tiptap/extension-link": "tiptap",
   "@tiptap/extension-table": "tiptap",
-  "@tiptap/extension-table-cell": "tiptap",
-  "@tiptap/extension-table-header": "tiptap",
-  "@tiptap/extension-table-row": "tiptap",
-  "@tiptap/extension-task-item": "tiptap",
-  "@tiptap/extension-task-list": "tiptap",
+  "@tiptap/extension-list": "tiptap",
   "@tiptap/extension-text-align": "tiptap",
-  "@tiptap/extension-underline": "tiptap",
+  "@tiptap/extensions": "tiptap",
   "@tiptap/suggestion": "tiptap",
   three: "three",
   motion: "motion",
@@ -781,13 +776,6 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  // esbuild options for faster dev transforms
-  esbuild: {
-    // Remove legal comments to reduce memory overhead
-    legalComments: 'none',
-    // Target modern browsers for faster transforms
-    target: 'es2022',
   },
   build: {
     // Target modern browsers for smaller bundles

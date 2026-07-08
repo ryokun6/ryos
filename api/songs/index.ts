@@ -18,7 +18,7 @@
  */
 
 import { z } from "zod";
-import pako from "pako";
+import { ungzip } from "pako";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import {
@@ -169,7 +169,7 @@ function decompressFromBase64<T>(value: unknown): T | null {
     }
 
     // Use ungzip since the data is gzip compressed (not raw deflate)
-    const decompressed = pako.ungzip(bytes);
+    const decompressed = ungzip(bytes);
     const text = new TextDecoder("utf-8").decode(decompressed);
     return JSON.parse(text) as T;
   } catch (error) {

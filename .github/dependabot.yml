@@ -1,0 +1,33 @@
+version: 2
+updates:
+  # Bun dependencies (package.json + bun.lock)
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      # Batch non-breaking bumps into a single PR; majors get their own PRs.
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Pinned to castlabs electron-releases (Widevine) via a git tag, which
+      # Dependabot cannot resolve; bumped manually alongside desktop releases.
+      - dependency-name: "electron"
+
+  # GitHub Actions workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+
+  # Docker base image (oven/bun)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"

@@ -21,6 +21,29 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // eslint-plugin-react-hooks v7 ships the React Compiler rules as errors
+      // in `recommended`. Keep the pre-v7 severities until the codebase is
+      // migrated to satisfy the compiler rules.
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/refs': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/set-state-in-render': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/globals': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/static-components': 'off',
+      'react-hooks/use-memo': 'off',
+      'react-hooks/component-hook-factories': 'off',
+      'react-hooks/error-boundaries': 'off',
+      'react-hooks/incompatible-library': 'off',
+      'react-hooks/unsupported-syntax': 'off',
+      'react-hooks/config': 'off',
+      'react-hooks/gating': 'off',
+      // New-in-ESLint-10 recommended rules; existing violations predate the
+      // upgrade and are tracked separately from this dependency bump.
+      'no-useless-assignment': 'off',
+      'preserve-caught-error': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

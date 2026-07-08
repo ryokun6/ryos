@@ -106,6 +106,7 @@ export default apiHandler<RyoReplyRequest>(
       const { text } = await generateText({
         model: google("gemini-3-flash-preview"),
         messages,
+        allowSystemInMessages: true,
         temperature: 0.6,
       });
       replyText = text;

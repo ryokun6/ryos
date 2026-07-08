@@ -2,7 +2,7 @@
  * Song API Utility Functions
  */
 
-import pako from "pako";
+import { inflate } from "pako";
 import { Converter } from "opencc-js";
 import {
   APPLE_MUSIC_ID_REGEX,
@@ -141,7 +141,7 @@ export function decodeKRC(krcBase64: string): string {
   for (let i = 0; i < encrypted.length; i++) {
     encrypted[i] ^= KRC_DECRYPTION_KEY[i % 16];
   }
-  const decompressed = pako.inflate(encrypted);
+  const decompressed = inflate(encrypted);
   return new TextDecoder("utf-8").decode(decompressed);
 }
 

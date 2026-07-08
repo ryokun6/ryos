@@ -6,10 +6,6 @@ import {
   S3Client,
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
-import {
-  RequestChecksumCalculation,
-  ResponseChecksumValidation,
-} from "@aws-sdk/middleware-flexible-checksums";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { signStorageUploadToken } from "./storage-upload-token.js";
 
@@ -191,8 +187,8 @@ function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
     // - virtual-hosted style unless explicitly forced to path-style
     // - only calculate request/response checksums when required so presigned
     //   PUT URLs stay minimal for S3-compatible providers
-    requestChecksumCalculation: RequestChecksumCalculation.WHEN_REQUIRED,
-    responseChecksumValidation: ResponseChecksumValidation.WHEN_REQUIRED,
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,

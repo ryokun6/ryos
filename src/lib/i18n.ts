@@ -101,7 +101,7 @@ const initializeDefaultI18n = async (): Promise<void> => {
         fallbackLng: DEFAULT_LANGUAGE,
         defaultNS: "translation",
         ns: ["translation"],
-        initImmediate: false,
+        initAsync: false,
         interpolation: {
           escapeValue: false, // React already escapes values
         },

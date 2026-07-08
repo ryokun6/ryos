@@ -1,11 +1,14 @@
 #!/usr/bin/env bun
 
 import { describe, expect, test } from "bun:test";
+import { Editor } from "@tiptap/core";
 import { Schema, type Node as PMNode } from "@tiptap/pm/model";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
+import StarterKit from "@tiptap/starter-kit";
 import {
   buildMergeTransaction,
   computeMergeRange,
+  mergeEditorContent,
 } from "../src/apps/textedit/utils/mergeEditorContent";
 
 // Minimal schema (doc > paragraph > text) — enough to exercise the diff/merge
@@ -97,5 +100,33 @@ describe("TextEdit cursor-preserving merge", () => {
     // Without preservation the selection is not explicitly remapped; the caret
     // stays at the raw mapped default rather than being re-anchored by us.
     expect(tr!.doc.textContent).toBe("Say Hello world");
+  });
+
+  test("merging into an unmounted editor does not throw (Tiptap 3 view proxy)", () => {
+    // With @tiptap/react v3, useEditor creates the editor with `element: null`
+    // and mounts the view later; until then editor.view is a proxy that throws
+    // on DOM accessors like hasFocus/dom. External syncs (e.g. the AI edit
+    // tool or file sync) can fire before the mount, and must still merge.
+    const paragraph = (text: string) => ({
+      type: "paragraph",
+      content: [{ type: "text", text }],
+    });
+    const editor = new Editor({
+      element: null,
+      extensions: [StarterKit],
+      content: { type: "doc", content: [paragraph("Hello")] },
+    });
+
+    try {
+      const changed = mergeEditorContent(editor, {
+        type: "doc",
+        content: [paragraph("Hello world")],
+      });
+
+      expect(changed).toBe(true);
+      expect(editor.state.doc.textContent).toBe("Hello world");
+    } finally {
+      editor.destroy();
+    }
   });
 });

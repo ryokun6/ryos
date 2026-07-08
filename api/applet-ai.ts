@@ -7,7 +7,7 @@ import {
 } from "ai";
 import {
   google,
-  type GoogleGenerativeAIProviderOptions,
+  type GoogleProviderOptions,
 } from "@ai-sdk/google";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
@@ -125,7 +125,7 @@ export const APPLET_IMAGE_PROVIDER_OPTIONS = {
     imageConfig: {
       imageSize: "1K",
     },
-  } satisfies GoogleGenerativeAIProviderOptions,
+  } satisfies GoogleProviderOptions,
 } as const;
 
 type ParsedMessage = z.infer<typeof MessageSchema>;
@@ -217,8 +217,8 @@ const createMessageParts = (
         );
       }
       const imagePart: ImagePart = {
-        type: "image",
-        image: imageData,
+        type: 'file',
+        data: imageData,
         mediaType: attachment.mediaType,
       };
       parts.push(imagePart);
@@ -479,8 +479,8 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
           }
 
           promptParts.push({
-            type: "image",
-            image: imageData,
+            type: 'file',
+            data: imageData,
             mediaType: image.mediaType,
           });
         });
@@ -576,6 +576,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     const { text } = await generateText({
       model: google("gemini-3-flash-preview"),
       messages: finalMessages,
+      allowSystemInMessages: true,
       temperature: temperature ?? 0.6,
       maxOutputTokens: 4000,
     });

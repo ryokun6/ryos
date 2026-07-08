@@ -6,6 +6,8 @@
     "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
+    // TS 6.0 defaults `types` to []; list ambient global packages explicitly.
+    "types": ["node"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

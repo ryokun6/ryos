@@ -397,6 +397,9 @@ function TextEditContent({
 
     try {
       mergeEditorContent(editor, contentJson);
+      // External store updates (AI write/edit) are already persisted to disk,
+      // so clear the dirty flag. User keystrokes set hasUnsavedChanges via
+      // onUpdate and are skipped above via lastWrittenJsonRef.
       setHasUnsavedChanges(false);
       log.debug("Editor content merged from store change");
     } catch (err) {

@@ -318,6 +318,12 @@ export const htmlToMarkdown = (html: string): string => {
     .replace(/<i[^>]*>(.*?)<\/i>/gi, "*$1*")
     .replace(/<u[^>]*>(.*?)<\/u>/gi, "_$1_");
 
+  // Convert links (before the final tag-strip removes the anchor markup)
+  markdown = markdown.replace(
+    /<a[^>]*href=['"]([^'"]+)['"][^>]*>(.*?)<\/a>/gi,
+    "[$2]($1)"
+  );
+
   // Convert paragraphs and line breaks
   markdown = markdown
     .replace(/<p[^>]*>(.*?)<\/p>/gi, "$1\n")
