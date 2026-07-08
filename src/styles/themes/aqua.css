@@ -2370,18 +2370,17 @@
 
 /* Soft dim over the parent window body (below the titlebar) while a sheet
    is open — hints that clicking outside the sheet dismisses it. Desktop
-   outside the window stays undimmed. Sheet strip must stack above this
-   scrim (Radix portals each DialogPortal child separately, so DOM order
-   alone is not a reliable stacking guarantee). */
+   outside the window stays undimmed. Lives inside the sheet strip so it
+   shares data-state and fades with the sheet (and stays under the body). */
 :root[data-os-theme="macosx"] .macosx-sheet-window-scrim {
-  z-index: 50;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  pointer-events: none;
   background: rgba(0, 0, 0, 0.18);
   border-radius: 0 0 7.2px 7.2px;
-  animation: macosx-sheet-scrim-in 200ms ease-out;
-}
-
-:root[data-os-theme="macosx"] .macosx-sheet-strip {
-  z-index: 51;
 }
 
 @keyframes macosx-sheet-scrim-in {
@@ -2390,6 +2389,15 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes macosx-sheet-scrim-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -2409,6 +2417,18 @@
   to {
     opacity: 0;
   }
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="open"]
+  .macosx-sheet-window-scrim {
+  animation: macosx-sheet-scrim-in 200ms ease-out;
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="closed"]
+  .macosx-sheet-window-scrim {
+  animation: macosx-sheet-scrim-out 220ms ease-in forwards;
 }
 
 :root[data-os-theme="macosx"]

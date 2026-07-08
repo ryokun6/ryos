@@ -242,50 +242,32 @@ const DialogContent = (
 
   if (isSheet) {
     const anchor = hasMeasuredAnchor ? (sheetAnchor as SheetAnchor) : null;
-    // Radix DialogPortal portals each child into its own container node.
-    // Always mount the scrim (even before the anchor is measured) so a late
-    // mount can't append after the sheet and paint over it. Explicit z-index
-    // keeps the sheet above the scrim regardless of portal DOM order.
+    // Scrim lives inside Content (not a sibling portal) so it shares the
+    // strip's data-state and can fade out with the sheet. Same stacking
+    // context also keeps the sheet body above the scrim.
     return (
       <DialogPortal>
         {/* Sheets don't dim the desktop; the overlay only blocks interaction
-            outside the parent window. A separate window-local scrim dims the
-            area under the titlebar to hint that clicking dismisses. */}
+            outside the parent window. A window-local scrim inside the strip
+            dims the area under the titlebar to hint that clicking dismisses. */}
         <DialogPrimitive.Overlay
           className={cn("fixed inset-0 z-50 bg-transparent", overlayClassName)}
-        />
-        <div
-          aria-hidden
-          className="macosx-sheet-window-scrim fixed z-50 pointer-events-none"
-          style={
-            anchor && anchor.height > 0
-              ? {
-                  left: anchor.left,
-                  top: anchor.top,
-                  width: anchor.width,
-                  height: anchor.height,
-                }
-              : {
-                  left: 0,
-                  top: 0,
-                  width: 0,
-                  height: 0,
-                  visibility: "hidden",
-                }
-          }
         />
         {/* Full-window-width strip below the titlebar; overflow-hidden clips
             the sheet while it slides out from behind the titlebar. Pointer
             events pass through the strip padding to the overlay. */}
         <DialogPrimitive.Content
           ref={composedContentRef}
-          className="macosx-sheet-strip fixed z-[51] flex flex-col items-center overflow-hidden px-4 pb-10"
+          className="macosx-sheet-strip fixed z-50 flex flex-col items-center overflow-hidden px-4 pb-10"
           style={
             anchor
               ? {
                   left: anchor.left,
                   top: anchor.top,
                   width: anchor.width,
+                  // At least the window body so the absolute scrim isn't
+                  // clipped; taller sheets can still extend below.
+                  minHeight: anchor.height,
                   pointerEvents: "none",
                 }
               : {
@@ -301,13 +283,24 @@ const DialogContent = (
           onCloseAutoFocus={cleanupPointerEvents}
           {...props}
         >
+          {/* Soft dim over the parent window body — sized to the window, not
+              the sheet, so the area around the sheet reads as dismissible. */}
+          <div
+            aria-hidden
+            className="macosx-sheet-window-scrim"
+            style={
+              anchor && anchor.height > 0
+                ? { height: anchor.height }
+                : { visibility: "hidden", height: 0 }
+            }
+          />
           {/* Shadow the titlebar casts onto the emerging sheet — painted
               above the window frame and the sheet so the sheet reads as
               sliding out of a slot under the titlebar. */}
           <div aria-hidden className="macosx-sheet-titlebar-shadow" />
           <div
             className={cn(
-              "macosx-sheet-body pointer-events-auto grid w-full min-w-0 max-w-lg gap-4 border bg-os-window-bg p-0 overflow-hidden",
+              "macosx-sheet-body pointer-events-auto relative z-[1] grid w-full min-w-0 max-w-lg gap-4 border bg-os-window-bg p-0 overflow-hidden",
               "border-[length:var(--os-metrics-border-width)] border-os-window macosx-dialog [&_button]:text-[length:var(--os-typography-button)]",
               className
             )}
