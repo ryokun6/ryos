@@ -251,6 +251,9 @@ export const ChatMessagesContent = memo(function ChatMessagesContent({
         const isStreamingMessage =
           messageKey === streamingAssistantMessageKey &&
           !animatedKeysRef.current.has(messageKey);
+        // Pass null to non-matching rows so memo skips TTS highlight ticks.
+        const rowHighlight =
+          highlightSegment?.messageId === message.id ? highlightSegment : null;
         return (
           <ChatMessageItem
             key={messageKey}
@@ -267,7 +270,7 @@ export const ChatMessagesContent = memo(function ChatMessagesContent({
             isPlaying={playingMessageId === messageKey}
             isSpeechLoading={speechLoadingId === messageKey}
             speechEnabled={speechEnabled}
-            highlightSegment={highlightSegment}
+            highlightSegment={rowHighlight}
             isAdmin={isAdmin}
             roomId={roomId}
             username={username}

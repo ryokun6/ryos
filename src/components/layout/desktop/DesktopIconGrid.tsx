@@ -1,6 +1,6 @@
 import type { AnyApp } from "@/apps/base/types";
 import type { AppId } from "@/config/appRegistry";
-import type { MouseEvent as ReactMouseEvent } from "react";
+import { memo, useMemo, type MouseEvent as ReactMouseEvent } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -26,7 +26,8 @@ export interface DesktopIconGridProps {
   displayedApps: AnyApp[];
   getDisplayName: (shortcut: FileSystemItem) => string;
   getShortcutIcon: (shortcut: FileSystemItem) => string;
-  isItemSelected: (itemId: DesktopItemId) => boolean;
+  /** Stable selection list — per-icon `isSelected` is derived so memo skips. */
+  selectedItemIds: DesktopItemId[];
   onDesktopItemClick: (
     itemId: DesktopItemId,
     event: ReactMouseEvent<HTMLDivElement>
@@ -43,7 +44,188 @@ export interface DesktopIconGridProps {
   onTrashDoubleClick: (e: ReactMouseEvent<HTMLDivElement>) => void;
 }
 
-export function DesktopIconGrid({
+const DesktopMacintoshHdIcon = memo(function DesktopMacintoshHdIcon({
+  name,
+  isWindowsTheme,
+  isSelected,
+  onDesktopItemClick,
+  onFinderOpen,
+  onIconContextMenu,
+}: {
+  name: string;
+  isWindowsTheme: boolean;
+  isSelected: boolean;
+  onDesktopItemClick: DesktopIconGridProps["onDesktopItemClick"];
+  onFinderOpen: DesktopIconGridProps["onFinderOpen"];
+  onIconContextMenu: DesktopIconGridProps["onIconContextMenu"];
+}) {
+  return (
+    <div data-desktop-item-id={getDesktopAppItemId("macintosh-hd")}>
+      <FileIcon
+        name={name}
+        isDirectory={true}
+        icon={
+          isWindowsTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
+        }
+        onClick={(e) =>
+          onDesktopItemClick(getDesktopAppItemId("macintosh-hd"), e)
+        }
+        onDoubleClick={onFinderOpen}
+        onPointerDown={() => prefetchAppChunk("finder")}
+        onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) =>
+          onIconContextMenu("macintosh-hd", e)
+        }
+        isSelected={isSelected}
+        size="large"
+      />
+    </div>
+  );
+});
+
+const DesktopShortcutIcon = memo(function DesktopShortcutIcon({
+  shortcut,
+  displayName,
+  icon,
+  isSelected,
+  onDesktopItemClick,
+  onShortcutDoubleClick,
+  onShortcutPointerDown,
+  onShortcutContextMenu,
+}: {
+  shortcut: FileSystemItem;
+  displayName: string;
+  icon: string;
+  isSelected: boolean;
+  onDesktopItemClick: DesktopIconGridProps["onDesktopItemClick"];
+  onShortcutDoubleClick: DesktopIconGridProps["onShortcutDoubleClick"];
+  onShortcutPointerDown: DesktopIconGridProps["onShortcutPointerDown"];
+  onShortcutContextMenu: DesktopIconGridProps["onShortcutContextMenu"];
+}) {
+  return (
+    <div
+      data-desktop-item-id={getDesktopShortcutItemId(shortcut.path)}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData(
+          "application/json",
+          JSON.stringify({
+            path: shortcut.path,
+            name: shortcut.name,
+            appId: shortcut.appId,
+            aliasType: shortcut.aliasType,
+            aliasTarget: shortcut.aliasTarget,
+          })
+        );
+        const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+        dragImage.style.position = "absolute";
+        dragImage.style.top = "-1000px";
+        document.body.appendChild(dragImage);
+        e.dataTransfer.setDragImage(
+          dragImage,
+          e.nativeEvent.offsetX,
+          e.nativeEvent.offsetY
+        );
+        setTimeout(() => document.body.removeChild(dragImage), 0);
+      }}
+    >
+      <FileIcon
+        name={displayName}
+        isDirectory={
+          shortcut.aliasType === "file" &&
+          shortcut.aliasTarget === "/Applications"
+        }
+        icon={icon}
+        onClick={(e) =>
+          onDesktopItemClick(getDesktopShortcutItemId(shortcut.path), e)
+        }
+        onDoubleClick={(e) => onShortcutDoubleClick(shortcut, e)}
+        onPointerDown={() => onShortcutPointerDown(shortcut)}
+        onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) =>
+          onShortcutContextMenu(shortcut.path, e)
+        }
+        isSelected={isSelected}
+        size="large"
+      />
+    </div>
+  );
+});
+
+const DesktopAppIcon = memo(function DesktopAppIcon({
+  app,
+  isWindowsTheme,
+  currentTheme,
+  isSelected,
+  onDesktopItemClick,
+  onAppDoubleClick,
+  onIconContextMenu,
+}: {
+  app: AnyApp;
+  isWindowsTheme: boolean;
+  currentTheme: string;
+  isSelected: boolean;
+  onDesktopItemClick: DesktopIconGridProps["onDesktopItemClick"];
+  onAppDoubleClick: DesktopIconGridProps["onAppDoubleClick"];
+  onIconContextMenu: DesktopIconGridProps["onIconContextMenu"];
+}) {
+  return (
+    <div data-desktop-item-id={getDesktopAppItemId(app.id)}>
+      <FileIcon
+        name={getTranslatedAppName(app.id as AppId)}
+        isDirectory={false}
+        icon={
+          isWindowsTheme && app.id === "pc"
+            ? `/icons/${currentTheme}/games.png`
+            : getAppIconPath(app.id)
+        }
+        onClick={(e) => onDesktopItemClick(getDesktopAppItemId(app.id), e)}
+        onDoubleClick={(e) => onAppDoubleClick(app, e)}
+        onPointerDown={() => prefetchAppChunk(app.id)}
+        onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) =>
+          onIconContextMenu(app.id, e)
+        }
+        isSelected={isSelected}
+        size="large"
+      />
+    </div>
+  );
+});
+
+const DesktopTrashIcon = memo(function DesktopTrashIcon({
+  name,
+  trashIcon,
+  isSelected,
+  onDesktopItemClick,
+  onTrashDoubleClick,
+  onIconContextMenu,
+}: {
+  name: string;
+  trashIcon: string;
+  isSelected: boolean;
+  onDesktopItemClick: DesktopIconGridProps["onDesktopItemClick"];
+  onTrashDoubleClick: DesktopIconGridProps["onTrashDoubleClick"];
+  onIconContextMenu: DesktopIconGridProps["onIconContextMenu"];
+}) {
+  return (
+    <div data-desktop-item-id={getDesktopAppItemId("trash")}>
+      <FileIcon
+        name={name}
+        isDirectory={true}
+        icon={trashIcon}
+        onClick={(e) => onDesktopItemClick(getDesktopAppItemId("trash"), e)}
+        onDoubleClick={onTrashDoubleClick}
+        onPointerDown={() => prefetchAppChunk("finder")}
+        onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) => {
+          onIconContextMenu("trash", e);
+        }}
+        isSelected={isSelected}
+        size="large"
+      />
+    </div>
+  );
+});
+
+export const DesktopIconGrid = memo(function DesktopIconGrid({
   isWindowsTheme,
   isMacOSTheme,
   isDesktopApp,
@@ -55,7 +237,7 @@ export function DesktopIconGrid({
   displayedApps,
   getDisplayName,
   getShortcutIcon,
-  isItemSelected,
+  selectedItemIds,
   onDesktopItemClick,
   onFinderOpen,
   onIconContextMenu,
@@ -65,6 +247,11 @@ export function DesktopIconGrid({
   onAppDoubleClick,
   onTrashDoubleClick,
 }: DesktopIconGridProps) {
+  const selectedSet = useMemo(
+    () => new Set(selectedItemIds),
+    [selectedItemIds]
+  );
+
   return (
     <div
       className={cn(
@@ -103,130 +290,53 @@ export function DesktopIconGrid({
             : "flex flex-col flex-wrap-reverse justify-start content-start h-full gap-x-3 gap-y-3"
         }
       >
-        <div data-desktop-item-id={getDesktopAppItemId("macintosh-hd")}>
-          <FileIcon
-            name={macintoshHdName}
-            isDirectory={true}
-            icon={
-              isWindowsTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
-            }
-            onClick={(e) =>
-              onDesktopItemClick(getDesktopAppItemId("macintosh-hd"), e)
-            }
-            onDoubleClick={onFinderOpen}
-            onPointerDown={() => prefetchAppChunk("finder")}
-            onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) =>
-              onIconContextMenu("macintosh-hd", e)
-            }
-            isSelected={isItemSelected(getDesktopAppItemId("macintosh-hd"))}
-            size="large"
-          />
-        </div>
-        {/* Display desktop shortcuts */}
+        <DesktopMacintoshHdIcon
+          name={macintoshHdName}
+          isWindowsTheme={isWindowsTheme}
+          isSelected={selectedSet.has(getDesktopAppItemId("macintosh-hd"))}
+          onDesktopItemClick={onDesktopItemClick}
+          onFinderOpen={onFinderOpen}
+          onIconContextMenu={onIconContextMenu}
+        />
         {desktopShortcuts.map((shortcut) => (
-          <div
+          <DesktopShortcutIcon
             key={shortcut.path}
-            data-desktop-item-id={getDesktopShortcutItemId(shortcut.path)}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.effectAllowed = "move";
-              e.dataTransfer.setData(
-                "application/json",
-                JSON.stringify({
-                  path: shortcut.path,
-                  name: shortcut.name,
-                  appId: shortcut.appId,
-                  aliasType: shortcut.aliasType,
-                  aliasTarget: shortcut.aliasTarget,
-                })
-              );
-              // Set drag image
-              const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
-              dragImage.style.position = "absolute";
-              dragImage.style.top = "-1000px";
-              document.body.appendChild(dragImage);
-              e.dataTransfer.setDragImage(
-                dragImage,
-                e.nativeEvent.offsetX,
-                e.nativeEvent.offsetY
-              );
-              setTimeout(() => document.body.removeChild(dragImage), 0);
-            }}
-          >
-            <FileIcon
-              name={getDisplayName(shortcut)}
-              isDirectory={
-                shortcut.aliasType === "file" &&
-                shortcut.aliasTarget === "/Applications"
-              }
-              icon={getShortcutIcon(shortcut)}
-              onClick={(e) =>
-                onDesktopItemClick(
-                  getDesktopShortcutItemId(shortcut.path),
-                  e
-                )
-              }
-              onDoubleClick={(e) => onShortcutDoubleClick(shortcut, e)}
-              onPointerDown={() => onShortcutPointerDown(shortcut)}
-              onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) =>
-                onShortcutContextMenu(shortcut.path, e)
-              }
-              isSelected={isItemSelected(
-                getDesktopShortcutItemId(shortcut.path)
-              )}
-              size="large"
-            />
-          </div>
+            shortcut={shortcut}
+            displayName={getDisplayName(shortcut)}
+            icon={getShortcutIcon(shortcut)}
+            isSelected={selectedSet.has(
+              getDesktopShortcutItemId(shortcut.path)
+            )}
+            onDesktopItemClick={onDesktopItemClick}
+            onShortcutDoubleClick={onShortcutDoubleClick}
+            onShortcutPointerDown={onShortcutPointerDown}
+            onShortcutContextMenu={onShortcutContextMenu}
+          />
         ))}
-        {/* Display regular app icons (only if not using shortcuts) */}
         {desktopShortcuts.length === 0 &&
           displayedApps.map((app) => (
-            <div
+            <DesktopAppIcon
               key={app.id}
-              data-desktop-item-id={getDesktopAppItemId(app.id)}
-            >
-              <FileIcon
-                name={getTranslatedAppName(app.id as AppId)}
-                isDirectory={false}
-                icon={
-                  isWindowsTheme && app.id === "pc"
-                    ? `/icons/${currentTheme}/games.png`
-                    : getAppIconPath(app.id)
-                }
-                onClick={(e) =>
-                  onDesktopItemClick(getDesktopAppItemId(app.id), e)
-                }
-                onDoubleClick={(e) => onAppDoubleClick(app, e)}
-                onPointerDown={() => prefetchAppChunk(app.id)}
-                onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) =>
-                  onIconContextMenu(app.id, e)
-                }
-                isSelected={isItemSelected(getDesktopAppItemId(app.id))}
-                size="large"
-              />
-            </div>
-          ))}
-        {/* Display Trash icon at the end for non-macOS X themes */}
-        {!isMacOSTheme && (
-          <div data-desktop-item-id={getDesktopAppItemId("trash")}>
-            <FileIcon
-              name={trashName}
-              isDirectory={true}
-              icon={trashIcon}
-              onClick={(e) =>
-                onDesktopItemClick(getDesktopAppItemId("trash"), e)
-              }
-              onDoubleClick={onTrashDoubleClick}
-              onPointerDown={() => prefetchAppChunk("finder")}
-              onContextMenu={(e: ReactMouseEvent<HTMLDivElement>) => {
-                onIconContextMenu("trash", e);
-              }}
-              isSelected={isItemSelected(getDesktopAppItemId("trash"))}
-              size="large"
+              app={app}
+              isWindowsTheme={isWindowsTheme}
+              currentTheme={currentTheme}
+              isSelected={selectedSet.has(getDesktopAppItemId(app.id))}
+              onDesktopItemClick={onDesktopItemClick}
+              onAppDoubleClick={onAppDoubleClick}
+              onIconContextMenu={onIconContextMenu}
             />
-          </div>
+          ))}
+        {!isMacOSTheme && (
+          <DesktopTrashIcon
+            name={trashName}
+            trashIcon={trashIcon}
+            isSelected={selectedSet.has(getDesktopAppItemId("trash"))}
+            onDesktopItemClick={onDesktopItemClick}
+            onTrashDoubleClick={onTrashDoubleClick}
+            onIconContextMenu={onIconContextMenu}
+          />
         )}
       </div>
     </div>
   );
-}
+});
