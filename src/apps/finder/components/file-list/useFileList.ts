@@ -42,10 +42,12 @@ export function useFileList({
   const marqueeStartRef = useRef<SelectionPoint | null>(null);
   const marqueeBaseSelectionRef = useRef<string[]>([]);
   const marqueeAdditiveRef = useRef(false);
-  const [selectionRect, setSelectionRect] = useState<{
-    start: SelectionPoint;
-    end: SelectionPoint;
-  } | null>(null);
+  const marqueeElementRef = useRef<HTMLDivElement | null>(null);
+  const marqueeOriginRef = useRef<{ left: number; top: number } | null>(null);
+  const lastMarqueeSelectionSigRef = useRef<string | null>(null);
+  // Boolean only — geometry is painted onto marqueeElementRef per pointer move
+  // so the file list does not re-render on every mousemove (matches Desktop).
+  const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
   const {
     isWindowsTheme,
     isMacOSTheme,
@@ -94,6 +96,21 @@ export function useFileList({
     [files, onFileSelect]
   );
 
+  const paintMarqueeRect = useCallback(
+    (start: SelectionPoint, end: SelectionPoint) => {
+      const element = marqueeElementRef.current;
+      const origin = marqueeOriginRef.current;
+      if (!element || !origin) return;
+
+      const rect = createSelectionRect(start, end);
+      element.style.left = `${rect.left - origin.left}px`;
+      element.style.top = `${rect.top - origin.top}px`;
+      element.style.width = `${rect.right - rect.left}px`;
+      element.style.height = `${rect.bottom - rect.top}px`;
+    },
+    []
+  );
+
   const updateSelectionFromMarquee = useCallback(
     (start: SelectionPoint, end: SelectionPoint) => {
       const container = containerRef.current;
@@ -121,10 +138,14 @@ export function useFileList({
             intersectingPaths
           )
         : intersectingPaths;
-      const primaryPath = nextSelectedPaths[nextSelectedPaths.length - 1] ?? null;
-      const anchorPath = primaryPath;
 
-      applySelection(nextSelectedPaths, primaryPath, anchorPath);
+      // Only touch React state when the intersecting set actually changes.
+      const signature = nextSelectedPaths.join("\u0000");
+      if (signature === lastMarqueeSelectionSigRef.current) return;
+      lastMarqueeSelectionSigRef.current = signature;
+
+      const primaryPath = nextSelectedPaths[nextSelectedPaths.length - 1] ?? null;
+      applySelection(nextSelectedPaths, primaryPath, primaryPath);
     },
     [applySelection, orderedPaths]
   );
@@ -139,37 +160,49 @@ export function useFileList({
       marqueeStartRef.current = start;
       marqueeBaseSelectionRef.current = selectedFiles;
       marqueeAdditiveRef.current = event.shiftKey || hasToggleModifier(event);
-      setSelectionRect({ start, end: start });
+      lastMarqueeSelectionSigRef.current = null;
+
+      const container = containerRef.current;
+      const bounds = container?.getBoundingClientRect();
+      marqueeOriginRef.current = bounds
+        ? { left: bounds.left, top: bounds.top }
+        : { left: 0, top: 0 };
+
+      setIsMarqueeSelecting(true);
     },
     [selectedFiles]
   );
 
   useEffect(() => {
-    if (!selectionRect || !marqueeStartRef.current) return;
+    if (!isMarqueeSelecting || !marqueeStartRef.current) return;
+
+    paintMarqueeRect(marqueeStartRef.current, marqueeStartRef.current);
 
     const handleMouseMove = (event: MouseEvent) => {
       const start = marqueeStartRef.current;
       if (!start) return;
 
       const end = { x: event.clientX, y: event.clientY };
-      setSelectionRect({ start, end });
+      paintMarqueeRect(start, end);
       updateSelectionFromMarquee(start, end);
     };
 
     const handleMouseUp = (event: MouseEvent) => {
       const start = marqueeStartRef.current;
+      if (!start) return;
+
       const end = { x: event.clientX, y: event.clientY };
       const movedEnough =
-        Math.abs(end.x - start!.x) > 3 || Math.abs(end.y - start!.y) > 3;
+        Math.abs(end.x - start.x) > 3 || Math.abs(end.y - start.y) > 3;
 
       if (movedEnough) {
-        updateSelectionFromMarquee(start!, end);
+        updateSelectionFromMarquee(start, end);
       } else if (!marqueeAdditiveRef.current) {
         applySelection([], null, null);
       }
 
       marqueeStartRef.current = null;
-      setSelectionRect(null);
+      setIsMarqueeSelecting(false);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -179,7 +212,12 @@ export function useFileList({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [applySelection, selectionRect, updateSelectionFromMarquee]);
+  }, [
+    applySelection,
+    isMarqueeSelecting,
+    paintMarqueeRect,
+    updateSelectionFromMarquee,
+  ]);
 
   const handleFileSelect = useCallback(
     (
@@ -443,22 +481,11 @@ export function useFileList({
     [t]
   );
 
-  const renderedSelectionRect =
-    selectionRect &&
-    containerRef.current &&
-    createSelectionRect(selectionRect.start, selectionRect.end);
-  const containerRect = containerRef.current?.getBoundingClientRect();
   const listTableKey = files.length === 0 ? "empty" : "populated";
 
-  const selectionMarqueeProps =
-    renderedSelectionRect && containerRect
-      ? {
-          left: renderedSelectionRect.left - containerRect.left,
-          top: renderedSelectionRect.top - containerRect.top,
-          width: renderedSelectionRect.right - renderedSelectionRect.left,
-          height: renderedSelectionRect.bottom - renderedSelectionRect.top,
-        }
-      : null;
+  const selectionMarqueeProps = isMarqueeSelecting
+    ? { elementRef: marqueeElementRef }
+    : null;
 
   const containerDragHandlers = useMemo(
     () => ({
