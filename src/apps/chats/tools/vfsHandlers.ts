@@ -32,8 +32,13 @@ import {
   type IpodLibrarySelection,
   useIpodStore,
 } from "@/stores/useIpodStore";
-import { markdownToHtml } from "@/utils/markdown";
-import { generateJsonFromHtml } from "@/utils/tiptapHtml";
+import { htmlToMarkdown } from "@/utils/markdown";
+import { markdownToSafeHtml } from "@/apps/textedit/utils/markdownPaste";
+import { parseRichMarkdown } from "@/apps/textedit/utils/richMarkdown";
+import {
+  generateHtmlFromJson,
+  generateJsonFromHtml,
+} from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
@@ -85,6 +90,17 @@ async function storedContentToText(
   if (typeof content === "string") return content;
   if (content instanceof Blob) return content.text();
   return new TextDecoder().decode(content);
+}
+
+/**
+ * Documents saved by TextEdit may embed a base64 rich-content metadata comment
+ * on the first line; strip it so the AI reads and matches against the plain
+ * markdown the user actually sees.
+ */
+async function storedDocumentToMarkdown(
+  content: DocumentContent["content"]
+): Promise<string> {
+  return parseRichMarkdown(await storedContentToText(content)).markdown;
 }
 
 const recentlyCreatedTextEditInstances = new Map<
@@ -723,7 +739,9 @@ export async function handleVfsRead(
         throw new Error(`Failed to read file content: ${path}`);
       }
 
-      const content = await storedContentToText(contentData.content);
+      const content = isApplet
+        ? await storedContentToText(contentData.content)
+        : await storedDocumentToMarkdown(contentData.content);
 
       const fileLabel = isApplet
         ? i18n.t("apps.chats.toolCalls.applet")
@@ -830,7 +848,7 @@ export async function handleVfsWrite(
         existingItem.uuid
       );
       if (existingData?.content) {
-        const existingContent = await storedContentToText(
+        const existingContent = await storedDocumentToMarkdown(
           existingData.content
         );
         finalContent =
@@ -866,8 +884,10 @@ export async function handleVfsWrite(
     }
 
     if (targetInstanceId) {
-      // Update existing TextEdit instance with content
-      const htmlFragment = markdownToHtml(finalContent);
+      // Update existing TextEdit instance with content. Convert through the
+      // GFM-aware pipeline so tables, links and task lists render as rich
+      // content instead of raw markdown text.
+      const htmlFragment = markdownToSafeHtml(finalContent);
       const contentJson = await generateJsonFromHtml(htmlFragment);
 
       textEditStore.updateInstance(targetInstanceId, {
@@ -951,7 +971,6 @@ export async function handleVfsEdit(
 
   try {
     if (path.startsWith("/Documents/")) {
-      // Edit document - read directly from file system (independent of TextEdit instances)
       const filesStore = useFilesStore.getState();
       const fileItem = filesStore.items[path];
 
@@ -961,16 +980,47 @@ export async function handleVfsEdit(
         );
       }
 
-      // Read existing content from IndexedDB
-      const contentData = await dbOperations.get<DocumentContent>(
-        STORES.DOCUMENTS,
-        fileItem.uuid
-      );
-      if (!contentData?.content) {
-        throw new Error(`Failed to read document content: ${path}`);
+      // When the document is open in TextEdit, edit the live editor buffer so
+      // the change composes with the user's unsaved edits (and with earlier AI
+      // edits that have not been saved yet). Otherwise read from disk.
+      const textEditState = useTextEditStore.getState();
+      const appState = useAppStore.getState();
+      let openInstanceId = textEditState.getInstanceIdByPath(path);
+      if (openInstanceId && !appState.instances[openInstanceId]) {
+        // Stale instance reference - clean it up
+        textEditState.removeInstance(openInstanceId);
+        openInstanceId = null;
+      }
+      const openInstance = openInstanceId
+        ? textEditState.instances[openInstanceId]
+        : null;
+
+      let existingContent: string | null = null;
+      if (openInstance?.contentJson) {
+        try {
+          const bufferHtml = await generateHtmlFromJson(
+            openInstance.contentJson
+          );
+          existingContent = htmlToMarkdown(bufferHtml);
+        } catch (err) {
+          console.error(
+            "Failed to serialize open TextEdit buffer, falling back to disk:",
+            err
+          );
+        }
       }
 
-      const existingContent = await storedContentToText(contentData.content);
+      if (existingContent == null) {
+        // Read existing content from IndexedDB
+        const contentData = await dbOperations.get<DocumentContent>(
+          STORES.DOCUMENTS,
+          fileItem.uuid
+        );
+        if (!contentData?.content) {
+          throw new Error(`Failed to read document content: ${path}`);
+        }
+        existingContent = await storedDocumentToMarkdown(contentData.content);
+      }
 
       // Normalize existing content
       const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
@@ -1007,29 +1057,25 @@ export async function handleVfsEdit(
         normalizedNewString
       );
 
-      await persistChatDocument({
-        saveFile,
-        path,
-        fileName: fileItem.name,
-        content: updatedContent,
-        icon: fileItem.icon || "📄",
-      });
+      if (openInstanceId) {
+        // Apply the edit to the open editor as a pending (unsaved) change so
+        // the user can review it and save explicitly. Convert through the
+        // GFM-aware pipeline so tables and links render as rich content.
+        const updatedHtml = markdownToSafeHtml(updatedContent);
+        const updatedJson = await generateJsonFromHtml(updatedHtml);
 
-      // Also update any open TextEdit instance showing this file
-      const textEditState = useTextEditStore.getState();
-      for (const [instanceId, instance] of Object.entries(
-        textEditState.instances
-      )) {
-        if (instance.filePath === path) {
-          const updatedHtml = markdownToHtml(updatedContent);
-          const updatedJson = await generateJsonFromHtml(updatedHtml);
-
-          textEditState.updateInstance(instanceId, {
-            contentJson: updatedJson,
-            hasUnsavedChanges: false, // Already saved to disk
-          });
-          break;
-        }
+        textEditState.updateInstance(openInstanceId, {
+          contentJson: updatedJson,
+          hasUnsavedChanges: true,
+        });
+      } else {
+        await persistChatDocument({
+          saveFile,
+          path,
+          fileName: fileItem.name,
+          content: updatedContent,
+          icon: fileItem.icon || "📄",
+        });
       }
 
       addToolOutput({

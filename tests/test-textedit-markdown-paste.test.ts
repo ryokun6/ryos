@@ -218,3 +218,52 @@ describe("TextEdit Markdown paste security and persistence", () => {
     );
   });
 });
+
+describe("AI tool markdown-to-editor pipeline", () => {
+  // The AI write/edit tools convert markdown through markdownToSafeHtml +
+  // generateJsonFromHtml before pushing it into an open TextEdit instance.
+  // GFM tables and links must survive that conversion so AI-authored content
+  // renders as rich content instead of raw markdown text.
+  const AI_MARKDOWN = `# Notes
+
+| Name | Age |
+| --- | --- |
+| Alice | 30 |
+
+Visit the [ryOS site](https://os.ryo.lu) for more.`;
+
+  test("AI markdown renders tables and links as rich editor content", async () => {
+    const editorJson = await generateJsonFromHtml(
+      markdownToSafeHtml(AI_MARKDOWN)
+    );
+
+    expect(hasNodeType(editorJson, "table")).toBe(true);
+
+    const json = JSON.stringify(editorJson);
+    expect(json).toContain('"type":"link"');
+    expect(json).toContain("https://os.ryo.lu");
+  });
+
+  test("open-buffer edits round-trip through markdown for string matching", async () => {
+    // The AI edit tool serializes the live buffer (JSON -> HTML -> markdown),
+    // applies old_string/new_string on the markdown, and converts back. The
+    // serialization must reproduce the text the AI saw in the system state.
+    const editorJson = await generateJsonFromHtml(
+      markdownToSafeHtml(AI_MARKDOWN)
+    );
+
+    const { generateHtmlFromJson } = await import("../src/utils/tiptapHtml");
+    const bufferMarkdown = htmlToMarkdown(await generateHtmlFromJson(editorJson));
+
+    expect(bufferMarkdown).toContain("| Name | Age |");
+    expect(bufferMarkdown).toContain("[ryOS site](https://os.ryo.lu)");
+
+    const updatedMarkdown = bufferMarkdown.replace("Alice", "Bob");
+    const updatedJson = await generateJsonFromHtml(
+      markdownToSafeHtml(updatedMarkdown)
+    );
+
+    expect(hasNodeType(updatedJson, "table")).toBe(true);
+    expect(JSON.stringify(updatedJson)).toContain("Bob");
+  });
+});

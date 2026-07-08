@@ -58,6 +58,14 @@ export async function generateJsonFromHtml(html: string): Promise<JSONContent> {
 }
 
 /**
+ * Async version — always works, triggers lazy load on first call.
+ */
+export async function generateHtmlFromJson(json: JSONContent): Promise<string> {
+  const { generateHTML, extensions } = await loadModules();
+  return generateHTML(json, extensions);
+}
+
+/**
  * Sync version — returns null if modules are not yet loaded.
  * Safe to use in synchronous contexts: when a TextEdit instance has content,
  * TipTap will already be in memory (loaded by the TextEdit component itself).

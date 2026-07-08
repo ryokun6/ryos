@@ -397,12 +397,14 @@ function TextEditContent({
 
     try {
       mergeEditorContent(editor, contentJson);
-      setHasUnsavedChanges(false);
+      // Don't touch hasUnsavedChanges here: whoever updated the store set it
+      // alongside contentJson (e.g. the AI edit tool marks the doc as pending
+      // save, while the AI write tool persists to disk and clears the flag).
       log.debug("Editor content merged from store change");
     } catch (err) {
       console.error("[TextEdit] Failed to sync editor content:", err);
     }
-  }, [contentJson, editor, setHasUnsavedChanges]);
+  }, [contentJson, editor]);
 
   const handleTranscriptionComplete = (text: string) => {
     setIsTranscribing(false);

@@ -19,7 +19,9 @@ export function EditorProvider({ children }: EditorProviderProps) {
       // StarterKit v3 bundles Link and Underline.
       StarterKit.configure({
         link: {
-          openOnClick: false,
+          // Clicking a link opens it in a new tab (classic TextEdit behavior);
+          // caret placement inside the link text still works via arrow keys.
+          openOnClick: true,
         },
       }),
       TextAlign.configure({
