@@ -48,6 +48,28 @@ describe("aqua disabled button shadow", () => {
     expect(aquaCss).not.toContain(".aqua-button:disabled > *");
   });
 
+  test("disabled aqua buttons keep outer drop shadow and lighten inset bevels", () => {
+    const primary = extractRuleBlock(aquaCss, ".aqua-button.primary:disabled");
+    const secondary = extractRuleBlock(aquaCss, ".aqua-button.secondary:disabled");
+    const orange = extractRuleBlock(aquaCss, ".aqua-button.orange:disabled");
+    const destructive = extractRuleBlock(
+      aquaCss,
+      ".aqua-button.destructive:disabled"
+    );
+
+    for (const block of [primary, secondary, orange, destructive]) {
+      expect(block).toContain("box-shadow:");
+      expect(block).toContain("0 2px 3px");
+      expect(block).toContain("inset");
+    }
+
+    expect(primary).toContain("inset 0 1px 3px rgba(0, 17, 49, 0.28)");
+    expect(primary).not.toContain("inset 0 1px 3px rgba(0, 17, 49, 0.8)");
+    expect(secondary).toContain("inset 0 1px 2px rgba(0, 0, 0, 0.14)");
+    expect(orange).toContain("inset 0 1px 3px rgba(120, 65, 0, 0.28)");
+    expect(destructive).toContain("inset 0 1px 3px rgba(92, 0, 7, 0.3)");
+  });
+
   test("dark mode disabled labels stay dim without muffling shadows", () => {
     expect(darkAquaCss).toContain(".aqua-button.primary:disabled");
     expect(darkAquaCss).toContain(".aqua-button.secondary:disabled");
