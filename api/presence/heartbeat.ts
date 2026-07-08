@@ -26,8 +26,8 @@ export default apiHandler(
         member: username,
       });
 
-      // Broadcast to the global presence channel
-      await triggerRealtimeEvent(GLOBAL_PRESENCE_CHANNEL, "user-heartbeat", {
+      // Broadcast is best-effort — don't block the heartbeat response.
+      void triggerRealtimeEvent(GLOBAL_PRESENCE_CHANNEL, "user-heartbeat", {
         username,
         timestamp: now,
       }).catch(() => {});

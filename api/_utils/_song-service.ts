@@ -310,6 +310,24 @@ export async function getSong(
 }
 
 /**
+ * Bump the denormalized catalog version stamp used by getSongsVersionInfo.
+ * Kept as a best-effort side write so pollers stay O(1).
+ */
+async function bumpSongsVersion(redis: Redis, stamp: number): Promise<void> {
+  const key = redisKeys.media.songsVersion();
+  const current = await redis.get<number | string>(key);
+  const currentNum =
+    typeof current === "number"
+      ? current
+      : current
+        ? parseInt(String(current), 10) || 0
+        : 0;
+  if (stamp > currentNum) {
+    await redis.set(key, stamp);
+  }
+}
+
+/**
  * Save a song to Redis (split storage: metadata + content)
  */
 export async function saveSong(
@@ -397,6 +415,9 @@ export async function saveSong(
   // Add to the set of all song IDs
   await redis.sadd(redisKeys.media.songIds(), song.id);
 
+  // Keep the O(1) version probe current for catalog pollers.
+  await bumpSongsVersion(redis, meta.updatedAt);
+
   // Return combined document
   return { ...meta, ...content };
 }
@@ -416,6 +437,9 @@ export async function deleteSong(redis: Redis, id: string): Promise<boolean> {
 
   // Remove from the set
   await redis.srem(redisKeys.media.songIds(), id);
+
+  // Deletion is a catalog change — advance the version stamp.
+  await bumpSongsVersion(redis, Date.now());
 
   return true;
 }
@@ -437,8 +461,8 @@ export async function deleteAllSongs(redis: Redis): Promise<number> {
   const contentKeys = songIds.map((id) => getSongContentKey(id));
   await redis.del(...metaKeys, ...contentKeys);
 
-  // Clear the set
-  await redis.del(redisKeys.media.songIds());
+  // Clear the set and version stamp
+  await redis.del(redisKeys.media.songIds(), redisKeys.media.songsVersion());
 
   return songIds.length;
 }
@@ -454,12 +478,46 @@ export interface SongsVersionInfo {
  * Lightweight version summary of the song catalog, so clients can poll for
  * changes (~50 byte response) instead of downloading the full metadata list
  * every interval.
+ *
+ * Unfiltered probes are O(1) via a denormalized version stamp + SCARD.
+ * `createdBy` filters still scan metadata (admin/owner views).
  */
 export async function getSongsVersionInfo(
   redis: Redis,
   options: { createdBy?: string } = {}
 ): Promise<SongsVersionInfo> {
   const { createdBy } = options;
+
+  // Fast path: global catalog probe (the common iPod poller case).
+  if (!createdBy) {
+    const versionRaw = await redis.get<number | string>(
+      redisKeys.media.songsVersion()
+    );
+    const version =
+      typeof versionRaw === "number"
+        ? versionRaw
+        : versionRaw
+          ? parseInt(String(versionRaw), 10) || 0
+          : 0;
+    const count = await redis.scard(redisKeys.media.songIds());
+    // Cold start / pre-migration: fall back to a one-time full scan and seed.
+    if (version === 0 && count > 0) {
+      const songIds = await getSongIds(redis);
+      const metaRows = await getSongMetaRows(redis, songIds);
+      let scannedVersion = 0;
+      for (const { meta } of metaRows) {
+        const stamp = meta.updatedAt || meta.createdAt || 0;
+        if (stamp > scannedVersion) scannedVersion = stamp;
+      }
+      if (scannedVersion > 0) {
+        await bumpSongsVersion(redis, scannedVersion);
+      }
+      return { version: scannedVersion, count: metaRows.length };
+    }
+    return { version, count };
+  }
+
+  // Filtered path: still needs metadata (owner-scoped admin views).
   const songIds = await getSongIds(redis);
   if (!songIds || songIds.length === 0) {
     return { version: 0, count: 0 };
@@ -470,7 +528,7 @@ export async function getSongsVersionInfo(
   let version = 0;
   let count = 0;
   for (const { meta } of metaRows) {
-    if (createdBy && meta.createdBy !== createdBy) continue;
+    if (meta.createdBy !== createdBy) continue;
     count++;
     const stamp = meta.updatedAt || meta.createdAt || 0;
     if (stamp > version) version = stamp;

@@ -23,7 +23,7 @@ export const AI_LIMIT_ANON_PER_DAY = 3;
 export const AI_WINDOW_AUTHENTICATED = 5 * 60 * 60; // 5 hours in seconds
 export const AI_WINDOW_ANONYMOUS = 24 * 60 * 60; // 24 hours in seconds
 
-const INCREMENT_WITH_TTL_SCRIPT = `
+export const INCREMENT_WITH_TTL_SCRIPT = `
 local count = redis.call("INCR", KEYS[1])
 if count == 1 then
   redis.call("EXPIRE", KEYS[1], ARGV[1])
@@ -145,19 +145,18 @@ export async function checkCounterLimit({
   // ATOMIC approach: increment first, then check
   // This prevents race conditions where two concurrent requests both read
   // the same count and both pass the limit check
-  const newCount = await client.incr(key);
-
-  // Set TTL only if this is the first increment (count became 1)
-  // This is safe because INCR is atomic - only one request will see newCount === 1
-  if (newCount === 1) {
-    await client.expire(key, windowSeconds);
-  }
-
-  const ttl = await client.ttl(key);
-  const resetSeconds = typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds;
+  // Atomic incr+expire in one round trip (avoids orphaned keys without TTL).
+  const newCount = await client.eval<number>(
+    INCREMENT_WITH_TTL_SCRIPT,
+    [key],
+    [windowSeconds]
+  );
 
   // Check if the NEW count exceeds the limit
   if (newCount > limit) {
+    // Only fetch exact TTL on the denied path (used for Retry-After).
+    const ttl = await client.ttl(key);
+    const resetSeconds = typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds;
     return {
       allowed: false,
       count: newCount,
@@ -174,7 +173,8 @@ export async function checkCounterLimit({
     limit,
     remaining: Math.max(0, limit - newCount),
     windowSeconds,
-    resetSeconds,
+    // Approximate on the allowed path — callers rarely need exact reset.
+    resetSeconds: windowSeconds,
   };
 }
 

@@ -167,7 +167,7 @@ export default apiHandler(
         });
       }
 
-      await setSession(sessionId, session, redis);
+      await setSession(sessionId, session, redis, { registerInIndex: false });
 
       const listenerCount = session.users.length + (session.anonymousListeners?.length ?? 0);
 

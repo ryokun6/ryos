@@ -189,6 +189,8 @@ export const redisKeys = {
     songIds: () => redisKey("media", "song", "ids"),
     songMeta: (songId: string) => songKey(songId, "meta"),
     songContent: (songId: string) => songKey(songId, "content"),
+    /** Catalog version stamp (max updatedAt) for O(1) poll probes. */
+    songsVersion: () => redisKey("media", "song", "version"),
   },
   cache: {
     appleArtwork: (catalogId: string) =>
