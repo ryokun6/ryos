@@ -12,6 +12,7 @@ import {
   isPrivateRoomOnline,
   sortPrivateRoomsForSidebar,
 } from "../utils/privateRoomOrdering";
+import { getRoomActivitySignature } from "../utils/roomActivitySignature";
 import {
   Tooltip,
   TooltipContent,
@@ -153,7 +154,11 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
 }: ChatRoomSidebarProps) {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const roomMessages = useChatsStore((s) => s.roomMessages);
+  // Activity signature (newest timestamp per room) — not the full messages map —
+  // so content ticks that don't change ordering skip the sidebar commit.
+  const roomActivitySignature = useChatsStore((s) =>
+    getRoomActivitySignature(Array.isArray(rooms) ? rooms : [], s.roomMessages)
+  );
   // NOTE: unread counts are deliberately NOT subscribed here — each
   // ChatRoomSidebarItem subscribes to its own room's count so a badge update
   // re-renders one row instead of the whole sidebar.
@@ -172,6 +177,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   const { publicRooms, privateRooms } = useMemo(() => {
     const nextPublicRooms: ChatRoom[] = [];
     const nextPrivateRooms: ChatRoom[] = [];
+    const roomMessages = useChatsStore.getState().roomMessages;
 
     for (const room of Array.isArray(rooms) ? rooms : []) {
       if (room.type === "private") {
@@ -189,7 +195,9 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
         roomMessages,
       }),
     };
-  }, [onlineUsers, roomMessages, rooms, username]);
+    // roomActivitySignature is the deliberate cache key for roomMessages.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlineUsers, roomActivitySignature, rooms, username]);
 
   if (!isVisible) {
     return null;

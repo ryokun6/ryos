@@ -1,6 +1,6 @@
 import { ChatCircle, WarningCircle } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStickToBottomContext } from "use-stick-to-bottom";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { getChatMessageStyle } from "./streamdown";
 import type { ChatMessage, ChatMessagesContentProps } from "./types";
 import { getErrorMessage, getMessageKey, getMessageText } from "./utils";
 
-export function ChatMessagesContent({
+export const ChatMessagesContent = memo(function ChatMessagesContent({
   messages,
   isLoading,
   error,
@@ -263,9 +263,9 @@ export function ChatMessagesContent({
             isRoomView={isRoomView}
             fontSize={fontSize}
             isMacOSTheme={isMacOSTheme}
-            copiedMessageId={copiedMessageId}
-            playingMessageId={playingMessageId}
-            speechLoadingId={speechLoadingId}
+            isCopied={copiedMessageId === messageKey}
+            isPlaying={playingMessageId === messageKey}
+            isSpeechLoading={speechLoadingId === messageKey}
             speechEnabled={speechEnabled}
             highlightSegment={highlightSegment}
             isAdmin={isAdmin}
@@ -372,4 +372,4 @@ export function ChatMessagesContent({
         })()}
     </AnimatePresence>
   );
-}
+});

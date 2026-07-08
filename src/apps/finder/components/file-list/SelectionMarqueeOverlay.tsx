@@ -1,18 +1,24 @@
+import type { Ref } from "react";
+
 interface SelectionMarqueeOverlayProps {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
+  /** When set, geometry is painted onto this element imperatively (no React state per move). */
+  elementRef?: Ref<HTMLDivElement>;
+  left?: number;
+  top?: number;
+  width?: number;
+  height?: number;
 }
 
 export function SelectionMarqueeOverlay({
-  left,
-  top,
-  width,
-  height,
+  elementRef,
+  left = 0,
+  top = 0,
+  width = 0,
+  height = 0,
 }: SelectionMarqueeOverlayProps) {
   return (
     <div
+      ref={elementRef}
       className="pointer-events-none absolute z-10 border"
       style={{
         left,

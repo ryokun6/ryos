@@ -17,6 +17,7 @@ import {
   isPrivateRoomOnline,
   sortPrivateRoomsForSidebar,
 } from "../utils/privateRoomOrdering";
+import { getRoomActivitySignature } from "../utils/roomActivitySignature";
 
 interface ChatRoomDropdownProps {
   rooms: ChatRoom[];
@@ -43,12 +44,15 @@ export function ChatRoomDropdown({
   children,
 }: ChatRoomDropdownProps) {
   const { t } = useTranslation();
-  const roomMessages = useChatsStore((s) => s.roomMessages);
+  const roomActivitySignature = useChatsStore((s) =>
+    getRoomActivitySignature(Array.isArray(rooms) ? rooms : [], s.roomMessages)
+  );
   const unreadCounts = useChatsStore((s) => s.unreadCounts);
 
   const { publicRooms, privateRooms } = useMemo(() => {
     const nextPublicRooms: ChatRoom[] = [];
     const nextPrivateRooms: ChatRoom[] = [];
+    const roomMessages = useChatsStore.getState().roomMessages;
 
     for (const room of Array.isArray(rooms) ? rooms : []) {
       if (room.type === "private") {
@@ -66,7 +70,8 @@ export function ChatRoomDropdown({
         roomMessages,
       }),
     };
-  }, [onlineUsers, roomMessages, rooms, username]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlineUsers, roomActivitySignature, rooms, username]);
 
   const hasBoth = publicRooms.length > 0 && privateRooms.length > 0;
 

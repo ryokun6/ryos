@@ -72,13 +72,25 @@ export function AppletViewerMenuBar({
   const bringInstanceToForeground = useAppStore(
     (s) => s.bringInstanceToForeground
   );
-  const instances = useAppStore((s) => s.instances);
+  // Open applet-viewer windows only — geometry/focus writes on other apps
+  // must not rebuild the Window menu.
+  const appletInstancesSignature = useAppStore((s) =>
+    Object.values(s.instances)
+      .filter((inst) => inst.appId === "applet-viewer" && inst.isOpen)
+      .map((inst) =>
+        [inst.instanceId, inst.title ?? "", inst.displayTitle ?? ""].join(
+          "\u001f"
+        )
+      )
+      .join("\u001e")
+  );
   const appletInstances = useMemo(
     () =>
-      Object.values(instances).filter(
+      Object.values(useAppStore.getState().instances).filter(
         (inst) => inst.appId === "applet-viewer" && inst.isOpen
       ),
-    [instances]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [appletInstancesSignature]
   );
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);

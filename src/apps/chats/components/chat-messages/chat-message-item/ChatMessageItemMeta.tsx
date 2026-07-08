@@ -26,9 +26,9 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
     isMacOSTheme,
     isAdmin,
     isHovered,
-    copiedMessageId,
-    playingMessageId,
-    speechLoadingId,
+    isCopied,
+    isPlaying,
+    isSpeechLoading,
     speechEnabled,
     fullAssistantSource,
     displayContent,
@@ -82,7 +82,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
             onClick={() => onCopyMessage(message)}
             aria-label={t("apps.chats.ariaLabels.copyMessage")}
           >
-            {copiedMessageId === messageKey ? (
+            {isCopied ? (
               <Check className="size-3" weight="bold" />
             ) : (
               <Copy className="size-3" weight="bold" />
@@ -139,7 +139,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
             onClick={() => onCopyMessage(message)}
             aria-label={t("apps.chats.ariaLabels.copyMessage")}
           >
-            {copiedMessageId === messageKey ? (
+            {isCopied ? (
               <Check className="size-3" weight="bold" />
             ) : (
               <Copy className="size-3" weight="bold" />
@@ -154,7 +154,7 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
               }}
               className="size-3 text-neutral-400 hover:text-neutral-600 transition-colors select-none"
               onClick={() => {
-                if (playingMessageId === messageKey) {
+                if (isPlaying) {
                   stopSpeech();
                   setPlayingMessageId(null);
                   setSpeechLoadingId(null);
@@ -181,13 +181,13 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
                 }
               }}
               aria-label={
-                playingMessageId === messageKey
+                isPlaying
                   ? t("apps.chats.ariaLabels.stopSpeech")
                   : t("apps.chats.ariaLabels.speakMessage")
               }
             >
-              {playingMessageId === messageKey ? (
-                speechLoadingId === messageKey ? (
+              {isPlaying ? (
+                isSpeechLoading ? (
                   <ActivityIndicator size="xs" />
                 ) : (
                   <Pause className="size-3" weight="bold" />

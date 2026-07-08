@@ -48,9 +48,9 @@ export interface ChatMessageItemProps {
   isRoomView: boolean;
   fontSize: number;
   isMacOSTheme: boolean;
-  copiedMessageId: string | null;
-  playingMessageId: string | null;
-  speechLoadingId: string | null;
+  isCopied: boolean;
+  isPlaying: boolean;
+  isSpeechLoading: boolean;
   speechEnabled: boolean;
   highlightSegment?: ChatHighlightSegment | null;
   isAdmin: boolean;

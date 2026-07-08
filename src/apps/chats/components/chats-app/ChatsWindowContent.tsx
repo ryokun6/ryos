@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { ChatRoomSidebar } from "../ChatRoomSidebar";
 import { ChatRoomDropdown } from "../ChatRoomDropdown";
-import { ChatMessages } from "../ChatMessages";
 import { ChatInput } from "../ChatInput";
+import { ChatsMessagesPane } from "./ChatsMessagesPane";
 import type { ChatsAppController } from "./useChatsAppController";
 
 type ChatsWindowContentProps = {
@@ -266,8 +266,8 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
               className="flex-1 overflow-hidden"
               ref={messagesContainerRef}
             >
-              <ChatMessages
-                key={currentRoomId || "ryo"}
+              <ChatsMessagesPane
+                roomKey={currentRoomId || "ryo"}
                 messages={currentMessagesToDisplay}
                 isLoading={
                   (isLoading && !currentRoomId) ||
