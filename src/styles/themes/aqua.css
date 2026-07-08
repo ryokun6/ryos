@@ -325,15 +325,93 @@
   font-smooth: auto;
 }
 
+/* Disabled Aqua buttons must keep their drop shadow. Element-level
+   `opacity` / `filter` would mute `box-shadow`, so dim the face instead:
+   washed fills, faded gloss pseudos, and faded label color. */
 .aqua-button:disabled {
   cursor: default;
-  opacity: 0.5;
-  filter: grayscale(0.3);
   pointer-events: none;
+  /* Beat Tailwind `disabled:opacity-50` without muffling the shadow. */
+  opacity: 1 !important;
+  filter: none;
+}
+
+.aqua-button:disabled::before,
+.aqua-button:disabled::after {
+  opacity: 0.4;
+}
+
+/* Icon glyphs as direct children (text nodes inherit muted `color`). */
+.aqua-button:disabled > svg {
+  opacity: 0.5;
 }
 
 .aqua-button.primary:disabled {
   animation: none;
+  background: var(
+    --os-accent-button-bg-disabled,
+    linear-gradient(
+      rgba(0, 65, 184, 0.28),
+      rgba(45, 115, 199, 0.28),
+      rgba(33, 160, 196, 0.28)
+    )
+  );
+  /* Keep outer drop shadow; soften inset bevels to match washed fill. */
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3),
+    0 1px 1px var(--os-accent-button-edge, rgba(0, 78, 187, 0.5)),
+    inset 0 1px 3px rgba(0, 17, 49, 0.28),
+    inset 0 2px 3px 1px var(--os-accent-button-inner-disabled, rgba(0, 78, 187, 0.28));
+}
+
+.aqua-button.primary:disabled,
+.aqua-button.primary:disabled span {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.aqua-button.secondary:disabled {
+  background: linear-gradient(
+    rgba(160, 160, 160, 0.28),
+    rgba(255, 255, 255, 0.28)
+  );
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(0, 0, 0, 0.14), inset 0 2px 3px 1px rgba(187, 187, 187, 0.4);
+}
+
+.aqua-button.secondary:disabled,
+.aqua-button.secondary:disabled span {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.aqua-button.orange:disabled {
+  background: linear-gradient(
+    rgba(250, 172, 4, 0.38),
+    rgba(254, 197, 64, 0.38),
+    rgba(255, 219, 128, 0.38)
+  );
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(250, 172, 4, 0.5),
+    inset 0 1px 3px rgba(120, 65, 0, 0.28),
+    inset 0 2px 3px 1px rgba(250, 172, 4, 0.28);
+}
+
+.aqua-button.orange:disabled,
+.aqua-button.orange:disabled span {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.aqua-button.destructive:disabled {
+  background: linear-gradient(
+    rgba(177, 20, 30, 0.4),
+    rgba(225, 53, 62, 0.4),
+    rgba(248, 125, 130, 0.4)
+  );
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(150, 0, 10, 0.55),
+    inset 0 1px 3px rgba(92, 0, 7, 0.3),
+    inset 0 2px 3px 1px rgba(225, 53, 62, 0.28);
+}
+
+.aqua-button.destructive:disabled,
+.aqua-button.destructive:disabled span {
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Aqua button pulse animation - classic Mac OS X pulsing effect */

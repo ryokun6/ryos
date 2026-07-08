@@ -1,0 +1,78 @@
+import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const aquaCss = readFileSync(
+  join(import.meta.dir, "../src/styles/themes/aqua.css"),
+  "utf8"
+);
+const darkAquaCss = readFileSync(
+  join(import.meta.dir, "../src/styles/themes/dark-aqua.css"),
+  "utf8"
+);
+
+function extractRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  if (start === -1) return "";
+  const braceStart = css.indexOf("{", start);
+  if (braceStart === -1) return "";
+  let depth = 0;
+  for (let i = braceStart; i < css.length; i++) {
+    if (css[i] === "{") depth++;
+    else if (css[i] === "}") {
+      depth--;
+      if (depth === 0) return css.slice(start, i + 1);
+    }
+  }
+  return "";
+}
+
+describe("aqua disabled button shadow", () => {
+  test("disabled aqua buttons keep opacity fully on so box-shadow stays visible", () => {
+    const block = extractRuleBlock(aquaCss, ".aqua-button:disabled");
+    expect(block.length).toBeGreaterThan(0);
+    expect(block).toContain("opacity: 1 !important");
+    expect(block).toContain("filter: none");
+    expect(block).not.toMatch(/opacity:\s*0\.[0-9]/);
+    expect(block).not.toContain("grayscale");
+  });
+
+  test("disabled aqua buttons dim face layers instead of the whole control", () => {
+    expect(aquaCss).toContain(".aqua-button:disabled::before");
+    expect(aquaCss).toContain(".aqua-button:disabled::after");
+    expect(aquaCss).toContain(".aqua-button:disabled > svg");
+    expect(aquaCss).toContain(".aqua-button.primary:disabled");
+    expect(aquaCss).toContain(".aqua-button.secondary:disabled");
+    expect(aquaCss).toContain(".aqua-button.orange:disabled");
+    expect(aquaCss).toContain(".aqua-button.destructive:disabled");
+    expect(aquaCss).not.toContain(".aqua-button:disabled > *");
+  });
+
+  test("disabled aqua buttons keep outer drop shadow and lighten inset bevels", () => {
+    const primary = extractRuleBlock(aquaCss, ".aqua-button.primary:disabled");
+    const secondary = extractRuleBlock(aquaCss, ".aqua-button.secondary:disabled");
+    const orange = extractRuleBlock(aquaCss, ".aqua-button.orange:disabled");
+    const destructive = extractRuleBlock(
+      aquaCss,
+      ".aqua-button.destructive:disabled"
+    );
+
+    for (const block of [primary, secondary, orange, destructive]) {
+      expect(block).toContain("box-shadow:");
+      expect(block).toContain("0 2px 3px");
+      expect(block).toContain("inset");
+    }
+
+    expect(primary).toContain("inset 0 1px 3px rgba(0, 17, 49, 0.28)");
+    expect(primary).not.toContain("inset 0 1px 3px rgba(0, 17, 49, 0.8)");
+    expect(secondary).toContain("inset 0 1px 2px rgba(0, 0, 0, 0.14)");
+    expect(orange).toContain("inset 0 1px 3px rgba(120, 65, 0, 0.28)");
+    expect(destructive).toContain("inset 0 1px 3px rgba(92, 0, 7, 0.3)");
+  });
+
+  test("dark mode disabled labels stay dim without muffling shadows", () => {
+    expect(darkAquaCss).toContain(".aqua-button.primary:disabled");
+    expect(darkAquaCss).toContain(".aqua-button.secondary:disabled");
+    expect(darkAquaCss).toContain("color: rgba(255, 255, 255, 0.45) !important");
+  });
+});
