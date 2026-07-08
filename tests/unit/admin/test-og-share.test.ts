@@ -1,12 +1,41 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from "bun:test";
 import {
   createOgShareResponse,
   getSongShareMetadataFromRaw,
   resolveSongShareId,
 } from "../../../api/_utils/og-share";
 import { UpdateSongSchema } from "../../../api/songs/_constants";
+import { redisKeys } from "../../../src/shared/redisKeys";
+import { FakeRedis } from "../../helpers/fake-redis";
+import * as actualRedis from "../../../api/_utils/redis";
 
 const ORIGINAL_ENV = { ...process.env };
+
+let fake: FakeRedis;
+
+// Point createRedis at a fake so song-key cutover tests exercise real
+// getSongFromRedis key-reading. Spread the real module so other exports
+// survive — Bun module mocks are global across files in the same run.
+mock.module("../../../api/_utils/redis.js", () => ({
+  ...actualRedis,
+  createRedis: () => fake,
+}));
+
+afterAll(() => {
+  mock.module("../../../api/_utils/redis.js", () => actualRedis);
+});
+
+beforeEach(() => {
+  fake = new FakeRedis();
+});
 
 afterEach(() => {
   for (const key of Object.keys(process.env)) {
@@ -363,5 +392,62 @@ describe("og share response", () => {
         cover: "https://example.com/cover.jpg",
       }).cover
     ).toBe("https://example.com/cover.jpg");
+  });
+});
+
+describe("og share song-key canonical cutover", () => {
+  test("reads song metadata from the canonical media:song key", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const songId = "abc123DEF45";
+    await fake.set(
+      redisKeys.media.songMeta(songId),
+      JSON.stringify({
+        title: "Canonical Song",
+        artist: "Canonical Artist",
+        cover: "https://example.com/canonical.jpg",
+      })
+    );
+    // A YouTube oEmbed fetch would indicate the canonical read missed.
+    const fetchMock = mock(() => {
+      throw new Error("should not fall back to YouTube when canonical exists");
+    });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      const response = await createOgShareResponse(
+        new Request(`https://os.example.com/ipod/${songId}`)
+      );
+      const body = await response!.text();
+      expect(body).toContain(
+        '<meta property="og:title" content="Canonical Song - Canonical Artist">'
+      );
+      expect(body).toContain(
+        '<meta property="og:image" content="https://example.com/canonical.jpg">'
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("ignores the legacy song:meta key for canonical-only reads", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const songId = "am:1616228595";
+    // Seed ONLY the legacy key — it must no longer be read.
+    await fake.set(
+      `song:meta:${songId}`,
+      JSON.stringify({
+        title: "Legacy Song",
+        artist: "Legacy Artist",
+        cover: "https://example.com/legacy.jpg",
+      })
+    );
+
+    const response = await createOgShareResponse(
+      new Request("https://os.example.com/karaoke/am%3A1616228595")
+    );
+    const body = await response!.text();
+    expect(body).not.toContain("Legacy Song");
+    expect(body).not.toContain("https://example.com/legacy.jpg");
   });
 });

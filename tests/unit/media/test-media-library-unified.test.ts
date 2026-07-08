@@ -44,6 +44,9 @@ if (!browserGlobals.localStorage) {
 
 const { trackToVideoItem } = await import("../../../src/shared/media/library");
 const { useIpodStore } = await import("../../../src/stores/useIpodStore");
+const { useMediaLibraryStore } = await import(
+  "../../../src/stores/useMediaLibraryStore"
+);
 const { useVideoStore } = await import("../../../src/stores/useVideoStore");
 type Track = import("../../../src/shared/media/library").Track;
 
@@ -66,6 +69,28 @@ describe("media item converters", () => {
       title: "Song One",
       artist: "Artist A",
     });
+  });
+});
+
+describe("useMediaLibraryStore facade", () => {
+  test("shares the same Zustand state as useIpodStore", () => {
+    expect(useMediaLibraryStore.getState()).toBe(useIpodStore.getState());
+  });
+
+  test("reads tracks from the iPod store implementation", () => {
+    useIpodStore.setState({
+      tracks: [
+        {
+          id: "track-1",
+          title: "Track One",
+          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        },
+      ],
+    });
+
+    expect(
+      useMediaLibraryStore.getState().tracks.map((track) => track.id)
+    ).toEqual(["track-1"]);
   });
 });
 
