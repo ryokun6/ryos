@@ -431,6 +431,9 @@ export function AboutFinderDialog({
       <DialogContent
         className={cn("max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
         style={isWindowsTheme ? { fontSize: "11px" } : undefined}
+        // About This Computer is a system reference panel, not an in-window
+        // action sheet — always present as a centered modal even on Aqua.
+        disableSheet
       >
         {isWindowsTheme ? (
           <>

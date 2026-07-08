@@ -60,6 +60,25 @@ describe("aqua sheet dialog wiring", () => {
     expect(source).toMatch(/disableSheet/);
   });
 
+  test("AboutDialog opts out of sheet presentation", () => {
+    const source = readFileSync(
+      join(import.meta.dir, "../../../src/components/dialogs/AboutDialog.tsx"),
+      "utf8"
+    );
+    expect(source).toMatch(/disableSheet/);
+  });
+
+  test("AboutFinderDialog opts out of sheet presentation", () => {
+    const source = readFileSync(
+      join(
+        import.meta.dir,
+        "../../../src/components/dialogs/AboutFinderDialog.tsx"
+      ),
+      "utf8"
+    );
+    expect(source).toMatch(/disableSheet/);
+  });
+
   test("sheet path paints a window-local scrim under the titlebar", () => {
     const dialog = readFileSync(
       join(import.meta.dir, "../../../src/components/ui/dialog.tsx"),
