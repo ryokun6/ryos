@@ -6,7 +6,7 @@ import {
   pinSheetWindow,
   subscribeSheetWindowPins,
   unpinSheetWindow,
-} from "../src/components/shared/sheetWindowPin";
+} from "../../../src/components/shared/sheetWindowPin";
 
 describe("sheetWindowPin", () => {
   beforeEach(() => {
@@ -54,7 +54,7 @@ describe("sheetWindowPin", () => {
 describe("aqua sheet dialog wiring", () => {
   test("HelpDialog opts out of sheet presentation", () => {
     const source = readFileSync(
-      join(import.meta.dir, "../src/components/dialogs/HelpDialog.tsx"),
+      join(import.meta.dir, "../../../src/components/dialogs/HelpDialog.tsx"),
       "utf8"
     );
     expect(source).toMatch(/disableSheet/);
@@ -62,11 +62,11 @@ describe("aqua sheet dialog wiring", () => {
 
   test("sheet path paints a window-local scrim under the titlebar", () => {
     const dialog = readFileSync(
-      join(import.meta.dir, "../src/components/ui/dialog.tsx"),
+      join(import.meta.dir, "../../../src/components/ui/dialog.tsx"),
       "utf8"
     );
     const aqua = readFileSync(
-      join(import.meta.dir, "../src/styles/themes/aqua.css"),
+      join(import.meta.dir, "../../../src/styles/themes/aqua.css"),
       "utf8"
     );
     expect(dialog).toMatch(/macosx-sheet-window-scrim/);
@@ -76,11 +76,11 @@ describe("aqua sheet dialog wiring", () => {
 
   test("window-local scrim lives in the sheet strip and fades with it", () => {
     const dialog = readFileSync(
-      join(import.meta.dir, "../src/components/ui/dialog.tsx"),
+      join(import.meta.dir, "../../../src/components/ui/dialog.tsx"),
       "utf8"
     );
     const aqua = readFileSync(
-      join(import.meta.dir, "../src/styles/themes/aqua.css"),
+      join(import.meta.dir, "../../../src/styles/themes/aqua.css"),
       "utf8"
     );
     // Scrim is a child of the strip (not a sibling portal) so it shares
@@ -107,7 +107,10 @@ describe("aqua sheet dialog wiring", () => {
 
   test("WindowFrame pins immersive titlebar while a sheet is open", () => {
     const source = readFileSync(
-      join(import.meta.dir, "../src/components/layout/window-frame/WindowFrame.tsx"),
+      join(
+        import.meta.dir,
+        "../../../src/components/layout/window-frame/WindowFrame.tsx"
+      ),
       "utf8"
     );
     expect(source).toMatch(/isSheetWindowPinned/);
