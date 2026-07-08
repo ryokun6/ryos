@@ -675,11 +675,6 @@ export function useDesktop({
     }
   };
 
-  const isItemSelected = useCallback(
-    (itemId: DesktopItemId) => selectedItemIds.includes(itemId),
-    [selectedItemIds]
-  );
-
   const macintoshHdName = useMemo(
     () =>
       isWindowsTheme
@@ -777,7 +772,7 @@ export function useDesktop({
     displayedApps,
     getDisplayName,
     getShortcutIcon,
-    isItemSelected,
+    selectedItemIds,
     handleDesktopItemClick,
     handleFinderOpen,
     handleIconContextMenu,

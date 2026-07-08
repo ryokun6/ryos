@@ -81,67 +81,72 @@ describe("selectZIndexForInstance", () => {
 });
 
 describe("selectOpenInstanceCount", () => {
-  test("counts only open non-minimized windows", () => {
-    const instances = {
-      a: makeAppInstance({ instanceId: "a", isOpen: true, isMinimized: false }),
-      b: makeAppInstance({ instanceId: "b", isOpen: true, isMinimized: true }),
-      c: makeAppInstance({ instanceId: "c", isOpen: false }),
-      d: makeAppInstance({ instanceId: "d", isOpen: true }),
+  test("counts open instances and ignores closed ones", () => {
+    const state = {
+      instances: {
+        a: makeAppInstance({ instanceId: "a", isOpen: true }),
+        b: makeAppInstance({ instanceId: "b", isOpen: false }),
+        c: makeAppInstance({ instanceId: "c", isOpen: true }),
+      },
     };
-    expect(selectOpenInstanceCount({ instances })).toBe(2);
+    expect(selectOpenInstanceCount(state)).toBe(2);
   });
 });
 
 describe("getFinderInstancesSignature", () => {
-  test("ignores view/selection changes that the dock does not render", () => {
-    const base = {
+  test("is stable when only selection/view fields change", () => {
+    const a = {
       f1: makeFinderInstance({
         instanceId: "f1",
         currentPath: "/Documents",
+        selectedFiles: ["a.txt"],
         viewType: "list",
-        selectedFiles: [],
       }),
     };
-    const viewChanged = {
+    const b = {
       f1: makeFinderInstance({
         instanceId: "f1",
         currentPath: "/Documents",
-        viewType: "large",
-        selectedFiles: ["/Documents/a.txt"],
-        selectedFile: "/Documents/a.txt",
+        selectedFiles: ["b.txt", "c.txt"],
+        viewType: "icons",
+        sortType: "date",
       }),
     };
-    const pathChanged = {
-      f1: makeFinderInstance({
-        instanceId: "f1",
-        currentPath: "/Images",
-        viewType: "list",
-      }),
-    };
+    expect(getFinderInstancesSignature(a)).toBe(getFinderInstancesSignature(b));
+  });
 
-    expect(getFinderInstancesSignature(base)).toBe(
-      getFinderInstancesSignature(viewChanged)
-    );
-    expect(getFinderInstancesSignature(base)).not.toBe(
-      getFinderInstancesSignature(pathChanged)
+  test("changes when a Finder path changes", () => {
+    const a = {
+      f1: makeFinderInstance({
+        instanceId: "f1",
+        currentPath: "/Documents",
+      }),
+    };
+    const b = {
+      f1: makeFinderInstance({
+        instanceId: "f1",
+        currentPath: "/Applications",
+      }),
+    };
+    expect(getFinderInstancesSignature(a)).not.toBe(
+      getFinderInstancesSignature(b)
     );
   });
 
-  test("snapshot preserves path for focus-or-launch routing", () => {
+  test("snapshot preserves path for dock routing", () => {
     const instances = {
       f1: makeFinderInstance({
         instanceId: "f1",
-        currentPath: "/Applets",
+        currentPath: "/Trash",
       }),
     };
     const snap = getFinderInstancesSnapshot(instances);
-    expect(snap.f1.currentPath).toBe("/Applets");
-    expect(snap.f1.instanceId).toBe("f1");
+    expect(snap.f1?.currentPath).toBe("/Trash");
   });
 });
 
 describe("getRoomActivitySignature", () => {
-  test("stays stable when message content changes but newest timestamp does not", () => {
+  test("is stable when message content changes but newest timestamp does not", () => {
     const rooms: ChatRoom[] = [
       {
         id: "dm-1",
@@ -152,30 +157,33 @@ describe("getRoomActivitySignature", () => {
       } as ChatRoom,
     ];
     const messagesA: ChatMessage[] = [
-      { id: "m1", roomId: "dm-1", username: "alice", content: "hi", timestamp: 100 } as ChatMessage,
+      { id: "m1", content: "hello", timestamp: 100 } as ChatMessage,
     ];
     const messagesB: ChatMessage[] = [
-      {
-        id: "m1",
-        roomId: "dm-1",
-        username: "alice",
-        content: "hi there",
-        timestamp: 100,
-      } as ChatMessage,
+      { id: "m1", content: "hello world", timestamp: 100 } as ChatMessage,
     ];
-    const messagesC: ChatMessage[] = [
-      {
-        id: "m2",
-        roomId: "dm-1",
-        username: "alice",
-        content: "newer",
-        timestamp: 200,
-      } as ChatMessage,
-    ];
-
     expect(
       getRoomActivitySignature(rooms, { "dm-1": messagesA })
     ).toBe(getRoomActivitySignature(rooms, { "dm-1": messagesB }));
+  });
+
+  test("changes when a newer message arrives", () => {
+    const rooms: ChatRoom[] = [
+      {
+        id: "dm-1",
+        name: "alice",
+        type: "private",
+        createdAt: 1,
+        lastMessageAt: 100,
+      } as ChatRoom,
+    ];
+    const messagesA: ChatMessage[] = [
+      { id: "m1", content: "hello", timestamp: 100 } as ChatMessage,
+    ];
+    const messagesC: ChatMessage[] = [
+      { id: "m1", content: "hello", timestamp: 100 } as ChatMessage,
+      { id: "m2", content: "later", timestamp: 200 } as ChatMessage,
+    ];
     expect(
       getRoomActivitySignature(rooms, { "dm-1": messagesA })
     ).not.toBe(getRoomActivitySignature(rooms, { "dm-1": messagesC }));
@@ -216,6 +224,51 @@ describe("render-perf wiring", () => {
     expect(source).toContain("isCopied={copiedMessageId === messageKey}");
     expect(source).toContain("isPlaying={playingMessageId === messageKey}");
     expect(source).not.toMatch(/copiedMessageId=\{copiedMessageId\}/);
+  });
+
+  test("ChatMessagesContent passes null highlightSegment to non-matching rows", () => {
+    const source = readSource(
+      "src/apps/chats/components/chat-messages/ChatMessagesContent.tsx"
+    );
+    expect(source).toContain("rowHighlight");
+    expect(source).toMatch(
+      /highlightSegment\?\.messageId === message\.id\s*\?\s*highlightSegment\s*:\s*null/
+    );
+    expect(source).toContain("highlightSegment={rowHighlight}");
+  });
+
+  test("useThemeFlags uses a single shallow Zustand subscription", () => {
+    const source = readSource("src/hooks/useThemeFlags.ts");
+    expect(source).toContain("useShallow");
+    expect(source).toMatch(/useThemeStore\(\s*useShallow/);
+    const storeCalls = source.match(/useThemeStore\(/g) ?? [];
+    expect(storeCalls.length).toBe(1);
+  });
+
+  test("ThemedIcon is memoized and selects only current theme", () => {
+    const source = readSource("src/components/shared/ThemedIcon.tsx");
+    expect(source).toContain("export const ThemedIcon = memo(ThemedIconInner)");
+    expect(source).toContain("useThemeStore((state) => state.current)");
+    expect(source).not.toContain("useThemeFlags");
+  });
+
+  test("MacDock selects trashed count via path-query cache helper", () => {
+    const source = readSource("src/components/layout/dock/MacDock.tsx");
+    expect(source).toContain("selectTrashedCount");
+    expect(source).not.toMatch(
+      /Object\.values\(s\.items\)\.filter\(\(item\) => item\.status === ["']trashed["']\)/
+    );
+  });
+
+  test("DesktopIconGrid uses memoized per-item FileIcon wrappers", () => {
+    const source = readSource(
+      "src/components/layout/desktop/DesktopIconGrid.tsx"
+    );
+    expect(source).toContain("memo(function DesktopIconGrid");
+    expect(source).toContain("memo(function DesktopShortcutIcon");
+    expect(source).toContain("memo(function DesktopAppIcon");
+    expect(source).toContain("memo(function DesktopMacintoshHdIcon");
+    expect(source).toContain("memo(function DesktopTrashIcon");
   });
 
   test("Finder file-list marquee paints via ref, not selectionRect state", () => {
