@@ -52,7 +52,7 @@
         "hangul-romanization": "^1.0.1",
         "i18next": "^26.3.4",
         "ioredis": "^5.11.1",
-        "ios-vibrator-pro-max": "^3.0.3",
+        "ios-vibrator-pro-max": "^1.3.2",
         "irc-framework": "^4.14.0",
         "jose": "^6.2.3",
         "leo-profanity": "^1.9.0",
@@ -1887,7 +1887,7 @@
 
     "ioredis": ["ioredis@5.11.1", "", { "dependencies": { "@ioredis/commands": "1.10.0", "cluster-key-slot": "1.1.1", "debug": "4.4.3", "denque": "2.1.0", "redis-errors": "1.2.0", "redis-parser": "3.0.0", "standard-as-callback": "2.1.0" } }, "sha512-ehuGcf94bQXhfagULNXrJdfnWO38v070jxSx/qE87Kjzmu2fU7ro5EFAb+OPituLqgfyuQaym5DlrNydW2sJ9A=="],
 
-    "ios-vibrator-pro-max": ["ios-vibrator-pro-max@3.0.3", "", {}, "sha512-D1C+goFN1qw2v9jJFO9FksOte5V73PSDirWijRGLsjtOrl4ZyT3WanEUrxPXO/YENIOgj56BHtyb++9DPOel4g=="],
+    "ios-vibrator-pro-max": ["ios-vibrator-pro-max@1.3.2", "", {}, "sha512-HG5bUMXlju4pjDOQ4jg8d/9eAVh8myDzDOFuTfrHz6CmswNzLePPpIDjxX0lppO2F/2XMjQoWrIaSL6xj1Dyfg=="],
 
     "ip-address": ["ip-address@10.2.0", "", {}, "sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA=="],
 
