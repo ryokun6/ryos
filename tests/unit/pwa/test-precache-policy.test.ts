@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { collectOfflinePrecacheChunkClosure } from "../vite/precachePolicy";
+import { collectOfflinePrecacheChunkClosure } from "../../../vite/precachePolicy";
 
 describe("Workbox precache policy", () => {
   test("keeps the shell, apps, locales, and their static dependencies", () => {

@@ -56,7 +56,7 @@ describe("self-host storage backend selection", () => {
   });
 
   test("throws for unsupported explicit providers", () => {
-    process.env.STORAGE_PROVIDER = "vercel-blob";
+    process.env.STORAGE_PROVIDER = "vercel-blob"; // pragma: allowlist secret
     delete process.env.BLOB_READ_WRITE_TOKEN;
 
     expect(() => getStorageBackend()).toThrow(
@@ -80,11 +80,11 @@ describe("self-host storage backend selection", () => {
     );
   });
 
-  test("defaults presigned URLs to virtual-hosted style for custom endpoints", async () => {
+  test("defaults presigned URLs to virtual-hosted style for R2-compatible endpoints", async () => {
     process.env.STORAGE_PROVIDER = "s3"; // pragma: allowlist secret
     process.env.S3_BUCKET = "bucket";
     process.env.S3_REGION = "auto";
-    process.env.S3_ENDPOINT = "https://storage.example.com"; // pragma: allowlist secret
+    process.env.S3_ENDPOINT = "https://example-account.r2.cloudflarestorage.com"; // pragma: allowlist secret
     process.env.S3_ACCESS_KEY_ID = "key";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
     delete process.env.S3_FORCE_PATH_STYLE;
@@ -110,7 +110,7 @@ describe("self-host storage backend selection", () => {
     process.env.STORAGE_PROVIDER = "s3"; // pragma: allowlist secret
     process.env.S3_BUCKET = "bucket";
     process.env.S3_REGION = "us-east-1";
-    process.env.S3_ENDPOINT = "https://storage.example.com"; // pragma: allowlist secret
+    process.env.S3_ENDPOINT = "http://minio:9000"; // pragma: allowlist secret
     process.env.S3_PUBLIC_ENDPOINT = "https://storage.example.com";
     process.env.S3_ACCESS_KEY_ID = "key";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
@@ -135,7 +135,7 @@ describe("self-host storage backend selection", () => {
     process.env.STORAGE_PROVIDER = "s3"; // pragma: allowlist secret
     process.env.S3_BUCKET = "bucket";
     process.env.S3_REGION = "auto";
-    process.env.S3_ENDPOINT = "https://storage.example.com"; // pragma: allowlist secret
+    process.env.S3_ENDPOINT = "https://example-account.r2.cloudflarestorage.com"; // pragma: allowlist secret
     process.env.S3_ACCESS_KEY_ID = "key";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
     process.env.S3_FORCE_PATH_STYLE = "true";
@@ -160,7 +160,7 @@ describe("self-host storage backend selection", () => {
     process.env.STORAGE_CLIENT_UPLOAD = "proxy";
     process.env.S3_BUCKET = "bucket";
     process.env.S3_REGION = "auto";
-    process.env.S3_ENDPOINT = "https://storage.example.com"; // pragma: allowlist secret
+    process.env.S3_ENDPOINT = "https://example-account.r2.cloudflarestorage.com"; // pragma: allowlist secret
     process.env.S3_ACCESS_KEY_ID = "key";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
 
