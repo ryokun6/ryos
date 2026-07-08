@@ -22,6 +22,7 @@ if (typeof document === "undefined") {
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
+  writable: true,
   value: true,
 });
 
@@ -65,6 +66,7 @@ afterEach(async () => {
 });
 
 afterAll(() => {
+  Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   if (GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }

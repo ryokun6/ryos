@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -13,6 +21,7 @@ if (typeof document === "undefined") {
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
+  writable: true,
   value: true,
 });
 
@@ -29,6 +38,9 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   });
 }
 
+const i18n = i18next.createInstance();
+
+
 const { BooksCustomizePanel } = await import(
   "../../../src/apps/books/components/BooksCustomizePanel"
 );
@@ -38,8 +50,7 @@ const { applyFontPreviewStack, BOOK_FONTS, getBookFontCssStack } = await import(
 const { DEFAULT_BOOKS_SETTINGS } = await import(
   "../../../src/stores/useBooksStore"
 );
-
-const i18n = i18next.createInstance();
+const { useThemeStore } = await import("../../../src/stores/useThemeStore");
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -56,6 +67,11 @@ beforeAll(async () => {
   });
 });
 
+beforeEach(() => {
+  // Aqua pill / metal-inset classes are macosx-only.
+  useThemeStore.setState({ current: "macosx" });
+});
+
 afterEach(async () => {
   await act(async () => {
     root?.unmount();
@@ -67,6 +83,7 @@ afterEach(async () => {
 });
 
 afterAll(() => {
+  Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   // Only tear down the DOM this suite created: unregistering a DOM another
   // suite registered (and still relies on) crashes React work later in the
   // aggregate run.

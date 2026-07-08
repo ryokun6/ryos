@@ -10,7 +10,7 @@ import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
-import { useFilesStore } from "@/stores/useFilesStore";
+import { selectTrashedCount, useFilesStore } from "@/stores/useFilesStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -481,11 +481,9 @@ export function MacDock() {
     onTouchCancel: dividerLongPressRaw.onTouchCancel,
   };
 
-  // Get trash items to check if trash is empty - use targeted selector
-  const trashItemCount = useFilesStore(
-    (s) => Object.values(s.items).filter((item) => item.status === "trashed").length
-  );
-  const isTrashEmpty = trashItemCount === 0;
+  // Scalar from the path-query cache — avoids O(n) Object.values scans on
+  // every files-store write (create/rename/move) that don't touch trash.
+  const isTrashEmpty = useFilesStore((s) => selectTrashedCount(s) === 0);
 
   // Normalize pinned app ids before rendering. Stale localStorage / cloud sync
   // entries would otherwise throw in getAppIconPath and paint a blank slot.

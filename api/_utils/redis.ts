@@ -39,6 +39,8 @@ export interface RedisPipelineLike {
   ttl(key: string): this;
   sadd(key: string, ...members: string[]): this;
   srem(key: string, ...members: string[]): this;
+  lpush(key: string, ...values: string[]): this;
+  ltrim(key: string, start: number, stop: number): this;
   zremrangebyscore(key: string, min: number | string, max: number | string): this;
   zadd(key: string, entry: RedisSortedSetEntry): this;
   zcard(key: string): this;
@@ -69,6 +71,7 @@ export interface RedisLike {
   ): Promise<[string | number, string[]]>;
   pipeline(): RedisPipelineLike;
   smembers<T = string[]>(key: string): Promise<T>;
+  scard(key: string): Promise<number>;
   sadd(key: string, ...members: string[]): Promise<number>;
   srem(key: string, ...members: string[]): Promise<number>;
   lpush(key: string, ...values: string[]): Promise<number>;
@@ -111,6 +114,7 @@ export interface RedisLike {
 
 const redisClientCache = globalThis as typeof globalThis & {
   __ryosStandardRedis?: IORedis;
+  __ryosUpstashRedis?: Redis;
 };
 
 const redisPubSubCache = globalThis as typeof globalThis & {
@@ -230,6 +234,18 @@ class StandardRedisPipelineAdapter implements RedisPipelineLike {
     if (members.length > 0) {
       this.pipelineClient.srem(key, ...members);
     }
+    return this;
+  }
+
+  lpush(key: string, ...values: string[]): this {
+    if (values.length > 0) {
+      this.pipelineClient.lpush(key, ...values);
+    }
+    return this;
+  }
+
+  ltrim(key: string, start: number, stop: number): this {
+    this.pipelineClient.ltrim(key, start, stop);
     return this;
   }
 
@@ -380,6 +396,10 @@ class StandardRedisAdapter implements RedisLike {
 
   async smembers<T = string[]>(key: string): Promise<T> {
     return (await this.client.smembers(key)) as T;
+  }
+
+  async scard(key: string): Promise<number> {
+    return await this.client.scard(key);
   }
 
   async sadd(key: string, ...members: string[]): Promise<number> {
@@ -554,14 +574,24 @@ function getStandardRedisClient(): IORedis {
 }
 
 function createUpstashRedis(): Redis {
-  const config = getUpstashConfig();
-  if (!config) {
-    throw new Error(
-      "Missing Redis configuration. Set REDIS_KV_REST_API_URL and REDIS_KV_REST_API_TOKEN environment variables."
-    );
+  if (!redisClientCache.__ryosUpstashRedis) {
+    const config = getUpstashConfig();
+    if (!config) {
+      throw new Error(
+        "Missing Redis configuration. Set REDIS_KV_REST_API_URL and REDIS_KV_REST_API_TOKEN environment variables."
+      );
+    }
+
+    // Cache one client per process (mirrors the ioredis path) and enable
+    // auto-pipelining so Promise.all of Redis commands collapses into fewer
+    // HTTPS round trips on Upstash REST.
+    redisClientCache.__ryosUpstashRedis = new Redis({
+      ...config,
+      enableAutoPipelining: true,
+    });
   }
 
-  return new Redis(config);
+  return redisClientCache.__ryosUpstashRedis;
 }
 
 /**

@@ -13,6 +13,16 @@ import {
 } from "../../../src/stores/useAudioSettingsStore";
 import { base64FromBlob, bufferToBase64 } from "../../../src/utils/audio";
 
+/** Real setters — do not capture from getState() at load (a prior suite may have mocked them). */
+const realAudioActions = {
+  setMasterVolume: (v: number) =>
+    useAudioSettingsStore.setState({ masterVolume: v }),
+  setIpodVolume: (v: number) =>
+    useAudioSettingsStore.setState({ ipodVolume: v }),
+  setChatSynthVolume: (v: number) =>
+    useAudioSettingsStore.setState({ chatSynthVolume: v }),
+};
+
 const resetAudioState = () => {
   resetTtsDuckingForTests();
   useAudioSettingsStore.setState({
@@ -23,6 +33,7 @@ const resetAudioState = () => {
     ipodVolume: 1,
     ttsMusicDuckingFactor: 1,
     ttsChatSynthDuckingFactor: 1,
+    ...realAudioActions,
   });
 };
 

@@ -148,6 +148,17 @@ describe("runtime Redis canonical cutover", () => {
     expect(fake.getCalls).toBe(0);
     expect(fake.mgetCalls).toBe(2);
     expect(fake.maxMgetKeys).toBeLessThanOrEqual(100);
+
+    // Unfiltered probe is O(1) via denormalized version stamp + SCARD.
+    await redis.set(redisKeys.media.songsVersion(), 1_718_180_001_124);
+    fake.resetCounts();
+    const globalVersion = await getSongsVersionInfo(redis);
+    expect(globalVersion).toEqual({
+      count: 125,
+      version: 1_718_180_001_124,
+    });
+    expect(fake.getCalls).toBe(1);
+    expect(fake.mgetCalls).toBe(0);
   });
 
   test("sync2 reads/writes canonical state only and ignores legacy-only users", async () => {

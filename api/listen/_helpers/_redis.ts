@@ -46,12 +46,17 @@ export async function getSession(
 export async function setSession(
   sessionId: string,
   session: ListenSession,
-  client: Redis = createRedisClient()
+  client: Redis = createRedisClient(),
+  options: { registerInIndex?: boolean } = {}
 ): Promise<void> {
+  const { registerInIndex = true } = options;
   await client.set(redisKeys.session.listen(sessionId), JSON.stringify(session), {
     ex: LISTEN_SESSION_TTL_SECONDS,
   });
-  await client.sadd(redisKeys.session.listenIds(), sessionId);
+  // SADD is only needed on create/join — skip on high-frequency sync ticks.
+  if (registerInIndex) {
+    await client.sadd(redisKeys.session.listenIds(), sessionId);
+  }
 }
 
 export async function deleteSession(

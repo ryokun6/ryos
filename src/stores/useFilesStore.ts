@@ -2009,6 +2009,18 @@ export const useFilesStore = create<FilesStoreState>()(
 );
 
 /**
+ * Scalar trash-count selector for shell chrome (Dock). Uses the path-query
+ * cache so unrelated file mutations only pay a ref check + length read, not
+ * an O(n) scan of the whole filesystem map.
+ */
+export function selectTrashedCount(state: {
+  items: Record<string, FileSystemItem>;
+}): number {
+  ensurePathQueryCache(state.items);
+  return pathQueryCache.trashedItems.length;
+}
+
+/**
  * Shallow-equality selector hook for this store. Co-located with the store
  * (rather than a central helpers barrel) so importing it doesn't pull other
  * stores into the bundle.

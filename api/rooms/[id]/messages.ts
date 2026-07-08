@@ -21,6 +21,7 @@ import {
   CHAT_MIN_INTERVAL_SECONDS,
 } from "../_helpers/_constants.js";
 import { makeKey } from "../../_utils/_rate-limit-key.js";
+import { INCREMENT_WITH_TTL_SCRIPT } from "../../_utils/_rate-limit.js";
 import { ensureUserExists } from "../_helpers/_users.js";
 import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, setUser } from "../_helpers/_redis.js";
 import { setRoomPresence } from "../_helpers/_presence.js";
@@ -142,8 +143,20 @@ export default apiHandler(
         const longKey = makeKey(["rl", "chat:burst", "long", roomId, "user", username]);
         const lastKey = makeKey(["rl", "chat:burst", "last", roomId, "user", username]);
 
-        const shortCount = await redis.incr(shortKey);
-        if (shortCount === 1) await redis.expire(shortKey, CHAT_BURST_SHORT_WINDOW_SECONDS);
+        // Atomic incr+expire (one RT each) — avoids orphaned keys without TTL.
+        const [shortCount, longCount] = await Promise.all([
+          redis.eval<number>(
+            INCREMENT_WITH_TTL_SCRIPT,
+            [shortKey],
+            [CHAT_BURST_SHORT_WINDOW_SECONDS]
+          ),
+          redis.eval<number>(
+            INCREMENT_WITH_TTL_SCRIPT,
+            [longKey],
+            [CHAT_BURST_LONG_WINDOW_SECONDS]
+          ),
+        ]);
+
         if (shortCount > CHAT_BURST_SHORT_LIMIT) {
           logger.warn("Short burst rate limit exceeded", { username, roomId });
           logger.response(429, Date.now() - startTime);
@@ -151,8 +164,6 @@ export default apiHandler(
           return;
         }
 
-        const longCount = await redis.incr(longKey);
-        if (longCount === 1) await redis.expire(longKey, CHAT_BURST_LONG_WINDOW_SECONDS);
         if (longCount > CHAT_BURST_LONG_LIMIT) {
           logger.warn("Long burst rate limit exceeded", { username, roomId });
           logger.response(429, Date.now() - startTime);
@@ -228,11 +239,16 @@ export default apiHandler(
       // setUser's plain SET clears any legacy TTL: user records persist
       // forever (an old expire call here used to attach one on each send).
       const updatedUser = { ...userData, lastActive: getCurrentTimestamp() };
-      await setUser(username, updatedUser, redis);
-      await setRoomPresence(roomId, username, redis);
+      // Presence + lastActive are independent of the response body — run in parallel.
+      await Promise.all([
+        setUser(username, updatedUser, redis),
+        setRoomPresence(roomId, username, redis),
+      ]);
 
-      await broadcastNewMessage(roomId, message, roomData);
-      logger.info("Pusher room-message broadcast sent", { roomId, messageId: message.id });
+      // Broadcast is best-effort — don't block the 201 on Pusher latency.
+      void broadcastNewMessage(roomId, message, roomData).then(() => {
+        logger.info("Pusher room-message broadcast sent", { roomId, messageId: message.id });
+      });
 
       // If this is an IRC room, forward the message to the IRC bridge. Send
       // the unescaped content so the IRC side doesn't see HTML entities.

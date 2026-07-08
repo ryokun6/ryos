@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import {
   createCachedIconObjectUrl,
   getIconRecoveryCandidates,
@@ -6,7 +6,7 @@ import {
   resolveIconLegacyAware,
   useIconPath,
 } from "@/utils/icons";
-import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 
 export interface ThemedIconProps
@@ -78,13 +78,14 @@ const applySafariImageStabilizer = (
   return nextStyle;
 };
 
-export const ThemedIcon: React.FC<ThemedIconProps> = ({
+const ThemedIconInner: React.FC<ThemedIconProps> = ({
   name,
   alt,
   themeOverride,
   ...imgProps
 }) => {
-  const { currentTheme } = useThemeFlags();
+  // Narrow subscription: icons only need the active theme id, not accent/dark-mode.
+  const currentTheme = useThemeStore((state) => state.current);
   const { className, style, onError, ...restImgProps } = imgProps;
   const composedClassName = cn("themed-icon", className);
   const [recoveredSrc, setRecoveredSrc] = React.useState<string | null>(null);
@@ -218,3 +219,6 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
     />
   );
 };
+
+export const ThemedIcon = memo(ThemedIconInner);
+ThemedIcon.displayName = "ThemedIcon";

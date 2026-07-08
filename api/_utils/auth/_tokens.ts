@@ -23,6 +23,14 @@ export async function getCanonicalSessionKey(token: string): Promise<string> {
 }
 
 /**
+ * Build the Redis session key from a precomputed token hash.
+ * Prefer this when the caller already hashed the token (avoids a second SHA-256).
+ */
+export function getCanonicalSessionKeyFromHash(tokenHash: string): string {
+  return redisKeys.auth.session(tokenHash);
+}
+
+/**
  * Build the Redis key for grace-period token storage
  */
 export function getLastTokenKey(username: string): string {
