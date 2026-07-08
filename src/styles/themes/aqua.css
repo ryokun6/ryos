@@ -2216,14 +2216,13 @@
   border-radius: 7.2px 7.2px 0px 0px !important;
 }
 
-/* Mac OS X sheet dialogs — slide out from under the parent window titlebar */
+/* Mac OS X sheet dialogs — slide out from under the parent window titlebar.
+   No top border and a tight shadow so the sheet reads as emerging from the
+   titlebar rather than floating above the window. */
 :root[data-os-theme="macosx"] .macosx-sheet-body.macosx-dialog {
   border-radius: 0 0 7.2px 7.2px !important;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
-}
-
-:root[data-os-theme="macosx"] .macosx-sheet-body .macosx-dialog-header {
-  border-radius: 0 !important;
+  border-top-width: 0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 @keyframes macosx-sheet-in {

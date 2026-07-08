@@ -73,6 +73,13 @@ interface SheetAnchor {
   width: number;
 }
 
+/**
+ * True when the dialog renders as a macOS sheet; sheets have no titlebar of
+ * their own (they slide out from the parent window's titlebar), so
+ * DialogHeader renders nothing.
+ */
+const DialogSheetContext = React.createContext(false);
+
 function measureSheetAnchor(parentInstanceId: string): SheetAnchor | null {
   const frame = document.querySelector<HTMLElement>(
     `[data-window-instance-id="${CSS.escape(parentInstanceId)}"]`
@@ -266,7 +273,9 @@ const DialogContent = (
                 backgroundImage: "var(--os-pinstripe-window)",
               }}
             >
-              {children}
+              <DialogSheetContext.Provider value={true}>
+                {children}
+              </DialogSheetContext.Provider>
             </div>
           </div>
         </DialogPrimitive.Content>
@@ -317,7 +326,14 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { t } = useTranslation();
   const { isWinXp, isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const isSheet = React.useContext(DialogSheetContext);
   const closeRef = React.useRef<HTMLButtonElement>(null);
+
+  // macOS sheets have no titlebar — they slide out from the parent window's
+  // titlebar. Titles stay accessible via the callers' (sr-only) DialogTitle.
+  if (isSheet) {
+    return null;
+  }
 
   if (isWindowsTheme) {
     return (
