@@ -108,6 +108,20 @@ export function buildMergeTransaction(
   return tr;
 }
 
+/**
+ * Whether the editor's ProseMirror view is mounted in the DOM. In Tiptap 3 the
+ * view is created lazily when React mounts `EditorContent`; before that,
+ * `editor.view` is a proxy that supports `dispatch`/`state` but throws on DOM
+ * accessors like `hasFocus` or `dom`.
+ */
+function isViewMounted(editor: Editor): boolean {
+  try {
+    return Boolean(editor.view.dom);
+  } catch {
+    return false;
+  }
+}
+
 function findScrollParent(el: HTMLElement | null): HTMLElement | null {
   let node: HTMLElement | null = el?.parentElement ?? null;
   while (node) {
@@ -188,8 +202,14 @@ export function mergeEditorContent(
   // Nothing to do if the documents are already identical.
   if (oldDoc.eq(newDoc)) return false;
 
-  const wasFocused = view.hasFocus();
-  const scrollParent = findScrollParent(view.dom as HTMLElement);
+  // Before the view is mounted there is no focus, DOM or scroll position to
+  // preserve; the merge itself still works because the unmounted-view proxy
+  // routes `dispatch` through the editor state.
+  const viewMounted = isViewMounted(editor);
+  const wasFocused = viewMounted && view.hasFocus();
+  const scrollParent = viewMounted
+    ? findScrollParent(view.dom as HTMLElement)
+    : null;
   const previousScrollTop = scrollParent?.scrollTop ?? 0;
 
   const dispatchFullReplace = () => {
