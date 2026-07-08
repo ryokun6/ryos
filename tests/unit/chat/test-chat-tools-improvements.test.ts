@@ -284,8 +284,9 @@ describe("checkToolRateLimit", () => {
     expect(blocked.message).toContain("Rate limit reached for searchSongs");
   });
 
-  test("fails open when the redis client errors", async () => {
+  test("fails closed when the redis client errors", async () => {
     const throwingRedis = {
+      eval: () => Promise.reject(new Error("redis down")),
       incr: () => Promise.reject(new Error("redis down")),
     } as unknown as Redis;
     const logError = mock(() => {});
@@ -294,7 +295,8 @@ describe("checkToolRateLimit", () => {
       redis: throwingRedis,
       logError,
     });
-    expect(result.allowed).toBe(true);
+    expect(result.allowed).toBe(false);
+    expect(result.message).toContain("temporarily unavailable");
     expect(logError).toHaveBeenCalled();
   });
 });

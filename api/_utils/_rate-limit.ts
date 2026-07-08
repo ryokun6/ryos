@@ -31,10 +31,14 @@ end
 return count
 `;
 
-// Helper function to get rate limit key for a user
+// Helper function to get rate limit key for a user.
+// Identifiers are lowercased so username casing cannot split the bucket
+// (auth already normalizes, but analytics/admin lookups and older callers
+// may pass mixed-case names).
 export const getAIRateLimitKey = (identifier: string): string => {
-  const scope = identifier.startsWith("anon:") ? "anon" : "user";
-  return makeCanonicalRateKey(["ai", scope, identifier]);
+  const normalized = identifier.trim().toLowerCase();
+  const scope = normalized.startsWith("anon:") ? "anon" : "user";
+  return makeCanonicalRateKey(["ai", scope, normalized]);
 };
 
 interface AIRateLimitResult {
@@ -49,23 +53,27 @@ export async function checkAndIncrementAIMessageCount(
   isAuthenticated: boolean,
   authToken: string | null = null
 ): Promise<AIRateLimitResult> {
-  const key = getAIRateLimitKey(identifier);
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+  const key = getAIRateLimitKey(normalizedIdentifier);
 
   // Determine if user is anonymous (identifier starts with "anon:")
-  const isAnonymous = identifier.startsWith("anon:");
+  const isAnonymous = normalizedIdentifier.startsWith("anon:");
 
   // Set limit and window based on authentication status
   const limit = isAnonymous ? AI_LIMIT_ANON_PER_DAY : AI_LIMIT_PER_5_HOURS;
   const ttlSeconds = isAnonymous ? AI_WINDOW_ANONYMOUS : AI_WINDOW_AUTHENTICATED;
 
   // Identify privileged user (ryo)
-  const isRyo = identifier === "ryo";
+  const isRyo = normalizedIdentifier === "ryo";
 
   // --- Authentication validation section ---
   // If authenticated, validate the token
   if (isAuthenticated && authToken) {
-    const lower = identifier.toLowerCase();
-    const validation = await validateAuth(getRedis(), lower, authToken);
+    const validation = await validateAuth(
+      getRedis(),
+      normalizedIdentifier,
+      authToken
+    );
     if (!validation.valid) {
       // Invalid token for this user – treat as unauthenticated (use anon limit)
       return {

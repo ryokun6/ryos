@@ -141,4 +141,30 @@ describe("analytics Redis keys", () => {
     const alice = detail.aiRateLimits.find((r) => r.identifier === "alice");
     expect(alice).toMatchObject({ currentCount: 9, limit: 15, windowLabel: "5h" });
   });
+
+  test("does not invent a fake anonymous 0/3 rate-limit badge", async () => {
+    const fake = new FakeRedis();
+    const redis = fake as unknown as Redis;
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Anonymous AI usage is tracked in analytics, but the chat budget is
+    // per-IP — there is no single anonymous counter to display.
+    await redis.hset(`analytics:api:aiu:${today}`, {
+      anonymous: "12",
+      alice: "2",
+    });
+    await redis.set(getAIRateLimitKey("alice"), "2");
+
+    const detail = await getAnalyticsDetail(redis, 1);
+    expect(detail.aiByUser).toEqual([
+      { username: "anonymous", count: 12 },
+      { username: "alice", count: 2 },
+    ]);
+    expect(
+      detail.aiRateLimits.find((r) => r.identifier === "anonymous")
+    ).toBeUndefined();
+    expect(detail.aiRateLimits.find((r) => r.identifier === "alice")).toMatchObject(
+      { currentCount: 2, limit: 15 }
+    );
+  });
 });
