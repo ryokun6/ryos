@@ -13,16 +13,35 @@ import { createRoot, type Root } from "react-dom/client";
 
 let registeredDomHere = false;
 
+const originalActEnvironment = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "IS_REACT_ACT_ENVIRONMENT"
+);
+
 beforeAll(() => {
   if (typeof document === "undefined") {
     GlobalRegistrator.register();
     registeredDomHere = true;
   }
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-    true;
+  // Earlier suites may leave a non-writable descriptor; redefine instead of
+  // assigning so this suite stays green in the aggregate Bun process.
+  Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
+    configurable: true,
+    writable: true,
+    value: true,
+  });
 });
 
 afterAll(() => {
+  if (originalActEnvironment) {
+    Object.defineProperty(
+      globalThis,
+      "IS_REACT_ACT_ENVIRONMENT",
+      originalActEnvironment
+    );
+  } else {
+    Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
+  }
   if (registeredDomHere && GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }

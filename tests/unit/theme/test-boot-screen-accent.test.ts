@@ -33,6 +33,7 @@ beforeAll(() => {
 
 afterAll(async () => {
   await flushReact();
+  useThemeStore.setState({ current: "macosx" });
   if (GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
   }
@@ -54,9 +55,17 @@ mock.module("@/hooks/useSound", () => ({
 
 mock.module("react-i18next", () => ({
   ...actualReactI18next,
+  // Keep a real-shaped return value: later suites (e.g. BooksCustomizePanel)
+  // read `i18n.resolvedLanguage`. If bun's mock.module restore is sticky,
+  // an incomplete mock crashes those suites in the aggregate run.
   useTranslation: () => ({
     t: (key: string) =>
       key === "common.system.systemRestoring" ? "System Restoring..." : key,
+    i18n: {
+      language: "en",
+      resolvedLanguage: "en",
+      changeLanguage: async () => undefined,
+    },
   }),
 }));
 

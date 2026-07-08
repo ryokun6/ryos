@@ -3,7 +3,14 @@
  * sanitization so overfilled tool calls do not mutate unrelated preferences.
  */
 import "fake-indexeddb/auto";
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from "bun:test";
 
 class MemoryStorage implements Storage {
   private readonly map = new Map<string, string>();
@@ -416,6 +423,13 @@ describe("handleSettings applies only sanitized fields", () => {
   const setWallpaper = mock(async () => {});
   const addToolOutput = mock(() => {});
 
+  // Snapshot real store actions before this suite swaps in mocks — otherwise
+  // later suites (e.g. TTS audio ducking) inherit no-op setters and fail.
+  const realLanguage = useLanguageStore.getState();
+  const realTheme = useThemeStore.getState();
+  const realAudio = useAudioSettingsStore.getState();
+  const realDisplay = useDisplaySettingsStore.getState();
+
   beforeEach(() => {
     setLanguage.mockClear();
     setTheme.mockClear();
@@ -447,6 +461,24 @@ describe("handleSettings applies only sanitized fields", () => {
     useDisplaySettingsStore.setState({
       currentWallpaper: "/wallpapers/tiles/bondi.png",
       setWallpaper,
+    } as Partial<ReturnType<typeof useDisplaySettingsStore.getState>>);
+  });
+
+  afterAll(() => {
+    useLanguageStore.setState({
+      setLanguage: realLanguage.setLanguage,
+    } as Partial<ReturnType<typeof useLanguageStore.getState>>);
+    useThemeStore.setState({
+      setTheme: realTheme.setTheme,
+      setAccent: realTheme.setAccent,
+    } as Partial<ReturnType<typeof useThemeStore.getState>>);
+    useAudioSettingsStore.setState({
+      setMasterVolume: realAudio.setMasterVolume,
+      setSpeechEnabled: realAudio.setSpeechEnabled,
+      setUiSoundsEnabled: realAudio.setUiSoundsEnabled,
+    } as Partial<ReturnType<typeof useAudioSettingsStore.getState>>);
+    useDisplaySettingsStore.setState({
+      setWallpaper: realDisplay.setWallpaper,
     } as Partial<ReturnType<typeof useDisplaySettingsStore.getState>>);
   });
 

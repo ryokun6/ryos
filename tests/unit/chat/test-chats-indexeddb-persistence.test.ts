@@ -177,8 +177,16 @@ async function readPersistedAiMessages(): Promise<AIChatMessage[]> {
 }
 
 beforeEach(async () => {
+  // Earlier suites may leave in-memory chat state and a debounced IndexedDB
+  // write in flight. Settle first: deleteDatabase resolves on `blocked` and
+  // silently keeps stale rows, which then win over localStorage migration.
+  useChatsStore.setState({
+    aiMessages: [],
+  });
+  await settleAllPersistWrites();
   resetPersistWritesForTests();
   installTestLocalStorage(new QuotaStorage());
+  localStorage.clear();
   await resetDb();
   listRoomsImpl = async () => ({ rooms: [] });
 });
