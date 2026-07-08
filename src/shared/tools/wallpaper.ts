@@ -7,7 +7,7 @@
  *
  * `WALLPAPER_PHOTO_CATEGORIES` mirrors the photo category folders in
  * `public/wallpapers/photos/` (and thus `public/wallpapers/manifest.json`).
- * A unit test (`tests/test-wallpaper-tool-settings.test.ts`) verifies the two
+ * A unit test (`tests/unit/theme/test-wallpaper-tool-settings.test.ts`) verifies the two
  * stay in sync when wallpapers are added or removed.
  */
 

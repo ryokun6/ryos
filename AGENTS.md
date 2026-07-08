@@ -125,7 +125,7 @@ bun run i18n:translate
 
 ## Testing
 
-Tests use **Bun's native test runner** (`bun:test`). Test files live in `tests/` and use the `.test.ts` or `.test.tsx` extension.
+Tests use **Bun's native test runner** (`bun:test`). Suites live under `tests/unit/<domain>/` (no server) and `tests/integration/{api,opt-in}/` (server / env-gated). Shared helpers are in `tests/helpers/`. See `tests/README.md`.
 
 ### Running Tests
 
@@ -134,10 +134,11 @@ Tests use **Bun's native test runner** (`bun:test`). Test files live in `tests/`
 bun test
 
 # Run only unit/wiring tests (no server required)
-bun test tests/test-chat-notification-logic.test.ts tests/test-pusher-client-refcount.test.ts
+bun run test:unit
+bun test tests/unit/chat/test-chat-notification-logic.test.ts tests/unit/realtime/test-pusher-client-refcount.test.ts
 
 # Run a single suite
-bun test tests/test-admin.test.ts
+bun test tests/integration/api/test-admin.test.ts
 
 # Run API integration tests only (requires server)
 bun run test:api
@@ -179,17 +180,19 @@ bun run dev:api
 # Terminal 2
 bun test                    # all tests
 bun run test:api            # API integration only
-bun test tests/test-admin.test.ts  # single suite
+bun test tests/integration/api/test-admin.test.ts  # single suite
 ```
 
 ### Writing Tests
 
-Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in `tests/test-utils.ts`:
+Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in `tests/helpers/test-utils.ts`:
 
 - `fetchWithOrigin(url, opts)` — adds `Origin: http://localhost:3000`
 - `fetchWithAuth(url, username, token, opts)` — adds Origin + Authorization + X-Username
 - `makeRateLimitBypassHeaders()` — random IP to avoid rate limits in tests
 - `ensureUserAuth(username, password)` — register-or-login, returns token
+
+Unit suites go in `tests/unit/<domain>/` (auto-discovered). API suites go in `tests/integration/api/` and must be listed in `API_TEST_FILES` in `scripts/test-groups.ts`.
 
 ### Manual Testing Guidelines
 
@@ -214,4 +217,4 @@ These notes are specific to the Cursor Cloud Agent VM (where dependencies are al
 
 - **Secrets are pre-injected as environment variables** — there is **no `.env.local` file** on the cloud VM. Redis (Upstash REST: `REDIS_KV_REST_API_URL`/`REDIS_KV_REST_API_TOKEN`), Pusher, and AI keys (OpenAI/Anthropic/Google) are already present, so `bun run dev` works with full functionality out of the box. The README's `.env.local` instructions are for local maintainer machines only.
 - **AI chat is rate-limited, which can look like a broken AI.** `/api/chat` (the Ryo assistant in the Chats app) allows only **3 messages/day for anonymous users (per IP)** and **15 per 5h for authenticated users (per username)** (see `api/_utils/_rate-limit.ts`). The shared anonymous per-IP budget is quickly exhausted by the API test suite, so if Ryo doesn't reply while logged out you're almost certainly rate-limited (HTTP 429), not missing keys. **Sign in (register/login) before testing AI in the UI.**
-- **`bun run test:unit` runs every suite in one Bun process, so cross-file pollution is the usual cause of aggregate-only failures.** Bun's file execution order differs between machines (it is not the CLI/alphabetical order), so a suite can pass in CI yet fail locally, or vice versa. If an aggregate failure does not reproduce in isolation (`bun test ./tests/<suite>.test.ts`), bisect the actual execution order (the `tests/<file>:` headers in the log) to find the polluting suite instead of treating it as a regression. Known traps: unregistering a happy-dom `GlobalRegistrator` another suite registered; Radix UI's layout-effect shim freezing its DOM detection at first import (`tests/test-boot-screen-accent.test.ts` pins it via `mock.module`); leaked `useFilesStore` state/debounced IndexedDB writes from earlier suites (settle + reset before `deleteDatabase`, which silently no-ops when blocked). The full API integration suite (`bun run dev:api` + `bun run test:api`) passes 325/325.
+- **`bun run test:unit` runs every suite in one Bun process, so cross-file pollution is the usual cause of aggregate-only failures.** Bun's file execution order differs between machines (it is not the CLI/alphabetical order), so a suite can pass in CI yet fail locally, or vice versa. If an aggregate failure does not reproduce in isolation (`bun test ./tests/unit/<domain>/<suite>.test.ts`), bisect the actual execution order (the `tests/<file>:` headers in the log) to find the polluting suite instead of treating it as a regression. Known traps: unregistering a happy-dom `GlobalRegistrator` another suite registered; Radix UI's layout-effect shim freezing its DOM detection at first import (`tests/unit/theme/test-boot-screen-accent.test.ts` pins it via `mock.module`); leaked `useFilesStore` state/debounced IndexedDB writes from earlier suites (settle + reset before `deleteDatabase`, which silently no-ops when blocked). The full API integration suite (`bun run dev:api` + `bun run test:api`) passes 325/325.

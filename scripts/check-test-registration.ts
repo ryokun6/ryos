@@ -27,11 +27,13 @@ for (const file of duplicateConfiguredFiles) {
 
 function looksLikeApiIntegration(file: string): boolean {
   const source = readFileSync(file, "utf8");
+  const importsTestUtils =
+    source.includes("helpers/test-utils") || source.includes("./test-utils");
   return (
     source.includes("Requires the standalone API server") ||
     source.includes("bun run dev:api") ||
     (
-      source.includes("./test-utils") &&
+      importsTestUtils &&
       (
         source.includes("fetchWithOrigin") ||
         source.includes("fetchWithAuth") ||
@@ -51,6 +53,27 @@ for (const file of allTests) {
 for (const file of API_TEST_FILES) {
   if (allTestSet.has(file) && optInSet.has(file)) {
     errors.push(`Test file cannot be both API and opt-in: ${file}`);
+  }
+}
+
+// Guard: unit suites must live under tests/unit/
+for (const file of getUnitTestFiles()) {
+  if (!file.startsWith("tests/unit/")) {
+    errors.push(`Unit test is outside tests/unit/: ${file}`);
+  }
+}
+
+// Guard: API suites must live under tests/integration/api/
+for (const file of API_TEST_FILES) {
+  if (!file.startsWith("tests/integration/api/")) {
+    errors.push(`API test is outside tests/integration/api/: ${file}`);
+  }
+}
+
+// Guard: opt-in suites must live under tests/integration/opt-in/
+for (const file of OPT_IN_TEST_FILES) {
+  if (!file.startsWith("tests/integration/opt-in/")) {
+    errors.push(`Opt-in test is outside tests/integration/opt-in/: ${file}`);
   }
 }
 

@@ -113,7 +113,7 @@ const PUSHER_FORCE_TLS = pusherRuntimeConfig.forceTLS;
  * Resolves the Pusher constructor, preferring the module default export and
  * falling back to a global `Pusher` (set by some script-tag builds). Throws
  * when neither is available. Exported for unit tests (see
- * tests/test-pusher-client-constructor-wiring.test.ts).
+ * tests/unit/realtime/test-pusher-client-constructor-wiring.test.ts).
  */
 export const getPusherConstructor = (
   PusherNamespace: unknown
@@ -347,7 +347,7 @@ class DeferredRealtimeChannel implements RealtimeChannel {
   }
 }
 
-/** Exported for unit tests (see tests/test-pusher-lazy-load.test.ts). */
+/** Exported for unit tests (see tests/unit/realtime/test-pusher-lazy-load.test.ts). */
 export class DeferredPusherRealtimeClient implements RealtimeClient {
   readonly connection = new DeferredRealtimeConnection();
 
