@@ -246,8 +246,10 @@ export async function addMessage(
 ): Promise<void> {
   const serialized = JSON.stringify(message);
   const messagesKey = redisKeys.chat.roomMessages(roomId);
-  await client.lpush(messagesKey, serialized);
-  await client.ltrim(messagesKey, 0, 99);
+  const pipeline = client.pipeline();
+  pipeline.lpush(messagesKey, serialized);
+  pipeline.ltrim(messagesKey, 0, 99);
+  await pipeline.exec();
 }
 
 /**

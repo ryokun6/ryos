@@ -55,7 +55,7 @@ export function Desktop(props: DesktopProps) {
         displayedApps={d.displayedApps}
         getDisplayName={d.getDisplayName}
         getShortcutIcon={d.getShortcutIcon}
-        isItemSelected={d.isItemSelected}
+        selectedItemIds={d.selectedItemIds}
         onDesktopItemClick={d.handleDesktopItemClick}
         onFinderOpen={d.handleFinderOpen}
         onIconContextMenu={d.handleIconContextMenu}

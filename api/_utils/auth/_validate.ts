@@ -12,7 +12,7 @@ import {
   TOKEN_GRACE_PERIOD,
 } from "./_constants.js";
 import {
-  getCanonicalSessionKey,
+  getCanonicalSessionKeyFromHash,
   getLastTokenKey,
 } from "./_tokens.js";
 import { redisKeys, sha256RedisIdentifier } from "../../../src/shared/redisKeys.js";
@@ -58,18 +58,24 @@ export async function validateAuth(
 
   // 1. Check canonical active token:
   // auth:session:{sha256(token)} + auth:user:{username}:sessions membership.
+  // Hash once and reuse — getCanonicalSessionKey used to re-hash the same token.
   const tokenHash = await sha256RedisIdentifier(token);
-  const canonicalSessionKey = await getCanonicalSessionKey(token);
-  const canonicalSessionExists = await redis.exists(canonicalSessionKey);
-  if (canonicalSessionExists) {
-    const sessionHashes = await redis.smembers<string[]>(
-      redisKeys.auth.userSessions(normalizedUsername)
-    );
-    if (sessionHashes.includes(tokenHash)) {
-      await redis.expire(canonicalSessionKey, USER_TTL_SECONDS);
-      await redis.expire(redisKeys.auth.userSessions(normalizedUsername), USER_TTL_SECONDS);
-      return { valid: true, expired: false };
-    }
+  const canonicalSessionKey = getCanonicalSessionKeyFromHash(tokenHash);
+  const sessionsKey = redisKeys.auth.userSessions(normalizedUsername);
+
+  // Parallel exists + smembers (auto-pipelined on Upstash into one HTTPS RT).
+  const [canonicalSessionExists, sessionHashes] = await Promise.all([
+    redis.exists(canonicalSessionKey),
+    redis.smembers<string[]>(sessionsKey),
+  ]);
+
+  if (canonicalSessionExists && sessionHashes.includes(tokenHash)) {
+    // Pipeline both TTL refreshes into one round trip.
+    const expirePipeline = redis.pipeline();
+    expirePipeline.expire(canonicalSessionKey, USER_TTL_SECONDS);
+    expirePipeline.expire(sessionsKey, USER_TTL_SECONDS);
+    await expirePipeline.exec();
+    return { valid: true, expired: false };
   }
 
   // 2. Check grace period for recently expired tokens (if allowed)
@@ -99,4 +105,3 @@ export async function validateAuth(
 
   return { valid: false };
 }
-

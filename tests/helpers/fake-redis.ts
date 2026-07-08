@@ -40,6 +40,16 @@ export class FakeRedisPipeline {
     return this;
   }
 
+  lpush(key: string, ...values: string[]): this {
+    this.operations.push(() => this.redis.lpushSync(key, ...values));
+    return this;
+  }
+
+  ltrim(key: string, start: number, stop: number): this {
+    this.operations.push(() => this.redis.ltrimSync(key, start, stop));
+    return this;
+  }
+
   sadd(key: string, ...members: string[]): this {
     this.operations.push(() => this.redis.saddSync(key, ...members));
     return this;
@@ -295,12 +305,44 @@ export class FakeRedis {
     return next;
   }
 
+  /**
+   * Minimal Lua eval supporting the INCREMENT_WITH_TTL_SCRIPT used by
+   * rate limiting (INCR + conditional EXPIRE).
+   */
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: Array<string | number>
+  ): Promise<T> {
+    const normalized = script.replace(/\s+/g, " ");
+    if (
+      normalized.includes('redis.call("INCR"') &&
+      normalized.includes('redis.call("EXPIRE"')
+    ) {
+      const key = keys[0];
+      if (!key) throw new Error("FakeRedis.eval: missing key");
+      const ttl = Number(args[0]);
+      const count = await this.incr(key);
+      if (count === 1 && Number.isFinite(ttl)) {
+        await this.expire(key, ttl);
+      }
+      return count as T;
+    }
+    throw new Error(
+      `FakeRedis.eval: unsupported script: ${script.slice(0, 80)}...`
+    );
+  }
+
   async mget<T = unknown>(...keys: string[]): Promise<(T | null)[]> {
     return keys.map((key) => (this.kv.get(key) as T | undefined) ?? null);
   }
 
   async smembers<T = string[]>(key: string): Promise<T> {
     return Array.from(this.sets.get(key) || []) as T;
+  }
+
+  async scard(key: string): Promise<number> {
+    return (this.sets.get(key) || new Set()).size;
   }
 
   async sadd(key: string, ...members: string[]): Promise<number> {
@@ -402,11 +444,15 @@ export class FakeRedis {
     return list.length;
   }
 
-  async lpush(key: string, ...values: string[]): Promise<number> {
+  lpushSync(key: string, ...values: string[]): number {
     const list = this.lists.get(key) || [];
     list.unshift(...values.reverse());
     this.lists.set(key, list);
     return list.length;
+  }
+
+  async lpush(key: string, ...values: string[]): Promise<number> {
+    return this.lpushSync(key, ...values);
   }
 
   async lrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]> {
@@ -416,12 +462,16 @@ export class FakeRedis {
     return list.slice(normalizedStart, normalizedStop + 1) as T[];
   }
 
-  async ltrim(key: string, start: number, stop: number): Promise<string> {
+  ltrimSync(key: string, start: number, stop: number): string {
     const list = this.lists.get(key) || [];
     const normalizedStart = start < 0 ? Math.max(0, list.length + start) : start;
     const normalizedStop = stop < 0 ? list.length + stop : stop;
     this.lists.set(key, list.slice(normalizedStart, normalizedStop + 1));
     return "OK";
+  }
+
+  async ltrim(key: string, start: number, stop: number): Promise<string> {
+    return this.ltrimSync(key, start, stop);
   }
 
   async llen(key: string): Promise<number> {
