@@ -41,8 +41,9 @@ export function useChatsAppController({
   const initialData = rawInitialData as ChatsInitialData | undefined;
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
+  // Length only for layout/input history — full aiMessages identity is not
+  // needed here (display messages come from useAiChat's live stream).
   const aiMessageCount = useChatsStore((state) => state.aiMessages.length);
-  const aiMessages = useChatsStore((state) => state.aiMessages);
 
   const authResult = useAuth();
   const { promptSetUsername } = authResult;
@@ -518,9 +519,11 @@ export function useChatsAppController({
   );
 
   const previousUserMessages = useMemo(
-    () => extractPreviousUserMessages(aiMessages),
+    () => extractPreviousUserMessages(getLiveMessages()),
+    // Count + getLiveMessages identity: content of older user turns is stable
+    // across streaming ticks of the assistant reply.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [aiMessageCount]
+    [aiMessageCount, getLiveMessages]
   );
 
   const currentMessagesToDisplay = useMemo(
