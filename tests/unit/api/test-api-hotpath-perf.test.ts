@@ -12,23 +12,23 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { Redis } from "../api/_utils/redis";
-import { validateAuth } from "../api/_utils/auth/_validate";
-import { storeToken } from "../api/_utils/auth/_tokens";
+import type { Redis } from "../../../api/_utils/redis";
+import { validateAuth } from "../../../api/_utils/auth/_validate";
+import { storeToken } from "../../../api/_utils/auth/_tokens";
 import {
   checkCounterLimit,
   INCREMENT_WITH_TTL_SCRIPT,
-} from "../api/_utils/_rate-limit";
+} from "../../../api/_utils/_rate-limit";
 import {
   getSongsVersionInfo,
   saveSong,
-} from "../api/_utils/_song-service";
-import { addMessage } from "../api/rooms/_helpers/_redis";
-import { setSession } from "../api/listen/_helpers/_redis";
-import { redisKeys } from "../src/shared/redisKeys";
-import { FakeRedis } from "./fake-redis";
-import type { ListenSession } from "../api/listen/_helpers/_types";
-import type { Message } from "../api/rooms/_helpers/_types";
+} from "../../../api/_utils/_song-service";
+import { addMessage } from "../../../api/rooms/_helpers/_redis";
+import { setSession } from "../../../api/listen/_helpers/_redis";
+import { redisKeys, sha256RedisIdentifier } from "../../../src/shared/redisKeys";
+import { FakeRedis } from "../../helpers/fake-redis";
+import type { ListenSession } from "../../../api/listen/_helpers/_types";
+import type { Message } from "../../../api/rooms/_helpers/_types";
 
 const readSource = (relPath: string): string =>
   readFileSync(resolve(process.cwd(), relPath), "utf-8");
@@ -99,9 +99,7 @@ describe("API hot-path behavior", () => {
     const result = await validateAuth(redis, username, token);
     expect(result).toEqual({ valid: true, expired: false });
 
-    const tokenHash = await import("../src/shared/redisKeys").then((m) =>
-      m.sha256RedisIdentifier(token)
-    );
+    const tokenHash = await sha256RedisIdentifier(token);
     expect(fake.ttls.get(redisKeys.auth.session(tokenHash))).toBeGreaterThan(0);
     expect(
       fake.ttls.get(redisKeys.auth.userSessions(username))
