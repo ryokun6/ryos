@@ -74,6 +74,27 @@ describe("aqua sheet dialog wiring", () => {
     expect(aqua).toMatch(/\.macosx-sheet-window-scrim/);
   });
 
+  test("sheet strip stacks above the window-local scrim", () => {
+    const dialog = readFileSync(
+      join(import.meta.dir, "../src/components/ui/dialog.tsx"),
+      "utf8"
+    );
+    const aqua = readFileSync(
+      join(import.meta.dir, "../src/styles/themes/aqua.css"),
+      "utf8"
+    );
+    // Sheet must outrank the scrim: Radix portals each child separately, so a
+    // late-mounted scrim can otherwise paint over the sheet at equal z-index.
+    expect(dialog).toMatch(/macosx-sheet-strip[^"]*z-\[51\]/);
+    expect(dialog).toMatch(
+      /macosx-sheet-window-scrim[^"]*z-50|macosx-sheet-window-scrim fixed z-50/
+    );
+    expect(aqua).toMatch(
+      /\.macosx-sheet-window-scrim\s*\{[^}]*z-index:\s*50/s
+    );
+    expect(aqua).toMatch(/\.macosx-sheet-strip\s*\{[^}]*z-index:\s*51/s);
+  });
+
   test("WindowFrame pins immersive titlebar while a sheet is open", () => {
     const source = readFileSync(
       join(import.meta.dir, "../src/components/layout/window-frame/WindowFrame.tsx"),

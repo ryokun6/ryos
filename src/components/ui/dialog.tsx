@@ -242,6 +242,10 @@ const DialogContent = (
 
   if (isSheet) {
     const anchor = hasMeasuredAnchor ? (sheetAnchor as SheetAnchor) : null;
+    // Radix DialogPortal portals each child into its own container node.
+    // Always mount the scrim (even before the anchor is measured) so a late
+    // mount can't append after the sheet and paint over it. Explicit z-index
+    // keeps the sheet above the scrim regardless of portal DOM order.
     return (
       <DialogPortal>
         {/* Sheets don't dim the desktop; the overlay only blocks interaction
@@ -250,24 +254,32 @@ const DialogContent = (
         <DialogPrimitive.Overlay
           className={cn("fixed inset-0 z-50 bg-transparent", overlayClassName)}
         />
-        {anchor && anchor.height > 0 ? (
-          <div
-            aria-hidden
-            className="macosx-sheet-window-scrim fixed z-50 pointer-events-none"
-            style={{
-              left: anchor.left,
-              top: anchor.top,
-              width: anchor.width,
-              height: anchor.height,
-            }}
-          />
-        ) : null}
+        <div
+          aria-hidden
+          className="macosx-sheet-window-scrim fixed z-50 pointer-events-none"
+          style={
+            anchor && anchor.height > 0
+              ? {
+                  left: anchor.left,
+                  top: anchor.top,
+                  width: anchor.width,
+                  height: anchor.height,
+                }
+              : {
+                  left: 0,
+                  top: 0,
+                  width: 0,
+                  height: 0,
+                  visibility: "hidden",
+                }
+          }
+        />
         {/* Full-window-width strip below the titlebar; overflow-hidden clips
             the sheet while it slides out from behind the titlebar. Pointer
             events pass through the strip padding to the overlay. */}
         <DialogPrimitive.Content
           ref={composedContentRef}
-          className="macosx-sheet-strip fixed z-50 flex flex-col items-center overflow-hidden px-4 pb-10"
+          className="macosx-sheet-strip fixed z-[51] flex flex-col items-center overflow-hidden px-4 pb-10"
           style={
             anchor
               ? {
