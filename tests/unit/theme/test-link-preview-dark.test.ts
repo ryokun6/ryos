@@ -1,0 +1,100 @@
+import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { aquaThemeCss } from "../../helpers/theme-css-fixtures";
+
+const indexCss = readFileSync(join(import.meta.dir, "../../../src/index.css"), "utf8");
+const loadingSource = readFileSync(
+  join(import.meta.dir, "../../../src/components/shared/link-preview/components/LinkPreviewLoading.tsx"),
+  "utf8"
+);
+const previewSource = readFileSync(
+  join(import.meta.dir, "../../../src/components/shared/link-preview/LinkPreview.tsx"),
+  "utf8"
+);
+const actionButtonsSource = readFileSync(
+  join(
+    import.meta.dir,
+    "../../../src/components/shared/link-preview/components/LinkPreviewActionButtons.tsx"
+  ),
+  "utf8"
+);
+
+function extractRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  if (start === -1) return "";
+  const braceStart = css.indexOf("{", start);
+  if (braceStart === -1) return "";
+  let depth = 0;
+  for (let i = braceStart; i < css.length; i++) {
+    if (css[i] === "{") depth++;
+    else if (css[i] === "}") {
+      depth--;
+      if (depth === 0) return css.slice(start, i + 1);
+    }
+  }
+  return "";
+}
+
+describe("link preview dark mode styling", () => {
+  test("loading component uses shared skeleton class and macOS bubble shell", () => {
+    expect(loadingSource).toContain("link-preview-loading-skeleton");
+    expect(loadingSource).toContain("macosx-link-preview");
+    expect(loadingSource).toContain("rounded-[16px]");
+    expect(loadingSource).toContain("useThemeFlags");
+    // macOS: shimmer on the bubble root (chat-bubble > * breaks absolute children)
+    expect(loadingSource).toContain(
+      "chat-bubble macosx-link-preview rounded-[16px] border-none shadow-none link-preview-loading-skeleton"
+    );
+    expect(loadingSource).toContain("!isMacOSTheme");
+  });
+
+  test("loaded macOS link preview uses 16px radius to match chat image previews", () => {
+    expect(previewSource).toContain("rounded-[16px]");
+  });
+
+  test(".dark .link-preview-loading-skeleton avoids bright white sweep", () => {
+    const block = extractRuleBlock(indexCss, ".dark .link-preview-loading-skeleton");
+    expect(block.length).toBeGreaterThan(0);
+    expect(block).not.toMatch(/#fff\b/i);
+    expect(block).not.toMatch(/rgba\(\s*250\s*,\s*250\s*,\s*250/i);
+    expect(block).toContain("rgba(82, 82, 91");
+  });
+
+  test("light skeleton keeps a brighter highlight for light themes", () => {
+    const block = extractRuleBlock(indexCss, ".link-preview-loading-skeleton {");
+    expect(block).toContain("rgba(250, 250, 250");
+  });
+
+  test("loaded card shell has dark surface tokens", () => {
+    expect(previewSource).toContain("dark:bg-neutral-950");
+    expect(previewSource).toContain("dark:border-neutral-700");
+    expect(previewSource).toContain("dark:bg-neutral-800/90");
+  });
+
+  test("macOS loading hides bubble gloss pseudo-elements so skeleton shimmer shows", () => {
+    expect(aquaThemeCss).toContain(
+      ".link-preview-loading.macosx-link-preview.chat-bubble:before"
+    );
+    expect(aquaThemeCss).toContain("display: none");
+    expect(aquaThemeCss).toContain(".link-preview-loading.macosx-link-preview.chat-bubble");
+    expect(aquaThemeCss).toContain("padding: 0 !important");
+  });
+
+  test("macOS themes enforce 16px radius on link preview cards and loading shells", () => {
+    expect(aquaThemeCss).toContain(
+      ".macosx-link-preview.chat-bubble.link-preview-container"
+    );
+    expect(aquaThemeCss).toContain(
+      ".macosx-link-preview.chat-bubble.link-preview-loading"
+    );
+    expect(aquaThemeCss).toContain("border-radius: 16px !important");
+  });
+
+  test("action row divider uses OS separator tokens on macOS", () => {
+    expect(actionButtonsSource).toContain("link-preview-actions-divider");
+    expect(actionButtonsSource).toContain("var(--os-color-separator)");
+    expect(actionButtonsSource).toContain("isMacOSTheme");
+    expect(aquaThemeCss).toContain(".macosx-link-preview .link-preview-actions-divider");
+  });
+});

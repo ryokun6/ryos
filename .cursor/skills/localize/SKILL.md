@@ -80,7 +80,7 @@ Add to `src/lib/locales/en/translation.json`:
 
 Do not rely on `defaultValue` as the only copy of a new key. `t("some.key", { defaultValue: "English" })` renders, but sync and audit scripts only compare locale JSON files, so missing keys stay invisible until the English catalog contains them.
 
-Use Apple-style title casing for standalone English menu and control labels, such as `Repeat All`, `Repeat One`, `Sign In`, and `Main Volume`. When a casing or terminology rule should be enforced globally, add the key to `ENGLISH_STYLE_EXPECTATIONS` in `scripts/apple-ui-terminology.ts` and cover it with `tests/test-translation-audit.test.ts`.
+Use Apple-style title casing for standalone English menu and control labels, such as `Repeat All`, `Repeat One`, `Sign In`, and `Main Volume`. When a casing or terminology rule should be enforced globally, add the key to `ENGLISH_STYLE_EXPECTATIONS` in `scripts/apple-ui-terminology.ts` and cover it with `tests/unit/i18n/test-translation-audit.test.ts`.
 
 ## Step 4: Sync Across Languages
 
@@ -124,6 +124,6 @@ Use `bun run i18n:audit:fix` only for terminology drift the script can safely re
 - Emoji/symbols (♪, ✓) can stay hardcoded
 - Help items use pattern: `apps.[appName].help.[key].title/description`
 - Help item key order lives in `src/hooks/useTranslatedHelpItems.ts`; apps with longer localized help rows can export their key list (for example `src/apps/maps/helpKeys.ts`, `src/apps/calculator/helpKeys.ts`, or `src/apps/internet-explorer/helpKeys.ts`) and spread it into `APP_HELP_I18N_KEYS`
-- `tests/test-help-i18n-alignment.test.ts` covers every registered app; update it only if the global help-key contract changes
+- `tests/unit/i18n/test-help-i18n-alignment.test.ts` covers every registered app; update it only if the global help-key contract changes
 - Include `t` in dependency arrays when used in `useMemo`/`useCallback`
 - If Apple terminology changes upstream, refresh the glossary source with `bun run i18n:apple-glossary` before auditing locale copy

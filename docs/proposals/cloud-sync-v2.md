@@ -10,7 +10,7 @@ Implementation map:
 - Shared: `src/shared/sync2/{types,hlc,namespaces}.ts`
 - Client: `src/sync/{engine,codecs,state,blobs,transport}.ts`,
   `src/hooks/useAutoCloudSync.ts`, `src/stores/useCloudSyncStore.ts`
-- Tests: `tests/test-sync-v2-{core,codecs,api,engine-e2e}.test.ts`
+- Tests: `tests/unit/sync/test-sync-v2-{core,codecs}.test.ts`, `tests/integration/api/test-sync-v2-{api,engine-e2e}.test.ts`
 
 Implementation notes where the final system deviates from the original
 proposal text below:
