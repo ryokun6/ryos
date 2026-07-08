@@ -21,7 +21,10 @@ import {
   useAppStoreShallow,
 } from "@/stores/useAppStore";
 import { shouldMountInstance } from "../instanceMountPolicy";
-import { getZIndexForInstance, supportsMultiWindowApp } from "./instanceHelpers";
+import {
+  selectZIndexForInstance,
+  supportsMultiWindowApp,
+} from "./instanceHelpers";
 import type { AppProps } from "../types";
 import type { AppManagerViewModel } from "./useAppManager";
 import { createClientLogger } from "@/utils/logger";
@@ -146,8 +149,10 @@ const ManagedAppInstance = memo(function ManagedAppInstance({
   const isForeground = useAppStore((state) =>
     selectIsInstanceForeground(state, instanceId)
   );
+  // Scalar index — not the instanceOrder array — so windows whose stack
+  // position is unchanged skip this commit when another window is focused.
   const zIndex = useAppStore((state) =>
-    getZIndexForInstance(instanceId, state.instanceOrder)
+    selectZIndexForInstance(state, instanceId)
   );
 
   // Hooks must run unconditionally — keep them above the early returns below

@@ -11,6 +11,7 @@ import {
 } from "@/components/shared/WindowFrameDrawerContext";
 import { motion, AnimatePresence } from "motion/react";
 import { selectExposeWindow } from "@/utils/appEventBus";
+import { selectOpenInstanceCount } from "@/apps/base/app-manager/instanceHelpers";
 import type { WindowFrameProps } from "./windowFrameTypes";
 import { getSwipeStyle } from "./windowFrameUtils";
 import {
@@ -66,7 +67,6 @@ export function WindowFrame({
     closeAppInstance,
     updateInstanceTitle,
     exposeMode,
-    openInstanceCount,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     updateInstanceWindowState: state.updateInstanceWindowState,
@@ -74,12 +74,12 @@ export function WindowFrame({
     closeAppInstance: state.closeAppInstance,
     updateInstanceTitle: state.updateInstanceTitle,
     exposeMode: state.exposeMode,
-    openInstanceCount: state.exposeMode
-      ? Object.values(state.instances).filter(
-          (inst) => inst.isOpen && !inst.isMinimized
-        ).length
-      : 0,
   }));
+  // Scalar count selected separately so geometry/title writes on other
+  // windows don't rebuild this shallow tuple while Exposé is active.
+  const openInstanceCount = useAppStore((state) =>
+    state.exposeMode ? selectOpenInstanceCount(state) : 0
+  );
 
   const showResizers = useDisplaySettingsStore((s) => s.showResizers);
   const isMinimized = useAppStore((state) =>
