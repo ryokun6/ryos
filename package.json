@@ -139,7 +139,7 @@
     "hangul-romanization": "^1.0.1",
     "i18next": "^26.3.4",
     "ioredis": "^5.11.1",
-    "ios-vibrator-pro-max": "^1.3.2",
+    "ios-vibrator-pro-max": "^3.0.3",
     "irc-framework": "^4.14.0",
     "jose": "^6.2.3",
     "leo-profanity": "^1.9.0",
