@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import ReactPlayer from "react-player";
+import ReactPlayerImport from "react-player";
 import type ReactPlayerType from "react-player";
 import { createClientLogger } from "@/utils/logger";
+
+// react-player 2 is CJS with an `__esModule`/`default` exports object. Vite's
+// dev prebundler (esbuild) resolves the default import to the component, but
+// Rolldown production builds use Node CJS semantics where the default import
+// is the whole exports object — rendering it throws React error #130.
+const ReactPlayer = ((
+  ReactPlayerImport as unknown as { default?: typeof ReactPlayerImport }
+).default ?? ReactPlayerImport) as typeof ReactPlayerImport;
 
 const youtubePlayerLog = createClientLogger("YouTubePlayer");
 
