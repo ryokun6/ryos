@@ -130,6 +130,9 @@ export function AboutDialog({
       <DialogContent
         className={cn("w-fit min-w-[280px] max-w-[400px]", isWindowsTheme && "p-0 overflow-hidden")}
         style={isWindowsTheme ? { fontSize: "11px" } : undefined}
+        // About is a reference panel, not an in-window action sheet — always
+        // present as a centered modal even on Aqua.
+        disableSheet
       >
         {isWindowsTheme ? (
           <>
