@@ -1574,6 +1574,13 @@
   border-radius: var(--os-glass-r-dialog) !important;
 }
 
+/* Sheets slide out from under the parent titlebar — keep their top edge
+   square so they read as emerging from a slot (bottom corners stay glassy). */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .macosx-sheet-body.macosx-dialog {
+  border-radius: 0 0 var(--os-glass-r-dialog) var(--os-glass-r-dialog) !important;
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"] .macosx-dialog-header {
   border-radius: var(--os-glass-r-dialog) var(--os-glass-r-dialog) 0 0 !important;
 }

@@ -2216,6 +2216,110 @@
   border-radius: 7.2px 7.2px 0px 0px !important;
 }
 
+/* Mac OS X sheet dialogs — slide out from under the parent window titlebar.
+   No top border and a tight shadow so the sheet reads as emerging from the
+   titlebar rather than floating above the window. */
+:root[data-os-theme="macosx"] .macosx-sheet-body.macosx-dialog {
+  border-radius: 0 0 7.2px 7.2px !important;
+  border-top-width: 0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+@keyframes macosx-sheet-in {
+  from {
+    transform: translateY(-101%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes macosx-sheet-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-101%);
+  }
+}
+
+/* No-op animation on the Radix content element so it waits for the sheet
+   retract animation (running on the child) before unmounting. */
+@keyframes macosx-sheet-hold {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-os-theme="macosx"] .macosx-sheet-strip[data-state="closed"] {
+  animation: macosx-sheet-hold 260ms linear;
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="open"]
+  .macosx-sheet-body {
+  animation: macosx-sheet-in 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="closed"]
+  .macosx-sheet-body {
+  animation: macosx-sheet-out 260ms cubic-bezier(0.55, 0.06, 0.68, 0.19)
+    forwards;
+}
+
+/* Shadow cast by the titlebar onto the sheet sliding out beneath it.
+   Absolutely positioned at the strip top (the titlebar's bottom edge),
+   spanning the full window width, painted above the sheet body. */
+:root[data-os-theme="macosx"] .macosx-sheet-titlebar-shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  z-index: 10;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.12) 45%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+@keyframes macosx-sheet-shadow-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes macosx-sheet-shadow-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="open"]
+  .macosx-sheet-titlebar-shadow {
+  animation: macosx-sheet-shadow-in 200ms ease-out;
+}
+
+:root[data-os-theme="macosx"]
+  .macosx-sheet-strip[data-state="closed"]
+  .macosx-sheet-titlebar-shadow {
+  animation: macosx-sheet-shadow-out 220ms ease-in forwards;
+}
+
 /* macOS Aqua Tab Styles */
 .aqua-tab {
   position: relative;

@@ -7,6 +7,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
+import { DialogParentWindowContext } from "@/components/shared/DialogParentWindowContext";
 
 const Dialog = ({
   children,
@@ -58,6 +59,39 @@ const DialogClose = DialogPrimitive.Close;
 interface DialogContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
   overlayClassName?: string;
+  /**
+   * Opt out of the macOS sheet presentation (dialog slides out from the
+   * parent window titlebar) and always render as a centered modal.
+   */
+  disableSheet?: boolean;
+}
+
+/** Viewport-space anchor line a sheet slides out from (parent titlebar). */
+interface SheetAnchor {
+  left: number;
+  top: number;
+  width: number;
+}
+
+/**
+ * True when the dialog renders as a macOS sheet; sheets have no titlebar of
+ * their own (they slide out from the parent window's titlebar), so
+ * DialogHeader renders nothing.
+ */
+const DialogSheetContext = React.createContext(false);
+
+function measureSheetAnchor(parentInstanceId: string): SheetAnchor | null {
+  const frame = document.querySelector<HTMLElement>(
+    `[data-window-instance-id="${CSS.escape(parentInstanceId)}"]`
+  );
+  if (!frame) return null;
+  // `.window` is the visible chrome; the outer frame carries mobile padding.
+  const chrome = frame.querySelector<HTMLElement>(".window") ?? frame;
+  const rect = chrome.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return null;
+  const titleBar = chrome.querySelector<HTMLElement>(":scope > .title-bar");
+  const top = titleBar ? titleBar.getBoundingClientRect().bottom : rect.top;
+  return { left: rect.left, top, width: rect.width };
 }
 
 const DialogContent = (
@@ -66,12 +100,81 @@ const DialogContent = (
     className,
     children,
     overlayClassName,
+    disableSheet = false,
+    style,
     ...props
   }: DialogContentProps & {
     ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Content>>;
   }
 ) => {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
+  const parentWindowInstanceId = React.useContext(DialogParentWindowContext);
+
+  // Mac OS X sheet behavior: when a dialog is opened from inside an app
+  // window on the Aqua theme, attach it to that window and slide it out from
+  // under the titlebar instead of showing a centered modal.
+  const wantsSheet =
+    isMacOSTheme && !disableSheet && parentWindowInstanceId !== null;
+
+  const [sheetAnchor, setSheetAnchor] = React.useState<
+    SheetAnchor | "unavailable" | null
+  >(null);
+  const hasMeasuredAnchor =
+    sheetAnchor !== null && sheetAnchor !== "unavailable";
+
+  // Only commit state when the measurement actually changed: Radix recomposes
+  // its internal ref chain on every render (detach + reattach), so this
+  // callback fires repeatedly and an unconditional set would loop forever.
+  const updateSheetAnchor = React.useCallback(() => {
+    if (!parentWindowInstanceId) return;
+    const next = measureSheetAnchor(parentWindowInstanceId) ?? "unavailable";
+    setSheetAnchor((prev) => {
+      if (prev === next) return prev;
+      if (
+        typeof prev === "object" &&
+        prev !== null &&
+        typeof next === "object" &&
+        prev.left === next.left &&
+        prev.top === next.top &&
+        prev.width === next.width
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [parentWindowInstanceId]);
+
+  // Measure the parent window when the (portaled) content mounts. The ref
+  // callback runs before paint, so the pre-measure hidden frame never shows.
+  const measureRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node || !wantsSheet) return;
+      updateSheetAnchor();
+    },
+    [wantsSheet, updateSheetAnchor]
+  );
+
+  const composedContentRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      measureRef(node);
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [measureRef, ref]
+  );
+
+  // Keep the sheet attached if the viewport (and thus window layout) changes.
+  React.useEffect(() => {
+    if (!hasMeasuredAnchor) return;
+    window.addEventListener("resize", updateSheetAnchor);
+    return () => window.removeEventListener("resize", updateSheetAnchor);
+  }, [hasMeasuredAnchor, updateSheetAnchor]);
+
+  // Fall back to the centered modal when the parent window can't be found.
+  const isSheet = wantsSheet && sheetAnchor !== "unavailable";
 
   // Function to clean up pointer-events
   const cleanupPointerEvents = React.useCallback(() => {
@@ -112,12 +215,85 @@ const DialogContent = (
     );
   };
 
+  if (isSheet) {
+    const anchor = hasMeasuredAnchor ? (sheetAnchor as SheetAnchor) : null;
+    return (
+      <DialogPortal>
+        {/* Sheets don't dim the desktop; the overlay only blocks interaction */}
+        <DialogPrimitive.Overlay
+          className={cn("fixed inset-0 z-50 bg-transparent", overlayClassName)}
+        />
+        {/* Full-window-width strip below the titlebar; overflow-hidden clips
+            the sheet while it slides out from behind the titlebar. Pointer
+            events pass through the strip padding to the overlay. */}
+        <DialogPrimitive.Content
+          ref={composedContentRef}
+          className="macosx-sheet-strip fixed z-50 flex flex-col items-center overflow-hidden px-4 pb-10"
+          style={
+            anchor
+              ? {
+                  left: anchor.left,
+                  top: anchor.top,
+                  width: anchor.width,
+                  pointerEvents: "none",
+                }
+              : {
+                  left: 0,
+                  top: 0,
+                  width: "100%",
+                  visibility: "hidden",
+                  pointerEvents: "none",
+                }
+          }
+          onEscapeKeyDown={cleanupPointerEvents}
+          onPointerDownOutside={cleanupPointerEvents}
+          onCloseAutoFocus={cleanupPointerEvents}
+          {...props}
+        >
+          {/* Shadow the titlebar casts onto the emerging sheet — painted
+              above the window frame and the sheet so the sheet reads as
+              sliding out of a slot under the titlebar. */}
+          <div aria-hidden className="macosx-sheet-titlebar-shadow" />
+          <div
+            className={cn(
+              "macosx-sheet-body pointer-events-auto grid w-full min-w-0 max-w-lg gap-4 border bg-os-window-bg p-0 overflow-hidden",
+              "border-[length:var(--os-metrics-border-width)] border-os-window macosx-dialog [&_button]:text-[length:var(--os-typography-button)]",
+              className
+            )}
+            style={{
+              ...(anchor
+                ? { maxHeight: `calc(100dvh - ${anchor.top}px - 12px)` }
+                : undefined),
+              ...style,
+            }}
+          >
+            <div
+              className={cn(
+                "flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col overflow-x-hidden",
+                OS_SHELL_TEXT_SCALE_CLASS
+              )}
+              style={{
+                backgroundColor: "var(--os-color-window-bg)",
+                backgroundImage: "var(--os-pinstripe-window)",
+              }}
+            >
+              <DialogSheetContext.Provider value={true}>
+                {children}
+              </DialogSheetContext.Provider>
+            </div>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    );
+  }
+
   return (
     <DialogPortal>
       <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", overlayClassName)} />
       <DialogPrimitive.Content
-        ref={ref}
+        ref={composedContentRef}
         className={getDialogContentClasses()}
+        style={style}
         onEscapeKeyDown={cleanupPointerEvents}
         onPointerDownOutside={cleanupPointerEvents}
         onCloseAutoFocus={cleanupPointerEvents}
@@ -154,7 +330,14 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { t } = useTranslation();
   const { isWinXp, isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const isSheet = React.useContext(DialogSheetContext);
   const closeRef = React.useRef<HTMLButtonElement>(null);
+
+  // macOS sheets have no titlebar — they slide out from the parent window's
+  // titlebar. Titles stay accessible via the callers' (sr-only) DialogTitle.
+  if (isSheet) {
+    return null;
+  }
 
   if (isWindowsTheme) {
     return (
