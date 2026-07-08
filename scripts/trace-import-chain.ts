@@ -1,7 +1,7 @@
 /**
  * Dev utility: trace static import chains from the client entry to a target
  * module. Helps find which import path drags a heavy module into the boot
- * bundle. Also imported by tests/test-boot-import-graph.test.ts to guard the
+ * bundle. Also imported by tests/unit/pwa/test-boot-import-graph.test.ts to guard the
  * boot graph against regressions.
  *
  * Usage: bun run scripts/trace-import-chain.ts <target-substring> [entry]

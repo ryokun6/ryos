@@ -66,7 +66,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ├── electron/         # Electron shell, menu, preload, and updater
 ├── public/           # Static assets (icons, wallpapers, sounds, fonts)
 ├── scripts/          # Build + maintenance + standalone API runner
-├── tests/            # Bun test suites
+├── tests/            # Bun test suites (unit/<domain>, integration/api, helpers)
 ├── src/
 │   ├── api/          # Frontend API clients
 │   ├── apps/         # Individual app modules

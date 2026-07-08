@@ -317,7 +317,7 @@ const Lazy[AppName]App = createLazyComponent<unknown>(
 
 For longer help lists, create `src/apps/[app-name]/helpKeys.ts` and spread that exported list into `APP_HELP_I18N_KEYS`. Calculator, Maps, and Internet Explorer are good examples.
 
-Run `bun test tests/test-help-i18n-alignment.test.ts` after adding the app. It catches missing help keys and row-count drift across every registered app.
+Run `bun test tests/unit/i18n/test-help-i18n-alignment.test.ts` after adding the app. It catches missing help keys and row-count drift across every registered app.
 
 ## AppProps Interface
 

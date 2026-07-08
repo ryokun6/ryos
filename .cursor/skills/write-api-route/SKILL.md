@@ -162,10 +162,10 @@ API integration tests require the standalone server running:
 # Terminal 1
 bun run dev:api          # exports TRUSTED_PROXY_COUNT=1 for spoofed-IP rate-limit tests
 # Terminal 2
-bun run test:api         # or: bun test tests/test-<feature>.test.ts
+bun run test:api         # or: bun test tests/integration/api/test-<feature>.test.ts
 ```
 
-Use helpers from `tests/test-utils.ts`: `fetchWithOrigin`, `fetchWithAuth`, `ensureUserAuth`, `makeRateLimitBypassHeaders` (random IP to dodge rate limits). Add the new suite to the `test:api` script in `package.json` if you created a new file. For pure schema/validation logic, a no-server unit test (see the `write-tests` skill) is often enough.
+Use helpers from `tests/helpers/test-utils.ts`: `fetchWithOrigin`, `fetchWithAuth`, `ensureUserAuth`, `makeRateLimitBypassHeaders` (random IP to dodge rate limits). Place new API suites under `tests/integration/api/` and append them to `API_TEST_FILES` in `scripts/test-groups.ts`, then run `bun run test:registration`. For pure schema/validation logic, a no-server unit test under `tests/unit/` (see the `write-tests` skill) is often enough.
 
 ## Best Practices
 

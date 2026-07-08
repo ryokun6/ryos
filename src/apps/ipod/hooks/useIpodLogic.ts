@@ -4865,7 +4865,7 @@ export function useIpodLogic({
   // itself ("Today's Hits" / "Apple Music"), NOT the song that's
   // currently playing through it. Resolution lives in
   // `resolveLyricsTrackMetadata` so the rule is unit-tested in
-  // isolation (see `tests/test-ipod-lyrics-track-metadata.test.ts`).
+  // isolation (see `tests/unit/ipod/test-ipod-lyrics-track-metadata.test.ts`).
   const lyricsMetadata = useMemo(
     () => resolveLyricsTrackMetadata(currentTrack, appleMusicKitNowPlaying),
     [currentTrack, appleMusicKitNowPlaying]

@@ -58,7 +58,7 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 ├── index.html        # Vite entry / app shell
 ├── electron/         # Electron main/preload/menu/updater
 ├── public/           # Static assets
-├── tests/            # bun:test suites
+├── tests/            # bun:test suites (unit/<domain>, integration/api, helpers)
 ├── src/
 │   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc)
 │   ├── apps/         # 27 app modules

@@ -199,4 +199,4 @@ Use an existing `CloudSyncDeletionBucket` value (see `useCloudSyncStore.ts`); on
 
 ## Testing
 
-Store logic (reducers, migrations, tombstone calls) is unit-testable without a server — see the `write-tests` skill and examples like `tests/test-stickies-tool-reducer.test.ts` and `tests/test-debounced-persist-storage.test.ts`. Register new unit suites in the `test:unit` script.
+Store logic (reducers, migrations, tombstone calls) is unit-testable without a server — see the `write-tests` skill and examples like `tests/unit/apps/test-stickies-tool-reducer.test.ts` and `tests/unit/sync/test-debounced-persist-storage.test.ts`. Place new unit suites under `tests/unit/<domain>/` (auto-discovered by `test:unit`).

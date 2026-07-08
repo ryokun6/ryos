@@ -9,7 +9,7 @@
 //
 // Guarded with `typeof window` so this module is safe to import in
 // non-browser environments (Bun's default test runner, Node-only API
-// handlers, SSR). Tests like `tests/test-ipod-apple-music.test.ts`
+// handlers, SSR). Tests like `tests/unit/ipod/test-ipod-apple-music.test.ts`
 // pull this module in transitively via the iPod store; without the
 // guard, just loading the module would throw `ReferenceError: window
 // is not defined` and abort the suite.

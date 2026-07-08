@@ -74,10 +74,10 @@ This regenerates all of `public/docs/`. Commit `changelog.html` **and** `overvie
 
 ### 5. Sync Tests
 
-`tests/test-changelog-docs-sync.test.ts` enforces md/HTML sync, 1280×720 screenshot dimensions, month count, the ≤5 featured limit, and the exact featured-screenshot lists for recent months — update its expectations (and add new anchor phrases) when the featured set changes, then run:
+`tests/unit/i18n/test-changelog-docs-sync.test.ts` enforces md/HTML sync, 1280×720 screenshot dimensions, month count, the ≤5 featured limit, and the exact featured-screenshot lists for recent months — update its expectations (and add new anchor phrases) when the featured set changes, then run:
 
 ```bash
-bun test tests/test-changelog-docs-sync.test.ts tests/test-generate-docs-path-links.test.ts
+bun test tests/unit/i18n/test-changelog-docs-sync.test.ts tests/unit/i18n/test-generate-docs-path-links.test.ts
 ```
 
 ### 6. Review Changes
