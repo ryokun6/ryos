@@ -781,6 +781,10 @@ export async function getAnalyticsDetail(
     .slice(0, 20);
 
   // ── AI rate-limit lookups (small optional pipeline) ──
+  // Authenticated users share one counter per username. Anonymous chat
+  // budget is per-IP (`anon:<ip>`), so there is no single "anonymous"
+  // counter to display — omit it rather than hardcoding 0/3 (which made
+  // working limits look broken in the admin dashboard).
   const aiRateLimits: AIRateLimitInfo[] = [];
   const nonAnonUsers = aiByUser.filter((u) => u.username !== "anonymous");
   if (nonAnonUsers.length > 0) {
@@ -798,14 +802,6 @@ export async function getAnalyticsDetail(
         windowLabel: "5h",
       });
     }
-  }
-  if (aiuMap.has("anonymous")) {
-    aiRateLimits.push({
-      identifier: "anonymous",
-      currentCount: 0,
-      limit: 3,
-      windowLabel: "24h",
-    });
   }
 
   const product = await getProductAnalyticsDetail(redis, days);

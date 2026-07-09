@@ -96,7 +96,15 @@ export default async function handler(
         return;
       }
     } catch (rlErr) {
+      // Fail closed: a Redis/limiter outage must not unlock unlimited
+      // transcription.
       logger.error("Rate limit check failed", rlErr);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({
+        error: "rate_limit_unavailable",
+        message: "Rate limiting is temporarily unavailable. Please try again shortly.",
+      });
+      return;
     }
 
     // Parse form data

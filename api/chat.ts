@@ -314,12 +314,15 @@ export default apiHandler<{
           `Rate limit exceeded: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
         );
 
+        const windowLabel = isAuthenticated
+          ? "this 5-hour window"
+          : "the last 24 hours";
         const errorResponse = {
           error: "rate_limit_exceeded",
           isAuthenticated,
           count: rateLimitResult.count,
           limit: rateLimitResult.limit,
-          message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
+          message: `You've hit your limit of ${rateLimitResult.limit} messages in ${windowLabel}. Please wait a while and try again.`,
         };
 
         res.status(429).json(errorResponse);

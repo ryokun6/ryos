@@ -133,6 +133,9 @@ describe("server AI chat lifecycle wiring", () => {
     expect(source).toMatch(
       /if \(shouldRateLimit\) \{\s*const rateLimitResult = await checkAndIncrementAIMessageCount/
     );
+    expect(source).toContain('isAuthenticated');
+    expect(source).toContain('"this 5-hour window"');
+    expect(source).toContain('"the last 24 hours"');
   });
 
   test("forwards disconnects to the model while keeping the persistence consumer", () => {

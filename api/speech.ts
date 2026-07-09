@@ -119,7 +119,14 @@ export default apiHandler<SpeechRequest>(
         logger.info("Rate limit bypassed for authenticated ryo user");
       }
     } catch (e) {
+      // Fail closed: a Redis/limiter outage must not unlock unlimited TTS.
       logger.error("Rate limit check failed (tts)", e);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({
+        error: "rate_limit_unavailable",
+        message: "Rate limiting is temporarily unavailable. Please try again shortly.",
+      });
+      return;
     }
 
     try {

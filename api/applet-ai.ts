@@ -448,7 +448,14 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
         });
       }
     } catch (error) {
+      // Fail closed: a Redis/limiter outage must not unlock unlimited
+      // text/image generation.
       logger.error("Rate limit check failed:", error);
+      logger.response(503, Date.now() - startTime);
+      return res.status(503).json({
+        error: "rate_limit_unavailable",
+        message: "Rate limiting is temporarily unavailable. Please try again shortly.",
+      });
     }
   }
 

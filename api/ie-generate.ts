@@ -204,8 +204,14 @@ export default apiHandler<IEGenerateRequestBody>(
         });
       }
     } catch (e) {
-      // Fail open on limiter error to avoid blocking
+      // Fail closed: a Redis/limiter outage must not unlock unlimited
+      // IE generation.
       logger.error("IE generate rate-limit error", e);
+      logger.response(503, Date.now() - startTime);
+      return res.status(503).json({
+        error: "rate_limit_unavailable",
+        message: "Rate limiting is temporarily unavailable. Please try again shortly.",
+      });
     }
 
     // Extract query parameters

@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { Redis } from "../../../api/_utils/redis";
-import { makeKey } from "../../../api/_utils/_rate-limit";
+import {
+  getAIRateLimitKey,
+  makeKey,
+} from "../../../api/_utils/_rate-limit";
 import { deleteLegacyRedisKeys } from "../../../scripts/lib/redis-key-migration";
 import { FakeRedis } from "../../helpers/fake-redis";
 
@@ -11,6 +14,20 @@ describe("rate-limit Redis keys", () => {
     expect(key).toMatch(/^rate:parse-title:burst:ip:[a-f0-9]{64}$/);
     expect(key.startsWith("rl:")).toBe(false);
     expect(key).not.toContain("203.0.113.9");
+  });
+
+  test("AI chat rate-limit keys ignore username casing", () => {
+    expect(getAIRateLimitKey("Alice")).toBe(getAIRateLimitKey("alice"));
+    expect(getAIRateLimitKey("ALICE")).toBe(getAIRateLimitKey("alice"));
+    expect(getAIRateLimitKey("anon:203.0.113.9")).toBe(
+      getAIRateLimitKey("ANON:203.0.113.9")
+    );
+  });
+
+  test("tool rate-limit keys land under the canonical rate: namespace", () => {
+    const key = makeKey(["rl", "tool", "webFetch", "user", "alice"]);
+    expect(key).toMatch(/^rate:tool:webfetch:user:[a-f0-9]{64}$/);
+    expect(key.startsWith("ratelimit:")).toBe(false);
   });
 
   test("legacy rl cleanup does not delete newly generated runtime counters", async () => {

@@ -13,7 +13,7 @@
  */
 
 import type { Redis } from "../../_utils/redis.js";
-import { checkCounterLimit } from "../../_utils/_rate-limit.js";
+import { checkCounterLimit, makeKey } from "../../_utils/_rate-limit.js";
 
 export type RateLimitedToolName =
   | "webFetch"
@@ -55,7 +55,7 @@ export async function checkToolRateLimit(
   const { limit, windowSeconds } = TOOL_RATE_LIMITS[tool];
   try {
     const result = await checkCounterLimit({
-      key: `ratelimit:tool:${tool}:${username.toLowerCase()}`,
+      key: makeKey(["rl", "tool", tool, "user", username.toLowerCase()]),
       windowSeconds,
       limit,
       ...(redis ? { redis } : {}),
@@ -69,8 +69,12 @@ export async function checkToolRateLimit(
     }
     return { allowed: true };
   } catch (error) {
-    // Fail open: a Redis hiccup should not take down tool execution.
+    // Fail closed for tool quota: returning "allowed" here would let a
+    // Redis outage burn external API quota unbounded through tool loops.
     logError(`[${tool}] rate limit check failed`, error);
-    return { allowed: true };
+    return {
+      allowed: false,
+      message: `Rate limiting is temporarily unavailable for ${tool}. Please try again shortly.`,
+    };
   }
 }
