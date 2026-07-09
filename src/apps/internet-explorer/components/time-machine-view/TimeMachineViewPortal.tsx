@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from "motion/react";
+import { lazy, Suspense } from "react";
 import { X, Sparkle, Export } from "@phosphor-icons/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { Button } from "@/components/ui/button";
-import GalaxyBackground from "@/components/shared/GalaxyBackground";
 import { ShaderType } from "@/types/shader";
 import {
   DropdownMenu,
@@ -16,6 +16,10 @@ import TimeNavigationControls from "../TimeNavigationControls";
 import type { ShaderOption } from "./types";
 import type { useTimeMachineView } from "./useTimeMachineView";
 import { timeMachineLog as log } from "../../logging";
+
+const GalaxyBackground = lazy(
+  () => import("@/components/shared/GalaxyBackground")
+);
 
 export type TimeMachineViewVm = ReturnType<typeof useTimeMachineView>;
 
@@ -34,8 +38,12 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                   exit={{ opacity: 0, scale: 1.05 }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-            {/* Galaxy Background */}
-            <GalaxyBackground shaderType={vm.selectedShaderType} />
+            {/* Galaxy Background — lazy so Three.js stays out of the IE chunk */}
+            {vm.shaderEffectEnabled ? (
+              <Suspense fallback={null}>
+                <GalaxyBackground shaderType={vm.selectedShaderType} />
+              </Suspense>
+            ) : null}
 
             {/* Top Close Button */}
             <button
