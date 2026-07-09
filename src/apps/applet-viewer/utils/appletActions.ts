@@ -12,6 +12,7 @@ import { APPLET_ANALYTICS, track } from "@/utils/analytics";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { emitFileSaved } from "@/utils/appEventBus";
+import { invalidateAppletCatalog } from "./appletCatalog";
 
 export interface Applet {
   id: string;
@@ -226,6 +227,8 @@ export const useAppletActions = () => {
         icon: data.icon || undefined,
       });
       
+      invalidateAppletCatalog();
+
       // Track analytics for install or update
       if (isUpdate) {
         track(APPLET_ANALYTICS.UPDATE, {

@@ -38,6 +38,7 @@ import { generateJsonFromHtml } from "@/utils/tiptapHtml";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
+import { fetchAppletCatalog } from "@/apps/applet-viewer/utils/appletCatalog";
 import { aiChatLog as log } from "../logging";
 import { emitAppletUpdated, emitDocumentUpdated } from "@/utils/appEventBus";
 import {
@@ -253,24 +254,7 @@ export async function handleVfsList(
       const hasKeyword = normalizedKeyword.length > 0;
       const maxResults = limit ? Math.min(Math.max(limit, 1), 100) : 50;
 
-      const response = await abortableFetch(
-        getApiUrl("/api/share-applet?list=true"),
-        {
-          timeout: 15000,
-          retry: { maxAttempts: 2, initialDelayMs: 500 },
-        }
-      );
-
-      const data = await response.json();
-      const allApplets: Array<{
-        id: string;
-        title?: string;
-        name?: string;
-        icon?: string;
-        createdAt?: number;
-        createdBy?: string;
-      }> = Array.isArray(data?.applets) ? data.applets : [];
-
+      const allApplets = await fetchAppletCatalog();
       const scoreThreshold = hasKeyword
         ? deriveScoreThreshold(normalizedKeyword.length)
         : 0;
