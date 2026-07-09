@@ -22,14 +22,16 @@
 
 ## Priority fixes
 
-1. **Phosphor Icons barrel** (`bundle-barrel-imports`) — 134 files import `@phosphor-icons/react`. Add Vite package-import optimization or CSR subpath imports.
-2. **Decouple Finder from desktop shell** (`bundle-dynamic-imports`) — `DesktopIconGrid` imports Finder `FileIcon`, pulling Finder into boot.
-3. **Parallelize room teardown Redis** (`async-parallel`) — four sequential deletes in `api/rooms/[id].ts` / `leave.ts`.
-4. **Dedupe applet catalog fetches** (`client-swr-dedup`) — multiple independent `/api/share-applet?list=true` callers.
-5. **Finder grid virtualization** (`rendering-content-visibility`) — list view virtualizes; grid maps all files.
-6. **Lazy `useState` for storage calc** (`rerender-lazy-state-init`) — `useState(calculateStorageSpace())` in Finder.
-7. **Shorten `/api/chat` pre-stream waterfall** (`async-api-routes`) — geo / timezone / memory / attachments can overlap.
-8. **Lazy Three.js in IE Time Machine** (`bundle-dynamic-imports`) — eager `GalaxyBackground` → `three`.
+Status as of 2026-07-09 follow-up PR commits:
+
+1. **Phosphor Icons barrel** (`bundle-barrel-imports`) — **FIXED** via `vite/optimizePhosphorImports.ts` (named CSR subpath rewrite).
+2. **Decouple Finder from desktop shell** (`bundle-dynamic-imports`) — **FIXED** via `OsIconLabel` + `DesktopIconGrid` switch.
+3. **Parallelize room teardown Redis** (`async-parallel`) — **FIXED** (`Promise.all` in delete/leave).
+4. **Dedupe applet catalog fetches** (`client-swr-dedup`) — **FIXED** via `fetchAppletCatalog` helper.
+5. **Finder grid virtualization** (`rendering-content-visibility`) — **ALREADY PRESENT** (`contentVisibility: auto` on `GridItem`).
+6. **Lazy `useState` for storage calc** (`rerender-lazy-state-init`) — **FIXED** + deferred Finder search.
+7. **Shorten `/api/chat` pre-stream waterfall** (`async-api-routes`) — **FIXED** (geo∥tz, memory∥attachments).
+8. **Lazy Three.js in IE Time Machine** (`bundle-dynamic-imports`) — **FIXED** (`React.lazy` GalaxyBackground).
 
 ---
 
