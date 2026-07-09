@@ -251,7 +251,7 @@ function ComboboxImpl({
     const onResize = () => updateRect();
 
     document.addEventListener("pointerdown", onPointerDown, true);
-    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
     window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);

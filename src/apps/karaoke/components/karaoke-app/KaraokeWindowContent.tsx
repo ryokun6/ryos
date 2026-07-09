@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
+import { Suspense, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { CoverFlow } from "@/apps/ipod/components/cover-flow/CoverFlow";
+import { CoverFlow } from "@/apps/ipod/components/ipod-app/ipodLazyImports";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
@@ -51,6 +52,13 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
     handlePassDj, handleTransferSessionHost, handleSendReaction, cycleAlignment, cycleLyricsFont,
     displayMode, handleDisplayModeSelect, displayModeOptions,
   } = c;
+
+  // Keep CoverFlow mounted after first open so exit animations work, but
+  // defer the lazy chunk until the user actually opens CoverFlow.
+  const [hasOpenedCoverFlow, setHasOpenedCoverFlow] = useState(false);
+  useEffect(() => {
+    if (isCoverFlowOpen) setHasOpenedCoverFlow(true);
+  }, [isCoverFlowOpen]);
 
   return (
     <div
@@ -267,22 +275,28 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
         />
       </KaraokeLyricsPlaybackProvider>
 
-      {/* CoverFlow overlay - full height, below notitlebar (z-50) */}
-      {tracks.length > 0 && (
-        <div className={`absolute inset-0 z-40 ${isCoverFlowOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
-          <CoverFlow
-            ref={coverFlowRef}
-            tracks={tracks}
-            currentIndex={currentIndex}
-            onSelectTrack={handleCoverFlowSelectTrack}
-            onExit={() => setIsCoverFlowOpen(false)}
-            onRotation={handleCoverFlowRotation}
-            isVisible={isCoverFlowOpen}
-            ipodMode={false}
-            isPlaying={isPlaying}
-            onTogglePlay={handlePlayPause}
-            onPlayTrackInPlace={handleCoverFlowPlayInPlace}
-          />
+      {/* CoverFlow overlay - full height, below notitlebar (z-50); lazy-loaded */}
+      {tracks.length > 0 && hasOpenedCoverFlow && (
+        <div
+          className={`absolute inset-0 z-40 ${
+            isCoverFlowOpen ? "pointer-events-auto" : "pointer-events-none"
+          }`}
+        >
+          <Suspense fallback={null}>
+            <CoverFlow
+              ref={coverFlowRef}
+              tracks={tracks}
+              currentIndex={currentIndex}
+              onSelectTrack={handleCoverFlowSelectTrack}
+              onExit={() => setIsCoverFlowOpen(false)}
+              onRotation={handleCoverFlowRotation}
+              isVisible={isCoverFlowOpen}
+              ipodMode={false}
+              isPlaying={isPlaying}
+              onTogglePlay={handlePlayPause}
+              onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+            />
+          </Suspense>
         </div>
       )}
 

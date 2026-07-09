@@ -10,7 +10,8 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppletUpdates } from "./useAppletUpdates";
-import { useAppletActions, type Applet } from "../utils/appletActions";
+import { useAppletActions } from "../utils/appletActions";
+import { fetchAppletCatalog } from "../utils/appletCatalog";
 import { toast } from "sonner";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -190,17 +191,8 @@ export function useAppletViewerLogic({
   const checkForAppletUpdate = useCallback(
     async (shareId: string) => {
       try {
-        const response = await abortableFetch(
-          getApiUrl("/api/share-applet?list=true"),
-          {
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-        const data = await response.json();
-        const applet = (data.applets || []).find(
-          (a: Applet) => a.id === shareId
-        );
+        const applets = await fetchAppletCatalog();
+        const applet = applets.find((a) => a.id === shareId);
 
         if (!applet) return null;
 

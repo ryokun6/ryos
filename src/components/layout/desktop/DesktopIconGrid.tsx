@@ -1,7 +1,7 @@
 import type { AnyApp } from "@/apps/base/types";
 import type { AppId } from "@/config/appRegistry";
 import { memo, useMemo, type MouseEvent as ReactMouseEvent } from "react";
-import { FileIcon } from "@/apps/finder/components/FileIcon";
+import { OsIconLabel } from "@/components/shared/OsIconLabel";
 import { getAppIconPath } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { FileSystemItem } from "@/stores/useFilesStore";
@@ -61,7 +61,7 @@ const DesktopMacintoshHdIcon = memo(function DesktopMacintoshHdIcon({
 }) {
   return (
     <div data-desktop-item-id={getDesktopAppItemId("macintosh-hd")}>
-      <FileIcon
+      <OsIconLabel
         name={name}
         isDirectory={true}
         icon={
@@ -129,7 +129,7 @@ const DesktopShortcutIcon = memo(function DesktopShortcutIcon({
         setTimeout(() => document.body.removeChild(dragImage), 0);
       }}
     >
-      <FileIcon
+      <OsIconLabel
         name={displayName}
         isDirectory={
           shortcut.aliasType === "file" &&
@@ -170,7 +170,7 @@ const DesktopAppIcon = memo(function DesktopAppIcon({
 }) {
   return (
     <div data-desktop-item-id={getDesktopAppItemId(app.id)}>
-      <FileIcon
+      <OsIconLabel
         name={getTranslatedAppName(app.id as AppId)}
         isDirectory={false}
         icon={
@@ -208,7 +208,7 @@ const DesktopTrashIcon = memo(function DesktopTrashIcon({
 }) {
   return (
     <div data-desktop-item-id={getDesktopAppItemId("trash")}>
-      <FileIcon
+      <OsIconLabel
         name={name}
         isDirectory={true}
         icon={trashIcon}

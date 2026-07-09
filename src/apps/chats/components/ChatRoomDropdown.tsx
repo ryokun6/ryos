@@ -30,6 +30,67 @@ interface ChatRoomDropdownProps {
   children: React.ReactNode;
 }
 
+const ChatRoomDropdownItem = React.memo(function ChatRoomDropdownItem({
+  room,
+  isSelected,
+  username,
+  onlineUsers,
+  onRoomSelect,
+}: {
+  room: ChatRoom;
+  isSelected: boolean;
+  username?: string | null;
+  onlineUsers: string[];
+  onRoomSelect: (room: ChatRoom | null) => void;
+}) {
+  const { t } = useTranslation();
+  // Per-room subscription: an unread-count bump re-renders only this row.
+  const unreadCount = useChatsStore((s) => s.unreadCounts[room.id] || 0);
+  const isOnline = Boolean(
+    room.type === "private" &&
+      isPrivateRoomOnline(room, username, onlineUsers)
+  );
+
+  return (
+    <DropdownMenuCheckboxItem
+      checked={isSelected}
+      onCheckedChange={(checked) => {
+        if (checked) onRoomSelect(room);
+      }}
+      className="text-md h-6"
+    >
+      <span className="flex w-full min-w-0 items-center">
+        {isOnline && (
+          <span
+            className="mr-1.5 inline-block size-1.5 flex-shrink-0 rounded-full bg-green-500"
+            title="Online"
+          />
+        )}
+        <span className="truncate min-w-0">
+          {room.type === "private"
+            ? getPrivateRoomDisplayName(room, username ?? null)
+            : `#${room.name}`}
+        </span>
+        {room.type === "irc" && (
+          <span
+            className="ml-1 flex-shrink-0 text-[9px] font-bold uppercase tracking-wider opacity-40"
+            title={`IRC ${room.ircHost || "irc.pieter.com"}`}
+          >
+            irc
+          </span>
+        )}
+        {unreadCount > 0 && (
+          <span className="ml-auto flex-shrink-0 whitespace-nowrap pl-2 text-[10px] text-orange-600">
+            {`${unreadCount >= 20 ? "20+" : unreadCount} ${t(
+              "apps.chats.sidebar.new"
+            )}`}
+          </span>
+        )}
+      </span>
+    </DropdownMenuCheckboxItem>
+  );
+});
+
 /**
  * Room switcher for narrow (mobile) frames: anchors the shared dropdown menu
  * to the chat header title instead of the desktop sidebar.
@@ -47,7 +108,6 @@ export function ChatRoomDropdown({
   const roomActivitySignature = useChatsStore((s) =>
     getRoomActivitySignature(Array.isArray(rooms) ? rooms : [], s.roomMessages)
   );
-  const unreadCounts = useChatsStore((s) => s.unreadCounts);
 
   const { publicRooms, privateRooms } = useMemo(() => {
     const nextPublicRooms: ChatRoom[] = [];
@@ -74,54 +134,6 @@ export function ChatRoomDropdown({
   }, [onlineUsers, roomActivitySignature, rooms, username]);
 
   const hasBoth = publicRooms.length > 0 && privateRooms.length > 0;
-
-  const renderRoomItem = (room: ChatRoom) => {
-    const isOnline = Boolean(
-      room.type === "private" &&
-        isPrivateRoomOnline(room, username, onlineUsers)
-    );
-    const unreadCount = unreadCounts[room.id] || 0;
-
-    return (
-      <DropdownMenuCheckboxItem
-        key={room.id}
-        checked={currentRoom?.id === room.id}
-        onCheckedChange={(checked) => {
-          if (checked) onRoomSelect(room);
-        }}
-        className="text-md h-6"
-      >
-        <span className="flex w-full min-w-0 items-center">
-          {isOnline && (
-            <span
-              className="mr-1.5 inline-block size-1.5 flex-shrink-0 rounded-full bg-green-500"
-              title="Online"
-            />
-          )}
-          <span className="truncate min-w-0">
-            {room.type === "private"
-              ? getPrivateRoomDisplayName(room, username ?? null)
-              : `#${room.name}`}
-          </span>
-          {room.type === "irc" && (
-            <span
-              className="ml-1 flex-shrink-0 text-[9px] font-bold uppercase tracking-wider opacity-40"
-              title={`IRC ${room.ircHost || "irc.pieter.com"}`}
-            >
-              irc
-            </span>
-          )}
-          {unreadCount > 0 && (
-            <span className="ml-auto flex-shrink-0 whitespace-nowrap pl-2 text-[10px] text-orange-600">
-              {`${unreadCount >= 20 ? "20+" : unreadCount} ${t(
-                "apps.chats.sidebar.new"
-              )}`}
-            </span>
-          )}
-        </span>
-      </DropdownMenuCheckboxItem>
-    );
-  };
 
   const sectionLabelClassName = cn(
     "flex h-5 items-center px-3 py-0 font-normal",
@@ -152,16 +164,43 @@ export function ChatRoomDropdown({
             <DropdownMenuLabel className={sectionLabelClassName}>
               {t("apps.chats.sidebar.rooms")}
             </DropdownMenuLabel>
-            {publicRooms.map(renderRoomItem)}
+            {publicRooms.map((room) => (
+              <ChatRoomDropdownItem
+                key={room.id}
+                room={room}
+                isSelected={currentRoom?.id === room.id}
+                username={username}
+                onlineUsers={onlineUsers}
+                onRoomSelect={onRoomSelect}
+              />
+            ))}
             <DropdownMenuLabel className={sectionLabelClassName}>
               {t("apps.chats.sidebar.private")}
             </DropdownMenuLabel>
-            {privateRooms.map(renderRoomItem)}
+            {privateRooms.map((room) => (
+              <ChatRoomDropdownItem
+                key={room.id}
+                room={room}
+                isSelected={currentRoom?.id === room.id}
+                username={username}
+                onlineUsers={onlineUsers}
+                onRoomSelect={onRoomSelect}
+              />
+            ))}
           </>
         ) : (
           <>
             {(publicRooms.length > 0 ? publicRooms : privateRooms).map(
-              renderRoomItem
+              (room) => (
+                <ChatRoomDropdownItem
+                  key={room.id}
+                  room={room}
+                  isSelected={currentRoom?.id === room.id}
+                  username={username}
+                  onlineUsers={onlineUsers}
+                  onRoomSelect={onRoomSelect}
+                />
+              )
             )}
           </>
         )}

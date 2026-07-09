@@ -4,6 +4,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppletActions, type Applet } from "../../utils/appletActions";
+import { fetchAppletCatalog } from "../../utils/appletCatalog";
 import type { AppStoreFeedRef } from "../AppStoreFeed";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
@@ -64,19 +65,8 @@ export function useAppStore({ theme, sharedAppletId, focusWindow }: AppStoreProp
   const fetchApplets = useCallback(
     async (signal?: AbortSignal) => {
       try {
-        const response = await abortableFetch(getApiUrl("/api/share-applet?list=true"), {
-          signal,
-          timeout: 15000,
-          retry: { maxAttempts: 2, initialDelayMs: 500 },
-        });
+        const sortedApplets = await fetchAppletCatalog({ signal });
         if (signal?.aborted) return;
-
-        const data = await response.json();
-        if (signal?.aborted) return;
-
-        const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
-          return (b.createdAt || 0) - (a.createdAt || 0);
-        });
         setApplets(sortedApplets);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;

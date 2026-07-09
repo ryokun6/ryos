@@ -100,8 +100,9 @@ export function ScreenSaverOverlay() {
       timeoutId = setTimeout(checkIdle, 1000);
     };
 
-    // Activity listeners
-    const events = ["mousedown", "mousemove", "keydown", "touchstart", "scroll", "wheel"];
+    // Activity listeners — omit mousemove (fires constantly); pointer/key/scroll
+    // are enough to detect user presence without burning main-thread time.
+    const events = ["mousedown", "keydown", "touchstart", "scroll", "wheel"];
     events.forEach((event) => {
       window.addEventListener(event, resetTimer, { passive: true });
     });
@@ -149,9 +150,9 @@ export function ScreenSaverOverlay() {
 
     // Small delay to prevent immediate dismiss
     const timeoutId = setTimeout(() => {
-      window.addEventListener("mousedown", handleDismiss);
+      window.addEventListener("mousedown", handleDismiss, { passive: true });
       window.addEventListener("keydown", handleDismiss);
-      window.addEventListener("touchstart", handleDismiss);
+      window.addEventListener("touchstart", handleDismiss, { passive: true });
     }, 500);
 
     return () => {

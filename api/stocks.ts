@@ -101,6 +101,22 @@ export default apiHandler(
       const YahooFinance = (await import("yahoo-finance2")).default;
       const yahooFinance = new YahooFinance();
 
+      // Start chart fetch alongside quotes when requested — they are independent.
+      const chartPromise = chartSymbol
+        ? (() => {
+            const { period1, interval } = rangeToDate(range);
+            return yahooFinance
+              .chart(chartSymbol.toUpperCase(), {
+                period1,
+                interval: interval as "1d" | "1wk" | "1mo" | "5m" | "15m",
+              })
+              .catch((chartErr: unknown) => {
+                logger.error(`Chart failed for ${chartSymbol}`, chartErr);
+                return null;
+              });
+          })()
+        : null;
+
       const quoteResults = await Promise.allSettled(
         symbols.map((sym) =>
           yahooFinance.quote(sym).then(
@@ -126,30 +142,21 @@ export default apiHandler(
 
       const response: StocksApiResponse = { quotes };
 
-      if (chartSymbol) {
-        const { period1, interval } = rangeToDate(range);
-        try {
-          const chartResult = await yahooFinance.chart(chartSymbol.toUpperCase(), {
-            period1,
-            interval: interval as "1d" | "1wk" | "1mo" | "5m" | "15m",
-          });
-
-          if (chartResult?.quotes) {
-            response.chart = chartResult.quotes.reduce<
-              { timestamp: number; close: number }[]
-            >((acc, quoteEntry) => {
-              if (quoteEntry.date == null || quoteEntry.close == null) {
-                return acc;
-              }
-              acc.push({
-                timestamp: new Date(quoteEntry.date as string | number | Date).getTime(),
-                close: quoteEntry.close as number,
-              });
+      if (chartPromise) {
+        const chartResult = await chartPromise;
+        if (chartResult?.quotes) {
+          response.chart = chartResult.quotes.reduce<
+            { timestamp: number; close: number }[]
+          >((acc, quoteEntry) => {
+            if (quoteEntry.date == null || quoteEntry.close == null) {
               return acc;
-            }, []);
-          }
-        } catch (chartErr) {
-          logger.error(`Chart failed for ${chartSymbol}`, chartErr);
+            }
+            acc.push({
+              timestamp: new Date(quoteEntry.date as string | number | Date).getTime(),
+              close: quoteEntry.close as number,
+            });
+            return acc;
+          }, []);
         }
       }
 

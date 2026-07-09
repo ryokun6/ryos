@@ -42,13 +42,8 @@ export default apiHandler<Record<string, unknown>>(
     parseJsonBody: true,
   },
   async ({ req, res, redis, logger, startTime, body, origin }): Promise<void> => {
-    const authResolution = await resolveRequestAuth(req, redis, {
-      required: false,
-      allowExpired: false,
-    });
-
     try {
-    // GET: Retrieve applet by ID or list featured applets
+    // GET: Retrieve applet by ID or list featured applets (no auth needed)
     if (req.method === "GET") {
       const listParam = req.query.list as string | undefined;
       const ip = getClientIp(req);
@@ -169,6 +164,12 @@ export default apiHandler<Record<string, unknown>>(
       return;
     }
 
+    // Mutating methods need auth — resolve only when required.
+    const authResolution = await resolveRequestAuth(req, redis, {
+      required: false,
+      allowExpired: false,
+    });
+
     // POST: Save applet
     if (req.method === "POST") {
       const username = authResolution.user?.username || null;
@@ -242,11 +243,13 @@ export default apiHandler<Record<string, unknown>>(
         featured: isUpdate && existingAppletData?.featured !== undefined ? existingAppletData.featured : undefined,
       };
 
-      await redis.set(key, JSON.stringify(appletData));
-      await redis.zadd(appletShareIndexKey(), {
-        score: appletData.createdAt,
-        member: id,
-      });
+      await Promise.all([
+        redis.set(key, JSON.stringify(appletData)),
+        redis.zadd(appletShareIndexKey(), {
+          score: appletData.createdAt,
+          member: id,
+        }),
+      ]);
       const shareUrl = `${getAppPublicOrigin(origin)}/applet-viewer/${id}`;
 
       logger.info("Saved applet", { id, isUpdate });

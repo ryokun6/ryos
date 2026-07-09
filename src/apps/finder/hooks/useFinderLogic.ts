@@ -1,4 +1,11 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+  useDeferredValue,
+} from "react";
 import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import type {
   ChangeEvent,
@@ -205,7 +212,9 @@ export function useFinderLogic({
   // UI state
   const [searchQuery, setSearchQuery] = useState("");
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [storageSpace, setStorageSpace] = useState(calculateStorageSpace());
+  const [storageSpace, setStorageSpace] = useState(() =>
+    calculateStorageSpace()
+  );
   const [contextMenuPos, setContextMenuPos] = useState<{
     x: number;
     y: number;
@@ -546,11 +555,12 @@ export function useFinderLogic({
     });
   }, [files, sortType, i18n.language, i18n.resolvedLanguage]);
 
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const filteredFiles = useMemo(() => {
-    if (!searchQuery.trim()) return sortedFiles;
-    const q = searchQuery.toLowerCase();
+    if (!deferredSearchQuery.trim()) return sortedFiles;
+    const q = deferredSearchQuery.toLowerCase();
     return sortedFiles.filter((f) => f.name.toLowerCase().includes(q));
-  }, [sortedFiles, searchQuery]);
+  }, [sortedFiles, deferredSearchQuery]);
 
   const handleEmptyTrash = () => {
     setIsEmptyTrashDialogOpen(true);

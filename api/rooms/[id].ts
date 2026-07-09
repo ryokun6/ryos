@@ -112,10 +112,12 @@ export default apiHandler(
       if (roomData.type === "private") {
         const updatedMembers = roomData.members!.filter((m) => m !== username);
         if (updatedMembers.length <= 1) {
-          await deleteRoom(roomId, redis);
-          await deleteAllMessages(roomId, redis);
-          await unregisterRoom(roomId, redis);
-          await deleteRoomPresence(roomId, redis);
+          await Promise.all([
+            deleteRoom(roomId, redis),
+            deleteAllMessages(roomId, redis),
+            unregisterRoom(roomId, redis),
+            deleteRoomPresence(roomId, redis),
+          ]);
 
           await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
           logger.info("Pusher room-deleted broadcast sent", {
@@ -126,8 +128,10 @@ export default apiHandler(
           const updatedRoom: Room = { ...roomData, members: updatedMembers, userCount: updatedMembers.length };
           await setRoom(roomId, updatedRoom, redis);
 
-          await broadcastRoomUpdated(roomId);
-          await broadcastRoomDeleted(roomId, roomData.type, [username]);
+          await Promise.all([
+            broadcastRoomUpdated(roomId),
+            broadcastRoomDeleted(roomId, roomData.type, [username]),
+          ]);
           logger.info("Pusher private leave broadcasts sent", {
             roomId,
             remainingMembers: updatedMembers.length,
@@ -135,10 +139,12 @@ export default apiHandler(
           });
         }
       } else {
-        await deleteRoom(roomId, redis);
-        await deleteAllMessages(roomId, redis);
-        await unregisterRoom(roomId, redis);
-        await deleteRoomPresence(roomId, redis);
+        await Promise.all([
+          deleteRoom(roomId, redis),
+          deleteAllMessages(roomId, redis),
+          unregisterRoom(roomId, redis),
+          deleteRoomPresence(roomId, redis),
+        ]);
 
         await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
         logger.info("Pusher room-deleted broadcast sent", {

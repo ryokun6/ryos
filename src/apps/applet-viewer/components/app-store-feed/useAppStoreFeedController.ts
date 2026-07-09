@@ -8,6 +8,7 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../../utils/appletActions";
+import { fetchAppletCatalog } from "../../utils/appletCatalog";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { useChatsStoreShallow } from "@/stores/useChatsStore";
@@ -75,15 +76,7 @@ export function useAppStoreFeedController({
       return;
     }
     try {
-      const response = await abortableFetch(
-        getApiUrl("/api/share-applet?list=true"),
-        {
-          timeout: 15000,
-          retry: { maxAttempts: 2, initialDelayMs: 500 },
-        }
-      );
-      const data = await response.json();
-      const allApplets = data.applets || [];
+      const allApplets = await fetchAppletCatalog();
       const sortedApplets = sortAppletsForFeed(
         allApplets,
         actions,

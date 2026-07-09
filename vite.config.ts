@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { collectOfflinePrecacheChunkClosure } from "./vite/precachePolicy";
+import { optimizePhosphorImports } from "./vite/optimizePhosphorImports";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -301,6 +302,10 @@ export default defineConfig({
     ] : [],
   },
   plugins: [
+    // Rewrite Phosphor barrel imports to per-icon CSR subpaths so unused icons
+    // are tree-shaken out of the client bundle (Vite equivalent of Next.js
+    // optimizePackageImports for @phosphor-icons/react).
+    optimizePhosphorImports(),
     // Replace any production service worker left on localhost with a tiny
     // cleanup worker so Vite dev sessions cannot be controlled by stale bundles.
     ...(isDev
