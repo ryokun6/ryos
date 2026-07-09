@@ -14,10 +14,10 @@ describe("optimizePhosphorImports", () => {
       "/workspace/src/components/Example.tsx"
     );
     expect(result?.code).toContain(
-      `import X from "@phosphor-icons/react/dist/csr/X";`
+      `import { X } from "@phosphor-icons/react/dist/csr/X";`
     );
     expect(result?.code).toContain(
-      `import CheckIcon from "@phosphor-icons/react/dist/csr/Check";`
+      `import { Check as CheckIcon } from "@phosphor-icons/react/dist/csr/Check";`
     );
     expect(result?.code).not.toContain(`from "@phosphor-icons/react"`);
   });

@@ -10,7 +10,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppletUpdates } from "./useAppletUpdates";
-import { useAppletActions, type Applet } from "../utils/appletActions";
+import { useAppletActions } from "../utils/appletActions";
 import { fetchAppletCatalog } from "../utils/appletCatalog";
 import { toast } from "sonner";
 import { getApiUrl } from "@/utils/platform";

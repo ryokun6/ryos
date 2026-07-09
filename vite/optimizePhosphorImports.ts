@@ -4,12 +4,13 @@ import type { Plugin } from "vite";
  * Rewrites barrel imports from `@phosphor-icons/react` into per-icon CSR
  * subpath imports so Rollup/Vite can tree-shake unused icons.
  *
- *   import { X, Check } from "@phosphor-icons/react";
+ *   import { X, Check as CheckIcon } from "@phosphor-icons/react";
  *   →
- *   import X from "@phosphor-icons/react/dist/csr/X";
- *   import Check from "@phosphor-icons/react/dist/csr/Check";
+ *   import { X } from "@phosphor-icons/react/dist/csr/X";
+ *   import { Check as CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
  *
- * Type-only imports (`import type { Icon }`) are left on the barrel.
+ * CSR modules export named icons (not default). Type-only imports
+ * (`import type { Icon }`) are left on the barrel.
  */
 const BARREL = "@phosphor-icons/react";
 const CSR_PREFIX = "@phosphor-icons/react/dist/csr";
@@ -40,10 +41,11 @@ function rewritePhosphorImports(code: string): string | null {
 
       changed = true;
       return names
-        .map(
-          ({ imported, local }) =>
-            `import ${local} from "${CSR_PREFIX}/${imported}";`
-        )
+        .map(({ imported, local }) => {
+          const binding =
+            local === imported ? `{ ${imported} }` : `{ ${imported} as ${local} }`;
+          return `import ${binding} from "${CSR_PREFIX}/${imported}";`;
+        })
         .join("\n");
     }
   );
