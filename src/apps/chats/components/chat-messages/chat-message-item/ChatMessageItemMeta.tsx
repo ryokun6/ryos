@@ -14,10 +14,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useEffectiveTimezone } from "@/hooks/useEffectiveTimezone";
+import { formatChatMessageTimestamp } from "../../../utils/formatMessageTimestamp";
 import { MOTION_BTN_INITIAL } from "../constants";
 import type { ChatMessageItemViewModel } from "./useChatMessageItem";
 
 export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
+  const timeZone = useEffectiveTimezone();
   const {
     t,
     message,
@@ -106,23 +109,10 @@ export function ChatMessageItemMeta({ vm }: { vm: ChatMessageItemViewModel }) {
       </span>{" "}
       <span className="text-neutral-400 select-text">
         {message.metadata?.createdAt ? (
-          (() => {
-            const messageDate = new Date(message.metadata.createdAt);
-            const today = new Date();
-            const isBeforeToday =
-              messageDate.getDate() !== today.getDate() ||
-              messageDate.getMonth() !== today.getMonth() ||
-              messageDate.getFullYear() !== today.getFullYear();
-            return isBeforeToday
-              ? messageDate.toLocaleDateString([], {
-                  month: "short",
-                  day: "numeric",
-                })
-              : messageDate.toLocaleTimeString([], {
-                  hour: "numeric",
-                  minute: "2-digit",
-                });
-          })()
+          formatChatMessageTimestamp(
+            new Date(message.metadata.createdAt),
+            timeZone
+          )
         ) : (
           <ActivityIndicator size="xs" />
         )}
