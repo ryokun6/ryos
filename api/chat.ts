@@ -455,41 +455,39 @@ export default apiHandler<{
       return;
     }
 
-    // --- Geolocation ---
+    // --- Geolocation + timezone (independent; start both early) ---
     // Resolve an approximate location from the client IP via a free
     // IP-geolocation provider (`ipwho.is` by default, overridable via
     // `IP_GEOLOCATION_URL_TEMPLATE`). Results are cached in Redis for 24h so
     // we don't hammer the provider per chat turn.
-    const resolvedGeo =
-      (await resolveIpGeolocation({
-        ip,
-        redis,
-        log,
-        logError,
-      })) ?? {};
+    const userTimeZone = incomingSystemState?.userLocalTime?.timeZone;
+    const geoPromise = resolveIpGeolocation({
+      ip,
+      redis,
+      log,
+      logError,
+    });
+    const storedTzPromise =
+      !userTimeZone && isAuthenticated && username
+        ? getStoredUserTimeZone(redis, username)
+        : Promise.resolve(null);
+
+    const [resolvedGeoRaw, storedUserTimeZone] = await Promise.all([
+      geoPromise,
+      storedTzPromise,
+    ]);
+    const resolvedGeo = resolvedGeoRaw ?? {};
 
     // Attach geolocation info to system state that will be sent to the prompt
     const systemState: SystemState | undefined = incomingSystemState
       ? { ...incomingSystemState, requestGeo: resolvedGeo }
       : ({ requestGeo: resolvedGeo } as SystemState);
-    const userTimeZone = systemState?.userLocalTime?.timeZone;
     if (isAuthenticated && username && userTimeZone) {
-      await updateStoredUserTimeZone(redis, username, userTimeZone).catch((error) => {
+      void updateStoredUserTimeZone(redis, username, userTimeZone).catch((error) => {
         logError("Failed to update user timezone from chat system state", error);
       });
     }
-    const storedUserTimeZone =
-      !userTimeZone && isAuthenticated && username
-        ? await getStoredUserTimeZone(redis, username)
-        : null;
     const effectiveUserTimeZone = userTimeZone || storedUserTimeZone || undefined;
-    const loadedMemoryContext = await loadRyoMemoryContext({
-      redis: isAuthenticated ? redis : undefined,
-      username: isAuthenticated ? username : null,
-      timeZone: effectiveUserTimeZone,
-      log,
-      logError,
-    });
 
     let modelConversationMessages = clientConversationMessages;
     if (storedConversation) {
@@ -508,12 +506,30 @@ export default apiHandler<{
               clientActionMessage
             );
     }
-    if (storedConversation && username) {
-      modelConversationMessages = await resolveAIAttachmentsForModel({
-        username,
-        messages: modelConversationMessages,
-      });
-    }
+
+    // Memory load and attachment resolution are independent once timezone +
+    // conversation messages are known — run them in parallel.
+    const memoryPromise = loadRyoMemoryContext({
+      redis: isAuthenticated ? redis : undefined,
+      username: isAuthenticated ? username : null,
+      timeZone: effectiveUserTimeZone,
+      log,
+      logError,
+    });
+    const attachmentsPromise =
+      storedConversation && username
+        ? resolveAIAttachmentsForModel({
+            username,
+            messages: modelConversationMessages,
+          })
+        : Promise.resolve(modelConversationMessages);
+
+    const [loadedMemoryContext, resolvedMessages] = await Promise.all([
+      memoryPromise,
+      attachmentsPromise,
+    ]);
+    modelConversationMessages = resolvedMessages;
+
     const preparedConversation = await prepareRyoConversationModelInput({
       channel: conversationChannel,
       messages: modelConversationMessages,

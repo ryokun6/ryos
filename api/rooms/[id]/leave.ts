@@ -96,10 +96,12 @@ export default apiHandler(
           const updatedMembers = roomData.members ? roomData.members.filter((m) => m !== username) : [];
 
           if (updatedMembers.length <= 1) {
-            await deleteRoom(roomId, redis);
-            await deleteAllMessages(roomId, redis);
-            await unregisterRoom(roomId, redis);
-            await deleteRoomPresence(roomId, redis);
+            await Promise.all([
+              deleteRoom(roomId, redis),
+              deleteAllMessages(roomId, redis),
+              unregisterRoom(roomId, redis),
+              deleteRoomPresence(roomId, redis),
+            ]);
 
             await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
             logger.info("Pusher room-deleted broadcast sent", {
