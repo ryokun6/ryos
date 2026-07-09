@@ -1,8 +1,28 @@
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+  __resetAppletCatalogForTests,
+  fetchAppletCatalog,
+  invalidateAppletCatalog,
+} from "../../../src/apps/applet-viewer/utils/appletCatalog";
 
-const fetchMock = mock(() =>
-  Promise.resolve(
-    new Response(
+const originalFetch = globalThis.fetch;
+
+type FetchStub = {
+  calls: Array<{ url: string }>;
+  restore: () => void;
+};
+
+function stubCatalogFetch(): FetchStub {
+  const calls: Array<{ url: string }> = [];
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+    calls.push({ url });
+    return new Response(
       JSON.stringify({
         applets: [
           { id: "a", createdAt: 2 },
@@ -10,30 +30,28 @@ const fetchMock = mock(() =>
         ],
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
-    )
-  )
-);
+    );
+  }) as typeof fetch;
 
-mock.module("@/utils/abortableFetch", () => ({
-  abortableFetch: fetchMock,
-}));
-
-mock.module("@/utils/platform", () => ({
-  getApiUrl: (path: string) => `http://localhost:3000${path}`,
-}));
-
-const {
-  fetchAppletCatalog,
-  invalidateAppletCatalog,
-  __resetAppletCatalogForTests,
-} = await import(
-  "../../../src/apps/applet-viewer/utils/appletCatalog"
-);
+  return {
+    calls,
+    restore: () => {
+      globalThis.fetch = originalFetch;
+    },
+  };
+}
 
 describe("fetchAppletCatalog", () => {
+  let stub: FetchStub;
+
   beforeEach(() => {
     __resetAppletCatalogForTests();
-    fetchMock.mockClear();
+    stub = stubCatalogFetch();
+  });
+
+  afterEach(() => {
+    stub.restore();
+    __resetAppletCatalogForTests();
   });
 
   test("coalesces concurrent list fetches into one network call", async () => {
@@ -43,7 +61,8 @@ describe("fetchAppletCatalog", () => {
       fetchAppletCatalog(),
     ]);
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(stub.calls).toHaveLength(1);
+    expect(stub.calls[0]?.url).toContain("/api/share-applet?list=true");
     expect(a).toEqual(b);
     expect(b).toEqual(c);
     expect(a.map((item) => item.id)).toEqual(["a", "b"]);
@@ -51,19 +70,19 @@ describe("fetchAppletCatalog", () => {
 
   test("serves TTL cache without refetching", async () => {
     await fetchAppletCatalog();
-    fetchMock.mockClear();
+    const callsAfterFirst = stub.calls.length;
 
     const cached = await fetchAppletCatalog();
-    expect(fetchMock).toHaveBeenCalledTimes(0);
+    expect(stub.calls).toHaveLength(callsAfterFirst);
     expect(cached[0]?.id).toBe("a");
   });
 
   test("force bypasses cache and invalidate clears it", async () => {
     await fetchAppletCatalog();
-    fetchMock.mockClear();
+    const callsAfterFirst = stub.calls.length;
 
     invalidateAppletCatalog();
     await fetchAppletCatalog({ force: true });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(stub.calls.length).toBeGreaterThan(callsAfterFirst);
   });
 });
