@@ -479,7 +479,6 @@ export default defineConfig({
                     const response = await createOgShareResponse(
                       new Request(requestUrl.toString(), {
                         method: req.method || "GET",
-                        headers: req.headers as HeadersInit,
                       })
                     );
                     if (!response) {

@@ -490,8 +490,9 @@ async function getYouTubeInfo(
 
     if (!response.ok) return null;
 
-    const data = await response.json();
-    const rawTitle = data.title || "";
+    const data = (await response.json()) as { title?: unknown };
+    const rawTitle =
+      typeof data.title === "string" ? data.title : "";
     const parsed = parseYouTubeTitleSimple(rawTitle);
 
     return { title: parsed.title, artist: parsed.artist || null };
