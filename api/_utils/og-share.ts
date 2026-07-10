@@ -2,13 +2,15 @@ import { getAppPublicOrigin } from "./runtime-config.js";
 import { parseYouTubeTitleSimple } from "./parse-youtube-title.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
-// App display names for OG titles
+// Keep in sync with `appIds` / `appNames` in src/config/appRegistryData.ts.
+// Descriptions are share-card copy (may be richer than in-app About text).
 const APP_NAMES: Record<string, string> = {
   finder: "Finder",
   soundboard: "Soundboard",
   "internet-explorer": "Internet Explorer",
   chats: "Chats",
   textedit: "TextEdit",
+  preview: "Preview",
   paint: "Paint",
   "photo-booth": "Photo Booth",
   minesweeper: "Minesweeper",
@@ -21,6 +23,7 @@ const APP_NAMES: Record<string, string> = {
   terminal: "Terminal",
   "applet-viewer": "Applet Store",
   "control-panels": "Control Panels",
+  admin: "Admin",
   stickies: "Stickies",
   "infinite-mac": "Infinite Mac",
   winamp: "Winamp",
@@ -29,15 +32,16 @@ const APP_NAMES: Record<string, string> = {
   dashboard: "Dashboard",
   maps: "Maps",
   books: "Books",
+  calculator: "Calculator",
 };
 
-// App descriptions
 const APP_DESCRIPTIONS: Record<string, string> = {
   finder: "Browse and manage files",
-  soundboard: "Record and trigger custom sounds",
+  soundboard: "Play and record custom sound effects",
   "internet-explorer": "Browse the web through time",
   chats: "Talk to Ryo and neighbors online",
   textedit: "Write and edit documents",
+  preview: "View images, PDFs, and documents",
   paint: "Draw and edit art, like it's 1984",
   "photo-booth": "Take photos with shader effects",
   minesweeper: "Play this classic puzzle game",
@@ -50,6 +54,7 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   terminal: "Command line interface with Ryo AI",
   "applet-viewer": "Explore and install community applets",
   "control-panels": "Set themes, sounds, and system preferences",
+  admin: "System administration panel",
   stickies: "Colorful sticky notes for reminders and quick notes",
   "infinite-mac": "Run classic Mac OS and NeXT in your browser",
   winamp: "Classic Winamp media player in your browser",
@@ -58,15 +63,16 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   dashboard: "Widgets dashboard with clock, calendar, and weather",
   maps: "Find places with Apple Maps",
   books: "Read EPUB books",
+  calculator: "Basic, scientific, and unit conversion calculator",
 };
 
-// App ID to macOS icon mapping
 const APP_ICONS: Record<string, string> = {
   finder: "mac.png",
   soundboard: "sound.png",
   "internet-explorer": "ie.png",
   chats: "chats.png",
   textedit: "textedit.png",
+  preview: "preview.png",
   paint: "paint.png",
   "photo-booth": "photo-booth.png",
   minesweeper: "minesweeper.png",
@@ -79,6 +85,7 @@ const APP_ICONS: Record<string, string> = {
   terminal: "terminal.png",
   "applet-viewer": "app.png",
   "control-panels": "control-panels/appearance-manager/app.png",
+  admin: "admin.png",
   stickies: "stickies.png",
   "infinite-mac": "infinite-mac.png",
   winamp: "winamp.png",
@@ -87,12 +94,26 @@ const APP_ICONS: Record<string, string> = {
   dashboard: "dashboard.png",
   maps: "maps.png",
   books: "books.png",
+  calculator: "calculator.png",
 };
 
 export type SongShareMetadata = {
   title: string;
   artist: string | null;
   cover: string | null;
+};
+
+export type AppletShareMetadata = {
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+};
+
+export type ListenShareMetadata = {
+  title: string;
+  description: string;
+  imageUrl: string | null;
+  hostUsername: string | null;
 };
 
 function generateOgHtml(options: {
@@ -128,7 +149,7 @@ function generateOgHtml(options: {
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
-  <script>location.replace("${escapeHtml(redirectUrl)}")</script>
+  <script>location.replace(${JSON.stringify(redirectUrl)})</script>
 </head>
 </html>`;
 }
@@ -265,18 +286,17 @@ export function getSongShareMetadataFromRaw(
   };
 }
 
-async function createSongRedisClient(): Promise<{
+async function createOgRedisClient(): Promise<{
   get<T = unknown>(key: string): Promise<T | null>;
 } | null> {
   // Delegate to the canonical Redis factory so the OG read path resolves the
-  // exact same backend (Upstash REST vs standard REDIS_URL) that the song API
-  // writes to. Picking a backend independently here used to silently diverge
-  // — e.g. when REDIS_URL (and/or REDIS_PROVIDER=redis-url) is set but stale
-  // Upstash vars also linger — causing reads to hit an empty store and
-  // previews to always fall back. The dynamic import keeps the standard-Redis
-  // (ioredis) dependency out of bundles that only use Upstash REST.
-  // `createRedis` throws when nothing is configured, which the caller treats
-  // as "no metadata".
+  // exact same backend (Upstash REST vs standard REDIS_URL) that writers use.
+  // Picking a backend independently here used to silently diverge — e.g. when
+  // REDIS_URL (and/or REDIS_PROVIDER=redis-url) is set but stale Upstash vars
+  // also linger — causing reads to hit an empty store and previews to always
+  // fall back. The dynamic import keeps the standard-Redis (ioredis) dependency
+  // out of bundles that only use Upstash REST. `createRedis` throws when
+  // nothing is configured, which the caller treats as "no metadata".
   const { createRedis } = await import("./redis.js");
   return createRedis();
 }
@@ -286,13 +306,156 @@ async function getSongFromRedis(
   songId: string
 ): Promise<SongShareMetadata | null> {
   try {
-    const redis = await createSongRedisClient();
+    const redis = await createOgRedisClient();
     if (!redis) return null;
 
     // Fetch song metadata (split storage format) from the canonical
     // `media:song:…:meta` key.
     const raw = await redis.get(redisKeys.media.songMeta(songId));
     return getSongShareMetadataFromRaw(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve an applet icon into an absolute image URL for og:image.
+ * Applets often store emoji glyphs (not usable as OG images) — those return null.
+ */
+export function resolveAppletShareImageUrl(
+  icon: string | null | undefined,
+  publicOrigin: string
+): string | null {
+  const value = asNonEmptyString(icon);
+  if (!value) return null;
+
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:image/")) {
+    return value.replace(/^http:\/\//i, "https://");
+  }
+
+  if (value.startsWith("/")) {
+    return `${publicOrigin}${value}`;
+  }
+
+  // Emoji / short glyph icons cannot be used as og:image.
+  return null;
+}
+
+export function getAppletShareMetadataFromRaw(
+  raw: unknown,
+  publicOrigin: string
+): AppletShareMetadata | null {
+  if (!raw) return null;
+
+  let parsed: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  const meta = getRecord(parsed);
+  if (!meta) return null;
+
+  const title =
+    asNonEmptyString(meta.title) ||
+    asNonEmptyString(meta.name) ||
+    null;
+  if (!title) return null;
+
+  const createdBy = asNonEmptyString(meta.createdBy);
+  const description = createdBy
+    ? `Shared by ${createdBy} on ryOS`
+    : "Open applet in ryOS";
+
+  return {
+    title: `${title} on ryOS`,
+    description,
+    imageUrl: resolveAppletShareImageUrl(
+      asNonEmptyString(meta.icon),
+      publicOrigin
+    ),
+  };
+}
+
+async function getAppletFromRedis(
+  appletId: string,
+  publicOrigin: string
+): Promise<AppletShareMetadata | null> {
+  try {
+    const redis = await createOgRedisClient();
+    if (!redis) return null;
+    const raw = await redis.get(redisKeys.media.appletShare(appletId));
+    return getAppletShareMetadataFromRaw(raw, publicOrigin);
+  } catch {
+    return null;
+  }
+}
+
+export function getListenShareMetadataFromRaw(
+  raw: unknown,
+  options: { appHint?: string | null; publicOrigin: string }
+): ListenShareMetadata | null {
+  if (!raw) return null;
+
+  let parsed: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  const session = getRecord(parsed);
+  if (!session) return null;
+
+  const hostUsername = asNonEmptyString(session.hostUsername);
+  const trackMeta = getRecord(session.currentTrackMeta);
+  const trackTitle = asNonEmptyString(trackMeta?.title);
+  const trackArtist = asNonEmptyString(trackMeta?.artist);
+  const trackCover = formatMusicCoverUrl(
+    asNonEmptyString(trackMeta?.cover),
+    400
+  );
+
+  const isIpod = options.appHint === "ipod";
+  const appLabel = isIpod ? "iPod" : "Karaoke";
+
+  let title: string;
+  if (trackTitle && trackArtist) {
+    title = `${trackTitle} - ${trackArtist}`;
+  } else if (trackTitle) {
+    title = trackTitle;
+  } else if (hostUsername) {
+    title = `${hostUsername}'s Live Session on ryOS`;
+  } else {
+    return null;
+  }
+
+  const description = hostUsername
+    ? `Join ${hostUsername}'s live session on ryOS ${appLabel}`
+    : `Listen together in real-time on ryOS ${appLabel}`;
+
+  return {
+    title,
+    description,
+    imageUrl: trackCover,
+    hostUsername,
+  };
+}
+
+async function getListenSessionFromRedis(
+  sessionId: string,
+  options: { appHint?: string | null; publicOrigin: string }
+): Promise<ListenShareMetadata | null> {
+  try {
+    const redis = await createOgRedisClient();
+    if (!redis) return null;
+    const raw = await redis.get(redisKeys.session.listen(sessionId));
+    return getListenShareMetadataFromRaw(raw, options);
   } catch {
     return null;
   }
@@ -384,6 +547,14 @@ export async function createOgShareResponse(
   request: Request,
   options: {
     getSong?: (songId: string) => Promise<SongShareMetadata | null>;
+    getApplet?: (
+      appletId: string,
+      publicOrigin: string
+    ) => Promise<AppletShareMetadata | null>;
+    getListenSession?: (
+      sessionId: string,
+      opts: { appHint?: string | null; publicOrigin: string }
+    ) => Promise<ListenShareMetadata | null>;
   } = {}
 ): Promise<Response | null> {
   if (request.method !== "GET" && request.method !== "HEAD") {
@@ -496,17 +667,51 @@ export async function createOgShareResponse(
 
   const listenMatch = pathname.match(/^\/listen\/([a-zA-Z0-9_-]+)$/);
   if (listenMatch) {
-    imageUrl = `${publicOrigin}/icons/macosx/karaoke.png`;
+    const sessionId = listenMatch[1];
+    const appHint = url.searchParams.get("app")?.toLowerCase() || null;
+    const isIpod = appHint === "ipod";
+    const fallbackAppId = isIpod ? "ipod" : "karaoke";
+    const appLabel = isIpod ? "iPod" : "Karaoke";
+
+    imageUrl = getAppIconUrl(publicOrigin, fallbackAppId);
     title = "Join Live Session on ryOS";
-    description = "Listen together in real-time on ryOS Karaoke";
+    description = `Listen together in real-time on ryOS ${appLabel}`;
+    // Live sessions change frequently — keep CDN cache short.
+    cacheMaxAge = FALLBACK_CACHE_SECONDS;
+
+    const getListen = options.getListenSession || getListenSessionFromRedis;
+    const sessionMeta = await getListen(sessionId, {
+      appHint,
+      publicOrigin,
+    });
+    if (sessionMeta) {
+      title = sessionMeta.title;
+      description = sessionMeta.description;
+      if (sessionMeta.imageUrl) {
+        imageUrl = sessionMeta.imageUrl;
+      }
+    }
     matched = true;
   }
 
   const appletMatch = pathname.match(/^\/applet-viewer\/([a-zA-Z0-9_-]+)$/);
   if (appletMatch) {
+    const appletId = appletMatch[1];
     imageUrl = `${publicOrigin}/icons/macosx/applet.png`;
     title = "Shared Applet on ryOS";
     description = "Open applet in ryOS";
+
+    const getApplet = options.getApplet || getAppletFromRedis;
+    const appletMeta = await getApplet(appletId, publicOrigin);
+    if (appletMeta) {
+      title = appletMeta.title;
+      description = appletMeta.description || description;
+      if (appletMeta.imageUrl) {
+        imageUrl = appletMeta.imageUrl;
+      }
+    } else {
+      cacheMaxAge = FALLBACK_CACHE_SECONDS;
+    }
     matched = true;
   }
 
@@ -558,8 +763,20 @@ export async function createOgShareResponse(
     return null;
   }
 
-  const pageUrl = `${publicOrigin}${pathname}`;
-  const redirectUrl = `${pageUrl}?_ryo=1`;
+  const pageUrl = `${publicOrigin}${pathname}${
+    // Preserve share-significant query params (e.g. /listen/…?app=ipod) in
+    // the canonical OG URL so crawlers and copy-paste keep the app hint.
+    url.searchParams.get("app")
+      ? `?app=${encodeURIComponent(url.searchParams.get("app")!)}`
+      : ""
+  }`;
+  const redirectParams = new URLSearchParams();
+  for (const [key, value] of url.searchParams.entries()) {
+    if (key === "_ryo") continue;
+    redirectParams.set(key, value);
+  }
+  redirectParams.set("_ryo", "1");
+  const redirectUrl = `${publicOrigin}${pathname}?${redirectParams.toString()}`;
   const html = generateOgHtml({
     title,
     description,
