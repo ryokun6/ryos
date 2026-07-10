@@ -379,15 +379,23 @@ class StandardRedisAdapter implements RedisLike {
     cursor: number | string,
     options?: RedisScanOptions
   ): Promise<[string | number, string[]]> {
-    const args: Array<string | number> = [String(cursor)];
+    const cursorKey = String(cursor);
+    if (options?.match && typeof options.count === "number") {
+      return await this.client.scan(
+        cursorKey,
+        "MATCH",
+        options.match,
+        "COUNT",
+        options.count
+      );
+    }
     if (options?.match) {
-      args.push("MATCH", options.match);
+      return await this.client.scan(cursorKey, "MATCH", options.match);
     }
     if (typeof options?.count === "number") {
-      args.push("COUNT", options.count);
+      return await this.client.scan(cursorKey, "COUNT", options.count);
     }
-    const [nextCursor, keys] = await this.client.scan(...args);
-    return [nextCursor, keys];
+    return await this.client.scan(cursorKey);
   }
 
   pipeline(): RedisPipelineLike {

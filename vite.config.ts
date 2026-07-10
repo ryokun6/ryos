@@ -439,6 +439,71 @@ export default defineConfig({
         });
       },
     },
+    // Mirror production OG share HTML in Vite dev so /finder, /ipod/…, etc.
+    // return crawler-friendly meta instead of the SPA shell's default tags.
+    // Browsers still redirect to ?_ryo=1 and load the app as usual.
+    ...(isDev
+      ? [
+          {
+            name: "serve-og-share-dev",
+            configureServer(server: ViteDevServer) {
+              server.middlewares.use((
+                req: IncomingMessage,
+                res: ServerResponse,
+                next: (err?: unknown) => void
+              ) => {
+                if (req.method !== "GET" && req.method !== "HEAD") {
+                  next();
+                  return;
+                }
+
+                const host = req.headers.host || "localhost:5173";
+                const requestUrl = new URL(req.url || "/", `http://${host}`);
+                if (requestUrl.searchParams.has("_ryo")) {
+                  next();
+                  return;
+                }
+                if (
+                  requestUrl.pathname.startsWith("/api") ||
+                  requestUrl.pathname.startsWith("/@") ||
+                  requestUrl.pathname.startsWith("/src") ||
+                  requestUrl.pathname.startsWith("/node_modules") ||
+                  requestUrl.pathname.includes(".")
+                ) {
+                  next();
+                  return;
+                }
+
+                void import("./api/_utils/og-share.ts")
+                  .then(async ({ createOgShareResponse }) => {
+                    const response = await createOgShareResponse(
+                      new Request(requestUrl.toString(), {
+                        method: req.method || "GET",
+                      })
+                    );
+                    if (!response) {
+                      next();
+                      return;
+                    }
+
+                    res.statusCode = response.status;
+                    response.headers.forEach((value, key) => {
+                      res.setHeader(key, value);
+                    });
+                    if (req.method === "HEAD") {
+                      res.end();
+                      return;
+                    }
+                    res.end(Buffer.from(await response.arrayBuffer()));
+                  })
+                  .catch((error: unknown) => {
+                    next(error);
+                  });
+              });
+            },
+          },
+        ]
+      : []),
     react(),
     tailwindcss(),
     // Only include PWA plugin in production builds (not dev)

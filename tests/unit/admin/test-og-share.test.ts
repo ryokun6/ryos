@@ -9,11 +9,14 @@ import {
 } from "bun:test";
 import {
   createOgShareResponse,
+  getAppletShareMetadataFromRaw,
+  getListenShareMetadataFromRaw,
   getSongShareMetadataFromRaw,
   resolveSongShareId,
 } from "../../../api/_utils/og-share";
 import { UpdateSongSchema } from "../../../api/songs/_constants";
 import { redisKeys } from "../../../src/shared/redisKeys";
+import { appIds, appNames } from "../../../src/config/appRegistryData";
 import { FakeRedis } from "../../helpers/fake-redis";
 import * as actualRedis from "../../../api/_utils/redis";
 
@@ -100,6 +103,24 @@ describe("og share response", () => {
         description: "Read EPUB books",
         icon: "books.png",
       },
+      {
+        id: "preview",
+        title: "Preview on ryOS",
+        description: "View images, PDFs, and documents",
+        icon: "preview.png",
+      },
+      {
+        id: "calculator",
+        title: "Calculator on ryOS",
+        description: "Basic, scientific, and unit conversion calculator",
+        icon: "calculator.png",
+      },
+      {
+        id: "admin",
+        title: "Admin on ryOS",
+        description: "System administration panel",
+        icon: "admin.png",
+      },
     ];
 
     for (const app of appCases) {
@@ -120,6 +141,191 @@ describe("og share response", () => {
       );
       expect(body).toContain(
         `location.replace("https://os.example.com/${app.id}?_ryo=1")`
+      );
+    }
+  });
+
+  test("uses stored applet title and creator for shared applet OG tags", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    const response = await createOgShareResponse(
+      new Request("https://os.example.com/applet-viewer/abc123share"),
+      {
+        getApplet: async (appletId, publicOrigin) => {
+          expect(appletId).toBe("abc123share");
+          expect(publicOrigin).toBe("https://os.example.com");
+          return {
+            title: "Pixel Painter on ryOS",
+            description: "Shared by ryo on ryOS",
+            imageUrl: "https://os.example.com/icons/custom/pixel.png",
+          };
+        },
+      }
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="Pixel Painter on ryOS">'
+    );
+    expect(body).toContain(
+      '<meta property="og:description" content="Shared by ryo on ryOS">'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://os.example.com/icons/custom/pixel.png">'
+    );
+    expect(body).not.toContain("Shared Applet on ryOS");
+  });
+
+  test("falls back to generic applet OG when Redis has no metadata", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    const response = await createOgShareResponse(
+      new Request("https://os.example.com/applet-viewer/missing"),
+      { getApplet: async () => null }
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="Shared Applet on ryOS">'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://os.example.com/icons/macosx/applet.png">'
+    );
+    expect(response?.headers.get("cache-control")).toBe(
+      "no-store, s-maxage=60"
+    );
+  });
+
+  test("uses listen session track and host for live session OG tags", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    const response = await createOgShareResponse(
+      new Request("https://os.example.com/listen/sess123?app=ipod"),
+      {
+        getListenSession: async (sessionId, opts) => {
+          expect(sessionId).toBe("sess123");
+          expect(opts.appHint).toBe("ipod");
+          return {
+            title: "七里香 - 周杰倫",
+            description: "Join ryo's live session on ryOS iPod",
+            imageUrl: "https://imge.kugou.com/stdmusic/400/album.jpg",
+            hostUsername: "ryo",
+          };
+        },
+      }
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="七里香 - 周杰倫">'
+    );
+    expect(body).toContain(
+      '<meta property="og:description" content="Join ryo&#039;s live session on ryOS iPod">'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://imge.kugou.com/stdmusic/400/album.jpg">'
+    );
+    expect(body).toContain(
+      '<meta property="og:url" content="https://os.example.com/listen/sess123?app=ipod">'
+    );
+    expect(body).toContain(
+      'location.replace("https://os.example.com/listen/sess123?app=ipod&_ryo=1")'
+    );
+    expect(response?.headers.get("cache-control")).toBe(
+      "no-store, s-maxage=60"
+    );
+  });
+
+  test("falls back to karaoke branding for listen sessions without Redis data", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    const response = await createOgShareResponse(
+      new Request("https://os.example.com/listen/sess456"),
+      { getListenSession: async () => null }
+    );
+
+    expect(response).not.toBeNull();
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="Join Live Session on ryOS">'
+    );
+    expect(body).toContain(
+      '<meta property="og:description" content="Listen together in real-time on ryOS Karaoke">'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://os.example.com/icons/macosx/karaoke.png">'
+    );
+  });
+
+  test("parses applet and listen metadata from Redis payloads", () => {
+    expect(
+      getAppletShareMetadataFromRaw(
+        {
+          title: "Clock",
+          name: "Clock Applet",
+          icon: "🕐",
+          createdBy: "alice",
+        },
+        "https://os.example.com"
+      )
+    ).toEqual({
+      title: "Clock on ryOS",
+      description: "Shared by alice on ryOS",
+      imageUrl: null,
+    });
+
+    expect(
+      getAppletShareMetadataFromRaw(
+        {
+          name: "Gallery",
+          icon: "/icons/macosx/applet.png",
+        },
+        "https://os.example.com"
+      )
+    ).toEqual({
+      title: "Gallery on ryOS",
+      description: "Open applet in ryOS",
+      imageUrl: "https://os.example.com/icons/macosx/applet.png",
+    });
+
+    expect(
+      getListenShareMetadataFromRaw(
+        {
+          hostUsername: "bob",
+          currentTrackMeta: {
+            title: "Song",
+            artist: "Artist",
+            cover: "http://cdn.example.com/{size}/cover.jpg",
+          },
+        },
+        { appHint: null, publicOrigin: "https://os.example.com" }
+      )
+    ).toEqual({
+      title: "Song - Artist",
+      description: "Join bob's live session on ryOS Karaoke",
+      imageUrl: "https://cdn.example.com/400/cover.jpg",
+      hostUsername: "bob",
+    });
+  });
+
+  test("covers every registered app id with an OG share card", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+
+    for (const appId of appIds) {
+      const response = await createOgShareResponse(
+        new Request(`https://os.example.com/${appId}`)
+      );
+      expect(response).not.toBeNull();
+      const body = await response!.text();
+      expect(body).toContain(
+        `<meta property="og:title" content="${appNames[appId]} on ryOS">`
+      );
+      expect(body).toContain("/icons/macosx/");
+      expect(body).toContain(
+        `location.replace("https://os.example.com/${appId}?_ryo=1")`
       );
     }
   });
@@ -449,5 +655,69 @@ describe("og share song-key canonical cutover", () => {
     const body = await response!.text();
     expect(body).not.toContain("Legacy Song");
     expect(body).not.toContain("https://example.com/legacy.jpg");
+  });
+});
+
+describe("og share applet and listen redis reads", () => {
+  test("reads applet share metadata from Redis", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const appletId = "appletShare99";
+    await fake.set(
+      redisKeys.media.appletShare(appletId),
+      JSON.stringify({
+        title: "Neon Clock",
+        icon: "https://cdn.example.com/neon.png",
+        createdBy: "ryo",
+        content: "<html></html>",
+      })
+    );
+
+    const response = await createOgShareResponse(
+      new Request(`https://os.example.com/applet-viewer/${appletId}`)
+    );
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="Neon Clock on ryOS">'
+    );
+    expect(body).toContain(
+      '<meta property="og:description" content="Shared by ryo on ryOS">'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://cdn.example.com/neon.png">'
+    );
+  });
+
+  test("reads listen session track metadata from Redis", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    const sessionId = "liveSess01";
+    await fake.set(
+      redisKeys.session.listen(sessionId),
+      JSON.stringify({
+        id: sessionId,
+        hostUsername: "djryo",
+        djUsername: "djryo",
+        currentTrackMeta: {
+          title: "Night Drive",
+          artist: "Synthwave",
+          cover: "https://cdn.example.com/{w}x{h}/cover.jpg",
+        },
+        isPlaying: true,
+        users: [],
+      })
+    );
+
+    const response = await createOgShareResponse(
+      new Request(`https://os.example.com/listen/${sessionId}`)
+    );
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="Night Drive - Synthwave">'
+    );
+    expect(body).toContain(
+      '<meta property="og:description" content="Join djryo&#039;s live session on ryOS Karaoke">'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://cdn.example.com/400x400/cover.jpg">'
+    );
   });
 });
