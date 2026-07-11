@@ -40,6 +40,7 @@ import {
   uploadAIConversationImage,
 } from "@/api/aiConversations";
 import { useServerAIConversation } from "@/hooks/useServerAIConversation";
+import { compactAiMessages } from "../utils/messageCompaction";
 
 
 // Helper to check if chats app is currently in the foreground
@@ -233,13 +234,19 @@ function getSharedAiChat(): Chat<AIChatMessage> {
 }
 
 export function useAiChat(onPromptSetUsername?: () => void) {
-  const { aiMessages, setAiMessages, username, isAuthenticated } =
-    useChatsStoreShallow((state) => ({
-      aiMessages: state.aiMessages,
-      setAiMessages: state.setAiMessages,
-      username: state.username,
-      isAuthenticated: state.isAuthenticated,
-    }));
+  const {
+    aiMessages,
+    setAiMessages,
+    setAiHistoryCompacted,
+    username,
+    isAuthenticated,
+  } = useChatsStoreShallow((state) => ({
+    aiMessages: state.aiMessages,
+    setAiMessages: state.setAiMessages,
+    setAiHistoryCompacted: state.setAiHistoryCompacted,
+    username: state.username,
+    isAuthenticated: state.isAuthenticated,
+  }));
   const launchApp = useLaunchApp();
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
@@ -358,9 +365,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         isError,
         ...summarizeChatMessages(finalMessages),
       });
-      setAiMessages(finalMessages);
+      // Anonymous history has no server trim — compact locally when over cap.
+      let syncedMessages = finalMessages;
+      if (!useChatsStore.getState().isAuthenticated) {
+        const compacted = compactAiMessages(finalMessages);
+        syncedMessages = compacted.messages;
+        setAiMessages(syncedMessages);
+        if (compacted.compacted) {
+          setAiHistoryCompacted(true);
+          setSdkMessages(syncedMessages);
+        }
+      } else {
+        setAiMessages(finalMessages);
+      }
 
-      const lastMsg = finalMessages.at(-1);
+      const lastMsg = syncedMessages.at(-1);
       if (!lastMsg || lastMsg.role !== "assistant") return;
 
       // Recovery for AI SDK v6 bug (GitHub issue #10291):
@@ -634,7 +653,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   });
 
   const applyServerMessages = useCallback(
-    (messages: AIChatMessage[]) => {
+    (
+      messages: AIChatMessage[],
+      options?: { historyTruncated?: boolean }
+    ) => {
       const nextMessages =
         messages.length > 0 ? messages : [createInitialChatMessage()];
       // Hydration replaces the live SDK messages wholesale — log it so races
@@ -645,8 +667,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       );
       setAiMessages(nextMessages);
       setSdkMessages(nextMessages);
+      if (typeof options?.historyTruncated === "boolean") {
+        setAiHistoryCompacted(options.historyTruncated);
+      }
     },
-    [setAiMessages, setSdkMessages]
+    [setAiMessages, setAiHistoryCompacted, setSdkMessages]
   );
 
   // Server conversation sync: hydration on sign-in, focus/visibility
@@ -982,8 +1007,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Update both the Zustand store and the SDK state directly
     setAiMessages([initialMessage]);
     setSdkMessages([initialMessage]);
+    setAiHistoryCompacted(false);
   }, [
     setAiMessages,
+    setAiHistoryCompacted,
     setSdkMessages,
     sdkStop,
     clearError,

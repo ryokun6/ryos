@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { motion } from "motion/react";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
+import { isMessagesCompactedMarker } from "@/apps/chats/utils/messageCompaction";
 import type { ChatMessageItemProps } from "../types";
 import { isUrlOnly } from "../utils";
 import { CHAT_BUBBLE_VARIANTS } from "../constants";
@@ -24,6 +25,30 @@ export const ChatMessageItem = memo(function ChatMessageItem(
     displayContent,
     setIsHovered,
   } = vm;
+
+  if (isMessagesCompactedMarker(message)) {
+    return (
+      <motion.div
+        variants={CHAT_BUBBLE_VARIANTS}
+        initial={isInitialMessage ? "animate" : "initial"}
+        animate="animate"
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="flex w-full justify-center z-10 py-1"
+        style={{
+          contentVisibility: "auto",
+          containIntrinsicSize: "auto 20px",
+        }}
+      >
+        <span
+          className={`${
+            props.isMacOSTheme ? "text-[10px]" : "text-[16px]"
+          } chat-messages-meta text-neutral-400 font-['Geneva-9'] antialiased select-text text-center`}
+        >
+          {vm.t("apps.chats.status.previousMessagesCompacted")}
+        </span>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

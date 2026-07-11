@@ -230,6 +230,7 @@ function forceLogoutOnUnauthorized() {
   clearAIConversationSessionCache();
   useChatsStore.setState({
     aiMessages: [getInitialAiMessage()],
+    aiHistoryCompacted: false,
     username: null,
     isAuthenticated: false,
     currentRoomId: null,
@@ -251,6 +252,8 @@ const ensureUsernameRecovery = (username: string | null) => {
 export interface ChatsStoreState {
   // AI Chat State
   aiMessages: AIChatMessage[];
+  /** True when older AI history was compacted/truncated (server or local). */
+  aiHistoryCompacted: boolean;
   // Room State
   username: string | null;
   isAuthenticated: boolean;
@@ -269,6 +272,7 @@ export interface ChatsStoreState {
 
   // Actions
   setAiMessages: (messages: AIChatMessage[]) => void;
+  setAiHistoryCompacted: (compacted: boolean) => void;
   setUsername: (username: string | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
   setPassword: (
@@ -345,6 +349,7 @@ const getInitialState = (): Omit<
   | "logout"
   | "deleteAccount"
   | "setAiMessages"
+  | "setAiHistoryCompacted"
   | "setUsername"
   | "setAuthenticated"
   | "setPassword"
@@ -376,6 +381,7 @@ const getInitialState = (): Omit<
 
   return {
     aiMessages: [getInitialAiMessage()],
+    aiHistoryCompacted: false,
     username: recoveredUsername,
     isAuthenticated: false,
     rooms: [],
@@ -397,6 +403,7 @@ const STORE_NAME = "ryos:chats";
 type ChatsPersistedState = Pick<
   ChatsStoreState,
   | "aiMessages"
+  | "aiHistoryCompacted"
   | "username"
   | "currentRoomId"
   | "isSidebarVisible"
@@ -484,6 +491,7 @@ const mergeChatsState = (
   return {
     ...metadata,
     aiMessages,
+    aiHistoryCompacted: metadata.aiHistoryCompacted === true,
     roomMessages,
   };
 };
@@ -501,6 +509,8 @@ export const useChatsStore = create<ChatsStoreState>()(
 
         // --- Actions ---
         setAiMessages: (messages) => set({ aiMessages: messages }),
+        setAiHistoryCompacted: (compacted) =>
+          set({ aiHistoryCompacted: compacted }),
         setUsername: (username) => {
           const previousUsername = get().username;
           const clearAIHistory = shouldClearAIHistoryForUsernameChange(
@@ -518,7 +528,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           set({
             username,
             ...(clearAIHistory
-              ? { aiMessages: [getInitialAiMessage()] }
+              ? {
+                  aiMessages: [getInitialAiMessage()],
+                  aiHistoryCompacted: false,
+                }
               : {}),
           });
 
@@ -553,6 +566,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             set({
               isAuthenticated: false,
               aiMessages: [getInitialAiMessage()],
+              aiHistoryCompacted: false,
             });
             return;
           }
@@ -850,6 +864,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           set((state) => ({
             ...state,
             aiMessages: [getInitialAiMessage()],
+            aiHistoryCompacted: false,
             username: null,
             isAuthenticated: false,
             currentRoomId: null,
@@ -903,6 +918,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           set((state) => ({
             ...state,
             aiMessages: [getInitialAiMessage()],
+            aiHistoryCompacted: false,
             username: null,
             isAuthenticated: false,
             currentRoomId: null,
@@ -1287,7 +1303,10 @@ export const useChatsStore = create<ChatsStoreState>()(
                 username: data.user.username,
                 isAuthenticated: true,
                 ...(clearAIHistory
-                  ? { aiMessages: [getInitialAiMessage()] }
+                  ? {
+                      aiMessages: [getInitialAiMessage()],
+                      aiHistoryCompacted: false,
+                    }
                   : {}),
               });
 
@@ -1342,6 +1361,7 @@ export const useChatsStore = create<ChatsStoreState>()(
       }),
       partialize: (state) => ({
         aiMessages: state.aiMessages,
+        aiHistoryCompacted: state.aiHistoryCompacted,
         username: state.username,
         currentRoomId: state.currentRoomId,
         isSidebarVisible: state.isSidebarVisible,

@@ -1,4 +1,5 @@
 import type { AIChatMessage, ChatMessage } from "@/types/chat";
+import { withCompactedMessagesMarker } from "./messageCompaction";
 
 export interface DisplayMessage extends Omit<AIChatMessage, "role"> {
   username?: string;
@@ -9,9 +10,13 @@ export interface DisplayMessage extends Omit<AIChatMessage, "role"> {
 interface BuildDisplayMessagesParams {
   currentRoomId: string | null;
   currentRoomMessagesLimited: ChatMessage[];
+  /** True when older room messages exist beyond the render window. */
+  roomHasOlderMessages?: boolean;
   aiMessages: AIChatMessage[];
   messageRenderLimit: number;
   username: string | null;
+  /** True when server (or local) history was truncated/compacted. */
+  aiHistoryCompacted?: boolean;
 }
 
 // Reuse display wrappers keyed by the source message object so that
@@ -74,19 +79,28 @@ const toDisplayMessage = (
 export const buildDisplayMessages = ({
   currentRoomId,
   currentRoomMessagesLimited,
+  roomHasOlderMessages = false,
   aiMessages,
   messageRenderLimit,
   username,
+  aiHistoryCompacted = false,
 }: BuildDisplayMessagesParams): DisplayMessage[] => {
   if (currentRoomId) {
-    return currentRoomMessagesLimited.map((msg, index) =>
+    const roomDisplay = currentRoomMessagesLimited.map((msg, index) =>
       toRoomDisplayMessage(msg, index, username)
     );
+    return withCompactedMessagesMarker(roomDisplay, roomHasOlderMessages);
   }
 
-  return aiMessages
-    .slice(-messageRenderLimit)
-    .map((msg) => toDisplayMessage(msg, username));
+  const visibleAiMessages = aiMessages.slice(-messageRenderLimit);
+  const display = visibleAiMessages.map((msg) =>
+    toDisplayMessage(msg, username)
+  );
+  const wasRenderCompacted = aiMessages.length > visibleAiMessages.length;
+  return withCompactedMessagesMarker(
+    display,
+    aiHistoryCompacted || wasRenderCompacted
+  );
 };
 
 export const extractPreviousUserMessages = (
