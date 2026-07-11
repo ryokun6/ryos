@@ -19,6 +19,7 @@ import type { ChatInputProps } from "./types";
 
 export function useChatInput({
   isLoading,
+  imageUploadProgress = null,
   isForeground = false,
   onSubmitMessage,
   onStop,
@@ -390,6 +391,7 @@ export function useChatInput({
     showNudgeButton,
     isInChatRoom,
     isLoading,
+    imageUploadProgress,
     isSpeechPlaying,
     needsUsername,
     isOffline,

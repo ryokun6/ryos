@@ -1159,6 +1159,7 @@
         "transcribing": "Trascrivo…",
         "typeMessage": "Digita un messaggio…",
         "typeOrPushSpace": "Digita o premi 'spazio' per parlare…",
+        "uploadingImage": "Caricamento immagine…",
         "usingModel": "Utilizzo di {{model}}"
       },
       "toasts": {

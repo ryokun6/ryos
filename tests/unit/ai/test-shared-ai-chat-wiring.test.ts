@@ -84,7 +84,7 @@ describe("shared AI chat wiring", () => {
       ) ?? []
     ).toHaveLength(2);
     const imageUpload = source.indexOf(
-      "image = await uploadAIConversationImage(imageContent)"
+      "image = await uploadAIConversationImage(imageContent"
     );
     const imageSend = source.indexOf("sendMessage(", imageUpload);
     const postUpload = source.slice(imageUpload, imageSend);

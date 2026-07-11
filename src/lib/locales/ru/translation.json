@@ -1161,6 +1161,7 @@
         "transcribing": "Расшифровка…",
         "typeMessage": "Введите сообщение…",
         "typeOrPushSpace": "Наберите текст или нажмите 'пробел', чтобы говорить…",
+        "uploadingImage": "Загрузка изображения…",
         "usingModel": "Используется {{model}}"
       },
       "toasts": {

@@ -669,6 +669,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   });
 
   const isLoading = status === "streaming" || status === "submitted";
+  const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(
+    null
+  );
+  const imageUploadAbortRef = useRef<AbortController | null>(null);
+  const isSubmittingRef = useRef(false);
+  const isUploadingImage = imageUploadProgress !== null;
   const retryLastUserMessage = useCallback((): Promise<void> => {
     const messages = getSharedAiChat().messages;
     let latestUserMessage: AIChatMessage | undefined;
@@ -719,9 +725,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     }
   }, [username, needsUsername]);
 
+  // Drop upload overlay + release submit guard once chat loading owns Stop.
+  useEffect(() => {
+    if (!isLoading) return;
+    isSubmittingRef.current = false;
+    if (imageUploadProgress !== null) {
+      setImageUploadProgress(null);
+    }
+  }, [isLoading, imageUploadProgress]);
+
   // --- Action Handlers ---
   const handleSubmitMessage = useCallback(
     async (messageContent: string, imageContent: string | null = null) => {
+      // Synchronous re-entry guard (Enter / double-click before React re-renders Stop).
+      if (isSubmittingRef.current || imageUploadAbortRef.current) {
+        return false;
+      }
+
       const submissionIdentity = captureChatSubmissionIdentity();
       if (!messageContent.trim() && !imageContent) return false; // Don't submit empty messages
 
@@ -748,7 +768,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Clear any previous rate limit errors on new submission attempt
       setRateLimitError(null);
-
+      isSubmittingRef.current = true;
+      let keepSubmitGuard = false;
+      try {
       // Proceed with the actual submission using useChat v5
       const freshSystemState = getSystemState();
       log.debug("Submitting AI chat", {
@@ -803,21 +825,49 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
             return false;
           }
+          const uploadController = new AbortController();
+          imageUploadAbortRef.current = uploadController;
+          setImageUploadProgress(0);
           try {
-            image = await uploadAIConversationImage(imageContent);
+            image = await uploadAIConversationImage(imageContent, {
+              signal: uploadController.signal,
+              onProgress: (progress) => {
+                setImageUploadProgress(
+                  Math.max(0, Math.min(100, progress.percentage))
+                );
+              },
+            });
+            // Hold the uploading UI through send handoff so the stop button
+            // does not flicker back to send between upload end and streaming.
+            setImageUploadProgress(100);
           } catch (error) {
+            setImageUploadProgress(null);
+            if (error instanceof DOMException && error.name === "AbortError") {
+              return false;
+            }
+            if (error instanceof Error && error.name === "AbortError") {
+              return false;
+            }
             log.error("Failed to upload chat image", error);
             toast.error(i18n.t("apps.chats.toasts.aiError"), {
               description: i18n.t("apps.chats.toasts.failedToGetResponse"),
             });
             return false;
+          } finally {
+            if (imageUploadAbortRef.current === uploadController) {
+              imageUploadAbortRef.current = null;
+            }
           }
         }
         if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+          setImageUploadProgress(null);
           return false;
         }
 
-        // Send message with image attachment using files array
+        // Send message with image attachment using files array.
+        // Keep upload progress at 100 until chat `isLoading` takes over so the
+        // Stop button does not flicker back to Send between upload and stream.
+        keepSubmitGuard = true;
         sendMessage(
           {
             text: messageContent.trim() || t("apps.chats.status.describeThisImage"),
@@ -841,6 +891,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
           return false;
         }
+        keepSubmitGuard = true;
         sendMessage(
           {
             text: messageContent,
@@ -854,6 +905,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         );
       }
       return true;
+    } finally {
+      if (!keepSubmitGuard) {
+        isSubmittingRef.current = false;
+      }
+    }
     },
     [
       sendMessage,
@@ -1115,8 +1171,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [username, saveFile, launchApp],
   );
 
-  // Stop both chat streaming and TTS queue
+  // Stop image upload, chat streaming, and TTS queue
   const stop = useCallback(() => {
+    imageUploadAbortRef.current?.abort();
+    imageUploadAbortRef.current = null;
+    setImageUploadProgress(null);
+    isSubmittingRef.current = false;
     sdkStop();
     stopSpeech();
   }, [sdkStop, stopSpeech]);
@@ -1138,6 +1198,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     messages: messagesWithTimestamps, // Return messages with timestamps
     handleSubmitMessage,
     isLoading,
+    isUploadingImage,
+    imageUploadProgress,
     retryLastUserMessage,
     regenerateAssistantMessage: sdkRegenerate,
     error,

@@ -1157,6 +1157,7 @@
         "transcribing": "Transkribieren …",
         "typeMessage": "Nachricht eingeben…",
         "typeOrPushSpace": "Tippen oder 'Leertaste' drücken, um zu sprechen…",
+        "uploadingImage": "Bild wird hochgeladen …",
         "usingModel": "Verwende {{model}}"
       },
       "toasts": {

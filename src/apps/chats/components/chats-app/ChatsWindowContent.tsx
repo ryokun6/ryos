@@ -44,6 +44,8 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     currentRoomId,
     currentMessagesToDisplay,
     isLoading,
+    isUploadingImage,
+    imageUploadProgress,
     isRyoLoading,
     error,
     retryLastUserMessage,
@@ -320,7 +322,8 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                 )
               ) : (
                 <ChatInput
-                  isLoading={isLoading || isRyoLoading}
+                  isLoading={isLoading || isRyoLoading || isUploadingImage}
+                  imageUploadProgress={imageUploadProgress}
                   isForeground={isForeground}
                   onSubmitMessage={handleSubmit}
                   onStop={handleStop}

@@ -1157,6 +1157,7 @@
         "transcribing": "文字起こし中…",
         "typeMessage": "メッセージを入力…",
         "typeOrPushSpace": "入力または「スペース」を押して話す…",
+        "uploadingImage": "画像をアップロード中…",
         "usingModel": "{{model}}を使用中"
       },
       "toasts": {

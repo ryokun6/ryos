@@ -919,6 +919,7 @@
         "createAccountToContinue": "Create account to continue…",
         "typeMessage": "Type a message…",
         "describeThisImage": "Describe this image",
+        "uploadingImage": "Uploading image…",
         "typeOrPushSpace": "Type or push 'space' to talk…",
         "scrollToBottom": "Scroll to bottom",
         "nudgeSent": "👋 *nudge sent*"
