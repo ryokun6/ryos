@@ -13,6 +13,9 @@ type Props = Pick<
   | "handleImageClear"
 >;
 
+const RING_RADIUS = 12;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
 export function ChatInputImagePreview({
   t,
   selectedImage,
@@ -65,7 +68,7 @@ export function ChatInputImagePreview({
                 />
                 {isUploading ? (
                   <div
-                    className="absolute inset-0 flex flex-col justify-end bg-black/35"
+                    className="absolute inset-0 flex items-center justify-center bg-black/40"
                     aria-label={
                       t("apps.chats.status.uploadingImage") ||
                       "Uploading image"
@@ -75,12 +78,34 @@ export function ChatInputImagePreview({
                     aria-valuemax={100}
                     aria-valuenow={Math.round(progressPercent)}
                   >
-                    <div className="mx-1.5 mb-1.5 h-1.5 overflow-hidden rounded-full bg-white/25">
-                      <div
-                        className="h-full rounded-full bg-white transition-[width] duration-150 ease-out"
-                        style={{ width: `${progressPercent}%` }}
+                    <svg
+                      className="size-8 -rotate-90"
+                      viewBox="0 0 32 32"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r={RING_RADIUS}
+                        fill="none"
+                        stroke="rgba(255,255,255,0.28)"
+                        strokeWidth="2.5"
                       />
-                    </div>
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r={RING_RADIUS}
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeDasharray={RING_CIRCUMFERENCE}
+                        strokeDashoffset={
+                          RING_CIRCUMFERENCE * (1 - progressPercent / 100)
+                        }
+                        className="transition-[stroke-dashoffset] duration-150 ease-out"
+                      />
+                    </svg>
                   </div>
                 ) : null}
               </div>

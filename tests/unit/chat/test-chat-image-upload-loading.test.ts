@@ -29,6 +29,8 @@ describe("chat image upload loading UI", () => {
     );
     expect(preview).toContain('role="progressbar"');
     expect(preview).toContain("imageUploadProgress");
-    expect(preview).toContain("progressPercent");
+    expect(preview).toContain("strokeDashoffset");
+    expect(preview).toContain("RING_CIRCUMFERENCE");
+    expect(preview).toContain("-rotate-90");
   });
 });
