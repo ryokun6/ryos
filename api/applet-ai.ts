@@ -1,7 +1,9 @@
 import {
   generateText,
-  type ImagePart,
+  uploadFile,
+  type FilePart,
   type ModelMessage,
+  type SystemModelMessage,
   type TextPart,
   type UserContent,
 } from "ai";
@@ -14,6 +16,8 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
+import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
+import { GOOGLE_FILES_POLL_TIMEOUT_MS } from "./_utils/upload-provider-file.js";
 
 // ============================================================================
 // Constants and Schemas
@@ -191,11 +195,11 @@ const decodeBase64Image = (input: string): Uint8Array => {
   return bytes;
 };
 
-const createMessageParts = (
+const createMessageParts = async (
   message: ParsedMessage,
   messageIndex: number
-): Array<TextPart | ImagePart> => {
-  const parts: Array<TextPart | ImagePart> = [];
+): Promise<Array<TextPart | FilePart>> => {
+  const parts: Array<TextPart | FilePart> = [];
   const text = message.content?.trim();
 
   if (text && text.length > 0) {
@@ -203,7 +207,7 @@ const createMessageParts = (
   }
 
   if (message.attachments) {
-    message.attachments.forEach((attachment, attachmentIndex) => {
+    for (const [attachmentIndex, attachment] of message.attachments.entries()) {
       let imageData: Uint8Array;
       try {
         imageData = decodeBase64Image(attachment.data);
@@ -216,13 +220,33 @@ const createMessageParts = (
           }: ${details}`
         );
       }
-      const imagePart: ImagePart = {
-        type: 'file',
-        data: imageData,
-        mediaType: attachment.mediaType,
-      };
-      parts.push(imagePart);
-    });
+
+      let filePart: FilePart;
+      try {
+        const uploaded = await uploadFile({
+          api: google.files(),
+          data: imageData,
+          mediaType: attachment.mediaType,
+          filename: `applet-attachment-${messageIndex}-${attachmentIndex}`,
+          providerOptions: {
+            google: { pollTimeoutMs: GOOGLE_FILES_POLL_TIMEOUT_MS },
+          },
+        });
+        filePart = {
+          type: "file",
+          // Full MIME required for provider references (not top-level "image").
+          mediaType: uploaded.mediaType || attachment.mediaType,
+          data: uploaded.providerReference,
+        };
+      } catch {
+        filePart = {
+          type: "file",
+          mediaType: attachment.mediaType,
+          data: { type: "data", data: imageData },
+        };
+      }
+      parts.push(filePart);
+    }
   }
 
   return parts;
@@ -234,39 +258,54 @@ const CACHE_CONTROL_OPTIONS = {
   },
 } as const;
 
-const buildModelMessages = (
+const buildModelMessages = async (
   conversation: ParsedMessage[],
   context?: string
-): ModelMessage[] => {
-  const messages: ModelMessage[] = [
-    { role: "system", content: APPLET_SYSTEM_PROMPT.trim(), ...CACHE_CONTROL_OPTIONS },
-  ];
+): Promise<{
+  instructions: SystemModelMessage;
+  dynamicContextMessages: ModelMessage[];
+  messages: ModelMessage[];
+}> => {
+  const instructions: SystemModelMessage = {
+    role: "system",
+    content: APPLET_SYSTEM_PROMPT.trim(),
+    ...CACHE_CONTROL_OPTIONS,
+  };
+
+  const dynamicContextMessages: ModelMessage[] = [];
 
   if (context) {
-    messages.push({
-      role: "system",
+    dynamicContextMessages.push({
+      role: "user",
       content: `<applet_context>${context}</applet_context>`,
     });
   }
 
-  conversation.forEach((message, index) => {
+  const messages: ModelMessage[] = [];
+
+  for (const [index, message] of conversation.entries()) {
     const trimmedContent = message.content?.trim() ?? "";
 
     if (message.role === "system") {
+      // Treat applet-supplied system content as dynamic context (not
+      // instructions) so the static applet prompt stays cacheable.
       if (trimmedContent.length > 0) {
-        messages.push({ role: "system", content: trimmedContent });
+        dynamicContextMessages.push({
+          role: "user",
+          content: trimmedContent,
+        });
       }
-      return;
+      continue;
     }
 
     if (message.role === "assistant") {
       if (trimmedContent.length > 0) {
         messages.push({ role: "assistant", content: trimmedContent });
       }
-      return;
+      continue;
     }
 
-    const parts = createMessageParts(message, index);
+    const parts = await createMessageParts(message, index);
     if (parts.length === 0) {
       throw new Error(
         `User message ${index + 1} must include text or at least one attachment.`
@@ -282,9 +321,9 @@ const buildModelMessages = (
       role: "user",
       content,
     });
-  });
+  }
 
-  return messages;
+  return { instructions, dynamicContextMessages, messages };
 };
 
 // ============================================================================
@@ -461,7 +500,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
 
   if (mode === "image") {
     const promptText = prompt?.trim() ?? "";
-    const promptParts: Array<TextPart | ImagePart> = [];
+    const promptParts: Array<TextPart | FilePart> = [];
 
     if (context && context.trim().length > 0) {
       promptParts.push({ type: "text", text: context.trim() });
@@ -473,7 +512,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
 
     try {
       if (parsedBody.images) {
-        parsedBody.images.forEach((image, index) => {
+        for (const [index, image] of parsedBody.images.entries()) {
           let imageData: Uint8Array;
           try {
             imageData = decodeBase64Image(image.data);
@@ -485,12 +524,30 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
             );
           }
 
-          promptParts.push({
-            type: 'file',
-            data: imageData,
-            mediaType: image.mediaType,
-          });
-        });
+          try {
+            const uploaded = await uploadFile({
+              api: google.files(),
+              data: imageData,
+              mediaType: image.mediaType,
+              filename: `applet-image-${index}`,
+              providerOptions: {
+                google: { pollTimeoutMs: GOOGLE_FILES_POLL_TIMEOUT_MS },
+              },
+            });
+            promptParts.push({
+              type: "file",
+              // Full MIME required for provider references (not top-level "image").
+              mediaType: uploaded.mediaType || image.mediaType,
+              data: uploaded.providerReference,
+            });
+          } catch {
+            promptParts.push({
+              type: "file",
+              mediaType: image.mediaType,
+              data: { type: "data", data: imageData },
+            });
+          }
+        }
       }
     } catch (error) {
       logger.error("Image attachment parsing failed:", error);
@@ -566,9 +623,13 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       ? messages
       : [{ role: "user", content: prompt!.trim() }];
 
-  let finalMessages: ModelMessage[];
+  let prepared: {
+    instructions: SystemModelMessage;
+    dynamicContextMessages: ModelMessage[];
+    messages: ModelMessage[];
+  };
   try {
-    finalMessages = buildModelMessages(conversation, context);
+    prepared = await buildModelMessages(conversation, context);
   } catch (error) {
     logger.error("Message preparation failed:", error);
     logger.response(400, Date.now() - startTime);
@@ -579,19 +640,39 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
   }
 
   try {
-    logger.info("Starting text generation", { messageCount: finalMessages.length });
+    logger.info("Starting text generation", {
+      messageCount: prepared.messages.length,
+      dynamicContextCount: prepared.dynamicContextMessages.length,
+    });
+    const appletModel = google("gemini-3-flash-preview");
     const { text } = await generateText({
-      model: google("gemini-3-flash-preview"),
-      messages: finalMessages,
-      allowSystemInMessages: true,
+      model: appletModel,
+      instructions: prepared.instructions,
+      messages: prepared.messages,
+      prepareStep: ({ stepNumber, messages, model: stepModel }) => {
+        const withDynamicContext =
+          stepNumber === 0 && prepared.dynamicContextMessages.length > 0
+            ? [...prepared.dynamicContextMessages, ...messages]
+            : messages;
+        return {
+          messages: addCacheControlToMessages({
+            messages: withDynamicContext,
+            model: stepModel,
+          }),
+        };
+      },
       temperature: temperature ?? 0.6,
       maxOutputTokens: 4000,
+      timeout: {
+        totalMs: 60_000,
+        stepMs: 45_000,
+      },
     });
 
     const trimmedReply = text.trim();
     logger.info("Text generation succeeded", {
       replyLength: trimmedReply.length,
-      messageCount: finalMessages.length,
+      messageCount: prepared.messages.length,
       temperature: temperature ?? 0.6,
     });
 

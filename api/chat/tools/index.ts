@@ -24,32 +24,13 @@
  *   logError: logger.error,
  *   env: process.env,
  * });
- * 
- * streamText({
- *   model: selectedModel,
- *   tools,
- *   // ...
- * });
+ *
+ * // Pass per-tool toolsContext (AI SDK 7) when streaming / creating agents:
+ * // toolsContext: buildChatToolsContextMap(tools, context)
  * ```
  */
 
-import type {
-  MemoryWriteInput,
-  MemoryReadInput,
-  MemoryDeleteInput,
-  WebFetchInput,
-  RunJsInput,
-  MapsSearchPlacesInput,
-  GetWeatherInput,
-} from "./types.js";
 import * as schemas from "./schemas.js";
-import type {
-  CalendarControlInput,
-  DocumentsControlInput,
-  StickiesControlInput,
-  ContactsControlInput,
-  SongLibraryControlInput,
-} from "./types.js";
 import {
   executeGenerateHtml,
   executeSearchSongs,
@@ -69,10 +50,16 @@ import {
 } from "./app-state-executors.js";
 import { executeMapsSearchPlaces } from "./maps-executor.js";
 import { executeGetWeather } from "./weather-executor.js";
+import { chatToolsContextSchema } from "./context.js";
 
 // Re-export types and schemas for external use
 export * from "./types.js";
 export * from "./schemas.js";
+export {
+  chatToolsContextSchema,
+  buildChatToolsContextMap,
+  type ChatToolsContextMap,
+} from "./context.js";
 export {
   executeGenerateHtml,
   executeSearchSongs,
@@ -92,6 +79,21 @@ export {
 } from "./app-state-executors.js";
 export { executeMapsSearchPlaces } from "./maps-executor.js";
 export { executeGetWeather } from "./weather-executor.js";
+
+/**
+ * Bind a server executor to AI SDK 7 tool `context` (from toolsContext).
+ * Falls back to the closed-over request context when execute is invoked
+ * directly in unit tests without a toolsContext options bag.
+ */
+function bindServerExecute<TInput, TOutput>(
+  fallbackContext: MemoryToolContext,
+  executor: (input: TInput, context: MemoryToolContext) => Promise<TOutput>
+) {
+  return async (
+    input: TInput,
+    options?: { context?: MemoryToolContext }
+  ) => executor(input, options?.context ?? fallbackContext);
+}
 
 const MEMORY_TOOL_NAMES = [
   "memoryWrite",
@@ -363,9 +365,8 @@ export function createChatTools(
     generateHtml: {
       description: TOOL_DESCRIPTIONS.generateHtml,
       inputSchema: schemas.generateHtmlSchema,
-      execute: async (input: { html: string; title?: string; icon?: string }) => {
-        return executeGenerateHtml(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeGenerateHtml),
     },
 
     // ============================================================================
@@ -413,9 +414,8 @@ export function createChatTools(
     searchSongs: {
       description: TOOL_DESCRIPTIONS.searchSongs,
       inputSchema: schemas.searchSongsSchema,
-      execute: async (input: { query: string; maxResults?: number }) => {
-        return executeSearchSongs(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeSearchSongs),
     },
     // ============================================================================
     // Web Fetch Tool (Server-side execution)
@@ -423,9 +423,8 @@ export function createChatTools(
     webFetch: {
       description: TOOL_DESCRIPTIONS.webFetch,
       inputSchema: schemas.webFetchSchema,
-      execute: async (input: WebFetchInput) => {
-        return executeWebFetch(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeWebFetch),
     },
 
     // ============================================================================
@@ -434,9 +433,8 @@ export function createChatTools(
     getWeather: {
       description: TOOL_DESCRIPTIONS.getWeather,
       inputSchema: schemas.getWeatherSchema,
-      execute: async (input: GetWeatherInput) => {
-        return executeGetWeather(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeGetWeather),
     },
 
     // ============================================================================
@@ -445,20 +443,19 @@ export function createChatTools(
     runJs: {
       description: TOOL_DESCRIPTIONS.runJs,
       inputSchema: schemas.runJsSchema,
-      execute: async (input: RunJsInput) => {
-        return executeRunJs(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeRunJs),
     },
 
     // ============================================================================
     // Precise Location Tool (Client-side execution, approval-gated)
     // The user must approve via the in-chat permission card before the
     // browser geolocation handler runs (see src/apps/chats/tools).
+    // Approval policy is set on ToolLoopAgent via `toolApproval` (AI SDK 7).
     // ============================================================================
     getPreciseLocation: {
       description: TOOL_DESCRIPTIONS.getPreciseLocation,
       inputSchema: schemas.getPreciseLocationSchema,
-      needsApproval: true,
       // No execute - handled client-side after user approval
     },
 
@@ -468,9 +465,8 @@ export function createChatTools(
     mapsSearchPlaces: {
       description: TOOL_DESCRIPTIONS.mapsSearchPlaces,
       inputSchema: schemas.mapsSearchPlacesSchema,
-      execute: async (input: MapsSearchPlacesInput) => {
-        return executeMapsSearchPlaces(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeMapsSearchPlaces),
     },
 
     // ============================================================================
@@ -521,9 +517,9 @@ export function createChatTools(
                   text: result.message || "Screen captured from emulator.",
                 },
                 {
-                  type: "image-data" as const,
-                  data: base64Data,
+                  type: "file" as const,
                   mediaType,
+                  data: { type: "data" as const, data: base64Data },
                 },
               ],
             };
@@ -555,23 +551,20 @@ export function createChatTools(
     memoryWrite: {
       description: TOOL_DESCRIPTIONS.memoryWrite,
       inputSchema: schemas.memoryWriteSchema,
-      execute: async (input: MemoryWriteInput) => {
-        return executeMemoryWrite(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeMemoryWrite),
     },
     memoryRead: {
       description: TOOL_DESCRIPTIONS.memoryRead,
       inputSchema: schemas.memoryReadSchema,
-      execute: async (input: MemoryReadInput) => {
-        return executeMemoryRead(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeMemoryRead),
     },
     memoryDelete: {
       description: TOOL_DESCRIPTIONS.memoryDelete,
       inputSchema: schemas.memoryDeleteSchema,
-      execute: async (input: MemoryDeleteInput) => {
-        return executeMemoryDelete(input, context);
-      },
+      contextSchema: chatToolsContextSchema,
+      execute: bindServerExecute(context, executeMemoryDelete),
     },
   };
 
@@ -603,37 +596,32 @@ export function createChatTools(
       documentsControl: {
         description: TOOL_DESCRIPTIONS.documentsControl,
         inputSchema: schemas.documentsControlSchema,
-        execute: async (input: DocumentsControlInput) => {
-          return executeDocumentsControl(input, context);
-        },
+        contextSchema: chatToolsContextSchema,
+        execute: bindServerExecute(context, executeDocumentsControl),
       },
       calendarControl: {
         description: TOOL_DESCRIPTIONS.calendarControl,
         inputSchema: schemas.calendarControlSchema,
-        execute: async (input: CalendarControlInput) => {
-          return executeCalendarControl(input, context);
-        },
+        contextSchema: chatToolsContextSchema,
+        execute: bindServerExecute(context, executeCalendarControl),
       },
       stickiesControl: {
         description: TOOL_DESCRIPTIONS.stickiesControl,
         inputSchema: schemas.stickiesControlSchema,
-        execute: async (input: StickiesControlInput) => {
-          return executeStickiesControl(input, context);
-        },
+        contextSchema: chatToolsContextSchema,
+        execute: bindServerExecute(context, executeStickiesControl),
       },
       contactsControl: {
         description: TOOL_DESCRIPTIONS.contactsControl,
         inputSchema: schemas.contactsControlSchema,
-        execute: async (input: ContactsControlInput) => {
-          return executeContactsControl(input, context);
-        },
+        contextSchema: chatToolsContextSchema,
+        execute: bindServerExecute(context, executeContactsControl),
       },
       songLibraryControl: {
         description: TOOL_DESCRIPTIONS.songLibraryControl,
         inputSchema: schemas.songLibraryControlSchema,
-        execute: async (input: SongLibraryControlInput) => {
-          return executeSongLibraryControl(input, context);
-        },
+        contextSchema: chatToolsContextSchema,
+        execute: bindServerExecute(context, executeSongLibraryControl),
       },
       mapsSearchPlaces: {
         ...allTools.mapsSearchPlaces,

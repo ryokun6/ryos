@@ -604,8 +604,8 @@ export async function streamTranslation(
   try {
     const result = streamText({
       model: openai("gpt-5.4"),
+      instructions: systemPrompt,
       messages: [
-        { role: "system", content: systemPrompt },
         { role: "user", content: textsToProcess },
       ],
       temperature: 0.3,

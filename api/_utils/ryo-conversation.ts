@@ -6,6 +6,7 @@ import {
   validateUIMessages,
   type LanguageModel,
   type ModelMessage,
+  type SystemModelMessage,
   type ToolSet,
   type UIMessage,
 } from "ai";
@@ -34,8 +35,10 @@ import {
 } from "./_memory.js";
 import {
   createChatTools,
+  buildChatToolsContextMap,
   type ChatToolProfile,
   type ChatToolsContext,
+  type ChatToolsContextMap,
 } from "../chat/tools/index.js";
 import {
   CURSOR_CLOUD_AGENT_DESCRIPTION,
@@ -191,10 +194,41 @@ export interface PrepareRyoConversationOptions {
   cursorRepoAgentNotifyTelegram?: CursorRepoAgentTelegramNotify;
 }
 
+export type RyoAgentRuntimeContext = {
+  username: string | null;
+  channel: string;
+  modelId: string;
+};
+
 export interface PreparedRyoConversation {
   selectedModel: LanguageModel;
   modelId: SupportedModel;
   tools: ToolSet;
+  /**
+   * AI SDK 7 per-tool context map (keyed by tool name). Passed to
+   * ToolLoopAgent as `toolsContext` so server tools receive typed `context`
+   * instead of closing over request state.
+   */
+  toolsContext: ChatToolsContextMap;
+  /**
+   * Shared agent runtime state (username/channel/model) for prepareStep and
+   * lifecycle callbacks — not injected into the model prompt.
+   */
+  runtimeContext: RyoAgentRuntimeContext;
+  /**
+   * AI SDK 7 top-level instructions: static system prompt only (cacheable).
+   * Dynamic per-request context is injected via `prepareStep` messages —
+   * do not put memory/volatile state here.
+   */
+  instructions: SystemModelMessage;
+  /**
+   * Per-request dynamic context (memory + volatile system state). Injected
+   * once at step 0 through `prepareStep` and then carried forward.
+   */
+  dynamicContextMessages: ModelMessage[];
+  /**
+   * Conversation model messages only (no system roles).
+   */
   enrichedMessages: ModelMessage[];
   loadedSections: string[];
   staticSystemPrompt: string;
@@ -917,24 +951,25 @@ export async function prepareRyoConversationModelInput(
     username,
   });
 
-  const baseTools: ToolSet = createChatTools(
-    {
-      log,
-      logError,
-      env: {
-        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
-        YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
-      },
-      username: username ?? null,
-      redis,
-      timeZone: userTimeZone,
-      ...(effectiveSystemState?.requestGeo
-        ? { requestGeo: effectiveSystemState.requestGeo }
-        : {}),
-      ...toolContextOverrides,
+  const chatToolsContext: ChatToolsContext = {
+    log,
+    logError,
+    env: {
+      YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+      YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
     },
-    { profile: toolProfile }
-  );
+    username: username ?? null,
+    redis,
+    timeZone: userTimeZone,
+    ...(effectiveSystemState?.requestGeo
+      ? { requestGeo: effectiveSystemState.requestGeo }
+      : {}),
+    ...toolContextOverrides,
+  };
+
+  const baseTools: ToolSet = createChatTools(chatToolsContext, {
+    profile: toolProfile,
+  });
 
   const cursorRepoTools: ToolSet =
     enableCursorRepoTool &&
@@ -946,20 +981,11 @@ export async function prepareRyoConversationModelInput(
             inputSchema: cursorCloudAgentSchema,
             execute: async (input: CursorCloudAgentInput) =>
               executeCursorCloudAgent(input, {
-                log,
-                logError,
-                env: {
-                  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
-                  YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
-                },
-                username: username ?? null,
-                redis,
-                timeZone: userTimeZone,
+                ...chatToolsContext,
                 apiKey: cursorApiKey,
                 ...(cursorRepoAgentNotifyTelegram
                   ? { notifyTelegram: cursorRepoAgentNotifyTelegram }
                   : {}),
-                ...toolContextOverrides,
               }),
           },
           listCursorCloudAgentRuns: {
@@ -967,18 +993,7 @@ export async function prepareRyoConversationModelInput(
               "List recent Cursor Cloud coding-agent runs against ryokun6/ryos (real product repo, not the browser VFS). Returns stable run ids, agentDashboardUrl, status, timestamps, prompt/summary previews, PR URLs when known, and poll URLs for live events. When summarizing for the user, describe status and titles only — do not paste agentDashboardUrl, agent ids, or run ids in text (the UI list card already exposes dashboard links).",
             inputSchema: listCursorCloudAgentRunsSchema,
             execute: async (input) =>
-              executeListCursorCloudAgentRuns(input, {
-                log,
-                logError,
-                env: {
-                  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
-                  YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
-                },
-                username: username ?? null,
-                redis,
-                timeZone: userTimeZone,
-                ...toolContextOverrides,
-              }),
+              executeListCursorCloudAgentRuns(input, chatToolsContext),
           },
         }
       : {};
@@ -1016,36 +1031,48 @@ export async function prepareRyoConversationModelInput(
     ignoreIncompleteToolCalls: true,
   });
 
-  // Three-tier system message structure for optimal prompt caching:
-  //   1. Static instructions — identical across all users/requests (cacheable)
-  //   2. Memory context   — stable per-user, changes ~once per session (cacheable prefix extends)
-  //   3. Volatile state    — changes every request (time, apps, media — never cached)
-  const enrichedMessages = [
-    {
-      role: "system" as const,
-      content: staticSystemPrompt,
-      ...CACHE_CONTROL_OPTIONS,
-    },
+  // Static instructions stay in the top-level `instructions` option so the
+  // provider can cache them across users/requests (AI SDK 7).
+  //
+  // Dynamic context (memory + volatile state) is NOT folded into instructions.
+  // It is returned as `dynamicContextMessages` and prepended once via
+  // `prepareStep` on the ToolLoopAgent (see createRyoToolLoopAgent).
+  const instructions: SystemModelMessage = {
+    role: "system",
+    content: staticSystemPrompt,
+    ...CACHE_CONTROL_OPTIONS,
+  };
+
+  const dynamicContextMessages: ModelMessage[] = [
     ...(memoryContextPrompt
       ? [
           {
-            role: "system" as const,
+            role: "user" as const,
             content: memoryContextPrompt,
+            // Memory is stable per-user for a session — keep a cache breakpoint
+            // so Anthropic can reuse the prefix after the static instructions.
             ...CACHE_CONTROL_OPTIONS,
           },
         ]
       : []),
     ...(volatileStatePrompt
-      ? [{ role: "system" as const, content: volatileStatePrompt }]
+      ? [{ role: "user" as const, content: volatileStatePrompt }]
       : []),
-    ...modelMessages,
   ];
 
   return {
     selectedModel: getModelInstance(model),
     modelId: model,
     tools,
-    enrichedMessages,
+    toolsContext: buildChatToolsContextMap(tools, chatToolsContext),
+    runtimeContext: {
+      username: username ?? null,
+      channel,
+      modelId: model,
+    },
+    instructions,
+    dynamicContextMessages,
+    enrichedMessages: modelMessages,
     loadedSections,
     staticSystemPrompt,
     memoryContextPrompt,

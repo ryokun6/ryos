@@ -25,7 +25,10 @@ import {
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
-import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
+import {
+  createRyoToolLoopAgent,
+  RYO_AGENT_TIMEOUTS,
+} from "./_utils/ryo-agent.js";
 import {
   getStoredUserTimeZone,
   updateStoredUserTimeZone,
@@ -552,8 +555,13 @@ export default apiHandler<{
           }
         : {}),
     });
-    const { enrichedMessages, loadedSections, staticSystemPrompt } =
-      preparedConversation;
+    const {
+      enrichedMessages,
+      loadedSections,
+      staticSystemPrompt,
+      instructions,
+      dynamicContextMessages,
+    } = preparedConversation;
 
     log(
       `Context-aware prompts (${
@@ -564,6 +572,18 @@ export default apiHandler<{
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
     // Log message structure without retaining transcript content.
+    const instructionContent =
+      typeof instructions.content === "string"
+        ? instructions.content
+        : JSON.stringify(instructions.content);
+    log(`Static instructions, ${instructionContent.length} chars`);
+    dynamicContextMessages.forEach((msg, index) => {
+      const contentStr =
+        typeof msg.content === "string"
+          ? msg.content
+          : JSON.stringify(msg.content);
+      log(`Dynamic context ${index} [${msg.role}], ${contentStr.length} chars`);
+    });
     enrichedMessages.forEach((msg, index) => {
       const contentStr =
         typeof msg.content === "string"
@@ -579,6 +599,8 @@ export default apiHandler<{
 
     const result = await agent.stream({
       messages: enrichedMessages,
+      // Must pass explicitly — call-time `timeout` overwrites constructor default.
+      timeout: RYO_AGENT_TIMEOUTS.chat,
       abortSignal: generationAbortController.signal,
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,

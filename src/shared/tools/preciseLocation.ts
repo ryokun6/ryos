@@ -2,8 +2,9 @@
  * Shared types for the `getPreciseLocation` chat tool.
  *
  * The tool is client-executed (browser geolocation) and approval-gated: the
- * server marks it `needsApproval`, the chat UI renders an Allow / Don't Allow
- * prompt, and the handler only runs after the user approves.
+ * server registers `toolApproval: { getPreciseLocation: 'user-approval' }`,
+ * the chat UI renders an Allow / Don't Allow prompt, and the handler only
+ * runs after the user approves.
  */
 
 export interface GetPreciseLocationInput {

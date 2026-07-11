@@ -2,7 +2,6 @@ import {
   streamText,
   smoothStream,
   convertToModelMessages,
-  type ModelMessage,
   type UIMessage,
 } from "ai";
 import * as RateLimit from "./_utils/_rate-limit.js";
@@ -11,8 +10,9 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-  getOpenAIProviderOptions,
+  getModelReasoning,
 } from "./_utils/_aiModels.js";
+import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
 import {
@@ -277,46 +277,59 @@ export default apiHandler<IEGenerateRequestBody>(
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Build system messages — static portion gets cache control so providers
-    // can reuse the prefix across requests with different year/url params
-    const staticSystemMessage = {
+    // Static instructions stay cacheable; year/url context is injected via
+    // prepareStep messages so we don't mutate the cached instructions.
+    const instructions = {
       role: "system" as const,
       content: STATIC_SYSTEM_PROMPT,
       providerOptions: {
         anthropic: { cacheControl: { type: "ephemeral" } },
       },
     };
+    const dynamicContextMessages = [
+      {
+        role: "user" as const,
+        content: systemPrompt,
+      },
+    ];
 
-    const dynamicSystemMessage = {
-      role: "system" as const,
-      content: systemPrompt,
-    };
-
-    // Convert UIMessages to ModelMessages for the AI model (AI SDK v6)
+    // Convert UIMessages to ModelMessages for the AI model (AI SDK v7)
     const uiMessages = ensureUIMessageFormat(incomingMessages);
     const modelMessages = await convertToModelMessages(uiMessages);
 
-    const enrichedMessages: ModelMessage[] = [
-      staticSystemMessage,
-      dynamicSystemMessage,
-      ...modelMessages,
-    ];
-
     logger.info("Starting generation", {
       model,
-      messageCount: enrichedMessages.length,
+      messageCount: modelMessages.length,
       cacheKey,
     });
 
+    const reasoning = getModelReasoning(model);
     const result = streamText({
       model: selectedModel,
-      messages: enrichedMessages,
-      allowSystemInMessages: true,
+      instructions,
+      messages: modelMessages,
+      prepareStep: ({ stepNumber, messages, model: stepModel }) => {
+        const withDynamicContext =
+          stepNumber === 0
+            ? [...dynamicContextMessages, ...messages]
+            : messages;
+        return {
+          messages: addCacheControlToMessages({
+            messages: withDynamicContext,
+            model: stepModel,
+          }),
+        };
+      },
       // We assume prompt/messages already include necessary system/user details
       temperature: 0.7,
       maxOutputTokens: 4000,
+      timeout: {
+        totalMs: 90_000,
+        stepMs: 60_000,
+        chunkMs: 30_000,
+      },
       experimental_transform: smoothStream(),
-      providerOptions: getOpenAIProviderOptions(model),
+      ...(reasoning ? { reasoning } : {}),
       onEnd: async ({ text }) => {
         if (!cacheKey) {
           logger.info("No cacheKey available, skipping cache save");

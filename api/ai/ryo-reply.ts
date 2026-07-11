@@ -86,27 +86,25 @@ export default apiHandler<RyoReplyRequest>(
     }
 
     const messages = [
-      { role: "system" as const, content: CHAT_ROOM_REPLY_INSTRUCTIONS },
       systemState?.chatRoomContext
         ? {
-            role: "system" as const,
-            content: `\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
+            role: "user" as const,
+            content: `${prompt}\n\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
               systemState.chatRoomContext.recentMessages || ""
             }\nmentionedMessage: ${
               systemState.chatRoomContext.mentionedMessage || prompt
             }\n</chat_room_context>`,
           }
-        : null,
-      { role: "user" as const, content: prompt },
-    ].filter((m): m is NonNullable<typeof m> => m !== null);
+        : { role: "user" as const, content: prompt },
+    ];
 
     let replyText = "";
     try {
       logger.info("Generating AI reply", { roomId, promptLength: prompt.length });
       const { text } = await generateText({
         model: google("gemini-3-flash-preview"),
+        instructions: CHAT_ROOM_REPLY_INSTRUCTIONS,
         messages,
-        allowSystemInMessages: true,
         temperature: 0.6,
       });
       replyText = text;

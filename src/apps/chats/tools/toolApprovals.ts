@@ -1,7 +1,7 @@
 /**
  * Approval plumbing for approval-gated client tools (AI SDK tool-approval
- * flow: `needsApproval` on the server → `approval-requested` tool part →
- * user decision → `addToolApprovalResponse` / client execution).
+ * flow: agent `toolApproval: { tool: 'user-approval' }` → `approval-requested`
+ * tool part → user decision → `addToolApprovalResponse` / client execution).
  *
  * Multiple chat surfaces (the Chats app's shared chat, the desktop
  * assistant's bubble chat) can host approval-gated tool calls, so each

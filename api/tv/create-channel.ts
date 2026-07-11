@@ -190,13 +190,12 @@ export default apiHandler<CreateChannelRequest>(
     try {
       const { output } = await generateText({
         model: google("gemini-3-flash-preview"),
-        allowSystemInMessages: true,
+        instructions: SYSTEM_PROMPT,
         output: Output.object({
           schema: ChannelPlanSchema,
           name: "channel_plan",
         }),
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
             content: `Description: ${description}`,

@@ -13,7 +13,7 @@ import {
 import {
   getTelegramProviderStatusToolCall,
 } from "../../../api/webhooks/telegram";
-import { getOpenAIProviderOptions } from "../../../api/_utils/_aiModels.js";
+import { getModelReasoning } from "../../../api/_utils/_aiModels.js";
 
 describe("telegram status helpers", () => {
   test("maps tool names to concise status text", () => {
@@ -138,12 +138,8 @@ describe("telegram status helpers", () => {
     ).toBeNull();
   });
 
-  test("uses shared OpenAI provider options for Telegram replies", () => {
-    expect(getOpenAIProviderOptions("gpt-5.5")).toEqual({
-      openai: {
-        reasoningEffort: "none",
-      },
-    });
+  test("uses shared OpenAI reasoning setting for Telegram replies", () => {
+    expect(getModelReasoning("gpt-5.5")).toBe("none");
   });
 });
 
