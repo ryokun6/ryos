@@ -55,27 +55,43 @@ describe("cursorCloudAgent gate", () => {
 
 describe("resolveCursorSdkModelSelection", () => {
   const prevEnv = process.env.CURSOR_SDK_MODEL;
+  const composer25Fast = {
+    id: "composer-2.5",
+    params: [{ id: "fast", value: "true" }],
+  };
 
-  test("defaults to Composer 2.5 fast when unset", () => {
+  test("defaults to Grok 4.5 high+fast when unset", () => {
     delete process.env.CURSOR_SDK_MODEL;
     expect(resolveCursorSdkModelSelection()).toEqual(DEFAULT_CURSOR_SDK_MODEL);
-    expect(DEFAULT_CURSOR_SDK_MODEL_ID).toBe("composer-2.5");
+    expect(DEFAULT_CURSOR_SDK_MODEL_ID).toBe("grok-4.5");
+    expect(DEFAULT_CURSOR_SDK_MODEL.params).toEqual([
+      { id: "effort", value: "high" },
+      { id: "fast", value: "true" },
+    ]);
   });
 
-  test("maps legacy composer-2 to Composer 2.5 fast", () => {
+  test("maps legacy composer ids to Composer 2.5 fast", () => {
     expect(resolveCursorSdkModelSelection("composer-2")).toEqual(
+      composer25Fast
+    );
+    expect(resolveCursorSdkModelSelection("composer-2.5")).toEqual(
+      composer25Fast
+    );
+    expect(resolveCursorSdkModelSelection("composer-2.5-fast")).toEqual(
+      composer25Fast
+    );
+  });
+
+  test("maps grok-4.5 and grok-4.5-fast to default params", () => {
+    expect(resolveCursorSdkModelSelection("grok-4.5")).toEqual(
+      DEFAULT_CURSOR_SDK_MODEL
+    );
+    expect(resolveCursorSdkModelSelection("grok-4.5-fast")).toEqual(
       DEFAULT_CURSOR_SDK_MODEL
     );
   });
 
-  test("maps composer-2.5-fast alias to ModelSelection params", () => {
-    expect(resolveCursorSdkModelSelection("composer-2.5-fast")).toEqual({
-      id: "composer-2.5",
-      params: [{ id: "fast", value: "true" }],
-    });
-  });
-
-  test("respects explicit non-composer model ids", () => {
+  test("respects explicit non-default model ids", () => {
     expect(resolveCursorSdkModelSelection("claude-4.6-sonnet")).toEqual({
       id: "claude-4.6-sonnet",
     });
