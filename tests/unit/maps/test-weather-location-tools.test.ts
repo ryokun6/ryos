@@ -139,7 +139,7 @@ describe("createChatTools weather/location registration", () => {
     timeZone: "America/Los_Angeles",
   };
 
-  test("all profile registers getWeather (server execute) and getPreciseLocation (needsApproval, client)", () => {
+  test("all profile registers getWeather (server execute) and getPreciseLocation (client, approval via toolApproval)", () => {
     const tools = createChatTools(context, { profile: "all" }) as Record<
       string,
       { description?: string; execute?: unknown; needsApproval?: boolean }
@@ -149,7 +149,9 @@ describe("createChatTools weather/location registration", () => {
     expect(tools.getWeather.description).toBe(TOOL_DESCRIPTIONS.getWeather);
 
     expect(tools.getPreciseLocation).toBeDefined();
-    expect(tools.getPreciseLocation.needsApproval).toBe(true);
+    // AI SDK 7: approval is configured on ToolLoopAgent via toolApproval, not
+    // on the tool definition itself.
+    expect(tools.getPreciseLocation.needsApproval).toBeUndefined();
     // Client-executed after user approval — the server must not execute it.
     expect(tools.getPreciseLocation.execute).toBeUndefined();
   });

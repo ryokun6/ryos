@@ -478,7 +478,8 @@ async function _processSingleDayBatch(
     output: Output.object({
       schema: dailyNotesExtractionSchema,
     }),
-    prompt: `${DAILY_NOTES_EXTRACTION_PROMPT}${existingStateSection}\n\n--- DAILY NOTES ---\n${dailyNotesText}\n--- END DAILY NOTES ---\n\nExtract up to ${Math.max(maxExtract, 3)} long-term memories. For existing keys, you may suggest updates via relatedKeys. Return empty array if nothing qualifies.`,
+    instructions: DAILY_NOTES_EXTRACTION_PROMPT,
+    prompt: `${existingStateSection}\n\n--- DAILY NOTES ---\n${dailyNotesText}\n--- END DAILY NOTES ---\n\nExtract up to ${Math.max(maxExtract, 3)} long-term memories. For existing keys, you may suggest updates via relatedKeys. Return empty array if nothing qualifies.`,
     temperature: 0.3,
   });
 

@@ -78,9 +78,21 @@ type RyoAgentPresetName = keyof typeof RYO_AGENT_PRESETS;
 
 type RyoToolLoopAgentOptions = {
   preset: RyoAgentPresetName;
-  prepared: Pick<PreparedRyoConversation, "selectedModel" | "modelId" | "tools">;
+  prepared: Pick<
+    PreparedRyoConversation,
+    "selectedModel" | "modelId" | "tools" | "instructions"
+  >;
   temperature?: number;
   tools?: ToolSet;
+};
+
+/**
+ * Client-executed tools that require in-chat user approval before running.
+ * Declared on the agent via AI SDK 7 `toolApproval` (replaces tool-level
+ * `needsApproval`).
+ */
+const RYO_TOOL_APPROVAL = {
+  getPreciseLocation: "user-approval" as const,
 };
 
 export function createRyoToolLoopAgent({
@@ -94,15 +106,21 @@ export function createRyoToolLoopAgent({
   const headers = prepared.modelId.startsWith("sonnet")
     ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
     : undefined;
+  const resolvedTools = tools ?? prepared.tools;
 
   return new ToolLoopAgent<never, ToolSet>({
     id: agentPreset.id,
     model: prepared.selectedModel,
-    tools: tools ?? prepared.tools,
-    allowSystemInMessages: true,
+    tools: resolvedTools,
+    instructions: prepared.instructions,
     temperature,
     maxOutputTokens: agentPreset.maxOutputTokens,
     stopWhen: isStepCount(agentPreset.stopAfterSteps),
+    // Only attach approval policy when the tool is actually registered for
+    // this profile (e.g. telegram omits getPreciseLocation).
+    ...(resolvedTools.getPreciseLocation
+      ? { toolApproval: RYO_TOOL_APPROVAL }
+      : {}),
     experimental_repairToolCall: repairRyoToolCall,
     ...(headers ? { headers } : {}),
     ...(providerOptions ? { providerOptions } : {}),
@@ -110,10 +128,10 @@ export function createRyoToolLoopAgent({
 }
 
 export async function* textStreamFromFullStream<TOOLS extends ToolSet>(
-  fullStream: AsyncIterable<TextStreamPart<TOOLS>>,
+  stream: AsyncIterable<TextStreamPart<TOOLS>>,
   onPart?: (part: TextStreamPart<TOOLS>) => Promise<void> | void
 ): AsyncIterable<string> {
-  for await (const part of fullStream) {
+  for await (const part of stream) {
     await onPart?.(part);
 
     if (part.type === "text-delta") {

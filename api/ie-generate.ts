@@ -2,7 +2,6 @@ import {
   streamText,
   smoothStream,
   convertToModelMessages,
-  type ModelMessage,
   type UIMessage,
 } from "ai";
 import * as RateLimit from "./_utils/_rate-limit.js";
@@ -277,41 +276,36 @@ export default apiHandler<IEGenerateRequestBody>(
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Build system messages — static portion gets cache control so providers
+    // Build instructions — static portion gets cache control so providers
     // can reuse the prefix across requests with different year/url params
-    const staticSystemMessage = {
-      role: "system" as const,
-      content: STATIC_SYSTEM_PROMPT,
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
+    const instructions = [
+      {
+        role: "system" as const,
+        content: STATIC_SYSTEM_PROMPT,
+        providerOptions: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
       },
-    };
+      {
+        role: "system" as const,
+        content: systemPrompt,
+      },
+    ];
 
-    const dynamicSystemMessage = {
-      role: "system" as const,
-      content: systemPrompt,
-    };
-
-    // Convert UIMessages to ModelMessages for the AI model (AI SDK v6)
+    // Convert UIMessages to ModelMessages for the AI model (AI SDK v7)
     const uiMessages = ensureUIMessageFormat(incomingMessages);
     const modelMessages = await convertToModelMessages(uiMessages);
 
-    const enrichedMessages: ModelMessage[] = [
-      staticSystemMessage,
-      dynamicSystemMessage,
-      ...modelMessages,
-    ];
-
     logger.info("Starting generation", {
       model,
-      messageCount: enrichedMessages.length,
+      messageCount: modelMessages.length,
       cacheKey,
     });
 
     const result = streamText({
       model: selectedModel,
-      messages: enrichedMessages,
-      allowSystemInMessages: true,
+      instructions,
+      messages: modelMessages,
       // We assume prompt/messages already include necessary system/user details
       temperature: 0.7,
       maxOutputTokens: 4000,

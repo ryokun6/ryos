@@ -2,6 +2,7 @@ import {
   generateText,
   type ImagePart,
   type ModelMessage,
+  type SystemModelMessage,
   type TextPart,
   type UserContent,
 } from "ai";
@@ -237,24 +238,28 @@ const CACHE_CONTROL_OPTIONS = {
 const buildModelMessages = (
   conversation: ParsedMessage[],
   context?: string
-): ModelMessage[] => {
-  const messages: ModelMessage[] = [
+): { instructions: SystemModelMessage[]; messages: ModelMessage[] } => {
+  const instructions: SystemModelMessage[] = [
     { role: "system", content: APPLET_SYSTEM_PROMPT.trim(), ...CACHE_CONTROL_OPTIONS },
   ];
 
   if (context) {
-    messages.push({
+    instructions.push({
       role: "system",
       content: `<applet_context>${context}</applet_context>`,
     });
   }
 
+  const messages: ModelMessage[] = [];
+
   conversation.forEach((message, index) => {
     const trimmedContent = message.content?.trim() ?? "";
 
     if (message.role === "system") {
+      // Fold applet-supplied system content into trusted instructions so we
+      // never allow system roles in the messages array (AI SDK 7 default).
       if (trimmedContent.length > 0) {
-        messages.push({ role: "system", content: trimmedContent });
+        instructions.push({ role: "system", content: trimmedContent });
       }
       return;
     }
@@ -284,7 +289,7 @@ const buildModelMessages = (
     });
   });
 
-  return messages;
+  return { instructions, messages };
 };
 
 // ============================================================================
@@ -566,9 +571,12 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       ? messages
       : [{ role: "user", content: prompt!.trim() }];
 
-  let finalMessages: ModelMessage[];
+  let prepared: {
+    instructions: SystemModelMessage[];
+    messages: ModelMessage[];
+  };
   try {
-    finalMessages = buildModelMessages(conversation, context);
+    prepared = buildModelMessages(conversation, context);
   } catch (error) {
     logger.error("Message preparation failed:", error);
     logger.response(400, Date.now() - startTime);
@@ -579,11 +587,14 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
   }
 
   try {
-    logger.info("Starting text generation", { messageCount: finalMessages.length });
+    logger.info("Starting text generation", {
+      messageCount: prepared.messages.length,
+      instructionCount: prepared.instructions.length,
+    });
     const { text } = await generateText({
       model: google("gemini-3-flash-preview"),
-      messages: finalMessages,
-      allowSystemInMessages: true,
+      instructions: prepared.instructions,
+      messages: prepared.messages,
       temperature: temperature ?? 0.6,
       maxOutputTokens: 4000,
     });
@@ -591,7 +602,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     const trimmedReply = text.trim();
     logger.info("Text generation succeeded", {
       replyLength: trimmedReply.length,
-      messageCount: finalMessages.length,
+      messageCount: prepared.messages.length,
       temperature: temperature ?? 0.6,
     });
 

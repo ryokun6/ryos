@@ -454,11 +454,11 @@ export function createChatTools(
     // Precise Location Tool (Client-side execution, approval-gated)
     // The user must approve via the in-chat permission card before the
     // browser geolocation handler runs (see src/apps/chats/tools).
+    // Approval policy is set on ToolLoopAgent via `toolApproval` (AI SDK 7).
     // ============================================================================
     getPreciseLocation: {
       description: TOOL_DESCRIPTIONS.getPreciseLocation,
       inputSchema: schemas.getPreciseLocationSchema,
-      needsApproval: true,
       // No execute - handled client-side after user approval
     },
 
@@ -521,9 +521,9 @@ export function createChatTools(
                   text: result.message || "Screen captured from emulator.",
                 },
                 {
-                  type: "image-data" as const,
-                  data: base64Data,
+                  type: "file" as const,
                   mediaType,
+                  data: { type: "data" as const, data: base64Data },
                 },
               ],
             };

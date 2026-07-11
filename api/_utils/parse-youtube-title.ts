@@ -201,10 +201,7 @@ export async function parseYouTubeTitleWithAI(
         schema: ParsedTitleSchema,
         name: "parsed_youtube_title",
       }),
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. If possible, also extract the album name.
+      instructions: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. If possible, also extract the album name.
 
 Rules:
 - Return ONLY the clean song title, artist name, and optional album name as simple strings.
@@ -218,7 +215,7 @@ Examples:
 - title="Jay Chou - Sunny Day (周杰倫 - 晴天)", channel="Jay Chou" -> {"title":"晴天","artist":"周杰倫","album":null}
 - title="NewJeans (뉴진스) 'How Sweet' Official MV", channel="HYBE LABELS" -> {"title":"How Sweet","artist":"뉴진스","album":null}
 - title="Lofi Hip Hop Radio - Beats to Relax/Study to", channel="ChillHop Music" -> {"title":"Lofi Hip Hop Radio - Beats to Relax/Study to","artist":null,"album":null}`,
-        },
+      messages: [
         {
           role: "user",
           content: `Title: ${cleanTitle}${cleanChannel ? `\nChannel: ${cleanChannel}` : ""}`,

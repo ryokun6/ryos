@@ -61,7 +61,8 @@ export async function consolidateMemoryContent(
     output: Output.object({
       schema: memoryConsolidationSchema,
     }),
-    prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${newMemory.summary}\nContent: ${newMemory.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
+    instructions: CONSOLIDATION_PROMPT,
+    prompt: `NEW:\nSummary: ${newMemory.summary}\nContent: ${newMemory.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
     temperature: 0.3,
   });
 

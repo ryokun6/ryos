@@ -1160,8 +1160,8 @@ export default apiHandler<Record<string, unknown>>(
           // Use streamText with GPT-5.4
           const result = streamText({
             model: openai("gpt-5.4"),
+            instructions: getTranslationSystemPrompt(language),
             messages: [
-              { role: "system", content: getTranslationSystemPrompt(language) },
               { role: "user", content: textsToProcess },
             ],
             temperature: 0.3,
@@ -1385,8 +1385,8 @@ export default apiHandler<Record<string, unknown>>(
 
           const result = streamText({
             model: openai("gpt-5.4"),
+            instructions: FURIGANA_STREAM_SYSTEM_PROMPT,
             messages: [
-              { role: "system", content: FURIGANA_STREAM_SYSTEM_PROMPT },
               { role: "user", content: textsToProcess },
             ],
             temperature: 0.1,
@@ -1668,8 +1668,8 @@ export default apiHandler<Record<string, unknown>>(
           // Use streamText
           const result = streamText({
             model: openai("gpt-5.4"),
+            instructions: systemPrompt,
             messages: [
-              { role: "system", content: systemPrompt },
               { role: "user", content: textsToProcess },
             ],
             temperature: 0.7,

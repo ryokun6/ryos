@@ -354,8 +354,9 @@ export async function extractMemoriesFromConversation({
     output: Output.object({
       schema: extractionSchema,
     }),
+    instructions: EXTRACTION_PROMPT,
     prompt:
-      `${EXTRACTION_PROMPT}${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\n` +
+      `${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\n` +
       `Extract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
     temperature: 0.3,
   });

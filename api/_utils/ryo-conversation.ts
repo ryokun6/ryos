@@ -4,8 +4,10 @@ import type { Redis } from "./redis.js";
 import {
   convertToModelMessages,
   validateUIMessages,
+  type Instructions,
   type LanguageModel,
   type ModelMessage,
+  type SystemModelMessage,
   type ToolSet,
   type UIMessage,
 } from "ai";
@@ -195,6 +197,16 @@ export interface PreparedRyoConversation {
   selectedModel: LanguageModel;
   modelId: SupportedModel;
   tools: ToolSet;
+  /**
+   * AI SDK 7 top-level instructions (static + memory + volatile system
+   * prompts). Kept separate from conversation `messages` so system content
+   * is not injectable via chat history.
+   */
+  instructions: Instructions;
+  /**
+   * Conversation model messages only (no system roles). Formerly included
+   * prepended system messages; those now live in `instructions`.
+   */
   enrichedMessages: ModelMessage[];
   loadedSections: string[];
   staticSystemPrompt: string;
@@ -1016,13 +1028,13 @@ export async function prepareRyoConversationModelInput(
     ignoreIncompleteToolCalls: true,
   });
 
-  // Three-tier system message structure for optimal prompt caching:
+  // Three-tier instructions structure for optimal prompt caching (AI SDK 7):
   //   1. Static instructions — identical across all users/requests (cacheable)
   //   2. Memory context   — stable per-user, changes ~once per session (cacheable prefix extends)
   //   3. Volatile state    — changes every request (time, apps, media — never cached)
-  const enrichedMessages = [
+  const instructions: SystemModelMessage[] = [
     {
-      role: "system" as const,
+      role: "system",
       content: staticSystemPrompt,
       ...CACHE_CONTROL_OPTIONS,
     },
@@ -1038,14 +1050,14 @@ export async function prepareRyoConversationModelInput(
     ...(volatileStatePrompt
       ? [{ role: "system" as const, content: volatileStatePrompt }]
       : []),
-    ...modelMessages,
   ];
 
   return {
     selectedModel: getModelInstance(model),
     modelId: model,
     tools,
-    enrichedMessages,
+    instructions,
+    enrichedMessages: modelMessages,
     loadedSections,
     staticSystemPrompt,
     memoryContextPrompt,

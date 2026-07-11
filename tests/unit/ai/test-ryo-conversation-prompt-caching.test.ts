@@ -153,7 +153,7 @@ describe("prompt caching structure", () => {
     expect(prompt).not.toContain("MEDIA PLAYBACK");
   });
 
-  test("prepareRyoConversationModelInput emits three system messages with cache control", async () => {
+  test("prepareRyoConversationModelInput emits three instruction messages with cache control", async () => {
     const result = await prepareRyoConversationModelInput({
       channel: "chat",
       messages: [{ id: "1", role: "user", content: "hello" }],
@@ -165,32 +165,39 @@ describe("prompt caching structure", () => {
       },
     });
 
-    const systemMessages = result.enrichedMessages.filter(
-      (m) => m.role === "system"
-    );
+    expect(Array.isArray(result.instructions)).toBe(true);
+    const instructionMessages = result.instructions as Array<{
+      role: string;
+      content: string;
+      providerOptions?: unknown;
+    }>;
 
-    expect(systemMessages.length).toBe(3);
+    expect(instructionMessages.length).toBe(3);
 
     // First: static instructions (cached)
-    expect(systemMessages[0].content).toContain("core_priority");
-    expect((systemMessages[0] as Record<string, unknown>).providerOptions).toBeDefined();
+    expect(instructionMessages[0].content).toContain("core_priority");
+    expect(instructionMessages[0].providerOptions).toBeDefined();
 
     // Second: memory context (cached)
-    expect(systemMessages[1].content).toContain("user_context");
-    expect(systemMessages[1].content).toContain("LONG-TERM MEMORIES");
-    expect((systemMessages[1] as Record<string, unknown>).providerOptions).toBeDefined();
+    expect(instructionMessages[1].content).toContain("user_context");
+    expect(instructionMessages[1].content).toContain("LONG-TERM MEMORIES");
+    expect(instructionMessages[1].providerOptions).toBeDefined();
 
     // Third: volatile state (NOT cached)
-    expect(systemMessages[2].content).toContain("system_state");
-    expect(systemMessages[2].content).toContain("Ryo Time:");
-    expect((systemMessages[2] as Record<string, unknown>).providerOptions).toBeUndefined();
+    expect(instructionMessages[2].content).toContain("system_state");
+    expect(instructionMessages[2].content).toContain("Ryo Time:");
+    expect(instructionMessages[2].providerOptions).toBeUndefined();
+
+    // Conversation messages must not carry system roles (AI SDK 7)
+    expect(result.enrichedMessages.every((m) => m.role !== "system")).toBe(true);
+    expect(result.enrichedMessages.some((m) => m.role === "user")).toBe(true);
 
     // Verify the new fields are populated
     expect(result.memoryContextPrompt).toContain("user_context");
     expect(result.volatileStatePrompt).toContain("system_state");
   });
 
-  test("prepareRyoConversationModelInput emits three system messages without memories", async () => {
+  test("prepareRyoConversationModelInput emits three instruction messages without memories", async () => {
     const result = await prepareRyoConversationModelInput({
       channel: "chat",
       messages: [{ id: "1", role: "user", content: "hello" }],
@@ -202,14 +209,16 @@ describe("prompt caching structure", () => {
       },
     });
 
-    const systemMessages = result.enrichedMessages.filter(
-      (m) => m.role === "system"
-    );
+    const instructionMessages = result.instructions as Array<{
+      role: string;
+      content: string;
+    }>;
 
     // Still 3 messages: static + minimal memory context (user identity) + volatile
-    expect(systemMessages.length).toBe(3);
-    expect(systemMessages[0].content).toContain("core_priority");
-    expect(systemMessages[1].content).toContain("user_context");
-    expect(systemMessages[2].content).toContain("system_state");
+    expect(instructionMessages.length).toBe(3);
+    expect(instructionMessages[0].content).toContain("core_priority");
+    expect(instructionMessages[1].content).toContain("user_context");
+    expect(instructionMessages[2].content).toContain("system_state");
+    expect(result.enrichedMessages.every((m) => m.role !== "system")).toBe(true);
   });
 });

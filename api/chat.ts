@@ -552,7 +552,7 @@ export default apiHandler<{
           }
         : {}),
     });
-    const { enrichedMessages, loadedSections, staticSystemPrompt } =
+    const { enrichedMessages, loadedSections, staticSystemPrompt, instructions } =
       preparedConversation;
 
     log(
@@ -564,6 +564,20 @@ export default apiHandler<{
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
     // Log message structure without retaining transcript content.
+    const instructionMessages = Array.isArray(instructions)
+      ? instructions
+      : instructions
+        ? [instructions]
+        : [];
+    instructionMessages.forEach((msg, index) => {
+      const contentStr =
+        typeof msg === "string"
+          ? msg
+          : typeof msg.content === "string"
+            ? msg.content
+            : JSON.stringify(msg.content);
+      log(`Instruction ${index}, ${contentStr.length} chars`);
+    });
     enrichedMessages.forEach((msg, index) => {
       const contentStr =
         typeof msg.content === "string"
