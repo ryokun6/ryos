@@ -62,7 +62,10 @@ export function ChatMessages({
   return (
     <StickToBottom
       className="flex-1 relative flex flex-col overflow-hidden size-full"
-      resize="smooth"
+      // Instant resize: restored/hydrated history must land at the bottom
+      // without a spring scroll. New messages still animate via the explicit
+      // scrollToBottom("smooth") trigger in ChatMessagesContent.
+      resize="instant"
       initial="instant"
     >
       <StickToBottom.Content className="flex flex-col gap-1 p-3 pt-12 pb-14">
