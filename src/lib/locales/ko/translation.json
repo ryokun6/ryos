@@ -1157,6 +1157,7 @@
         "transcribing": "전사 중…",
         "typeMessage": "메시지를 입력하세요…",
         "typeOrPushSpace": "입력하거나 '스페이스'를 눌러 말하세요…",
+        "uploadingImage": "이미지 업로드 중…",
         "usingModel": "{{model}} 사용 중"
       },
       "toasts": {

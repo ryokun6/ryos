@@ -1157,6 +1157,7 @@
         "transcribing": "正在转录…",
         "typeMessage": "输入消息…",
         "typeOrPushSpace": "输入消息或按空格键说话…",
+        "uploadingImage": "正在上传图像…",
         "usingModel": "使用 {{model}}"
       },
       "toasts": {
