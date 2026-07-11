@@ -669,6 +669,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   });
 
   const isLoading = status === "streaming" || status === "submitted";
+  const [imageUploadProgress, setImageUploadProgress] = useState<number | null>(
+    null
+  );
+  const imageUploadAbortRef = useRef<AbortController | null>(null);
+  const isUploadingImage = imageUploadProgress !== null;
   const retryLastUserMessage = useCallback((): Promise<void> => {
     const messages = getSharedAiChat().messages;
     let latestUserMessage: AIChatMessage | undefined;
@@ -803,39 +808,68 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
             return false;
           }
+          const uploadController = new AbortController();
+          imageUploadAbortRef.current = uploadController;
+          setImageUploadProgress(0);
           try {
-            image = await uploadAIConversationImage(imageContent);
+            image = await uploadAIConversationImage(imageContent, {
+              signal: uploadController.signal,
+              onProgress: (progress) => {
+                setImageUploadProgress(
+                  Math.max(0, Math.min(100, progress.percentage))
+                );
+              },
+            });
+            // Hold the uploading UI through send handoff so the stop button
+            // does not flicker back to send between upload end and streaming.
+            setImageUploadProgress(100);
           } catch (error) {
+            setImageUploadProgress(null);
+            if (error instanceof DOMException && error.name === "AbortError") {
+              return false;
+            }
+            if (error instanceof Error && error.name === "AbortError") {
+              return false;
+            }
             log.error("Failed to upload chat image", error);
             toast.error(i18n.t("apps.chats.toasts.aiError"), {
               description: i18n.t("apps.chats.toasts.failedToGetResponse"),
             });
             return false;
+          } finally {
+            if (imageUploadAbortRef.current === uploadController) {
+              imageUploadAbortRef.current = null;
+            }
           }
         }
         if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
+          setImageUploadProgress(null);
           return false;
         }
 
         // Send message with image attachment using files array
-        sendMessage(
-          {
-            text: messageContent.trim() || t("apps.chats.status.describeThisImage"),
-            files: [
-              {
-                type: "file" as const,
-                mediaType: image.mediaType,
-                url: image.url,
+        try {
+          sendMessage(
+            {
+              text: messageContent.trim() || t("apps.chats.status.describeThisImage"),
+              files: [
+                {
+                  type: "file" as const,
+                  mediaType: image.mediaType,
+                  url: image.url,
+                },
+              ],
+              metadata: {
+                createdAt: new Date(),
               },
-            ],
-            metadata: {
-              createdAt: new Date(),
             },
-          },
-          {
-            body: requestBody,
-          },
-        );
+            {
+              body: requestBody,
+            },
+          );
+        } finally {
+          setImageUploadProgress(null);
+        }
       } else {
         // Send text-only message
         if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
@@ -1115,8 +1149,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     [username, saveFile, launchApp],
   );
 
-  // Stop both chat streaming and TTS queue
+  // Stop image upload, chat streaming, and TTS queue
   const stop = useCallback(() => {
+    imageUploadAbortRef.current?.abort();
+    imageUploadAbortRef.current = null;
+    setImageUploadProgress(null);
     sdkStop();
     stopSpeech();
   }, [sdkStop, stopSpeech]);
@@ -1138,6 +1175,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     messages: messagesWithTimestamps, // Return messages with timestamps
     handleSubmitMessage,
     isLoading,
+    isUploadingImage,
+    imageUploadProgress,
     retryLastUserMessage,
     regenerateAssistantMessage: sdkRegenerate,
     error,

@@ -35,6 +35,7 @@ export function ChatInputView(vm: ChatInputViewModel) {
           isInChatRoom={vm.isInChatRoom}
           isMacTheme={vm.isMacTheme}
           isWindowsTheme={vm.isWindowsTheme}
+          imageUploadProgress={vm.imageUploadProgress}
           handleImageClear={vm.handleImageClear}
         />
 

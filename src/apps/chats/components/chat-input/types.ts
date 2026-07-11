@@ -1,5 +1,7 @@
 export interface ChatInputProps {
   isLoading: boolean;
+  /** 0–100 while an attached image is uploading to the server; null otherwise */
+  imageUploadProgress?: number | null;
   isForeground?: boolean;
   onSubmitMessage: (
     message: string,

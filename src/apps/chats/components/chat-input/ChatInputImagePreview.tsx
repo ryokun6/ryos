@@ -4,7 +4,13 @@ import type { ChatInputViewModel } from "./useChatInput";
 
 type Props = Pick<
   ChatInputViewModel,
-  "t" | "selectedImage" | "isInChatRoom" | "isMacTheme" | "isWindowsTheme" | "handleImageClear"
+  | "t"
+  | "selectedImage"
+  | "isInChatRoom"
+  | "isMacTheme"
+  | "isWindowsTheme"
+  | "imageUploadProgress"
+  | "handleImageClear"
 >;
 
 export function ChatInputImagePreview({
@@ -13,8 +19,16 @@ export function ChatInputImagePreview({
   isInChatRoom,
   isMacTheme,
   isWindowsTheme,
+  imageUploadProgress,
   handleImageClear,
 }: Props) {
+  const isUploading =
+    typeof imageUploadProgress === "number" &&
+    Number.isFinite(imageUploadProgress);
+  const progressPercent = isUploading
+    ? Math.max(0, Math.min(100, imageUploadProgress))
+    : 0;
+
   return (
     <AnimatePresence>
       {selectedImage && !isInChatRoom && (
@@ -49,16 +63,37 @@ export function ChatInputImagePreview({
                   className="h-16 w-auto object-cover block"
                   style={{ maxWidth: "120px" }}
                 />
+                {isUploading ? (
+                  <div
+                    className="absolute inset-0 flex flex-col justify-end bg-black/35"
+                    aria-label={
+                      t("apps.chats.status.uploadingImage") ||
+                      "Uploading image"
+                    }
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(progressPercent)}
+                  >
+                    <div className="mx-1.5 mb-1.5 h-1.5 overflow-hidden rounded-full bg-white/25">
+                      <div
+                        className="h-full rounded-full bg-white transition-[width] duration-150 ease-out"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
             <button
               type="button"
               onClick={handleImageClear}
+              disabled={isUploading}
               className={`absolute -top-1.5 -right-1.5 size-5 flex items-center justify-center z-20 ${
                 isMacTheme
                   ? "rounded-full overflow-hidden"
                   : "rounded-sm bg-black/40 backdrop-blur-sm hover:bg-black/60"
-              } transition-colors`}
+              } transition-colors disabled:opacity-50 disabled:pointer-events-none`}
               style={
                 isMacTheme
                   ? {

@@ -316,7 +316,15 @@ async function fetchSessionState(
 }
 
 export async function uploadAIConversationImage(
-  dataUrl: string
+  dataUrl: string,
+  options?: {
+    signal?: AbortSignal;
+    onProgress?: (progress: {
+      loaded: number;
+      total: number;
+      percentage: number;
+    }) => void;
+  }
 ): Promise<{ mediaType: string; url: string }> {
   const match = /^data:([^;,]+);base64,/.exec(dataUrl);
   const mediaType = match?.[1];
@@ -328,12 +336,11 @@ export async function uploadAIConversationImage(
     throw new Error("AI conversation image exceeds the upload limit");
   }
 
-  const response = await abortableFetch(getApiUrl("/api/ai/attachments"), {
-    method: "POST",
-    headers: { "Content-Type": mediaType },
-    body: blob,
-    timeout: 30_000,
-  });
+  if (options?.signal?.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
+
+  const response = await uploadAIAttachmentBlob(blob, mediaType, options);
   const result: unknown = await response.json();
   if (
     !isRecord(result) ||
@@ -343,6 +350,89 @@ export async function uploadAIConversationImage(
     throw new Error("Invalid AI attachment response");
   }
   return { mediaType, url: getApiUrl(result.url) };
+}
+
+function uploadAIAttachmentBlob(
+  blob: Blob,
+  mediaType: string,
+  options?: {
+    signal?: AbortSignal;
+    onProgress?: (progress: {
+      loaded: number;
+      total: number;
+      percentage: number;
+    }) => void;
+  }
+): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", getApiUrl("/api/ai/attachments"), true);
+    xhr.withCredentials = true;
+    xhr.timeout = 30_000;
+    xhr.responseType = "text";
+    xhr.setRequestHeader("Content-Type", mediaType);
+
+    const onAbort = () => {
+      xhr.abort();
+    };
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      options.signal.addEventListener("abort", onAbort, { once: true });
+    }
+
+    const cleanup = () => {
+      options?.signal?.removeEventListener("abort", onAbort);
+    };
+
+    xhr.upload.onprogress = (event) => {
+      if (!options?.onProgress || !event.lengthComputable) return;
+      options.onProgress({
+        loaded: event.loaded,
+        total: event.total,
+        percentage: event.total > 0 ? (event.loaded / event.total) * 100 : 0,
+      });
+    };
+
+    xhr.onload = () => {
+      cleanup();
+      const response = new Response(xhr.responseText, {
+        status: xhr.status,
+        statusText: xhr.statusText,
+        headers: {
+          "Content-Type":
+            xhr.getResponseHeader("Content-Type") ?? "application/json",
+        },
+      });
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(
+          new Error(`HTTP ${xhr.status}: ${xhr.statusText || "Upload failed"}`)
+        );
+        return;
+      }
+      resolve(response);
+    };
+
+    xhr.onerror = () => {
+      cleanup();
+      reject(new Error("AI attachment upload failed before a response"));
+    };
+    xhr.ontimeout = () => {
+      cleanup();
+      const timeoutError = new Error("Request timed out after 30000ms");
+      timeoutError.name = "TimeoutError";
+      reject(timeoutError);
+    };
+    xhr.onabort = () => {
+      cleanup();
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    options?.onProgress?.({ loaded: 0, total: blob.size, percentage: 0 });
+    xhr.send(blob);
+  });
 }
 
 function normalizeCreatedAt(value: unknown): string {
