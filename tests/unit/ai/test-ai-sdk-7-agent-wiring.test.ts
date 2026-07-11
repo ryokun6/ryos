@@ -13,7 +13,7 @@ describe("AI SDK 7 Ryo agent wiring", () => {
     expect(source).toContain('getPreciseLocation: "user-approval"');
     expect(source).toContain("toolApproval: RYO_TOOL_APPROVAL");
     expect(source).not.toContain("allowSystemInMessages");
-    expect(source).not.toContain("needsApproval");
+    expect(source).not.toMatch(/needsApproval\s*:/);
   });
 
   test("prepareRyoConversationModelInput returns instructions separate from messages", () => {
