@@ -11,8 +11,17 @@ describe("chat image upload loading UI", () => {
     expect(source).toContain("imageUploadProgress");
     expect(source).toContain("isUploadingImage");
     expect(source).toContain("imageUploadAbortRef");
+    expect(source).toContain("isSubmittingRef");
     expect(source).toContain("onProgress:");
     expect(source).toContain("imageUploadAbortRef.current?.abort()");
+    // Re-entry guard before starting another upload/submit.
+    expect(source).toContain(
+      "if (isSubmittingRef.current || imageUploadAbortRef.current)"
+    );
+    // Keep overlay until chat loading owns the Stop button.
+    expect(source).toContain("if (!isLoading) return;");
+    expect(source).toContain("keepSubmitGuard");
+    expect(source).toContain("if (!keepSubmitGuard)");
   });
 
   test("ChatInput shows stop while uploading and progress on preview", () => {
@@ -24,6 +33,11 @@ describe("chat image upload loading UI", () => {
     );
     expect(windowSource).toContain("imageUploadProgress={imageUploadProgress}");
 
+    const view = readSource(
+      "src/apps/chats/components/chat-input/ChatInputView.tsx"
+    );
+    expect(view).toContain("if (vm.isLoading)");
+
     const preview = readSource(
       "src/apps/chats/components/chat-input/ChatInputImagePreview.tsx"
     );
@@ -32,5 +46,8 @@ describe("chat image upload loading UI", () => {
     expect(preview).toContain("strokeDashoffset");
     expect(preview).toContain("RING_CIRCUMFERENCE");
     expect(preview).toContain("-rotate-90");
+    expect(preview).toContain("isIndeterminate");
+    expect(preview).toContain("animate-spin");
+    expect(preview).toContain("INDETERMINATE_ARC");
   });
 });

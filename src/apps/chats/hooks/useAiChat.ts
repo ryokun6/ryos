@@ -673,6 +673,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     null
   );
   const imageUploadAbortRef = useRef<AbortController | null>(null);
+  const isSubmittingRef = useRef(false);
   const isUploadingImage = imageUploadProgress !== null;
   const retryLastUserMessage = useCallback((): Promise<void> => {
     const messages = getSharedAiChat().messages;
@@ -724,9 +725,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     }
   }, [username, needsUsername]);
 
+  // Drop upload overlay + release submit guard once chat loading owns Stop.
+  useEffect(() => {
+    if (!isLoading) return;
+    isSubmittingRef.current = false;
+    if (imageUploadProgress !== null) {
+      setImageUploadProgress(null);
+    }
+  }, [isLoading, imageUploadProgress]);
+
   // --- Action Handlers ---
   const handleSubmitMessage = useCallback(
     async (messageContent: string, imageContent: string | null = null) => {
+      // Synchronous re-entry guard (Enter / double-click before React re-renders Stop).
+      if (isSubmittingRef.current || imageUploadAbortRef.current) {
+        return false;
+      }
+
       const submissionIdentity = captureChatSubmissionIdentity();
       if (!messageContent.trim() && !imageContent) return false; // Don't submit empty messages
 
@@ -753,7 +768,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Clear any previous rate limit errors on new submission attempt
       setRateLimitError(null);
-
+      isSubmittingRef.current = true;
+      let keepSubmitGuard = false;
+      try {
       // Proceed with the actual submission using useChat v5
       const freshSystemState = getSystemState();
       log.debug("Submitting AI chat", {
@@ -847,34 +864,34 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           return false;
         }
 
-        // Send message with image attachment using files array
-        try {
-          sendMessage(
-            {
-              text: messageContent.trim() || t("apps.chats.status.describeThisImage"),
-              files: [
-                {
-                  type: "file" as const,
-                  mediaType: image.mediaType,
-                  url: image.url,
-                },
-              ],
-              metadata: {
-                createdAt: new Date(),
+        // Send message with image attachment using files array.
+        // Keep upload progress at 100 until chat `isLoading` takes over so the
+        // Stop button does not flicker back to Send between upload and stream.
+        keepSubmitGuard = true;
+        sendMessage(
+          {
+            text: messageContent.trim() || t("apps.chats.status.describeThisImage"),
+            files: [
+              {
+                type: "file" as const,
+                mediaType: image.mediaType,
+                url: image.url,
               },
+            ],
+            metadata: {
+              createdAt: new Date(),
             },
-            {
-              body: requestBody,
-            },
-          );
-        } finally {
-          setImageUploadProgress(null);
-        }
+          },
+          {
+            body: requestBody,
+          },
+        );
       } else {
         // Send text-only message
         if (!isChatSubmissionIdentityCurrent(submissionIdentity)) {
           return false;
         }
+        keepSubmitGuard = true;
         sendMessage(
           {
             text: messageContent,
@@ -888,6 +905,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         );
       }
       return true;
+    } finally {
+      if (!keepSubmitGuard) {
+        isSubmittingRef.current = false;
+      }
+    }
     },
     [
       sendMessage,
@@ -1154,6 +1176,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     imageUploadAbortRef.current?.abort();
     imageUploadAbortRef.current = null;
     setImageUploadProgress(null);
+    isSubmittingRef.current = false;
     sdkStop();
     stopSpeech();
   }, [sdkStop, stopSpeech]);

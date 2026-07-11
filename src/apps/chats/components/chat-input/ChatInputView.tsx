@@ -41,8 +41,12 @@ export function ChatInputView(vm: ChatInputViewModel) {
 
         <form
           onSubmit={async (e) => {
+            e.preventDefault();
+            // Ignore Enter / submit while upload or chat response is in flight.
+            if (vm.isLoading) {
+              return;
+            }
             if (vm.isOffline) {
-              e.preventDefault();
               checkOfflineAndShowError(
                 vm.t("apps.chats.status.chatRequiresInternet")
               );
@@ -55,7 +59,6 @@ export function ChatInputView(vm: ChatInputViewModel) {
                 isChatRoom: vm.isInChatRoom,
               });
             }
-            e.preventDefault();
             const didSubmit = await vm.onSubmitMessage(vm.input, vm.selectedImage);
             if (didSubmit) {
               vm.dispatchComposer({ type: "clearComposer" });

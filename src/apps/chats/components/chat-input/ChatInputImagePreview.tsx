@@ -15,6 +15,8 @@ type Props = Pick<
 
 const RING_RADIUS = 12;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+/** Partial arc used while upload progress is unknown / still at 0%. */
+const INDETERMINATE_ARC = RING_CIRCUMFERENCE * 0.28;
 
 export function ChatInputImagePreview({
   t,
@@ -31,6 +33,9 @@ export function ChatInputImagePreview({
   const progressPercent = isUploading
     ? Math.max(0, Math.min(100, imageUploadProgress))
     : 0;
+  // Non-lengthComputable XHR uploads stay at 0 — show a spinning arc instead
+  // of an empty ring that looks stuck.
+  const isIndeterminate = isUploading && progressPercent < 1;
 
   return (
     <AnimatePresence>
@@ -76,10 +81,15 @@ export function ChatInputImagePreview({
                     role="progressbar"
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-valuenow={Math.round(progressPercent)}
+                    aria-valuenow={
+                      isIndeterminate ? undefined : Math.round(progressPercent)
+                    }
+                    aria-busy={isIndeterminate || undefined}
                   >
                     <svg
-                      className="size-8 -rotate-90"
+                      className={`size-8 -rotate-90 ${
+                        isIndeterminate ? "animate-spin" : ""
+                      }`}
                       viewBox="0 0 32 32"
                       aria-hidden="true"
                     >
@@ -99,11 +109,21 @@ export function ChatInputImagePreview({
                         stroke="white"
                         strokeWidth="2.5"
                         strokeLinecap="round"
-                        strokeDasharray={RING_CIRCUMFERENCE}
-                        strokeDashoffset={
-                          RING_CIRCUMFERENCE * (1 - progressPercent / 100)
+                        strokeDasharray={
+                          isIndeterminate
+                            ? `${INDETERMINATE_ARC} ${RING_CIRCUMFERENCE}`
+                            : RING_CIRCUMFERENCE
                         }
-                        className="transition-[stroke-dashoffset] duration-150 ease-out"
+                        strokeDashoffset={
+                          isIndeterminate
+                            ? 0
+                            : RING_CIRCUMFERENCE * (1 - progressPercent / 100)
+                        }
+                        className={
+                          isIndeterminate
+                            ? undefined
+                            : "transition-[stroke-dashoffset] duration-150 ease-out"
+                        }
                       />
                     </svg>
                   </div>
