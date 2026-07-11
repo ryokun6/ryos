@@ -921,7 +921,8 @@
         "describeThisImage": "Describe this image",
         "typeOrPushSpace": "Type or push 'space' to talk…",
         "scrollToBottom": "Scroll to bottom",
-        "nudgeSent": "👋 *nudge sent*"
+        "nudgeSent": "👋 *nudge sent*",
+        "previousMessagesCompacted": "Previous messages compacted"
       },
       "notification": {
         "openAction": "Open"

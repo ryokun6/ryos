@@ -21,7 +21,10 @@ export interface UseServerAIConversationInput {
   /** True when the live chat is idle and safe to overwrite with server state. */
   isChatReady: () => boolean;
   /** Apply the canonical server messages to the live chat + local store. */
-  applyMessages: (messages: AIChatMessage[]) => void;
+  applyMessages: (
+    messages: AIChatMessage[],
+    options?: { historyTruncated?: boolean }
+  ) => void;
   onError: (error: unknown, context: string) => void;
 }
 
@@ -77,7 +80,9 @@ export function useServerAIConversation({
       ) {
         return;
       }
-      applyMessagesRef.current(loaded.messages);
+      applyMessagesRef.current(loaded.messages, {
+        historyTruncated: loaded.conversation.historyTruncated,
+      });
     },
     [channel, identity]
   );

@@ -2,6 +2,15 @@ import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import type { Redis } from "./redis.js";
 import {
+  AI_CHAT_COMPACTION_MESSAGE_SAFETY_MAX,
+  AI_CHAT_RESERVED_OUTPUT_TOKENS,
+  getModelConversationTokenBudget,
+} from "../../src/shared/aiModels.js";
+import {
+  compactMessagesByTokenBudget,
+  estimateTextTokens,
+} from "../../src/shared/aiConversationCompaction.js";
+import {
   convertToModelMessages,
   validateUIMessages,
   type LanguageModel,
@@ -196,6 +205,8 @@ export interface PreparedRyoConversation {
   modelId: SupportedModel;
   tools: ToolSet;
   enrichedMessages: ModelMessage[];
+  /** True when conversation history was trimmed to fit the model context. */
+  historyCompacted: boolean;
   loadedSections: string[];
   staticSystemPrompt: string;
   memoryContextPrompt: string;
@@ -1006,15 +1017,43 @@ export async function prepareRyoConversationModelInput(
     ),
     tools,
   });
+
+  // Compact conversation history to the selected model's input budget before
+  // conversion. System prompts + reserved output are excluded from the budget.
+  const systemTokenEstimate =
+    estimateTextTokens(staticSystemPrompt) +
+    estimateTextTokens(memoryContextPrompt) +
+    estimateTextTokens(volatileStatePrompt);
+  const conversationTokenBudget = getModelConversationTokenBudget(model, {
+    maxOutputTokens: AI_CHAT_RESERVED_OUTPUT_TOKENS,
+    systemTokenEstimate,
+  });
+  const compactedHistory = compactMessagesByTokenBudget(uiMessages, {
+    maxTokens: conversationTokenBudget,
+    maxMessages: AI_CHAT_COMPACTION_MESSAGE_SAFETY_MAX,
+  });
+  if (compactedHistory.compacted) {
+    log("Compacted conversation history to fit model context window", {
+      model,
+      before: uiMessages.length,
+      after: compactedHistory.messages.length,
+      estimatedTokens: compactedHistory.estimatedTokens,
+      maxTokens: conversationTokenBudget,
+    });
+  }
+
   // `ignoreIncompleteToolCalls` drops dangling client tool calls that never
   // received their output (e.g. the user typed a new message instead, or the
   // completing continuation request failed). Without it, one dangling
   // `input-available` part in the stored history makes every subsequent
   // model call throw AI_MissingToolResultsError, bricking the conversation.
-  const modelMessages = await convertToModelMessages(uiMessages, {
-    tools,
-    ignoreIncompleteToolCalls: true,
-  });
+  const modelMessages = await convertToModelMessages(
+    compactedHistory.messages as UIMessage[],
+    {
+      tools,
+      ignoreIncompleteToolCalls: true,
+    }
+  );
 
   // Three-tier system message structure for optimal prompt caching:
   //   1. Static instructions — identical across all users/requests (cacheable)
@@ -1046,6 +1085,7 @@ export async function prepareRyoConversationModelInput(
     modelId: model,
     tools,
     enrichedMessages,
+    historyCompacted: compactedHistory.compacted,
     loadedSections,
     staticSystemPrompt,
     memoryContextPrompt,

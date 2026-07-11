@@ -5,6 +5,11 @@ export {
   SUPPORTED_AI_MODELS,
   AI_MODEL_METADATA,
   DEFAULT_AI_MODEL,
+  AI_CHAT_RESERVED_OUTPUT_TOKENS,
+  AI_CHAT_COMPACTION_SAFETY_TOKENS,
+  AI_CHAT_COMPACTION_MESSAGE_SAFETY_MAX,
+  getAIModelContextWindow,
+  getModelConversationTokenBudget,
 } from "@/shared/aiModels";
 export type {
   AIModel,

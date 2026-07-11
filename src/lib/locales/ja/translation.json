@@ -1146,6 +1146,7 @@
         "nudgeSent": "👋 *つつき送信済み*",
         "pleaseLoginToDeleteRooms": "ルームを削除するにはログインしてください",
         "pleaseLoginToSendMessages": "メッセージを送信するにはログインしてください",
+        "previousMessagesCompacted": "以前のメッセージを圧縮しました",
         "recording": "録音中…",
         "retry": "再試行",
         "ryo": "@ryo",

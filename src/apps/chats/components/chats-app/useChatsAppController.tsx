@@ -164,6 +164,7 @@ export function useChatsAppController({
   const fontSize = useChatsStore((state) => state.fontSize);
   const setFontSize = useChatsStore((state) => state.setFontSize);
   const messageRenderLimit = useChatsStore((state) => state.messageRenderLimit);
+  const aiHistoryCompacted = useChatsStore((state) => state.aiHistoryCompacted);
 
   const [isShaking, setIsShaking] = useState(false);
   const {
@@ -531,16 +532,22 @@ export function useChatsAppController({
       buildDisplayMessages({
         currentRoomId,
         currentRoomMessagesLimited,
+        roomHasOlderMessages:
+          !!currentRoomId &&
+          currentRoomMessages.length > currentRoomMessagesLimited.length,
         aiMessages: messages,
         messageRenderLimit,
         username,
+        aiHistoryCompacted,
       }),
     [
       currentRoomId,
+      currentRoomMessages,
       currentRoomMessagesLimited,
       messages,
       messageRenderLimit,
       username,
+      aiHistoryCompacted,
     ]
   );
 
