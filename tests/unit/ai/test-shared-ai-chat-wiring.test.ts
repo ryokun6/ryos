@@ -145,8 +145,12 @@ describe("server AI chat lifecycle wiring", () => {
     expect(source).toContain('req.off("aborted", abortGeneration)');
     expect(source).toContain('res.off("close", handleResponseClose)');
     expect(source).toContain('requestSocket?.off("close", abortGeneration)');
-    expect(source).toMatch(
-      /agent\.stream\(\{\s*messages: enrichedMessages,\s*abortSignal: generationAbortController\.signal/
+    expect(source).toContain("messages: enrichedMessages");
+    // Call-time timeout is required — ToolLoopAgent overwrites constructor
+    // timeout with undefined when the stream() arg is omitted.
+    expect(source).toContain("timeout: RYO_AGENT_TIMEOUTS.chat");
+    expect(source).toContain(
+      "abortSignal: generationAbortController.signal"
     );
     expect(source).toContain("consumeSseStream: consumeStream");
     // An aborted or failed turn simply skips persistence: the begun user
