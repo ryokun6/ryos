@@ -154,13 +154,19 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
         model: google("gemini-3-flash-preview"),
         temperature: 1,
         maxOutputTokens: 2000,
-        instructions: [
-          { role: "system" as const, content: PROACTIVE_GREETING_INSTRUCTIONS },
-          { role: "system" as const, content: greetingDynamicContext },
-        ],
+        instructions: PROACTIVE_GREETING_INSTRUCTIONS,
         messages: [
           { role: "user" as const, content: "Generate a proactive greeting." },
         ],
+        prepareStep: ({ stepNumber, messages }) => {
+          if (stepNumber !== 0) return {};
+          return {
+            messages: [
+              { role: "user" as const, content: greetingDynamicContext },
+              ...messages,
+            ],
+          };
+        },
       });
 
       const greeting = text.trim();

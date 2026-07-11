@@ -4,7 +4,6 @@ import type { Redis } from "./redis.js";
 import {
   convertToModelMessages,
   validateUIMessages,
-  type Instructions,
   type LanguageModel,
   type ModelMessage,
   type SystemModelMessage,
@@ -198,14 +197,18 @@ export interface PreparedRyoConversation {
   modelId: SupportedModel;
   tools: ToolSet;
   /**
-   * AI SDK 7 top-level instructions (static + memory + volatile system
-   * prompts). Kept separate from conversation `messages` so system content
-   * is not injectable via chat history.
+   * AI SDK 7 top-level instructions: static system prompt only (cacheable).
+   * Dynamic per-request context is injected via `prepareStep` messages —
+   * do not put memory/volatile state here.
    */
-  instructions: Instructions;
+  instructions: SystemModelMessage;
   /**
-   * Conversation model messages only (no system roles). Formerly included
-   * prepended system messages; those now live in `instructions`.
+   * Per-request dynamic context (memory + volatile system state). Injected
+   * once at step 0 through `prepareStep` and then carried forward.
+   */
+  dynamicContextMessages: ModelMessage[];
+  /**
+   * Conversation model messages only (no system roles).
    */
   enrichedMessages: ModelMessage[];
   loadedSections: string[];
@@ -1028,27 +1031,32 @@ export async function prepareRyoConversationModelInput(
     ignoreIncompleteToolCalls: true,
   });
 
-  // Three-tier instructions structure for optimal prompt caching (AI SDK 7):
-  //   1. Static instructions — identical across all users/requests (cacheable)
-  //   2. Memory context   — stable per-user, changes ~once per session (cacheable prefix extends)
-  //   3. Volatile state    — changes every request (time, apps, media — never cached)
-  const instructions: SystemModelMessage[] = [
-    {
-      role: "system",
-      content: staticSystemPrompt,
-      ...CACHE_CONTROL_OPTIONS,
-    },
+  // Static instructions stay in the top-level `instructions` option so the
+  // provider can cache them across users/requests (AI SDK 7).
+  //
+  // Dynamic context (memory + volatile state) is NOT folded into instructions.
+  // It is returned as `dynamicContextMessages` and prepended once via
+  // `prepareStep` on the ToolLoopAgent (see createRyoToolLoopAgent).
+  const instructions: SystemModelMessage = {
+    role: "system",
+    content: staticSystemPrompt,
+    ...CACHE_CONTROL_OPTIONS,
+  };
+
+  const dynamicContextMessages: ModelMessage[] = [
     ...(memoryContextPrompt
       ? [
           {
-            role: "system" as const,
+            role: "user" as const,
             content: memoryContextPrompt,
+            // Memory is stable per-user for a session — keep a cache breakpoint
+            // so Anthropic can reuse the prefix after the static instructions.
             ...CACHE_CONTROL_OPTIONS,
           },
         ]
       : []),
     ...(volatileStatePrompt
-      ? [{ role: "system" as const, content: volatileStatePrompt }]
+      ? [{ role: "user" as const, content: volatileStatePrompt }]
       : []),
   ];
 
@@ -1057,6 +1065,7 @@ export async function prepareRyoConversationModelInput(
     modelId: model,
     tools,
     instructions,
+    dynamicContextMessages,
     enrichedMessages: modelMessages,
     loadedSections,
     staticSystemPrompt,

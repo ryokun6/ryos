@@ -276,18 +276,18 @@ export default apiHandler<IEGenerateRequestBody>(
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Build instructions — static portion gets cache control so providers
-    // can reuse the prefix across requests with different year/url params
-    const instructions = [
-      {
-        role: "system" as const,
-        content: STATIC_SYSTEM_PROMPT,
-        providerOptions: {
-          anthropic: { cacheControl: { type: "ephemeral" } },
-        },
+    // Static instructions stay cacheable; year/url context is injected via
+    // prepareStep messages so we don't mutate the cached instructions.
+    const instructions = {
+      role: "system" as const,
+      content: STATIC_SYSTEM_PROMPT,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
       },
+    };
+    const dynamicContextMessages = [
       {
-        role: "system" as const,
+        role: "user" as const,
         content: systemPrompt,
       },
     ];
@@ -306,6 +306,12 @@ export default apiHandler<IEGenerateRequestBody>(
       model: selectedModel,
       instructions,
       messages: modelMessages,
+      prepareStep: ({ stepNumber, messages }) => {
+        if (stepNumber !== 0) return {};
+        return {
+          messages: [...dynamicContextMessages, ...messages],
+        };
+      },
       // We assume prompt/messages already include necessary system/user details
       temperature: 0.7,
       maxOutputTokens: 4000,

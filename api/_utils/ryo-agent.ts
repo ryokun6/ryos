@@ -80,7 +80,11 @@ type RyoToolLoopAgentOptions = {
   preset: RyoAgentPresetName;
   prepared: Pick<
     PreparedRyoConversation,
-    "selectedModel" | "modelId" | "tools" | "instructions"
+    | "selectedModel"
+    | "modelId"
+    | "tools"
+    | "instructions"
+    | "dynamicContextMessages"
   >;
   temperature?: number;
   tools?: ToolSet;
@@ -107,15 +111,29 @@ export function createRyoToolLoopAgent({
     ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
     : undefined;
   const resolvedTools = tools ?? prepared.tools;
+  const dynamicContextMessages = prepared.dynamicContextMessages;
 
   return new ToolLoopAgent<never, ToolSet>({
     id: agentPreset.id,
     model: prepared.selectedModel,
     tools: resolvedTools,
+    // Static system prompt only — never mutate this for per-request state.
     instructions: prepared.instructions,
     temperature,
     maxOutputTokens: agentPreset.maxOutputTokens,
     stopWhen: isStepCount(agentPreset.stopAfterSteps),
+    // Inject memory + volatile state once via messages (AI SDK 7 prepareStep).
+    // Returned messages carry forward for later steps, so we only prepend on
+    // step 0. Do not override `instructions` here — that would bust the static
+    // prompt cache.
+    prepareStep: ({ stepNumber, messages }) => {
+      if (stepNumber !== 0 || dynamicContextMessages.length === 0) {
+        return {};
+      }
+      return {
+        messages: [...dynamicContextMessages, ...messages],
+      };
+    },
     // Only attach approval policy when the tool is actually registered for
     // this profile (e.g. telegram omits getPreciseLocation).
     ...(resolvedTools.getPreciseLocation

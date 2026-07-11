@@ -238,14 +238,22 @@ const CACHE_CONTROL_OPTIONS = {
 const buildModelMessages = (
   conversation: ParsedMessage[],
   context?: string
-): { instructions: SystemModelMessage[]; messages: ModelMessage[] } => {
-  const instructions: SystemModelMessage[] = [
-    { role: "system", content: APPLET_SYSTEM_PROMPT.trim(), ...CACHE_CONTROL_OPTIONS },
-  ];
+): {
+  instructions: SystemModelMessage;
+  dynamicContextMessages: ModelMessage[];
+  messages: ModelMessage[];
+} => {
+  const instructions: SystemModelMessage = {
+    role: "system",
+    content: APPLET_SYSTEM_PROMPT.trim(),
+    ...CACHE_CONTROL_OPTIONS,
+  };
+
+  const dynamicContextMessages: ModelMessage[] = [];
 
   if (context) {
-    instructions.push({
-      role: "system",
+    dynamicContextMessages.push({
+      role: "user",
       content: `<applet_context>${context}</applet_context>`,
     });
   }
@@ -256,10 +264,13 @@ const buildModelMessages = (
     const trimmedContent = message.content?.trim() ?? "";
 
     if (message.role === "system") {
-      // Fold applet-supplied system content into trusted instructions so we
-      // never allow system roles in the messages array (AI SDK 7 default).
+      // Treat applet-supplied system content as dynamic context (not
+      // instructions) so the static applet prompt stays cacheable.
       if (trimmedContent.length > 0) {
-        instructions.push({ role: "system", content: trimmedContent });
+        dynamicContextMessages.push({
+          role: "user",
+          content: trimmedContent,
+        });
       }
       return;
     }
@@ -289,7 +300,7 @@ const buildModelMessages = (
     });
   });
 
-  return { instructions, messages };
+  return { instructions, dynamicContextMessages, messages };
 };
 
 // ============================================================================
@@ -572,7 +583,8 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       : [{ role: "user", content: prompt!.trim() }];
 
   let prepared: {
-    instructions: SystemModelMessage[];
+    instructions: SystemModelMessage;
+    dynamicContextMessages: ModelMessage[];
     messages: ModelMessage[];
   };
   try {
@@ -589,12 +601,23 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
   try {
     logger.info("Starting text generation", {
       messageCount: prepared.messages.length,
-      instructionCount: prepared.instructions.length,
+      dynamicContextCount: prepared.dynamicContextMessages.length,
     });
     const { text } = await generateText({
       model: google("gemini-3-flash-preview"),
       instructions: prepared.instructions,
       messages: prepared.messages,
+      prepareStep: ({ stepNumber, messages }) => {
+        if (
+          stepNumber !== 0 ||
+          prepared.dynamicContextMessages.length === 0
+        ) {
+          return {};
+        }
+        return {
+          messages: [...prepared.dynamicContextMessages, ...messages],
+        };
+      },
       temperature: temperature ?? 0.6,
       maxOutputTokens: 4000,
     });
