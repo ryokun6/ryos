@@ -96,13 +96,15 @@ export const ChatMessagesContent = memo(function ChatMessagesContent({
     }
   }, [messages]);
 
-  // Effect to trigger scroll to bottom
+  // Effect to trigger scroll to bottom (smooth) when new messages are added.
+  // Restored history relies on StickToBottom's resize="instant" instead —
+  // do not animate that path.
   const isInitialMount = useRef(true);
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
     } else {
-      scrollToBottom();
+      void scrollToBottom("smooth");
     }
   }, [scrollToBottomTrigger, scrollToBottom]);
 

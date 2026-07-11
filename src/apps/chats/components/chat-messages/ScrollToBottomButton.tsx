@@ -35,7 +35,7 @@ export function ScrollToBottomButton() {
             border: isMacTheme ? undefined : "1px solid rgba(0,0,0,0.3)",
             backdropFilter: isMacTheme ? "blur(2px)" : undefined,
           }}
-          onClick={() => scrollToBottom()}
+          onClick={() => void scrollToBottom("smooth")}
           aria-label={t("apps.chats.status.scrollToBottom")}
         >
           {isMacTheme && (
