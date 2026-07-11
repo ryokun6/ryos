@@ -1077,7 +1077,11 @@ describe("AI conversation store", () => {
   test("bounds retained history without resetting sequence numbers", async () => {
     const redis = new MemoryConversationRedis();
     let document = await seedTurn(redis, "alice", "chat", "turn-0", "message 0");
-    for (let index = 1; index < 205; index += 1) {
+    // Short messages never approach the ~1M token budget, so use bulky
+    // payloads to force token-based compaction while keeping the loop small.
+    const bulky = "x".repeat(80_000); // ~20k tokens each
+    const overflowCount = 55;
+    for (let index = 1; index < overflowCount; index += 1) {
       document = (
         await beginAIConversationTurn({
           redis,
@@ -1086,16 +1090,18 @@ describe("AI conversation store", () => {
           operationId: `turn-${index}`,
           action: {
             kind: "user-message",
-            message: message(`u${index}`, "user", `message ${index}`),
+            message: message(`u${index}`, "user", `${bulky}-${index}`),
           },
         })
       ).document;
     }
 
-    expect(document.messages).toHaveLength(200);
-    expect(document.messages[0]?.seq).toBe(6);
-    expect(document.messages.at(-1)?.seq).toBe(205);
+    expect(document.messages.length).toBeLessThan(overflowCount);
+    expect(document.messages.length).toBeGreaterThan(0);
+    expect(document.messages.at(-1)?.seq).toBe(overflowCount);
     expect(document.historyTruncated).toBe(true);
+    // Sequence numbers keep advancing; the oldest retained seq is > 1.
+    expect(document.messages[0]?.seq).toBeGreaterThan(1);
   });
 
   test("account deletion tombstones reject in-flight and future writes", async () => {

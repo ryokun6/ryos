@@ -16,12 +16,21 @@ import {
   parseAIAttachmentUrl,
 } from "../../../../src/shared/contracts/aiAttachment.js";
 import { ASSISTANT_SUMMON_MESSAGE } from "../../../../src/shared/assistantGreeting.js";
+import {
+  AI_CHAT_COMPACTION_MESSAGE_SAFETY_MAX,
+  DEFAULT_AI_MODEL,
+  getModelConversationTokenBudget,
+} from "../../../../src/shared/aiModels.js";
+import {
+  compactMessagesByTokenBudget,
+} from "../../../../src/shared/aiConversationCompaction.js";
 
 const CONVERSATION_TTL_SECONDS = 365 * 24 * 60 * 60;
 const LOCK_TTL_SECONDS = 60;
 const LOCK_ATTEMPTS = 40;
 const LOCK_RETRY_MS = 25;
-const MAX_MESSAGES = 200;
+/** Absolute message-count safety net; token budget is the primary limit. */
+const MAX_MESSAGES = AI_CHAT_COMPACTION_MESSAGE_SAFETY_MAX;
 const MAX_CONVERSATION_BYTES = 4 * 1024 * 1024;
 const MAX_MESSAGE_BYTES = 768 * 1024;
 const MAX_MESSAGE_TEXT_LENGTH = 128_000;
@@ -29,6 +38,11 @@ const MAX_PARTS_PER_MESSAGE = 48;
 const MAX_RECENT_OPERATIONS = 48;
 const MAX_MESSAGE_ID_LENGTH = 160;
 const TURN_COMPLETION_OPERATION_SUFFIX = ":complete";
+
+/** Persistence uses the default model's conversation budget as a shared cap. */
+function getPersistedConversationTokenBudget(): number {
+  return getModelConversationTokenBudget(DEFAULT_AI_MODEL);
+}
 
 export function getAIConversationTurnCompletionOperationId(
   turnId: string,
@@ -548,10 +562,23 @@ function trimConversation(document: StoredConversation): void {
   );
   let removed = false;
 
-  while (
-    document.messages.length > MAX_MESSAGES ||
-    (totalBytes > MAX_CONVERSATION_BYTES && document.messages.length > 1)
+  const compacted = compactMessagesByTokenBudget(document.messages, {
+    maxTokens: getPersistedConversationTokenBudget(),
+    maxMessages: MAX_MESSAGES,
+  });
+  if (
+    compacted.compacted &&
+    compacted.messages.length !== document.messages.length
   ) {
+    document.messages = compacted.messages as StoredConversation["messages"];
+    totalBytes = document.messages.reduce(
+      (total, message) => total + jsonByteLength(message.parts),
+      0,
+    );
+    removed = true;
+  }
+
+  while (totalBytes > MAX_CONVERSATION_BYTES && document.messages.length > 1) {
     const nextTurn = document.messages.findIndex(
       (message, index) => index > 0 && message.role === "user",
     );

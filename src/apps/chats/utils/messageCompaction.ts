@@ -1,5 +1,14 @@
 import type { AIChatMessage } from "@/types/chat";
 import type { DisplayMessage } from "./messages";
+import {
+  compactMessagesByTokenBudget,
+  compactMessagesForModelContext,
+} from "@/shared/aiConversationCompaction";
+import {
+  AI_CHAT_COMPACTION_MESSAGE_SAFETY_MAX,
+  DEFAULT_AI_MODEL,
+  type SupportedModel,
+} from "@/shared/aiModels";
 
 /** Stable id for the display-only "Previous messages compacted" marker. */
 export const MESSAGES_COMPACTED_MARKER_ID =
@@ -9,11 +18,10 @@ export const MESSAGES_COMPACTED_MARKER_ID =
 export const MESSAGES_COMPACTED_KIND = "messages-compacted";
 
 /**
- * Align with the server conversation cap (`MAX_MESSAGES` in
- * `api/ai/conversations/_helpers/store.ts`). Anonymous local history is
- * trimmed to this size so long chats don't grow forever.
+ * Absolute message-count safety net. Primary compaction uses the selected
+ * model's context-window token budget.
  */
-export const AI_MESSAGE_COMPACTION_MAX = 200;
+export const AI_MESSAGE_COMPACTION_MAX = AI_CHAT_COMPACTION_MESSAGE_SAFETY_MAX;
 
 export function isMessagesCompactedMarker(message: {
   id?: string;
@@ -38,33 +46,48 @@ export const COMPACTED_MESSAGES_MARKER: DisplayMessage = {
   },
 };
 
+export interface CompactAiMessagesOptions {
+  modelId?: SupportedModel | null;
+  /** Explicit conversation-history token budget (overrides model derivation). */
+  maxTokens?: number;
+  maxMessages?: number;
+  systemTokenEstimate?: number;
+}
+
 /**
- * Drop oldest turns (at user-message boundaries) when history exceeds the
- * compaction cap. Returns whether any messages were removed.
+ * Drop oldest turns when history exceeds the selected model's conversation
+ * token budget (context window minus reserved output / safety). Cuts only at
+ * user-message boundaries.
  */
 export function compactAiMessages(
   messages: readonly AIChatMessage[],
-  maxMessages: number = AI_MESSAGE_COMPACTION_MAX
-): { messages: AIChatMessage[]; compacted: boolean } {
-  if (messages.length <= maxMessages || maxMessages < 1) {
-    return { messages: [...messages], compacted: false };
-  }
-
-  let cutIndex = messages.length - maxMessages;
-  // Prefer cutting at a user turn so we don't leave a dangling assistant reply.
-  while (cutIndex < messages.length && messages[cutIndex]?.role !== "user") {
-    cutIndex += 1;
-  }
-  if (cutIndex <= 0 || cutIndex >= messages.length) {
+  options: CompactAiMessagesOptions = {}
+): {
+  messages: AIChatMessage[];
+  compacted: boolean;
+  estimatedTokens: number;
+} {
+  if (typeof options.maxTokens === "number") {
+    const budgeted = compactMessagesByTokenBudget(messages, {
+      maxTokens: options.maxTokens,
+      maxMessages: options.maxMessages,
+    });
     return {
-      messages: messages.slice(-maxMessages),
-      compacted: true,
+      messages: budgeted.messages as AIChatMessage[],
+      compacted: budgeted.compacted,
+      estimatedTokens: budgeted.estimatedTokens,
     };
   }
 
+  const result = compactMessagesForModelContext(messages, {
+    modelId: options.modelId ?? DEFAULT_AI_MODEL,
+    maxMessages: options.maxMessages,
+    systemTokenEstimate: options.systemTokenEstimate,
+  });
   return {
-    messages: messages.slice(cutIndex),
-    compacted: true,
+    messages: result.messages as AIChatMessage[],
+    compacted: result.compacted,
+    estimatedTokens: result.estimatedTokens,
   };
 }
 

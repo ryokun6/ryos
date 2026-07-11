@@ -365,10 +365,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         isError,
         ...summarizeChatMessages(finalMessages),
       });
-      // Anonymous history has no server trim — compact locally when over cap.
+      // Anonymous history has no server trim — compact locally to the
+      // selected model's conversation token budget.
       let syncedMessages = finalMessages;
       if (!useChatsStore.getState().isAuthenticated) {
-        const compacted = compactAiMessages(finalMessages);
+        const compacted = compactAiMessages(finalMessages, {
+          modelId: useAppStore.getState().aiModel,
+        });
         syncedMessages = compacted.messages;
         setAiMessages(syncedMessages);
         if (compacted.compacted) {
