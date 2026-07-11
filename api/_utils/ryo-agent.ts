@@ -63,7 +63,15 @@ export const repairRyoToolCall: ToolCallRepairFunction<ToolSet> = async ({
   return null;
 };
 
-const RYO_AGENT_TIMEOUTS = {
+/**
+ * Per-preset timeouts for Ryo ToolLoopAgent runs.
+ *
+ * IMPORTANT: AI SDK 7's `agent.stream()` / `agent.generate()` always forward
+ * the call-time `timeout` argument (even when omitted as `undefined`), which
+ * overwrites the constructor default. Call sites MUST pass
+ * `timeout: RYO_AGENT_TIMEOUTS[preset]` explicitly.
+ */
+export const RYO_AGENT_TIMEOUTS = {
   chat: {
     totalMs: 180_000,
     stepMs: 90_000,
@@ -75,6 +83,11 @@ const RYO_AGENT_TIMEOUTS = {
       searchSongsMs: 25_000,
       mapsSearchPlacesMs: 20_000,
       getWeatherMs: 15_000,
+      memoryWriteMs: 15_000,
+      memoryReadMs: 15_000,
+      memoryDeleteMs: 15_000,
+      generateHtmlMs: 30_000,
+      infiniteMacControlMs: 45_000,
     },
   },
   telegram: {
@@ -88,6 +101,13 @@ const RYO_AGENT_TIMEOUTS = {
       mapsSearchPlacesMs: 20_000,
       getWeatherMs: 15_000,
       songLibraryControlMs: 25_000,
+      memoryWriteMs: 15_000,
+      memoryReadMs: 15_000,
+      memoryDeleteMs: 15_000,
+      documentsControlMs: 20_000,
+      calendarControlMs: 20_000,
+      stickiesControlMs: 15_000,
+      contactsControlMs: 15_000,
     },
   },
   telegramHeartbeat: {
@@ -97,6 +117,8 @@ const RYO_AGENT_TIMEOUTS = {
     tools: {
       webFetchMs: 15_000,
       runJsMs: 10_000,
+      memoryWriteMs: 10_000,
+      memoryReadMs: 10_000,
     },
   },
 } as const satisfies Record<string, TimeoutConfiguration<ToolSet>>;

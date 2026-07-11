@@ -95,6 +95,55 @@ describe("AI SDK 7 prompt cache helper", () => {
     });
     expect(openaiPassthrough).toEqual(messages);
   });
+
+  test("merges into existing anthropic providerOptions instead of replacing them", () => {
+    const messages: ModelMessage[] = [
+      {
+        role: "user",
+        content: "cached",
+        providerOptions: {
+          anthropic: {
+            cacheControl: { type: "ephemeral" },
+            // Preserve any other Anthropic bag fields already on the message.
+            somethingElse: true,
+          } as never,
+          otherProvider: { keep: true } as never,
+        },
+      },
+    ];
+
+    const cached = addCacheControlToMessages({
+      messages,
+      model: {
+        provider: "anthropic.messages",
+        modelId: "claude-sonnet-4-6",
+      } as never,
+    });
+
+    expect(cached[0].providerOptions).toEqual({
+      otherProvider: { keep: true },
+      anthropic: {
+        somethingElse: true,
+        cacheControl: { type: "ephemeral" },
+      },
+    });
+  });
+});
+
+describe("AI SDK 7 agent call-site timeouts", () => {
+  test("chat / telegram / heartbeat pass timeout on stream/generate", () => {
+    const chat = readSource("api/chat.ts");
+    expect(chat).toContain("RYO_AGENT_TIMEOUTS");
+    expect(chat).toContain("timeout: RYO_AGENT_TIMEOUTS.chat");
+
+    const telegram = readSource("api/webhooks/telegram.ts");
+    expect(telegram).toContain("timeout: RYO_AGENT_TIMEOUTS.telegram");
+
+    const heartbeat = readSource("api/cron/telegram-heartbeat.ts");
+    expect(heartbeat).toContain(
+      "timeout: RYO_AGENT_TIMEOUTS.telegramHeartbeat"
+    );
+  });
 });
 
 describe("AI SDK 7 toolsContext map", () => {

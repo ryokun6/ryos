@@ -25,7 +25,10 @@ import {
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
 import { resolveIpGeolocation } from "./_utils/_geolocation.js";
-import { createRyoToolLoopAgent } from "./_utils/ryo-agent.js";
+import {
+  createRyoToolLoopAgent,
+  RYO_AGENT_TIMEOUTS,
+} from "./_utils/ryo-agent.js";
 import {
   getStoredUserTimeZone,
   updateStoredUserTimeZone,
@@ -596,6 +599,8 @@ export default apiHandler<{
 
     const result = await agent.stream({
       messages: enrichedMessages,
+      // Must pass explicitly — call-time `timeout` overwrites constructor default.
+      timeout: RYO_AGENT_TIMEOUTS.chat,
       abortSignal: generationAbortController.signal,
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,

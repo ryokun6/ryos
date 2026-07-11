@@ -40,6 +40,7 @@ import {
 import { getTelegramModel } from "../_utils/_aiModels.js";
 import {
   createRyoToolLoopAgent,
+  RYO_AGENT_TIMEOUTS,
   textStreamFromFullStream,
 } from "../_utils/ryo-agent.js";
 import {
@@ -197,7 +198,7 @@ async function injectImageIntoLastUserMessage(
         ? msg.content
         : [];
 
-  const providerReference = await uploadProviderFileForModel({
+  const uploaded = await uploadProviderFileForModel({
     modelId: options.modelId,
     data: image.data,
     mediaType: image.mimeType,
@@ -205,11 +206,13 @@ async function injectImageIntoLastUserMessage(
     log: options.log,
   });
 
-  const imagePart = providerReference
+  // Provider references require a full MIME subtype (e.g. image/jpeg).
+  // Top-level "image" throws in resolveFullMediaType for non-inline data.
+  const imagePart = uploaded
     ? {
         type: "file" as const,
-        mediaType: "image",
-        data: providerReference,
+        mediaType: uploaded.mediaType,
+        data: uploaded.providerReference,
       }
     : {
         type: "file" as const,
@@ -737,6 +740,8 @@ export default async function handler(
 
     const result = await agent.stream({
       messages: finalMessages,
+      // Must pass explicitly — call-time `timeout` overwrites constructor default.
+      timeout: RYO_AGENT_TIMEOUTS.telegram,
       onStepEnd: async (stepResult) => {
         if (stepResult.toolResults.length > 0) {
           await statusReporter.markThinking();

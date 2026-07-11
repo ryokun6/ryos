@@ -42,7 +42,10 @@ import {
   getTelegramModel,
 } from "../_utils/_aiModels.js";
 import { getHeader } from "../_utils/request-helpers.js";
-import { createRyoToolLoopAgent } from "../_utils/ryo-agent.js";
+import {
+  createRyoToolLoopAgent,
+  RYO_AGENT_TIMEOUTS,
+} from "../_utils/ryo-agent.js";
 import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 
 function setResponseHeaders(res: ApiResponse): void {
@@ -397,6 +400,8 @@ export default async function handler(
 
   const result = await agent.generate({
     messages: enrichedMessages,
+    // Must pass explicitly — call-time `timeout` overwrites constructor default.
+    timeout: RYO_AGENT_TIMEOUTS.telegramHeartbeat,
     onStepEnd: async (stepResult) => {
       if (stepResult.toolResults.length > 0) {
         logger.info("Telegram heartbeat completed tool step", {

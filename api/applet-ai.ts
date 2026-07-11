@@ -17,6 +17,7 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
 import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
+import { GOOGLE_FILES_POLL_TIMEOUT_MS } from "./_utils/upload-provider-file.js";
 
 // ============================================================================
 // Constants and Schemas
@@ -222,16 +223,20 @@ const createMessageParts = async (
 
       let filePart: FilePart;
       try {
-        const { providerReference } = await uploadFile({
+        const uploaded = await uploadFile({
           api: google.files(),
           data: imageData,
           mediaType: attachment.mediaType,
           filename: `applet-attachment-${messageIndex}-${attachmentIndex}`,
+          providerOptions: {
+            google: { pollTimeoutMs: GOOGLE_FILES_POLL_TIMEOUT_MS },
+          },
         });
         filePart = {
           type: "file",
-          mediaType: "image",
-          data: providerReference,
+          // Full MIME required for provider references (not top-level "image").
+          mediaType: uploaded.mediaType || attachment.mediaType,
+          data: uploaded.providerReference,
         };
       } catch {
         filePart = {
@@ -520,16 +525,20 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
           }
 
           try {
-            const { providerReference } = await uploadFile({
+            const uploaded = await uploadFile({
               api: google.files(),
               data: imageData,
               mediaType: image.mediaType,
               filename: `applet-image-${index}`,
+              providerOptions: {
+                google: { pollTimeoutMs: GOOGLE_FILES_POLL_TIMEOUT_MS },
+              },
             });
             promptParts.push({
               type: "file",
-              mediaType: "image",
-              data: providerReference,
+              // Full MIME required for provider references (not top-level "image").
+              mediaType: uploaded.mediaType || image.mediaType,
+              data: uploaded.providerReference,
             });
           } catch {
             promptParts.push({

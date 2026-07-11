@@ -16,9 +16,18 @@ function isAnthropicModel(model: LanguageModel): boolean {
   );
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 /**
  * Mark the last message with Anthropic ephemeral cache control so each
  * agent step can incrementally reuse the conversation prefix.
+ *
+ * Merges into existing `providerOptions.anthropic` instead of replacing the
+ * whole provider bag (preserves other Anthropic options on that message).
  *
  * See https://ai-sdk.dev/v7/cookbook/node/dynamic-prompt-caching
  */
@@ -36,12 +45,20 @@ export function addCacheControlToMessages({
 
   return messages.map((message, index) => {
     if (index !== messages.length - 1) return message;
+
+    const existing = asRecord(message.providerOptions);
+    const incoming = asRecord(providerOptions);
+
     return {
       ...message,
       providerOptions: {
-        ...message.providerOptions,
-        ...providerOptions,
-      },
+        ...existing,
+        ...incoming,
+        anthropic: {
+          ...asRecord(existing.anthropic),
+          ...asRecord(incoming.anthropic),
+        },
+      } as ProviderOptions,
     };
   });
 }
