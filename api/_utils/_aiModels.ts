@@ -21,11 +21,24 @@ export type { SupportedModel };
 export const DEFAULT_MODEL: SupportedModel = DEFAULT_AI_MODEL;
 export const TELEGRAM_DEFAULT_MODEL: SupportedModel = DEFAULT_MODEL;
 
-type OpenAIReasoningEffort = "none" | "medium";
+/**
+ * AI SDK 7 top-level `reasoning` levels.
+ * Prefer this over provider-specific `providerOptions.openai.reasoningEffort`
+ * — if both are set, provider options win and the top-level value is ignored.
+ */
+export type ModelReasoningLevel =
+  | "provider-default"
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh";
 
-const OPENAI_REASONING_EFFORT_BY_MODEL: Partial<
-  Record<SupportedModel, OpenAIReasoningEffort>
+const MODEL_REASONING_BY_MODEL: Partial<
+  Record<SupportedModel, ModelReasoningLevel>
 > = {
+  // gpt-5.5 defaults to extended reasoning; disable for chat latency/cost.
   "gpt-5.5": "none",
 };
 
@@ -47,29 +60,14 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
   }
 };
 
-export function getOpenAIProviderOptions(
+/**
+ * Top-level AI SDK 7 `reasoning` setting for a model, when we override the
+ * provider default. Returns undefined to leave the provider default alone.
+ */
+export function getModelReasoning(
   model: SupportedModel
-): { openai: { reasoningEffort?: OpenAIReasoningEffort } } | undefined {
-  if (AI_MODELS[model].provider !== "OpenAI") {
-    return undefined;
-  }
-
-  const openaiOptions: {
-    reasoningEffort?: OpenAIReasoningEffort;
-  } = {};
-
-  const reasoningEffort = OPENAI_REASONING_EFFORT_BY_MODEL[model];
-  if (reasoningEffort) {
-    openaiOptions.reasoningEffort = reasoningEffort;
-  }
-
-  if (Object.keys(openaiOptions).length === 0) {
-    return undefined;
-  }
-
-  return {
-    openai: openaiOptions,
-  };
+): ModelReasoningLevel | undefined {
+  return MODEL_REASONING_BY_MODEL[model];
 }
 
 export function getTelegramModel(

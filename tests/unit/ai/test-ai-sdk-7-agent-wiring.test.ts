@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { addCacheControlToMessages } from "../../../api/_utils/ai-prompt-cache.js";
+import { buildChatToolsContextMap } from "../../../api/chat/tools/context.js";
+import { chatToolsContextSchema } from "../../../api/chat/tools/context.js";
+import type { ModelMessage } from "ai";
 
 const readSource = (relativePath: string) =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
@@ -14,7 +18,13 @@ describe("AI SDK 7 Ryo agent wiring", () => {
     expect(source).toContain("dynamicContextMessages");
     expect(source).toContain('getPreciseLocation: "user-approval"');
     expect(source).toContain("toolApproval: RYO_TOOL_APPROVAL");
+    expect(source).toContain("timeout: RYO_AGENT_TIMEOUTS[preset]");
+    expect(source).toContain("getModelReasoning");
+    expect(source).toContain("toolsContext");
+    expect(source).toContain("runtimeContext");
+    expect(source).toContain("addCacheControlToMessages");
     expect(source).not.toContain("allowSystemInMessages");
+    expect(source).not.toContain("getOpenAIProviderOptions");
     expect(source).not.toMatch(/needsApproval\s*:/);
     // prepareStep must not override instructions (keeps static prompt cache)
     expect(source).not.toMatch(/prepareStep:[\s\S]*?instructions\s*:/);
@@ -25,7 +35,10 @@ describe("AI SDK 7 Ryo agent wiring", () => {
 
     expect(source).toContain("instructions: SystemModelMessage");
     expect(source).toContain("dynamicContextMessages: ModelMessage[]");
+    expect(source).toContain("toolsContext: ChatToolsContextMap");
+    expect(source).toContain("runtimeContext: RyoAgentRuntimeContext");
     expect(source).toContain("enrichedMessages: modelMessages");
+    expect(source).toContain("buildChatToolsContextMap");
     expect(source).toMatch(/Static instructions stay in the top-level/);
   });
 
@@ -42,5 +55,74 @@ describe("AI SDK 7 Ryo agent wiring", () => {
     expect(toolBlock).toContain("getPreciseLocation:");
     expect(toolBlock).toContain("toolApproval");
     expect(toolBlock).not.toMatch(/needsApproval\s*:/);
+  });
+
+  test("server chat tools declare contextSchema for toolsContext", () => {
+    const source = readSource("api/chat/tools/index.ts");
+    expect(source).toContain("contextSchema: chatToolsContextSchema");
+    expect(source).toContain("bindServerExecute");
+    expect(source).toContain("options?.context ?? fallbackContext");
+  });
+});
+
+describe("AI SDK 7 prompt cache helper", () => {
+  test("marks last message for Anthropic models only", () => {
+    const messages: ModelMessage[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "hi" },
+      { role: "user", content: "again" },
+    ];
+
+    const anthropicCached = addCacheControlToMessages({
+      messages,
+      model: {
+        provider: "anthropic.messages",
+        modelId: "claude-sonnet-4-6",
+      } as never,
+    });
+
+    expect(anthropicCached[0].providerOptions).toBeUndefined();
+    expect(anthropicCached[2].providerOptions).toEqual({
+      anthropic: { cacheControl: { type: "ephemeral" } },
+    });
+
+    const openaiPassthrough = addCacheControlToMessages({
+      messages,
+      model: {
+        provider: "openai.responses",
+        modelId: "gpt-5.5",
+      } as never,
+    });
+    expect(openaiPassthrough).toEqual(messages);
+  });
+});
+
+describe("AI SDK 7 toolsContext map", () => {
+  test("buildChatToolsContextMap only includes tools with contextSchema", () => {
+    const context = {
+      log: () => {},
+      logError: () => {},
+      env: {},
+      username: "ryo",
+    };
+
+    const map = buildChatToolsContextMap(
+      {
+        memoryWrite: {
+          description: "write",
+          inputSchema: chatToolsContextSchema,
+          contextSchema: chatToolsContextSchema,
+          execute: async () => ({ ok: true }),
+        },
+        launchApp: {
+          description: "launch",
+          inputSchema: chatToolsContextSchema,
+        },
+      } as never,
+      context
+    );
+
+    expect(Object.keys(map)).toEqual(["memoryWrite"]);
+    expect(map.memoryWrite).toBe(context);
   });
 });

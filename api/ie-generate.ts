@@ -10,8 +10,9 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-  getOpenAIProviderOptions,
+  getModelReasoning,
 } from "./_utils/_aiModels.js";
+import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { redisKeys, sha256RedisIdentifier } from "../src/shared/redisKeys.js";
 import {
@@ -302,21 +303,33 @@ export default apiHandler<IEGenerateRequestBody>(
       cacheKey,
     });
 
+    const reasoning = getModelReasoning(model);
     const result = streamText({
       model: selectedModel,
       instructions,
       messages: modelMessages,
-      prepareStep: ({ stepNumber, messages }) => {
-        if (stepNumber !== 0) return {};
+      prepareStep: ({ stepNumber, messages, model: stepModel }) => {
+        const withDynamicContext =
+          stepNumber === 0
+            ? [...dynamicContextMessages, ...messages]
+            : messages;
         return {
-          messages: [...dynamicContextMessages, ...messages],
+          messages: addCacheControlToMessages({
+            messages: withDynamicContext,
+            model: stepModel,
+          }),
         };
       },
       // We assume prompt/messages already include necessary system/user details
       temperature: 0.7,
       maxOutputTokens: 4000,
+      timeout: {
+        totalMs: 90_000,
+        stepMs: 60_000,
+        chunkMs: 30_000,
+      },
       experimental_transform: smoothStream(),
-      providerOptions: getOpenAIProviderOptions(model),
+      ...(reasoning ? { reasoning } : {}),
       onEnd: async ({ text }) => {
         if (!cacheKey) {
           logger.info("No cacheKey available, skipping cache save");

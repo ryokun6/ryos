@@ -1,6 +1,7 @@
 import {
   generateText,
-  type ImagePart,
+  uploadFile,
+  type FilePart,
   type ModelMessage,
   type SystemModelMessage,
   type TextPart,
@@ -15,6 +16,7 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
+import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
 
 // ============================================================================
 // Constants and Schemas
@@ -192,11 +194,11 @@ const decodeBase64Image = (input: string): Uint8Array => {
   return bytes;
 };
 
-const createMessageParts = (
+const createMessageParts = async (
   message: ParsedMessage,
   messageIndex: number
-): Array<TextPart | ImagePart> => {
-  const parts: Array<TextPart | ImagePart> = [];
+): Promise<Array<TextPart | FilePart>> => {
+  const parts: Array<TextPart | FilePart> = [];
   const text = message.content?.trim();
 
   if (text && text.length > 0) {
@@ -204,7 +206,7 @@ const createMessageParts = (
   }
 
   if (message.attachments) {
-    message.attachments.forEach((attachment, attachmentIndex) => {
+    for (const [attachmentIndex, attachment] of message.attachments.entries()) {
       let imageData: Uint8Array;
       try {
         imageData = decodeBase64Image(attachment.data);
@@ -217,13 +219,29 @@ const createMessageParts = (
           }: ${details}`
         );
       }
-      const imagePart: ImagePart = {
-        type: 'file',
-        data: imageData,
-        mediaType: attachment.mediaType,
-      };
-      parts.push(imagePart);
-    });
+
+      let filePart: FilePart;
+      try {
+        const { providerReference } = await uploadFile({
+          api: google.files(),
+          data: imageData,
+          mediaType: attachment.mediaType,
+          filename: `applet-attachment-${messageIndex}-${attachmentIndex}`,
+        });
+        filePart = {
+          type: "file",
+          mediaType: "image",
+          data: providerReference,
+        };
+      } catch {
+        filePart = {
+          type: "file",
+          mediaType: attachment.mediaType,
+          data: { type: "data", data: imageData },
+        };
+      }
+      parts.push(filePart);
+    }
   }
 
   return parts;
@@ -235,14 +253,14 @@ const CACHE_CONTROL_OPTIONS = {
   },
 } as const;
 
-const buildModelMessages = (
+const buildModelMessages = async (
   conversation: ParsedMessage[],
   context?: string
-): {
+): Promise<{
   instructions: SystemModelMessage;
   dynamicContextMessages: ModelMessage[];
   messages: ModelMessage[];
-} => {
+}> => {
   const instructions: SystemModelMessage = {
     role: "system",
     content: APPLET_SYSTEM_PROMPT.trim(),
@@ -260,7 +278,7 @@ const buildModelMessages = (
 
   const messages: ModelMessage[] = [];
 
-  conversation.forEach((message, index) => {
+  for (const [index, message] of conversation.entries()) {
     const trimmedContent = message.content?.trim() ?? "";
 
     if (message.role === "system") {
@@ -272,17 +290,17 @@ const buildModelMessages = (
           content: trimmedContent,
         });
       }
-      return;
+      continue;
     }
 
     if (message.role === "assistant") {
       if (trimmedContent.length > 0) {
         messages.push({ role: "assistant", content: trimmedContent });
       }
-      return;
+      continue;
     }
 
-    const parts = createMessageParts(message, index);
+    const parts = await createMessageParts(message, index);
     if (parts.length === 0) {
       throw new Error(
         `User message ${index + 1} must include text or at least one attachment.`
@@ -298,7 +316,7 @@ const buildModelMessages = (
       role: "user",
       content,
     });
-  });
+  }
 
   return { instructions, dynamicContextMessages, messages };
 };
@@ -477,7 +495,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
 
   if (mode === "image") {
     const promptText = prompt?.trim() ?? "";
-    const promptParts: Array<TextPart | ImagePart> = [];
+    const promptParts: Array<TextPart | FilePart> = [];
 
     if (context && context.trim().length > 0) {
       promptParts.push({ type: "text", text: context.trim() });
@@ -489,7 +507,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
 
     try {
       if (parsedBody.images) {
-        parsedBody.images.forEach((image, index) => {
+        for (const [index, image] of parsedBody.images.entries()) {
           let imageData: Uint8Array;
           try {
             imageData = decodeBase64Image(image.data);
@@ -501,12 +519,26 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
             );
           }
 
-          promptParts.push({
-            type: 'file',
-            data: imageData,
-            mediaType: image.mediaType,
-          });
-        });
+          try {
+            const { providerReference } = await uploadFile({
+              api: google.files(),
+              data: imageData,
+              mediaType: image.mediaType,
+              filename: `applet-image-${index}`,
+            });
+            promptParts.push({
+              type: "file",
+              mediaType: "image",
+              data: providerReference,
+            });
+          } catch {
+            promptParts.push({
+              type: "file",
+              mediaType: image.mediaType,
+              data: { type: "data", data: imageData },
+            });
+          }
+        }
       }
     } catch (error) {
       logger.error("Image attachment parsing failed:", error);
@@ -588,7 +620,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     messages: ModelMessage[];
   };
   try {
-    prepared = buildModelMessages(conversation, context);
+    prepared = await buildModelMessages(conversation, context);
   } catch (error) {
     logger.error("Message preparation failed:", error);
     logger.response(400, Date.now() - startTime);
@@ -603,23 +635,29 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       messageCount: prepared.messages.length,
       dynamicContextCount: prepared.dynamicContextMessages.length,
     });
+    const appletModel = google("gemini-3-flash-preview");
     const { text } = await generateText({
-      model: google("gemini-3-flash-preview"),
+      model: appletModel,
       instructions: prepared.instructions,
       messages: prepared.messages,
-      prepareStep: ({ stepNumber, messages }) => {
-        if (
-          stepNumber !== 0 ||
-          prepared.dynamicContextMessages.length === 0
-        ) {
-          return {};
-        }
+      prepareStep: ({ stepNumber, messages, model: stepModel }) => {
+        const withDynamicContext =
+          stepNumber === 0 && prepared.dynamicContextMessages.length > 0
+            ? [...prepared.dynamicContextMessages, ...messages]
+            : messages;
         return {
-          messages: [...prepared.dynamicContextMessages, ...messages],
+          messages: addCacheControlToMessages({
+            messages: withDynamicContext,
+            model: stepModel,
+          }),
         };
       },
       temperature: temperature ?? 0.6,
       maxOutputTokens: 4000,
+      timeout: {
+        totalMs: 60_000,
+        stepMs: 45_000,
+      },
     });
 
     const trimmedReply = text.trim();

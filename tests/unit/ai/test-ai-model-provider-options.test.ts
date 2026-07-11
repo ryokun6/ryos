@@ -1,16 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { getOpenAIProviderOptions } from "../../../api/_utils/_aiModels.js";
+import { getModelReasoning } from "../../../api/_utils/_aiModels.js";
 
-describe("OpenAI provider options", () => {
-  test("preserves explicit reasoning effort for gpt-5.5", () => {
-    expect(getOpenAIProviderOptions("gpt-5.5")).toEqual({
-      openai: {
-        reasoningEffort: "none",
-      },
-    });
+describe("model reasoning options", () => {
+  test("uses top-level reasoning none for gpt-5.5", () => {
+    expect(getModelReasoning("gpt-5.5")).toBe("none");
   });
 
-  test("ignores OpenAI provider options for non-OpenAI models", () => {
-    expect(getOpenAIProviderOptions("sonnet-4.6")).toBeUndefined();
+  test("leaves non-OpenAI models on provider default", () => {
+    expect(getModelReasoning("sonnet-4.6")).toBeUndefined();
+    expect(getModelReasoning("gemini-3-flash")).toBeUndefined();
   });
 });

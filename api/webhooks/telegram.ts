@@ -3,6 +3,8 @@ import { type ModelMessage, type ToolSet } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
+import { uploadProviderFileForModel } from "../_utils/upload-provider-file.js";
+import type { SupportedModel } from "../_utils/_aiModels.js";
 import {
   appendTelegramConversationMessage,
   claimTelegramUpdate,
@@ -168,36 +170,57 @@ async function handleTelegramCommandUpdate(args: {
   sendJson(args.res, 200, args.payload);
 }
 
-function injectImageIntoLastUserMessage(
+async function injectImageIntoLastUserMessage(
   messages: ModelMessage[],
-  image: { data: Uint8Array; mimeType: string }
-): ModelMessage[] {
+  image: { data: Uint8Array; mimeType: string },
+  options: {
+    modelId: SupportedModel;
+    log?: (...args: unknown[]) => void;
+  }
+): Promise<ModelMessage[]> {
   let lastUserIdx = -1;
   for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === "user") { lastUserIdx = i; break; }
+    if (messages[i].role === "user") {
+      lastUserIdx = i;
+      break;
+    }
   }
   if (lastUserIdx === -1) return messages;
 
   const msg = messages[lastUserIdx];
   if (msg.role !== "user") return messages;
 
-  const existingContent = typeof msg.content === "string"
-    ? [{ type: "text" as const, text: msg.content }]
-    : Array.isArray(msg.content)
-      ? msg.content
-      : [];
+  const existingContent =
+    typeof msg.content === "string"
+      ? [{ type: "text" as const, text: msg.content }]
+      : Array.isArray(msg.content)
+        ? msg.content
+        : [];
+
+  const providerReference = await uploadProviderFileForModel({
+    modelId: options.modelId,
+    data: image.data,
+    mediaType: image.mimeType,
+    filename: "telegram-image",
+    log: options.log,
+  });
+
+  const imagePart = providerReference
+    ? {
+        type: "file" as const,
+        mediaType: "image",
+        data: providerReference,
+      }
+    : {
+        type: "file" as const,
+        mediaType: image.mimeType,
+        data: { type: "data" as const, data: image.data },
+      };
 
   const updated: ModelMessage[] = [...messages];
   updated[lastUserIdx] = {
     ...msg,
-    content: [
-      ...existingContent,
-      {
-        type: "image" as const,
-        image: image.data,
-        mimeType: image.mimeType,
-      },
-    ],
+    content: [...existingContent, imagePart],
   } as ModelMessage;
 
   return updated;
@@ -656,7 +679,7 @@ export default async function handler(
     logError: (...args: unknown[]) =>
       logger.error(`[Telegram:${linkedAccount.username}]`, args),
   });
-  const { tools, enrichedMessages, loadedSections, staticSystemPrompt } =
+  const { tools, enrichedMessages, loadedSections, staticSystemPrompt, modelId } =
     preparedConversation;
 
   logger.info("Telegram prompt sections loaded", {
@@ -666,7 +689,15 @@ export default async function handler(
   });
 
   const finalMessages: ModelMessage[] = imageData
-    ? injectImageIntoLastUserMessage(enrichedMessages as ModelMessage[], imageData)
+    ? await injectImageIntoLastUserMessage(
+        enrichedMessages as ModelMessage[],
+        imageData,
+        {
+          modelId,
+          log: (...args: unknown[]) =>
+            logger.info(`[Telegram:${linkedAccount.username}]`, args),
+        }
+      )
     : (enrichedMessages as ModelMessage[]);
 
   const statusReporter = createTelegramStatusReporter({

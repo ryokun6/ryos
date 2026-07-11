@@ -5,9 +5,16 @@ import {
   type TextStreamPart,
   type ToolCallRepairFunction,
   type ToolSet,
+  type TimeoutConfiguration,
 } from "ai";
-import { getOpenAIProviderOptions } from "./_aiModels.js";
-import type { PreparedRyoConversation } from "./ryo-conversation.js";
+import { getModelReasoning } from "./_aiModels.js";
+import { addCacheControlToMessages } from "./ai-prompt-cache.js";
+import type {
+  PreparedRyoConversation,
+  RyoAgentRuntimeContext,
+} from "./ryo-conversation.js";
+
+export type { RyoAgentRuntimeContext };
 
 /**
  * Deterministic tool-call repair for malformed inputs.
@@ -56,6 +63,44 @@ export const repairRyoToolCall: ToolCallRepairFunction<ToolSet> = async ({
   return null;
 };
 
+const RYO_AGENT_TIMEOUTS = {
+  chat: {
+    totalMs: 180_000,
+    stepMs: 90_000,
+    chunkMs: 45_000,
+    toolMs: 45_000,
+    tools: {
+      webFetchMs: 25_000,
+      runJsMs: 20_000,
+      searchSongsMs: 25_000,
+      mapsSearchPlacesMs: 20_000,
+      getWeatherMs: 15_000,
+    },
+  },
+  telegram: {
+    totalMs: 120_000,
+    stepMs: 60_000,
+    chunkMs: 30_000,
+    toolMs: 30_000,
+    tools: {
+      webFetchMs: 20_000,
+      runJsMs: 15_000,
+      mapsSearchPlacesMs: 20_000,
+      getWeatherMs: 15_000,
+      songLibraryControlMs: 25_000,
+    },
+  },
+  telegramHeartbeat: {
+    totalMs: 90_000,
+    stepMs: 45_000,
+    toolMs: 25_000,
+    tools: {
+      webFetchMs: 15_000,
+      runJsMs: 10_000,
+    },
+  },
+} as const satisfies Record<string, TimeoutConfiguration<ToolSet>>;
+
 export const RYO_AGENT_PRESETS = {
   chat: {
     id: "ryo-chat",
@@ -85,9 +130,13 @@ type RyoToolLoopAgentOptions = {
     | "tools"
     | "instructions"
     | "dynamicContextMessages"
+    | "toolsContext"
+    | "runtimeContext"
   >;
   temperature?: number;
   tools?: ToolSet;
+  toolsContext?: PreparedRyoConversation["toolsContext"];
+  runtimeContext?: RyoAgentRuntimeContext;
 };
 
 /**
@@ -104,16 +153,26 @@ export function createRyoToolLoopAgent({
   prepared,
   temperature = 0.7,
   tools,
-}: RyoToolLoopAgentOptions): ToolLoopAgent<never, ToolSet> {
+  toolsContext,
+  runtimeContext,
+}: RyoToolLoopAgentOptions): ToolLoopAgent<
+  never,
+  ToolSet,
+  RyoAgentRuntimeContext
+> {
   const agentPreset = RYO_AGENT_PRESETS[preset];
-  const providerOptions = getOpenAIProviderOptions(prepared.modelId);
+  const reasoning = getModelReasoning(prepared.modelId);
   const headers = prepared.modelId.startsWith("sonnet")
     ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
     : undefined;
   const resolvedTools = tools ?? prepared.tools;
   const dynamicContextMessages = prepared.dynamicContextMessages;
+  const resolvedToolsContext = toolsContext ?? prepared.toolsContext;
+  const resolvedRuntimeContext = runtimeContext ?? prepared.runtimeContext;
+  const hasToolsContext =
+    resolvedToolsContext && Object.keys(resolvedToolsContext).length > 0;
 
-  return new ToolLoopAgent<never, ToolSet>({
+  return new ToolLoopAgent<never, ToolSet, RyoAgentRuntimeContext>({
     id: agentPreset.id,
     model: prepared.selectedModel,
     tools: resolvedTools,
@@ -122,16 +181,30 @@ export function createRyoToolLoopAgent({
     temperature,
     maxOutputTokens: agentPreset.maxOutputTokens,
     stopWhen: isStepCount(agentPreset.stopAfterSteps),
+    timeout: RYO_AGENT_TIMEOUTS[preset],
+    ...(reasoning ? { reasoning } : {}),
+    ...(hasToolsContext ? { toolsContext: resolvedToolsContext } : {}),
+    ...(resolvedRuntimeContext
+      ? { runtimeContext: resolvedRuntimeContext }
+      : {}),
     // Inject memory + volatile state once via messages (AI SDK 7 prepareStep).
     // Returned messages carry forward for later steps, so we only prepend on
     // step 0. Do not override `instructions` here — that would bust the static
     // prompt cache.
-    prepareStep: ({ stepNumber, messages }) => {
-      if (stepNumber !== 0 || dynamicContextMessages.length === 0) {
-        return {};
-      }
+    //
+    // Every step also marks the last message with Anthropic ephemeral
+    // cacheControl so multi-step tool loops can incrementally reuse prefixes.
+    prepareStep: ({ stepNumber, messages, model }) => {
+      const withDynamicContext =
+        stepNumber === 0 && dynamicContextMessages.length > 0
+          ? [...dynamicContextMessages, ...messages]
+          : messages;
+
       return {
-        messages: [...dynamicContextMessages, ...messages],
+        messages: addCacheControlToMessages({
+          messages: withDynamicContext,
+          model,
+        }),
       };
     },
     // Only attach approval policy when the tool is actually registered for
@@ -141,7 +214,6 @@ export function createRyoToolLoopAgent({
       : {}),
     experimental_repairToolCall: repairRyoToolCall,
     ...(headers ? { headers } : {}),
-    ...(providerOptions ? { providerOptions } : {}),
   });
 }
 

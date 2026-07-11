@@ -196,6 +196,18 @@ describe("prompt caching structure", () => {
     expect(result.enrichedMessages.every((m) => m.role !== "system")).toBe(true);
     expect(result.enrichedMessages.some((m) => m.role === "user")).toBe(true);
 
+    // AI SDK 7 toolsContext / runtimeContext wiring
+    expect(result.runtimeContext).toEqual({
+      username: "testuser",
+      channel: "chat",
+      modelId: result.modelId,
+    });
+    expect(Object.keys(result.toolsContext).length).toBeGreaterThan(0);
+    expect(result.toolsContext.memoryWrite?.username).toBe("testuser");
+    expect(
+      (result.tools.memoryWrite as { contextSchema?: unknown }).contextSchema
+    ).toBeDefined();
+
     // Verify the helper fields are populated
     expect(result.memoryContextPrompt).toContain("user_context");
     expect(result.volatileStatePrompt).toContain("system_state");
