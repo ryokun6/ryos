@@ -15,9 +15,11 @@ export const MESSAGES_COMPACTED_KIND = "messages-compacted";
  */
 export const AI_MESSAGE_COMPACTION_MAX = 200;
 
-export function isMessagesCompactedMarker(
-  message: Pick<DisplayMessage, "id" | "role" | "metadata">
-): boolean {
+export function isMessagesCompactedMarker(message: {
+  id?: string;
+  role: string;
+  metadata?: { kind?: unknown; [key: string]: unknown };
+}): boolean {
   return (
     message.role === "system" &&
     (message.id === MESSAGES_COMPACTED_MARKER_ID ||
