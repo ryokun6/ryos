@@ -16,6 +16,7 @@ export const API_TEST_FILES = [
   "tests/integration/api/test-listen-security.test.ts",
   "tests/integration/api/test-media.test.ts",
   "tests/integration/api/test-new-api.test.ts",
+  "tests/integration/api/test-opds.test.ts",
   "tests/integration/api/test-parse-title.test.ts",
   "tests/integration/api/test-proactive-greeting-api.test.ts",
   "tests/integration/api/test-pusher-auth.test.ts",

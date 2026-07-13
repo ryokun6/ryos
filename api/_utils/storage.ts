@@ -292,6 +292,34 @@ function parseS3StorageUrl(storageUrl: string): {
   };
 }
 
+/**
+ * Check that an S3 storage URL points into this deployment's configured
+ * bucket and under the requested object-key prefix.
+ */
+export function isStoredObjectWithinPath(
+  storageUrl: string,
+  pathnamePrefix: string,
+): boolean {
+  if (!storageUrl.startsWith("s3://")) {
+    return false;
+  }
+
+  const config = getS3Config();
+  if (!config) {
+    return false;
+  }
+
+  try {
+    const { bucket, key } = parseS3StorageUrl(storageUrl);
+    return (
+      bucket === config.bucket &&
+      key.startsWith(normalizePathname(pathnamePrefix))
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isMissingObjectError(error: unknown): boolean {
   if (!error || typeof error !== "object") {
     return false;

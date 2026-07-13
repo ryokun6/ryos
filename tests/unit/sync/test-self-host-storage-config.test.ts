@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   createStorageUploadDescriptor,
   getStorageBackend,
+  isStoredObjectWithinPath,
 } from "../../../api/_utils/storage";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -41,6 +42,39 @@ describe("self-host storage backend selection", () => {
     delete process.env.STORAGE_PROVIDER;
 
     expect(getStorageBackend()).toBe("s3");
+  });
+
+  test("checks storage URLs against the configured bucket and key prefix", () => {
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "us-east-1";
+    process.env.S3_ENDPOINT = "https://storage.example.com"; // pragma: allowlist secret
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+
+    expect(
+      isStoredObjectWithinPath(
+        "s3://bucket/sync/alice/blobs/book.gz",
+        "sync/alice/blobs/",
+      ),
+    ).toBe(true);
+    expect(
+      isStoredObjectWithinPath(
+        "s3://other-bucket/sync/alice/blobs/book.gz",
+        "sync/alice/blobs/",
+      ),
+    ).toBe(false);
+    expect(
+      isStoredObjectWithinPath(
+        "s3://bucket/sync/bob/blobs/book.gz",
+        "sync/alice/blobs/",
+      ),
+    ).toBe(false);
+    expect(
+      isStoredObjectWithinPath(
+        "https://storage.example.com/sync/alice/blobs/book.gz",
+        "sync/alice/blobs/",
+      ),
+    ).toBe(false);
   });
 
   test("respects explicit S3 selection", () => {

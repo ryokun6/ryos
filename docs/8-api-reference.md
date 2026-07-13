@@ -34,6 +34,7 @@ graph LR
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, stocks, sync, admin |
 | [KOReader Sync API](/docs/kosync-api) | KOReader-compatible progress sync bridged to Books |
+| [Books OPDS Catalog](/docs/opds-api) | Password-authenticated EPUB catalog and downloads |
 | [API Design Guide](/docs/api-design-guide) | Patterns and conventions for API development |
 
 ## Cross-Cutting Handler Pattern
@@ -127,6 +128,8 @@ graph LR
 | `/api/mapkit-token` | MapKit JS token |
 | `/api/musickit-token` | MusicKit JS token |
 | `/api/tv/create-channel` | AI-assisted TV channel creation |
+| `/api/opds` | HTTP Basic-authenticated Books acquisition feed |
+| `/api/opds/books/:bookId.epub` | Authenticated EPUB acquisition |
 | `/api/sync/auto-sync-preference` | Read/update the cross-device Auto Sync toggle |
 | `/api/sync/v2/ops` | Apply batched journal ops |
 | `/api/sync/v2/changes` | Read journal ops after a cursor |
