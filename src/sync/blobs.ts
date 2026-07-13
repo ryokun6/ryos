@@ -4,10 +4,18 @@
  * (direct for public URLs, signed via the API for s3:// locations).
  */
 
-import { uploadBlobWithStorageInstruction } from "@/utils/storageUpload";
-import type { StorageUploadInstruction } from "@/utils/storageUpload";
+import {
+  isStorageUploadInstruction,
+  uploadBlobWithStorageInstruction,
+  type StorageUploadInstruction,
+  type StorageUploadProgress,
+} from "@/utils/storageUpload";
 import type { SyncBlobRef } from "@/shared/sync2/types";
-import { postSyncBlobs } from "@/sync/transport";
+import {
+  postSyncBlobs,
+  requestSyncBlobProxyUpload,
+} from "@/sync/transport";
+import { cloudSyncLog } from "@/sync/logging";
 
 function assertCompressionSupport(): void {
   if (
@@ -78,6 +86,96 @@ interface BlobDownloadOptions {
   signal?: AbortSignal;
 }
 
+export interface BlobUploadFallbackOptions {
+  blob: Blob;
+  sha256: string;
+  instruction: StorageUploadInstruction;
+  onProgress?: (progress: StorageUploadProgress) => void;
+  signal?: AbortSignal;
+}
+
+export interface BlobUploadFallbackDependencies {
+  uploadBlob: typeof uploadBlobWithStorageInstruction;
+  requestProxyUpload: typeof requestSyncBlobProxyUpload;
+}
+
+const DEFAULT_BLOB_UPLOAD_FALLBACK_DEPENDENCIES: BlobUploadFallbackDependencies = {
+  uploadBlob: uploadBlobWithStorageInstruction,
+  requestProxyUpload: requestSyncBlobProxyUpload,
+};
+
+function isAbortFailure(error: unknown, signal?: AbortSignal): boolean {
+  return (
+    signal?.aborted === true ||
+    (error instanceof Error && error.name === "AbortError")
+  );
+}
+
+/**
+ * Retry one failed storage upload through a fresh authenticated API proxy.
+ * The fresh instruction avoids both stale presigned URLs and stale proxy tokens.
+ */
+export async function uploadBlobWithProxyFallback(
+  options: BlobUploadFallbackOptions,
+  dependencies: BlobUploadFallbackDependencies =
+    DEFAULT_BLOB_UPLOAD_FALLBACK_DEPENDENCIES
+): Promise<{ storageUrl: string }> {
+  let maximumReportedBytes = 0;
+  const reportProgress = options.onProgress
+    ? (progress: StorageUploadProgress) => {
+        maximumReportedBytes = Math.max(maximumReportedBytes, progress.loaded);
+        options.onProgress?.({
+          loaded: maximumReportedBytes,
+          total: progress.total,
+          percentage:
+            progress.total > 0
+              ? (maximumReportedBytes / progress.total) * 100
+              : 0,
+        });
+      }
+    : undefined;
+
+  try {
+    return await dependencies.uploadBlob(options.blob, options.instruction, {
+      onProgress: reportProgress,
+      signal: options.signal,
+    });
+  } catch (error) {
+    if (isAbortFailure(error, options.signal)) {
+      throw error;
+    }
+
+    cloudSyncLog.warn(
+      "Blob upload failed; retrying with a fresh authenticated proxy instruction",
+      {
+        sha256Prefix: options.sha256.slice(0, 12),
+        uploadMethod: options.instruction.uploadMethod,
+        errorName: error instanceof Error ? error.name : "unknown",
+      }
+    );
+  }
+
+  const response = await dependencies.requestProxyUpload(
+    {
+      sha256: options.sha256,
+      size: options.blob.size,
+    },
+    options.signal
+  );
+  if (
+    !isStorageUploadInstruction(response.upload) ||
+    response.upload.uploadMethod !== "api-proxy-put" ||
+    response.upload.storageUrl !== options.instruction.storageUrl
+  ) {
+    throw new Error("Sync blob proxy instruction was invalid.");
+  }
+
+  return dependencies.uploadBlob(options.blob, response.upload, {
+    onProgress: reportProgress,
+    signal: options.signal,
+  });
+}
+
 /**
  * Upload a batch of blob items, skipping content the server already has.
  * Returns a map key → SyncBlobRef for inclusion in docs.
@@ -145,15 +243,20 @@ export async function uploadBlobItems(
     if (result.exists && result.url) {
       url = result.url;
     } else if (result.upload) {
-      const uploadResult = await uploadBlobWithStorageInstruction(
-        new Blob([entry.compressed.slice().buffer as ArrayBuffer], {
+      if (!isStorageUploadInstruction(result.upload)) {
+        throw new Error(`Invalid blob upload instruction for ${result.sha256}`);
+      }
+      const uploadResult = await uploadBlobWithProxyFallback({
+        blob: new Blob([entry.compressed.slice().buffer as ArrayBuffer], {
           type: "application/gzip",
         }),
-        result.upload as StorageUploadInstruction,
-        (progress) => {
+        sha256: result.sha256,
+        instruction: result.upload,
+        onProgress: (progress) => {
           emitProgress(completedUploadBytes + progress.loaded);
-        }
-      );
+        },
+        signal: options.signal,
+      });
       url = uploadResult.storageUrl;
       completedUploadBytes += entry.compressed.length;
       completedUploadItems += 1;

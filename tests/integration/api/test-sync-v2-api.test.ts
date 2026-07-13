@@ -189,6 +189,52 @@ describe("sync v2 API", () => {
     expect(body.downloads?.[1]).toBeNull();
   });
 
+  test("issues a fresh authenticated proxy instruction for one failed blob", async () => {
+    const sha256 = "ef".repeat(32);
+    const response = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/blob-upload`,
+      USERNAME,
+      token,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sha256, size: 1024 }),
+      }
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      ok: boolean;
+      upload?: {
+        uploadMethod?: string;
+        uploadUrl?: string;
+        pathname?: string;
+        maximumSizeInBytes?: number;
+      };
+    };
+    expect(body.ok).toBe(true);
+    expect(body.upload?.uploadMethod).toBe("api-proxy-put");
+    expect(body.upload?.uploadUrl?.startsWith(
+      "/api/sync/v2/blob-upload?token="
+    )).toBe(true);
+    expect(body.upload?.pathname).toBe(
+      `sync/${USERNAME}/blobs/${sha256}.gz`
+    );
+    expect(body.upload?.maximumSizeInBytes).toBe(1024);
+  });
+
+  test("proxy fallback instruction requires authentication", async () => {
+    const response = await fetchWithOrigin(
+      `${BASE_URL}/api/sync/v2/blob-upload`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sha256: "ef".repeat(32), size: 1024 }),
+      }
+    );
+    expect([401, 403]).toContain(response.status);
+  });
+
   test(
     "blob endpoint prepares a large descriptor batch within its function budget",
     async () => {

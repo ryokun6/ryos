@@ -10,6 +10,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { signStorageUploadToken } from "./storage-upload-token.js";
 
 export type StorageBackend = "s3";
+export type StorageClientUploadMode = "presigned" | "proxy";
 
 export interface StorageObjectMetadata {
   size: number;
@@ -22,6 +23,7 @@ export interface StorageUploadOptions {
   maximumSizeInBytes: number;
   allowedContentTypes?: string[];
   allowOverwrite?: boolean;
+  clientUploadMode?: StorageClientUploadMode;
 }
 
 interface BaseStorageUploadDescriptor {
@@ -154,8 +156,6 @@ function getS3Config(): S3Config | null {
 export function shouldEnableStorageDebugLogs(): boolean {
   return isTruthy(process.env.STORAGE_DEBUG);
 }
-
-export type StorageClientUploadMode = "presigned" | "proxy";
 
 export function getStorageClientUploadMode(): StorageClientUploadMode {
   const explicit = process.env.STORAGE_CLIENT_UPLOAD?.trim().toLowerCase();
@@ -425,8 +425,10 @@ export async function createStorageUploadDescriptor(
   options: StorageUploadOptions,
 ): Promise<StorageUploadDescriptor> {
   const pathname = normalizePathname(options.pathname);
+  const uploadMode =
+    options.clientUploadMode ?? getStorageClientUploadMode();
 
-  if (getStorageClientUploadMode() === "proxy") {
+  if (uploadMode === "proxy") {
     return createS3ProxyUploadDescriptor(options);
   }
 

@@ -9,6 +9,7 @@ import type {
   BlobUploadRequestItem,
   GetChangesResponse,
   GetSnapshotResponse,
+  PostBlobUploadInstructionResponse,
   PostBlobsResponse,
   PostOpsResponse,
   SyncOp,
@@ -88,4 +89,26 @@ export async function postSyncBlobs(
     retry: { maxAttempts: 2, initialDelayMs: 500 },
   });
   return parseJsonOrThrow<PostBlobsResponse>(response, "Sync blobs");
+}
+
+export async function requestSyncBlobProxyUpload(
+  body: BlobUploadRequestItem,
+  signal?: AbortSignal
+): Promise<PostBlobUploadInstructionResponse> {
+  const response = await abortableFetch(
+    getApiUrl("/api/sync/v2/blob-upload"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      timeout: 20000,
+      signal,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 2, initialDelayMs: 500 },
+    }
+  );
+  return parseJsonOrThrow<PostBlobUploadInstructionResponse>(
+    response,
+    "Sync blob proxy instruction"
+  );
 }
