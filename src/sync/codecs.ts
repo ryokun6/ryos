@@ -1517,6 +1517,7 @@ const mapsCodec: SyncCodec = {
 //
 // Keys:
 //   bookshelf/progress:<path> — { cfi, percentage, updatedAt } per book
+//   bookshelf/docmap:<path>   — { filenameMd5, partialMd5? } KOReader doc ids
 //   bookshelf/order           — { pinnedTop, pinnedBottom } shelf ordering
 //   bookshelf/last-opened     — { path } most recently opened book
 //
@@ -1527,8 +1528,8 @@ const mapsCodec: SyncCodec = {
 // device-local (reopen this device's last reader/shelf session).
 //
 // Deleting a book: `useBooksLogic.deleteBook` calls `useBooksStore.removeBook`,
-// which drops the book's `progress` entry and prunes it from the order. On the
-// next flush, `collect` no longer emits `bookshelf/progress:<path>`, so the
+// which drops the book's `progress`/`docmap` entries and prunes it from the
+// order. On the next flush, `collect` no longer emits those keys, so the
 // engine's shadow diff infers the removal and uploads a tombstone (`del`) that
 // removes the key on peers. The `order`/`last-opened` docs are singletons that
 // always exist and simply update. Like the structurally identical `videos`
@@ -1547,6 +1548,10 @@ const bookshelfCodec: SyncCodec = {
       if (!path || !progress) continue;
       docs.set(`bookshelf/progress:${path}`, progress);
     }
+    for (const [path, docMap] of Object.entries(state.docMapByPath)) {
+      if (!path || !docMap?.filenameMd5) continue;
+      docs.set(`bookshelf/docmap:${path}`, docMap);
+    }
     docs.set("bookshelf/order", {
       pinnedTop: state.pinnedTop,
       pinnedBottom: state.pinnedBottom,
@@ -1557,6 +1562,8 @@ const bookshelfCodec: SyncCodec = {
   apply(ops) {
     const progressUpserts = new Map<string, BookProgress>();
     const progressDeletes = new Set<string>();
+    const docMapUpserts = new Map<string, { filenameMd5: string; partialMd5?: string }>();
+    const docMapDeletes = new Set<string>();
     let order: Record<string, unknown> | null = null;
     let lastOpened: string | null | undefined;
 
@@ -1567,6 +1574,20 @@ const bookshelfCodec: SyncCodec = {
           progressDeletes.add(path);
         } else if (asRecord(op.v)) {
           progressUpserts.set(path, op.v as BookProgress);
+        }
+      } else if (op.k.startsWith("bookshelf/docmap:")) {
+        const path = op.k.slice("bookshelf/docmap:".length);
+        if (op.del) {
+          docMapDeletes.add(path);
+        } else {
+          const doc = asRecord(op.v);
+          if (doc && typeof doc.filenameMd5 === "string") {
+            docMapUpserts.set(path, {
+              filenameMd5: doc.filenameMd5,
+              partialMd5:
+                typeof doc.partialMd5 === "string" ? doc.partialMd5 : undefined,
+            });
+          }
         }
       } else if (op.k === "bookshelf/order" && !op.del) {
         order = asRecord(op.v);
@@ -1607,6 +1628,17 @@ const bookshelfCodec: SyncCodec = {
         }
       }
 
+      let docMapByPath = state.docMapByPath;
+      if (docMapUpserts.size > 0 || docMapDeletes.size > 0) {
+        docMapByPath = { ...state.docMapByPath };
+        for (const path of docMapDeletes) {
+          delete docMapByPath[path];
+        }
+        for (const [path, incoming] of docMapUpserts) {
+          docMapByPath[path] = incoming;
+        }
+      }
+
       const filterPaths = (value: unknown): string[] | null =>
         Array.isArray(value)
           ? value.filter((p): p is string => typeof p === "string")
@@ -1617,6 +1649,7 @@ const bookshelfCodec: SyncCodec = {
 
       return {
         progressByPath,
+        docMapByPath,
         pinnedTop: pinnedTop ?? state.pinnedTop,
         pinnedBottom: pinnedBottom ?? state.pinnedBottom,
         lastOpenedPath:
@@ -1630,6 +1663,7 @@ const bookshelfCodec: SyncCodec = {
     return useBooksStore.subscribe((state, prev) => {
       if (
         state.progressByPath !== prev.progressByPath ||
+        state.docMapByPath !== prev.docMapByPath ||
         state.pinnedTop !== prev.pinnedTop ||
         state.pinnedBottom !== prev.pinnedBottom ||
         state.lastOpenedPath !== prev.lastOpenedPath

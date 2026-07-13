@@ -33,6 +33,7 @@ graph LR
 | [Presence API](/docs/presence-api) | Presence tracking, user search, AI replies |
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, stocks, sync, admin |
+| [KOReader Sync API](/docs/kosync-api) | KOReader-compatible progress sync bridged to Books |
 | [API Design Guide](/docs/api-design-guide) | Patterns and conventions for API development |
 
 ## Cross-Cutting Handler Pattern

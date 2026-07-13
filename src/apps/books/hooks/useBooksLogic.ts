@@ -16,8 +16,13 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useBooksStore } from "@/stores/useBooksStore";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
+import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
 import { emitFileSaved, onFileRenamed } from "@/utils/appEventBus";
+import {
+  filenameMd5FromPath,
+  partialMd5Hex,
+} from "@/shared/kosync/md5";
 import { helpItems } from "../metadata";
 import { useBookCover } from "../utils/useBookCover";
 import type {
@@ -114,6 +119,7 @@ export function useBooksLogic({
   const setLastOpenedPath = useBooksStore((s) => s.setLastOpenedPath);
   const setOpenPath = useBooksStore((s) => s.setOpenPath);
   const setProgressAction = useBooksStore((s) => s.setProgress);
+  const setDocMapAction = useBooksStore((s) => s.setDocMap);
   const renameProgressPath = useBooksStore((s) => s.renameProgressPath);
   const pinnedTop = useBooksStore((s) => s.pinnedTop);
   const pinnedBottom = useBooksStore((s) => s.pinnedBottom);
@@ -134,9 +140,6 @@ export function useBooksLogic({
     },
     [setProgressAction]
   );
-
-  const { saveFile, moveToTrash } = useVfsFileOperations(BOOKS_PATH);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const library = useMemo<BooksLibraryEntry[]>(() => {
     const prefix = `${BOOKS_PATH}/`;
@@ -173,6 +176,79 @@ export function useBooksLogic({
       return (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0);
     });
   }, [items, pinnedTop, pinnedBottom]);
+
+  // Keep KOReader document-id maps in sync so kosync can match books by
+  // filename MD5 (and partial content MD5 when bytes are available).
+  useEffect(() => {
+    if (!hasBooksHydrated) return;
+    let cancelled = false;
+    const libraryPaths = library.map((entry) => entry.path);
+
+    const ensureFilenameMaps = () => {
+      const currentMaps = useBooksStore.getState().docMapByPath;
+      for (const path of libraryPaths) {
+        const filenameMd5 = filenameMd5FromPath(path);
+        const existing = currentMaps[path];
+        if (!existing || existing.filenameMd5 !== filenameMd5) {
+          setDocMapAction(path, {
+            filenameMd5,
+            partialMd5: existing?.partialMd5,
+          });
+        }
+      }
+    };
+    ensureFilenameMaps();
+
+    const fillPartialMaps = async () => {
+      for (const path of libraryPaths) {
+        if (cancelled) return;
+        const existing = useBooksStore.getState().docMapByPath[path];
+        if (existing?.partialMd5) continue;
+        try {
+          const blob = await readBookBlobContent(path);
+          if (!blob || cancelled) continue;
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          if (cancelled || bytes.length === 0) continue;
+          const partialMd5 = partialMd5Hex(bytes);
+          const latest = useBooksStore.getState().docMapByPath[path];
+          setDocMapAction(path, {
+            filenameMd5: latest?.filenameMd5 ?? filenameMd5FromPath(path),
+            partialMd5,
+          });
+        } catch {
+          // Best-effort: filename matching still works without partial MD5.
+        }
+      }
+    };
+
+    if (typeof window === "undefined") return;
+
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    const w = window;
+    if (typeof w.requestIdleCallback === "function") {
+      idleId = w.requestIdleCallback(() => {
+        void fillPartialMaps();
+      });
+    } else {
+      timeoutId = w.setTimeout(() => {
+        void fillPartialMaps();
+      }, 750);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined && typeof w.cancelIdleCallback === "function") {
+        w.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) {
+        w.clearTimeout(timeoutId);
+      }
+    };
+  }, [library, hasBooksHydrated, setDocMapAction]);
+
+  const { saveFile, moveToTrash } = useVfsFileOperations(BOOKS_PATH);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Always-current active book, so closeBook can capture it without taking a
   // dependency on the (later-declared) memoized value.

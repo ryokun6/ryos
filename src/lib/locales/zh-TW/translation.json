@@ -653,6 +653,10 @@
         "progress": {
           "description": "系統會自動儲存您的閱讀進度，並在下次開啟書籍時恢復。",
           "title": "閱讀進度"
+        },
+        "kosync": {
+          "title": "KOReader 同步",
+          "description": "與其他裝置上的 KOReader 同步閱讀進度。在 KOReader Progress Sync 中，將自訂伺服器設為此 ryOS 主機的 /api/kosync URL，使用你的 ryOS 使用者名稱註冊，並對 /Books 中的 EPUB 使用檔名文件比對。"
         }
       },
       "import": {

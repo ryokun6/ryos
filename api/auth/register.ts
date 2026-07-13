@@ -34,6 +34,7 @@ import {
   updateStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
 import { clearAIConversationTombstone } from "../ai/conversations/_helpers/store.js";
+import { syncKosyncAuthKeyFromPlainPassword } from "../kosync/_helpers/_auth.js";
 
 interface RegisterRequest {
   username: string;
@@ -146,6 +147,7 @@ export default apiHandler(
               username,
               getHeader(req, "x-user-timezone")
             );
+            await syncKosyncAuthKeyFromPlainPassword(redis, username, password);
             const token = generateAuthToken();
             await storeToken(redis, username, token);
             res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
@@ -180,6 +182,7 @@ export default apiHandler(
     // Hash and store password
     const passwordHash = await hashPassword(password);
     await setUserPasswordHash(redis, username, passwordHash);
+    await syncKosyncAuthKeyFromPlainPassword(redis, username, password);
 
     // Generate and store token
     const token = generateAuthToken();

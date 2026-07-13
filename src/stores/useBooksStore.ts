@@ -38,11 +38,21 @@ export type BooksTextLayout = "book" | "vertical";
 export type BooksShelfView = "grid" | "list";
 
 export interface BookProgress {
-  /** EPUB CFI of the current location. */
+  /** EPUB CFI of the current location. Empty when restored from KOReader %. */
   cfi: string;
   /** 0..1 progress through the book (when locations are available). */
   percentage: number;
   updatedAt: number;
+}
+
+/**
+ * KOReader document-id mapping for a book path. Synced via
+ * `bookshelf/docmap:<path>` so the kosync server can match filename or
+ * partial-content MD5 document IDs to `/Books/….epub` paths.
+ */
+export interface BookDocMap {
+  filenameMd5: string;
+  partialMd5?: string;
 }
 
 export type BooksHighlightColor =
@@ -217,6 +227,11 @@ export function clampBooksGutter(value: number): number {
 interface BooksStoreState {
   progressByPath: Record<string, BookProgress>;
   /**
+   * KOReader document-id map per book path. Synced so kosync can resolve
+   * filename / partial MD5 document IDs to VFS paths.
+   */
+  docMapByPath: Record<string, BookDocMap>;
+  /**
    * Text highlights per book. Device-local (not cloud-synced): the bookshelf
    * sync namespace can't grow new keys without older clients inferring
    * deletions, so annotations stay on the device that made them.
@@ -240,6 +255,7 @@ interface BooksStoreState {
   setProgress: (path: string, progress: BookProgress) => void;
   getProgress: (path: string) => BookProgress | undefined;
   clearProgress: (path: string) => void;
+  setDocMap: (path: string, docMap: BookDocMap) => void;
   /**
    * Forget all synced reading state for a removed book: progress, shelf
    * ordering, last-opened, and the device-local open session path. Used when
@@ -277,6 +293,7 @@ export const useBooksStore = create<BooksStoreState>()(
   persist(
     (set, get) => ({
       progressByPath: {},
+      docMapByPath: {},
       highlightsByPath: {},
       bookmarksByPath: {},
       settings: { ...DEFAULT_BOOKS_SETTINGS },
@@ -297,9 +314,24 @@ export const useBooksStore = create<BooksStoreState>()(
           delete next[path];
           return { progressByPath: next };
         }),
+      setDocMap: (path, docMap) =>
+        set((state) => {
+          const existing = state.docMapByPath[path];
+          if (
+            existing &&
+            existing.filenameMd5 === docMap.filenameMd5 &&
+            existing.partialMd5 === docMap.partialMd5
+          ) {
+            return state;
+          }
+          return {
+            docMapByPath: { ...state.docMapByPath, [path]: docMap },
+          };
+        }),
       removeBook: (path) =>
         set((state) => {
           const hadProgress = path in state.progressByPath;
+          const hadDocMap = path in state.docMapByPath;
           const hadHighlights = path in state.highlightsByPath;
           const hadBookmarks = path in state.bookmarksByPath;
           const inTop = state.pinnedTop.includes(path);
@@ -308,6 +340,7 @@ export const useBooksStore = create<BooksStoreState>()(
           const wasOpen = state.openPath === path;
           if (
             !hadProgress &&
+            !hadDocMap &&
             !hadHighlights &&
             !hadBookmarks &&
             !inTop &&
@@ -322,6 +355,11 @@ export const useBooksStore = create<BooksStoreState>()(
             progressByPath = { ...state.progressByPath };
             delete progressByPath[path];
           }
+          let docMapByPath = state.docMapByPath;
+          if (hadDocMap) {
+            docMapByPath = { ...state.docMapByPath };
+            delete docMapByPath[path];
+          }
           let highlightsByPath = state.highlightsByPath;
           if (hadHighlights) {
             highlightsByPath = { ...state.highlightsByPath };
@@ -334,6 +372,7 @@ export const useBooksStore = create<BooksStoreState>()(
           }
           return {
             progressByPath,
+            docMapByPath,
             highlightsByPath,
             bookmarksByPath,
             pinnedTop: inTop ? without(state.pinnedTop, path) : state.pinnedTop,
@@ -416,6 +455,7 @@ export const useBooksStore = create<BooksStoreState>()(
       renameProgressPath: (oldPath, newPath) =>
         set((state) => {
           const existing = state.progressByPath[oldPath];
+          const existingDocMap = state.docMapByPath[oldPath];
           const existingHighlights = state.highlightsByPath[oldPath];
           const existingBookmarks = state.bookmarksByPath[oldPath];
           const inTop = state.pinnedTop.includes(oldPath);
@@ -424,6 +464,7 @@ export const useBooksStore = create<BooksStoreState>()(
           const wasOpen = state.openPath === oldPath;
           if (
             !existing &&
+            !existingDocMap &&
             !existingHighlights &&
             !existingBookmarks &&
             !inTop &&
@@ -437,6 +478,13 @@ export const useBooksStore = create<BooksStoreState>()(
           if (existing) {
             delete next[oldPath];
             next[newPath] = existing;
+          }
+          let docMapByPath = state.docMapByPath;
+          if (existingDocMap) {
+            docMapByPath = { ...state.docMapByPath };
+            delete docMapByPath[oldPath];
+            // Basename may change on rename — keep hashes until recomputed.
+            docMapByPath[newPath] = existingDocMap;
           }
           let highlightsByPath = state.highlightsByPath;
           if (existingHighlights) {
@@ -452,6 +500,7 @@ export const useBooksStore = create<BooksStoreState>()(
           }
           return {
             progressByPath: next,
+            docMapByPath,
             highlightsByPath,
             bookmarksByPath,
             pinnedTop: inTop
@@ -485,7 +534,8 @@ export const useBooksStore = create<BooksStoreState>()(
       // -Transparent) via the DEFAULT_BOOKS_SETTINGS spread below.
       // v8: device-local `openPath` for reader/shelf session restore.
       // v9: device-local `highlightsByPath` / `bookmarksByPath` annotations.
-      version: 9,
+      // v10: `docMapByPath` for KOReader kosync document-id bridging.
+      version: 10,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         const settings = {
@@ -501,10 +551,12 @@ export const useBooksStore = create<BooksStoreState>()(
             typeof state.openPath === "string" ? state.openPath : null,
           highlightsByPath: state.highlightsByPath ?? {},
           bookmarksByPath: state.bookmarksByPath ?? {},
+          docMapByPath: state.docMapByPath ?? {},
         } as BooksStoreState;
       },
       partialize: (state) => ({
         progressByPath: state.progressByPath,
+        docMapByPath: state.docMapByPath,
         highlightsByPath: state.highlightsByPath,
         bookmarksByPath: state.bookmarksByPath,
         settings: state.settings,

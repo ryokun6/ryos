@@ -40,6 +40,13 @@ export interface ApiHandlerOptions<TBody = unknown> {
   contentType?: string | null;
   analytics?: boolean;
   /**
+   * Allow requests with no Origin/Referer (native clients such as KOReader).
+   * When false (default), a missing origin is rejected like a disallowed one.
+   */
+  allowMissingOrigin?: boolean;
+  /** Extra CORS request headers beyond the defaults (Authorization, etc.). */
+  corsHeaders?: string[];
+  /**
    * Optional schema validating the parsed JSON request body. When provided,
    * the body is read and validated at the handler boundary: on failure the
    * request is rejected with `400 { error: "validation_error", issues }`
@@ -111,9 +118,12 @@ export function apiHandler<TBody = unknown>(
     parseJsonBody = false,
     contentType = "application/json",
     analytics = true,
+    allowMissingOrigin = false,
+    corsHeaders,
     bodySchema,
   } = options;
   const shouldReadBody = parseJsonBody || !!bodySchema;
+  const corsHeaderList = corsHeaders;
 
   return async (req: ApiRequest, res: ApiResponse): Promise<void> => {
     const { logger } = initLogger();
@@ -133,12 +143,18 @@ export function apiHandler<TBody = unknown>(
       hasBodySchema: !!bodySchema,
       contentType,
       analytics,
+      allowMissingOrigin,
       hasOrigin: !!origin,
       redisBackend: getRedisBackend(),
     });
 
+    const corsOptions = {
+      methods: [...methods, "OPTIONS"],
+      ...(corsHeaderList ? { headers: corsHeaderList } : {}),
+    };
+
     if (method === "OPTIONS") {
-      setCorsHeaders(res, origin, { methods: [...methods, "OPTIONS"] });
+      setCorsHeaders(res, origin, corsOptions);
       if (contentType) {
         res.setHeader("Content-Type", contentType);
       }
@@ -148,12 +164,15 @@ export function apiHandler<TBody = unknown>(
       return;
     }
 
-    setCorsHeaders(res, origin, { methods: [...methods, "OPTIONS"] });
+    setCorsHeaders(res, origin, corsOptions);
     if (contentType) {
       res.setHeader("Content-Type", contentType);
     }
 
-    if (!isAllowedOrigin(origin)) {
+    const originMissing = !origin;
+    const originOk =
+      (originMissing && allowMissingOrigin) || isAllowedOrigin(origin);
+    if (!originOk) {
       logger.debug("Rejected API request origin", { path, hasOrigin: !!origin });
       logger.response(403, Date.now() - startTime);
       sendJsonError(res, 403, "Unauthorized");

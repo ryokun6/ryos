@@ -4804,6 +4804,10 @@
           "title": "Reading Progress",
           "description": "Your place is saved automatically. Reopening Books resumes the book and page you left on, or the shelf if you closed it."
         },
+        "kosync": {
+          "title": "KOReader Sync",
+          "description": "Sync reading progress with KOReader on other devices. Sign in to ryOS once, then in KOReader Progress Sync set the custom server to this host’s /api/kosync URL and use your ryOS username and password (prefer filename document matching for EPUBs in /Books)."
+        },
         "fonts": {
           "title": "Fonts & Layout",
           "description": "Pick a reading font (including Garamond), text size, and single or double columns from the View menu."

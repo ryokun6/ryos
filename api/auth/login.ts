@@ -32,6 +32,7 @@ import {
   getStoredUserRecord,
   updateStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
+import { syncKosyncAuthKeyFromPlainPassword } from "../kosync/_helpers/_auth.js";
 
 interface LoginRequest {
   username: string;
@@ -113,6 +114,8 @@ export default apiHandler(
     // Successful login — reset the per-username failure counter.
     await resetLoginFailures(redis, username);
     await updateStoredUserTimeZone(redis, username, getHeader(req, "x-user-timezone"));
+    // Mirror md5(password) for KOReader Progress Sync auth.
+    await syncKosyncAuthKeyFromPlainPassword(redis, username, password);
 
     // Handle old token if provided (rotation)
     if (oldToken) {
