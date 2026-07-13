@@ -653,6 +653,10 @@
         "progress": {
           "description": "Deine Leseposition wird automatisch gespeichert und beim nächsten Öffnen des Buches wiederhergestellt.",
           "title": "Lesefortschritt"
+        },
+        "kosync": {
+          "title": "KOReader-Synchronisierung",
+          "description": "Synchronisiere den Lesefortschritt mit KOReader auf anderen Geräten. Lege in KOReader Progress Sync den benutzerdefinierten Server auf die /api/kosync-URL dieses ryOS-Hosts fest, registriere dich mit deinem ryOS-Benutzernamen und verwende die Dateinamenzuordnung für passende EPUBs in /Books."
         }
       },
       "import": {

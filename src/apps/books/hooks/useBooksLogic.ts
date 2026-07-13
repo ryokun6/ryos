@@ -141,6 +141,42 @@ export function useBooksLogic({
     [setProgressAction]
   );
 
+  const library = useMemo<BooksLibraryEntry[]>(() => {
+    const prefix = `${BOOKS_PATH}/`;
+    const entries = Object.values(items)
+      .filter((item) => {
+        if (item.isDirectory) return false;
+        if (item.status !== "active") return false;
+        if (!item.path.startsWith(prefix)) return false;
+        // Exclude items nested in sub-folders of /Books.
+        if (item.path.slice(prefix.length).includes("/")) return false;
+        return item.name.toLowerCase().endsWith(".epub");
+      })
+      .map((item) => ({
+        path: item.path,
+        fileName: item.name,
+        name: item.name.replace(/\.epub$/i, ""),
+        modifiedAt: item.modifiedAt,
+      }));
+
+    // Pinned-top books come first (in pin order), pinned-bottom last (in pin
+    // order), and everything else in the middle sorted by recency. This lets
+    // "Move to Top/Bottom" hold regardless of import dates.
+    const topRank = new Map(pinnedTop.map((p, i) => [p, i]));
+    const bottomRank = new Map(pinnedBottom.map((p, i) => [p, i]));
+    const groupOf = (path: string) =>
+      topRank.has(path) ? 0 : bottomRank.has(path) ? 2 : 1;
+
+    return entries.sort((a, b) => {
+      const ga = groupOf(a.path);
+      const gb = groupOf(b.path);
+      if (ga !== gb) return ga - gb;
+      if (ga === 0) return topRank.get(a.path)! - topRank.get(b.path)!;
+      if (ga === 2) return bottomRank.get(a.path)! - bottomRank.get(b.path)!;
+      return (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0);
+    });
+  }, [items, pinnedTop, pinnedBottom]);
+
   // Keep KOReader document-id maps in sync so kosync can match books by
   // filename MD5 (and partial content MD5 when bytes are available).
   useEffect(() => {
@@ -185,63 +221,34 @@ export function useBooksLogic({
       }
     };
 
-    const idle =
-      typeof window !== "undefined" && "requestIdleCallback" in window
-        ? window.requestIdleCallback(() => {
-            void fillPartialMaps();
-          })
-        : window.setTimeout(() => {
-            void fillPartialMaps();
-          }, 750);
+    if (typeof window === "undefined") return;
+
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    const w = window;
+    if (typeof w.requestIdleCallback === "function") {
+      idleId = w.requestIdleCallback(() => {
+        void fillPartialMaps();
+      });
+    } else {
+      timeoutId = w.setTimeout(() => {
+        void fillPartialMaps();
+      }, 750);
+    }
 
     return () => {
       cancelled = true;
-      if (typeof window !== "undefined" && "cancelIdleCallback" in window) {
-        window.cancelIdleCallback(idle as number);
-      } else {
-        window.clearTimeout(idle as number);
+      if (idleId !== undefined && typeof w.cancelIdleCallback === "function") {
+        w.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) {
+        w.clearTimeout(timeoutId);
       }
     };
   }, [library, hasBooksHydrated, setDocMapAction]);
 
   const { saveFile, moveToTrash } = useVfsFileOperations(BOOKS_PATH);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const library = useMemo<BooksLibraryEntry[]>(() => {
-    const prefix = `${BOOKS_PATH}/`;
-    const entries = Object.values(items)
-      .filter((item) => {
-        if (item.isDirectory) return false;
-        if (item.status !== "active") return false;
-        if (!item.path.startsWith(prefix)) return false;
-        // Exclude items nested in sub-folders of /Books.
-        if (item.path.slice(prefix.length).includes("/")) return false;
-        return item.name.toLowerCase().endsWith(".epub");
-      })
-      .map((item) => ({
-        path: item.path,
-        fileName: item.name,
-        name: item.name.replace(/\.epub$/i, ""),
-        modifiedAt: item.modifiedAt,
-      }));
-
-    // Pinned-top books come first (in pin order), pinned-bottom last (in pin
-    // order), and everything else in the middle sorted by recency. This lets
-    // "Move to Top/Bottom" hold regardless of import dates.
-    const topRank = new Map(pinnedTop.map((p, i) => [p, i]));
-    const bottomRank = new Map(pinnedBottom.map((p, i) => [p, i]));
-    const groupOf = (path: string) =>
-      topRank.has(path) ? 0 : bottomRank.has(path) ? 2 : 1;
-
-    return entries.sort((a, b) => {
-      const ga = groupOf(a.path);
-      const gb = groupOf(b.path);
-      if (ga !== gb) return ga - gb;
-      if (ga === 0) return topRank.get(a.path)! - topRank.get(b.path)!;
-      if (ga === 2) return bottomRank.get(a.path)! - bottomRank.get(b.path)!;
-      return (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0);
-    });
-  }, [items, pinnedTop, pinnedBottom]);
 
   // Always-current active book, so closeBook can capture it without taking a
   // dependency on the (later-declared) memoized value.
