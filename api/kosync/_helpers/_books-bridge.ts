@@ -40,6 +40,13 @@ export interface BookshelfProgressDoc {
   updatedAt: number;
 }
 
+export interface KosyncBridgeResult {
+  path: string | null;
+  accepted: boolean;
+  timestamp: number;
+  reason?: "books-newer" | "stale-backward";
+}
+
 function isBooksEpubPath(path: string): boolean {
   if (!path.startsWith(BOOKS_PREFIX)) return false;
   if (path.slice(BOOKS_PREFIX.length).includes("/")) return false;
@@ -72,6 +79,30 @@ function asBookshelfProgress(value: unknown): BookshelfProgressDoc | null {
     percentage: Math.min(1, Math.max(0, percentage)),
     updatedAt,
   };
+}
+
+/**
+ * KOSync PUTs are timestamped by the server, not by the reading device. A
+ * delayed retry can therefore look newer than a Books update that happened
+ * after the device's previous accepted PUT. Preserve that Books update when
+ * the delayed PUT would move progress backward; equal/forward progress remains
+ * valid so a KOReader device can continue reading from the shared position.
+ */
+export function shouldAcceptKosyncProgressUpdate(
+  existing: BookshelfProgressDoc | null,
+  previousKosyncTimestamp: number | null,
+  incoming: KosyncProgressRecord
+): boolean {
+  if (!existing) return true;
+
+  const incomingUpdatedAt = incoming.timestamp * 1000;
+  if (existing.updatedAt > incomingUpdatedAt) return false;
+
+  const previousKosyncUpdatedAt = (previousKosyncTimestamp ?? 0) * 1000;
+  const booksChangedSincePreviousKosync =
+    existing.updatedAt > previousKosyncUpdatedAt;
+  const wouldMoveBackward = incoming.percentage < existing.percentage;
+  return !(booksChangedSincePreviousKosync && wouldMoveBackward);
 }
 
 /** Resolve a kosync document id to a `/Books/….epub` VFS path when possible. */
@@ -121,10 +152,17 @@ export async function bridgeKosyncProgressToBooks(
   redis: Redis,
   username: string,
   documentId: string,
-  record: KosyncProgressRecord
-): Promise<string | null> {
+  record: KosyncProgressRecord,
+  previousKosyncTimestamp: number | null = null
+): Promise<KosyncBridgeResult> {
   const path = await resolveDocumentPath(redis, username, documentId);
-  if (!path) return null;
+  if (!path) {
+    return {
+      path: null,
+      accepted: true,
+      timestamp: record.timestamp,
+    };
+  }
 
   const existingDocs = await readSyncDocsByPrefix(
     redis,
@@ -133,9 +171,21 @@ export async function bridgeKosyncProgressToBooks(
   );
   const existing = asBookshelfProgress(existingDocs[`${PROGRESS_PREFIX}${path}`]);
   const updatedAt = record.timestamp * 1000;
-  if (existing && existing.updatedAt > updatedAt) {
-    // Fresher Books progress already wins — do not roll it back.
-    return path;
+  if (
+    existing &&
+    !shouldAcceptKosyncProgressUpdate(
+      existing,
+      previousKosyncTimestamp,
+      record
+    )
+  ) {
+    return {
+      path,
+      accepted: false,
+      timestamp: Math.floor(existing.updatedAt / 1000),
+      reason:
+        existing.updatedAt > updatedAt ? "books-newer" : "stale-backward",
+    };
   }
 
   const progress: BookshelfProgressDoc = {
@@ -148,7 +198,11 @@ export async function bridgeKosyncProgressToBooks(
   const t = hlcFromTimestamp(updatedAt, SERVER_SYNC_CLIENT_ID);
   const ops: SyncOp[] = [{ k: `${PROGRESS_PREFIX}${path}`, v: progress, t }];
   await writeSyncOpsFromServer(redis, username, ops);
-  return path;
+  return {
+    path,
+    accepted: true,
+    timestamp: record.timestamp,
+  };
 }
 
 /**

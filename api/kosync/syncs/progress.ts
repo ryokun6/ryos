@@ -5,7 +5,6 @@
 
 import { apiHandler } from "../../_utils/api-handler.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
-import { getClientIp } from "../../_utils/_rate-limit.js";
 import { authorizeKosyncRequest } from "../_helpers/_auth.js";
 import { bridgeKosyncProgressToBooks } from "../_helpers/_books-bridge.js";
 import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
@@ -13,7 +12,10 @@ import {
   isValidKosyncField,
   isValidKosyncKeyField,
 } from "../_helpers/_md5.js";
-import { setKosyncProgress } from "../_helpers/_progress.js";
+import {
+  getKosyncProgress,
+  setKosyncProgress,
+} from "../_helpers/_progress.js";
 import { KOSYNC_CORS_HEADERS } from "../_helpers/_types.js";
 import type { KosyncProgressRecord } from "../_helpers/_types.js";
 
@@ -106,21 +108,30 @@ export default apiHandler(
     };
 
     try {
-      await setKosyncProgress(redis, username, documentId, record);
-      const bridgedPath = await bridgeKosyncProgressToBooks(
+      const previous = await getKosyncProgress(redis, username, documentId);
+      const bridgeResult = await bridgeKosyncProgressToBooks(
         redis,
         username,
         documentId,
-        record
+        record,
+        previous?.timestamp ?? null
       );
+      if (bridgeResult.accepted) {
+        await setKosyncProgress(redis, username, documentId, record);
+      }
       logger.info("kosync progress updated", {
         username,
         documentId,
-        bridgedPath,
-        percentage: record.percentage,
+        bridgedPath: bridgeResult.path,
+        accepted: bridgeResult.accepted,
+        reason: bridgeResult.reason,
+        percentage: bridgeResult.accepted ? record.percentage : undefined,
       });
       logger.response(200, Date.now() - startTime);
-      res.status(200).json({ document: documentId, timestamp });
+      res.status(200).json({
+        document: documentId,
+        timestamp: bridgeResult.timestamp,
+      });
     } catch (error) {
       logger.error("kosync progress update failed", error);
       sendKosyncError(res, KosyncErrorCode.INTERNAL);

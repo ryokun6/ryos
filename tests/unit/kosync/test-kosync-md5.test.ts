@@ -6,7 +6,10 @@ import {
   md5Hex,
   partialMd5Hex,
 } from "../../../src/shared/kosync/md5";
-import { pickNewerProgress } from "../../../api/kosync/_helpers/_books-bridge";
+import {
+  pickNewerProgress,
+  shouldAcceptKosyncProgressUpdate,
+} from "../../../api/kosync/_helpers/_books-bridge";
 import {
   isValidKosyncField,
   isValidKosyncKeyField,
@@ -88,5 +91,55 @@ describe("pickNewerProgress", () => {
     expect(pickNewerProgress(null, older)).toEqual(older);
     expect(pickNewerProgress(older, null)).toEqual(older);
     expect(pickNewerProgress(null, null)).toBeNull();
+  });
+});
+
+describe("shouldAcceptKosyncProgressUpdate", () => {
+  const incoming = {
+    percentage: 0.4,
+    progress: "40",
+    device: "KOReader",
+    device_id: "device-1",
+    timestamp: 200,
+  };
+
+  test("rejects a delayed lower PUT after Books advanced", () => {
+    expect(
+      shouldAcceptKosyncProgressUpdate(
+        { cfi: "epubcfi(/6/4)", percentage: 0.8, updatedAt: 150_000 },
+        100,
+        incoming
+      )
+    ).toBe(false);
+  });
+
+  test("accepts equal or forward progress after Books changed", () => {
+    const existing = {
+      cfi: "epubcfi(/6/4)",
+      percentage: 0.8,
+      updatedAt: 150_000,
+    };
+    expect(
+      shouldAcceptKosyncProgressUpdate(existing, 100, {
+        ...incoming,
+        percentage: 0.8,
+      })
+    ).toBe(true);
+    expect(
+      shouldAcceptKosyncProgressUpdate(existing, 100, {
+        ...incoming,
+        percentage: 0.9,
+      })
+    ).toBe(true);
+  });
+
+  test("accepts a backward PUT when Books has not changed since KOSync", () => {
+    expect(
+      shouldAcceptKosyncProgressUpdate(
+        { cfi: "", percentage: 0.8, updatedAt: 100_000 },
+        100,
+        incoming
+      )
+    ).toBe(true);
   });
 });

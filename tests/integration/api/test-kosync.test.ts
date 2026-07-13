@@ -197,4 +197,134 @@ describe("kosync API", () => {
     expect(progress.device).toBe("ryOS Books");
     expect(progress.progress).toContain("epubcfi");
   });
+
+  test(
+    "does not let a delayed lower kosync PUT roll back Books",
+    async () => {
+      const username = `ks${Date.now().toString(36)}`.slice(0, 20);
+      const password = `Password1!${username}`;
+      const token = await ensureUserAuth(username, password);
+      expect(token).toBeTruthy();
+      const key = md5Hex(password);
+      const bookPath = "/Books/Kosync Rollback Guard.epub";
+      const document = filenameMd5FromPath(bookPath);
+
+      const createRes = await createKosyncUser(username, key);
+      expect(createRes.status).toBe(201);
+
+      const seedRes = await fetchWithAuth(
+        `${BASE_URL}/api/sync/v2/ops`,
+        username,
+        token!,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientId: "kosync-rollback-test",
+            ops: [
+              {
+                k: `files/item:${bookPath}`,
+                v: {
+                  path: bookPath,
+                  name: "Kosync Rollback Guard.epub",
+                  status: "active",
+                  uuid: "test-uuid-kosync-rollback",
+                  modifiedAt: Date.now(),
+                },
+                t: hlcFromTimestamp(Date.now(), "test-client"),
+              },
+              {
+                k: `bookshelf/docmap:${bookPath}`,
+                v: { filenameMd5: document },
+                t: hlcFromTimestamp(Date.now(), "test-client"),
+              },
+            ],
+          }),
+        }
+      );
+      expect(seedRes.status).toBe(200);
+
+      const initialPut = await fetchWithOrigin(`${KOSYNC}/syncs/progress`, {
+        method: "PUT",
+        headers: kosyncHeaders(username, key),
+        body: JSON.stringify({
+          document,
+          progress: "20",
+          percentage: 0.2,
+          device: "KOReader",
+          device_id: "TESTDEVICE",
+        }),
+      });
+      expect(initialPut.status).toBe(200);
+      const initialPutBody = (await initialPut.json()) as { timestamp: number };
+
+      // Books advances after the last accepted KOSync write.
+      const booksUpdatedAt = initialPutBody.timestamp * 1000 + 1;
+      const booksUpdateRes = await fetchWithAuth(
+        `${BASE_URL}/api/sync/v2/ops`,
+        username,
+        token!,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientId: "kosync-rollback-test",
+            ops: [
+              {
+                k: `bookshelf/progress:${bookPath}`,
+                v: {
+                  cfi: "epubcfi(/6/8!/4/2/2/2)",
+                  percentage: 0.8,
+                  updatedAt: booksUpdatedAt,
+                },
+                t: hlcFromTimestamp(
+                  Math.max(Date.now(), booksUpdatedAt) + 1,
+                  "test-client"
+                ),
+              },
+            ],
+          }),
+        }
+      );
+      expect(booksUpdateRes.status).toBe(200);
+
+      // Ensure the delayed PUT gets a later server timestamp than the Books
+      // update, reproducing the rollback that receive-time LWW used to allow.
+      const nextKosyncSecond = (initialPutBody.timestamp + 1) * 1000 + 20;
+      const waitMs = Math.max(0, nextKosyncSecond - Date.now());
+      if (waitMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      }
+
+      const delayedPut = await fetchWithOrigin(`${KOSYNC}/syncs/progress`, {
+        method: "PUT",
+        headers: kosyncHeaders(username, key),
+        body: JSON.stringify({
+          document,
+          progress: "40",
+          percentage: 0.4,
+          device: "KOReader",
+          device_id: "TESTDEVICE",
+        }),
+      });
+      expect(delayedPut.status).toBe(200);
+      expect(await delayedPut.json()).toEqual({
+        document,
+        timestamp: initialPutBody.timestamp,
+      });
+
+      const get = await fetchWithOrigin(
+        `${KOSYNC}/syncs/progress/${document}`,
+        { headers: kosyncHeaders(username, key) }
+      );
+      expect(get.status).toBe(200);
+      const progress = (await get.json()) as {
+        percentage: number;
+        device: string;
+      };
+      expect(progress.percentage).toBeCloseTo(0.8);
+      expect(progress.device).toBe("ryOS Books");
+    },
+    30_000
+  );
 });
