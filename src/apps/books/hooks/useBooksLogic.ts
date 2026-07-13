@@ -28,6 +28,7 @@ import { useBookCover } from "../utils/useBookCover";
 import type {
   BookBookmark,
   BookHighlight,
+  BookProgress,
   BooksHighlightColor,
 } from "@/stores/useBooksStore";
 import type { BooksInitialData } from "@/apps/base/types";
@@ -135,8 +136,21 @@ export function useBooksLogic({
   const removeBookmarkAction = useBooksStore((s) => s.removeBookmark);
 
   const saveProgress = useCallback(
-    (path: string, cfi: string, percentage: number) => {
-      setProgressAction(path, { cfi, percentage, updatedAt: Date.now() });
+    (
+      path: string,
+      cfi: string,
+      percentage: number,
+      kosyncProgress?: string
+    ) => {
+      const progress: BookProgress = {
+        cfi,
+        percentage,
+        updatedAt: Date.now(),
+      };
+      if (kosyncProgress) {
+        progress.kosyncProgress = kosyncProgress;
+      }
+      setProgressAction(path, progress);
     },
     [setProgressAction]
   );

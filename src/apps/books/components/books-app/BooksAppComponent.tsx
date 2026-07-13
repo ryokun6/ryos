@@ -316,9 +316,12 @@ export function BooksAppComponent({
             osIsDark={isDarkMode}
             originRect={openOriginRect}
             initialCfi={progressByPath[activeBook.path]?.cfi}
+            initialKosyncProgress={
+              progressByPath[activeBook.path]?.kosyncProgress
+            }
             initialPercentage={progressByPath[activeBook.path]?.percentage}
-            onProgress={(cfi, percentage) =>
-              saveProgress(activeBook.path, cfi, percentage)
+            onProgress={(cfi, percentage, kosyncProgress) =>
+              saveProgress(activeBook.path, cfi, percentage, kosyncProgress)
             }
             onNavigationStateChange={handleReaderNavigationStateChange}
             onSpeechStateChange={handleSpeechStateChange}

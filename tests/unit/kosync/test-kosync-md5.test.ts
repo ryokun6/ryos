@@ -92,6 +92,25 @@ describe("pickNewerProgress", () => {
     expect(pickNewerProgress(older, null)).toEqual(older);
     expect(pickNewerProgress(null, null)).toBeNull();
   });
+
+  test("prefers native KO XPath on equal timestamp and percentage", () => {
+    const native = {
+      percentage: 0.5,
+      progress: "/body/DocFragment[2]/body/p[1]/text()[1].12",
+      device: "CrossPoint",
+      device_id: "cp-1",
+      timestamp: 100,
+    };
+    const bridged = {
+      percentage: 0.5,
+      progress: "5000",
+      device: "ryOS Books",
+      device_id: "ryos",
+      timestamp: 100,
+    };
+    expect(pickNewerProgress(native, bridged)).toEqual(native);
+    expect(pickNewerProgress(bridged, native)).toEqual(native);
+  });
 });
 
 describe("shouldAcceptKosyncProgressUpdate", () => {

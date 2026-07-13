@@ -1516,7 +1516,7 @@ const mapsCodec: SyncCodec = {
 // useBooksStore so it can sync independently of the large file blobs.
 //
 // Keys:
-//   bookshelf/progress:<path> — { cfi, percentage, updatedAt } per book
+//   bookshelf/progress:<path> — { cfi, percentage, updatedAt, kosyncProgress? } per book
 //   bookshelf/docmap:<path>   — { filenameMd5, partialMd5? } KOReader doc ids
 //   bookshelf/order           — { pinnedTop, pinnedBottom } shelf ordering
 //   bookshelf/last-opened     — { path } most recently opened book

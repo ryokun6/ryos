@@ -115,7 +115,13 @@ import {
   BOOKS_EDGE_TAP_RATIO,
   resolveBooksEdgeTapDirection,
 } from "../utils/booksEdgeTap";
-import { resolveBooksSwipeDirection } from "../utils/booksSwipe";
+import {
+  resolveBooksSwipeDirection,
+} from "../utils/booksSwipe";
+import {
+  cfiToKoXPath,
+  koXPathToCfi,
+} from "../utils/kosyncProgressAnchor";
 
 const booksLog = createClientLogger("BooksReader");
 
@@ -126,9 +132,15 @@ interface BooksReaderPaneProps {
   /** Page-space rect of the clicked shelf cover, to zoom in from. */
   originRect?: BookOriginRect | null;
   initialCfi?: string;
+  /** CrossPoint KO-style XPath when CFI is unavailable (KOSync inbound). */
+  initialKosyncProgress?: string;
   /** Cached reading progress (0..1) so the footer shows it without a 0% flash. */
   initialPercentage?: number;
-  onProgress: (cfi: string, percentage: number) => void;
+  onProgress: (
+    cfi: string,
+    percentage: number,
+    kosyncProgress?: string
+  ) => void;
   onNavigationStateChange?: (state: BooksNavigationState) => void;
   onSpeechStateChange?: (isSpeaking: boolean) => void;
   /** EPUB metadata language once known (drives CJK-only menus / features). */
@@ -475,6 +487,7 @@ export const BooksReaderPane = forwardRef<
     osIsDark,
     originRect,
     initialCfi,
+    initialKosyncProgress,
     initialPercentage,
     onProgress,
     onNavigationStateChange,
@@ -537,6 +550,7 @@ export const BooksReaderPane = forwardRef<
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
   const initialCfiRef = useRef(initialCfi);
+  const initialKosyncProgressRef = useRef(initialKosyncProgress);
   const initialPercentageRef = useRef(initialPercentage);
   const activeSectionHrefRef = useRef<string | undefined>(undefined);
 
@@ -1316,15 +1330,24 @@ export const BooksReaderPane = forwardRef<
                 // ignore
               }
               const computed = clamp01(pct || 0);
+              const renditionForKo = renditionRef.current;
+              const kosyncProgress =
+                renditionForKo && cfi
+                  ? (cfiToKoXPath(renditionForKo, cfi) ?? undefined)
+                  : undefined;
               // A 0 that isn't genuinely the start of the book means epub.js
               // hasn't generated locations yet — don't drop the seeded/known value
               // to 0. Keep showing it and persist the cfi with the known percentage
               // so the cache isn't clobbered either.
               if (computed > 0 || atStartNow) {
                 setProgressPct(computed);
-                onProgressRef.current(cfi, computed);
+                onProgressRef.current(cfi, computed, kosyncProgress);
               } else {
-                onProgressRef.current(cfi, progressPctRef.current);
+                onProgressRef.current(
+                  cfi,
+                  progressPctRef.current,
+                  kosyncProgress
+                );
               }
               speechRelocatedRef.current();
             }
@@ -1337,13 +1360,35 @@ export const BooksReaderPane = forwardRef<
         rendition = createRendition("initial");
 
         try {
-          const initialDisplayTarget = initialCfiRef.current || undefined;
+          let initialDisplayTarget = initialCfiRef.current?.trim() || undefined;
+          if (!initialDisplayTarget) {
+            const koProgress = initialKosyncProgressRef.current?.trim();
+            if (koProgress) {
+              try {
+                const cfiFromKo = await koXPathToCfi(activeBook, koProgress);
+                if (cfiFromKo) {
+                  initialDisplayTarget = cfiFromKo;
+                  appendDebugEvent("epubjs:display:kosync-xpath", {
+                    kosyncProgress: koProgress,
+                  });
+                }
+              } catch (error) {
+                appendDebugEvent(
+                  "epubjs:display:kosync-xpath:failed",
+                  { error, kosyncProgress: koProgress },
+                  "warn"
+                );
+              }
+            }
+          }
           const fallbackDisplayTarget = resolveEpubDisplayFallbackTarget(
             activeBook,
             initialDisplayTarget
           );
           appendDebugEvent("epubjs:display:start", {
-            initialCfi: initialDisplayTarget,
+            initialCfi: initialCfiRef.current,
+            initialKosyncProgress: initialKosyncProgressRef.current,
+            initialDisplayTarget,
             fallbackTarget: fallbackDisplayTarget,
           });
           const displayResult = await watch(
@@ -1463,16 +1508,37 @@ export const BooksReaderPane = forwardRef<
         }, REVEAL_DELAY_MS);
 
         // Generate locations for accurate progress percentages (best-effort).
-        // When kosync/Books progress arrived with percentage but no CFI
-        // (KOReader xpointers aren't epub CFIs), jump via percentage after
-        // locations are ready.
+        // When kosync/Books progress arrived with percentage but no CFI, try the
+        // stored CrossPoint XPath first, then fall back to percentage.
         activeBook.ready
           .then(() => activeBook.locations.generate(1600))
-          .then(() => {
+          .then(async () => {
             appendDebugEvent("epubjs:locations:generated");
             const pct = clamp01(initialPercentageRef.current ?? 0);
             const hasCfi = Boolean(initialCfiRef.current?.trim());
-            if (hasCfi || pct <= 0 || cancelled) return;
+            const koProgress = initialKosyncProgressRef.current?.trim();
+            if (hasCfi || cancelled) return;
+            if (koProgress) {
+              try {
+                const cfiFromKo = await koXPathToCfi(activeBook, koProgress);
+                if (cfiFromKo && !cancelled) {
+                  const rendition = renditionRef.current;
+                  if (!rendition) return;
+                  appendDebugEvent("epubjs:display:kosync-xpath:late", {
+                    kosyncProgress: koProgress,
+                  });
+                  void rendition.display(cfiFromKo);
+                  return;
+                }
+              } catch (error) {
+                appendDebugEvent(
+                  "epubjs:display:kosync-xpath:late:failed",
+                  { error, kosyncProgress: koProgress },
+                  "warn"
+                );
+              }
+            }
+            if (pct <= 0) return;
             try {
               const cfiFromPct = activeBook.locations.cfiFromPercentage(pct);
               if (!cfiFromPct || cancelled) return;

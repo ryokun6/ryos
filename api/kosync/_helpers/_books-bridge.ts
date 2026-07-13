@@ -28,6 +28,11 @@ import {
   KOSYNC_DEVICE_ID_RYOS,
   KOSYNC_DEVICE_RYOS,
 } from "./_types.js";
+import {
+  isEpubCfi,
+  isKoStyleXPath,
+  kosyncPercentagePlaceholder,
+} from "../../../src/shared/kosyncProgressLocator.js";
 
 const BOOKS_PREFIX = "/Books/";
 const PROGRESS_PREFIX = "bookshelf/progress:";
@@ -38,6 +43,7 @@ export interface BookshelfProgressDoc {
   cfi: string;
   percentage: number;
   updatedAt: number;
+  kosyncProgress?: string;
 }
 
 export interface KosyncBridgeResult {
@@ -74,11 +80,23 @@ function asBookshelfProgress(value: unknown): BookshelfProgressDoc | null {
   const percentage = Number(record.percentage);
   const updatedAt = Number(record.updatedAt);
   if (!Number.isFinite(percentage) || !Number.isFinite(updatedAt)) return null;
+  const kosyncProgress =
+    typeof record.kosyncProgress === "string" &&
+    isKoStyleXPath(record.kosyncProgress)
+      ? record.kosyncProgress
+      : undefined;
   return {
     cfi: typeof record.cfi === "string" ? record.cfi : "",
     percentage: Math.min(1, Math.max(0, percentage)),
     updatedAt,
+    ...(kosyncProgress ? { kosyncProgress } : {}),
   };
+}
+
+function kosyncProgressFromRecord(record: KosyncProgressRecord): string | undefined {
+  const progress = record.progress?.trim() ?? "";
+  if (isKoStyleXPath(progress)) return progress;
+  return undefined;
 }
 
 /**
@@ -146,7 +164,8 @@ export async function resolveDocumentPath(
 
 /**
  * Push kosync progress into Cloud Sync v2 so the Books app picks it up.
- * Clears CFI so the reader restores via percentage (KOReader xpointers ≠ epub CFI).
+ * Preserves CrossPoint XPath in `kosyncProgress`; EPUB CFIs stay native when
+ * a device sends them. Percentage-only records restore via percentage.
  */
 export async function bridgeKosyncProgressToBooks(
   redis: Redis,
@@ -188,11 +207,13 @@ export async function bridgeKosyncProgressToBooks(
     };
   }
 
+  const kosyncProgress = kosyncProgressFromRecord(record);
+  const incomingCfi = record.progress?.trim() ?? "";
   const progress: BookshelfProgressDoc = {
-    // Empty CFI forces percentage-based restore in the Books reader.
-    cfi: "",
+    cfi: isEpubCfi(incomingCfi) ? incomingCfi : "",
     percentage: Math.min(1, Math.max(0, record.percentage)),
     updatedAt,
+    ...(kosyncProgress ? { kosyncProgress } : {}),
   };
 
   const t = hlcFromTimestamp(updatedAt, SERVER_SYNC_CLIENT_ID);
@@ -223,8 +244,10 @@ export async function bridgeBooksProgressToKosync(
 
   return {
     percentage: progress.percentage,
-    // Prefer CFI when present; KOReader ignores unknown pointers and uses %.
-    progress: progress.cfi || String(Math.round(progress.percentage * 10000)),
+    // Never emit EPUB CFI as CrossPoint `progress`; prefer stored XPath.
+    progress:
+      progress.kosyncProgress ??
+      kosyncPercentagePlaceholder(progress.percentage),
     device: KOSYNC_DEVICE_RYOS,
     device_id: KOSYNC_DEVICE_ID_RYOS,
     timestamp: Math.floor(progress.updatedAt / 1000),
@@ -241,6 +264,10 @@ export function pickNewerProgress(
   if (b.timestamp !== a.timestamp) {
     return b.timestamp > a.timestamp ? b : a;
   }
+  const aKo = isKoStyleXPath(a.progress);
+  const bKo = isKoStyleXPath(b.progress);
+  if (aKo && !bKo) return a;
+  if (bKo && !aKo) return b;
   // Tie-break on further percentage (matches “furthest progress” intent).
   return b.percentage >= a.percentage ? b : a;
 }

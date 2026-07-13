@@ -195,7 +195,154 @@ describe("kosync API", () => {
     };
     expect(progress.percentage).toBeCloseTo(0.55);
     expect(progress.device).toBe("ryOS Books");
-    expect(progress.progress).toContain("epubcfi");
+    expect(progress.progress).toBe("5500");
+    expect(progress.progress).not.toContain("epubcfi");
+  });
+
+  test("bridges Books kosyncProgress XPath into kosync GET", async () => {
+    const username = `kx${Date.now().toString(36)}`.slice(0, 20);
+    const password = `Password1!${username}`;
+    const token = await ensureUserAuth(username, password);
+    expect(token).toBeTruthy();
+    const key = md5Hex(password);
+    const bookPath = "/Books/KOSync XPath Bridge.epub";
+    const document = filenameMd5FromPath(bookPath);
+    const xpath =
+      "/body/DocFragment[3]/body/div[1]/p[2]/text()[1].42";
+
+    const createRes = await createKosyncUser(username, key);
+    expect(createRes.status).toBe(201);
+
+    const t = hlcFromTimestamp(Date.now(), "test-client");
+    const opsRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/ops`,
+      username,
+      token!,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: "kosync-xpath-test",
+          ops: [
+            {
+              k: `files/item:${bookPath}`,
+              v: {
+                path: bookPath,
+                name: "KOSync XPath Bridge.epub",
+                status: "active",
+                uuid: "test-uuid-kosync-xpath",
+                modifiedAt: Date.now(),
+              },
+              t,
+            },
+            {
+              k: `bookshelf/progress:${bookPath}`,
+              v: {
+                cfi: "epubcfi(/6/4!/4/2/2/2)",
+                kosyncProgress: xpath,
+                percentage: 0.33,
+                updatedAt: Date.now(),
+              },
+              t,
+            },
+            {
+              k: `bookshelf/docmap:${bookPath}`,
+              v: { filenameMd5: document },
+              t,
+            },
+          ],
+        }),
+      }
+    );
+    expect(opsRes.status).toBe(200);
+
+    const get = await fetchWithOrigin(
+      `${KOSYNC}/syncs/progress/${document}`,
+      { headers: kosyncHeaders(username, key) }
+    );
+    expect(get.status).toBe(200);
+    const progress = (await get.json()) as {
+      percentage: number;
+      progress: string;
+    };
+    expect(progress.percentage).toBeCloseTo(0.33);
+    expect(progress.progress).toBe(xpath);
+  });
+
+  test("preserves CrossPoint XPath on kosync PUT into Books", async () => {
+    const username = `kp${Date.now().toString(36)}`.slice(0, 20);
+    const password = `Password1!${username}`;
+    const token = await ensureUserAuth(username, password);
+    expect(token).toBeTruthy();
+    const key = md5Hex(password);
+    const bookPath = "/Books/CrossPoint XPath In.epub";
+    const document = filenameMd5FromPath(bookPath);
+    const xpath =
+      "/body/DocFragment[1]/body/p[4]/text()[1].96";
+
+    const createRes = await createKosyncUser(username, key);
+    expect(createRes.status).toBe(201);
+
+    const seedRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/ops`,
+      username,
+      token!,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: "kosync-xpath-put",
+          ops: [
+            {
+              k: `files/item:${bookPath}`,
+              v: {
+                path: bookPath,
+                name: "CrossPoint XPath In.epub",
+                status: "active",
+                uuid: "test-uuid-xpath-in",
+                modifiedAt: Date.now(),
+              },
+              t: hlcFromTimestamp(Date.now(), "test-client"),
+            },
+            {
+              k: `bookshelf/docmap:${bookPath}`,
+              v: { filenameMd5: document },
+              t: hlcFromTimestamp(Date.now(), "test-client"),
+            },
+          ],
+        }),
+      }
+    );
+    expect(seedRes.status).toBe(200);
+
+    const put = await fetchWithOrigin(`${KOSYNC}/syncs/progress`, {
+      method: "PUT",
+      headers: {
+        ...kosyncHeaders(username, key),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        document,
+        percentage: 0.61,
+        progress: xpath,
+        device: "CrossPoint",
+        device_id: "cp-test",
+      }),
+    });
+    expect(put.status).toBe(200);
+
+    const docsRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/snapshot`,
+      username,
+      token!
+    );
+    expect(docsRes.status).toBe(200);
+    const docs = (await docsRes.json()) as {
+      entries: Record<string, { v?: { cfi?: string; kosyncProgress?: string } }>;
+    };
+    const stored = docs.entries[`bookshelf/progress:${bookPath}`]?.v;
+    expect(stored?.kosyncProgress).toBe(xpath);
+    expect(stored?.cfi).toBe("");
   });
 
   test(

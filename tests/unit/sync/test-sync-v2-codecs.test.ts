@@ -307,7 +307,12 @@ describe("bookshelf codec", () => {
   test("collect emits per-book progress plus order + last-opened docs", () => {
     useBooksStore.setState({
       progressByPath: {
-        "/Books/a.epub": { cfi: "epubcfi(/2)", percentage: 0.3, updatedAt: 10 },
+        "/Books/a.epub": {
+          cfi: "epubcfi(/2)",
+          kosyncProgress: "/body/DocFragment[1]/body/p[1]/text()[1].4",
+          percentage: 0.3,
+          updatedAt: 10,
+        },
       },
       pinnedTop: ["/Books/a.epub"],
       pinnedBottom: [],
@@ -315,6 +320,9 @@ describe("bookshelf codec", () => {
     } as never);
     const docs = SYNC_CODECS.bookshelf.collect(ctx) as Map<string, unknown>;
     expect(docs.has("bookshelf/progress:/Books/a.epub")).toBe(true);
+    expect(docs.get("bookshelf/progress:/Books/a.epub")).toMatchObject({
+      kosyncProgress: "/body/DocFragment[1]/body/p[1]/text()[1].4",
+    });
     expect(docs.get("bookshelf/order")).toMatchObject({
       pinnedTop: ["/Books/a.epub"],
     });

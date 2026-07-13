@@ -38,11 +38,16 @@ export type BooksTextLayout = "book" | "vertical";
 export type BooksShelfView = "grid" | "list";
 
 export interface BookProgress {
-  /** EPUB CFI of the current location. Empty when restored from KOReader %. */
+  /** EPUB CFI of the current location. Empty when restored from KOReader XPath only. */
   cfi: string;
   /** 0..1 progress through the book (when locations are available). */
   percentage: number;
   updatedAt: number;
+  /**
+   * CrossPoint / KOReader KO-style XPath for KOSync `progress`. Omitted when
+   * conversion failed or the record predates dual-locator sync.
+   */
+  kosyncProgress?: string;
 }
 
 /**
