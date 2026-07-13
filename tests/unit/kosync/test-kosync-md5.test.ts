@@ -44,10 +44,11 @@ describe("kosync md5 helpers", () => {
     );
   });
 
-  test("md5Hex of password is what KOReader sends as X-Auth-Key", () => {
-    const password = "testtest";
-    expect(md5Hex(password)).toBe(
-      createHash("md5").update(password).digest("hex")
+  test("md5Hex produces stable hex keys for KOReader auth payloads", () => {
+    // KOReader sends md5(plain) as X-Auth-Key; compare against Node once.
+    const sample = "testtest";
+    expect(md5Hex(sample)).toBe(
+      createHash("md5").update(sample).digest("hex")
     );
   });
 });

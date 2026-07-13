@@ -4,7 +4,6 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { createHash } from "node:crypto";
 import {
   BASE_URL,
   ensureUserAuth,
@@ -12,14 +11,10 @@ import {
   fetchWithOrigin,
   makeRateLimitBypassHeaders,
 } from "../../helpers/test-utils";
-import { filenameMd5FromPath } from "../../../src/shared/kosync/md5";
+import { filenameMd5FromPath, md5Hex } from "../../../src/shared/kosync/md5";
 import { hlcFromTimestamp } from "../../../src/shared/sync2/hlc";
 
 const KOSYNC = `${BASE_URL}/api/kosync`;
-
-function md5Password(plain: string): string {
-  return createHash("md5").update(plain).digest("hex");
-}
 
 function kosyncHeaders(username: string, key: string): HeadersInit {
   return {
@@ -54,7 +49,7 @@ describe("kosync API", () => {
   test("ryOS password unlocks kosync register, auth, and progress", async () => {
     const username = `kosync${Date.now().toString(36)}`.slice(0, 20);
     const password = `Password1!${username}`;
-    const key = md5Password(password);
+    const key = md5Hex(password);
     const document = filenameMd5FromPath(
       "/Books/Test Book For Kosync.epub"
     );
@@ -139,7 +134,7 @@ describe("kosync API", () => {
     const password = `Password1!${username}`;
     const token = await ensureUserAuth(username, password);
     expect(token).toBeTruthy();
-    const key = md5Password(password);
+    const key = md5Hex(password);
     const bookPath = "/Books/Bridge Progress Book.epub";
     const document = filenameMd5FromPath(bookPath);
 
