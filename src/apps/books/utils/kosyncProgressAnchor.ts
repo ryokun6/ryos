@@ -1,6 +1,5 @@
 import type { Book, Rendition } from "epubjs";
 import {
-  isKoStyleXPath,
   parseKoXPath,
   type ParsedKoXPath,
 } from "@/shared/kosyncProgressLocator";
@@ -169,13 +168,15 @@ export function rangeToKoXPath(
 }
 
 function walkKoXPathSteps(doc: Document, parsed: ParsedKoXPath): Element | null {
-  let element: Element | null = doc.body;
-  if (!element) return null;
+  const root = doc.body;
+  if (!root) return null;
 
+  let current: Element = root;
   for (const step of parsed.steps) {
+    const children: Element[] = Array.from(current.children);
     let match: Element | null = null;
     let count = 0;
-    for (const child of element.children) {
+    for (const child of children) {
       if (localName(child) !== step.tag) continue;
       count += 1;
       if (count === step.index) {
@@ -184,10 +185,10 @@ function walkKoXPathSteps(doc: Document, parsed: ParsedKoXPath): Element | null 
       }
     }
     if (!match) return null;
-    element = match;
+    current = match;
   }
 
-  return element;
+  return current;
 }
 
 /**
