@@ -24,6 +24,12 @@ export const helpItems = [
       "Your place is saved automatically. Reopening Books resumes the book and page you left on, or the shelf if you closed it.",
   },
   {
+    icon: "📱",
+    title: "KOReader Sync",
+    description:
+      "Sync reading progress with KOReader on other devices. In KOReader Progress Sync, set the custom server to this ryOS host’s /api/kosync URL, register with your ryOS username, and use filename document matching for matching EPUBs in /Books.",
+  },
+  {
     icon: "🅰️",
     title: "Fonts & Layout",
     description:

@@ -16,8 +16,13 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useBooksStore } from "@/stores/useBooksStore";
 import { useVfsFileOperations } from "@/services/vfs/useVfsFileOperations";
+import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
 import { openNativeFile } from "@/utils/nativeFileDialogs";
 import { emitFileSaved, onFileRenamed } from "@/utils/appEventBus";
+import {
+  filenameMd5FromPath,
+  partialMd5Hex,
+} from "@/shared/kosync/md5";
 import { helpItems } from "../metadata";
 import { useBookCover } from "../utils/useBookCover";
 import type {
@@ -114,6 +119,7 @@ export function useBooksLogic({
   const setLastOpenedPath = useBooksStore((s) => s.setLastOpenedPath);
   const setOpenPath = useBooksStore((s) => s.setOpenPath);
   const setProgressAction = useBooksStore((s) => s.setProgress);
+  const setDocMapAction = useBooksStore((s) => s.setDocMap);
   const renameProgressPath = useBooksStore((s) => s.renameProgressPath);
   const pinnedTop = useBooksStore((s) => s.pinnedTop);
   const pinnedBottom = useBooksStore((s) => s.pinnedBottom);
@@ -134,6 +140,69 @@ export function useBooksLogic({
     },
     [setProgressAction]
   );
+
+  // Keep KOReader document-id maps in sync so kosync can match books by
+  // filename MD5 (and partial content MD5 when bytes are available).
+  useEffect(() => {
+    if (!hasBooksHydrated) return;
+    let cancelled = false;
+    const libraryPaths = library.map((entry) => entry.path);
+
+    const ensureFilenameMaps = () => {
+      const currentMaps = useBooksStore.getState().docMapByPath;
+      for (const path of libraryPaths) {
+        const filenameMd5 = filenameMd5FromPath(path);
+        const existing = currentMaps[path];
+        if (!existing || existing.filenameMd5 !== filenameMd5) {
+          setDocMapAction(path, {
+            filenameMd5,
+            partialMd5: existing?.partialMd5,
+          });
+        }
+      }
+    };
+    ensureFilenameMaps();
+
+    const fillPartialMaps = async () => {
+      for (const path of libraryPaths) {
+        if (cancelled) return;
+        const existing = useBooksStore.getState().docMapByPath[path];
+        if (existing?.partialMd5) continue;
+        try {
+          const blob = await readBookBlobContent(path);
+          if (!blob || cancelled) continue;
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          if (cancelled || bytes.length === 0) continue;
+          const partialMd5 = partialMd5Hex(bytes);
+          const latest = useBooksStore.getState().docMapByPath[path];
+          setDocMapAction(path, {
+            filenameMd5: latest?.filenameMd5 ?? filenameMd5FromPath(path),
+            partialMd5,
+          });
+        } catch {
+          // Best-effort: filename matching still works without partial MD5.
+        }
+      }
+    };
+
+    const idle =
+      typeof window !== "undefined" && "requestIdleCallback" in window
+        ? window.requestIdleCallback(() => {
+            void fillPartialMaps();
+          })
+        : window.setTimeout(() => {
+            void fillPartialMaps();
+          }, 750);
+
+    return () => {
+      cancelled = true;
+      if (typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idle as number);
+      } else {
+        window.clearTimeout(idle as number);
+      }
+    };
+  }, [library, hasBooksHydrated, setDocMapAction]);
 
   const { saveFile, moveToTrash } = useVfsFileOperations(BOOKS_PATH);
   const fileInputRef = useRef<HTMLInputElement>(null);

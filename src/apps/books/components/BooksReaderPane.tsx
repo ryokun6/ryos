@@ -537,6 +537,7 @@ export const BooksReaderPane = forwardRef<
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
   const initialCfiRef = useRef(initialCfi);
+  const initialPercentageRef = useRef(initialPercentage);
   const activeSectionHrefRef = useRef<string | undefined>(undefined);
 
   const { t, i18n } = useTranslation();
@@ -1462,9 +1463,31 @@ export const BooksReaderPane = forwardRef<
         }, REVEAL_DELAY_MS);
 
         // Generate locations for accurate progress percentages (best-effort).
+        // When kosync/Books progress arrived with percentage but no CFI
+        // (KOReader xpointers aren't epub CFIs), jump via percentage after
+        // locations are ready.
         activeBook.ready
           .then(() => activeBook.locations.generate(1600))
-          .then(() => appendDebugEvent("epubjs:locations:generated"))
+          .then(() => {
+            appendDebugEvent("epubjs:locations:generated");
+            const pct = clamp01(initialPercentageRef.current ?? 0);
+            const hasCfi = Boolean(initialCfiRef.current?.trim());
+            if (hasCfi || pct <= 0 || cancelled) return;
+            try {
+              const cfiFromPct = activeBook.locations.cfiFromPercentage(pct);
+              if (!cfiFromPct || cancelled) return;
+              const rendition = renditionRef.current;
+              if (!rendition) return;
+              appendDebugEvent("epubjs:display:percentage", { percentage: pct });
+              void rendition.display(cfiFromPct);
+            } catch (error) {
+              appendDebugEvent(
+                "epubjs:display:percentage:failed",
+                { error, percentage: pct },
+                "warn"
+              );
+            }
+          })
           .catch((error) =>
             appendDebugEvent("epubjs:locations:failed", error, "warn")
           );

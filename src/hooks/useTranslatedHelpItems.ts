@@ -205,6 +205,7 @@ export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
     "import",
     "pageTurn",
     "progress",
+    "kosync",
     "fonts",
     "darkMode",
   ],
