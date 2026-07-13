@@ -3,7 +3,7 @@
  * KOReader sync server health probe — `{ state: "OK" }`.
  */
 
-import { apiHandler } from "../../_utils/api-handler.js";
+import { apiHandler } from "../_utils/api-handler.js";
 import { KOSYNC_CORS_HEADERS } from "./_helpers/_types.js";
 
 export default apiHandler(

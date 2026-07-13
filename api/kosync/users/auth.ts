@@ -4,9 +4,9 @@
  */
 
 import { apiHandler } from "../../_utils/api-handler.js";
-import { authorizeKosyncRequest } from "./_helpers/_auth.js";
-import { KosyncErrorCode, sendKosyncError } from "./_helpers/_errors.js";
-import { KOSYNC_CORS_HEADERS } from "./_helpers/_types.js";
+import { authorizeKosyncRequest } from "../_helpers/_auth.js";
+import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
+import { KOSYNC_CORS_HEADERS } from "../_helpers/_types.js";
 
 export default apiHandler(
   {

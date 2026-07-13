@@ -3,16 +3,16 @@
  * Fetch reading progress for a document, merging kosync + Books bookshelf.
  */
 
-import { apiHandler } from "../../_utils/api-handler.js";
-import { authorizeKosyncRequest } from "../_helpers/_auth.js";
+import { apiHandler } from "../../../_utils/api-handler.js";
+import { authorizeKosyncRequest } from "../../_helpers/_auth.js";
 import {
   bridgeBooksProgressToKosync,
   pickNewerProgress,
-} from "../_helpers/_books-bridge.js";
-import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
-import { isValidKosyncKeyField } from "../_helpers/_md5.js";
-import { getKosyncProgress } from "../_helpers/_progress.js";
-import { KOSYNC_CORS_HEADERS } from "../_helpers/_types.js";
+} from "../../_helpers/_books-bridge.js";
+import { KosyncErrorCode, sendKosyncError } from "../../_helpers/_errors.js";
+import { isValidKosyncKeyField } from "../../_helpers/_md5.js";
+import { getKosyncProgress } from "../../_helpers/_progress.js";
+import { KOSYNC_CORS_HEADERS } from "../../_helpers/_types.js";
 
 export default apiHandler(
   {

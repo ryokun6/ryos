@@ -6,16 +6,16 @@
 import { apiHandler } from "../../_utils/api-handler.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 import { getClientIp } from "../../_utils/_rate-limit.js";
-import { authorizeKosyncRequest } from "./_helpers/_auth.js";
-import { bridgeKosyncProgressToBooks } from "./_helpers/_books-bridge.js";
-import { KosyncErrorCode, sendKosyncError } from "./_helpers/_errors.js";
+import { authorizeKosyncRequest } from "../_helpers/_auth.js";
+import { bridgeKosyncProgressToBooks } from "../_helpers/_books-bridge.js";
+import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
 import {
   isValidKosyncField,
   isValidKosyncKeyField,
-} from "./_helpers/_md5.js";
-import { setKosyncProgress } from "./_helpers/_progress.js";
-import { KOSYNC_CORS_HEADERS } from "./_helpers/_types.js";
-import type { KosyncProgressRecord } from "./_helpers/_types.js";
+} from "../_helpers/_md5.js";
+import { setKosyncProgress } from "../_helpers/_progress.js";
+import { KOSYNC_CORS_HEADERS } from "../_helpers/_types.js";
+import type { KosyncProgressRecord } from "../_helpers/_types.js";
 
 interface ProgressBody {
   document?: string;

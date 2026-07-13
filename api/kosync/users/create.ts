@@ -12,13 +12,13 @@ import { getClientIp } from "../../_utils/_rate-limit.js";
 import {
   getKosyncAuthKey,
   setKosyncAuthKey,
-} from "./_helpers/_auth.js";
-import { KosyncErrorCode, sendKosyncError } from "./_helpers/_errors.js";
+} from "../_helpers/_auth.js";
+import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
 import {
   isValidKosyncField,
   isValidKosyncKeyField,
-} from "./_helpers/_md5.js";
-import { KOSYNC_CORS_HEADERS } from "./_helpers/_types.js";
+} from "../_helpers/_md5.js";
+import { KOSYNC_CORS_HEADERS } from "../_helpers/_types.js";
 
 interface CreateBody {
   username?: string;
