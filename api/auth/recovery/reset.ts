@@ -25,6 +25,7 @@ import { resolveRecoveryUsername } from "../../_utils/auth/_recovery-channels.js
 import { apiHandler } from "../../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../../_utils/_cookie.js";
 import { getClientIp, makeKey } from "../../_utils/_rate-limit.js";
+import { syncKosyncAuthKeyFromPlainPassword } from "../../kosync/_helpers/_auth.js";
 
 interface ResetRequestBody {
   /** Username or verified recovery email. */
@@ -118,6 +119,7 @@ export default apiHandler<ResetRequestBody>(
     try {
       const passwordHash = await hashPassword(newPassword);
       await setUserPasswordHash(redis, username, passwordHash);
+      await syncKosyncAuthKeyFromPlainPassword(redis, username, newPassword);
       // Invalidate every existing session — a reset implies the old credentials
       // may be compromised.
       await deleteAllUserTokens(redis, username);

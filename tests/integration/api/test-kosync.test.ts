@@ -4,8 +4,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import {
   BASE_URL,
+  ensureUserAuth,
+  fetchWithAuth,
   fetchWithOrigin,
   makeRateLimitBypassHeaders,
 } from "../../helpers/test-utils";
@@ -14,10 +17,8 @@ import { hlcFromTimestamp } from "../../../src/shared/sync2/hlc";
 
 const KOSYNC = `${BASE_URL}/api/kosync`;
 
-/** Deterministic 32-char hex kosync auth key for tests (not MD5 of a password). */
-function testKosyncAuthKey(seed: string): string {
-  const hex = Buffer.from(`kosync-test:${seed}`, "utf8").toString("hex");
-  return (hex + "0".repeat(32)).slice(0, 32);
+function md5Password(plain: string): string {
+  return createHash("md5").update(plain).digest("hex");
 }
 
 function kosyncHeaders(username: string, key: string): HeadersInit {
@@ -50,21 +51,30 @@ describe("kosync API", () => {
     expect(await res.json()).toEqual({ state: "OK" });
   });
 
-  test("register, auth, update and get progress", async () => {
+  test("ryOS password unlocks kosync register, auth, and progress", async () => {
     const username = `kosync${Date.now().toString(36)}`.slice(0, 20);
-    const key = testKosyncAuthKey(`pw-${username}`);
+    const password = `Password1!${username}`;
+    const key = md5Password(password);
     const document = filenameMd5FromPath(
       "/Books/Test Book For Kosync.epub"
     );
+
+    // Creating a ryOS account syncs md5(password) for kosync.
+    const token = await ensureUserAuth(username, password);
+    expect(token).toBeTruthy();
+
+    const beforeLogin = await createKosyncUser(
+      `nouser${Date.now().toString(36)}`.slice(0, 20),
+      key
+    );
+    expect(beforeLogin.status).toBe(403);
 
     const createRes = await createKosyncUser(username, key);
     expect(createRes.status).toBe(201);
     expect(await createRes.json()).toEqual({ username });
 
-    const dup = await createKosyncUser(username, key);
-    expect(dup.status).toBe(402);
-    const dupBody = (await dup.json()) as { code: number };
-    expect(dupBody.code).toBe(2002);
+    const wrongPass = await createKosyncUser(username, "0".repeat(32));
+    expect(wrongPass.status).toBe(401);
 
     const badAuth = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
       headers: kosyncHeaders(username, "0".repeat(32)),
@@ -125,21 +135,17 @@ describe("kosync API", () => {
   });
 
   test("bridges Books bookshelf progress into kosync GET", async () => {
-    const { ensureUserAuth, fetchWithAuth } = await import(
-      "../../helpers/test-utils"
-    );
     const username = `kb${Date.now().toString(36)}`.slice(0, 20);
     const password = `Password1!${username}`;
     const token = await ensureUserAuth(username, password);
     expect(token).toBeTruthy();
-    const key = testKosyncAuthKey(password);
+    const key = md5Password(password);
     const bookPath = "/Books/Bridge Progress Book.epub";
     const document = filenameMd5FromPath(bookPath);
 
     const createRes = await createKosyncUser(username, key);
     expect(createRes.status).toBe(201);
 
-    // Seed file metadata + bookshelf progress via sync v2 so kosync can resolve.
     const t = hlcFromTimestamp(Date.now(), "test-client");
     const opsRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/v2/ops`,

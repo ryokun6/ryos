@@ -43,6 +43,13 @@ describe("kosync md5 helpers", () => {
       "https://os.ryo.lu/api/kosync"
     );
   });
+
+  test("md5Hex of password is what KOReader sends as X-Auth-Key", () => {
+    const password = "testtest";
+    expect(md5Hex(password)).toBe(
+      createHash("md5").update(password).digest("hex")
+    );
+  });
 });
 
 describe("kosync field validators", () => {

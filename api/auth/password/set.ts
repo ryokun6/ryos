@@ -20,6 +20,7 @@ import {
 } from "../../_utils/auth/_password.js";
 import { apiHandler } from "../../_utils/api-handler.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
+import { syncKosyncAuthKeyFromPlainPassword } from "../../kosync/_helpers/_auth.js";
 
 interface SetPasswordRequest {
   /** New password to store. Required. */
@@ -139,6 +140,7 @@ export default apiHandler<SetPasswordRequest>(
 
       const passwordHash = await hashPassword(password);
       await setUserPasswordHash(redis, username, passwordHash);
+      await syncKosyncAuthKeyFromPlainPassword(redis, username, password);
 
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ success: true });

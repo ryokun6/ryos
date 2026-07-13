@@ -1,18 +1,17 @@
 /**
  * POST /api/kosync/users/create
  *
- * Register kosync credentials. The client sends `password` as MD5(plain),
- * matching the official KOReader sync protocol. Username should match the
- * ryOS account so progress bridges into the Books app.
+ * KOReader "Register". Credentials are the ryOS account password:
+ * the client sends `password` as MD5(plain). That MD5 is stored when the
+ * user signs in / registers / changes password on ryOS. Register here
+ * succeeds when the supplied MD5 already matches that key.
  */
 
 import { apiHandler } from "../../_utils/api-handler.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 import { getClientIp } from "../../_utils/_rate-limit.js";
-import {
-  getKosyncAuthKey,
-  setKosyncAuthKey,
-} from "../_helpers/_auth.js";
+import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
+import { getKosyncAuthKey } from "../_helpers/_auth.js";
 import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
 import {
   isValidKosyncField,
@@ -63,26 +62,34 @@ export default apiHandler(
       return;
     }
 
-    // KOReader usernames are case-sensitive on the wire, but ryOS accounts are
-    // lowercase — normalize so Books bridging finds the matching sync user.
     const username = payload.username.toLowerCase();
-    const password = payload.password;
+    const password = payload.password.toLowerCase();
 
-    // MD5 hex is 32 chars; reject obviously wrong payloads.
     if (!/^[a-f0-9]{32}$/i.test(password)) {
       sendKosyncError(res, KosyncErrorCode.INVALID_FIELDS);
       return;
     }
 
     try {
+      const ryosUser = await getStoredUserRecord(redis, username);
       const existing = await getKosyncAuthKey(redis, username);
-      if (existing) {
-        sendKosyncError(res, KosyncErrorCode.USER_EXISTS);
+
+      if (!ryosUser || !existing) {
+        res.status(403).json({
+          code: KosyncErrorCode.REGISTRATION_DISABLED,
+          message:
+            "Sign in to ryOS once with this username, then use the same password here.",
+        });
         return;
       }
 
-      await setKosyncAuthKey(redis, username, password.toLowerCase());
-      logger.info("kosync user created", { username });
+      if (existing !== password) {
+        sendKosyncError(res, KosyncErrorCode.UNAUTHORIZED);
+        return;
+      }
+
+      // MD5 matches the ryOS password key — Register succeeds for KOReader.
+      logger.info("kosync register matched ryOS password key", { username });
       logger.response(201, Date.now() - startTime);
       res.status(201).json({ username });
     } catch (error) {

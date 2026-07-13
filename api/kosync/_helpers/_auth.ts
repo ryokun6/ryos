@@ -3,6 +3,7 @@ import type { ApiRequest } from "../../_utils/api-types.js";
 import { getHeader } from "../../_utils/request-helpers.js";
 import { USER_TTL_SECONDS } from "../../_utils/auth/index.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
+import { md5Hex } from "../../../src/shared/kosync/md5.js";
 import {
   isValidKosyncField,
   isValidKosyncKeyField,
@@ -25,9 +26,23 @@ export async function setKosyncAuthKey(
   username: string,
   md5Password: string
 ): Promise<void> {
-  await redis.set(kosyncUserKey(username), md5Password, {
+  await redis.set(kosyncUserKey(username), md5Password.toLowerCase(), {
     ex: USER_TTL_SECONDS,
   });
+}
+
+/**
+ * Keep the kosync auth key in sync with the ryOS account password.
+ * KOReader only sends `md5(plain)` — we store that whenever the plain
+ * password is known (login / register / password change / recovery).
+ */
+export async function syncKosyncAuthKeyFromPlainPassword(
+  redis: Redis,
+  username: string,
+  plainPassword: string
+): Promise<void> {
+  if (!plainPassword) return;
+  await setKosyncAuthKey(redis, username, md5Hex(plainPassword));
 }
 
 /**
@@ -45,7 +60,7 @@ export async function authorizeKosyncRequest(
   }
   const username = authUser.toLowerCase();
   const stored = await getKosyncAuthKey(redis, username);
-  if (!stored || stored !== authKey) {
+  if (!stored || stored !== authKey.toLowerCase()) {
     return null;
   }
   // Refresh TTL on successful auth so active syncers stay alive.
