@@ -212,4 +212,24 @@ describe("self-host storage backend selection", () => {
     expect(upload.uploadUrl.startsWith("/api/sync/v2/blob-upload?token=")).toBe(true);
     expect(upload.storageUrl).toBe("s3://bucket/sync/test-user/blobs/abc123.gz");
   });
+
+  test("allows a fresh proxy instruction regardless of deployment upload mode", async () => {
+    process.env.STORAGE_PROVIDER = "s3"; // pragma: allowlist secret
+    process.env.STORAGE_CLIENT_UPLOAD = "presigned";
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "auto";
+    process.env.S3_ENDPOINT = "https://example-account.r2.cloudflarestorage.com"; // pragma: allowlist secret
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+
+    const upload = await createStorageUploadDescriptor({
+      pathname: "sync/test-user/blobs/abc123.gz",
+      contentType: "application/gzip",
+      maximumSizeInBytes: 1024,
+      clientUploadMode: "proxy",
+    });
+
+    expect(upload.uploadMethod).toBe("api-proxy-put");
+    expect(upload.uploadUrl.startsWith("/api/sync/v2/blob-upload?token=")).toBe(true);
+  });
 });

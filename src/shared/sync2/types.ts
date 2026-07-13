@@ -97,6 +97,12 @@ export interface PostBlobsResponse {
   downloads?: (string | null)[];
 }
 
+export interface PostBlobUploadInstructionResponse {
+  ok: true;
+  /** Fresh authenticated API-proxy instruction for one sync blob. */
+  upload: unknown;
+}
+
 /** Realtime event payload (Pusher event "sync-ops"). */
 export interface SyncOpsRealtimeEvent {
   seq: number;

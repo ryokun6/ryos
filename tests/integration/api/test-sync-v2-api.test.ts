@@ -6,6 +6,7 @@ import {
   fetchWithOrigin,
 } from "../../helpers/test-utils";
 import { formatHlc } from "../../../src/shared/sync2/hlc";
+import { deleteStoredObject } from "../../../api/_utils/storage";
 
 /**
  * Cloud Sync v2 API integration tests (sync-v2 suite).
@@ -187,6 +188,77 @@ describe("sync v2 API", () => {
     // Own URL gets signed; foreign URLs are refused.
     expect(typeof body.downloads?.[0]).toBe("string");
     expect(body.downloads?.[1]).toBeNull();
+  });
+
+  test("issues a fresh authenticated proxy instruction for one failed blob", async () => {
+    const sha256 = "ef".repeat(32);
+    const uploadBytes = new Uint8Array([31, 139, 8, 0]);
+    const response = await fetchWithAuth(
+      `${BASE_URL}/api/sync/v2/blob-upload`,
+      USERNAME,
+      token,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sha256, size: uploadBytes.byteLength }),
+      }
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      ok: boolean;
+      upload?: {
+        uploadMethod?: string;
+        uploadUrl?: string;
+        pathname?: string;
+        maximumSizeInBytes?: number;
+        storageUrl?: string;
+      };
+    };
+    expect(body.ok).toBe(true);
+    expect(body.upload?.uploadMethod).toBe("api-proxy-put");
+    expect(body.upload?.uploadUrl?.startsWith(
+      "/api/sync/v2/blob-upload?token="
+    )).toBe(true);
+    expect(body.upload?.pathname).toBe(
+      `sync/${USERNAME}/blobs/${sha256}.gz`
+    );
+    expect(body.upload?.maximumSizeInBytes).toBe(uploadBytes.byteLength);
+    expect(typeof body.upload?.storageUrl).toBe("string");
+
+    const uploadUrl = body.upload?.uploadUrl;
+    const storageUrl = body.upload?.storageUrl;
+    if (!uploadUrl || !storageUrl) {
+      throw new Error("Expected a complete proxy upload instruction");
+    }
+
+    try {
+      const uploadResponse = await fetchWithAuth(
+        `${BASE_URL}${uploadUrl}`,
+        USERNAME,
+        token,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/gzip" },
+          body: new Blob([uploadBytes], { type: "application/gzip" }),
+        }
+      );
+      expect(uploadResponse.status).toBe(204);
+    } finally {
+      await deleteStoredObject(storageUrl);
+    }
+  });
+
+  test("proxy fallback instruction requires authentication", async () => {
+    const response = await fetchWithOrigin(
+      `${BASE_URL}/api/sync/v2/blob-upload`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sha256: "ef".repeat(32), size: 1024 }),
+      }
+    );
+    expect([401, 403]).toContain(response.status);
   });
 
   test(

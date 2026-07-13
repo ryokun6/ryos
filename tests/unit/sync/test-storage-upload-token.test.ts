@@ -61,6 +61,20 @@ describe("storage upload token", () => {
     expect(verifyStorageUploadToken(`${payload}.invalid`)).toBe(null);
   });
 
+  test("rejects expired proxy upload tokens", async () => {
+    process.env.S3_SECRET_ACCESS_KEY = "test-signing-secret";
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const token = await signStorageUploadToken({
+      pathname: "sync/alice/blobs/expired.gz",
+      contentType: "application/gzip",
+      maximumSizeInBytes: 1024,
+      expiresInSeconds: 60,
+    });
+
+    expect(verifyStorageUploadToken(token, nowSeconds + 59)).not.toBeNull();
+    expect(verifyStorageUploadToken(token, nowSeconds + 61)).toBeNull();
+  });
+
   test("restricts proxy uploads to sync blobs and the user's backup object", () => {
     expect(isUploadPathOwnedByUser("sync/alice/blobs/abc.gz", "alice")).toBe(true);
     expect(isUploadPathOwnedByUser("backups/alice/backup.gz", "alice")).toBe(true);
