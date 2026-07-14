@@ -412,12 +412,14 @@ export default apiHandler(
     upstreamStatus: number | null;
     blocked: boolean;
     scriptsStripped: boolean;
+    lite: boolean;
   } = {
     cookiesApplied: 0,
     headless: false,
     upstreamStatus: null,
     blocked: false,
     scriptsStripped: false,
+    lite: false,
   };
   const writeProxyDebugHeader = () => {
     try {
@@ -427,7 +429,9 @@ export default apiHandler(
           proxyDebug.headless ? 1 : 0
         };status=${proxyDebug.upstreamStatus ?? "-"};blocked=${
           proxyDebug.blocked ? 1 : 0
-        };scriptsStripped=${proxyDebug.scriptsStripped ? 1 : 0}`
+        };scriptsStripped=${proxyDebug.scriptsStripped ? 1 : 0};lite=${
+          proxyDebug.lite ? 1 : 0
+        }`
       );
       res.setHeader("Access-Control-Expose-Headers", "X-IE-Proxy");
     } catch {
@@ -1209,15 +1213,20 @@ export default apiHandler(
           throw sizeError;
         }
 
-        // Cap + strip third-party scripts on large documents so same-origin
-        // iframe JS cannot freeze the shared desktop tab main thread.
-        const sanitized = sanitizeProxiedHtml(html);
+        // Cap + convert oversized documents to a lite/reader view so
+        // same-origin iframe JS/CSS cannot freeze the shared desktop tab.
+        const sanitized = sanitizeProxiedHtml(html, {
+          pageUrl: finalUrl || targetUrl,
+        });
         html = sanitized.html;
         if (sanitized.strippedScripts) {
-          logger.info(
-            `Stripped page scripts for oversized HTML (${sanitized.byteLength} bytes) at ${targetUrl}`
-          );
           proxyDebug.scriptsStripped = true;
+        }
+        if (sanitized.liteMode) {
+          logger.info(
+            `Serving lite view for oversized HTML (${sanitized.byteLength} bytes) at ${targetUrl}`
+          );
+          proxyDebug.lite = true;
         }
 
         writeProxyDebugHeader();

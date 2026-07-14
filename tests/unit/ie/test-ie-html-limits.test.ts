@@ -1,16 +1,17 @@
 #!/usr/bin/env bun
 /**
- * Unit tests for IE proxied-HTML size / script-strip helpers.
+ * Unit tests for IE proxied-HTML size / lite-view helpers.
  */
 import { describe, test, expect } from "bun:test";
 import {
   IE_MAX_HTML_BYTES,
-  IE_SCRIPT_STRIP_THRESHOLD_BYTES,
+  IE_LITE_THRESHOLD_BYTES,
   IeHtmlTooLargeError,
   readResponseTextWithLimit,
   readResponseTextPrefix,
   stripHtmlScripts,
   sanitizeProxiedHtml,
+  buildLiteHtml,
 } from "../../../api/_utils/_ie-html.ts";
 
 describe("stripHtmlScripts", () => {
@@ -22,21 +23,71 @@ describe("stripHtmlScripts", () => {
   });
 });
 
+describe("buildLiteHtml", () => {
+  test("extracts title, description, and article body", () => {
+    const html = `<!doctype html><html><head>
+      <title>Shop visit</title>
+      <meta property="og:title" content="Tower Records Shibuya">
+      <meta property="og:description" content="A goliath of a retailer">
+      <meta property="og:image" content="https://cdn.example/hero.jpg">
+    </head><body>
+      <nav>ignore me</nav>
+      <article>
+        <h1>Tower Records Shibuya</h1>
+        <p>${"Vinyl fills every floor. ".repeat(8)}</p>
+        <p>${"The sixth floor is dedicated to records. ".repeat(6)}</p>
+        <script>evil()</script>
+      </article>
+    </body></html>`;
+    const lite = buildLiteHtml(html, "https://www.whathifi.com/article");
+    expect(lite).toContain("ie-lite-view");
+    expect(lite).toContain("Simplified view");
+    expect(lite).toContain("Tower Records Shibuya");
+    expect(lite).toContain("A goliath of a retailer");
+    expect(lite).toContain("Vinyl fills every floor");
+    expect(lite).not.toContain("evil()");
+    expect(lite).toContain('href="https://www.whathifi.com/article"');
+    expect(new TextEncoder().encode(lite).byteLength).toBeLessThan(20_000);
+  });
+
+  test("falls back to paragraphs when no article tag exists", () => {
+    const html = `<html><head><title>News</title></head><body>
+      <h1>Big headline</h1>
+      <p>${"Alpha paragraph with enough text to keep. ".repeat(5)}</p>
+      <p>${"Beta paragraph with enough text to keep. ".repeat(5)}</p>
+    </body></html>`;
+    const lite = buildLiteHtml(html, "https://example.com/news");
+    expect(lite).toContain("Big headline");
+    expect(lite).toContain("Alpha paragraph");
+    expect(lite).toContain("Beta paragraph");
+  });
+});
+
 describe("sanitizeProxiedHtml", () => {
   test("leaves small pages intact", () => {
     const html = "<html><body><script>ok</script>hi</body></html>";
     const result = sanitizeProxiedHtml(html);
     expect(result.strippedScripts).toBe(false);
+    expect(result.liteMode).toBe(false);
     expect(result.html).toContain("<script>ok</script>");
   });
 
-  test("strips scripts when over threshold", () => {
-    const padding = "x".repeat(IE_SCRIPT_STRIP_THRESHOLD_BYTES + 100);
-    const html = `<html><body><script>evil()</script>${padding}</body></html>`;
-    const result = sanitizeProxiedHtml(html);
+  test("converts oversized pages to lite mode", () => {
+    const padding = "x".repeat(IE_LITE_THRESHOLD_BYTES + 100);
+    const html = `<html><head><title>Huge</title></head><body>
+      <article><h1>Huge</h1><p>${"Readable content for the lite view. ".repeat(20)}</p></article>
+      <script>evil()</script>
+      <!-- ${padding} -->
+    </body></html>`;
+    const result = sanitizeProxiedHtml(html, {
+      pageUrl: "https://example.com/huge",
+    });
+    expect(result.liteMode).toBe(true);
     expect(result.strippedScripts).toBe(true);
-    expect(result.html).not.toContain("<script");
-    expect(result.html).toContain(padding.slice(0, 20));
+    expect(result.html).toContain("Simplified view");
+    expect(result.html).toContain("Readable content for the lite view");
+    expect(result.html).not.toContain("evil()");
+    expect(result.html).not.toContain(padding.slice(0, 40));
   });
 
   test("throws when over hard max", () => {

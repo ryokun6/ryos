@@ -213,13 +213,15 @@ describe("iframe-check", () => {
       expect(res.status).toBe(200);
       const diag = res.headers.get("x-ie-proxy");
       expect(diag).toBeTruthy();
-      // Shape: cookies=N;headless=0|1;status=NNN;blocked=0|1;scriptsStripped=0|1
+      // Shape: cookies=N;headless=0|1;status=NNN;blocked=0|1;scriptsStripped=0|1;lite=0|1
       expect(diag).toContain("cookies=");
       expect(diag).toContain("headless=");
       expect(diag).toContain("status=");
       expect(diag).toContain("scriptsStripped=");
-      // example.com is small — scripts should not be stripped.
+      expect(diag).toContain("lite=");
+      // example.com is small — scripts should not be stripped / lite mode off.
       expect(diag).toContain("scriptsStripped=0");
+      expect(diag).toContain("lite=0");
     });
 
     test("does not arm proxy sessions without env/admin/debug opt-in", async () => {
