@@ -1016,10 +1016,7 @@ export function useInternetExplorerLogic({
                   error: true,
                   type: "timeout",
                   status: 408,
-                  message: t(
-                    "apps.internet-explorer.pageLoadTimedOut",
-                    "The page took too long to load. Internet Explorer stopped waiting to keep ryOS responsive."
-                  ),
+                  message: t("apps.internet-explorer.pageLoadTimedOut"),
                   details: t(
                     "apps.internet-explorer.tryRefreshingThePage"
                   ),

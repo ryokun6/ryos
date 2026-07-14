@@ -78,7 +78,7 @@ export function InternetExplorerContentPane({
         ? t("apps.internet-explorer.cannotFindServerOrDnsError")
         : errorDetails.type === "timeout" ||
             errorDetails.type === "page_too_large"
-          ? t("apps.internet-explorer.pageLoadTimedOutTitle", "Page stopped")
+          ? t("apps.internet-explorer.pageLoadTimedOutTitle")
           : t("apps.internet-explorer.error");
     const primaryMessage =
       errorDetails.message || t("apps.internet-explorer.anErrorOccurred");

@@ -199,12 +199,16 @@ function metaContent(html: string, names: string[]): string | null {
 }
 
 function extractTitle(html: string): string {
+  // Prefer the on-page headline for reader mode when present.
+  const h1Match = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
+  if (h1Match?.[1]) {
+    const h1 = stripTags(h1Match[1]);
+    if (h1.length >= 8) return h1;
+  }
   const og = metaContent(html, ["og:title", "twitter:title"]);
   if (og) return og;
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
   if (titleMatch?.[1]) return decodeHtmlEntitiesOnce(titleMatch[1].trim());
-  const h1Match = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
-  if (h1Match?.[1]) return stripTags(h1Match[1]);
   return "Untitled page";
 }
 
@@ -241,18 +245,48 @@ function extractBalancedInner(
   return null;
 }
 
+const CHROME_TAG_RE =
+  /<(nav|header|footer|aside|form|button|noscript|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+const NOISE_CLASS_RE =
+  /\b(?:share|social|newsletter|subscribe|cookie|consent|related|recommend|promo|advert|ads?|kiosq|utility-bar|trending|comments?|viafoura|breadcrumb|masthead|site-logo|skip-to)\b/i;
+
+/** Drop whole elements whose class/id looks like chrome / share / ads. */
+function stripNoiseBlocks(html: string): string {
+  return html.replace(
+    /<(div|section|ul|ol|aside|nav)\b([^>]*)>([\s\S]*?)<\/\1\s*>/gi,
+    (full, _tag, attrs: string, inner: string) => {
+      if (NOISE_CLASS_RE.test(attrs)) return "";
+      const innerText = stripTags(inner);
+      // Drop short link farms (share rows, tag clouds).
+      if (
+        /<a\b/i.test(inner) &&
+        (inner.match(/<a\b/gi) || []).length >= 4 &&
+        innerText.length < 220
+      ) {
+        return "";
+      }
+      return full;
+    }
+  );
+}
+
 function cleanExtractedMarkup(html: string): string {
-  return html
-    .replace(COMMENT_RE, "")
-    .replace(SCRIPT_TAG_RE, "")
-    .replace(SCRIPT_SELF_CLOSING_RE, "")
-    .replace(STYLE_TAG_RE, "")
-    .replace(NOSCRIPT_TAG_RE, "")
-    .replace(SVG_TAG_RE, "")
-    .replace(IFRAME_TAG_RE, "")
-    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
-    .replace(/\s(style)\s*=\s*(['"])[\s\S]*?\2/gi, "")
-    .trim();
+  return stripNoiseBlocks(
+    html
+      .replace(COMMENT_RE, "")
+      .replace(SCRIPT_TAG_RE, "")
+      .replace(SCRIPT_SELF_CLOSING_RE, "")
+      .replace(STYLE_TAG_RE, "")
+      .replace(NOSCRIPT_TAG_RE, "")
+      .replace(SVG_TAG_RE, "")
+      .replace(IFRAME_TAG_RE, "")
+      .replace(CHROME_TAG_RE, "")
+      .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+      .replace(/\s(style|class|id|data-[a-z0-9_-]+)\s*=\s*(['"])[\s\S]*?\2/gi, "")
+      .replace(/<\/?(?:div|span|section)\b[^>]*>/gi, "")
+      .replace(/(?:\s*\n){3,}/g, "\n\n")
+      .trim()
+  );
 }
 
 function truncateHtml(html: string, maxBytes: number): string {
@@ -264,112 +298,344 @@ function truncateHtml(html: string, maxBytes: number): string {
   const lastLt = text.lastIndexOf("<");
   const lastGt = text.lastIndexOf(">");
   if (lastLt > lastGt) text = text.slice(0, lastLt);
-  return `${text}\n<p><em>…content truncated for performance.</em></p>`;
+  return `${text}\n<p class="ie-reader-truncated"><em>…article truncated for performance.</em></p>`;
+}
+
+function isBoilerplateParagraph(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("affiliate commission") ||
+    lower.includes("subscribe to our newsletter") ||
+    lower.includes("get the what hi-fi") ||
+    lower.includes("newsletter") ||
+    lower.includes("join the conversation") ||
+    lower.includes("preferred source on google") ||
+    lower.includes("sign up for") ||
+    lower.includes("cookie") ||
+    /^(copy link|facebook|whatsapp|pinterest|flipboard|email|share this)/i.test(
+      text
+    )
+  );
 }
 
 function collectFallbackBlocks(html: string): string {
   const parts: string[] = [];
-  const h1 = html.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/i);
-  if (h1) parts.push(h1[0]);
 
-  const paragraphRe = /<(p|h2|h3|blockquote|li)\b[^>]*>[\s\S]*?<\/\1>/gi;
+  const paragraphRe = /<(p|h2|h3|blockquote)\b[^>]*>[\s\S]*?<\/\1>/gi;
   let match: RegExpExecArray | null;
   while ((match = paragraphRe.exec(html))) {
     const text = stripTags(match[0]);
-    if (text.length < 40) continue;
+    if (text.length < 50) continue;
+    if (isBoilerplateParagraph(text)) continue;
     parts.push(match[0]);
     if (parts.join("").length > IE_LITE_CONTENT_MAX_BYTES) break;
   }
 
-  const images: string[] = [];
-  const ogImage = metaContent(html, ["og:image", "twitter:image"]);
-  if (ogImage) {
-    images.push(
-      `<p><img src="${escapeHtml(ogImage)}" alt="" style="max-width:100%;height:auto"></p>`
-    );
-  }
-  const imgRe = /<img\b[^>]*src=["']([^"']+)["'][^>]*>/gi;
-  let imgMatch: RegExpExecArray | null;
-  while ((imgMatch = imgRe.exec(html)) && images.length < 4) {
-    const src = imgMatch[1];
-    if (!src || src.startsWith("data:")) continue;
-    if (ogImage && src === ogImage) continue;
-    images.push(
-      `<p><img src="${escapeHtml(src)}" alt="" style="max-width:100%;height:auto"></p>`
-    );
-  }
+  return parts.join("\n");
+}
 
-  return [...images.slice(0, 1), ...parts, ...images.slice(1)].join("\n");
+function extractByline(html: string): string | null {
+  const author =
+    metaContent(html, [
+      "author",
+      "article:author",
+      "og:article:author",
+      "byl",
+      "sailthru.author",
+    ]) || null;
+  const published =
+    metaContent(html, [
+      "article:published_time",
+      "og:article:published_time",
+      "pubdate",
+      "publish-date",
+      "date",
+      "DC.date.issued",
+    ]) || null;
+
+  const bits: string[] = [];
+  if (author) bits.push(author.replace(/^by\s+/i, ""));
+  if (published) {
+    const parsed = Date.parse(published);
+    if (!Number.isNaN(parsed)) {
+      bits.push(
+        new Date(parsed).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      );
+    } else {
+      bits.push(published);
+    }
+  }
+  return bits.length ? bits.join(" · ") : null;
+}
+
+function extractHeroImage(html: string): string | null {
+  return metaContent(html, ["og:image", "twitter:image", "og:image:url"]);
+}
+
+function hostnameOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
 }
 
 /**
- * Build a lightweight reader document from a heavy page so IE can show the
- * content without parsing/executing the full modern site bundle.
+ * Build a proper Reader Mode document from a heavy page so IE can show the
+ * article without parsing/executing the full modern site bundle.
  */
 export function buildLiteHtml(html: string, pageUrl: string): string {
   const title = extractTitle(html);
   const description =
     metaContent(html, ["og:description", "description", "twitter:description"]) ||
     "";
+  const byline = extractByline(html);
+  const heroImage = extractHeroImage(html);
+  const host = hostnameOf(pageUrl);
 
   let body =
-    extractBalancedInner(html, "article") ||
-    extractBalancedInner(
-      html,
-      "main",
-      (open) => /role\s*=\s*["']?main["']?/i.test(open) || true
-    ) ||
     extractBalancedInner(html, "div", (open) =>
-      /role\s*=\s*["']main["']/i.test(open)
-    ) ||
-    extractBalancedInner(html, "div", (open) =>
-      /class\s*=\s*["'][^"']*(?:article-body|article__body|post-content|entry-content|page-content|content-body)[^"']*["']/i.test(
+      /class\s*=\s*["'][^"']*(?:article-body|article__body|post-content|entry-content|content-body|article__content)[^"']*["']/i.test(
         open
       )
+    ) ||
+    extractBalancedInner(html, "article") ||
+    extractBalancedInner(html, "main") ||
+    extractBalancedInner(html, "div", (open) =>
+      /role\s*=\s*["']main["']/i.test(open)
     );
 
   if (body) {
     body = cleanExtractedMarkup(body);
+    // Avoid repeating the page title / hero already shown in the reader chrome.
+    body = body.replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i, "");
+    if (heroImage) {
+      const escaped = heroImage.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      body = body.replace(
+        new RegExp(`<img\\b[^>]*src=["']${escaped}["'][^>]*>`, "i"),
+        ""
+      );
+    }
   }
   if (!body || stripTags(body).length < 120) {
     body = cleanExtractedMarkup(collectFallbackBlocks(html));
   }
+
+  // Keep only contentful blocks; drop leftover boilerplate paragraphs.
+  body = body
+    .split(/(?=<p\b|<h[2-6]\b|<blockquote\b|<figure\b|<img\b|<ul\b|<ol\b)/i)
+    .filter((chunk) => {
+      const text = stripTags(chunk);
+      if (!text && /<img\b/i.test(chunk)) return true;
+      if (text.length < 2) return false;
+      return !isBoilerplateParagraph(text);
+    })
+    .join("\n");
 
   body = truncateHtml(body, IE_LITE_CONTENT_MAX_BYTES);
 
   const safeTitle = escapeHtml(title);
   const safeDescription = description ? escapeHtml(description) : "";
   const safeUrl = escapeHtml(pageUrl);
+  const safeHost = escapeHtml(host);
+  const safeByline = byline ? escapeHtml(byline) : "";
+  const safeHero = heroImage ? escapeHtml(heroImage) : "";
 
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${safeTitle}</title>
 <meta name="page-title" content="${encodeURIComponent(title)}">
 <meta name="ie-lite-view" content="1">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <style>
-  body{margin:0;padding:24px;font:16px/1.55 Geneva,Helvetica,Arial,sans-serif;color:#111;background:#f7f7f7}
-  .ie-lite{max-width:44rem;margin:0 auto;background:#fff;border:1px solid #ccc;padding:20px 24px 32px}
-  .ie-lite-banner{margin:0 0 1.25rem;padding:.75rem 1rem;background:#fff8d5;border:1px solid #e2c96a;font-size:13px;line-height:1.4}
-  .ie-lite-banner a{color:#0b57d0}
-  h1{font-size:1.6rem;line-height:1.25;margin:0 0 .75rem}
-  .ie-lite-desc{color:#444;margin:0 0 1.25rem}
-  img{max-width:100%;height:auto}
-  p,li,blockquote{margin:0 0 .9rem}
-  a{color:#0b57d0}
+  :root {
+    --reader-bg: #dfe6ee;
+    --reader-paper: #fbfcfd;
+    --reader-ink: #1a1f26;
+    --reader-muted: #5a6570;
+    --reader-rule: #c5ced8;
+    --reader-link: #0b4f9c;
+    --reader-bar: #2c3640;
+    --reader-bar-text: #f3f6f9;
+    --reader-accent: #3d7ab5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--reader-bg);
+    color: var(--reader-ink);
+    font-family: "EB Garamond", "AppleGaramond", Georgia, "Times New Roman", serif;
+  }
+  body {
+    min-height: 100%;
+    background-image:
+      radial-gradient(ellipse at top, rgba(255,255,255,.55), transparent 55%),
+      linear-gradient(180deg, #d5dee8 0%, var(--reader-bg) 28%, #d7dde5 100%);
+  }
+  .ie-reader-bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 18px;
+    background: linear-gradient(180deg, #3a4652 0%, var(--reader-bar) 100%);
+    color: var(--reader-bar-text);
+    font-family: "Geneva-12", "Lucida Grande", Geneva, Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid #1c242c;
+    box-shadow: 0 1px 0 rgba(255,255,255,.08) inset;
+  }
+  .ie-reader-bar strong {
+    font-family: "Mondwest", "Geneva-12", sans-serif;
+    font-weight: normal;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+  .ie-reader-bar a {
+    color: #9fd0ff;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(159,208,255,.35);
+  }
+  .ie-reader-bar a:hover { color: #fff; border-bottom-color: #fff; }
+  .ie-reader-shell {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 28px 16px 64px;
+  }
+  .ie-reader {
+    background: var(--reader-paper);
+    border: 1px solid var(--reader-rule);
+    border-radius: 2px;
+    padding: 2.25rem 2rem 2.75rem;
+    box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 10px 28px rgba(28, 40, 55, .08);
+  }
+  .ie-reader-kicker {
+    margin: 0 0 0.85rem;
+    font-family: "Geneva-12", "Lucida Grande", Geneva, Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--reader-accent);
+  }
+  .ie-reader h1 {
+    margin: 0 0 0.65rem;
+    font-family: "AppleGaramond", "EB Garamond", Georgia, serif;
+    font-size: clamp(1.85rem, 4vw, 2.35rem);
+    font-weight: normal;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    color: var(--reader-ink);
+  }
+  .ie-reader-byline {
+    margin: 0 0 1.1rem;
+    font-family: "Geneva-12", "Lucida Grande", Geneva, Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    color: var(--reader-muted);
+  }
+  .ie-reader-dek {
+    margin: 0 0 1.5rem;
+    padding-bottom: 1.35rem;
+    border-bottom: 1px solid var(--reader-rule);
+    font-size: 1.15rem;
+    line-height: 1.45;
+    color: #3a4550;
+    font-style: italic;
+  }
+  .ie-reader-hero {
+    margin: 0 0 1.5rem;
+    border: 1px solid var(--reader-rule);
+    background: #eef2f6;
+    overflow: hidden;
+  }
+  .ie-reader-hero img {
+    display: block;
+    width: 100%;
+    height: auto;
+    vertical-align: middle;
+  }
+  .ie-reader-body {
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+  .ie-reader-body p,
+  .ie-reader-body li,
+  .ie-reader-body blockquote {
+    margin: 0 0 1.05rem;
+  }
+  .ie-reader-body h2,
+  .ie-reader-body h3,
+  .ie-reader-body h4 {
+    font-family: "AppleGaramond", "EB Garamond", Georgia, serif;
+    font-weight: normal;
+    line-height: 1.25;
+    margin: 1.6rem 0 0.7rem;
+  }
+  .ie-reader-body h2 { font-size: 1.45rem; }
+  .ie-reader-body h3 { font-size: 1.25rem; }
+  .ie-reader-body a { color: var(--reader-link); }
+  .ie-reader-body img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1.25rem 0;
+    border: 1px solid var(--reader-rule);
+  }
+  .ie-reader-body blockquote {
+    margin: 1.25rem 0;
+    padding: 0.15rem 0 0.15rem 1rem;
+    border-left: 3px solid var(--reader-accent);
+    color: #33404c;
+    font-style: italic;
+  }
+  .ie-reader-body ul,
+  .ie-reader-body ol {
+    margin: 0 0 1.05rem;
+    padding-left: 1.35rem;
+  }
+  .ie-reader-truncated {
+    margin-top: 1.5rem;
+    color: var(--reader-muted);
+    font-size: 0.95rem;
+  }
+  @media (max-width: 640px) {
+    .ie-reader { padding: 1.5rem 1.15rem 2rem; }
+    .ie-reader-bar { padding: 9px 12px; gap: 8px; flex-wrap: wrap; }
+  }
 </style>
 </head>
 <body>
-<main class="ie-lite">
-  <p class="ie-lite-banner">
-    Simplified view — this page was too large to load fully in Internet Explorer.
-    <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">Open original</a>
-  </p>
-  <h1>${safeTitle}</h1>
-  ${safeDescription ? `<p class="ie-lite-desc">${safeDescription}</p>` : ""}
-  ${body}
-</main>
+  <header class="ie-reader-bar">
+    <div><strong>Reader</strong> · ${safeHost}</div>
+    <div><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">Open original</a></div>
+  </header>
+  <div class="ie-reader-shell">
+    <article class="ie-reader">
+      <p class="ie-reader-kicker">Simplified for Internet Explorer</p>
+      ${
+        safeHero
+          ? `<figure class="ie-reader-hero"><img src="${safeHero}" alt=""></figure>`
+          : ""
+      }
+      <h1>${safeTitle}</h1>
+      ${safeByline ? `<p class="ie-reader-byline">${safeByline}</p>` : ""}
+      ${safeDescription ? `<p class="ie-reader-dek">${safeDescription}</p>` : ""}
+      <div class="ie-reader-body">
+        ${body}
+      </div>
+    </article>
+  </div>
 </body>
 </html>`;
 }

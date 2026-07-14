@@ -24,12 +24,14 @@ describe("stripHtmlScripts", () => {
 });
 
 describe("buildLiteHtml", () => {
-  test("extracts title, description, and article body", () => {
+  test("builds a reader document with title, description, and article body", () => {
     const html = `<!doctype html><html><head>
       <title>Shop visit</title>
       <meta property="og:title" content="Tower Records Shibuya">
       <meta property="og:description" content="A goliath of a retailer">
       <meta property="og:image" content="https://cdn.example/hero.jpg">
+      <meta name="author" content="Lewis Empson">
+      <meta property="article:published_time" content="2026-04-16">
     </head><body>
       <nav>ignore me</nav>
       <article>
@@ -41,25 +43,43 @@ describe("buildLiteHtml", () => {
     </body></html>`;
     const lite = buildLiteHtml(html, "https://www.whathifi.com/article");
     expect(lite).toContain("ie-lite-view");
-    expect(lite).toContain("Simplified view");
+    expect(lite).toContain("ie-reader");
+    expect(lite).toContain("Reader");
     expect(lite).toContain("Tower Records Shibuya");
     expect(lite).toContain("A goliath of a retailer");
     expect(lite).toContain("Vinyl fills every floor");
+    expect(lite).toContain("Lewis Empson");
+    expect(lite).toContain("https://cdn.example/hero.jpg");
     expect(lite).not.toContain("evil()");
     expect(lite).toContain('href="https://www.whathifi.com/article"');
-    expect(new TextEncoder().encode(lite).byteLength).toBeLessThan(20_000);
+    expect(lite).toContain("/fonts/fonts.css");
+    expect(new TextEncoder().encode(lite).byteLength).toBeLessThan(25_000);
   });
 
   test("falls back to paragraphs when no article tag exists", () => {
     const html = `<html><head><title>News</title></head><body>
-      <h1>Big headline</h1>
+      <h1>Big headline about records</h1>
       <p>${"Alpha paragraph with enough text to keep. ".repeat(5)}</p>
       <p>${"Beta paragraph with enough text to keep. ".repeat(5)}</p>
     </body></html>`;
     const lite = buildLiteHtml(html, "https://example.com/news");
-    expect(lite).toContain("Big headline");
+    expect(lite).toContain("Big headline about records");
     expect(lite).toContain("Alpha paragraph");
     expect(lite).toContain("Beta paragraph");
+  });
+
+  test("strips share/newsletter chrome from the reader body", () => {
+    const html = `<html><head><title>Story</title>
+      <meta property="og:title" content="Story">
+    </head><body><article>
+      <div class="share-buttons"><a href="#">Facebook</a><a href="#">X</a><a href="#">Email</a><a href="#">Copy</a></div>
+      <p>${"The real article paragraph about vinyl shopping in Tokyo. ".repeat(4)}</p>
+      <p>Subscribe to our newsletter for more deals.</p>
+    </article></body></html>`;
+    const lite = buildLiteHtml(html, "https://example.com/story");
+    expect(lite).toContain("vinyl shopping in Tokyo");
+    expect(lite).not.toContain("Facebook");
+    expect(lite).not.toContain("Subscribe to our newsletter");
   });
 });
 
@@ -72,7 +92,7 @@ describe("sanitizeProxiedHtml", () => {
     expect(result.html).toContain("<script>ok</script>");
   });
 
-  test("converts oversized pages to lite mode", () => {
+  test("converts oversized pages to reader mode", () => {
     const padding = "x".repeat(IE_LITE_THRESHOLD_BYTES + 100);
     const html = `<html><head><title>Huge</title></head><body>
       <article><h1>Huge</h1><p>${"Readable content for the lite view. ".repeat(20)}</p></article>
@@ -84,7 +104,7 @@ describe("sanitizeProxiedHtml", () => {
     });
     expect(result.liteMode).toBe(true);
     expect(result.strippedScripts).toBe(true);
-    expect(result.html).toContain("Simplified view");
+    expect(result.html).toContain("Reader");
     expect(result.html).toContain("Readable content for the lite view");
     expect(result.html).not.toContain("evil()");
     expect(result.html).not.toContain(padding.slice(0, 40));
