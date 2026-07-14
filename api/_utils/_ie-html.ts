@@ -248,7 +248,100 @@ function extractBalancedInner(
 const CHROME_TAG_RE =
   /<(nav|header|footer|aside|form|button|noscript|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
 const NOISE_CLASS_RE =
-  /\b(?:share|social|newsletter|subscribe|cookie|consent|related|recommend|promo|advert|ads?|kiosq|utility-bar|trending|comments?|viafoura|breadcrumb|masthead|site-logo|skip-to)\b/i;
+  /\b(?:share|social|newsletter|subscribe|cookie|consent|related|recommend|promo|advert|ads?|kiosq|utility-bar|trending|comments?|viafoura|breadcrumb|masthead|site-logo|skip-to|video|jwplayer|carousel|playlist)\b/i;
+
+function isBoilerplateParagraph(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("affiliate commission") ||
+    lower.includes("subscribe to our newsletter") ||
+    lower.includes("get the what hi-fi") ||
+    lower.includes("newsletter") ||
+    lower.includes("join the conversation") ||
+    lower.includes("preferred source on google") ||
+    lower.includes("sign up for") ||
+    lower.includes("cookie") ||
+    lower.includes("latest videos") ||
+    lower.includes("watch full video") ||
+    lower.includes("watch now") ||
+    /^(copy link|facebook|whatsapp|pinterest|flipboard|email|share this)/i.test(
+      text
+    )
+  );
+}
+
+function extractByline(html: string): string | null {
+  let author =
+    metaContent(html, [
+      "author",
+      "byl",
+      "sailthru.author",
+    ]) || null;
+  // Skip URL-ish author values (common in og:article:author).
+  if (author && /^https?:\/\//i.test(author)) {
+    author = null;
+  }
+
+  // JSON-LD author.name
+  if (!author) {
+    const jsonLdAuthor = html.match(
+      /"author"\s*:\s*\{[^}]*"name"\s*:\s*"([^"]+)"/i
+    );
+    if (jsonLdAuthor?.[1]) author = decodeHtmlEntitiesOnce(jsonLdAuthor[1]);
+  }
+
+  // /author/lewis-empson → Lewis Empson
+  if (!author) {
+    const authorUrl =
+      metaContent(html, ["article:author", "og:article:author"]) || "";
+    const slug = authorUrl.match(/\/author\/([^/?#]+)/i)?.[1];
+    if (slug) {
+      author = decodeURIComponent(slug)
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+  }
+
+  // Visible byline near the headline when meta author is missing.
+  if (!author) {
+    const byMatch = html.match(
+      /(?:itemprop|rel)=["']author["'][^>]*>([\s\S]{0,120}?)<\/(?:a|span|div|p)/i
+    );
+    if (byMatch?.[1]) {
+      const text = stripTags(byMatch[1]).replace(/^by\s+/i, "").trim();
+      if (text && text.length < 80 && !/^https?:\/\//i.test(text)) {
+        author = text;
+      }
+    }
+  }
+
+  const published =
+    metaContent(html, [
+      "article:published_time",
+      "og:article:published_time",
+      "pubdate",
+      "publish-date",
+      "DC.date.issued",
+    ]) || null;
+
+  const bits: string[] = [];
+  if (author) bits.push(author.replace(/^by\s+/i, ""));
+  if (published) {
+    const parsed = Date.parse(published);
+    if (!Number.isNaN(parsed)) {
+      bits.push(
+        new Date(parsed).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      );
+    } else if (!/^https?:\/\//i.test(published)) {
+      bits.push(published);
+    }
+  }
+  return bits.length ? bits.join(" · ") : null;
+}
 
 /** Drop whole elements whose class/id looks like chrome / share / ads. */
 function stripNoiseBlocks(html: string): string {
@@ -301,23 +394,6 @@ function truncateHtml(html: string, maxBytes: number): string {
   return `${text}\n<p class="ie-reader-truncated"><em>…article truncated for performance.</em></p>`;
 }
 
-function isBoilerplateParagraph(text: string): boolean {
-  const lower = text.toLowerCase();
-  return (
-    lower.includes("affiliate commission") ||
-    lower.includes("subscribe to our newsletter") ||
-    lower.includes("get the what hi-fi") ||
-    lower.includes("newsletter") ||
-    lower.includes("join the conversation") ||
-    lower.includes("preferred source on google") ||
-    lower.includes("sign up for") ||
-    lower.includes("cookie") ||
-    /^(copy link|facebook|whatsapp|pinterest|flipboard|email|share this)/i.test(
-      text
-    )
-  );
-}
-
 function collectFallbackBlocks(html: string): string {
   const parts: string[] = [];
 
@@ -332,44 +408,6 @@ function collectFallbackBlocks(html: string): string {
   }
 
   return parts.join("\n");
-}
-
-function extractByline(html: string): string | null {
-  const author =
-    metaContent(html, [
-      "author",
-      "article:author",
-      "og:article:author",
-      "byl",
-      "sailthru.author",
-    ]) || null;
-  const published =
-    metaContent(html, [
-      "article:published_time",
-      "og:article:published_time",
-      "pubdate",
-      "publish-date",
-      "date",
-      "DC.date.issued",
-    ]) || null;
-
-  const bits: string[] = [];
-  if (author) bits.push(author.replace(/^by\s+/i, ""));
-  if (published) {
-    const parsed = Date.parse(published);
-    if (!Number.isNaN(parsed)) {
-      bits.push(
-        new Date(parsed).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      );
-    } else {
-      bits.push(published);
-    }
-  }
-  return bits.length ? bits.join(" · ") : null;
 }
 
 function extractHeroImage(html: string): string | null {
@@ -390,9 +428,14 @@ function hostnameOf(url: string): string {
  */
 export function buildLiteHtml(html: string, pageUrl: string): string {
   const title = extractTitle(html);
-  const description =
+  const rawDescription =
     metaContent(html, ["og:description", "description", "twitter:description"]) ||
     "";
+  // Skip truncated / junk descriptions (e.g. cut-off OG text).
+  const description =
+    rawDescription.length >= 20 && !/^[.\s]*$/.test(rawDescription)
+      ? rawDescription
+      : "";
   const byline = extractByline(html);
   const heroImage = extractHeroImage(html);
   const host = hostnameOf(pageUrl);
