@@ -657,6 +657,8 @@
       "cannotFindServerOrDnsError": "Cannot find server or DNS Error",
       "error": "Error",
       "anErrorOccurred": "An error occurred",
+      "pageLoadTimedOutTitle": "Page stopped",
+      "pageLoadTimedOut": "The page took too long to load. Internet Explorer stopped waiting to keep ryOS responsive.",
       "checkWebAddressAndTryAgain": "Check the web address you typed and try again.",
       "goBackToPreviousPage": "Go back to the previous page.",
       "tryRefreshingThePage": "Try refreshing the page.",

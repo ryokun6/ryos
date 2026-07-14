@@ -21,6 +21,12 @@ import {
   isIeLiveBrowserConfigured,
   buildLiveViewUrl,
 } from "./_utils/_ie-live.js";
+import {
+  IeHtmlTooLargeError,
+  readResponseTextPrefix,
+  readResponseTextWithLimit,
+  sanitizeProxiedHtml,
+} from "./_utils/_ie-html.js";
 import { resolveRequestAuth } from "./_utils/request-auth.js";
 import type { Redis } from "./_utils/redis.js";
 import type { ApiRequest } from "./_utils/api-types.js";
@@ -405,7 +411,14 @@ export default apiHandler(
     headless: boolean;
     upstreamStatus: number | null;
     blocked: boolean;
-  } = { cookiesApplied: 0, headless: false, upstreamStatus: null, blocked: false };
+    scriptsStripped: boolean;
+  } = {
+    cookiesApplied: 0,
+    headless: false,
+    upstreamStatus: null,
+    blocked: false,
+    scriptsStripped: false,
+  };
   const writeProxyDebugHeader = () => {
     try {
       res.setHeader(
@@ -414,7 +427,7 @@ export default apiHandler(
           proxyDebug.headless ? 1 : 0
         };status=${proxyDebug.upstreamStatus ?? "-"};blocked=${
           proxyDebug.blocked ? 1 : 0
-        }`
+        };scriptsStripped=${proxyDebug.scriptsStripped ? 1 : 0}`
       );
       res.setHeader("Access-Control-Expose-Headers", "X-IE-Proxy");
     } catch {
@@ -820,7 +833,9 @@ export default apiHandler(
       let pageTitle: string | undefined = undefined; // Initialize title
 
       if (contentType.includes("text/html")) {
-        const html = await fetchRes.text();
+        // Only scan a prefix — full buffering of multi‑MB pages stalls the
+        // API and is unnecessary for title / meta CSP extraction.
+        const html = await readResponseTextPrefix(fetchRes);
         // Extract meta CSP
         const metaTagMatch = html.match(
           /<meta\s+http-equiv=["']Content-Security-Policy["']\s+content=["']([^"']*)["'][^>]*>/i
@@ -832,6 +847,12 @@ export default apiHandler(
         const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (titleMatch && titleMatch[1]) {
           pageTitle = decodeHtmlEntitiesOnce(titleMatch[1]).trim();
+        }
+      } else {
+        try {
+          fetchRes.body?.cancel();
+        } catch {
+          /* ignore */
         }
       }
 
@@ -1135,15 +1156,17 @@ export default apiHandler(
       logger.info(`Proxying content type: ${contentType}`);
       let pageTitle: string | undefined = undefined; // Initialize title for proxy mode
 
-      // Set response headers
+      // Set response headers shared by all proxy responses. The X-IE-Proxy
+      // diagnostics header is written later once we know whether scripts were
+      // stripped (HTML) or immediately for raw / non-HTML streams.
       res.setHeader("content-security-policy", "frame-ancestors *");
       res.setHeader("access-control-allow-origin", "*");
-      writeProxyDebugHeader();
 
       // Raw sub-resource forward: return the upstream payload untouched (no
       // HTML rewriting / interceptor injection) so JSON, scripts, assets and
       // HTML fragments fetched via the re-proxied fetch/XHR are not corrupted.
       if (isRawProxy) {
+        writeProxyDebugHeader();
         if (contentType) res.setHeader("Content-Type", contentType);
         const cacheControl = upstreamRes.headers.get("cache-control");
         if (cacheControl) res.setHeader("Cache-Control", cacheControl);
@@ -1161,7 +1184,43 @@ export default apiHandler(
 
       // If it's HTML, inject the <base> tag and click interceptor script
       if (contentType.includes("text/html")) {
-        let html = await upstreamRes.text();
+        let html: string;
+        try {
+          html = await readResponseTextWithLimit(upstreamRes);
+        } catch (sizeError) {
+          if (sizeError instanceof IeHtmlTooLargeError) {
+            logger.warn(
+              `Refusing oversized HTML for ${targetUrl} (${sizeError.byteLength} bytes)`
+            );
+            proxyDebug.blocked = true;
+            writeProxyDebugHeader();
+            res.setHeader("Content-Type", "application/json");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            logger.response(413, Date.now() - startTime);
+            return res.status(413).json({
+              error: true,
+              type: "page_too_large",
+              status: 413,
+              message:
+                "This page is too large to display safely. Internet Explorer stopped loading it to keep ryOS responsive.",
+              details: sizeError.message,
+            });
+          }
+          throw sizeError;
+        }
+
+        // Cap + strip third-party scripts on large documents so same-origin
+        // iframe JS cannot freeze the shared desktop tab main thread.
+        const sanitized = sanitizeProxiedHtml(html);
+        html = sanitized.html;
+        if (sanitized.strippedScripts) {
+          logger.info(
+            `Stripped page scripts for oversized HTML (${sanitized.byteLength} bytes) at ${targetUrl}`
+          );
+          proxyDebug.scriptsStripped = true;
+        }
+
+        writeProxyDebugHeader();
 
         // --- Sanitize HTML for proxy embedding ---
         // Strip existing <base> tags to prevent conflicts with our injected base tag
@@ -1552,6 +1611,7 @@ export default apiHandler(
         return res.status(upstreamRes.status).send(html);
       } else {
         logger.info("Proxying non-HTML content directly (streamed)");
+        writeProxyDebugHeader();
         // For non‑HTML content, stream the body straight through without
         // buffering the whole payload in memory.
         if (contentType) res.setHeader("Content-Type", contentType);
