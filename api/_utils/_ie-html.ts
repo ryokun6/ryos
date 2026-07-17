@@ -16,8 +16,12 @@ export const IE_MAX_HTML_BYTES = 2_500_000;
  * When HTML exceeds this size, serve a lite/reader view (extracted article
  * content) instead of the full document. Our navigation interceptor is still
  * injected afterward by the proxy.
+ *
+ * ~1 MB leaves ordinary modern pages as a full proxy; the freeze cases we care
+ * about (e.g. heavy magazine HTML + script bundles) are typically well above
+ * this. Hard refuse remains at IE_MAX_HTML_BYTES.
  */
-export const IE_LITE_THRESHOLD_BYTES = 350_000;
+export const IE_LITE_THRESHOLD_BYTES = 1_000_000;
 
 /** @deprecated Alias kept for existing imports/tests. */
 export const IE_SCRIPT_STRIP_THRESHOLD_BYTES = IE_LITE_THRESHOLD_BYTES;
