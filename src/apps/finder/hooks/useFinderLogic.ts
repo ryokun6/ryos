@@ -45,6 +45,7 @@ import {
 } from "@/utils/finderDisplay";
 import { helpItems } from "../index";
 import { useFilesStoreShallow } from "@/stores/useFilesStore";
+import { useFileMetadataInPath } from "@/services/vfs/FileMetadataService";
 import { useDockStore } from "@/stores/useDockStore";
 import {
   emitFileRenamed,
@@ -60,26 +61,16 @@ import {
   validateNewRootFolderName,
 } from "@/services/vfs/pathPolicy";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
+import {
+  orderFinderRootFolders,
+  orderSidebarRootFolders,
+} from "../utils/sidebarPlaces";
 
 const log = createClientLogger("Finder");
 
 type FinderUndoAction =
   | { type: "moveToTrash"; fileName: string; originalPath: string }
   | { type: "rename"; basePath: string; oldName: string; newName: string };
-
-const SIDEBAR_HIDDEN_FOLDERS = new Set(["/Trash", "/Sites"]);
-
-// Explicit sidebar folder order; any visible folders not listed here keep their
-// natural order, appended after these.
-const SIDEBAR_FOLDER_ORDER = [
-  "/Applications",
-  "/Applets",
-  "/Documents",
-  "/Images",
-  "/Music",
-  "/Videos",
-  "/Books",
-];
 
 // Type for Finder initial data
 export interface FinderInitialData {
@@ -1149,10 +1140,15 @@ export function useFinderLogic({
   // the writable system subtrees, and any user root folder subtree.
   const canCreateFolder = isWritablePath(currentPath);
 
+  // Subscribe to root children so sidebar/Go menu refresh after IndexedDB
+  // rehydrate (stable getItemsInPath refs alone would keep an empty snapshot).
+  const rootItems = useFileMetadataInPath("/");
+
   // Get all root folders for the Go menu using fileStore
-  // This will always show root folders regardless of current path
+  // This will always show root folders regardless of current path.
+  // Same place order as the sidebar: Applications, Applets, A–Z, Desktop.
   const rootFolders = useMemo(() => {
-    return getItemsInPath("/").reduce<
+    const folders = rootItems.reduce<
       { name: string; isDirectory: true; path: string; icon: string }[]
     >((acc, item) => {
       if (!item.isDirectory || item.path === "/Trash") {
@@ -1166,7 +1162,8 @@ export function useFinderLogic({
       });
       return acc;
     }, []);
-  }, [getItemsInPath]);
+    return orderFinderRootFolders(folders);
+  }, [rootItems]);
 
   // Add a new handler for rename requests
   const handleRenameRequest = (file: FileItem) => {
@@ -1571,26 +1568,13 @@ export function useFinderLogic({
   );
 
   const sidebarItems = useMemo(() => {
-    const visibleRootFolders = rootFolders.filter(
-      (f) => !SIDEBAR_HIDDEN_FOLDERS.has(f.path)
-    );
-
-    // Order by the explicit list; unlisted folders keep their natural order
-    // after the listed ones (stable sort).
-    const orderRank = (path: string) => {
-      const i = SIDEBAR_FOLDER_ORDER.indexOf(path);
-      return i === -1 ? Number.MAX_SAFE_INTEGER : i;
-    };
-    visibleRootFolders.sort((a, b) => orderRank(a.path) - orderRank(b.path));
-
-    const places = visibleRootFolders
-      .map((f) => ({
-        name: getTranslatedFolderNameFromName(f.name) || f.name,
-        path: f.path,
-        icon: f.icon,
-        divider: false,
-        isAirDrop: false,
-      }));
+    const places = orderSidebarRootFolders(rootFolders).map((f) => ({
+      name: getTranslatedFolderNameFromName(f.name) || f.name,
+      path: f.path,
+      icon: f.icon,
+      divider: false,
+      isAirDrop: false,
+    }));
     return [
       { name: t("apps.finder.window.macintoshHd"), path: "/", icon: "/icons/default/disk.png", divider: false, isAirDrop: false },
       {

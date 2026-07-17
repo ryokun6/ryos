@@ -25,6 +25,10 @@ const vfsFileOperationsSource = readFileSync(
   "src/services/vfs/useVfsFileOperations.ts",
   "utf8"
 );
+const finderLogicSource = readFileSync(
+  "src/apps/finder/hooks/useFinderLogic.ts",
+  "utf8"
+);
 
 describe("VFS service wiring", () => {
   test("TextEdit uses VFS services for save/load", () => {
@@ -69,5 +73,15 @@ describe("VFS service wiring", () => {
     expect(vfsFileOperationsSource).toContain(
       "useFileSystem(basePath, { skipLoad: true })"
     );
+  });
+
+  test("Finder sidebar root folders subscribe to VFS items (not stable action refs)", () => {
+    expect(finderLogicSource).toContain("@/services/vfs/FileMetadataService");
+    expect(finderLogicSource).toContain("useFileMetadataInPath(\"/\")");
+    expect(finderLogicSource).toContain("orderFinderRootFolders");
+    expect(finderLogicSource).toContain("orderSidebarRootFolders");
+    // Regression: memoizing rootFolders on getItemsInPath alone left sidebar
+    // empty after reload until remount, because action refs never change.
+    expect(finderLogicSource).not.toContain("}, [getItemsInPath]);");
   });
 });
