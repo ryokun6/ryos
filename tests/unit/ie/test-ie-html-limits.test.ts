@@ -15,16 +15,16 @@ import {
 } from "../../../api/_utils/_ie-html.ts";
 
 describe("stripHtmlScripts", () => {
-  test("removes inline and external script tags", () => {
+  test("removes inline and external script tags", async () => {
     const html = `<html><head><script src="/a.js"></script><script>alert(1)</script></head><body>hi<script type="module">x</script></body></html>`;
-    const out = stripHtmlScripts(html);
+    const out = await stripHtmlScripts(html);
     expect(out).not.toContain("<script");
     expect(out).toContain("hi");
   });
 });
 
 describe("buildLiteHtml", () => {
-  test("builds a reader document with title, description, and article body", () => {
+  test("builds a reader document with title, description, and article body", async () => {
     const html = `<!doctype html><html><head>
       <title>Shop visit</title>
       <meta property="og:title" content="Tower Records Shibuya">
@@ -41,7 +41,7 @@ describe("buildLiteHtml", () => {
         <script>evil()</script>
       </article>
     </body></html>`;
-    const lite = buildLiteHtml(html, "https://www.whathifi.com/article");
+    const lite = await buildLiteHtml(html, "https://www.whathifi.com/article");
     expect(lite).toContain("ie-lite-view");
     expect(lite).toContain("ie-reader");
     expect(lite).toContain("Reader");
@@ -56,19 +56,19 @@ describe("buildLiteHtml", () => {
     expect(new TextEncoder().encode(lite).byteLength).toBeLessThan(25_000);
   });
 
-  test("falls back to paragraphs when no article tag exists", () => {
+  test("falls back to paragraphs when no article tag exists", async () => {
     const html = `<html><head><title>News</title></head><body>
       <h1>Big headline about records</h1>
       <p>${"Alpha paragraph with enough text to keep. ".repeat(5)}</p>
       <p>${"Beta paragraph with enough text to keep. ".repeat(5)}</p>
     </body></html>`;
-    const lite = buildLiteHtml(html, "https://example.com/news");
+    const lite = await buildLiteHtml(html, "https://example.com/news");
     expect(lite).toContain("Big headline about records");
     expect(lite).toContain("Alpha paragraph");
     expect(lite).toContain("Beta paragraph");
   });
 
-  test("strips share/newsletter chrome from the reader body", () => {
+  test("strips share/newsletter chrome from the reader body", async () => {
     const html = `<html><head><title>Story</title>
       <meta property="og:title" content="Story">
     </head><body><article>
@@ -76,7 +76,7 @@ describe("buildLiteHtml", () => {
       <p>${"The real article paragraph about vinyl shopping in Tokyo. ".repeat(4)}</p>
       <p>Subscribe to our newsletter for more deals.</p>
     </article></body></html>`;
-    const lite = buildLiteHtml(html, "https://example.com/story");
+    const lite = await buildLiteHtml(html, "https://example.com/story");
     expect(lite).toContain("vinyl shopping in Tokyo");
     expect(lite).not.toContain("Facebook");
     expect(lite).not.toContain("Subscribe to our newsletter");
@@ -84,22 +84,22 @@ describe("buildLiteHtml", () => {
 });
 
 describe("sanitizeProxiedHtml", () => {
-  test("leaves small pages intact", () => {
+  test("leaves small pages intact", async () => {
     const html = "<html><body><script>ok</script>hi</body></html>";
-    const result = sanitizeProxiedHtml(html);
+    const result = await sanitizeProxiedHtml(html);
     expect(result.strippedScripts).toBe(false);
     expect(result.liteMode).toBe(false);
     expect(result.html).toContain("<script>ok</script>");
   });
 
-  test("converts oversized pages to reader mode", () => {
+  test("converts oversized pages to reader mode", async () => {
     const padding = "x".repeat(IE_LITE_THRESHOLD_BYTES + 100);
     const html = `<html><head><title>Huge</title></head><body>
       <article><h1>Huge</h1><p>${"Readable content for the lite view. ".repeat(20)}</p></article>
       <script>evil()</script>
       <!-- ${padding} -->
     </body></html>`;
-    const result = sanitizeProxiedHtml(html, {
+    const result = await sanitizeProxiedHtml(html, {
       pageUrl: "https://example.com/huge",
     });
     expect(result.liteMode).toBe(true);
@@ -110,9 +110,9 @@ describe("sanitizeProxiedHtml", () => {
     expect(result.html).not.toContain(padding.slice(0, 40));
   });
 
-  test("throws when over hard max", () => {
+  test("throws when over hard max", async () => {
     const huge = "y".repeat(IE_MAX_HTML_BYTES + 10);
-    expect(() => sanitizeProxiedHtml(huge)).toThrow(IeHtmlTooLargeError);
+    await expect(sanitizeProxiedHtml(huge)).rejects.toThrow(IeHtmlTooLargeError);
   });
 });
 

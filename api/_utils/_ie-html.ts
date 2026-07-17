@@ -159,18 +159,50 @@ export async function readResponseTextPrefix(
   return new TextDecoder("utf-8", { fatal: false }).decode(merged);
 }
 
-const SCRIPT_TAG_RE = /<script\b[^>]*>[\s\S]*?<\/script\s*>/gi;
-const SCRIPT_SELF_CLOSING_RE = /<script\b[^>]*\/>/gi;
-const STYLE_TAG_RE = /<style\b[^>]*>[\s\S]*?<\/style\s*>/gi;
-const NOSCRIPT_TAG_RE = /<noscript\b[^>]*>[\s\S]*?<\/noscript\s*>/gi;
-const SVG_TAG_RE = /<svg\b[^>]*>[\s\S]*?<\/svg\s*>/gi;
-const IFRAME_TAG_RE = /<iframe\b[^>]*>[\s\S]*?<\/iframe\s*>/gi;
-const COMMENT_RE = /<!--[\s\S]*?-->/g;
 const TAG_RE = /<\/?([a-zA-Z0-9:-]+)(\s[^>]*)?>/g;
 
-/** Remove page `<script>` tags. Caller re-injects the IE navigation interceptor. */
-export function stripHtmlScripts(html: string): string {
-  return html.replace(SCRIPT_TAG_RE, "").replace(SCRIPT_SELF_CLOSING_RE, "");
+/** Tags removed entirely from reader-mode article markup. */
+const DROP_TAGS = new Set([
+  "script",
+  "style",
+  "noscript",
+  "svg",
+  "iframe",
+  "nav",
+  "header",
+  "footer",
+  "aside",
+  "form",
+  "button",
+  "template",
+]);
+
+/** Tags unwrapped (keep children) after attribute scrubbing. */
+const UNWRAP_TAGS = new Set(["div", "span", "section"]);
+
+/** Containers that may be dropped when class/id looks like page chrome. */
+const NOISE_CONTAINER_TAGS = new Set([
+  "div",
+  "section",
+  "ul",
+  "ol",
+  "aside",
+  "nav",
+]);
+
+/**
+ * Remove page `<script>` elements via HTMLRewriter (parser-based, not regex).
+ * Caller re-injects the IE navigation interceptor.
+ */
+export async function stripHtmlScripts(html: string): Promise<string> {
+  return new HTMLRewriter()
+    .on("script", {
+      element(el) {
+        el.remove();
+      },
+    })
+    .transform(new Response(html))
+    .text();
 }
 
 function escapeHtml(text: string): string {
@@ -245,8 +277,6 @@ function extractBalancedInner(
   return null;
 }
 
-const CHROME_TAG_RE =
-  /<(nav|header|footer|aside|form|button|noscript|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
 const NOISE_CLASS_RE =
   /\b(?:share|social|newsletter|subscribe|cookie|consent|related|recommend|promo|advert|ads?|kiosq|utility-bar|trending|comments?|viafoura|breadcrumb|masthead|site-logo|skip-to|video|jwplayer|carousel|playlist)\b/i;
 
@@ -343,43 +373,60 @@ function extractByline(html: string): string | null {
   return bits.length ? bits.join(" · ") : null;
 }
 
-/** Drop whole elements whose class/id looks like chrome / share / ads. */
-function stripNoiseBlocks(html: string): string {
-  return html.replace(
-    /<(div|section|ul|ol|aside|nav)\b([^>]*)>([\s\S]*?)<\/\1\s*>/gi,
-    (full, _tag, attrs: string, inner: string) => {
-      if (NOISE_CLASS_RE.test(attrs)) return "";
-      const innerText = stripTags(inner);
-      // Drop short link farms (share rows, tag clouds).
-      if (
-        /<a\b/i.test(inner) &&
-        (inner.match(/<a\b/gi) || []).length >= 4 &&
-        innerText.length < 220
-      ) {
-        return "";
-      }
-      return full;
-    }
-  );
-}
+/**
+ * Parser-based cleanup for reader-mode article fragments. Uses HTMLRewriter
+ * instead of regex so nested/malformed tags and event handlers are handled
+ * correctly (and CodeQL incomplete-sanitization rules stay quiet).
+ */
+async function cleanExtractedMarkup(html: string): Promise<string> {
+  const cleaned = await new HTMLRewriter()
+    .on("*", {
+      element(el) {
+        const tag = el.tagName.toLowerCase();
+        if (DROP_TAGS.has(tag)) {
+          el.remove();
+          return;
+        }
 
-function cleanExtractedMarkup(html: string): string {
-  return stripNoiseBlocks(
-    html
-      .replace(COMMENT_RE, "")
-      .replace(SCRIPT_TAG_RE, "")
-      .replace(SCRIPT_SELF_CLOSING_RE, "")
-      .replace(STYLE_TAG_RE, "")
-      .replace(NOSCRIPT_TAG_RE, "")
-      .replace(SVG_TAG_RE, "")
-      .replace(IFRAME_TAG_RE, "")
-      .replace(CHROME_TAG_RE, "")
-      .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
-      .replace(/\s(style|class|id|data-[a-z0-9_-]+)\s*=\s*(['"])[\s\S]*?\2/gi, "")
-      .replace(/<\/?(?:div|span|section)\b[^>]*>/gi, "")
-      .replace(/(?:\s*\n){3,}/g, "\n\n")
-      .trim()
-  );
+        const cls = el.getAttribute("class") || "";
+        const id = el.getAttribute("id") || "";
+        if (
+          NOISE_CONTAINER_TAGS.has(tag) &&
+          (NOISE_CLASS_RE.test(cls) || NOISE_CLASS_RE.test(id))
+        ) {
+          el.remove();
+          return;
+        }
+
+        const attrNames: string[] = [];
+        for (const [name] of el.attributes) {
+          attrNames.push(name);
+        }
+        for (const name of attrNames) {
+          const lower = name.toLowerCase();
+          if (
+            lower.startsWith("on") ||
+            lower === "style" ||
+            lower === "class" ||
+            lower === "id" ||
+            lower.startsWith("data-")
+          ) {
+            el.removeAttribute(name);
+          }
+        }
+
+        if (UNWRAP_TAGS.has(tag)) {
+          el.removeAndKeepContent();
+        }
+      },
+      comments(comment) {
+        comment.remove();
+      },
+    })
+    .transform(new Response(html))
+    .text();
+
+  return cleaned.replace(/(?:\s*\n){3,}/g, "\n\n").trim();
 }
 
 function truncateHtml(html: string, maxBytes: number): string {
@@ -426,7 +473,10 @@ function hostnameOf(url: string): string {
  * Build a proper Reader Mode document from a heavy page so IE can show the
  * article without parsing/executing the full modern site bundle.
  */
-export function buildLiteHtml(html: string, pageUrl: string): string {
+export async function buildLiteHtml(
+  html: string,
+  pageUrl: string
+): Promise<string> {
   const title = extractTitle(html);
   const rawDescription =
     metaContent(html, ["og:description", "description", "twitter:description"]) ||
@@ -453,7 +503,7 @@ export function buildLiteHtml(html: string, pageUrl: string): string {
     );
 
   if (body) {
-    body = cleanExtractedMarkup(body);
+    body = await cleanExtractedMarkup(body);
     // Avoid repeating the page title / hero already shown in the reader chrome.
     body = body.replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i, "");
     if (heroImage) {
@@ -465,7 +515,7 @@ export function buildLiteHtml(html: string, pageUrl: string): string {
     }
   }
   if (!body || stripTags(body).length < 120) {
-    body = cleanExtractedMarkup(collectFallbackBlocks(html));
+    body = await cleanExtractedMarkup(collectFallbackBlocks(html));
   }
 
   // Keep only contentful blocks; drop leftover boilerplate paragraphs.
@@ -694,7 +744,7 @@ export interface SanitizeProxiedHtmlResult {
  * Cap + convert oversized HTML into a lite/reader view so the shared tab stays
  * responsive. Throws IeHtmlTooLargeError when over the hard ceiling.
  */
-export function sanitizeProxiedHtml(
+export async function sanitizeProxiedHtml(
   html: string,
   options?: {
     maxBytes?: number;
@@ -702,7 +752,7 @@ export function sanitizeProxiedHtml(
     scriptStripThresholdBytes?: number;
     pageUrl?: string;
   }
-): SanitizeProxiedHtmlResult {
+): Promise<SanitizeProxiedHtmlResult> {
   const maxBytes = options?.maxBytes ?? IE_MAX_HTML_BYTES;
   const liteThreshold =
     options?.liteThresholdBytes ??
@@ -718,7 +768,7 @@ export function sanitizeProxiedHtml(
 
   if (byteLength > liteThreshold) {
     return {
-      html: buildLiteHtml(html, pageUrl),
+      html: await buildLiteHtml(html, pageUrl),
       strippedScripts: true,
       liteMode: true,
       byteLength,

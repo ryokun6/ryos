@@ -1215,7 +1215,7 @@ export default apiHandler(
 
         // Cap + convert oversized documents to a lite/reader view so
         // same-origin iframe JS/CSS cannot freeze the shared desktop tab.
-        const sanitized = sanitizeProxiedHtml(html, {
+        const sanitized = await sanitizeProxiedHtml(html, {
           pageUrl: finalUrl || targetUrl,
         });
         html = sanitized.html;
