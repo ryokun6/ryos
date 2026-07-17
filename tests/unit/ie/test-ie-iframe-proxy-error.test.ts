@@ -20,9 +20,12 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  // Do not unregister — other suites in the same Bun process may still need
-  // the DOM globals (see AGENTS.md cross-file pollution notes).
-  void registered;
+  // Unregister only when this suite registered happy-dom. Leaving it installed
+  // replaces Bun's native Request and drops Content-Length, which breaks later
+  // suites (e.g. standalone body limits) depending on Bun's file order.
+  if (registered && GlobalRegistrator.isRegistered) {
+    GlobalRegistrator.unregister();
+  }
 });
 
 function makeDoc(html: string, contentType: string): Document {
