@@ -279,6 +279,14 @@ export default defineConfig({
       // Motion (motion/react) is used on initial load for animations
       "motion/react",
       "motion",
+      // Force cjs-interop pre-bundling for tone's transitive CJS deps.
+      // "tone" itself is excluded (see below) so it's served unbundled in
+      // dev, but its nested deps are UMD/CJS builds with no static ESM
+      // exports. Vite must esbuild-transform them or the browser fails to
+      // resolve named exports (e.g. "AutomationEventList"), crashing the
+      // whole desktop boot the first time any Tone-using hook mounts.
+      "automation-events",
+      "standardized-audio-context",
     ],
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened
