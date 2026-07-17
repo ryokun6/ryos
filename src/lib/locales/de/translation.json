@@ -646,6 +646,10 @@
           "description": "Verwende Ablage ▸ Importieren, um .epub-Dateien hinzuzufügen. Bücher werden unter /Books gespeichert und mit der Cloud synchronisiert.",
           "title": "EPUBs importieren"
         },
+        "kosync": {
+          "description": "Synchronisiere den Lesefortschritt mit KOReader auf anderen Geräten. Lege in KOReader Progress Sync den benutzerdefinierten Server auf die /api/kosync-URL dieses ryOS-Hosts fest, registriere dich mit deinem ryOS-Benutzernamen und verwende die Dateinamenzuordnung für passende EPUBs in /Books.",
+          "title": "KOReader-Synchronisierung"
+        },
         "pageTurn": {
           "description": "Klicke auf die Seitenränder, verwende die Pfeiltasten oder streiche, um im Buch umzublättern.",
           "title": "Umblättern"
@@ -653,10 +657,6 @@
         "progress": {
           "description": "Deine Leseposition wird automatisch gespeichert und beim nächsten Öffnen des Buches wiederhergestellt.",
           "title": "Lesefortschritt"
-        },
-        "kosync": {
-          "title": "KOReader-Synchronisierung",
-          "description": "Synchronisiere den Lesefortschritt mit KOReader auf anderen Geräten. Lege in KOReader Progress Sync den benutzerdefinierten Server auf die /api/kosync-URL dieses ryOS-Hosts fest, registriere dich mit deinem ryOS-Benutzernamen und verwende die Dateinamenzuordnung für passende EPUBs in /Books."
         }
       },
       "import": {
@@ -2789,6 +2789,8 @@
       "openingSharedPage": "Geteilte Seite wird geöffnet",
       "page": "Seite",
       "pageCouldNotBeLoadedInIframe": "Die Seite konnte nicht im Iframe geladen werden. Dies könnte an Sicherheitsbeschränkungen oder Netzwerkproblemen liegen.",
+      "pageLoadTimedOut": "Das Laden der Seite hat zu lange gedauert. Internet Explorer hat den Vorgang abgebrochen, damit ryOS reaktionsfähig bleibt.",
+      "pageLoadTimedOutTitle": "Seite gestoppt",
       "pleaseTryTheFollowing": "Bitte versuchen Sie Folgendes:",
       "portugal": "Portugal",
       "portuguese": "Portugiesisch",

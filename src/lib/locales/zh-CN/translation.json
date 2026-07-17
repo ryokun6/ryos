@@ -646,6 +646,10 @@
           "description": "使用“文件 ▸ 导入”添加 .epub 文件。书籍会保存到 /Books 并同步到云端。",
           "title": "导入 EPUB"
         },
+        "kosync": {
+          "description": "与其他设备上的 KOReader 同步阅读进度。在 KOReader Progress Sync 中，将自定义服务器设置为此 ryOS 主机的 /api/kosync URL，使用你的 ryOS 用户名注册，并对 /Books 中的 EPUB 使用文件名文档匹配。",
+          "title": "KOReader 同步"
+        },
         "pageTurn": {
           "description": "点击页面边缘、使用方向键或滑动来翻阅书籍。",
           "title": "翻页"
@@ -653,10 +657,6 @@
         "progress": {
           "description": "系统会自动保存阅读进度，并在下次打开书籍时恢复。",
           "title": "阅读进度"
-        },
-        "kosync": {
-          "title": "KOReader 同步",
-          "description": "与其他设备上的 KOReader 同步阅读进度。在 KOReader Progress Sync 中，将自定义服务器设置为此 ryOS 主机的 /api/kosync URL，使用你的 ryOS 用户名注册，并对 /Books 中的 EPUB 使用文件名文档匹配。"
         }
       },
       "import": {
@@ -2789,6 +2789,8 @@
       "openingSharedPage": "正在打开分享的页面",
       "page": "页面",
       "pageCouldNotBeLoadedInIframe": "无法在 iframe 中加载此页面，原因可能是安全限制或网络问题。",
+      "pageLoadTimedOut": "页面加载时间过长。Internet Explorer 已停止等待，以保持 ryOS 的响应速度。",
+      "pageLoadTimedOutTitle": "页面已停止",
       "pleaseTryTheFollowing": "请尝试以下操作：",
       "portugal": "葡萄牙",
       "portuguese": "葡萄牙语",

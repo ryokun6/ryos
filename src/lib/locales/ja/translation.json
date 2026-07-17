@@ -646,6 +646,10 @@
           "description": "「ファイル」▸「読み込む」を使用して.epubファイルを追加します。ブックは/Booksに保存され、クラウドに同期されます。",
           "title": "EPUBを読み込む"
         },
+        "kosync": {
+          "description": "他のデバイスのKOReaderと読書進捗を同期します。KOReader Progress SyncでカスタムサーバーをこのryOSホストの/api/kosync URLに設定し、ryOSのユーザー名で登録し、/Books内のEPUBにはファイル名によるドキュメント照合を使用してください。",
+          "title": "KOReader同期"
+        },
         "pageTurn": {
           "description": "ページの端をクリックするか、矢印キーを使用するか、スワイプしてページをめくります。",
           "title": "ページ移動"
@@ -653,10 +657,6 @@
         "progress": {
           "description": "読書位置は自動的に保存され、次にブックを開いたときに復元されます。",
           "title": "読書の進捗"
-        },
-        "kosync": {
-          "title": "KOReader同期",
-          "description": "他のデバイスのKOReaderと読書進捗を同期します。KOReader Progress SyncでカスタムサーバーをこのryOSホストの/api/kosync URLに設定し、ryOSのユーザー名で登録し、/Books内のEPUBにはファイル名によるドキュメント照合を使用してください。"
         }
       },
       "import": {
@@ -2789,6 +2789,8 @@
       "openingSharedPage": "共有ページを開いています",
       "page": "ページ",
       "pageCouldNotBeLoadedInIframe": "iframe 内でページを読み込めませんでした。これはセキュリティ制限またはネットワークの問題が原因である可能性があります。",
+      "pageLoadTimedOut": "ページの読み込みに時間がかかりすぎました。ryOSの応答性を維持するため、Internet Explorerは待機を停止しました。",
+      "pageLoadTimedOutTitle": "ページを停止しました",
       "pleaseTryTheFollowing": "以下をお試しください:",
       "portugal": "ポルトガル",
       "portuguese": "ポルトガル語",

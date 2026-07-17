@@ -12,7 +12,6 @@ import { InternetExplorerInitialData } from "../../base/types";
 import {
   useInternetExplorerStore,
   DEFAULT_FAVORITES,
-  ErrorResponse,
   Favorite,
   isDirectPassthrough,
 } from "@/stores/useInternetExplorerStore";
@@ -38,6 +37,10 @@ import {
   getLanguageDisplayName,
   getLocationDisplayName,
 } from "../utils/displayNames";
+import {
+  IE_IFRAME_NAVIGATION_TIMEOUT_MS,
+  readIframeProxyError,
+} from "../utils/iframeProxyError";
 import {
   getHostnameFromUrl,
   formatTitle,
@@ -283,6 +286,16 @@ export function useInternetExplorerLogic({
   );
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  /** Clears a hung iframe navigation so the desktop stays responsive. */
+  const iframeLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const clearIframeLoadTimeout = useCallback(() => {
+    if (iframeLoadTimeoutRef.current !== null) {
+      clearTimeout(iframeLoadTimeoutRef.current);
+      iframeLoadTimeoutRef.current = null;
+    }
+  }, []);
   const [hasMoreToScroll] = useState(false);
   const [urlBarUiState, dispatchUrlBarUi] = useReducer(
     urlBarUiReducer,
@@ -557,66 +570,28 @@ export function useInternetExplorerLogic({
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
+      clearIframeLoadTimeout();
       const iframeSrc = iframeRef.current.src;
       if (
         iframeSrc.includes("/api/iframe-check") &&
         iframeRef.current.contentDocument
       ) {
         try {
-          const textContent =
-            iframeRef.current.contentDocument.body?.textContent?.trim();
-          if (textContent) {
-            // Only try to parse as JSON if it looks like JSON (starts with { or [)
-            const looksLikeJson =
-              textContent.startsWith("{") || textContent.startsWith("[");
-            if (looksLikeJson) {
-              try {
-                const potentialErrorData = JSON.parse(
-                  textContent
-                ) as ErrorResponse;
-                if (
-                  potentialErrorData &&
-                  potentialErrorData.error === true &&
-                  potentialErrorData.type
-                ) {
-                  log.debug("Detected JSON error response in iframe body", {
-                    type: potentialErrorData.type,
-                    status: potentialErrorData.status,
-                  });
-                  track(IE_ANALYTICS.NAVIGATION_ERROR, {
-                    ...normalizeUrlForAnalytics(iframeSrc),
-                    type: potentialErrorData.type,
-                    status: potentialErrorData.status || 500,
-                  });
-                  handleNavigationError(potentialErrorData, url);
-                  return;
-                }
-              } catch {
-                // Silently ignore - content looked like JSON but wasn't valid JSON
-                // This is expected for regular HTML pages
-              }
-            }
-          }
-
-          const contentType = iframeRef.current.contentDocument.contentType;
-          if (contentType === "application/json") {
-            const text = iframeRef.current.contentDocument.body.textContent;
-            if (text) {
-              const errorData = JSON.parse(text) as ErrorResponse;
-              if (errorData.error) {
-                log.debug("Detected JSON error response via content-type", {
-                  type: errorData.type,
-                  status: errorData.status,
-                });
-                track(IE_ANALYTICS.NAVIGATION_ERROR, {
-                  ...normalizeUrlForAnalytics(iframeSrc),
-                  type: errorData.type,
-                  status: errorData.status || 500,
-                });
-                handleNavigationError(errorData, url);
-                return;
-              }
-            }
+          const potentialErrorData = readIframeProxyError(
+            iframeRef.current.contentDocument
+          );
+          if (potentialErrorData) {
+            log.debug("Detected JSON error response in iframe", {
+              type: potentialErrorData.type,
+              status: potentialErrorData.status,
+            });
+            track(IE_ANALYTICS.NAVIGATION_ERROR, {
+              ...normalizeUrlForAnalytics(iframeSrc),
+              type: potentialErrorData.type,
+              status: potentialErrorData.status || 500,
+            });
+            handleNavigationError(potentialErrorData, url);
+            return;
           }
         } catch (error) {
           console.warn("[IE] Error processing iframe content:", error);
@@ -697,6 +672,7 @@ export function useInternetExplorerLogic({
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
+      clearIframeLoadTimeout();
       setTimeout(() => {
         if (
           iframeRef.current &&
@@ -760,6 +736,7 @@ export function useInternetExplorerLogic({
       }
 
       clearErrorDetails();
+      clearIframeLoadTimeout();
 
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -1018,9 +995,39 @@ export function useInternetExplorerLogic({
           if (iframeRef.current) {
             iframeRef.current.dataset.navToken = newToken.toString();
             iframeRef.current.src = urlToLoad;
+            // Arm a navigation timeout so a hung proxy/page cannot leave the
+            // desktop stuck in "loading" (or freeze the tab forever).
+            clearIframeLoadTimeout();
+            const timeoutToken = newToken;
+            const timeoutTargetUrl = normalizedTargetUrl;
+            iframeLoadTimeoutRef.current = setTimeout(() => {
+              iframeLoadTimeoutRef.current = null;
+              if (navTokenRef.current !== timeoutToken) return;
+              if (iframeRef.current) {
+                iframeRef.current.src = "about:blank";
+              }
+              track(IE_ANALYTICS.NAVIGATION_ERROR, {
+                ...normalizeUrlForAnalytics(timeoutTargetUrl),
+                type: "timeout",
+                status: 408,
+              });
+              handleNavigationError(
+                {
+                  error: true,
+                  type: "timeout",
+                  status: 408,
+                  message: t("apps.internet-explorer.pageLoadTimedOut"),
+                  details: t(
+                    "apps.internet-explorer.tryRefreshingThePage"
+                  ),
+                },
+                timeoutTargetUrl
+              );
+            }, IE_IFRAME_NAVIGATION_TIMEOUT_MS);
           }
         }
       } catch (error) {
+        clearIframeLoadTimeout();
         if (!abortController.signal.aborted) {
           console.error(`[IE] Navigation error:`, error);
           handleNavigationError(
@@ -1049,6 +1056,7 @@ export function useInternetExplorerLogic({
       stopGeneration,
       loadSuccess,
       clearErrorDetails,
+      clearIframeLoadTimeout,
       handleNavigationError,
       setPrefetchedTitle,
       setUrl,
@@ -1357,11 +1365,13 @@ export function useInternetExplorerLogic({
 
   const handleRefresh = useCallback(() => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
+    clearIframeLoadTimeout();
     if (iframeRef.current) iframeRef.current.src = "about:blank";
     handleNavigate(url, year, true);
-  }, [handleNavigate, url, year]);
+  }, [handleNavigate, url, year, clearIframeLoadTimeout]);
 
   const handleStop = useCallback(() => {
+    clearIframeLoadTimeout();
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -1379,6 +1389,7 @@ export function useInternetExplorerLogic({
     }
   }, [
     cancel,
+    clearIframeLoadTimeout,
     isAiLoading,
     stopGeneration,
     clearErrorDetails,
@@ -1738,6 +1749,16 @@ export function useInternetExplorerLogic({
         // truncated) by loadSuccess.
         useInternetExplorerStore.getState().setNavigatingHistory(false);
         latestNavigateRef.current(messageData.url, latestYearRef.current);
+      } else if (
+        messageData.type === "iframeOpenWindow" &&
+        typeof messageData.url === "string"
+      ) {
+        // target=_blank / window.open from the proxied iframe — open outside
+        // IE (e.g. Reader Mode "Open original") instead of navigating in-place.
+        log.debug("Received open-window request from iframe", {
+          url: messageData.url,
+        });
+        window.open(messageData.url, "_blank", "noopener,noreferrer");
       } else if (messageData.type === "goBack") {
         log.debug("Received back button request from iframe");
         latestGoBackRef.current();
