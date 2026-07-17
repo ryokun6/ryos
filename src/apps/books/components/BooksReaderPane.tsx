@@ -164,6 +164,8 @@ interface BooksReaderPaneProps {
   onBookmarkStateChange?: (isBookmarked: boolean) => void;
   /** Continue the Ask Ryo conversation in Chats with the passage quoted. */
   onAskRyo: (passage: string) => void;
+  /** Leave the reader and return to the bookshelf (error-screen CTA). */
+  onBackToShelf: () => void;
 }
 
 const clamp01 = (value: number): number =>
@@ -505,6 +507,7 @@ export const BooksReaderPane = forwardRef<
     onRemoveBookmark,
     onBookmarkStateChange,
     onAskRyo,
+    onBackToShelf,
   },
   ref
 ) {
@@ -3148,10 +3151,12 @@ export const BooksReaderPane = forwardRef<
         </div>
       )}
 
-      {/* Error message shown when the EPUB can't be opened. */}
+      {/* Error message shown when the EPUB can't be opened. Cover zoom
+          intros are dismissed on error, so include an explicit shelf CTA —
+          the auto-hiding titlebar control is easy to miss. */}
       {loadError && (
         <div
-          className="absolute inset-0 z-50 flex items-center justify-center px-6 text-center"
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6 text-center"
           style={{ backgroundColor: overlayBackground }}
         >
           <span
@@ -3162,6 +3167,18 @@ export const BooksReaderPane = forwardRef<
           >
             {loadError}
           </span>
+          <button
+            type="button"
+            onClick={onBackToShelf}
+            className={cn(
+              "font-os-ui text-sm px-4 py-1.5 rounded-full transition-colors",
+              palette.isDark
+                ? "bg-white/15 text-white/85 hover:bg-white/25"
+                : "bg-black/10 text-black/70 hover:bg-black/15"
+            )}
+          >
+            {t("apps.books.menu.backToShelf")}
+          </button>
         </div>
       )}
 
