@@ -78,6 +78,7 @@ describe("VFS service wiring", () => {
   test("Finder sidebar root folders subscribe to VFS items (not stable action refs)", () => {
     expect(finderLogicSource).toContain("@/services/vfs/FileMetadataService");
     expect(finderLogicSource).toContain("useFileMetadataInPath(\"/\")");
+    expect(finderLogicSource).toContain("orderFinderRootFolders");
     expect(finderLogicSource).toContain("orderSidebarRootFolders");
     // Regression: memoizing rootFolders on getItemsInPath alone left sidebar
     // empty after reload until remount, because action refs never change.

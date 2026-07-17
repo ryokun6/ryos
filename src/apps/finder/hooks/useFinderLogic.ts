@@ -61,7 +61,10 @@ import {
   validateNewRootFolderName,
 } from "@/services/vfs/pathPolicy";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
-import { orderSidebarRootFolders } from "../utils/sidebarPlaces";
+import {
+  orderFinderRootFolders,
+  orderSidebarRootFolders,
+} from "../utils/sidebarPlaces";
 
 const log = createClientLogger("Finder");
 
@@ -1142,9 +1145,10 @@ export function useFinderLogic({
   const rootItems = useFileMetadataInPath("/");
 
   // Get all root folders for the Go menu using fileStore
-  // This will always show root folders regardless of current path
+  // This will always show root folders regardless of current path.
+  // Same place order as the sidebar: Applications, Applets, A–Z, Desktop.
   const rootFolders = useMemo(() => {
-    return rootItems.reduce<
+    const folders = rootItems.reduce<
       { name: string; isDirectory: true; path: string; icon: string }[]
     >((acc, item) => {
       if (!item.isDirectory || item.path === "/Trash") {
@@ -1158,6 +1162,7 @@ export function useFinderLogic({
       });
       return acc;
     }, []);
+    return orderFinderRootFolders(folders);
   }, [rootItems]);
 
   // Add a new handler for rename requests
