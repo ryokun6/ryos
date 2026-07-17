@@ -163,7 +163,7 @@ export function ShelfBook({
       // No overflow-hidden here: the morphing book lives inside, and clipping it
       // to the button would chop the morph as it travels to/from the list.
       // `group` so the cover's shadow can grow on hover.
-      className="group relative block h-[160px] w-[104px] shrink-0 focus:outline-none"
+      className="group relative block h-[160px] w-[104px] shrink-0 touch-pan-y focus:outline-none"
       title={info?.title || entry.name}
     >
       <BookMorphCover

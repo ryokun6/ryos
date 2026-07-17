@@ -43,10 +43,12 @@ const BOOK_GAP = 20; // horizontal gap between books (gap-5)
 // trailing gap so a book isn't forced to wrap just to reserve one.
 const SHELF_GUTTER = 32;
 
-// Books slot min-height (168) + wooden ledge (top face 12 + front lip 14 +
-// shadow spacer 16). Used to backfill the shelf with empty rows so it always
-// looks like a full bookcase.
-const SHELF_ROW_HEIGHT = 168 + 42;
+// Books slot (168) with -6px ledge overlap + ledge (12+14+16). Keep in sync with
+// the rendered row so empty backfill actually overflows and iOS can bounce.
+const SHELF_ROW_HEIGHT = 168 - 6 + 12 + 14 + 16; // 204
+
+// Space under the floating transparent toolbar so the first shelf isn't covered.
+const SHELF_TOOLBAR_CLEARANCE = 56;
 
 // Brighter warm-wood backdrop shared by the shelf surface and ledges. The
 // `soft-light` warm-amber wash over the texture boosts saturation + brightness
@@ -79,8 +81,6 @@ export function BooksShelfView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
-  // Only fade the top once scrolled, so the first row isn't dimmed at rest.
-  const [scrolled, setScrolled] = useState(false);
   const [contextMenu, setContextMenu] = useState<ShelfContextMenu | null>(null);
 
   const openContextMenu = useMemo(
@@ -176,22 +176,22 @@ export function BooksShelfView({
   }, [library, perRow]);
 
   // Backfill the shelf with empty rows so the bookcase fills the viewport even
-  // when there are only a few books.
+  // when there are only a few books. Count against the area below the floating
+  // toolbar.
   const emptyRowCount = useMemo(() => {
     if (viewportHeight <= 0) return 0;
-    const rowsToFill = Math.ceil(viewportHeight / SHELF_ROW_HEIGHT);
+    const fillHeight = Math.max(0, viewportHeight - SHELF_TOOLBAR_CLEARANCE);
+    const rowsToFill = Math.ceil(fillHeight / SHELF_ROW_HEIGHT);
     return Math.max(0, rowsToFill - rows.length);
   }, [viewportHeight, rows.length]);
 
   return (
     <div
       ref={containerRef}
-      className="relative flex h-full w-full flex-col overflow-hidden"
+      className="relative h-full w-full overflow-hidden"
       style={WOOD_BG}
     >
-      {/* Dark-mode dim: a scrim above the wood (back panel + ledges, which are
-          z-auto) but below the books (z-[1]) and toolbar (z-20), so only the
-          wood is dimmed and the covers stay vivid. */}
+      {/* Dark-mode dim: above the wood, below books (z-[1]) and toolbar (z-20). */}
       {isDarkMode && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
@@ -199,70 +199,19 @@ export function BooksShelfView({
           aria-hidden
         />
       )}
-      {/* Top toolbar */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 px-3 pb-2 pt-7 bg-gradient-to-b from-black/45 via-black/25 to-transparent">
-        <span
-          className="font-apple-garamond text-white !text-[22px] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-        >
-          {t("apps.books.title")}
-        </span>
-        <div className="flex items-center gap-1.5">
-          <ToolbarButtonGroup>
-            <ToolbarButton
-              icon
-              onClick={onImport}
-              title={t("apps.books.shelf.import")}
-              aria-label={t("apps.books.shelf.import")}
-            >
-              <Plus size={14} weight="bold" />
-            </ToolbarButton>
-          </ToolbarButtonGroup>
-          <ToolbarButtonGroup>
-            <ToolbarButton
-              icon
-              data-state={shelfView === "grid" ? "on" : "off"}
-              onClick={() => onSetShelfView("grid")}
-              title={t("apps.books.shelf.gridView")}
-              aria-label={t("apps.books.shelf.gridView")}
-            >
-              <SquaresFour size={14} />
-            </ToolbarButton>
-            <ToolbarButton
-              icon
-              data-state={shelfView === "list" ? "on" : "off"}
-              onClick={() => onSetShelfView("list")}
-              title={t("apps.books.shelf.listView")}
-              aria-label={t("apps.books.shelf.listView")}
-            >
-              <Rows size={14} />
-            </ToolbarButton>
-          </ToolbarButtonGroup>
-        </div>
-      </div>
-
+      {/* Full-bleed scroller under the floating toolbar. Native overflow only —
+          no mask / JS rubber-band. touch-pan-y pans under page touch-action:none. */}
       <div
         ref={scrollRef}
         data-books-scroll
-        className="min-h-0 flex-1 overflow-y-auto"
-        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
-        // Soft gradient mask at the top so content fades under the toolbar as it
-        // scrolls — only once scrolled, so the first row isn't dimmed at rest.
-        style={
-          scrolled
-            ? {
-                maskImage:
-                  "linear-gradient(to bottom, transparent 0, black 28px)",
-                WebkitMaskImage:
-                  "linear-gradient(to bottom, transparent 0, black 28px)",
-              }
-            : undefined
-        }
+        className="absolute inset-0 z-[1] overflow-y-auto overscroll-y-auto touch-pan-y"
       >
         {library.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="px-8 pt-10 text-center text-white/85"
+            className="px-8 text-center text-white/85"
+            style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE + 24 }}
           >
             <div className="font-os-ui text-sm drop-shadow">
               {t("apps.books.shelf.emptyTitle")}
@@ -279,7 +228,10 @@ export function BooksShelfView({
           // Gated on `measured` so covers mount with layoutId at correct sizes.
           <LayoutGroup>
             {!measured ? null : shelfView === "grid" ? (
-              <div className="flex flex-col pb-3 pt-1">
+              <div
+                className="flex flex-col pb-3"
+                style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
+              >
                 {rows.map((row, rowIndex) => (
                   <div key={rowIndex} className="relative">
                     {/* Books stand on the shelf, their base resting halfway down
@@ -313,13 +265,16 @@ export function BooksShelfView({
                 {/* Empty shelves so the bookcase fills the viewport */}
                 {Array.from({ length: emptyRowCount }).map((_, i) => (
                   <div key={`empty-${i}`} className="relative" aria-hidden>
-                    <div style={{ minHeight: 168 }} />
+                    <div style={{ minHeight: 168, marginBottom: -6 }} />
                     <ShelfLedge isDark={isDarkMode} />
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col gap-1 p-2">
+              <div
+                className="flex flex-col gap-1 p-2"
+                style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
+              >
                 {library.map((entry) => (
                   <BookListRow
                     key={entry.path}
@@ -336,6 +291,47 @@ export function BooksShelfView({
             )}
           </LayoutGroup>
         )}
+      </div>
+
+      {/* Transparent floating toolbar — overlays the scroller so wood scrolls
+          underneath without a clipped gradient edge. Hits pass through except
+          on the controls. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 bg-transparent px-3 pb-2 pt-7">
+        <span className="font-apple-garamond text-white !text-[22px] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+          {t("apps.books.title")}
+        </span>
+        <div className="pointer-events-auto flex items-center gap-1.5">
+          <ToolbarButtonGroup>
+            <ToolbarButton
+              icon
+              onClick={onImport}
+              title={t("apps.books.shelf.import")}
+              aria-label={t("apps.books.shelf.import")}
+            >
+              <Plus size={14} weight="bold" />
+            </ToolbarButton>
+          </ToolbarButtonGroup>
+          <ToolbarButtonGroup>
+            <ToolbarButton
+              icon
+              data-state={shelfView === "grid" ? "on" : "off"}
+              onClick={() => onSetShelfView("grid")}
+              title={t("apps.books.shelf.gridView")}
+              aria-label={t("apps.books.shelf.gridView")}
+            >
+              <SquaresFour size={14} />
+            </ToolbarButton>
+            <ToolbarButton
+              icon
+              data-state={shelfView === "list" ? "on" : "off"}
+              onClick={() => onSetShelfView("list")}
+              title={t("apps.books.shelf.listView")}
+              aria-label={t("apps.books.shelf.listView")}
+            >
+              <Rows size={14} />
+            </ToolbarButton>
+          </ToolbarButtonGroup>
+        </div>
       </div>
 
       {/* Right-click / long-press context menu. Portaled to <body> so its
@@ -448,7 +444,7 @@ function BookListRow({
       onTouchMove={longPress.onTouchMove}
       onTouchEnd={longPress.onTouchEnd}
       onTouchCancel={longPress.onTouchCancel}
-      className="group flex w-full items-center gap-3 rounded-[4px] bg-black/15 px-2 py-1.5 text-left transition-colors hover:bg-black/30"
+      className="group flex w-full items-center gap-3 rounded-[4px] bg-black/15 px-2 py-1.5 text-left touch-pan-y transition-colors hover:bg-black/30"
     >
       <BookMorphCover
         entry={entry}
