@@ -11,7 +11,6 @@ import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu"
 import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { cn } from "@/lib/utils";
 import type {
   BooksLibraryEntry,
   BookOriginRect,
@@ -87,8 +86,6 @@ export function BooksShelfView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
-  // Only fade the top once scrolled, so the first row isn't dimmed at rest.
-  const [scrolled, setScrolled] = useState(false);
   const [contextMenu, setContextMenu] = useState<ShelfContextMenu | null>(null);
 
   const openContextMenu = useMemo(
@@ -218,7 +215,6 @@ export function BooksShelfView({
         ref={scrollRef}
         data-books-scroll
         className="absolute inset-0 overflow-y-scroll overscroll-y-auto touch-pan-y [-webkit-overflow-scrolling:touch]"
-        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
       >
         {/* min-height ensures the element is always a scroll container — even a
             short library — so iOS overflow bounce engages at rest. */}
@@ -321,15 +317,9 @@ export function BooksShelfView({
       </div>
 
       {/* Floating title toolbar — overlays the scroller so rubber-band overscroll
-          slides the bookcase underneath. pointer-events only on the controls. */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 px-3 pb-2 pt-7",
-          "bg-gradient-to-b from-black/45 via-black/25 to-transparent",
-          // Slightly stronger veil once content has scrolled under the bar.
-          scrolled && "from-black/55 via-black/30"
-        )}
-      >
+          slides the bookcase underneath. No top fade/mask: that fought the bounce.
+          pointer-events only on the controls. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 px-3 pb-2 pt-7">
         <span className="font-apple-garamond text-white !text-[22px] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
           {t("apps.books.title")}
         </span>

@@ -39,5 +39,9 @@ describe("Books shelf rubber-band wiring", () => {
     expect(source).toContain(
       "pointer-events-none absolute inset-x-0 top-0 z-20"
     );
+    // Top fade/mask makes overscroll feel clipped — keep the chrome unmasked.
+    expect(source).not.toContain("maskImage");
+    expect(source).not.toContain("WebkitMaskImage");
+    expect(source).not.toContain("bg-gradient-to-b from-black/");
   });
 });
