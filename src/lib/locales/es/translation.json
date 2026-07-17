@@ -648,6 +648,10 @@
           "description": "Usa Archivo ▸ Importar para añadir archivos .epub. Los libros se guardan en /Books y se sincronizan con la nube.",
           "title": "Importar EPUBs"
         },
+        "kosync": {
+          "description": "Sincroniza el progreso de lectura con KOReader en otros dispositivos. En KOReader Progress Sync, configura el servidor personalizado con la URL /api/kosync de este host ryOS, regístrate con tu nombre de usuario de ryOS y usa la coincidencia por nombre de archivo para los EPUB en /Books.",
+          "title": "Sincronización con KOReader"
+        },
         "pageTurn": {
           "description": "Haz clic en los bordes de la página, usa las teclas de flecha o desliza para pasar las páginas del libro.",
           "title": "Pasar páginas"
@@ -655,10 +659,6 @@
         "progress": {
           "description": "Tu posición se guarda automáticamente y se recupera la próxima vez que abras el libro.",
           "title": "Progreso de lectura"
-        },
-        "kosync": {
-          "title": "Sincronización con KOReader",
-          "description": "Sincroniza el progreso de lectura con KOReader en otros dispositivos. En KOReader Progress Sync, configura el servidor personalizado con la URL /api/kosync de este host ryOS, regístrate con tu nombre de usuario de ryOS y usa la coincidencia por nombre de archivo para los EPUB en /Books."
         }
       },
       "import": {
@@ -2791,6 +2791,8 @@
       "openingSharedPage": "Abriendo página compartida",
       "page": "Página",
       "pageCouldNotBeLoadedInIframe": "La página no se pudo cargar en el iframe. Esto podría deberse a restricciones de seguridad o problemas de red.",
+      "pageLoadTimedOut": "La página ha tardado demasiado en cargarse. Internet Explorer ha dejado de esperar para que ryOS siga respondiendo.",
+      "pageLoadTimedOutTitle": "Página detenida",
       "pleaseTryTheFollowing": "Por favor, intente lo siguiente:",
       "portugal": "Portugal",
       "portuguese": "Portugués",

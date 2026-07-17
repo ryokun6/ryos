@@ -648,6 +648,10 @@
           "description": "Utilisez Fichier ▸ Importer pour ajouter des fichiers .epub. Les livres sont enregistrés dans /Books et synchronisés sur le cloud.",
           "title": "Importer des EPUB"
         },
+        "kosync": {
+          "description": "Synchronisez votre progression de lecture avec KOReader sur d’autres appareils. Dans KOReader Progress Sync, définissez le serveur personnalisé sur l’URL /api/kosync de cet hôte ryOS, inscrivez-vous avec votre nom d’utilisateur ryOS et utilisez la correspondance par nom de fichier pour les EPUB dans /Books.",
+          "title": "Synchronisation KOReader"
+        },
         "pageTurn": {
           "description": "Cliquez sur le bord des pages, utilisez les touches fléchées ou balayez pour feuilleter le livre.",
           "title": "Tourner les pages"
@@ -655,10 +659,6 @@
         "progress": {
           "description": "Votre position est enregistrée automatiquement et restaurée à la prochaine ouverture du livre.",
           "title": "Progression de lecture"
-        },
-        "kosync": {
-          "title": "Synchronisation KOReader",
-          "description": "Synchronisez votre progression de lecture avec KOReader sur d’autres appareils. Dans KOReader Progress Sync, définissez le serveur personnalisé sur l’URL /api/kosync de cet hôte ryOS, inscrivez-vous avec votre nom d’utilisateur ryOS et utilisez la correspondance par nom de fichier pour les EPUB dans /Books."
         }
       },
       "import": {
@@ -2791,6 +2791,8 @@
       "openingSharedPage": "Ouverture de la page partagée",
       "page": "Page",
       "pageCouldNotBeLoadedInIframe": "La page n'a pas pu être chargée dans l'iframe. Cela peut être dû à des restrictions de sécurité ou à des problèmes de réseau.",
+      "pageLoadTimedOut": "Le chargement de la page a pris trop de temps. Internet Explorer a cessé d’attendre pour préserver la réactivité de ryOS.",
+      "pageLoadTimedOutTitle": "Page arrêtée",
       "pleaseTryTheFollowing": "Veuillez essayer ce qui suit :",
       "portugal": "Portugal",
       "portuguese": "Portugais",

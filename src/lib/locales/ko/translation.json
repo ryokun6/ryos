@@ -646,6 +646,10 @@
           "description": "파일 ▸ 가져오기를 사용하여 .epub 파일을 추가하십시오. 책은 /Books에 저장되며 클라우드에 동기화됩니다.",
           "title": "EPUB 가져오기"
         },
+        "kosync": {
+          "description": "다른 기기의 KOReader와 독서 진행 상황을 동기화합니다. KOReader Progress Sync에서 사용자 지정 서버를 이 ryOS 호스트의 /api/kosync URL로 설정하고, ryOS 사용자 이름으로 등록한 뒤 /Books의 EPUB에는 파일 이름 문서 매칭을 사용하세요.",
+          "title": "KOReader 동기화"
+        },
         "pageTurn": {
           "description": "페이지 가장자리를 클릭하거나 화살표 키를 사용하거나 쓸어넘겨서 책장을 넘길 수 있습니다.",
           "title": "페이지 넘기기"
@@ -653,10 +657,6 @@
         "progress": {
           "description": "읽던 위치가 자동으로 저장되며 다음에 책을 열 때 복원됩니다.",
           "title": "독서 진행 상황"
-        },
-        "kosync": {
-          "title": "KOReader 동기화",
-          "description": "다른 기기의 KOReader와 독서 진행 상황을 동기화합니다. KOReader Progress Sync에서 사용자 지정 서버를 이 ryOS 호스트의 /api/kosync URL로 설정하고, ryOS 사용자 이름으로 등록한 뒤 /Books의 EPUB에는 파일 이름 문서 매칭을 사용하세요."
         }
       },
       "import": {
@@ -2789,6 +2789,8 @@
       "openingSharedPage": "공유된 페이지를 여는 중",
       "page": "페이지",
       "pageCouldNotBeLoadedInIframe": "iframe에서 페이지를 로드할 수 없습니다. 보안 제한 또는 네트워크 문제 때문일 수 있습니다.",
+      "pageLoadTimedOut": "페이지를 로드하는 데 시간이 너무 오래 걸렸습니다. ryOS의 응답성을 유지하기 위해 Internet Explorer가 대기를 중단했습니다.",
+      "pageLoadTimedOutTitle": "페이지 중단됨",
       "pleaseTryTheFollowing": "다음을 시도해 보세요:",
       "portugal": "포르투갈",
       "portuguese": "포르투갈어",
