@@ -338,6 +338,7 @@ export function BooksAppComponent({
             onRemoveBookmark={removeBookmark}
             onBookmarkStateChange={handleBookmarkStateChange}
             onAskRyo={handleAskRyo}
+            onBackToShelf={closeBook}
           />
         ) : (
           <BooksShelfView
