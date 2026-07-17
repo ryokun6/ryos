@@ -1276,7 +1276,7 @@ export default apiHandler(
   var realParent = window.parent;
 
   // Helper to resolve and post navigation URL to real parent
-  function postNavigation(url, source) {
+  function postNavigation(url, source, openInNewWindow) {
     try {
       var absoluteUrl = new URL(url, document.baseURI || window.location.href).href;
       if (absoluteUrl.startsWith('javascript:') ||
@@ -1285,7 +1285,11 @@ export default apiHandler(
           (absoluteUrl.indexOf('#') !== -1 && absoluteUrl.split('#')[0] === window.location.href.split('#')[0])) {
         return false;
       }
-      realParent.postMessage({ type: 'iframeNavigation', url: absoluteUrl, source: source }, '*');
+      realParent.postMessage({
+        type: openInNewWindow ? 'iframeOpenWindow' : 'iframeNavigation',
+        url: absoluteUrl,
+        source: source
+      }, '*');
       return true;
     } catch (e) {
       return false;
@@ -1364,7 +1368,9 @@ export default apiHandler(
 
     if (anchor && anchor.href) {
       var href = anchor.getAttribute('href');
-      if (postNavigation(href, 'click')) {
+      var openInNewWindow =
+        (anchor.getAttribute('target') || '').toLowerCase() === '_blank';
+      if (postNavigation(href, 'click', openInNewWindow)) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -1504,7 +1510,11 @@ export default apiHandler(
   // --- Intercept window.open ---
   var originalOpen = window.open;
   window.open = function(url, target, features) {
-    if (url && postNavigation(url, 'window-open')) return null;
+    var openInNewWindow =
+      !target ||
+      String(target).toLowerCase() === '_blank' ||
+      String(target).toLowerCase() === '_new';
+    if (url && postNavigation(url, 'window-open', openInNewWindow)) return null;
     return originalOpen ? originalOpen.call(window, url, target, features) : null;
   };
 

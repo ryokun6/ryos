@@ -607,12 +607,6 @@ export async function buildLiteHtml(
     border-bottom: 1px solid #1c242c;
     box-shadow: 0 1px 0 rgba(255,255,255,.08) inset;
   }
-  .ie-reader-bar strong {
-    font-family: "Mondwest", "Geneva-12", sans-serif;
-    font-weight: normal;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-  }
   .ie-reader-bar a {
     color: #9fd0ff;
     text-decoration: none;
@@ -630,14 +624,6 @@ export async function buildLiteHtml(
     border-radius: 2px;
     padding: 2.25rem 2rem 2.75rem;
     box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 10px 28px rgba(28, 40, 55, .08);
-  }
-  .ie-reader-kicker {
-    margin: 0 0 0.85rem;
-    font-family: "Geneva-12", "Lucida Grande", Geneva, Helvetica, Arial, sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--reader-accent);
   }
   .ie-reader h1 {
     margin: 0 0 0.65rem;
@@ -727,12 +713,11 @@ export async function buildLiteHtml(
 </head>
 <body>
   <header class="ie-reader-bar">
-    <div><strong>Reader</strong> · ${safeHost}</div>
+    <div>${safeHost}</div>
     <div><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">Open original</a></div>
   </header>
   <div class="ie-reader-shell">
     <article class="ie-reader">
-      <p class="ie-reader-kicker">Simplified for Internet Explorer</p>
       ${
         safeHero
           ? `<figure class="ie-reader-hero"><img src="${safeHero}" alt=""></figure>`

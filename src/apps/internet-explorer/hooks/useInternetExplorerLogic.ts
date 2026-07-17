@@ -1749,6 +1749,16 @@ export function useInternetExplorerLogic({
         // truncated) by loadSuccess.
         useInternetExplorerStore.getState().setNavigatingHistory(false);
         latestNavigateRef.current(messageData.url, latestYearRef.current);
+      } else if (
+        messageData.type === "iframeOpenWindow" &&
+        typeof messageData.url === "string"
+      ) {
+        // target=_blank / window.open from the proxied iframe — open outside
+        // IE (e.g. Reader Mode "Open original") instead of navigating in-place.
+        log.debug("Received open-window request from iframe", {
+          url: messageData.url,
+        });
+        window.open(messageData.url, "_blank", "noopener,noreferrer");
       } else if (messageData.type === "goBack") {
         log.debug("Received back button request from iframe");
         latestGoBackRef.current();

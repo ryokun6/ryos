@@ -44,7 +44,9 @@ describe("buildLiteHtml", () => {
     const lite = await buildLiteHtml(html, "https://www.whathifi.com/article");
     expect(lite).toContain("ie-lite-view");
     expect(lite).toContain("ie-reader");
-    expect(lite).toContain("Reader");
+    expect(lite).toContain("whathifi.com");
+    expect(lite).not.toContain("<strong>Reader</strong>");
+    expect(lite).not.toContain("Simplified for Internet Explorer");
     expect(lite).toContain("Tower Records Shibuya");
     expect(lite).toContain("A goliath of a retailer");
     expect(lite).toContain("Vinyl fills every floor");
@@ -52,6 +54,7 @@ describe("buildLiteHtml", () => {
     expect(lite).toContain("https://cdn.example/hero.jpg");
     expect(lite).not.toContain("evil()");
     expect(lite).toContain('href="https://www.whathifi.com/article"');
+    expect(lite).toContain('target="_blank"');
     expect(lite).toContain("/fonts/fonts.css");
     expect(new TextEncoder().encode(lite).byteLength).toBeLessThan(25_000);
   });
@@ -104,7 +107,8 @@ describe("sanitizeProxiedHtml", () => {
     });
     expect(result.liteMode).toBe(true);
     expect(result.strippedScripts).toBe(true);
-    expect(result.html).toContain("Reader");
+    expect(result.html).toContain("ie-lite-view");
+    expect(result.html).toContain("example.com");
     expect(result.html).toContain("Readable content for the lite view");
     expect(result.html).not.toContain("evil()");
     expect(result.html).not.toContain(padding.slice(0, 40));
