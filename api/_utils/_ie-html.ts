@@ -191,18 +191,32 @@ const NOISE_CONTAINER_TAGS = new Set([
 ]);
 
 /**
+ * Run HTMLRewriter over a string. Pass a string (not Response) so Bun returns
+ * a string synchronously — important under aggregate unit tests where happy-dom
+ * replaces the global Response constructor and breaks HTMLRewriter.
+ */
+function rewriteHtml(
+  html: string,
+  configure: (rewriter: HTMLRewriter) => HTMLRewriter
+): string {
+  const result = configure(new HTMLRewriter()).transform(html);
+  if (typeof result === "string") return result;
+  // Fallback for older Bun typings / Response-shaped returns.
+  throw new TypeError("HTMLRewriter.transform(string) did not return a string");
+}
+
+/**
  * Remove page `<script>` elements via HTMLRewriter (parser-based, not regex).
  * Caller re-injects the IE navigation interceptor.
  */
 export async function stripHtmlScripts(html: string): Promise<string> {
-  return new HTMLRewriter()
-    .on("script", {
+  return rewriteHtml(html, (rewriter) =>
+    rewriter.on("script", {
       element(el) {
         el.remove();
       },
     })
-    .transform(new Response(html))
-    .text();
+  );
 }
 
 function escapeHtml(text: string): string {
@@ -379,8 +393,8 @@ function extractByline(html: string): string | null {
  * correctly (and CodeQL incomplete-sanitization rules stay quiet).
  */
 async function cleanExtractedMarkup(html: string): Promise<string> {
-  const cleaned = await new HTMLRewriter()
-    .on("*", {
+  const cleaned = rewriteHtml(html, (rewriter) =>
+    rewriter.on("*", {
       element(el) {
         const tag = el.tagName.toLowerCase();
         if (DROP_TAGS.has(tag)) {
@@ -423,8 +437,7 @@ async function cleanExtractedMarkup(html: string): Promise<string> {
         comment.remove();
       },
     })
-    .transform(new Response(html))
-    .text();
+  );
 
   return cleaned.replace(/(?:\s*\n){3,}/g, "\n\n").trim();
 }
