@@ -11,6 +11,7 @@ import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu"
 import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { cn } from "@/lib/utils";
 import type {
   BooksLibraryEntry,
   BookOriginRect,
@@ -18,6 +19,7 @@ import type {
 import type { BookProgress, BooksShelfView } from "@/stores/useBooksStore";
 import { ShelfBook, BookMorphCover } from "./ShelfBook";
 import { useBookCover } from "../utils/useBookCover";
+import { attachBooksShelfRubberBand } from "../utils/booksShelfRubberBand";
 
 interface BooksShelfViewProps {
   library: BooksLibraryEntry[];
@@ -43,10 +45,16 @@ const BOOK_GAP = 20; // horizontal gap between books (gap-5)
 // trailing gap so a book isn't forced to wrap just to reserve one.
 const SHELF_GUTTER = 32;
 
-// Books slot min-height (168) + wooden ledge (top face 12 + front lip 14 +
-// shadow spacer 16). Used to backfill the shelf with empty rows so it always
-// looks like a full bookcase.
-const SHELF_ROW_HEIGHT = 168 + 42;
+// Books slot min-height (168) with the books' -6px overlap into the ledge, plus
+// wooden ledge (top face 12 + front lip 14 + shadow spacer 16). Used to
+// backfill the shelf with empty rows so it always looks like a full bookcase.
+// Keep this in sync with the rendered row geometry below — an overestimate
+// under-fills the viewport and leaves the scroller with no overflow, which
+// kills iOS rubber-banding.
+const SHELF_ROW_HEIGHT = 168 - 6 + 12 + 14 + 16; // 204
+
+// Clearance under the floating title toolbar so the first shelf isn't covered.
+const SHELF_TOOLBAR_CLEARANCE = 56;
 
 // Brighter warm-wood backdrop shared by the shelf surface and ledges. The
 // `soft-light` warm-amber wash over the texture boosts saturation + brightness
@@ -134,6 +142,15 @@ export function BooksShelfView({
     }
   }, []);
 
+  // Touch rubber-band: native iOS bounce is flaky inside the Motion window
+  // shell, so we apply a damped translate past the scroll edges ourselves.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handle = attachBooksShelfRubberBand(el);
+    return () => handle.destroy();
+  }, []);
+
   // Books render only once the width is known (seeded synchronously above before
   // first paint, so there's no visible delay). This guarantees each cover MOUNTS
   // with its shared `layoutId` already attached at the correct grid position —
@@ -176,37 +193,147 @@ export function BooksShelfView({
   }, [library, perRow]);
 
   // Backfill the shelf with empty rows so the bookcase fills the viewport even
-  // when there are only a few books.
+  // when there are only a few books. Count against the area below the floating
+  // toolbar; always leave at least one extra row so the scroller has overflow
+  // and iOS can rubber-band at the edges.
   const emptyRowCount = useMemo(() => {
-    if (viewportHeight <= 0) return 0;
-    const rowsToFill = Math.ceil(viewportHeight / SHELF_ROW_HEIGHT);
-    return Math.max(0, rowsToFill - rows.length);
+    if (viewportHeight <= 0) return 1;
+    const fillHeight = Math.max(0, viewportHeight - SHELF_TOOLBAR_CLEARANCE);
+    const rowsToFill = Math.ceil(fillHeight / SHELF_ROW_HEIGHT) + 1;
+    return Math.max(1, rowsToFill - rows.length);
   }, [viewportHeight, rows.length]);
 
   return (
     <div
       ref={containerRef}
-      className="relative flex h-full w-full flex-col overflow-hidden"
+      className="relative h-full w-full overflow-hidden"
+      // Matching wood behind the scroller so overscroll peeks the same grain
+      // instead of a flat window background.
       style={WOOD_BG}
     >
-      {/* Dark-mode dim: a scrim above the wood (back panel + ledges, which are
-          z-auto) but below the books (z-[1]) and toolbar (z-20), so only the
-          wood is dimmed and the covers stay vivid. */}
-      {isDarkMode && (
-        <div
-          className="pointer-events-none absolute inset-0 z-0"
-          style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
-          aria-hidden
-        />
-      )}
-      {/* Top toolbar */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 px-3 pb-2 pt-7 bg-gradient-to-b from-black/45 via-black/25 to-transparent">
-        <span
-          className="font-apple-garamond text-white !text-[22px] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-        >
+      {/* Full-bleed scroller: the bookcase itself scrolls (and rubber-bands on
+          iOS). The title toolbar floats above it, so pulling past the top moves
+          wood + shelves under the chrome like a native shelf. */}
+      <div
+        ref={scrollRef}
+        data-books-scroll
+        className="absolute inset-0 overflow-y-scroll overscroll-y-auto touch-pan-y [-webkit-overflow-scrolling:touch]"
+        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
+      >
+        {/* min-height ensures the element is always a scroll container — even a
+            short library — so iOS overflow bounce engages at rest. */}
+        <div className="relative min-h-[calc(100%+1px)]" style={WOOD_BG}>
+          {/* Dark-mode dim: scrim above the wood (back panel + ledges) but below
+              the books (z-[1]), so only the wood is dimmed and covers stay vivid. */}
+          {isDarkMode && (
+            <div
+              className="pointer-events-none absolute inset-0 z-0"
+              style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
+              aria-hidden
+            />
+          )}
+          {library.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="px-8 text-center text-white/85"
+              style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE + 24 }}
+            >
+              <div className="font-os-ui text-sm drop-shadow">
+                {t("apps.books.shelf.emptyTitle")}
+              </div>
+              <div className="mt-1 font-os-ui text-xs text-white/65">
+                {t("apps.books.shelf.emptyHint")}
+              </div>
+            </motion.div>
+          ) : (
+            // Grid and list render conditionally inside a single LayoutGroup so
+            // each book (shared `layoutId`) morphs its position+size between the
+            // two layouts when `shelfView` flips. No AnimatePresence/fade: the
+            // book is the focus; surrounding chrome just appears/disappears.
+            // Gated on `measured` so covers mount with layoutId at correct sizes.
+            <LayoutGroup>
+              {!measured ? null : shelfView === "grid" ? (
+                <div
+                  className="flex flex-col pb-3"
+                  style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
+                >
+                  {rows.map((row, rowIndex) => (
+                    <div key={rowIndex} className="relative">
+                      {/* Books stand on the shelf, their base resting halfway down
+                          the upper face (negative margin overlaps the ledge by half
+                          the 12px face); z-[1] keeps books in front of that face. */}
+                      <div
+                        className="relative z-[1] flex items-end gap-5"
+                        style={{
+                          paddingLeft: SHELF_GUTTER,
+                          paddingRight: SHELF_GUTTER,
+                          minHeight: 168,
+                          marginBottom: -6,
+                        }}
+                      >
+                        {row.map((entry) => (
+                          <ShelfBook
+                            key={entry.path}
+                            entry={entry}
+                            progress={progressByPath[entry.path]}
+                            onOpen={onOpenBook}
+                            onContextMenu={openContextMenu}
+                            morphLayout
+                            layoutAnimated={layoutAnimated}
+                            isDark={isDarkMode}
+                          />
+                        ))}
+                      </div>
+                      <ShelfLedge isDark={isDarkMode} />
+                    </div>
+                  ))}
+                  {/* Empty shelves so the bookcase fills the viewport */}
+                  {Array.from({ length: emptyRowCount }).map((_, i) => (
+                    <div key={`empty-${i}`} className="relative" aria-hidden>
+                      <div style={{ minHeight: 168, marginBottom: -6 }} />
+                      <ShelfLedge isDark={isDarkMode} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  className="flex flex-col gap-1 p-2"
+                  style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
+                >
+                  {library.map((entry) => (
+                    <BookListRow
+                      key={entry.path}
+                      entry={entry}
+                      progress={progressByPath[entry.path]}
+                      onOpen={onOpenBook}
+                      onContextMenu={openContextMenu}
+                      morphLayout
+                      layoutAnimated={layoutAnimated}
+                      isDark={isDarkMode}
+                    />
+                  ))}
+                </div>
+              )}
+            </LayoutGroup>
+          )}
+        </div>
+      </div>
+
+      {/* Floating title toolbar — overlays the scroller so rubber-band overscroll
+          slides the bookcase underneath. pointer-events only on the controls. */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 px-3 pb-2 pt-7",
+          "bg-gradient-to-b from-black/45 via-black/25 to-transparent",
+          // Slightly stronger veil once content has scrolled under the bar.
+          scrolled && "from-black/55 via-black/30"
+        )}
+      >
+        <span className="font-apple-garamond text-white !text-[22px] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
           {t("apps.books.title")}
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="pointer-events-auto flex items-center gap-1.5">
           <ToolbarButtonGroup>
             <ToolbarButton
               icon
@@ -238,104 +365,6 @@ export function BooksShelfView({
             </ToolbarButton>
           </ToolbarButtonGroup>
         </div>
-      </div>
-
-      <div
-        ref={scrollRef}
-        data-books-scroll
-        className="min-h-0 flex-1 overflow-y-auto"
-        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
-        // Soft gradient mask at the top so content fades under the toolbar as it
-        // scrolls — only once scrolled, so the first row isn't dimmed at rest.
-        style={
-          scrolled
-            ? {
-                maskImage:
-                  "linear-gradient(to bottom, transparent 0, black 28px)",
-                WebkitMaskImage:
-                  "linear-gradient(to bottom, transparent 0, black 28px)",
-              }
-            : undefined
-        }
-      >
-        {library.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="px-8 pt-10 text-center text-white/85"
-          >
-            <div className="font-os-ui text-sm drop-shadow">
-              {t("apps.books.shelf.emptyTitle")}
-            </div>
-            <div className="mt-1 font-os-ui text-xs text-white/65">
-              {t("apps.books.shelf.emptyHint")}
-            </div>
-          </motion.div>
-        ) : (
-          // Grid and list render conditionally inside a single LayoutGroup so
-          // each book (shared `layoutId`) morphs its position+size between the
-          // two layouts when `shelfView` flips. No AnimatePresence/fade: the
-          // book is the focus; surrounding chrome just appears/disappears.
-          // Gated on `measured` so covers mount with layoutId at correct sizes.
-          <LayoutGroup>
-            {!measured ? null : shelfView === "grid" ? (
-              <div className="flex flex-col pb-3 pt-1">
-                {rows.map((row, rowIndex) => (
-                  <div key={rowIndex} className="relative">
-                    {/* Books stand on the shelf, their base resting halfway down
-                        the upper face (negative margin overlaps the ledge by half
-                        the 12px face); z-[1] keeps books in front of that face. */}
-                    <div
-                      className="relative z-[1] flex items-end gap-5"
-                      style={{
-                        paddingLeft: SHELF_GUTTER,
-                        paddingRight: SHELF_GUTTER,
-                        minHeight: 168,
-                        marginBottom: -6,
-                      }}
-                    >
-                      {row.map((entry) => (
-                        <ShelfBook
-                          key={entry.path}
-                          entry={entry}
-                          progress={progressByPath[entry.path]}
-                          onOpen={onOpenBook}
-                          onContextMenu={openContextMenu}
-                          morphLayout
-                          layoutAnimated={layoutAnimated}
-                          isDark={isDarkMode}
-                        />
-                      ))}
-                    </div>
-                    <ShelfLedge isDark={isDarkMode} />
-                  </div>
-                ))}
-                {/* Empty shelves so the bookcase fills the viewport */}
-                {Array.from({ length: emptyRowCount }).map((_, i) => (
-                  <div key={`empty-${i}`} className="relative" aria-hidden>
-                    <div style={{ minHeight: 168 }} />
-                    <ShelfLedge isDark={isDarkMode} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1 p-2">
-                {library.map((entry) => (
-                  <BookListRow
-                    key={entry.path}
-                    entry={entry}
-                    progress={progressByPath[entry.path]}
-                    onOpen={onOpenBook}
-                    onContextMenu={openContextMenu}
-                    morphLayout
-                    layoutAnimated={layoutAnimated}
-                    isDark={isDarkMode}
-                  />
-                ))}
-              </div>
-            )}
-          </LayoutGroup>
-        )}
       </div>
 
       {/* Right-click / long-press context menu. Portaled to <body> so its
