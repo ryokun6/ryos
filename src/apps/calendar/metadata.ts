@@ -12,9 +12,9 @@ export const appMetadata = {
 export const helpItems = [
   {
     icon: "📅",
-    title: "Navigate Months",
+    title: "Swipe to Navigate",
     description:
-      "Use the arrow buttons to flip months, or hit Today to snap back to now",
+      "Swipe left or right to flip days, weeks, and months — or use the arrow buttons. Hit Today to snap back to now",
   },
   {
     icon: "➕",

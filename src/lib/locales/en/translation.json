@@ -3764,8 +3764,8 @@
       "today": "Today",
       "help": {
         "navigateMonths": {
-          "title": "Navigate Months",
-          "description": "Use the arrow buttons to flip months, or hit Today to snap back to now"
+          "title": "Swipe to Navigate",
+          "description": "Swipe left or right to flip days, weeks, and months — or use the arrow buttons. Hit Today to snap back to now"
         },
         "createEvents": {
           "title": "Create Events",
@@ -3787,6 +3787,10 @@
           "title": "Undo & Auto-Save",
           "description": "Every change auto-saves; ⌘Z reverts deletes, edits, and even bulk imports"
         }
+      },
+      "navigate": {
+        "previous": "Previous",
+        "next": "Next"
       }
     },
     "contacts": {

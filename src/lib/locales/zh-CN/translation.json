@@ -955,8 +955,8 @@
           "title": "iCal 导入/导出"
         },
         "navigateMonths": {
-          "description": "使用箭头按钮切换月份，或点按“今天”返回当前日期",
-          "title": "切换月份"
+          "description": "向左或向右轻扫以翻阅日、周和月，或者使用箭头按钮。点按“今天”即可回到当前日期。",
+          "title": "轻扫以导航"
         },
         "ryoSchedules": {
           "description": "在“聊天”中请 Ryo 添加、编辑或总结即将到来的日程",
@@ -991,6 +991,10 @@
         "weekView": "周视图"
       },
       "name": "日历",
+      "navigate": {
+        "next": "下一个",
+        "previous": "上一个"
+      },
       "sidebar": {
         "calendars": "日历",
         "newTodoPlaceholder": "新建待办事项…",

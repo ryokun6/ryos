@@ -274,6 +274,7 @@ export function TimedEventBlock({
 
   return (
     <div
+      data-no-period-swipe
       className="absolute left-0.5 right-0.5 rounded overflow-hidden select-none"
       style={{
         top: Math.max(top, 0),

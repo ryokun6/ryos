@@ -955,8 +955,8 @@
           "title": "iCalのインポート / エクスポート"
         },
         "navigateMonths": {
-          "description": "矢印ボタンで月を切り替えるか、「今日」をクリックして現在の月に戻ります",
-          "title": "月の移動"
+          "description": "左右にスワイプして日、週、月を切り替えるか、矢印ボタンを使用します。「今日」をタップすると、現在の日付にすぐ戻ります。",
+          "title": "スワイプして移動"
         },
         "ryoSchedules": {
           "description": "チャットでRyoに頼んで、今後のイベントの追加、編集、要約を行えます",
@@ -991,6 +991,10 @@
         "weekView": "週表示"
       },
       "name": "カレンダー",
+      "navigate": {
+        "next": "次へ",
+        "previous": "前へ"
+      },
       "sidebar": {
         "calendars": "カレンダー",
         "newTodoPlaceholder": "新規To Do…",

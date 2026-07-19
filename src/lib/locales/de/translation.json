@@ -955,8 +955,8 @@
           "title": "iCal Import / Export"
         },
         "navigateMonths": {
-          "description": "Nutze die Pfeiltasten zum Wechseln der Monate oder klicke auf Heute, um zum aktuellen Datum zu springen",
-          "title": "Durch Monate navigieren"
+          "description": "Streiche nach links oder rechts, um durch Tage, Wochen und Monate zu blättern — oder verwende die Pfeiltasten. Klicke auf „Heute“, um zum aktuellen Datum zurückzukehren",
+          "title": "Zum Navigieren streichen"
         },
         "ryoSchedules": {
           "description": "Frage Ryo in Chats, um anstehende Ereignisse für dich hinzuzufügen, zu bearbeiten oder zusammenzufassen",
@@ -991,6 +991,10 @@
         "weekView": "Wochenansicht"
       },
       "name": "Kalender",
+      "navigate": {
+        "next": "Weiter",
+        "previous": "Zurück"
+      },
       "sidebar": {
         "calendars": "Kalender",
         "newTodoPlaceholder": "Neue Aufgabe…",
