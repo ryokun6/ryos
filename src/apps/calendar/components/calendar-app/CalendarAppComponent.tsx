@@ -471,7 +471,7 @@ export function CalendarAppComponent({
                       style={{ borderColor: "rgba(0,0,0,0.1)" }}
                       onClick={() => setShowMobileCalendarsPanel(false)}
                     >
-                      {t("apps.calendar.tray.done")}
+                      {t("apps.calendar.sidebar.done")}
                     </button>
                   </div>
                 )}

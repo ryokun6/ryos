@@ -3737,7 +3737,8 @@
         "calendars": "Calendars",
         "toDoItems": "To Do Items",
         "noTodoItems": "No to-do items",
-        "newTodoPlaceholder": "New To Do…"
+        "newTodoPlaceholder": "New To Do…",
+        "done": "Done"
       },
       "tray": {
         "eventDetails": "Event Details",

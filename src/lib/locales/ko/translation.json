@@ -997,6 +997,7 @@
       },
       "sidebar": {
         "calendars": "캘린더",
+        "done": "완료",
         "newTodoPlaceholder": "새로운 할 일…",
         "noTodoItems": "할 일이 없습니다",
         "toDoItems": "할 일 항목"

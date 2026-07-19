@@ -1001,6 +1001,7 @@
       },
       "sidebar": {
         "calendars": "Календари",
+        "done": "Готово",
         "newTodoPlaceholder": "Новое Дело…",
         "noTodoItems": "Нет дел",
         "toDoItems": "Дела"

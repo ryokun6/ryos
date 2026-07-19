@@ -997,6 +997,7 @@
       },
       "sidebar": {
         "calendars": "カレンダー",
+        "done": "完了",
         "newTodoPlaceholder": "新規To Do…",
         "noTodoItems": "To Do項目はありません",
         "toDoItems": "To Do項目"

@@ -997,6 +997,7 @@
       },
       "sidebar": {
         "calendars": "日历",
+        "done": "完成",
         "newTodoPlaceholder": "新建待办事项…",
         "noTodoItems": "没有待办事项",
         "toDoItems": "待办事项"

@@ -997,6 +997,7 @@
       },
       "sidebar": {
         "calendars": "Kalender",
+        "done": "Fertig",
         "newTodoPlaceholder": "Neue Aufgabe…",
         "noTodoItems": "Keine Aufgaben",
         "toDoItems": "Aufgaben"

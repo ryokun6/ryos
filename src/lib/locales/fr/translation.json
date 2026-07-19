@@ -999,6 +999,7 @@
       },
       "sidebar": {
         "calendars": "Calendriers",
+        "done": "Terminé",
         "newTodoPlaceholder": "Nouvelle tâche…",
         "noTodoItems": "Aucune tâche",
         "toDoItems": "Tâches"

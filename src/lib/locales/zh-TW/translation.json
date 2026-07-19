@@ -997,6 +997,7 @@
       },
       "sidebar": {
         "calendars": "行事曆",
+        "done": "完成",
         "newTodoPlaceholder": "新增待辦事項⋯",
         "noTodoItems": "沒有待辦事項",
         "toDoItems": "待辦事項"

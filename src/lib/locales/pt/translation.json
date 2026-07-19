@@ -999,6 +999,7 @@
       },
       "sidebar": {
         "calendars": "Calendários",
+        "done": "OK",
         "newTodoPlaceholder": "Nova Tarefa…",
         "noTodoItems": "Nenhuma tarefa",
         "toDoItems": "Tarefas"

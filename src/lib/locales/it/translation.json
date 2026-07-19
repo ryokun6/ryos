@@ -999,6 +999,7 @@
       },
       "sidebar": {
         "calendars": "Calendari",
+        "done": "Fine",
         "newTodoPlaceholder": "Nuovo elemento da fare…",
         "noTodoItems": "Nessun elemento da fare",
         "toDoItems": "Elementi da fare"
