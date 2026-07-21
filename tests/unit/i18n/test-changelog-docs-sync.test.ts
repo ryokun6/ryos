@@ -6,6 +6,7 @@ const CHANGELOG_MD = "docs/9-changelog.md";
 const CHANGELOG_HTML = "public/docs/changelog.html";
 /** Curated major entries that must appear in both markdown source and static HTML. */
 const ANCHOR_PHRASES = [
+  "Internet Explorer Reader Mode",
   "Weather and location tools",
   "Save anywhere",
   "Desktop Assistant",
@@ -93,11 +94,13 @@ describe("changelog docs sync", () => {
     expect(
       [...julyFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
     ).toEqual([
+      "/docs-assets/changelog/2026-07-08-ie-reader-mode-16x9.webp",
       "/docs-assets/changelog/2026-07-07-weather-location-16x9.webp",
       "/docs-assets/changelog/2026-07-07-save-anywhere-16x9.webp",
       "/docs-assets/changelog/2026-07-06-desktop-assistant-16x9.webp",
       "/docs-assets/changelog/2026-07-01-books-library-16x9.webp",
     ]);
+    expect(julyFeatured).toContain("<h3>Internet Explorer Reader Mode</h3>");
     expect(julyFeatured).toContain("<h3>Weather &amp; location tools</h3>");
     expect(julyFeatured).toContain("<h3>Save anywhere</h3>");
     expect(julyFeatured).toContain("<h3>Desktop Assistant</h3>");
