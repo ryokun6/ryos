@@ -20,14 +20,16 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 ## July 2026
 
 <div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-08-ie-reader-mode-16x9.webp" alt="Internet Explorer Reader Mode in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Internet Explorer Reader Mode</h3><p>Heavy modern pages open as a clean article view so the desktop stays responsive.</p></div></article>
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-07-weather-location-16x9.webp" alt="Weather and location tools in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Weather &amp; location tools</h3><p>Ryo fetches live forecasts and asks for precise location with an in-chat Allow / Don't Allow card.</p></div></article>
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-07-save-anywhere-16x9.webp" alt="Save anywhere VFS in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Save anywhere</h3><p>Create root folders in Finder and save documents to any writable path across apps.</p></div></article>
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-06-desktop-assistant-16x9.webp" alt="Desktop Assistant in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Desktop Assistant</h3><p>Clippy, Rover, and friends float on the desktop with AI chat, speech, and custom behaviors.</p></div></article>
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books library</h3><p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p></div></article>
 </div>
 <details>
-<summary>More from this month (26)</summary>
+<summary>More from this month (27)</summary>
 
+- **Internet Explorer Reader Mode**: oversized modern pages (about 1 MB+) open as a lite article view with Open original, so heavy sites no longer freeze the shared desktop tab.
 - Add **runJs** chat tool: a QuickJS WASM sandbox runs pure ES2023 on the server and returns console output plus the completion value.
 - Add **getWeather** and **getPreciseLocation** AI tools with Open-Meteo forecasts and an approval-gated location permission card in web chat.
 - Allow user-created root folders and save-anywhere VFS: Finder can create folders at `/`, and Save dialogs list every writable directory.
