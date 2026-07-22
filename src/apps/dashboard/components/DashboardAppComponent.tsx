@@ -22,7 +22,8 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Emoji } from "@/components/shared/Emoji";
+import { WIDGET_ICONS } from "@/components/layout/dashboard/dashboardWidgetConstants";
+import { WidgetBarIcon } from "@/components/layout/dashboard/WidgetBarIcon";
 
 type WidgetFrontProps = {
   widgetId: string;
@@ -240,20 +241,6 @@ function WidgetOverflow({ type, widgetId }: { type: WidgetType; widgetId: string
   );
 }
 
-const WIDGET_ICONS: Record<WidgetType, string> = {
-  clock: "🕐",
-  calendar: "📅",
-  weather: "🌤️",
-  stocks: "📈",
-  ipod: "🎵",
-  translation: "🌐",
-  currency: "💱",
-  stickynote: "📝",
-  dictionary: "📖",
-  aquarium: "🐠",
-  terrarium: "🌿",
-};
-
 function WidgetStrip({
   onAdd,
   isWindowsTheme,
@@ -373,7 +360,11 @@ function WidgetStrip({
                   filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
                 }}
               >
-                <Emoji emoji={WIDGET_ICONS[w.type]} size={36} />
+                <WidgetBarIcon
+                  icon={WIDGET_ICONS[w.type]}
+                  size={36}
+                  alt={w.label}
+                />
               </motion.div>
               <span
                 className="text-[10px] font-bold text-center leading-tight max-w-[72px] truncate"

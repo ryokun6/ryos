@@ -42,6 +42,9 @@ describe("getClientIp", () => {
   });
 
   test("trusts the standalone-server peer IP header", () => {
+    // Explicitly clear — cloud/dev shells may inject TRUSTED_PROXY_COUNT=1,
+    // which would make XFF win over the peer header.
+    setTrustedProxyCount(undefined);
     const ip = getClientIp(
       reqWith({
         [PEER_IP_HEADER]: "198.51.100.7",
@@ -52,6 +55,7 @@ describe("getClientIp", () => {
   });
 
   test("trusts cf-connecting-ip when no peer header is present", () => {
+    setTrustedProxyCount(undefined);
     const ip = getClientIp(
       reqWith({
         "cf-connecting-ip": "203.0.113.50",

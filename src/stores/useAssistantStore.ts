@@ -1,11 +1,12 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import type { AIChatMessage } from "@/types/chat";
 import {
   DEFAULT_ASSISTANT_CHARACTER_ID,
   type AssistantCharacterId,
 } from "@/components/assistant/characters";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { createLiveJsonStorage } from "@/utils/liveJsonStorage";
 import {
   ASSISTANT_INSTRUCTIONS_MAX_LENGTH,
   DEFAULT_ASSISTANT_RESPONSE_STYLE,
@@ -112,7 +113,7 @@ export const useAssistantStore = create<AssistantStoreState>()(
     {
       name: STORAGE_KEYS.assistant,
       version: ASSISTANT_STORE_VERSION,
-      storage: createJSONStorage(() => localStorage),
+      storage: createLiveJsonStorage(),
       partialize: (state) => ({
         enabled: state.enabled,
         characterId: state.characterId,

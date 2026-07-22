@@ -122,6 +122,9 @@ describe("self-host storage backend selection", () => {
     process.env.S3_ACCESS_KEY_ID = "key";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
     delete process.env.S3_FORCE_PATH_STYLE;
+    // Cloud/dev shells may inject proxy upload mode; this case wants a
+    // direct presigned PUT URL.
+    delete process.env.STORAGE_CLIENT_UPLOAD;
 
     const upload = await createStorageUploadDescriptor({
       pathname: "sync/test/files-images.gz",
@@ -149,6 +152,7 @@ describe("self-host storage backend selection", () => {
     process.env.S3_ACCESS_KEY_ID = "key";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
     process.env.S3_FORCE_PATH_STYLE = "false";
+    delete process.env.STORAGE_CLIENT_UPLOAD;
 
     const upload = await createStorageUploadDescriptor({
       pathname: "sync/test/files-images.gz",
@@ -173,6 +177,7 @@ describe("self-host storage backend selection", () => {
     process.env.S3_ACCESS_KEY_ID = "key";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
     process.env.S3_FORCE_PATH_STYLE = "true";
+    delete process.env.STORAGE_CLIENT_UPLOAD;
 
     const upload = await createStorageUploadDescriptor({
       pathname: "sync/test/files-images.gz",

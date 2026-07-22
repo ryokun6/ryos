@@ -28,5 +28,10 @@ Each catalog contains:
 - `folders/` - converted PNGs for CoreServices folder icons.
 - `devices/` - converted PNGs for CoreServices device, display, disk, and network icons.
 - `file-types/` - converted PNGs for key system and app document/file type icons.
+- `dashboard-widgets/` (Tiger) - stock Dashboard Widget Bar `Icon.png` files from `/Library/Widgets/*.wdgt`.
 - `catalog.json` - machine-readable metadata with source bundle/icon paths.
 - `catalog.md` - browsable table of the same entries.
+
+Tiger Dashboard Widget Bar icons are also copied into
+`/public/icons/dashboard-widgets/` for active use by the ryOS Dashboard widget
+strip and Add Widget menu.
