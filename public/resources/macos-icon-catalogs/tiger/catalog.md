@@ -4,6 +4,8 @@ Source: [Mac OS X Tiger 10.4 Retail DVD](https://archive.org/details/macosx10.4t
 
 Generated entries: 319 (51 applications, 10 System Preferences panes, 61 folders, 81 devices/displays, 81 file types, 35 dialog/UI assets).
 
+Dashboard Widget Bar icons (`Icon.png` from `/Library/Widgets/*.wdgt`) were also extracted from the [Mac OS X Tiger Install Disc (2005)](https://archive.org/details/MacOSXTigerInstallDisc2005) into [`dashboard-widgets/`](./dashboard-widgets/catalog.md).
+
 ## Applications
 
 | Name | PNG | Source bundle | Source icon | Size |

@@ -6,7 +6,9 @@ import {
 } from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
-import { Emoji } from "@/components/shared/Emoji";
+import { WIDGET_ICONS } from "@/components/layout/dashboard/dashboardWidgetConstants";
+import { WidgetBarIcon } from "@/components/layout/dashboard/WidgetBarIcon";
+import type { WidgetType } from "@/stores/useDashboardStore";
 
 interface DashboardMenuBarProps {
   onClose: () => void;
@@ -56,14 +58,14 @@ export function DashboardMenuBar({
   } = useAppMenuBarChrome("dashboard");
 
   const widgetItem = (
-    emoji: string,
+    type: WidgetType,
     label: string,
     onClick: () => void
   ): MenuItemDescriptor => ({
     type: "action",
     label: (
       <>
-        <Emoji emoji={emoji} size={14} />
+        <WidgetBarIcon icon={WIDGET_ICONS[type]} size={14} alt="" />
         {label}
       </>
     ),
@@ -79,22 +81,30 @@ export function DashboardMenuBar({
           type: "submenu",
           label: t("apps.dashboard.menu.addWidget"),
           items: [
-            widgetItem("🕐", t("apps.dashboard.widgets.clock"), onAddClock),
+            widgetItem("clock", t("apps.dashboard.widgets.clock"), onAddClock),
             widgetItem(
-              "📅",
+              "calendar",
               t("apps.dashboard.widgets.calendar"),
               onAddCalendar
             ),
-            widgetItem("🌤️", t("apps.dashboard.widgets.weather"), onAddWeather),
-            widgetItem("📈", t("apps.dashboard.widgets.stocks"), onAddStocks),
-            widgetItem("🎵", t("apps.dashboard.widgets.ipod", "iPod"), onAddIpod),
             widgetItem(
-              "🌐",
+              "weather",
+              t("apps.dashboard.widgets.weather"),
+              onAddWeather
+            ),
+            widgetItem("stocks", t("apps.dashboard.widgets.stocks"), onAddStocks),
+            widgetItem(
+              "ipod",
+              t("apps.dashboard.widgets.ipod", "iPod"),
+              onAddIpod
+            ),
+            widgetItem(
+              "translation",
               t("apps.dashboard.widgets.translation", "Translation"),
               onAddTranslation
             ),
             widgetItem(
-              "💱",
+              "currency",
               t(
                 "apps.dashboard.widgets.currencyConverter",
                 "Currency Converter"
@@ -102,22 +112,22 @@ export function DashboardMenuBar({
               onAddCurrency
             ),
             widgetItem(
-              "📝",
+              "stickynote",
               t("apps.dashboard.widgets.stickyNote", "Sticky Note"),
               onAddStickyNote
             ),
             widgetItem(
-              "📖",
+              "dictionary",
               t("apps.dashboard.widgets.dictionary", "Dictionary"),
               onAddDictionary
             ),
             widgetItem(
-              "🐠",
+              "aquarium",
               t("apps.dashboard.widgets.aquarium", "Aquarium"),
               onAddAquarium
             ),
             widgetItem(
-              "🌿",
+              "terrarium",
               t("apps.dashboard.widgets.terrarium", "Terrarium"),
               onAddTerrarium
             ),
