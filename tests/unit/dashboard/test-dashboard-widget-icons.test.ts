@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   WIDGET_ICONS,
+  WIDGET_TRAY_ICON_SIZE,
+  WIDGET_TRAY_ITEM_MIN_WIDTH,
   isWidgetImageIcon,
 } from "@/components/layout/dashboard/dashboardWidgetConstants";
 import type { WidgetType } from "@/stores/useDashboardStore";
@@ -43,6 +45,13 @@ describe("dashboard widget icons", () => {
       const diskPath = resolve(process.cwd(), "public" + icon);
       expect(existsSync(diskPath)).toBe(true);
     }
+  });
+
+  test("sizes the Dashboard widget tray for larger Tiger icons", () => {
+    expect(WIDGET_TRAY_ICON_SIZE).toBeGreaterThanOrEqual(64);
+    expect(WIDGET_TRAY_ITEM_MIN_WIDTH).toBeGreaterThanOrEqual(
+      WIDGET_TRAY_ICON_SIZE
+    );
   });
 
   test("catalogs the full Tiger Widget Bar set including unused stock icons", () => {
