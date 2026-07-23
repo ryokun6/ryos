@@ -21,6 +21,7 @@ import {
   getSyncNamespaceCategory,
   isSyncBlobNamespace,
   SYNC_NAMESPACES,
+  type SyncBlobNamespace,
   type SyncNamespace,
 } from "@/shared/sync2/namespaces";
 import {
@@ -63,7 +64,10 @@ import {
 } from "@/sync/codecs";
 import { getPersistedSyncShadowKeys } from "@/sync/stateStorage";
 import { useFilesStore } from "@/stores/useFilesStore";
-import type { IndexedDBStoreItemWithKey as StoreItemWithKey } from "@/utils/indexedDBBackup";
+import {
+  readStoreItemsByKeys,
+  type IndexedDBStoreItemWithKey as StoreItemWithKey,
+} from "@/utils/indexedDBBackup";
 
 const FLUSH_DEBOUNCE_MS = 1000;
 const FLUSH_MAX_DEBOUNCE_MS = 3000;
@@ -875,7 +879,9 @@ export class CloudSyncEngine {
    * timestamp matches the shadow are skipped.
    */
   async applySnapshot(force: boolean): Promise<void> {
-    const snapshot = await getSyncSnapshot(this.abortController.signal);
+    const snapshot = await getSyncSnapshot({
+      signal: this.abortController.signal,
+    });
     if (this.stopped) return;
     const ops: SyncOp[] = [];
 
@@ -893,7 +899,7 @@ export class CloudSyncEngine {
         entryCount: Object.keys(snapshot.entries).length,
         ops: summarizeSyncOps(ops),
       });
-      await this.applyRemoteOps(ops);
+      await this.applyRemoteOps(ops, { force });
     } else {
       cloudSyncLog.debug("Snapshot already current", {
         force,
@@ -902,6 +908,74 @@ export class CloudSyncEngine {
       });
     }
     this.state.setCursor(snapshot.seq);
+  }
+
+  /**
+   * Ensure a single blob-namespace item is present in IndexedDB, re-fetching
+   * from cloud when the VFS metadata/shadow says it should exist but the
+   * local bytes are gone (Safari IDB loss, quota eviction, partial restore).
+   */
+  async ensureBlobItemLocal(
+    namespace: SyncBlobNamespace,
+    storeKey: string
+  ): Promise<boolean> {
+    if (!storeKey || this.stopped) return false;
+    if (!this.isNamespaceEnabled(namespace)) {
+      cloudSyncLog.debug("ensureBlobItemLocal skipped; category disabled", {
+        namespace,
+        storeKey,
+      });
+      return false;
+    }
+    const codec = SYNC_CODECS[namespace];
+    if (!isBlobCodec(codec)) return false;
+
+    const syncKey = `${namespace}/item:${storeKey}`;
+    const db = await ensureIndexedDBInitialized();
+    try {
+      const existing = await readStoreItemsByKeys(db, codec.storeName, [
+        storeKey,
+      ]);
+      if (existing.length > 0) return true;
+
+      cloudSyncLog.debug("Local blob missing; fetching from cloud", {
+        namespace,
+        storeKey,
+      });
+      const snapshot = await getSyncSnapshot({
+        signal: this.abortController.signal,
+        prefix: syncKey,
+      });
+      if (this.stopped) return false;
+
+      const entry = snapshot.entries[syncKey];
+      if (!entry || entry.del) {
+        cloudSyncLog.warn("Cloud blob entry missing for local file", {
+          namespace,
+          storeKey,
+        });
+        return false;
+      }
+
+      await this.applyRemoteOps([this.entryToOp(syncKey, entry)], {
+        force: true,
+      });
+
+      const restored = await readStoreItemsByKeys(db, codec.storeName, [
+        storeKey,
+      ]);
+      return restored.length > 0;
+    } catch (error) {
+      if (this.stopped || isAbortError(error)) return false;
+      cloudSyncLog.error("ensureBlobItemLocal failed", {
+        namespace,
+        storeKey,
+        error,
+      });
+      return false;
+    } finally {
+      db.close();
+    }
   }
 
   private entryToOp(key: string, entry: SyncKvEntry): SyncOp {
@@ -973,7 +1047,10 @@ export class CloudSyncEngine {
   // Remote op application
   // -------------------------------------------------------------------------
 
-  async applyRemoteOps(ops: SyncOp[]): Promise<void> {
+  async applyRemoteOps(
+    ops: SyncOp[],
+    options: { force?: boolean } = {}
+  ): Promise<void> {
     const clientId = getSyncClientId();
     const byNamespace = new Map<SyncNamespace, AppliedSyncOp[]>();
     let skippedOwnCount = 0;
@@ -990,7 +1067,10 @@ export class CloudSyncEngine {
       }
 
       const shadow = this.state.getShadow(op.k);
-      if (shadow && shadow.t === op.t) {
+      // Force downloads must re-enter appliers even when the shadow timestamp
+      // already matches — blob namespaces verify IndexedDB presence and may
+      // need to re-hydrate missing local bytes.
+      if (!options.force && shadow && shadow.t === op.t) {
         skippedAlreadyAppliedCount += 1;
         continue; // already applied
       }
@@ -1120,6 +1200,13 @@ export class CloudSyncEngine {
       url: string;
       size: number;
     }> = [];
+    const maybeLocal: Array<{
+      op: AppliedSyncOp;
+      contentHash: string;
+      url: string;
+      size: number;
+      storeKey: string;
+    }> = [];
 
     for (const op of ops) {
       if (!op.k.startsWith(prefix)) continue;
@@ -1133,11 +1220,47 @@ export class CloudSyncEngine {
       const contentHash = ref.sha256 || ref.sig || "";
       const shadow = this.state.getShadow(op.k);
       if (contentHash && shadow?.h === contentHash) {
-        // Content already local; record the new timestamp.
-        this.state.setShadow(op.k, { t: op.t, h: contentHash });
+        // Shadow says we already have these bytes — but IndexedDB can lose
+        // them (Safari, quota, partial wipe) while the shadow survives.
+        // Verify presence before skipping the download.
+        maybeLocal.push({
+          op,
+          contentHash,
+          url: ref.url,
+          size: ref.size,
+          storeKey: op.k.slice(prefix.length),
+        });
         continue;
       }
       downloads.push({ op, contentHash, url: ref.url, size: ref.size });
+    }
+
+    if (maybeLocal.length > 0) {
+      const db = ctx.db;
+      if (!db) {
+        downloads.push(...maybeLocal);
+      } else {
+        const present = await readStoreItemsByKeys(
+          db,
+          codec.storeName,
+          maybeLocal.map((item) => item.storeKey)
+        );
+        const presentKeys = new Set(present.map((item) => item.key));
+        for (const item of maybeLocal) {
+          if (presentKeys.has(item.storeKey)) {
+            this.state.setShadow(item.op.k, {
+              t: item.op.t,
+              h: item.contentHash,
+            });
+          } else {
+            cloudSyncLog.warn(
+              "Blob shadow matched but local content missing; re-downloading",
+              { namespace, key: item.op.k }
+            );
+            downloads.push(item);
+          }
+        }
+      }
     }
 
     if (deletes.length > 0) {
@@ -1300,7 +1423,9 @@ export class CloudSyncEngine {
 
     try {
       cloudSyncLog.debug("Manual restore promotion started", { namespaces });
-      const snapshot = await getSyncSnapshot(this.abortController.signal);
+      const snapshot = await getSyncSnapshot({
+        signal: this.abortController.signal,
+      });
       if (this.stopped) {
         throw new DOMException("Cloud sync stopped", "AbortError");
       }

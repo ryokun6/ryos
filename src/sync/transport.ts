@@ -60,12 +60,19 @@ export async function getSyncChanges(
 }
 
 export async function getSyncSnapshot(
-  signal?: AbortSignal
+  options: { signal?: AbortSignal; prefix?: string } = {}
 ): Promise<GetSnapshotResponse> {
-  const response = await abortableFetch(getApiUrl("/api/sync/v2/snapshot"), {
+  const prefix =
+    typeof options.prefix === "string" && options.prefix.length > 0
+      ? options.prefix
+      : undefined;
+  const url = prefix
+    ? `/api/sync/v2/snapshot?prefix=${encodeURIComponent(prefix)}`
+    : "/api/sync/v2/snapshot";
+  const response = await abortableFetch(getApiUrl(url), {
     method: "GET",
     timeout: 30000,
-    signal,
+    signal: options.signal,
     throwOnHttpError: false,
     retry: { maxAttempts: 2, initialDelayMs: 500 },
   });
