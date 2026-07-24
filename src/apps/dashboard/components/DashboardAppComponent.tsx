@@ -341,7 +341,7 @@ function WidgetStrip({
         )}
         <div
           ref={scrollRef}
-          className="widget-strip-scroll flex items-start gap-6 overflow-x-auto px-8 py-3"
+          className="widget-strip-scroll flex items-start gap-6 overflow-x-auto px-8 py-2"
           style={{
             justifyContent: "center",
             position: "relative",
@@ -353,7 +353,7 @@ function WidgetStrip({
               key={w.type}
               type="button"
               onClick={() => onAdd(w.type)}
-              className="flex flex-col items-center gap-2 shrink-0 group"
+              className="flex flex-col items-center gap-1.5 shrink-0 group"
               style={{ minWidth: WIDGET_TRAY_ITEM_MIN_WIDTH }}
             >
               <motion.div
