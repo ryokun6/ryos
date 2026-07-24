@@ -955,8 +955,8 @@
           "title": "iCal 匯入 / 匯出"
         },
         "navigateMonths": {
-          "description": "使用箭頭按鈕切換月份，或點擊「今天」返回目前日期",
-          "title": "切換月份"
+          "description": "向左或向右滑動來切換日、週和月 — 或使用箭頭按鈕。點一下「今天」即可返回目前時間。",
+          "title": "滑動來導覽"
         },
         "ryoSchedules": {
           "description": "在聊天中要求 Ryo 為您新增、編輯或摘要即將到來的行程",
@@ -991,8 +991,13 @@
         "weekView": "整週檢視區"
       },
       "name": "行事曆",
+      "navigate": {
+        "next": "下一個",
+        "previous": "上一個"
+      },
       "sidebar": {
         "calendars": "行事曆",
+        "done": "完成",
         "newTodoPlaceholder": "新增待辦事項⋯",
         "noTodoItems": "沒有待辦事項",
         "toDoItems": "待辦事項"
