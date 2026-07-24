@@ -341,7 +341,7 @@ function WidgetStrip({
         )}
         <div
           ref={scrollRef}
-          className="widget-strip-scroll flex items-start gap-6 overflow-x-auto px-8 py-7"
+          className="widget-strip-scroll flex items-start gap-6 overflow-x-auto px-8 py-3"
           style={{
             justifyContent: "center",
             position: "relative",
