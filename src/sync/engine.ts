@@ -914,10 +914,15 @@ export class CloudSyncEngine {
    * Ensure a single blob-namespace item is present in IndexedDB, re-fetching
    * from cloud when the VFS metadata/shadow says it should exist but the
    * local bytes are gone (Safari IDB loss, quota eviction, partial restore).
+   *
+   * With `forceReload`, an existing local record is discarded first so a
+   * corrupt/unreadable blob can be replaced from cloud (used by the Books
+   * Safari Blob recovery path).
    */
   async ensureBlobItemLocal(
     namespace: SyncBlobNamespace,
-    storeKey: string
+    storeKey: string,
+    options: { forceReload?: boolean } = {}
   ): Promise<boolean> {
     if (!storeKey || this.stopped) return false;
     if (!this.isNamespaceEnabled(namespace)) {
@@ -932,16 +937,29 @@ export class CloudSyncEngine {
 
     const syncKey = `${namespace}/item:${storeKey}`;
     const db = await ensureIndexedDBInitialized();
+    const ctx: CodecContext = { db };
     try {
       const existing = await readStoreItemsByKeys(db, codec.storeName, [
         storeKey,
       ]);
-      if (existing.length > 0) return true;
+      if (existing.length > 0 && !options.forceReload) return true;
 
-      cloudSyncLog.debug("Local blob missing; fetching from cloud", {
-        namespace,
-        storeKey,
-      });
+      if (existing.length > 0 && options.forceReload) {
+        // Drop the unreadable local record and its shadow so applyBlobOps
+        // cannot treat the stale hash as "already local".
+        cloudSyncLog.debug("Force-reloading local blob from cloud", {
+          namespace,
+          storeKey,
+        });
+        await codec.deleteItems([storeKey], ctx);
+        this.state.deleteShadow(syncKey);
+      } else {
+        cloudSyncLog.debug("Local blob missing; fetching from cloud", {
+          namespace,
+          storeKey,
+        });
+      }
+
       const snapshot = await getSyncSnapshot({
         signal: this.abortController.signal,
         prefix: syncKey,

@@ -236,6 +236,77 @@ describe("cloud sync blob missing-local repair", () => {
     }
   });
 
+  test("ensureBlobItemLocal forceReload replaces an existing corrupt local blob", async () => {
+    const item = await bookStoreItem("good-bytes");
+    const digest = await sha256Json(item);
+    const compressed = await gzipJson(item);
+    let downloadCount = 0;
+
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/sync/v2/snapshot")) {
+        return Response.json({
+          ok: true,
+          seq: 7,
+          entries: {
+            [SYNC_KEY]: {
+              v: {
+                blob: {
+                  url: "https://example.test/book.gz",
+                  size: compressed.byteLength,
+                  sha256: digest,
+                },
+              },
+              t,
+              seq: 7,
+            },
+          },
+        });
+      }
+      if (url.includes("example.test/book.gz")) {
+        downloadCount += 1;
+        return new Response(new Blob([compressed]), {
+          status: 200,
+          headers: { "content-length": String(compressed.byteLength) },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    await dbOperations.put(
+      STORES.BOOKS,
+      { name: BOOK_NAME, content: new Blob(["bad"]) },
+      BOOK_UUID
+    );
+
+    const engine = await CloudSyncEngine.create(
+      `blob-force-reload-${crypto.randomUUID()}`
+    );
+    try {
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      state.setShadow(SYNC_KEY, { t, h: digest });
+
+      // Without forceReload, presence short-circuits.
+      const skipped = await engine.ensureBlobItemLocal("books", BOOK_UUID);
+      expect(skipped).toBe(true);
+      expect(downloadCount).toBe(0);
+
+      const ok = await engine.ensureBlobItemLocal("books", BOOK_UUID, {
+        forceReload: true,
+      });
+      expect(ok).toBe(true);
+      expect(downloadCount).toBe(1);
+
+      const restored = await dbOperations.get<{ content: ArrayBuffer }>(
+        STORES.BOOKS,
+        BOOK_UUID
+      );
+      expect(new TextDecoder().decode(restored!.content)).toBe("good-bytes");
+    } finally {
+      await engine.stop();
+    }
+  });
+
   test("matching shadow with local content still skips download", async () => {
     const item = await bookStoreItem("already-local");
     const digest = await sha256Json(item);

@@ -406,7 +406,8 @@ function scheduleDefaultBookWarmup(): void {
  */
 async function ensureCloudBlobContentLoaded(
   storeName: string,
-  uuid: string
+  uuid: string,
+  options: { forceReload?: boolean } = {}
 ): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return false;
@@ -424,7 +425,9 @@ async function ensureCloudBlobContentLoaded(
     }
     const engine = getActiveCloudSyncEngine();
     if (!engine) return false;
-    return engine.ensureBlobItemLocal(namespace, uuid);
+    return engine.ensureBlobItemLocal(namespace, uuid, {
+      forceReload: options.forceReload,
+    });
   } catch (error) {
     console.warn(
       `[FilesStore] Cloud blob hydrate failed for ${storeName}/${uuid}:`,
@@ -524,11 +527,14 @@ export async function ensureFileContentLoaded(
     }
     if (!pendingFile?.assetPath) {
       // User-imported / synced binaries have no bundled assetPath. When the
-      // VFS metadata still points at a UUID whose IndexedDB payload is gone,
-      // ask cloud sync to re-hydrate that single blob.
+      // VFS metadata still points at a UUID whose IndexedDB payload is gone
+      // (or forceReload needs to replace an unreadable Blob), ask cloud sync
+      // to re-hydrate that single blob.
       loadingAssets.add(uuid);
       try {
-        return await ensureCloudBlobContentLoaded(storeName, uuid);
+        return await ensureCloudBlobContentLoaded(storeName, uuid, {
+          forceReload: options.forceReload,
+        });
       } finally {
         loadingAssets.delete(uuid);
       }
