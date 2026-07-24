@@ -27,3 +27,9 @@ export const WIDGET_ICONS: Record<WidgetType, string> = {
 export function isWidgetImageIcon(icon: string): boolean {
   return icon.startsWith("/") || icon.startsWith("http");
 }
+
+/** Pixel size for Tiger Widget Bar icons in the Dashboard add-widget tray. */
+export const WIDGET_TRAY_ICON_SIZE = 64;
+
+/** Minimum column width for each tray item (icon + label). */
+export const WIDGET_TRAY_ITEM_MIN_WIDTH = 96;

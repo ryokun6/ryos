@@ -22,7 +22,11 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { WIDGET_ICONS } from "@/components/layout/dashboard/dashboardWidgetConstants";
+import {
+  WIDGET_ICONS,
+  WIDGET_TRAY_ICON_SIZE,
+  WIDGET_TRAY_ITEM_MIN_WIDTH,
+} from "@/components/layout/dashboard/dashboardWidgetConstants";
 import { WidgetBarIcon } from "@/components/layout/dashboard/WidgetBarIcon";
 
 type WidgetFrontProps = {
@@ -337,7 +341,7 @@ function WidgetStrip({
         )}
         <div
           ref={scrollRef}
-          className="widget-strip-scroll flex items-start gap-5 overflow-x-auto px-6 py-4"
+          className="widget-strip-scroll flex items-start gap-6 overflow-x-auto px-8 py-2"
           style={{
             justifyContent: "center",
             position: "relative",
@@ -350,7 +354,7 @@ function WidgetStrip({
               type="button"
               onClick={() => onAdd(w.type)}
               className="flex flex-col items-center gap-1.5 shrink-0 group"
-              style={{ minWidth: 72 }}
+              style={{ minWidth: WIDGET_TRAY_ITEM_MIN_WIDTH }}
             >
               <motion.div
                 whileTap={{ scale: 0.95 }}
@@ -358,17 +362,20 @@ function WidgetStrip({
                 className="flex items-center justify-center"
                 style={{
                   filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
+                  width: WIDGET_TRAY_ICON_SIZE,
+                  height: WIDGET_TRAY_ICON_SIZE,
                 }}
               >
                 <WidgetBarIcon
                   icon={WIDGET_ICONS[w.type]}
-                  size={36}
+                  size={WIDGET_TRAY_ICON_SIZE}
                   alt={w.label}
                 />
               </motion.div>
               <span
-                className="text-[10px] font-bold text-center leading-tight max-w-[72px] truncate"
+                className="text-[11px] font-bold text-center leading-tight truncate"
                 style={{
+                  maxWidth: WIDGET_TRAY_ITEM_MIN_WIDTH,
                   color: isWindowsTheme ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.7)",
                   textShadow: isWindowsTheme ? "none" : "0 1px 3px rgba(0,0,0,0.5)",
                 }}
