@@ -400,6 +400,44 @@ function scheduleDefaultBookWarmup(): void {
 }
 
 /**
+ * Re-hydrate a missing IndexedDB blob from cloud sync (user-imported books,
+ * images, applets, etc.). Uses a dynamic import so this module does not form
+ * a static cycle with the sync engine (which imports useFilesStore).
+ */
+async function ensureCloudBlobContentLoaded(
+  storeName: string,
+  uuid: string,
+  options: { forceReload?: boolean } = {}
+): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return false;
+  }
+  try {
+    const [{ getActiveCloudSyncEngine }, { getCloudSyncDomainForContentStore }, { isSyncBlobNamespace }] =
+      await Promise.all([
+        import("@/sync/engine"),
+        import("@/apps/finder/utils/fileSystemHelpers"),
+        import("@/shared/sync2/namespaces"),
+      ]);
+    const namespace = getCloudSyncDomainForContentStore(storeName);
+    if (!namespace || !isSyncBlobNamespace(namespace)) {
+      return false;
+    }
+    const engine = getActiveCloudSyncEngine();
+    if (!engine) return false;
+    return engine.ensureBlobItemLocal(namespace, uuid, {
+      forceReload: options.forceReload,
+    });
+  } catch (error) {
+    console.warn(
+      `[FilesStore] Cloud blob hydrate failed for ${storeName}/${uuid}:`,
+      error
+    );
+    return false;
+  }
+}
+
+/**
  * Load content for a specific file on-demand (lazy loading).
  * Call this when a file is opened to ensure its content is in IndexedDB.
  * Returns true if content was loaded (or already exists), false on error.
@@ -488,7 +526,18 @@ export async function ensureFileContentLoaded(
       }
     }
     if (!pendingFile?.assetPath) {
-      return false;
+      // User-imported / synced binaries have no bundled assetPath. When the
+      // VFS metadata still points at a UUID whose IndexedDB payload is gone
+      // (or forceReload needs to replace an unreadable Blob), ask cloud sync
+      // to re-hydrate that single blob.
+      loadingAssets.add(uuid);
+      try {
+        return await ensureCloudBlobContentLoaded(storeName, uuid, {
+          forceReload: options.forceReload,
+        });
+      } finally {
+        loadingAssets.delete(uuid);
+      }
     }
 
     // Offline: the asset fetch below cannot succeed — fail fast instead of
