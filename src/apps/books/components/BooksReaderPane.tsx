@@ -629,9 +629,29 @@ export const BooksReaderPane = forwardRef<
   const readActiveBookBlob = useCallback(async (): Promise<Blob | null> => {
     const fallbackAssetUrl = DEFAULT_BOOK_ASSET_BY_PATH[entry.path];
     try {
+      appendDebugEvent("content:vfs:read", {
+        path: entry.path,
+        modifiedAt: entry.modifiedAt,
+      });
       const storedBlob = await readBookBlobContent(entry.path);
-      if (storedBlob) return storedBlob;
-      appendDebugEvent("content:vfs:missing", { fallbackAssetUrl }, "warn");
+      if (storedBlob) {
+        appendDebugEvent("content:vfs:hit", {
+          path: entry.path,
+          size: storedBlob.size,
+          type: storedBlob.type,
+        });
+        return storedBlob;
+      }
+      appendDebugEvent(
+        "content:vfs:missing",
+        {
+          path: entry.path,
+          fallbackAssetUrl,
+          // Help diagnose orphan-UUID / cloud-tombstone cases in debug mode.
+          note: "IndexedDB miss after cloud hydrate attempt; see [CloudSync] logs",
+        },
+        "warn"
+      );
     } catch (error) {
       appendDebugEvent("content:vfs:failed", error, "error");
     }
@@ -660,7 +680,7 @@ export const BooksReaderPane = forwardRef<
     const blob = await response.blob();
     appendDebugEvent("content:fallbackFetch:success", { blob });
     return blob;
-  }, [appendDebugEvent, entry.path]);
+  }, [appendDebugEvent, entry.modifiedAt, entry.path]);
 
   const accentBaseHex = useThemeStore((state) => resolveOsAccentBaseHex(state));
   const palette = resolveReadingPalette(settings, osIsDark, accentBaseHex);

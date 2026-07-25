@@ -620,19 +620,29 @@ export class CloudSyncEngine {
             const corroborated = missing.filter((key) =>
               Boolean(getDeletionMarkerForKey(key))
             );
-            const suspicious =
-              missing.length > SUSPICIOUS_DELETE_COUNT &&
-              missing.length >= shadowKeys.length * SUSPICIOUS_DELETE_RATIO &&
-              corroborated.length < missing.length;
+            // Blob namespaces (books/images/…) routinely lose IndexedDB rows
+            // without user intent (Safari, quota). Inferring a cloud tombstone
+            // from a missing local blob permanently destroys the only copy.
+            // Require an explicit deletion marker for every blob delete.
+            const blobNamespace = isSyncBlobNamespace(namespace);
+            const suspicious = blobNamespace
+              ? corroborated.length < missing.length
+              : missing.length > SUSPICIOUS_DELETE_COUNT &&
+                missing.length >= shadowKeys.length * SUSPICIOUS_DELETE_RATIO &&
+                corroborated.length < missing.length;
             const deletions = suspicious ? corroborated : missing;
             deletionCount = deletions.length;
             suppressedDeletionCount = missing.length - deletions.length;
             if (suspicious && corroborated.length < missing.length) {
               cloudSyncLog.warn("Suppressed uncorroborated deletions", {
                 namespace,
+                blobNamespace,
                 suppressedDeletionCount,
                 missingCount: missing.length,
                 shadowKeyCount: shadowKeys.length,
+                suppressedKeys: missing.filter(
+                  (key) => !getDeletionMarkerForKey(key)
+                ),
               });
             }
             for (const key of deletions) {
@@ -918,17 +928,27 @@ export class CloudSyncEngine {
    * With `forceReload`, an existing local record is discarded first so a
    * corrupt/unreadable blob can be replaced from cloud (used by the Books
    * Safari Blob recovery path).
+   *
+   * When `path` is provided and the cloud blob for `storeKey` is missing,
+   * re-check `files/item:{path}` — a replace on another device may have
+   * minted a new UUID while this device still holds the orphan id.
    */
   async ensureBlobItemLocal(
     namespace: SyncBlobNamespace,
     storeKey: string,
-    options: { forceReload?: boolean } = {}
+    options: {
+      forceReload?: boolean;
+      path?: string;
+      /** Internal: avoid infinite files-metadata repair loops. */
+      _retriedPath?: boolean;
+    } = {}
   ): Promise<boolean> {
     if (!storeKey || this.stopped) return false;
     if (!this.isNamespaceEnabled(namespace)) {
       cloudSyncLog.debug("ensureBlobItemLocal skipped; category disabled", {
         namespace,
         storeKey,
+        path: options.path ?? null,
       });
       return false;
     }
@@ -936,6 +956,9 @@ export class CloudSyncEngine {
     if (!isBlobCodec(codec)) return false;
 
     const syncKey = `${namespace}/item:${storeKey}`;
+    const localFile = options.path
+      ? useFilesStore.getState().items[options.path]
+      : undefined;
     const db = await ensureIndexedDBInitialized();
     const ctx: CodecContext = { db };
     try {
@@ -950,6 +973,7 @@ export class CloudSyncEngine {
         cloudSyncLog.debug("Force-reloading local blob from cloud", {
           namespace,
           storeKey,
+          path: options.path ?? null,
         });
         await codec.deleteItems([storeKey], ctx);
         this.state.deleteShadow(syncKey);
@@ -957,6 +981,12 @@ export class CloudSyncEngine {
         cloudSyncLog.debug("Local blob missing; fetching from cloud", {
           namespace,
           storeKey,
+          path: options.path ?? null,
+          localFileUuid: localFile?.uuid ?? null,
+          localFileStatus: localFile?.status ?? null,
+          localFileModifiedAt: localFile?.modifiedAt ?? null,
+          shadow: this.state.getShadow(syncKey),
+          deletionMarker: getDeletionMarkerForKey(syncKey),
         });
       }
 
@@ -971,7 +1001,22 @@ export class CloudSyncEngine {
         cloudSyncLog.warn("Cloud blob entry missing for local file", {
           namespace,
           storeKey,
+          path: options.path ?? null,
+          tombstoned: Boolean(entry?.del),
+          snapshotEntryCount: Object.keys(snapshot.entries).length,
+          shadow: this.state.getShadow(syncKey),
+          deletionMarker: getDeletionMarkerForKey(syncKey),
+          localFileUuid: localFile?.uuid ?? null,
         });
+
+        if (options.path && !options._retriedPath) {
+          const repaired = await this.repairBlobViaRemoteFileMetadata(
+            namespace,
+            options.path,
+            storeKey
+          );
+          if (repaired) return true;
+        }
         return false;
       }
 
@@ -982,18 +1027,87 @@ export class CloudSyncEngine {
       const restored = await readStoreItemsByKeys(db, codec.storeName, [
         storeKey,
       ]);
+      cloudSyncLog.debug("Cloud blob hydrate result", {
+        namespace,
+        storeKey,
+        path: options.path ?? null,
+        restored: restored.length > 0,
+      });
       return restored.length > 0;
     } catch (error) {
       if (this.stopped || isAbortError(error)) return false;
       cloudSyncLog.error("ensureBlobItemLocal failed", {
         namespace,
         storeKey,
+        path: options.path ?? null,
         error,
       });
       return false;
     } finally {
       db.close();
     }
+  }
+
+  /**
+   * If remote files metadata for `path` points at a different content UUID
+   * than the orphan local id, adopt that metadata and hydrate the new blob.
+   */
+  private async repairBlobViaRemoteFileMetadata(
+    namespace: SyncBlobNamespace,
+    path: string,
+    localUuid: string
+  ): Promise<boolean> {
+    const filesKey = `files/item:${path}`;
+    cloudSyncLog.debug("Attempting blob repair via remote files metadata", {
+      namespace,
+      path,
+      localUuid,
+      filesKey,
+    });
+    const snapshot = await getSyncSnapshot({
+      signal: this.abortController.signal,
+      prefix: filesKey,
+    });
+    if (this.stopped) return false;
+
+    const entry = snapshot.entries[filesKey];
+    const remoteValue =
+      entry && !entry.del && entry.v && typeof entry.v === "object"
+        ? (entry.v as Record<string, unknown>)
+        : null;
+    const remoteUuid =
+      typeof remoteValue?.uuid === "string" ? remoteValue.uuid : null;
+
+    cloudSyncLog.debug("Remote files metadata for orphan blob", {
+      path,
+      localUuid,
+      remoteUuid,
+      remoteStatus:
+        typeof remoteValue?.status === "string" ? remoteValue.status : null,
+      remoteModifiedAt:
+        typeof remoteValue?.modifiedAt === "number"
+          ? remoteValue.modifiedAt
+          : null,
+      hasRemoteEntry: Boolean(entry),
+      remoteDeleted: Boolean(entry?.del),
+    });
+
+    if (!entry || !remoteUuid || remoteUuid === localUuid) {
+      return false;
+    }
+
+    cloudSyncLog.warn("Adopting remote file content UUID for orphan blob", {
+      path,
+      localUuid,
+      remoteUuid,
+    });
+    await this.applyRemoteOps([this.entryToOp(filesKey, entry)], {
+      force: true,
+    });
+    return this.ensureBlobItemLocal(namespace, remoteUuid, {
+      path,
+      _retriedPath: true,
+    });
   }
 
   private entryToOp(key: string, entry: SyncKvEntry): SyncOp {
