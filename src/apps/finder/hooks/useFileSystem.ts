@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES, dbOperations } from "@/utils/indexedDB";
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
 import { useIsRyoAdmin } from "@/hooks/useIsRyoAdmin";
@@ -1199,9 +1200,38 @@ export function useFileSystem(
       const isDirectory = false;
       const fileType = fileData.type || getFileTypeFromExtension(name);
 
-      // Check if file already exists to preserve UUID
+      // Check if file already exists to preserve UUID — unless the existing
+      // UUID is an orphan (metadata present, IndexedDB bytes gone). Replacing
+      // over an orphan UUID can never revive a cloud-tombstoned blob; mint a
+      // fresh content id so the new bytes sync as a new key.
       const existingItem = getFileItem(path);
-      const uuid = existingItem?.uuid;
+      let uuid = existingItem?.uuid;
+      const storeName = getStoreForFile(path, { name, type: fileType });
+      let replacedOrphanUuid: string | null = null;
+      if (uuid && storeName) {
+        try {
+          const existingContent = await dbOperations.get<DocumentContent>(
+            storeName,
+            uuid
+          );
+          if (!existingContent) {
+            replacedOrphanUuid = uuid;
+            uuid = uuidv4();
+            log.warn("Replacing file with orphan content UUID; minting new id", {
+              path,
+              orphanUuid: replacedOrphanUuid,
+              newUuid: uuid,
+              storeName,
+            });
+          }
+        } catch (err) {
+          log.warn("Could not probe existing content before save", {
+            path,
+            uuid,
+            error: err,
+          });
+        }
+      }
 
       // 1. Create the full metadata object first
       const now = Date.now();
@@ -1223,7 +1253,7 @@ export function useFileSystem(
         isDirectory: isDirectory,
         type: fileType,
         status: "active", // Explicitly set status
-        uuid: uuid, // Preserve existing UUID if updating
+        uuid: uuid, // Preserve existing UUID if updating (unless orphaned)
         // Set timestamps
         createdAt: existingItem?.createdAt || now,
         modifiedAt: now,
@@ -1246,8 +1276,14 @@ export function useFileSystem(
 
       // 2. Add/Update Metadata in FileStore (will generate UUID if new)
       try {
-        log.debug("Updating metadata store", { path });
-        // Pass the complete metadata object to addItem
+        log.debug("Updating metadata store", {
+          path,
+          uuid: metadata.uuid ?? null,
+          replacedOrphanUuid,
+        });
+        // Pass the complete metadata object to addItem. When rotating off an
+        // orphan UUID, metadata.uuid differs from the existing id and addItem
+        // keeps the caller's new content id.
         addFileItem(metadata);
         track(FINDER_ANALYTICS.FILE_SAVE, {
           appId: "finder",
@@ -1265,11 +1301,10 @@ export function useFileSystem(
         log.debug("Metadata store updated", {
           path,
           uuid: savedItem.uuid,
+          replacedOrphanUuid,
         });
 
         // 3. Save Content to IndexedDB using UUID
-        log.debug("Determining content store", { path });
-        const storeName = getStoreForFile(path, { name, type: fileType });
         log.debug("Selected content store", { path, storeName });
         if (storeName) {
           try {
@@ -1286,12 +1321,25 @@ export function useFileSystem(
               contentLength:
                 typeof content === "string" ? content.length : undefined,
               contentType: content instanceof Blob ? "blob" : typeof content,
+              contentSize:
+                contentToStore.content instanceof ArrayBuffer
+                  ? contentToStore.content.byteLength
+                  : content instanceof Blob
+                    ? content.size
+                    : undefined,
             });
             await dbOperations.put<DocumentContent>(
               storeName,
               contentToStore,
               savedItem.uuid
             );
+            const deletionBucket =
+              getCloudSyncDeletionBucketForContentStore(storeName);
+            if (deletionBucket) {
+              useCloudSyncStore
+                .getState()
+                .clearDeletedKeys(deletionBucket, [savedItem.uuid]);
+            }
             const syncDomain = getCloudSyncDomainForContentStore(storeName);
             if (syncDomain) {
               emitCloudSyncContentChange(syncDomain, savedItem.uuid);

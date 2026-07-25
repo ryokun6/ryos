@@ -5,16 +5,20 @@ import { CloudSyncEngine } from "../../../src/sync/engine";
 import { gzipJson, sha256Json } from "../../../src/sync/blobs";
 import { SyncClientState } from "../../../src/sync/state";
 import { useCloudSyncStore } from "../../../src/stores/useCloudSyncStore";
+import { useFilesStore } from "../../../src/stores/useFilesStore";
 import {
   dbOperations,
   ensureIndexedDBInitialized,
   STORES,
 } from "../../../src/utils/indexedDB";
 import { serializeStoreItem } from "../../../src/utils/indexedDBBackup";
+import type { SyncOp } from "../../../src/shared/sync2/types";
 
 const t = "01718180000000-0000-test";
 const BOOK_UUID = "a66df7db-ef19-4b22-a23c-587dbd2ac620";
+const BOOK_UUID_REMOTE = "b77ef8ec-f020-5c33-b34d-698ece3bd731";
 const SYNC_KEY = `books/item:${BOOK_UUID}`;
+const BOOK_PATH = "/Books/Steve Jobs in Exile.epub";
 const BOOK_NAME = "Steve Jobs in Exile.epub";
 
 async function deleteRyOsDatabase(): Promise<void> {
@@ -48,7 +52,15 @@ describe("cloud sync blob missing-local repair", () => {
       autoSyncEnabled: true,
       syncFiles: true,
       syncBooks: true,
+      deletionMarkers: {
+        ...useCloudSyncStore.getState().deletionMarkers,
+        fileBookKeys: {},
+      },
     });
+    useFilesStore.setState({
+      items: {},
+      libraryState: "loaded",
+    } as never);
   });
 
   afterEach(() => {
@@ -363,5 +375,250 @@ describe("cloud sync blob missing-local repair", () => {
     } finally {
       await engine.stop();
     }
+  });
+
+  test("does not tombstone a missing local book blob without a deletion marker", async () => {
+    const uploadedOps: SyncOp[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/api/sync/v2/ops")) {
+        const body = JSON.parse(String(init?.body)) as { ops: SyncOp[] };
+        uploadedOps.push(...body.ops);
+        return Response.json({
+          ok: true,
+          seq: body.ops.length,
+          results: body.ops.map((op) => ({
+            k: op.k,
+            accepted: true,
+            seq: 1,
+          })),
+        });
+      }
+      if (url.includes("/api/sync/v2/snapshot")) {
+        return Response.json({ ok: true, seq: 0, entries: {} });
+      }
+      if (url.includes("/api/sync/v2/changes")) {
+        return Response.json({ ok: true, seq: 0, ops: [] });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    const engine = await CloudSyncEngine.create(
+      `blob-no-tombstone-${crypto.randomUUID()}`
+    );
+    try {
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      // Shadow says the book was synced, but IndexedDB no longer has bytes.
+      state.setShadow(SYNC_KEY, { t, h: "a".repeat(64) });
+      engine.markDirty("books", [SYNC_KEY]);
+      await engine.flush({ throwOnError: true });
+
+      expect(uploadedOps.some((op) => op.k === SYNC_KEY && op.del)).toBe(false);
+      // Shadow kept — we did not locally record a tombstone either.
+      expect(state.getShadow(SYNC_KEY)?.h).toBe("a".repeat(64));
+    } finally {
+      await engine.stop();
+    }
+  });
+
+  test("tombstones a missing local book blob when explicitly marked deleted", async () => {
+    const uploadedOps: SyncOp[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/api/sync/v2/ops")) {
+        const body = JSON.parse(String(init?.body)) as { ops: SyncOp[] };
+        uploadedOps.push(...body.ops);
+        return Response.json({
+          ok: true,
+          seq: body.ops.length,
+          results: body.ops.map((op) => ({
+            k: op.k,
+            accepted: true,
+            seq: 1,
+          })),
+        });
+      }
+      if (url.includes("/api/sync/v2/snapshot")) {
+        return Response.json({ ok: true, seq: 0, entries: {} });
+      }
+      if (url.includes("/api/sync/v2/changes")) {
+        return Response.json({ ok: true, seq: 0, ops: [] });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    useCloudSyncStore
+      .getState()
+      .markDeletedKeys("fileBookKeys", [BOOK_UUID]);
+
+    const engine = await CloudSyncEngine.create(
+      `blob-tombstone-${crypto.randomUUID()}`
+    );
+    try {
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      state.setShadow(SYNC_KEY, { t, h: "a".repeat(64) });
+      engine.markDirty("books", [SYNC_KEY]);
+      await engine.flush({ throwOnError: true });
+
+      expect(uploadedOps.some((op) => op.k === SYNC_KEY && op.del)).toBe(true);
+      // Accepted deletes clear the local shadow (see sendOps) rather than
+      // leaving an "__del__" placeholder.
+      expect(state.getShadow(SYNC_KEY)).toBeNull();
+    } finally {
+      await engine.stop();
+    }
+  });
+
+  test("ensureBlobItemLocal adopts a newer remote files UUID when local blob is gone", async () => {
+    const remoteItem = await serializeStoreItem({
+      key: BOOK_UUID_REMOTE,
+      value: {
+        name: BOOK_NAME,
+        content: new Blob([new TextEncoder().encode("replacement")], {
+          type: "application/epub+zip",
+        }),
+      },
+    });
+    const digest = await sha256Json(remoteItem);
+    const compressed = await gzipJson(remoteItem);
+    const remoteFilesKey = `files/item:${BOOK_PATH}`;
+    const remoteBlobKey = `books/item:${BOOK_UUID_REMOTE}`;
+
+    useFilesStore.setState({
+      items: {
+        [BOOK_PATH]: {
+          path: BOOK_PATH,
+          name: BOOK_NAME,
+          isDirectory: false,
+          type: "epub",
+          status: "active",
+          uuid: BOOK_UUID,
+          modifiedAt: 1,
+        },
+      },
+      libraryState: "loaded",
+    } as never);
+
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/sync/v2/snapshot")) {
+        if (url.includes(encodeURIComponent(SYNC_KEY))) {
+          // Local orphan UUID has no cloud blob (tombstoned / never uploaded).
+          return Response.json({ ok: true, seq: 9, entries: {} });
+        }
+        if (url.includes(encodeURIComponent(remoteFilesKey))) {
+          return Response.json({
+            ok: true,
+            seq: 9,
+            entries: {
+              [remoteFilesKey]: {
+                v: {
+                  path: BOOK_PATH,
+                  name: BOOK_NAME,
+                  isDirectory: false,
+                  type: "epub",
+                  status: "active",
+                  uuid: BOOK_UUID_REMOTE,
+                  modifiedAt: 2,
+                },
+                t: `${t}-remote-files`,
+                seq: 8,
+              },
+            },
+          });
+        }
+        if (url.includes(encodeURIComponent(remoteBlobKey))) {
+          return Response.json({
+            ok: true,
+            seq: 9,
+            entries: {
+              [remoteBlobKey]: {
+                v: {
+                  blob: {
+                    url: "https://example.test/book.gz",
+                    size: compressed.byteLength,
+                    sha256: digest,
+                  },
+                },
+                t: `${t}-remote-blob`,
+                seq: 9,
+              },
+            },
+          });
+        }
+        return Response.json({ ok: true, seq: 9, entries: {} });
+      }
+      if (url.includes("example.test/book.gz")) {
+        return new Response(new Blob([compressed]), {
+          status: 200,
+          headers: { "content-length": String(compressed.byteLength) },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    const engine = await CloudSyncEngine.create(
+      `blob-repair-path-${crypto.randomUUID()}`
+    );
+    try {
+      const ok = await engine.ensureBlobItemLocal("books", BOOK_UUID, {
+        path: BOOK_PATH,
+      });
+      expect(ok).toBe(true);
+      expect(useFilesStore.getState().items[BOOK_PATH]?.uuid).toBe(
+        BOOK_UUID_REMOTE
+      );
+      const restored = await dbOperations.get<{ content: ArrayBuffer }>(
+        STORES.BOOKS,
+        BOOK_UUID_REMOTE
+      );
+      expect(new TextDecoder().decode(restored!.content)).toBe("replacement");
+    } finally {
+      await engine.stop();
+    }
+  });
+});
+
+describe("files store orphan UUID rotation", () => {
+  test("addItem keeps an explicitly rotated content UUID on update", () => {
+    useFilesStore.setState({
+      items: {
+        "/Books": {
+          path: "/Books",
+          name: "Books",
+          isDirectory: true,
+          type: "directory",
+          status: "active",
+          createdAt: 1,
+          modifiedAt: 1,
+        },
+        [BOOK_PATH]: {
+          path: BOOK_PATH,
+          name: BOOK_NAME,
+          isDirectory: false,
+          type: "epub",
+          status: "active",
+          uuid: BOOK_UUID,
+          createdAt: 1,
+          modifiedAt: 1,
+        },
+      },
+      libraryState: "loaded",
+    } as never);
+
+    useFilesStore.getState().addItem({
+      path: BOOK_PATH,
+      name: BOOK_NAME,
+      isDirectory: false,
+      type: "epub",
+      status: "active",
+      uuid: BOOK_UUID_REMOTE,
+      modifiedAt: 2,
+    });
+
+    expect(useFilesStore.getState().items[BOOK_PATH]?.uuid).toBe(
+      BOOK_UUID_REMOTE
+    );
+    expect(useFilesStore.getState().items[BOOK_PATH]?.createdAt).toBe(1);
   });
 });
