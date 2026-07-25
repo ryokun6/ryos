@@ -407,9 +407,12 @@ function scheduleDefaultBookWarmup(): void {
 async function ensureCloudBlobContentLoaded(
   storeName: string,
   uuid: string,
-  options: { forceReload?: boolean } = {}
+  options: { forceReload?: boolean; path?: string } = {}
 ): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    debug(
+      `[FilesStore] Offline — cannot hydrate cloud blob for ${options.path ?? uuid}`
+    );
     return false;
   }
   try {
@@ -421,12 +424,28 @@ async function ensureCloudBlobContentLoaded(
       ]);
     const namespace = getCloudSyncDomainForContentStore(storeName);
     if (!namespace || !isSyncBlobNamespace(namespace)) {
+      debug(
+        `[FilesStore] No blob namespace for store ${storeName} (${options.path ?? uuid})`
+      );
       return false;
     }
     const engine = getActiveCloudSyncEngine();
-    if (!engine) return false;
+    if (!engine) {
+      debug(
+        `[FilesStore] No active cloud sync engine for hydrate (${options.path ?? uuid})`
+      );
+      return false;
+    }
+    debug(`[FilesStore] Hydrating cloud blob`, {
+      storeName,
+      namespace,
+      uuid,
+      path: options.path ?? null,
+      forceReload: Boolean(options.forceReload),
+    });
     return engine.ensureBlobItemLocal(namespace, uuid, {
       forceReload: options.forceReload,
+      path: options.path,
     });
   } catch (error) {
     console.warn(
@@ -534,6 +553,7 @@ export async function ensureFileContentLoaded(
       try {
         return await ensureCloudBlobContentLoaded(storeName, uuid, {
           forceReload: options.forceReload,
+          path: filePath,
         });
       } finally {
         loadingAssets.delete(uuid);
@@ -957,14 +977,22 @@ export const useFilesStore = create<FilesStoreState>()(
           // Check if item already exists
           const existingItem = state.items[newItem.path];
           if (existingItem) {
-            // Update existing item, preserving UUID and createdAt
+            // Update existing item, preserving UUID and createdAt — unless the
+            // caller explicitly supplies a different uuid (orphan content-id
+            // rotation after a missing IndexedDB blob / cloud tombstone).
             debug(
               `[FilesStore] Updating existing item at path "${newItem.path}"`
             );
+            const uuidRotated =
+              Boolean(newItem.uuid) &&
+              Boolean(existingItem.uuid) &&
+              newItem.uuid !== existingItem.uuid;
             const updatedItem: FileSystemItem = {
               ...existingItem,
               ...newItem,
-              uuid: existingItem.uuid || newItem.uuid, // Preserve existing UUID
+              uuid: uuidRotated
+                ? newItem.uuid
+                : existingItem.uuid || newItem.uuid,
               createdAt: existingItem.createdAt || newItem.createdAt, // Preserve original creation time
               modifiedAt: newItem.modifiedAt || now, // Always update modification time
               // Preserve shareId and createdBy - use nullish coalescing to only fall back if undefined/null
