@@ -105,13 +105,15 @@ export function StuffAppComponent({
         ) : (
           <div
             className={cn(
-              "flex size-full flex-col overflow-hidden font-os-ui",
+              // window-body is `md:flex-row` — flex-1 + min-w-0 required so the
+              // app fills the frame instead of leaving an empty glass band.
+              "flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden font-os-ui",
               isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
             )}
           >
             <div
               className={cn(
-                "flex min-h-0 flex-1 overflow-hidden",
+                "flex min-h-0 w-full flex-1 overflow-hidden",
                 isMacOSTheme && "gap-[5px] p-[5px]"
               )}
             >
