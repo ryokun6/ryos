@@ -13,7 +13,12 @@ import {
   fetchImageAsDataUrl,
   lookupBarcode,
 } from "../utils/barcodeLookup";
-import { printStuffLabels } from "../utils/printLabels";
+import {
+  itemToLabelTarget,
+  parseStuffIdBarcode,
+  printStuffLabels,
+  tagToLabelTarget,
+} from "../utils/printLabels";
 import type { ScannedBarcode } from "../components/StuffBarcodeScanner";
 
 export function useStuffLogic({
@@ -109,15 +114,95 @@ export function useStuffLogic({
 
   const handlePrintSelected = () => {
     if (!selectedItem) return;
-    printStuffLabels([selectedItem]);
+    printStuffLabels([itemToLabelTarget(selectedItem)]);
   };
 
-  const handlePrintAllWithBarcodes = () => {
-    const printable = filteredItems.filter((item) => item.barcode);
-    printStuffLabels(printable.length > 0 ? printable : items.filter((i) => i.barcode));
+  const handlePrintItemLabels = () => {
+    const targets = (filteredItems.length > 0 ? filteredItems : items).map(
+      itemToLabelTarget
+    );
+    printStuffLabels(targets);
+  };
+
+  const handlePrintTagLabels = (tagIds?: string[]) => {
+    const selected =
+      tagIds && tagIds.length > 0
+        ? tags.filter((tag) => tagIds.includes(tag.id))
+        : selectedTagId
+          ? tags.filter((tag) => tag.id === selectedTagId)
+          : tags;
+    printStuffLabels(selected.map(tagToLabelTarget));
   };
 
   const handleScan = async (result: ScannedBarcode) => {
+    const ryosId = parseStuffIdBarcode(result.text);
+    if (ryosId?.kind === "item") {
+      const match =
+        items.find((item) => item.id === ryosId.id) ??
+        items.find((item) => item.id === result.text);
+      if (match) {
+        setSelectedItemId(match.id);
+        toast.success(
+          t("apps.stuff.scanner.openedItem", {
+            defaultValue: "Opened {{title}}",
+            title: match.title,
+          })
+        );
+        return;
+      }
+      toast.error(
+        t("apps.stuff.scanner.unknownItem", {
+          defaultValue: "No item found for that ryOS label.",
+        })
+      );
+      return;
+    }
+    if (ryosId?.kind === "tag") {
+      const match = tags.find((tag) => tag.id === ryosId.id);
+      if (match) {
+        setSelectedTagId(match.id);
+        setSelectedItemId(null);
+        toast.success(
+          t("apps.stuff.scanner.openedTag", {
+            defaultValue: "Filtered to {{name}}",
+            name: match.name,
+          })
+        );
+        return;
+      }
+      toast.error(
+        t("apps.stuff.scanner.unknownTag", {
+          defaultValue: "No tag found for that ryOS label.",
+        })
+      );
+      return;
+    }
+
+    // Bare id fallback (printed CODE128 without prefix still matches).
+    const bareItem = items.find((item) => item.id === result.text);
+    if (bareItem) {
+      setSelectedItemId(bareItem.id);
+      toast.success(
+        t("apps.stuff.scanner.openedItem", {
+          defaultValue: "Opened {{title}}",
+          title: bareItem.title,
+        })
+      );
+      return;
+    }
+    const bareTag = tags.find((tag) => tag.id === result.text);
+    if (bareTag) {
+      setSelectedTagId(bareTag.id);
+      setSelectedItemId(null);
+      toast.success(
+        t("apps.stuff.scanner.openedTag", {
+          defaultValue: "Filtered to {{name}}",
+          name: bareTag.name,
+        })
+      );
+      return;
+    }
+
     setIsLookingUp(true);
     const toastId = toast.loading(
       t("apps.stuff.scanner.lookingUp", {
@@ -213,7 +298,8 @@ export function useStuffLogic({
     handleUpdateSelected,
     handleDeleteSelected,
     handlePrintSelected,
-    handlePrintAllWithBarcodes,
+    handlePrintItemLabels,
+    handlePrintTagLabels,
     handleScan,
   };
 }

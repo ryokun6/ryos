@@ -4999,10 +4999,11 @@
         "newItem": "New Item",
         "scanBarcode": "Scan Barcode…",
         "share": "Share Shelf…",
-        "printLabels": "Print Labels…",
         "backToShelf": "Back to My Shelf",
         "help": "Stuff Help",
-        "about": "About Stuff"
+        "about": "About Stuff",
+        "printItemLabels": "Print Item Labels…",
+        "printTagLabels": "Print Tag Labels…"
       },
       "toolbar": {
         "add": "Add",
@@ -5018,7 +5019,8 @@
         "allStuff": "All Stuff",
         "newTag": "New tag…",
         "deleteTag": "Delete tag",
-        "status": "Status"
+        "status": "Status",
+        "printTag": "Print tag label"
       },
       "status": {
         "all": "All statuses",
@@ -5039,8 +5041,9 @@
         "discountedPrice": "Asking",
         "soldPrice": "Sold",
         "currency": "Currency",
-        "barcode": "Barcode",
-        "notes": "Notes"
+        "notes": "Notes",
+        "productBarcode": "Product barcode",
+        "ryosLabel": "ryOS label"
       },
       "detail": {
         "title": "Details",
@@ -5060,7 +5063,11 @@
         "cameraError": "Could not access the camera. Enter a barcode manually below.",
         "lookingUp": "Looking up product…",
         "found": "Product added",
-        "addedWithoutMeta": "Barcode saved — no product info found"
+        "addedWithoutMeta": "Barcode saved — no product info found",
+        "openedItem": "Opened {{title}}",
+        "openedTag": "Filtered to {{name}}",
+        "unknownItem": "No item found for that ryOS label.",
+        "unknownTag": "No tag found for that ryOS label."
       },
       "share": {
         "title": "Share Stuff",
@@ -5114,7 +5121,7 @@
         },
         "print": {
           "title": "Print Labels",
-          "description": "Print barcode labels for selected items from File ▸ Print Labels."
+          "description": "Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag."
         }
       }
     }

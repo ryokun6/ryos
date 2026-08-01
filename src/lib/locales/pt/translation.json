@@ -4057,7 +4057,9 @@
         "discountedPrice": "[TODO] Asking",
         "notes": "[TODO] Notes",
         "originalPrice": "[TODO] Original",
+        "productBarcode": "[TODO] Product barcode",
         "quantity": "[TODO] Quantity",
+        "ryosLabel": "[TODO] ryOS label",
         "soldPrice": "[TODO] Sold",
         "status": "[TODO] Status",
         "tags": "[TODO] Tags",
@@ -4069,7 +4071,7 @@
           "title": "[TODO] Prices & Status"
         },
         "print": {
-          "description": "[TODO] Print barcode labels for selected items from File ▸ Print Labels.",
+          "description": "[TODO] Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag.",
           "title": "[TODO] Print Labels"
         },
         "scan": {
@@ -4094,7 +4096,8 @@
         "backToShelf": "[TODO] Back to My Shelf",
         "help": "[TODO] Stuff Help",
         "newItem": "[TODO] New Item",
-        "printLabels": "[TODO] Print Labels…",
+        "printItemLabels": "[TODO] Print Item Labels…",
+        "printTagLabels": "[TODO] Print Tag Labels…",
         "scanBarcode": "[TODO] Scan Barcode…",
         "share": "[TODO] Share Shelf…"
       },
@@ -4109,7 +4112,11 @@
         "found": "[TODO] Product added",
         "lookingUp": "[TODO] Looking up product…",
         "manualPlaceholder": "[TODO] Or type a barcode…",
-        "title": "[TODO] Scan Barcode"
+        "openedItem": "[TODO] Opened {{title}}",
+        "openedTag": "[TODO] Filtered to {{name}}",
+        "title": "[TODO] Scan Barcode",
+        "unknownItem": "[TODO] No item found for that ryOS label.",
+        "unknownTag": "[TODO] No tag found for that ryOS label."
       },
       "searchPlaceholder": "[TODO] Search stuff…",
       "share": {
@@ -4145,6 +4152,7 @@
         "allStuff": "[TODO] All Stuff",
         "deleteTag": "[TODO] Delete tag",
         "newTag": "[TODO] New tag…",
+        "printTag": "[TODO] Print tag label",
         "status": "[TODO] Status",
         "tags": "[TODO] Tags"
       },

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { STUFF_STATUSES, type StuffItem, type StuffTag } from "../types";
 import { formatMoney, parseOptionalNumber } from "../utils/colors";
-import { renderBarcodeSvg } from "../utils/printLabels";
+import { renderStuffIdBarcodeSvg } from "../utils/printLabels";
 
 interface StuffDetailPanelProps {
   item: StuffItem;
@@ -25,9 +25,7 @@ export function StuffDetailPanel({
   onPrint,
 }: StuffDetailPanelProps) {
   const { t } = useTranslation();
-  const barcodeSvg = item.barcode
-    ? renderBarcodeSvg(item.barcode, item.barcodeFormat)
-    : null;
+  const ryosBarcodeSvg = renderStuffIdBarcodeSvg("item", item.id);
 
   const toggleTag = (tagId: string) => {
     const next = item.tagIds.includes(tagId)
@@ -215,7 +213,9 @@ export function StuffDetailPanel({
         )}
 
         <label className="block text-xs font-medium opacity-70">
-          {t("apps.stuff.fields.barcode", { defaultValue: "Barcode" })}
+          {t("apps.stuff.fields.productBarcode", {
+            defaultValue: "Product barcode",
+          })}
           <Input
             className="mt-1 font-mono text-xs"
             value={item.barcode ?? ""}
@@ -230,12 +230,22 @@ export function StuffDetailPanel({
           />
         </label>
 
-        {barcodeSvg && (
-          <div
-            className="rounded bg-white p-2"
-            dangerouslySetInnerHTML={{ __html: barcodeSvg }}
-          />
-        )}
+        <div>
+          <p className="mb-1 text-xs font-medium opacity-70">
+            {t("apps.stuff.fields.ryosLabel", {
+              defaultValue: "ryOS label",
+            })}
+          </p>
+          {ryosBarcodeSvg && (
+            <div
+              className="rounded bg-white p-2"
+              dangerouslySetInnerHTML={{ __html: ryosBarcodeSvg }}
+            />
+          )}
+          <p className="mt-1 break-all font-mono text-[10px] opacity-50">
+            {item.id}
+          </p>
+        </div>
 
         <label className="block text-xs font-medium opacity-70">
           {t("apps.stuff.fields.notes", { defaultValue: "Notes" })}
@@ -254,7 +264,6 @@ export function StuffDetailPanel({
           size="sm"
           className="flex-1"
           onClick={onPrint}
-          disabled={!item.barcode}
         >
           {t("apps.stuff.detail.print", { defaultValue: "Print" })}
         </Button>

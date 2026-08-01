@@ -154,7 +154,6 @@ export function StuffShelfView({
           defaultValue: "Print Label",
         }),
         onSelect: () => onPrintItem(item.id),
-        disabled: !item.barcode,
       },
       { type: "separator" },
       {

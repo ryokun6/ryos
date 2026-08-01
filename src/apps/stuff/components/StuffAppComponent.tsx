@@ -13,7 +13,7 @@ import { StuffDetailPanel } from "./StuffDetailPanel";
 import { StuffBarcodeScanner } from "./StuffBarcodeScanner";
 import { StuffShareDialog } from "./StuffShareDialog";
 import { StuffSharedView } from "./StuffSharedView";
-import { printStuffLabels } from "../utils/printLabels";
+import { printStuffLabels, itemToLabelTarget } from "../utils/printLabels";
 
 export function StuffAppComponent({
   isWindowOpen,
@@ -40,8 +40,10 @@ export function StuffAppComponent({
       onAddItem={logic.handleAddItem}
       onScan={() => logic.setIsScannerOpen(true)}
       onShare={() => logic.setIsShareDialogOpen(true)}
-      onPrintLabels={logic.handlePrintAllWithBarcodes}
-      canPrint={logic.items.some((item) => Boolean(item.barcode))}
+      onPrintItemLabels={logic.handlePrintItemLabels}
+      onPrintTagLabels={() => logic.handlePrintTagLabels()}
+      canPrintItems={logic.items.length > 0}
+      canPrintTags={logic.tags.length > 0}
       isSharedView={Boolean(viewingShareId)}
       onBackFromShare={() => logic.setActiveShareId(null)}
     />
@@ -89,6 +91,7 @@ export function StuffAppComponent({
                 onStatusFilter={logic.setStatusFilter}
                 onAddTag={logic.addTag}
                 onDeleteTag={logic.deleteTag}
+                onPrintTag={(id) => logic.handlePrintTagLabels([id])}
               />
               <StuffShelfView
                 items={logic.filteredItems}
@@ -103,7 +106,7 @@ export function StuffAppComponent({
                 onDeleteItem={(id) => logic.deleteItem(id)}
                 onPrintItem={(id) => {
                   const item = logic.items.find((entry) => entry.id === id);
-                  if (item) printStuffLabels([item]);
+                  if (item) printStuffLabels([itemToLabelTarget(item)]);
                 }}
               />
               {logic.selectedItem && (

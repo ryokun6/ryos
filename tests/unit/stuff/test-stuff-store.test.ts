@@ -8,7 +8,11 @@ import {
   type StuffTag,
 } from "../../../src/apps/stuff/types";
 import { colorFromString, parseOptionalNumber } from "../../../src/apps/stuff/utils/colors";
-import { toJsBarcodeFormat } from "../../../src/apps/stuff/utils/printLabels";
+import {
+  encodeStuffId,
+  parseStuffIdBarcode,
+  toJsBarcodeFormat,
+} from "../../../src/apps/stuff/utils/printLabels";
 import { toSharedItem } from "../../../src/apps/stuff/utils/share";
 
 function makeItem(overrides: Partial<StuffItem> = {}): StuffItem {
@@ -97,5 +101,21 @@ describe("Stuff helpers", () => {
     );
     expect(shared.tagNames).toEqual(["Kitchen"]);
     expect(shared.title).toBe("Pan");
+  });
+
+  test("encode/parse ryOS stuff id barcodes", () => {
+    const itemPayload = encodeStuffId("item", "abc-123");
+    const tagPayload = encodeStuffId("tag", "kitchen");
+    expect(itemPayload).toBe("ryos:stuff:item:abc-123");
+    expect(tagPayload).toBe("ryos:stuff:tag:kitchen");
+    expect(parseStuffIdBarcode(itemPayload)).toEqual({
+      kind: "item",
+      id: "abc-123",
+    });
+    expect(parseStuffIdBarcode(tagPayload)).toEqual({
+      kind: "tag",
+      id: "kitchen",
+    });
+    expect(parseStuffIdBarcode("012345678905")).toBeNull();
   });
 });

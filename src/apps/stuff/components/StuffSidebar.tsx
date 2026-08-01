@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash } from "@phosphor-icons/react";
+import { Plus, Trash, Barcode } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ interface StuffSidebarProps {
   onStatusFilter: (status: StuffStatus | "all") => void;
   onAddTag: (name: string) => void;
   onDeleteTag: (id: string) => void;
+  onPrintTag: (id: string) => void;
 }
 
 export function StuffSidebar({
@@ -28,6 +29,7 @@ export function StuffSidebar({
   onStatusFilter,
   onAddTag,
   onDeleteTag,
+  onPrintTag,
 }: StuffSidebarProps) {
   const { t } = useTranslation();
 
@@ -86,6 +88,16 @@ export function StuffSidebar({
               <span className="ml-auto text-xs opacity-60">
                 {itemCountsByTag[tag.id] ?? 0}
               </span>
+            </button>
+            <button
+              type="button"
+              className="rounded p-1 opacity-0 hover:bg-black/10 group-hover:opacity-100 dark:hover:bg-white/10"
+              aria-label={t("apps.stuff.sidebar.printTag", {
+                defaultValue: "Print tag label",
+              })}
+              onClick={() => onPrintTag(tag.id)}
+            >
+              <Barcode size={12} />
             </button>
             <button
               type="button"

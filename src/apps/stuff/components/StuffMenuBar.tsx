@@ -13,8 +13,10 @@ interface StuffMenuBarProps {
   onAddItem: () => void;
   onScan: () => void;
   onShare: () => void;
-  onPrintLabels: () => void;
-  canPrint: boolean;
+  onPrintItemLabels: () => void;
+  onPrintTagLabels: () => void;
+  canPrintItems: boolean;
+  canPrintTags: boolean;
   isSharedView: boolean;
   onBackFromShare?: () => void;
 }
@@ -26,8 +28,10 @@ export function StuffMenuBar({
   onAddItem,
   onScan,
   onShare,
-  onPrintLabels,
-  canPrint,
+  onPrintItemLabels,
+  onPrintTagLabels,
+  canPrintItems,
+  canPrintTags,
   isSharedView,
   onBackFromShare,
 }: StuffMenuBarProps) {
@@ -86,11 +90,19 @@ export function StuffMenuBar({
             },
             {
               type: "action",
-              label: t("apps.stuff.menu.printLabels", {
-                defaultValue: "Print Labels…",
+              label: t("apps.stuff.menu.printItemLabels", {
+                defaultValue: "Print Item Labels…",
               }),
-              onClick: onPrintLabels,
-              disabled: !canPrint,
+              onClick: onPrintItemLabels,
+              disabled: !canPrintItems,
+            },
+            {
+              type: "action",
+              label: t("apps.stuff.menu.printTagLabels", {
+                defaultValue: "Print Tag Labels…",
+              }),
+              onClick: onPrintTagLabels,
+              disabled: !canPrintTags,
             },
             { type: "separator" },
             {

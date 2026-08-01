@@ -1,5 +1,37 @@
 import JsBarcode from "jsbarcode";
-import type { StuffItem } from "../types";
+import type { StuffItem, StuffTag } from "../types";
+
+export type StuffLabelKind = "item" | "tag";
+
+export interface StuffLabelTarget {
+  kind: StuffLabelKind;
+  id: string;
+  title: string;
+  subtitle?: string;
+}
+
+const ITEM_PREFIX = "ryos:stuff:item:";
+const TAG_PREFIX = "ryos:stuff:tag:";
+
+/** Encode a ryOS Stuff entity id into a scannable CODE128 payload. */
+export function encodeStuffId(kind: StuffLabelKind, id: string): string {
+  return `${kind === "item" ? ITEM_PREFIX : TAG_PREFIX}${id}`;
+}
+
+export function parseStuffIdBarcode(
+  value: string
+): { kind: StuffLabelKind; id: string } | null {
+  const text = value.trim();
+  if (text.startsWith(ITEM_PREFIX)) {
+    const id = text.slice(ITEM_PREFIX.length).trim();
+    return id ? { kind: "item", id } : null;
+  }
+  if (text.startsWith(TAG_PREFIX)) {
+    const id = text.slice(TAG_PREFIX.length).trim();
+    return id ? { kind: "tag", id } : null;
+  }
+  return null;
+}
 
 /** Map ZXing format names to JsBarcode format keys. */
 export function toJsBarcodeFormat(format?: string): string {
@@ -30,16 +62,16 @@ export function toJsBarcodeFormat(format?: string): string {
     case "DATA_MATRIX":
     case "PDF_417":
     case "AZTEC":
-      // JsBarcode doesn't render 2D codes; fall back to CODE128 of the payload
       return "CODE128";
     default:
       return "CODE128";
   }
 }
 
+/** Always render ryOS ids as CODE128 (alphanumeric + punctuation). */
 export function renderBarcodeSvg(
   value: string,
-  format?: string
+  format: string = "CODE128"
 ): string | null {
   if (!value.trim()) return null;
   try {
@@ -47,8 +79,8 @@ export function renderBarcodeSvg(
     JsBarcode(svg, value, {
       format: toJsBarcodeFormat(format),
       displayValue: true,
-      fontSize: 14,
-      height: 60,
+      fontSize: 11,
+      height: 56,
       margin: 8,
       background: "#ffffff",
       lineColor: "#000000",
@@ -60,8 +92,8 @@ export function renderBarcodeSvg(
       JsBarcode(svg, value, {
         format: "CODE128",
         displayValue: true,
-        fontSize: 14,
-        height: 60,
+        fontSize: 11,
+        height: 56,
         margin: 8,
       });
       return new XMLSerializer().serializeToString(svg);
@@ -71,24 +103,61 @@ export function renderBarcodeSvg(
   }
 }
 
-export function printStuffLabels(items: StuffItem[]): void {
-  const printable = items.filter((item) => item.barcode);
-  if (printable.length === 0) {
-    window.alert("Select items that have barcodes to print labels.");
+export function renderStuffIdBarcodeSvg(
+  kind: StuffLabelKind,
+  id: string
+): string | null {
+  return renderBarcodeSvg(encodeStuffId(kind, id), "CODE128");
+}
+
+export function itemToLabelTarget(item: StuffItem): StuffLabelTarget {
+  return {
+    kind: "item",
+    id: item.id,
+    title: item.title,
+    subtitle: item.brand,
+  };
+}
+
+export function tagToLabelTarget(tag: StuffTag): StuffLabelTarget {
+  return {
+    kind: "tag",
+    id: tag.id,
+    title: tag.name,
+    subtitle: "Tag",
+  };
+}
+
+export function printStuffLabels(targets: StuffLabelTarget[]): void {
+  if (targets.length === 0) {
+    window.alert("Nothing to print.");
     return;
   }
 
-  const labels = printable
-    .map((item) => {
-      const svg = renderBarcodeSvg(item.barcode!, item.barcodeFormat);
+  const labels = targets
+    .map((target) => {
+      const payload = encodeStuffId(target.kind, target.id);
+      const svg = renderBarcodeSvg(payload, "CODE128");
       if (!svg) return "";
+      const kindLabel = target.kind === "tag" ? "Tag" : "Item";
       return `<div class="label">
-        <div class="title">${escapeHtml(item.title)}</div>
+        <div class="kind">${escapeHtml(kindLabel)}</div>
+        <div class="title">${escapeHtml(target.title)}</div>
+        ${
+          target.subtitle
+            ? `<div class="subtitle">${escapeHtml(target.subtitle)}</div>`
+            : ""
+        }
         <div class="barcode">${svg}</div>
       </div>`;
     })
     .filter(Boolean)
     .join("\n");
+
+  if (!labels) {
+    window.alert("Could not generate barcode labels.");
+    return;
+  }
 
   const html = `<!DOCTYPE html>
 <html>
@@ -106,7 +175,9 @@ export function printStuffLabels(items: StuffItem[]): void {
       page-break-inside: avoid;
       text-align: center;
     }
-    .title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .kind { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.55; margin-bottom: 2px; }
+    .title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .subtitle { font-size: 11px; opacity: 0.7; margin-bottom: 6px; }
     .barcode svg { max-width: 100%; height: auto; }
   </style>
 </head>
