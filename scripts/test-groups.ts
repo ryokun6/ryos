@@ -24,6 +24,7 @@ export const API_TEST_FILES = [
   "tests/integration/api/test-share-applet.test.ts",
   "tests/integration/api/test-song.test.ts",
   "tests/integration/api/test-speech.test.ts",
+  "tests/integration/api/test-stuff-shares.test.ts",
   "tests/integration/api/test-sync-v2-api.test.ts",
   "tests/integration/api/test-sync-v2-engine-e2e.test.ts",
   "tests/integration/api/test-telegram-webhook.test.ts",

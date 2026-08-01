@@ -9,6 +9,7 @@ import type {
   PreviewInitialData,
   VideosInitialData,
   BooksInitialData,
+  StuffInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { createLazyComponent } from "./lazyAppComponent";
@@ -181,6 +182,14 @@ const LazyCalculatorApp = createLazyComponent<unknown>(
   "calculator"
 );
 
+const LazyStuffApp = createLazyComponent<StuffInitialData>(
+  () =>
+    import("@/apps/stuff/components/StuffAppComponent").then((m) => ({
+      default: m.StuffAppComponent,
+    })),
+  "stuff"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -220,6 +229,7 @@ import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } fro
 import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
 import { appMetadata as booksMetadata, helpItems as booksHelpItems } from "@/apps/books/metadata";
 import { appMetadata as calculatorMetadata, helpItems as calculatorHelpItems } from "@/apps/calculator/metadata";
+import { appMetadata as stuffMetadata, helpItems as stuffHelpItems } from "@/apps/stuff/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -600,6 +610,19 @@ export const appRegistry = {
       defaultSize: { width: 240, height: 360 },
       minSize: { width: 240, height: 360 },
       maxSize: { width: 320, height: 520 },
+    } as WindowConstraints,
+  },
+  ["stuff"]: {
+    id: "stuff",
+    name: "Stuff",
+    icon: { type: "image", src: stuffMetadata.icon },
+    description: "Catalog your stuff on a wooden shelf",
+    component: LazyStuffApp,
+    helpItems: stuffHelpItems,
+    metadata: stuffMetadata,
+    windowConfig: {
+      defaultSize: { width: 860, height: 560 },
+      minSize: { width: 520, height: 380 },
     } as WindowConstraints,
   },
 } as const;

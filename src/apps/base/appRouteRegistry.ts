@@ -204,13 +204,34 @@ export function resolveInitialRoute(
     );
   }
 
+  const stuffShareMatch = pathname.match(/^\/stuff\/([^/]+)$/);
+  if (stuffShareMatch) {
+    return createLaunchAction(
+      {
+        appId: "stuff",
+        initialData: {
+          shareId: stuffShareMatch[1],
+        },
+      },
+      {
+        delayMs: 0,
+        toast: {
+          type: "text",
+          message: "Opening shared Stuff…",
+        },
+        urlCleanupTiming: "immediate",
+      },
+    );
+  }
+
   if (
     pathname.startsWith("/internet-explorer/") ||
     pathname.startsWith("/applet-viewer/") ||
     pathname.startsWith("/ipod/") ||
     pathname.startsWith("/listen/") ||
     pathname.startsWith("/karaoke/") ||
-    pathname.startsWith("/videos/")
+    pathname.startsWith("/videos/") ||
+    pathname.startsWith("/stuff/")
   ) {
     return null;
   }

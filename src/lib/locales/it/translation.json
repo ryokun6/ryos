@@ -4034,6 +4034,136 @@
       "placeholder": "Scrivi una nota…",
       "title": "Memo"
     },
+    "stuff": {
+      "contextMenu": {
+        "delete": "[TODO] Delete",
+        "edit": "[TODO] Edit",
+        "printLabel": "[TODO] Print Label"
+      },
+      "description": "[TODO] Catalog your stuff on a wooden shelf",
+      "detail": {
+        "delete": "[TODO] Delete",
+        "print": "[TODO] Print",
+        "title": "[TODO] Details"
+      },
+      "empty": {
+        "description": "[TODO] Add an item or scan a barcode to start filling your shelves.",
+        "title": "[TODO] No stuff yet"
+      },
+      "fields": {
+        "barcode": "[TODO] Barcode",
+        "brand": "[TODO] Brand",
+        "currency": "[TODO] Currency",
+        "discountedPrice": "[TODO] Asking",
+        "notes": "[TODO] Notes",
+        "originalPrice": "[TODO] Original",
+        "quantity": "[TODO] Quantity",
+        "soldPrice": "[TODO] Sold",
+        "status": "[TODO] Status",
+        "tags": "[TODO] Tags",
+        "title": "[TODO] Title"
+      },
+      "help": {
+        "prices": {
+          "description": "[TODO] Track original, discounted, and sold prices. Mark items as in use, stowed, for sale, sold, or discarded.",
+          "title": "[TODO] Prices & Status"
+        },
+        "print": {
+          "description": "[TODO] Print barcode labels for selected items from File ▸ Print Labels.",
+          "title": "[TODO] Print Labels"
+        },
+        "scan": {
+          "description": "[TODO] Use File ▸ Scan Barcode to capture UPC, EAN, Code 128, QR, and more. Product details fill in when found.",
+          "title": "[TODO] Scan Barcodes"
+        },
+        "share": {
+          "description": "[TODO] Publish selected items to a public URL. Signed-in visitors can reserve items and place highest offers.",
+          "title": "[TODO] Share & Bid"
+        },
+        "shelf": {
+          "description": "[TODO] Browse your inventory on wooden shelves. Click an item to edit details, status, and prices.",
+          "title": "[TODO] Your Shelf"
+        },
+        "tags": {
+          "description": "[TODO] Organize stuff with tags like Kitchen or Electronics. Filter the shelf from the sidebar.",
+          "title": "[TODO] Tags"
+        }
+      },
+      "menu": {
+        "about": "[TODO] About Stuff",
+        "backToShelf": "[TODO] Back to My Shelf",
+        "help": "[TODO] Stuff Help",
+        "newItem": "[TODO] New Item",
+        "printLabels": "[TODO] Print Labels…",
+        "scanBarcode": "[TODO] Scan Barcode…",
+        "share": "[TODO] Share Shelf…"
+      },
+      "name": "[TODO] Stuff",
+      "newItemTitle": "[TODO] New Item",
+      "scannedItemTitle": "[TODO] Scanned Item",
+      "scanner": {
+        "add": "[TODO] Add",
+        "addedWithoutMeta": "[TODO] Barcode saved — no product info found",
+        "cameraError": "[TODO] Could not access the camera. Enter a barcode manually below.",
+        "description": "[TODO] Point your camera at a barcode (UPC, EAN, Code 128, QR, and more).",
+        "found": "[TODO] Product added",
+        "lookingUp": "[TODO] Looking up product…",
+        "manualPlaceholder": "[TODO] Or type a barcode…",
+        "title": "[TODO] Scan Barcode"
+      },
+      "searchPlaceholder": "[TODO] Search stuff…",
+      "share": {
+        "description": "[TODO] Publish selected items. Visitors must sign in to reserve or bid.",
+        "empty": "[TODO] No items to share.",
+        "failed": "[TODO] Could not publish share.",
+        "noneSelected": "[TODO] Select at least one item to share.",
+        "publish": "[TODO] Publish",
+        "published": "[TODO] Shelf published",
+        "publishing": "[TODO] Publishing…",
+        "shelfTitle": "[TODO] Share title",
+        "title": "[TODO] Share Stuff"
+      },
+      "shared": {
+        "back": "[TODO] Back",
+        "bid": "[TODO] Place Offer",
+        "bidFailed": "[TODO] Could not place offer.",
+        "bidPlaced": "[TODO] Offer placed",
+        "by": "[TODO] Shared by {{username}}",
+        "invalidBid": "[TODO] Enter a valid offer amount.",
+        "loading": "[TODO] Loading…",
+        "loadingTitle": "[TODO] Shared Stuff",
+        "notFound": "[TODO] This shared shelf could not be found.",
+        "reserve": "[TODO] Reserve",
+        "reserveFailed": "[TODO] Could not reserve item.",
+        "reserved": "[TODO] Item reserved",
+        "reservedBy": "[TODO] Reserved by {{username}}",
+        "signIn": "[TODO] Sign in to bid",
+        "topOffer": "[TODO] Top offer {{amount}}",
+        "yourOffer": "[TODO] Your offer"
+      },
+      "sidebar": {
+        "allStuff": "[TODO] All Stuff",
+        "deleteTag": "[TODO] Delete tag",
+        "newTag": "[TODO] New tag…",
+        "status": "[TODO] Status",
+        "tags": "[TODO] Tags"
+      },
+      "status": {
+        "all": "[TODO] All statuses",
+        "discarded": "[TODO] Discarded",
+        "for_sale": "[TODO] For sale",
+        "in_use": "[TODO] In use",
+        "reserved": "[TODO] Reserved",
+        "sold": "[TODO] Sold",
+        "stowed": "[TODO] Stowed"
+      },
+      "title": "[TODO] Stuff",
+      "toolbar": {
+        "add": "[TODO] Add",
+        "scan": "[TODO] Scan",
+        "share": "[TODO] Share"
+      }
+    },
     "synth": {
       "addPreset": "AGGIUNGI PRESET",
       "controls": "CONTROLLI",
@@ -4787,7 +4917,9 @@
           "applet": "Applet",
           "item": "Elemento",
           "page": "Pagina",
-          "song": "Brano"
+          "shelf": "[TODO] Shelf",
+          "song": "Brano",
+          "stuff": "[TODO] Shelf"
         },
         "linkCopied": "Link copiato",
         "linkCopiedToClipboard": "Link {{itemType}} copiato negli appunti",
