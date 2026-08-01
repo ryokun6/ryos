@@ -74,6 +74,23 @@ describe("Stuff filters", () => {
   });
 });
 
+describe("Stuff title updates", () => {
+  test("preserves titles that contain spaces when committed", async () => {
+    // Isolate store module so persist hydration from other suites cannot leak.
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    useStuffStore.setState({
+      items: [],
+      selectedItemId: null,
+    });
+    const id = useStuffStore.getState().addItem({ title: "Lamp" });
+    useStuffStore.getState().updateItem(id, { title: "Desk Lamp" });
+    expect(useStuffStore.getState().items[0]?.title).toBe("Desk Lamp");
+    useStuffStore.getState().updateItem(id, { title: "  " });
+    // Empty/whitespace commits keep the previous title rather than "Untitled".
+    expect(useStuffStore.getState().items[0]?.title).toBe("Desk Lamp");
+  });
+});
+
 describe("Stuff helpers", () => {
   test("colorFromString is stable", () => {
     expect(colorFromString("abc")).toEqual(colorFromString("abc"));

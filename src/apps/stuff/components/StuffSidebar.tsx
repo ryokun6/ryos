@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash, Barcode } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { STUFF_STATUSES, type StuffStatus, type StuffTag } from "../types";
 
 interface StuffSidebarProps {
@@ -19,6 +19,46 @@ interface StuffSidebarProps {
   onPrintTag: (id: string) => void;
 }
 
+function SectionHeader({
+  title,
+  isMacOSTheme,
+  useGeneva,
+}: {
+  title: string;
+  isMacOSTheme: boolean;
+  useGeneva: boolean;
+}) {
+  if (isMacOSTheme) {
+    return (
+      <div
+        className={cn(
+          "text-center text-[11px] font-regular",
+          useGeneva && "font-geneva-12"
+        )}
+        style={{
+          background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
+          color: "#222",
+          textShadow: "0 1px 0 #e1e1e1",
+          borderTop: "1px solid rgba(255,255,255,0.5)",
+          borderBottom: "1px solid #787878",
+        }}
+      >
+        {title}
+      </div>
+    );
+  }
+  return (
+    <div
+      className={cn(
+        "mb-1 px-2.5 text-[9px] font-bold uppercase tracking-wide opacity-50",
+        useGeneva && "font-geneva-12"
+      )}
+    >
+      {title}
+    </div>
+  );
+}
+
 export function StuffSidebar({
   tags,
   selectedTagId,
@@ -32,6 +72,8 @@ export function StuffSidebar({
   onPrintTag,
 }: StuffSidebarProps) {
   const { t } = useTranslation();
+  const { isMacOSTheme, isSystem7Theme } = useThemeFlags();
+  const useGeneva = isMacOSTheme || isSystem7Theme;
 
   const statusOptions = useMemo(
     () =>
@@ -47,101 +89,141 @@ export function StuffSidebar({
     [t]
   );
 
+  const rowClass = (selected: boolean) =>
+    cn(
+      "flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[11px] transition-colors",
+      useGeneva && "font-geneva-12",
+      selected ? "bg-black/[0.06]" : "hover:bg-black/5"
+    );
+
   return (
-    <aside className="flex w-44 shrink-0 flex-col border-r border-black/15 bg-black/5 dark:border-white/10 dark:bg-black/20">
-      <div className="border-b border-black/10 px-3 py-2 dark:border-white/10">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/55">
-          {t("apps.stuff.sidebar.tags", { defaultValue: "Tags" })}
-        </p>
-      </div>
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+    <AppSidebarPanel
+      bordered={isMacOSTheme}
+      className="flex h-full w-[160px] shrink-0 flex-col min-h-0"
+      style={
+        !isMacOSTheme
+          ? { borderRight: "1px solid rgba(0,0,0,0.08)" }
+          : undefined
+      }
+    >
+      <SectionHeader
+        title={t("apps.stuff.sidebar.tags", { defaultValue: "Tags" })}
+        isMacOSTheme={isMacOSTheme}
+        useGeneva={useGeneva}
+      />
+
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto",
+          !isMacOSTheme && "py-1.5"
+        )}
+      >
         <button
           type="button"
-          className={cn(
-            "mb-1 flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm",
-            selectedTagId === null
-              ? "bg-black/15 dark:bg-white/15"
-              : "hover:bg-black/8 dark:hover:bg-white/10"
-          )}
+          className={rowClass(selectedTagId === null)}
           onClick={() => onSelectTag(null)}
         >
-          <span>{t("apps.stuff.sidebar.allStuff", { defaultValue: "All Stuff" })}</span>
-          <span className="text-xs opacity-60">{totalCount}</span>
+          <span className="min-w-0 flex-1 truncate">
+            {t("apps.stuff.sidebar.allStuff", { defaultValue: "All Stuff" })}
+          </span>
+          <span className="shrink-0 text-[10px] opacity-50">{totalCount}</span>
         </button>
-        {tags.map((tag) => (
-          <div key={tag.id} className="group mb-0.5 flex items-center gap-1">
-            <button
-              type="button"
-              className={cn(
-                "flex min-w-0 flex-1 items-center gap-2 rounded px-2 py-1.5 text-left text-sm",
-                selectedTagId === tag.id
-                  ? "bg-black/15 dark:bg-white/15"
-                  : "hover:bg-black/8 dark:hover:bg-white/10"
-              )}
-              onClick={() => onSelectTag(tag.id)}
-            >
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: tag.color }}
-              />
-              <span className="truncate">{tag.name}</span>
-              <span className="ml-auto text-xs opacity-60">
-                {itemCountsByTag[tag.id] ?? 0}
-              </span>
-            </button>
-            <button
-              type="button"
-              className="rounded p-1 opacity-0 hover:bg-black/10 group-hover:opacity-100 dark:hover:bg-white/10"
-              aria-label={t("apps.stuff.sidebar.printTag", {
-                defaultValue: "Print tag label",
-              })}
-              onClick={() => onPrintTag(tag.id)}
-            >
-              <Barcode size={12} />
-            </button>
-            <button
-              type="button"
-              className="rounded p-1 opacity-0 hover:bg-black/10 group-hover:opacity-100 dark:hover:bg-white/10"
-              aria-label={t("apps.stuff.sidebar.deleteTag", {
-                defaultValue: "Delete tag",
-              })}
-              onClick={() => onDeleteTag(tag.id)}
-            >
-              <Trash size={12} />
-            </button>
-          </div>
-        ))}
+
+        {tags.map((tag) => {
+          const selected = selectedTagId === tag.id;
+          return (
+            <div key={tag.id} className="group relative flex items-center">
+              <button
+                type="button"
+                className={rowClass(selected)}
+                onClick={() => onSelectTag(tag.id)}
+              >
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: tag.color }}
+                />
+                <span className="min-w-0 flex-1 truncate">{tag.name}</span>
+                <span className="shrink-0 text-[10px] opacity-50">
+                  {itemCountsByTag[tag.id] ?? 0}
+                </span>
+              </button>
+              <div className="absolute right-1 top-1/2 flex -translate-y-1/2 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  className="rounded p-0.5 text-black/40 hover:bg-black/10 hover:text-black/70"
+                  aria-label={t("apps.stuff.sidebar.printTag", {
+                    defaultValue: "Print tag label",
+                  })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrintTag(tag.id);
+                  }}
+                >
+                  <Barcode size={11} />
+                </button>
+                <button
+                  type="button"
+                  className="rounded p-0.5 text-black/40 hover:bg-black/10 hover:text-black/70"
+                  aria-label={t("apps.stuff.sidebar.deleteTag", {
+                    defaultValue: "Delete tag",
+                  })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteTag(tag.id);
+                  }}
+                >
+                  <Trash size={11} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
         <form
-          className="mt-2 flex gap-1"
+          className="mt-1 flex items-center gap-1 px-2 pb-1"
           onSubmit={(e) => {
             e.preventDefault();
             const form = e.currentTarget;
-            const input = form.elements.namedItem("tagName") as HTMLInputElement;
+            const input = form.elements.namedItem(
+              "tagName"
+            ) as HTMLInputElement;
             if (input.value.trim()) {
               onAddTag(input.value);
               input.value = "";
             }
           }}
         >
-          <Input
+          <input
             name="tagName"
-            className="h-7 text-xs"
+            className={cn(
+              "min-w-0 flex-1 rounded border border-black/15 bg-white/80 px-1.5 py-0.5 text-[10px] outline-none",
+              useGeneva && "font-geneva-12"
+            )}
             placeholder={t("apps.stuff.sidebar.newTag", {
               defaultValue: "New tag…",
             })}
           />
-          <Button type="submit" size="sm" variant="ghost" className="h-7 w-7 p-0">
-            <Plus size={14} />
-          </Button>
+          <button
+            type="submit"
+            className="rounded p-0.5 text-black/45 hover:bg-black/10 hover:text-black/70"
+            aria-label={t("apps.stuff.toolbar.add", { defaultValue: "Add" })}
+          >
+            <Plus size={12} />
+          </button>
         </form>
       </div>
 
-      <div className="border-t border-black/10 px-3 py-2 dark:border-white/10">
-        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-black/55 dark:text-white/55">
-          {t("apps.stuff.sidebar.status", { defaultValue: "Status" })}
-        </p>
+      <SectionHeader
+        title={t("apps.stuff.sidebar.status", { defaultValue: "Status" })}
+        isMacOSTheme={isMacOSTheme}
+        useGeneva={useGeneva}
+      />
+      <div className="px-2 py-1.5">
         <select
-          className="w-full rounded border border-black/20 bg-white/80 px-2 py-1 text-xs dark:border-white/20 dark:bg-black/40"
+          className={cn(
+            "w-full rounded-sm border border-black/20 bg-white px-1 py-0.5 text-[11px] outline-none",
+            useGeneva && "font-geneva-12"
+          )}
           value={statusFilter}
           onChange={(e) =>
             onStatusFilter(e.target.value as StuffStatus | "all")
@@ -154,6 +236,6 @@ export function StuffSidebar({
           ))}
         </select>
       </div>
-    </aside>
+    </AppSidebarPanel>
   );
 }

@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { STUFF_STATUSES, type StuffItem, type StuffTag } from "../types";
 import { formatMoney, parseOptionalNumber } from "../utils/colors";
 import { renderStuffIdBarcodeSvg } from "../utils/printLabels";
@@ -11,22 +10,72 @@ import { renderStuffIdBarcodeSvg } from "../utils/printLabels";
 interface StuffDetailPanelProps {
   item: StuffItem;
   tags: StuffTag[];
-  onClose: () => void;
   onChange: (draft: Partial<StuffItem>) => void;
   onDelete: () => void;
   onPrint: () => void;
 }
 
+function FieldRow({
+  label,
+  useGeneva,
+  children,
+}: {
+  label: string;
+  useGeneva: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-[22px] items-start gap-2">
+      <span
+        className={cn(
+          "w-[58px] shrink-0 pt-0.5 text-right text-[11px] font-bold leading-tight text-[#222]",
+          useGeneva && "font-geneva-12"
+        )}
+      >
+        {label}
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Item editor content for `AppDrawer` — mirrors Calendar's tray: local text
+ * drafts that commit on blur so spaces / mid-edit empties don't thrash the store.
+ */
 export function StuffDetailPanel({
   item,
   tags,
-  onClose,
   onChange,
   onDelete,
   onPrint,
 }: StuffDetailPanelProps) {
   const { t } = useTranslation();
+  const { isMacOSTheme, isSystem7Theme, isWindowsTheme } = useThemeFlags();
+  const useGeneva = isMacOSTheme || isSystem7Theme;
+
+  const [title, setTitle] = useState(item.title);
+  const [brand, setBrand] = useState(item.brand ?? "");
+  const [notes, setNotes] = useState(item.notes);
+  const [barcode, setBarcode] = useState(item.barcode ?? "");
+  const [currency, setCurrency] = useState(item.prices.currency);
   const [ryosBarcodeSvg, setRyosBarcodeSvg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTitle(item.title);
+    setBrand(item.brand ?? "");
+    setNotes(item.notes);
+    setBarcode(item.barcode ?? "");
+    setCurrency(item.prices.currency);
+  }, [
+    item.id,
+    item.updatedAt,
+    item.title,
+    item.brand,
+    item.notes,
+    item.barcode,
+    item.prices.currency,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +88,41 @@ export function StuffDetailPanel({
     };
   }, [item.id]);
 
+  const commitTitle = () => {
+    const next = title.trim();
+    if (!next) {
+      setTitle(item.title);
+      return;
+    }
+    if (next !== item.title) onChange({ title: next });
+  };
+
+  const commitBrand = () => {
+    const next = brand.trim() || undefined;
+    if (next !== (item.brand || undefined)) onChange({ brand: next });
+  };
+
+  const commitNotes = () => {
+    if (notes !== item.notes) onChange({ notes });
+  };
+
+  const commitBarcode = () => {
+    const next = barcode.trim() || undefined;
+    if (next !== (item.barcode || undefined)) {
+      onChange({
+        barcode: next,
+        barcodeFormat: next ? item.barcodeFormat ?? "CODE_128" : undefined,
+      });
+    }
+  };
+
+  const commitCurrency = () => {
+    const next = currency.trim().toUpperCase() || "USD";
+    if (next !== item.prices.currency) {
+      onChange({ prices: { ...item.prices, currency: next } });
+    }
+  };
+
   const toggleTag = (tagId: string) => {
     const next = item.tagIds.includes(tagId)
       ? item.tagIds.filter((id) => id !== tagId)
@@ -46,48 +130,80 @@ export function StuffDetailPanel({
     onChange({ tagIds: next });
   };
 
-  return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-black/15 bg-os-window-bg dark:border-white/10">
-      <div className="flex items-center justify-between border-b border-black/10 px-3 py-2 dark:border-white/10">
-        <h2 className="truncate font-apple-garamond text-lg">
-          {t("apps.stuff.detail.title", { defaultValue: "Details" })}
-        </h2>
-        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onClose}>
-          <X size={14} />
-        </Button>
-      </div>
+  const titleInputClass = cn(
+    "w-full border-0 bg-transparent p-0 outline-none focus:ring-0",
+    "font-bold tracking-tight text-[#222]",
+    isMacOSTheme && "font-geneva-12 text-lg leading-snug min-h-[1.35rem]",
+    isSystem7Theme && !isMacOSTheme && "font-geneva-12 text-[16px] leading-snug",
+    !isMacOSTheme && !isSystem7Theme && "text-base font-semibold leading-snug"
+  );
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-3">
+  const fieldInputClass = cn(
+    "w-full rounded-sm border bg-white px-1 py-0.5 text-[11px] outline-none",
+    useGeneva ? "font-geneva-12 border-black/25" : "border-black/20",
+    isWindowsTheme && "text-black"
+  );
+
+  const panelShell = cn(
+    "flex min-h-0 flex-1 flex-col overflow-y-auto",
+    "bg-white pb-2 pl-2.5 pr-2.5 pt-2",
+    !isMacOSTheme && "rounded-sm border border-black/10"
+  );
+
+  return (
+    <div className={panelShell}>
+      <div
+        className={cn(
+          "mb-2 shrink-0 border-b border-black/20 pb-2",
+          isMacOSTheme && "border-black/15"
+        )}
+      >
         {item.imageDataUrl ? (
           <img
             src={item.imageDataUrl}
             alt=""
-            className="mx-auto max-h-40 rounded object-contain"
+            className="mb-2 mx-auto max-h-28 rounded object-contain"
           />
         ) : null}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={commitTitle}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") {
+              setTitle(item.title);
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          className={titleInputClass}
+          placeholder={t("apps.stuff.fields.title", { defaultValue: "Title" })}
+          aria-label={t("apps.stuff.fields.title", { defaultValue: "Title" })}
+        />
+        <input
+          type="text"
+          value={brand}
+          onChange={(e) => setBrand(e.target.value)}
+          onBlur={commitBrand}
+          onKeyDown={(e) => e.stopPropagation()}
+          className={cn(
+            "mt-0.5 w-full border-0 bg-transparent p-0 text-[11px] text-black/45 outline-none placeholder:text-black/35 focus:ring-0",
+            useGeneva && "font-geneva-12"
+          )}
+          placeholder={t("apps.stuff.fields.brand", { defaultValue: "Brand" })}
+          aria-label={t("apps.stuff.fields.brand", { defaultValue: "Brand" })}
+        />
+      </div>
 
-        <label className="block text-xs font-medium opacity-70">
-          {t("apps.stuff.fields.title", { defaultValue: "Title" })}
-          <Input
-            className="mt-1"
-            value={item.title}
-            onChange={(e) => onChange({ title: e.target.value })}
-          />
-        </label>
-
-        <label className="block text-xs font-medium opacity-70">
-          {t("apps.stuff.fields.brand", { defaultValue: "Brand" })}
-          <Input
-            className="mt-1"
-            value={item.brand ?? ""}
-            onChange={(e) => onChange({ brand: e.target.value || undefined })}
-          />
-        </label>
-
-        <label className="block text-xs font-medium opacity-70">
-          {t("apps.stuff.fields.status", { defaultValue: "Status" })}
+      <div className="flex min-h-0 flex-col gap-2">
+        <FieldRow
+          label={t("apps.stuff.fields.status", { defaultValue: "Status" })}
+          useGeneva={useGeneva}
+        >
           <select
-            className="mt-1 w-full rounded border border-input bg-transparent px-2 py-1.5 text-sm"
+            className={fieldInputClass}
             value={item.status}
             onChange={(e) =>
               onChange({ status: e.target.value as StuffItem["status"] })
@@ -101,33 +217,38 @@ export function StuffDetailPanel({
               </option>
             ))}
           </select>
-        </label>
+        </FieldRow>
 
-        <label className="block text-xs font-medium opacity-70">
-          {t("apps.stuff.fields.quantity", { defaultValue: "Quantity" })}
-          <Input
-            className="mt-1"
+        <FieldRow
+          label={t("apps.stuff.fields.quantity", { defaultValue: "Quantity" })}
+          useGeneva={useGeneva}
+        >
+          <input
             type="number"
             min={1}
+            className={fieldInputClass}
             value={item.quantity}
             onChange={(e) =>
               onChange({ quantity: Math.max(1, Number(e.target.value) || 1) })
             }
           />
-        </label>
+        </FieldRow>
 
-        <div>
-          <p className="mb-1 text-xs font-medium opacity-70">
-            {t("apps.stuff.fields.tags", { defaultValue: "Tags" })}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
+        <FieldRow
+          label={t("apps.stuff.fields.tags", { defaultValue: "Tags" })}
+          useGeneva={useGeneva}
+        >
+          <div className="flex flex-wrap gap-1">
             {tags.map((tag) => {
               const active = item.tagIds.includes(tag.id);
               return (
                 <button
                   key={tag.id}
                   type="button"
-                  className="rounded-full px-2 py-0.5 text-xs"
+                  className={cn(
+                    "rounded-sm px-1.5 py-0.5 text-[10px]",
+                    useGeneva && "font-geneva-12"
+                  )}
                   style={{
                     backgroundColor: active ? tag.color : "transparent",
                     color: active ? "#fff" : undefined,
@@ -140,83 +261,93 @@ export function StuffDetailPanel({
               );
             })}
           </div>
-        </div>
+        </FieldRow>
 
-        <div className="grid grid-cols-2 gap-2">
-          <label className="block text-xs font-medium opacity-70">
-            {t("apps.stuff.fields.originalPrice", {
-              defaultValue: "Original",
-            })}
-            <Input
-              className="mt-1"
-              type="number"
-              step="0.01"
-              value={item.prices.original ?? ""}
-              onChange={(e) =>
-                onChange({
-                  prices: {
-                    ...item.prices,
-                    original: parseOptionalNumber(e.target.value),
-                  },
-                })
-              }
-            />
-          </label>
-          <label className="block text-xs font-medium opacity-70">
-            {t("apps.stuff.fields.discountedPrice", {
-              defaultValue: "Asking",
-            })}
-            <Input
-              className="mt-1"
-              type="number"
-              step="0.01"
-              value={item.prices.discounted ?? ""}
-              onChange={(e) =>
-                onChange({
-                  prices: {
-                    ...item.prices,
-                    discounted: parseOptionalNumber(e.target.value),
-                  },
-                })
-              }
-            />
-          </label>
-          <label className="block text-xs font-medium opacity-70">
-            {t("apps.stuff.fields.soldPrice", { defaultValue: "Sold" })}
-            <Input
-              className="mt-1"
-              type="number"
-              step="0.01"
-              value={item.prices.sold ?? ""}
-              onChange={(e) =>
-                onChange({
-                  prices: {
-                    ...item.prices,
-                    sold: parseOptionalNumber(e.target.value),
-                  },
-                })
-              }
-            />
-          </label>
-          <label className="block text-xs font-medium opacity-70">
-            {t("apps.stuff.fields.currency", { defaultValue: "Currency" })}
-            <Input
-              className="mt-1"
-              value={item.prices.currency}
-              onChange={(e) =>
-                onChange({
-                  prices: {
-                    ...item.prices,
-                    currency: e.target.value.toUpperCase() || "USD",
-                  },
-                })
-              }
-            />
-          </label>
-        </div>
+        <FieldRow
+          label={t("apps.stuff.fields.originalPrice", {
+            defaultValue: "Original",
+          })}
+          useGeneva={useGeneva}
+        >
+          <input
+            type="number"
+            step="0.01"
+            className={fieldInputClass}
+            value={item.prices.original ?? ""}
+            onChange={(e) =>
+              onChange({
+                prices: {
+                  ...item.prices,
+                  original: parseOptionalNumber(e.target.value),
+                },
+              })
+            }
+          />
+        </FieldRow>
+
+        <FieldRow
+          label={t("apps.stuff.fields.discountedPrice", {
+            defaultValue: "Asking",
+          })}
+          useGeneva={useGeneva}
+        >
+          <input
+            type="number"
+            step="0.01"
+            className={fieldInputClass}
+            value={item.prices.discounted ?? ""}
+            onChange={(e) =>
+              onChange({
+                prices: {
+                  ...item.prices,
+                  discounted: parseOptionalNumber(e.target.value),
+                },
+              })
+            }
+          />
+        </FieldRow>
+
+        <FieldRow
+          label={t("apps.stuff.fields.soldPrice", { defaultValue: "Sold" })}
+          useGeneva={useGeneva}
+        >
+          <input
+            type="number"
+            step="0.01"
+            className={fieldInputClass}
+            value={item.prices.sold ?? ""}
+            onChange={(e) =>
+              onChange({
+                prices: {
+                  ...item.prices,
+                  sold: parseOptionalNumber(e.target.value),
+                },
+              })
+            }
+          />
+        </FieldRow>
+
+        <FieldRow
+          label={t("apps.stuff.fields.currency", { defaultValue: "Currency" })}
+          useGeneva={useGeneva}
+        >
+          <input
+            type="text"
+            className={fieldInputClass}
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            onBlur={commitCurrency}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </FieldRow>
 
         {(item.prices.discounted ?? item.prices.original) !== undefined && (
-          <p className="text-xs opacity-70">
+          <p
+            className={cn(
+              "pl-[66px] text-[10px] opacity-60",
+              useGeneva && "font-geneva-12"
+            )}
+          >
             {formatMoney(
               item.prices.discounted ?? item.prices.original,
               item.prices.currency
@@ -224,71 +355,82 @@ export function StuffDetailPanel({
           </p>
         )}
 
-        <label className="block text-xs font-medium opacity-70">
-          {t("apps.stuff.fields.productBarcode", {
-            defaultValue: "Product barcode",
+        <FieldRow
+          label={t("apps.stuff.fields.productBarcode", {
+            defaultValue: "Barcode",
           })}
-          <Input
-            className="mt-1 font-mono text-xs"
-            value={item.barcode ?? ""}
-            onChange={(e) =>
-              onChange({
-                barcode: e.target.value || undefined,
-                barcodeFormat: e.target.value
-                  ? item.barcodeFormat ?? "CODE_128"
-                  : undefined,
-              })
-            }
+          useGeneva={useGeneva}
+        >
+          <input
+            type="text"
+            className={cn(fieldInputClass, "font-mono")}
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            onBlur={commitBarcode}
+            onKeyDown={(e) => e.stopPropagation()}
           />
-        </label>
+        </FieldRow>
 
-        <div>
-          <p className="mb-1 text-xs font-medium opacity-70">
-            {t("apps.stuff.fields.ryosLabel", {
-              defaultValue: "ryOS label",
-            })}
-          </p>
-          {ryosBarcodeSvg && (
+        <FieldRow
+          label={t("apps.stuff.fields.ryosLabel", { defaultValue: "ryOS" })}
+          useGeneva={useGeneva}
+        >
+          {ryosBarcodeSvg ? (
             <div
-              className="rounded bg-white p-2"
+              className="overflow-hidden rounded-sm bg-white"
               dangerouslySetInnerHTML={{ __html: ryosBarcodeSvg }}
             />
+          ) : (
+            <div className="h-10 animate-pulse rounded-sm bg-black/5" />
           )}
-          <p className="mt-1 break-all font-mono text-[10px] opacity-50">
+          <p className="mt-0.5 break-all font-mono text-[9px] opacity-40">
             {item.id}
           </p>
+        </FieldRow>
+
+        <FieldRow
+          label={t("apps.stuff.fields.notes", { defaultValue: "Notes" })}
+          useGeneva={useGeneva}
+        >
+          <textarea
+            className={cn(fieldInputClass, "min-h-[64px] resize-y")}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={commitNotes}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </FieldRow>
+
+        <div className="mt-1 flex gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-7 flex-1 text-[11px]",
+              useGeneva && "font-geneva-12"
+            )}
+            onClick={onPrint}
+          >
+            {t("apps.stuff.detail.print", { defaultValue: "Print" })}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-7 flex-1 text-[11px] text-red-600 hover:text-red-700",
+              useGeneva && "font-geneva-12"
+            )}
+            onClick={onDelete}
+          >
+            {t("apps.stuff.detail.delete", { defaultValue: "Delete" })}
+          </Button>
         </div>
 
-        <label className="block text-xs font-medium opacity-70">
-          {t("apps.stuff.fields.notes", { defaultValue: "Notes" })}
-          <Textarea
-            className="mt-1 min-h-[80px]"
-            value={item.notes}
-            onChange={(e) => onChange({ notes: e.target.value })}
-          />
-        </label>
+        {/* Scroll end spacer — padding-bottom alone is clipped on Mobile Safari */}
+        <div className="h-3 shrink-0" aria-hidden />
       </div>
-
-      <div className="flex gap-2 border-t border-black/10 p-3 dark:border-white/10">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="flex-1"
-          onClick={onPrint}
-        >
-          {t("apps.stuff.detail.print", { defaultValue: "Print" })}
-        </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          className="flex-1"
-          onClick={onDelete}
-        >
-          {t("apps.stuff.detail.delete", { defaultValue: "Delete" })}
-        </Button>
-      </div>
-    </aside>
+    </div>
   );
 }

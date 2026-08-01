@@ -19,7 +19,7 @@ interface StuffShelfViewProps {
   selectedItemId: string | null;
   shelfView: StuffShelfView;
   onSetShelfView: (view: StuffShelfView) => void;
-  onSelectItem: (id: string) => void;
+  onSelectItem: (id: string | null) => void;
   onAddItem: () => void;
   onScan: () => void;
   onShare: () => void;
@@ -172,7 +172,7 @@ export function StuffShelfView({
   }, [contextMenu]);
 
   return (
-    <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col">
+    <div ref={containerRef} className="relative flex h-full min-h-0 flex-1 flex-col">
       <div
         className="absolute inset-0"
         style={{
@@ -258,7 +258,9 @@ export function StuffShelfView({
                   key={item.id}
                   type="button"
                   className="flex w-full items-center gap-3 rounded-md bg-black/20 px-3 py-2 text-left text-[#f5e6d0] hover:bg-black/30"
-                  onClick={() => onSelectItem(item.id)}
+                  onClick={() =>
+                    onSelectItem(selectedItemId === item.id ? null : item.id)
+                  }
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setContextMenu({ item, x: e.clientX, y: e.clientY });
@@ -305,7 +307,11 @@ export function StuffShelfView({
                         item={item}
                         tags={tags}
                         selected={selectedItemId === item.id}
-                        onClick={() => onSelectItem(item.id)}
+                        onClick={() =>
+                          onSelectItem(
+                            selectedItemId === item.id ? null : item.id
+                          )
+                        }
                         onContextMenu={(e) => {
                           e.preventDefault();
                           setContextMenu({

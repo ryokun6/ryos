@@ -36,9 +36,16 @@ function emptyPrices(): StuffPrices {
 
 function normalizeItem(draft: StuffItemDraft, existing?: StuffItem): StuffItem {
   const now = Date.now();
+  // Only fall back to Untitled when creating/committing an empty title.
+  // Callers that edit text live should keep a local draft and commit on blur
+  // (trimming then) so spaces are not stripped mid-keystroke.
+  const nextTitle =
+    draft.title !== undefined
+      ? draft.title.trim()
+      : (existing?.title ?? "").trim();
   return {
     id: existing?.id ?? crypto.randomUUID(),
-    title: (draft.title ?? existing?.title ?? "Untitled").trim() || "Untitled",
+    title: nextTitle || existing?.title || "Untitled",
     notes: draft.notes ?? existing?.notes ?? "",
     imageDataUrl:
       draft.imageDataUrl !== undefined
