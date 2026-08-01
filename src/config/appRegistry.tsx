@@ -621,8 +621,9 @@ export const appRegistry = {
     helpItems: stuffHelpItems,
     metadata: stuffMetadata,
     windowConfig: {
-      defaultSize: { width: 860, height: 560 },
-      minSize: { width: 520, height: 380 },
+      // Leave room for sidebar (160) + shelf + ~266px side-drawer protrusion.
+      defaultSize: { width: 920, height: 580 },
+      minSize: { width: 560, height: 400 },
     } as WindowConstraints,
   },
 } as const;

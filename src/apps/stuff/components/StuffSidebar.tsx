@@ -12,6 +12,8 @@ interface StuffSidebarProps {
   statusFilter: StuffStatus | "all";
   itemCountsByTag: Record<string, number>;
   totalCount: number;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
   onSelectTag: (id: string | null) => void;
   onStatusFilter: (status: StuffStatus | "all") => void;
   onAddTag: (name: string) => void;
@@ -65,6 +67,8 @@ export function StuffSidebar({
   statusFilter,
   itemCountsByTag,
   totalCount,
+  searchQuery,
+  onSearchQueryChange,
   onSelectTag,
   onStatusFilter,
   onAddTag,
@@ -106,6 +110,21 @@ export function StuffSidebar({
           : undefined
       }
     >
+      <div className="shrink-0 border-b border-black/10 px-1.5 py-1.5">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => onSearchQueryChange(e.target.value)}
+          placeholder={t("apps.stuff.searchPlaceholder", {
+            defaultValue: "Search stuff…",
+          })}
+          className={cn(
+            "w-full rounded-sm border border-black/20 bg-white px-1.5 py-0.5 text-[11px] outline-none",
+            useGeneva && "font-geneva-12"
+          )}
+        />
+      </div>
+
       <SectionHeader
         title={t("apps.stuff.sidebar.tags", { defaultValue: "Tags" })}
         isMacOSTheme={isMacOSTheme}
@@ -135,7 +154,7 @@ export function StuffSidebar({
             <div key={tag.id} className="group relative flex items-center">
               <button
                 type="button"
-                className={rowClass(selected)}
+                className={cn(rowClass(selected), "pr-10")}
                 onClick={() => onSelectTag(tag.id)}
               >
                 <span

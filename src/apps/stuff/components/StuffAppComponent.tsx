@@ -4,7 +4,6 @@ import { AppDrawer } from "@/components/shared/AppDrawer";
 import { AppProps } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -77,9 +76,13 @@ export function StuffAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="stuff"
+        // Opaque metal like Calendar/Finder — glass/transparent chrome lets the
+        // desktop show through content gaps as a frosted "ghost" over the shelf.
+        material={isMacOSTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isWindowsTheme ? menuBar : undefined}
+        windowConstraints={{ minWidth: 560, minHeight: 400 }}
         drawer={
           <AppDrawer isOpen={showItemDrawer}>
             {logic.selectedItem ? (
@@ -102,31 +105,14 @@ export function StuffAppComponent({
         ) : (
           <div
             className={cn(
-              "flex h-full flex-col overflow-hidden font-os-ui",
+              "flex size-full flex-col overflow-hidden font-os-ui",
               isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
             )}
           >
             <div
               className={cn(
-                "flex items-center gap-2 px-2 py-1.5",
-                isMacOSTheme
-                  ? "border-b border-black/10"
-                  : "border-b border-black/10 dark:border-white/10"
-              )}
-            >
-              <Input
-                className="h-7 text-sm"
-                value={logic.searchQuery}
-                onChange={(e) => logic.setSearchQuery(e.target.value)}
-                placeholder={logic.t("apps.stuff.searchPlaceholder", {
-                  defaultValue: "Search stuff…",
-                })}
-              />
-            </div>
-            <div
-              className={cn(
                 "flex min-h-0 flex-1 overflow-hidden",
-                isMacOSTheme && "gap-[5px] p-[5px] pt-0"
+                isMacOSTheme && "gap-[5px] p-[5px]"
               )}
             >
               <StuffSidebar
@@ -135,6 +121,8 @@ export function StuffAppComponent({
                 statusFilter={logic.statusFilter}
                 itemCountsByTag={logic.itemCountsByTag}
                 totalCount={logic.items.length}
+                searchQuery={logic.searchQuery}
+                onSearchQueryChange={logic.setSearchQuery}
                 onSelectTag={logic.setSelectedTagId}
                 onStatusFilter={logic.setStatusFilter}
                 onAddTag={logic.addTag}
@@ -143,9 +131,8 @@ export function StuffAppComponent({
               />
               <div
                 className={cn(
-                  "min-w-0 flex-1 overflow-hidden",
-                  isMacOSTheme &&
-                    "bg-white os-inset-pane"
+                  "min-h-0 min-w-0 flex-1 overflow-hidden",
+                  isMacOSTheme && "bg-white os-inset-pane"
                 )}
                 style={
                   isMacOSTheme

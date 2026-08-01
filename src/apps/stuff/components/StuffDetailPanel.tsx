@@ -25,16 +25,16 @@ function FieldRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-[22px] items-start gap-2">
+    <div className="flex w-full min-h-[22px] items-start gap-2">
       <span
         className={cn(
-          "w-[58px] shrink-0 pt-0.5 text-right text-[11px] font-bold leading-tight text-[#222]",
+          "w-[52px] shrink-0 pt-0.5 text-right text-[11px] font-bold leading-tight text-[#222]",
           useGeneva && "font-geneva-12"
         )}
       >
         {label}
       </span>
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
     </div>
   );
 }
@@ -145,7 +145,7 @@ export function StuffDetailPanel({
   );
 
   const panelShell = cn(
-    "flex min-h-0 flex-1 flex-col overflow-y-auto",
+    "flex w-full min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden",
     "bg-white pb-2 pl-2.5 pr-2.5 pt-2",
     !isMacOSTheme && "rounded-sm border border-black/10"
   );
@@ -344,7 +344,7 @@ export function StuffDetailPanel({
         {(item.prices.discounted ?? item.prices.original) !== undefined && (
           <p
             className={cn(
-              "pl-[66px] text-[10px] opacity-60",
+              "pl-[60px] text-[10px] opacity-60",
               useGeneva && "font-geneva-12"
             )}
           >
@@ -377,13 +377,13 @@ export function StuffDetailPanel({
         >
           {ryosBarcodeSvg ? (
             <div
-              className="overflow-hidden rounded-sm bg-white"
+              className="max-w-full overflow-hidden rounded-sm bg-white [&_svg]:h-auto [&_svg]:max-w-full"
               dangerouslySetInnerHTML={{ __html: ryosBarcodeSvg }}
             />
           ) : (
             <div className="h-10 animate-pulse rounded-sm bg-black/5" />
           )}
-          <p className="mt-0.5 break-all font-mono text-[9px] opacity-40">
+          <p className="mt-0.5 break-all font-mono text-[9px] leading-tight opacity-40">
             {item.id}
           </p>
         </FieldRow>
