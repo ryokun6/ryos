@@ -4033,140 +4033,139 @@
     },
     "stuff": {
       "contextMenu": {
-        "delete": "[TODO] Delete",
-        "edit": "[TODO] Edit",
-        "printLabel": "[TODO] Print Label"
+        "delete": "削除",
+        "edit": "編集",
+        "printLabel": "ラベルをプリント"
       },
-      "description": "[TODO] Catalog your stuff on a wooden shelf",
+      "description": "木の棚で持ち物をカタログ管理",
       "detail": {
-        "delete": "[TODO] Delete",
-        "print": "[TODO] Print",
-        "title": "[TODO] Details"
+        "delete": "削除",
+        "print": "プリント",
+        "title": "詳細"
       },
       "empty": {
-        "description": "[TODO] Add an item or scan a barcode to start filling your shelves.",
-        "title": "[TODO] No stuff yet"
+        "description": "アイテムを追加するかバーコードをスキャンして棚を埋めてください。",
+        "title": "まだアイテムがありません"
       },
       "fields": {
-        "barcode": "[TODO] Barcode",
-        "brand": "[TODO] Brand",
-        "currency": "[TODO] Currency",
-        "discountedPrice": "[TODO] Asking",
-        "notes": "[TODO] Notes",
-        "originalPrice": "[TODO] Original",
-        "productBarcode": "[TODO] Product barcode",
-        "quantity": "[TODO] Quantity",
-        "ryosLabel": "[TODO] ryOS label",
-        "soldPrice": "[TODO] Sold",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags",
-        "title": "[TODO] Title"
+        "brand": "ブランド",
+        "currency": "通貨",
+        "discountedPrice": "希望価格",
+        "notes": "メモ",
+        "originalPrice": "定価",
+        "productBarcode": "商品バーコード",
+        "quantity": "数量",
+        "ryosLabel": "ryOSラベル",
+        "soldPrice": "売却価格",
+        "status": "状況",
+        "tags": "タグ",
+        "title": "タイトル"
       },
       "help": {
         "prices": {
-          "description": "[TODO] Track original, discounted, and sold prices. Mark items as in use, stowed, for sale, sold, or discarded.",
-          "title": "[TODO] Prices & Status"
+          "description": "定価、希望価格、売却価格を記録します。使用中、保管中、売り出し中、売却済み、廃棄済みとしてマークできます。",
+          "title": "価格とステータス"
         },
         "print": {
-          "description": "[TODO] Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag.",
-          "title": "[TODO] Print Labels"
+          "description": "ファイル ▸ アイテム/タグラベルをプリントからryOS IDバーコードを印刷します。印刷したラベルをスキャンするとそのアイテムが開くか、タグで絞り込まれます。",
+          "title": "ラベルをプリント"
         },
         "scan": {
-          "description": "[TODO] Use File ▸ Scan Barcode to capture UPC, EAN, Code 128, QR, and more. Product details fill in when found.",
-          "title": "[TODO] Scan Barcodes"
+          "description": "ファイル ▸ バーコードをスキャンでUPC、EAN、Code 128、QRなどを取り込みます。見つかった場合は商品詳細が入力されます。",
+          "title": "バーコードをスキャン"
         },
         "share": {
-          "description": "[TODO] Publish selected items to a public URL. Signed-in visitors can reserve items and place highest offers.",
-          "title": "[TODO] Share & Bid"
+          "description": "選択したアイテムを公開URLで公開します。サインインした訪問者は予約や最高オファーができます。",
+          "title": "共有と入札"
         },
         "shelf": {
-          "description": "[TODO] Browse your inventory on wooden shelves. Click an item to edit details, status, and prices.",
-          "title": "[TODO] Your Shelf"
+          "description": "木の棚でインベントリを閲覧します。アイテムをクリックして詳細、ステータス、価格を編集できます。",
+          "title": "あなたの棚"
         },
         "tags": {
-          "description": "[TODO] Organize stuff with tags like Kitchen or Electronics. Filter the shelf from the sidebar.",
-          "title": "[TODO] Tags"
+          "description": "キッチンや電化製品などのタグで持ち物を整理し、サイドバーから棚を絞り込みます。",
+          "title": "タグ"
         }
       },
       "menu": {
-        "about": "[TODO] About Stuff",
-        "backToShelf": "[TODO] Back to My Shelf",
-        "help": "[TODO] Stuff Help",
-        "newItem": "[TODO] New Item",
-        "printItemLabels": "[TODO] Print Item Labels…",
-        "printTagLabels": "[TODO] Print Tag Labels…",
-        "scanBarcode": "[TODO] Scan Barcode…",
-        "share": "[TODO] Share Shelf…"
+        "about": "Stuffについて",
+        "backToShelf": "自分の棚に戻る",
+        "help": "Stuffヘルプ",
+        "newItem": "新規アイテム",
+        "printItemLabels": "アイテムラベルをプリント…",
+        "printTagLabels": "タグラベルをプリント…",
+        "scanBarcode": "バーコードをスキャン…",
+        "share": "棚を共有…"
       },
-      "name": "[TODO] Stuff",
-      "newItemTitle": "[TODO] New Item",
-      "scannedItemTitle": "[TODO] Scanned Item",
+      "name": "Stuff",
+      "newItemTitle": "新規アイテム",
+      "scannedItemTitle": "スキャンしたアイテム",
       "scanner": {
-        "add": "[TODO] Add",
-        "addedWithoutMeta": "[TODO] Barcode saved — no product info found",
-        "cameraError": "[TODO] Could not access the camera. Enter a barcode manually below.",
-        "description": "[TODO] Point your camera at a barcode (UPC, EAN, Code 128, QR, and more).",
-        "found": "[TODO] Product added",
-        "lookingUp": "[TODO] Looking up product…",
-        "manualPlaceholder": "[TODO] Or type a barcode…",
-        "openedItem": "[TODO] Opened {{title}}",
-        "openedTag": "[TODO] Filtered to {{name}}",
-        "title": "[TODO] Scan Barcode",
-        "unknownItem": "[TODO] No item found for that ryOS label.",
-        "unknownTag": "[TODO] No tag found for that ryOS label."
+        "add": "追加",
+        "addedWithoutMeta": "バーコードを保存しました — 商品情報は見つかりませんでした",
+        "cameraError": "カメラにアクセスできませんでした。下にバーコードを手動入力してください。",
+        "description": "カメラをバーコードに向けてください（UPC、EAN、Code 128、QRなど）。",
+        "found": "商品を追加しました",
+        "lookingUp": "商品を検索中…",
+        "manualPlaceholder": "またはバーコードを入力…",
+        "openedItem": "{{title}}を開きました",
+        "openedTag": "{{name}}で絞り込みました",
+        "title": "バーコードをスキャン",
+        "unknownItem": "そのryOSラベルのアイテムは見つかりませんでした。",
+        "unknownTag": "そのryOSラベルのタグは見つかりませんでした。"
       },
-      "searchPlaceholder": "[TODO] Search stuff…",
+      "searchPlaceholder": "持ち物を検索…",
       "share": {
-        "description": "[TODO] Publish selected items. Visitors must sign in to reserve or bid.",
-        "empty": "[TODO] No items to share.",
-        "failed": "[TODO] Could not publish share.",
-        "noneSelected": "[TODO] Select at least one item to share.",
-        "publish": "[TODO] Publish",
-        "published": "[TODO] Shelf published",
-        "publishing": "[TODO] Publishing…",
-        "shelfTitle": "[TODO] Share title",
-        "title": "[TODO] Share Stuff"
+        "description": "選択したアイテムを公開します。予約や入札にはサインインが必要です。",
+        "empty": "共有するアイテムがありません。",
+        "failed": "共有を公開できませんでした。",
+        "noneSelected": "共有するアイテムを少なくとも1つ選択してください。",
+        "publish": "公開",
+        "published": "棚を公開しました",
+        "publishing": "公開中…",
+        "shelfTitle": "共有タイトル",
+        "title": "Stuffを共有"
       },
       "shared": {
-        "back": "[TODO] Back",
-        "bid": "[TODO] Place Offer",
-        "bidFailed": "[TODO] Could not place offer.",
-        "bidPlaced": "[TODO] Offer placed",
-        "by": "[TODO] Shared by {{username}}",
-        "invalidBid": "[TODO] Enter a valid offer amount.",
-        "loading": "[TODO] Loading…",
-        "loadingTitle": "[TODO] Shared Stuff",
-        "notFound": "[TODO] This shared shelf could not be found.",
-        "reserve": "[TODO] Reserve",
-        "reserveFailed": "[TODO] Could not reserve item.",
-        "reserved": "[TODO] Item reserved",
-        "reservedBy": "[TODO] Reserved by {{username}}",
-        "signIn": "[TODO] Sign in to bid",
-        "topOffer": "[TODO] Top offer {{amount}}",
-        "yourOffer": "[TODO] Your offer"
+        "back": "戻る",
+        "bid": "オファーする",
+        "bidFailed": "オファーを送信できませんでした。",
+        "bidPlaced": "オファーを送信しました",
+        "by": "{{username}}さんが共有",
+        "invalidBid": "有効なオファー金額を入力してください。",
+        "loading": "読み込み中…",
+        "loadingTitle": "共有されたStuff",
+        "notFound": "この共有棚は見つかりませんでした。",
+        "reserve": "予約",
+        "reserveFailed": "アイテムを予約できませんでした。",
+        "reserved": "アイテムを予約しました",
+        "reservedBy": "{{username}}さんが予約",
+        "signIn": "入札するにはサインイン",
+        "topOffer": "最高オファー {{amount}}",
+        "yourOffer": "あなたのオファー"
       },
       "sidebar": {
-        "allStuff": "[TODO] All Stuff",
-        "deleteTag": "[TODO] Delete tag",
-        "newTag": "[TODO] New tag…",
-        "printTag": "[TODO] Print tag label",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags"
+        "allStuff": "すべての持ち物",
+        "deleteTag": "タグを削除",
+        "newTag": "新規タグ…",
+        "printTag": "タグラベルをプリント",
+        "status": "状況",
+        "tags": "タグ"
       },
       "status": {
-        "all": "[TODO] All statuses",
-        "discarded": "[TODO] Discarded",
-        "for_sale": "[TODO] For sale",
-        "in_use": "[TODO] In use",
-        "reserved": "[TODO] Reserved",
-        "sold": "[TODO] Sold",
-        "stowed": "[TODO] Stowed"
+        "all": "すべてのステータス",
+        "discarded": "廃棄済み",
+        "for_sale": "売り出し中",
+        "in_use": "使用中",
+        "reserved": "予約済み",
+        "sold": "売却済み",
+        "stowed": "保管中"
       },
-      "title": "[TODO] Stuff",
+      "title": "Stuff",
       "toolbar": {
-        "add": "[TODO] Add",
-        "scan": "[TODO] Scan",
-        "share": "[TODO] Share"
+        "add": "追加",
+        "scan": "スキャン",
+        "share": "共有"
       }
     },
     "synth": {
@@ -4921,9 +4920,9 @@
           "applet": "アプレット",
           "item": "項目",
           "page": "ページ",
-          "shelf": "[TODO] Shelf",
+          "shelf": "棚",
           "song": "曲",
-          "stuff": "[TODO] Shelf"
+          "stuff": "棚"
         },
         "linkCopied": "リンクがコピーされました",
         "linkCopiedToClipboard": "{{itemType}}のリンクをクリップボードにコピーしました",

@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser";
-import { DecodeHintType, BarcodeFormat } from "@zxing/library";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -24,23 +22,7 @@ interface StuffBarcodeScannerProps {
   onScan: (result: ScannedBarcode) => void;
 }
 
-const HINTS = new Map();
-HINTS.set(DecodeHintType.POSSIBLE_FORMATS, [
-  BarcodeFormat.EAN_13,
-  BarcodeFormat.EAN_8,
-  BarcodeFormat.UPC_A,
-  BarcodeFormat.UPC_E,
-  BarcodeFormat.CODE_128,
-  BarcodeFormat.CODE_39,
-  BarcodeFormat.CODE_93,
-  BarcodeFormat.CODABAR,
-  BarcodeFormat.ITF,
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.DATA_MATRIX,
-  BarcodeFormat.PDF_417,
-  BarcodeFormat.AZTEC,
-]);
-HINTS.set(DecodeHintType.TRY_HARDER, true);
+type ScannerControls = { stop: () => void };
 
 export function StuffBarcodeScanner({
   isOpen,
@@ -49,7 +31,7 @@ export function StuffBarcodeScanner({
 }: StuffBarcodeScannerProps) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsRef = useRef<IScannerControls | null>(null);
+  const controlsRef = useRef<ScannerControls | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -58,23 +40,49 @@ export function StuffBarcodeScanner({
     if (!isOpen) return;
 
     let cancelled = false;
-    const reader = new BrowserMultiFormatReader(HINTS);
 
     const start = async () => {
       setError(null);
       setScanning(true);
       try {
-        if (!videoRef.current) return;
+        // Lazy-load ZXing so it stays out of the Stuff app's offline precache.
+        const [{ BrowserMultiFormatReader }, zxingLibrary] = await Promise.all([
+          import("@zxing/browser"),
+          import("@zxing/library"),
+        ]);
+        if (cancelled || !videoRef.current) return;
+
+        const { DecodeHintType, BarcodeFormat } = zxingLibrary;
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.EAN_8,
+          BarcodeFormat.UPC_A,
+          BarcodeFormat.UPC_E,
+          BarcodeFormat.CODE_128,
+          BarcodeFormat.CODE_39,
+          BarcodeFormat.CODE_93,
+          BarcodeFormat.CODABAR,
+          BarcodeFormat.ITF,
+          BarcodeFormat.QR_CODE,
+          BarcodeFormat.DATA_MATRIX,
+          BarcodeFormat.PDF_417,
+          BarcodeFormat.AZTEC,
+        ]);
+        hints.set(DecodeHintType.TRY_HARDER, true);
+
+        const reader = new BrowserMultiFormatReader(hints);
         const controls = await reader.decodeFromVideoDevice(
           undefined,
           videoRef.current,
-          (result, _err, controls) => {
+          (result, _err, activeControls) => {
             if (result && !cancelled) {
-              controls.stop();
+              activeControls.stop();
               controlsRef.current = null;
               onScan({
                 text: result.getText(),
-                format: BarcodeFormat[result.getBarcodeFormat()] ?? "CODE_128",
+                format:
+                  BarcodeFormat[result.getBarcodeFormat()] ?? "CODE_128",
               });
               onClose();
             }

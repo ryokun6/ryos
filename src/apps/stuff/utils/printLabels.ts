@@ -1,4 +1,3 @@
-import JsBarcode from "jsbarcode";
 import type { StuffItem, StuffTag } from "../types";
 
 export type StuffLabelKind = "item" | "tag";
@@ -68,12 +67,31 @@ export function toJsBarcodeFormat(format?: string): string {
   }
 }
 
+type JsBarcodeFn = (
+  element: SVGElement,
+  value: string,
+  options?: Record<string, unknown>
+) => void;
+
+let jsBarcodeLoader: Promise<JsBarcodeFn> | null = null;
+
+async function loadJsBarcode(): Promise<JsBarcodeFn> {
+  if (!jsBarcodeLoader) {
+    jsBarcodeLoader = import("jsbarcode").then((mod) => {
+      const fn = (mod as { default?: JsBarcodeFn }).default ?? (mod as unknown as JsBarcodeFn);
+      return fn;
+    });
+  }
+  return jsBarcodeLoader;
+}
+
 /** Always render ryOS ids as CODE128 (alphanumeric + punctuation). */
-export function renderBarcodeSvg(
+export async function renderBarcodeSvg(
   value: string,
   format: string = "CODE128"
-): string | null {
-  if (!value.trim()) return null;
+): Promise<string | null> {
+  if (!value.trim() || typeof document === "undefined") return null;
+  const JsBarcode = await loadJsBarcode();
   try {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     JsBarcode(svg, value, {
@@ -103,10 +121,10 @@ export function renderBarcodeSvg(
   }
 }
 
-export function renderStuffIdBarcodeSvg(
+export async function renderStuffIdBarcodeSvg(
   kind: StuffLabelKind,
   id: string
-): string | null {
+): Promise<string | null> {
   return renderBarcodeSvg(encodeStuffId(kind, id), "CODE128");
 }
 
@@ -128,16 +146,16 @@ export function tagToLabelTarget(tag: StuffTag): StuffLabelTarget {
   };
 }
 
-export function printStuffLabels(targets: StuffLabelTarget[]): void {
+export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<void> {
   if (targets.length === 0) {
     window.alert("Nothing to print.");
     return;
   }
 
-  const labels = targets
-    .map((target) => {
+  const rendered = await Promise.all(
+    targets.map(async (target) => {
       const payload = encodeStuffId(target.kind, target.id);
-      const svg = renderBarcodeSvg(payload, "CODE128");
+      const svg = await renderBarcodeSvg(payload, "CODE128");
       if (!svg) return "";
       const kindLabel = target.kind === "tag" ? "Tag" : "Item";
       return `<div class="label">
@@ -151,9 +169,9 @@ export function printStuffLabels(targets: StuffLabelTarget[]): void {
         <div class="barcode">${svg}</div>
       </div>`;
     })
-    .filter(Boolean)
-    .join("\n");
+  );
 
+  const labels = rendered.filter(Boolean).join("\n");
   if (!labels) {
     window.alert("Could not generate barcode labels.");
     return;

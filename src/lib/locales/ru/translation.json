@@ -4042,140 +4042,139 @@
     },
     "stuff": {
       "contextMenu": {
-        "delete": "[TODO] Delete",
-        "edit": "[TODO] Edit",
-        "printLabel": "[TODO] Print Label"
+        "delete": "Удалить",
+        "edit": "Править",
+        "printLabel": "Печать этикетки"
       },
-      "description": "[TODO] Catalog your stuff on a wooden shelf",
+      "description": "Каталогизируйте вещи на деревянной полке",
       "detail": {
-        "delete": "[TODO] Delete",
-        "print": "[TODO] Print",
-        "title": "[TODO] Details"
+        "delete": "Удалить",
+        "print": "Печать",
+        "title": "Сведения"
       },
       "empty": {
-        "description": "[TODO] Add an item or scan a barcode to start filling your shelves.",
-        "title": "[TODO] No stuff yet"
+        "description": "Добавьте предмет или отсканируйте штрихкод, чтобы заполнить полки.",
+        "title": "Пока ничего нет"
       },
       "fields": {
-        "barcode": "[TODO] Barcode",
-        "brand": "[TODO] Brand",
-        "currency": "[TODO] Currency",
-        "discountedPrice": "[TODO] Asking",
-        "notes": "[TODO] Notes",
-        "originalPrice": "[TODO] Original",
-        "productBarcode": "[TODO] Product barcode",
-        "quantity": "[TODO] Quantity",
-        "ryosLabel": "[TODO] ryOS label",
-        "soldPrice": "[TODO] Sold",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags",
-        "title": "[TODO] Title"
+        "brand": "Бренд",
+        "currency": "Валюта",
+        "discountedPrice": "Запрос",
+        "notes": "Заметки",
+        "originalPrice": "Исходная",
+        "productBarcode": "Штрихкод товара",
+        "quantity": "Количество",
+        "ryosLabel": "Этикетка ryOS",
+        "soldPrice": "Продано",
+        "status": "Статус",
+        "tags": "Теги",
+        "title": "Название"
       },
       "help": {
         "prices": {
-          "description": "[TODO] Track original, discounted, and sold prices. Mark items as in use, stowed, for sale, sold, or discarded.",
-          "title": "[TODO] Prices & Status"
+          "description": "Отслеживайте исходную, запрашиваемую и продажную цены. Отмечайте предметы как в использовании, убранные, на продажу, проданные или списанные.",
+          "title": "Цены и статус"
         },
         "print": {
-          "description": "[TODO] Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag.",
-          "title": "[TODO] Print Labels"
+          "description": "Печатайте штрихкоды с ID ryOS для предметов или тегов через Файл ▸ Печать этикеток предметов/тегов. Сканирование напечатанной этикетки открывает предмет или фильтрует по тегу.",
+          "title": "Печать этикеток"
         },
         "scan": {
-          "description": "[TODO] Use File ▸ Scan Barcode to capture UPC, EAN, Code 128, QR, and more. Product details fill in when found.",
-          "title": "[TODO] Scan Barcodes"
+          "description": "Используйте Файл ▸ Сканировать штрихкод для UPC, EAN, Code 128, QR и др. Сведения о товаре заполняются при нахождении.",
+          "title": "Сканирование штрихкодов"
         },
         "share": {
-          "description": "[TODO] Publish selected items to a public URL. Signed-in visitors can reserve items and place highest offers.",
-          "title": "[TODO] Share & Bid"
+          "description": "Публикуйте выбранные предметы по общедоступному URL. Вошедшие посетители могут резервировать и предлагать цену.",
+          "title": "Публикация и предложения"
         },
         "shelf": {
-          "description": "[TODO] Browse your inventory on wooden shelves. Click an item to edit details, status, and prices.",
-          "title": "[TODO] Your Shelf"
+          "description": "Просматривайте инвентарь на деревянных полках. Нажмите на предмет, чтобы изменить сведения, статус и цены.",
+          "title": "Ваша полка"
         },
         "tags": {
-          "description": "[TODO] Organize stuff with tags like Kitchen or Electronics. Filter the shelf from the sidebar.",
-          "title": "[TODO] Tags"
+          "description": "Организуйте вещи тегами вроде «Кухня» или «Электроника». Фильтруйте полку в боковой панели.",
+          "title": "Теги"
         }
       },
       "menu": {
-        "about": "[TODO] About Stuff",
-        "backToShelf": "[TODO] Back to My Shelf",
-        "help": "[TODO] Stuff Help",
-        "newItem": "[TODO] New Item",
-        "printItemLabels": "[TODO] Print Item Labels…",
-        "printTagLabels": "[TODO] Print Tag Labels…",
-        "scanBarcode": "[TODO] Scan Barcode…",
-        "share": "[TODO] Share Shelf…"
+        "about": "О программе Stuff",
+        "backToShelf": "К моей полке",
+        "help": "Справка Stuff",
+        "newItem": "Новый предмет",
+        "printItemLabels": "Печать этикеток предметов…",
+        "printTagLabels": "Печать этикеток тегов…",
+        "scanBarcode": "Сканировать штрихкод…",
+        "share": "Поделиться полкой…"
       },
-      "name": "[TODO] Stuff",
-      "newItemTitle": "[TODO] New Item",
-      "scannedItemTitle": "[TODO] Scanned Item",
+      "name": "Stuff",
+      "newItemTitle": "Новый предмет",
+      "scannedItemTitle": "Отсканированный предмет",
       "scanner": {
-        "add": "[TODO] Add",
-        "addedWithoutMeta": "[TODO] Barcode saved — no product info found",
-        "cameraError": "[TODO] Could not access the camera. Enter a barcode manually below.",
-        "description": "[TODO] Point your camera at a barcode (UPC, EAN, Code 128, QR, and more).",
-        "found": "[TODO] Product added",
-        "lookingUp": "[TODO] Looking up product…",
-        "manualPlaceholder": "[TODO] Or type a barcode…",
-        "openedItem": "[TODO] Opened {{title}}",
-        "openedTag": "[TODO] Filtered to {{name}}",
-        "title": "[TODO] Scan Barcode",
-        "unknownItem": "[TODO] No item found for that ryOS label.",
-        "unknownTag": "[TODO] No tag found for that ryOS label."
+        "add": "Добавить",
+        "addedWithoutMeta": "Штрихкод сохранён — сведения о товаре не найдены",
+        "cameraError": "Не удалось получить доступ к камере. Введите штрихкод вручную ниже.",
+        "description": "Наведите камеру на штрихкод (UPC, EAN, Code 128, QR и др.).",
+        "found": "Товар добавлен",
+        "lookingUp": "Поиск товара…",
+        "manualPlaceholder": "Или введите штрихкод…",
+        "openedItem": "Открыто: {{title}}",
+        "openedTag": "Фильтр: {{name}}",
+        "title": "Сканировать штрихкод",
+        "unknownItem": "Предмет для этой этикетки ryOS не найден.",
+        "unknownTag": "Тег для этой этикетки ryOS не найден."
       },
-      "searchPlaceholder": "[TODO] Search stuff…",
+      "searchPlaceholder": "Искать вещи…",
       "share": {
-        "description": "[TODO] Publish selected items. Visitors must sign in to reserve or bid.",
-        "empty": "[TODO] No items to share.",
-        "failed": "[TODO] Could not publish share.",
-        "noneSelected": "[TODO] Select at least one item to share.",
-        "publish": "[TODO] Publish",
-        "published": "[TODO] Shelf published",
-        "publishing": "[TODO] Publishing…",
-        "shelfTitle": "[TODO] Share title",
-        "title": "[TODO] Share Stuff"
+        "description": "Опубликуйте выбранные предметы. Посетители должны войти, чтобы резервировать или предлагать цену.",
+        "empty": "Нет предметов для публикации.",
+        "failed": "Не удалось опубликовать.",
+        "noneSelected": "Выберите хотя бы один предмет.",
+        "publish": "Опубликовать",
+        "published": "Полка опубликована",
+        "publishing": "Публикация…",
+        "shelfTitle": "Название публикации",
+        "title": "Поделиться Stuff"
       },
       "shared": {
-        "back": "[TODO] Back",
-        "bid": "[TODO] Place Offer",
-        "bidFailed": "[TODO] Could not place offer.",
-        "bidPlaced": "[TODO] Offer placed",
-        "by": "[TODO] Shared by {{username}}",
-        "invalidBid": "[TODO] Enter a valid offer amount.",
-        "loading": "[TODO] Loading…",
-        "loadingTitle": "[TODO] Shared Stuff",
-        "notFound": "[TODO] This shared shelf could not be found.",
-        "reserve": "[TODO] Reserve",
-        "reserveFailed": "[TODO] Could not reserve item.",
-        "reserved": "[TODO] Item reserved",
-        "reservedBy": "[TODO] Reserved by {{username}}",
-        "signIn": "[TODO] Sign in to bid",
-        "topOffer": "[TODO] Top offer {{amount}}",
-        "yourOffer": "[TODO] Your offer"
+        "back": "Назад",
+        "bid": "Сделать предложение",
+        "bidFailed": "Не удалось отправить предложение.",
+        "bidPlaced": "Предложение отправлено",
+        "by": "Поделился {{username}}",
+        "invalidBid": "Введите корректную сумму предложения.",
+        "loading": "Загрузка…",
+        "loadingTitle": "Общий Stuff",
+        "notFound": "Эта общая полка не найдена.",
+        "reserve": "Зарезервировать",
+        "reserveFailed": "Не удалось зарезервировать предмет.",
+        "reserved": "Предмет зарезервирован",
+        "reservedBy": "Зарезервировал {{username}}",
+        "signIn": "Войдите, чтобы предложить цену",
+        "topOffer": "Лучшее предложение {{amount}}",
+        "yourOffer": "Ваше предложение"
       },
       "sidebar": {
-        "allStuff": "[TODO] All Stuff",
-        "deleteTag": "[TODO] Delete tag",
-        "newTag": "[TODO] New tag…",
-        "printTag": "[TODO] Print tag label",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags"
+        "allStuff": "Все вещи",
+        "deleteTag": "Удалить тег",
+        "newTag": "Новый тег…",
+        "printTag": "Печать этикетки тега",
+        "status": "Статус",
+        "tags": "Теги"
       },
       "status": {
-        "all": "[TODO] All statuses",
-        "discarded": "[TODO] Discarded",
-        "for_sale": "[TODO] For sale",
-        "in_use": "[TODO] In use",
-        "reserved": "[TODO] Reserved",
-        "sold": "[TODO] Sold",
-        "stowed": "[TODO] Stowed"
+        "all": "Все статусы",
+        "discarded": "Списано",
+        "for_sale": "На продажу",
+        "in_use": "В использовании",
+        "reserved": "Зарезервировано",
+        "sold": "Продано",
+        "stowed": "Убрано"
       },
-      "title": "[TODO] Stuff",
+      "title": "Stuff",
       "toolbar": {
-        "add": "[TODO] Add",
-        "scan": "[TODO] Scan",
-        "share": "[TODO] Share"
+        "add": "Добавить",
+        "scan": "Сканировать",
+        "share": "Поделиться"
       }
     },
     "synth": {
@@ -4932,9 +4931,9 @@
           "applet": "Апплет",
           "item": "Элемент",
           "page": "Страница",
-          "shelf": "[TODO] Shelf",
+          "shelf": "Полка",
           "song": "Песня",
-          "stuff": "[TODO] Shelf"
+          "stuff": "Полка"
         },
         "linkCopied": "Ссылка скопирована",
         "linkCopiedToClipboard": "Ссылка на {{itemType}} скопирована в буфер обмена",

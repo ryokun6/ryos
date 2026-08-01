@@ -4033,140 +4033,139 @@
     },
     "stuff": {
       "contextMenu": {
-        "delete": "[TODO] Delete",
-        "edit": "[TODO] Edit",
-        "printLabel": "[TODO] Print Label"
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "printLabel": "Etikett drucken"
       },
-      "description": "[TODO] Catalog your stuff on a wooden shelf",
+      "description": "Katalogisiere deine Sachen auf einem Holzregal",
       "detail": {
-        "delete": "[TODO] Delete",
-        "print": "[TODO] Print",
-        "title": "[TODO] Details"
+        "delete": "Löschen",
+        "print": "Drucken",
+        "title": "Details"
       },
       "empty": {
-        "description": "[TODO] Add an item or scan a barcode to start filling your shelves.",
-        "title": "[TODO] No stuff yet"
+        "description": "Füge einen Eintrag hinzu oder scanne einen Barcode, um deine Regale zu füllen.",
+        "title": "Noch keine Sachen"
       },
       "fields": {
-        "barcode": "[TODO] Barcode",
-        "brand": "[TODO] Brand",
-        "currency": "[TODO] Currency",
-        "discountedPrice": "[TODO] Asking",
-        "notes": "[TODO] Notes",
-        "originalPrice": "[TODO] Original",
-        "productBarcode": "[TODO] Product barcode",
-        "quantity": "[TODO] Quantity",
-        "ryosLabel": "[TODO] ryOS label",
-        "soldPrice": "[TODO] Sold",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags",
-        "title": "[TODO] Title"
+        "brand": "Marke",
+        "currency": "Währung",
+        "discountedPrice": "Angebot",
+        "notes": "Notizen",
+        "originalPrice": "Original",
+        "productBarcode": "Produkt-Barcode",
+        "quantity": "Menge",
+        "ryosLabel": "ryOS-Etikett",
+        "soldPrice": "Verkauft",
+        "status": "Status",
+        "tags": "Schlagwörter",
+        "title": "Titel"
       },
       "help": {
         "prices": {
-          "description": "[TODO] Track original, discounted, and sold prices. Mark items as in use, stowed, for sale, sold, or discarded.",
-          "title": "[TODO] Prices & Status"
+          "description": "Verfolge Original-, Angebots- und Verkaufspreise. Markiere Einträge als in Gebrauch, verstaut, zu verkaufen, verkauft oder aussortiert.",
+          "title": "Preise & Status"
         },
         "print": {
-          "description": "[TODO] Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag.",
-          "title": "[TODO] Print Labels"
+          "description": "Drucke ryOS-ID-Barcodes für Einträge oder Schlagwörter über Ablage ▸ Objekt-/Schlagwortetiketten drucken. Das Scannen eines gedruckten Etiketts öffnet den Eintrag oder filtert nach Schlagwort.",
+          "title": "Etiketten drucken"
         },
         "scan": {
-          "description": "[TODO] Use File ▸ Scan Barcode to capture UPC, EAN, Code 128, QR, and more. Product details fill in when found.",
-          "title": "[TODO] Scan Barcodes"
+          "description": "Über Ablage ▸ Barcode scannen kannst du UPC, EAN, Code 128, QR und mehr erfassen. Produktdetails werden bei Treffer ausgefüllt.",
+          "title": "Barcodes scannen"
         },
         "share": {
-          "description": "[TODO] Publish selected items to a public URL. Signed-in visitors can reserve items and place highest offers.",
-          "title": "[TODO] Share & Bid"
+          "description": "Veröffentliche ausgewählte Einträge unter einer öffentlichen URL. Angemeldete Besucher können reservieren und Höchstgebote abgeben.",
+          "title": "Teilen & Bieten"
         },
         "shelf": {
-          "description": "[TODO] Browse your inventory on wooden shelves. Click an item to edit details, status, and prices.",
-          "title": "[TODO] Your Shelf"
+          "description": "Durchsuche deinen Bestand auf Holzregalen. Klicke auf einen Eintrag, um Details, Status und Preise zu bearbeiten.",
+          "title": "Dein Regal"
         },
         "tags": {
-          "description": "[TODO] Organize stuff with tags like Kitchen or Electronics. Filter the shelf from the sidebar.",
-          "title": "[TODO] Tags"
+          "description": "Organisiere Sachen mit Schlagwörtern wie Küche oder Elektronik. Filtere das Regal in der Seitenleiste.",
+          "title": "Schlagwörter"
         }
       },
       "menu": {
-        "about": "[TODO] About Stuff",
-        "backToShelf": "[TODO] Back to My Shelf",
-        "help": "[TODO] Stuff Help",
-        "newItem": "[TODO] New Item",
-        "printItemLabels": "[TODO] Print Item Labels…",
-        "printTagLabels": "[TODO] Print Tag Labels…",
-        "scanBarcode": "[TODO] Scan Barcode…",
-        "share": "[TODO] Share Shelf…"
+        "about": "Über Stuff",
+        "backToShelf": "Zurück zu meinem Regal",
+        "help": "Stuff-Hilfe",
+        "newItem": "Neuer Eintrag",
+        "printItemLabels": "Objektetiketten drucken…",
+        "printTagLabels": "Schlagwortetiketten drucken…",
+        "scanBarcode": "Barcode scannen…",
+        "share": "Regal teilen…"
       },
-      "name": "[TODO] Stuff",
-      "newItemTitle": "[TODO] New Item",
-      "scannedItemTitle": "[TODO] Scanned Item",
+      "name": "Stuff",
+      "newItemTitle": "Neuer Eintrag",
+      "scannedItemTitle": "Gescanntes Objekt",
       "scanner": {
-        "add": "[TODO] Add",
-        "addedWithoutMeta": "[TODO] Barcode saved — no product info found",
-        "cameraError": "[TODO] Could not access the camera. Enter a barcode manually below.",
-        "description": "[TODO] Point your camera at a barcode (UPC, EAN, Code 128, QR, and more).",
-        "found": "[TODO] Product added",
-        "lookingUp": "[TODO] Looking up product…",
-        "manualPlaceholder": "[TODO] Or type a barcode…",
-        "openedItem": "[TODO] Opened {{title}}",
-        "openedTag": "[TODO] Filtered to {{name}}",
-        "title": "[TODO] Scan Barcode",
-        "unknownItem": "[TODO] No item found for that ryOS label.",
-        "unknownTag": "[TODO] No tag found for that ryOS label."
+        "add": "Hinzufügen",
+        "addedWithoutMeta": "Barcode gespeichert — keine Produktinfos gefunden",
+        "cameraError": "Kamerazugriff nicht möglich. Gib unten manuell einen Barcode ein.",
+        "description": "Richte die Kamera auf einen Barcode (UPC, EAN, Code 128, QR und mehr).",
+        "found": "Produkt hinzugefügt",
+        "lookingUp": "Produkt wird gesucht…",
+        "manualPlaceholder": "Oder Barcode eingeben…",
+        "openedItem": "{{title}} geöffnet",
+        "openedTag": "Gefiltert nach {{name}}",
+        "title": "Barcode scannen",
+        "unknownItem": "Kein Eintrag für dieses ryOS-Etikett gefunden.",
+        "unknownTag": "Kein Schlagwort für dieses ryOS-Etikett gefunden."
       },
-      "searchPlaceholder": "[TODO] Search stuff…",
+      "searchPlaceholder": "Sachen suchen…",
       "share": {
-        "description": "[TODO] Publish selected items. Visitors must sign in to reserve or bid.",
-        "empty": "[TODO] No items to share.",
-        "failed": "[TODO] Could not publish share.",
-        "noneSelected": "[TODO] Select at least one item to share.",
-        "publish": "[TODO] Publish",
-        "published": "[TODO] Shelf published",
-        "publishing": "[TODO] Publishing…",
-        "shelfTitle": "[TODO] Share title",
-        "title": "[TODO] Share Stuff"
+        "description": "Ausgewählte Einträge veröffentlichen. Besucher müssen sich anmelden, um zu reservieren oder zu bieten.",
+        "empty": "Keine Einträge zum Teilen.",
+        "failed": "Freigabe konnte nicht veröffentlicht werden.",
+        "noneSelected": "Wähle mindestens einen Eintrag zum Teilen aus.",
+        "publish": "Veröffentlichen",
+        "published": "Regal veröffentlicht",
+        "publishing": "Wird veröffentlicht…",
+        "shelfTitle": "Titel der Freigabe",
+        "title": "Stuff teilen"
       },
       "shared": {
-        "back": "[TODO] Back",
-        "bid": "[TODO] Place Offer",
-        "bidFailed": "[TODO] Could not place offer.",
-        "bidPlaced": "[TODO] Offer placed",
-        "by": "[TODO] Shared by {{username}}",
-        "invalidBid": "[TODO] Enter a valid offer amount.",
-        "loading": "[TODO] Loading…",
-        "loadingTitle": "[TODO] Shared Stuff",
-        "notFound": "[TODO] This shared shelf could not be found.",
-        "reserve": "[TODO] Reserve",
-        "reserveFailed": "[TODO] Could not reserve item.",
-        "reserved": "[TODO] Item reserved",
-        "reservedBy": "[TODO] Reserved by {{username}}",
-        "signIn": "[TODO] Sign in to bid",
-        "topOffer": "[TODO] Top offer {{amount}}",
-        "yourOffer": "[TODO] Your offer"
+        "back": "Zurück",
+        "bid": "Angebot abgeben",
+        "bidFailed": "Angebot konnte nicht abgegeben werden.",
+        "bidPlaced": "Angebot abgegeben",
+        "by": "Geteilt von {{username}}",
+        "invalidBid": "Gib einen gültigen Angebotsbetrag ein.",
+        "loading": "Laden…",
+        "loadingTitle": "Geteilte Sachen",
+        "notFound": "Dieses geteilte Regal wurde nicht gefunden.",
+        "reserve": "Reservieren",
+        "reserveFailed": "Eintrag konnte nicht reserviert werden.",
+        "reserved": "Eintrag reserviert",
+        "reservedBy": "Reserviert von {{username}}",
+        "signIn": "Anmelden zum Bieten",
+        "topOffer": "Höchstgebot {{amount}}",
+        "yourOffer": "Dein Angebot"
       },
       "sidebar": {
-        "allStuff": "[TODO] All Stuff",
-        "deleteTag": "[TODO] Delete tag",
-        "newTag": "[TODO] New tag…",
-        "printTag": "[TODO] Print tag label",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags"
+        "allStuff": "Alle Sachen",
+        "deleteTag": "Schlagwort löschen",
+        "newTag": "Neues Schlagwort…",
+        "printTag": "Schlagwortetikett drucken",
+        "status": "Status",
+        "tags": "Schlagwörter"
       },
       "status": {
-        "all": "[TODO] All statuses",
-        "discarded": "[TODO] Discarded",
-        "for_sale": "[TODO] For sale",
-        "in_use": "[TODO] In use",
-        "reserved": "[TODO] Reserved",
-        "sold": "[TODO] Sold",
-        "stowed": "[TODO] Stowed"
+        "all": "Alle Status",
+        "discarded": "Aussortiert",
+        "for_sale": "Zu verkaufen",
+        "in_use": "In Gebrauch",
+        "reserved": "Reserviert",
+        "sold": "Verkauft",
+        "stowed": "Verstaut"
       },
-      "title": "[TODO] Stuff",
+      "title": "Stuff",
       "toolbar": {
-        "add": "[TODO] Add",
-        "scan": "[TODO] Scan",
-        "share": "[TODO] Share"
+        "add": "Hinzufügen",
+        "scan": "Scannen",
+        "share": "Teilen"
       }
     },
     "synth": {
@@ -4921,9 +4920,9 @@
           "applet": "Applet",
           "item": "Element",
           "page": "Seite",
-          "shelf": "[TODO] Shelf",
+          "shelf": "Regal",
           "song": "Titel",
-          "stuff": "[TODO] Shelf"
+          "stuff": "Regal"
         },
         "linkCopied": "Link kopiert",
         "linkCopiedToClipboard": "{{itemType}}-Link in die Zwischenablage kopiert",

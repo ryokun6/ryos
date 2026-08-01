@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,18 @@ export function StuffDetailPanel({
   onPrint,
 }: StuffDetailPanelProps) {
   const { t } = useTranslation();
-  const ryosBarcodeSvg = renderStuffIdBarcodeSvg("item", item.id);
+  const [ryosBarcodeSvg, setRyosBarcodeSvg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRyosBarcodeSvg(null);
+    void renderStuffIdBarcodeSvg("item", item.id).then((svg) => {
+      if (!cancelled) setRyosBarcodeSvg(svg);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id]);
 
   const toggleTag = (tagId: string) => {
     const next = item.tagIds.includes(tagId)

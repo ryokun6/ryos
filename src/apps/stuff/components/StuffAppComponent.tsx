@@ -106,7 +106,7 @@ export function StuffAppComponent({
                 onDeleteItem={(id) => logic.deleteItem(id)}
                 onPrintItem={(id) => {
                   const item = logic.items.find((entry) => entry.id === id);
-                  if (item) printStuffLabels([itemToLabelTarget(item)]);
+                  if (item) void printStuffLabels([itemToLabelTarget(item)]);
                 }}
               />
               {logic.selectedItem && (

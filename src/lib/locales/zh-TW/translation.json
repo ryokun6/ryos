@@ -4033,140 +4033,139 @@
     },
     "stuff": {
       "contextMenu": {
-        "delete": "[TODO] Delete",
-        "edit": "[TODO] Edit",
-        "printLabel": "[TODO] Print Label"
+        "delete": "刪除",
+        "edit": "編輯",
+        "printLabel": "列印標籤"
       },
-      "description": "[TODO] Catalog your stuff on a wooden shelf",
+      "description": "在木製架子上整理您的物品",
       "detail": {
-        "delete": "[TODO] Delete",
-        "print": "[TODO] Print",
-        "title": "[TODO] Details"
+        "delete": "刪除",
+        "print": "列印",
+        "title": "詳細資訊"
       },
       "empty": {
-        "description": "[TODO] Add an item or scan a barcode to start filling your shelves.",
-        "title": "[TODO] No stuff yet"
+        "description": "加入項目或掃描條碼來開始填滿您的架子。",
+        "title": "尚無物品"
       },
       "fields": {
-        "barcode": "[TODO] Barcode",
-        "brand": "[TODO] Brand",
-        "currency": "[TODO] Currency",
-        "discountedPrice": "[TODO] Asking",
-        "notes": "[TODO] Notes",
-        "originalPrice": "[TODO] Original",
-        "productBarcode": "[TODO] Product barcode",
-        "quantity": "[TODO] Quantity",
-        "ryosLabel": "[TODO] ryOS label",
-        "soldPrice": "[TODO] Sold",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags",
-        "title": "[TODO] Title"
+        "brand": "品牌",
+        "currency": "貨幣",
+        "discountedPrice": "要價",
+        "notes": "備註",
+        "originalPrice": "原價",
+        "productBarcode": "產品條碼",
+        "quantity": "數量",
+        "ryosLabel": "ryOS 標籤",
+        "soldPrice": "成交價",
+        "status": "狀態",
+        "tags": "標籤",
+        "title": "標題"
       },
       "help": {
         "prices": {
-          "description": "[TODO] Track original, discounted, and sold prices. Mark items as in use, stowed, for sale, sold, or discarded.",
-          "title": "[TODO] Prices & Status"
+          "description": "追蹤原價、折扣價和售價。將項目標記為使用中、已收納、待售、已售出或已丟棄。",
+          "title": "價格與狀態"
         },
         "print": {
-          "description": "[TODO] Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag.",
-          "title": "[TODO] Print Labels"
+          "description": "從「檔案」▸「列印項目/標籤標籤」列印項目或標籤的 ryOS ID 條碼。掃描印出的標籤可打開該項目或依標籤過濾。",
+          "title": "列印標籤"
         },
         "scan": {
-          "description": "[TODO] Use File ▸ Scan Barcode to capture UPC, EAN, Code 128, QR, and more. Product details fill in when found.",
-          "title": "[TODO] Scan Barcodes"
+          "description": "使用「檔案」▸「掃描條碼」來擷取 UPC、EAN、Code 128、QR 等。找到時會自動填寫產品詳細資訊。",
+          "title": "掃描條碼"
         },
         "share": {
-          "description": "[TODO] Publish selected items to a public URL. Signed-in visitors can reserve items and place highest offers.",
-          "title": "[TODO] Share & Bid"
+          "description": "將所選項目發佈到公開網址。已登入的訪客可以預留項目並進行最高出價。",
+          "title": "分享與出價"
         },
         "shelf": {
-          "description": "[TODO] Browse your inventory on wooden shelves. Click an item to edit details, status, and prices.",
-          "title": "[TODO] Your Shelf"
+          "description": "在木製架子上瀏覽您的庫存。按一下項目以編輯詳細資訊、狀態和價格。",
+          "title": "您的架子"
         },
         "tags": {
-          "description": "[TODO] Organize stuff with tags like Kitchen or Electronics. Filter the shelf from the sidebar.",
-          "title": "[TODO] Tags"
+          "description": "使用「廚房」或「電子產品」等標籤整理物品。從側邊欄過濾架子上的項目。",
+          "title": "標籤"
         }
       },
       "menu": {
-        "about": "[TODO] About Stuff",
-        "backToShelf": "[TODO] Back to My Shelf",
-        "help": "[TODO] Stuff Help",
-        "newItem": "[TODO] New Item",
-        "printItemLabels": "[TODO] Print Item Labels…",
-        "printTagLabels": "[TODO] Print Tag Labels…",
-        "scanBarcode": "[TODO] Scan Barcode…",
-        "share": "[TODO] Share Shelf…"
+        "about": "關於 Stuff",
+        "backToShelf": "回到我的架子",
+        "help": "Stuff 輔助說明",
+        "newItem": "新增項目",
+        "printItemLabels": "列印項目標籤⋯",
+        "printTagLabels": "列印標籤標籤⋯",
+        "scanBarcode": "掃描條碼⋯",
+        "share": "分享架子…"
       },
-      "name": "[TODO] Stuff",
-      "newItemTitle": "[TODO] New Item",
-      "scannedItemTitle": "[TODO] Scanned Item",
+      "name": "Stuff",
+      "newItemTitle": "新增項目",
+      "scannedItemTitle": "掃描的項目",
       "scanner": {
-        "add": "[TODO] Add",
-        "addedWithoutMeta": "[TODO] Barcode saved — no product info found",
-        "cameraError": "[TODO] Could not access the camera. Enter a barcode manually below.",
-        "description": "[TODO] Point your camera at a barcode (UPC, EAN, Code 128, QR, and more).",
-        "found": "[TODO] Product added",
-        "lookingUp": "[TODO] Looking up product…",
-        "manualPlaceholder": "[TODO] Or type a barcode…",
-        "openedItem": "[TODO] Opened {{title}}",
-        "openedTag": "[TODO] Filtered to {{name}}",
-        "title": "[TODO] Scan Barcode",
-        "unknownItem": "[TODO] No item found for that ryOS label.",
-        "unknownTag": "[TODO] No tag found for that ryOS label."
+        "add": "加入",
+        "addedWithoutMeta": "條碼已儲存 — 找不到產品資訊",
+        "cameraError": "無法取用相機。在下方手動輸入條碼。",
+        "description": "將相機對準條碼（UPC、EAN、Code 128、QR 等）。",
+        "found": "產品已加入",
+        "lookingUp": "正在查詢產品…",
+        "manualPlaceholder": "或輸入條碼…",
+        "openedItem": "已打開 {{title}}",
+        "openedTag": "已篩選為 {{name}}",
+        "title": "掃描條碼",
+        "unknownItem": "找不到該 ryOS 標籤的項目。",
+        "unknownTag": "找不到該 ryOS 標籤的標籤。"
       },
-      "searchPlaceholder": "[TODO] Search stuff…",
+      "searchPlaceholder": "搜尋 Stuff…",
       "share": {
-        "description": "[TODO] Publish selected items. Visitors must sign in to reserve or bid.",
-        "empty": "[TODO] No items to share.",
-        "failed": "[TODO] Could not publish share.",
-        "noneSelected": "[TODO] Select at least one item to share.",
-        "publish": "[TODO] Publish",
-        "published": "[TODO] Shelf published",
-        "publishing": "[TODO] Publishing…",
-        "shelfTitle": "[TODO] Share title",
-        "title": "[TODO] Share Stuff"
+        "description": "發佈選取的項目。訪客必須登入才能預訂或競標。",
+        "empty": "沒有可分享的項目。",
+        "failed": "無法發佈分享。",
+        "noneSelected": "請至少選擇一個項目來分享。",
+        "publish": "發佈",
+        "published": "書架已發佈",
+        "publishing": "正在發佈⋯",
+        "shelfTitle": "分享標題",
+        "title": "分享物品"
       },
       "shared": {
-        "back": "[TODO] Back",
-        "bid": "[TODO] Place Offer",
-        "bidFailed": "[TODO] Could not place offer.",
-        "bidPlaced": "[TODO] Offer placed",
-        "by": "[TODO] Shared by {{username}}",
-        "invalidBid": "[TODO] Enter a valid offer amount.",
-        "loading": "[TODO] Loading…",
-        "loadingTitle": "[TODO] Shared Stuff",
-        "notFound": "[TODO] This shared shelf could not be found.",
-        "reserve": "[TODO] Reserve",
-        "reserveFailed": "[TODO] Could not reserve item.",
-        "reserved": "[TODO] Item reserved",
-        "reservedBy": "[TODO] Reserved by {{username}}",
-        "signIn": "[TODO] Sign in to bid",
-        "topOffer": "[TODO] Top offer {{amount}}",
-        "yourOffer": "[TODO] Your offer"
+        "back": "返回",
+        "bid": "出價",
+        "bidFailed": "無法出價。",
+        "bidPlaced": "已出價",
+        "by": "由 {{username}} 分享",
+        "invalidBid": "請輸入有效的出價金額。",
+        "loading": "載入中⋯",
+        "loadingTitle": "已分享物品",
+        "notFound": "找不到此分享書架。",
+        "reserve": "預訂",
+        "reserveFailed": "無法預訂項目。",
+        "reserved": "項目已預訂",
+        "reservedBy": "由 {{username}} 預訂",
+        "signIn": "登入以出價",
+        "topOffer": "最高出價 {{amount}}",
+        "yourOffer": "你的出價"
       },
       "sidebar": {
-        "allStuff": "[TODO] All Stuff",
-        "deleteTag": "[TODO] Delete tag",
-        "newTag": "[TODO] New tag…",
-        "printTag": "[TODO] Print tag label",
-        "status": "[TODO] Status",
-        "tags": "[TODO] Tags"
+        "allStuff": "所有物品",
+        "deleteTag": "刪除標籤",
+        "newTag": "新增標籤…",
+        "printTag": "列印標籤",
+        "status": "狀態",
+        "tags": "標籤"
       },
       "status": {
-        "all": "[TODO] All statuses",
-        "discarded": "[TODO] Discarded",
-        "for_sale": "[TODO] For sale",
-        "in_use": "[TODO] In use",
-        "reserved": "[TODO] Reserved",
-        "sold": "[TODO] Sold",
-        "stowed": "[TODO] Stowed"
+        "all": "所有狀態",
+        "discarded": "已捨棄",
+        "for_sale": "待售",
+        "in_use": "使用中",
+        "reserved": "已預訂",
+        "sold": "已售出",
+        "stowed": "已收納"
       },
-      "title": "[TODO] Stuff",
+      "title": "物品",
       "toolbar": {
-        "add": "[TODO] Add",
-        "scan": "[TODO] Scan",
-        "share": "[TODO] Share"
+        "add": "加入",
+        "scan": "掃描",
+        "share": "分享"
       }
     },
     "synth": {
@@ -4921,9 +4920,9 @@
           "applet": "小程式",
           "item": "項目",
           "page": "頁面",
-          "shelf": "[TODO] Shelf",
+          "shelf": "層架",
           "song": "歌曲",
-          "stuff": "[TODO] Shelf"
+          "stuff": "層架"
         },
         "linkCopied": "已拷貝連結",
         "linkCopiedToClipboard": "{{itemType}}連結已複製到剪貼簿",

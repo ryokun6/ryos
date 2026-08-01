@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
@@ -55,8 +56,12 @@ export function useStuffLogic({
   const deleteTag = useStuffStore((s) => s.deleteTag);
   const setLastShareId = useStuffStore((s) => s.setLastShareId);
 
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [activeShareId, setActiveShareId] = useState<string | null>(
@@ -114,14 +119,14 @@ export function useStuffLogic({
 
   const handlePrintSelected = () => {
     if (!selectedItem) return;
-    printStuffLabels([itemToLabelTarget(selectedItem)]);
+    void printStuffLabels([itemToLabelTarget(selectedItem)]);
   };
 
   const handlePrintItemLabels = () => {
     const targets = (filteredItems.length > 0 ? filteredItems : items).map(
       itemToLabelTarget
     );
-    printStuffLabels(targets);
+    void printStuffLabels(targets);
   };
 
   const handlePrintTagLabels = (tagIds?: string[]) => {
@@ -131,7 +136,7 @@ export function useStuffLogic({
         : selectedTagId
           ? tags.filter((tag) => tag.id === selectedTagId)
           : tags;
-    printStuffLabels(selected.map(tagToLabelTarget));
+    void printStuffLabels(selected.map(tagToLabelTarget));
   };
 
   const handleScan = async (result: ScannedBarcode) => {
