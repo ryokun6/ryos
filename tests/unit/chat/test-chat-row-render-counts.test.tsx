@@ -8,7 +8,7 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import React, { memo, useState } from "react";
+import React, { memo } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react";
 
@@ -119,7 +119,7 @@ describe("ChatMessageItem render counts (old vs new props)", () => {
     // --- OLD ---
     const oldHost = document.createElement("div");
     document.body.appendChild(oldHost);
-    let oldRoot: Root = createRoot(oldHost);
+    const oldRoot: Root = createRoot(oldHost);
     let copiedId: string | null = null;
     await act(async () => {
       oldRoot.render(
@@ -143,7 +143,7 @@ describe("ChatMessageItem render counts (old vs new props)", () => {
     // --- NEW ---
     const newHost = document.createElement("div");
     document.body.appendChild(newHost);
-    let newRoot: Root = createRoot(newHost);
+    const newRoot: Root = createRoot(newHost);
     copiedId = null;
     await act(async () => {
       newRoot.render(
