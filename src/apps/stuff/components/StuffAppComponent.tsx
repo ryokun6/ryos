@@ -37,7 +37,7 @@ export function StuffAppComponent({
     instanceId,
     initialData,
   });
-  const { isMacOSTheme, isWindowsTheme, isDarkMode } = useThemeFlags();
+  const { isWindowsTheme, isDarkMode } = useThemeFlags();
   const viewingShareId = logic.activeShareId;
   const showItemDrawer = Boolean(logic.selectedItem) && !viewingShareId;
 
