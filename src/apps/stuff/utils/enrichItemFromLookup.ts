@@ -41,6 +41,9 @@ export function productFieldsFromDraft(draft: StuffItemDraft): StuffItemDraft {
   if (draft.imageUrl !== undefined) {
     patch.imageUrl = draft.imageUrl;
   }
+  if (draft.coverBlobId !== undefined) {
+    patch.coverBlobId = draft.coverBlobId;
+  }
   if (draft.prices !== undefined) {
     // Only list/original price from product data — never discounted/sold.
     patch.prices = {
@@ -99,12 +102,15 @@ export async function enrichStuffFromLookupResult(
   let imageApplied = false;
 
   if (lookup.imageDataUrl) {
+    // Store still migrates legacy data URLs into cover blobs on write.
     draft.imageDataUrl = lookup.imageDataUrl;
     draft.imageUrl = "";
+    draft.coverBlobId = "";
     imageApplied = true;
   } else if (remoteImageUrl) {
     draft.imageUrl = remoteImageUrl;
     draft.imageDataUrl = "";
+    draft.coverBlobId = "";
     imageApplied = true;
   }
 

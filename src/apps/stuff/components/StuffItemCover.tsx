@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import {
   BookOpen,
   Chair,
@@ -10,6 +12,8 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { ScrollingText } from "@/apps/ipod/components/screen";
+import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
 import { colorFromString, formatMoney } from "../utils/colors";
 import {
   productAquaPhotoMatStyle,
@@ -22,7 +26,6 @@ import {
   type StuffVisualKind,
 } from "../utils/stuffItemVisualKind";
 import {
-  stuffItemCoverSrc,
   type StuffItem,
   type StuffStatus,
   type StuffTag,
@@ -32,6 +35,10 @@ import {
   stuffStatusRibbonStyle,
 } from "../utils/stuffStatusRibbon";
 import { getStuffCoverDimensions } from "../utils/stuffCoverSizes";
+import { useStuffItemCoverSrc } from "../hooks/useStuffItemCoverSrc";
+
+/** Match karaoke / iPod now-playing: dwell before marquee starts. */
+export const STUFF_TITLE_SCROLL_START_DELAY_SEC = 1;
 
 interface StuffItemCoverProps {
   item: StuffItem;
@@ -117,11 +124,14 @@ function GridTitleOverlay({
   item,
   primaryTag,
   price,
+  isHovered,
 }: {
   item: StuffItem;
   primaryTag?: StuffTag;
   price: string | null;
+  isHovered: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -129,16 +139,22 @@ function GridTitleOverlay({
         "opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       )}
     >
-      <div className="truncate text-[10px] font-medium text-white">
-        {item.title}
-      </div>
+      <ScrollingText
+        text={item.title}
+        align="left"
+        fadeEdges
+        isPlaying={isHovered}
+        resetOnPause
+        scrollStartDelaySec={STUFF_TITLE_SCROLL_START_DELAY_SEC}
+        className="w-full min-w-0 text-[10px] font-medium leading-tight text-white"
+      />
       <div className="flex items-center justify-between gap-1">
         {primaryTag && (
           <span
             className="truncate rounded-full px-1.5 text-[9px] text-white"
             style={{ backgroundColor: primaryTag.color }}
           >
-            {primaryTag.name}
+            {stuffTagDisplayName(primaryTag, t)}
           </span>
         )}
         {price && (
@@ -191,6 +207,7 @@ export function StuffItemCover({
   onClick,
   onContextMenu,
 }: StuffItemCoverProps) {
+  const [isHovered, setIsHovered] = useState(false);
   const visualKind = resolveStuffItemVisualKind(item, tags);
   const isBook = visualKind === "book";
   const isDetail = size === "detail";
@@ -205,7 +222,7 @@ export function StuffItemCover({
   const PlaceholderIcon = KIND_ICONS[visualKind];
   const aquaTint = primaryTag?.color ?? colors.fg;
   const aquaText = productAquaTileTextColor(aquaTint);
-  const coverSrc = stuffItemCoverSrc(item);
+  const coverSrc = useStuffItemCoverSrc(item);
 
   // Detail drawer: bare multiply against the white panel.
   // Shelf photo covers use clear glass instead (no multiply on tinted gel).
@@ -339,7 +356,12 @@ export function StuffItemCover({
       {isBook && <BookSpineHighlight />}
 
       {isGrid && !preview && size === "grid" && (
-        <GridTitleOverlay item={item} primaryTag={primaryTag} price={price} />
+        <GridTitleOverlay
+          item={item}
+          primaryTag={primaryTag}
+          price={price}
+          isHovered={isHovered}
+        />
       )}
 
       {!preview && !isList && (
@@ -365,6 +387,8 @@ export function StuffItemCover({
       style={coverStyle}
       onClick={onClick}
       onContextMenu={onContextMenu}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {coverBody}
     </motion.button>

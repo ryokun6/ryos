@@ -37,10 +37,19 @@ export interface StuffItem {
   id: string;
   title: string;
   notes: string;
-  /** Local data-URL thumbnail (optional) */
+  /**
+   * Legacy inline data-URL cover. Prefer `coverBlobId` (IndexedDB + Sync v2
+   * blob namespace). Kept only for migration / share payload compatibility —
+   * sync codecs strip this field so ops stay under the 512 KiB limit.
+   */
   imageDataUrl?: string;
-  /** Remote cover URL for display when no embedded data URL is stored */
+  /** Remote cover URL for display when no local cover blob is stored */
   imageUrl?: string;
+  /**
+   * Local/cloud cover blob id (IndexedDB `stuff_images` / sync key
+   * `stuff-images/item:<id>`). Usually equals the item id.
+   */
+  coverBlobId?: string;
   barcode?: string;
   /** ZXing / JsBarcode format name, e.g. EAN_13, UPC_A, CODE_128, QR_CODE */
   barcodeFormat?: string;
@@ -84,10 +93,16 @@ export interface StuffSharedItem {
   quantity: number;
 }
 
-/** Prefer embedded bytes; fall back to a remote cover URL for `<img src>`. */
+/**
+ * Resolve a displayable cover `src`. Prefer a resolved blob object URL, then
+ * a legacy embedded data URL, then a remote hotlink.
+ */
 export function stuffItemCoverSrc(
-  item: Pick<StuffItem, "imageDataUrl" | "imageUrl">
+  item: Pick<StuffItem, "imageDataUrl" | "imageUrl" | "coverBlobId">,
+  resolvedBlobUrl?: string | null
 ): string | undefined {
+  const blobUrl = resolvedBlobUrl?.trim();
+  if (blobUrl) return blobUrl;
   const embedded = item.imageDataUrl?.trim();
   if (embedded) return embedded;
   const remote = item.imageUrl?.trim();

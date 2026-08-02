@@ -1782,6 +1782,7 @@
         "settings": "Einstellungen",
         "songs": "Titel",
         "stickies": "Notizzettel",
+        "stuff": "Stuff",
         "title": "Cloud-Synchronisierung",
         "tvChannels": "TV-Sender",
         "uploading": "Wird hochgeladen",
@@ -4037,11 +4038,46 @@
         "edit": "Bearbeiten",
         "printLabel": "Etikett drucken"
       },
+      "defaultTags": {
+        "books": "Bücher",
+        "cd": "CD",
+        "clothing": "Kleidung",
+        "electronics": "Elektronik",
+        "furniture": "Möbel",
+        "kitchen": "Küche",
+        "other": "Sonstiges"
+      },
       "description": "Katalogisiere deine Sachen auf einem Holzregal",
       "detail": {
+        "applyImageUrl": "Anwenden",
+        "chooseImage": "Bild auswählen …",
         "delete": "Löschen",
+        "imageFetchFailed": "Diese Bild-URL konnte nicht geladen werden.",
+        "imageInvalid": "Dieses Bild konnte nicht verwendet werden (muss unter 1,5 MB liegen).",
+        "imageUrlDialogDescription": "Füge eine Bild-URL ein, die als Cover verwendet werden soll.",
+        "imageUrlDialogTitle": "Bild-URL",
+        "imageUrlPlaceholder": "Bild-URL …",
+        "lookup": "Nachschlagen",
+        "pasteImageUrl": "URL einfügen …",
         "print": "Drucken",
+        "qrCode": "QR-Code",
+        "removeImage": "Entfernen",
         "title": "Details"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "Gib einen Namen für das neue Tag ein.",
+          "title": "Neues Tag"
+        },
+        "productLookup": {
+          "applying": "Wird angewendet …",
+          "description": "Wähle einen Treffer für „{{query}}“",
+          "error": "Produktsuche fehlgeschlagen",
+          "noResults": "Keine Produkte gefunden",
+          "selectResult": "Ergebnis auswählen:",
+          "title": "Produkt auswählen",
+          "useSelected": "Auswahl verwenden"
+        }
       },
       "empty": {
         "description": "Füge einen Eintrag hinzu oder scanne einen Barcode, um deine Regale zu füllen.",
@@ -4059,6 +4095,7 @@
         "soldPrice": "Verkauft",
         "status": "Status",
         "tags": "Schlagwörter",
+        "thumbnail": "Vorschaubild",
         "title": "Titel"
       },
       "help": {
@@ -4090,12 +4127,17 @@
       "menu": {
         "about": "Über Stuff",
         "backToShelf": "Zurück zu meinem Regal",
+        "exportShelf": "Regal exportieren…",
+        "gridView": "Rasteransicht",
         "help": "Stuff-Hilfe",
+        "importShelf": "Regal importieren…",
+        "listView": "Listenansicht",
         "newItem": "Neuer Eintrag",
         "printItemLabels": "Objektetiketten drucken…",
         "printTagLabels": "Schlagwortetiketten drucken…",
         "scanBarcode": "Barcode scannen…",
-        "share": "Regal teilen…"
+        "share": "Regal teilen…",
+        "showSidebar": "Seitenleiste einblenden"
       },
       "name": "Stuff",
       "newItemTitle": "Neuer Eintrag",
@@ -4104,15 +4146,24 @@
         "add": "Hinzufügen",
         "addedWithoutMeta": "Barcode gespeichert — keine Produktinfos gefunden",
         "cameraError": "Kamerazugriff nicht möglich. Gib unten manuell einen Barcode ein.",
+        "coverFetchFailed": "Produkt gefunden — Cover konnte nicht geladen werden",
         "description": "Richte die Kamera auf einen Barcode (UPC, EAN, Code 128, QR und mehr).",
         "found": "Produkt hinzugefügt",
+        "foundNoCover": "Produkt hinzugefügt — kein Cover gefunden",
+        "foundWithCover": "Produkt mit Cover hinzugefügt",
         "lookingUp": "Produkt wird gesucht…",
+        "lookupFailed": "Produktsuche fehlgeschlagen",
         "manualPlaceholder": "Oder Barcode eingeben…",
+        "noLookupQuery": "Gib einen Titel, eine Marke oder einen Barcode zum Nachschlagen ein.",
+        "notFoundExisting": "Keine Produktinformationen gefunden",
         "openedItem": "{{title}} geöffnet",
         "openedTag": "Gefiltert nach {{name}}",
         "title": "Barcode scannen",
         "unknownItem": "Kein Eintrag für dieses ryOS-Etikett gefunden.",
-        "unknownTag": "Kein Schlagwort für dieses ryOS-Etikett gefunden."
+        "unknownTag": "Kein Schlagwort für dieses ryOS-Etikett gefunden.",
+        "updated": "Produktdetails aktualisiert",
+        "updatedNoCover": "Produktdetails aktualisiert — kein Cover gefunden",
+        "updatedWithCover": "Produktdetails und Cover aktualisiert"
       },
       "searchPlaceholder": "Sachen suchen…",
       "share": {
@@ -4144,6 +4195,10 @@
         "topOffer": "Höchstgebot {{amount}}",
         "yourOffer": "Dein Angebot"
       },
+      "shelf": {
+        "gridView": "Rasteransicht",
+        "listView": "Listenansicht"
+      },
       "sidebar": {
         "allStuff": "Alle Sachen",
         "deleteTag": "Schlagwort löschen",
@@ -4162,6 +4217,13 @@
         "stowed": "Verstaut"
       },
       "title": "Stuff",
+      "toasts": {
+        "exportFailed": "Regal konnte nicht exportiert werden",
+        "exportSuccess": "Regal exportiert",
+        "importEmpty": "Keine neuen Objekte oder Schlagwörter in dieser Datei gefunden",
+        "importFailed": "Regal konnte nicht importiert werden — Datei möglicherweise ungültig",
+        "importSuccess": "{{items}} Objekte und {{tags}} Schlagwörter importiert ({{skipped}} übersprungen)"
+      },
       "toolbar": {
         "add": "Hinzufügen",
         "scan": "Scannen",
@@ -4923,7 +4985,7 @@
           "page": "Seite",
           "shelf": "Regal",
           "song": "Titel",
-          "stuff": "Regal"
+          "stuff": "Stuff"
         },
         "linkCopied": "Link kopiert",
         "linkCopiedToClipboard": "{{itemType}}-Link in die Zwischenablage kopiert",

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   DEFAULT_CURRENCY,
   DEFAULT_TAG_COLORS,
@@ -12,50 +13,80 @@ import {
   type StuffStatus,
   type StuffTag,
 } from "@/apps/stuff/types";
+import {
+  dataUrlToBlob,
+  deleteStuffCoverBlob,
+  migrateImageDataUrlToCoverBlob,
+  putStuffCoverBlob,
+} from "@/apps/stuff/utils/stuffCoverBlobs";
+import {
+  buildStuffShelfExport,
+  mergeStuffShelfImport,
+  stringifyStuffShelfExport,
+  type ImportStuffShelfCounts,
+} from "@/apps/stuff/utils/stuffShelfImportExport";
 
-const STUFF_STORE_VERSION = 2;
+const STUFF_STORE_VERSION = 4;
 
+/** Canonical English names — UI labels come from `apps.stuff.defaultTags.*`. */
 const DEFAULT_TAGS: Omit<StuffTag, "id" | "createdAt">[] = [
   { name: "Kitchen", color: DEFAULT_TAG_COLORS[0] },
   { name: "Electronics", color: DEFAULT_TAG_COLORS[1] },
   { name: "Clothing", color: DEFAULT_TAG_COLORS[2] },
   { name: "Books", color: DEFAULT_TAG_COLORS[3] },
   { name: "Furniture", color: DEFAULT_TAG_COLORS[5] },
+  { name: "CD", color: DEFAULT_TAG_COLORS[6] },
   { name: "Other", color: DEFAULT_TAG_COLORS[4] },
 ];
+
+/** Stable ids so empty devices that seed defaults don't fight Sync v2 peers. */
+export function defaultStuffTagId(name: string): string {
+  return `stuff-default:${name.trim().toLowerCase()}`;
+}
 
 function createDefaultTags(): StuffTag[] {
   const now = Date.now();
   return DEFAULT_TAGS.map((tag, index) => ({
     ...tag,
-    id: crypto.randomUUID(),
+    id: defaultStuffTagId(tag.name),
     createdAt: now + index,
   }));
 }
 
-/** Insert Furniture into persisted tags when missing (v1 → v2). */
-export function ensureFurnitureTag(tags: StuffTag[]): StuffTag[] {
-  if (tags.some((tag) => tag.name.toLowerCase() === "furniture")) {
-    return tags;
-  }
-  const furnitureDefault = DEFAULT_TAGS.find((tag) => tag.name === "Furniture");
-  if (!furnitureDefault) return tags;
-  const furniture: StuffTag = {
-    ...furnitureDefault,
-    id: crypto.randomUUID(),
-    createdAt: Date.now(),
-  };
-  const otherIndex = tags.findIndex(
-    (tag) => tag.name.toLowerCase() === "other"
+function tagMatchesDefault(tag: StuffTag, defaultName: string): boolean {
+  const slug = defaultName.trim().toLowerCase();
+  return (
+    tag.id === defaultStuffTagId(defaultName) ||
+    tag.name.trim().toLowerCase() === slug
   );
-  if (otherIndex === -1) {
-    return [...tags, furniture];
+}
+
+/**
+ * Insert any missing seeded default tags (Furniture, CD, …) without wiping
+ * custom tags. New defaults land before Other when present.
+ */
+export function ensureDefaultStuffTags(tags: StuffTag[]): StuffTag[] {
+  let next = tags;
+  const now = Date.now();
+  for (const def of DEFAULT_TAGS) {
+    if (next.some((tag) => tagMatchesDefault(tag, def.name))) continue;
+    const insert: StuffTag = {
+      ...def,
+      id: defaultStuffTagId(def.name),
+      createdAt: now,
+    };
+    const otherIndex = next.findIndex((tag) => tagMatchesDefault(tag, "Other"));
+    next =
+      otherIndex === -1
+        ? [...next, insert]
+        : [...next.slice(0, otherIndex), insert, ...next.slice(otherIndex)];
   }
-  return [
-    ...tags.slice(0, otherIndex),
-    furniture,
-    ...tags.slice(otherIndex),
-  ];
+  return next;
+}
+
+/** @deprecated Prefer {@link ensureDefaultStuffTags}. Kept for older tests/imports. */
+export function ensureFurnitureTag(tags: StuffTag[]): StuffTag[] {
+  return ensureDefaultStuffTags(tags);
 }
 
 function emptyPrices(): StuffPrices {
@@ -71,18 +102,31 @@ function normalizeItem(draft: StuffItemDraft, existing?: StuffItem): StuffItem {
     draft.title !== undefined
       ? draft.title.trim()
       : (existing?.title ?? "").trim();
+
+  const nextCoverBlobId =
+    draft.coverBlobId !== undefined
+      ? draft.coverBlobId || undefined
+      : existing?.coverBlobId;
+
+  // Prefer blob covers: when a coverBlobId is present, drop legacy data URLs.
+  let nextImageDataUrl =
+    draft.imageDataUrl !== undefined
+      ? draft.imageDataUrl || undefined
+      : existing?.imageDataUrl;
+  if (nextCoverBlobId) {
+    nextImageDataUrl = undefined;
+  }
+
   return {
     id: existing?.id ?? crypto.randomUUID(),
     title: nextTitle || existing?.title || "Untitled",
     notes: draft.notes ?? existing?.notes ?? "",
-    imageDataUrl:
-      draft.imageDataUrl !== undefined
-        ? draft.imageDataUrl || undefined
-        : existing?.imageDataUrl,
+    imageDataUrl: nextImageDataUrl,
     imageUrl:
       draft.imageUrl !== undefined
         ? draft.imageUrl || undefined
         : existing?.imageUrl,
+    coverBlobId: nextCoverBlobId,
     barcode: draft.barcode !== undefined ? draft.barcode : existing?.barcode,
     barcodeFormat:
       draft.barcodeFormat !== undefined
@@ -104,6 +148,44 @@ function normalizeItem(draft: StuffItemDraft, existing?: StuffItem): StuffItem {
   };
 }
 
+function clearCoverSideEffects(
+  item: StuffItem | undefined,
+  next: StuffItem
+): void {
+  const prevCoverId = item?.coverBlobId?.trim();
+  const nextCoverId = next.coverBlobId?.trim();
+  const coverRemoved = Boolean(prevCoverId) && !nextCoverId;
+  const coverReplaced =
+    Boolean(prevCoverId) && Boolean(nextCoverId) && prevCoverId !== nextCoverId;
+  if ((coverRemoved || coverReplaced) && prevCoverId) {
+    void deleteStuffCoverBlob(prevCoverId);
+  }
+}
+
+async function ingestInlineCoverIfNeeded(
+  itemId: string,
+  draft: StuffItemDraft
+): Promise<void> {
+  const dataUrl = draft.imageDataUrl?.trim();
+  if (!dataUrl || !dataUrl.startsWith("data:image/")) return;
+  const blob = dataUrlToBlob(dataUrl);
+  if (!blob) return;
+  const coverBlobId = draft.coverBlobId?.trim() || itemId;
+  await putStuffCoverBlob(coverBlobId, blob);
+  useStuffStore.setState((state) => ({
+    items: state.items.map((item) =>
+      item.id === itemId
+        ? {
+            ...item,
+            coverBlobId,
+            imageDataUrl: undefined,
+            updatedAt: Date.now(),
+          }
+        : item
+    ),
+  }));
+}
+
 interface StuffStoreState {
   items: StuffItem[];
   tags: StuffTag[];
@@ -114,6 +196,8 @@ interface StuffStoreState {
   isSidebarVisible: boolean;
   searchQuery: string;
   lastShareId: string | null;
+  /** Bumped when remote cover blobs land so UI object URLs refresh. */
+  coversRevision: number;
   setSelectedItemId: (id: string | null) => void;
   setSelectedTagId: (id: string | null) => void;
   setStatusFilter: (status: StuffStatus | "all") => void;
@@ -128,13 +212,27 @@ interface StuffStoreState {
   updateTag: (id: string, updates: Partial<Pick<StuffTag, "name" | "color">>) => void;
   deleteTag: (id: string) => void;
   setLastShareId: (id: string | null) => void;
+  /**
+   * Replace items/tags from Sync v2 without creating deletion markers.
+   * Tag deletes also strip the id from every item (same as local deleteTag).
+   */
+  replaceFromSync: (snapshot: { items: StuffItem[]; tags: StuffTag[] }) => void;
+  bumpCoversRevision: () => void;
+  /** Portable JSON backup (covers inlined as data URLs). */
+  exportShelf: () => Promise<string>;
+  /**
+   * Merge a shelf JSON backup into the local store (skip existing ids;
+   * remap tags by name). Returns add/skip counts for toasts.
+   */
+  importShelf: (json: string) => ImportStuffShelfCounts;
 }
 
 export const useStuffStore = create<StuffStoreState>()(
   persist(
     (set, get) => ({
       items: [],
-      tags: createDefaultTags(),
+      // Empty until IndexedDB hydrates — seeding earlier races restored/synced tags.
+      tags: [],
       selectedItemId: null,
       selectedTagId: null,
       statusFilter: "all",
@@ -142,6 +240,7 @@ export const useStuffStore = create<StuffStoreState>()(
       isSidebarVisible: true,
       searchQuery: "",
       lastShareId: null,
+      coversRevision: 0,
 
       setSelectedItemId: (id) => set({ selectedItemId: id }),
       setSelectedTagId: (id) => set({ selectedTagId: id }),
@@ -152,25 +251,62 @@ export const useStuffStore = create<StuffStoreState>()(
         set((state) => ({ isSidebarVisible: !state.isSidebarVisible })),
       setSearchQuery: (query) => set({ searchQuery: query }),
       setLastShareId: (id) => set({ lastShareId: id }),
+      bumpCoversRevision: () =>
+        set((state) => ({ coversRevision: state.coversRevision + 1 })),
 
       addItem: (draft = {}) => {
         const item = normalizeItem(draft);
+        useCloudSyncStore.getState().clearDeletedKeys("stuffItemIds", [item.id]);
+        if (item.coverBlobId) {
+          useCloudSyncStore
+            .getState()
+            .clearDeletedKeys("stuffCoverKeys", [item.coverBlobId]);
+        }
         set((state) => ({
           items: [item, ...state.items],
           selectedItemId: item.id,
         }));
+        if (draft.imageDataUrl?.trim()) {
+          void ingestInlineCoverIfNeeded(item.id, draft);
+        }
         return item.id;
       },
 
       updateItem: (id, draft) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? normalizeItem(draft, item) : item
-          ),
-        }));
+        let nextDraft: StuffItemDraft = { ...draft };
+
+        // Remove cover: both display fields cleared (detail panel / lookup).
+        if (draft.imageDataUrl === "" && draft.imageUrl === "") {
+          nextDraft = { ...nextDraft, coverBlobId: "" };
+        }
+
+        // Hotlink replaces local cover bytes.
+        if (draft.imageUrl?.trim() && draft.imageDataUrl === "") {
+          nextDraft = { ...nextDraft, coverBlobId: "" };
+        }
+
+        set((state) => {
+          const items = state.items.map((item) => {
+            if (item.id !== id) return item;
+            const next = normalizeItem(nextDraft, item);
+            clearCoverSideEffects(item, next);
+            return next;
+          });
+          return { items };
+        });
+
+        // Legacy callers still pass imageDataUrl — migrate into the blob store.
+        if (draft.imageDataUrl?.trim()) {
+          void ingestInlineCoverIfNeeded(id, draft);
+        }
       },
 
       deleteItem: (id) => {
+        const existing = get().items.find((item) => item.id === id);
+        useCloudSyncStore.getState().markDeletedKeys("stuffItemIds", [id]);
+        if (existing?.coverBlobId) {
+          void deleteStuffCoverBlob(existing.coverBlobId);
+        }
         set((state) => ({
           items: state.items.filter((item) => item.id !== id),
           selectedItemId:
@@ -186,6 +322,7 @@ export const useStuffStore = create<StuffStoreState>()(
         );
         if (existing) return existing.id;
         const id = crypto.randomUUID();
+        useCloudSyncStore.getState().clearDeletedKeys("stuffTagIds", [id]);
         const usedColors = new Set(get().tags.map((tag) => tag.color));
         const nextColor =
           color ??
@@ -215,6 +352,7 @@ export const useStuffStore = create<StuffStoreState>()(
       },
 
       deleteTag: (id) => {
+        useCloudSyncStore.getState().markDeletedKeys("stuffTagIds", [id]);
         set((state) => ({
           tags: state.tags.filter((tag) => tag.id !== id),
           selectedTagId:
@@ -225,6 +363,77 @@ export const useStuffStore = create<StuffStoreState>()(
             updatedAt: Date.now(),
           })),
         }));
+      },
+
+      replaceFromSync: (snapshot) => {
+        const prevItems = get().items;
+        const nextCoverIds = new Set(
+          snapshot.items
+            .map((item) => item.coverBlobId?.trim())
+            .filter((id): id is string => Boolean(id))
+        );
+        for (const item of prevItems) {
+          const coverId = item.coverBlobId?.trim();
+          if (!coverId || nextCoverIds.has(coverId)) continue;
+          // Remote apply owns tombstones; only drop orphaned local bytes.
+          void deleteStuffCoverBlob(coverId, { tombstone: false });
+        }
+        set({
+          items: snapshot.items,
+          tags: snapshot.tags,
+        });
+      },
+
+      exportShelf: async () => {
+        const { tags, items } = get();
+        const payload = await buildStuffShelfExport(tags, items);
+        return stringifyStuffShelfExport(payload);
+      },
+
+      importShelf: (json) => {
+        const result = mergeStuffShelfImport(json, {
+          items: get().items,
+          tags: get().tags,
+        });
+
+        const newTagIds = result.tags
+          .map((tag) => tag.id)
+          .filter((id) => !get().tags.some((tag) => tag.id === id));
+        const newItemIds = result.items
+          .map((item) => item.id)
+          .filter((id) => !get().items.some((item) => item.id === id));
+
+        if (newTagIds.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .clearDeletedKeys("stuffTagIds", newTagIds);
+        }
+        if (newItemIds.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .clearDeletedKeys("stuffItemIds", newItemIds);
+        }
+        for (const { itemId } of result.coverIngest) {
+          useCloudSyncStore
+            .getState()
+            .clearDeletedKeys("stuffCoverKeys", [itemId]);
+        }
+
+        set({
+          items: result.items,
+          tags: result.tags,
+        });
+
+        for (const { itemId, imageDataUrl } of result.coverIngest) {
+          void ingestInlineCoverIfNeeded(itemId, { imageDataUrl });
+        }
+
+        return {
+          addedItems: result.addedItems,
+          addedTags: result.addedTags,
+          skippedItems: result.skippedItems,
+          skippedTags: result.skippedTags,
+        };
       },
     }),
     {
@@ -243,19 +452,74 @@ export const useStuffStore = create<StuffStoreState>()(
       }),
       migrate: (persistedState, version) => {
         const state = (persistedState ?? {}) as Partial<StuffStoreState>;
-        if (version < 2) {
-          return {
-            ...state,
-            tags: ensureFurnitureTag(
-              Array.isArray(state.tags) ? state.tags : []
-            ),
-          };
+        let tags = Array.isArray(state.tags) ? state.tags : [];
+        if (version < 4) {
+          tags = ensureDefaultStuffTags(tags);
         }
-        return state;
+        return {
+          ...state,
+          tags,
+        };
       },
     }
   )
 );
+
+let didSeedDefaultTags = false;
+let didMigrateCovers = false;
+
+function seedDefaultTagsIfNeeded(): void {
+  if (didSeedDefaultTags) return;
+  if (!useStuffStore.persist.hasHydrated()) return;
+  didSeedDefaultTags = true;
+  const { tags } = useStuffStore.getState();
+  if (tags.length > 0) return;
+  useStuffStore.setState({ tags: createDefaultTags() });
+}
+
+async function migrateLegacyCoversIfNeeded(): Promise<void> {
+  if (didMigrateCovers) return;
+  if (!useStuffStore.persist.hasHydrated()) return;
+  didMigrateCovers = true;
+  const { items } = useStuffStore.getState();
+  const pending = items.filter((item) => item.imageDataUrl?.startsWith("data:image/"));
+  if (pending.length === 0) return;
+
+  const migrated = new Map<string, StuffItem>();
+  for (const item of pending) {
+    try {
+      const result = await migrateImageDataUrlToCoverBlob(item);
+      if (!result) continue;
+      migrated.set(item.id, {
+        ...item,
+        coverBlobId: result.coverBlobId,
+        imageDataUrl: undefined,
+        updatedAt: Date.now(),
+      });
+    } catch (error) {
+      console.error("[Stuff] Failed to migrate cover data URL:", error);
+    }
+  }
+  if (migrated.size === 0) return;
+  useStuffStore.setState((state) => ({
+    items: state.items.map((item) => migrated.get(item.id) ?? item),
+  }));
+}
+
+function runPostHydrationStuffTasks(): void {
+  seedDefaultTagsIfNeeded();
+  void migrateLegacyCoversIfNeeded();
+}
+
+if (typeof window !== "undefined") {
+  if (useStuffStore.persist.hasHydrated()) {
+    runPostHydrationStuffTasks();
+  } else {
+    useStuffStore.persist.onFinishHydration(() => {
+      runPostHydrationStuffTasks();
+    });
+  }
+}
 
 export function getFilteredStuffItems(params: {
   items: StuffItem[];

@@ -45,6 +45,9 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "songTrackIds",
   "tvCustomChannelIds",
   "mapsFavoriteIds",
+  "stuffItemIds",
+  "stuffTagIds",
+  "stuffCoverKeys",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -71,6 +74,9 @@ export function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     songTrackIds: {},
     tvCustomChannelIds: {},
     mapsFavoriteIds: {},
+    stuffItemIds: {},
+    stuffTagIds: {},
+    stuffCoverKeys: {},
   };
 }
 
@@ -96,6 +102,7 @@ function createInitialCategoryStatus(): CloudSyncCategoryStatusMap {
     contacts: empty(),
     maps: empty(),
     books: empty(),
+    stuff: empty(),
   };
 }
 
@@ -145,6 +152,7 @@ interface CloudSyncStoreState {
   syncContacts: boolean;
   syncMaps: boolean;
   syncBooks: boolean;
+  syncStuff: boolean;
   isCheckingRemote: boolean;
   lastCheckedAt: string | null;
   lastError: string | null;
@@ -192,7 +200,7 @@ interface CloudSyncStoreState {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 14;
+const STORE_VERSION = 15;
 
 const CATEGORY_TOGGLE_FIELDS: Record<SyncCategory, keyof CloudSyncStoreState> = {
   files: "syncFiles",
@@ -205,6 +213,7 @@ const CATEGORY_TOGGLE_FIELDS: Record<SyncCategory, keyof CloudSyncStoreState> = 
   contacts: "syncContacts",
   maps: "syncMaps",
   books: "syncBooks",
+  stuff: "syncStuff",
 };
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
@@ -221,6 +230,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncContacts: true,
       syncMaps: true,
       syncBooks: true,
+      syncStuff: true,
       isCheckingRemote: false,
       lastCheckedAt: null,
       lastError: null,
@@ -493,6 +503,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncContacts: state.syncContacts,
         syncMaps: state.syncMaps,
         syncBooks: state.syncBooks,
+        syncStuff: state.syncStuff,
         lastCheckedAt: state.lastCheckedAt,
         deletionMarkers: state.deletionMarkers,
         categoryStatus: Object.fromEntries(

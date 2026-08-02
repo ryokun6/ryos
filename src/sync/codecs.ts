@@ -37,6 +37,12 @@ import { useAssistantStore } from "@/stores/useAssistantStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
+import { useStuffStore } from "@/stores/useStuffStore";
+import type { StuffItem, StuffTag } from "@/apps/stuff/types";
+import {
+  invalidateStuffCoverCache,
+  stripImageDataUrlForSync,
+} from "@/apps/stuff/utils/stuffCoverBlobs";
 import {
   BOOKS_FONT_SIZE_MAX,
   BOOKS_FONT_SIZE_MIN,
@@ -137,6 +143,9 @@ export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> =
   songTrackIds: "songs/track:",
   tvCustomChannelIds: "tv/channel:",
   mapsFavoriteIds: "maps/favorite:",
+  stuffItemIds: "stuff/item:",
+  stuffTagIds: "stuff/tag:",
+  stuffCoverKeys: "stuff-images/item:",
 };
 
 export function getDeletionMarkerForKey(key: string): string | null {
@@ -1509,6 +1518,169 @@ const mapsCodec: SyncCodec = {
 };
 
 // ---------------------------------------------------------------------------
+// Stuff codec (inventory items + tags; covers sync via `stuff-images` blobs)
+//
+// Keys:
+//   stuff/item:<id> — item metadata (no imageDataUrl; cover via coverBlobId)
+//   stuff/tag:<id>  — tag
+//
+// Device-local UI (selection, filters, shelf view, sidebar, search, last
+// share id) is intentionally excluded. Cover bytes live in the stuff-images
+// blob namespace and must apply before this metadata namespace.
+// ---------------------------------------------------------------------------
+
+function toStuffItemSyncDoc(item: StuffItem): Record<string, unknown> {
+  return stripImageDataUrlForSync({
+    id: item.id,
+    title: item.title,
+    notes: item.notes,
+    imageUrl: item.imageUrl,
+    coverBlobId: item.coverBlobId,
+    barcode: item.barcode,
+    barcodeFormat: item.barcodeFormat,
+    brand: item.brand,
+    productUrl: item.productUrl,
+    tagIds: item.tagIds,
+    status: item.status,
+    prices: item.prices,
+    quantity: item.quantity,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  });
+}
+
+function asStuffItem(value: unknown, id: string): StuffItem | null {
+  if (!asRecord(value)) return null;
+  const record = value as Partial<StuffItem>;
+  if (typeof record.title !== "string") return null;
+  return {
+    id,
+    title: record.title,
+    notes: typeof record.notes === "string" ? record.notes : "",
+    imageUrl:
+      typeof record.imageUrl === "string" ? record.imageUrl || undefined : undefined,
+    coverBlobId:
+      typeof record.coverBlobId === "string"
+        ? record.coverBlobId || undefined
+        : undefined,
+    // Never re-hydrate giant data URLs from sync ops.
+    imageDataUrl: undefined,
+    barcode:
+      typeof record.barcode === "string" ? record.barcode || undefined : undefined,
+    barcodeFormat:
+      typeof record.barcodeFormat === "string"
+        ? record.barcodeFormat || undefined
+        : undefined,
+    brand: typeof record.brand === "string" ? record.brand || undefined : undefined,
+    productUrl:
+      typeof record.productUrl === "string"
+        ? record.productUrl || undefined
+        : undefined,
+    tagIds: Array.isArray(record.tagIds)
+      ? record.tagIds.filter((tagId): tagId is string => typeof tagId === "string")
+      : [],
+    status: (record.status as StuffItem["status"]) || "stowed",
+    prices:
+      record.prices && typeof record.prices === "object"
+        ? (record.prices as StuffItem["prices"])
+        : { currency: "USD" },
+    quantity:
+      typeof record.quantity === "number" && Number.isFinite(record.quantity)
+        ? Math.max(1, record.quantity)
+        : 1,
+    createdAt:
+      typeof record.createdAt === "number" ? record.createdAt : Date.now(),
+    updatedAt:
+      typeof record.updatedAt === "number" ? record.updatedAt : Date.now(),
+  };
+}
+
+function asStuffTag(value: unknown, id: string): StuffTag | null {
+  if (!asRecord(value)) return null;
+  const record = value as Partial<StuffTag>;
+  if (typeof record.name !== "string" || !record.name.trim()) return null;
+  return {
+    id,
+    name: record.name.trim(),
+    color:
+      typeof record.color === "string" && record.color
+        ? record.color
+        : "#c45c26",
+    createdAt:
+      typeof record.createdAt === "number" ? record.createdAt : Date.now(),
+  };
+}
+
+const stuffCodec: SyncCodec = {
+  namespace: "stuff",
+  collect() {
+    const docs = new Map<string, unknown>();
+    const state = useStuffStore.getState();
+    for (const item of state.items) {
+      if (item?.id) docs.set(`stuff/item:${item.id}`, toStuffItemSyncDoc(item));
+    }
+    for (const tag of state.tags) {
+      if (tag?.id) docs.set(`stuff/tag:${tag.id}`, tag);
+    }
+    return docs;
+  },
+  apply(ops) {
+    const state = useStuffStore.getState();
+    const itemsById = new Map(state.items.map((item) => [item.id, item]));
+    const tagsById = new Map(state.tags.map((tag) => [tag.id, tag]));
+    const deletedTagIds = new Set<string>();
+
+    for (const op of ops) {
+      if (op.k.startsWith("stuff/item:")) {
+        const id = op.k.slice("stuff/item:".length);
+        if (op.del) {
+          itemsById.delete(id);
+        } else {
+          const item = asStuffItem(op.v, id);
+          if (item) itemsById.set(id, item);
+        }
+      } else if (op.k.startsWith("stuff/tag:")) {
+        const id = op.k.slice("stuff/tag:".length);
+        if (op.del) {
+          tagsById.delete(id);
+          deletedTagIds.add(id);
+        } else {
+          const tag = asStuffTag(op.v, id);
+          if (tag) tagsById.set(id, tag);
+        }
+      }
+    }
+
+    if (deletedTagIds.size > 0) {
+      for (const [id, item] of itemsById) {
+        if (!item.tagIds.some((tagId) => deletedTagIds.has(tagId))) continue;
+        itemsById.set(id, {
+          ...item,
+          tagIds: item.tagIds.filter((tagId) => !deletedTagIds.has(tagId)),
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
+    state.replaceFromSync({
+      items: Array.from(itemsById.values()),
+      tags: Array.from(tagsById.values()),
+    });
+  },
+  subscribe(onChange) {
+    return useStuffStore.subscribe((state, prev) => {
+      if (state.items !== prev.items || state.tags !== prev.tags) {
+        if (!useStuffStore.persist.hasHydrated()) return;
+        onChange();
+      }
+    });
+  },
+  isReady() {
+    return useStuffStore.persist.hasHydrated();
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Bookshelf codec (Books app reading state: progress + ordering + last-opened)
 //
 // The EPUB *files* sync via the `books` blob namespace (under the "files"
@@ -1916,8 +2088,19 @@ async function finalizeCustomWallpaperSync(ctx: CodecContext): Promise<void> {
   displayStore.bumpCustomWallpapersRevision();
 }
 
+async function finalizeStuffCoverSync(): Promise<void> {
+  invalidateStuffCoverCache();
+  useStuffStore.getState().bumpCoversRevision();
+}
+
 function createBlobCodec(
-  namespace: "images" | "books" | "trash" | "applets" | "wallpapers",
+  namespace:
+    | "images"
+    | "books"
+    | "trash"
+    | "applets"
+    | "wallpapers"
+    | "stuff-images",
   storeName: string,
   options?: { afterApply?: (ctx: CodecContext) => Promise<void> }
 ): BlobSyncCodec {
@@ -1980,6 +2163,13 @@ const appletsCodec = createBlobCodec("applets", STORES.APPLETS);
 const wallpapersCodec = createBlobCodec("wallpapers", STORES.CUSTOM_WALLPAPERS, {
   afterApply: finalizeCustomWallpaperSync,
 });
+const stuffImagesCodec = createBlobCodec(
+  "stuff-images",
+  STORES.STUFF_IMAGES,
+  {
+    afterApply: finalizeStuffCoverSync,
+  }
+);
 
 // ---------------------------------------------------------------------------
 // Registry
@@ -2002,6 +2192,8 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   trash: trashCodec,
   applets: appletsCodec,
   wallpapers: wallpapersCodec,
+  stuff: stuffCodec,
+  "stuff-images": stuffImagesCodec,
 };
 
 export function isBlobCodec(codec: SyncCodec): codec is BlobSyncCodec {
@@ -2018,6 +2210,7 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "books",
   "trash",
   "applets",
+  "stuff-images",
   "settings",
   "files",
   "bookshelf",
@@ -2029,4 +2222,5 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "calendar",
   "contacts",
   "maps",
+  "stuff",
 ];

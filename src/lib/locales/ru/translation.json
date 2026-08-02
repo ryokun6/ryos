@@ -1789,6 +1789,7 @@
         "settings": "Настройки",
         "songs": "Песни",
         "stickies": "Записки",
+        "stuff": "Stuff",
         "title": "Облачная синхронизация",
         "tvChannels": "ТВ-каналы",
         "uploading": "Выгрузка",
@@ -4046,11 +4047,46 @@
         "edit": "Править",
         "printLabel": "Печать этикетки"
       },
+      "defaultTags": {
+        "books": "Книги",
+        "cd": "CD",
+        "clothing": "Одежда",
+        "electronics": "Электроника",
+        "furniture": "Мебель",
+        "kitchen": "Кухня",
+        "other": "Другое"
+      },
       "description": "Каталогизируйте вещи на деревянной полке",
       "detail": {
+        "applyImageUrl": "Применить",
+        "chooseImage": "Выбрать изображение…",
         "delete": "Удалить",
+        "imageFetchFailed": "Не удалось загрузить изображение по этому URL.",
+        "imageInvalid": "Не удалось использовать это изображение (должно быть меньше 1,5 МБ).",
+        "imageUrlDialogDescription": "Вставьте URL изображения, чтобы использовать его как обложку.",
+        "imageUrlDialogTitle": "URL изображения",
+        "imageUrlPlaceholder": "URL изображения…",
+        "lookup": "Найти",
+        "pasteImageUrl": "Вставить URL…",
         "print": "Печать",
+        "qrCode": "QR-код",
+        "removeImage": "Удалить",
         "title": "Сведения"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "Введите имя для нового тега.",
+          "title": "Новый тег"
+        },
+        "productLookup": {
+          "applying": "Применение…",
+          "description": "Выберите совпадение для «{{query}}»",
+          "error": "Не удалось найти товар",
+          "noResults": "Товары не найдены",
+          "selectResult": "Выберите результат:",
+          "title": "Выбрать товар",
+          "useSelected": "Использовать выбранное"
+        }
       },
       "empty": {
         "description": "Добавьте предмет или отсканируйте штрихкод, чтобы заполнить полки.",
@@ -4068,6 +4104,7 @@
         "soldPrice": "Продано",
         "status": "Статус",
         "tags": "Теги",
+        "thumbnail": "Миниатюра",
         "title": "Название"
       },
       "help": {
@@ -4099,12 +4136,17 @@
       "menu": {
         "about": "О программе Stuff",
         "backToShelf": "К моей полке",
+        "exportShelf": "Экспортировать полку…",
+        "gridView": "Вид сеткой",
         "help": "Справка Stuff",
+        "importShelf": "Импортировать полку…",
+        "listView": "Вид списком",
         "newItem": "Новый предмет",
         "printItemLabels": "Печать этикеток предметов…",
         "printTagLabels": "Печать этикеток тегов…",
         "scanBarcode": "Сканировать штрихкод…",
-        "share": "Поделиться полкой…"
+        "share": "Поделиться полкой…",
+        "showSidebar": "Показать боковое меню"
       },
       "name": "Stuff",
       "newItemTitle": "Новый предмет",
@@ -4113,15 +4155,24 @@
         "add": "Добавить",
         "addedWithoutMeta": "Штрихкод сохранён — сведения о товаре не найдены",
         "cameraError": "Не удалось получить доступ к камере. Введите штрихкод вручную ниже.",
+        "coverFetchFailed": "Товар найден — не удалось загрузить обложку",
         "description": "Наведите камеру на штрихкод (UPC, EAN, Code 128, QR и др.).",
         "found": "Товар добавлен",
+        "foundNoCover": "Товар добавлен — обложка не найдена",
+        "foundWithCover": "Товар добавлен с обложкой",
         "lookingUp": "Поиск товара…",
+        "lookupFailed": "Не удалось найти товар",
         "manualPlaceholder": "Или введите штрихкод…",
+        "noLookupQuery": "Введите название, бренд или штрихкод для поиска.",
+        "notFoundExisting": "Информация о товаре не найдена",
         "openedItem": "Открыто: {{title}}",
         "openedTag": "Фильтр: {{name}}",
         "title": "Сканировать штрихкод",
         "unknownItem": "Предмет для этой этикетки ryOS не найден.",
-        "unknownTag": "Тег для этой этикетки ryOS не найден."
+        "unknownTag": "Тег для этой этикетки ryOS не найден.",
+        "updated": "Сведения о товаре обновлены",
+        "updatedNoCover": "Сведения о товаре обновлены — обложка не найдена",
+        "updatedWithCover": "Сведения о товаре и обложка обновлены"
       },
       "searchPlaceholder": "Искать вещи…",
       "share": {
@@ -4153,6 +4204,10 @@
         "topOffer": "Лучшее предложение {{amount}}",
         "yourOffer": "Ваше предложение"
       },
+      "shelf": {
+        "gridView": "Вид сеткой",
+        "listView": "Вид списком"
+      },
       "sidebar": {
         "allStuff": "Все вещи",
         "deleteTag": "Удалить тег",
@@ -4171,6 +4226,13 @@
         "stowed": "Убрано"
       },
       "title": "Stuff",
+      "toasts": {
+        "exportFailed": "Не удалось экспортировать полку",
+        "exportSuccess": "Полка экспортирована",
+        "importEmpty": "В этом файле не найдено новых предметов или тегов",
+        "importFailed": "Не удалось импортировать полку — возможно, файл недействителен",
+        "importSuccess": "Импортировано {{items}} предметов и {{tags}} тегов ({{skipped}} пропущено)"
+      },
       "toolbar": {
         "add": "Добавить",
         "scan": "Сканировать",
@@ -4934,7 +4996,7 @@
           "page": "Страница",
           "shelf": "Полка",
           "song": "Песня",
-          "stuff": "Полка"
+          "stuff": "Stuff"
         },
         "linkCopied": "Ссылка скопирована",
         "linkCopiedToClipboard": "Ссылка на {{itemType}} скопирована в буфер обмена",

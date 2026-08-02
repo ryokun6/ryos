@@ -120,7 +120,7 @@
           "app": "App",
           "applet": "Applet",
           "item": "Item",
-          "stuff": "Shelf",
+          "stuff": "Stuff",
           "shelf": "Shelf"
         }
       }
@@ -3324,6 +3324,7 @@
         "calendar": "Calendar",
         "contacts": "Contacts",
         "maps": "Maps",
+        "stuff": "Stuff",
         "waiting": "Waiting for the next eligible change",
         "neverSynced": "Not yet synced",
         "checking": "Checking for cloud updates…",
@@ -4995,6 +4996,15 @@
       "searchPlaceholder": "Search Stuff…",
       "newItemTitle": "New Item",
       "scannedItemTitle": "Scanned Item",
+      "defaultTags": {
+        "kitchen": "Kitchen",
+        "electronics": "Electronics",
+        "clothing": "Clothing",
+        "books": "Books",
+        "furniture": "Furniture",
+        "cd": "CD",
+        "other": "Other"
+      },
       "menu": {
         "newItem": "New Item",
         "scanBarcode": "Scan Barcode…",
@@ -5003,7 +5013,19 @@
         "help": "Stuff Help",
         "about": "About Stuff",
         "printItemLabels": "Print Item Labels…",
-        "printTagLabels": "Print Tag Labels…"
+        "printTagLabels": "Print Tag Labels…",
+        "exportShelf": "Export Shelf…",
+        "importShelf": "Import Shelf…",
+        "gridView": "Grid View",
+        "listView": "List View",
+        "showSidebar": "Show Sidebar"
+      },
+      "toasts": {
+        "exportSuccess": "Shelf exported",
+        "exportFailed": "Couldn't export shelf",
+        "importSuccess": "Imported {{items}} items and {{tags}} tags ({{skipped}} skipped)",
+        "importEmpty": "No new items or tags found in that file",
+        "importFailed": "Couldn't import shelf — file may be invalid"
       },
       "toolbar": {
         "add": "Add",
@@ -5071,9 +5093,13 @@
         "print": "Print",
         "delete": "Delete",
         "lookup": "Look Up",
+        "qrCode": "QR Code",
         "chooseImage": "Choose Image…",
+        "pasteImageUrl": "Paste URL…",
         "removeImage": "Remove",
         "imageUrlPlaceholder": "Image URL…",
+        "imageUrlDialogTitle": "Image URL",
+        "imageUrlDialogDescription": "Paste an image URL to use as the cover.",
         "applyImageUrl": "Apply",
         "imageInvalid": "Could not use that image (must be under 1.5 MB).",
         "imageFetchFailed": "Could not fetch that image URL."

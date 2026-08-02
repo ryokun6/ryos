@@ -1,7 +1,9 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QRCodeSVG } from "qrcode.react";
+import i18n from "@/lib/i18n";
 import type { StuffItem, StuffTag } from "../types";
+import { stuffTagDisplayName } from "./stuffTagDisplayName";
 
 export type StuffLabelKind = "item" | "tag";
 
@@ -160,7 +162,7 @@ export function tagToLabelTarget(tag: StuffTag): StuffLabelTarget {
   return {
     kind: "tag",
     id: tag.id,
-    title: tag.name,
+    title: stuffTagDisplayName(tag, i18n.t.bind(i18n)),
     subtitle: "Tag",
   };
 }

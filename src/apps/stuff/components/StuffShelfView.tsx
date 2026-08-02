@@ -17,7 +17,11 @@ import {
 import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { StuffItemCover } from "./StuffItemCover";
+import { ScrollingText } from "@/apps/ipod/components/screen";
+import {
+  StuffItemCover,
+  STUFF_TITLE_SCROLL_START_DELAY_SEC,
+} from "./StuffItemCover";
 import type { StuffItem, StuffShelfView, StuffTag } from "../types";
 import {
   STUFF_SHELF_ITEM_WIDTH,
@@ -45,6 +49,55 @@ interface ShelfContextMenu {
   item: StuffItem;
   x: number;
   y: number;
+}
+
+function StuffShelfListRow({
+  item,
+  tags,
+  selected,
+  onSelect,
+  onContextMenu,
+}: {
+  item: StuffItem;
+  tags: StuffTag[];
+  selected: boolean;
+  onSelect: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const subtitle = [item.brand, item.status.replace(/_/g, " "), item.barcode]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <button
+      type="button"
+      className="flex w-full items-center gap-3 rounded-md bg-black/20 px-3 py-2 text-left text-[#f5e6d0] hover:bg-black/30"
+      onClick={onSelect}
+      onContextMenu={onContextMenu}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <StuffItemCover
+        item={item}
+        tags={tags}
+        size="list"
+        selected={selected}
+      />
+      <div className="min-w-0 flex-1">
+        <ScrollingText
+          text={item.title}
+          align="left"
+          fadeEdges
+          isPlaying={isHovered}
+          resetOnPause
+          scrollStartDelaySec={STUFF_TITLE_SCROLL_START_DELAY_SEC}
+          className="w-full min-w-0 font-apple-garamond text-lg leading-tight"
+        />
+        <div className="truncate text-xs opacity-75">{subtitle}</div>
+      </div>
+    </button>
+  );
 }
 
 const ITEM_WIDTH = STUFF_SHELF_ITEM_WIDTH;
@@ -248,35 +301,19 @@ export function StuffShelfView({
               style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
             >
               {items.map((item) => (
-                <button
+                <StuffShelfListRow
                   key={item.id}
-                  type="button"
-                  className="flex w-full items-center gap-3 rounded-md bg-black/20 px-3 py-2 text-left text-[#f5e6d0] hover:bg-black/30"
-                  onClick={() =>
+                  item={item}
+                  tags={tags}
+                  selected={selectedItemId === item.id}
+                  onSelect={() =>
                     onSelectItem(selectedItemId === item.id ? null : item.id)
                   }
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setContextMenu({ item, x: e.clientX, y: e.clientY });
                   }}
-                >
-                  <StuffItemCover
-                    item={item}
-                    tags={tags}
-                    size="list"
-                    selected={selectedItemId === item.id}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-apple-garamond text-lg">
-                      {item.title}
-                    </div>
-                    <div className="truncate text-xs opacity-75">
-                      {[item.brand, item.status.replace(/_/g, " "), item.barcode]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </div>
-                  </div>
-                </button>
+                />
               ))}
             </div>
           </LayoutGroup>

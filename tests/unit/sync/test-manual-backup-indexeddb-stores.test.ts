@@ -15,7 +15,7 @@ import {
 
 describe("manual IndexedDB backup manifest", () => {
   test("includes user data and persisted Zustand slices", () => {
-    expect(MANUAL_BACKUP_VERSION).toBe(6);
+    expect(MANUAL_BACKUP_VERSION).toBe(7);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.DOCUMENTS);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.IMAGES);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.BOOKS);
@@ -23,6 +23,7 @@ describe("manual IndexedDB backup manifest", () => {
       STORES.BOOK_THUMBNAILS
     );
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.APPLETS);
+    expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.STUFF_IMAGES);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(STORES.PERSISTED_STATE);
     expect(MANUAL_BACKUP_INDEXEDDB_STORES).toContain(
       STORES.SOUNDBOARD_AUDIO

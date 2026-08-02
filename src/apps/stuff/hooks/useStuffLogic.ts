@@ -8,6 +8,7 @@ import {
   getFilteredStuffItems,
   useStuffStore,
 } from "@/stores/useStuffStore";
+import { openNativeFile, saveBlobToDevice } from "@/utils/nativeFileDialogs";
 import { helpItems } from "../metadata";
 import type { StuffInitialData, StuffItemDraft } from "../types";
 import type { ProductLookupResult } from "../utils/barcodeLookup";
@@ -80,6 +81,8 @@ export function useStuffLogic({
   const addTag = useStuffStore((s) => s.addTag);
   const deleteTag = useStuffStore((s) => s.deleteTag);
   const setLastShareId = useStuffStore((s) => s.setLastShareId);
+  const exportShelf = useStuffStore((s) => s.exportShelf);
+  const importShelf = useStuffStore((s) => s.importShelf);
 
   const {
     isHelpDialogOpen,
@@ -165,6 +168,102 @@ export function useStuffLogic({
           ? tags.filter((tag) => tag.id === selectedTagId)
           : tags;
     void printStuffLabels(selected.map(tagToLabelTarget));
+  };
+
+  const applyImportedShelfJson = (json: string) => {
+    const result = importShelf(json);
+    if (result.addedItems === 0 && result.addedTags === 0) {
+      toast.message(
+        t("apps.stuff.toasts.importEmpty", {
+          defaultValue: "No new items or tags found in that file",
+        })
+      );
+      return;
+    }
+    toast.success(
+      t("apps.stuff.toasts.importSuccess", {
+        defaultValue:
+          "Imported {{items}} items and {{tags}} tags ({{skipped}} skipped)",
+        items: result.addedItems,
+        tags: result.addedTags,
+        skipped: result.skippedItems + result.skippedTags,
+      })
+    );
+  };
+
+  const handleExportShelf = async () => {
+    try {
+      const json = await exportShelf();
+      const blob = new Blob([json], { type: "application/json" });
+      await saveBlobToDevice(
+        blob,
+        `stuff-shelf-${new Date().toISOString().slice(0, 10)}.json`,
+        { filters: [{ name: "JSON", extensions: ["json"] }] }
+      );
+      toast.success(
+        t("apps.stuff.toasts.exportSuccess", {
+          defaultValue: "Shelf exported",
+        })
+      );
+    } catch (error) {
+      console.error("Failed to export Stuff shelf:", error);
+      toast.error(
+        t("apps.stuff.toasts.exportFailed", {
+          defaultValue: "Couldn't export shelf",
+        })
+      );
+    }
+  };
+
+  const handleImportShelf = async () => {
+    const failImport = (error: unknown) => {
+      console.error("Failed to import Stuff shelf:", error);
+      toast.error(
+        t("apps.stuff.toasts.importFailed", {
+          defaultValue: "Couldn't import shelf — file may be invalid",
+        })
+      );
+    };
+
+    try {
+      const file = await openNativeFile({
+        title: t("apps.stuff.menu.importShelf", {
+          defaultValue: "Import Shelf…",
+        }),
+        filters: [{ name: "JSON", extensions: ["json"] }],
+        mimeType: "application/json",
+      });
+      if (file) {
+        try {
+          applyImportedShelfJson(await file.text());
+        } catch (error) {
+          failImport(error);
+        }
+        return;
+      }
+    } catch (error) {
+      console.error("Native Stuff shelf import failed:", error);
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const json = event.target?.result;
+          if (typeof json !== "string") throw new Error("empty file");
+          applyImportedShelfJson(json);
+        } catch (error) {
+          failImport(error);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   };
 
   const toastForEnriched = (
@@ -523,6 +622,8 @@ export function useStuffLogic({
     handlePrintSelected,
     handlePrintItemLabels,
     handlePrintTagLabels,
+    handleExportShelf,
+    handleImportShelf,
     handleScan,
     handleLookupSelected,
     handleLookupFromFields,

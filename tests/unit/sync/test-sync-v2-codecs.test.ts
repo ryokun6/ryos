@@ -13,10 +13,12 @@ import { useVideoStore } from "../../../src/stores/useVideoStore";
 import { useTvStore } from "../../../src/stores/useTvStore";
 import { useIpodStore } from "../../../src/stores/useIpodStore";
 import { useMapsStore } from "../../../src/stores/useMapsStore";
+import { useStuffStore } from "../../../src/stores/useStuffStore";
 import {
   DEFAULT_BOOKS_SETTINGS,
   useBooksStore,
 } from "../../../src/stores/useBooksStore";
+import { stripImageDataUrlForSync } from "../../../src/apps/stuff/utils/stuffCoverBlobs";
 import { useAudioSettingsStore } from "../../../src/stores/useAudioSettingsStore";
 import { useAssistantStore } from "../../../src/stores/useAssistantStore";
 import { DEFAULT_ASSISTANT_CHARACTER_ID } from "../../../src/components/assistant/characters";
@@ -291,6 +293,145 @@ describe("maps codec", () => {
     const state = useMapsStore.getState();
     expect(state.home).toMatchObject({ name: "Home" });
     expect(state.favorites.map((favorite) => favorite.id)).toEqual(["f1"]);
+  });
+});
+
+describe("stuff codec", () => {
+  beforeEach(() => {
+    useStuffStore.setState({ items: [], tags: [] } as never);
+    useCloudSyncStore.setState({
+      deletionMarkers: {
+        ...useCloudSyncStore.getState().deletionMarkers,
+        stuffItemIds: {},
+        stuffTagIds: {},
+        stuffCoverKeys: {},
+      },
+    });
+  });
+
+  test("collect emits per-item and per-tag keys without imageDataUrl", () => {
+    useStuffStore.setState({
+      items: [
+        {
+          id: "i1",
+          title: "Lamp",
+          notes: "",
+          imageDataUrl: "data:image/png;base64,AAAA",
+          coverBlobId: "i1",
+          tagIds: ["t1"],
+          status: "stowed",
+          prices: { currency: "USD" },
+          quantity: 1,
+          createdAt: 1,
+          updatedAt: 2,
+        },
+      ],
+      tags: [{ id: "t1", name: "Kitchen", color: "#c45c26", createdAt: 1 }],
+    } as never);
+
+    const docs = SYNC_CODECS.stuff.collect(ctx) as Map<string, unknown>;
+    expect([...docs.keys()].sort()).toEqual([
+      "stuff/item:i1",
+      "stuff/tag:t1",
+    ]);
+    const itemDoc = docs.get("stuff/item:i1") as Record<string, unknown>;
+    expect(itemDoc.coverBlobId).toBe("i1");
+    expect(itemDoc.imageDataUrl).toBeUndefined();
+    expect(itemDoc.title).toBe("Lamp");
+  });
+
+  test("apply upserts/deletes items and strips deleted tags from items", async () => {
+    useStuffStore.setState({
+      items: [
+        {
+          id: "i1",
+          title: "Old",
+          notes: "",
+          tagIds: ["t1", "t2"],
+          status: "stowed",
+          prices: { currency: "USD" },
+          quantity: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+      tags: [
+        { id: "t1", name: "Kitchen", color: "#c45c26", createdAt: 1 },
+        { id: "t2", name: "Other", color: "#e67700", createdAt: 2 },
+      ],
+    } as never);
+
+    await SYNC_CODECS.stuff.apply(
+      [
+        { k: "stuff/item:i1", del: true, t },
+        {
+          k: "stuff/item:i2",
+          v: {
+            id: "i2",
+            title: "Chair",
+            notes: "",
+            tagIds: ["t1"],
+            status: "in_use",
+            prices: { currency: "USD" },
+            quantity: 1,
+            createdAt: 3,
+            updatedAt: 3,
+          },
+          t,
+        },
+        { k: "stuff/tag:t1", del: true, t },
+        {
+          k: "stuff/tag:t3",
+          v: { id: "t3", name: "Furniture", color: "#0b7285", createdAt: 4 },
+          t,
+        },
+      ],
+      ctx
+    );
+
+    const state = useStuffStore.getState();
+    expect(state.items.map((item) => item.id)).toEqual(["i2"]);
+    expect(state.items[0]?.tagIds).toEqual([]); // t1 stripped by remote tag delete
+    expect(state.tags.map((tag) => tag.id).sort()).toEqual(["t2", "t3"]);
+  });
+
+  test("stripImageDataUrlForSync removes oversized inline covers", () => {
+    const stripped = stripImageDataUrlForSync({
+      id: "i1",
+      title: "Lamp",
+      imageDataUrl: "data:image/png;base64,AAAA",
+      coverBlobId: "i1",
+    });
+    expect(stripped.imageDataUrl).toBeUndefined();
+    expect(stripped.coverBlobId).toBe("i1");
+  });
+
+  test("deleteItem and deleteTag record tombstones", () => {
+    useStuffStore.setState({
+      items: [
+        {
+          id: "i1",
+          title: "Lamp",
+          notes: "",
+          coverBlobId: "i1",
+          tagIds: ["t1"],
+          status: "stowed",
+          prices: { currency: "USD" },
+          quantity: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+      tags: [{ id: "t1", name: "Kitchen", color: "#c45c26", createdAt: 1 }],
+    } as never);
+
+    useStuffStore.getState().deleteTag("t1");
+    useStuffStore.getState().deleteItem("i1");
+
+    const markers = useCloudSyncStore.getState().deletionMarkers;
+    expect(markers.stuffTagIds.t1).toBeDefined();
+    expect(markers.stuffItemIds.i1).toBeDefined();
+    expect(markers.stuffCoverKeys.i1).toBeDefined();
   });
 });
 
@@ -869,6 +1010,9 @@ describe("cloud sync store", () => {
     });
     expect(merged.mapsFavoriteIds).toEqual({});
     expect(merged.tvCustomChannelIds).toEqual({});
+    expect(merged.stuffItemIds).toEqual({});
+    expect(merged.stuffTagIds).toEqual({});
+    expect(merged.stuffCoverKeys).toEqual({});
   });
 
   test("category toggles round-trip through setCategoryEnabled", () => {
@@ -1093,6 +1237,7 @@ describe("cloud sync engine resilience", () => {
       syncContacts: false,
       syncMaps: false,
       syncBooks: false,
+      syncStuff: false,
     });
 
     const originalFetch = globalThis.fetch;

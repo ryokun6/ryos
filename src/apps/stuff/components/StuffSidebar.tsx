@@ -19,6 +19,7 @@ import {
   type StuffTag,
   stuffStatusLabelDefault,
 } from "../types";
+import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
 
 interface StuffSidebarProps {
   tags: StuffTag[];
@@ -153,7 +154,9 @@ export function StuffSidebar({
                     style={{ backgroundColor: tag.color }}
                   />
                 </span>
-                <span className="min-w-0 flex-1 truncate">{tag.name}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  {stuffTagDisplayName(tag, t)}
+                </span>
                 <span className={cn(sidebarCountClass, "group-hover:hidden")}>
                   {itemCountsByTag[tag.id] ?? 0}
                 </span>

@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { LinkSimple, MagnifyingGlass, Trash } from "@phosphor-icons/react";
+import {
+  LinkSimple,
+  MagnifyingGlass,
+  Printer,
+  QrCode,
+  Trash,
+} from "@phosphor-icons/react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,7 +22,6 @@ import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   STUFF_STATUSES,
-  stuffItemCoverSrc,
   stuffStatusLabelDefault,
   type StuffItem,
   type StuffTag,
@@ -24,7 +29,15 @@ import {
 import { formatMoney, parseOptionalNumber } from "../utils/colors";
 import { encodeStuffId } from "../utils/printLabels";
 import { StuffItemCover } from "./StuffItemCover";
-import { readImageFileAsDataUrl } from "../utils/barcodeLookup";
+import { STUFF_IMAGE_MAX_BYTES } from "../utils/barcodeLookup";
+import {
+  getStuffCoverDimensions,
+  STUFF_PRODUCT_DETAIL,
+} from "../utils/stuffCoverSizes";
+import { putStuffCoverBlob } from "../utils/stuffCoverBlobs";
+import { useStuffItemCoverSrc } from "../hooks/useStuffItemCoverSrc";
+import { resolveStuffItemVisualKind } from "../utils/stuffItemVisualKind";
+import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
 
 interface StuffDetailPanelProps {
   item: StuffItem;
@@ -130,9 +143,27 @@ export function StuffDetailPanel({
   const [imageUrl, setImageUrl] = useState("");
   const [isImageUrlDialogOpen, setIsImageUrlDialogOpen] = useState(false);
   const [isImageBusy, setIsImageBusy] = useState(false);
+  const [showBarcodePreview, setShowBarcodePreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverSrc = useStuffItemCoverSrc(item);
+  const hasCover = Boolean(coverSrc);
+  const coverDims = getStuffCoverDimensions(
+    resolveStuffItemVisualKind(item, tags),
+    "detail"
+  );
+  // QR always matches product/square detail size (112×112), not book portrait.
+  const barcodeQrSize = STUFF_PRODUCT_DETAIL.width;
 
-  const ryosPayload = encodeStuffId("item", item.id);
+  const ryosPayload = item.id ? encodeStuffId("item", item.id) : "";
+  const canShowBarcodePreview = Boolean(ryosPayload);
+  const showingBarcodePreview = showBarcodePreview && canShowBarcodePreview;
+  // When toggling QR on books, keep the tall reserved area and center a square QR.
+  const previewSlotDims = showingBarcodePreview
+    ? {
+        width: Math.max(coverDims.width, STUFF_PRODUCT_DETAIL.width),
+        height: Math.max(coverDims.height, STUFF_PRODUCT_DETAIL.height),
+      }
+    : coverDims;
 
   useEffect(() => {
     setTitle(item.title);
@@ -151,7 +182,12 @@ export function StuffDetailPanel({
     item.prices.currency,
     item.imageDataUrl,
     item.imageUrl,
+    item.coverBlobId,
   ]);
+
+  useEffect(() => {
+    setShowBarcodePreview(false);
+  }, [item.id]);
 
   const commitTitle = () => {
     const next = title.trim();
@@ -190,13 +226,20 @@ export function StuffDetailPanel({
   };
 
   const lookupLabel = t("apps.stuff.detail.lookup", { defaultValue: "Look Up" });
-  const lookupButtonClass = cn(
-    "size-7 shrink-0 self-center !p-0 min-w-0",
+  const printLabel = t("apps.stuff.detail.print", { defaultValue: "Print" });
+  const qrCodeLabel = t("apps.stuff.detail.qrCode", { defaultValue: "QR Code" });
+  const deleteLabel = t("apps.stuff.detail.delete", { defaultValue: "Delete" });
+  const headerActionButtonClass = cn(
+    "size-7 shrink-0 !p-0 min-w-0",
     isWindowsTheme && "text-black"
+  );
+  const deleteActionButtonClass = cn(
+    headerActionButtonClass,
+    "hover:text-red-600 active:text-red-700"
   );
 
   const titleInputClass = cn(
-    "w-full border-0 bg-transparent p-0 outline-none focus:ring-0",
+    "w-full border-0 bg-transparent p-0 text-center outline-none focus:ring-0",
     "font-bold tracking-tight text-[#222]",
     isMacOSTheme && "font-geneva-12 text-lg leading-snug min-h-[1.35rem]",
     isSystem7Theme && !isMacOSTheme && "font-geneva-12 text-[16px] leading-snug",
@@ -204,7 +247,7 @@ export function StuffDetailPanel({
   );
 
   const headerMetaInputClass = cn(
-    "mt-0.5 w-full border-0 bg-transparent p-0 text-[11px] text-black/45 outline-none placeholder:text-black/35 focus:ring-0",
+    "mt-0.5 w-full border-0 bg-transparent p-0 text-center text-[11px] text-black/45 outline-none placeholder:text-black/35 focus:ring-0",
     useGeneva && "font-geneva-12"
   );
 
@@ -229,8 +272,7 @@ export function StuffDetailPanel({
 
     setIsImageBusy(true);
     try {
-      const imageDataUrl = await readImageFileAsDataUrl(file);
-      if (!imageDataUrl) {
+      if (!file.type.startsWith("image/") || file.size > STUFF_IMAGE_MAX_BYTES) {
         toast.error(
           t("apps.stuff.detail.imageInvalid", {
             defaultValue: "Could not use that image (must be under 1.5 MB).",
@@ -238,7 +280,14 @@ export function StuffDetailPanel({
         );
         return;
       }
-      onChange({ imageDataUrl, imageUrl: "" });
+      await putStuffCoverBlob(item.id, file);
+      onChange({ coverBlobId: item.id, imageDataUrl: "", imageUrl: "" });
+    } catch {
+      toast.error(
+        t("apps.stuff.detail.imageInvalid", {
+          defaultValue: "Could not use that image (must be under 1.5 MB).",
+        })
+      );
     } finally {
       setIsImageBusy(false);
     }
@@ -248,16 +297,14 @@ export function StuffDetailPanel({
     const url = rawUrl.trim();
     if (!url) return;
     // Hotlink for display — same path as lookup picker thumbnails / covers.
-    onChange({ imageUrl: url, imageDataUrl: "" });
+    onChange({ imageUrl: url, imageDataUrl: "", coverBlobId: "" });
     setImageUrl("");
     setIsImageUrlDialogOpen(false);
   };
 
   const handleRemoveImage = () => {
-    onChange({ imageDataUrl: "", imageUrl: "" });
+    onChange({ imageDataUrl: "", imageUrl: "", coverBlobId: "" });
   };
-
-  const hasCover = Boolean(stuffItemCoverSrc(item));
 
   const chooseImageLabel = t("apps.stuff.detail.chooseImage", {
     defaultValue: "Choose Image…",
@@ -270,7 +317,7 @@ export function StuffDetailPanel({
   });
 
   const overlayButtonClass = cn(
-    "h-auto px-2.5 py-1 text-[10px] shadow-sm",
+    "h-auto px-2.5 py-1 text-xs shadow-sm",
     useGeneva && "font-geneva-12",
     isWindowsTheme && "text-black"
   );
@@ -288,12 +335,6 @@ export function StuffDetailPanel({
     isWindowsTheme && "text-black"
   );
 
-  const actionButtonClass = cn(
-    "w-full min-w-0 justify-center px-3 py-2 h-auto text-[12px] leading-normal",
-    useGeneva && "font-geneva-12",
-    isWindowsTheme && "text-black"
-  );
-
   const panelShell = cn(
     "flex w-full min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden",
     "bg-white pb-2 pl-2.5 pr-2.5 pt-2",
@@ -308,68 +349,98 @@ export function StuffDetailPanel({
           isMacOSTheme && "border-black/15"
         )}
       >
-        <div
-          className="group/thumb relative mx-auto mb-2 w-fit rounded-[10px] outline-none focus-within:ring-2 focus-within:ring-os-accent/40 focus-within:ring-offset-1"
-          tabIndex={0}
-        >
-          <StuffItemCover item={item} tags={tags} size="detail" preview />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleChooseImage}
-          />
+        <div className="relative mx-auto mb-1 flex w-full items-center justify-center py-4">
           <div
             className={cn(
-              "absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-[10px]",
-              "bg-black/50 opacity-0 transition-opacity duration-150",
-              "group-hover/thumb:opacity-100 group-focus-within/thumb:opacity-100",
-              imageControlsDisabled && "pointer-events-none opacity-40"
+              "relative flex shrink-0 items-center justify-center outline-none",
+              !showingBarcodePreview &&
+                "group/thumb rounded-[10px] focus-within:ring-2 focus-within:ring-os-accent/40 focus-within:ring-offset-1"
             )}
+            style={{
+              width: previewSlotDims.width,
+              height: previewSlotDims.height,
+            }}
+            tabIndex={showingBarcodePreview ? undefined : 0}
           >
-            <Button
-              type="button"
-              variant={isMacOSTheme ? "aqua" : "retro"}
-              size="sm"
-              className={overlayButtonClass}
-              disabled={imageControlsDisabled}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {chooseImageLabel}
-            </Button>
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                variant={isMacOSTheme ? "secondary" : "retro"}
-                size="sm"
-                className={overlayIconButtonClass}
-                disabled={imageControlsDisabled}
-                onClick={() => setIsImageUrlDialogOpen(true)}
-                aria-label={pasteImageUrlLabel}
-                title={pasteImageUrlLabel}
+            {showingBarcodePreview ? (
+              <div
+                className="flex items-center justify-center rounded-[10px] bg-white"
+                style={{
+                  width: STUFF_PRODUCT_DETAIL.width,
+                  height: STUFF_PRODUCT_DETAIL.height,
+                }}
+                aria-label={qrCodeLabel}
               >
-                <LinkSimple size={14} weight="bold" />
-              </Button>
-              {hasCover ? (
+                <QRCodeSVG
+                  value={ryosPayload}
+                  size={barcodeQrSize}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+            ) : (
+              <StuffItemCover item={item} tags={tags} size="detail" preview />
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleChooseImage}
+            />
+            {!showingBarcodePreview ? (
+              <div
+                className={cn(
+                  "absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-[10px]",
+                  "bg-black/50 opacity-0 transition-opacity duration-150",
+                  "group-hover/thumb:opacity-100 group-focus-within/thumb:opacity-100",
+                  imageControlsDisabled && "pointer-events-none opacity-40"
+                )}
+              >
                 <Button
                   type="button"
-                  variant={isMacOSTheme ? "secondary" : "retro"}
+                  variant={isMacOSTheme ? "aqua" : "retro"}
                   size="sm"
-                  className={overlayIconButtonClass}
+                  className={overlayButtonClass}
                   disabled={imageControlsDisabled}
-                  onClick={handleRemoveImage}
-                  aria-label={removeImageLabel}
-                  title={removeImageLabel}
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  <Trash size={14} weight="bold" />
+                  {chooseImageLabel}
                 </Button>
-              ) : null}
-            </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant={isMacOSTheme ? "secondary" : "retro"}
+                    size="sm"
+                    className={overlayIconButtonClass}
+                    disabled={imageControlsDisabled}
+                    onClick={() => setIsImageUrlDialogOpen(true)}
+                    aria-label={pasteImageUrlLabel}
+                    title={pasteImageUrlLabel}
+                  >
+                    <LinkSimple size={14} weight="bold" />
+                  </Button>
+                  {hasCover ? (
+                    <Button
+                      type="button"
+                      variant={isMacOSTheme ? "secondary" : "retro"}
+                      size="sm"
+                      className={overlayIconButtonClass}
+                      disabled={imageControlsDisabled}
+                      onClick={handleRemoveImage}
+                      aria-label={removeImageLabel}
+                      title={removeImageLabel}
+                    >
+                      <Trash size={14} weight="bold" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-        <div className="flex items-stretch gap-2">
-          <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex w-full min-w-0 flex-col items-center">
             <input
               type="text"
               value={title}
@@ -412,20 +483,60 @@ export function StuffDetailPanel({
               })}
             />
           </div>
-          {onLookup ? (
+          <div className="flex items-center justify-center gap-1.5">
+            {onLookup ? (
+              <Button
+                type="button"
+                variant={isMacOSTheme ? "aqua" : "retro"}
+                size="sm"
+                className={headerActionButtonClass}
+                disabled={isLookingUp}
+                onClick={handleLookupClick}
+                aria-label={lookupLabel}
+                title={lookupLabel}
+              >
+                <MagnifyingGlass size={14} weight="bold" />
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant={isMacOSTheme ? "aqua" : "retro"}
               size="sm"
-              className={lookupButtonClass}
-              disabled={isLookingUp}
-              onClick={handleLookupClick}
-              aria-label={lookupLabel}
-              title={lookupLabel}
+              className={headerActionButtonClass}
+              onClick={onPrint}
+              aria-label={printLabel}
+              title={printLabel}
             >
-              <MagnifyingGlass size={14} weight="bold" />
+              <Printer size={14} weight="bold" />
             </Button>
-          ) : null}
+            <Button
+              type="button"
+              variant={isMacOSTheme ? "aqua" : "retro"}
+              size="sm"
+              className={cn(
+                headerActionButtonClass,
+                showBarcodePreview && "ring-1 ring-os-accent/50"
+              )}
+              disabled={!canShowBarcodePreview}
+              aria-pressed={showBarcodePreview}
+              onClick={() => setShowBarcodePreview((prev) => !prev)}
+              aria-label={qrCodeLabel}
+              title={qrCodeLabel}
+            >
+              <QrCode size={14} weight="bold" />
+            </Button>
+            <Button
+              type="button"
+              variant={isMacOSTheme ? "aqua" : "retro"}
+              size="sm"
+              className={deleteActionButtonClass}
+              onClick={onDelete}
+              aria-label={deleteLabel}
+              title={deleteLabel}
+            >
+              <Trash size={14} weight="bold" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -491,7 +602,7 @@ export function StuffDetailPanel({
                   style={tagPillStyle(tag.color, active, isDarkMode)}
                   onClick={() => toggleTag(tag.id)}
                 >
-                  {tag.name}
+                  {stuffTagDisplayName(tag, t)}
                 </button>
               );
             })}
@@ -591,25 +702,6 @@ export function StuffDetailPanel({
         )}
 
         <FieldRow
-          label={t("apps.stuff.fields.ryosLabel", { defaultValue: "ryOS Label" })}
-          useGeneva={useGeneva}
-        >
-          <div className="flex flex-col items-start gap-1.5 pb-0.5">
-            <div className="rounded-sm bg-white p-1.5">
-              <QRCodeSVG
-                value={ryosPayload}
-                size={96}
-                level="M"
-                includeMargin={false}
-              />
-            </div>
-            <p className="break-all font-mono text-[9px] leading-snug opacity-50">
-              {ryosPayload}
-            </p>
-          </div>
-        </FieldRow>
-
-        <FieldRow
           label={t("apps.stuff.fields.notes", { defaultValue: "Notes" })}
           useGeneva={useGeneva}
         >
@@ -621,30 +713,6 @@ export function StuffDetailPanel({
             onKeyDown={(e) => e.stopPropagation()}
           />
         </FieldRow>
-
-        <div className="mt-1 flex shrink-0 flex-col gap-2">
-          <Button
-            type="button"
-            variant={isMacOSTheme ? "aqua" : "retro"}
-            size="sm"
-            className={actionButtonClass}
-            onClick={onPrint}
-          >
-            {t("apps.stuff.detail.print", { defaultValue: "Print" })}
-          </Button>
-          <Button
-            type="button"
-            variant={isMacOSTheme ? "destructive" : "retro"}
-            size="sm"
-            className={cn(
-              actionButtonClass,
-              !isMacOSTheme && "text-red-600 hover:text-red-700"
-            )}
-            onClick={onDelete}
-          >
-            {t("apps.stuff.detail.delete", { defaultValue: "Delete" })}
-          </Button>
-        </div>
 
         {/* Scroll end spacer — padding-bottom alone is clipped on Mobile Safari */}
         <div className="h-4 shrink-0" aria-hidden />

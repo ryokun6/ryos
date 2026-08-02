@@ -63,10 +63,17 @@ export function StuffAppComponent({
       onShare={() => logic.setIsShareDialogOpen(true)}
       onPrintItemLabels={logic.handlePrintItemLabels}
       onPrintTagLabels={() => logic.handlePrintTagLabels()}
+      onExportShelf={() => void logic.handleExportShelf()}
+      onImportShelf={() => void logic.handleImportShelf()}
       canPrintItems={logic.items.length > 0}
       canPrintTags={logic.tags.length > 0}
+      canExportShelf={logic.items.length > 0 || logic.tags.length > 0}
       isSharedView={Boolean(viewingShareId)}
       onBackFromShare={() => logic.setActiveShareId(null)}
+      shelfView={logic.shelfView}
+      onSetShelfView={logic.setShelfView}
+      isSidebarVisible={logic.isSidebarVisible}
+      onToggleSidebar={logic.toggleSidebarVisibility}
     />
   );
 

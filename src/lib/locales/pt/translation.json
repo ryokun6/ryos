@@ -1784,6 +1784,7 @@
         "settings": "Ajustes",
         "songs": "Músicas",
         "stickies": "Anotações",
+        "stuff": "Stuff",
         "title": "Sincronização na nuvem",
         "tvChannels": "Canais de TV",
         "uploading": "Enviando",
@@ -4040,11 +4041,46 @@
         "edit": "Editar",
         "printLabel": "Imprimir etiqueta"
       },
+      "defaultTags": {
+        "books": "Livros",
+        "cd": "CD",
+        "clothing": "Roupas",
+        "electronics": "Eletrônicos",
+        "furniture": "Móveis",
+        "kitchen": "Cozinha",
+        "other": "Outros"
+      },
       "description": "Catalogue as suas coisas numa prateleira de madeira",
       "detail": {
+        "applyImageUrl": "Aplicar",
+        "chooseImage": "Escolher Imagem…",
         "delete": "Apagar",
+        "imageFetchFailed": "Não foi possível obter essa URL de imagem.",
+        "imageInvalid": "Não foi possível usar essa imagem (deve ter menos de 1,5 MB).",
+        "imageUrlDialogDescription": "Cole uma URL de imagem para usar como capa.",
+        "imageUrlDialogTitle": "URL da Imagem",
+        "imageUrlPlaceholder": "URL da Imagem…",
+        "lookup": "Consultar",
+        "pasteImageUrl": "Colar URL…",
         "print": "Imprimir",
+        "qrCode": "Código QR",
+        "removeImage": "Remover",
         "title": "Detalhes"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "Digite um nome para a nova etiqueta.",
+          "title": "Nova Etiqueta"
+        },
+        "productLookup": {
+          "applying": "Aplicando…",
+          "description": "Selecione uma correspondência para \"{{query}}\"",
+          "error": "Falha na busca do produto",
+          "noResults": "Nenhum produto encontrado",
+          "selectResult": "Selecione um resultado:",
+          "title": "Escolher Produto",
+          "useSelected": "Usar Selecionado"
+        }
       },
       "empty": {
         "description": "Adicione um item ou digitalize um código de barras para começar a encher as prateleiras.",
@@ -4062,6 +4098,7 @@
         "soldPrice": "Vendido",
         "status": "Estado",
         "tags": "Tags",
+        "thumbnail": "Miniatura",
         "title": "Título"
       },
       "help": {
@@ -4093,12 +4130,17 @@
       "menu": {
         "about": "Acerca do Stuff",
         "backToShelf": "Voltar à minha prateleira",
+        "exportShelf": "Exportar prateleira…",
+        "gridView": "Visualização em Grade",
         "help": "Ajuda do Stuff",
+        "importShelf": "Importar prateleira…",
+        "listView": "Visualização em Lista",
         "newItem": "Novo item",
         "printItemLabels": "Imprimir etiquetas de itens…",
         "printTagLabels": "Imprimir etiquetas de tags…",
         "scanBarcode": "Digitalizar código de barras…",
-        "share": "Partilhar prateleira…"
+        "share": "Partilhar prateleira…",
+        "showSidebar": "Mostrar Barra Lateral"
       },
       "name": "Stuff",
       "newItemTitle": "Novo item",
@@ -4107,15 +4149,24 @@
         "add": "Adicionar",
         "addedWithoutMeta": "Código guardado — sem informação do produto",
         "cameraError": "Não foi possível aceder à câmara. Introduza um código de barras manualmente abaixo.",
+        "coverFetchFailed": "Produto Encontrado — Não Foi Possível Baixar a Capa",
         "description": "Aponte a câmara para um código de barras (UPC, EAN, Code 128, QR e mais).",
         "found": "Produto adicionado",
+        "foundNoCover": "Produto Adicionado — Nenhuma Capa Encontrada",
+        "foundWithCover": "Produto Adicionado Com Capa",
         "lookingUp": "A procurar produto…",
+        "lookupFailed": "Falha na Busca do Produto",
         "manualPlaceholder": "Ou escreva um código de barras…",
+        "noLookupQuery": "Digite um título, marca ou código de barras para consultar.",
+        "notFoundExisting": "Nenhuma Informação do Produto Encontrada",
         "openedItem": "Aberto {{title}}",
         "openedTag": "Filtrado para {{name}}",
         "title": "Digitalizar código de barras",
         "unknownItem": "Nenhum item encontrado para essa etiqueta ryOS.",
-        "unknownTag": "Nenhuma tag encontrada para essa etiqueta ryOS."
+        "unknownTag": "Nenhuma tag encontrada para essa etiqueta ryOS.",
+        "updated": "Detalhes do Produto Atualizados",
+        "updatedNoCover": "Detalhes do Produto Atualizados — Nenhuma Capa Encontrada",
+        "updatedWithCover": "Detalhes do Produto e Capa Atualizados"
       },
       "searchPlaceholder": "Pesquisar coisas…",
       "share": {
@@ -4147,6 +4198,10 @@
         "topOffer": "Melhor oferta {{amount}}",
         "yourOffer": "A sua oferta"
       },
+      "shelf": {
+        "gridView": "Visualização em Grade",
+        "listView": "Visualização em Lista"
+      },
       "sidebar": {
         "allStuff": "Todas as coisas",
         "deleteTag": "Apagar tag",
@@ -4165,6 +4220,13 @@
         "stowed": "Guardado"
       },
       "title": "Stuff",
+      "toasts": {
+        "exportFailed": "Não foi possível exportar a prateleira",
+        "exportSuccess": "Prateleira exportada",
+        "importEmpty": "Nenhum item ou tag novo encontrado nesse arquivo",
+        "importFailed": "Não foi possível importar a prateleira — o arquivo pode ser inválido",
+        "importSuccess": "Importados {{items}} itens e {{tags}} tags ({{skipped}} ignorados)"
+      },
       "toolbar": {
         "add": "Adicionar",
         "scan": "Digitalizar",
@@ -4927,7 +4989,7 @@
           "page": "Página",
           "shelf": "Prateleira",
           "song": "Música",
-          "stuff": "Prateleira"
+          "stuff": "Stuff"
         },
         "linkCopied": "Link copiado",
         "linkCopiedToClipboard": "Link de {{itemType}} copiado para a área de transferência",

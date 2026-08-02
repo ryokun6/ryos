@@ -5,6 +5,7 @@ import {
 } from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
+import type { StuffShelfView } from "../types";
 
 interface StuffMenuBarProps {
   onClose: () => void;
@@ -15,10 +16,17 @@ interface StuffMenuBarProps {
   onShare: () => void;
   onPrintItemLabels: () => void;
   onPrintTagLabels: () => void;
+  onExportShelf: () => void;
+  onImportShelf: () => void;
   canPrintItems: boolean;
   canPrintTags: boolean;
+  canExportShelf: boolean;
   isSharedView: boolean;
   onBackFromShare?: () => void;
+  shelfView: StuffShelfView;
+  onSetShelfView: (view: StuffShelfView) => void;
+  isSidebarVisible: boolean;
+  onToggleSidebar: () => void;
 }
 
 export function StuffMenuBar({
@@ -30,10 +38,17 @@ export function StuffMenuBar({
   onShare,
   onPrintItemLabels,
   onPrintTagLabels,
+  onExportShelf,
+  onImportShelf,
   canPrintItems,
   canPrintTags,
+  canExportShelf,
   isSharedView,
   onBackFromShare,
+  shelfView,
+  onSetShelfView,
+  isSidebarVisible,
+  onToggleSidebar,
 }: StuffMenuBarProps) {
   const { t } = useTranslation();
   const {
@@ -44,6 +59,15 @@ export function StuffMenuBar({
     appId,
     appName,
   } = useAppMenuBarChrome("stuff");
+
+  const viewCheckbox = (view: StuffShelfView, label: string) =>
+    ({
+      type: "checkbox",
+      label,
+      checked: shelfView === view,
+      onChange: () => onSetShelfView(view),
+      disabled: isSharedView,
+    }) as const;
 
   const menus: MenuDescriptor[] = [
     {
@@ -107,11 +131,50 @@ export function StuffMenuBar({
             { type: "separator" },
             {
               type: "action",
+              label: t("apps.stuff.menu.exportShelf", {
+                defaultValue: "Export Shelf…",
+              }),
+              onClick: onExportShelf,
+              disabled: !canExportShelf,
+            },
+            {
+              type: "action",
+              label: t("apps.stuff.menu.importShelf", {
+                defaultValue: "Import Shelf…",
+              }),
+              onClick: onImportShelf,
+            },
+            { type: "separator" },
+            {
+              type: "action",
               label: t("common.menu.close"),
               onClick: onClose,
               shortcutId: "close",
             },
           ],
+    },
+    {
+      label: t("common.menu.view"),
+      items: [
+        viewCheckbox(
+          "grid",
+          t("apps.stuff.menu.gridView", { defaultValue: "Grid View" })
+        ),
+        viewCheckbox(
+          "list",
+          t("apps.stuff.menu.listView", { defaultValue: "List View" })
+        ),
+        { type: "separator" },
+        {
+          type: "checkbox",
+          label: t("apps.stuff.menu.showSidebar", {
+            defaultValue: "Show Sidebar",
+          }),
+          checked: isSidebarVisible,
+          onChange: () => onToggleSidebar(),
+          disabled: isSharedView,
+        },
+      ],
     },
   ];
 

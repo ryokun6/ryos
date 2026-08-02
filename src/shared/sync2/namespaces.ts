@@ -30,6 +30,9 @@ export const SYNC_NAMESPACES = [
   "trash",
   "applets",
   "wallpapers",
+  // Stuff inventory metadata + cover image blobs (category: "stuff").
+  "stuff",
+  "stuff-images",
 ] as const;
 
 export type SyncNamespace = (typeof SYNC_NAMESPACES)[number];
@@ -41,6 +44,7 @@ export const SYNC_BLOB_NAMESPACES = [
   "trash",
   "applets",
   "wallpapers",
+  "stuff-images",
 ] as const;
 
 export type SyncBlobNamespace = (typeof SYNC_BLOB_NAMESPACES)[number];
@@ -57,6 +61,7 @@ export const SYNC_CATEGORIES = [
   "contacts",
   "maps",
   "books",
+  "stuff",
 ] as const;
 
 export type SyncCategory = (typeof SYNC_CATEGORIES)[number];
@@ -81,6 +86,8 @@ const NAMESPACE_TO_CATEGORY: Record<SyncNamespace, SyncCategory> = {
   trash: "files",
   applets: "files",
   wallpapers: "files",
+  stuff: "stuff",
+  "stuff-images": "stuff",
 };
 
 export function isSyncNamespace(value: unknown): value is SyncNamespace {

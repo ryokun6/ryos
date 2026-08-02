@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import type { StuffItem, StuffTag } from "../types";
-import { toSharedItem, generateStuffShareUrl } from "../utils/share";
+import { toSharedItemAsync, generateStuffShareUrl } from "../utils/share";
 
 interface StuffShareDialogProps {
   isOpen: boolean;
@@ -130,7 +130,9 @@ export function StuffShareDialog({
         body: JSON.stringify({
           title: title.trim() || "My Stuff",
           shareId: lastShareId ?? undefined,
-          items: shareableItems.map((item) => toSharedItem(item, tags)),
+          items: await Promise.all(
+            shareableItems.map((item) => toSharedItemAsync(item, tags))
+          ),
         }),
       });
 

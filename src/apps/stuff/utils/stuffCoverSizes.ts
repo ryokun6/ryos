@@ -12,11 +12,11 @@ export const STUFF_BOOK_LIST = { width: 36, height: 52 } as const;
 /** Square list thumbnail for non-book items. */
 export const STUFF_PRODUCT_LIST = { width: 40, height: 40 } as const;
 
-/** Detail drawer preview — portrait book. */
-export const STUFF_BOOK_DETAIL = { width: 132, height: 203 } as const;
+/** Detail drawer preview — portrait book (smaller than shelf so the header breathes). */
+export const STUFF_BOOK_DETAIL = { width: 100, height: 154 } as const;
 
 /** Detail drawer preview — square product. */
-export const STUFF_PRODUCT_DETAIL = { width: 132, height: 132 } as const;
+export const STUFF_PRODUCT_DETAIL = { width: 112, height: 112 } as const;
 
 /** Grid column math uses the widest cover slot (product square). */
 export const STUFF_SHELF_ITEM_WIDTH = STUFF_PRODUCT_GRID.width;

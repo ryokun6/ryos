@@ -1782,6 +1782,7 @@
         "settings": "设置",
         "songs": "歌曲",
         "stickies": "便笺",
+        "stuff": "Stuff",
         "title": "云端同步",
         "tvChannels": "电视频道",
         "uploading": "正在上传",
@@ -4037,11 +4038,46 @@
         "edit": "编辑",
         "printLabel": "打印标签"
       },
+      "defaultTags": {
+        "books": "书籍",
+        "cd": "CD",
+        "clothing": "服饰",
+        "electronics": "电子产品",
+        "furniture": "家具",
+        "kitchen": "厨房",
+        "other": "其他"
+      },
       "description": "在木质架子上分类整理您的物品",
       "detail": {
+        "applyImageUrl": "应用",
+        "chooseImage": "选择图像…",
         "delete": "删除",
+        "imageFetchFailed": "无法获取该图像 URL。",
+        "imageInvalid": "无法使用该图像（必须小于 1.5 MB）。",
+        "imageUrlDialogDescription": "粘贴图像 URL 以用作封面。",
+        "imageUrlDialogTitle": "图像 URL",
+        "imageUrlPlaceholder": "图像 URL…",
+        "lookup": "查询",
+        "pasteImageUrl": "粘贴 URL…",
         "print": "打印",
+        "qrCode": "二维码",
+        "removeImage": "移除",
         "title": "详细信息"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "输入新标签的名称。",
+          "title": "新建标签"
+        },
+        "productLookup": {
+          "applying": "正在应用…",
+          "description": "选择与“{{query}}”匹配的项目",
+          "error": "产品查询失败",
+          "noResults": "未找到产品",
+          "selectResult": "选择结果：",
+          "title": "选择产品",
+          "useSelected": "使用所选项目"
+        }
       },
       "empty": {
         "description": "添加项目或扫描条形码以开始填充架子。",
@@ -4059,6 +4095,7 @@
         "soldPrice": "成交价",
         "status": "状态",
         "tags": "标签",
+        "thumbnail": "缩略图",
         "title": "标题"
       },
       "help": {
@@ -4090,12 +4127,17 @@
       "menu": {
         "about": "关于 Stuff",
         "backToShelf": "返回我的架子",
+        "exportShelf": "导出货架…",
+        "gridView": "网格视图",
         "help": "Stuff 帮助",
+        "importShelf": "导入货架…",
+        "listView": "列表视图",
         "newItem": "新建物品",
         "printItemLabels": "打印物品标签…",
         "printTagLabels": "打印标签标签…",
         "scanBarcode": "扫描条形码…",
-        "share": "共享架子…"
+        "share": "共享架子…",
+        "showSidebar": "显示边栏"
       },
       "name": "Stuff",
       "newItemTitle": "新项目",
@@ -4104,15 +4146,24 @@
         "add": "添加",
         "addedWithoutMeta": "条形码已保存 — 未找到产品信息",
         "cameraError": "无法访问摄像头。在下方手动输入条形码。",
+        "coverFetchFailed": "已找到产品 — 无法下载封面",
         "description": "将摄像头对准条形码（UPC、EAN、Code 128、二维码等）。",
         "found": "产品已添加",
+        "foundNoCover": "已添加产品 — 未找到封面",
+        "foundWithCover": "已添加产品及封面",
         "lookingUp": "正在查询产品…",
+        "lookupFailed": "产品查询失败",
         "manualPlaceholder": "或输入条形码…",
+        "noLookupQuery": "输入标题、品牌或条形码进行查询。",
+        "notFoundExisting": "未找到产品信息",
         "openedItem": "已打开 {{title}}",
         "openedTag": "已过滤为 {{name}}",
         "title": "扫描条形码",
         "unknownItem": "未找到该 ryOS 标签对应的项目。",
-        "unknownTag": "未找到该 ryOS 标签对应的标签。"
+        "unknownTag": "未找到该 ryOS 标签对应的标签。",
+        "updated": "产品详情已更新",
+        "updatedNoCover": "产品详情已更新 — 未找到封面",
+        "updatedWithCover": "产品详情和封面已更新"
       },
       "searchPlaceholder": "搜索 Stuff…",
       "share": {
@@ -4144,6 +4195,10 @@
         "topOffer": "最高出价 {{amount}}",
         "yourOffer": "您的出价"
       },
+      "shelf": {
+        "gridView": "网格视图",
+        "listView": "列表视图"
+      },
       "sidebar": {
         "allStuff": "所有物品",
         "deleteTag": "删除标签",
@@ -4162,6 +4217,13 @@
         "stowed": "已收纳"
       },
       "title": "物品",
+      "toasts": {
+        "exportFailed": "无法导出货架",
+        "exportSuccess": "货架已导出",
+        "importEmpty": "该文件中未找到新的物品或标签",
+        "importFailed": "无法导入货架 — 文件可能无效",
+        "importSuccess": "已导入 {{items}} 件物品和 {{tags}} 个标签（跳过 {{skipped}} 个）"
+      },
       "toolbar": {
         "add": "添加",
         "scan": "扫描",
@@ -4923,7 +4985,7 @@
           "page": "页面",
           "shelf": "搁架",
           "song": "歌曲",
-          "stuff": "搁架"
+          "stuff": "Stuff"
         },
         "linkCopied": "已拷贝链接",
         "linkCopiedToClipboard": "{{itemType}}链接已拷贝到剪贴板",

@@ -1782,6 +1782,7 @@
         "settings": "설정",
         "songs": "노래",
         "stickies": "스티커",
+        "stuff": "Stuff",
         "title": "클라우드 동기화",
         "tvChannels": "TV 채널",
         "uploading": "업로드 중",
@@ -4037,11 +4038,46 @@
         "edit": "편집",
         "printLabel": "라벨 인쇄"
       },
+      "defaultTags": {
+        "books": "책",
+        "cd": "CD",
+        "clothing": "의류",
+        "electronics": "전자제품",
+        "furniture": "가구",
+        "kitchen": "주방",
+        "other": "기타"
+      },
       "description": "나무 선반에 물건을 정리하세요",
       "detail": {
+        "applyImageUrl": "적용",
+        "chooseImage": "이미지 선택…",
         "delete": "삭제",
+        "imageFetchFailed": "해당 이미지 URL을 가져올 수 없습니다.",
+        "imageInvalid": "해당 이미지를 사용할 수 없습니다(1.5MB 미만이어야 함).",
+        "imageUrlDialogDescription": "커버로 사용할 이미지 URL을 붙여넣으십시오.",
+        "imageUrlDialogTitle": "이미지 URL",
+        "imageUrlPlaceholder": "이미지 URL…",
+        "lookup": "찾아보기",
+        "pasteImageUrl": "URL 붙여넣기…",
         "print": "인쇄",
+        "qrCode": "QR 코드",
+        "removeImage": "제거",
         "title": "세부사항"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "새로운 태그의 이름을 입력하십시오.",
+          "title": "새로운 태그"
+        },
+        "productLookup": {
+          "applying": "적용 중…",
+          "description": "“{{query}}”와(과) 일치하는 항목을 선택하십시오.",
+          "error": "제품 찾기 실패",
+          "noResults": "검색된 제품 없음",
+          "selectResult": "결과 선택:",
+          "title": "제품 선택",
+          "useSelected": "선택 항목 사용"
+        }
       },
       "empty": {
         "description": "항목을 추가하거나 바코드를 스캔해 선반을 채워 보세요.",
@@ -4059,6 +4095,7 @@
         "soldPrice": "판매가",
         "status": "상태",
         "tags": "태그",
+        "thumbnail": "썸네일",
         "title": "제목"
       },
       "help": {
@@ -4090,12 +4127,17 @@
       "menu": {
         "about": "Stuff 정보",
         "backToShelf": "내 선반으로 돌아가기",
+        "exportShelf": "선반 내보내기…",
+        "gridView": "격자 보기",
         "help": "Stuff 도움말",
+        "importShelf": "선반 가져오기…",
+        "listView": "목록 보기",
         "newItem": "새 항목",
         "printItemLabels": "항목 라벨 인쇄…",
         "printTagLabels": "태그 라벨 인쇄…",
         "scanBarcode": "바코드 스캔…",
-        "share": "선반 공유…"
+        "share": "선반 공유…",
+        "showSidebar": "사이드바 보기"
       },
       "name": "Stuff",
       "newItemTitle": "새 항목",
@@ -4104,15 +4146,24 @@
         "add": "추가",
         "addedWithoutMeta": "바코드 저장됨 — 제품 정보 없음",
         "cameraError": "카메라에 접근할 수 없습니다. 아래에 바코드를 직접 입력하세요.",
+        "coverFetchFailed": "제품을 찾음 — 커버를 다운로드할 수 없음",
         "description": "카메라를 바코드에 맞추세요(UPC, EAN, Code 128, QR 등).",
         "found": "제품 추가됨",
+        "foundNoCover": "제품이 추가됨 — 커버를 찾을 수 없음",
+        "foundWithCover": "커버와 함께 제품이 추가됨",
         "lookingUp": "제품 검색 중…",
+        "lookupFailed": "제품 조회 실패",
         "manualPlaceholder": "또는 바코드 입력…",
+        "noLookupQuery": "조회할 제목, 브랜드 또는 바코드를 입력하십시오.",
+        "notFoundExisting": "제품 정보를 찾을 수 없음",
         "openedItem": "{{title}} 열림",
         "openedTag": "{{name}}(으)로 필터링됨",
         "title": "바코드 스캔",
         "unknownItem": "해당 ryOS 라벨의 항목을 찾을 수 없습니다.",
-        "unknownTag": "해당 ryOS 라벨의 태그를 찾을 수 없습니다."
+        "unknownTag": "해당 ryOS 라벨의 태그를 찾을 수 없습니다.",
+        "updated": "제품 세부 정보가 업데이트됨",
+        "updatedNoCover": "제품 세부 정보가 업데이트됨 — 커버를 찾을 수 없음",
+        "updatedWithCover": "제품 세부 정보 및 커버가 업데이트됨"
       },
       "searchPlaceholder": "물건 검색…",
       "share": {
@@ -4144,6 +4195,10 @@
         "topOffer": "최고 제안 {{amount}}",
         "yourOffer": "내 제안"
       },
+      "shelf": {
+        "gridView": "격자 보기",
+        "listView": "목록 보기"
+      },
       "sidebar": {
         "allStuff": "모든 물건",
         "deleteTag": "태그 삭제",
@@ -4162,6 +4217,13 @@
         "stowed": "보관됨"
       },
       "title": "Stuff",
+      "toasts": {
+        "exportFailed": "선반을 내보낼 수 없습니다",
+        "exportSuccess": "선반을 내보냈습니다",
+        "importEmpty": "해당 파일에서 새 항목이나 태그를 찾지 못했습니다",
+        "importFailed": "선반을 가져올 수 없습니다 — 파일이 유효하지 않을 수 있습니다",
+        "importSuccess": "항목 {{items}}개와 태그 {{tags}}개를 가져왔습니다({{skipped}}개 건너뜀)"
+      },
       "toolbar": {
         "add": "추가",
         "scan": "스캔",
@@ -4923,7 +4985,7 @@
           "page": "페이지",
           "shelf": "선반",
           "song": "노래",
-          "stuff": "선반"
+          "stuff": "Stuff"
         },
         "linkCopied": "링크 복사됨",
         "linkCopiedToClipboard": "{{itemType}} 링크가 클립보드에 복사되었습니다.",

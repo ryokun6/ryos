@@ -1784,6 +1784,7 @@
         "settings": "Impostazioni",
         "songs": "Brani",
         "stickies": "Memo",
+        "stuff": "Stuff",
         "title": "Sincronizzazione cloud",
         "tvChannels": "Canali TV",
         "uploading": "Carico",
@@ -4040,11 +4041,46 @@
         "edit": "Modifica",
         "printLabel": "Stampa etichetta"
       },
+      "defaultTags": {
+        "books": "Libri",
+        "cd": "CD",
+        "clothing": "Abbigliamento",
+        "electronics": "Elettronica",
+        "furniture": "Mobili",
+        "kitchen": "Cucina",
+        "other": "Altro"
+      },
       "description": "Cataloga le tue cose su uno scaffale di legno",
       "detail": {
+        "applyImageUrl": "Applica",
+        "chooseImage": "Scegli immagine…",
         "delete": "Elimina",
+        "imageFetchFailed": "Impossibile recuperare quell’URL dell’immagine.",
+        "imageInvalid": "Impossibile usare quell’immagine (deve essere inferiore a 1,5 MB).",
+        "imageUrlDialogDescription": "Incolla un URL di immagine da usare come copertina.",
+        "imageUrlDialogTitle": "URL immagine",
+        "imageUrlPlaceholder": "URL immagine…",
+        "lookup": "Cerca",
+        "pasteImageUrl": "Incolla URL…",
         "print": "Stampa",
+        "qrCode": "Codice QR",
+        "removeImage": "Rimuovi",
         "title": "Dettagli"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "Inserisci un nome per il nuovo tag.",
+          "title": "Nuovo tag"
+        },
+        "productLookup": {
+          "applying": "Applicazione…",
+          "description": "Seleziona una corrispondenza per \"{{query}}\"",
+          "error": "Ricerca prodotto non riuscita",
+          "noResults": "Nessun prodotto trovato",
+          "selectResult": "Seleziona un risultato:",
+          "title": "Scegli prodotto",
+          "useSelected": "Usa selezione"
+        }
       },
       "empty": {
         "description": "Aggiungi un articolo o scansiona un codice a barre per riempire gli scaffali.",
@@ -4062,6 +4098,7 @@
         "soldPrice": "Venduto",
         "status": "Stato",
         "tags": "Tag",
+        "thumbnail": "Miniatura",
         "title": "Titolo"
       },
       "help": {
@@ -4093,12 +4130,17 @@
       "menu": {
         "about": "Informazioni su Stuff",
         "backToShelf": "Torna al mio scaffale",
+        "exportShelf": "Esporta scaffale…",
+        "gridView": "Vista a griglia",
         "help": "Aiuto di Stuff",
+        "importShelf": "Importa scaffale…",
+        "listView": "Vista a elenco",
         "newItem": "Nuovo articolo",
         "printItemLabels": "Stampa etichette articoli…",
         "printTagLabels": "Stampa etichette tag…",
         "scanBarcode": "Scansiona codice a barre…",
-        "share": "Condividi scaffale…"
+        "share": "Condividi scaffale…",
+        "showSidebar": "Mostra barra laterale"
       },
       "name": "Stuff",
       "newItemTitle": "Nuovo articolo",
@@ -4107,15 +4149,24 @@
         "add": "Aggiungi",
         "addedWithoutMeta": "Codice salvato — nessuna info prodotto trovata",
         "cameraError": "Impossibile accedere alla fotocamera. Inserisci un codice a barre manualmente qui sotto.",
+        "coverFetchFailed": "Prodotto trovato — Impossibile scaricare la copertina",
         "description": "Inquadra un codice a barre con la fotocamera (UPC, EAN, Code 128, QR e altri).",
         "found": "Prodotto aggiunto",
+        "foundNoCover": "Prodotto aggiunto — Nessuna copertina trovata",
+        "foundWithCover": "Prodotto aggiunto con copertina",
         "lookingUp": "Ricerca prodotto…",
+        "lookupFailed": "Ricerca prodotto non riuscita",
         "manualPlaceholder": "O digita un codice a barre…",
+        "noLookupQuery": "Inserisci un titolo, una marca o un codice a barre da cercare.",
+        "notFoundExisting": "Nessuna informazione sul prodotto trovata",
         "openedItem": "Aperto {{title}}",
         "openedTag": "Filtro su {{name}}",
         "title": "Scansiona codice a barre",
         "unknownItem": "Nessun articolo trovato per quell’etichetta ryOS.",
-        "unknownTag": "Nessun tag trovato per quell’etichetta ryOS."
+        "unknownTag": "Nessun tag trovato per quell’etichetta ryOS.",
+        "updated": "Dettagli prodotto aggiornati",
+        "updatedNoCover": "Dettagli prodotto aggiornati — Nessuna copertina trovata",
+        "updatedWithCover": "Dettagli prodotto e copertina aggiornati"
       },
       "searchPlaceholder": "Cerca cose…",
       "share": {
@@ -4147,6 +4198,10 @@
         "topOffer": "Offerta migliore {{amount}}",
         "yourOffer": "La tua offerta"
       },
+      "shelf": {
+        "gridView": "Vista a griglia",
+        "listView": "Vista a elenco"
+      },
       "sidebar": {
         "allStuff": "Tutte le cose",
         "deleteTag": "Elimina tag",
@@ -4165,6 +4220,13 @@
         "stowed": "Riposto"
       },
       "title": "Stuff",
+      "toasts": {
+        "exportFailed": "Impossibile esportare lo scaffale",
+        "exportSuccess": "Scaffale esportato",
+        "importEmpty": "Nessun nuovo articolo o tag trovato in quel file",
+        "importFailed": "Impossibile importare lo scaffale — il file potrebbe non essere valido",
+        "importSuccess": "Importati {{items}} articoli e {{tags}} tag ({{skipped}} ignorati)"
+      },
       "toolbar": {
         "add": "Aggiungi",
         "scan": "Scansiona",
@@ -4927,7 +4989,7 @@
           "page": "Pagina",
           "shelf": "Scaffale",
           "song": "Brano",
-          "stuff": "Scaffale"
+          "stuff": "Stuff"
         },
         "linkCopied": "Link copiato",
         "linkCopiedToClipboard": "Link {{itemType}} copiato negli appunti",

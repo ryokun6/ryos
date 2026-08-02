@@ -1782,6 +1782,7 @@
         "settings": "設定",
         "songs": "歌曲",
         "stickies": "便條紙",
+        "stuff": "Stuff",
         "title": "雲端同步",
         "tvChannels": "電視頻道",
         "uploading": "正在上傳",
@@ -4037,11 +4038,46 @@
         "edit": "編輯",
         "printLabel": "列印標籤"
       },
+      "defaultTags": {
+        "books": "書籍",
+        "cd": "CD",
+        "clothing": "服飾",
+        "electronics": "電子產品",
+        "furniture": "家具",
+        "kitchen": "廚房",
+        "other": "其他"
+      },
       "description": "在木製架子上整理您的物品",
       "detail": {
+        "applyImageUrl": "套用",
+        "chooseImage": "選擇影像⋯",
         "delete": "刪除",
+        "imageFetchFailed": "無法擷取該影像 URL。",
+        "imageInvalid": "無法使用該影像（必須小於 1.5 MB）。",
+        "imageUrlDialogDescription": "貼上影像 URL 以用作封面。",
+        "imageUrlDialogTitle": "影像 URL",
+        "imageUrlPlaceholder": "影像 URL⋯",
+        "lookup": "查詢",
+        "pasteImageUrl": "貼上 URL⋯",
         "print": "列印",
+        "qrCode": "QR Code",
+        "removeImage": "移除",
         "title": "詳細資訊"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "輸入新標籤的名稱。",
+          "title": "新增標籤"
+        },
+        "productLookup": {
+          "applying": "正在套用⋯",
+          "description": "選擇與「{{query}}」相符的項目",
+          "error": "產品查詢失敗",
+          "noResults": "找不到產品",
+          "selectResult": "選擇結果：",
+          "title": "選擇產品",
+          "useSelected": "使用所選項目"
+        }
       },
       "empty": {
         "description": "加入項目或掃描條碼來開始填滿您的架子。",
@@ -4059,6 +4095,7 @@
         "soldPrice": "成交價",
         "status": "狀態",
         "tags": "標籤",
+        "thumbnail": "縮圖",
         "title": "標題"
       },
       "help": {
@@ -4090,12 +4127,17 @@
       "menu": {
         "about": "關於 Stuff",
         "backToShelf": "回到我的架子",
+        "exportShelf": "匯出貨架…",
+        "gridView": "格狀檢視",
         "help": "Stuff 輔助說明",
+        "importShelf": "匯入貨架…",
+        "listView": "列表檢視",
         "newItem": "新增項目",
         "printItemLabels": "列印項目標籤⋯",
         "printTagLabels": "列印標籤標籤⋯",
         "scanBarcode": "掃描條碼⋯",
-        "share": "分享架子…"
+        "share": "分享架子…",
+        "showSidebar": "顯示側邊欄"
       },
       "name": "Stuff",
       "newItemTitle": "新增項目",
@@ -4104,15 +4146,24 @@
         "add": "加入",
         "addedWithoutMeta": "條碼已儲存 — 找不到產品資訊",
         "cameraError": "無法取用相機。在下方手動輸入條碼。",
+        "coverFetchFailed": "找到產品 — 無法下載封面",
         "description": "將相機對準條碼（UPC、EAN、Code 128、QR 等）。",
         "found": "產品已加入",
+        "foundNoCover": "已加入產品 — 找不到封面",
+        "foundWithCover": "已加入產品（含封面）",
         "lookingUp": "正在查詢產品…",
+        "lookupFailed": "產品查詢失敗",
         "manualPlaceholder": "或輸入條碼…",
+        "noLookupQuery": "輸入標題、品牌或條碼來查詢。",
+        "notFoundExisting": "找不到產品資訊",
         "openedItem": "已打開 {{title}}",
         "openedTag": "已篩選為 {{name}}",
         "title": "掃描條碼",
         "unknownItem": "找不到該 ryOS 標籤的項目。",
-        "unknownTag": "找不到該 ryOS 標籤的標籤。"
+        "unknownTag": "找不到該 ryOS 標籤的標籤。",
+        "updated": "產品詳細資訊已更新",
+        "updatedNoCover": "產品詳細資訊已更新 — 找不到封面",
+        "updatedWithCover": "產品詳細資訊與封面已更新"
       },
       "searchPlaceholder": "搜尋 Stuff…",
       "share": {
@@ -4144,6 +4195,10 @@
         "topOffer": "最高出價 {{amount}}",
         "yourOffer": "你的出價"
       },
+      "shelf": {
+        "gridView": "格狀檢視",
+        "listView": "列表檢視"
+      },
       "sidebar": {
         "allStuff": "所有物品",
         "deleteTag": "刪除標籤",
@@ -4162,6 +4217,13 @@
         "stowed": "已收納"
       },
       "title": "物品",
+      "toasts": {
+        "exportFailed": "無法匯出貨架",
+        "exportSuccess": "貨架已匯出",
+        "importEmpty": "該檔案中找不到新的物品或標籤",
+        "importFailed": "無法匯入貨架 — 檔案可能無效",
+        "importSuccess": "已匯入 {{items}} 件物品和 {{tags}} 個標籤（略過 {{skipped}} 個）"
+      },
       "toolbar": {
         "add": "加入",
         "scan": "掃描",
@@ -4923,7 +4985,7 @@
           "page": "頁面",
           "shelf": "層架",
           "song": "歌曲",
-          "stuff": "層架"
+          "stuff": "Stuff"
         },
         "linkCopied": "已拷貝連結",
         "linkCopiedToClipboard": "{{itemType}}連結已複製到剪貼簿",

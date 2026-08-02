@@ -99,6 +99,7 @@ export type ControlPanelsMacPaneRendererProps = {
   syncTv: boolean;
   syncStickies: boolean;
   syncBooks: boolean;
+  syncStuff: boolean;
   setSyncFiles: (enabled: boolean) => void;
   setSyncSettings: (enabled: boolean) => void;
   setSyncCalendar: (enabled: boolean) => void;
@@ -109,6 +110,7 @@ export type ControlPanelsMacPaneRendererProps = {
   setSyncTv: (enabled: boolean) => void;
   setSyncStickies: (enabled: boolean) => void;
   setSyncBooks: (enabled: boolean) => void;
+  setSyncStuff: (enabled: boolean) => void;
   isCloudForceSyncing: boolean;
   isCloudForceUploading: boolean;
   isCloudForceDownloading: boolean;
@@ -287,6 +289,7 @@ export function ControlPanelsMacPaneRenderer(
           syncTv={props.syncTv}
           syncStickies={props.syncStickies}
           syncBooks={props.syncBooks}
+          syncStuff={props.syncStuff}
           setSyncFiles={props.setSyncFiles}
           setSyncSettings={props.setSyncSettings}
           setSyncCalendar={props.setSyncCalendar}
@@ -297,6 +300,7 @@ export function ControlPanelsMacPaneRenderer(
           setSyncTv={props.setSyncTv}
           setSyncStickies={props.setSyncStickies}
           setSyncBooks={props.setSyncBooks}
+          setSyncStuff={props.setSyncStuff}
           isCloudForceSyncing={props.isCloudForceSyncing}
           isCloudForceUploading={props.isCloudForceUploading}
           isCloudForceDownloading={props.isCloudForceDownloading}

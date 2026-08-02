@@ -9,7 +9,7 @@ export interface IndexedDBStoreItemWithKey {
   value: IndexedDBStoreItem;
 }
 
-export const MANUAL_BACKUP_VERSION = 6;
+export const MANUAL_BACKUP_VERSION = 7;
 
 /**
  * User-owned IndexedDB data included in manual backups. Apple Music stores are
@@ -25,6 +25,7 @@ export const MANUAL_BACKUP_INDEXEDDB_STORES = [
   STORES.TRASH,
   STORES.CUSTOM_WALLPAPERS,
   STORES.APPLETS,
+  STORES.STUFF_IMAGES,
   STORES.PERSISTED_STATE,
   STORES.SOUNDBOARD_AUDIO,
   STORES.CHATS_AI_MESSAGES,

@@ -224,9 +224,12 @@ stickies/note:uuid             → { content, position, color, ... }
 calendar/event:uuid            → { title, start, end, ... }
 contacts/contact:uuid          → { name, phone, ... }
 maps/favorite:uuid             → { name, coordinate, ... }
+stuff/item:uuid                → { title, coverBlobId, imageUrl, ... }  // no imageDataUrl
+stuff/tag:uuid                 → { name, color, ... }
 images/item:uuid               → { name, contentRef: { sha256, size } }
 applets/item:uuid              → { name, contentRef: { sha256, size } }
 wallpapers/item:uuid           → { name, contentRef: { sha256, size } }
+stuff-images/item:uuid         → { name, contentRef: { sha256, size } }  // Stuff covers
 ```
 
 The granularity rule: **a key is the unit of conflict resolution**. v1

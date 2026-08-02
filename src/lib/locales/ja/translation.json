@@ -1782,6 +1782,7 @@
         "settings": "設定",
         "songs": "曲",
         "stickies": "スティッキーズ",
+        "stuff": "Stuff",
         "title": "クラウド同期",
         "tvChannels": "テレビチャンネル",
         "uploading": "アップロード中",
@@ -4037,11 +4038,46 @@
         "edit": "編集",
         "printLabel": "ラベルをプリント"
       },
+      "defaultTags": {
+        "books": "ブック",
+        "cd": "CD",
+        "clothing": "衣料",
+        "electronics": "エレクトロニクス",
+        "furniture": "家具",
+        "kitchen": "キッチン",
+        "other": "その他"
+      },
       "description": "木の棚で持ち物をカタログ管理",
       "detail": {
+        "applyImageUrl": "適用",
+        "chooseImage": "画像を選択…",
         "delete": "削除",
+        "imageFetchFailed": "その画像URLを取得できませんでした。",
+        "imageInvalid": "その画像は使用できません（1.5 MB未満である必要があります）。",
+        "imageUrlDialogDescription": "カバーとして使用する画像のURLをペーストしてください。",
+        "imageUrlDialogTitle": "画像URL",
+        "imageUrlPlaceholder": "画像URL…",
+        "lookup": "調べる",
+        "pasteImageUrl": "URLをペースト…",
         "print": "プリント",
+        "qrCode": "QRコード",
+        "removeImage": "削除",
         "title": "詳細"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "新しいタグの名前を入力してください。",
+          "title": "新規タグ"
+        },
+        "productLookup": {
+          "applying": "適用中…",
+          "description": "“{{query}}”に一致するものを選択してください",
+          "error": "製品の検索に失敗しました",
+          "noResults": "製品が見つかりませんでした",
+          "selectResult": "結果を選択:",
+          "title": "製品を選択",
+          "useSelected": "選択したものを使用"
+        }
       },
       "empty": {
         "description": "アイテムを追加するかバーコードをスキャンして棚を埋めてください。",
@@ -4059,6 +4095,7 @@
         "soldPrice": "売却価格",
         "status": "状況",
         "tags": "タグ",
+        "thumbnail": "サムネイル",
         "title": "タイトル"
       },
       "help": {
@@ -4090,12 +4127,17 @@
       "menu": {
         "about": "Stuffについて",
         "backToShelf": "自分の棚に戻る",
+        "exportShelf": "棚を書き出す…",
+        "gridView": "グリッド表示",
         "help": "Stuffヘルプ",
+        "importShelf": "棚を読み込む…",
+        "listView": "リスト表示",
         "newItem": "新規アイテム",
         "printItemLabels": "アイテムラベルをプリント…",
         "printTagLabels": "タグラベルをプリント…",
         "scanBarcode": "バーコードをスキャン…",
-        "share": "棚を共有…"
+        "share": "棚を共有…",
+        "showSidebar": "サイドバーを表示"
       },
       "name": "Stuff",
       "newItemTitle": "新規アイテム",
@@ -4104,15 +4146,24 @@
         "add": "追加",
         "addedWithoutMeta": "バーコードを保存しました — 商品情報は見つかりませんでした",
         "cameraError": "カメラにアクセスできませんでした。下にバーコードを手動入力してください。",
+        "coverFetchFailed": "製品が見つかりました — カバーをダウンロードできませんでした",
         "description": "カメラをバーコードに向けてください（UPC、EAN、Code 128、QRなど）。",
         "found": "商品を追加しました",
+        "foundNoCover": "製品を追加しました — カバーが見つかりませんでした",
+        "foundWithCover": "カバー付きで製品を追加しました",
         "lookingUp": "商品を検索中…",
+        "lookupFailed": "製品の検索に失敗しました",
         "manualPlaceholder": "またはバーコードを入力…",
+        "noLookupQuery": "検索するタイトル、ブランド、またはバーコードを入力してください。",
+        "notFoundExisting": "製品情報が見つかりませんでした",
         "openedItem": "{{title}}を開きました",
         "openedTag": "{{name}}で絞り込みました",
         "title": "バーコードをスキャン",
         "unknownItem": "そのryOSラベルのアイテムは見つかりませんでした。",
-        "unknownTag": "そのryOSラベルのタグは見つかりませんでした。"
+        "unknownTag": "そのryOSラベルのタグは見つかりませんでした。",
+        "updated": "製品の詳細を更新しました",
+        "updatedNoCover": "製品の詳細を更新しました — カバーが見つかりませんでした",
+        "updatedWithCover": "製品の詳細とカバーを更新しました"
       },
       "searchPlaceholder": "持ち物を検索…",
       "share": {
@@ -4144,6 +4195,10 @@
         "topOffer": "最高オファー {{amount}}",
         "yourOffer": "あなたのオファー"
       },
+      "shelf": {
+        "gridView": "グリッド表示",
+        "listView": "リスト表示"
+      },
       "sidebar": {
         "allStuff": "すべての持ち物",
         "deleteTag": "タグを削除",
@@ -4162,6 +4217,13 @@
         "stowed": "保管中"
       },
       "title": "Stuff",
+      "toasts": {
+        "exportFailed": "棚を書き出せませんでした",
+        "exportSuccess": "棚を書き出しました",
+        "importEmpty": "そのファイルに新しいアイテムやタグはありません",
+        "importFailed": "棚を読み込めませんでした — ファイルが無効の可能性があります",
+        "importSuccess": "{{items}}件のアイテムと{{tags}}件のタグを読み込みました（{{skipped}}件をスキップ）"
+      },
       "toolbar": {
         "add": "追加",
         "scan": "スキャン",
@@ -4923,7 +4985,7 @@
           "page": "ページ",
           "shelf": "棚",
           "song": "曲",
-          "stuff": "棚"
+          "stuff": "Stuff"
         },
         "linkCopied": "リンクがコピーされました",
         "linkCopiedToClipboard": "{{itemType}}のリンクをクリップボードにコピーしました",

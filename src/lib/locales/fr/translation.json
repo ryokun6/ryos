@@ -1784,6 +1784,7 @@
         "settings": "Réglages",
         "songs": "Morceaux",
         "stickies": "Aide-mémoire",
+        "stuff": "Stuff",
         "title": "Synchronisation cloud",
         "tvChannels": "Chaînes TV",
         "uploading": "Mise en ligne",
@@ -4040,11 +4041,46 @@
         "edit": "Modifier",
         "printLabel": "Imprimer l’étiquette"
       },
+      "defaultTags": {
+        "books": "Livres",
+        "cd": "CD",
+        "clothing": "Vêtements",
+        "electronics": "Électronique",
+        "furniture": "Meubles",
+        "kitchen": "Cuisine",
+        "other": "Autre"
+      },
       "description": "Cataloguez vos affaires sur une étagère en bois",
       "detail": {
+        "applyImageUrl": "Appliquer",
+        "chooseImage": "Choisir une image…",
         "delete": "Supprimer",
+        "imageFetchFailed": "Impossible de récupérer l’URL de cette image.",
+        "imageInvalid": "Impossible d’utiliser cette image (elle doit faire moins de 1,5 Mo).",
+        "imageUrlDialogDescription": "Collez l’URL d’une image à utiliser comme couverture.",
+        "imageUrlDialogTitle": "URL de l’image",
+        "imageUrlPlaceholder": "URL de l’image…",
+        "lookup": "Rechercher",
+        "pasteImageUrl": "Coller l’URL…",
         "print": "Imprimer",
+        "qrCode": "Code QR",
+        "removeImage": "Supprimer",
         "title": "Détails"
+      },
+      "dialogs": {
+        "newTag": {
+          "description": "Saisissez un nom pour le nouveau tag.",
+          "title": "Nouveau tag"
+        },
+        "productLookup": {
+          "applying": "Application…",
+          "description": "Sélectionnez une correspondance pour « {{query}} »",
+          "error": "Échec de la recherche du produit",
+          "noResults": "Aucun produit trouvé",
+          "selectResult": "Sélectionnez un résultat :",
+          "title": "Choisir un produit",
+          "useSelected": "Utiliser la sélection"
+        }
       },
       "empty": {
         "description": "Ajoutez un article ou scannez un code-barres pour remplir vos étagères.",
@@ -4062,6 +4098,7 @@
         "soldPrice": "Vendu",
         "status": "État",
         "tags": "Tags",
+        "thumbnail": "Vignette",
         "title": "Titre"
       },
       "help": {
@@ -4093,12 +4130,17 @@
       "menu": {
         "about": "À propos de Stuff",
         "backToShelf": "Retour à mon étagère",
+        "exportShelf": "Exporter l’étagère…",
+        "gridView": "Présentation par grille",
         "help": "Aide Stuff",
+        "importShelf": "Importer l’étagère…",
+        "listView": "Présentation par liste",
         "newItem": "Nouvel article",
         "printItemLabels": "Imprimer les étiquettes d’articles…",
         "printTagLabels": "Imprimer les étiquettes de tags…",
         "scanBarcode": "Scanner un code-barres…",
-        "share": "Partager l’étagère…"
+        "share": "Partager l’étagère…",
+        "showSidebar": "Afficher la barre latérale"
       },
       "name": "Stuff",
       "newItemTitle": "Nouvel article",
@@ -4107,15 +4149,24 @@
         "add": "Ajouter",
         "addedWithoutMeta": "Code-barres enregistré — aucune info produit trouvée",
         "cameraError": "Impossible d’accéder à la caméra. Saisissez un code-barres manuellement ci-dessous.",
+        "coverFetchFailed": "Produit trouvé — La couverture n’a pas pu être téléchargée",
         "description": "Pointez la caméra vers un code-barres (UPC, EAN, Code 128, QR, etc.).",
         "found": "Produit ajouté",
+        "foundNoCover": "Produit ajouté — Aucune couverture trouvée",
+        "foundWithCover": "Produit ajouté avec couverture",
         "lookingUp": "Recherche du produit…",
+        "lookupFailed": "Échec de la recherche du produit",
         "manualPlaceholder": "Ou saisissez un code-barres…",
+        "noLookupQuery": "Saisissez un titre, une marque ou un code-barres à rechercher.",
+        "notFoundExisting": "Aucune information sur le produit trouvée",
         "openedItem": "{{title}} ouvert",
         "openedTag": "Filtré sur {{name}}",
         "title": "Scanner un code-barres",
         "unknownItem": "Aucun article trouvé pour cette étiquette ryOS.",
-        "unknownTag": "Aucun tag trouvé pour cette étiquette ryOS."
+        "unknownTag": "Aucun tag trouvé pour cette étiquette ryOS.",
+        "updated": "Détails du produit mis à jour",
+        "updatedNoCover": "Détails du produit mis à jour — Aucune couverture trouvée",
+        "updatedWithCover": "Détails du produit et couverture mis à jour"
       },
       "searchPlaceholder": "Rechercher des affaires…",
       "share": {
@@ -4147,6 +4198,10 @@
         "topOffer": "Meilleure offre {{amount}}",
         "yourOffer": "Votre offre"
       },
+      "shelf": {
+        "gridView": "Présentation par grille",
+        "listView": "Présentation par liste"
+      },
       "sidebar": {
         "allStuff": "Toutes les affaires",
         "deleteTag": "Supprimer le tag",
@@ -4165,6 +4220,13 @@
         "stowed": "Rangé"
       },
       "title": "Stuff",
+      "toasts": {
+        "exportFailed": "Impossible d’exporterer l’étagère",
+        "exportSuccess": "Étagère exportée",
+        "importEmpty": "Aucun nouvel objet ou étiquette trouvé dans ce fichier",
+        "importFailed": "Impossible d’importer l’étagère — le fichier est peut‑être invalide",
+        "importSuccess": "{{items}} objets et {{tags}} étiquettes importés ({{skipped}} ignorés)"
+      },
       "toolbar": {
         "add": "Ajouter",
         "scan": "Scanner",
@@ -4927,7 +4989,7 @@
           "page": "Page",
           "shelf": "Étagère",
           "song": "Morceau",
-          "stuff": "Étagère"
+          "stuff": "Stuff"
         },
         "linkCopied": "Lien copié",
         "linkCopiedToClipboard": "Lien {{itemType}} copié dans le presse-papiers",
