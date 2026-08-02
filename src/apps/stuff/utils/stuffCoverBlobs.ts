@@ -195,9 +195,11 @@ export async function migrateImageDataUrlToCoverBlob(
 }
 
 /** Strip oversized inline covers from a sync document. */
-export function stripImageDataUrlForSync<T extends { imageDataUrl?: string }>(
+export function stripImageDataUrlForSync<T extends object>(
   doc: T
-): Omit<T, "imageDataUrl"> & { imageDataUrl?: undefined } {
-  const { imageDataUrl: _ignored, ...rest } = doc;
+): Omit<T, "imageDataUrl"> {
+  const { imageDataUrl: _ignored, ...rest } = doc as T & {
+    imageDataUrl?: string;
+  };
   return rest;
 }

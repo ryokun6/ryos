@@ -1,4 +1,13 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type CSSProperties,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   LinkSimple,
@@ -143,6 +152,7 @@ export function StuffDetailPanel({
   const [imageUrl, setImageUrl] = useState("");
   const [isImageUrlDialogOpen, setIsImageUrlDialogOpen] = useState(false);
   const [isImageBusy, setIsImageBusy] = useState(false);
+  const [isCoverDragOver, setIsCoverDragOver] = useState(false);
   const [showBarcodePreview, setShowBarcodePreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverSrc = useStuffItemCoverSrc(item);
@@ -188,6 +198,10 @@ export function StuffDetailPanel({
   useEffect(() => {
     setShowBarcodePreview(false);
   }, [item.id]);
+
+  useEffect(() => {
+    setIsCoverDragOver(false);
+  }, [item.id, showBarcodePreview]);
 
   const commitTitle = () => {
     const next = title.trim();
@@ -265,32 +279,88 @@ export function StuffDetailPanel({
     onChange({ tagIds: next });
   };
 
-  const handleChooseImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
+  const imageInvalidToast = () => {
+    toast.error(
+      t("apps.stuff.detail.imageInvalid", {
+        defaultValue: "Could not use that image (must be under 1.5 MB).",
+      })
+    );
+  };
 
+  const applyCoverFile = async (file: File) => {
     setIsImageBusy(true);
     try {
       if (!file.type.startsWith("image/") || file.size > STUFF_IMAGE_MAX_BYTES) {
-        toast.error(
-          t("apps.stuff.detail.imageInvalid", {
-            defaultValue: "Could not use that image (must be under 1.5 MB).",
-          })
-        );
+        imageInvalidToast();
         return;
       }
       await putStuffCoverBlob(item.id, file);
       onChange({ coverBlobId: item.id, imageDataUrl: "", imageUrl: "" });
     } catch {
-      toast.error(
-        t("apps.stuff.detail.imageInvalid", {
-          defaultValue: "Could not use that image (must be under 1.5 MB).",
-        })
-      );
+      imageInvalidToast();
     } finally {
       setIsImageBusy(false);
     }
+  };
+
+  const getImageFileFromDataTransfer = (
+    data: DataTransfer | null
+  ): File | null => {
+    if (!data) return null;
+    const fromFiles = Array.from(data.files ?? []).find((file) =>
+      file.type.startsWith("image/")
+    );
+    if (fromFiles) return fromFiles;
+    for (const item of Array.from(data.items ?? [])) {
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) return file;
+      }
+    }
+    return null;
+  };
+
+  const handleChooseImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    void applyCoverFile(file);
+  };
+
+  const imageControlsDisabled = isImageBusy || isLookingUp;
+  const canAcceptCoverDrop = !showingBarcodePreview && !imageControlsDisabled;
+
+  const handleCoverDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!canAcceptCoverDrop) return;
+    if (![...event.dataTransfer.types].includes("Files")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "copy";
+    if (!isCoverDragOver) setIsCoverDragOver(true);
+  };
+
+  const handleCoverDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    const related = event.relatedTarget as Node | null;
+    if (related && event.currentTarget.contains(related)) return;
+    setIsCoverDragOver(false);
+  };
+
+  const handleCoverDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsCoverDragOver(false);
+    if (!canAcceptCoverDrop) return;
+    const file = getImageFileFromDataTransfer(event.dataTransfer);
+    if (file) void applyCoverFile(file);
+  };
+
+  const handleCoverPaste = (event: ClipboardEvent<HTMLDivElement>) => {
+    if (!canAcceptCoverDrop) return;
+    const file = getImageFileFromDataTransfer(event.clipboardData);
+    if (!file) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void applyCoverFile(file);
   };
 
   const handleApplyImageUrl = (rawUrl: string) => {
@@ -327,8 +397,6 @@ export function StuffDetailPanel({
     isWindowsTheme && "text-black"
   );
 
-  const imageControlsDisabled = isImageBusy || isLookingUp;
-
   const fieldInputClass = cn(
     "w-full rounded-sm border bg-white px-1 py-0.5 text-[11px] outline-none",
     useGeneva ? "font-geneva-12 border-black/25" : "border-black/20",
@@ -345,7 +413,7 @@ export function StuffDetailPanel({
     <div className={panelShell}>
       <div
         className={cn(
-          "mb-2 shrink-0 border-b border-black/20 pb-2",
+          "mb-2 shrink-0 pb-4",
           isMacOSTheme && "border-black/15"
         )}
       >
@@ -354,13 +422,22 @@ export function StuffDetailPanel({
             className={cn(
               "relative flex shrink-0 items-center justify-center outline-none",
               !showingBarcodePreview &&
-                "group/thumb rounded-[10px] focus-within:ring-2 focus-within:ring-os-accent/40 focus-within:ring-offset-1"
+                "group/thumb rounded-[10px] focus-within:ring-2 focus-within:ring-os-accent/40 focus-within:ring-offset-1",
+              isCoverDragOver &&
+                !showingBarcodePreview &&
+                "ring-2 ring-os-accent/70 ring-offset-1"
             )}
             style={{
               width: previewSlotDims.width,
               height: previewSlotDims.height,
             }}
             tabIndex={showingBarcodePreview ? undefined : 0}
+            aria-label={showingBarcodePreview ? undefined : chooseImageLabel}
+            onDragEnter={canAcceptCoverDrop ? handleCoverDragOver : undefined}
+            onDragOver={canAcceptCoverDrop ? handleCoverDragOver : undefined}
+            onDragLeave={canAcceptCoverDrop ? handleCoverDragLeave : undefined}
+            onDrop={canAcceptCoverDrop ? handleCoverDrop : undefined}
+            onPaste={canAcceptCoverDrop ? handleCoverPaste : undefined}
           >
             {showingBarcodePreview ? (
               <div
@@ -394,7 +471,10 @@ export function StuffDetailPanel({
                   "absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-[10px]",
                   "bg-black/50 opacity-0 transition-opacity duration-150",
                   "group-hover/thumb:opacity-100 group-focus-within/thumb:opacity-100",
-                  imageControlsDisabled && "pointer-events-none opacity-40"
+                  isCoverDragOver && "opacity-100",
+                  (imageControlsDisabled || isCoverDragOver) &&
+                    "pointer-events-none",
+                  imageControlsDisabled && "opacity-40"
                 )}
               >
                 <Button

@@ -100,7 +100,6 @@ export default apiHandler(
         return;
       }
 
-      const ip = getClientIp(req);
       const rl = await RateLimit.checkCounterLimit({
         key: RateLimit.makeKey([
           "rl",

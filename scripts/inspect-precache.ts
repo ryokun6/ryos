@@ -34,8 +34,8 @@ const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 // Rollup did, so file-count ceilings sit above Rollup-era numbers. The byte
 // budget tracks the measured offline shell (Stuff + shelf apps pushed it past
 // 12 MiB); keep a small headroom for theme/CSS polish.
-const MAX_FILES = 245;
-const MAX_SCRIPTS = 230;
+const MAX_FILES = 255;
+const MAX_SCRIPTS = 240;
 const MAX_BYTES = 13 * 1024 * 1024;
 
 summarize("total", urls);

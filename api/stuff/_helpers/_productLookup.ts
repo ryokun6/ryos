@@ -334,7 +334,7 @@ export function brandFromWikipediaDescription(
   if (!description) return undefined;
   // Only trust explicit manufacturer phrasing, not incidental "from …" copy.
   const match = description.match(
-    /\b(?:manufactured|made|designed|sold|produced)\b[^.]{0,80}?\bby\s+([A-Z][\w.&'’\-]+(?:\s+[A-Z][\w.&'’\-]+){0,5})/
+    /\b(?:manufactured|made|designed|sold|produced)\b[^.]{0,80}?\bby\s+([A-Z][\w.&'’-]+(?:\s+[A-Z][\w.&'’-]+){0,5})/
   );
   if (!match?.[1]) return undefined;
   return match[1]
