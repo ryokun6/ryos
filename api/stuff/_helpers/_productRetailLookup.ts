@@ -22,7 +22,8 @@ export type RetailLookupResult = {
     | "amazon"
     | "duckduckgo_images"
     | "apple"
-    | "itunes";
+    | "itunes"
+    | "itunes_music";
 };
 
 const BROWSER_UA =
@@ -550,23 +551,197 @@ export async function lookupAppleComByTitle(
   return result;
 }
 
-type ITunesTrack = {
+/** Shared iTunes Search / Lookup JSON shape (apps + albums). */
+export type ITunesCatalogEntry = {
   trackName?: string;
   collectionName?: string;
   artistName?: string;
   kind?: string;
   wrapperType?: string;
+  collectionType?: string;
   artworkUrl100?: string;
   artworkUrl60?: string;
   trackViewUrl?: string;
   collectionViewUrl?: string;
+  collectionPrice?: number;
   price?: number;
   currency?: string;
+  releaseDate?: string;
 };
 
-function itunesArtworkUrl(url?: string): string | undefined {
+/** Upsize iTunes artwork path segment (e.g. 100x100bb → 600x600bb). */
+export function itunesArtworkUrl(url?: string): string | undefined {
   if (!url) return undefined;
-  return url.replace(/\/\d+x\d+bb\./, "/600x600bb.");
+  return url
+    .replace(/^http:\/\//i, "https://")
+    .replace(/\/\d+x\d+bb(\.[a-z]+)$/i, "/600x600bb$1")
+    .replace(/\/\d+x\d+bb\./i, "/600x600bb.");
+}
+
+/**
+ * UPC/EAN variants to try against iTunes lookup (12-digit UPC-A ↔ 13-digit
+ * EAN with leading zero are common for CD barcodes).
+ */
+export function itunesUpcCandidates(barcode: string): string[] {
+  const digits = barcode.replace(/\D/g, "");
+  if (!digits) return [];
+  // iTunes returns unrelated catalogs for all-zero / repeated-digit UPCs.
+  if (/^0+$/.test(digits) || /^(\d)\1+$/.test(digits)) return [];
+  const out = [digits];
+  if (digits.length === 13 && digits.startsWith("0")) {
+    out.push(digits.slice(1));
+  } else if (digits.length === 12) {
+    out.push(`0${digits}`);
+  } else if (digits.length === 11) {
+    out.push(digits.padStart(12, "0"));
+    out.push(digits.padStart(13, "0"));
+  }
+  return [...new Set(out)];
+}
+
+export function isITunesAlbumEntry(entry: ITunesCatalogEntry): boolean {
+  if (!entry.collectionName?.trim()) return false;
+  if (entry.wrapperType === "collection") {
+    if (!entry.collectionType) return true;
+    return /album/i.test(entry.collectionType);
+  }
+  return false;
+}
+
+/** Map an iTunes album/collection hit to the shared retail lookup shape. */
+export function mapITunesAlbumToProductResult(
+  entry: ITunesCatalogEntry
+): RetailLookupResult | null {
+  if (!isITunesAlbumEntry(entry) || !entry.collectionName) return null;
+  const price =
+    typeof entry.collectionPrice === "number" &&
+    Number.isFinite(entry.collectionPrice) &&
+    entry.collectionPrice > 0
+      ? entry.collectionPrice
+      : undefined;
+  return {
+    found: true,
+    title: entry.collectionName,
+    brand: entry.artistName || undefined,
+    imageUrl: itunesArtworkUrl(entry.artworkUrl100 || entry.artworkUrl60),
+    productUrl: entry.collectionViewUrl || entry.trackViewUrl,
+    originalPrice: price,
+    currency: entry.currency || (price != null ? "USD" : undefined),
+    source: "itunes_music",
+  };
+}
+
+/**
+ * Score an iTunes album against a free-text query. Prefer concise titles whose
+ * artist is mentioned in the query over long tribute / lullaby listings that
+ * merely contain the album name as a substring.
+ */
+export function scoreITunesAlbumMatch(
+  entry: ITunesCatalogEntry,
+  query: string
+): number {
+  const title = entry.collectionName;
+  if (!title?.trim() || !query.trim()) return 0;
+
+  const titleScore = scoreTitleMatch(title, query);
+  const artist = entry.artistName?.trim();
+  const combinedScore = artist
+    ? scoreTitleMatch(`${artist} ${title}`, query)
+    : 0;
+  let score = Math.max(titleScore, combinedScore * 0.95);
+
+  const qTokens = normalizeTitleTokens(query);
+  const tTokens = normalizeTitleTokens(title);
+  if (artist) {
+    const aTokens = normalizeTitleTokens(artist);
+    if (
+      aTokens.length > 0 &&
+      aTokens.every((token) => qTokens.includes(token))
+    ) {
+      score += 0.7;
+    }
+  }
+
+  // Prefer album titles close to the query length over "Lullaby Versions of …".
+  if (tTokens.length > Math.max(qTokens.length, 2) * 2) {
+    score -= 0.55;
+  }
+  if (/\b(lullaby|tribute|cover|karaoke|piano\s+versions?)\b/i.test(title)) {
+    score -= 0.8;
+  }
+
+  return score;
+}
+
+/** Prefer albums with artwork; when a query is known, prefer stronger title match. */
+export function pickBestITunesAlbum(
+  entries?: ITunesCatalogEntry[],
+  query?: string
+): ITunesCatalogEntry | undefined {
+  const albums = (entries ?? []).filter(isITunesAlbumEntry);
+  if (!albums.length) return undefined;
+  const hasArt = (entry: ITunesCatalogEntry) =>
+    Boolean(entry.artworkUrl100 || entry.artworkUrl60);
+  if (!query) {
+    // UPC lookup can return many unrelated collections for bogus codes —
+    // only trust a small, coherent edition set.
+    if (albums.length > 4) return undefined;
+    return albums.find(hasArt) ?? albums[0];
+  }
+  const ranked = [...albums].sort((a, b) => {
+    const aImg = hasArt(a) ? 1 : 0;
+    const bImg = hasArt(b) ? 1 : 0;
+    if (aImg !== bImg) return bImg - aImg;
+    return scoreITunesAlbumMatch(b, query) - scoreITunesAlbumMatch(a, query);
+  });
+  const best = ranked[0];
+  if (!best || scoreITunesAlbumMatch(best, query) < 0.75) return undefined;
+  return best;
+}
+
+/** iTunes Lookup API — album metadata / artwork by UPC or EAN. */
+export async function lookupITunesAlbumByUpc(
+  upc: string
+): Promise<RetailLookupResult | null> {
+  const candidates = itunesUpcCandidates(upc);
+  if (!candidates.length) return null;
+
+  const responses = await Promise.all(
+    candidates.map((code) =>
+      fetchJson<{ results?: ITunesCatalogEntry[] }>(
+        `https://itunes.apple.com/lookup?upc=${encodeURIComponent(code)}`
+      )
+    )
+  );
+
+  for (const data of responses) {
+    // Guard against noisy UPC mappings (e.g. all-zero codes returning dozens
+    // of unrelated albums). Prefer a tight edition set with artwork.
+    const albums = (data?.results ?? []).filter(isITunesAlbumEntry);
+    if (!albums.length || albums.length > 4) continue;
+    const album = pickBestITunesAlbum(albums);
+    const mapped = album ? mapITunesAlbumToProductResult(album) : null;
+    if (mapped?.title) return mapped;
+  }
+  return null;
+}
+
+/**
+ * iTunes Search API — album metadata / artwork for free-text title/artist queries.
+ * Soft-fails on weak title matches so product searches stay clean.
+ */
+export async function lookupITunesAlbumByTitle(
+  title: string
+): Promise<RetailLookupResult | null> {
+  const trimmed = title.trim();
+  if (!trimmed) return null;
+
+  const data = await fetchJson<{ results?: ITunesCatalogEntry[] }>(
+    `https://itunes.apple.com/search?term=${encodeURIComponent(trimmed)}&country=us&media=music&entity=album&limit=8`
+  );
+  const album = pickBestITunesAlbum(data?.results, trimmed);
+  if (!album?.collectionName) return null;
+  return mapITunesAlbumToProductResult(album);
 }
 
 /** iTunes Search API — software / app artwork when the query looks app-related. */
@@ -575,7 +750,7 @@ export async function lookupITunesSoftwareByTitle(
 ): Promise<RetailLookupResult | null> {
   if (!looksLikeITunesSoftwareQuery(title)) return null;
 
-  const data = await fetchJson<{ results?: ITunesTrack[] }>(
+  const data = await fetchJson<{ results?: ITunesCatalogEntry[] }>(
     `https://itunes.apple.com/search?term=${encodeURIComponent(title)}&country=us&entity=software,iPadSoftware,macSoftware&limit=8`
   );
   const apps = (data?.results ?? []).filter(

@@ -42,6 +42,15 @@
   font-display: swap;
 }
 
+/* Marker handwriting — Stuff empty CD jewel-case title/artist overlays. */
+@font-face {
+  font-family: "Permanent Marker";
+  src: url("/fonts/PermanentMarker-Latin.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: "EB Garamond";
   src: url("/fonts/EBGaramond-Italic-Latin.woff2") format("woff2");

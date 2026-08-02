@@ -62,6 +62,7 @@ function sourceLabel(source?: string): string {
     case "apple":
       return "Apple";
     case "itunes":
+    case "itunes_music":
       return "iTunes";
     default:
       return source?.trim() || "";

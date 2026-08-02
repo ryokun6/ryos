@@ -4,6 +4,7 @@ import {
   ensureDefaultStuffTags,
   ensureFurnitureTag,
   getFilteredStuffItems,
+  isDefaultStuffTag,
 } from "../../../src/stores/useStuffStore";
 import {
   DEFAULT_CURRENCY,
@@ -52,6 +53,16 @@ describe("ensureDefaultStuffTags", () => {
     { id: "3", name: "Other", color: DEFAULT_TAG_COLORS[4], createdAt: 3 },
   ];
 
+  const ALL_DEFAULT_NAMES = [
+    "Kitchen",
+    "Electronics",
+    "Clothing",
+    "Books",
+    "Furniture",
+    "CD",
+    "Other",
+  ];
+
   test("inserts missing defaults (Furniture, CD, …) before Other", () => {
     const next = ensureDefaultStuffTags(baseTags);
     expect(next.map((t) => t.name)).toEqual([
@@ -67,6 +78,31 @@ describe("ensureDefaultStuffTags", () => {
       DEFAULT_TAG_COLORS[5]
     );
     expect(next.find((t) => t.name === "CD")?.color).toBe(DEFAULT_TAG_COLORS[6]);
+    expect(next.find((t) => t.name === "CD")?.id).toBe(defaultStuffTagId("CD"));
+  });
+
+  test("ensures all canonical defaults are present without duplicates", () => {
+    // Simulates an already-v4 shelf that persisted without CD / Furniture.
+    const legacyShelf: StuffTag[] = [
+      { id: "1", name: "Kitchen", color: DEFAULT_TAG_COLORS[0], createdAt: 1 },
+      {
+        id: "2",
+        name: "Electronics",
+        color: DEFAULT_TAG_COLORS[1],
+        createdAt: 2,
+      },
+      { id: "3", name: "Clothing", color: DEFAULT_TAG_COLORS[2], createdAt: 3 },
+      { id: "4", name: "Books", color: DEFAULT_TAG_COLORS[3], createdAt: 4 },
+      { id: "5", name: "Other", color: DEFAULT_TAG_COLORS[4], createdAt: 5 },
+      { id: "custom", name: "Vintage", color: "#111", createdAt: 6 },
+    ];
+    const next = ensureDefaultStuffTags(legacyShelf);
+    for (const name of ALL_DEFAULT_NAMES) {
+      expect(next.filter((t) => t.name.toLowerCase() === name.toLowerCase())).toHaveLength(
+        1
+      );
+    }
+    expect(next.map((t) => t.name)).toContain("Vintage");
     expect(next.find((t) => t.name === "CD")?.id).toBe(defaultStuffTagId("CD"));
   });
 
@@ -87,11 +123,65 @@ describe("ensureDefaultStuffTags", () => {
     );
   });
 
+  test("isDefaultStuffTag matches stable id or canonical name", () => {
+    expect(
+      isDefaultStuffTag({
+        id: defaultStuffTagId("CD"),
+        name: "CD",
+        color: "#000",
+        createdAt: 1,
+      })
+    ).toBe(true);
+    expect(
+      isDefaultStuffTag({
+        id: "uuid",
+        name: "Kitchen",
+        color: "#000",
+        createdAt: 1,
+      })
+    ).toBe(true);
+    expect(
+      isDefaultStuffTag({
+        id: "custom",
+        name: "Vintage",
+        color: "#000",
+        createdAt: 1,
+      })
+    ).toBe(false);
+  });
+
   test("ensureFurnitureTag alias still inserts Furniture", () => {
     const withoutOther = baseTags.slice(0, 2);
     const next = ensureFurnitureTag(withoutOther);
     expect(next.map((t) => t.name)).toContain("Furniture");
     expect(next.map((t) => t.name)).toContain("CD");
+  });
+
+  test("deleteTag refuses seeded defaults and keeps custom tags deletable", async () => {
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    const defaults = ALL_DEFAULT_NAMES.map((name, index) => ({
+      id: defaultStuffTagId(name),
+      name,
+      color: DEFAULT_TAG_COLORS[index % DEFAULT_TAG_COLORS.length],
+      createdAt: index + 1,
+    }));
+    useStuffStore.setState({
+      tags: [
+        ...defaults,
+        { id: "custom", name: "Vintage", color: "#111", createdAt: 99 },
+      ],
+      selectedTagId: null,
+    });
+
+    useStuffStore.getState().deleteTag(defaultStuffTagId("CD"));
+    expect(
+      useStuffStore.getState().tags.some((t) => t.name === "CD")
+    ).toBe(true);
+
+    useStuffStore.getState().deleteTag("custom");
+    expect(
+      useStuffStore.getState().tags.some((t) => t.id === "custom")
+    ).toBe(false);
   });
 });
 

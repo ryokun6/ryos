@@ -19,6 +19,7 @@ import {
   type StuffTag,
   stuffStatusLabelDefault,
 } from "../types";
+import { isDefaultStuffTag } from "@/stores/useStuffStore";
 import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
 
 interface StuffSidebarProps {
@@ -175,19 +176,21 @@ export function StuffSidebar({
                 >
                   <Barcode size={11} />
                 </button>
-                <button
-                  type="button"
-                  className="rounded p-0.5 text-black/40 hover:bg-black/10 hover:text-black/70"
-                  aria-label={t("apps.stuff.sidebar.deleteTag", {
-                    defaultValue: "Delete Tag",
-                  })}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteTag(tag.id);
-                  }}
-                >
-                  <Trash size={11} />
-                </button>
+                {isDefaultStuffTag(tag) ? null : (
+                  <button
+                    type="button"
+                    className="rounded p-0.5 text-black/40 hover:bg-black/10 hover:text-black/70"
+                    aria-label={t("apps.stuff.sidebar.deleteTag", {
+                      defaultValue: "Delete Tag",
+                    })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteTag(tag.id);
+                    }}
+                  >
+                    <Trash size={11} />
+                  </button>
+                )}
               </div>
             </div>
           );

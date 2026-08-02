@@ -1,0 +1,7 @@
+Permanent Marker (Apache License 2.0)
+
+Source: https://fonts.google.com/specimen/Permanent+Marker
+GitHub: https://github.com/google/fonts/tree/main/apache/permanentmarker
+File: PermanentMarker-Latin.woff2 (latin subset from fonts.gstatic.com)
+License: Apache License 2.0 — see PermanentMarker-LICENSE.txt
+

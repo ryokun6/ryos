@@ -24,6 +24,10 @@ import {
   tagIdsWithDefaultBooks,
 } from "../utils/bookBarcode";
 import {
+  isItunesMusicLookupResult,
+  tagIdsWithDefaultCd,
+} from "../utils/cdLookupTag";
+import {
   itemToLabelTarget,
   parseStuffIdBarcode,
   printStuffLabels,
@@ -336,15 +340,20 @@ export function useStuffLogic({
       return;
     }
 
-    // New scan/add: default Books tag for ISBN / bookland codes only.
+    // New scan/add: Books for ISBN / bookland; CD for iTunes album hits.
     const isBook = isBookLookupScan({
       barcode: options.barcode ?? draftFields.barcode,
       barcodeFormat: options.barcodeFormat ?? draftFields.barcodeFormat,
       queryKind: enriched.queryKind,
     });
-    const tagIds = isBook
-      ? tagIdsWithDefaultBooks(undefined, addTag("Books"), true)
-      : undefined;
+    const isCd = isItunesMusicLookupResult({ source: enriched.source });
+    let tagIds: string[] | undefined;
+    if (isBook) {
+      tagIds = tagIdsWithDefaultBooks(undefined, addTag("Books"), true);
+    }
+    if (isCd) {
+      tagIds = tagIdsWithDefaultCd(tagIds, addTag("CD"), true);
+    }
     addItem({
       ...productDraft,
       status: "stowed",

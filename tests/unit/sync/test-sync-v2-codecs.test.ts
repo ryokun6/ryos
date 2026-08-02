@@ -392,7 +392,13 @@ describe("stuff codec", () => {
     const state = useStuffStore.getState();
     expect(state.items.map((item) => item.id)).toEqual(["i2"]);
     expect(state.items[0]?.tagIds).toEqual([]); // t1 stripped by remote tag delete
-    expect(state.tags.map((tag) => tag.id).sort()).toEqual(["t2", "t3"]);
+    // Remote tags kept; missing seeded defaults (Kitchen, CD, …) re-inserted.
+    expect(state.tags.map((tag) => tag.id)).toContain("t2");
+    expect(state.tags.map((tag) => tag.id)).toContain("t3");
+    expect(state.tags.some((tag) => tag.id === "stuff-default:cd")).toBe(true);
+    expect(state.tags.some((tag) => tag.id === "stuff-default:kitchen")).toBe(
+      true
+    );
   });
 
   test("stripImageDataUrlForSync removes oversized inline covers", () => {
@@ -422,7 +428,8 @@ describe("stuff codec", () => {
           updatedAt: 1,
         },
       ],
-      tags: [{ id: "t1", name: "Kitchen", color: "#c45c26", createdAt: 1 }],
+      // Custom tag — seeded defaults are not deletable.
+      tags: [{ id: "t1", name: "Vintage", color: "#c45c26", createdAt: 1 }],
     } as never);
 
     useStuffStore.getState().deleteTag("t1");

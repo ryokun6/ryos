@@ -15,11 +15,16 @@ import {
 } from "../../../api/stuff/_helpers/_productLookup";
 import {
   appleProductSlugCandidates,
+  itunesArtworkUrl,
+  itunesUpcCandidates,
   looksLikeAppleProductQuery,
   looksLikeITunesSoftwareQuery,
+  mapITunesAlbumToProductResult,
   parseAmazonSearchHtml,
   parseAppleProductPageHtml,
   pickBestDuckDuckGoImageResult,
+  pickBestITunesAlbum,
+  scoreITunesAlbumMatch,
   upgradeAmazonImageUrl,
 } from "../../../api/stuff/_helpers/_productRetailLookup";
 import {
@@ -422,6 +427,156 @@ describe("retail scrape helpers", () => {
     expect(appleProductSlugCandidates("AirPods Pro")).toContain("airpods-pro");
     expect(looksLikeITunesSoftwareQuery("AirPods Pro")).toBe(false);
     expect(looksLikeITunesSoftwareQuery("Things 3 ios app")).toBe(true);
+  });
+
+  test("itunesArtworkUrl upsizes square bb artwork paths", () => {
+    expect(
+      itunesArtworkUrl(
+        "https://is1-ssl.mzstatic.com/image/thumb/Music/x/y.jpg/100x100bb.jpg"
+      )
+    ).toBe(
+      "https://is1-ssl.mzstatic.com/image/thumb/Music/x/y.jpg/600x600bb.jpg"
+    );
+    expect(
+      itunesArtworkUrl(
+        "http://is1-ssl.mzstatic.com/image/thumb/Music/x/y.jpg/60x60bb.png"
+      )
+    ).toBe(
+      "https://is1-ssl.mzstatic.com/image/thumb/Music/x/y.jpg/600x600bb.png"
+    );
+    expect(itunesArtworkUrl(undefined)).toBeUndefined();
+  });
+
+  test("itunesUpcCandidates expands 12↔13 digit UPC/EAN forms", () => {
+    expect(itunesUpcCandidates("720642462928")).toEqual([
+      "720642462928",
+      "0720642462928",
+    ]);
+    expect(itunesUpcCandidates("0720642462928")).toEqual([
+      "0720642462928",
+      "720642462928",
+    ]);
+    expect(itunesUpcCandidates("978-0-14-0329473")).toEqual(["9780140329473"]);
+    expect(itunesUpcCandidates("000000000000")).toEqual([]);
+    expect(itunesUpcCandidates("111111111111")).toEqual([]);
+  });
+
+  test("mapITunesAlbumToProductResult maps album JSON to candidate shape", () => {
+    const mapped = mapITunesAlbumToProductResult({
+      wrapperType: "collection",
+      collectionType: "Album",
+      collectionName: "Weezer (Blue Album)",
+      artistName: "Weezer",
+      artworkUrl100:
+        "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ab.jpg/100x100bb.jpg",
+      collectionViewUrl:
+        "https://music.apple.com/us/album/weezer-blue-album/123",
+      collectionPrice: 9.99,
+      currency: "USD",
+    });
+    expect(mapped).toEqual({
+      found: true,
+      title: "Weezer (Blue Album)",
+      brand: "Weezer",
+      imageUrl:
+        "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ab.jpg/600x600bb.jpg",
+      productUrl: "https://music.apple.com/us/album/weezer-blue-album/123",
+      originalPrice: 9.99,
+      currency: "USD",
+      source: "itunes_music",
+    });
+  });
+
+  test("mapITunesAlbumToProductResult rejects non-album entries", () => {
+    expect(
+      mapITunesAlbumToProductResult({
+        wrapperType: "track",
+        trackName: "Buddy Holly",
+        artistName: "Weezer",
+      })
+    ).toBeNull();
+  });
+
+  test("pickBestITunesAlbum prefers artwork and title relevance", () => {
+    const best = pickBestITunesAlbum(
+      [
+        {
+          wrapperType: "collection",
+          collectionType: "Album",
+          collectionName: "Blue",
+        },
+        {
+          wrapperType: "collection",
+          collectionType: "Album",
+          collectionName: "Weezer (Blue Album)",
+          artistName: "Weezer",
+          artworkUrl100:
+            "https://is1-ssl.mzstatic.com/image/thumb/Music/x.jpg/100x100bb.jpg",
+        },
+        {
+          wrapperType: "collection",
+          collectionType: "Album",
+          collectionName: "Pinkerton",
+          artworkUrl100:
+            "https://is1-ssl.mzstatic.com/image/thumb/Music/y.jpg/100x100bb.jpg",
+        },
+      ],
+      "Weezer Blue Album"
+    );
+    expect(best?.collectionName).toBe("Weezer (Blue Album)");
+  });
+
+  test("scoreITunesAlbumMatch prefers original artist album over tribute listings", () => {
+    const query = "Kind of Blue Miles Davis";
+    const original = scoreITunesAlbumMatch(
+      {
+        collectionName: "Kind of Blue",
+        artistName: "Miles Davis",
+      },
+      query
+    );
+    const tribute = scoreITunesAlbumMatch(
+      {
+        collectionName: "Lullaby Versions of Kind of Blue & Miles Davis",
+        artistName: "Twinkle Twinkle Little Rock Star",
+      },
+      query
+    );
+    expect(original).toBeGreaterThan(tribute);
+    expect(
+      pickBestITunesAlbum(
+        [
+          {
+            wrapperType: "collection",
+            collectionType: "Album",
+            collectionName: "Lullaby Versions of Kind of Blue & Miles Davis",
+            artistName: "Twinkle Twinkle Little Rock Star",
+            artworkUrl100:
+              "https://is1-ssl.mzstatic.com/image/thumb/Music/a.jpg/100x100bb.jpg",
+          },
+          {
+            wrapperType: "collection",
+            collectionType: "Album",
+            collectionName: "Kind of Blue",
+            artistName: "Miles Davis",
+            artworkUrl100:
+              "https://is1-ssl.mzstatic.com/image/thumb/Music/b.jpg/100x100bb.jpg",
+          },
+        ],
+        query
+      )?.collectionName
+    ).toBe("Kind of Blue");
+  });
+
+  test("pickBestITunesAlbum rejects noisy UPC result sets without a query", () => {
+    const noisy = Array.from({ length: 6 }, (_, i) => ({
+      wrapperType: "collection" as const,
+      collectionType: "Album",
+      collectionName: `Album ${i}`,
+      artworkUrl100:
+        "https://is1-ssl.mzstatic.com/image/thumb/Music/x.jpg/100x100bb.jpg",
+    }));
+    expect(pickBestITunesAlbum(noisy)).toBeUndefined();
   });
 
   test("parseAppleProductPageHtml reads Open Graph metadata", () => {

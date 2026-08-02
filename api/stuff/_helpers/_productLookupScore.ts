@@ -86,6 +86,7 @@ export const RETAIL_PRODUCT_SOURCES = new Set([
   "apple",
   "duckduckgo_images",
   "itunes",
+  "itunes_music",
   "upcitemdb",
   "openproductsfacts",
   "openfoodfacts",
@@ -103,6 +104,7 @@ export function sourcePackshotBoost(source?: string): number {
       return 0.55;
     case "upcitemdb":
     case "itunes":
+    case "itunes_music":
       return 0.4;
     case "openproductsfacts":
     case "openfoodfacts":

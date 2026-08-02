@@ -44,6 +44,7 @@
       "AppleMyungjo", Batang;
     --font-apple-garamond: "AppleGaramond", var(--font-cjk-serif-jp),
       "SerenityOS-Emoji", "Times New Roman", serif;
+    --font-permanent-marker: "Permanent Marker", "Comic Sans MS", cursive;
     --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
@@ -478,6 +479,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   .font-apple-garamond {
     font-family: var(--font-apple-garamond);
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  .font-permanent-marker {
+    font-family: var(--font-permanent-marker);
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }

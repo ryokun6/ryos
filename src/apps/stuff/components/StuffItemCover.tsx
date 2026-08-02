@@ -40,6 +40,9 @@ import { useStuffItemCoverSrc } from "../hooks/useStuffItemCoverSrc";
 /** Match karaoke / iPod now-playing: dwell before marquee starts. */
 export const STUFF_TITLE_SCROLL_START_DELAY_SEC = 1;
 
+/** Classic Mac CD Audio volume icon — optimized 256² for empty CD trays. */
+const STUFF_CD_DISC_ICON = "/icons/stuff/cd-disc.png";
+
 interface StuffItemCoverProps {
   item: StuffItem;
   tags: StuffTag[];
@@ -52,6 +55,7 @@ interface StuffItemCoverProps {
 
 const KIND_ICONS: Record<StuffVisualKind, Icon> = {
   book: BookOpen,
+  cd: Disc,
   electronics: Cpu,
   kitchen: CookingPot,
   clothing: TShirt,
@@ -69,6 +73,92 @@ function BookSpineHighlight() {
           "linear-gradient(to right, rgba(0,0,0,0.45), rgba(0,0,0,0.12) 55%, rgba(255,255,255,0.25))",
       }}
     />
+  );
+}
+
+/** Left hinge + clear plastic sheen for a CD jewel case. */
+function JewelCaseChrome({ compact }: { compact?: boolean }) {
+  const hingeWidth = compact ? 5 : 8;
+  return (
+    <>
+      {/* Hinge / spine edge — crisp linear chrome ridge (matches ~1px left radius) */}
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 z-[2]"
+        style={{
+          width: hingeWidth,
+          background:
+            "linear-gradient(to right, rgba(95,102,112,0.55) 0%, rgba(210,218,228,0.8) 14%, rgba(255,255,255,0.78) 28%, rgba(185,194,206,0.45) 48%, rgba(120,130,142,0.28) 100%)",
+        }}
+      />
+      {/* Thin hard-edged specular along the hinge — not a soft oval bloom */}
+      <div
+        className="pointer-events-none absolute inset-y-0 z-[3]"
+        style={{
+          left: Math.max(1, hingeWidth - (compact ? 1.5 : 2)),
+          width: compact ? 1 : 1.5,
+          background:
+            "linear-gradient(to bottom, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.85) 28%, rgba(255,255,255,0.55) 62%, rgba(255,255,255,0.2) 100%)",
+        }}
+      />
+      {/* Clear plastic front glare — flatter linear sheen, no soft left radial */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[2]"
+        style={{
+          background:
+            "linear-gradient(to right, transparent 0%, transparent 10%, rgba(255,255,255,0.1) 22%, transparent 38%, transparent 74%, rgba(255,255,255,0.14) 100%)",
+          boxShadow:
+            "inset 0 0 0 1px rgba(255,255,255,0.5), inset 0 0 0 2px rgba(120,130,145,0.22)",
+        }}
+      />
+      {/* Top lip highlight */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-px bg-white/55"
+        style={{ marginLeft: hingeWidth }}
+      />
+    </>
+  );
+}
+
+/** Frosted clear tray for CD jewel-case artwork. */
+function JewelCaseTray({
+  children,
+  compact,
+}: {
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
+  // Slim clear lip around the tray so cover art fills more of the case.
+  // Left stays larger than the hinge (compact 5 / grid 8) so art clears it.
+  // Right stays tight so the case doesn't read too wide on the open edge.
+  // Slightly wider left lip at grid/detail so art clears the hinge on the
+  // ~123×108 jewel case (142:125 mm); list stays tight for the compact thumbnail.
+  const inset = compact
+    ? { top: 1, right: 0, bottom: 1, left: 6 }
+    : { top: 3, right: 2, bottom: 3, left: 10 };
+
+  return (
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(236,242,248,0.28) 48%, rgba(210,220,230,0.38) 100%)",
+      }}
+    >
+      <div
+        className="absolute overflow-hidden"
+        style={{
+          top: inset.top,
+          right: inset.right,
+          bottom: inset.bottom,
+          left: inset.left,
+          background: "rgba(255,255,255,0.18)",
+          boxShadow:
+            "inset 0 0 0 1px rgba(255,255,255,0.4), inset 0 1px 3px rgba(0,0,0,0.1)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -210,6 +300,8 @@ export function StuffItemCover({
   const [isHovered, setIsHovered] = useState(false);
   const visualKind = resolveStuffItemVisualKind(item, tags);
   const isBook = visualKind === "book";
+  const isCd = visualKind === "cd";
+  const isFramedCover = isBook || isCd;
   const isDetail = size === "detail";
   const isList = size === "list";
   const isGrid = size === "grid" || isDetail;
@@ -226,7 +318,8 @@ export function StuffItemCover({
 
   // Detail drawer: bare multiply against the white panel.
   // Shelf photo covers use clear glass instead (no multiply on tinted gel).
-  if (preview && isDetail && !isBook && coverSrc) {
+  // Books / CDs keep their skeuomorphic frame in detail preview.
+  if (preview && isDetail && !isFramedCover && coverSrc) {
     return (
       <div
         className="relative shrink-0"
@@ -247,26 +340,41 @@ export function StuffItemCover({
     "group relative shrink-0 overflow-hidden text-left outline-none",
     isBook
       ? "rounded-[2px] rounded-l-[4px] shadow-md"
-      : cn("rounded-[10px]", isList && "rounded-[6px]"),
+      : isCd
+        ? "rounded-l-[1px] rounded-r-[3px] shadow-md"
+        : cn("rounded-[10px]", isList && "rounded-[6px]"),
     !preview && selected && "ring-2 ring-os-accent ring-offset-1"
   );
+
+  const framedCoverShadow = isGrid
+    ? "-2px 4px 10px rgba(0,0,0,0.35), -1px 1px 0 rgba(0,0,0,0.2)"
+    : "-1px 2px 4px rgba(0,0,0,0.25)";
 
   const coverStyle = isBook
     ? ({
         width,
         height,
-        boxShadow: isGrid
-          ? "-2px 4px 10px rgba(0,0,0,0.35), -1px 1px 0 rgba(0,0,0,0.2)"
-          : "-1px 2px 4px rgba(0,0,0,0.25)",
+        boxShadow: framedCoverShadow,
       } as const)
-    : ({
-        width,
-        height,
-        // Photos: clear glass + light well (no multiply). Placeholders: tinted gel.
-        ...(coverSrc
-          ? productAquaPhotoTileStyle(aquaTint)
-          : productAquaTileStyle(aquaTint)),
-      } as const);
+    : isCd
+      ? ({
+          width,
+          height,
+          // Frosted clear plastic — no opaque black tray fill.
+          background:
+            "linear-gradient(155deg, rgba(255,255,255,0.58) 0%, rgba(232,240,248,0.36) 52%, rgba(200,214,228,0.48) 100%)",
+          boxShadow: isGrid
+            ? `${framedCoverShadow}, inset -1px 0 0 rgba(255,255,255,0.35)`
+            : framedCoverShadow,
+        } as const)
+      : ({
+          width,
+          height,
+          // Photos: clear glass + light well (no multiply). Placeholders: tinted gel.
+          ...(coverSrc
+            ? productAquaPhotoTileStyle(aquaTint)
+            : productAquaTileStyle(aquaTint)),
+        } as const);
 
   const renderNonBookContent = () => {
     if (coverSrc) {
@@ -315,9 +423,82 @@ export function StuffItemCover({
     );
   };
 
+  const renderCdContent = () => {
+    if (coverSrc) {
+      return (
+        <JewelCaseTray compact={isList}>
+          <img
+            src={coverSrc}
+            alt=""
+            className="h-full w-full object-cover"
+            draggable={false}
+          />
+        </JewelCaseTray>
+      );
+    }
+
+    // Empty CD: disc art in the clear tray; title/artist like empty books
+    // (top + bottom), so type clears the spindle hole.
+    return (
+      <JewelCaseTray compact={isList}>
+        <img
+          src={STUFF_CD_DISC_ICON}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-contain"
+          style={{
+            // Fill most of the clear tray; height is the limiting axis
+            // (landscape case + object-contain). Title/artist sit on the disc.
+            width: isList ? "96%" : "102%",
+            height: isList ? "96%" : "102%",
+          }}
+        />
+        {!isList && (
+          <div
+            className={cn(
+              "relative z-[1] flex h-full w-full flex-col justify-between",
+              isGrid ? "px-2.5 pb-2.5 pt-3" : "px-2 pb-2 pt-2.5"
+            )}
+            style={{
+              color: "rgba(32, 36, 42, 0.92)",
+              // Marker face via CSS var (not a utility class) — Aqua themes
+              // force `font-size` on some named font utilities.
+              fontFamily: "var(--font-permanent-marker)",
+            }}
+          >
+            <span
+              className={cn(
+                "line-clamp-3 text-center leading-[1.05]",
+                isGrid ? "text-[13px]" : "text-[11px]"
+              )}
+              style={{
+                textShadow:
+                  "0 0 4px rgba(255,255,255,0.95), 0 1px 0 rgba(255,255,255,0.85)",
+              }}
+            >
+              {item.title}
+            </span>
+            {isGrid && item.brand && (
+              <span
+                className="truncate text-center text-[11px] opacity-90"
+                style={{
+                  textShadow:
+                    "0 0 4px rgba(255,255,255,0.95), 0 1px 0 rgba(255,255,255,0.8)",
+                }}
+              >
+                {item.brand}
+              </span>
+            )}
+          </div>
+        )}
+      </JewelCaseTray>
+    );
+  };
+
   const coverBody = (
     <>
-      {!isBook && <ProductAquaChrome compact={isList} />}
+      {!isFramedCover && <ProductAquaChrome compact={isList} />}
 
       {isBook ? (
         coverSrc ? (
@@ -351,11 +532,14 @@ export function StuffItemCover({
             )}
           </div>
         )
+      ) : isCd ? (
+        renderCdContent()
       ) : (
         renderNonBookContent()
       )}
 
       {isBook && <BookSpineHighlight />}
+      {isCd && <JewelCaseChrome compact={isList} />}
 
       {isGrid && !preview && size === "grid" && (
         <GridTitleOverlay

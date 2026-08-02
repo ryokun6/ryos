@@ -12,6 +12,8 @@ import {
   lookupAmazonByTitle,
   lookupAppleComByTitle,
   lookupDuckDuckGoImagesByTitle,
+  lookupITunesAlbumByTitle,
+  lookupITunesAlbumByUpc,
   lookupITunesSoftwareByTitle,
 } from "./_productRetailLookup.js";
 
@@ -831,9 +833,10 @@ export async function lookupWikipediaByTitle(
  * Resolve product metadata for barcode, ISBN, or free-text queries.
  *
  * Title (free-text) search fans out in parallel to retail scrapes (Amazon,
- * DuckDuckGo images, Apple.com / iTunes when relevant), catalog APIs
- * (UPCitemdb, Open Products/Food Facts), Wikipedia, and book APIs, then ranks
- * distinct source hits for the picker (primary fields = best hit).
+ * DuckDuckGo images, Apple.com / iTunes when relevant), iTunes album search,
+ * catalog APIs (UPCitemdb, Open Products/Food Facts), Wikipedia, and book APIs,
+ * then ranks distinct source hits for the picker (primary fields = best hit).
+ * Barcode lookup also tries iTunes UPC → album artwork.
  */
 export async function resolveProductLookup(
   rawQuery: string
@@ -863,15 +866,20 @@ export async function resolveProductLookup(
   }
 
   if (kind === "barcode") {
-    const [openFoodFacts, upc] = await Promise.all([
+    const [openFoodFacts, upc, itunesAlbum] = await Promise.all([
       lookupOpenFoodFacts(normalized),
       lookupUpcItemDb(normalized),
+      lookupITunesAlbumByUpc(normalized),
     ]);
-    let candidates: Array<ProductLookupResult | null> = [openFoodFacts, upc];
+    let candidates: Array<ProductLookupResult | null> = [
+      openFoodFacts,
+      upc,
+      itunesAlbum,
+    ];
 
     if (/^97[89]\d{10}$/.test(normalized)) {
       const needBooks = !openFoodFacts?.imageUrl && !upc?.imageUrl;
-      if (needBooks || (!openFoodFacts && !upc)) {
+      if (needBooks || (!openFoodFacts && !upc && !itunesAlbum)) {
         const [openLibrary, googleBooks] = await Promise.all([
           lookupOpenLibraryByIsbn(normalized),
           lookupGoogleBooksByIsbn(normalized),
@@ -887,12 +895,13 @@ export async function resolveProductLookup(
     );
   }
 
-  // Free-text: retail scrapes + catalogs + books in parallel.
+  // Free-text: retail scrapes + catalogs + books + albums in parallel.
   const [
     amazonTitle,
     ddgImagesTitle,
     appleTitle,
     itunesTitle,
+    itunesAlbumTitle,
     upcTitle,
     openProductsTitle,
     openFoodTitle,
@@ -904,6 +913,7 @@ export async function resolveProductLookup(
     lookupDuckDuckGoImagesByTitle(normalized),
     lookupAppleComByTitle(normalized),
     lookupITunesSoftwareByTitle(normalized),
+    lookupITunesAlbumByTitle(normalized),
     lookupUpcItemDbByTitle(normalized),
     lookupOpenProductsFactsByTitle(normalized),
     lookupOpenFoodFactsByTitle(normalized),
@@ -913,9 +923,9 @@ export async function resolveProductLookup(
   ]);
 
   // Prefer retail/catalog ordering when a solid product hit exists so cookbooks
-  // don't dominate the top of the picker; otherwise lead with wiki/books.
+  // don't dominate the top of the picker; otherwise lead with wiki/books/albums.
   const retailMerged = mergeAllProductResults(
-    [amazonTitle, appleTitle, itunesTitle],
+    [amazonTitle, appleTitle, itunesTitle, itunesAlbumTitle],
     { query: normalized }
   );
   const catalogMerged = mergeAllProductResults(
@@ -936,6 +946,7 @@ export async function resolveProductLookup(
         amazonTitle,
         appleTitle,
         itunesTitle,
+        itunesAlbumTitle,
         upcTitle,
         openProductsTitle,
         openFoodTitle,
@@ -948,6 +959,7 @@ export async function resolveProductLookup(
         wikipediaTitle,
         openLibraryTitle,
         googleBooksTitle,
+        itunesAlbumTitle,
         amazonTitle,
         appleTitle,
         itunesTitle,

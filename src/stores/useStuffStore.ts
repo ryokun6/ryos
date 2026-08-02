@@ -26,7 +26,7 @@ import {
   type ImportStuffShelfCounts,
 } from "@/apps/stuff/utils/stuffShelfImportExport";
 
-const STUFF_STORE_VERSION = 4;
+const STUFF_STORE_VERSION = 5;
 
 /** Canonical English names — UI labels come from `apps.stuff.defaultTags.*`. */
 const DEFAULT_TAGS: Omit<StuffTag, "id" | "createdAt">[] = [
@@ -59,6 +59,11 @@ function tagMatchesDefault(tag: StuffTag, defaultName: string): boolean {
     tag.id === defaultStuffTagId(defaultName) ||
     tag.name.trim().toLowerCase() === slug
   );
+}
+
+/** True when a tag is one of the seeded canonical defaults (by id or name). */
+export function isDefaultStuffTag(tag: StuffTag): boolean {
+  return DEFAULT_TAGS.some((def) => tagMatchesDefault(tag, def.name));
 }
 
 /**
@@ -358,6 +363,9 @@ export const useStuffStore = create<StuffStoreState>()(
       },
 
       deleteTag: (id) => {
+        const existing = get().tags.find((tag) => tag.id === id);
+        // Seeded defaults must stay available (same as ensure-on-load).
+        if (existing && isDefaultStuffTag(existing)) return;
         useCloudSyncStore.getState().markDeletedKeys("stuffTagIds", [id]);
         set((state) => ({
           tags: state.tags.filter((tag) => tag.id !== id),
@@ -386,7 +394,7 @@ export const useStuffStore = create<StuffStoreState>()(
         }
         set({
           items: snapshot.items,
-          tags: snapshot.tags,
+          tags: ensureDefaultStuffTags(snapshot.tags),
         });
       },
 
@@ -427,7 +435,7 @@ export const useStuffStore = create<StuffStoreState>()(
 
         set({
           items: result.items,
-          tags: result.tags,
+          tags: ensureDefaultStuffTags(result.tags),
         });
 
         for (const { itemId, imageDataUrl } of result.coverIngest) {
@@ -459,7 +467,9 @@ export const useStuffStore = create<StuffStoreState>()(
       migrate: (persistedState, version) => {
         const state = (persistedState ?? {}) as Partial<StuffStoreState>;
         let tags = Array.isArray(state.tags) ? state.tags : [];
-        if (version < 4) {
+        // v4 added Furniture/CD ensure for <4 only; already-v4 shelves that
+        // never got CD (or deleted a default) need ensure again at v5.
+        if (version < 5) {
           tags = ensureDefaultStuffTags(tags);
         }
         return {
@@ -474,13 +484,27 @@ export const useStuffStore = create<StuffStoreState>()(
 let didSeedDefaultTags = false;
 let didMigrateCovers = false;
 
+/**
+ * After IndexedDB hydrate: insert any missing seeded defaults (Kitchen…CD…Other).
+ * Must run even when tags is non-empty — migrate alone won't help already-v4
+ * shelves that persisted without CD.
+ */
 function seedDefaultTagsIfNeeded(): void {
   if (didSeedDefaultTags) return;
   if (!useStuffStore.persist.hasHydrated()) return;
   didSeedDefaultTags = true;
   const { tags } = useStuffStore.getState();
-  if (tags.length > 0) return;
-  useStuffStore.setState({ tags: createDefaultTags() });
+  const next =
+    tags.length === 0 ? createDefaultTags() : ensureDefaultStuffTags(tags);
+  if (next === tags) return;
+  const prevIds = new Set(tags.map((tag) => tag.id));
+  const addedIds = next
+    .filter((tag) => !prevIds.has(tag.id))
+    .map((tag) => tag.id);
+  if (addedIds.length > 0) {
+    useCloudSyncStore.getState().clearDeletedKeys("stuffTagIds", addedIds);
+  }
+  useStuffStore.setState({ tags: next });
 }
 
 async function migrateLegacyCoversIfNeeded(): Promise<void> {
