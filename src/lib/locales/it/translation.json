@@ -4071,6 +4071,8 @@
         "title": "Dettagli"
       },
       "dialogs": {
+        "clearShelfDescription": "Vuoi davvero svuotare l’intero scaffale? Tutti gli articoli verranno rimossi e resteranno solo i tag predefiniti. Questa azione non può essere annullata.",
+        "clearShelfTitle": "Svuota scaffale",
         "newTag": {
           "description": "Inserisci un nome per il nuovo tag.",
           "title": "Nuovo tag"
@@ -4110,7 +4112,7 @@
           "title": "Prezzi e stato"
         },
         "print": {
-          "description": "Stampa codici a barre con ID ryOS per articoli o tag da File ▸ Stampa etichette articoli/tag. Scansionare un’etichetta stampata apre l’articolo o filtra per tag.",
+          "description": "Stampa codici a barre con ID ryOS per articoli o tag da Stampa ▸ Stampa etichette articoli/tag. Scansionare un’etichetta stampata apre l’articolo o filtra per tag.",
           "title": "Stampa etichette"
         },
         "scan": {
@@ -4133,12 +4135,14 @@
       "menu": {
         "about": "Informazioni su Stuff",
         "backToShelf": "Torna al mio scaffale",
+        "clearShelf": "Svuota scaffale…",
         "exportShelf": "Esporta scaffale…",
         "gridView": "Vista a griglia",
         "help": "Aiuto di Stuff",
         "importShelf": "Importa scaffale…",
         "listView": "Vista a elenco",
         "newItem": "Nuovo articolo",
+        "print": "Stampa",
         "printItemLabels": "Stampa etichette articoli…",
         "printTagLabels": "Stampa etichette tag…",
         "scanBarcode": "Scansiona codice a barre…",
@@ -4231,7 +4235,8 @@
         "exportSuccess": "Scaffale esportato",
         "importEmpty": "Nessun nuovo articolo o tag trovato in quel file",
         "importFailed": "Impossibile importare lo scaffale — il file potrebbe non essere valido",
-        "importSuccess": "Importati {{items}} articoli e {{tags}} tag ({{skipped}} ignorati)"
+        "importSuccess": "Importati {{items}} articoli e {{tags}} tag ({{skipped}} ignorati)",
+        "shelfCleared": "Scaffale svuotato"
       },
       "toolbar": {
         "add": "Aggiungi",

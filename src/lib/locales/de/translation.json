@@ -4068,6 +4068,8 @@
         "title": "Details"
       },
       "dialogs": {
+        "clearShelfDescription": "Möchten Sie Ihr gesamtes Regal wirklich leeren? Alle Einträge werden entfernt und nur die Standard-Schlagwörter bleiben. Diese Aktion kann nicht rückgängig gemacht werden.",
+        "clearShelfTitle": "Regal leeren",
         "newTag": {
           "description": "Gib einen Namen für das neue Tag ein.",
           "title": "Neues Tag"
@@ -4107,7 +4109,7 @@
           "title": "Preise & Status"
         },
         "print": {
-          "description": "Drucke ryOS-ID-Barcodes für Einträge oder Schlagwörter über Ablage ▸ Objekt-/Schlagwortetiketten drucken. Das Scannen eines gedruckten Etiketts öffnet den Eintrag oder filtert nach Schlagwort.",
+          "description": "Drucke ryOS-ID-Barcodes für Einträge oder Schlagwörter über Drucken ▸ Objekt-/Schlagwortetiketten drucken. Das Scannen eines gedruckten Etiketts öffnet den Eintrag oder filtert nach Schlagwort.",
           "title": "Etiketten drucken"
         },
         "scan": {
@@ -4130,12 +4132,14 @@
       "menu": {
         "about": "Über Stuff",
         "backToShelf": "Zurück zu meinem Regal",
+        "clearShelf": "Regal leeren…",
         "exportShelf": "Regal exportieren…",
         "gridView": "Rasteransicht",
         "help": "Stuff-Hilfe",
         "importShelf": "Regal importieren…",
         "listView": "Listenansicht",
         "newItem": "Neuer Eintrag",
+        "print": "Drucken",
         "printItemLabels": "Objektetiketten drucken…",
         "printTagLabels": "Schlagwortetiketten drucken…",
         "scanBarcode": "Barcode scannen…",
@@ -4228,7 +4232,8 @@
         "exportSuccess": "Regal exportiert",
         "importEmpty": "Keine neuen Objekte oder Schlagwörter in dieser Datei gefunden",
         "importFailed": "Regal konnte nicht importiert werden — Datei möglicherweise ungültig",
-        "importSuccess": "{{items}} Objekte und {{tags}} Schlagwörter importiert ({{skipped}} übersprungen)"
+        "importSuccess": "{{items}} Objekte und {{tags}} Schlagwörter importiert ({{skipped}} übersprungen)",
+        "shelfCleared": "Regal geleert"
       },
       "toolbar": {
         "add": "Hinzufügen",

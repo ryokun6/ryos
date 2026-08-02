@@ -53,6 +53,6 @@ export const helpItems = [
     icon: "🖨️",
     title: "Print Labels",
     description:
-      "Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag.",
+      "Print ryOS ID barcodes for items or tags from Print ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag.",
   },
 ];

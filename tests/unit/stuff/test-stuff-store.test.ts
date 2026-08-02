@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  createDefaultStuffTags,
   defaultStuffTagId,
   ensureDefaultStuffTags,
   ensureFurnitureTag,
@@ -182,6 +183,44 @@ describe("ensureDefaultStuffTags", () => {
     expect(
       useStuffStore.getState().tags.some((t) => t.id === "custom")
     ).toBe(false);
+  });
+
+  test("clearShelf empties items, resets defaults, and clears filters", async () => {
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    const defaults = createDefaultStuffTags();
+    useStuffStore.setState({
+      items: [
+        makeItem({
+          id: "lamp",
+          title: "Lamp",
+          coverBlobId: "lamp-cover",
+          tagIds: ["custom"],
+        }),
+      ],
+      tags: [
+        ...defaults,
+        { id: "custom", name: "Vintage", color: "#111", createdAt: 99 },
+      ],
+      selectedItemId: "lamp",
+      selectedTagId: "custom",
+      statusFilter: "for_sale",
+      searchQuery: "lamp",
+      lastShareId: "share-1",
+    });
+
+    useStuffStore.getState().clearShelf();
+    const state = useStuffStore.getState();
+
+    expect(state.items).toEqual([]);
+    expect(state.tags.map((tag) => tag.name)).toEqual(ALL_DEFAULT_NAMES);
+    expect(state.tags.every((tag) => tag.id === defaultStuffTagId(tag.name))).toBe(
+      true
+    );
+    expect(state.selectedItemId).toBeNull();
+    expect(state.selectedTagId).toBeNull();
+    expect(state.statusFilter).toBe("all");
+    expect(state.searchQuery).toBe("");
+    expect(state.lastShareId).toBeNull();
   });
 });
 

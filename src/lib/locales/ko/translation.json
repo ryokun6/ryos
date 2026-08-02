@@ -4068,6 +4068,8 @@
         "title": "세부사항"
       },
       "dialogs": {
+        "clearShelfDescription": "전체 선반을 지우시겠습니까? 모든 항목이 제거되고 기본 태그만 남습니다. 이 작업은 되돌릴 수 없습니다.",
+        "clearShelfTitle": "선반 지우기",
         "newTag": {
           "description": "새로운 태그의 이름을 입력하십시오.",
           "title": "새로운 태그"
@@ -4107,7 +4109,7 @@
           "title": "가격 및 상태"
         },
         "print": {
-          "description": "파일 ▸ 항목/태그 라벨 인쇄에서 항목이나 태그의 ryOS ID 바코드를 인쇄하세요. 인쇄된 라벨을 스캔하면 해당 항목이 열리거나 태그로 필터링됩니다.",
+          "description": "프린트 ▸ 항목/태그 라벨 인쇄에서 항목이나 태그의 ryOS ID 바코드를 인쇄하세요. 인쇄된 라벨을 스캔하면 해당 항목이 열리거나 태그로 필터링됩니다.",
           "title": "라벨 인쇄"
         },
         "scan": {
@@ -4130,12 +4132,14 @@
       "menu": {
         "about": "Stuff 정보",
         "backToShelf": "내 선반으로 돌아가기",
+        "clearShelf": "선반 지우기…",
         "exportShelf": "선반 내보내기…",
         "gridView": "격자 보기",
         "help": "Stuff 도움말",
         "importShelf": "선반 가져오기…",
         "listView": "목록 보기",
         "newItem": "새 항목",
+        "print": "프린트",
         "printItemLabels": "항목 라벨 인쇄…",
         "printTagLabels": "태그 라벨 인쇄…",
         "scanBarcode": "바코드 스캔…",
@@ -4228,7 +4232,8 @@
         "exportSuccess": "선반을 내보냈습니다",
         "importEmpty": "해당 파일에서 새 항목이나 태그를 찾지 못했습니다",
         "importFailed": "선반을 가져올 수 없습니다 — 파일이 유효하지 않을 수 있습니다",
-        "importSuccess": "항목 {{items}}개와 태그 {{tags}}개를 가져왔습니다({{skipped}}개 건너뜀)"
+        "importSuccess": "항목 {{items}}개와 태그 {{tags}}개를 가져왔습니다({{skipped}}개 건너뜀)",
+        "shelfCleared": "선반이 지워짐"
       },
       "toolbar": {
         "add": "추가",

@@ -4068,6 +4068,8 @@
         "title": "詳細"
       },
       "dialogs": {
+        "clearShelfDescription": "棚をすべて消去してもよろしいですか？すべてのアイテムが削除され、デフォルトのタグのみが残ります。この操作は元に戻せません。",
+        "clearShelfTitle": "棚を消去",
         "newTag": {
           "description": "新しいタグの名前を入力してください。",
           "title": "新規タグ"
@@ -4107,7 +4109,7 @@
           "title": "価格とステータス"
         },
         "print": {
-          "description": "ファイル ▸ アイテム/タグラベルをプリントからryOS IDバーコードを印刷します。印刷したラベルをスキャンするとそのアイテムが開くか、タグで絞り込まれます。",
+          "description": "プリント ▸ アイテム/タグラベルをプリントから ryOS ID バーコードを印刷します。印刷したラベルをスキャンするとそのアイテムが開くか、タグで絞り込まれます。",
           "title": "ラベルをプリント"
         },
         "scan": {
@@ -4130,12 +4132,14 @@
       "menu": {
         "about": "Stuffについて",
         "backToShelf": "自分の棚に戻る",
+        "clearShelf": "棚を消去…",
         "exportShelf": "棚を書き出す…",
         "gridView": "グリッド表示",
         "help": "Stuffヘルプ",
         "importShelf": "棚を読み込む…",
         "listView": "リスト表示",
         "newItem": "新規アイテム",
+        "print": "プリント",
         "printItemLabels": "アイテムラベルをプリント…",
         "printTagLabels": "タグラベルをプリント…",
         "scanBarcode": "バーコードをスキャン…",
@@ -4228,7 +4232,8 @@
         "exportSuccess": "棚を書き出しました",
         "importEmpty": "そのファイルに新しいアイテムやタグはありません",
         "importFailed": "棚を読み込めませんでした — ファイルが無効の可能性があります",
-        "importSuccess": "{{items}}件のアイテムと{{tags}}件のタグを読み込みました（{{skipped}}件をスキップ）"
+        "importSuccess": "{{items}}件のアイテムと{{tags}}件のタグを読み込みました（{{skipped}}件をスキップ）",
+        "shelfCleared": "棚をクリアしました"
       },
       "toolbar": {
         "add": "追加",

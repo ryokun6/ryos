@@ -5012,10 +5012,12 @@
         "backToShelf": "Back to My Shelf",
         "help": "Stuff Help",
         "about": "About Stuff",
+        "print": "Print",
         "printItemLabels": "Print Item Labels…",
         "printTagLabels": "Print Tag Labels…",
         "exportShelf": "Export Shelf…",
         "importShelf": "Import Shelf…",
+        "clearShelf": "Clear Shelf…",
         "gridView": "Grid View",
         "listView": "List View",
         "showSidebar": "Show Sidebar"
@@ -5025,7 +5027,8 @@
         "exportFailed": "Couldn't export shelf",
         "importSuccess": "Imported {{items}} items and {{tags}} tags ({{skipped}} skipped)",
         "importEmpty": "No new items or tags found in that file",
-        "importFailed": "Couldn't import shelf — file may be invalid"
+        "importFailed": "Couldn't import shelf — file may be invalid",
+        "shelfCleared": "Shelf Cleared"
       },
       "toolbar": {
         "add": "Add",
@@ -5054,6 +5057,8 @@
           "title": "New Tag",
           "description": "Enter a name for the new tag."
         },
+        "clearShelfTitle": "Clear Shelf",
+        "clearShelfDescription": "Are you sure you want to clear your entire shelf? All items will be removed and only default tags will remain. This action can't be undone.",
         "productLookup": {
           "title": "Choose Product",
           "description": "Select a match for \"{{query}}\"",
@@ -5190,7 +5195,7 @@
         },
         "print": {
           "title": "Print Labels",
-          "description": "Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag."
+          "description": "Print ryOS ID barcodes for items or tags from Print ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag."
         }
       }
     }

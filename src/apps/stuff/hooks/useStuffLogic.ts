@@ -87,6 +87,7 @@ export function useStuffLogic({
   const setLastShareId = useStuffStore((s) => s.setLastShareId);
   const exportShelf = useStuffStore((s) => s.exportShelf);
   const importShelf = useStuffStore((s) => s.importShelf);
+  const clearShelf = useStuffStore((s) => s.clearShelf);
 
   const {
     isHelpDialogOpen,
@@ -96,6 +97,7 @@ export function useStuffLogic({
   } = useAppHelpAboutDialogs();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [activeShareId, setActiveShareId] = useState<string | null>(
     initialData?.shareId ?? null
   );
@@ -172,6 +174,20 @@ export function useStuffLogic({
           ? tags.filter((tag) => tag.id === selectedTagId)
           : tags;
     void printStuffLabels(selected.map(tagToLabelTarget));
+  };
+
+  const handleClearShelf = () => {
+    setIsConfirmClearOpen(true);
+  };
+
+  const confirmClearShelf = () => {
+    clearShelf();
+    setIsConfirmClearOpen(false);
+    toast.success(
+      t("apps.stuff.toasts.shelfCleared", {
+        defaultValue: "Shelf Cleared",
+      })
+    );
   };
 
   const applyImportedShelfJson = (json: string) => {
@@ -596,6 +612,8 @@ export function useStuffLogic({
     setIsScannerOpen,
     isShareDialogOpen,
     setIsShareDialogOpen,
+    isConfirmClearOpen,
+    setIsConfirmClearOpen,
     activeShareId,
     setActiveShareId,
     isLookingUp,
@@ -631,6 +649,8 @@ export function useStuffLogic({
     handlePrintSelected,
     handlePrintItemLabels,
     handlePrintTagLabels,
+    handleClearShelf,
+    confirmClearShelf,
     handleExportShelf,
     handleImportShelf,
     handleScan,

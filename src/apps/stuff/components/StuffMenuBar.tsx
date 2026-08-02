@@ -14,6 +14,7 @@ interface StuffMenuBarProps {
   onAddItem: () => void;
   onScan: () => void;
   onShare: () => void;
+  onClearShelf: () => void;
   onPrintItemLabels: () => void;
   onPrintTagLabels: () => void;
   onExportShelf: () => void;
@@ -36,6 +37,7 @@ export function StuffMenuBar({
   onAddItem,
   onScan,
   onShare,
+  onClearShelf,
   onPrintItemLabels,
   onPrintTagLabels,
   onExportShelf,
@@ -112,22 +114,6 @@ export function StuffMenuBar({
               }),
               onClick: onShare,
             },
-            {
-              type: "action",
-              label: t("apps.stuff.menu.printItemLabels", {
-                defaultValue: "Print Item Labels…",
-              }),
-              onClick: onPrintItemLabels,
-              disabled: !canPrintItems,
-            },
-            {
-              type: "action",
-              label: t("apps.stuff.menu.printTagLabels", {
-                defaultValue: "Print Tag Labels…",
-              }),
-              onClick: onPrintTagLabels,
-              disabled: !canPrintTags,
-            },
             { type: "separator" },
             {
               type: "action",
@@ -143,6 +129,14 @@ export function StuffMenuBar({
                 defaultValue: "Import Shelf…",
               }),
               onClick: onImportShelf,
+            },
+            { type: "separator" },
+            {
+              type: "action",
+              label: t("apps.stuff.menu.clearShelf", {
+                defaultValue: "Clear Shelf…",
+              }),
+              onClick: onClearShelf,
             },
             { type: "separator" },
             {
@@ -173,6 +167,27 @@ export function StuffMenuBar({
           checked: isSidebarVisible,
           onChange: () => onToggleSidebar(),
           disabled: isSharedView,
+        },
+      ],
+    },
+    {
+      label: t("apps.stuff.menu.print", { defaultValue: "Print" }),
+      items: [
+        {
+          type: "action",
+          label: t("apps.stuff.menu.printItemLabels", {
+            defaultValue: "Print Item Labels…",
+          }),
+          onClick: onPrintItemLabels,
+          disabled: !canPrintItems || isSharedView,
+        },
+        {
+          type: "action",
+          label: t("apps.stuff.menu.printTagLabels", {
+            defaultValue: "Print Tag Labels…",
+          }),
+          onClick: onPrintTagLabels,
+          disabled: !canPrintTags || isSharedView,
         },
       ],
     },

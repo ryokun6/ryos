@@ -4068,6 +4068,8 @@
         "title": "詳細資訊"
       },
       "dialogs": {
+        "clearShelfDescription": "確定要清除整個貨架嗎？所有項目都會移除，只保留預設標籤。此動作無法復原。",
+        "clearShelfTitle": "清除貨架",
         "newTag": {
           "description": "輸入新標籤的名稱。",
           "title": "新增標籤"
@@ -4107,7 +4109,7 @@
           "title": "價格與狀態"
         },
         "print": {
-          "description": "從「檔案」▸「列印項目/標籤標籤」列印項目或標籤的 ryOS ID 條碼。掃描印出的標籤可打開該項目或依標籤過濾。",
+          "description": "從「列印」▸「列印項目/標籤標籤」列印項目或標籤的 ryOS ID 條碼。掃描印出的標籤可打開該項目或依標籤過濾。",
           "title": "列印標籤"
         },
         "scan": {
@@ -4130,12 +4132,14 @@
       "menu": {
         "about": "關於 Stuff",
         "backToShelf": "回到我的架子",
+        "clearShelf": "清除貨架⋯",
         "exportShelf": "匯出貨架…",
         "gridView": "格狀檢視",
         "help": "Stuff 輔助說明",
         "importShelf": "匯入貨架…",
         "listView": "列表檢視",
         "newItem": "新增項目",
+        "print": "列印",
         "printItemLabels": "列印項目標籤⋯",
         "printTagLabels": "列印標籤標籤⋯",
         "scanBarcode": "掃描條碼⋯",
@@ -4228,7 +4232,8 @@
         "exportSuccess": "貨架已匯出",
         "importEmpty": "該檔案中找不到新的物品或標籤",
         "importFailed": "無法匯入貨架 — 檔案可能無效",
-        "importSuccess": "已匯入 {{items}} 件物品和 {{tags}} 個標籤（略過 {{skipped}} 個）"
+        "importSuccess": "已匯入 {{items}} 件物品和 {{tags}} 個標籤（略過 {{skipped}} 個）",
+        "shelfCleared": "已清除貨架"
       },
       "toolbar": {
         "add": "加入",

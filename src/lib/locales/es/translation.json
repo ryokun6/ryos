@@ -4071,6 +4071,8 @@
         "title": "Detalles"
       },
       "dialogs": {
+        "clearShelfDescription": "¿Seguro que quieres vaciar toda la estantería? Se eliminarán todos los artículos y solo quedarán las etiquetas predeterminadas. Esta acción no se puede deshacer.",
+        "clearShelfTitle": "Vaciar estantería",
         "newTag": {
           "description": "Introduce un nombre para la etiqueta nueva.",
           "title": "Etiqueta nueva"
@@ -4110,7 +4112,7 @@
           "title": "Precios y estado"
         },
         "print": {
-          "description": "Imprime códigos de barras con ID de ryOS para artículos o tags desde Archivo ▸ Imprimir etiquetas de artículos/tags. Escanear una etiqueta impresa abre ese artículo o filtra por tag.",
+          "description": "Imprime códigos de barras con ID de ryOS para artículos o tags desde Impresión ▸ Imprimir etiquetas de artículos/tags. Escanear una etiqueta impresa abre ese artículo o filtra por tag.",
           "title": "Imprimir etiquetas"
         },
         "scan": {
@@ -4133,12 +4135,14 @@
       "menu": {
         "about": "Acerca de Stuff",
         "backToShelf": "Volver a mi estantería",
+        "clearShelf": "Vaciar estantería…",
         "exportShelf": "Exportar estantería…",
         "gridView": "Vista de cuadrícula",
         "help": "Ayuda de Stuff",
         "importShelf": "Importar estantería…",
         "listView": "Vista de lista",
         "newItem": "Nuevo artículo",
+        "print": "Impresión",
         "printItemLabels": "Imprimir etiquetas de artículos…",
         "printTagLabels": "Imprimir etiquetas de tags…",
         "scanBarcode": "Escanear código de barras…",
@@ -4231,7 +4235,8 @@
         "exportSuccess": "Estantería exportada",
         "importEmpty": "No se encontraron artículos o etiquetas nuevos en ese archivo",
         "importFailed": "No se pudo importar la estantería: el archivo puede no ser válido",
-        "importSuccess": "Se importaron {{items}} artículos y {{tags}} etiquetas ({{skipped}} omitidos)"
+        "importSuccess": "Se importaron {{items}} artículos y {{tags}} etiquetas ({{skipped}} omitidos)",
+        "shelfCleared": "Estantería vaciada"
       },
       "toolbar": {
         "add": "Añadir",

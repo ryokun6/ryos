@@ -4071,6 +4071,8 @@
         "title": "Détails"
       },
       "dialogs": {
+        "clearShelfDescription": "Voulez-vous vraiment vider toute l’étagère ? Tous les articles seront supprimés et seuls les tags par défaut resteront. Cette action est irréversible.",
+        "clearShelfTitle": "Effacer l’étagère",
         "newTag": {
           "description": "Saisissez un nom pour le nouveau tag.",
           "title": "Nouveau tag"
@@ -4110,7 +4112,7 @@
           "title": "Prix et statut"
         },
         "print": {
-          "description": "Imprimez des codes-barres d’ID ryOS pour les articles ou tags via Fichier ▸ Imprimer les étiquettes d’articles/tags. Scanner une étiquette imprimée ouvre l’article ou filtre par tag.",
+          "description": "Imprimez des codes-barres d’ID ryOS pour les articles ou tags via Impression ▸ Imprimer les étiquettes d’articles/tags. Scanner une étiquette imprimée ouvre l’article ou filtre par tag.",
           "title": "Imprimer des étiquettes"
         },
         "scan": {
@@ -4133,12 +4135,14 @@
       "menu": {
         "about": "À propos de Stuff",
         "backToShelf": "Retour à mon étagère",
+        "clearShelf": "Effacer l’étagère…",
         "exportShelf": "Exporter l’étagère…",
         "gridView": "Présentation par grille",
         "help": "Aide Stuff",
         "importShelf": "Importer l’étagère…",
         "listView": "Présentation par liste",
         "newItem": "Nouvel article",
+        "print": "Impression",
         "printItemLabels": "Imprimer les étiquettes d’articles…",
         "printTagLabels": "Imprimer les étiquettes de tags…",
         "scanBarcode": "Scanner un code-barres…",
@@ -4231,7 +4235,8 @@
         "exportSuccess": "Étagère exportée",
         "importEmpty": "Aucun nouvel objet ou étiquette trouvé dans ce fichier",
         "importFailed": "Impossible d’importer l’étagère — le fichier est peut‑être invalide",
-        "importSuccess": "{{items}} objets et {{tags}} étiquettes importés ({{skipped}} ignorés)"
+        "importSuccess": "{{items}} objets et {{tags}} étiquettes importés ({{skipped}} ignorés)",
+        "shelfCleared": "Étagère effacée"
       },
       "toolbar": {
         "add": "Ajouter",

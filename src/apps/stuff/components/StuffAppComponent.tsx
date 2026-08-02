@@ -4,6 +4,7 @@ import { AppDrawer } from "@/components/shared/AppDrawer";
 import { AppProps } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { appMetadata } from "..";
@@ -61,6 +62,7 @@ export function StuffAppComponent({
       onAddItem={logic.handleAddItem}
       onScan={() => logic.setIsScannerOpen(true)}
       onShare={() => logic.setIsShareDialogOpen(true)}
+      onClearShelf={logic.handleClearShelf}
       onPrintItemLabels={logic.handlePrintItemLabels}
       onPrintTagLabels={() => logic.handlePrintTagLabels()}
       onExportShelf={() => void logic.handleExportShelf()}
@@ -214,6 +216,18 @@ export function StuffAppComponent({
         onOpenChange={logic.setIsAboutDialogOpen}
         metadata={appMetadata}
         appId="stuff"
+      />
+      <ConfirmDialog
+        isOpen={logic.isConfirmClearOpen}
+        onOpenChange={logic.setIsConfirmClearOpen}
+        onConfirm={logic.confirmClearShelf}
+        title={logic.t("apps.stuff.dialogs.clearShelfTitle", {
+          defaultValue: "Clear Shelf",
+        })}
+        description={logic.t("apps.stuff.dialogs.clearShelfDescription", {
+          defaultValue:
+            "Are you sure you want to clear your entire shelf? All items will be removed and only default tags will remain. This action can't be undone.",
+        })}
       />
     </>
   );

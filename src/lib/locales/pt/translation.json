@@ -4071,6 +4071,8 @@
         "title": "Detalhes"
       },
       "dialogs": {
+        "clearShelfDescription": "Tem certeza de que deseja limpar toda a prateleira? Todos os itens serão removidos e apenas as tags padrão permanecerão. Esta ação não pode ser desfeita.",
+        "clearShelfTitle": "Limpar prateleira",
         "newTag": {
           "description": "Digite um nome para a nova etiqueta.",
           "title": "Nova Etiqueta"
@@ -4110,7 +4112,7 @@
           "title": "Preços e estado"
         },
         "print": {
-          "description": "Imprima códigos de barras com ID ryOS para itens ou tags em Ficheiro ▸ Imprimir etiquetas de itens/tags. Digitalizar uma etiqueta impressa abre o item ou filtra por tag.",
+          "description": "Imprima códigos de barras com ID ryOS para itens ou tags em Imprimir ▸ Imprimir etiquetas de itens/tags. Digitalizar uma etiqueta impressa abre o item ou filtra por tag.",
           "title": "Imprimir etiquetas"
         },
         "scan": {
@@ -4133,12 +4135,14 @@
       "menu": {
         "about": "Acerca do Stuff",
         "backToShelf": "Voltar à minha prateleira",
+        "clearShelf": "Limpar prateleira…",
         "exportShelf": "Exportar prateleira…",
         "gridView": "Visualização em Grade",
         "help": "Ajuda do Stuff",
         "importShelf": "Importar prateleira…",
         "listView": "Visualização em Lista",
         "newItem": "Novo item",
+        "print": "Imprimir",
         "printItemLabels": "Imprimir etiquetas de itens…",
         "printTagLabels": "Imprimir etiquetas de tags…",
         "scanBarcode": "Digitalizar código de barras…",
@@ -4231,7 +4235,8 @@
         "exportSuccess": "Prateleira exportada",
         "importEmpty": "Nenhum item ou tag novo encontrado nesse arquivo",
         "importFailed": "Não foi possível importar a prateleira — o arquivo pode ser inválido",
-        "importSuccess": "Importados {{items}} itens e {{tags}} tags ({{skipped}} ignorados)"
+        "importSuccess": "Importados {{items}} itens e {{tags}} tags ({{skipped}} ignorados)",
+        "shelfCleared": "Prateleira limpa"
       },
       "toolbar": {
         "add": "Adicionar",

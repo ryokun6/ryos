@@ -4068,6 +4068,8 @@
         "title": "详细信息"
       },
       "dialogs": {
+        "clearShelfDescription": "确定要清除整个货架吗？所有物品都将被移除，仅保留默认标签。此操作无法撤销。",
+        "clearShelfTitle": "清除货架",
         "newTag": {
           "description": "输入新标签的名称。",
           "title": "新建标签"
@@ -4107,7 +4109,7 @@
           "title": "价格与状态"
         },
         "print": {
-          "description": "从“文件 ▸ 打印物品/标签标签”打印物品或标签的 ryOS ID 条形码。扫描打印的标签可打开该物品或按标签过滤。",
+          "description": "从“打印 ▸ 打印物品/标签标签”打印物品或标签的 ryOS ID 条形码。扫描打印的标签可打开该物品或按标签过滤。",
           "title": "打印标签"
         },
         "scan": {
@@ -4130,12 +4132,14 @@
       "menu": {
         "about": "关于 Stuff",
         "backToShelf": "返回我的架子",
+        "clearShelf": "清除货架…",
         "exportShelf": "导出货架…",
         "gridView": "网格视图",
         "help": "Stuff 帮助",
         "importShelf": "导入货架…",
         "listView": "列表视图",
         "newItem": "新建物品",
+        "print": "打印",
         "printItemLabels": "打印物品标签…",
         "printTagLabels": "打印标签标签…",
         "scanBarcode": "扫描条形码…",
@@ -4228,7 +4232,8 @@
         "exportSuccess": "货架已导出",
         "importEmpty": "该文件中未找到新的物品或标签",
         "importFailed": "无法导入货架 — 文件可能无效",
-        "importSuccess": "已导入 {{items}} 件物品和 {{tags}} 个标签（跳过 {{skipped}} 个）"
+        "importSuccess": "已导入 {{items}} 件物品和 {{tags}} 个标签（跳过 {{skipped}} 个）",
+        "shelfCleared": "货架已清除"
       },
       "toolbar": {
         "add": "添加",

@@ -44,7 +44,8 @@ export function defaultStuffTagId(name: string): string {
   return `stuff-default:${name.trim().toLowerCase()}`;
 }
 
-function createDefaultTags(): StuffTag[] {
+/** Fresh seeded default tags (Kitchen…Other) with stable ids. */
+export function createDefaultStuffTags(): StuffTag[] {
   const now = Date.now();
   return DEFAULT_TAGS.map((tag, index) => ({
     ...tag,
@@ -246,6 +247,11 @@ interface StuffStoreState {
    * remap tags by name). Returns add/skip counts for toasts.
    */
   importShelf: (json: string) => ImportStuffShelfCounts;
+  /**
+   * Empty the shelf: remove all items (and cover blobs), reset tags to
+   * seeded defaults, and clear selection / filters.
+   */
+  clearShelf: () => void;
 }
 
 export const useStuffStore = create<StuffStoreState>()(
@@ -467,6 +473,45 @@ export const useStuffStore = create<StuffStoreState>()(
           skippedTags: result.skippedTags,
         };
       },
+
+      clearShelf: () => {
+        const { items, tags } = get();
+        const defaults = createDefaultStuffTags();
+        const defaultTagIds = new Set(defaults.map((tag) => tag.id));
+        const itemIds = items.map((item) => item.id);
+        const removedTagIds = tags
+          .map((tag) => tag.id)
+          .filter((id) => !defaultTagIds.has(id));
+
+        if (itemIds.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .markDeletedKeys("stuffItemIds", itemIds);
+        }
+        if (removedTagIds.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .markDeletedKeys("stuffTagIds", removedTagIds);
+        }
+        useCloudSyncStore
+          .getState()
+          .clearDeletedKeys("stuffTagIds", defaults.map((tag) => tag.id));
+
+        for (const item of items) {
+          const coverId = item.coverBlobId?.trim();
+          if (coverId) void deleteStuffCoverBlob(coverId);
+        }
+
+        set({
+          items: [],
+          tags: defaults,
+          selectedItemId: null,
+          selectedTagId: null,
+          statusFilter: "all",
+          searchQuery: "",
+          lastShareId: null,
+        });
+      },
     }),
     {
       name: STORAGE_KEYS.stuff,
@@ -513,7 +558,9 @@ function seedDefaultTagsIfNeeded(): void {
   didSeedDefaultTags = true;
   const { tags } = useStuffStore.getState();
   const next =
-    tags.length === 0 ? createDefaultTags() : ensureDefaultStuffTags(tags);
+    tags.length === 0
+      ? createDefaultStuffTags()
+      : ensureDefaultStuffTags(tags);
   if (next === tags) return;
   const prevIds = new Set(tags.map((tag) => tag.id));
   const addedIds = next
