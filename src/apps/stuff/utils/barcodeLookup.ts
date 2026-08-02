@@ -174,13 +174,14 @@ export async function readImageFileAsDataUrl(
   file: File
 ): Promise<string | undefined> {
   if (!file.type.startsWith("image/")) return undefined;
-  if (file.size > STUFF_IMAGE_MAX_BYTES) return undefined;
   try {
+    const { prepareStuffCoverBlob } = await import("./stuffCoverCompress");
+    const prepared = await prepareStuffCoverBlob(file);
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));
       reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(prepared);
     });
   } catch {
     return undefined;
@@ -199,10 +200,8 @@ export function parseProductImageResponse(
   ) {
     return undefined;
   }
-  if (imageDataUrl.length > STUFF_IMAGE_MAX_BYTES * 2) {
-    // Base64 expands ~4/3; reject grossly oversized payloads.
-    return undefined;
-  }
+  // Oversized payloads are compressed later via prepareStuffCoverBlob /
+  // putStuffCoverBlob — only reject empty / non-image data URLs here.
   return imageDataUrl;
 }
 
@@ -247,12 +246,13 @@ export async function fetchImageAsDataUrl(
     if (!response.ok) return undefined;
     const blob = await response.blob();
     if (!blob.type.startsWith("image/")) return undefined;
-    if (blob.size > STUFF_IMAGE_MAX_BYTES) return undefined;
+    const { prepareStuffCoverBlob } = await import("./stuffCoverCompress");
+    const prepared = await prepareStuffCoverBlob(blob);
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));
       reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(prepared);
     });
   } catch {
     return undefined;

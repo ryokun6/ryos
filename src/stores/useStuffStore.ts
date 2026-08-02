@@ -237,7 +237,7 @@ export const useStuffStore = create<StuffStoreState>()(
       selectedTagId: null,
       statusFilter: "all",
       shelfView: "grid",
-      isSidebarVisible: true,
+      isSidebarVisible: false,
       searchQuery: "",
       lastShareId: null,
       coversRevision: 0,
@@ -275,8 +275,14 @@ export const useStuffStore = create<StuffStoreState>()(
       updateItem: (id, draft) => {
         let nextDraft: StuffItemDraft = { ...draft };
 
-        // Remove cover: both display fields cleared (detail panel / lookup).
-        if (draft.imageDataUrl === "" && draft.imageUrl === "") {
+        // Remove cover when both display fields are cleared and no blob cover
+        // is being set. Upload/paste passes coverBlobId + empty image fields —
+        // must not wipe that coverBlobId (detail panel applyCoverFile).
+        if (
+          draft.imageDataUrl === "" &&
+          draft.imageUrl === "" &&
+          !draft.coverBlobId?.trim()
+        ) {
           nextDraft = { ...nextDraft, coverBlobId: "" };
         }
 

@@ -155,6 +155,74 @@ describe("Stuff title updates", () => {
   });
 });
 
+describe("Stuff cover blob updates", () => {
+  test("persists coverBlobId when upload clears imageUrl/imageDataUrl", async () => {
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    useStuffStore.setState({
+      items: [],
+      selectedItemId: null,
+    });
+    const id = useStuffStore.getState().addItem({
+      title: "Camera",
+      imageUrl: "https://example.com/hotlink.jpg",
+    });
+
+    // Same shape as StuffDetailPanel.applyCoverFile after putStuffCoverBlob.
+    useStuffStore.getState().updateItem(id, {
+      coverBlobId: id,
+      imageDataUrl: "",
+      imageUrl: "",
+    });
+
+    const item = useStuffStore.getState().items.find((row) => row.id === id);
+    expect(item?.coverBlobId).toBe(id);
+    expect(item?.imageUrl).toBeUndefined();
+    expect(item?.imageDataUrl).toBeUndefined();
+  });
+
+  test("clears coverBlobId when remove cover clears both image fields", async () => {
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    useStuffStore.setState({
+      items: [],
+      selectedItemId: null,
+    });
+    const id = useStuffStore.getState().addItem({
+      title: "Camera",
+      coverBlobId: "blob-1",
+    });
+
+    useStuffStore.getState().updateItem(id, {
+      imageDataUrl: "",
+      imageUrl: "",
+    });
+
+    const item = useStuffStore.getState().items.find((row) => row.id === id);
+    expect(item?.coverBlobId).toBeUndefined();
+  });
+
+  test("hotlink imageUrl clears coverBlobId", async () => {
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    useStuffStore.setState({
+      items: [],
+      selectedItemId: null,
+    });
+    const id = useStuffStore.getState().addItem({
+      title: "Camera",
+      coverBlobId: "blob-1",
+    });
+
+    useStuffStore.getState().updateItem(id, {
+      imageUrl: "https://example.com/cover.jpg",
+      imageDataUrl: "",
+      coverBlobId: "",
+    });
+
+    const item = useStuffStore.getState().items.find((row) => row.id === id);
+    expect(item?.imageUrl).toBe("https://example.com/cover.jpg");
+    expect(item?.coverBlobId).toBeUndefined();
+  });
+});
+
 describe("Stuff cover helpers", () => {
   test("defaultStuffTagId is stable across devices", () => {
     expect(defaultStuffTagId("Kitchen")).toBe("stuff-default:kitchen");

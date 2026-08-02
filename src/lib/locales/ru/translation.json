@@ -4062,7 +4062,7 @@
         "chooseImage": "Выбрать изображение…",
         "delete": "Удалить",
         "imageFetchFailed": "Не удалось загрузить изображение по этому URL.",
-        "imageInvalid": "Не удалось использовать это изображение (должно быть меньше 1,5 МБ).",
+        "imageInvalid": "Не удалось использовать это изображение.",
         "imageUrlDialogDescription": "Вставьте URL изображения, чтобы использовать его как обложку.",
         "imageUrlDialogTitle": "URL изображения",
         "imageUrlPlaceholder": "URL изображения…",

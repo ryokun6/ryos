@@ -4053,7 +4053,7 @@
         "chooseImage": "选择图像…",
         "delete": "删除",
         "imageFetchFailed": "无法获取该图像 URL。",
-        "imageInvalid": "无法使用该图像（必须小于 1.5 MB）。",
+        "imageInvalid": "无法使用该图像。",
         "imageUrlDialogDescription": "粘贴图像 URL 以用作封面。",
         "imageUrlDialogTitle": "图像 URL",
         "imageUrlPlaceholder": "图像 URL…",

@@ -4056,7 +4056,7 @@
         "chooseImage": "Escolher Imagem…",
         "delete": "Apagar",
         "imageFetchFailed": "Não foi possível obter essa URL de imagem.",
-        "imageInvalid": "Não foi possível usar essa imagem (deve ter menos de 1,5 MB).",
+        "imageInvalid": "Não foi possível usar essa imagem.",
         "imageUrlDialogDescription": "Cole uma URL de imagem para usar como capa.",
         "imageUrlDialogTitle": "URL da Imagem",
         "imageUrlPlaceholder": "URL da Imagem…",

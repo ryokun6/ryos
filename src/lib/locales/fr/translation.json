@@ -4056,7 +4056,7 @@
         "chooseImage": "Choisir une image…",
         "delete": "Supprimer",
         "imageFetchFailed": "Impossible de récupérer l’URL de cette image.",
-        "imageInvalid": "Impossible d’utiliser cette image (elle doit faire moins de 1,5 Mo).",
+        "imageInvalid": "Impossible d’utiliser cette image.",
         "imageUrlDialogDescription": "Collez l’URL d’une image à utiliser comme couverture.",
         "imageUrlDialogTitle": "URL de l’image",
         "imageUrlPlaceholder": "URL de l’image…",

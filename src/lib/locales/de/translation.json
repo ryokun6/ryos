@@ -4053,7 +4053,7 @@
         "chooseImage": "Bild auswählen …",
         "delete": "Löschen",
         "imageFetchFailed": "Diese Bild-URL konnte nicht geladen werden.",
-        "imageInvalid": "Dieses Bild konnte nicht verwendet werden (muss unter 1,5 MB liegen).",
+        "imageInvalid": "Dieses Bild konnte nicht verwendet werden.",
         "imageUrlDialogDescription": "Füge eine Bild-URL ein, die als Cover verwendet werden soll.",
         "imageUrlDialogTitle": "Bild-URL",
         "imageUrlPlaceholder": "Bild-URL …",

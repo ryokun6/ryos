@@ -5101,7 +5101,7 @@
         "imageUrlDialogTitle": "Image URL",
         "imageUrlDialogDescription": "Paste an image URL to use as the cover.",
         "applyImageUrl": "Apply",
-        "imageInvalid": "Could not use that image (must be under 1.5 MB).",
+        "imageInvalid": "Could not use that image.",
         "imageFetchFailed": "Could not fetch that image URL."
       },
       "contextMenu": {

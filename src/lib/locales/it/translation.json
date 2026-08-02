@@ -4056,7 +4056,7 @@
         "chooseImage": "Scegli immagine…",
         "delete": "Elimina",
         "imageFetchFailed": "Impossibile recuperare quell’URL dell’immagine.",
-        "imageInvalid": "Impossibile usare quell’immagine (deve essere inferiore a 1,5 MB).",
+        "imageInvalid": "Impossibile usare quell’immagine.",
         "imageUrlDialogDescription": "Incolla un URL di immagine da usare come copertina.",
         "imageUrlDialogTitle": "URL immagine",
         "imageUrlPlaceholder": "URL immagine…",

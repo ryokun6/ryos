@@ -11,6 +11,13 @@ import {
 } from "@/utils/cloudSyncEvents";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import type { StuffItem } from "../types";
+import { prepareStuffCoverBlob } from "./stuffCoverCompress";
+
+export {
+  prepareStuffCoverBlob,
+  STUFF_COVER_MAX_EDGE,
+  STUFF_IMAGE_MAX_BYTES,
+} from "./stuffCoverCompress";
 
 export interface StuffCoverRecord {
   name: string;
@@ -108,11 +115,15 @@ export async function putStuffCoverBlob(
   blob: Blob,
   name = "cover"
 ): Promise<void> {
-  if (!coverBlobId || !(blob instanceof Blob) || blob.size === 0) return;
+  if (!coverBlobId || !(blob instanceof Blob) || blob.size === 0) {
+    throw new Error("Invalid Stuff cover blob");
+  }
+  // Compress oversized covers so picker / paste / lookup share one path.
+  const content = await prepareStuffCoverBlob(blob);
   const record: StuffCoverRecord = {
     name,
-    content: blob,
-    type: blob.type || "image/jpeg",
+    content,
+    type: content.type || "image/jpeg",
   };
   await dbOperations.put(STORES.STUFF_IMAGES, record, coverBlobId);
   useCloudSyncStore.getState().clearDeletedKeys("stuffCoverKeys", [coverBlobId]);

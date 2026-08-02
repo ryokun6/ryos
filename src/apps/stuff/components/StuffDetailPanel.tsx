@@ -38,12 +38,23 @@ import {
 import { formatMoney, parseOptionalNumber } from "../utils/colors";
 import { encodeStuffId } from "../utils/printLabels";
 import { StuffItemCover } from "./StuffItemCover";
-import { STUFF_IMAGE_MAX_BYTES } from "../utils/barcodeLookup";
 import {
   getStuffCoverDimensions,
   STUFF_PRODUCT_DETAIL,
 } from "../utils/stuffCoverSizes";
-import { putStuffCoverBlob } from "../utils/stuffCoverBlobs";
+import {
+  dataUrlToBlob,
+  putStuffCoverBlob,
+} from "../utils/stuffCoverBlobs";
+import {
+  clipboardMayContainImage,
+  ensureStuffCoverFileType,
+  extractClipboardImageUrl,
+  getImageFileFromDataTransfer,
+  isAcceptableStuffCoverFile,
+  isDataImageUrl,
+  isHttpImageUrl,
+} from "../utils/stuffCoverIngest";
 import { useStuffItemCoverSrc } from "../hooks/useStuffItemCoverSrc";
 import { resolveStuffItemVisualKind } from "../utils/stuffItemVisualKind";
 import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
@@ -282,19 +293,20 @@ export function StuffDetailPanel({
   const imageInvalidToast = () => {
     toast.error(
       t("apps.stuff.detail.imageInvalid", {
-        defaultValue: "Could not use that image (must be under 1.5 MB).",
+        defaultValue: "Could not use that image.",
       })
     );
   };
 
   const applyCoverFile = async (file: File) => {
+    const normalized = ensureStuffCoverFileType(file);
     setIsImageBusy(true);
     try {
-      if (!file.type.startsWith("image/") || file.size > STUFF_IMAGE_MAX_BYTES) {
+      if (!isAcceptableStuffCoverFile(normalized)) {
         imageInvalidToast();
         return;
       }
-      await putStuffCoverBlob(item.id, file);
+      await putStuffCoverBlob(item.id, normalized);
       onChange({ coverBlobId: item.id, imageDataUrl: "", imageUrl: "" });
     } catch {
       imageInvalidToast();
@@ -303,21 +315,90 @@ export function StuffDetailPanel({
     }
   };
 
-  const getImageFileFromDataTransfer = (
-    data: DataTransfer | null
-  ): File | null => {
-    if (!data) return null;
-    const fromFiles = Array.from(data.files ?? []).find((file) =>
-      file.type.startsWith("image/")
-    );
-    if (fromFiles) return fromFiles;
-    for (const item of Array.from(data.items ?? [])) {
-      if (item.kind === "file" && item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (file) return file;
-      }
+  const applyCoverDataUrl = async (dataUrl: string) => {
+    const blob = dataUrlToBlob(dataUrl);
+    if (!blob || blob.size === 0) {
+      imageInvalidToast();
+      return;
     }
-    return null;
+    const mime = blob.type.startsWith("image/") ? blob.type : "image/png";
+    const file = new File([blob], "pasted-cover", { type: mime });
+    await applyCoverFile(file);
+  };
+
+  const handleApplyImageUrl = (rawUrl: string) => {
+    const url = rawUrl.trim();
+    if (!url) return;
+    if (isDataImageUrl(url)) {
+      void applyCoverDataUrl(url);
+      setImageUrl("");
+      setIsImageUrlDialogOpen(false);
+      return;
+    }
+    // Hotlink for display — same path as lookup picker thumbnails / covers.
+    onChange({ imageUrl: url, imageDataUrl: "", coverBlobId: "" });
+    setImageUrl("");
+    setIsImageUrlDialogOpen(false);
+  };
+
+  const applyCoverFromClipboardUrl = async (url: string) => {
+    if (isDataImageUrl(url)) {
+      await applyCoverDataUrl(url);
+      return;
+    }
+    if (isHttpImageUrl(url)) {
+      handleApplyImageUrl(url);
+      return;
+    }
+    if (url.toLowerCase().startsWith("blob:")) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          imageInvalidToast();
+          return;
+        }
+        const blob = await response.blob();
+        const mime = blob.type.startsWith("image/")
+          ? blob.type
+          : "image/png";
+        await applyCoverFile(
+          new File([blob], "pasted-cover", { type: mime })
+        );
+      } catch {
+        imageInvalidToast();
+      }
+      return;
+    }
+    imageInvalidToast();
+  };
+
+  const readCoverFromClipboardApi = async (): Promise<boolean> => {
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.clipboard ||
+      typeof navigator.clipboard.read !== "function"
+    ) {
+      return false;
+    }
+    try {
+      const items = await navigator.clipboard.read();
+      for (const clipboardItem of items) {
+        const imageType = clipboardItem.types.find((type) =>
+          type.startsWith("image/")
+        );
+        if (!imageType) continue;
+        const blob = await clipboardItem.getType(imageType);
+        await applyCoverFile(
+          new File([blob], "pasted-cover", {
+            type: blob.type || imageType,
+          })
+        );
+        return true;
+      }
+    } catch {
+      // Permission denied or unsupported — fall through to toast at caller.
+    }
+    return false;
   };
 
   const handleChooseImage = (event: ChangeEvent<HTMLInputElement>) => {
@@ -356,20 +437,34 @@ export function StuffDetailPanel({
 
   const handleCoverPaste = (event: ClipboardEvent<HTMLDivElement>) => {
     if (!canAcceptCoverDrop) return;
-    const file = getImageFileFromDataTransfer(event.clipboardData);
-    if (!file) return;
+    const data = event.clipboardData;
+    if (!clipboardMayContainImage(data)) return;
+
+    // Claim the paste early so Chrome doesn't also insert HTML/text elsewhere.
     event.preventDefault();
     event.stopPropagation();
-    void applyCoverFile(file);
-  };
 
-  const handleApplyImageUrl = (rawUrl: string) => {
-    const url = rawUrl.trim();
-    if (!url) return;
-    // Hotlink for display — same path as lookup picker thumbnails / covers.
-    onChange({ imageUrl: url, imageDataUrl: "", coverBlobId: "" });
-    setImageUrl("");
-    setIsImageUrlDialogOpen(false);
+    const file = getImageFileFromDataTransfer(data);
+    if (file) {
+      void applyCoverFile(file);
+      return;
+    }
+
+    const imageUrlFromClipboard = extractClipboardImageUrl(data);
+    void (async () => {
+      if (imageUrlFromClipboard) {
+        // Prefer a real clipboard image blob when HTML only has a foreign blob: URL.
+        if (imageUrlFromClipboard.toLowerCase().startsWith("blob:")) {
+          const fromApi = await readCoverFromClipboardApi();
+          if (fromApi) return;
+        }
+        await applyCoverFromClipboardUrl(imageUrlFromClipboard);
+        return;
+      }
+
+      const fromApi = await readCoverFromClipboardApi();
+      if (!fromApi) imageInvalidToast();
+    })();
   };
 
   const handleRemoveImage = () => {
@@ -461,7 +556,7 @@ export function StuffDetailPanel({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif,.bmp"
               className="hidden"
               onChange={handleChooseImage}
             />

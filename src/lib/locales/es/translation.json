@@ -4056,7 +4056,7 @@
         "chooseImage": "Elegir imagen…",
         "delete": "Eliminar",
         "imageFetchFailed": "No se pudo obtener esa URL de imagen.",
-        "imageInvalid": "No se pudo usar esa imagen (debe ser menor de 1,5 MB).",
+        "imageInvalid": "No se pudo usar esa imagen.",
         "imageUrlDialogDescription": "Pega una URL de imagen para usarla como portada.",
         "imageUrlDialogTitle": "URL de imagen",
         "imageUrlPlaceholder": "URL de imagen…",

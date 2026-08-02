@@ -148,7 +148,7 @@ function GridTitleOverlay({
         scrollStartDelaySec={STUFF_TITLE_SCROLL_START_DELAY_SEC}
         className="w-full min-w-0 text-[10px] font-medium leading-tight text-white"
       />
-      <div className="flex items-center justify-between gap-1">
+      <div className="mt-1 flex items-center justify-between gap-1">
         {primaryTag && (
           <span
             className="truncate rounded-full px-1.5 text-[9px] text-white"
@@ -345,7 +345,9 @@ export function StuffItemCover({
               {item.title}
             </span>
             {isGrid && item.brand && (
-              <span className="truncate text-[10px] opacity-80">{item.brand}</span>
+              <span className="truncate text-center text-[10px] opacity-80">
+                {item.brand}
+              </span>
             )}
           </div>
         )
