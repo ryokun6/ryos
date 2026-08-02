@@ -380,14 +380,14 @@ describe("Stuff shelf import/export", () => {
       exportedAt: 1,
       tags: [
         { id: "kitchen", name: "Kitchen", color: "#c45c26", createdAt: 1 },
-        { id: "books", name: "Books", color: "#9c36b5", createdAt: 2 },
+        { id: "vintage", name: "Vintage", color: "#9c36b5", createdAt: 2 },
       ],
       items: [
         makeItem({ id: "keep-me", title: "Should Skip", tagIds: ["kitchen"] }),
         makeItem({
           id: "new-1",
           title: "Novel",
-          tagIds: ["books"],
+          tagIds: ["vintage"],
           brand: "Penguin",
         }),
       ],
@@ -402,10 +402,10 @@ describe("Stuff shelf import/export", () => {
     expect(result.skippedTags).toBe(1);
     expect(result.addedItems).toBe(1);
     expect(result.skippedItems).toBe(1);
-    expect(result.tags.map((t) => t.id).sort()).toEqual(["books", "kitchen"]);
+    expect(result.tags.map((t) => t.id).sort()).toEqual(["kitchen", "vintage"]);
     expect(result.items.map((i) => i.id).sort()).toEqual(["keep-me", "new-1"]);
     expect(result.items.find((i) => i.id === "new-1")?.tagIds).toEqual([
-      "books",
+      "vintage",
     ]);
   });
 
@@ -435,7 +435,195 @@ describe("Stuff shelf import/export", () => {
 
     expect(result.addedTags).toBe(0);
     expect(result.addedItems).toBe(1);
+    // Reuse the existing local tag (even a legacy UUID) — do not add a second
+    // Books / stuff-default:books copy.
     expect(result.items[0]?.tagIds).toEqual(["local-books"]);
+    expect(
+      result.tags.filter((t) => t.name.toLowerCase() === "books")
+    ).toHaveLength(1);
+  });
+
+  test("re-importing the same export is idempotent", () => {
+    const existingTags = ensureDefaultStuffTags([
+      { id: "custom", name: "Vintage", color: "#111", createdAt: 1 },
+    ]);
+    const payload: StuffShelfExport = {
+      version: 1,
+      exportedAt: 1,
+      tags: [
+        {
+          id: defaultStuffTagId("Kitchen"),
+          name: "Kitchen",
+          color: DEFAULT_TAG_COLORS[0],
+          createdAt: 1,
+        },
+        { id: "custom", name: "Vintage", color: "#111", createdAt: 1 },
+        { id: "uuid-books", name: "Books", color: "#222", createdAt: 2 },
+      ],
+      items: [
+        makeItem({
+          id: "item-1",
+          title: "Pan",
+          tagIds: [defaultStuffTagId("Kitchen")],
+        }),
+        makeItem({
+          id: "item-2",
+          title: "Novel",
+          tagIds: ["uuid-books", "custom"],
+        }),
+      ],
+    };
+    const json = stringifyStuffShelfExport(payload);
+
+    const first = mergeStuffShelfImport(json, {
+      items: [],
+      tags: existingTags,
+    });
+    const afterFirst = {
+      items: first.items,
+      tags: ensureDefaultStuffTags(first.tags),
+    };
+    const second = mergeStuffShelfImport(json, afterFirst);
+    const afterSecond = {
+      items: second.items,
+      tags: ensureDefaultStuffTags(second.tags),
+    };
+
+    expect(second.addedItems).toBe(0);
+    expect(second.addedTags).toBe(0);
+    expect(afterSecond.items).toHaveLength(afterFirst.items.length);
+    expect(afterSecond.tags).toHaveLength(afterFirst.tags.length);
+    expect(
+      afterSecond.tags.filter((t) => t.name.toLowerCase() === "books")
+    ).toHaveLength(1);
+    expect(
+      afterSecond.tags.filter((t) => t.name.toLowerCase() === "kitchen")
+    ).toHaveLength(1);
+  });
+
+  test("does not duplicate default tags when export uses a different id", () => {
+    const existingTags = ensureDefaultStuffTags([]);
+    const payload: StuffShelfExport = {
+      version: 1,
+      exportedAt: 1,
+      tags: [
+        { id: "uuid-kitchen", name: "Kitchen", color: "#abc", createdAt: 1 },
+        { id: "uuid-cd", name: "CD", color: "#def", createdAt: 2 },
+        { id: "custom", name: "Vintage", color: "#111", createdAt: 3 },
+      ],
+      items: [
+        makeItem({
+          id: "item-1",
+          title: "Pan",
+          tagIds: ["uuid-kitchen"],
+        }),
+        makeItem({
+          id: "item-2",
+          title: "Album",
+          tagIds: ["uuid-cd", "custom"],
+        }),
+      ],
+    };
+
+    const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
+      items: [],
+      tags: existingTags,
+    });
+    const tags = ensureDefaultStuffTags(result.tags);
+
+    expect(result.addedTags).toBe(1); // only Vintage
+    expect(tags.filter((t) => t.name.toLowerCase() === "kitchen")).toHaveLength(
+      1
+    );
+    expect(tags.filter((t) => t.name.toLowerCase() === "cd")).toHaveLength(1);
+    expect(tags.find((t) => t.name === "Kitchen")?.id).toBe(
+      defaultStuffTagId("Kitchen")
+    );
+    expect(result.items.find((i) => i.id === "item-1")?.tagIds).toEqual([
+      defaultStuffTagId("Kitchen"),
+    ]);
+    expect(result.items.find((i) => i.id === "item-2")?.tagIds).toEqual([
+      defaultStuffTagId("CD"),
+      "custom",
+    ]);
+  });
+
+  test("remaps onto renamed default tags by stable id / English name", () => {
+    const existingTags: StuffTag[] = [
+      {
+        id: defaultStuffTagId("Kitchen"),
+        name: "Cookware", // user renamed the default
+        color: "#111",
+        createdAt: 1,
+      },
+    ];
+    const payload: StuffShelfExport = {
+      version: 1,
+      exportedAt: 1,
+      tags: [
+        { id: "uuid-kitchen", name: "Kitchen", color: "#222", createdAt: 2 },
+      ],
+      items: [
+        makeItem({
+          id: "item-a",
+          title: "Pan",
+          tagIds: ["uuid-kitchen"],
+        }),
+      ],
+    };
+
+    const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
+      items: [],
+      tags: existingTags,
+    });
+
+    expect(result.addedTags).toBe(0);
+    expect(result.tags).toHaveLength(1);
+    expect(result.tags[0]?.id).toBe(defaultStuffTagId("Kitchen"));
+    expect(result.items[0]?.tagIds).toEqual([defaultStuffTagId("Kitchen")]);
+  });
+
+  test("empty import base still creates stable default ids (not UUID twins)", () => {
+    const payload: StuffShelfExport = {
+      version: 1,
+      exportedAt: 1,
+      tags: [
+        { id: "uuid-kitchen", name: "Kitchen", color: "#111", createdAt: 1 },
+      ],
+      items: [
+        makeItem({
+          id: "item-a",
+          title: "Pan",
+          tagIds: ["uuid-kitchen"],
+        }),
+      ],
+    };
+
+    const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
+      items: [],
+      tags: [],
+    });
+    const tags = ensureDefaultStuffTags(result.tags);
+
+    expect(result.tags.find((t) => t.name === "Kitchen")?.id).toBe(
+      defaultStuffTagId("Kitchen")
+    );
+    expect(tags.filter((t) => t.name.toLowerCase() === "kitchen")).toHaveLength(
+      1
+    );
+    expect(result.items[0]?.tagIds).toEqual([defaultStuffTagId("Kitchen")]);
+  });
+
+  test("skips items without ids so re-import cannot mint duplicates", () => {
+    const json = JSON.stringify({
+      version: 1,
+      exportedAt: 1,
+      tags: [],
+      items: [{ title: "No Id", notes: "", tagIds: [], status: "stowed" }],
+    });
+    const first = mergeStuffShelfImport(json, { items: [], tags: [] });
+    expect(first.addedItems).toBe(0);
+    expect(first.skippedItems).toBe(1);
   });
 
   test("queues cover ingestion from inline imageDataUrl", () => {

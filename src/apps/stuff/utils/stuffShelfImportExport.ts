@@ -13,8 +13,43 @@ import {
   type StuffTag,
 } from "../types";
 import { getStuffCoverDataUrl } from "./stuffCoverBlobs";
+import {
+  STUFF_DEFAULT_TAG_SLUGS,
+  type StuffDefaultTagSlug,
+} from "./stuffTagDisplayName";
 
 export const STUFF_SHELF_EXPORT_VERSION = 1 as const;
+
+const DEFAULT_TAG_SLUG_SET = new Set<string>(STUFF_DEFAULT_TAG_SLUGS);
+
+/** Canonical English names for seeded defaults (matches store DEFAULT_TAGS). */
+const CANONICAL_DEFAULT_TAG_NAME: Record<StuffDefaultTagSlug, string> = {
+  kitchen: "Kitchen",
+  electronics: "Electronics",
+  clothing: "Clothing",
+  books: "Books",
+  furniture: "Furniture",
+  cd: "CD",
+  other: "Other",
+};
+
+function defaultStuffTagId(slug: StuffDefaultTagSlug): string {
+  return `stuff-default:${slug}`;
+}
+
+/** Resolve a seeded-default slug from export id and/or English name. */
+function resolveDefaultTagSlug(
+  id: string,
+  name: string
+): StuffDefaultTagSlug | null {
+  if (id.startsWith("stuff-default:")) {
+    const slug = id.slice("stuff-default:".length);
+    if (DEFAULT_TAG_SLUG_SET.has(slug)) return slug as StuffDefaultTagSlug;
+  }
+  const byName = name.trim().toLowerCase();
+  if (DEFAULT_TAG_SLUG_SET.has(byName)) return byName as StuffDefaultTagSlug;
+  return null;
+}
 
 export interface StuffShelfExport {
   version: typeof STUFF_SHELF_EXPORT_VERSION;
@@ -107,7 +142,9 @@ export function stringifyStuffShelfExport(payload: StuffShelfExport): string {
 /**
  * Parse a Stuff shelf export and merge into existing items/tags.
  * Existing ids are kept (skipped); new entries are appended.
- * Tags that match by name (case-insensitive) remap item tagIds without duplicating.
+ * Tags that match by id, case-insensitive name, or seeded-default slug
+ * remap item tagIds without duplicating. Default-named tags always land on
+ * `stuff-default:<slug>` so ensureDefaultStuffTags cannot add a second copy.
  */
 export function mergeStuffShelfImport(
   json: string,
@@ -128,13 +165,30 @@ export function mergeStuffShelfImport(
 
   const tags = [...existing.tags];
   const items = [...existing.items];
-  const existingTagIds = new Set(tags.map((tag) => tag.id));
+  const existingTagIds = new Set<string>();
   const existingItemIds = new Set(items.map((item) => item.id));
-  const tagIdByName = new Map(
-    tags.map((tag) => [tag.name.trim().toLowerCase(), tag.id])
-  );
+  const tagIdByName = new Map<string, string>();
   /** Map exported tag id → local tag id after merge. */
   const tagIdMap = new Map<string, string>();
+
+  const rememberTag = (tag: StuffTag) => {
+    existingTagIds.add(tag.id);
+    tagIdByName.set(tag.name.trim().toLowerCase(), tag.id);
+    const slug = resolveDefaultTagSlug(tag.id, tag.name);
+    if (slug) {
+      // Also index by canonical English name so renamed defaults still match.
+      tagIdByName.set(slug, tag.id);
+      tagIdByName.set(CANONICAL_DEFAULT_TAG_NAME[slug].toLowerCase(), tag.id);
+    }
+  };
+
+  // Index existing tags (incl. renamed defaults → canonical slug/name).
+  for (const tag of tags) rememberTag(tag);
+
+  const mapExportTagId = (exportId: string, localId: string) => {
+    if (exportId) tagIdMap.set(exportId, localId);
+    tagIdMap.set(localId, localId);
+  };
 
   let addedTags = 0;
   let skippedTags = 0;
@@ -157,16 +211,60 @@ export function mergeStuffShelfImport(
         ? candidate.id.trim()
         : "";
     const nameKey = name.toLowerCase();
+    const defaultSlug = resolveDefaultTagSlug(preferredId, name);
 
+    // 1) Exact id collision → keep local, never add a second.
     if (preferredId && existingTagIds.has(preferredId)) {
-      tagIdMap.set(preferredId, preferredId);
+      mapExportTagId(preferredId, preferredId);
       skippedTags += 1;
       continue;
     }
 
+    // 2) Seeded default (by stable id or English name) → reuse/create stable id.
+    if (defaultSlug) {
+      const stableId = defaultStuffTagId(defaultSlug);
+      const byStable = existingTagIds.has(stableId) ? stableId : undefined;
+      const byName =
+        tagIdByName.get(nameKey) ??
+        tagIdByName.get(defaultSlug) ??
+        tagIdByName.get(CANONICAL_DEFAULT_TAG_NAME[defaultSlug].toLowerCase());
+      const localId = byStable ?? byName;
+
+      if (localId) {
+        if (preferredId) mapExportTagId(preferredId, localId);
+        mapExportTagId(stableId, localId);
+        skippedTags += 1;
+        continue;
+      }
+
+      // No local match — add under the stable default id (not a random UUID).
+      const color =
+        typeof candidate.color === "string" && candidate.color.trim()
+          ? candidate.color.trim()
+          : DEFAULT_TAG_COLORS[tags.length % DEFAULT_TAG_COLORS.length];
+      const createdAt =
+        typeof candidate.createdAt === "number" &&
+        Number.isFinite(candidate.createdAt)
+          ? candidate.createdAt
+          : Date.now();
+      const tag: StuffTag = {
+        id: stableId,
+        name: CANONICAL_DEFAULT_TAG_NAME[defaultSlug],
+        color,
+        createdAt,
+      };
+      tags.push(tag);
+      rememberTag(tag);
+      if (preferredId) mapExportTagId(preferredId, stableId);
+      mapExportTagId(stableId, stableId);
+      addedTags += 1;
+      continue;
+    }
+
+    // 3) Custom tag — match by case-insensitive name.
     const byName = tagIdByName.get(nameKey);
     if (byName) {
-      if (preferredId) tagIdMap.set(preferredId, byName);
+      if (preferredId) mapExportTagId(preferredId, byName);
       skippedTags += 1;
       continue;
     }
@@ -185,10 +283,9 @@ export function mergeStuffShelfImport(
 
     const tag: StuffTag = { id, name, color, createdAt };
     tags.push(tag);
-    existingTagIds.add(id);
-    tagIdByName.set(nameKey, id);
-    if (preferredId) tagIdMap.set(preferredId, id);
-    tagIdMap.set(id, id);
+    rememberTag(tag);
+    if (preferredId) mapExportTagId(preferredId, id);
+    mapExportTagId(id, id);
     addedTags += 1;
   }
 
@@ -215,20 +312,32 @@ export function mergeStuffShelfImport(
         ? candidate.id.trim()
         : "";
 
+    // Same id (including within this import) → skip; never mint a second copy.
     if (preferredId && existingItemIds.has(preferredId)) {
       skippedItems += 1;
       continue;
     }
 
-    let id = preferredId || crypto.randomUUID();
-    while (existingItemIds.has(id)) id = crypto.randomUUID();
+    // Items without a stable id cannot be idempotently re-imported; skip rather
+    // than assign a fresh UUID that would duplicate on every re-import.
+    if (!preferredId) {
+      skippedItems += 1;
+      continue;
+    }
 
+    const id = preferredId;
+
+    const seenTagIds = new Set<string>();
     const remappedTagIds = (
       Array.isArray(candidate.tagIds) ? candidate.tagIds : []
     )
       .filter((tagId): tagId is string => typeof tagId === "string")
       .map((tagId) => tagIdMap.get(tagId) ?? tagId)
-      .filter((tagId) => existingTagIds.has(tagId));
+      .filter((tagId) => {
+        if (!existingTagIds.has(tagId) || seenTagIds.has(tagId)) return false;
+        seenTagIds.add(tagId);
+        return true;
+      });
 
     const imageDataUrl =
       typeof candidate.imageDataUrl === "string" &&

@@ -421,9 +421,11 @@ export const useStuffStore = create<StuffStoreState>()(
       },
 
       importShelf: (json) => {
+        // Seed defaults before merge so export copies of Kitchen/Books/… remap
+        // onto stuff-default:* instead of inserting UUID twins.
         const result = mergeStuffShelfImport(json, {
           items: get().items,
-          tags: get().tags,
+          tags: ensureDefaultStuffTags(get().tags),
         });
 
         const newTagIds = result.tags
