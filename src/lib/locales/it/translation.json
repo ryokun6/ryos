@@ -4034,6 +4034,143 @@
       "placeholder": "Scrivi una nota…",
       "title": "Memo"
     },
+    "stuff": {
+      "contextMenu": {
+        "delete": "Elimina",
+        "edit": "Modifica",
+        "printLabel": "Stampa etichetta"
+      },
+      "description": "Cataloga le tue cose su uno scaffale di legno",
+      "detail": {
+        "delete": "Elimina",
+        "print": "Stampa",
+        "title": "Dettagli"
+      },
+      "empty": {
+        "description": "Aggiungi un articolo o scansiona un codice a barre per riempire gli scaffali.",
+        "title": "Ancora nessuna cosa"
+      },
+      "fields": {
+        "brand": "Marca",
+        "currency": "Valuta",
+        "discountedPrice": "Richiesto",
+        "notes": "Note",
+        "originalPrice": "Originale",
+        "productBarcode": "Codice a barre prodotto",
+        "quantity": "Quantità",
+        "ryosLabel": "Etichetta ryOS",
+        "soldPrice": "Venduto",
+        "status": "Stato",
+        "tags": "Tag",
+        "title": "Titolo"
+      },
+      "help": {
+        "prices": {
+          "description": "Tieni traccia dei prezzi originali, richiesti e di vendita. Segna gli articoli come in uso, riposti, in vendita, venduti o scartati.",
+          "title": "Prezzi e stato"
+        },
+        "print": {
+          "description": "Stampa codici a barre con ID ryOS per articoli o tag da File ▸ Stampa etichette articoli/tag. Scansionare un’etichetta stampata apre l’articolo o filtra per tag.",
+          "title": "Stampa etichette"
+        },
+        "scan": {
+          "description": "Usa File ▸ Scansiona codice a barre per catturare UPC, EAN, Code 128, QR e altri. I dettagli prodotto vengono compilati se trovati.",
+          "title": "Scansiona codici a barre"
+        },
+        "share": {
+          "description": "Pubblica articoli selezionati con un URL pubblico. I visitatori autenticati possono prenotare e fare offerte.",
+          "title": "Condividi e offri"
+        },
+        "shelf": {
+          "description": "Sfoglia l’inventario su scaffali di legno. Fai clic su un articolo per modificare dettagli, stato e prezzi.",
+          "title": "Il tuo scaffale"
+        },
+        "tags": {
+          "description": "Organizza le cose con tag come Cucina o Elettronica. Filtra lo scaffale dalla barra laterale.",
+          "title": "Tag"
+        }
+      },
+      "menu": {
+        "about": "Informazioni su Stuff",
+        "backToShelf": "Torna al mio scaffale",
+        "help": "Aiuto di Stuff",
+        "newItem": "Nuovo articolo",
+        "printItemLabels": "Stampa etichette articoli…",
+        "printTagLabels": "Stampa etichette tag…",
+        "scanBarcode": "Scansiona codice a barre…",
+        "share": "Condividi scaffale…"
+      },
+      "name": "Stuff",
+      "newItemTitle": "Nuovo articolo",
+      "scannedItemTitle": "Articolo scansionato",
+      "scanner": {
+        "add": "Aggiungi",
+        "addedWithoutMeta": "Codice salvato — nessuna info prodotto trovata",
+        "cameraError": "Impossibile accedere alla fotocamera. Inserisci un codice a barre manualmente qui sotto.",
+        "description": "Inquadra un codice a barre con la fotocamera (UPC, EAN, Code 128, QR e altri).",
+        "found": "Prodotto aggiunto",
+        "lookingUp": "Ricerca prodotto…",
+        "manualPlaceholder": "O digita un codice a barre…",
+        "openedItem": "Aperto {{title}}",
+        "openedTag": "Filtro su {{name}}",
+        "title": "Scansiona codice a barre",
+        "unknownItem": "Nessun articolo trovato per quell’etichetta ryOS.",
+        "unknownTag": "Nessun tag trovato per quell’etichetta ryOS."
+      },
+      "searchPlaceholder": "Cerca cose…",
+      "share": {
+        "description": "Pubblica gli articoli selezionati. I visitatori devono accedere per prenotare o fare un’offerta.",
+        "empty": "Nessun articolo da condividere.",
+        "failed": "Impossibile pubblicare la condivisione.",
+        "noneSelected": "Seleziona almeno un articolo da condividere.",
+        "publish": "Pubblica",
+        "published": "Scaffale pubblicato",
+        "publishing": "Pubblicazione…",
+        "shelfTitle": "Titolo della condivisione",
+        "title": "Condividi Stuff"
+      },
+      "shared": {
+        "back": "Indietro",
+        "bid": "Fai un’offerta",
+        "bidFailed": "Impossibile inviare l’offerta.",
+        "bidPlaced": "Offerta inviata",
+        "by": "Condiviso da {{username}}",
+        "invalidBid": "Inserisci un importo di offerta valido.",
+        "loading": "Caricamento…",
+        "loadingTitle": "Stuff condiviso",
+        "notFound": "Questo scaffale condiviso non è stato trovato.",
+        "reserve": "Prenota",
+        "reserveFailed": "Impossibile prenotare l’articolo.",
+        "reserved": "Articolo prenotato",
+        "reservedBy": "Prenotato da {{username}}",
+        "signIn": "Accedi per offrire",
+        "topOffer": "Offerta migliore {{amount}}",
+        "yourOffer": "La tua offerta"
+      },
+      "sidebar": {
+        "allStuff": "Tutte le cose",
+        "deleteTag": "Elimina tag",
+        "newTag": "Nuovo tag…",
+        "printTag": "Stampa etichetta tag",
+        "status": "Stato",
+        "tags": "Tag"
+      },
+      "status": {
+        "all": "Tutti gli stati",
+        "discarded": "Scartato",
+        "for_sale": "In vendita",
+        "in_use": "In uso",
+        "reserved": "Prenotato",
+        "sold": "Venduto",
+        "stowed": "Riposto"
+      },
+      "title": "Stuff",
+      "toolbar": {
+        "add": "Aggiungi",
+        "scan": "Scansiona",
+        "share": "Condividi"
+      }
+    },
     "synth": {
       "addPreset": "AGGIUNGI PRESET",
       "controls": "CONTROLLI",
@@ -4787,7 +4924,9 @@
           "applet": "Applet",
           "item": "Elemento",
           "page": "Pagina",
-          "song": "Brano"
+          "shelf": "Scaffale",
+          "song": "Brano",
+          "stuff": "Scaffale"
         },
         "linkCopied": "Link copiato",
         "linkCopiedToClipboard": "Link {{itemType}} copiato negli appunti",

@@ -4031,6 +4031,143 @@
       "placeholder": "付箋を書く…",
       "title": "スティッキーズ"
     },
+    "stuff": {
+      "contextMenu": {
+        "delete": "削除",
+        "edit": "編集",
+        "printLabel": "ラベルをプリント"
+      },
+      "description": "木の棚で持ち物をカタログ管理",
+      "detail": {
+        "delete": "削除",
+        "print": "プリント",
+        "title": "詳細"
+      },
+      "empty": {
+        "description": "アイテムを追加するかバーコードをスキャンして棚を埋めてください。",
+        "title": "まだアイテムがありません"
+      },
+      "fields": {
+        "brand": "ブランド",
+        "currency": "通貨",
+        "discountedPrice": "希望価格",
+        "notes": "メモ",
+        "originalPrice": "定価",
+        "productBarcode": "商品バーコード",
+        "quantity": "数量",
+        "ryosLabel": "ryOSラベル",
+        "soldPrice": "売却価格",
+        "status": "状況",
+        "tags": "タグ",
+        "title": "タイトル"
+      },
+      "help": {
+        "prices": {
+          "description": "定価、希望価格、売却価格を記録します。使用中、保管中、売り出し中、売却済み、廃棄済みとしてマークできます。",
+          "title": "価格とステータス"
+        },
+        "print": {
+          "description": "ファイル ▸ アイテム/タグラベルをプリントからryOS IDバーコードを印刷します。印刷したラベルをスキャンするとそのアイテムが開くか、タグで絞り込まれます。",
+          "title": "ラベルをプリント"
+        },
+        "scan": {
+          "description": "ファイル ▸ バーコードをスキャンでUPC、EAN、Code 128、QRなどを取り込みます。見つかった場合は商品詳細が入力されます。",
+          "title": "バーコードをスキャン"
+        },
+        "share": {
+          "description": "選択したアイテムを公開URLで公開します。サインインした訪問者は予約や最高オファーができます。",
+          "title": "共有と入札"
+        },
+        "shelf": {
+          "description": "木の棚でインベントリを閲覧します。アイテムをクリックして詳細、ステータス、価格を編集できます。",
+          "title": "あなたの棚"
+        },
+        "tags": {
+          "description": "キッチンや電化製品などのタグで持ち物を整理し、サイドバーから棚を絞り込みます。",
+          "title": "タグ"
+        }
+      },
+      "menu": {
+        "about": "Stuffについて",
+        "backToShelf": "自分の棚に戻る",
+        "help": "Stuffヘルプ",
+        "newItem": "新規アイテム",
+        "printItemLabels": "アイテムラベルをプリント…",
+        "printTagLabels": "タグラベルをプリント…",
+        "scanBarcode": "バーコードをスキャン…",
+        "share": "棚を共有…"
+      },
+      "name": "Stuff",
+      "newItemTitle": "新規アイテム",
+      "scannedItemTitle": "スキャンしたアイテム",
+      "scanner": {
+        "add": "追加",
+        "addedWithoutMeta": "バーコードを保存しました — 商品情報は見つかりませんでした",
+        "cameraError": "カメラにアクセスできませんでした。下にバーコードを手動入力してください。",
+        "description": "カメラをバーコードに向けてください（UPC、EAN、Code 128、QRなど）。",
+        "found": "商品を追加しました",
+        "lookingUp": "商品を検索中…",
+        "manualPlaceholder": "またはバーコードを入力…",
+        "openedItem": "{{title}}を開きました",
+        "openedTag": "{{name}}で絞り込みました",
+        "title": "バーコードをスキャン",
+        "unknownItem": "そのryOSラベルのアイテムは見つかりませんでした。",
+        "unknownTag": "そのryOSラベルのタグは見つかりませんでした。"
+      },
+      "searchPlaceholder": "持ち物を検索…",
+      "share": {
+        "description": "選択したアイテムを公開します。予約や入札にはサインインが必要です。",
+        "empty": "共有するアイテムがありません。",
+        "failed": "共有を公開できませんでした。",
+        "noneSelected": "共有するアイテムを少なくとも1つ選択してください。",
+        "publish": "公開",
+        "published": "棚を公開しました",
+        "publishing": "公開中…",
+        "shelfTitle": "共有タイトル",
+        "title": "Stuffを共有"
+      },
+      "shared": {
+        "back": "戻る",
+        "bid": "オファーする",
+        "bidFailed": "オファーを送信できませんでした。",
+        "bidPlaced": "オファーを送信しました",
+        "by": "{{username}}さんが共有",
+        "invalidBid": "有効なオファー金額を入力してください。",
+        "loading": "読み込み中…",
+        "loadingTitle": "共有されたStuff",
+        "notFound": "この共有棚は見つかりませんでした。",
+        "reserve": "予約",
+        "reserveFailed": "アイテムを予約できませんでした。",
+        "reserved": "アイテムを予約しました",
+        "reservedBy": "{{username}}さんが予約",
+        "signIn": "入札するにはサインイン",
+        "topOffer": "最高オファー {{amount}}",
+        "yourOffer": "あなたのオファー"
+      },
+      "sidebar": {
+        "allStuff": "すべての持ち物",
+        "deleteTag": "タグを削除",
+        "newTag": "新規タグ…",
+        "printTag": "タグラベルをプリント",
+        "status": "状況",
+        "tags": "タグ"
+      },
+      "status": {
+        "all": "すべてのステータス",
+        "discarded": "廃棄済み",
+        "for_sale": "売り出し中",
+        "in_use": "使用中",
+        "reserved": "予約済み",
+        "sold": "売却済み",
+        "stowed": "保管中"
+      },
+      "title": "Stuff",
+      "toolbar": {
+        "add": "追加",
+        "scan": "スキャン",
+        "share": "共有"
+      }
+    },
     "synth": {
       "addPreset": "プリセットを追加",
       "controls": "コントロール",
@@ -4783,7 +4920,9 @@
           "applet": "アプレット",
           "item": "項目",
           "page": "ページ",
-          "song": "曲"
+          "shelf": "棚",
+          "song": "曲",
+          "stuff": "棚"
         },
         "linkCopied": "リンクがコピーされました",
         "linkCopiedToClipboard": "{{itemType}}のリンクをクリップボードにコピーしました",

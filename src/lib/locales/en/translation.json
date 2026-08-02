@@ -119,7 +119,9 @@
           "song": "Song",
           "app": "App",
           "applet": "Applet",
-          "item": "Item"
+          "item": "Item",
+          "stuff": "Shelf",
+          "shelf": "Shelf"
         }
       }
     },
@@ -4983,6 +4985,179 @@
         "liveCurrency": {
           "title": "Live Currency",
           "description": "Currency conversions fetch exchange rates through the ryOS API"
+        }
+      }
+    },
+    "stuff": {
+      "name": "Stuff",
+      "title": "Stuff",
+      "description": "Catalog your stuff on a wooden shelf",
+      "searchPlaceholder": "Search Stuff…",
+      "newItemTitle": "New Item",
+      "scannedItemTitle": "Scanned Item",
+      "menu": {
+        "newItem": "New Item",
+        "scanBarcode": "Scan Barcode…",
+        "share": "Share Shelf…",
+        "backToShelf": "Back to My Shelf",
+        "help": "Stuff Help",
+        "about": "About Stuff",
+        "printItemLabels": "Print Item Labels…",
+        "printTagLabels": "Print Tag Labels…"
+      },
+      "toolbar": {
+        "add": "Add",
+        "scan": "Scan",
+        "share": "Share"
+      },
+      "shelf": {
+        "gridView": "Grid View",
+        "listView": "List View"
+      },
+      "empty": {
+        "title": "No Stuff Yet",
+        "description": "Add an item or scan a barcode to start filling your shelves."
+      },
+      "sidebar": {
+        "tags": "Tags",
+        "allStuff": "All Stuff",
+        "newTag": "New Tag…",
+        "deleteTag": "Delete Tag",
+        "status": "Status",
+        "printTag": "Print Tag Label"
+      },
+      "dialogs": {
+        "newTag": {
+          "title": "New Tag",
+          "description": "Enter a name for the new tag."
+        },
+        "productLookup": {
+          "title": "Choose Product",
+          "description": "Select a match for \"{{query}}\"",
+          "selectResult": "Select a result:",
+          "useSelected": "Use Selected",
+          "applying": "Applying…",
+          "noResults": "No products found",
+          "error": "Product lookup failed"
+        }
+      },
+      "status": {
+        "all": "All Statuses",
+        "in_use": "In Use",
+        "stowed": "Stowed",
+        "for_sale": "For Sale",
+        "reserved": "Reserved",
+        "sold": "Sold",
+        "discarded": "Discarded"
+      },
+      "fields": {
+        "title": "Title",
+        "brand": "Brand",
+        "status": "Status",
+        "quantity": "Quantity",
+        "tags": "Tags",
+        "originalPrice": "Original",
+        "discountedPrice": "Asking",
+        "soldPrice": "Sold",
+        "currency": "Currency",
+        "notes": "Notes",
+        "productBarcode": "Product Barcode",
+        "ryosLabel": "ryOS Label",
+        "thumbnail": "Thumbnail"
+      },
+      "detail": {
+        "title": "Details",
+        "print": "Print",
+        "delete": "Delete",
+        "lookup": "Look Up",
+        "chooseImage": "Choose Image…",
+        "removeImage": "Remove",
+        "imageUrlPlaceholder": "Image URL…",
+        "applyImageUrl": "Apply",
+        "imageInvalid": "Could not use that image (must be under 1.5 MB).",
+        "imageFetchFailed": "Could not fetch that image URL."
+      },
+      "contextMenu": {
+        "edit": "Edit",
+        "printLabel": "Print Label",
+        "delete": "Delete"
+      },
+      "scanner": {
+        "title": "Scan Barcode",
+        "description": "Point your camera at a barcode (UPC, EAN, Code 128, QR, and more).",
+        "manualPlaceholder": "ISBN, UPC, or Title…",
+        "add": "Add",
+        "cameraError": "Could not access the camera. Enter a barcode manually below.",
+        "lookingUp": "Looking Up Product…",
+        "found": "Product Added",
+        "foundWithCover": "Product Added With Cover",
+        "foundNoCover": "Product Added — No Cover Found",
+        "updated": "Product Details Updated",
+        "updatedWithCover": "Product Details and Cover Updated",
+        "updatedNoCover": "Product Details Updated — No Cover Found",
+        "coverFetchFailed": "Product Found — Cover Could Not Be Downloaded",
+        "addedWithoutMeta": "Barcode Saved — No Product Info Found",
+        "notFoundExisting": "No Product Info Found",
+        "lookupFailed": "Product Lookup Failed",
+        "noLookupQuery": "Enter a title, brand, or barcode to look up.",
+        "openedItem": "Opened {{title}}",
+        "openedTag": "Filtered to {{name}}",
+        "unknownItem": "No item found for that ryOS label.",
+        "unknownTag": "No tag found for that ryOS label."
+      },
+      "share": {
+        "title": "Share Stuff",
+        "description": "Publish selected items. Visitors must sign in to reserve or bid.",
+        "shelfTitle": "Share Title",
+        "empty": "No items to share.",
+        "noneSelected": "Select at least one item to share.",
+        "publish": "Publish",
+        "publishing": "Publishing…",
+        "published": "Shelf Published",
+        "failed": "Could not publish share."
+      },
+      "shared": {
+        "back": "Back",
+        "loadingTitle": "Shared Stuff",
+        "by": "Shared by {{username}}",
+        "loading": "Loading…",
+        "notFound": "This shared shelf could not be found.",
+        "reserve": "Reserve",
+        "bid": "Place Offer",
+        "yourOffer": "Your Offer",
+        "signIn": "Sign In to Bid",
+        "reserved": "Item Reserved",
+        "reserveFailed": "Could not reserve item.",
+        "bidPlaced": "Offer Placed",
+        "bidFailed": "Could not place offer.",
+        "invalidBid": "Enter a valid offer amount.",
+        "topOffer": "Top Offer {{amount}}",
+        "reservedBy": "Reserved By {{username}}"
+      },
+      "help": {
+        "shelf": {
+          "title": "Your Shelf",
+          "description": "Browse your inventory on wooden shelves. Click an item to edit details, status, and prices."
+        },
+        "scan": {
+          "title": "Scan Barcodes",
+          "description": "Use File ▸ Scan Barcode to capture UPC, EAN, Code 128, QR, and more. Product details fill in when found."
+        },
+        "tags": {
+          "title": "Tags",
+          "description": "Organize stuff with tags like Kitchen or Electronics. Filter the shelf from the sidebar."
+        },
+        "prices": {
+          "title": "Prices & Status",
+          "description": "Track original, discounted, and sold prices. Mark items as in use, stowed, for sale, sold, or discarded."
+        },
+        "share": {
+          "title": "Share & Bid",
+          "description": "Publish selected items to a public URL. Signed-in visitors can reserve items and place highest offers."
+        },
+        "print": {
+          "title": "Print Labels",
+          "description": "Print ryOS ID barcodes for items or tags from File ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag."
         }
       }
     }

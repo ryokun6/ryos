@@ -4031,6 +4031,143 @@
       "placeholder": "Notiz schreiben…",
       "title": "Notizzettel"
     },
+    "stuff": {
+      "contextMenu": {
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "printLabel": "Etikett drucken"
+      },
+      "description": "Katalogisiere deine Sachen auf einem Holzregal",
+      "detail": {
+        "delete": "Löschen",
+        "print": "Drucken",
+        "title": "Details"
+      },
+      "empty": {
+        "description": "Füge einen Eintrag hinzu oder scanne einen Barcode, um deine Regale zu füllen.",
+        "title": "Noch keine Sachen"
+      },
+      "fields": {
+        "brand": "Marke",
+        "currency": "Währung",
+        "discountedPrice": "Angebot",
+        "notes": "Notizen",
+        "originalPrice": "Original",
+        "productBarcode": "Produkt-Barcode",
+        "quantity": "Menge",
+        "ryosLabel": "ryOS-Etikett",
+        "soldPrice": "Verkauft",
+        "status": "Status",
+        "tags": "Schlagwörter",
+        "title": "Titel"
+      },
+      "help": {
+        "prices": {
+          "description": "Verfolge Original-, Angebots- und Verkaufspreise. Markiere Einträge als in Gebrauch, verstaut, zu verkaufen, verkauft oder aussortiert.",
+          "title": "Preise & Status"
+        },
+        "print": {
+          "description": "Drucke ryOS-ID-Barcodes für Einträge oder Schlagwörter über Ablage ▸ Objekt-/Schlagwortetiketten drucken. Das Scannen eines gedruckten Etiketts öffnet den Eintrag oder filtert nach Schlagwort.",
+          "title": "Etiketten drucken"
+        },
+        "scan": {
+          "description": "Über Ablage ▸ Barcode scannen kannst du UPC, EAN, Code 128, QR und mehr erfassen. Produktdetails werden bei Treffer ausgefüllt.",
+          "title": "Barcodes scannen"
+        },
+        "share": {
+          "description": "Veröffentliche ausgewählte Einträge unter einer öffentlichen URL. Angemeldete Besucher können reservieren und Höchstgebote abgeben.",
+          "title": "Teilen & Bieten"
+        },
+        "shelf": {
+          "description": "Durchsuche deinen Bestand auf Holzregalen. Klicke auf einen Eintrag, um Details, Status und Preise zu bearbeiten.",
+          "title": "Dein Regal"
+        },
+        "tags": {
+          "description": "Organisiere Sachen mit Schlagwörtern wie Küche oder Elektronik. Filtere das Regal in der Seitenleiste.",
+          "title": "Schlagwörter"
+        }
+      },
+      "menu": {
+        "about": "Über Stuff",
+        "backToShelf": "Zurück zu meinem Regal",
+        "help": "Stuff-Hilfe",
+        "newItem": "Neuer Eintrag",
+        "printItemLabels": "Objektetiketten drucken…",
+        "printTagLabels": "Schlagwortetiketten drucken…",
+        "scanBarcode": "Barcode scannen…",
+        "share": "Regal teilen…"
+      },
+      "name": "Stuff",
+      "newItemTitle": "Neuer Eintrag",
+      "scannedItemTitle": "Gescanntes Objekt",
+      "scanner": {
+        "add": "Hinzufügen",
+        "addedWithoutMeta": "Barcode gespeichert — keine Produktinfos gefunden",
+        "cameraError": "Kamerazugriff nicht möglich. Gib unten manuell einen Barcode ein.",
+        "description": "Richte die Kamera auf einen Barcode (UPC, EAN, Code 128, QR und mehr).",
+        "found": "Produkt hinzugefügt",
+        "lookingUp": "Produkt wird gesucht…",
+        "manualPlaceholder": "Oder Barcode eingeben…",
+        "openedItem": "{{title}} geöffnet",
+        "openedTag": "Gefiltert nach {{name}}",
+        "title": "Barcode scannen",
+        "unknownItem": "Kein Eintrag für dieses ryOS-Etikett gefunden.",
+        "unknownTag": "Kein Schlagwort für dieses ryOS-Etikett gefunden."
+      },
+      "searchPlaceholder": "Sachen suchen…",
+      "share": {
+        "description": "Ausgewählte Einträge veröffentlichen. Besucher müssen sich anmelden, um zu reservieren oder zu bieten.",
+        "empty": "Keine Einträge zum Teilen.",
+        "failed": "Freigabe konnte nicht veröffentlicht werden.",
+        "noneSelected": "Wähle mindestens einen Eintrag zum Teilen aus.",
+        "publish": "Veröffentlichen",
+        "published": "Regal veröffentlicht",
+        "publishing": "Wird veröffentlicht…",
+        "shelfTitle": "Titel der Freigabe",
+        "title": "Stuff teilen"
+      },
+      "shared": {
+        "back": "Zurück",
+        "bid": "Angebot abgeben",
+        "bidFailed": "Angebot konnte nicht abgegeben werden.",
+        "bidPlaced": "Angebot abgegeben",
+        "by": "Geteilt von {{username}}",
+        "invalidBid": "Gib einen gültigen Angebotsbetrag ein.",
+        "loading": "Laden…",
+        "loadingTitle": "Geteilte Sachen",
+        "notFound": "Dieses geteilte Regal wurde nicht gefunden.",
+        "reserve": "Reservieren",
+        "reserveFailed": "Eintrag konnte nicht reserviert werden.",
+        "reserved": "Eintrag reserviert",
+        "reservedBy": "Reserviert von {{username}}",
+        "signIn": "Anmelden zum Bieten",
+        "topOffer": "Höchstgebot {{amount}}",
+        "yourOffer": "Dein Angebot"
+      },
+      "sidebar": {
+        "allStuff": "Alle Sachen",
+        "deleteTag": "Schlagwort löschen",
+        "newTag": "Neues Schlagwort…",
+        "printTag": "Schlagwortetikett drucken",
+        "status": "Status",
+        "tags": "Schlagwörter"
+      },
+      "status": {
+        "all": "Alle Status",
+        "discarded": "Aussortiert",
+        "for_sale": "Zu verkaufen",
+        "in_use": "In Gebrauch",
+        "reserved": "Reserviert",
+        "sold": "Verkauft",
+        "stowed": "Verstaut"
+      },
+      "title": "Stuff",
+      "toolbar": {
+        "add": "Hinzufügen",
+        "scan": "Scannen",
+        "share": "Teilen"
+      }
+    },
     "synth": {
       "addPreset": "VOREINSTELLUNG HINZUFÜGEN",
       "controls": "STEUERUNG",
@@ -4783,7 +4920,9 @@
           "applet": "Applet",
           "item": "Element",
           "page": "Seite",
-          "song": "Titel"
+          "shelf": "Regal",
+          "song": "Titel",
+          "stuff": "Regal"
         },
         "linkCopied": "Link kopiert",
         "linkCopiedToClipboard": "{{itemType}}-Link in die Zwischenablage kopiert",

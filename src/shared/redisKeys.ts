@@ -186,6 +186,10 @@ export const redisKeys = {
     appletShare: (shareId: string) =>
       redisKeyCaseSensitive("media", "applet", "share", shareId),
     appletShareIndex: () => redisKey("media", "applet", "share-index"),
+    stuffShare: (shareId: string) =>
+      redisKeyCaseSensitive("media", "stuff", "share", shareId),
+    stuffShareLock: (shareId: string) =>
+      redisKeyCaseSensitive("media", "stuff", "share", shareId, "lock"),
     songIds: () => redisKey("media", "song", "ids"),
     songMeta: (songId: string) => songKey(songId, "meta"),
     songContent: (songId: string) => songKey(songId, "content"),

@@ -306,8 +306,9 @@ export class FakeRedis {
   }
 
   /**
-   * Minimal Lua eval supporting the INCREMENT_WITH_TTL_SCRIPT used by
-   * rate limiting (INCR + conditional EXPIRE).
+   * Minimal Lua eval supporting:
+   * - INCREMENT_WITH_TTL_SCRIPT (INCR + conditional EXPIRE)
+   * - compare-and-delete lock release (GET token then DEL)
    */
   async eval<T = unknown>(
     script: string,
@@ -327,6 +328,18 @@ export class FakeRedis {
         await this.expire(key, ttl);
       }
       return count as T;
+    }
+    if (
+      normalized.includes('redis.call("GET", KEYS[1]) == ARGV[1]') &&
+      normalized.includes('redis.call("DEL", KEYS[1])')
+    ) {
+      const key = keys[0];
+      if (!key) throw new Error("FakeRedis.eval: missing key");
+      const token = String(args[0] ?? "");
+      if (this.kv.get(key) === token) {
+        return this.delSync(key) as T;
+      }
+      return 0 as T;
     }
     throw new Error(
       `FakeRedis.eval: unsupported script: ${script.slice(0, 80)}...`

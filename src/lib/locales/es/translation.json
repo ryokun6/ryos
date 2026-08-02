@@ -4034,6 +4034,143 @@
       "placeholder": "Escribir una nota…",
       "title": "Notas Adhesivas"
     },
+    "stuff": {
+      "contextMenu": {
+        "delete": "Eliminar",
+        "edit": "Editar",
+        "printLabel": "Imprimir etiqueta"
+      },
+      "description": "Cataloga tus cosas en una estantería de madera",
+      "detail": {
+        "delete": "Eliminar",
+        "print": "Imprimir",
+        "title": "Detalles"
+      },
+      "empty": {
+        "description": "Añade un artículo o escanea un código de barras para empezar a llenar tus estantes.",
+        "title": "Aún no hay nada"
+      },
+      "fields": {
+        "brand": "Marca",
+        "currency": "Moneda",
+        "discountedPrice": "Precio pedido",
+        "notes": "Notas",
+        "originalPrice": "Original",
+        "productBarcode": "Código de barras del producto",
+        "quantity": "Cantidad",
+        "ryosLabel": "Etiqueta ryOS",
+        "soldPrice": "Vendido",
+        "status": "Estado",
+        "tags": "Etiquetas",
+        "title": "Título"
+      },
+      "help": {
+        "prices": {
+          "description": "Registra precios originales, de oferta y de venta. Marca artículos como en uso, guardados, en venta, vendidos o descartados.",
+          "title": "Precios y estado"
+        },
+        "print": {
+          "description": "Imprime códigos de barras con ID de ryOS para artículos o tags desde Archivo ▸ Imprimir etiquetas de artículos/tags. Escanear una etiqueta impresa abre ese artículo o filtra por tag.",
+          "title": "Imprimir etiquetas"
+        },
+        "scan": {
+          "description": "Usa Archivo ▸ Escanear código de barras para capturar UPC, EAN, Code 128, QR y más. Los detalles del producto se rellenan si se encuentran.",
+          "title": "Escanear códigos"
+        },
+        "share": {
+          "description": "Publica artículos seleccionados en una URL pública. Los visitantes con sesión iniciada pueden reservar y hacer ofertas.",
+          "title": "Compartir y ofertar"
+        },
+        "shelf": {
+          "description": "Explora tu inventario en estanterías de madera. Haz clic en un artículo para editar detalles, estado y precios.",
+          "title": "Tu estantería"
+        },
+        "tags": {
+          "description": "Organiza las cosas con etiquetas como Cocina o Electrónica. Filtra la estantería desde la barra lateral.",
+          "title": "Etiquetas"
+        }
+      },
+      "menu": {
+        "about": "Acerca de Stuff",
+        "backToShelf": "Volver a mi estantería",
+        "help": "Ayuda de Stuff",
+        "newItem": "Nuevo artículo",
+        "printItemLabels": "Imprimir etiquetas de artículos…",
+        "printTagLabels": "Imprimir etiquetas de tags…",
+        "scanBarcode": "Escanear código de barras…",
+        "share": "Compartir estantería…"
+      },
+      "name": "Stuff",
+      "newItemTitle": "Nuevo artículo",
+      "scannedItemTitle": "Artículo escaneado",
+      "scanner": {
+        "add": "Añadir",
+        "addedWithoutMeta": "Código guardado — no se encontró información del producto",
+        "cameraError": "No se pudo acceder a la cámara. Introduce un código de barras manualmente abajo.",
+        "description": "Apunta la cámara a un código de barras (UPC, EAN, Code 128, QR y más).",
+        "found": "Producto añadido",
+        "lookingUp": "Buscando producto…",
+        "manualPlaceholder": "O escribe un código de barras…",
+        "openedItem": "Se abrió {{title}}",
+        "openedTag": "Filtrado por {{name}}",
+        "title": "Escanear código de barras",
+        "unknownItem": "No se encontró ningún artículo para esa etiqueta ryOS.",
+        "unknownTag": "No se encontró ninguna etiqueta para esa etiqueta ryOS."
+      },
+      "searchPlaceholder": "Buscar cosas…",
+      "share": {
+        "description": "Publica los artículos seleccionados. Los visitantes deben iniciar sesión para reservar u ofrecer.",
+        "empty": "No hay artículos para compartir.",
+        "failed": "No se pudo publicar el enlace.",
+        "noneSelected": "Selecciona al menos un artículo para compartir.",
+        "publish": "Publicar",
+        "published": "Estantería publicada",
+        "publishing": "Publicando…",
+        "shelfTitle": "Título del compartir",
+        "title": "Compartir Stuff"
+      },
+      "shared": {
+        "back": "Atrás",
+        "bid": "Hacer oferta",
+        "bidFailed": "No se pudo enviar la oferta.",
+        "bidPlaced": "Oferta enviada",
+        "by": "Compartido por {{username}}",
+        "invalidBid": "Introduce un importe de oferta válido.",
+        "loading": "Cargando…",
+        "loadingTitle": "Stuff compartido",
+        "notFound": "No se pudo encontrar esta estantería compartida.",
+        "reserve": "Reservar",
+        "reserveFailed": "No se pudo reservar el artículo.",
+        "reserved": "Artículo reservado",
+        "reservedBy": "Reservado por {{username}}",
+        "signIn": "Inicia sesión para ofertar",
+        "topOffer": "Mejor oferta {{amount}}",
+        "yourOffer": "Tu oferta"
+      },
+      "sidebar": {
+        "allStuff": "Todas las cosas",
+        "deleteTag": "Eliminar etiqueta",
+        "newTag": "Nueva etiqueta…",
+        "printTag": "Imprimir etiqueta del tag",
+        "status": "Estado",
+        "tags": "Etiquetas"
+      },
+      "status": {
+        "all": "Todos los estados",
+        "discarded": "Descartado",
+        "for_sale": "En venta",
+        "in_use": "En uso",
+        "reserved": "Reservado",
+        "sold": "Vendido",
+        "stowed": "Guardado"
+      },
+      "title": "Stuff",
+      "toolbar": {
+        "add": "Añadir",
+        "scan": "Escanear",
+        "share": "Compartir"
+      }
+    },
     "synth": {
       "addPreset": "AÑADIR PREAJUSTE",
       "controls": "CONTROLES",
@@ -4787,7 +4924,9 @@
           "applet": "Applet",
           "item": "Ítem",
           "page": "Página",
-          "song": "Canción"
+          "shelf": "Estantería",
+          "song": "Canción",
+          "stuff": "Estantería"
         },
         "linkCopied": "Enlace copiado",
         "linkCopiedToClipboard": "Enlace de {{itemType}} copiado al portapapeles",

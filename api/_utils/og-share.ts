@@ -33,6 +33,7 @@ const APP_NAMES: Record<string, string> = {
   maps: "Maps",
   books: "Books",
   calculator: "Calculator",
+  stuff: "Stuff",
 };
 
 const APP_DESCRIPTIONS: Record<string, string> = {
@@ -64,6 +65,7 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   maps: "Find places with Apple Maps",
   books: "Read EPUB books",
   calculator: "Basic, scientific, and unit conversion calculator",
+  stuff: "Catalog your stuff on a wooden shelf",
 };
 
 const APP_ICONS: Record<string, string> = {
@@ -95,6 +97,7 @@ const APP_ICONS: Record<string, string> = {
   maps: "maps.png",
   books: "books.png",
   calculator: "calculator.png",
+  stuff: "stuff.png",
 };
 
 export type SongShareMetadata = {
@@ -713,6 +716,14 @@ export async function createOgShareResponse(
     } else {
       cacheMaxAge = FALLBACK_CACHE_SECONDS;
     }
+    matched = true;
+  }
+
+  const stuffMatch = pathname.match(/^\/stuff\/([a-zA-Z0-9_-]+)$/);
+  if (stuffMatch) {
+    imageUrl = `${publicOrigin}/icons/macosx/stuff.png`;
+    title = "Shared Stuff on ryOS";
+    description = "Browse a shared shelf — sign in to reserve or bid";
     matched = true;
   }
 

@@ -4034,6 +4034,143 @@
       "placeholder": "Escreva uma nota…",
       "title": "Anotações"
     },
+    "stuff": {
+      "contextMenu": {
+        "delete": "Apagar",
+        "edit": "Editar",
+        "printLabel": "Imprimir etiqueta"
+      },
+      "description": "Catalogue as suas coisas numa prateleira de madeira",
+      "detail": {
+        "delete": "Apagar",
+        "print": "Imprimir",
+        "title": "Detalhes"
+      },
+      "empty": {
+        "description": "Adicione um item ou digitalize um código de barras para começar a encher as prateleiras.",
+        "title": "Ainda sem coisas"
+      },
+      "fields": {
+        "brand": "Marca",
+        "currency": "Moeda",
+        "discountedPrice": "Pedido",
+        "notes": "Notas",
+        "originalPrice": "Original",
+        "productBarcode": "Código de barras do produto",
+        "quantity": "Quantidade",
+        "ryosLabel": "Etiqueta ryOS",
+        "soldPrice": "Vendido",
+        "status": "Estado",
+        "tags": "Tags",
+        "title": "Título"
+      },
+      "help": {
+        "prices": {
+          "description": "Acompanhe preços originais, pedidos e de venda. Marque itens como em uso, guardados, à venda, vendidos ou descartados.",
+          "title": "Preços e estado"
+        },
+        "print": {
+          "description": "Imprima códigos de barras com ID ryOS para itens ou tags em Ficheiro ▸ Imprimir etiquetas de itens/tags. Digitalizar uma etiqueta impressa abre o item ou filtra por tag.",
+          "title": "Imprimir etiquetas"
+        },
+        "scan": {
+          "description": "Use Ficheiro ▸ Digitalizar código de barras para capturar UPC, EAN, Code 128, QR e mais. Os detalhes do produto são preenchidos quando encontrados.",
+          "title": "Digitalizar códigos de barras"
+        },
+        "share": {
+          "description": "Publique itens selecionados num URL público. Visitantes autenticados podem reservar e fazer ofertas.",
+          "title": "Partilhar e oferecer"
+        },
+        "shelf": {
+          "description": "Navegue no inventário em prateleiras de madeira. Clique num item para editar detalhes, estado e preços.",
+          "title": "A sua prateleira"
+        },
+        "tags": {
+          "description": "Organize as coisas com tags como Cozinha ou Eletrónica. Filtre a prateleira na barra lateral.",
+          "title": "Tags"
+        }
+      },
+      "menu": {
+        "about": "Acerca do Stuff",
+        "backToShelf": "Voltar à minha prateleira",
+        "help": "Ajuda do Stuff",
+        "newItem": "Novo item",
+        "printItemLabels": "Imprimir etiquetas de itens…",
+        "printTagLabels": "Imprimir etiquetas de tags…",
+        "scanBarcode": "Digitalizar código de barras…",
+        "share": "Partilhar prateleira…"
+      },
+      "name": "Stuff",
+      "newItemTitle": "Novo item",
+      "scannedItemTitle": "Item digitalizado",
+      "scanner": {
+        "add": "Adicionar",
+        "addedWithoutMeta": "Código guardado — sem informação do produto",
+        "cameraError": "Não foi possível aceder à câmara. Introduza um código de barras manualmente abaixo.",
+        "description": "Aponte a câmara para um código de barras (UPC, EAN, Code 128, QR e mais).",
+        "found": "Produto adicionado",
+        "lookingUp": "A procurar produto…",
+        "manualPlaceholder": "Ou escreva um código de barras…",
+        "openedItem": "Aberto {{title}}",
+        "openedTag": "Filtrado para {{name}}",
+        "title": "Digitalizar código de barras",
+        "unknownItem": "Nenhum item encontrado para essa etiqueta ryOS.",
+        "unknownTag": "Nenhuma tag encontrada para essa etiqueta ryOS."
+      },
+      "searchPlaceholder": "Pesquisar coisas…",
+      "share": {
+        "description": "Publique os itens selecionados. Os visitantes têm de iniciar sessão para reservar ou oferecer.",
+        "empty": "Nenhum item para partilhar.",
+        "failed": "Não foi possível publicar a partilha.",
+        "noneSelected": "Selecione pelo menos um item para partilhar.",
+        "publish": "Publicar",
+        "published": "Prateleira publicada",
+        "publishing": "A publicar…",
+        "shelfTitle": "Título da partilha",
+        "title": "Partilhar Stuff"
+      },
+      "shared": {
+        "back": "Voltar",
+        "bid": "Fazer oferta",
+        "bidFailed": "Não foi possível enviar a oferta.",
+        "bidPlaced": "Oferta enviada",
+        "by": "Partilhado por {{username}}",
+        "invalidBid": "Introduza um valor de oferta válido.",
+        "loading": "A carregar…",
+        "loadingTitle": "Stuff partilhado",
+        "notFound": "Esta prateleira partilhada não foi encontrada.",
+        "reserve": "Reservar",
+        "reserveFailed": "Não foi possível reservar o item.",
+        "reserved": "Item reservado",
+        "reservedBy": "Reservado por {{username}}",
+        "signIn": "Inicie sessão para oferecer",
+        "topOffer": "Melhor oferta {{amount}}",
+        "yourOffer": "A sua oferta"
+      },
+      "sidebar": {
+        "allStuff": "Todas as coisas",
+        "deleteTag": "Apagar tag",
+        "newTag": "Nova tag…",
+        "printTag": "Imprimir etiqueta da tag",
+        "status": "Estado",
+        "tags": "Tags"
+      },
+      "status": {
+        "all": "Todos os estados",
+        "discarded": "Descartado",
+        "for_sale": "À venda",
+        "in_use": "Em uso",
+        "reserved": "Reservado",
+        "sold": "Vendido",
+        "stowed": "Guardado"
+      },
+      "title": "Stuff",
+      "toolbar": {
+        "add": "Adicionar",
+        "scan": "Digitalizar",
+        "share": "Partilhar"
+      }
+    },
     "synth": {
       "addPreset": "ADICIONAR PREDEFINIÇÃO",
       "controls": "CONTROLES",
@@ -4787,7 +4924,9 @@
           "applet": "Applet",
           "item": "Item",
           "page": "Página",
-          "song": "Música"
+          "shelf": "Prateleira",
+          "song": "Música",
+          "stuff": "Prateleira"
         },
         "linkCopied": "Link copiado",
         "linkCopiedToClipboard": "Link de {{itemType}} copiado para a área de transferência",

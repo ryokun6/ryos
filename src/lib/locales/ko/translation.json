@@ -4031,6 +4031,143 @@
       "placeholder": "메모 작성…",
       "title": "스티커"
     },
+    "stuff": {
+      "contextMenu": {
+        "delete": "삭제",
+        "edit": "편집",
+        "printLabel": "라벨 인쇄"
+      },
+      "description": "나무 선반에 물건을 정리하세요",
+      "detail": {
+        "delete": "삭제",
+        "print": "인쇄",
+        "title": "세부사항"
+      },
+      "empty": {
+        "description": "항목을 추가하거나 바코드를 스캔해 선반을 채워 보세요.",
+        "title": "아직 물건이 없음"
+      },
+      "fields": {
+        "brand": "브랜드",
+        "currency": "통화",
+        "discountedPrice": "희망가",
+        "notes": "메모",
+        "originalPrice": "원가",
+        "productBarcode": "제품 바코드",
+        "quantity": "수량",
+        "ryosLabel": "ryOS 라벨",
+        "soldPrice": "판매가",
+        "status": "상태",
+        "tags": "태그",
+        "title": "제목"
+      },
+      "help": {
+        "prices": {
+          "description": "원가, 희망가, 판매가를 추적하세요. 항목을 사용 중, 보관됨, 판매 중, 판매됨, 폐기됨으로 표시할 수 있습니다.",
+          "title": "가격 및 상태"
+        },
+        "print": {
+          "description": "파일 ▸ 항목/태그 라벨 인쇄에서 항목이나 태그의 ryOS ID 바코드를 인쇄하세요. 인쇄된 라벨을 스캔하면 해당 항목이 열리거나 태그로 필터링됩니다.",
+          "title": "라벨 인쇄"
+        },
+        "scan": {
+          "description": "파일 ▸ 바코드 스캔으로 UPC, EAN, Code 128, QR 등을 캡처합니다. 찾으면 제품 세부사항이 채워집니다.",
+          "title": "바코드 스캔"
+        },
+        "share": {
+          "description": "선택한 항목을 공개 URL로 게시합니다. 로그인한 방문자는 예약하고 최고 제안을 할 수 있습니다.",
+          "title": "공유 및 입찰"
+        },
+        "shelf": {
+          "description": "나무 선반에서 인벤토리를 살펴보세요. 항목을 클릭해 세부사항, 상태, 가격을 편집할 수 있습니다.",
+          "title": "내 선반"
+        },
+        "tags": {
+          "description": "주방이나 전자제품 같은 태그로 물건을 정리하고 사이드바에서 선반을 필터링하세요.",
+          "title": "태그"
+        }
+      },
+      "menu": {
+        "about": "Stuff 정보",
+        "backToShelf": "내 선반으로 돌아가기",
+        "help": "Stuff 도움말",
+        "newItem": "새 항목",
+        "printItemLabels": "항목 라벨 인쇄…",
+        "printTagLabels": "태그 라벨 인쇄…",
+        "scanBarcode": "바코드 스캔…",
+        "share": "선반 공유…"
+      },
+      "name": "Stuff",
+      "newItemTitle": "새 항목",
+      "scannedItemTitle": "스캔한 항목",
+      "scanner": {
+        "add": "추가",
+        "addedWithoutMeta": "바코드 저장됨 — 제품 정보 없음",
+        "cameraError": "카메라에 접근할 수 없습니다. 아래에 바코드를 직접 입력하세요.",
+        "description": "카메라를 바코드에 맞추세요(UPC, EAN, Code 128, QR 등).",
+        "found": "제품 추가됨",
+        "lookingUp": "제품 검색 중…",
+        "manualPlaceholder": "또는 바코드 입력…",
+        "openedItem": "{{title}} 열림",
+        "openedTag": "{{name}}(으)로 필터링됨",
+        "title": "바코드 스캔",
+        "unknownItem": "해당 ryOS 라벨의 항목을 찾을 수 없습니다.",
+        "unknownTag": "해당 ryOS 라벨의 태그를 찾을 수 없습니다."
+      },
+      "searchPlaceholder": "물건 검색…",
+      "share": {
+        "description": "선택한 항목을 게시합니다. 예약하거나 입찰하려면 방문자가 로그인해야 합니다.",
+        "empty": "공유할 항목이 없습니다.",
+        "failed": "공유를 게시할 수 없습니다.",
+        "noneSelected": "공유할 항목을 하나 이상 선택하세요.",
+        "publish": "게시",
+        "published": "선반이 게시됨",
+        "publishing": "게시 중…",
+        "shelfTitle": "공유 제목",
+        "title": "Stuff 공유"
+      },
+      "shared": {
+        "back": "뒤로",
+        "bid": "제안하기",
+        "bidFailed": "제안을 전송할 수 없습니다.",
+        "bidPlaced": "제안이 전송됨",
+        "by": "{{username}} 님이 공유",
+        "invalidBid": "유효한 제안 금액을 입력하세요.",
+        "loading": "로드 중…",
+        "loadingTitle": "공유된 Stuff",
+        "notFound": "이 공유 선반을 찾을 수 없습니다.",
+        "reserve": "예약",
+        "reserveFailed": "항목을 예약할 수 없습니다.",
+        "reserved": "항목이 예약됨",
+        "reservedBy": "{{username}} 님이 예약",
+        "signIn": "입찰하려면 로그인",
+        "topOffer": "최고 제안 {{amount}}",
+        "yourOffer": "내 제안"
+      },
+      "sidebar": {
+        "allStuff": "모든 물건",
+        "deleteTag": "태그 삭제",
+        "newTag": "새 태그…",
+        "printTag": "태그 라벨 인쇄",
+        "status": "상태",
+        "tags": "태그"
+      },
+      "status": {
+        "all": "모든 상태",
+        "discarded": "폐기됨",
+        "for_sale": "판매 중",
+        "in_use": "사용 중",
+        "reserved": "예약됨",
+        "sold": "판매됨",
+        "stowed": "보관됨"
+      },
+      "title": "Stuff",
+      "toolbar": {
+        "add": "추가",
+        "scan": "스캔",
+        "share": "공유"
+      }
+    },
     "synth": {
       "addPreset": "프리셋 추가",
       "controls": "컨트롤",
@@ -4783,7 +4920,9 @@
           "applet": "애플릿",
           "item": "항목",
           "page": "페이지",
-          "song": "노래"
+          "shelf": "선반",
+          "song": "노래",
+          "stuff": "선반"
         },
         "linkCopied": "링크 복사됨",
         "linkCopiedToClipboard": "{{itemType}} 링크가 클립보드에 복사되었습니다.",

@@ -119,7 +119,9 @@
           "song": "Song",
           "app": "App",
           "applet": "Applet",
-          "item": "Item"
+          "item": "Item",
+          "stuff": "Shelf",
+          "shelf": "Shelf"
         }
       }
     },
@@ -1782,6 +1784,10 @@
     "calculator": {
       "name": "Calculator",
       "description": "Basic, scientific, and unit conversion calculator"
+    },
+    "stuff": {
+      "name": "Stuff",
+      "description": "Catalog your stuff on a wooden shelf"
     }
   }
 }

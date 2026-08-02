@@ -1,0 +1,504 @@
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { useAppHelpAboutDialogs } from "@/hooks/useAppHelpAboutDialogs";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useThemeStore } from "@/stores/useThemeStore";
+import {
+  getFilteredStuffItems,
+  useStuffStore,
+} from "@/stores/useStuffStore";
+import { helpItems } from "../metadata";
+import type { StuffInitialData, StuffItemDraft } from "../types";
+import type { ProductLookupResult } from "../utils/barcodeLookup";
+import {
+  enrichStuffFromLookupResult,
+  enrichStuffFromQuery,
+  productFieldsFromDraft,
+  type EnrichedStuffDraft,
+} from "../utils/enrichItemFromLookup";
+import { buildStuffLookupQuery } from "../utils/buildStuffLookupQuery";
+import {
+  itemToLabelTarget,
+  parseStuffIdBarcode,
+  printStuffLabels,
+  tagToLabelTarget,
+} from "../utils/printLabels";
+import type { ScannedBarcode } from "../components/StuffBarcodeScanner";
+
+type ProductLookupApplyOptions = {
+  itemId?: string;
+  barcode?: string;
+  barcodeFormat?: string;
+  fallbackTitle?: string;
+};
+
+export type StuffProductLookupPickerState = {
+  query: string;
+  results: ProductLookupResult[];
+  options: ProductLookupApplyOptions;
+};
+
+export function useStuffLogic({
+  initialData,
+}: {
+  isWindowOpen?: boolean;
+  isForeground?: boolean;
+  instanceId?: string;
+  initialData?: StuffInitialData;
+}) {
+  const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("stuff", helpItems);
+  const currentTheme = useThemeStore((state) => state.current);
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+
+  const items = useStuffStore((s) => s.items);
+  const tags = useStuffStore((s) => s.tags);
+  const selectedItemId = useStuffStore((s) => s.selectedItemId);
+  const selectedTagId = useStuffStore((s) => s.selectedTagId);
+  const statusFilter = useStuffStore((s) => s.statusFilter);
+  const shelfView = useStuffStore((s) => s.shelfView);
+  const searchQuery = useStuffStore((s) => s.searchQuery);
+  const lastShareId = useStuffStore((s) => s.lastShareId);
+
+  const setSelectedItemId = useStuffStore((s) => s.setSelectedItemId);
+  const setSelectedTagId = useStuffStore((s) => s.setSelectedTagId);
+  const setStatusFilter = useStuffStore((s) => s.setStatusFilter);
+  const setShelfView = useStuffStore((s) => s.setShelfView);
+  const setSearchQuery = useStuffStore((s) => s.setSearchQuery);
+  const addItem = useStuffStore((s) => s.addItem);
+  const updateItem = useStuffStore((s) => s.updateItem);
+  const deleteItem = useStuffStore((s) => s.deleteItem);
+  const addTag = useStuffStore((s) => s.addTag);
+  const deleteTag = useStuffStore((s) => s.deleteTag);
+  const setLastShareId = useStuffStore((s) => s.setLastShareId);
+
+  const {
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+  } = useAppHelpAboutDialogs();
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [activeShareId, setActiveShareId] = useState<string | null>(
+    initialData?.shareId ?? null
+  );
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [productLookupPicker, setProductLookupPicker] =
+    useState<StuffProductLookupPickerState | null>(null);
+  const [isApplyingLookupPick, setIsApplyingLookupPick] = useState(false);
+
+  useEffect(() => {
+    if (initialData?.shareId) {
+      setActiveShareId(initialData.shareId);
+    }
+    if (initialData?.itemId) {
+      setSelectedItemId(initialData.itemId);
+    }
+  }, [initialData?.shareId, initialData?.itemId, setSelectedItemId]);
+
+  const filteredItems = useMemo(
+    () =>
+      getFilteredStuffItems({
+        items,
+        tags,
+        selectedTagId,
+        statusFilter,
+        searchQuery,
+      }),
+    [items, tags, selectedTagId, statusFilter, searchQuery]
+  );
+
+  const selectedItem =
+    items.find((item) => item.id === selectedItemId) ?? null;
+
+  const itemCountsByTag = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of items) {
+      for (const tagId of item.tagIds) {
+        counts[tagId] = (counts[tagId] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [items]);
+
+  const handleAddItem = () => {
+    addItem({ title: t("apps.stuff.newItemTitle", { defaultValue: "New Item" }) });
+  };
+
+  const handleUpdateSelected = (draft: StuffItemDraft) => {
+    if (!selectedItemId) return;
+    updateItem(selectedItemId, draft);
+  };
+
+  const handleDeleteSelected = () => {
+    if (!selectedItemId) return;
+    deleteItem(selectedItemId);
+  };
+
+  const handlePrintSelected = () => {
+    if (!selectedItem) return;
+    void printStuffLabels([itemToLabelTarget(selectedItem)]);
+  };
+
+  const handlePrintItemLabels = () => {
+    const targets = (filteredItems.length > 0 ? filteredItems : items).map(
+      itemToLabelTarget
+    );
+    void printStuffLabels(targets);
+  };
+
+  const handlePrintTagLabels = (tagIds?: string[]) => {
+    const selected =
+      tagIds && tagIds.length > 0
+        ? tags.filter((tag) => tagIds.includes(tag.id))
+        : selectedTagId
+          ? tags.filter((tag) => tag.id === selectedTagId)
+          : tags;
+    void printStuffLabels(selected.map(tagToLabelTarget));
+  };
+
+  const toastForEnriched = (
+    enriched: EnrichedStuffDraft,
+    options: ProductLookupApplyOptions,
+    toastId?: string | number
+  ) => {
+    const { found, imageApplied, hadImageUrl } = enriched;
+    const toastMessage = (() => {
+      if (!found) {
+        return options.itemId
+          ? t("apps.stuff.scanner.notFoundExisting", {
+              defaultValue: "No Product Info Found",
+            })
+          : t("apps.stuff.scanner.addedWithoutMeta", {
+              defaultValue: "Barcode Saved — No Product Info Found",
+            });
+      }
+      if (imageApplied) {
+        return options.itemId
+          ? t("apps.stuff.scanner.updatedWithCover", {
+              defaultValue: "Product Details and Cover Updated",
+            })
+          : t("apps.stuff.scanner.foundWithCover", {
+              defaultValue: "Product Added With Cover",
+            });
+      }
+      if (hadImageUrl) {
+        return t("apps.stuff.scanner.coverFetchFailed", {
+          defaultValue: "Product Found — Cover Could Not Be Downloaded",
+        });
+      }
+      return options.itemId
+        ? t("apps.stuff.scanner.updatedNoCover", {
+            defaultValue: "Product Details Updated — No Cover Found",
+          })
+        : t("apps.stuff.scanner.foundNoCover", {
+            defaultValue: "Product Added — No Cover Found",
+          });
+    })();
+    toast.success(toastMessage, toastId !== undefined ? { id: toastId } : undefined);
+  };
+
+  const applyEnrichedDraft = (
+    enriched: EnrichedStuffDraft,
+    options: ProductLookupApplyOptions
+  ) => {
+    const {
+      found: _found,
+      source: _source,
+      queryKind: _queryKind,
+      imageApplied: _imageApplied,
+      hadImageUrl: _hadImageUrl,
+      ...draftFields
+    } = enriched;
+
+    const resolvedTitle =
+      draftFields.title ||
+      options.fallbackTitle ||
+      (options.itemId
+        ? undefined
+        : t("apps.stuff.scannedItemTitle", {
+            defaultValue: "Scanned Item",
+          }));
+
+    // Only product metadata — never status, tags, notes, quantity, etc.
+    const productDraft = productFieldsFromDraft({
+      ...draftFields,
+      title: resolvedTitle,
+    });
+
+    if (options.itemId) {
+      updateItem(options.itemId, productDraft);
+    } else {
+      addItem({ ...productDraft, status: "stowed" });
+    }
+  };
+
+  const handleProductLookup = async (
+    query: string,
+    options: ProductLookupApplyOptions = {},
+    mode: "title-lookup" | "barcode-scan" = "title-lookup"
+  ) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    setIsLookingUp(true);
+    const toastId = toast.loading(
+      t("apps.stuff.scanner.lookingUp", {
+        defaultValue: "Looking Up Product…",
+      })
+    );
+
+    try {
+      // Do not seed status/tags/notes here — lookup must not reset user fields
+      // on existing items. New items default status via the store ("stowed").
+      const outcome = await enrichStuffFromQuery(
+        trimmed,
+        {
+          barcode: options.barcode,
+          barcodeFormat: options.barcodeFormat,
+        },
+        mode
+      );
+
+      if (!outcome.autoApply) {
+        toast.dismiss(toastId);
+        setProductLookupPicker({
+          query: trimmed,
+          results: outcome.response.results,
+          options,
+        });
+        return;
+      }
+
+      applyEnrichedDraft(outcome.autoApply, options);
+      toastForEnriched(outcome.autoApply, options, toastId);
+    } catch (err) {
+      console.error(err);
+      if (options.itemId) {
+        toast.error(
+          t("apps.stuff.scanner.lookupFailed", {
+            defaultValue: "Product Lookup Failed",
+          }),
+          { id: toastId }
+        );
+      } else {
+        addItem({
+          title:
+            options.fallbackTitle ||
+            t("apps.stuff.scannedItemTitle", {
+              defaultValue: "Scanned Item",
+            }),
+          barcode: options.barcode ?? trimmed,
+          barcodeFormat: options.barcodeFormat ?? "CODE_128",
+          status: "stowed",
+        });
+        toast.success(
+          t("apps.stuff.scanner.addedWithoutMeta", {
+            defaultValue: "Barcode Saved — No Product Info Found",
+          }),
+          { id: toastId }
+        );
+      }
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handleProductLookupPick = async (result: ProductLookupResult) => {
+    if (!productLookupPicker) return;
+    const { options } = productLookupPicker;
+    setIsApplyingLookupPick(true);
+    try {
+      const enriched = await enrichStuffFromLookupResult(result, {
+        barcode: options.barcode,
+        barcodeFormat: options.barcodeFormat,
+      });
+      applyEnrichedDraft(enriched, options);
+      toastForEnriched(enriched, options);
+      setProductLookupPicker(null);
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        t("apps.stuff.scanner.lookupFailed", {
+          defaultValue: "Product Lookup Failed",
+        })
+      );
+    } finally {
+      setIsApplyingLookupPick(false);
+    }
+  };
+
+  const handleLookupFromFields = async (fields: {
+    title: string;
+    brand: string;
+    barcode: string;
+  }) => {
+    if (!selectedItemId || !selectedItem) return;
+
+    const query = buildStuffLookupQuery(fields);
+    if (!query) {
+      toast.error(
+        t("apps.stuff.scanner.noLookupQuery", {
+          defaultValue: "Enter a title, brand, or barcode to look up.",
+        })
+      );
+      return;
+    }
+
+    const barcodeTrim = fields.barcode.trim() || undefined;
+
+    await handleProductLookup(
+      query,
+      {
+        itemId: selectedItemId,
+        barcode: barcodeTrim ?? selectedItem.barcode,
+        barcodeFormat: barcodeTrim
+          ? selectedItem.barcodeFormat ?? "CODE_128"
+          : selectedItem.barcodeFormat,
+        fallbackTitle: fields.title.trim() || selectedItem.title,
+      },
+      "title-lookup"
+    );
+  };
+
+  const handleLookupSelected = async () => {
+    if (!selectedItem) return;
+    await handleLookupFromFields({
+      title: selectedItem.title,
+      brand: selectedItem.brand ?? "",
+      barcode: selectedItem.barcode ?? "",
+    });
+  };
+
+  const handleScan = async (result: ScannedBarcode) => {
+    const ryosId = parseStuffIdBarcode(result.text);
+    if (ryosId?.kind === "item") {
+      const match =
+        items.find((item) => item.id === ryosId.id) ??
+        items.find((item) => item.id === result.text);
+      if (match) {
+        setSelectedItemId(match.id);
+        toast.success(
+          t("apps.stuff.scanner.openedItem", {
+            defaultValue: "Opened {{title}}",
+            title: match.title,
+          })
+        );
+        return;
+      }
+      toast.error(
+        t("apps.stuff.scanner.unknownItem", {
+          defaultValue: "No item found for that ryOS label.",
+        })
+      );
+      return;
+    }
+    if (ryosId?.kind === "tag") {
+      const match = tags.find((tag) => tag.id === ryosId.id);
+      if (match) {
+        setSelectedTagId(match.id);
+        setSelectedItemId(null);
+        toast.success(
+          t("apps.stuff.scanner.openedTag", {
+            defaultValue: "Filtered to {{name}}",
+            name: match.name,
+          })
+        );
+        return;
+      }
+      toast.error(
+        t("apps.stuff.scanner.unknownTag", {
+          defaultValue: "No tag found for that ryOS label.",
+        })
+      );
+      return;
+    }
+
+    // Bare id fallback (printed CODE128 without prefix still matches).
+    const bareItem = items.find((item) => item.id === result.text);
+    if (bareItem) {
+      setSelectedItemId(bareItem.id);
+      toast.success(
+        t("apps.stuff.scanner.openedItem", {
+          defaultValue: "Opened {{title}}",
+          title: bareItem.title,
+        })
+      );
+      return;
+    }
+    const bareTag = tags.find((tag) => tag.id === result.text);
+    if (bareTag) {
+      setSelectedTagId(bareTag.id);
+      setSelectedItemId(null);
+      toast.success(
+        t("apps.stuff.scanner.openedTag", {
+          defaultValue: "Filtered to {{name}}",
+          name: bareTag.name,
+        })
+      );
+      return;
+    }
+
+    await handleProductLookup(
+      result.text,
+      {
+        barcode: result.text,
+        barcodeFormat: result.format,
+      },
+      "barcode-scan"
+    );
+  };
+
+  return {
+    t,
+    translatedHelpItems,
+    isWindowsTheme,
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+    isScannerOpen,
+    setIsScannerOpen,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    activeShareId,
+    setActiveShareId,
+    isLookingUp,
+    productLookupPicker,
+    setProductLookupPicker,
+    isApplyingLookupPick,
+    handleProductLookupPick,
+    items,
+    tags,
+    filteredItems,
+    selectedItem,
+    selectedItemId,
+    selectedTagId,
+    statusFilter,
+    shelfView,
+    searchQuery,
+    lastShareId,
+    itemCountsByTag,
+    setSelectedItemId,
+    setSelectedTagId,
+    setStatusFilter,
+    setShelfView,
+    setSearchQuery,
+    addTag,
+    deleteTag,
+    deleteItem,
+    setLastShareId,
+    handleAddItem,
+    handleUpdateSelected,
+    handleDeleteSelected,
+    handlePrintSelected,
+    handlePrintItemLabels,
+    handlePrintTagLabels,
+    handleScan,
+    handleLookupSelected,
+    handleLookupFromFields,
+    handleProductLookup,
+  };
+}
