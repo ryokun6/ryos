@@ -5,6 +5,7 @@ import { getClientIp } from "../_utils/_rate-limit.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { getAppPublicOrigin } from "../_utils/runtime-config.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
+import { mergeItemsPreservingActiveReservations } from "./_helpers/_shareMutations.js";
 import type { StuffShareRecord } from "./_helpers/_types.js";
 
 const RATE_LIMITS = {
@@ -144,13 +145,17 @@ export default apiHandler(
         }
       }
 
+      const reservations = existing?.reservations ?? [];
       const record: StuffShareRecord = {
         id: shareId,
         ownerUsername: user.username,
         title: parsed.data.title,
         description: parsed.data.description,
-        items: parsed.data.items,
-        reservations: existing?.reservations ?? [],
+        items: mergeItemsPreservingActiveReservations(
+          parsed.data.items,
+          reservations
+        ),
+        reservations,
         bids: existing?.bids ?? [],
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,

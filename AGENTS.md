@@ -80,6 +80,8 @@ The following environment variables are required for full functionality:
 - `MUSICKIT_TEAM_ID` / `MUSICKIT_KEY_ID` / `MUSICKIT_PRIVATE_KEY` / `MUSICKIT_ORIGIN` - MusicKit JS v3 (Apple Music) used by the iPod's "Apple Music" library mode. Reuse the same `.p8` key as MapKit if both services are enabled on the key — the signer falls back to `MAPKIT_TEAM_ID` / `MAPKIT_KEY_ID` / `MAPKIT_PRIVATE_KEY` when the `MUSICKIT_*` variants are unset.
 - `IP_GEOLOCATION_URL_TEMPLATE` - Optional override for the IP-geolocation provider (defaults to `https://ipwho.is/{ip}`). Use to switch to a paid provider. Use `{ip}` as the placeholder.
 - `IP_GEOLOCATION_DISABLED` - Set to `1`/`true` to disable the IP-geolocation fallback entirely (no outbound calls).
+- `UPCITEMDB_USER_KEY` - Optional UPCitemdb paid/user key for Stuff product lookup. When set, barcode + keyword search use `https://api.upcitemdb.com/prod/v1` with higher quotas; otherwise the public trial endpoint is used.
+- `STUFF_DISABLE_RETAIL_SCRAPE` - Set to `1`/`true` to disable Stuff's best-effort Amazon / DuckDuckGo-images / Apple.com HTML scrapes (catalog APIs + Wikipedia + books still run).
 
 ### Deployment Hardening
 

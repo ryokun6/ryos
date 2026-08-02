@@ -18,6 +18,11 @@ import type {
 import type { BookProgress, BooksShelfView } from "@/stores/useBooksStore";
 import { ShelfBook, BookMorphCover } from "./ShelfBook";
 import { useBookCover } from "../utils/useBookCover";
+import {
+  WOOD_SHELF_BG,
+  WOOD_SHELF_DARK_SCRIM,
+} from "@/components/shelf/woodShelfBackground";
+import { WoodShelfLedge } from "@/components/shelf/WoodShelfLedge";
 
 interface BooksShelfViewProps {
   library: BooksLibraryEntry[];
@@ -49,20 +54,6 @@ const SHELF_ROW_HEIGHT = 168 - 6 + 12 + 14 + 16; // 204
 
 // Space under the floating transparent toolbar so the first shelf isn't covered.
 const SHELF_TOOLBAR_CLEARANCE = 56;
-
-// Brighter warm-wood backdrop shared by the shelf surface and ledges. The
-// `soft-light` warm-amber wash over the texture boosts saturation + brightness
-// without crushing the grain.
-const WOOD_BG: React.CSSProperties = {
-  backgroundColor: "#a8662a",
-  backgroundImage:
-    "linear-gradient(rgba(255,216,152,0.55), rgba(226,156,88,0.6)), url('/assets/books/wood-shelf.webp')",
-  backgroundBlendMode: "soft-light, normal",
-  // Texture is a 2x2 mirror-tiled seamless image; render it at 1024px so each
-  // mirrored sub-tile shows at the original ~512px grain scale.
-  backgroundSize: "auto, 1024px auto",
-  backgroundRepeat: "repeat",
-};
 
 export function BooksShelfView({
   library,
@@ -189,13 +180,13 @@ export function BooksShelfView({
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden"
-      style={WOOD_BG}
+      style={WOOD_SHELF_BG}
     >
       {/* Dark-mode dim: above the wood, below books (z-[1]) and toolbar (z-20). */}
       {isDarkMode && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
-          style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
+          style={{ backgroundColor: WOOD_SHELF_DARK_SCRIM }}
           aria-hidden
         />
       )}
@@ -259,14 +250,14 @@ export function BooksShelfView({
                         />
                       ))}
                     </div>
-                    <ShelfLedge isDark={isDarkMode} />
+                    <WoodShelfLedge isDark={isDarkMode} />
                   </div>
                 ))}
                 {/* Empty shelves so the bookcase fills the viewport */}
                 {Array.from({ length: emptyRowCount }).map((_, i) => (
                   <div key={`empty-${i}`} className="relative" aria-hidden>
                     <div style={{ minHeight: 168, marginBottom: -6 }} />
-                    <ShelfLedge isDark={isDarkMode} />
+                    <WoodShelfLedge isDark={isDarkMode} />
                   </div>
                 ))}
               </div>
@@ -347,53 +338,6 @@ export function BooksShelfView({
         />,
         document.body
       )}
-    </div>
-  );
-}
-
-function ShelfLedge({ isDark }: { isDark?: boolean }) {
-  return (
-    <div
-      className="relative px-2"
-      // Match the back-panel scrim so the wooden shelves dim too in dark mode.
-      style={isDark ? { filter: "brightness(0.85)" } : undefined}
-    >
-      {/* Upper face — the board's top surface in perspective: a trapezoid that's
-          wider at the front edge (bottom) and narrows toward the back wall (top),
-          so it recedes inward. Lit at the front, shadowed at the back. */}
-      <div
-        className="h-[12px] w-full"
-        style={{
-          ...WOOD_BG,
-          backgroundImage:
-            "linear-gradient(to top, rgba(192,146,88,0.6), rgba(58,38,18,0.64)), url('/assets/books/wood-shelf.webp')",
-          backgroundBlendMode: "overlay, normal",
-          backgroundPosition: "center",
-          clipPath:
-            "polygon(28px 0, calc(100% - 28px) 0, 100% 100%, 0 100%)",
-          // Warm mid-tone at the front (darker + more color than before, but
-          // lighter than the dark back where it meets the wall).
-          boxShadow: "inset 0 4px 5px -3px rgba(0,0,0,0.6)",
-        }}
-      />
-      {/* Front lip — the rounded wooden edge that protrudes toward the viewer. */}
-      <div
-        className="h-[14px] w-full rounded-b-[3px]"
-        style={{
-          ...WOOD_BG,
-          backgroundImage:
-            "linear-gradient(rgba(250,216,150,0.5), rgba(86,58,28,0.5)), url('/assets/books/wood-shelf.webp')",
-          backgroundBlendMode: "overlay, normal",
-          backgroundPosition: "center",
-          // The wide, soft drop shadow IS the cast shadow — box-shadow diffuses
-          // on all sides (no hard clipped edges like a gradient rectangle had).
-          boxShadow:
-            "0 0 0 0.5px rgba(0,0,0,0.5), 0 14px 22px -4px rgba(0,0,0,0.7), 0 6px 10px -3px rgba(0,0,0,0.55), inset 0 2px 1px rgba(255,240,205,0.6)",
-        }}
-      />
-      {/* Transparent spacer so the soft cast shadow has room before the next
-          shelf row (the shadow itself comes from the lip's box-shadow above). */}
-      <div className="h-[16px] w-full" />
     </div>
   );
 }

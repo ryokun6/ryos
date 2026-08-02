@@ -16,6 +16,9 @@ dist-ssr
 .env
 version.json
 
+# Vercel local link / build output
+.vercel
+
 # Editor directories and files
 .cursor/nal-trace
 .cursor/chats.json

@@ -1,3 +1,6 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { QRCodeSVG } from "qrcode.react";
 import type { StuffItem, StuffTag } from "../types";
 
 export type StuffLabelKind = "item" | "tag";
@@ -128,6 +131,22 @@ export async function renderStuffIdBarcodeSvg(
   return renderBarcodeSvg(encodeStuffId(kind, id), "CODE128");
 }
 
+/** Square QR for ryOS Stuff ids (detail panel + print labels). */
+export function renderStuffIdQrSvg(
+  kind: StuffLabelKind,
+  id: string,
+  size = 128
+): string {
+  return renderToStaticMarkup(
+    createElement(QRCodeSVG, {
+      value: encodeStuffId(kind, id),
+      size,
+      level: "M",
+      includeMargin: true,
+    })
+  );
+}
+
 export function itemToLabelTarget(item: StuffItem): StuffLabelTarget {
   return {
     kind: "item",
@@ -155,8 +174,8 @@ export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<voi
   const rendered = await Promise.all(
     targets.map(async (target) => {
       const payload = encodeStuffId(target.kind, target.id);
-      const svg = await renderBarcodeSvg(payload, "CODE128");
-      if (!svg) return "";
+      const qr = renderStuffIdQrSvg(target.kind, target.id, 128);
+      if (!qr) return "";
       const kindLabel = target.kind === "tag" ? "Tag" : "Item";
       return `<div class="label">
         <div class="kind">${escapeHtml(kindLabel)}</div>
@@ -166,14 +185,15 @@ export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<voi
             ? `<div class="subtitle">${escapeHtml(target.subtitle)}</div>`
             : ""
         }
-        <div class="barcode">${svg}</div>
+        <div class="qrcode">${qr}</div>
+        <div class="payload">${escapeHtml(payload)}</div>
       </div>`;
     })
   );
 
   const labels = rendered.filter(Boolean).join("\n");
   if (!labels) {
-    window.alert("Could not generate barcode labels.");
+    window.alert("Could not generate QR labels.");
     return;
   }
 
@@ -196,7 +216,14 @@ export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<voi
     .kind { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.55; margin-bottom: 2px; }
     .title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
     .subtitle { font-size: 11px; opacity: 0.7; margin-bottom: 6px; }
-    .barcode svg { max-width: 100%; height: auto; }
+    .qrcode svg { width: 128px; height: 128px; }
+    .payload {
+      font-family: ui-monospace, monospace;
+      font-size: 8px;
+      opacity: 0.55;
+      margin-top: 4px;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -207,7 +234,7 @@ export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<voi
 
   const win = window.open("", "_blank", "noopener,noreferrer,width=800,height=600");
   if (!win) {
-    window.alert("Allow pop-ups to print barcode labels.");
+    window.alert("Allow pop-ups to print QR labels.");
     return;
   }
   win.document.open();

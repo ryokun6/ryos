@@ -4,7 +4,6 @@ import { AppDrawer } from "@/components/shared/AppDrawer";
 import { AppProps } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { appMetadata } from "..";
@@ -15,9 +14,14 @@ import { StuffSidebar } from "./StuffSidebar";
 import { StuffShelfView } from "./StuffShelfView";
 import { StuffDetailPanel } from "./StuffDetailPanel";
 import { StuffBarcodeScanner } from "./StuffBarcodeScanner";
+import { StuffProductLookupDialog } from "./StuffProductLookupDialog";
 import { StuffShareDialog } from "./StuffShareDialog";
 import { StuffSharedView } from "./StuffSharedView";
 import { printStuffLabels, itemToLabelTarget } from "../utils/printLabels";
+import {
+  WOOD_SHELF_BG,
+  WOOD_SHELF_DARK_SCRIM,
+} from "@/components/shelf/woodShelfBackground";
 
 export function StuffAppComponent({
   isWindowOpen,
@@ -33,7 +37,7 @@ export function StuffAppComponent({
     instanceId,
     initialData,
   });
-  const { isMacOSTheme, isWindowsTheme } = useThemeFlags();
+  const { isMacOSTheme, isWindowsTheme, isDarkMode } = useThemeFlags();
   const viewingShareId = logic.activeShareId;
   const showItemDrawer = Boolean(logic.selectedItem) && !viewingShareId;
 
@@ -76,9 +80,8 @@ export function StuffAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="stuff"
-        // Opaque metal like Calendar/Finder — glass/transparent chrome lets the
-        // desktop show through content gaps as a frosted "ghost" over the shelf.
-        material={isMacOSTheme ? "brushedmetal" : "default"}
+        material="notitlebar"
+        disableTitlebarAutoHide
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isWindowsTheme ? menuBar : undefined}
@@ -92,6 +95,8 @@ export function StuffAppComponent({
                 onChange={logic.handleUpdateSelected}
                 onDelete={logic.handleDeleteSelected}
                 onPrint={logic.handlePrintSelected}
+                onLookup={(fields) => void logic.handleLookupFromFields(fields)}
+                isLookingUp={logic.isLookingUp}
               />
             ) : null}
           </AppDrawer>
@@ -103,20 +108,21 @@ export function StuffAppComponent({
             onBack={() => logic.setActiveShareId(null)}
           />
         ) : (
-          <div
-            className={cn(
-              // window-body is `md:flex-row` — flex-1 + min-w-0 required so the
-              // app fills the frame instead of leaving an empty glass band.
-              "flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden font-os-ui",
-              isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
-            )}
-          >
+          <div className="stuff-app-shell relative flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden bg-transparent font-os-ui">
+            {/* Full-bleed wood shelf backdrop (Books shelf pattern). */}
             <div
-              className={cn(
-                "flex min-h-0 w-full flex-1 overflow-hidden",
-                isMacOSTheme && "gap-[5px] p-[5px]"
-              )}
-            >
+              className="absolute inset-0"
+              style={WOOD_SHELF_BG}
+              aria-hidden
+            />
+            {isDarkMode && (
+              <div
+                className="pointer-events-none absolute inset-0 z-0"
+                style={{ backgroundColor: WOOD_SHELF_DARK_SCRIM }}
+                aria-hidden
+              />
+            )}
+            <div className="relative z-[1] flex min-h-0 w-full flex-1 overflow-hidden">
               <StuffSidebar
                 tags={logic.tags}
                 selectedTagId={logic.selectedTagId}
@@ -131,21 +137,7 @@ export function StuffAppComponent({
                 onDeleteTag={logic.deleteTag}
                 onPrintTag={(id) => logic.handlePrintTagLabels([id])}
               />
-              <div
-                className={cn(
-                  "min-h-0 min-w-0 flex-1 overflow-hidden",
-                  isMacOSTheme && "bg-white os-inset-pane"
-                )}
-                style={
-                  isMacOSTheme
-                    ? {
-                        border: "1px solid rgba(0, 0, 0, 0.55)",
-                        boxShadow:
-                          "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-                      }
-                    : undefined
-                }
-              >
+              <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
                 <StuffShelfView
                   items={logic.filteredItems}
                   tags={logic.tags}
@@ -183,6 +175,21 @@ export function StuffAppComponent({
         tags={logic.tags}
         lastShareId={logic.lastShareId}
         onShareCreated={logic.setLastShareId}
+      />
+
+      <StuffProductLookupDialog
+        isOpen={Boolean(logic.productLookupPicker)}
+        onOpenChange={(open) => {
+          if (!open && !logic.isApplyingLookupPick) {
+            logic.setProductLookupPicker(null);
+          }
+        }}
+        query={logic.productLookupPicker?.query ?? ""}
+        results={logic.productLookupPicker?.results ?? []}
+        isApplying={logic.isApplyingLookupPick}
+        onSelect={(result) => {
+          void logic.handleProductLookupPick(result);
+        }}
       />
 
       <HelpDialog

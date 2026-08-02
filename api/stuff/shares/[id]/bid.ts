@@ -3,6 +3,7 @@ import { generateAuthToken } from "../../../_utils/auth/index.js";
 import * as RateLimit from "../../../_utils/_rate-limit.js";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { redisKeys } from "../../../../src/shared/redisKeys.js";
+import { checkBidCurrency } from "../../_helpers/_shareMutations.js";
 import type { StuffShareRecord } from "../../_helpers/_types.js";
 
 const BodySchema = z.object({
@@ -69,8 +70,27 @@ export default apiHandler(
       return;
     }
 
+    const currencyCheck = checkBidCurrency({
+      listingCurrency: item.prices.currency,
+      bidCurrency: body!.currency,
+    });
+    if (!currencyCheck.ok) {
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({
+        error: "currency_mismatch",
+        expected: currencyCheck.expected,
+        received: currencyCheck.received,
+      });
+      return;
+    }
+
+    // Compare amounts only within the listing currency
     const currentTop = share.bids
-      .filter((bid) => bid.itemId === body!.itemId)
+      .filter(
+        (bid) =>
+          bid.itemId === body!.itemId &&
+          (bid.currency || "USD").toUpperCase() === currencyCheck.currency
+      )
       .sort((a, b) => b.amount - a.amount)[0];
 
     if (currentTop && body!.amount <= currentTop.amount) {
@@ -94,7 +114,7 @@ export default apiHandler(
       itemId: body!.itemId,
       username: user!.username,
       amount: body!.amount,
-      currency: body!.currency || item.prices.currency || "USD",
+      currency: currencyCheck.currency,
       createdAt: Date.now(),
     };
     share.bids.push(bid);

@@ -69,6 +69,12 @@ describe("canonical Redis key registry", () => {
     expect(redisKeys.media.songContent("am:12345")).toBe(
       "media:song:am:12345:content"
     );
+    expect(redisKeys.media.stuffShare("ShareABC")).toBe(
+      "media:stuff:share:ShareABC"
+    );
+    expect(redisKeys.media.stuffShareLock("ShareABC")).toBe(
+      "media:stuff:share:ShareABC:lock"
+    );
     expect(redisKeys.agent.cursorRunMeta("bc_AbC")).toBe(
       "agent:cursor:run:bc_AbC:meta"
     );

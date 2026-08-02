@@ -12,6 +12,11 @@ import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { StuffItemCover } from "./StuffItemCover";
 import type { StuffItem, StuffShelfView, StuffTag } from "../types";
+import {
+  STUFF_SHELF_ITEM_WIDTH,
+  STUFF_SHELF_ROW_MIN_HEIGHT,
+} from "../utils/stuffCoverSizes";
+import { WoodShelfLedge } from "@/components/shelf/WoodShelfLedge";
 
 interface StuffShelfViewProps {
   items: StuffItem[];
@@ -33,56 +38,12 @@ interface ShelfContextMenu {
   y: number;
 }
 
-const ITEM_WIDTH = 110;
+const ITEM_WIDTH = STUFF_SHELF_ITEM_WIDTH;
 const ITEM_GAP = 20;
 const SHELF_GUTTER = 32;
-const SHELF_ROW_HEIGHT = 140 - 6 + 12 + 14 + 16; // 176
+const SHELF_ROW_HEIGHT = STUFF_SHELF_ROW_MIN_HEIGHT - 6 + 12 + 14 + 16;
+/** Space for overlay titlebar (pt-7) + floating toolbar row — matches Books shelf. */
 const SHELF_TOOLBAR_CLEARANCE = 56;
-
-const WOOD_BG: React.CSSProperties = {
-  backgroundColor: "#a8662a",
-  backgroundImage:
-    "linear-gradient(rgba(255,216,152,0.55), rgba(226,156,88,0.6)), url('/assets/books/wood-shelf.webp')",
-  backgroundBlendMode: "soft-light, normal",
-  backgroundSize: "auto, 1024px auto",
-  backgroundRepeat: "repeat",
-};
-
-function ShelfLedge({ isDarkMode }: { isDarkMode: boolean }) {
-  return (
-    <div
-      className="relative w-full"
-      style={{ filter: isDarkMode ? "brightness(0.85)" : undefined }}
-    >
-      <div
-        className="h-[12px] w-full"
-        style={{
-          ...WOOD_BG,
-          backgroundImage:
-            "linear-gradient(to top, rgba(192,146,88,0.6), rgba(58,38,18,0.64)), url('/assets/books/wood-shelf.webp')",
-          backgroundBlendMode: "normal, normal",
-          backgroundSize: "auto, 1024px auto",
-          backgroundRepeat: "repeat",
-          clipPath:
-            "polygon(28px 0, calc(100% - 28px) 0, 100% 100%, 0 100%)",
-          boxShadow: "inset 0 4px 5px -3px rgba(0,0,0,0.6)",
-        }}
-      />
-      <div
-        className="h-[14px] w-full rounded-b-[3px]"
-        style={{
-          ...WOOD_BG,
-          backgroundImage:
-            "linear-gradient(to bottom, rgba(255,220,170,0.35), rgba(90,50,20,0.55)), url('/assets/books/wood-shelf.webp')",
-          backgroundBlendMode: "soft-light, normal",
-          boxShadow:
-            "0 10px 14px -6px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,230,190,0.35)",
-        }}
-      />
-      <div className="h-[16px]" />
-    </div>
-  );
-}
 
 export function StuffShelfView({
   items,
@@ -173,41 +134,35 @@ export function StuffShelfView({
 
   return (
     <div ref={containerRef} className="relative flex h-full min-h-0 flex-1 flex-col">
-      <div
-        className="absolute inset-0"
-        style={{
-          ...WOOD_BG,
-          ...(isDarkMode
-            ? {
-                backgroundImage: `${WOOD_BG.backgroundImage}, linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3))`,
-              }
-            : null),
-        }}
-      />
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center pt-2">
-        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/35 px-2 py-1 backdrop-blur-sm">
+      {/* Transparent floating toolbar — overlays the scroller so wood scrolls
+          underneath without a clipped gradient edge. Hits pass through except
+          on the controls. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-end gap-2 bg-transparent px-3 pb-2 pt-7">
+        <div className="pointer-events-auto flex items-center gap-1.5">
           <ToolbarButtonGroup>
             <ToolbarButton
               icon
-              aria-label={t("apps.stuff.toolbar.add", { defaultValue: "Add" })}
               onClick={onAddItem}
+              title={t("apps.stuff.toolbar.add", { defaultValue: "Add" })}
+              aria-label={t("apps.stuff.toolbar.add", { defaultValue: "Add" })}
             >
               <Plus size={14} weight="bold" />
             </ToolbarButton>
             <ToolbarButton
               icon
-              aria-label={t("apps.stuff.toolbar.scan", { defaultValue: "Scan" })}
               onClick={onScan}
+              title={t("apps.stuff.toolbar.scan", { defaultValue: "Scan" })}
+              aria-label={t("apps.stuff.toolbar.scan", { defaultValue: "Scan" })}
             >
               <Barcode size={14} />
             </ToolbarButton>
             <ToolbarButton
               icon
+              onClick={onShare}
+              title={t("apps.stuff.toolbar.share", { defaultValue: "Share" })}
               aria-label={t("apps.stuff.toolbar.share", {
                 defaultValue: "Share",
               })}
-              onClick={onShare}
             >
               <ShareNetwork size={14} />
             </ToolbarButton>
@@ -216,16 +171,22 @@ export function StuffShelfView({
             <ToolbarButton
               icon
               data-state={shelfView === "grid" ? "on" : "off"}
-              aria-label="Grid"
               onClick={() => onSetShelfView("grid")}
+              title={t("apps.stuff.shelf.gridView", { defaultValue: "Grid View" })}
+              aria-label={t("apps.stuff.shelf.gridView", {
+                defaultValue: "Grid View",
+              })}
             >
               <SquaresFour size={14} />
             </ToolbarButton>
             <ToolbarButton
               icon
               data-state={shelfView === "list" ? "on" : "off"}
-              aria-label="List"
               onClick={() => onSetShelfView("list")}
+              title={t("apps.stuff.shelf.listView", { defaultValue: "List View" })}
+              aria-label={t("apps.stuff.shelf.listView", {
+                defaultValue: "List View",
+              })}
             >
               <Rows size={14} />
             </ToolbarButton>
@@ -236,12 +197,14 @@ export function StuffShelfView({
       <div
         ref={scrollRef}
         className="relative z-10 min-h-0 flex-1 overflow-y-auto"
-        style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
       >
         {items.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 text-center text-[#f5e6d0]">
+          <div
+            className="flex h-full flex-col items-center justify-center px-6 text-center text-[#f5e6d0]"
+            style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE + 24 }}
+          >
             <p className="font-apple-garamond text-2xl">
-              {t("apps.stuff.empty.title", { defaultValue: "No stuff yet" })}
+              {t("apps.stuff.empty.title", { defaultValue: "No Stuff Yet" })}
             </p>
             <p className="mt-2 max-w-sm text-sm opacity-80">
               {t("apps.stuff.empty.description", {
@@ -252,7 +215,10 @@ export function StuffShelfView({
           </div>
         ) : shelfView === "list" ? (
           <LayoutGroup>
-            <div className="space-y-2 px-6 pb-8">
+            <div
+              className="space-y-2 px-6 pb-8"
+              style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
+            >
               {items.map((item) => (
                 <button
                   key={item.id}
@@ -288,16 +254,21 @@ export function StuffShelfView({
           </LayoutGroup>
         ) : (
           <LayoutGroup>
-            <div className="pb-8">
+            <div
+              className="pb-8"
+              style={{ paddingTop: SHELF_TOOLBAR_CLEARANCE }}
+            >
               {rows.map((row, rowIndex) => (
-                <div key={`row-${rowIndex}`}>
+                <div key={`row-${rowIndex}`} className="relative">
+                  {/* Items sit in front of the ledge upper face (negative margin
+                      overlaps the 12px face, same as Books shelf). */}
                   <div
-                    className="flex items-end justify-start"
+                    className="relative z-[1] flex items-end justify-start"
                     style={{
                       paddingLeft: SHELF_GUTTER,
                       paddingRight: SHELF_GUTTER,
                       gap: ITEM_GAP,
-                      minHeight: 140,
+                      minHeight: STUFF_SHELF_ROW_MIN_HEIGHT,
                       marginBottom: -6,
                     }}
                   >
@@ -323,7 +294,7 @@ export function StuffShelfView({
                       />
                     ))}
                   </div>
-                  <ShelfLedge isDarkMode={isDarkMode} />
+                  <WoodShelfLedge isDark={isDarkMode} />
                 </div>
               ))}
             </div>

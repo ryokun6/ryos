@@ -10,10 +10,14 @@ import {
 } from "@/stores/useStuffStore";
 import { helpItems } from "../metadata";
 import type { StuffInitialData, StuffItemDraft } from "../types";
+import type { ProductLookupResult } from "../utils/barcodeLookup";
 import {
-  fetchImageAsDataUrl,
-  lookupBarcode,
-} from "../utils/barcodeLookup";
+  enrichStuffFromLookupResult,
+  enrichStuffFromQuery,
+  productFieldsFromDraft,
+  type EnrichedStuffDraft,
+} from "../utils/enrichItemFromLookup";
+import { buildStuffLookupQuery } from "../utils/buildStuffLookupQuery";
 import {
   itemToLabelTarget,
   parseStuffIdBarcode,
@@ -21,6 +25,19 @@ import {
   tagToLabelTarget,
 } from "../utils/printLabels";
 import type { ScannedBarcode } from "../components/StuffBarcodeScanner";
+
+type ProductLookupApplyOptions = {
+  itemId?: string;
+  barcode?: string;
+  barcodeFormat?: string;
+  fallbackTitle?: string;
+};
+
+export type StuffProductLookupPickerState = {
+  query: string;
+  results: ProductLookupResult[];
+  options: ProductLookupApplyOptions;
+};
 
 export function useStuffLogic({
   initialData,
@@ -68,6 +85,9 @@ export function useStuffLogic({
     initialData?.shareId ?? null
   );
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [productLookupPicker, setProductLookupPicker] =
+    useState<StuffProductLookupPickerState | null>(null);
+  const [isApplyingLookupPick, setIsApplyingLookupPick] = useState(false);
 
   useEffect(() => {
     if (initialData?.shareId) {
@@ -139,6 +159,219 @@ export function useStuffLogic({
     void printStuffLabels(selected.map(tagToLabelTarget));
   };
 
+  const toastForEnriched = (
+    enriched: EnrichedStuffDraft,
+    options: ProductLookupApplyOptions,
+    toastId?: string | number
+  ) => {
+    const { found, imageApplied, hadImageUrl } = enriched;
+    const toastMessage = (() => {
+      if (!found) {
+        return options.itemId
+          ? t("apps.stuff.scanner.notFoundExisting", {
+              defaultValue: "No Product Info Found",
+            })
+          : t("apps.stuff.scanner.addedWithoutMeta", {
+              defaultValue: "Barcode Saved — No Product Info Found",
+            });
+      }
+      if (imageApplied) {
+        return options.itemId
+          ? t("apps.stuff.scanner.updatedWithCover", {
+              defaultValue: "Product Details and Cover Updated",
+            })
+          : t("apps.stuff.scanner.foundWithCover", {
+              defaultValue: "Product Added With Cover",
+            });
+      }
+      if (hadImageUrl) {
+        return t("apps.stuff.scanner.coverFetchFailed", {
+          defaultValue: "Product Found — Cover Could Not Be Downloaded",
+        });
+      }
+      return options.itemId
+        ? t("apps.stuff.scanner.updatedNoCover", {
+            defaultValue: "Product Details Updated — No Cover Found",
+          })
+        : t("apps.stuff.scanner.foundNoCover", {
+            defaultValue: "Product Added — No Cover Found",
+          });
+    })();
+    toast.success(toastMessage, toastId !== undefined ? { id: toastId } : undefined);
+  };
+
+  const applyEnrichedDraft = (
+    enriched: EnrichedStuffDraft,
+    options: ProductLookupApplyOptions
+  ) => {
+    const {
+      found: _found,
+      source: _source,
+      queryKind: _queryKind,
+      imageApplied: _imageApplied,
+      hadImageUrl: _hadImageUrl,
+      ...draftFields
+    } = enriched;
+
+    const resolvedTitle =
+      draftFields.title ||
+      options.fallbackTitle ||
+      (options.itemId
+        ? undefined
+        : t("apps.stuff.scannedItemTitle", {
+            defaultValue: "Scanned Item",
+          }));
+
+    // Only product metadata — never status, tags, notes, quantity, etc.
+    const productDraft = productFieldsFromDraft({
+      ...draftFields,
+      title: resolvedTitle,
+    });
+
+    if (options.itemId) {
+      updateItem(options.itemId, productDraft);
+    } else {
+      addItem({ ...productDraft, status: "stowed" });
+    }
+  };
+
+  const handleProductLookup = async (
+    query: string,
+    options: ProductLookupApplyOptions = {},
+    mode: "title-lookup" | "barcode-scan" = "title-lookup"
+  ) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    setIsLookingUp(true);
+    const toastId = toast.loading(
+      t("apps.stuff.scanner.lookingUp", {
+        defaultValue: "Looking Up Product…",
+      })
+    );
+
+    try {
+      // Do not seed status/tags/notes here — lookup must not reset user fields
+      // on existing items. New items default status via the store ("stowed").
+      const outcome = await enrichStuffFromQuery(
+        trimmed,
+        {
+          barcode: options.barcode,
+          barcodeFormat: options.barcodeFormat,
+        },
+        mode
+      );
+
+      if (!outcome.autoApply) {
+        toast.dismiss(toastId);
+        setProductLookupPicker({
+          query: trimmed,
+          results: outcome.response.results,
+          options,
+        });
+        return;
+      }
+
+      applyEnrichedDraft(outcome.autoApply, options);
+      toastForEnriched(outcome.autoApply, options, toastId);
+    } catch (err) {
+      console.error(err);
+      if (options.itemId) {
+        toast.error(
+          t("apps.stuff.scanner.lookupFailed", {
+            defaultValue: "Product Lookup Failed",
+          }),
+          { id: toastId }
+        );
+      } else {
+        addItem({
+          title:
+            options.fallbackTitle ||
+            t("apps.stuff.scannedItemTitle", {
+              defaultValue: "Scanned Item",
+            }),
+          barcode: options.barcode ?? trimmed,
+          barcodeFormat: options.barcodeFormat ?? "CODE_128",
+          status: "stowed",
+        });
+        toast.success(
+          t("apps.stuff.scanner.addedWithoutMeta", {
+            defaultValue: "Barcode Saved — No Product Info Found",
+          }),
+          { id: toastId }
+        );
+      }
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handleProductLookupPick = async (result: ProductLookupResult) => {
+    if (!productLookupPicker) return;
+    const { options } = productLookupPicker;
+    setIsApplyingLookupPick(true);
+    try {
+      const enriched = await enrichStuffFromLookupResult(result, {
+        barcode: options.barcode,
+        barcodeFormat: options.barcodeFormat,
+      });
+      applyEnrichedDraft(enriched, options);
+      toastForEnriched(enriched, options);
+      setProductLookupPicker(null);
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        t("apps.stuff.scanner.lookupFailed", {
+          defaultValue: "Product Lookup Failed",
+        })
+      );
+    } finally {
+      setIsApplyingLookupPick(false);
+    }
+  };
+
+  const handleLookupFromFields = async (fields: {
+    title: string;
+    brand: string;
+    barcode: string;
+  }) => {
+    if (!selectedItemId || !selectedItem) return;
+
+    const query = buildStuffLookupQuery(fields);
+    if (!query) {
+      toast.error(
+        t("apps.stuff.scanner.noLookupQuery", {
+          defaultValue: "Enter a title, brand, or barcode to look up.",
+        })
+      );
+      return;
+    }
+
+    const barcodeTrim = fields.barcode.trim() || undefined;
+
+    await handleProductLookup(
+      query,
+      {
+        itemId: selectedItemId,
+        barcode: barcodeTrim ?? selectedItem.barcode,
+        barcodeFormat: barcodeTrim
+          ? selectedItem.barcodeFormat ?? "CODE_128"
+          : selectedItem.barcodeFormat,
+        fallbackTitle: fields.title.trim() || selectedItem.title,
+      },
+      "title-lookup"
+    );
+  };
+
+  const handleLookupSelected = async () => {
+    if (!selectedItem) return;
+    await handleLookupFromFields({
+      title: selectedItem.title,
+      brand: selectedItem.brand ?? "",
+      barcode: selectedItem.barcode ?? "",
+    });
+  };
+
   const handleScan = async (result: ScannedBarcode) => {
     const ryosId = parseStuffIdBarcode(result.text);
     if (ryosId?.kind === "item") {
@@ -208,60 +441,14 @@ export function useStuffLogic({
       return;
     }
 
-    setIsLookingUp(true);
-    const toastId = toast.loading(
-      t("apps.stuff.scanner.lookingUp", {
-        defaultValue: "Looking up product…",
-      })
+    await handleProductLookup(
+      result.text,
+      {
+        barcode: result.text,
+        barcodeFormat: result.format,
+      },
+      "barcode-scan"
     );
-    try {
-      const lookup = await lookupBarcode(result.text);
-      let imageDataUrl: string | undefined;
-      if (lookup.imageUrl) {
-        imageDataUrl = await fetchImageAsDataUrl(lookup.imageUrl);
-      }
-      addItem({
-        title:
-          lookup.title ||
-          t("apps.stuff.scannedItemTitle", {
-            defaultValue: "Scanned Item",
-          }),
-        brand: lookup.brand,
-        productUrl: lookup.productUrl,
-        barcode: result.text,
-        barcodeFormat: result.format,
-        imageDataUrl,
-        status: "stowed",
-      });
-      toast.success(
-        lookup.found
-          ? t("apps.stuff.scanner.found", {
-              defaultValue: "Product added",
-            })
-          : t("apps.stuff.scanner.addedWithoutMeta", {
-              defaultValue: "Barcode saved — no product info found",
-            }),
-        { id: toastId }
-      );
-    } catch (err) {
-      console.error(err);
-      addItem({
-        title: t("apps.stuff.scannedItemTitle", {
-          defaultValue: "Scanned Item",
-        }),
-        barcode: result.text,
-        barcodeFormat: result.format,
-        status: "stowed",
-      });
-      toast.success(
-        t("apps.stuff.scanner.addedWithoutMeta", {
-          defaultValue: "Barcode saved — no product info found",
-        }),
-        { id: toastId }
-      );
-    } finally {
-      setIsLookingUp(false);
-    }
   };
 
   return {
@@ -279,6 +466,10 @@ export function useStuffLogic({
     activeShareId,
     setActiveShareId,
     isLookingUp,
+    productLookupPicker,
+    setProductLookupPicker,
+    isApplyingLookupPick,
+    handleProductLookupPick,
     items,
     tags,
     filteredItems,
@@ -306,5 +497,8 @@ export function useStuffLogic({
     handlePrintItemLabels,
     handlePrintTagLabels,
     handleScan,
+    handleLookupSelected,
+    handleLookupFromFields,
+    handleProductLookup,
   };
 }

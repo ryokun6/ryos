@@ -89,7 +89,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
         throw new Error(data.error || "reserve_failed");
       }
       toast.success(
-        t("apps.stuff.shared.reserved", { defaultValue: "Item reserved" })
+        t("apps.stuff.shared.reserved", { defaultValue: "Item Reserved" })
       );
       await load();
     } catch (err) {
@@ -141,7 +141,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
         throw new Error(data.error || "bid_failed");
       }
       toast.success(
-        t("apps.stuff.shared.bidPlaced", { defaultValue: "Offer placed" })
+        t("apps.stuff.shared.bidPlaced", { defaultValue: "Offer Placed" })
       );
       setBidAmount("");
       await load();
@@ -248,7 +248,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
                     {bid && (
                       <div className="text-[11px] opacity-70">
                         {t("apps.stuff.shared.topOffer", {
-                          defaultValue: "Top offer {{amount}}",
+                          defaultValue: "Top Offer {{amount}}",
                           amount: formatMoney(bid.amount, bid.currency),
                         })}
                       </div>
@@ -256,7 +256,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
                     {reservation && (
                       <div className="text-[11px] text-amber-700 dark:text-amber-400">
                         {t("apps.stuff.shared.reservedBy", {
-                          defaultValue: "Reserved by {{username}}",
+                          defaultValue: "Reserved By {{username}}",
                           username: reservation.username,
                         })}
                       </div>
@@ -305,7 +305,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
               step="0.01"
               min="0"
               placeholder={t("apps.stuff.shared.yourOffer", {
-                defaultValue: "Your offer",
+                defaultValue: "Your Offer",
               })}
               value={bidAmount}
               onChange={(e) => setBidAmount(e.target.value)}
@@ -327,7 +327,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
                 onClick={() => auth.promptLogin()}
               >
                 {t("apps.stuff.shared.signIn", {
-                  defaultValue: "Sign in to bid",
+                  defaultValue: "Sign In to Bid",
                 })}
               </Button>
             )}

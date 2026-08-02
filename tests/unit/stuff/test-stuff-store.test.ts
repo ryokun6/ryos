@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+  ensureFurnitureTag,
   getFilteredStuffItems,
 } from "../../../src/stores/useStuffStore";
 import {
   DEFAULT_CURRENCY,
+  DEFAULT_TAG_COLORS,
   type StuffItem,
   type StuffTag,
 } from "../../../src/apps/stuff/types";
@@ -30,6 +32,50 @@ function makeItem(overrides: Partial<StuffItem> = {}): StuffItem {
     ...overrides,
   };
 }
+
+describe("ensureFurnitureTag", () => {
+  const baseTags: StuffTag[] = [
+    { id: "1", name: "Kitchen", color: DEFAULT_TAG_COLORS[0], createdAt: 1 },
+    { id: "2", name: "Books", color: DEFAULT_TAG_COLORS[3], createdAt: 2 },
+    { id: "3", name: "Other", color: DEFAULT_TAG_COLORS[4], createdAt: 3 },
+  ];
+
+  test("inserts Furniture before Other when missing", () => {
+    const next = ensureFurnitureTag(baseTags);
+    expect(next.map((t) => t.name)).toEqual([
+      "Kitchen",
+      "Books",
+      "Furniture",
+      "Other",
+    ]);
+    expect(next[2]?.color).toBe(DEFAULT_TAG_COLORS[5]);
+  });
+
+  test("does not duplicate existing Furniture", () => {
+    const withFurniture: StuffTag[] = [
+      ...baseTags.slice(0, 2),
+      {
+        id: "f",
+        name: "furniture",
+        color: "#fff",
+        createdAt: 9,
+      },
+      baseTags[2]!,
+    ];
+    const next = ensureFurnitureTag(withFurniture);
+    expect(next).toBe(withFurniture);
+  });
+
+  test("appends when Other is absent", () => {
+    const withoutOther = baseTags.slice(0, 2);
+    const next = ensureFurnitureTag(withoutOther);
+    expect(next.map((t) => t.name)).toEqual([
+      "Kitchen",
+      "Books",
+      "Furniture",
+    ]);
+  });
+});
 
 describe("Stuff filters", () => {
   const tags: StuffTag[] = [

@@ -122,3 +122,14 @@ export const DEFAULT_TAG_COLORS = [
 ] as const;
 
 export const DEFAULT_CURRENCY = "USD";
+
+/** English fallback label for a stuff status key (Title Case). */
+export function stuffStatusLabelDefault(
+  status: StuffStatus | "all"
+): string {
+  if (status === "all") return "All Statuses";
+  return status
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
