@@ -8,6 +8,7 @@ import {
   DEFAULT_TAG_COLORS,
   type StuffItem,
   type StuffItemDraft,
+  type StuffLocation,
   type StuffPrices,
   type StuffShelfView,
   type StuffStatus,
@@ -26,7 +27,7 @@ import {
   type ImportStuffShelfCounts,
 } from "@/apps/stuff/utils/stuffShelfImportExport";
 
-const STUFF_STORE_VERSION = 5;
+const STUFF_STORE_VERSION = 6;
 
 /** Canonical English names — UI labels come from `apps.stuff.defaultTags.*`. */
 const DEFAULT_TAGS: Omit<StuffTag, "id" | "createdAt">[] = [
@@ -95,6 +96,69 @@ export function ensureFurnitureTag(tags: StuffTag[]): StuffTag[] {
   return ensureDefaultStuffTags(tags);
 }
 
+/** Canonical English names — UI labels come from `apps.stuff.defaultLocations.*`. */
+const DEFAULT_LOCATIONS: Omit<StuffLocation, "id" | "createdAt">[] = [
+  { name: "Closet" },
+  { name: "Storage" },
+  { name: "Carry On" },
+  { name: "Checked In" },
+  { name: "Box" },
+];
+
+/** Stable ids so empty devices that seed defaults don't fight Sync v2 peers. */
+export function defaultStuffLocationId(name: string): string {
+  return `stuff-location-default:${name.trim().toLowerCase().replace(/\s+/g, "-")}`;
+}
+
+/** Fresh seeded default locations (Closet…Box) with stable ids. */
+export function createDefaultStuffLocations(): StuffLocation[] {
+  const now = Date.now();
+  return DEFAULT_LOCATIONS.map((location, index) => ({
+    ...location,
+    id: defaultStuffLocationId(location.name),
+    createdAt: now + index,
+  }));
+}
+
+function locationMatchesDefault(
+  location: StuffLocation,
+  defaultName: string
+): boolean {
+  return (
+    location.id === defaultStuffLocationId(defaultName) ||
+    location.name.trim().toLowerCase() === defaultName.trim().toLowerCase()
+  );
+}
+
+/** True when a location is one of the seeded canonical defaults (by id or name). */
+export function isDefaultStuffLocation(location: StuffLocation): boolean {
+  return DEFAULT_LOCATIONS.some((def) =>
+    locationMatchesDefault(location, def.name)
+  );
+}
+
+/**
+ * Insert any missing seeded default locations without wiping custom ones.
+ */
+export function ensureDefaultStuffLocations(
+  locations: StuffLocation[]
+): StuffLocation[] {
+  let next = locations;
+  const now = Date.now();
+  for (const def of DEFAULT_LOCATIONS) {
+    if (next.some((location) => locationMatchesDefault(location, def.name))) {
+      continue;
+    }
+    const insert: StuffLocation = {
+      ...def,
+      id: defaultStuffLocationId(def.name),
+      createdAt: now,
+    };
+    next = [...next, insert];
+  }
+  return next;
+}
+
 function emptyPrices(): StuffPrices {
   return { currency: DEFAULT_CURRENCY };
 }
@@ -158,6 +222,10 @@ function normalizeItem(draft: StuffItemDraft, existing?: StuffItem): StuffItem {
     productUrl:
       draft.productUrl !== undefined ? draft.productUrl : existing?.productUrl,
     tagIds: draft.tagIds ?? existing?.tagIds ?? [],
+    locationId:
+      draft.locationId !== undefined
+        ? draft.locationId || undefined
+        : existing?.locationId,
     status: draft.status ?? existing?.status ?? "stowed",
     prices: {
       ...emptyPrices(),
@@ -211,8 +279,11 @@ async function ingestInlineCoverIfNeeded(
 interface StuffStoreState {
   items: StuffItem[];
   tags: StuffTag[];
+  locations: StuffLocation[];
   selectedItemId: string | null;
   selectedTagId: string | null;
+  /** Sidebar location filter; independent of and ANDed with `selectedTagId`. */
+  selectedLocationId: string | null;
   statusFilter: StuffStatus | "all";
   shelfView: StuffShelfView;
   isSidebarVisible: boolean;
@@ -222,6 +293,7 @@ interface StuffStoreState {
   coversRevision: number;
   setSelectedItemId: (id: string | null) => void;
   setSelectedTagId: (id: string | null) => void;
+  setSelectedLocationId: (id: string | null) => void;
   setStatusFilter: (status: StuffStatus | "all") => void;
   setShelfView: (view: StuffShelfView) => void;
   setSidebarVisible: (visible: boolean) => void;
@@ -233,12 +305,20 @@ interface StuffStoreState {
   addTag: (name: string, color?: string) => string;
   updateTag: (id: string, updates: Partial<Pick<StuffTag, "name" | "color">>) => void;
   deleteTag: (id: string) => void;
+  addLocation: (name: string) => string;
+  updateLocation: (id: string, updates: Partial<Pick<StuffLocation, "name">>) => void;
+  deleteLocation: (id: string) => void;
   setLastShareId: (id: string | null) => void;
   /**
-   * Replace items/tags from Sync v2 without creating deletion markers.
-   * Tag deletes also strip the id from every item (same as local deleteTag).
+   * Replace items/tags/locations from Sync v2 without creating deletion
+   * markers. Tag/location deletes also strip the id from every item (same
+   * as local deleteTag/deleteLocation).
    */
-  replaceFromSync: (snapshot: { items: StuffItem[]; tags: StuffTag[] }) => void;
+  replaceFromSync: (snapshot: {
+    items: StuffItem[];
+    tags: StuffTag[];
+    locations: StuffLocation[];
+  }) => void;
   bumpCoversRevision: () => void;
   /** Portable JSON backup (covers inlined as data URLs). */
   exportShelf: () => Promise<string>;
@@ -260,8 +340,11 @@ export const useStuffStore = create<StuffStoreState>()(
       items: [],
       // Empty until IndexedDB hydrates — seeding earlier races restored/synced tags.
       tags: [],
+      // Empty until IndexedDB hydrates — seeding earlier races restored/synced locations.
+      locations: [],
       selectedItemId: null,
       selectedTagId: null,
+      selectedLocationId: null,
       statusFilter: "all",
       shelfView: "grid",
       isSidebarVisible: false,
@@ -271,6 +354,7 @@ export const useStuffStore = create<StuffStoreState>()(
 
       setSelectedItemId: (id) => set({ selectedItemId: id }),
       setSelectedTagId: (id) => set({ selectedTagId: id }),
+      setSelectedLocationId: (id) => set({ selectedLocationId: id }),
       setStatusFilter: (status) => set({ statusFilter: status }),
       setShelfView: (view) => set({ shelfView: view }),
       setSidebarVisible: (visible) => set({ isSidebarVisible: visible }),
@@ -401,6 +485,51 @@ export const useStuffStore = create<StuffStoreState>()(
         }));
       },
 
+      addLocation: (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return "";
+        const existing = get().locations.find(
+          (location) => location.name.toLowerCase() === trimmed.toLowerCase()
+        );
+        if (existing) return existing.id;
+        const id = crypto.randomUUID();
+        useCloudSyncStore.getState().clearDeletedKeys("stuffLocationIds", [id]);
+        set((state) => ({
+          locations: [
+            ...state.locations,
+            { id, name: trimmed, createdAt: Date.now() },
+          ],
+        }));
+        return id;
+      },
+
+      updateLocation: (id, updates) => {
+        set((state) => ({
+          locations: state.locations.map((location) =>
+            location.id === id
+              ? { ...location, name: updates.name?.trim() || location.name }
+              : location
+          ),
+        }));
+      },
+
+      deleteLocation: (id) => {
+        const existing = get().locations.find((location) => location.id === id);
+        // Seeded defaults must stay available (same as ensure-on-load).
+        if (existing && isDefaultStuffLocation(existing)) return;
+        useCloudSyncStore.getState().markDeletedKeys("stuffLocationIds", [id]);
+        set((state) => ({
+          locations: state.locations.filter((location) => location.id !== id),
+          selectedLocationId:
+            state.selectedLocationId === id ? null : state.selectedLocationId,
+          items: state.items.map((item) =>
+            item.locationId === id
+              ? { ...item, locationId: undefined, updatedAt: Date.now() }
+              : item
+          ),
+        }));
+      },
+
       replaceFromSync: (snapshot) => {
         const prevItems = get().items;
         const nextCoverIds = new Set(
@@ -417,26 +546,34 @@ export const useStuffStore = create<StuffStoreState>()(
         set({
           items: snapshot.items,
           tags: ensureDefaultStuffTags(snapshot.tags),
+          locations: ensureDefaultStuffLocations(snapshot.locations),
         });
       },
 
       exportShelf: async () => {
-        const { tags, items } = get();
-        const payload = await buildStuffShelfExport(tags, items);
+        const { tags, items, locations } = get();
+        const payload = await buildStuffShelfExport(tags, items, locations);
         return stringifyStuffShelfExport(payload);
       },
 
       importShelf: (json) => {
-        // Seed defaults before merge so export copies of Kitchen/Books/… remap
-        // onto stuff-default:* instead of inserting UUID twins.
+        // Seed defaults before merge so export copies of Kitchen/Books/…
+        // and Closet/Storage/… remap onto stable ids instead of inserting
+        // UUID twins.
         const result = mergeStuffShelfImport(json, {
           items: get().items,
           tags: ensureDefaultStuffTags(get().tags),
+          locations: ensureDefaultStuffLocations(get().locations),
         });
 
         const newTagIds = result.tags
           .map((tag) => tag.id)
           .filter((id) => !get().tags.some((tag) => tag.id === id));
+        const newLocationIds = result.locations
+          .map((location) => location.id)
+          .filter(
+            (id) => !get().locations.some((location) => location.id === id)
+          );
         const newItemIds = result.items
           .map((item) => item.id)
           .filter((id) => !get().items.some((item) => item.id === id));
@@ -445,6 +582,11 @@ export const useStuffStore = create<StuffStoreState>()(
           useCloudSyncStore
             .getState()
             .clearDeletedKeys("stuffTagIds", newTagIds);
+        }
+        if (newLocationIds.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .clearDeletedKeys("stuffLocationIds", newLocationIds);
         }
         if (newItemIds.length > 0) {
           useCloudSyncStore
@@ -460,6 +602,7 @@ export const useStuffStore = create<StuffStoreState>()(
         set({
           items: result.items,
           tags: ensureDefaultStuffTags(result.tags),
+          locations: ensureDefaultStuffLocations(result.locations),
         });
 
         for (const { itemId, imageDataUrl } of result.coverIngest) {
@@ -469,19 +612,28 @@ export const useStuffStore = create<StuffStoreState>()(
         return {
           addedItems: result.addedItems,
           addedTags: result.addedTags,
+          addedLocations: result.addedLocations,
           skippedItems: result.skippedItems,
           skippedTags: result.skippedTags,
+          skippedLocations: result.skippedLocations,
         };
       },
 
       clearShelf: () => {
-        const { items, tags } = get();
-        const defaults = createDefaultStuffTags();
-        const defaultTagIds = new Set(defaults.map((tag) => tag.id));
+        const { items, tags, locations } = get();
+        const defaultTags = createDefaultStuffTags();
+        const defaultLocations = createDefaultStuffLocations();
+        const defaultTagIds = new Set(defaultTags.map((tag) => tag.id));
+        const defaultLocationIds = new Set(
+          defaultLocations.map((location) => location.id)
+        );
         const itemIds = items.map((item) => item.id);
         const removedTagIds = tags
           .map((tag) => tag.id)
           .filter((id) => !defaultTagIds.has(id));
+        const removedLocationIds = locations
+          .map((location) => location.id)
+          .filter((id) => !defaultLocationIds.has(id));
 
         if (itemIds.length > 0) {
           useCloudSyncStore
@@ -493,9 +645,23 @@ export const useStuffStore = create<StuffStoreState>()(
             .getState()
             .markDeletedKeys("stuffTagIds", removedTagIds);
         }
+        if (removedLocationIds.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .markDeletedKeys("stuffLocationIds", removedLocationIds);
+        }
         useCloudSyncStore
           .getState()
-          .clearDeletedKeys("stuffTagIds", defaults.map((tag) => tag.id));
+          .clearDeletedKeys(
+            "stuffTagIds",
+            defaultTags.map((tag) => tag.id)
+          );
+        useCloudSyncStore
+          .getState()
+          .clearDeletedKeys(
+            "stuffLocationIds",
+            defaultLocations.map((location) => location.id)
+          );
 
         for (const item of items) {
           const coverId = item.coverBlobId?.trim();
@@ -504,9 +670,11 @@ export const useStuffStore = create<StuffStoreState>()(
 
         set({
           items: [],
-          tags: defaults,
+          tags: defaultTags,
+          locations: defaultLocations,
           selectedItemId: null,
           selectedTagId: null,
+          selectedLocationId: null,
           statusFilter: "all",
           searchQuery: "",
           lastShareId: null,
@@ -520,8 +688,10 @@ export const useStuffStore = create<StuffStoreState>()(
       partialize: (state) => ({
         items: state.items,
         tags: state.tags,
+        locations: state.locations,
         selectedItemId: state.selectedItemId,
         selectedTagId: state.selectedTagId,
+        selectedLocationId: state.selectedLocationId,
         statusFilter: state.statusFilter,
         shelfView: state.shelfView,
         isSidebarVisible: state.isSidebarVisible,
@@ -535,9 +705,13 @@ export const useStuffStore = create<StuffStoreState>()(
         if (version < 5) {
           tags = ensureDefaultStuffTags(tags);
         }
+        // v6 introduces the locations catalog; pre-v6 shelves have no field
+        // at all — seeded post-hydration in seedDefaultLocationsIfNeeded.
+        const locations = Array.isArray(state.locations) ? state.locations : [];
         return {
           ...state,
           tags,
+          locations,
         };
       },
     }
@@ -545,6 +719,7 @@ export const useStuffStore = create<StuffStoreState>()(
 );
 
 let didSeedDefaultTags = false;
+let didSeedDefaultLocations = false;
 let didMigrateCovers = false;
 
 /**
@@ -570,6 +745,33 @@ function seedDefaultTagsIfNeeded(): void {
     useCloudSyncStore.getState().clearDeletedKeys("stuffTagIds", addedIds);
   }
   useStuffStore.setState({ tags: next });
+}
+
+/**
+ * After IndexedDB hydrate: insert any missing seeded default locations
+ * (Closet…Box). Must run even when locations is non-empty so shelves that
+ * deleted a default (or predate this feature) get it back.
+ */
+function seedDefaultLocationsIfNeeded(): void {
+  if (didSeedDefaultLocations) return;
+  if (!useStuffStore.persist.hasHydrated()) return;
+  didSeedDefaultLocations = true;
+  const { locations } = useStuffStore.getState();
+  const next =
+    locations.length === 0
+      ? createDefaultStuffLocations()
+      : ensureDefaultStuffLocations(locations);
+  if (next === locations) return;
+  const prevIds = new Set(locations.map((location) => location.id));
+  const addedIds = next
+    .filter((location) => !prevIds.has(location.id))
+    .map((location) => location.id);
+  if (addedIds.length > 0) {
+    useCloudSyncStore
+      .getState()
+      .clearDeletedKeys("stuffLocationIds", addedIds);
+  }
+  useStuffStore.setState({ locations: next });
 }
 
 async function migrateLegacyCoversIfNeeded(): Promise<void> {
@@ -603,6 +805,7 @@ async function migrateLegacyCoversIfNeeded(): Promise<void> {
 
 function runPostHydrationStuffTasks(): void {
   seedDefaultTagsIfNeeded();
+  seedDefaultLocationsIfNeeded();
   void migrateLegacyCoversIfNeeded();
 }
 
@@ -619,7 +822,9 @@ if (typeof window !== "undefined") {
 export function getFilteredStuffItems(params: {
   items: StuffItem[];
   tags: StuffTag[];
+  locations?: StuffLocation[];
   selectedTagId: string | null;
+  selectedLocationId?: string | null;
   statusFilter: StuffStatus | "all";
   searchQuery: string;
 }): StuffItem[] {
@@ -628,15 +833,26 @@ export function getFilteredStuffItems(params: {
     if (params.selectedTagId && !item.tagIds.includes(params.selectedTagId)) {
       return false;
     }
+    if (
+      params.selectedLocationId &&
+      item.locationId !== params.selectedLocationId
+    ) {
+      return false;
+    }
     if (params.statusFilter !== "all" && item.status !== params.statusFilter) {
       return false;
     }
     if (!query) return true;
+    const locationName = item.locationId
+      ? params.locations?.find((location) => location.id === item.locationId)
+          ?.name
+      : undefined;
     const haystack = [
       item.title,
       item.notes,
       item.brand,
       item.barcode,
+      locationName,
       ...item.tagIds.map(
         (tagId) => params.tags.find((tag) => tag.id === tagId)?.name ?? ""
       ),

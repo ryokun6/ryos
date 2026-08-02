@@ -4038,6 +4038,13 @@
         "edit": "編集",
         "printLabel": "ラベルをプリント"
       },
+      "defaultLocations": {
+        "box": "箱",
+        "carry-on": "機内持ち込み",
+        "checked-in": "預け入れ",
+        "closet": "クローゼット",
+        "storage": "収納"
+      },
       "defaultTags": {
         "books": "ブック",
         "cd": "CD",
@@ -4070,6 +4077,10 @@
       "dialogs": {
         "clearShelfDescription": "棚をすべて消去してもよろしいですか？すべてのアイテムが削除され、デフォルトのタグのみが残ります。この操作は元に戻せません。",
         "clearShelfTitle": "棚を消去",
+        "newLocation": {
+          "description": "新しい場所の名前を入力してください。",
+          "title": "新規場所"
+        },
         "newTag": {
           "description": "新しいタグの名前を入力してください。",
           "title": "新規タグ"
@@ -4092,6 +4103,11 @@
         "brand": "ブランド",
         "currency": "通貨",
         "discountedPrice": "希望価格",
+        "location": "場所",
+        "locationCreate": "「{{name}}」を追加",
+        "locationEmpty": "場所が見つかりません",
+        "locationNone": "なし",
+        "locationSearchPlaceholder": "場所を検索または追加…",
         "notes": "メモ",
         "originalPrice": "定価",
         "productBarcode": "商品バーコード",
@@ -4100,6 +4116,10 @@
         "soldPrice": "売却価格",
         "status": "状況",
         "tags": "タグ",
+        "tagsCreate": "「{{name}}」を追加",
+        "tagsEmpty": "タグが見つかりません",
+        "tagsNone": "なし",
+        "tagsSearchPlaceholder": "タグを検索または追加…",
         "thumbnail": "サムネイル",
         "title": "タイトル"
       },
@@ -4210,8 +4230,11 @@
         "listView": "リスト表示"
       },
       "sidebar": {
+        "allLocations": "すべての場所",
         "allStuff": "すべての持ち物",
+        "deleteLocation": "場所を削除",
         "deleteTag": "タグを削除",
+        "newLocation": "新規場所…",
         "newTag": "新規タグ…",
         "printTag": "タグラベルをプリント",
         "status": "状況",

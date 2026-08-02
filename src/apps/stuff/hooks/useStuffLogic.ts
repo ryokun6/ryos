@@ -63,8 +63,10 @@ export function useStuffLogic({
 
   const items = useStuffStore((s) => s.items);
   const tags = useStuffStore((s) => s.tags);
+  const locations = useStuffStore((s) => s.locations);
   const selectedItemId = useStuffStore((s) => s.selectedItemId);
   const selectedTagId = useStuffStore((s) => s.selectedTagId);
+  const selectedLocationId = useStuffStore((s) => s.selectedLocationId);
   const statusFilter = useStuffStore((s) => s.statusFilter);
   const shelfView = useStuffStore((s) => s.shelfView);
   const isSidebarVisible = useStuffStore((s) => s.isSidebarVisible);
@@ -73,6 +75,7 @@ export function useStuffLogic({
 
   const setSelectedItemId = useStuffStore((s) => s.setSelectedItemId);
   const setSelectedTagId = useStuffStore((s) => s.setSelectedTagId);
+  const setSelectedLocationId = useStuffStore((s) => s.setSelectedLocationId);
   const setStatusFilter = useStuffStore((s) => s.setStatusFilter);
   const setShelfView = useStuffStore((s) => s.setShelfView);
   const toggleSidebarVisibility = useStuffStore(
@@ -84,6 +87,8 @@ export function useStuffLogic({
   const deleteItem = useStuffStore((s) => s.deleteItem);
   const addTag = useStuffStore((s) => s.addTag);
   const deleteTag = useStuffStore((s) => s.deleteTag);
+  const addLocation = useStuffStore((s) => s.addLocation);
+  const deleteLocation = useStuffStore((s) => s.deleteLocation);
   const setLastShareId = useStuffStore((s) => s.setLastShareId);
   const exportShelf = useStuffStore((s) => s.exportShelf);
   const importShelf = useStuffStore((s) => s.importShelf);
@@ -120,11 +125,21 @@ export function useStuffLogic({
       getFilteredStuffItems({
         items,
         tags,
+        locations,
         selectedTagId,
+        selectedLocationId,
         statusFilter,
         searchQuery,
       }),
-    [items, tags, selectedTagId, statusFilter, searchQuery]
+    [
+      items,
+      tags,
+      locations,
+      selectedTagId,
+      selectedLocationId,
+      statusFilter,
+      searchQuery,
+    ]
   );
 
   const selectedItem =
@@ -136,6 +151,15 @@ export function useStuffLogic({
       for (const tagId of item.tagIds) {
         counts[tagId] = (counts[tagId] ?? 0) + 1;
       }
+    }
+    return counts;
+  }, [items]);
+
+  const itemCountsByLocation = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of items) {
+      if (!item.locationId) continue;
+      counts[item.locationId] = (counts[item.locationId] ?? 0) + 1;
     }
     return counts;
   }, [items]);
@@ -192,7 +216,11 @@ export function useStuffLogic({
 
   const applyImportedShelfJson = (json: string) => {
     const result = importShelf(json);
-    if (result.addedItems === 0 && result.addedTags === 0) {
+    if (
+      result.addedItems === 0 &&
+      result.addedTags === 0 &&
+      result.addedLocations === 0
+    ) {
       toast.message(
         t("apps.stuff.toasts.importEmpty", {
           defaultValue: "No new items or tags found in that file",
@@ -206,7 +234,8 @@ export function useStuffLogic({
           "Imported {{items}} items and {{tags}} tags ({{skipped}} skipped)",
         items: result.addedItems,
         tags: result.addedTags,
-        skipped: result.skippedItems + result.skippedTags,
+        skipped:
+          result.skippedItems + result.skippedTags + result.skippedLocations,
       })
     );
   };
@@ -623,24 +652,30 @@ export function useStuffLogic({
     handleProductLookupPick,
     items,
     tags,
+    locations,
     filteredItems,
     selectedItem,
     selectedItemId,
     selectedTagId,
+    selectedLocationId,
     statusFilter,
     shelfView,
     isSidebarVisible,
     searchQuery,
     lastShareId,
     itemCountsByTag,
+    itemCountsByLocation,
     setSelectedItemId,
     setSelectedTagId,
+    setSelectedLocationId,
     setStatusFilter,
     setShelfView,
     toggleSidebarVisibility,
     setSearchQuery,
     addTag,
     deleteTag,
+    addLocation,
+    deleteLocation,
     deleteItem,
     setLastShareId,
     handleAddItem,

@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
+  createDefaultStuffLocations,
   createDefaultStuffTags,
+  defaultStuffLocationId,
   defaultStuffTagId,
+  ensureDefaultStuffLocations,
   ensureDefaultStuffTags,
   ensureFurnitureTag,
   getFilteredStuffItems,
+  isDefaultStuffLocation,
   isDefaultStuffTag,
 } from "../../../src/stores/useStuffStore";
 import {
@@ -12,6 +16,7 @@ import {
   DEFAULT_TAG_COLORS,
   stuffItemCoverSrc,
   type StuffItem,
+  type StuffLocation,
   type StuffTag,
 } from "../../../src/apps/stuff/types";
 import { colorFromString, parseOptionalNumber } from "../../../src/apps/stuff/utils/colors";
@@ -62,6 +67,14 @@ describe("ensureDefaultStuffTags", () => {
     "Furniture",
     "CD",
     "Other",
+  ];
+
+  const ALL_DEFAULT_LOCATION_NAMES = [
+    "Closet",
+    "Storage",
+    "Carry On",
+    "Checked In",
+    "Box",
   ];
 
   test("inserts missing defaults (Furniture, CD, …) before Other", () => {
@@ -188,6 +201,7 @@ describe("ensureDefaultStuffTags", () => {
   test("clearShelf empties items, resets defaults, and clears filters", async () => {
     const { useStuffStore } = await import("../../../src/stores/useStuffStore");
     const defaults = createDefaultStuffTags();
+    const defaultLocations = createDefaultStuffLocations();
     useStuffStore.setState({
       items: [
         makeItem({
@@ -195,11 +209,16 @@ describe("ensureDefaultStuffTags", () => {
           title: "Lamp",
           coverBlobId: "lamp-cover",
           tagIds: ["custom"],
+          locationId: "custom-loc",
         }),
       ],
       tags: [
         ...defaults,
         { id: "custom", name: "Vintage", color: "#111", createdAt: 99 },
+      ],
+      locations: [
+        ...defaultLocations,
+        { id: "custom-loc", name: "Garage", createdAt: 99 },
       ],
       selectedItemId: "lamp",
       selectedTagId: "custom",
@@ -216,11 +235,130 @@ describe("ensureDefaultStuffTags", () => {
     expect(state.tags.every((tag) => tag.id === defaultStuffTagId(tag.name))).toBe(
       true
     );
+    expect(state.locations.map((location) => location.name)).toEqual(
+      ALL_DEFAULT_LOCATION_NAMES
+    );
+    expect(
+      state.locations.every(
+        (location) => location.id === defaultStuffLocationId(location.name)
+      )
+    ).toBe(true);
     expect(state.selectedItemId).toBeNull();
     expect(state.selectedTagId).toBeNull();
     expect(state.statusFilter).toBe("all");
     expect(state.searchQuery).toBe("");
     expect(state.lastShareId).toBeNull();
+  });
+});
+
+describe("ensureDefaultStuffLocations", () => {
+  const baseLocations: StuffLocation[] = [
+    { id: "1", name: "Closet", createdAt: 1 },
+    { id: "2", name: "Box", createdAt: 2 },
+  ];
+
+  test("inserts missing defaults (Storage, Carry On, Checked In)", () => {
+    const next = ensureDefaultStuffLocations(baseLocations);
+    expect(next.map((l) => l.name)).toEqual([
+      "Closet",
+      "Box",
+      "Storage",
+      "Carry On",
+      "Checked In",
+    ]);
+    expect(next.find((l) => l.name === "Storage")?.id).toBe(
+      defaultStuffLocationId("Storage")
+    );
+    expect(next.find((l) => l.name === "Carry On")?.id).toBe(
+      defaultStuffLocationId("Carry On")
+    );
+  });
+
+  test("does not duplicate existing defaults matched by name (case-insensitive)", () => {
+    const withStorage: StuffLocation[] = [
+      ...baseLocations,
+      { id: "custom-storage", name: "storage", createdAt: 9 },
+    ];
+    const next = ensureDefaultStuffLocations(withStorage);
+    expect(
+      next.filter((l) => l.name.toLowerCase() === "storage")
+    ).toHaveLength(1);
+  });
+
+  test("isDefaultStuffLocation matches stable id or canonical name", () => {
+    expect(
+      isDefaultStuffLocation({
+        id: defaultStuffLocationId("Carry On"),
+        name: "Carry On",
+        createdAt: 1,
+      })
+    ).toBe(true);
+    expect(
+      isDefaultStuffLocation({
+        id: "uuid",
+        name: "Closet",
+        createdAt: 1,
+      })
+    ).toBe(true);
+    expect(
+      isDefaultStuffLocation({
+        id: "custom",
+        name: "Garage",
+        createdAt: 1,
+      })
+    ).toBe(false);
+  });
+
+  test("defaultStuffLocationId is stable and slugifies spaces", () => {
+    expect(defaultStuffLocationId("Closet")).toBe(
+      "stuff-location-default:closet"
+    );
+    expect(defaultStuffLocationId("Carry On")).toBe(
+      "stuff-location-default:carry-on"
+    );
+    expect(defaultStuffLocationId("Carry On")).toBe(
+      defaultStuffLocationId("carry on")
+    );
+  });
+
+  test("deleteLocation refuses seeded defaults, keeps custom locations deletable, and clears item references", async () => {
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    const defaults = createDefaultStuffLocations();
+    useStuffStore.setState({
+      items: [
+        makeItem({ id: "item-1", title: "Bag", locationId: "custom-loc" }),
+      ],
+      locations: [
+        ...defaults,
+        { id: "custom-loc", name: "Garage", createdAt: 99 },
+      ],
+    });
+
+    useStuffStore.getState().deleteLocation(defaultStuffLocationId("Box"));
+    expect(
+      useStuffStore.getState().locations.some((l) => l.name === "Box")
+    ).toBe(true);
+
+    useStuffStore.getState().deleteLocation("custom-loc");
+    expect(
+      useStuffStore.getState().locations.some((l) => l.id === "custom-loc")
+    ).toBe(false);
+    // Item that referenced the deleted custom location falls back to none.
+    expect(
+      useStuffStore.getState().items.find((i) => i.id === "item-1")
+        ?.locationId
+    ).toBeUndefined();
+  });
+
+  test("addLocation dedupes by case-insensitive name and returns existing id", async () => {
+    const { useStuffStore } = await import("../../../src/stores/useStuffStore");
+    useStuffStore.setState({ items: [], locations: [] });
+
+    const firstId = useStuffStore.getState().addLocation("Garage");
+    const secondId = useStuffStore.getState().addLocation("garage");
+
+    expect(secondId).toBe(firstId);
+    expect(useStuffStore.getState().locations).toHaveLength(1);
   });
 });
 
@@ -434,7 +572,7 @@ describe("Stuff shelf import/export", () => {
 
     const result = mergeStuffShelfImport(
       stringifyStuffShelfExport(payload),
-      { items: existingItems, tags: existingTags }
+      { items: existingItems, tags: existingTags, locations: [] }
     );
 
     expect(result.addedTags).toBe(1);
@@ -469,7 +607,7 @@ describe("Stuff shelf import/export", () => {
 
     const result = mergeStuffShelfImport(
       stringifyStuffShelfExport(payload),
-      { items: [], tags: existingTags }
+      { items: [], tags: existingTags, locations: [] }
     );
 
     expect(result.addedTags).toBe(0);
@@ -517,15 +655,18 @@ describe("Stuff shelf import/export", () => {
     const first = mergeStuffShelfImport(json, {
       items: [],
       tags: existingTags,
+      locations: [],
     });
     const afterFirst = {
       items: first.items,
       tags: ensureDefaultStuffTags(first.tags),
+      locations: first.locations,
     };
     const second = mergeStuffShelfImport(json, afterFirst);
     const afterSecond = {
       items: second.items,
       tags: ensureDefaultStuffTags(second.tags),
+      locations: second.locations,
     };
 
     expect(second.addedItems).toBe(0);
@@ -567,6 +708,7 @@ describe("Stuff shelf import/export", () => {
     const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
       items: [],
       tags: existingTags,
+      locations: [],
     });
     const tags = ensureDefaultStuffTags(result.tags);
 
@@ -614,6 +756,7 @@ describe("Stuff shelf import/export", () => {
     const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
       items: [],
       tags: existingTags,
+      locations: [],
     });
 
     expect(result.addedTags).toBe(0);
@@ -641,6 +784,7 @@ describe("Stuff shelf import/export", () => {
     const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
       items: [],
       tags: [],
+      locations: [],
     });
     const tags = ensureDefaultStuffTags(result.tags);
 
@@ -660,7 +804,11 @@ describe("Stuff shelf import/export", () => {
       tags: [],
       items: [{ title: "No Id", notes: "", tagIds: [], status: "stowed" }],
     });
-    const first = mergeStuffShelfImport(json, { items: [], tags: [] });
+    const first = mergeStuffShelfImport(json, {
+      items: [],
+      tags: [],
+      locations: [],
+    });
     expect(first.addedItems).toBe(0);
     expect(first.skippedItems).toBe(1);
   });
@@ -683,7 +831,7 @@ describe("Stuff shelf import/export", () => {
 
     const result = mergeStuffShelfImport(
       stringifyStuffShelfExport(payload),
-      { items: [], tags: [] }
+      { items: [], tags: [], locations: [] }
     );
 
     expect(result.coverIngest).toEqual([
@@ -694,12 +842,114 @@ describe("Stuff shelf import/export", () => {
   });
 
   test("rejects invalid payloads", () => {
-    expect(() => mergeStuffShelfImport("[]", { items: [], tags: [] })).toThrow(
-      /Invalid Stuff shelf format/
-    );
     expect(() =>
-      mergeStuffShelfImport('{"version":1}', { items: [], tags: [] })
+      mergeStuffShelfImport("[]", { items: [], tags: [], locations: [] })
     ).toThrow(/Invalid Stuff shelf format/);
+    expect(() =>
+      mergeStuffShelfImport('{"version":1}', {
+        items: [],
+        tags: [],
+        locations: [],
+      })
+    ).toThrow(/Invalid Stuff shelf format/);
+  });
+
+  test("merges new locations, skips existing ids, and remaps item.locationId", () => {
+    const existingLocations: StuffLocation[] = [
+      { id: "closet-1", name: "Closet", createdAt: 1 },
+    ];
+    const payload: StuffShelfExport = {
+      version: 1,
+      exportedAt: 1,
+      tags: [],
+      locations: [
+        { id: "closet-1", name: "Closet", createdAt: 1 },
+        { id: "garage-1", name: "Garage", createdAt: 2 },
+      ],
+      items: [
+        makeItem({ id: "item-1", title: "Coat", locationId: "closet-1" }),
+        makeItem({ id: "item-2", title: "Tools", locationId: "garage-1" }),
+      ],
+    };
+
+    const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
+      items: [],
+      tags: [],
+      locations: existingLocations,
+    });
+
+    expect(result.addedLocations).toBe(1);
+    expect(result.skippedLocations).toBe(1);
+    expect(result.locations.map((l) => l.name).sort()).toEqual([
+      "Closet",
+      "Garage",
+    ]);
+    expect(
+      result.items.find((i) => i.id === "item-1")?.locationId
+    ).toBe("closet-1");
+    expect(
+      result.items.find((i) => i.id === "item-2")?.locationId
+    ).toBe("garage-1");
+  });
+
+  test("does not duplicate default locations when export uses a different id", () => {
+    const existingLocations = ensureDefaultStuffLocations([]);
+    const payload: StuffShelfExport = {
+      version: 1,
+      exportedAt: 1,
+      tags: [],
+      locations: [
+        { id: "uuid-closet", name: "Closet", createdAt: 1 },
+        { id: "custom-loc", name: "Garage", createdAt: 2 },
+      ],
+      items: [
+        makeItem({
+          id: "item-1",
+          title: "Coat",
+          locationId: "uuid-closet",
+        }),
+      ],
+    };
+
+    const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
+      items: [],
+      tags: [],
+      locations: existingLocations,
+    });
+    const locations = ensureDefaultStuffLocations(result.locations);
+
+    expect(result.addedLocations).toBe(1); // only Garage
+    expect(
+      locations.filter((l) => l.name.toLowerCase() === "closet")
+    ).toHaveLength(1);
+    expect(locations.find((l) => l.name === "Closet")?.id).toBe(
+      defaultStuffLocationId("Closet")
+    );
+    expect(result.items[0]?.locationId).toBe(defaultStuffLocationId("Closet"));
+  });
+
+  test("drops locationId when the referenced location is missing from both sides", () => {
+    const payload: StuffShelfExport = {
+      version: 1,
+      exportedAt: 1,
+      tags: [],
+      locations: [],
+      items: [
+        makeItem({
+          id: "item-1",
+          title: "Orphan",
+          locationId: "does-not-exist",
+        }),
+      ],
+    };
+
+    const result = mergeStuffShelfImport(stringifyStuffShelfExport(payload), {
+      items: [],
+      tags: [],
+      locations: [],
+    });
+
+    expect(result.items[0]?.locationId).toBeUndefined();
   });
 });
 

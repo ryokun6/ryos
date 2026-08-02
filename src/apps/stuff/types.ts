@@ -33,6 +33,13 @@ export interface StuffTag {
   createdAt: number;
 }
 
+/** Single-select physical/storage location (Closet, Storage, Carry On, …). */
+export interface StuffLocation {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
 /** How the cover is staged on the shelf / detail panel. */
 export type StuffCoverPresentation = "default" | "cutout";
 
@@ -64,6 +71,8 @@ export interface StuffItem {
   brand?: string;
   productUrl?: string;
   tagIds: string[];
+  /** Single-select id into the locations catalog; undefined/empty = none. */
+  locationId?: string;
   status: StuffStatus;
   prices: StuffPrices;
   quantity: number;

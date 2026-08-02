@@ -4041,6 +4041,13 @@
         "edit": "Modifica",
         "printLabel": "Stampa etichetta"
       },
+      "defaultLocations": {
+        "box": "Scatola",
+        "carry-on": "Bagaglio a mano",
+        "checked-in": "Check-in",
+        "closet": "Armadio",
+        "storage": "Deposito"
+      },
       "defaultTags": {
         "books": "Libri",
         "cd": "CD",
@@ -4073,6 +4080,10 @@
       "dialogs": {
         "clearShelfDescription": "Vuoi davvero svuotare l’intero scaffale? Tutti gli articoli verranno rimossi e resteranno solo i tag predefiniti. Questa azione non può essere annullata.",
         "clearShelfTitle": "Svuota scaffale",
+        "newLocation": {
+          "description": "Inserisci un nome per la nuova posizione.",
+          "title": "Nuova posizione"
+        },
         "newTag": {
           "description": "Inserisci un nome per il nuovo tag.",
           "title": "Nuovo tag"
@@ -4095,6 +4106,11 @@
         "brand": "Marca",
         "currency": "Valuta",
         "discountedPrice": "Richiesto",
+        "location": "Posizione",
+        "locationCreate": "Aggiungi \"{{name}}\"",
+        "locationEmpty": "Nessuna posizione trovata",
+        "locationNone": "Nessuna",
+        "locationSearchPlaceholder": "Cerca o aggiungi una posizione…",
         "notes": "Note",
         "originalPrice": "Originale",
         "productBarcode": "Codice a barre prodotto",
@@ -4103,6 +4119,10 @@
         "soldPrice": "Venduto",
         "status": "Stato",
         "tags": "Tag",
+        "tagsCreate": "Aggiungi \"{{name}}\"",
+        "tagsEmpty": "Nessun tag trovato",
+        "tagsNone": "Nessuno",
+        "tagsSearchPlaceholder": "Cerca o aggiungi un tag…",
         "thumbnail": "Miniatura",
         "title": "Titolo"
       },
@@ -4213,8 +4233,11 @@
         "listView": "Vista a elenco"
       },
       "sidebar": {
+        "allLocations": "Tutte le posizioni",
         "allStuff": "Tutte le cose",
+        "deleteLocation": "Elimina posizione",
         "deleteTag": "Elimina tag",
+        "newLocation": "Nuova posizione…",
         "newTag": "Nuovo tag…",
         "printTag": "Stampa etichetta tag",
         "status": "Stato",

@@ -4038,6 +4038,13 @@
         "edit": "편집",
         "printLabel": "라벨 인쇄"
       },
+      "defaultLocations": {
+        "box": "상자",
+        "carry-on": "기내 수하물",
+        "checked-in": "위탁 수하물",
+        "closet": "옷장",
+        "storage": "보관함"
+      },
       "defaultTags": {
         "books": "책",
         "cd": "CD",
@@ -4070,6 +4077,10 @@
       "dialogs": {
         "clearShelfDescription": "전체 선반을 지우시겠습니까? 모든 항목이 제거되고 기본 태그만 남습니다. 이 작업은 되돌릴 수 없습니다.",
         "clearShelfTitle": "선반 지우기",
+        "newLocation": {
+          "description": "새로운 위치의 이름을 입력하십시오.",
+          "title": "새로운 위치"
+        },
         "newTag": {
           "description": "새로운 태그의 이름을 입력하십시오.",
           "title": "새로운 태그"
@@ -4092,6 +4103,11 @@
         "brand": "브랜드",
         "currency": "통화",
         "discountedPrice": "희망가",
+        "location": "위치",
+        "locationCreate": "\"{{name}}\" 추가",
+        "locationEmpty": "위치를 찾을 수 없습니다",
+        "locationNone": "없음",
+        "locationSearchPlaceholder": "위치 검색 또는 추가…",
         "notes": "메모",
         "originalPrice": "원가",
         "productBarcode": "제품 바코드",
@@ -4100,6 +4116,10 @@
         "soldPrice": "판매가",
         "status": "상태",
         "tags": "태그",
+        "tagsCreate": "\"{{name}}\" 추가",
+        "tagsEmpty": "태그를 찾을 수 없습니다",
+        "tagsNone": "없음",
+        "tagsSearchPlaceholder": "태그 검색 또는 추가…",
         "thumbnail": "썸네일",
         "title": "제목"
       },
@@ -4210,8 +4230,11 @@
         "listView": "목록 보기"
       },
       "sidebar": {
+        "allLocations": "모든 위치",
         "allStuff": "모든 물건",
+        "deleteLocation": "위치 삭제",
         "deleteTag": "태그 삭제",
+        "newLocation": "새 위치…",
         "newTag": "새 태그…",
         "printTag": "태그 라벨 인쇄",
         "status": "상태",

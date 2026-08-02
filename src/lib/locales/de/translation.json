@@ -4038,6 +4038,13 @@
         "edit": "Bearbeiten",
         "printLabel": "Etikett drucken"
       },
+      "defaultLocations": {
+        "box": "Kiste",
+        "carry-on": "Handgepäck",
+        "checked-in": "Eingecheckt",
+        "closet": "Schrank",
+        "storage": "Lager"
+      },
       "defaultTags": {
         "books": "Bücher",
         "cd": "CD",
@@ -4070,6 +4077,10 @@
       "dialogs": {
         "clearShelfDescription": "Möchten Sie Ihr gesamtes Regal wirklich leeren? Alle Einträge werden entfernt und nur die Standard-Schlagwörter bleiben. Diese Aktion kann nicht rückgängig gemacht werden.",
         "clearShelfTitle": "Regal leeren",
+        "newLocation": {
+          "description": "Gib einen Namen für den neuen Standort ein.",
+          "title": "Neuer Standort"
+        },
         "newTag": {
           "description": "Gib einen Namen für das neue Tag ein.",
           "title": "Neues Tag"
@@ -4092,6 +4103,11 @@
         "brand": "Marke",
         "currency": "Währung",
         "discountedPrice": "Angebot",
+        "location": "Standort",
+        "locationCreate": "\"{{name}}\" hinzufügen",
+        "locationEmpty": "Keine Orte gefunden",
+        "locationNone": "Kein",
+        "locationSearchPlaceholder": "Ort suchen oder hinzufügen…",
         "notes": "Notizen",
         "originalPrice": "Original",
         "productBarcode": "Produkt-Barcode",
@@ -4100,6 +4116,10 @@
         "soldPrice": "Verkauft",
         "status": "Status",
         "tags": "Schlagwörter",
+        "tagsCreate": "\"{{name}}\" hinzufügen",
+        "tagsEmpty": "Keine Tags gefunden",
+        "tagsNone": "Kein",
+        "tagsSearchPlaceholder": "Tag suchen oder hinzufügen…",
         "thumbnail": "Vorschaubild",
         "title": "Titel"
       },
@@ -4210,8 +4230,11 @@
         "listView": "Listenansicht"
       },
       "sidebar": {
+        "allLocations": "Alle Standorte",
         "allStuff": "Alle Sachen",
+        "deleteLocation": "Standort löschen",
         "deleteTag": "Schlagwort löschen",
+        "newLocation": "Neuer Standort…",
         "newTag": "Neues Schlagwort…",
         "printTag": "Schlagwortetikett drucken",
         "status": "Status",

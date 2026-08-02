@@ -4038,6 +4038,13 @@
         "edit": "编辑",
         "printLabel": "打印标签"
       },
+      "defaultLocations": {
+        "box": "箱子",
+        "carry-on": "随身行李",
+        "checked-in": "托运行李",
+        "closet": "衣柜",
+        "storage": "储藏"
+      },
       "defaultTags": {
         "books": "书籍",
         "cd": "CD",
@@ -4070,6 +4077,10 @@
       "dialogs": {
         "clearShelfDescription": "确定要清除整个货架吗？所有物品都将被移除，仅保留默认标签。此操作无法撤销。",
         "clearShelfTitle": "清除货架",
+        "newLocation": {
+          "description": "输入新位置的名称。",
+          "title": "新建位置"
+        },
         "newTag": {
           "description": "输入新标签的名称。",
           "title": "新建标签"
@@ -4092,6 +4103,11 @@
         "brand": "品牌",
         "currency": "货币",
         "discountedPrice": "要价",
+        "location": "位置",
+        "locationCreate": "添加\"{{name}}\"",
+        "locationEmpty": "未找到位置",
+        "locationNone": "无",
+        "locationSearchPlaceholder": "搜索或添加位置…",
         "notes": "备注",
         "originalPrice": "原价",
         "productBarcode": "产品条形码",
@@ -4100,6 +4116,10 @@
         "soldPrice": "成交价",
         "status": "状态",
         "tags": "标签",
+        "tagsCreate": "添加\"{{name}}\"",
+        "tagsEmpty": "未找到标签",
+        "tagsNone": "无",
+        "tagsSearchPlaceholder": "搜索或添加标签…",
         "thumbnail": "缩略图",
         "title": "标题"
       },
@@ -4210,8 +4230,11 @@
         "listView": "列表视图"
       },
       "sidebar": {
+        "allLocations": "所有位置",
         "allStuff": "所有物品",
+        "deleteLocation": "删除位置",
         "deleteTag": "删除标签",
+        "newLocation": "新建位置…",
         "newTag": "新建标签…",
         "printTag": "打印标签",
         "status": "状态",

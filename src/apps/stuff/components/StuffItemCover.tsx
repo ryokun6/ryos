@@ -760,13 +760,16 @@ export function StuffItemCover({
         {!isList && (
           <div
             className={cn(
-              "relative z-[1] flex h-full w-full flex-col justify-between",
+              "relative z-[1] flex h-full w-full flex-col justify-between font-permanent-marker",
               isGrid ? "px-2.5 pb-2.5 pt-3" : "px-2 pb-2 pt-2.5"
             )}
             style={{
               color: "rgba(32, 36, 42, 0.92)",
-              // Marker face via CSS var (not a utility class) — Aqua themes
-              // force `font-size` on some named font utilities.
+              // `font-permanent-marker` supplies the thicker (700) weight that
+              // keeps the CJK fallback (Chiron GoRound TC WS) from reading too
+              // thin next to Permanent Marker; fontFamily is still set inline
+              // (not from the class alone) since Aqua forces `font-size` on
+              // some named font utilities.
               fontFamily: "var(--font-permanent-marker)",
             }}
           >

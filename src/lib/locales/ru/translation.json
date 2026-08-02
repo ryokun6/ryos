@@ -4047,6 +4047,13 @@
         "edit": "Править",
         "printLabel": "Печать этикетки"
       },
+      "defaultLocations": {
+        "box": "Коробка",
+        "carry-on": "Ручная кладь",
+        "checked-in": "Багаж",
+        "closet": "Шкаф",
+        "storage": "Хранилище"
+      },
       "defaultTags": {
         "books": "Книги",
         "cd": "CD",
@@ -4079,6 +4086,10 @@
       "dialogs": {
         "clearShelfDescription": "Вы уверены, что хотите очистить всю полку? Все предметы будут удалены, останутся только теги по умолчанию. Это действие невозможно отменить.",
         "clearShelfTitle": "Очистить полку",
+        "newLocation": {
+          "description": "Введите имя для нового места.",
+          "title": "Новое место"
+        },
         "newTag": {
           "description": "Введите имя для нового тега.",
           "title": "Новый тег"
@@ -4101,6 +4112,11 @@
         "brand": "Бренд",
         "currency": "Валюта",
         "discountedPrice": "Запрос",
+        "location": "Место",
+        "locationCreate": "Добавить «{{name}}»",
+        "locationEmpty": "Место не найдено",
+        "locationNone": "Нет",
+        "locationSearchPlaceholder": "Искать или добавить место…",
         "notes": "Заметки",
         "originalPrice": "Исходная",
         "productBarcode": "Штрихкод товара",
@@ -4109,6 +4125,10 @@
         "soldPrice": "Продано",
         "status": "Статус",
         "tags": "Теги",
+        "tagsCreate": "Добавить «{{name}}»",
+        "tagsEmpty": "Тег не найден",
+        "tagsNone": "Нет",
+        "tagsSearchPlaceholder": "Искать или добавить тег…",
         "thumbnail": "Миниатюра",
         "title": "Название"
       },
@@ -4219,8 +4239,11 @@
         "listView": "Вид списком"
       },
       "sidebar": {
+        "allLocations": "Все места",
         "allStuff": "Все вещи",
+        "deleteLocation": "Удалить место",
         "deleteTag": "Удалить тег",
+        "newLocation": "Новое место…",
         "newTag": "Новый тег…",
         "printTag": "Печать этикетки тега",
         "status": "Статус",

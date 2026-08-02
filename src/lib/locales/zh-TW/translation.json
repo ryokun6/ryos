@@ -4038,6 +4038,13 @@
         "edit": "編輯",
         "printLabel": "列印標籤"
       },
+      "defaultLocations": {
+        "box": "箱子",
+        "carry-on": "隨身行李",
+        "checked-in": "託運行李",
+        "closet": "衣櫃",
+        "storage": "收納"
+      },
       "defaultTags": {
         "books": "書籍",
         "cd": "CD",
@@ -4070,6 +4077,10 @@
       "dialogs": {
         "clearShelfDescription": "確定要清除整個貨架嗎？所有項目都會移除，只保留預設標籤。此動作無法復原。",
         "clearShelfTitle": "清除貨架",
+        "newLocation": {
+          "description": "輸入新位置的名稱。",
+          "title": "新增位置"
+        },
         "newTag": {
           "description": "輸入新標籤的名稱。",
           "title": "新增標籤"
@@ -4092,6 +4103,11 @@
         "brand": "品牌",
         "currency": "貨幣",
         "discountedPrice": "要價",
+        "location": "位置",
+        "locationCreate": "新增「{{name}}」",
+        "locationEmpty": "找不到位置",
+        "locationNone": "無",
+        "locationSearchPlaceholder": "搜尋或新增位置…",
         "notes": "備註",
         "originalPrice": "原價",
         "productBarcode": "產品條碼",
@@ -4100,6 +4116,10 @@
         "soldPrice": "成交價",
         "status": "狀態",
         "tags": "標籤",
+        "tagsCreate": "新增「{{name}}」",
+        "tagsEmpty": "找不到標籤",
+        "tagsNone": "無",
+        "tagsSearchPlaceholder": "搜尋或新增標籤…",
         "thumbnail": "縮圖",
         "title": "標題"
       },
@@ -4210,8 +4230,11 @@
         "listView": "列表檢視"
       },
       "sidebar": {
+        "allLocations": "所有位置",
         "allStuff": "所有物品",
+        "deleteLocation": "刪除位置",
         "deleteTag": "刪除標籤",
+        "newLocation": "新增位置…",
         "newTag": "新增標籤…",
         "printTag": "列印標籤",
         "status": "狀態",

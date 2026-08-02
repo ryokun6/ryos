@@ -4041,6 +4041,13 @@
         "edit": "Modifier",
         "printLabel": "Imprimer l’étiquette"
       },
+      "defaultLocations": {
+        "box": "Boîte",
+        "carry-on": "Bagage à main",
+        "checked-in": "Enregistré",
+        "closet": "Placard",
+        "storage": "Stockage"
+      },
       "defaultTags": {
         "books": "Livres",
         "cd": "CD",
@@ -4073,6 +4080,10 @@
       "dialogs": {
         "clearShelfDescription": "Voulez-vous vraiment vider toute l’étagère ? Tous les articles seront supprimés et seuls les tags par défaut resteront. Cette action est irréversible.",
         "clearShelfTitle": "Effacer l’étagère",
+        "newLocation": {
+          "description": "Saisissez un nom pour le nouvel emplacement.",
+          "title": "Nouvel emplacement"
+        },
         "newTag": {
           "description": "Saisissez un nom pour le nouveau tag.",
           "title": "Nouveau tag"
@@ -4095,6 +4106,11 @@
         "brand": "Marque",
         "currency": "Devise",
         "discountedPrice": "Prix demandé",
+        "location": "Emplacement",
+        "locationCreate": "Ajouter « {{name}} »",
+        "locationEmpty": "Aucun emplacement trouvé",
+        "locationNone": "Aucun",
+        "locationSearchPlaceholder": "Rechercher ou ajouter un emplacement…",
         "notes": "Notes",
         "originalPrice": "Original",
         "productBarcode": "Code-barres produit",
@@ -4103,6 +4119,10 @@
         "soldPrice": "Vendu",
         "status": "État",
         "tags": "Tags",
+        "tagsCreate": "Ajouter « {{name}} »",
+        "tagsEmpty": "Aucun tag trouvé",
+        "tagsNone": "Aucun",
+        "tagsSearchPlaceholder": "Rechercher ou ajouter un tag…",
         "thumbnail": "Vignette",
         "title": "Titre"
       },
@@ -4213,8 +4233,11 @@
         "listView": "Présentation par liste"
       },
       "sidebar": {
+        "allLocations": "Tous les emplacements",
         "allStuff": "Toutes les affaires",
+        "deleteLocation": "Supprimer l’emplacement",
         "deleteTag": "Supprimer le tag",
+        "newLocation": "Nouvel emplacement…",
         "newTag": "Nouveau tag…",
         "printTag": "Imprimer l’étiquette du tag",
         "status": "État",

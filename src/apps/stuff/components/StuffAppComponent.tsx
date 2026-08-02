@@ -101,6 +101,9 @@ export function StuffAppComponent({
               <StuffDetailPanel
                 item={logic.selectedItem}
                 tags={logic.tags}
+                locations={logic.locations}
+                onAddTag={logic.addTag}
+                onAddLocation={logic.addLocation}
                 onChange={logic.handleUpdateSelected}
                 onDelete={logic.handleDeleteSelected}
                 onPrint={logic.handlePrintSelected}
@@ -136,16 +139,22 @@ export function StuffAppComponent({
                 <StuffSidebar
                   tags={logic.tags}
                   selectedTagId={logic.selectedTagId}
+                  locations={logic.locations}
+                  selectedLocationId={logic.selectedLocationId}
                   statusFilter={logic.statusFilter}
                   itemCountsByTag={logic.itemCountsByTag}
+                  itemCountsByLocation={logic.itemCountsByLocation}
                   totalCount={logic.items.length}
                   searchQuery={logic.searchQuery}
                   onSearchQueryChange={logic.setSearchQuery}
                   onSelectTag={logic.setSelectedTagId}
+                  onSelectLocation={logic.setSelectedLocationId}
                   onStatusFilter={logic.setStatusFilter}
                   onAddTag={logic.addTag}
                   onDeleteTag={logic.deleteTag}
                   onPrintTag={(id) => logic.handlePrintTagLabels([id])}
+                  onAddLocation={logic.addLocation}
+                  onDeleteLocation={logic.deleteLocation}
                 />
               ) : null}
               <div className="min-h-0 min-w-0 flex-1 overflow-hidden">

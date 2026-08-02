@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, Check } from "@phosphor-icons/react";
+import { CaretDown, Check, Plus } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -29,8 +29,10 @@ export type ComboboxFilter = {
 };
 
 export type ComboboxProps = {
-  value: string;
-  onChange: (value: string) => void;
+  /** Selected value in single-select mode; ignored when `multiple` is set. */
+  value?: string;
+  /** Called with the picked value in single-select mode; ignored when `multiple` is set. */
+  onChange?: (value: string) => void;
   options: ComboboxOption[];
   /** Label shown on the closed trigger; defaults to the selected option's label. */
   displayValue?: string;
@@ -46,6 +48,23 @@ export type ComboboxProps = {
   filters?: ComboboxFilter[];
   filterValue?: string;
   onFilterChange?: (value: string) => void;
+  /** When set (with `onCreateOption`), typing a non-matching query shows a "Create" row. */
+  creatable?: boolean;
+  /** Called with the trimmed query when the create row is selected. */
+  onCreateOption?: (query: string) => void;
+  /** Label for the create row; defaults to a plain `Create "<query>"`. */
+  createOptionLabel?: (query: string) => string;
+  /**
+   * Multi-select mode: rows toggle membership in `selectedValues` (via
+   * `onToggleOption`) instead of picking a single value and closing the
+   * panel. The trigger keeps showing `displayValue` (callers should
+   * summarize the current selection there, e.g. "Kitchen, CD").
+   */
+  multiple?: boolean;
+  /** Current selection set, used to render checkmarks when `multiple` is set. */
+  selectedValues?: string[];
+  /** Called with the toggled option's value when `multiple` is set. */
+  onToggleOption?: (value: string) => void;
 };
 
 function optionSearchHaystack(option: ComboboxOption): string {
@@ -111,7 +130,7 @@ function computePanelRect(
 }
 
 function ComboboxImpl({
-  value,
+  value = "",
   onChange,
   options,
   displayValue,
@@ -125,6 +144,12 @@ function ComboboxImpl({
   filters,
   filterValue,
   onFilterChange,
+  creatable = false,
+  onCreateOption,
+  createOptionLabel = (query) => `Create "${query}"`,
+  multiple = false,
+  selectedValues,
+  onToggleOption,
 }: ComboboxProps) {
   const { t } = useTranslation();
   const resolvedEmptyMessage = emptyMessage ?? t("common.noResults");
@@ -165,11 +190,37 @@ function ComboboxImpl({
     );
   }, [options, q, filterValue]);
 
+  // Exact (case-insensitive) label match against the full option set — not
+  // just the category-filtered list — so "create" never offers a duplicate.
+  const showCreateRow =
+    creatable &&
+    Boolean(onCreateOption) &&
+    q.length > 0 &&
+    !options.some((o) => o.label.trim().toLowerCase() === q);
+
+  const rowCount = filtered.length + (showCreateRow ? 1 : 0);
+
   // Derive a safe index during render (no clamp effect).
   const safeHighlight =
-    filtered.length === 0
-      ? 0
-      : Math.min(Math.max(highlight, 0), filtered.length - 1);
+    rowCount === 0 ? 0 : Math.min(Math.max(highlight, 0), rowCount - 1);
+
+  const handleCreate = useCallback(() => {
+    if (!onCreateOption) return;
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    playClick();
+    onCreateOption(trimmed);
+    if (multiple) {
+      // Keep the menu open so more tags can be picked; clear the query since
+      // it just got consumed by the newly created (and now-selected) option.
+      setQuery("");
+      setHighlight(0);
+      setHovering(false);
+      return;
+    }
+    setOpen(false);
+    playClose();
+  }, [onCreateOption, query, playClick, playClose, multiple]);
 
   const scrollHighlightIntoView = useCallback((index: number) => {
     listRef.current
@@ -217,11 +268,22 @@ function ComboboxImpl({
   const selectOption = useCallback(
     (option: ComboboxOption) => {
       playClick();
-      onChange(option.value);
+      if (multiple) {
+        // Toggle membership in place; the menu stays open for more picks.
+        onToggleOption?.(option.value);
+        return;
+      }
+      onChange?.(option.value);
       setOpen(false);
       playClose();
     },
-    [onChange, playClick, playClose]
+    [onChange, playClick, playClose, multiple, onToggleOption]
+  );
+
+  const isOptionSelected = useCallback(
+    (optionValue: string) =>
+      multiple ? (selectedValues?.includes(optionValue) ?? false) : optionValue === value,
+    [multiple, selectedValues, value]
   );
 
   // Single layout effect while open: focus search, outside dismiss, reposition.
@@ -263,28 +325,32 @@ function ComboboxImpl({
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      if (filtered.length === 0) return;
+      if (rowCount === 0) return;
       setHovering(false);
       setHighlight((h) => {
-        const base = Math.min(Math.max(h, 0), filtered.length - 1);
-        const next = Math.min(base + 1, filtered.length - 1);
+        const base = Math.min(Math.max(h, 0), rowCount - 1);
+        const next = Math.min(base + 1, rowCount - 1);
         queueMicrotask(() => scrollHighlightIntoView(next));
         return next;
       });
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      if (filtered.length === 0) return;
+      if (rowCount === 0) return;
       setHovering(false);
       setHighlight((h) => {
-        const base = Math.min(Math.max(h, 0), filtered.length - 1);
+        const base = Math.min(Math.max(h, 0), rowCount - 1);
         const next = Math.max(base - 1, 0);
         queueMicrotask(() => scrollHighlightIntoView(next));
         return next;
       });
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const option = filtered[safeHighlight];
-      if (option) selectOption(option);
+      if (safeHighlight < filtered.length) {
+        const option = filtered[safeHighlight];
+        if (option) selectOption(option);
+      } else if (showCreateRow) {
+        handleCreate();
+      }
     } else if (e.key === "Escape") {
       e.preventDefault();
       closePanel();
@@ -342,6 +408,7 @@ function ComboboxImpl({
             >
               <div
                 role="listbox"
+                aria-multiselectable={multiple || undefined}
                 className={cn(
                   "flex flex-col overflow-hidden w-full",
                   !isMacOSTheme &&
@@ -413,13 +480,13 @@ function ComboboxImpl({
                   className="min-h-0 flex-1 overflow-y-auto py-1"
                   style={{ maxHeight: maxListHeight }}
                 >
-                  {filtered.length === 0 ? (
+                  {filtered.length === 0 && !showCreateRow ? (
                     <div className="px-4 py-3 text-center text-[11px] opacity-60 font-geneva-12">
                       {resolvedEmptyMessage}
                     </div>
                   ) : (
                     filtered.map((option, index) => {
-                      const selected = option.value === value;
+                      const selected = isOptionSelected(option.value);
                       const highlighted =
                         hovering && index === safeHighlight;
                       const hasDescription = Boolean(option.description);
@@ -468,6 +535,33 @@ function ComboboxImpl({
                       );
                     })
                   )}
+                  {showCreateRow ? (
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={false}
+                      data-row={filtered.length}
+                      data-highlighted={
+                        hovering && filtered.length === safeHighlight
+                          ? ""
+                          : undefined
+                      }
+                      onMouseEnter={() => {
+                        setHighlight(filtered.length);
+                        setHovering(true);
+                      }}
+                      onClick={handleCreate}
+                      className={cn(
+                        "group relative flex w-full cursor-default select-none items-center gap-1.5 pl-4 pr-7 py-1.5 text-sm text-left outline-none",
+                        "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
+                      )}
+                    >
+                      <Plus size={12} weight="bold" className="shrink-0" />
+                      <span className="truncate">
+                        {createOptionLabel(query.trim())}
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash, Barcode, SquaresFour } from "@phosphor-icons/react";
+import { Trash, Barcode } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { SearchInput } from "@/components/ui/search-input";
@@ -15,47 +15,63 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   STUFF_STATUSES,
+  type StuffLocation,
   type StuffStatus,
   type StuffTag,
   stuffStatusLabelDefault,
 } from "../types";
-import { isDefaultStuffTag } from "@/stores/useStuffStore";
+import { isDefaultStuffLocation, isDefaultStuffTag } from "@/stores/useStuffStore";
 import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
+import { stuffLocationDisplayName } from "../utils/stuffLocationDisplayName";
 
 interface StuffSidebarProps {
   tags: StuffTag[];
   selectedTagId: string | null;
+  locations: StuffLocation[];
+  selectedLocationId: string | null;
   statusFilter: StuffStatus | "all";
   itemCountsByTag: Record<string, number>;
+  itemCountsByLocation: Record<string, number>;
   totalCount: number;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   onSelectTag: (id: string | null) => void;
+  onSelectLocation: (id: string | null) => void;
   onStatusFilter: (status: StuffStatus | "all") => void;
   onAddTag: (name: string) => void;
   onDeleteTag: (id: string) => void;
   onPrintTag: (id: string) => void;
+  onAddLocation: (name: string) => void;
+  onDeleteLocation: (id: string) => void;
 }
 
 export function StuffSidebar({
   tags,
   selectedTagId,
+  locations,
+  selectedLocationId,
   statusFilter,
   itemCountsByTag,
+  itemCountsByLocation,
   totalCount,
   searchQuery,
   onSearchQueryChange,
   onSelectTag,
+  onSelectLocation,
   onStatusFilter,
   onAddTag,
   onDeleteTag,
   onPrintTag,
+  onAddLocation,
+  onDeleteLocation,
 }: StuffSidebarProps) {
   const { t } = useTranslation();
   const { isMacOSTheme, isSystem7Theme } = useThemeFlags();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const [isNewTagDialogOpen, setIsNewTagDialogOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
+  const [isNewLocationDialogOpen, setIsNewLocationDialogOpen] = useState(false);
+  const [newLocationName, setNewLocationName] = useState("");
 
   const handleNewTagSubmit = (value: string) => {
     const trimmed = value.trim();
@@ -68,6 +84,19 @@ export function StuffSidebar({
   const openNewTagDialog = () => {
     setNewTagName("");
     setIsNewTagDialogOpen(true);
+  };
+
+  const handleNewLocationSubmit = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    onAddLocation(trimmed);
+    setNewLocationName("");
+    setIsNewLocationDialogOpen(false);
+  };
+
+  const openNewLocationDialog = () => {
+    setNewLocationName("");
+    setIsNewLocationDialogOpen(true);
   };
 
   const statusOptions = useMemo(
@@ -83,9 +112,6 @@ export function StuffSidebar({
       })),
     [t]
   );
-
-  const sidebarIconSlotClass =
-    "flex h-2 w-2 shrink-0 items-center justify-center";
 
   const sidebarRowClass = (selected: boolean) =>
     cn(
@@ -131,9 +157,6 @@ export function StuffSidebar({
           className={sidebarRowClass(selectedTagId === null)}
           onClick={() => onSelectTag(null)}
         >
-          <span className={sidebarIconSlotClass} aria-hidden>
-            <SquaresFour size={8} weight="fill" className="opacity-50" />
-          </span>
           <span className="min-w-0 flex-1 truncate">
             {t("apps.stuff.sidebar.allStuff", { defaultValue: "All Stuff" })}
           </span>
@@ -149,12 +172,6 @@ export function StuffSidebar({
                 className={sidebarRowClass(selected)}
                 onClick={() => onSelectTag(tag.id)}
               >
-                <span className={sidebarIconSlotClass} aria-hidden>
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: tag.color }}
-                  />
-                </span>
                 <span className="min-w-0 flex-1 truncate">
                   {stuffTagDisplayName(tag, t)}
                 </span>
@@ -201,11 +218,76 @@ export function StuffSidebar({
           className={sidebarRowClass(false)}
           onClick={openNewTagDialog}
         >
-          <span className={sidebarIconSlotClass} aria-hidden>
-            <Plus size={8} weight="bold" className="opacity-60" />
-          </span>
           <span className="min-w-0 flex-1 truncate">
             {t("apps.stuff.sidebar.newTag", { defaultValue: "New Tag…" })}
+          </span>
+        </button>
+
+        <div
+          className="my-1 h-px shrink-0 bg-black/10"
+          role="separator"
+          aria-hidden
+        />
+
+        <button
+          type="button"
+          className={sidebarRowClass(selectedLocationId === null)}
+          onClick={() => onSelectLocation(null)}
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {t("apps.stuff.sidebar.allLocations", {
+              defaultValue: "All Locations",
+            })}
+          </span>
+          <span className={sidebarCountClass}>{totalCount}</span>
+        </button>
+
+        {locations.map((location) => {
+          const selected = selectedLocationId === location.id;
+          return (
+            <div key={location.id} className="group relative flex items-center">
+              <button
+                type="button"
+                className={sidebarRowClass(selected)}
+                onClick={() => onSelectLocation(location.id)}
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  {stuffLocationDisplayName(location, t)}
+                </span>
+                <span className={cn(sidebarCountClass, "group-hover:hidden")}>
+                  {itemCountsByLocation[location.id] ?? 0}
+                </span>
+              </button>
+              {isDefaultStuffLocation(location) ? null : (
+                <div className="pointer-events-none absolute right-1 top-1/2 z-10 hidden -translate-y-1/2 gap-0.5 group-hover:pointer-events-auto group-hover:flex">
+                  <button
+                    type="button"
+                    className="rounded p-0.5 text-black/40 hover:bg-black/10 hover:text-black/70"
+                    aria-label={t("apps.stuff.sidebar.deleteLocation", {
+                      defaultValue: "Delete Location",
+                    })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteLocation(location.id);
+                    }}
+                  >
+                    <Trash size={11} />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <button
+          type="button"
+          className={sidebarRowClass(false)}
+          onClick={openNewLocationDialog}
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {t("apps.stuff.sidebar.newLocation", {
+              defaultValue: "New Location…",
+            })}
           </span>
         </button>
       </div>
@@ -252,6 +334,24 @@ export function StuffSidebar({
         })}
         value={newTagName}
         onChange={setNewTagName}
+        submitLabel={t("apps.stuff.toolbar.add", { defaultValue: "Add" })}
+      />
+
+      <InputDialog
+        isOpen={isNewLocationDialogOpen}
+        onOpenChange={(open) => {
+          setIsNewLocationDialogOpen(open);
+          if (!open) setNewLocationName("");
+        }}
+        onSubmit={handleNewLocationSubmit}
+        title={t("apps.stuff.dialogs.newLocation.title", {
+          defaultValue: "New Location",
+        })}
+        description={t("apps.stuff.dialogs.newLocation.description", {
+          defaultValue: "Enter a name for the new location.",
+        })}
+        value={newLocationName}
+        onChange={setNewLocationName}
         submitLabel={t("apps.stuff.toolbar.add", { defaultValue: "Add" })}
       />
     </>

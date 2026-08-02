@@ -38,7 +38,7 @@ import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
 import { useStuffStore } from "@/stores/useStuffStore";
-import type { StuffItem, StuffTag } from "@/apps/stuff/types";
+import type { StuffItem, StuffLocation, StuffTag } from "@/apps/stuff/types";
 import {
   invalidateStuffCoverCache,
   stripImageDataUrlForSync,
@@ -146,6 +146,7 @@ export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> =
   stuffItemIds: "stuff/item:",
   stuffTagIds: "stuff/tag:",
   stuffCoverKeys: "stuff-images/item:",
+  stuffLocationIds: "stuff/location:",
 };
 
 export function getDeletionMarkerForKey(key: string): string | null {
@@ -1521,8 +1522,9 @@ const mapsCodec: SyncCodec = {
 // Stuff codec (inventory items + tags; covers sync via `stuff-images` blobs)
 //
 // Keys:
-//   stuff/item:<id> — item metadata (no imageDataUrl; cover via coverBlobId)
-//   stuff/tag:<id>  — tag
+//   stuff/item:<id>     — item metadata (no imageDataUrl; cover via coverBlobId)
+//   stuff/tag:<id>      — tag
+//   stuff/location:<id> — location (single-select catalog entry)
 //
 // Device-local UI (selection, filters, shelf view, sidebar, search, last
 // share id) is intentionally excluded. Cover bytes live in the stuff-images
@@ -1543,6 +1545,7 @@ function toStuffItemSyncDoc(item: StuffItem): Record<string, unknown> {
     brand: item.brand,
     productUrl: item.productUrl,
     tagIds: item.tagIds,
+    locationId: item.locationId,
     status: item.status,
     prices: item.prices,
     quantity: item.quantity,
@@ -1583,6 +1586,10 @@ function asStuffItem(value: unknown, id: string): StuffItem | null {
     tagIds: Array.isArray(record.tagIds)
       ? record.tagIds.filter((tagId): tagId is string => typeof tagId === "string")
       : [],
+    locationId:
+      typeof record.locationId === "string"
+        ? record.locationId || undefined
+        : undefined,
     status: (record.status as StuffItem["status"]) || "stowed",
     prices:
       record.prices && typeof record.prices === "object"
@@ -1615,6 +1622,18 @@ function asStuffTag(value: unknown, id: string): StuffTag | null {
   };
 }
 
+function asStuffLocation(value: unknown, id: string): StuffLocation | null {
+  if (!asRecord(value)) return null;
+  const record = value as Partial<StuffLocation>;
+  if (typeof record.name !== "string" || !record.name.trim()) return null;
+  return {
+    id,
+    name: record.name.trim(),
+    createdAt:
+      typeof record.createdAt === "number" ? record.createdAt : Date.now(),
+  };
+}
+
 const stuffCodec: SyncCodec = {
   namespace: "stuff",
   collect() {
@@ -1626,13 +1645,20 @@ const stuffCodec: SyncCodec = {
     for (const tag of state.tags) {
       if (tag?.id) docs.set(`stuff/tag:${tag.id}`, tag);
     }
+    for (const location of state.locations) {
+      if (location?.id) docs.set(`stuff/location:${location.id}`, location);
+    }
     return docs;
   },
   apply(ops) {
     const state = useStuffStore.getState();
     const itemsById = new Map(state.items.map((item) => [item.id, item]));
     const tagsById = new Map(state.tags.map((tag) => [tag.id, tag]));
+    const locationsById = new Map(
+      state.locations.map((location) => [location.id, location])
+    );
     const deletedTagIds = new Set<string>();
+    const deletedLocationIds = new Set<string>();
 
     for (const op of ops) {
       if (op.k.startsWith("stuff/item:")) {
@@ -1652,15 +1678,30 @@ const stuffCodec: SyncCodec = {
           const tag = asStuffTag(op.v, id);
           if (tag) tagsById.set(id, tag);
         }
+      } else if (op.k.startsWith("stuff/location:")) {
+        const id = op.k.slice("stuff/location:".length);
+        if (op.del) {
+          locationsById.delete(id);
+          deletedLocationIds.add(id);
+        } else {
+          const location = asStuffLocation(op.v, id);
+          if (location) locationsById.set(id, location);
+        }
       }
     }
 
-    if (deletedTagIds.size > 0) {
+    if (deletedTagIds.size > 0 || deletedLocationIds.size > 0) {
       for (const [id, item] of itemsById) {
-        if (!item.tagIds.some((tagId) => deletedTagIds.has(tagId))) continue;
+        const stripTags = item.tagIds.some((tagId) => deletedTagIds.has(tagId));
+        const stripLocation =
+          item.locationId != null && deletedLocationIds.has(item.locationId);
+        if (!stripTags && !stripLocation) continue;
         itemsById.set(id, {
           ...item,
-          tagIds: item.tagIds.filter((tagId) => !deletedTagIds.has(tagId)),
+          tagIds: stripTags
+            ? item.tagIds.filter((tagId) => !deletedTagIds.has(tagId))
+            : item.tagIds,
+          locationId: stripLocation ? undefined : item.locationId,
           updatedAt: Date.now(),
         });
       }
@@ -1669,11 +1710,16 @@ const stuffCodec: SyncCodec = {
     state.replaceFromSync({
       items: Array.from(itemsById.values()),
       tags: Array.from(tagsById.values()),
+      locations: Array.from(locationsById.values()),
     });
   },
   subscribe(onChange) {
     return useStuffStore.subscribe((state, prev) => {
-      if (state.items !== prev.items || state.tags !== prev.tags) {
+      if (
+        state.items !== prev.items ||
+        state.tags !== prev.tags ||
+        state.locations !== prev.locations
+      ) {
         if (!useStuffStore.persist.hasHydrated()) return;
         onChange();
       }

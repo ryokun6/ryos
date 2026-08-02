@@ -5005,6 +5005,13 @@
         "cd": "CD",
         "other": "Other"
       },
+      "defaultLocations": {
+        "closet": "Closet",
+        "storage": "Storage",
+        "carry-on": "Carry On",
+        "checked-in": "Checked In",
+        "box": "Box"
+      },
       "menu": {
         "newItem": "New Item",
         "scanBarcode": "Scan Barcode…",
@@ -5050,12 +5057,19 @@
         "newTag": "New Tag…",
         "deleteTag": "Delete Tag",
         "status": "Status",
-        "printTag": "Print Tag Label"
+        "printTag": "Print Tag Label",
+        "allLocations": "All Locations",
+        "newLocation": "New Location…",
+        "deleteLocation": "Delete Location"
       },
       "dialogs": {
         "newTag": {
           "title": "New Tag",
           "description": "Enter a name for the new tag."
+        },
+        "newLocation": {
+          "title": "New Location",
+          "description": "Enter a name for the new location."
         },
         "clearShelfTitle": "Clear Shelf",
         "clearShelfDescription": "Are you sure you want to clear your entire shelf? All items will be removed and only default tags will remain. This action can't be undone.",
@@ -5087,6 +5101,15 @@
         "status": "Status",
         "quantity": "Quantity",
         "tags": "Tags",
+        "tagsNone": "None",
+        "tagsSearchPlaceholder": "Search or add a tag…",
+        "tagsEmpty": "No tags found",
+        "tagsCreate": "Add \"{{name}}\"",
+        "location": "Location",
+        "locationNone": "None",
+        "locationSearchPlaceholder": "Search or add a location…",
+        "locationEmpty": "No locations found",
+        "locationCreate": "Add \"{{name}}\"",
         "originalPrice": "Original",
         "discountedPrice": "Asking",
         "soldPrice": "Sold",

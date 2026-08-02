@@ -44,7 +44,9 @@
       "AppleMyungjo", Batang;
     --font-apple-garamond: "AppleGaramond", var(--font-cjk-serif-jp),
       "SerenityOS-Emoji", "Times New Roman", serif;
-    --font-permanent-marker: "Permanent Marker", "Comic Sans MS", cursive;
+    --font-permanent-marker: "Permanent Marker", "Chiron GoRound TC WS",
+      "Hiragino Maru Gothic ProN", "Nanum Gothic", "Yuanti SC",
+      "Comic Sans MS", cursive;
     --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
@@ -483,8 +485,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Permanent Marker is a single-weight (normal) webfont with no bold cut;
+     font-synthesis: none stops the browser from faux-bolding its Latin
+     glyphs. Chiron GoRound TC WS (CJK fallback) has real weight cuts, so
+     font-weight: 700 renders it bold to match Permanent Marker's heavy
+     handwritten look instead of looking too thin next to it. */
   .font-permanent-marker {
     font-family: var(--font-permanent-marker);
+    font-weight: 700;
+    font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }

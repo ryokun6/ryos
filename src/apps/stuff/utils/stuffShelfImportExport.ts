@@ -8,6 +8,7 @@ import {
   DEFAULT_TAG_COLORS,
   STUFF_STATUSES,
   type StuffItem,
+  type StuffLocation,
   type StuffPrices,
   type StuffStatus,
   type StuffTag,
@@ -17,6 +18,10 @@ import {
   STUFF_DEFAULT_TAG_SLUGS,
   type StuffDefaultTagSlug,
 } from "./stuffTagDisplayName";
+import {
+  STUFF_DEFAULT_LOCATION_SLUGS,
+  type StuffDefaultLocationSlug,
+} from "./stuffLocationDisplayName";
 
 export const STUFF_SHELF_EXPORT_VERSION = 1 as const;
 
@@ -51,23 +56,61 @@ function resolveDefaultTagSlug(
   return null;
 }
 
+const DEFAULT_LOCATION_SLUG_SET = new Set<string>(STUFF_DEFAULT_LOCATION_SLUGS);
+
+/** Canonical English names for seeded defaults (matches store DEFAULT_LOCATIONS). */
+const CANONICAL_DEFAULT_LOCATION_NAME: Record<StuffDefaultLocationSlug, string> = {
+  closet: "Closet",
+  storage: "Storage",
+  "carry-on": "Carry On",
+  "checked-in": "Checked In",
+  box: "Box",
+};
+
+function defaultStuffLocationId(slug: StuffDefaultLocationSlug): string {
+  return `stuff-location-default:${slug}`;
+}
+
+/** Resolve a seeded-default location slug from export id and/or (slugified) name. */
+function resolveDefaultLocationSlug(
+  id: string,
+  name: string
+): StuffDefaultLocationSlug | null {
+  if (id.startsWith("stuff-location-default:")) {
+    const slug = id.slice("stuff-location-default:".length);
+    if (DEFAULT_LOCATION_SLUG_SET.has(slug)) {
+      return slug as StuffDefaultLocationSlug;
+    }
+  }
+  const bySlug = name.trim().toLowerCase().replace(/\s+/g, "-");
+  if (DEFAULT_LOCATION_SLUG_SET.has(bySlug)) {
+    return bySlug as StuffDefaultLocationSlug;
+  }
+  return null;
+}
+
 export interface StuffShelfExport {
   version: typeof STUFF_SHELF_EXPORT_VERSION;
   exportedAt: number;
   tags: StuffTag[];
+  /** Optional so exports created before locations existed still parse. */
+  locations?: StuffLocation[];
   items: StuffItem[];
 }
 
 export interface ImportStuffShelfCounts {
   addedItems: number;
   addedTags: number;
+  addedLocations: number;
   skippedItems: number;
   skippedTags: number;
+  skippedLocations: number;
 }
 
 export interface ImportStuffShelfResult extends ImportStuffShelfCounts {
   items: StuffItem[];
   tags: StuffTag[];
+  locations: StuffLocation[];
   /** Item ids that need imageDataUrl → cover blob ingestion after setState. */
   coverIngest: Array<{ itemId: string; imageDataUrl: string }>;
 }
@@ -103,7 +146,8 @@ function normalizePrices(raw: unknown): StuffPrices {
 /** Resolve cover blobs to inline data URLs for a portable JSON backup. */
 export async function buildStuffShelfExport(
   tags: StuffTag[],
-  items: StuffItem[]
+  items: StuffItem[],
+  locations: StuffLocation[]
 ): Promise<StuffShelfExport> {
   const exportedItems: StuffItem[] = await Promise.all(
     items.map(async (item) => {
@@ -131,6 +175,7 @@ export async function buildStuffShelfExport(
     version: STUFF_SHELF_EXPORT_VERSION,
     exportedAt: Date.now(),
     tags: tags.map((tag) => ({ ...tag })),
+    locations: locations.map((location) => ({ ...location })),
     items: exportedItems,
   };
 }
@@ -148,7 +193,7 @@ export function stringifyStuffShelfExport(payload: StuffShelfExport): string {
  */
 export function mergeStuffShelfImport(
   json: string,
-  existing: { items: StuffItem[]; tags: StuffTag[] }
+  existing: { items: StuffItem[]; tags: StuffTag[]; locations: StuffLocation[] }
 ): ImportStuffShelfResult {
   const parsed = JSON.parse(json) as unknown;
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -157,19 +202,27 @@ export function mergeStuffShelfImport(
 
   const envelope = parsed as Partial<StuffShelfExport>;
   const incomingTagsRaw = Array.isArray(envelope.tags) ? envelope.tags : null;
+  const incomingLocationsRaw = Array.isArray(envelope.locations)
+    ? envelope.locations
+    : null;
   const incomingItemsRaw = Array.isArray(envelope.items) ? envelope.items : null;
 
-  if (!incomingTagsRaw && !incomingItemsRaw) {
+  if (!incomingTagsRaw && !incomingLocationsRaw && !incomingItemsRaw) {
     throw new Error("Invalid Stuff shelf format");
   }
 
   const tags = [...existing.tags];
+  const locations = [...existing.locations];
   const items = [...existing.items];
   const existingTagIds = new Set<string>();
+  const existingLocationIds = new Set<string>();
   const existingItemIds = new Set(items.map((item) => item.id));
   const tagIdByName = new Map<string, string>();
+  const locationIdByName = new Map<string, string>();
   /** Map exported tag id → local tag id after merge. */
   const tagIdMap = new Map<string, string>();
+  /** Map exported location id → local location id after merge. */
+  const locationIdMap = new Map<string, string>();
 
   const rememberTag = (tag: StuffTag) => {
     existingTagIds.add(tag.id);
@@ -289,6 +342,120 @@ export function mergeStuffShelfImport(
     addedTags += 1;
   }
 
+  const rememberLocation = (location: StuffLocation) => {
+    existingLocationIds.add(location.id);
+    locationIdByName.set(location.name.trim().toLowerCase(), location.id);
+    const slug = resolveDefaultLocationSlug(location.id, location.name);
+    if (slug) {
+      // Also index by canonical English name so renamed defaults still match.
+      locationIdByName.set(slug, location.id);
+      locationIdByName.set(
+        CANONICAL_DEFAULT_LOCATION_NAME[slug].toLowerCase(),
+        location.id
+      );
+    }
+  };
+
+  // Index existing locations (incl. renamed defaults → canonical slug/name).
+  for (const location of locations) rememberLocation(location);
+
+  const mapExportLocationId = (exportId: string, localId: string) => {
+    if (exportId) locationIdMap.set(exportId, localId);
+    locationIdMap.set(localId, localId);
+  };
+
+  let addedLocations = 0;
+  let skippedLocations = 0;
+
+  for (const raw of incomingLocationsRaw ?? []) {
+    if (!raw || typeof raw !== "object") {
+      skippedLocations += 1;
+      continue;
+    }
+    const candidate = raw as Partial<StuffLocation>;
+    const name =
+      typeof candidate.name === "string" ? candidate.name.trim() : "";
+    if (!name) {
+      skippedLocations += 1;
+      continue;
+    }
+
+    const preferredId =
+      typeof candidate.id === "string" && candidate.id.trim()
+        ? candidate.id.trim()
+        : "";
+    const nameKey = name.toLowerCase();
+    const defaultSlug = resolveDefaultLocationSlug(preferredId, name);
+
+    // 1) Exact id collision → keep local, never add a second.
+    if (preferredId && existingLocationIds.has(preferredId)) {
+      mapExportLocationId(preferredId, preferredId);
+      skippedLocations += 1;
+      continue;
+    }
+
+    // 2) Seeded default (by stable id or English name) → reuse/create stable id.
+    if (defaultSlug) {
+      const stableId = defaultStuffLocationId(defaultSlug);
+      const byStable = existingLocationIds.has(stableId) ? stableId : undefined;
+      const byName =
+        locationIdByName.get(nameKey) ??
+        locationIdByName.get(defaultSlug) ??
+        locationIdByName.get(
+          CANONICAL_DEFAULT_LOCATION_NAME[defaultSlug].toLowerCase()
+        );
+      const localId = byStable ?? byName;
+
+      if (localId) {
+        if (preferredId) mapExportLocationId(preferredId, localId);
+        mapExportLocationId(stableId, localId);
+        skippedLocations += 1;
+        continue;
+      }
+
+      // No local match — add under the stable default id (not a random UUID).
+      const createdAt =
+        typeof candidate.createdAt === "number" &&
+        Number.isFinite(candidate.createdAt)
+          ? candidate.createdAt
+          : Date.now();
+      const location: StuffLocation = {
+        id: stableId,
+        name: CANONICAL_DEFAULT_LOCATION_NAME[defaultSlug],
+        createdAt,
+      };
+      locations.push(location);
+      rememberLocation(location);
+      if (preferredId) mapExportLocationId(preferredId, stableId);
+      mapExportLocationId(stableId, stableId);
+      addedLocations += 1;
+      continue;
+    }
+
+    // 3) Custom location — match by case-insensitive name.
+    const byName = locationIdByName.get(nameKey);
+    if (byName) {
+      if (preferredId) mapExportLocationId(preferredId, byName);
+      skippedLocations += 1;
+      continue;
+    }
+
+    let id = preferredId || crypto.randomUUID();
+    while (existingLocationIds.has(id)) id = crypto.randomUUID();
+
+    const createdAt =
+      typeof candidate.createdAt === "number" && Number.isFinite(candidate.createdAt)
+        ? candidate.createdAt
+        : Date.now();
+
+    const location: StuffLocation = { id, name, createdAt };
+    locations.push(location);
+    rememberLocation(location);
+    if (preferredId) mapExportLocationId(preferredId, id);
+    mapExportLocationId(id, id);
+    addedLocations += 1;
+  }
+
   let addedItems = 0;
   let skippedItems = 0;
   const coverIngest: Array<{ itemId: string; imageDataUrl: string }> = [];
@@ -339,6 +506,18 @@ export function mergeStuffShelfImport(
         return true;
       });
 
+    const rawLocationId =
+      typeof candidate.locationId === "string" && candidate.locationId.trim()
+        ? candidate.locationId.trim()
+        : undefined;
+    const mappedLocationId = rawLocationId
+      ? locationIdMap.get(rawLocationId) ?? rawLocationId
+      : undefined;
+    const remappedLocationId =
+      mappedLocationId && existingLocationIds.has(mappedLocationId)
+        ? mappedLocationId
+        : undefined;
+
     const imageDataUrl =
       typeof candidate.imageDataUrl === "string" &&
       candidate.imageDataUrl.trim().startsWith("data:image/")
@@ -373,6 +552,7 @@ export function mergeStuffShelfImport(
           ? candidate.productUrl
           : undefined,
       tagIds: remappedTagIds,
+      locationId: remappedLocationId,
       status: isStuffStatus(candidate.status) ? candidate.status : "stowed",
       prices: normalizePrices(candidate.prices),
       quantity: Math.max(
@@ -402,10 +582,13 @@ export function mergeStuffShelfImport(
   return {
     addedItems,
     addedTags,
+    addedLocations,
     skippedItems,
     skippedTags,
+    skippedLocations,
     items,
     tags,
+    locations,
     coverIngest,
   };
 }

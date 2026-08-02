@@ -102,7 +102,7 @@ describe("Stuff coverPresentation", () => {
 
     const result = mergeStuffShelfImport(
       stringifyStuffShelfExport(payload),
-      { items: [], tags: [] }
+      { items: [], tags: [], locations: [] }
     );
 
     expect(result.items[0]?.coverPresentation).toBe("cutout");
@@ -126,7 +126,7 @@ describe("Stuff coverPresentation", () => {
 
     const result = mergeStuffShelfImport(
       stringifyStuffShelfExport(payload),
-      { items: [], tags: [] }
+      { items: [], tags: [], locations: [] }
     );
 
     expect(result.items[0]?.coverPresentation).toBe("cutout");

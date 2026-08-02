@@ -1,10 +1,10 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
   type ClipboardEvent,
-  type CSSProperties,
   type DragEvent,
   type ReactNode,
 } from "react";
@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -37,6 +38,7 @@ import {
   STUFF_STATUSES,
   stuffStatusLabelDefault,
   type StuffItem,
+  type StuffLocation,
   type StuffTag,
 } from "../types";
 import { formatMoney, parseOptionalNumber } from "../utils/colors";
@@ -63,6 +65,7 @@ import {
 import { useStuffItemCoverSrc } from "../hooks/useStuffItemCoverSrc";
 import { resolveStuffItemVisualKind } from "../utils/stuffItemVisualKind";
 import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
+import { stuffLocationDisplayName } from "../utils/stuffLocationDisplayName";
 
 async function blobToBase64(blob: Blob): Promise<string> {
   const buffer = await blob.arrayBuffer();
@@ -78,6 +81,9 @@ async function blobToBase64(blob: Blob): Promise<string> {
 interface StuffDetailPanelProps {
   item: StuffItem;
   tags: StuffTag[];
+  locations: StuffLocation[];
+  onAddTag: (name: string) => string;
+  onAddLocation: (name: string) => string;
   onChange: (draft: Partial<StuffItem>) => void;
   onDelete: () => void;
   onPrint: () => void;
@@ -109,50 +115,6 @@ function FieldRow({
   );
 }
 
-/** White or near-black label for solid tag-color fills. */
-function contrastTextForTagColor(hex: string): string {
-  const normalized = hex.trim().replace(/^#/, "");
-  const full =
-    normalized.length === 3
-      ? normalized
-          .split("")
-          .map((char) => char + char)
-          .join("")
-      : normalized;
-  if (!/^[0-9a-f]{6}$/i.test(full)) return "#ffffff";
-  const r = Number.parseInt(full.slice(0, 2), 16);
-  const g = Number.parseInt(full.slice(2, 4), 16);
-  const b = Number.parseInt(full.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.62 ? "#1f1a00" : "#ffffff";
-}
-
-function tagPillStyle(
-  color: string,
-  active: boolean,
-  isDarkMode: boolean
-): CSSProperties {
-  if (active) {
-    return {
-      backgroundColor: color,
-      color: contrastTextForTagColor(color),
-      border: `1px solid ${color}`,
-    };
-  }
-  if (isDarkMode) {
-    return {
-      backgroundColor: `${color}28`,
-      color,
-      border: `1px solid ${color}66`,
-    };
-  }
-  return {
-    backgroundColor: `${color}18`,
-    color,
-    border: `1px solid ${color}40`,
-  };
-}
-
 /**
  * Item editor content for `AppDrawer` — mirrors Calendar's tray: local text
  * drafts that commit on blur so spaces / mid-edit empties don't thrash the store.
@@ -160,6 +122,9 @@ function tagPillStyle(
 export function StuffDetailPanel({
   item,
   tags,
+  locations,
+  onAddTag,
+  onAddLocation,
   onChange,
   onDelete,
   onPrint,
@@ -168,8 +133,7 @@ export function StuffDetailPanel({
 }: StuffDetailPanelProps) {
   const { t } = useTranslation();
   const auth = useAuth();
-  const { isMacOSTheme, isSystem7Theme, isWindowsTheme, isDarkMode } =
-    useThemeFlags();
+  const { isMacOSTheme, isSystem7Theme, isWindowsTheme } = useThemeFlags();
   const useGeneva = isMacOSTheme || isSystem7Theme;
 
   const [title, setTitle] = useState(item.title);
@@ -301,11 +265,68 @@ export function StuffDetailPanel({
     }
   };
 
-  const toggleTag = (tagId: string) => {
+  const tagsNoneLabel = t("apps.stuff.fields.tagsNone", {
+    defaultValue: "None",
+  });
+  const selectedTags = useMemo(
+    () => tags.filter((tag) => item.tagIds.includes(tag.id)),
+    [tags, item.tagIds]
+  );
+  // All tags stay in the list (not filtered out once picked) — membership is
+  // shown via checkmarks inside the menu instead of removing rows.
+  const tagOptions = useMemo<ComboboxOption[]>(
+    () =>
+      tags.map((tag) => ({
+        value: tag.id,
+        label: stuffTagDisplayName(tag, t),
+      })),
+    [tags, t]
+  );
+  const tagsDisplayValue = selectedTags.length
+    ? selectedTags.map((tag) => stuffTagDisplayName(tag, t)).join(", ")
+    : tagsNoneLabel;
+
+  const handleToggleTag = (tagId: string) => {
     const next = item.tagIds.includes(tagId)
       ? item.tagIds.filter((id) => id !== tagId)
       : [...item.tagIds, tagId];
     onChange({ tagIds: next });
+  };
+
+  const handleCreateTag = (name: string) => {
+    const id = onAddTag(name);
+    if (id && !item.tagIds.includes(id)) {
+      onChange({ tagIds: [...item.tagIds, id] });
+    }
+  };
+
+  const locationNoneLabel = t("apps.stuff.fields.locationNone", {
+    defaultValue: "None",
+  });
+  const locationOptions = useMemo<ComboboxOption[]>(
+    () => [
+      { value: "", label: locationNoneLabel },
+      ...locations.map((location) => ({
+        value: location.id,
+        label: stuffLocationDisplayName(location, t),
+      })),
+    ],
+    [locations, locationNoneLabel, t]
+  );
+  const selectedLocation = locations.find(
+    (location) => location.id === item.locationId
+  );
+  const locationDisplayValue = selectedLocation
+    ? stuffLocationDisplayName(selectedLocation, t)
+    : locationNoneLabel;
+
+  const handleSelectLocation = (value: string) => {
+    onChange({ locationId: value || undefined });
+  };
+
+  const handleCreateLocation = (name: string) => {
+    const id = onAddLocation(name);
+    if (id) onChange({ locationId: id });
   };
 
   const imageInvalidToast = () => {
@@ -885,6 +906,67 @@ export function StuffDetailPanel({
         </FieldRow>
 
         <FieldRow
+          label={t("apps.stuff.fields.tags", { defaultValue: "Tags" })}
+          useGeneva={useGeneva}
+        >
+          <Combobox
+            options={tagOptions}
+            displayValue={tagsDisplayValue}
+            multiple
+            selectedValues={item.tagIds}
+            onToggleOption={handleToggleTag}
+            creatable
+            onCreateOption={handleCreateTag}
+            createOptionLabel={(query) =>
+              t("apps.stuff.fields.tagsCreate", {
+                defaultValue: 'Add "{{name}}"',
+                name: query,
+              })
+            }
+            searchPlaceholder={t("apps.stuff.fields.tagsSearchPlaceholder", {
+              defaultValue: "Search or add a tag…",
+            })}
+            searchAriaLabel={t("apps.stuff.fields.tags", {
+              defaultValue: "Tags",
+            })}
+            emptyMessage={t("apps.stuff.fields.tagsEmpty", {
+              defaultValue: "No tags found",
+            })}
+            className={cn("w-full text-[11px]", useGeneva && "font-geneva-12")}
+          />
+        </FieldRow>
+
+        <FieldRow
+          label={t("apps.stuff.fields.location", { defaultValue: "Location" })}
+          useGeneva={useGeneva}
+        >
+          <Combobox
+            value={item.locationId ?? ""}
+            onChange={handleSelectLocation}
+            options={locationOptions}
+            displayValue={locationDisplayValue}
+            creatable
+            onCreateOption={handleCreateLocation}
+            createOptionLabel={(query) =>
+              t("apps.stuff.fields.locationCreate", {
+                defaultValue: 'Add "{{name}}"',
+                name: query,
+              })
+            }
+            searchPlaceholder={t("apps.stuff.fields.locationSearchPlaceholder", {
+              defaultValue: "Search or add a location…",
+            })}
+            searchAriaLabel={t("apps.stuff.fields.location", {
+              defaultValue: "Location",
+            })}
+            emptyMessage={t("apps.stuff.fields.locationEmpty", {
+              defaultValue: "No locations found",
+            })}
+            className={cn("w-full text-[11px]", useGeneva && "font-geneva-12")}
+          />
+        </FieldRow>
+
+        <FieldRow
           label={t("apps.stuff.fields.quantity", { defaultValue: "Quantity" })}
           useGeneva={useGeneva}
         >
@@ -897,32 +979,6 @@ export function StuffDetailPanel({
               onChange({ quantity: Math.max(1, Number(e.target.value) || 1) })
             }
           />
-        </FieldRow>
-
-        <FieldRow
-          label={t("apps.stuff.fields.tags", { defaultValue: "Tags" })}
-          useGeneva={useGeneva}
-        >
-          <div className="flex flex-wrap gap-1 py-0.5">
-            {tags.map((tag) => {
-              const active = item.tagIds.includes(tag.id);
-              return (
-                <button
-                  key={tag.id}
-                  type="button"
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[10px] transition-colors hover:brightness-95",
-                    active && "font-medium",
-                    useGeneva && "font-geneva-12"
-                  )}
-                  style={tagPillStyle(tag.color, active, isDarkMode)}
-                  onClick={() => toggleTag(tag.id)}
-                >
-                  {stuffTagDisplayName(tag, t)}
-                </button>
-              );
-            })}
-          </div>
         </FieldRow>
 
         <FieldRow
