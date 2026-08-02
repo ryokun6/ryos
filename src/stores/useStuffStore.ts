@@ -79,6 +79,10 @@ function normalizeItem(draft: StuffItemDraft, existing?: StuffItem): StuffItem {
       draft.imageDataUrl !== undefined
         ? draft.imageDataUrl || undefined
         : existing?.imageDataUrl,
+    imageUrl:
+      draft.imageUrl !== undefined
+        ? draft.imageUrl || undefined
+        : existing?.imageUrl,
     barcode: draft.barcode !== undefined ? draft.barcode : existing?.barcode,
     barcodeFormat:
       draft.barcodeFormat !== undefined
@@ -107,12 +111,15 @@ interface StuffStoreState {
   selectedTagId: string | null;
   statusFilter: StuffStatus | "all";
   shelfView: StuffShelfView;
+  isSidebarVisible: boolean;
   searchQuery: string;
   lastShareId: string | null;
   setSelectedItemId: (id: string | null) => void;
   setSelectedTagId: (id: string | null) => void;
   setStatusFilter: (status: StuffStatus | "all") => void;
   setShelfView: (view: StuffShelfView) => void;
+  setSidebarVisible: (visible: boolean) => void;
+  toggleSidebarVisibility: () => void;
   setSearchQuery: (query: string) => void;
   addItem: (draft?: StuffItemDraft) => string;
   updateItem: (id: string, draft: StuffItemDraft) => void;
@@ -132,6 +139,7 @@ export const useStuffStore = create<StuffStoreState>()(
       selectedTagId: null,
       statusFilter: "all",
       shelfView: "grid",
+      isSidebarVisible: true,
       searchQuery: "",
       lastShareId: null,
 
@@ -139,6 +147,9 @@ export const useStuffStore = create<StuffStoreState>()(
       setSelectedTagId: (id) => set({ selectedTagId: id }),
       setStatusFilter: (status) => set({ statusFilter: status }),
       setShelfView: (view) => set({ shelfView: view }),
+      setSidebarVisible: (visible) => set({ isSidebarVisible: visible }),
+      toggleSidebarVisibility: () =>
+        set((state) => ({ isSidebarVisible: !state.isSidebarVisible })),
       setSearchQuery: (query) => set({ searchQuery: query }),
       setLastShareId: (id) => set({ lastShareId: id }),
 
@@ -227,6 +238,7 @@ export const useStuffStore = create<StuffStoreState>()(
         selectedTagId: state.selectedTagId,
         statusFilter: state.statusFilter,
         shelfView: state.shelfView,
+        isSidebarVisible: state.isSidebarVisible,
         lastShareId: state.lastShareId,
       }),
       migrate: (persistedState, version) => {

@@ -8,7 +8,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { colorFromString, formatMoney } from "../utils/colors";
-import type { StuffBid, StuffReservation, StuffShare, StuffSharedItem } from "../types";
+import {
+  stuffItemCoverSrc,
+  type StuffBid,
+  type StuffReservation,
+  type StuffShare,
+  type StuffSharedItem,
+} from "../types";
 
 interface StuffSharedViewProps {
   shareId: string;
@@ -217,6 +223,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
                 item.prices.discounted ?? item.prices.original,
                 item.prices.currency
               );
+              const coverSrc = stuffItemCoverSrc(item);
               return (
                 <button
                   key={item.id}
@@ -227,16 +234,16 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
                   <div
                     className="flex h-36 items-end p-2"
                     style={
-                      item.imageDataUrl
+                      coverSrc
                         ? {
-                            backgroundImage: `url(${item.imageDataUrl})`,
+                            backgroundImage: `url(${coverSrc})`,
                             backgroundSize: "cover",
                             backgroundPosition: "center",
                           }
                         : { backgroundColor: colors.bg, color: colors.fg }
                     }
                   >
-                    {!item.imageDataUrl && (
+                    {!coverSrc && (
                       <span className="font-apple-garamond text-sm leading-tight">
                         {item.title}
                       </span>

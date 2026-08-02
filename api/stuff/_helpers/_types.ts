@@ -10,6 +10,7 @@ export type StuffShareItem = {
   title: string;
   notes: string;
   imageDataUrl?: string;
+  imageUrl?: string;
   barcode?: string;
   brand?: string;
   tagNames: string[];

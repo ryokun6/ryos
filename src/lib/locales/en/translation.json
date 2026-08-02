@@ -5008,7 +5008,8 @@
       "toolbar": {
         "add": "Add",
         "scan": "Scan",
-        "share": "Share"
+        "share": "Share",
+        "toggleSidebar": "Toggle Sidebar"
       },
       "shelf": {
         "gridView": "Grid View",

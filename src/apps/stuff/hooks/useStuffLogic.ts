@@ -19,6 +19,10 @@ import {
 } from "../utils/enrichItemFromLookup";
 import { buildStuffLookupQuery } from "../utils/buildStuffLookupQuery";
 import {
+  isBookLookupScan,
+  tagIdsWithDefaultBooks,
+} from "../utils/bookBarcode";
+import {
   itemToLabelTarget,
   parseStuffIdBarcode,
   printStuffLabels,
@@ -58,6 +62,7 @@ export function useStuffLogic({
   const selectedTagId = useStuffStore((s) => s.selectedTagId);
   const statusFilter = useStuffStore((s) => s.statusFilter);
   const shelfView = useStuffStore((s) => s.shelfView);
+  const isSidebarVisible = useStuffStore((s) => s.isSidebarVisible);
   const searchQuery = useStuffStore((s) => s.searchQuery);
   const lastShareId = useStuffStore((s) => s.lastShareId);
 
@@ -65,6 +70,9 @@ export function useStuffLogic({
   const setSelectedTagId = useStuffStore((s) => s.setSelectedTagId);
   const setStatusFilter = useStuffStore((s) => s.setStatusFilter);
   const setShelfView = useStuffStore((s) => s.setShelfView);
+  const toggleSidebarVisibility = useStuffStore(
+    (s) => s.toggleSidebarVisibility
+  );
   const setSearchQuery = useStuffStore((s) => s.setSearchQuery);
   const addItem = useStuffStore((s) => s.addItem);
   const updateItem = useStuffStore((s) => s.updateItem);
@@ -164,7 +172,7 @@ export function useStuffLogic({
     options: ProductLookupApplyOptions,
     toastId?: string | number
   ) => {
-    const { found, imageApplied, hadImageUrl } = enriched;
+    const { found, imageApplied } = enriched;
     const toastMessage = (() => {
       if (!found) {
         return options.itemId
@@ -183,11 +191,6 @@ export function useStuffLogic({
           : t("apps.stuff.scanner.foundWithCover", {
               defaultValue: "Product Added With Cover",
             });
-      }
-      if (hadImageUrl) {
-        return t("apps.stuff.scanner.coverFetchFailed", {
-          defaultValue: "Product Found — Cover Could Not Be Downloaded",
-        });
       }
       return options.itemId
         ? t("apps.stuff.scanner.updatedNoCover", {
@@ -229,10 +232,25 @@ export function useStuffLogic({
     });
 
     if (options.itemId) {
+      // Existing Look Up: never overwrite tags.
       updateItem(options.itemId, productDraft);
-    } else {
-      addItem({ ...productDraft, status: "stowed" });
+      return;
     }
+
+    // New scan/add: default Books tag for ISBN / bookland codes only.
+    const isBook = isBookLookupScan({
+      barcode: options.barcode ?? draftFields.barcode,
+      barcodeFormat: options.barcodeFormat ?? draftFields.barcodeFormat,
+      queryKind: enriched.queryKind,
+    });
+    const tagIds = isBook
+      ? tagIdsWithDefaultBooks(undefined, addTag("Books"), true)
+      : undefined;
+    addItem({
+      ...productDraft,
+      status: "stowed",
+      ...(tagIds ? { tagIds } : {}),
+    });
   };
 
   const handleProductLookup = async (
@@ -284,15 +302,22 @@ export function useStuffLogic({
           { id: toastId }
         );
       } else {
+        const barcode = options.barcode ?? trimmed;
+        const barcodeFormat = options.barcodeFormat ?? "CODE_128";
+        const isBook = isBookLookupScan({ barcode, barcodeFormat });
+        const tagIds = isBook
+          ? tagIdsWithDefaultBooks(undefined, addTag("Books"), true)
+          : undefined;
         addItem({
           title:
             options.fallbackTitle ||
             t("apps.stuff.scannedItemTitle", {
               defaultValue: "Scanned Item",
             }),
-          barcode: options.barcode ?? trimmed,
-          barcodeFormat: options.barcodeFormat ?? "CODE_128",
+          barcode,
+          barcodeFormat,
           status: "stowed",
+          ...(tagIds ? { tagIds } : {}),
         });
         toast.success(
           t("apps.stuff.scanner.addedWithoutMeta", {
@@ -478,6 +503,7 @@ export function useStuffLogic({
     selectedTagId,
     statusFilter,
     shelfView,
+    isSidebarVisible,
     searchQuery,
     lastShareId,
     itemCountsByTag,
@@ -485,6 +511,7 @@ export function useStuffLogic({
     setSelectedTagId,
     setStatusFilter,
     setShelfView,
+    toggleSidebarVisibility,
     setSearchQuery,
     addTag,
     deleteTag,

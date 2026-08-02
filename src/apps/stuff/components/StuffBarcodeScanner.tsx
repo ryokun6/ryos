@@ -11,7 +11,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useSound, Sounds } from "@/hooks/useSound";
 import { cn } from "@/lib/utils";
+import {
+  BARCODE_CAMERA_CONSTRAINTS,
+  canUseNativeBarcodeDetector,
+  createNativeBarcodeDetector,
+  mapNativeBarcodeFormat,
+} from "../utils/barcodeDetectorSupport";
+import { createBarcodeScanLock } from "../utils/barcodeScanLock";
 
 export interface ScannedBarcode {
   text: string;
@@ -26,6 +34,15 @@ interface StuffBarcodeScannerProps {
 
 type ScannerControls = { stop: () => void };
 
+const NATIVE_DETECT_INTERVAL_MS = 150;
+
+function stopMediaStream(stream: MediaStream | null | undefined) {
+  if (!stream) return;
+  for (const track of stream.getTracks()) {
+    track.stop();
+  }
+}
+
 export function StuffBarcodeScanner({
   isOpen,
   onClose,
@@ -33,8 +50,10 @@ export function StuffBarcodeScanner({
 }: StuffBarcodeScannerProps) {
   const { t } = useTranslation();
   const { isWindowsTheme, isMacOSTheme: isMacTheme } = useThemeFlags();
+  const { play: playBeep } = useSound(Sounds.BEEP, 0.45);
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<ScannerControls | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -61,22 +80,123 @@ export function StuffBarcodeScanner({
   const onCloseEvent = useEffectEvent(() => {
     onClose();
   });
+  const playBeepEvent = useEffectEvent(() => {
+    void playBeep();
+  });
   const tEvent = useEffectEvent(t);
 
   useEffect(() => {
     if (!isOpen) return;
 
     let cancelled = false;
+    let detectTimer: ReturnType<typeof setTimeout> | null = null;
+    const scanLock = createBarcodeScanLock();
+
+    const cleanupCamera = () => {
+      if (detectTimer !== null) {
+        clearTimeout(detectTimer);
+        detectTimer = null;
+      }
+      controlsRef.current?.stop();
+      controlsRef.current = null;
+      stopMediaStream(streamRef.current);
+      streamRef.current = null;
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = null;
+      }
+    };
+
+    const acceptScan = (result: ScannedBarcode) => {
+      if (cancelled || !scanLock.tryAccept(result.text)) return;
+      cancelled = true;
+      playBeepEvent();
+      cleanupCamera();
+      onScanEvent(result);
+      onCloseEvent();
+    };
+
+    const startNativeLoop = (video: HTMLVideoElement) => {
+      const detector = createNativeBarcodeDetector();
+      if (!detector) return false;
+
+      const tick = async () => {
+        if (cancelled) return;
+        try {
+          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            const codes = await detector.detect(video);
+            const first = codes.find((c) => c.rawValue?.trim());
+            if (first && !cancelled) {
+              acceptScan({
+                text: first.rawValue.trim(),
+                format: mapNativeBarcodeFormat(first.format),
+              });
+              return;
+            }
+          }
+        } catch {
+          // Transient detect errors are common while focusing; keep looping.
+        }
+        if (!cancelled) {
+          detectTimer = setTimeout(() => {
+            void tick();
+          }, NATIVE_DETECT_INTERVAL_MS);
+        }
+      };
+
+      void tick();
+      return true;
+    };
 
     const start = async () => {
       setError(null);
       setScanning(true);
       try {
+        const stream = await navigator.mediaDevices.getUserMedia(
+          BARCODE_CAMERA_CONSTRAINTS
+        );
+        if (cancelled) {
+          stopMediaStream(stream);
+          return;
+        }
+        streamRef.current = stream;
+
+        const video = videoRef.current;
+        if (!video) {
+          stopMediaStream(stream);
+          streamRef.current = null;
+          if (!cancelled) setScanning(false);
+          return;
+        }
+
+        video.srcObject = stream;
+        video.setAttribute("playsinline", "true");
+        await video.play();
+        if (cancelled) {
+          cleanupCamera();
+          return;
+        }
+
+        const useNative = await canUseNativeBarcodeDetector();
+        if (cancelled) {
+          cleanupCamera();
+          return;
+        }
+
+        if (useNative && startNativeLoop(video)) {
+          // Keep scanning=true while the native detect loop is live.
+          return;
+        }
+
+        // Safari / Firefox / unsupported Chromium: ZXing with constrained formats.
         const [{ BrowserMultiFormatReader }, zxingLibrary] = await Promise.all([
           import("@zxing/browser"),
           import("@zxing/library"),
         ]);
-        if (cancelled || !videoRef.current) return;
+        if (cancelled || !videoRef.current) {
+          cleanupCamera();
+          return;
+        }
 
         const { DecodeHintType, BarcodeFormat } = zxingLibrary;
         const hints = new Map();
@@ -87,41 +207,35 @@ export function StuffBarcodeScanner({
           BarcodeFormat.UPC_E,
           BarcodeFormat.CODE_128,
           BarcodeFormat.CODE_39,
-          BarcodeFormat.CODE_93,
-          BarcodeFormat.CODABAR,
-          BarcodeFormat.ITF,
           BarcodeFormat.QR_CODE,
-          BarcodeFormat.DATA_MATRIX,
-          BarcodeFormat.PDF_417,
-          BarcodeFormat.AZTEC,
         ]);
         hints.set(DecodeHintType.TRY_HARDER, true);
 
         const reader = new BrowserMultiFormatReader(hints);
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
+        // Reuse the already-opened rear-camera stream so we don't renegotiate.
+        const controls = await reader.decodeFromStream(
+          stream,
           videoRef.current,
-          (result, _err, activeControls) => {
-            if (result && !cancelled) {
-              activeControls.stop();
-              controlsRef.current = null;
-              onScanEvent({
-                text: result.getText(),
-                format:
-                  BarcodeFormat[result.getBarcodeFormat()] ?? "CODE_128",
-              });
-              onCloseEvent();
-            }
+          (result) => {
+            if (!result || cancelled) return;
+            acceptScan({
+              text: result.getText(),
+              format: BarcodeFormat[result.getBarcodeFormat()] ?? "CODE_128",
+            });
           }
         );
         if (cancelled) {
           controls.stop();
+          cleanupCamera();
           return;
         }
         controlsRef.current = controls;
+        // Keep scanning=true while ZXing continuous decode is live.
       } catch (err) {
         console.error("Barcode scanner failed:", err);
+        cleanupCamera();
         if (!cancelled) {
+          setScanning(false);
           setError(
             tEvent("apps.stuff.scanner.cameraError", {
               defaultValue:
@@ -129,8 +243,6 @@ export function StuffBarcodeScanner({
             })
           );
         }
-      } finally {
-        if (!cancelled) setScanning(false);
       }
     };
 
@@ -138,14 +250,15 @@ export function StuffBarcodeScanner({
 
     return () => {
       cancelled = true;
-      controlsRef.current?.stop();
-      controlsRef.current = null;
+      cleanupCamera();
+      setScanning(false);
     };
   }, [isOpen]);
 
   const submitManual = () => {
     const text = manualCode.trim();
     if (!text) return;
+    void playBeep();
     onScan({ text, format: "CODE_128" });
     setManualCode("");
     onClose();

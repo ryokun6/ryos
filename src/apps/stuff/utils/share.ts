@@ -10,6 +10,7 @@ export function toSharedItem(
     title: item.title,
     notes: item.notes,
     imageDataUrl: item.imageDataUrl,
+    imageUrl: item.imageUrl,
     barcode: item.barcode,
     brand: item.brand,
     tagNames: item.tagIds

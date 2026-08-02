@@ -123,27 +123,31 @@ export function StuffAppComponent({
               />
             )}
             <div className="relative z-[1] flex min-h-0 w-full flex-1 overflow-hidden">
-              <StuffSidebar
-                tags={logic.tags}
-                selectedTagId={logic.selectedTagId}
-                statusFilter={logic.statusFilter}
-                itemCountsByTag={logic.itemCountsByTag}
-                totalCount={logic.items.length}
-                searchQuery={logic.searchQuery}
-                onSearchQueryChange={logic.setSearchQuery}
-                onSelectTag={logic.setSelectedTagId}
-                onStatusFilter={logic.setStatusFilter}
-                onAddTag={logic.addTag}
-                onDeleteTag={logic.deleteTag}
-                onPrintTag={(id) => logic.handlePrintTagLabels([id])}
-              />
+              {logic.isSidebarVisible ? (
+                <StuffSidebar
+                  tags={logic.tags}
+                  selectedTagId={logic.selectedTagId}
+                  statusFilter={logic.statusFilter}
+                  itemCountsByTag={logic.itemCountsByTag}
+                  totalCount={logic.items.length}
+                  searchQuery={logic.searchQuery}
+                  onSearchQueryChange={logic.setSearchQuery}
+                  onSelectTag={logic.setSelectedTagId}
+                  onStatusFilter={logic.setStatusFilter}
+                  onAddTag={logic.addTag}
+                  onDeleteTag={logic.deleteTag}
+                  onPrintTag={(id) => logic.handlePrintTagLabels([id])}
+                />
+              ) : null}
               <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
                 <StuffShelfView
                   items={logic.filteredItems}
                   tags={logic.tags}
                   selectedItemId={logic.selectedItemId}
                   shelfView={logic.shelfView}
+                  isSidebarVisible={logic.isSidebarVisible}
                   onSetShelfView={logic.setShelfView}
+                  onToggleSidebar={logic.toggleSidebarVisibility}
                   onSelectItem={logic.setSelectedItemId}
                   onAddItem={logic.handleAddItem}
                   onScan={() => logic.setIsScannerOpen(true)}

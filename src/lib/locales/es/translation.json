@@ -4168,7 +4168,8 @@
       "toolbar": {
         "add": "Añadir",
         "scan": "Escanear",
-        "share": "Compartir"
+        "share": "Compartir",
+        "toggleSidebar": "Alternar barra lateral"
       }
     },
     "synth": {

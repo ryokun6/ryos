@@ -14,14 +14,17 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { STUFF_STATUSES, type StuffItem, type StuffTag, stuffStatusLabelDefault } from "../types";
+import {
+  STUFF_STATUSES,
+  stuffItemCoverSrc,
+  stuffStatusLabelDefault,
+  type StuffItem,
+  type StuffTag,
+} from "../types";
 import { formatMoney, parseOptionalNumber } from "../utils/colors";
 import { encodeStuffId } from "../utils/printLabels";
 import { StuffItemCover } from "./StuffItemCover";
-import {
-  fetchImageAsDataUrl,
-  readImageFileAsDataUrl,
-} from "../utils/barcodeLookup";
+import { readImageFileAsDataUrl } from "../utils/barcodeLookup";
 
 interface StuffDetailPanelProps {
   item: StuffItem;
@@ -147,6 +150,7 @@ export function StuffDetailPanel({
     item.barcode,
     item.prices.currency,
     item.imageDataUrl,
+    item.imageUrl,
   ]);
 
   const commitTitle = () => {
@@ -234,38 +238,26 @@ export function StuffDetailPanel({
         );
         return;
       }
-      onChange({ imageDataUrl });
+      onChange({ imageDataUrl, imageUrl: "" });
     } finally {
       setIsImageBusy(false);
     }
   };
 
-  const handleApplyImageUrl = async (rawUrl: string) => {
+  const handleApplyImageUrl = (rawUrl: string) => {
     const url = rawUrl.trim();
     if (!url) return;
-
-    setIsImageBusy(true);
-    try {
-      const imageDataUrl = await fetchImageAsDataUrl(url);
-      if (!imageDataUrl) {
-        toast.error(
-          t("apps.stuff.detail.imageFetchFailed", {
-            defaultValue: "Could not fetch that image URL.",
-          })
-        );
-        return;
-      }
-      onChange({ imageDataUrl });
-      setImageUrl("");
-      setIsImageUrlDialogOpen(false);
-    } finally {
-      setIsImageBusy(false);
-    }
+    // Hotlink for display — same path as lookup picker thumbnails / covers.
+    onChange({ imageUrl: url, imageDataUrl: "" });
+    setImageUrl("");
+    setIsImageUrlDialogOpen(false);
   };
 
   const handleRemoveImage = () => {
-    onChange({ imageDataUrl: "" });
+    onChange({ imageDataUrl: "", imageUrl: "" });
   };
+
+  const hasCover = Boolean(stuffItemCoverSrc(item));
 
   const chooseImageLabel = t("apps.stuff.detail.chooseImage", {
     defaultValue: "Choose Image…",
@@ -359,7 +351,7 @@ export function StuffDetailPanel({
               >
                 <LinkSimple size={14} weight="bold" />
               </Button>
-              {item.imageDataUrl ? (
+              {hasCover ? (
                 <Button
                   type="button"
                   variant={isMacOSTheme ? "secondary" : "retro"}
@@ -665,7 +657,7 @@ export function StuffDetailPanel({
           if (!open) setImageUrl("");
         }}
         onSubmit={(value) => {
-          void handleApplyImageUrl(value);
+          handleApplyImageUrl(value);
         }}
         title={t("apps.stuff.detail.imageUrlDialogTitle", {
           defaultValue: "Image URL",

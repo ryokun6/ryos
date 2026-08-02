@@ -39,6 +39,8 @@ export interface StuffItem {
   notes: string;
   /** Local data-URL thumbnail (optional) */
   imageDataUrl?: string;
+  /** Remote cover URL for display when no embedded data URL is stored */
+  imageUrl?: string;
   barcode?: string;
   /** ZXing / JsBarcode format name, e.g. EAN_13, UPC_A, CODE_128, QR_CODE */
   barcodeFormat?: string;
@@ -73,12 +75,23 @@ export interface StuffSharedItem {
   title: string;
   notes: string;
   imageDataUrl?: string;
+  imageUrl?: string;
   barcode?: string;
   brand?: string;
   tagNames: string[];
   status: StuffStatus;
   prices: StuffPrices;
   quantity: number;
+}
+
+/** Prefer embedded bytes; fall back to a remote cover URL for `<img src>`. */
+export function stuffItemCoverSrc(
+  item: Pick<StuffItem, "imageDataUrl" | "imageUrl">
+): string | undefined {
+  const embedded = item.imageDataUrl?.trim();
+  if (embedded) return embedded;
+  const remote = item.imageUrl?.trim();
+  return remote || undefined;
 }
 
 export interface StuffReservation {

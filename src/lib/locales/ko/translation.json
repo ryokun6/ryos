@@ -4165,7 +4165,8 @@
       "toolbar": {
         "add": "추가",
         "scan": "스캔",
-        "share": "공유"
+        "share": "공유",
+        "toggleSidebar": "사이드바 토글"
       }
     },
     "synth": {

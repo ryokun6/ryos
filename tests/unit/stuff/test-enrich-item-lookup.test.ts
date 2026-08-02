@@ -1,13 +1,16 @@
 #!/usr/bin/env bun
 import { describe, expect, test } from "bun:test";
 import {
+  parseProductImageResponse,
   parseProductLookupResponse,
   shouldAutoApplyProductLookup,
 } from "../../../src/apps/stuff/utils/barcodeLookup";
 import {
+  enrichStuffFromLookupResult,
   productFieldsFromDraft,
   productLookupToDraft,
 } from "../../../src/apps/stuff/utils/enrichItemFromLookup";
+import { stuffItemCoverSrc } from "../../../src/apps/stuff/types";
 
 describe("productLookupToDraft", () => {
   test("maps book metadata and ISBN barcode", () => {
@@ -109,6 +112,7 @@ describe("productFieldsFromDraft", () => {
       barcodeFormat: "UPC_A",
       productUrl: "https://example.com/xm5",
       imageDataUrl: "data:image/png;base64,abc",
+      imageUrl: "https://cdn.example.com/xm5.jpg",
       prices: { currency: "USD", original: 348, discounted: 199 },
       status: "for_sale",
       tagIds: ["tag-a"],
@@ -123,6 +127,7 @@ describe("productFieldsFromDraft", () => {
       barcodeFormat: "UPC_A",
       productUrl: "https://example.com/xm5",
       imageDataUrl: "data:image/png;base64,abc",
+      imageUrl: "https://cdn.example.com/xm5.jpg",
       prices: { currency: "USD", original: 348 },
     });
     expect(patch.prices).not.toHaveProperty("discounted");
@@ -130,6 +135,50 @@ describe("productFieldsFromDraft", () => {
     expect(patch).not.toHaveProperty("tagIds");
     expect(patch).not.toHaveProperty("notes");
     expect(patch).not.toHaveProperty("quantity");
+  });
+});
+
+describe("enrichStuffFromLookupResult cover apply", () => {
+  test("stores remote imageUrl for display without downloading", async () => {
+    const enriched = await enrichStuffFromLookupResult({
+      found: true,
+      title: "KitchenAid Mixer",
+      imageUrl: "https://cdn.example.com/mixer.jpg",
+      source: "amazon",
+      queryKind: "title",
+    });
+
+    expect(enriched.imageUrl).toBe("https://cdn.example.com/mixer.jpg");
+    expect(enriched.imageDataUrl).toBe("");
+    expect(enriched.imageApplied).toBe(true);
+    expect(enriched.hadImageUrl).toBe(true);
+    expect(
+      stuffItemCoverSrc({
+        imageDataUrl: enriched.imageDataUrl,
+        imageUrl: enriched.imageUrl,
+      })
+    ).toBe("https://cdn.example.com/mixer.jpg");
+  });
+
+  test("prefers embedded imageDataUrl over imageUrl", async () => {
+    const enriched = await enrichStuffFromLookupResult({
+      found: true,
+      title: "KitchenAid Mixer",
+      imageUrl: "https://cdn.example.com/mixer.jpg",
+      imageDataUrl: "data:image/png;base64,abc",
+      source: "amazon",
+      queryKind: "title",
+    });
+
+    expect(enriched.imageDataUrl).toBe("data:image/png;base64,abc");
+    expect(enriched.imageUrl).toBe("");
+    expect(enriched.imageApplied).toBe(true);
+    expect(
+      stuffItemCoverSrc({
+        imageDataUrl: enriched.imageDataUrl,
+        imageUrl: enriched.imageUrl,
+      })
+    ).toBe("data:image/png;base64,abc");
   });
 });
 
@@ -261,5 +310,55 @@ describe("apply selected product lookup candidate", () => {
     expect(patch).not.toHaveProperty("status");
     expect(patch).not.toHaveProperty("tagIds");
     expect(patch).not.toHaveProperty("notes");
+  });
+
+  test("propagates top-level imageDataUrl onto list rows that share imageUrl", () => {
+    const cover = "data:image/jpeg;base64,/9j/primary";
+    const parsed = parseProductLookupResponse({
+      found: true,
+      queryKind: "title",
+      title: "Best Hit",
+      imageUrl: "https://cdn.example.com/a.jpg",
+      imageDataUrl: cover,
+      results: [
+        {
+          found: true,
+          title: "Best Hit",
+          imageUrl: "https://cdn.example.com/a.jpg",
+          source: "amazon",
+        },
+        {
+          found: true,
+          title: "Other Cover",
+          imageUrl: "https://cdn.example.com/b.jpg",
+          source: "wikipedia",
+        },
+      ],
+    });
+
+    expect(parsed.results[0]?.imageDataUrl).toBe(cover);
+    // Different URL must not inherit primary bytes.
+    expect(parsed.results[1]?.imageDataUrl).toBeUndefined();
+  });
+});
+
+describe("parseProductImageResponse", () => {
+  test("accepts a data URL image payload from the product-image API", () => {
+    expect(
+      parseProductImageResponse({
+        imageDataUrl: "data:image/png;base64,abc",
+      })
+    ).toBe("data:image/png;base64,abc");
+  });
+
+  test("rejects non-image or missing payloads", () => {
+    expect(parseProductImageResponse(null)).toBeUndefined();
+    expect(parseProductImageResponse({})).toBeUndefined();
+    expect(
+      parseProductImageResponse({ imageDataUrl: "https://example.com/a.jpg" })
+    ).toBeUndefined();
+    expect(
+      parseProductImageResponse({ imageDataUrl: "data:text/plain;base64,abc" })
+    ).toBeUndefined();
   });
 });

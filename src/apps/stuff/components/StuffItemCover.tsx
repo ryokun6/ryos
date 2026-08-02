@@ -21,7 +21,12 @@ import {
   resolveStuffItemVisualKind,
   type StuffVisualKind,
 } from "../utils/stuffItemVisualKind";
-import type { StuffItem, StuffStatus, StuffTag } from "../types";
+import {
+  stuffItemCoverSrc,
+  type StuffItem,
+  type StuffStatus,
+  type StuffTag,
+} from "../types";
 import {
   stuffStatusRibbonLabel,
   stuffStatusRibbonStyle,
@@ -200,10 +205,11 @@ export function StuffItemCover({
   const PlaceholderIcon = KIND_ICONS[visualKind];
   const aquaTint = primaryTag?.color ?? colors.fg;
   const aquaText = productAquaTileTextColor(aquaTint);
+  const coverSrc = stuffItemCoverSrc(item);
 
   // Detail drawer: bare multiply against the white panel.
   // Shelf photo covers use clear glass instead (no multiply on tinted gel).
-  if (preview && isDetail && !isBook && item.imageDataUrl) {
+  if (preview && isDetail && !isBook && coverSrc) {
     return (
       <div
         className="relative shrink-0"
@@ -211,7 +217,7 @@ export function StuffItemCover({
         aria-hidden
       >
         <img
-          src={item.imageDataUrl}
+          src={coverSrc}
           alt=""
           className="h-full w-full object-contain mix-blend-multiply"
           draggable={false}
@@ -240,17 +246,17 @@ export function StuffItemCover({
         width,
         height,
         // Photos: clear glass + light well (no multiply). Placeholders: tinted gel.
-        ...(item.imageDataUrl
+        ...(coverSrc
           ? productAquaPhotoTileStyle(aquaTint)
           : productAquaTileStyle(aquaTint)),
       } as const);
 
   const renderNonBookContent = () => {
-    if (item.imageDataUrl) {
+    if (coverSrc) {
       return (
         <ProductAquaWell compact={isList} hasImage>
           <img
-            src={item.imageDataUrl}
+            src={coverSrc}
             alt=""
             className="h-full w-full object-contain"
             draggable={false}
@@ -297,23 +303,27 @@ export function StuffItemCover({
       {!isBook && <ProductAquaChrome compact={isList} />}
 
       {isBook ? (
-        item.imageDataUrl ? (
+        coverSrc ? (
           <img
-            src={item.imageDataUrl}
+            src={coverSrc}
             alt=""
             className="h-full w-full object-cover"
             draggable={false}
           />
         ) : (
           <div
-            className="flex h-full w-full flex-col justify-between p-2"
+            className="flex h-full w-full flex-col justify-between px-2 pb-2 pt-8"
             style={{ backgroundColor: colors.bg, color: colors.fg }}
           >
+            {/* Garamond via inline style, not `font-apple-garamond`: Aqua forces
+                `font-size: 1.5rem !important` on that class (About dialog), which
+                would inflate em line-height and defeat text-[13px]/leading-[0.9]. */}
             <span
               className={cn(
-                "line-clamp-4 font-apple-garamond leading-tight",
+                "line-clamp-4 text-center leading-[0.9]",
                 isGrid ? "text-[13px]" : "text-[9px] line-clamp-2"
               )}
+              style={{ fontFamily: "var(--font-apple-garamond)" }}
             >
               {item.title}
             </span>

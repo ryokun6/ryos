@@ -4165,7 +4165,8 @@
       "toolbar": {
         "add": "添加",
         "scan": "扫描",
-        "share": "共享"
+        "share": "共享",
+        "toggleSidebar": "切换边栏"
       }
     },
     "synth": {

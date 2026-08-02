@@ -2,7 +2,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { LayoutGroup } from "motion/react";
 import { useTranslation } from "react-i18next";
-import { Plus, SquaresFour, Rows, Barcode, ShareNetwork } from "@phosphor-icons/react";
+import {
+  Plus,
+  SquaresFour,
+  Rows,
+  Barcode,
+  ShareNetwork,
+  SidebarSimple,
+} from "@phosphor-icons/react";
 import {
   ToolbarButton,
   ToolbarButtonGroup,
@@ -23,7 +30,9 @@ interface StuffShelfViewProps {
   tags: StuffTag[];
   selectedItemId: string | null;
   shelfView: StuffShelfView;
+  isSidebarVisible: boolean;
   onSetShelfView: (view: StuffShelfView) => void;
+  onToggleSidebar: () => void;
   onSelectItem: (id: string | null) => void;
   onAddItem: () => void;
   onScan: () => void;
@@ -50,7 +59,9 @@ export function StuffShelfView({
   tags,
   selectedItemId,
   shelfView,
+  isSidebarVisible,
   onSetShelfView,
+  onToggleSidebar,
   onSelectItem,
   onAddItem,
   onScan,
@@ -137,7 +148,24 @@ export function StuffShelfView({
       {/* Transparent floating toolbar — overlays the scroller so wood scrolls
           underneath without a clipped gradient edge. Hits pass through except
           on the controls. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-end gap-2 bg-transparent px-3 pb-2 pt-7">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 bg-transparent px-3 pb-2 pt-7">
+        <div className="pointer-events-auto">
+          <ToolbarButtonGroup>
+            <ToolbarButton
+              icon
+              data-state={isSidebarVisible ? "on" : "off"}
+              onClick={onToggleSidebar}
+              title={t("apps.stuff.toolbar.toggleSidebar", {
+                defaultValue: "Toggle Sidebar",
+              })}
+              aria-label={t("apps.stuff.toolbar.toggleSidebar", {
+                defaultValue: "Toggle Sidebar",
+              })}
+            >
+              <SidebarSimple size={14} />
+            </ToolbarButton>
+          </ToolbarButtonGroup>
+        </div>
         <div className="pointer-events-auto flex items-center gap-1.5">
           <ToolbarButtonGroup>
             <ToolbarButton

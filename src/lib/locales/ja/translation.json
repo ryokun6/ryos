@@ -4165,7 +4165,8 @@
       "toolbar": {
         "add": "追加",
         "scan": "スキャン",
-        "share": "共有"
+        "share": "共有",
+        "toggleSidebar": "サイドバーを切り替える"
       }
     },
     "synth": {

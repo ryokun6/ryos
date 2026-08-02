@@ -4165,7 +4165,8 @@
       "toolbar": {
         "add": "加入",
         "scan": "掃描",
-        "share": "分享"
+        "share": "分享",
+        "toggleSidebar": "切換側邊欄"
       }
     },
     "synth": {

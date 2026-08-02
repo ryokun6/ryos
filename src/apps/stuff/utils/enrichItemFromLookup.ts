@@ -1,6 +1,5 @@
 import type { StuffItemDraft } from "../types";
 import {
-  fetchImageAsDataUrl,
   lookupProduct,
   type ProductLookupResponse,
   type ProductLookupResult,
@@ -13,7 +12,7 @@ export interface EnrichedStuffDraft extends StuffItemDraft {
   queryKind?: ProductLookupResult["queryKind"];
   /** True when a cover/thumbnail was stored on the draft. */
   imageApplied: boolean;
-  /** Provider offered an image URL (even if download failed). */
+  /** Provider offered an image URL or embedded cover. */
   hadImageUrl: boolean;
 }
 
@@ -38,6 +37,9 @@ export function productFieldsFromDraft(draft: StuffItemDraft): StuffItemDraft {
   }
   if (draft.imageDataUrl !== undefined) {
     patch.imageDataUrl = draft.imageDataUrl;
+  }
+  if (draft.imageUrl !== undefined) {
+    patch.imageUrl = draft.imageUrl;
   }
   if (draft.prices !== undefined) {
     // Only list/original price from product data — never discounted/sold.
@@ -83,24 +85,27 @@ export function productLookupToDraft(
   return draft;
 }
 
-/** Apply a single lookup candidate (downloads cover when needed). */
+/**
+ * Apply a single lookup candidate. Prefers embedded `imageDataUrl`; otherwise
+ * stores `imageUrl` for direct `<img>` display (no client/proxy download).
+ */
 export async function enrichStuffFromLookupResult(
   lookup: ProductLookupResult,
   base: StuffItemDraft = {}
 ): Promise<EnrichedStuffDraft> {
   const draft = productLookupToDraft(lookup, base);
-  const hadImageUrl = Boolean(lookup.imageUrl || lookup.imageDataUrl);
+  const remoteImageUrl = lookup.imageUrl?.trim();
+  const hadImageUrl = Boolean(lookup.imageDataUrl || remoteImageUrl);
   let imageApplied = false;
 
   if (lookup.imageDataUrl) {
     draft.imageDataUrl = lookup.imageDataUrl;
+    draft.imageUrl = "";
     imageApplied = true;
-  } else if (lookup.imageUrl) {
-    const imageDataUrl = await fetchImageAsDataUrl(lookup.imageUrl);
-    if (imageDataUrl) {
-      draft.imageDataUrl = imageDataUrl;
-      imageApplied = true;
-    }
+  } else if (remoteImageUrl) {
+    draft.imageUrl = remoteImageUrl;
+    draft.imageDataUrl = "";
+    imageApplied = true;
   }
 
   return {

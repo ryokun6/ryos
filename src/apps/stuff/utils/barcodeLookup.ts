@@ -70,13 +70,28 @@ export function parseProductLookupResponse(
       originalPrice: raw.originalPrice ?? listed[0].originalPrice,
       currency: raw.currency ?? listed[0].currency,
     };
+    // Propagate the primary cover bytes onto list rows that share its URL so
+    // picker apply can reuse imageDataUrl without a second (CORS-prone) fetch.
+    const primaryImageDataUrl = primary.imageDataUrl;
+    const primaryImageUrl = primary.imageUrl;
     return {
       ...primary,
-      results: listed.map((entry) => ({
-        ...entry,
-        found: true,
-        queryKind: entry.queryKind ?? queryKind,
-      })),
+      results: listed.map((entry) => {
+        const row: ProductLookupResult = {
+          ...entry,
+          found: true,
+          queryKind: entry.queryKind ?? queryKind,
+        };
+        if (
+          !row.imageDataUrl &&
+          primaryImageDataUrl &&
+          primaryImageUrl &&
+          entry.imageUrl === primaryImageUrl
+        ) {
+          row.imageDataUrl = primaryImageDataUrl;
+        }
+        return row;
+      }),
     };
   }
 
@@ -172,12 +187,58 @@ export async function readImageFileAsDataUrl(
   }
 }
 
-/** Fetch a remote product image and convert to a local data URL for storage. */
+/** Parse `/api/stuff/product-image` JSON into a stored data URL. */
+export function parseProductImageResponse(
+  data: unknown
+): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const imageDataUrl = (data as { imageDataUrl?: unknown }).imageDataUrl;
+  if (
+    typeof imageDataUrl !== "string" ||
+    !imageDataUrl.startsWith("data:image/")
+  ) {
+    return undefined;
+  }
+  if (imageDataUrl.length > STUFF_IMAGE_MAX_BYTES * 2) {
+    // Base64 expands ~4/3; reject grossly oversized payloads.
+    return undefined;
+  }
+  return imageDataUrl;
+}
+
+/**
+ * Fetch a remote product image and convert to a local data URL for storage.
+ * Prefers the server proxy (avoids browser CORS on product CDNs); falls back
+ * to a direct fetch for same-origin / CORS-open URLs.
+ */
 export async function fetchImageAsDataUrl(
   url: string
 ): Promise<string | undefined> {
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+
   try {
-    const response = await abortableFetch(url, {
+    const proxied = await abortableFetch(
+      getApiUrl(
+        `/api/stuff/product-image?url=${encodeURIComponent(trimmed)}`
+      ),
+      {
+        method: "GET",
+        timeout: 12000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 200 },
+      }
+    );
+    if (proxied.ok) {
+      const fromProxy = parseProductImageResponse(await proxied.json());
+      if (fromProxy) return fromProxy;
+    }
+  } catch {
+    // Fall through to direct fetch.
+  }
+
+  try {
+    const response = await abortableFetch(trimmed, {
       method: "GET",
       timeout: 10000,
       throwOnHttpError: false,
