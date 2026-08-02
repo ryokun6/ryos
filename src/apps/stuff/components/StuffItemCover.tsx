@@ -220,20 +220,33 @@ function ProductAquaWell({
   );
 }
 
+/** Readable white hover labels on cutouts (no dark gradient wash). */
+const CUTOUT_HOVER_TEXT_SHADOW =
+  "0 1px 2px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.75)";
+
 function GridTitleOverlay({
   item,
   primaryTag,
   isHovered,
+  /** Dark wash under title/tag. Off for cutouts (no opaque cover face). */
+  showGradient = true,
 }: {
   item: StuffItem;
   primaryTag?: StuffTag;
   isHovered: boolean;
+  showGradient?: boolean;
 }) {
   const { t } = useTranslation();
+  // Cutouts skip the gradient; text-shadow keeps title/tag readable.
+  const cutoutTextShadow = showGradient
+    ? undefined
+    : { textShadow: CUTOUT_HOVER_TEXT_SHADOW };
+  // z-[3]: above status nameplate (z-[1]) so title/tag paint on top when both show.
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1.5 pt-6",
+        "pointer-events-none absolute inset-x-0 bottom-0 z-[3] px-1.5 pb-1.5 pt-6",
+        showGradient && "bg-gradient-to-t from-black/70 to-transparent",
         "opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       )}
     >
@@ -245,12 +258,16 @@ function GridTitleOverlay({
         resetOnPause
         scrollStartDelaySec={STUFF_TITLE_SCROLL_START_DELAY_SEC}
         className="w-full min-w-0 text-[10px] font-medium leading-tight text-white"
+        style={cutoutTextShadow}
       />
       {primaryTag ? (
         <div className="mt-1 flex items-center gap-1">
           <span
             className="truncate rounded-full px-1.5 text-[9px] text-white"
-            style={{ backgroundColor: primaryTag.color }}
+            style={{
+              backgroundColor: primaryTag.color,
+              ...cutoutTextShadow,
+            }}
           >
             {stuffTagDisplayName(primaryTag, t)}
           </span>
@@ -263,8 +280,9 @@ function GridTitleOverlay({
 /**
  * Small museum-style nameplate overlaid on the cover near its bottom edge.
  * `bottom: 6px` keeps the plate inset on the cover face (pose offsetY max is
- * small so random jitter cannot push it past the cover bottom). High z keeps
- * it above the cover and wood ledge.
+ * small so random jitter cannot push it past the cover bottom). z-[1] sits
+ * above the cover face but below GridTitleOverlay (z-[3]) so hover title/tag
+ * paint on top of the plate.
  *
  * - `for_sale`: asking/original price alone (tooltip keeps status · price)
  * - `sold`: ~~original~~ salePrice Sold (sale = sold ?? asking ?? original)
@@ -365,7 +383,7 @@ function StuffStatusNameCard({
 
   return (
     <div
-      className="pointer-events-none absolute bottom-[6px] right-0 z-20 overflow-visible whitespace-nowrap rounded-[3px] px-2 py-[3px] text-[13px] leading-none shadow-[0_1px_2px_rgba(0,0,0,0.4)] ring-1 ring-black/20 font-permanent-marker"
+      className="pointer-events-none absolute bottom-[6px] right-0 z-[1] overflow-visible whitespace-nowrap rounded-[3px] px-2 py-[3px] text-[13px] leading-none shadow-[0_1px_2px_rgba(0,0,0,0.4)] ring-1 ring-black/20 font-permanent-marker"
       style={{
         backgroundImage,
         color,
@@ -561,6 +579,7 @@ export function StuffItemCover({
             item={item}
             primaryTag={primaryTag}
             isHovered={isHovered}
+            showGradient={false}
           />
         ) : null}
         {!preview && !isList ? (
