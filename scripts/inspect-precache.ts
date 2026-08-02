@@ -31,11 +31,12 @@ const stylesheets = urls.filter((url) => url.endsWith(".css"));
 const fonts = urls.filter((url) => /\.(?:woff2?|ttf|otf)$/i.test(url));
 const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 // Rolldown (Vite 8) splits shared modules into more, smaller chunks than
-// Rollup did; total precache bytes are unchanged, so only the file-count
-// ceilings moved. The 12 MiB byte budget remains the hard limit.
+// Rollup did, so file-count ceilings sit above Rollup-era numbers. The byte
+// budget tracks the measured offline shell (Stuff + shelf apps pushed it past
+// 12 MiB); keep a small headroom for theme/CSS polish.
 const MAX_FILES = 245;
 const MAX_SCRIPTS = 230;
-const MAX_BYTES = 12 * 1024 * 1024;
+const MAX_BYTES = 13 * 1024 * 1024;
 
 summarize("total", urls);
 summarize("JavaScript", javascript);

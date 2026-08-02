@@ -521,40 +521,15 @@ export default defineConfig({
       VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
-      manifestFilename: "manifest.json",
+      // Static web app manifest lives in public/manifest.json so /manifest.json
+      // is available in dev (VitePWA is skipped in isDev to save ~50MB memory).
+      // index.html already links it; do not regenerate a second copy here.
+      manifest: false,
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
         "icons/*.png",
       ],
-      manifest: {
-        name: "ryOS",
-        short_name: "ryOS",
-        description: "An AI OS experience, made with Cursor",
-        theme_color: "#000000",
-        background_color: "#000000",
-        display: "standalone",
-        orientation: "any",
-        start_url: "/",
-        icons: [
-          {
-            src: "/icons/mac-192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "/icons/mac-512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "/icons/mac-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
       workbox: {
         // Do not let Workbox auto-register a precached navigation fallback.
         // GenerateSW emits that route before runtimeCaching, which means it can

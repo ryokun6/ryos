@@ -32,6 +32,7 @@ import {
 import {
   osDrawerSurfaceClassName,
   osSeparatorBorderClassName,
+  type OsDrawerMaterial,
 } from "@/components/shared/osThemePrimitives";
 
 // ── Shared constants (also re-exported for TvVideoDrawer) ────────────────────
@@ -82,6 +83,12 @@ export interface AppDrawerProps {
    * When neither `title` nor `onClose` is provided the header is omitted.
    */
   title?: string;
+  /**
+   * macOS Aqua drawer chrome texture.
+   * - `default`: brushed metal, or frosted glass under Aqua Glass
+   * - `wood`: shelf wood (Books / Stuff)
+   */
+  material?: OsDrawerMaterial;
   children: ReactNode;
   /** Extra Tailwind classes forwarded to the outer `motion.div`. */
   className?: string;
@@ -93,6 +100,7 @@ export function AppDrawer({
   isOpen,
   onClose,
   title,
+  material = "default",
   children,
   className,
   ...dataAttrs
@@ -102,8 +110,11 @@ export function AppDrawer({
     isSystem7Theme: isSystem7,
     isWindowsTheme,
     isWin98,
+    isAquaGlass,
   } = useThemeFlags();
   const useGeneva = isMacOSTheme || isSystem7;
+  const isWoodDrawer = isMacOSTheme && material === "wood";
+  const isGlassDrawer = isMacOSTheme && isAquaGlass && !isWoodDrawer;
 
   /** True on narrow viewports — mirrors TvVideoDrawer's compact detection. */
   const isCompact = useMediaQuery(COMPACT_DRAWER_MEDIA);
@@ -204,22 +215,26 @@ export function AppDrawer({
   // Compact (mobile): rounded on the edge that sticks out of the window.
   const panelOuterClass = osDrawerSurfaceClassName(
     { isMacOSTheme, isSystem7Theme: isSystem7, isWindowsTheme, isWin98 },
-    placement
+    placement,
+    { material }
   );
 
   // ── Header ────────────────────────────────────────────────────────────────
-  const headerStyle: React.CSSProperties | undefined = isMacOSTheme
-    ? {
-        background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
-        color: "#222",
-        textShadow: "0 1px 0 #e1e1e1",
-        borderTop: "1px solid rgba(255,255,255,0.5)",
-        borderBottom: "1px solid #787878",
-      }
-    : undefined;
+  // Metal keeps the classic platinum gradient inline; wood/glass headers are
+  // painted by CSS next to the drawer texture rules.
+  const headerStyle: React.CSSProperties | undefined =
+    isMacOSTheme && !isWoodDrawer && !isGlassDrawer
+      ? {
+          background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
+          color: "#222",
+          textShadow: "0 1px 0 #e1e1e1",
+          borderTop: "1px solid rgba(255,255,255,0.5)",
+          borderBottom: "1px solid #787878",
+        }
+      : undefined;
 
   const headerClass = cn(
-    "shrink-0 flex items-center justify-between select-none",
+    "os-drawer-header shrink-0 flex items-center justify-between select-none",
     isMacOSTheme && "px-2 py-0.5 min-h-[20px]",
     !isMacOSTheme && "px-2 pt-1.5 pb-1",
     isSystem7 && "border-b border-black",
@@ -233,14 +248,19 @@ export function AppDrawer({
     useGeneva && "font-geneva-12",
     isWindowsTheme && "font-tahoma",
     isMacOSTheme
-      ? "text-[#222]"
+      ? isWoodDrawer || isGlassDrawer
+        ? "os-drawer-header-title"
+        : "text-[#222]"
       : "opacity-60 text-[9px] uppercase tracking-wide"
   );
 
   const closeBtnClass = cn(
     "shrink-0 ml-1 flex items-center justify-center rounded p-0.5",
     "focus:outline-none focus-visible:ring-1",
-    isMacOSTheme && "text-black/50 hover:bg-black/10 hover:text-black/80 focus-visible:ring-black/30",
+    isMacOSTheme &&
+      (isWoodDrawer || isGlassDrawer
+        ? "os-drawer-header-close"
+        : "text-black/50 hover:bg-black/10 hover:text-black/80 focus-visible:ring-black/30"),
     (isSystem7 || isWindowsTheme || isWin98) && "text-black/50 hover:bg-black/10 hover:text-black/80"
   );
 

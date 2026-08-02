@@ -191,8 +191,14 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.04);
 }
 
-:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-metal::before {
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-metal:not(.os-drawer-wood)::before {
   filter: contrast(0.9) brightness(0.35) saturate(0.4);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-metal.os-drawer-wood::before {
+  filter: brightness(0.78) saturate(0.92);
 }
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .os-drawer-metal::after {
@@ -202,6 +208,49 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     inset 1px 0 0 rgba(255, 255, 255, 0.05),
     inset -1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-metal.os-drawer-wood::after {
+  box-shadow:
+    inset 0 2px 2px rgba(255, 240, 205, 0.16),
+    inset 0 8px 12px rgba(255, 216, 152, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    inset 1px 0 0 rgba(255, 240, 205, 0.08),
+    inset -1px 0 0 rgba(0, 0, 0, 0.28);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-metal.os-drawer-wood
+  .os-drawer-header {
+  background: linear-gradient(
+    to bottom,
+    rgba(90, 55, 28, 0.72),
+    rgba(36, 22, 12, 0.85)
+  );
+  color: rgba(255, 236, 210, 0.92);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  border-top: 1px solid rgba(255, 220, 170, 0.12);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.55);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-metal.os-drawer-wood
+  .os-drawer-header-title {
+  color: rgba(255, 236, 210, 0.92);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-metal.os-drawer-wood
+  .os-drawer-header-close {
+  color: rgba(255, 236, 210, 0.55);
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+  .os-drawer-metal.os-drawer-wood
+  .os-drawer-header-close:hover {
+  background: rgba(255, 236, 210, 0.12);
+  color: rgba(255, 236, 210, 0.9);
 }
 
 /* Recessed list well inside the drawer — match the dark window surface */

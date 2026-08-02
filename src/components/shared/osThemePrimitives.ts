@@ -60,17 +60,25 @@ export function osCardClassName(
   );
 }
 
+export type OsDrawerMaterial = "default" | "wood";
+
 export function osDrawerSurfaceClassName(
   flags: ThemeSurfaceFlags,
-  placement: DrawerPlacement
+  placement: DrawerPlacement,
+  options: { material?: OsDrawerMaterial } = {}
 ): string {
   const { isMacOSTheme, isSystem7Theme, isWindowsTheme, isWin98 = false } = flags;
+  const { material = "default" } = options;
+  // Aqua Glass chrome is applied in CSS via `[data-os-aqua-material="glass"]`
+  // on `.os-drawer-metal` (skipped when `.os-drawer-wood` is present).
+  const useWood = isMacOSTheme && material === "wood";
 
   return cn(
     "flex flex-1 flex-col overflow-hidden min-h-0",
     isMacOSTheme &&
       cn(
         "os-drawer-metal",
+        useWood && "os-drawer-wood",
         placement === "right" && "rounded-r-[0.45rem]",
         placement === "left" && "rounded-l-[0.45rem]",
         placement === "bottom" && "rounded-b-[0.45rem]",

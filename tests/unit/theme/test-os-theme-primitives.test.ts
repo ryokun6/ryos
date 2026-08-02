@@ -78,6 +78,31 @@ describe("os theme primitives", () => {
     expect(bottomWin98).toContain("border-r-os-separator");
   });
 
+  test("uses wood drawer chrome for shelf apps on macOS Aqua", () => {
+    const wood = osDrawerSurfaceClassName(
+      {
+        isMacOSTheme: true,
+        isSystem7Theme: false,
+        isWindowsTheme: false,
+      },
+      "right",
+      { material: "wood" }
+    );
+    const metal = osDrawerSurfaceClassName(
+      {
+        isMacOSTheme: true,
+        isSystem7Theme: false,
+        isWindowsTheme: false,
+      },
+      "right"
+    );
+
+    expect(wood).toContain("os-drawer-metal");
+    expect(wood).toContain("os-drawer-wood");
+    expect(metal).toContain("os-drawer-metal");
+    expect(metal).not.toContain("os-drawer-wood");
+  });
+
   test("composes toolbar borders and platform colors from one helper", () => {
     const toolbar = osToolbarSurfaceClassName(
       {

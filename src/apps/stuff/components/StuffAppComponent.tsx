@@ -87,7 +87,7 @@ export function StuffAppComponent({
         menuBar={isWindowsTheme ? menuBar : undefined}
         windowConstraints={{ minWidth: 560, minHeight: 400 }}
         drawer={
-          <AppDrawer isOpen={showItemDrawer}>
+          <AppDrawer isOpen={showItemDrawer} material="wood">
             {logic.selectedItem ? (
               <StuffDetailPanel
                 item={logic.selectedItem}
