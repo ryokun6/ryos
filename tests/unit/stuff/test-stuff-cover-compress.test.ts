@@ -40,7 +40,7 @@ describe("prepareStuffCoverBlob", () => {
     expect(prepared).toBe(small);
   });
 
-  test("resizes and JPEG-encodes oversized blobs until under budget", async () => {
+  test("resizes and JPEG-encodes oversized JPEG blobs until under budget", async () => {
     const calls = {
       canvasWidth: 0,
       canvasHeight: 0,
@@ -50,7 +50,7 @@ describe("prepareStuffCoverBlob", () => {
 
     const oversized = new Blob(
       [new Uint8Array(STUFF_IMAGE_MAX_BYTES + 1024)],
-      { type: "image/png" }
+      { type: "image/jpeg" }
     );
 
     let encodeCount = 0;
@@ -100,6 +100,40 @@ describe("prepareStuffCoverBlob", () => {
     expect(calls.qualities[1]).toBe(STUFF_COVER_JPEG_QUALITIES[1]);
     expect(calls.cleanedUp).toBe(true);
     expect(STUFF_COVER_EDGE_STEPS[0]).toBe(STUFF_COVER_MAX_EDGE);
+  });
+
+  test("preserves PNG when compressing oversized cutout covers", async () => {
+    const oversized = new Blob(
+      [new Uint8Array(STUFF_IMAGE_MAX_BYTES + 1024)],
+      { type: "image/png" }
+    );
+
+    const prepared = await prepareStuffCoverBlob(oversized, {
+      loadImage: async () => ({
+        source: { id: "cutout" },
+        width: 3200,
+        height: 2000,
+      }),
+      createCanvas: () => ({
+        canvas: {
+          toBlob: (callback, type) => {
+            callback(
+              new Blob([new Uint8Array(Math.floor(STUFF_IMAGE_MAX_BYTES / 2))], {
+                type: type ?? "image/png",
+              })
+            );
+          },
+        },
+        context: {
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: "high",
+          drawImage: () => {},
+        },
+      }),
+    });
+
+    expect(prepared.type).toBe("image/png");
+    expect(prepared.size).toBeLessThanOrEqual(STUFF_IMAGE_MAX_BYTES);
   });
 
   test("throws when compression cannot meet the size budget", async () => {

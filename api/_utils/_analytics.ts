@@ -51,6 +51,7 @@ const AI_PATH_PREFIXES = [
   "/api/ai/ryo-reply",
   "/api/ai/extract-memories",
   "/api/ai/process-daily-notes",
+  "/api/stuff/remove-background",
 ];
 
 // Proactive greeting generation is the one model-invoking route under

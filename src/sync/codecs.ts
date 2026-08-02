@@ -1536,6 +1536,8 @@ function toStuffItemSyncDoc(item: StuffItem): Record<string, unknown> {
     notes: item.notes,
     imageUrl: item.imageUrl,
     coverBlobId: item.coverBlobId,
+    coverPresentation:
+      item.coverPresentation === "cutout" ? "cutout" : undefined,
     barcode: item.barcode,
     barcodeFormat: item.barcodeFormat,
     brand: item.brand,
@@ -1563,6 +1565,8 @@ function asStuffItem(value: unknown, id: string): StuffItem | null {
       typeof record.coverBlobId === "string"
         ? record.coverBlobId || undefined
         : undefined,
+    coverPresentation:
+      record.coverPresentation === "cutout" ? "cutout" : undefined,
     // Never re-hydrate giant data URLs from sync ops.
     imageDataUrl: undefined,
     barcode:

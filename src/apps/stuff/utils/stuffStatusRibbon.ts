@@ -1,12 +1,11 @@
 import type { StuffStatus } from "../types";
-import { stuffStatusLabelDefault } from "../types";
 
 export interface StuffStatusRibbonStyle {
   background: string;
   color: string;
 }
 
-/** Ribbon colors per lifecycle status (readable on both light and dark covers). */
+/** Nameplate / status colors (readable on wood shelf and light/dark covers). */
 const STATUS_RIBBON_STYLES: Record<StuffStatus, StuffStatusRibbonStyle> = {
   in_use: { background: "#15803d", color: "#f0fdf4" },
   stowed: { background: "#475569", color: "#f8fafc" },
@@ -22,13 +21,55 @@ export function stuffStatusRibbonStyle(
   return STATUS_RIBBON_STYLES[status];
 }
 
-/** Ribbon text: for-sale items show asking price when set; otherwise status label. */
-export function stuffStatusRibbonLabel(
-  status: StuffStatus,
-  price?: string | null
+/** Parse `#rgb` / `#rrggbb` into 0–255 channels. */
+function parseHexRgb(hex: string): [number, number, number] | null {
+  const raw = hex.trim().replace(/^#/, "");
+  if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(raw)) return null;
+  const full =
+    raw.length === 3
+      ? raw
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : raw;
+  return [
+    parseInt(full.slice(0, 2), 16),
+    parseInt(full.slice(2, 4), 16),
+    parseInt(full.slice(4, 6), 16),
+  ];
+}
+
+/**
+ * Opaque mix of two hex colors. `weight` is how much of `from` remains
+ * (0 = all `toward`, 1 = all `from`). Never uses alpha — Permanent Marker
+ * self-overlapping strokes make translucent fills look nearly full-bright.
+ */
+export function mixOpaqueHex(
+  from: string,
+  toward: string,
+  weight: number
 ): string {
-  if (status === "for_sale" && price) {
-    return price;
-  }
-  return stuffStatusLabelDefault(status);
+  const a = parseHexRgb(from);
+  const b = parseHexRgb(toward);
+  if (!a || !b) return from;
+  const t = Math.min(1, Math.max(0, weight));
+  const r = Math.round(a[0] * t + b[0] * (1 - t));
+  const g = Math.round(a[1] * t + b[1] * (1 - t));
+  const bl = Math.round(a[2] * t + b[2] * (1 - t));
+  return `rgb(${r}, ${g}, ${bl})`;
+}
+
+/**
+ * Dimmed nameplate text for struck-through original prices.
+ *
+ * Must be an **opaque** rgb (not alpha / color-mix with transparent):
+ * ryOS `body` sets `-webkit-font-smoothing: none`, and Permanent Marker's
+ * self-overlapping strokes make translucent fills look nearly full-bright.
+ * Mixing the label color toward black yields a muted gray that stays
+ * unmistakably quieter than "Sold" / the sale amount on every plate.
+ */
+export function stuffStatusStruckColor(status: StuffStatus): string {
+  const { color } = STATUS_RIBBON_STYLES[status];
+  // ~42% label / 58% black — strong fade without disappearing.
+  return mixOpaqueHex(color, "#000000", 0.42);
 }

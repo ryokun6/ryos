@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import {
@@ -26,15 +26,20 @@ import {
   type StuffVisualKind,
 } from "../utils/stuffItemVisualKind";
 import {
+  stuffStatusLabelDefault,
   type StuffItem,
+  type StuffPrices,
   type StuffStatus,
   type StuffTag,
 } from "../types";
 import {
-  stuffStatusRibbonLabel,
   stuffStatusRibbonStyle,
+  stuffStatusStruckColor,
 } from "../utils/stuffStatusRibbon";
+import { resolveStuffSoldNameplatePrices } from "../utils/stuffSoldNameplate";
+import { nameplatePoseFromId } from "../utils/stuffNameplatePose";
 import { getStuffCoverDimensions } from "../utils/stuffCoverSizes";
+import { useStuffCoverIsCutout } from "../hooks/useStuffCoverIsCutout";
 import { useStuffItemCoverSrc } from "../hooks/useStuffItemCoverSrc";
 
 /** Match karaoke / iPod now-playing: dwell before marquee starts. */
@@ -49,6 +54,8 @@ interface StuffItemCoverProps {
   selected?: boolean;
   size?: "grid" | "list" | "detail";
   preview?: boolean;
+  /** Subtle pulse/rotate while AI background removal runs. */
+  processing?: boolean;
   onClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
@@ -213,12 +220,10 @@ function ProductAquaWell({
 function GridTitleOverlay({
   item,
   primaryTag,
-  price,
   isHovered,
 }: {
   item: StuffItem;
   primaryTag?: StuffTag;
-  price: string | null;
   isHovered: boolean;
 }) {
   const { t } = useTranslation();
@@ -238,53 +243,237 @@ function GridTitleOverlay({
         scrollStartDelaySec={STUFF_TITLE_SCROLL_START_DELAY_SEC}
         className="w-full min-w-0 text-[10px] font-medium leading-tight text-white"
       />
-      <div className="mt-1 flex items-center justify-between gap-1">
-        {primaryTag && (
+      {primaryTag ? (
+        <div className="mt-1 flex items-center gap-1">
           <span
             className="truncate rounded-full px-1.5 text-[9px] text-white"
             style={{ backgroundColor: primaryTag.color }}
           >
             {stuffTagDisplayName(primaryTag, t)}
           </span>
-        )}
-        {price && (
-          <span className="ml-auto text-[9px] text-white/90">{price}</span>
-        )}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-/** Horizontal status flag: right-pinned band with left swallowtail notch. */
-const STATUS_RIBBON_CLIP =
-  "polygon(0 0, 100% 0, 100% 100%, 0 100%, 0.5rem 50%)";
-
-function StuffStatusRibbon({
+/**
+ * Small museum-style nameplate overlaid on the cover near its bottom edge.
+ * `bottom: 6px` keeps the plate inset on the cover face (pose offsetY max is
+ * small so random jitter cannot push it past the cover bottom). High z keeps
+ * it above the cover and wood ledge.
+ *
+ * - `for_sale`: asking/original price alone (tooltip keeps status · price)
+ * - `sold`: ~~original~~ salePrice Sold (sale = sold ?? asking ?? original)
+ * - other statuses: localized status label
+ */
+function StuffStatusNameCard({
+  itemId,
   status,
   price,
+  prices,
 }: {
+  itemId: string;
   status: StuffStatus;
+  /** Asking/original formatted for for_sale nameplates */
   price?: string | null;
+  prices: StuffPrices;
 }) {
-  const statusLabel = stuffStatusRibbonLabel(status);
-  const label = stuffStatusRibbonLabel(status, price);
-  const { background, color } = stuffStatusRibbonStyle(status);
+  const { t } = useTranslation();
+  const statusLabel = t(`apps.stuff.status.${status}`, {
+    defaultValue: stuffStatusLabelDefault(status),
+  });
+  const soldPrices =
+    status === "sold" ? resolveStuffSoldNameplatePrices(prices) : null;
+  const soldTitleParts = soldPrices
+    ? [
+        soldPrices.originalStruckFormatted,
+        soldPrices.saleFormatted,
+        statusLabel,
+      ].filter(Boolean)
+    : [];
+  // For-sale with an asking price: show price on the plate; tooltip keeps status + price.
   const title =
-    status === "for_sale" && price ? `${statusLabel} · ${price}` : statusLabel;
+    status === "for_sale" && price
+      ? `${statusLabel} · ${price}`
+      : soldTitleParts.length > 0
+        ? soldTitleParts.join(" ")
+        : statusLabel;
+  const { background, color } = stuffStatusRibbonStyle(status);
+  // Soft wash so the cover peeks through: status ~80% → slightly darker translucent.
+  const backgroundImage = `linear-gradient(105deg, color-mix(in srgb, ${background} 80%, transparent), color-mix(in srgb, color-mix(in srgb, ${background}, #000 28%) 55%, transparent))`;
+  // Opaque dim (not alpha): Permanent Marker stroke self-overlap makes
+  // opacity / color-mix(..., transparent) look nearly as bright as full text.
+  const struckColor = status === "sold" ? stuffStatusStruckColor(status) : null;
+  const { rotateDeg, offsetX, offsetY } = nameplatePoseFromId(itemId);
+
+  let content: ReactNode = statusLabel;
+  if (status === "for_sale" && price) {
+    content = price;
+  } else if (status === "sold" && soldPrices) {
+    const hasPriceBits =
+      soldPrices.originalStruckFormatted || soldPrices.saleFormatted;
+    content = hasPriceBits ? (
+      <span className="inline-flex items-baseline gap-[0.35em]">
+        {soldPrices.originalStruckFormatted && struckColor ? (
+          <span
+            className="stuff-status-nameplate-struck"
+            style={{
+              // Inline color wins over Tailwind text-* (no !important elsewhere).
+              color: struckColor,
+              WebkitTextFillColor: struckColor,
+              textDecorationColor: struckColor,
+            }}
+          >
+            {soldPrices.originalStruckFormatted}
+          </span>
+        ) : null}
+        {soldPrices.saleFormatted ? (
+          <span>{soldPrices.saleFormatted}</span>
+        ) : null}
+        <span>{statusLabel}</span>
+      </span>
+    ) : (
+      statusLabel
+    );
+  }
 
   return (
     <div
-      className="pointer-events-none absolute right-0 top-2 z-[3] py-[0.28rem] pl-[0.7rem] pr-[0.4rem] text-[7px] font-semibold uppercase leading-none tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+      className="pointer-events-none absolute bottom-[6px] right-0 z-20 whitespace-nowrap rounded-[3px] px-2 py-[3px] text-[13px] leading-none shadow-[0_1px_2px_rgba(0,0,0,0.4)] ring-1 ring-black/20 backdrop-blur-sm font-permanent-marker"
       style={{
-        backgroundColor: background,
+        backgroundImage,
         color,
-        clipPath: STATUS_RIBBON_CLIP,
-        WebkitClipPath: STATUS_RIBBON_CLIP,
+        textShadow: "0 0.5px 1px rgba(0,0,0,0.45)",
+        // Handwriting face — Title Case from status labels reads better than uppercase.
+        fontFamily: "var(--font-permanent-marker)",
+        transformOrigin: "100% 100%",
+        transform: `translate(${offsetX}px, ${offsetY}px) rotate(${rotateDeg}deg)`,
       }}
       title={title}
     >
-      {label}
+      {content}
     </div>
+  );
+}
+
+function CutoutCoverStage({
+  coverSrc,
+  width,
+  height,
+  isGrid,
+  isList,
+  processing,
+  selected,
+  preview,
+  onClick,
+  onContextMenu,
+  onHoverChange,
+  children,
+}: {
+  coverSrc: string;
+  width: number;
+  height: number;
+  isGrid: boolean;
+  isList: boolean;
+  processing?: boolean;
+  selected?: boolean;
+  preview?: boolean;
+  onClick?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+  onHoverChange?: (hovered: boolean) => void;
+  children?: React.ReactNode;
+}) {
+  // Drop-shadow follows opaque pixels so the cutout sits on the shelf.
+  const dropShadow = isList
+    ? "drop-shadow(0 2px 3px rgba(0,0,0,0.28)) drop-shadow(0 1px 1px rgba(0,0,0,0.18))"
+    : isGrid
+      ? "drop-shadow(0 8px 14px rgba(0,0,0,0.32)) drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
+      : "drop-shadow(0 4px 8px rgba(0,0,0,0.28))";
+
+  const stageClassName = cn(
+    "group relative shrink-0 overflow-visible bg-transparent text-left outline-none",
+    !preview && selected && "ring-2 ring-os-accent ring-offset-1 rounded-[10px]"
+  );
+
+  // Bottom-align so the subject sits on the shelf ledge; object-contain
+  // fills the stage, then a slight scale-up makes cutouts read larger
+  // while staying fully visible (stage is overflow-visible).
+  const image = (
+    <img
+      src={coverSrc}
+      alt=""
+      className="h-full w-full origin-bottom scale-110 object-contain object-bottom"
+      style={{ filter: dropShadow }}
+      draggable={false}
+    />
+  );
+
+  const body = (
+    <>
+      {image}
+      {children}
+      {processing ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-[10px]"
+        >
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+            animate={{ x: ["-60%", "160%"] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <div className="absolute inset-0 animate-pulse bg-white/15" />
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (preview) {
+    return (
+      <motion.div
+        className={stageClassName}
+        style={{ width, height }}
+        aria-hidden
+        animate={
+          processing
+            ? { rotate: [-1.2, 1.2, -1.2], scale: [1, 1.015, 1] }
+            : undefined
+        }
+        transition={
+          processing
+            ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+            : undefined
+        }
+      >
+        {body}
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.button
+      type="button"
+      whileHover={isGrid && !isList ? { y: -8 } : undefined}
+      animate={
+        processing
+          ? { rotate: [-1.2, 1.2, -1.2], scale: [1, 1.015, 1] }
+          : undefined
+      }
+      transition={
+        processing
+          ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+          : { type: "spring", stiffness: 400, damping: 28 }
+      }
+      className={stageClassName}
+      style={{ width, height }}
+      onClick={onClick}
+      onContextMenu={onContextMenu}
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
+    >
+      {body}
+    </motion.button>
   );
 }
 
@@ -294,6 +483,7 @@ export function StuffItemCover({
   selected,
   size = "grid",
   preview = false,
+  processing = false,
   onClick,
   onContextMenu,
 }: StuffItemCoverProps) {
@@ -315,35 +505,106 @@ export function StuffItemCover({
   const aquaTint = primaryTag?.color ?? colors.fg;
   const aquaText = productAquaTileTextColor(aquaTint);
   const coverSrc = useStuffItemCoverSrc(item);
+  const transparencyCacheKey =
+    item.coverBlobId?.trim() ||
+    item.imageDataUrl?.trim() ||
+    item.imageUrl?.trim() ||
+    coverSrc;
+  const isCutout = useStuffCoverIsCutout(coverSrc, {
+    coverPresentation: item.coverPresentation,
+    cacheKey: transparencyCacheKey,
+  });
 
-  // Detail drawer: bare multiply against the white panel.
-  // Shelf photo covers use clear glass instead (no multiply on tinted gel).
-  // Books / CDs keep their skeuomorphic frame in detail preview.
+  // Background-removed covers: fully transparent stage + subject drop shadow.
+  // Applies to products, books, and CDs so cutouts sit cleanly on the shelf.
+  if (isCutout && coverSrc) {
+    return (
+      <CutoutCoverStage
+        coverSrc={coverSrc}
+        width={width}
+        height={height}
+        isGrid={isGrid}
+        isList={isList}
+        processing={processing}
+        selected={selected}
+        preview={preview}
+        onClick={onClick}
+        onContextMenu={onContextMenu}
+        onHoverChange={setIsHovered}
+      >
+        {isGrid && !preview && size === "grid" ? (
+          <GridTitleOverlay
+            item={item}
+            primaryTag={primaryTag}
+            isHovered={isHovered}
+          />
+        ) : null}
+        {!preview && !isList ? (
+          <StuffStatusNameCard
+            itemId={item.id}
+            status={item.status}
+            price={price}
+            prices={item.prices}
+          />
+        ) : null}
+      </CutoutCoverStage>
+    );
+  }
+
+  // Detail drawer: bare cover against the panel (normal blend).
+  // Shelf photo covers use clear glass instead. Books / CDs keep their
+  // skeuomorphic frame in detail preview.
   if (preview && isDetail && !isFramedCover && coverSrc) {
     return (
-      <div
+      <motion.div
         className="relative shrink-0"
         style={{ width, height }}
         aria-hidden
+        animate={
+          processing
+            ? { rotate: [-1.2, 1.2, -1.2], scale: [1, 1.015, 1] }
+            : undefined
+        }
+        transition={
+          processing
+            ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+            : undefined
+        }
       >
         <img
           src={coverSrc}
           alt=""
-          className="h-full w-full object-contain mix-blend-multiply"
+          className="h-full w-full object-contain"
           draggable={false}
         />
-      </div>
+        {processing ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 animate-pulse rounded-[10px] bg-white/30"
+          />
+        ) : null}
+      </motion.div>
     );
   }
 
+  // Outer stage stays overflow-visible so the status nameplate's 2px peek
+  // past the cover bottom isn't clipped. Rounding lives on the inner shell.
+  const coverRadiusClass = isBook
+    ? "rounded-[2px] rounded-l-[4px]"
+    : isCd
+      ? "rounded-l-[1px] rounded-r-[3px]"
+      : cn("rounded-[10px]", isList && "rounded-[6px]");
+
   const coverClassName = cn(
-    "group relative shrink-0 overflow-hidden text-left outline-none",
-    isBook
-      ? "rounded-[2px] rounded-l-[4px] shadow-md"
-      : isCd
-        ? "rounded-l-[1px] rounded-r-[3px] shadow-md"
-        : cn("rounded-[10px]", isList && "rounded-[6px]"),
+    "group relative shrink-0 overflow-visible text-left outline-none",
+    coverRadiusClass,
+    (isBook || isCd) && "shadow-md",
     !preview && selected && "ring-2 ring-os-accent ring-offset-1"
+  );
+
+  const coverShellClassName = cn(
+    "absolute inset-0 overflow-hidden",
+    coverRadiusClass
   );
 
   const framedCoverShadow = isGrid
@@ -498,60 +759,66 @@ export function StuffItemCover({
 
   const coverBody = (
     <>
-      {!isFramedCover && <ProductAquaChrome compact={isList} />}
+      <div className={coverShellClassName}>
+        {!isFramedCover && <ProductAquaChrome compact={isList} />}
 
-      {isBook ? (
-        coverSrc ? (
-          <img
-            src={coverSrc}
-            alt=""
-            className="h-full w-full object-cover"
-            draggable={false}
-          />
-        ) : (
-          <div
-            className="flex h-full w-full flex-col justify-between px-2 pb-2 pt-8"
-            style={{ backgroundColor: colors.bg, color: colors.fg }}
-          >
-            {/* Garamond via inline style, not `font-apple-garamond`: Aqua forces
-                `font-size: 1.5rem !important` on that class (About dialog), which
-                would inflate em line-height and defeat text-[13px]/leading-[0.9]. */}
-            <span
-              className={cn(
-                "line-clamp-4 text-center leading-[0.9]",
-                isGrid ? "text-[13px]" : "text-[9px] line-clamp-2"
-              )}
-              style={{ fontFamily: "var(--font-apple-garamond)" }}
+        {isBook ? (
+          coverSrc ? (
+            <img
+              src={coverSrc}
+              alt=""
+              className="h-full w-full object-cover"
+              draggable={false}
+            />
+          ) : (
+            <div
+              className="flex h-full w-full flex-col justify-between px-2 pb-2 pt-8"
+              style={{ backgroundColor: colors.bg, color: colors.fg }}
             >
-              {item.title}
-            </span>
-            {isGrid && item.brand && (
-              <span className="truncate text-center text-[10px] opacity-80">
-                {item.brand}
+              {/* Garamond via inline style, not `font-apple-garamond`: Aqua forces
+                  `font-size: 1.5rem !important` on that class (About dialog), which
+                  would inflate em line-height and defeat text-[13px]/leading-[0.9]. */}
+              <span
+                className={cn(
+                  "line-clamp-4 text-center leading-[0.9]",
+                  isGrid ? "text-[13px]" : "text-[9px] line-clamp-2"
+                )}
+                style={{ fontFamily: "var(--font-apple-garamond)" }}
+              >
+                {item.title}
               </span>
-            )}
-          </div>
-        )
-      ) : isCd ? (
-        renderCdContent()
-      ) : (
-        renderNonBookContent()
-      )}
+              {isGrid && item.brand && (
+                <span className="truncate text-center text-[10px] opacity-80">
+                  {item.brand}
+                </span>
+              )}
+            </div>
+          )
+        ) : isCd ? (
+          renderCdContent()
+        ) : (
+          renderNonBookContent()
+        )}
 
-      {isBook && <BookSpineHighlight />}
-      {isCd && <JewelCaseChrome compact={isList} />}
+        {isBook && <BookSpineHighlight />}
+        {isCd && <JewelCaseChrome compact={isList} />}
 
-      {isGrid && !preview && size === "grid" && (
-        <GridTitleOverlay
-          item={item}
-          primaryTag={primaryTag}
-          price={price}
-          isHovered={isHovered}
-        />
-      )}
+        {isGrid && !preview && size === "grid" && (
+          <GridTitleOverlay
+            item={item}
+            primaryTag={primaryTag}
+            isHovered={isHovered}
+          />
+        )}
+      </div>
 
       {!preview && !isList && (
-        <StuffStatusRibbon status={item.status} price={price} />
+        <StuffStatusNameCard
+          itemId={item.id}
+          status={item.status}
+          price={price}
+          prices={item.prices}
+        />
       )}
     </>
   );

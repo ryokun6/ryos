@@ -33,6 +33,9 @@ export interface StuffTag {
   createdAt: number;
 }
 
+/** How the cover is staged on the shelf / detail panel. */
+export type StuffCoverPresentation = "default" | "cutout";
+
 export interface StuffItem {
   id: string;
   title: string;
@@ -50,6 +53,11 @@ export interface StuffItem {
    * `stuff-images/item:<id>`). Usually equals the item id.
    */
   coverBlobId?: string;
+  /**
+   * `cutout` = transparent stage + drop shadow (background-removed PNG).
+   * Omitted / `default` = normal framed product / book / CD cover.
+   */
+  coverPresentation?: StuffCoverPresentation;
   barcode?: string;
   /** ZXing / JsBarcode format name, e.g. EAN_13, UPC_A, CODE_128, QR_CODE */
   barcodeFormat?: string;
@@ -85,6 +93,11 @@ export interface StuffSharedItem {
   notes: string;
   imageDataUrl?: string;
   imageUrl?: string;
+  /**
+   * Shelf staging for the cover. Preserved so shared cutouts render without
+   * a box (same meaning as {@link StuffItem.coverPresentation}).
+   */
+  coverPresentation?: StuffCoverPresentation;
   barcode?: string;
   brand?: string;
   tagNames: string[];

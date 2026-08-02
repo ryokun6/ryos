@@ -7,7 +7,7 @@ import {
   SquaresFour,
   Rows,
   Barcode,
-  ShareNetwork,
+  Export,
   SidebarSimple,
 } from "@phosphor-icons/react";
 import {
@@ -22,7 +22,12 @@ import {
   StuffItemCover,
   STUFF_TITLE_SCROLL_START_DELAY_SEC,
 } from "./StuffItemCover";
-import type { StuffItem, StuffShelfView, StuffTag } from "../types";
+import {
+  stuffStatusLabelDefault,
+  type StuffItem,
+  type StuffShelfView,
+  type StuffTag,
+} from "../types";
 import {
   STUFF_SHELF_ITEM_WIDTH,
   STUFF_SHELF_ROW_MIN_HEIGHT,
@@ -64,8 +69,12 @@ function StuffShelfListRow({
   onSelect: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
 }) {
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
-  const subtitle = [item.brand, item.status.replace(/_/g, " "), item.barcode]
+  const statusLabel = t(`apps.stuff.status.${item.status}`, {
+    defaultValue: stuffStatusLabelDefault(item.status),
+  });
+  const subtitle = [item.brand, statusLabel, item.barcode]
     .filter(Boolean)
     .join(" · ");
 
@@ -245,7 +254,7 @@ export function StuffShelfView({
                 defaultValue: "Share",
               })}
             >
-              <ShareNetwork size={14} />
+              <Export size={14} />
             </ToolbarButton>
           </ToolbarButtonGroup>
           <ToolbarButtonGroup>
@@ -325,10 +334,11 @@ export function StuffShelfView({
             >
               {rows.map((row, rowIndex) => (
                 <div key={`row-${rowIndex}`} className="relative">
-                  {/* Items sit in front of the ledge upper face (negative margin
-                      overlaps the 12px face, same as Books shelf). */}
+                  {/* Items + status nameplates sit in front of the ledge (z-[2]
+                      over ledge z-0). Negative margin overlaps the 12px upper
+                      face so covers rest on the shelf, same as Books. */}
                   <div
-                    className="relative z-[1] flex items-end justify-start"
+                    className="relative z-[2] flex items-end justify-start overflow-visible"
                     style={{
                       paddingLeft: SHELF_GUTTER,
                       paddingRight: SHELF_GUTTER,
@@ -359,7 +369,9 @@ export function StuffShelfView({
                       />
                     ))}
                   </div>
-                  <WoodShelfLedge isDark={isDarkMode} />
+                  <div className="relative z-0">
+                    <WoodShelfLedge isDark={isDarkMode} />
+                  </div>
                 </div>
               ))}
             </div>

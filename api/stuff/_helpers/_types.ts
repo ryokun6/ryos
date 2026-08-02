@@ -11,6 +11,8 @@ export type StuffShareItem = {
   notes: string;
   imageDataUrl?: string;
   imageUrl?: string;
+  /** Transparent cutout staging — preserved across share create/update. */
+  coverPresentation?: "default" | "cutout";
   barcode?: string;
   brand?: string;
   tagNames: string[];

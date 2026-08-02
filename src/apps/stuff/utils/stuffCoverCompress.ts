@@ -159,27 +159,34 @@ const defaultLoadImage = async (file: Blob): Promise<DecodedCoverImage> => {
   });
 };
 
-function canvasToJpeg(
+function canvasToBlob(
   canvas: CoverCanvas,
-  quality: number
+  type: string,
+  quality?: number
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          reject(new Error("Failed to encode cover as JPEG"));
+          reject(new Error(`Failed to encode cover as ${type}`));
           return;
         }
         resolve(blob);
       },
-      STUFF_COVER_MIME_TYPE,
+      type,
       quality
     );
   });
 }
 
+function prefersAlphaCover(input: Blob): boolean {
+  const type = (input.type || "").toLowerCase();
+  return type === "image/png" || type === "image/webp";
+}
+
 /**
- * Resize (max edge) + JPEG-encode until under STUFF_IMAGE_MAX_BYTES.
+ * Resize (max edge) + encode until under STUFF_IMAGE_MAX_BYTES.
+ * PNG/WebP inputs stay lossless PNG so cutout alpha is preserved.
  * Returns the original blob when it already fits.
  */
 export async function prepareStuffCoverBlob(
@@ -197,6 +204,7 @@ export async function prepareStuffCoverBlob(
   const loadImage = deps.loadImage ?? defaultLoadImage;
   const createCanvas = deps.createCanvas ?? defaultCreateCanvas;
   const image = await loadImage(input);
+  const keepAlpha = prefersAlphaCover(input);
 
   try {
     if (image.width <= 0 || image.height <= 0) {
@@ -214,8 +222,20 @@ export async function prepareStuffCoverBlob(
       context.imageSmoothingQuality = "high";
       context.drawImage(image.source, 0, 0, width, height);
 
+      if (keepAlpha) {
+        const encoded = await canvasToBlob(canvas, "image/png");
+        if (encoded.size <= STUFF_IMAGE_MAX_BYTES) {
+          return encoded;
+        }
+        continue;
+      }
+
       for (const quality of STUFF_COVER_JPEG_QUALITIES) {
-        const encoded = await canvasToJpeg(canvas, quality);
+        const encoded = await canvasToBlob(
+          canvas,
+          STUFF_COVER_MIME_TYPE,
+          quality
+        );
         if (encoded.size <= STUFF_IMAGE_MAX_BYTES) {
           return encoded;
         }

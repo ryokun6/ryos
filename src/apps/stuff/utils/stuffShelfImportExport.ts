@@ -85,6 +85,9 @@ export async function buildStuffShelfExport(
         imageDataUrl: imageDataUrl?.trim() || undefined,
         // Blob ids are device-local; recreated on import from imageDataUrl.
         coverBlobId: undefined,
+        // Explicit so cutout staging survives JSON round-trips.
+        coverPresentation:
+          item.coverPresentation === "cutout" ? "cutout" : undefined,
       };
     })
   );
@@ -232,17 +235,23 @@ export function mergeStuffShelfImport(
       candidate.imageDataUrl.trim().startsWith("data:image/")
         ? candidate.imageDataUrl.trim()
         : undefined;
+    const imageUrl =
+      typeof candidate.imageUrl === "string" && candidate.imageUrl.trim()
+        ? candidate.imageUrl.trim()
+        : undefined;
+    const hasCover = Boolean(imageDataUrl || imageUrl);
 
     const item: StuffItem = {
       id,
       title,
       notes: typeof candidate.notes === "string" ? candidate.notes : "",
       imageDataUrl: undefined,
-      imageUrl:
-        typeof candidate.imageUrl === "string" && candidate.imageUrl.trim()
-          ? candidate.imageUrl.trim()
-          : undefined,
+      imageUrl,
       coverBlobId: imageDataUrl ? id : undefined,
+      coverPresentation:
+        candidate.coverPresentation === "cutout" && hasCover
+          ? "cutout"
+          : undefined,
       barcode:
         typeof candidate.barcode === "string" ? candidate.barcode : undefined,
       barcodeFormat:

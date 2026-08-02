@@ -13,6 +13,8 @@ export function toSharedItem(
     notes: item.notes,
     imageDataUrl: options?.imageDataUrl ?? item.imageDataUrl,
     imageUrl: item.imageUrl,
+    coverPresentation:
+      item.coverPresentation === "cutout" ? "cutout" : undefined,
     barcode: item.barcode,
     brand: item.brand,
     tagNames: item.tagIds

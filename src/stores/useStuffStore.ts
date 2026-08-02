@@ -122,16 +122,32 @@ function normalizeItem(draft: StuffItemDraft, existing?: StuffItem): StuffItem {
     nextImageDataUrl = undefined;
   }
 
+  const nextImageUrl =
+    draft.imageUrl !== undefined
+      ? draft.imageUrl || undefined
+      : existing?.imageUrl;
+  const hasCover = Boolean(
+    nextCoverBlobId || nextImageDataUrl || nextImageUrl
+  );
+  let nextCoverPresentation: StuffItem["coverPresentation"];
+  if (!hasCover) {
+    nextCoverPresentation = undefined;
+  } else if (draft.coverPresentation !== undefined) {
+    nextCoverPresentation =
+      draft.coverPresentation === "cutout" ? "cutout" : undefined;
+  } else {
+    nextCoverPresentation =
+      existing?.coverPresentation === "cutout" ? "cutout" : undefined;
+  }
+
   return {
     id: existing?.id ?? crypto.randomUUID(),
     title: nextTitle || existing?.title || "Untitled",
     notes: draft.notes ?? existing?.notes ?? "",
     imageDataUrl: nextImageDataUrl,
-    imageUrl:
-      draft.imageUrl !== undefined
-        ? draft.imageUrl || undefined
-        : existing?.imageUrl,
+    imageUrl: nextImageUrl,
     coverBlobId: nextCoverBlobId,
+    coverPresentation: nextCoverPresentation,
     barcode: draft.barcode !== undefined ? draft.barcode : existing?.barcode,
     barcodeFormat:
       draft.barcodeFormat !== undefined

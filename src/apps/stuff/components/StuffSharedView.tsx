@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { colorFromString, formatMoney } from "../utils/colors";
+import { useStuffCoverIsCutout } from "../hooks/useStuffCoverIsCutout";
 import {
   stuffItemCoverSrc,
   type StuffBid,
@@ -15,6 +16,55 @@ import {
   type StuffShare,
   type StuffSharedItem,
 } from "../types";
+
+function SharedItemCover({ item }: { item: StuffSharedItem }) {
+  const colors = colorFromString(item.id + item.title);
+  const coverSrc = stuffItemCoverSrc(item);
+  const cacheKey =
+    item.imageDataUrl?.trim() || item.imageUrl?.trim() || coverSrc;
+  const isCutout = useStuffCoverIsCutout(coverSrc, {
+    coverPresentation: item.coverPresentation,
+    cacheKey,
+  });
+
+  if (coverSrc && isCutout) {
+    return (
+      <div className="flex h-36 items-end justify-center bg-transparent p-2">
+        <img
+          src={coverSrc}
+          alt=""
+          className="max-h-full max-w-full origin-bottom scale-110 object-contain object-bottom"
+          style={{
+            filter:
+              "drop-shadow(0 6px 10px rgba(0,0,0,0.3)) drop-shadow(0 2px 3px rgba(0,0,0,0.18))",
+          }}
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex h-36 items-end p-2"
+      style={
+        coverSrc
+          ? {
+              backgroundImage: `url(${coverSrc})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : { backgroundColor: colors.bg, color: colors.fg }
+      }
+    >
+      {!coverSrc && (
+        <span className="font-apple-garamond text-sm leading-tight">
+          {item.title}
+        </span>
+      )}
+    </div>
+  );
+}
 
 interface StuffSharedViewProps {
   shareId: string;
@@ -216,39 +266,20 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
         {share && (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
             {share.items.map((item) => {
-              const colors = colorFromString(item.id + item.title);
               const bid = highestBid(item.id);
               const reservation = activeReservation(item.id);
               const price = formatMoney(
                 item.prices.discounted ?? item.prices.original,
                 item.prices.currency
               );
-              const coverSrc = stuffItemCoverSrc(item);
               return (
                 <button
                   key={item.id}
                   type="button"
-                  className="overflow-hidden rounded-md border border-black/10 text-left shadow-sm dark:border-white/10"
+                  className="rounded-md border border-black/10 text-left shadow-sm dark:border-white/10"
                   onClick={() => setSelectedItem(item)}
                 >
-                  <div
-                    className="flex h-36 items-end p-2"
-                    style={
-                      coverSrc
-                        ? {
-                            backgroundImage: `url(${coverSrc})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          }
-                        : { backgroundColor: colors.bg, color: colors.fg }
-                    }
-                  >
-                    {!coverSrc && (
-                      <span className="font-apple-garamond text-sm leading-tight">
-                        {item.title}
-                      </span>
-                    )}
-                  </div>
+                  <SharedItemCover item={item} />
                   <div className="space-y-1 p-2">
                     <div className="truncate text-sm font-medium">{item.title}</div>
                     {price && <div className="text-xs opacity-70">{price}</div>}

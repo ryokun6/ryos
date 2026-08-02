@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import {
   LinkSimple,
+  MagicWand,
   MagnifyingGlass,
   Printer,
   QrCode,
@@ -28,7 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { abortableFetch } from "@/utils/abortableFetch";
+import { getApiUrl } from "@/utils/platform";
 import {
   STUFF_STATUSES,
   stuffStatusLabelDefault,
@@ -46,6 +50,7 @@ import {
   dataUrlToBlob,
   putStuffCoverBlob,
 } from "../utils/stuffCoverBlobs";
+import { trimStuffCutoutTransparentPadding } from "../utils/stuffCoverCutout";
 import {
   clipboardMayContainImage,
   ensureStuffCoverFileType,
@@ -58,6 +63,17 @@ import {
 import { useStuffItemCoverSrc } from "../hooks/useStuffItemCoverSrc";
 import { resolveStuffItemVisualKind } from "../utils/stuffItemVisualKind";
 import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
 
 interface StuffDetailPanelProps {
   item: StuffItem;
@@ -151,6 +167,7 @@ export function StuffDetailPanel({
   isLookingUp,
 }: StuffDetailPanelProps) {
   const { t } = useTranslation();
+  const auth = useAuth();
   const { isMacOSTheme, isSystem7Theme, isWindowsTheme, isDarkMode } =
     useThemeFlags();
   const useGeneva = isMacOSTheme || isSystem7Theme;
@@ -163,6 +180,7 @@ export function StuffDetailPanel({
   const [imageUrl, setImageUrl] = useState("");
   const [isImageUrlDialogOpen, setIsImageUrlDialogOpen] = useState(false);
   const [isImageBusy, setIsImageBusy] = useState(false);
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
   const [isCoverDragOver, setIsCoverDragOver] = useState(false);
   const [showBarcodePreview, setShowBarcodePreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -298,7 +316,10 @@ export function StuffDetailPanel({
     );
   };
 
-  const applyCoverFile = async (file: File) => {
+  const applyCoverFile = async (
+    file: File,
+    options?: { coverPresentation?: StuffItem["coverPresentation"] }
+  ) => {
     const normalized = ensureStuffCoverFileType(file);
     setIsImageBusy(true);
     try {
@@ -307,7 +328,12 @@ export function StuffDetailPanel({
         return;
       }
       await putStuffCoverBlob(item.id, normalized);
-      onChange({ coverBlobId: item.id, imageDataUrl: "", imageUrl: "" });
+      onChange({
+        coverBlobId: item.id,
+        imageDataUrl: "",
+        imageUrl: "",
+        coverPresentation: options?.coverPresentation ?? "default",
+      });
     } catch {
       imageInvalidToast();
     } finally {
@@ -336,7 +362,12 @@ export function StuffDetailPanel({
       return;
     }
     // Hotlink for display — same path as lookup picker thumbnails / covers.
-    onChange({ imageUrl: url, imageDataUrl: "", coverBlobId: "" });
+    onChange({
+      imageUrl: url,
+      imageDataUrl: "",
+      coverBlobId: "",
+      coverPresentation: "default",
+    });
     setImageUrl("");
     setIsImageUrlDialogOpen(false);
   };
@@ -411,6 +442,86 @@ export function StuffDetailPanel({
   const imageControlsDisabled = isImageBusy || isLookingUp;
   const canAcceptCoverDrop = !showingBarcodePreview && !imageControlsDisabled;
 
+  const handleRemoveBackground = () => {
+    if (!coverSrc || imageControlsDisabled) return;
+    if (!auth.isAuthenticated) {
+      auth.promptLogin();
+      toast.error(
+        t("apps.stuff.detail.removeBackgroundSignIn", {
+          defaultValue: "Sign in to remove backgrounds.",
+        })
+      );
+      return;
+    }
+
+    void (async () => {
+      setIsImageBusy(true);
+      setIsRemovingBackground(true);
+      try {
+        const response = await fetch(coverSrc);
+        if (!response.ok) {
+          throw new Error("cover_fetch_failed");
+        }
+        const sourceBlob = await response.blob();
+        if (!sourceBlob.size) {
+          throw new Error("cover_empty");
+        }
+        const mediaType = sourceBlob.type.startsWith("image/")
+          ? sourceBlob.type
+          : "image/png";
+        const imageBase64 = await blobToBase64(sourceBlob);
+
+        const apiResponse = await abortableFetch(
+          getApiUrl("/api/stuff/remove-background"),
+          {
+            method: "POST",
+            timeout: 90_000,
+            throwOnHttpError: false,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageBase64, mediaType }),
+          }
+        );
+
+        if (apiResponse.status === 401) {
+          auth.promptLogin();
+          toast.error(
+            t("apps.stuff.detail.removeBackgroundSignIn", {
+              defaultValue: "Sign in to remove backgrounds.",
+            })
+          );
+          return;
+        }
+
+        if (!apiResponse.ok) {
+          const data = (await apiResponse.json().catch(() => ({}))) as {
+            error?: string;
+            message?: string;
+          };
+          throw new Error(data.message || data.error || "remove_bg_failed");
+        }
+
+        const resultBlob = await apiResponse.blob();
+        // Trim excess transparent padding so object-contain fills stage height.
+        const trimmedBlob = await trimStuffCutoutTransparentPadding(resultBlob);
+        const file = new File([trimmedBlob], "cover-cutout.png", {
+          type: "image/png",
+        });
+        // applyCoverFile manages isImageBusy; keep removing flag until done.
+        setIsImageBusy(false);
+        await applyCoverFile(file, { coverPresentation: "cutout" });
+      } catch {
+        toast.error(
+          t("apps.stuff.detail.removeBackgroundFailed", {
+            defaultValue: "Could not remove the background.",
+          })
+        );
+        setIsImageBusy(false);
+      } finally {
+        setIsRemovingBackground(false);
+      }
+    })();
+  };
+
   const handleCoverDragOver = (event: DragEvent<HTMLDivElement>) => {
     if (!canAcceptCoverDrop) return;
     if (![...event.dataTransfer.types].includes("Files")) return;
@@ -468,7 +579,12 @@ export function StuffDetailPanel({
   };
 
   const handleRemoveImage = () => {
-    onChange({ imageDataUrl: "", imageUrl: "", coverBlobId: "" });
+    onChange({
+      imageDataUrl: "",
+      imageUrl: "",
+      coverBlobId: "",
+      coverPresentation: "default",
+    });
   };
 
   const chooseImageLabel = t("apps.stuff.detail.chooseImage", {
@@ -479,6 +595,9 @@ export function StuffDetailPanel({
   });
   const removeImageLabel = t("apps.stuff.detail.removeImage", {
     defaultValue: "Remove",
+  });
+  const removeBackgroundLabel = t("apps.stuff.detail.removeBackground", {
+    defaultValue: "Remove Background",
   });
 
   const overlayButtonClass = cn(
@@ -551,7 +670,13 @@ export function StuffDetailPanel({
                 />
               </div>
             ) : (
-              <StuffItemCover item={item} tags={tags} size="detail" preview />
+              <StuffItemCover
+                item={item}
+                tags={tags}
+                size="detail"
+                preview
+                processing={isRemovingBackground}
+              />
             )}
             <input
               ref={fileInputRef}
@@ -569,7 +694,9 @@ export function StuffDetailPanel({
                   isCoverDragOver && "opacity-100",
                   (imageControlsDisabled || isCoverDragOver) &&
                     "pointer-events-none",
-                  imageControlsDisabled && "opacity-40"
+                  imageControlsDisabled && "opacity-40",
+                  // Keep the stage visible while the cutout animates.
+                  isRemovingBackground && "opacity-0"
                 )}
               >
                 <Button
@@ -595,6 +722,20 @@ export function StuffDetailPanel({
                   >
                     <LinkSimple size={14} weight="bold" />
                   </Button>
+                  {hasCover ? (
+                    <Button
+                      type="button"
+                      variant={isMacOSTheme ? "secondary" : "retro"}
+                      size="sm"
+                      className={overlayIconButtonClass}
+                      disabled={imageControlsDisabled}
+                      onClick={handleRemoveBackground}
+                      aria-label={removeBackgroundLabel}
+                      title={removeBackgroundLabel}
+                    >
+                      <MagicWand size={14} weight="bold" />
+                    </Button>
+                  ) : null}
                   {hasCover ? (
                     <Button
                       type="button"

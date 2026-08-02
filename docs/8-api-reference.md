@@ -63,6 +63,7 @@ graph LR
 | `/api/ai/conversations/:channel/reset` | Clear synced history and process memories |
 | `/api/ai/attachments/:id` | Private synced chat images |
 | `/api/applet-ai` | Applet text + image generation |
+| `/api/stuff/remove-background` | Stuff cover background removal (transparent PNG) |
 | `/api/ie-generate` | Time-travel page generation |
 | `/api/parse-title` | Music metadata extraction |
 | `/api/ai/extract-memories` | Daily-note and long-term memory extraction |

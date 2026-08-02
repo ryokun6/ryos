@@ -224,7 +224,7 @@ stickies/note:uuid             → { content, position, color, ... }
 calendar/event:uuid            → { title, start, end, ... }
 contacts/contact:uuid          → { name, phone, ... }
 maps/favorite:uuid             → { name, coordinate, ... }
-stuff/item:uuid                → { title, coverBlobId, imageUrl, ... }  // no imageDataUrl
+stuff/item:uuid                → { title, coverBlobId, imageUrl, coverPresentation?, ... }  // no imageDataUrl; coverPresentation "cutout" stages transparent covers
 stuff/tag:uuid                 → { name, color, ... }
 images/item:uuid               → { name, contentRef: { sha256, size } }
 applets/item:uuid              → { name, contentRef: { sha256, size } }

@@ -489,6 +489,14 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Stuff sold nameplate: struck original price. Opaque fill is set inline;
+     !important clears inherited plate text-shadow so the dim color reads. */
+  .stuff-status-nameplate-struck {
+    text-decoration: line-through;
+    text-shadow: none !important;
+    opacity: 1;
+  }
+
   .font-mondwest {
     font-family: "Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia",
       "Palatino", "Yu Mincho", "Hiragino Mincho Pro", serif;

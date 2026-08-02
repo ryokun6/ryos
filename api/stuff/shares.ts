@@ -27,6 +27,7 @@ const StuffSharedItemSchema = z.object({
   notes: z.string().max(4000).default(""),
   imageDataUrl: z.string().max(2_000_000).optional(),
   imageUrl: z.string().max(2000).optional(),
+  coverPresentation: z.enum(["default", "cutout"]).optional(),
   barcode: z.string().max(128).optional(),
   brand: z.string().max(200).optional(),
   tagNames: z.array(z.string().max(64)).max(20).default([]),

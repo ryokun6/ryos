@@ -12,6 +12,7 @@ import {
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import type { StuffItem } from "../types";
 import { prepareStuffCoverBlob } from "./stuffCoverCompress";
+import { invalidateCoverTransparencyCache } from "./stuffCoverCutout";
 
 export {
   prepareStuffCoverBlob,
@@ -42,7 +43,11 @@ export function subscribeStuffCoversRevision(listener: () => void): () => void {
 
 export function bumpStuffCoversRevision(): void {
   coversRevision += 1;
-  for (const listener of revisionListeners) {
+  // Copy before notify: listeners may subscribe/unsubscribe (remount) while
+  // we iterate. Mutating the live Set during for-of can revisit new mounts
+  // in the same bump and amplify update storms.
+  const listeners = [...revisionListeners];
+  for (const listener of listeners) {
     try {
       listener();
     } catch (error) {
@@ -59,6 +64,8 @@ function revokeObjectUrl(coverBlobId: string): void {
 }
 
 export function invalidateStuffCoverCache(coverBlobId?: string): void {
+  // Cover bytes changed — drop alpha probe so cutout auto-detect re-runs.
+  invalidateCoverTransparencyCache(coverBlobId);
   if (coverBlobId) {
     revokeObjectUrl(coverBlobId);
   } else {
@@ -127,6 +134,7 @@ export async function putStuffCoverBlob(
   };
   await dbOperations.put(STORES.STUFF_IMAGES, record, coverBlobId);
   useCloudSyncStore.getState().clearDeletedKeys("stuffCoverKeys", [coverBlobId]);
+  invalidateCoverTransparencyCache(coverBlobId);
   revokeObjectUrl(coverBlobId);
   bumpStuffCoversRevision();
   emitCoverDirty(coverBlobId);
@@ -149,6 +157,7 @@ export async function deleteStuffCoverBlob(
   } catch (error) {
     console.error("[StuffCovers] Failed to delete cover blob:", error);
   }
+  invalidateCoverTransparencyCache(coverBlobId);
   revokeObjectUrl(coverBlobId);
   bumpStuffCoversRevision();
   if (options?.tombstone !== false) {
