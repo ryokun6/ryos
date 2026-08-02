@@ -489,10 +489,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  /* Stuff sold nameplate: struck original price. Opaque fill is set inline;
-     !important clears inherited plate text-shadow so the dim color reads. */
+  /* Stuff sold nameplate: struck original price. Opaque fill is set inline
+     (washed toward the plate, not black — black gray vanished on sold blue).
+     !important clears inherited plate text-shadow so the wash reads. */
   .stuff-status-nameplate-struck {
-    text-decoration: line-through;
+    text-decoration: line-through solid;
+    text-decoration-thickness: 2px;
     text-shadow: none !important;
     opacity: 1;
   }

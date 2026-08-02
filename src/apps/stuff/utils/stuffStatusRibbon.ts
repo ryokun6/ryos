@@ -65,11 +65,15 @@ export function mixOpaqueHex(
  * Must be an **opaque** rgb (not alpha / color-mix with transparent):
  * ryOS `body` sets `-webkit-font-smoothing: none`, and Permanent Marker's
  * self-overlapping strokes make translucent fills look nearly full-bright.
- * Mixing the label color toward black yields a muted gray that stays
- * unmistakably quieter than "Sold" / the sale amount on every plate.
+ *
+ * Mix the label color toward the **plate background** (not black). A dark
+ * gray toward black sits at nearly the same luminance as the sold blue plate
+ * (`#1d4ed8`), so struck originals disappeared and sold nameplates looked
+ * like status-only ("Sold"). A lighter wash stays secondary to the sale
+ * amount / label while remaining readable on the plate.
  */
 export function stuffStatusStruckColor(status: StuffStatus): string {
-  const { color } = STATUS_RIBBON_STYLES[status];
-  // ~42% label / 58% black — strong fade without disappearing.
-  return mixOpaqueHex(color, "#000000", 0.42);
+  const { background, color } = STATUS_RIBBON_STYLES[status];
+  // ~62% label / 38% plate — quieter than full label, still clear on blue.
+  return mixOpaqueHex(color, background, 0.62);
 }

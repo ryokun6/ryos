@@ -4059,11 +4059,11 @@
         "imageUrlPlaceholder": "影像 URL⋯",
         "lookup": "查詢",
         "pasteImageUrl": "貼上 URL⋯",
+        "print": "列印",
+        "qrCode": "QR Code",
         "removeBackground": "[TODO] Remove Background",
         "removeBackgroundFailed": "[TODO] Could not remove the background.",
         "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
-        "print": "列印",
-        "qrCode": "QR Code",
         "removeImage": "移除",
         "title": "詳細資訊"
       },
@@ -4144,6 +4144,9 @@
       },
       "name": "Stuff",
       "newItemTitle": "新增項目",
+      "price": {
+        "free": "免費"
+      },
       "scannedItemTitle": "掃描的項目",
       "scanner": {
         "add": "加入",

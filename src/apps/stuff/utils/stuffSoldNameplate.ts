@@ -8,6 +8,31 @@ export interface StuffSoldNameplatePrices {
   originalStruckFormatted: string | null;
 }
 
+/** Coerce persisted / sync values to a finite number. */
+function asFiniteAmount(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+/**
+ * Format a shelf nameplate price. Amount `0` becomes the localized Free label
+ * (Permanent Marker title case — matches Sold / For Sale).
+ */
+export function formatStuffNameplatePrice(
+  amount: unknown,
+  currency: string,
+  freeLabel: string
+): string | null {
+  const value = asFiniteAmount(amount);
+  if (value === undefined) return null;
+  if (value === 0) return freeLabel;
+  return formatMoney(value, currency);
+}
+
 /**
  * Resolve sold-status nameplate amounts.
  * Sale prefers `sold`, then asking (`discounted`), then `original`.
@@ -15,27 +40,33 @@ export interface StuffSoldNameplatePrices {
  * (or when sale falls back to original — strike only, no duplicate).
  */
 export function resolveStuffSoldNameplatePrices(
-  prices: StuffPrices
+  prices: StuffPrices,
+  freeLabel = "Free"
 ): StuffSoldNameplatePrices {
   const currency = prices.currency;
-  const saleAmount = prices.sold ?? prices.discounted ?? prices.original;
-  const saleFormatted = formatMoney(saleAmount, currency);
-  const original = prices.original;
+  const sold = asFiniteAmount(prices.sold);
+  const discounted = asFiniteAmount(prices.discounted);
+  const original = asFiniteAmount(prices.original);
+  const saleAmount = sold ?? discounted ?? original;
+  const saleFormatted = formatStuffNameplatePrice(
+    saleAmount,
+    currency,
+    freeLabel
+  );
 
-  if (
-    original === undefined ||
-    Number.isNaN(original) ||
-    saleAmount === undefined ||
-    Number.isNaN(saleAmount)
-  ) {
+  if (original === undefined || saleAmount === undefined) {
     return { saleFormatted, originalStruckFormatted: null };
   }
 
   // Sale is the original fallback only — strike it, don't repeat the number.
-  if (saleAmount === original && prices.sold == null && prices.discounted == null) {
+  if (saleAmount === original && sold === undefined && discounted === undefined) {
     return {
       saleFormatted: null,
-      originalStruckFormatted: formatMoney(original, currency),
+      originalStruckFormatted: formatStuffNameplatePrice(
+        original,
+        currency,
+        freeLabel
+      ),
     };
   }
 
@@ -45,6 +76,10 @@ export function resolveStuffSoldNameplatePrices(
 
   return {
     saleFormatted,
-    originalStruckFormatted: formatMoney(original, currency),
+    originalStruckFormatted: formatStuffNameplatePrice(
+      original,
+      currency,
+      freeLabel
+    ),
   };
 }

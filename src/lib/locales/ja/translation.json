@@ -4059,11 +4059,11 @@
         "imageUrlPlaceholder": "画像URL…",
         "lookup": "調べる",
         "pasteImageUrl": "URLをペースト…",
+        "print": "プリント",
+        "qrCode": "QRコード",
         "removeBackground": "背景を削除",
         "removeBackgroundFailed": "背景を削除できませんでした。",
         "removeBackgroundSignIn": "背景削除にはサインインが必要です。",
-        "print": "プリント",
-        "qrCode": "QRコード",
         "removeImage": "削除",
         "title": "詳細"
       },
@@ -4144,6 +4144,9 @@
       },
       "name": "Stuff",
       "newItemTitle": "新規アイテム",
+      "price": {
+        "free": "無料"
+      },
       "scannedItemTitle": "スキャンしたアイテム",
       "scanner": {
         "add": "追加",

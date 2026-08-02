@@ -5073,6 +5073,9 @@
         "sold": "Sold",
         "discarded": "Discarded"
       },
+      "price": {
+        "free": "Free"
+      },
       "fields": {
         "title": "Title",
         "brand": "Brand",

@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ScrollingText } from "@/apps/ipod/components/screen";
 import { stuffTagDisplayName } from "../utils/stuffTagDisplayName";
-import { colorFromString, formatMoney } from "../utils/colors";
+import { colorFromString } from "../utils/colors";
 import {
   productAquaPhotoMatStyle,
   productAquaPhotoTileStyle,
@@ -36,7 +36,10 @@ import {
   stuffStatusRibbonStyle,
   stuffStatusStruckColor,
 } from "../utils/stuffStatusRibbon";
-import { resolveStuffSoldNameplatePrices } from "../utils/stuffSoldNameplate";
+import {
+  formatStuffNameplatePrice,
+  resolveStuffSoldNameplatePrices,
+} from "../utils/stuffSoldNameplate";
 import { nameplatePoseFromId } from "../utils/stuffNameplatePose";
 import { getStuffCoverDimensions } from "../utils/stuffCoverSizes";
 import { useStuffCoverIsCutout } from "../hooks/useStuffCoverIsCutout";
@@ -270,21 +273,30 @@ function GridTitleOverlay({
 function StuffStatusNameCard({
   itemId,
   status,
-  price,
   prices,
 }: {
   itemId: string;
   status: StuffStatus;
-  /** Asking/original formatted for for_sale nameplates */
-  price?: string | null;
   prices: StuffPrices;
 }) {
   const { t } = useTranslation();
   const statusLabel = t(`apps.stuff.status.${status}`, {
     defaultValue: stuffStatusLabelDefault(status),
   });
+  const freeLabel = t("apps.stuff.price.free", { defaultValue: "Free" });
+  // Asking/original for for_sale; 0 → localized Free.
+  const forSalePrice =
+    status === "for_sale"
+      ? formatStuffNameplatePrice(
+          prices.discounted ?? prices.original,
+          prices.currency,
+          freeLabel
+        )
+      : null;
   const soldPrices =
-    status === "sold" ? resolveStuffSoldNameplatePrices(prices) : null;
+    status === "sold"
+      ? resolveStuffSoldNameplatePrices(prices, freeLabel)
+      : null;
   const soldTitleParts = soldPrices
     ? [
         soldPrices.originalStruckFormatted,
@@ -294,27 +306,26 @@ function StuffStatusNameCard({
     : [];
   // For-sale with an asking price: show price on the plate; tooltip keeps status + price.
   const title =
-    status === "for_sale" && price
-      ? `${statusLabel} · ${price}`
+    status === "for_sale" && forSalePrice
+      ? `${statusLabel} · ${forSalePrice}`
       : soldTitleParts.length > 0
         ? soldTitleParts.join(" ")
         : statusLabel;
   const { background, color } = stuffStatusRibbonStyle(status);
   // Soft wash so the cover peeks through: status ~80% → slightly darker translucent.
   const backgroundImage = `linear-gradient(105deg, color-mix(in srgb, ${background} 80%, transparent), color-mix(in srgb, color-mix(in srgb, ${background}, #000 28%) 55%, transparent))`;
-  // Opaque dim (not alpha): Permanent Marker stroke self-overlap makes
-  // opacity / color-mix(..., transparent) look nearly as bright as full text.
+  // Opaque wash toward plate (not black): dark gray was invisible on sold blue.
   const struckColor = status === "sold" ? stuffStatusStruckColor(status) : null;
   const { rotateDeg, offsetX, offsetY } = nameplatePoseFromId(itemId);
 
   let content: ReactNode = statusLabel;
-  if (status === "for_sale" && price) {
-    content = price;
+  if (status === "for_sale" && forSalePrice) {
+    content = forSalePrice;
   } else if (status === "sold" && soldPrices) {
     const hasPriceBits =
       soldPrices.originalStruckFormatted || soldPrices.saleFormatted;
     content = hasPriceBits ? (
-      <span className="inline-flex items-baseline gap-[0.35em]">
+      <span className="inline-flex items-baseline gap-[0.35em] overflow-visible">
         {soldPrices.originalStruckFormatted && struckColor ? (
           <span
             className="stuff-status-nameplate-struck"
@@ -329,9 +340,23 @@ function StuffStatusNameCard({
           </span>
         ) : null}
         {soldPrices.saleFormatted ? (
-          <span>{soldPrices.saleFormatted}</span>
+          <span
+            style={{
+              color,
+              WebkitTextFillColor: color,
+            }}
+          >
+            {soldPrices.saleFormatted}
+          </span>
         ) : null}
-        <span>{statusLabel}</span>
+        <span
+          style={{
+            color,
+            WebkitTextFillColor: color,
+          }}
+        >
+          {statusLabel}
+        </span>
       </span>
     ) : (
       statusLabel
@@ -340,12 +365,14 @@ function StuffStatusNameCard({
 
   return (
     <div
-      className="pointer-events-none absolute bottom-[6px] right-0 z-20 whitespace-nowrap rounded-[3px] px-2 py-[3px] text-[13px] leading-none shadow-[0_1px_2px_rgba(0,0,0,0.4)] ring-1 ring-black/20 backdrop-blur-sm font-permanent-marker"
+      className="pointer-events-none absolute bottom-[6px] right-0 z-20 overflow-visible whitespace-nowrap rounded-[3px] px-2 py-[3px] text-[13px] leading-none shadow-[0_1px_2px_rgba(0,0,0,0.4)] ring-1 ring-black/20 font-permanent-marker"
       style={{
         backgroundImage,
         color,
         textShadow: "0 0.5px 1px rgba(0,0,0,0.45)",
         // Handwriting face — Title Case from status labels reads better than uppercase.
+        // Avoid `.font-permanent-marker` alone for size: Aqua forces font-size on
+        // some named font utilities; size stays on text-[13px] here.
         fontFamily: "var(--font-permanent-marker)",
         transformOrigin: "100% 100%",
         transform: `translate(${offsetX}px, ${offsetY}px) rotate(${rotateDeg}deg)`,
@@ -498,9 +525,6 @@ export function StuffItemCover({
   const { width, height } = getStuffCoverDimensions(visualKind, size);
   const colors = colorFromString(item.id + item.title);
   const primaryTag = tags.find((tag) => item.tagIds.includes(tag.id));
-  const price =
-    formatMoney(item.prices.discounted ?? item.prices.original, item.prices.currency) ??
-    null;
   const PlaceholderIcon = KIND_ICONS[visualKind];
   const aquaTint = primaryTag?.color ?? colors.fg;
   const aquaText = productAquaTileTextColor(aquaTint);
@@ -543,7 +567,6 @@ export function StuffItemCover({
           <StuffStatusNameCard
             itemId={item.id}
             status={item.status}
-            price={price}
             prices={item.prices}
           />
         ) : null}
@@ -816,7 +839,6 @@ export function StuffItemCover({
         <StuffStatusNameCard
           itemId={item.id}
           status={item.status}
-          price={price}
           prices={item.prices}
         />
       )}

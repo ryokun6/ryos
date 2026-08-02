@@ -4068,11 +4068,11 @@
         "imageUrlPlaceholder": "URL изображения…",
         "lookup": "Найти",
         "pasteImageUrl": "Вставить URL…",
+        "print": "Печать",
+        "qrCode": "QR-код",
         "removeBackground": "[TODO] Remove Background",
         "removeBackgroundFailed": "[TODO] Could not remove the background.",
         "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
-        "print": "Печать",
-        "qrCode": "QR-код",
         "removeImage": "Удалить",
         "title": "Сведения"
       },
@@ -4153,6 +4153,9 @@
       },
       "name": "Stuff",
       "newItemTitle": "Новый предмет",
+      "price": {
+        "free": "Бесплатно"
+      },
       "scannedItemTitle": "Отсканированный предмет",
       "scanner": {
         "add": "Добавить",

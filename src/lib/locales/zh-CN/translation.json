@@ -4059,11 +4059,11 @@
         "imageUrlPlaceholder": "图像 URL…",
         "lookup": "查询",
         "pasteImageUrl": "粘贴 URL…",
+        "print": "打印",
+        "qrCode": "二维码",
         "removeBackground": "[TODO] Remove Background",
         "removeBackgroundFailed": "[TODO] Could not remove the background.",
         "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
-        "print": "打印",
-        "qrCode": "二维码",
         "removeImage": "移除",
         "title": "详细信息"
       },
@@ -4144,6 +4144,9 @@
       },
       "name": "Stuff",
       "newItemTitle": "新项目",
+      "price": {
+        "free": "免费"
+      },
       "scannedItemTitle": "扫描的项目",
       "scanner": {
         "add": "添加",

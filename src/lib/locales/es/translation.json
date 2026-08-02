@@ -4062,11 +4062,11 @@
         "imageUrlPlaceholder": "URL de imagen…",
         "lookup": "Buscar",
         "pasteImageUrl": "Pegar URL…",
+        "print": "Imprimir",
+        "qrCode": "Código QR",
         "removeBackground": "[TODO] Remove Background",
         "removeBackgroundFailed": "[TODO] Could not remove the background.",
         "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
-        "print": "Imprimir",
-        "qrCode": "Código QR",
         "removeImage": "Eliminar",
         "title": "Detalles"
       },
@@ -4147,6 +4147,9 @@
       },
       "name": "Stuff",
       "newItemTitle": "Nuevo artículo",
+      "price": {
+        "free": "Gratis"
+      },
       "scannedItemTitle": "Artículo escaneado",
       "scanner": {
         "add": "Añadir",

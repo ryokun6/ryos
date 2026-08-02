@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { resolveStuffSoldNameplatePrices } from "../../../src/apps/stuff/utils/stuffSoldNameplate";
+import {
+  formatStuffNameplatePrice,
+  resolveStuffSoldNameplatePrices,
+} from "../../../src/apps/stuff/utils/stuffSoldNameplate";
 import {
   mixOpaqueHex,
   stuffStatusRibbonStyle,
@@ -7,28 +10,48 @@ import {
 } from "../../../src/apps/stuff/utils/stuffStatusRibbon";
 
 describe("stuffStatusStruckColor", () => {
-  test("returns an opaque rgb mix dimmer than the sold label color", () => {
-    const { color } = stuffStatusRibbonStyle("sold");
+  test("returns an opaque rgb wash lighter than mixing toward black", () => {
+    const { background, color } = stuffStatusRibbonStyle("sold");
     const struck = stuffStatusStruckColor("sold");
     expect(struck).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
     expect(struck).not.toBe(color);
-    // Explicit opaque channels toward black — not currentColor / alpha mix.
-    expect(struck).toBe(mixOpaqueHex(color, "#000000", 0.42));
-    // Struck should be substantially darker than near-white label (#eff6ff).
+    // Mix toward plate — not black (black wash was invisible on sold blue).
+    expect(struck).toBe(mixOpaqueHex(color, background, 0.62));
+    expect(struck).not.toBe(mixOpaqueHex(color, "#000000", 0.42));
+
     const channels = struck.match(/\d+/g)!.map(Number);
-    const label = [0xef, 0xf6, 0xff];
+    const plate = [0x1d, 0x4e, 0xd8];
     const struckLuma =
       0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!;
-    const labelLuma =
-      0.2126 * label[0]! + 0.7152 * label[1]! + 0.0722 * label[2]!;
-    expect(struckLuma).toBeLessThan(labelLuma * 0.5);
+    const plateLuma =
+      0.2126 * plate[0]! + 0.7152 * plate[1]! + 0.0722 * plate[2]!;
+    // Struck must be clearly brighter than the plate so glyphs read on blue.
+    expect(struckLuma).toBeGreaterThan(plateLuma * 1.5);
   });
 
   test("mixOpaqueHex never emits alpha", () => {
     expect(mixOpaqueHex("#ffffff", "#000000", 0.45)).toBe("rgb(115, 115, 115)");
-    expect(mixOpaqueHex("#eff6ff", "#000000", 0.42)).toBe(
-      stuffStatusStruckColor("sold")
-    );
+  });
+});
+
+describe("formatStuffNameplatePrice", () => {
+  test("formats normal amounts", () => {
+    expect(formatStuffNameplatePrice(90, "USD", "Free")).toBe("$90.00");
+  });
+
+  test("shows Free for zero", () => {
+    expect(formatStuffNameplatePrice(0, "USD", "Free")).toBe("Free");
+    expect(formatStuffNameplatePrice(0, "JPY", "無料")).toBe("無料");
+  });
+
+  test("returns null for missing amounts", () => {
+    expect(formatStuffNameplatePrice(undefined, "USD", "Free")).toBeNull();
+    expect(formatStuffNameplatePrice(Number.NaN, "USD", "Free")).toBeNull();
+  });
+
+  test("coerces numeric strings from sync", () => {
+    expect(formatStuffNameplatePrice("42", "USD", "Free")).toBe("$42.00");
+    expect(formatStuffNameplatePrice("0", "USD", "Free")).toBe("Free");
   });
 });
 
@@ -105,6 +128,35 @@ describe("resolveStuffSoldNameplatePrices", () => {
     ).toEqual({
       saleFormatted: null,
       originalStruckFormatted: null,
+    });
+  });
+
+  test("shows Free for zero sale and/or original", () => {
+    expect(
+      resolveStuffSoldNameplatePrices(
+        {
+          original: 50,
+          sold: 0,
+          currency: "USD",
+        },
+        "Free"
+      )
+    ).toEqual({
+      saleFormatted: "Free",
+      originalStruckFormatted: "$50.00",
+    });
+
+    expect(
+      resolveStuffSoldNameplatePrices(
+        {
+          original: 0,
+          currency: "USD",
+        },
+        "Free"
+      )
+    ).toEqual({
+      saleFormatted: null,
+      originalStruckFormatted: "Free",
     });
   });
 });
