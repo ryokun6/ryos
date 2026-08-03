@@ -4068,9 +4068,9 @@
         "pasteImageUrl": "URL einfügen …",
         "print": "Drucken",
         "qrCode": "QR-Code",
-        "removeBackground": "[TODO] Remove Background",
-        "removeBackgroundFailed": "[TODO] Could not remove the background.",
-        "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
+        "removeBackground": "Hintergrund entfernen",
+        "removeBackgroundFailed": "Hintergrund konnte nicht entfernt werden.",
+        "removeBackgroundSignIn": "Melde dich an, um Hintergründe zu entfernen.",
         "removeImage": "Entfernen",
         "title": "Details"
       },

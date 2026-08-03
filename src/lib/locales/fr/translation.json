@@ -4071,9 +4071,9 @@
         "pasteImageUrl": "Coller l’URL…",
         "print": "Imprimer",
         "qrCode": "Code QR",
-        "removeBackground": "[TODO] Remove Background",
-        "removeBackgroundFailed": "[TODO] Could not remove the background.",
-        "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
+        "removeBackground": "Supprimer l’arrière-plan",
+        "removeBackgroundFailed": "Impossible de supprimer l’arrière-plan.",
+        "removeBackgroundSignIn": "Connectez-vous pour supprimer les arrière-plans.",
         "removeImage": "Supprimer",
         "title": "Détails"
       },

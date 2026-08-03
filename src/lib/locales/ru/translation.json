@@ -4077,9 +4077,9 @@
         "pasteImageUrl": "Вставить URL…",
         "print": "Печать",
         "qrCode": "QR-код",
-        "removeBackground": "[TODO] Remove Background",
-        "removeBackgroundFailed": "[TODO] Could not remove the background.",
-        "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
+        "removeBackground": "Удалить фон",
+        "removeBackgroundFailed": "Не удалось удалить фон.",
+        "removeBackgroundSignIn": "Войдите, чтобы удалять фон.",
         "removeImage": "Удалить",
         "title": "Сведения"
       },

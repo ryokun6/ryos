@@ -4071,9 +4071,9 @@
         "pasteImageUrl": "Colar URL…",
         "print": "Imprimir",
         "qrCode": "Código QR",
-        "removeBackground": "[TODO] Remove Background",
-        "removeBackgroundFailed": "[TODO] Could not remove the background.",
-        "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
+        "removeBackground": "Remover Fundo",
+        "removeBackgroundFailed": "Não foi possível remover o fundo.",
+        "removeBackgroundSignIn": "Inicie sessão para remover fundos.",
         "removeImage": "Remover",
         "title": "Detalhes"
       },
