@@ -20,6 +20,7 @@ import {
   mapNativeBarcodeFormat,
 } from "../utils/barcodeDetectorSupport";
 import { createBarcodeScanLock } from "../utils/barcodeScanLock";
+import { installZxingMultiFormatReaderWarnFilter } from "../utils/zxingWarnFilter";
 
 export interface ScannedBarcode {
   text: string;
@@ -90,6 +91,7 @@ export function StuffBarcodeScanner({
 
     let cancelled = false;
     let detectTimer: ReturnType<typeof setTimeout> | null = null;
+    let disposeZxingWarnFilter: (() => void) | null = null;
     const scanLock = createBarcodeScanLock();
 
     const cleanupCamera = () => {
@@ -97,6 +99,8 @@ export function StuffBarcodeScanner({
         clearTimeout(detectTimer);
         detectTimer = null;
       }
+      disposeZxingWarnFilter?.();
+      disposeZxingWarnFilter = null;
       controlsRef.current?.stop();
       controlsRef.current = null;
       stopMediaStream(streamRef.current);
@@ -189,10 +193,9 @@ export function StuffBarcodeScanner({
         }
 
         // Safari / Firefox / unsupported Chromium: ZXing with constrained formats.
-        const [{ BrowserMultiFormatReader }, zxingLibrary] = await Promise.all([
-          import("@zxing/browser"),
-          import("@zxing/library"),
-        ]);
+        // Load library first so browser and hints share one module instance.
+        const zxingLibrary = await import("@zxing/library");
+        const { BrowserMultiFormatReader } = await import("@zxing/browser");
         if (cancelled || !videoRef.current) {
           cleanupCamera();
           return;
@@ -210,6 +213,10 @@ export function StuffBarcodeScanner({
           BarcodeFormat.QR_CODE,
         ]);
         hints.set(DecodeHintType.TRY_HARDER, true);
+
+        // @zxing/library 0.23.0 spam-warns on normal NotFound/Checksum/Format
+        // misses; keep the filter installed for the continuous decode loop.
+        disposeZxingWarnFilter = installZxingMultiFormatReaderWarnFilter();
 
         const reader = new BrowserMultiFormatReader(hints);
         // Reuse the already-opened rear-camera stream so we don't renegotiate.
