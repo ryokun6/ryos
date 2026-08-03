@@ -110,9 +110,12 @@ describe("useStuffItemCoverSrc revision subscription", () => {
     } else {
       Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
     }
-    if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
-      GlobalRegistrator.unregister();
-    }
+    // Do not GlobalRegistrator.unregister() here. On CI's Bun process order,
+    // tearing down happy-dom after this suite can leave `indexedDB` in a state
+    // where later fake-indexeddb suites hang on open/deleteDatabase (5s
+    // timeouts). Leaving the registrator installed is safe for subsequent
+    // suites that check `isRegistered` before registering.
+    void registeredDomForSuite;
   });
 
   beforeEach(() => {

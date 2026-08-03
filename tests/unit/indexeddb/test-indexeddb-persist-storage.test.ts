@@ -17,6 +17,7 @@ import {
   afterEach,
   afterAll,
 } from "bun:test";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 
 // Minimal localStorage polyfill for the bun test environment (used by the
 // migration path). Mirrors tests/test-debounced-persist-storage.test.ts.
@@ -54,17 +55,9 @@ const {
   advancePersistEpoch,
 } = await import("../../../src/utils/persistWriteQueue");
 
-const resetDb = () =>
-  new Promise<void>((resolve) => {
-    const req = indexedDB.deleteDatabase("ryOS");
-    req.onsuccess = () => resolve();
-    req.onerror = () => resolve();
-    req.onblocked = () => resolve();
-  });
-
-beforeEach(async () => {
+beforeEach(() => {
   backing.clear();
-  await resetDb();
+  resetFakeIndexedDB();
 });
 
 afterEach(() => {

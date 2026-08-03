@@ -8,6 +8,7 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import type { AIChatMessage } from "../../../src/types/chat";
 import type { ChatRoom } from "../../../src/types/chat";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import { installTestLocalStorage } from "../../setup";
 import {
   resetPersistWritesForTests,
@@ -57,14 +58,6 @@ class QuotaStorage implements Storage {
     this.map.set(key, nextValue);
   }
 }
-
-const resetDb = () =>
-  new Promise<void>((resolve) => {
-    const req = indexedDB.deleteDatabase("ryOS");
-    req.onsuccess = () => resolve();
-    req.onerror = () => resolve();
-    req.onblocked = () => resolve();
-  });
 
 const makeLargeToolConversation = (): AIChatMessage[] => [
   {
@@ -178,8 +171,8 @@ async function readPersistedAiMessages(): Promise<AIChatMessage[]> {
 
 beforeEach(async () => {
   // Earlier suites may leave in-memory chat state and a debounced IndexedDB
-  // write in flight. Settle first: deleteDatabase resolves on `blocked` and
-  // silently keeps stale rows, which then win over localStorage migration.
+  // write in flight. Settle writes, then install a fresh fake-indexeddb
+  // factory so happy-dom unregister / leaked connections can't hang open().
   useChatsStore.setState({
     aiMessages: [],
   });
@@ -187,7 +180,7 @@ beforeEach(async () => {
   resetPersistWritesForTests();
   installTestLocalStorage(new QuotaStorage());
   localStorage.clear();
-  await resetDb();
+  resetFakeIndexedDB();
   listRoomsImpl = async () => ({ rooms: [] });
 });
 
