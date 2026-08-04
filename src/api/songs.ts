@@ -57,6 +57,7 @@ export interface SongMetadataPatch {
   clearFurigana?: boolean;
   clearSoramimi?: boolean;
   clearLyrics?: boolean;
+  clearCoverColor?: boolean;
   isShare?: boolean;
 }
 
@@ -354,6 +355,7 @@ export async function clearSongCachedData(
     clearTranslations?: boolean;
     clearFurigana?: boolean;
     clearSoramimi?: boolean;
+    clearCoverColor?: boolean;
   } = {}
 ): Promise<Record<string, unknown>> {
   invalidateLyricsCacheForSong(songId);
@@ -365,6 +367,7 @@ export async function clearSongCachedData(
       clearTranslations: options.clearTranslations ?? true,
       clearFurigana: options.clearFurigana ?? true,
       clearSoramimi: options.clearSoramimi ?? true,
+      clearCoverColor: options.clearCoverColor ?? true,
     },
   });
 }

@@ -137,6 +137,8 @@ export interface SaveSongOptions {
   preserveFurigana?: boolean;
   /** Preserve existing soramimi if not provided */
   preserveSoramimi?: boolean;
+  /** Drop cached cover glow color so clients re-extract it */
+  clearCoverColor?: boolean;
 }
 
 // =============================================================================
@@ -340,7 +342,8 @@ export async function saveSong(
     preserveLyrics = false, 
     preserveTranslations = false, 
     preserveFurigana = false, 
-    preserveSoramimi = false, 
+    preserveSoramimi = false,
+    clearCoverColor = false,
   } = options;
   const now = Date.now();
 
@@ -366,7 +369,9 @@ export async function saveSong(
     artist: song.artist ?? existing?.artist,
     album: song.album ?? existing?.album,
     cover: song.cover ?? existing?.cover,
-    coverColor: song.coverColor ?? (coverChanged ? undefined : existing?.coverColor),
+    coverColor: clearCoverColor
+      ? undefined
+      : (song.coverColor ?? (coverChanged ? undefined : existing?.coverColor)),
     lyricOffset: song.lyricOffset ?? existing?.lyricOffset,
     lyricsSource: song.lyricsSource ?? existing?.lyricsSource,
     createdBy: createdByValue,
@@ -695,13 +700,16 @@ export async function saveLyrics(
 
   // Build/update metadata
   const coverChanged = cover !== undefined && cover !== existingMeta?.cover;
+  // Force refresh / lyrics-source change should drop the cached glow color
+  // even when the cover URL is unchanged, so clients re-extract it.
+  const shouldClearCoverColor = coverChanged || shouldClearAnnotations;
   const meta: SongMetadata = {
     id,
     title: existingMeta?.title || lyricsSource?.title || id,
     artist: existingMeta?.artist || lyricsSource?.artist,
     album: existingMeta?.album || lyricsSource?.album,
     cover: cover ?? existingMeta?.cover,
-    coverColor: coverChanged ? undefined : existingMeta?.coverColor,
+    coverColor: shouldClearCoverColor ? undefined : existingMeta?.coverColor,
     lyricOffset: existingMeta?.lyricOffset,
     lyricsSource: lyricsSource ?? existingMeta?.lyricsSource,
     createdBy: existingMeta?.createdBy,

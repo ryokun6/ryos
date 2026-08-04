@@ -110,6 +110,20 @@ interface UnifiedLyricsResponse {
   translation?: TranslationStreamInfo;
   furigana?: FuriganaStreamInfo;
   soramimi?: SoramimiStreamInfo;
+  metadata?: {
+    title?: string;
+    artist?: string;
+    album?: string;
+    cover?: string;
+    coverColor?: string;
+    lyricsSource?: {
+      hash: string;
+      albumId: string | number;
+      title: string;
+      artist: string;
+      album?: string;
+    };
+  };
 }
 
 interface LyricsLogContext {
@@ -450,7 +464,10 @@ export function useLyrics(
       isAuthenticated: Boolean(authCredentials),
     });
 
-    // Build request - include translateTo, includeFurigana, includeSoramimi to reduce round-trips
+    // Build request - include translateTo, includeFurigana, includeSoramimi to reduce round-trips.
+    // Clear-cache and lyrics-search bump lyricsCacheBustTrigger; ask for metadata then
+    // so we can refresh local cover + color caches (and Cloud Sync via the store).
+    const shouldReturnMetadata = isCacheBustRequest;
     const requestBody: Record<string, unknown> = {
       action: "fetch-lyrics",
       force: forceServerFetch,
@@ -461,6 +478,7 @@ export function useLyrics(
       includeFurigana: includeFurigana || undefined,
       includeSoramimi: includeSoramimi || undefined,
       soramimiTargetLanguage: includeSoramimi ? soramimiTargetLanguage : undefined,
+      returnMetadata: shouldReturnMetadata || undefined,
     };
 
     if (selectedMatch) {
@@ -478,6 +496,7 @@ export function useLyrics(
       force: Boolean(requestBody.force),
       isRefetchRequest,
       isCacheBustRequest,
+      returnMetadata: shouldReturnMetadata,
       hasAuthenticatedUser: Boolean(authCredentials),
     });
     fetchLyrics(effectSongId, {
@@ -496,6 +515,7 @@ export function useLyrics(
       lyricsSource: requestBody.lyricsSource as
         | NonNullable<Parameters<typeof fetchSongLyrics>[1]>["lyricsSource"]
         | undefined,
+      returnMetadata: shouldReturnMetadata,
       signal: controller.signal,
     })
       .then(async (json) => {
@@ -533,6 +553,33 @@ export function useLyrics(
         });
         cachedKeyRef.current = cacheKey;
         useIpodStore.setState({ currentLyrics: { lines: parsed } });
+
+        // Refresh local + cloud-synced cover metadata after clear-cache / search.
+        // Server clears coverColor on force/source-change; apply cover and clear
+        // local color so glow extraction re-runs and re-saves.
+        if (shouldReturnMetadata && json.metadata) {
+          const meta = json.metadata;
+          const coverUpdate: {
+            cover?: string;
+            coverColor?: string | null;
+          } = {};
+          if (typeof meta.cover === "string" && meta.cover.length > 0) {
+            coverUpdate.cover = meta.cover;
+          }
+          if (typeof meta.coverColor === "string" && meta.coverColor.length > 0) {
+            coverUpdate.coverColor = meta.coverColor;
+          } else {
+            coverUpdate.coverColor = null;
+          }
+          if (coverUpdate.cover !== undefined || coverUpdate.coverColor !== undefined) {
+            useIpodStore.getState().applyTrackCoverMetadata(effectSongId, coverUpdate);
+            lyricsLog.debug("Applied cover metadata from lyrics fetch", {
+              ...logContext,
+              cover: coverUpdate.cover,
+              coverColor: coverUpdate.coverColor,
+            });
+          }
+        }
 
         // Store translation info for the translation effect to use (with language to ensure correct matching)
         if (json.translation && translateTo) {

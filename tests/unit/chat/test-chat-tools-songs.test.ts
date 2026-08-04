@@ -142,6 +142,55 @@ describe("song library chat tools", () => {
     expect(updated.coverColor).toBeUndefined();
   });
 
+  test("saveLyrics clears coverColor on force refresh even when cover URL is unchanged", async () => {
+    const redis = new FakeRedis();
+    const cover = "https://example.com/cover-same.png";
+
+    await saveLyrics(
+      redis as unknown as Redis,
+      "song_color_force",
+      { lrc: "[00:00.00]hello" },
+      undefined,
+      cover
+    );
+    await saveSong(redis as unknown as Redis, {
+      id: "song_color_force",
+      coverColor: "#fedcba",
+    });
+
+    const updated = await saveLyrics(
+      redis as unknown as Redis,
+      "song_color_force",
+      { lrc: "[00:00.00]hello again" },
+      undefined,
+      cover,
+      true // clearAnnotations / force refresh
+    );
+
+    expect(updated.cover).toBe(cover);
+    expect(updated.coverColor).toBeUndefined();
+  });
+
+  test("saveSong clearCoverColor drops cached glow color without changing cover", async () => {
+    const redis = new FakeRedis();
+
+    await saveSong(redis as unknown as Redis, {
+      id: "song_clear_color",
+      title: "Clear Color",
+      cover: "https://example.com/cover.png",
+      coverColor: "#112233",
+    });
+
+    const cleared = await saveSong(
+      redis as unknown as Redis,
+      { id: "song_clear_color" },
+      { clearCoverColor: true }
+    );
+
+    expect(cleared.cover).toBe("https://example.com/cover.png");
+    expect(cleared.coverColor).toBeUndefined();
+  });
+
   test("all profile does not expose songLibraryControl", () => {
     const tools = createChatTools(createContext(new FakeRedis()), { profile: "all" });
     expect("songLibraryControl" in tools).toBe(false);
