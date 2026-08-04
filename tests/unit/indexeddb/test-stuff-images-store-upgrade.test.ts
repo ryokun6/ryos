@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import "fake-indexeddb/auto";
 
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import {
   DB_NAME,
   DB_VERSION,
@@ -9,15 +10,6 @@ import {
   ensureIndexedDBInitialized,
   STORES,
 } from "../../../src/utils/indexedDB";
-
-async function deleteRyOsDatabase(): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(DB_NAME);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => resolve();
-  });
-}
 
 /** Create an older schema that intentionally omits `stuff_images`. */
 async function seedDatabaseWithoutStuffImages(
@@ -43,8 +35,8 @@ async function seedDatabaseWithoutStuffImages(
 }
 
 describe("stuff_images IndexedDB store", () => {
-  beforeEach(async () => {
-    await deleteRyOsDatabase();
+  beforeEach(() => {
+    resetFakeIndexedDB();
   });
 
   test("DB_VERSION includes stuff_images in the current schema", () => {

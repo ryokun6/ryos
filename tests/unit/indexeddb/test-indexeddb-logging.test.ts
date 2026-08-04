@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import "fake-indexeddb/auto";
 
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import { dbOperations, STORES } from "../../../src/utils/indexedDB";
 import {
   refreshRuntimeDebugFlag,
@@ -10,24 +11,15 @@ import {
 const originalConsoleLog = console.log;
 let logCalls: unknown[][] = [];
 
-async function deleteRyOsDatabase(): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase("ryOS");
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => resolve();
-  });
-}
-
 describe("IndexedDB logging", () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     logCalls = [];
     console.log = mock((...args: unknown[]) => {
       logCalls.push(args);
     }) as unknown as typeof console.log;
     refreshRuntimeDebugFlag();
     setRuntimeDebugEnabled(true);
-    await deleteRyOsDatabase();
+    resetFakeIndexedDB();
   });
 
   afterEach(() => {

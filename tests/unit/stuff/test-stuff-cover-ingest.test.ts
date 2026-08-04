@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import "fake-indexeddb/auto";
 
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import { STUFF_IMAGE_MAX_BYTES } from "../../../src/apps/stuff/utils/barcodeLookup";
 import {
   clipboardMayContainImage,
@@ -16,10 +17,7 @@ import {
   getStuffCoverRecord,
   putStuffCoverBlob,
 } from "../../../src/apps/stuff/utils/stuffCoverBlobs";
-import {
-  DB_NAME,
-  ensureIndexedDBInitialized,
-} from "../../../src/utils/indexedDB";
+import { ensureIndexedDBInitialized } from "../../../src/utils/indexedDB";
 
 function makeFile(
   name: string,
@@ -126,12 +124,7 @@ describe("stuff cover ingest helpers", () => {
 
 describe("putStuffCoverBlob JPEG", () => {
   test("stores and reads a JPEG blob", async () => {
-    await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.deleteDatabase(DB_NAME);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-      request.onblocked = () => resolve();
-    });
+    resetFakeIndexedDB();
     await ensureIndexedDBInitialized();
 
     const jpeg = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], {
@@ -140,7 +133,9 @@ describe("putStuffCoverBlob JPEG", () => {
     await putStuffCoverBlob("jpeg-cover", jpeg);
     const loaded = await getStuffCoverRecord("jpeg-cover");
     expect(loaded?.type).toBe("image/jpeg");
-    expect(loaded?.content).toBeInstanceOf(Blob);
-    expect(loaded?.content.size).toBe(4);
+    // Avoid `instanceof Blob` — happy-dom may leave a different Blob realm
+    // after GlobalRegistrator teardown in earlier suites.
+    expect(loaded?.content).toMatchObject({ size: 4, type: "image/jpeg" });
+    expect(typeof loaded?.content?.arrayBuffer).toBe("function");
   });
 });
