@@ -53,19 +53,36 @@ export function pickPrUrlFromRunGit(git: unknown): string | undefined {
 /** Default repo for ryOS Cursor Cloud runs (override with CURSOR_CLOUD_REPO_URL). */
 export const DEFAULT_RYOS_GITHUB_REPO_URL = "https://github.com/ryokun6/ryos";
 
-/** Default cloud model — Composer 2.5 Fast (`fast` is default; set explicitly for clarity). */
-export const DEFAULT_CURSOR_SDK_MODEL_ID = "composer-2.5";
+/**
+ * Default cloud model — Grok 4.5 (high effort + fast).
+ * Matches the `isDefault` variant from `Cursor.models.list()`.
+ */
+export const DEFAULT_CURSOR_SDK_MODEL_ID = "grok-4.5";
 
 export const DEFAULT_CURSOR_SDK_MODEL: import("@cursor/sdk").ModelSelection = {
   id: DEFAULT_CURSOR_SDK_MODEL_ID,
+  params: [
+    { id: "effort", value: "high" },
+    { id: "fast", value: "true" },
+  ],
+};
+
+/** Composer 2.5 Fast — kept for explicit / legacy model ids. */
+const COMPOSER_25_FAST: import("@cursor/sdk").ModelSelection = {
+  id: "composer-2.5",
   params: [{ id: "fast", value: "true" }],
 };
 
-const LEGACY_FAST_MODEL_IDS = new Set(["composer-2.5-fast", "composer-2-fast"]);
+const LEGACY_COMPOSER_FAST_IDS = new Set([
+  "composer-2",
+  "composer-2-fast",
+  "composer-2.5",
+  "composer-2.5-fast",
+]);
 
 /**
  * Resolve a dashboard/env model id to SDK `ModelSelection`.
- * Maps legacy `composer-2` / `composer-*-fast` aliases to Composer 2.5 Fast.
+ * Unset → Grok 4.5 high+fast. Legacy Composer ids → Composer 2.5 Fast.
  */
 export function resolveCursorSdkModelSelection(
   modelIdOverride?: string | null
@@ -75,16 +92,10 @@ export function resolveCursorSdkModelSelection(
     process.env.CURSOR_SDK_MODEL?.trim() ||
     "";
   if (!raw) return DEFAULT_CURSOR_SDK_MODEL;
-  if (raw === "composer-2") {
-    return DEFAULT_CURSOR_SDK_MODEL;
+  if (LEGACY_COMPOSER_FAST_IDS.has(raw)) {
+    return COMPOSER_25_FAST;
   }
-  if (LEGACY_FAST_MODEL_IDS.has(raw)) {
-    return {
-      id: raw.replace(/-fast$/, ""),
-      params: [{ id: "fast", value: "true" }],
-    };
-  }
-  if (raw === DEFAULT_CURSOR_SDK_MODEL_ID) {
+  if (raw === DEFAULT_CURSOR_SDK_MODEL_ID || raw === "grok-4.5-fast") {
     return DEFAULT_CURSOR_SDK_MODEL;
   }
   return { id: raw };
@@ -142,7 +153,7 @@ export const cursorCloudAgentSchema = z.object({
     .min(1)
     .optional()
     .describe(
-      "Optional model id (default composer-2.5 fast). Use Cursor.models.list() for valid ids; fast is a param on composer-2.5, not a separate id."
+      "Optional model id (default grok-4.5 high effort + fast). Use Cursor.models.list() for valid ids; effort/fast are params on grok-4.5, not separate ids."
     ),
 });
 
