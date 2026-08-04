@@ -8,20 +8,13 @@
 
 import "fake-indexeddb/auto";
 import { describe, test, expect, beforeEach } from "bun:test";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import {
   resetPersistWritesForTests,
   settleAllPersistWrites,
 } from "../../../src/utils/persistWriteQueue";
 
 const SOUNDBOARD_KEY = "ryos:soundboard";
-
-const resetDb = () =>
-  new Promise<void>((resolve) => {
-    const req = indexedDB.deleteDatabase("ryOS");
-    req.onsuccess = () => resolve();
-    req.onerror = () => resolve();
-    req.onblocked = () => resolve();
-  });
 
 const makeBoard = (id: string, name: string) => ({
   id,
@@ -33,10 +26,10 @@ const makeBoard = (id: string, name: string) => ({
   })),
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   resetPersistWritesForTests();
   localStorage.clear();
-  await resetDb();
+  resetFakeIndexedDB();
 });
 
 describe("useSoundboardStore IndexedDB persistence", () => {

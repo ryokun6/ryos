@@ -30,15 +30,24 @@ class MemoryStorage {
   }
 }
 
-const ORIGINAL = (globalThis as { sessionStorage?: Storage }).sessionStorage;
+const ORIGINAL = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
 
 beforeEach(() => {
-  (globalThis as { sessionStorage?: Storage }).sessionStorage =
-    new MemoryStorage() as unknown as Storage;
+  // happy-dom makes sessionStorage a readonly accessor; assignment throws.
+  Object.defineProperty(globalThis, "sessionStorage", {
+    configurable: true,
+    enumerable: true,
+    writable: true,
+    value: new MemoryStorage() as unknown as Storage,
+  });
 });
 
 afterEach(() => {
-  (globalThis as { sessionStorage?: Storage }).sessionStorage = ORIGINAL;
+  if (ORIGINAL) {
+    Object.defineProperty(globalThis, "sessionStorage", ORIGINAL);
+  } else {
+    Reflect.deleteProperty(globalThis, "sessionStorage");
+  }
 });
 
 // Imported after the storage shim is installable; functions read sessionStorage

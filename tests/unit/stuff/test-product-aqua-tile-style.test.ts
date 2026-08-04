@@ -21,10 +21,14 @@ describe("productAquaTileStyle", () => {
 
   test("photo tile uses a light clear fill, not strong tinted gel", () => {
     const style = productAquaPhotoTileStyle("#2f6fed");
-    expect(String(style.background)).toContain("255, 255, 255, 0.96");
-    expect(String(style.background)).toContain("0.14");
+    // Soft tinted wash into near-white — packshots sit on a light well
+    // without the strong 0.72 gel fill used by non-photo tiles.
+    expect(String(style.background)).toContain("255, 255, 255, 0.94");
+    expect(String(style.background)).toContain("255, 255, 255, 0.99");
+    expect(String(style.background)).toContain("0.18");
     expect(String(style.background)).not.toContain("0.72");
-    expect(String(style.boxShadow)).toContain("inset");
+    // Photo well is opaque; inset chrome lives on the mat above the photo.
+    expect(String(style.boxShadow ?? "")).not.toContain("inset");
   });
 
   test("uses dark text on light gel surfaces (typical tags)", () => {

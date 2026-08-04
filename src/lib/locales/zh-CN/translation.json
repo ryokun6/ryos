@@ -4068,9 +4068,9 @@
         "pasteImageUrl": "粘贴 URL…",
         "print": "打印",
         "qrCode": "二维码",
-        "removeBackground": "[TODO] Remove Background",
-        "removeBackgroundFailed": "[TODO] Could not remove the background.",
-        "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
+        "removeBackground": "移除背景",
+        "removeBackgroundFailed": "无法移除背景。",
+        "removeBackgroundSignIn": "登录以移除背景。",
         "removeImage": "移除",
         "title": "详细信息"
       },

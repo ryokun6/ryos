@@ -829,6 +829,9 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Keep a single @zxing/library instance so ReaderException instanceof
+    // checks (and Stuff's warn filter) behave correctly across @zxing/browser.
+    dedupe: ["@zxing/library"],
   },
   build: {
     // Target modern browsers for smaller bundles

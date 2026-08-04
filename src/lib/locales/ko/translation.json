@@ -4068,9 +4068,9 @@
         "pasteImageUrl": "URL 붙여넣기…",
         "print": "인쇄",
         "qrCode": "QR 코드",
-        "removeBackground": "[TODO] Remove Background",
-        "removeBackgroundFailed": "[TODO] Could not remove the background.",
-        "removeBackgroundSignIn": "[TODO] Sign in to remove backgrounds.",
+        "removeBackground": "배경 제거",
+        "removeBackgroundFailed": "배경을 제거할 수 없습니다.",
+        "removeBackgroundSignIn": "배경을 제거하려면 로그인하십시오.",
         "removeImage": "제거",
         "title": "세부사항"
       },
