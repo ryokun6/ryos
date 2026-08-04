@@ -13,6 +13,7 @@ import {
   ryOSLocaleToSpeechLanguage,
 } from "../../../src/utils/browserSpeech";
 import { useAudioSettingsStore } from "../../../src/stores/useAudioSettingsStore";
+import { assignGlobal } from "../../helpers/assign-global";
 
 const enSpeech: Record<string, string> = {
   "apps.calculator.speech.error": "Error",
@@ -172,7 +173,8 @@ describe("calculatorSpeech synchronous playback (mobile Safari)", () => {
       addEventListener: () => {},
       removeEventListener: () => {},
     };
-    g.window = globalThis;
+    // happy-dom may leave `window` readonly after GlobalRegistrator.register().
+    assignGlobal("window", globalThis);
     g.speechSynthesis = synth;
     g.SpeechSynthesisUtterance = FakeUtterance;
     __resetCalculatorSpeechStateForTests();
@@ -183,7 +185,7 @@ describe("calculatorSpeech synchronous playback (mobile Safari)", () => {
     spoken.forEach((u) => u.onend?.());
     __resetCalculatorSpeechStateForTests();
     useAudioSettingsStore.setState({ browserTtsVoiceURI: null });
-    g.window = originalWindow;
+    assignGlobal("window", originalWindow);
     g.SpeechSynthesisUtterance = originalUtterance;
     delete g.speechSynthesis;
   });

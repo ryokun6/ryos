@@ -16,6 +16,7 @@ import {
 } from "../../../src/components/assistant/assistantSounds";
 import { useAudioSettingsStore } from "../../../src/stores/useAudioSettingsStore";
 import { useAssistantStore } from "../../../src/stores/useAssistantStore";
+import { assignGlobal } from "../../helpers/assign-global";
 
 describe("prepareAssistantSpeechTexts", () => {
   test("splits a reply into sentence utterances", () => {
@@ -104,7 +105,8 @@ describe("assistant speech playback", () => {
       addEventListener: () => {},
       removeEventListener: () => {},
     };
-    g.window = globalThis;
+    // happy-dom may leave `window` readonly after GlobalRegistrator.register().
+    assignGlobal("window", globalThis);
     g.speechSynthesis = synth;
     g.SpeechSynthesisUtterance = FakeUtterance;
     __resetAssistantSpeechStateForTests();
@@ -117,7 +119,7 @@ describe("assistant speech playback", () => {
     __resetAssistantSpeechStateForTests();
     useAudioSettingsStore.setState({ browserTtsVoiceURI: null });
     useAssistantStore.setState({ characterId: "rover" });
-    g.window = originalWindow;
+    assignGlobal("window", originalWindow);
     g.SpeechSynthesisUtterance = originalUtterance;
     delete g.speechSynthesis;
   });
@@ -436,7 +438,7 @@ describe("assistant sound effects coexist with speech", () => {
       addEventListener: () => {},
       removeEventListener: () => {},
     };
-    g.window = globalThis;
+    assignGlobal("window", globalThis);
     g.speechSynthesis = synth;
     g.SpeechSynthesisUtterance = FakeUtterance;
     const fakeContext = {
@@ -480,7 +482,7 @@ describe("assistant sound effects coexist with speech", () => {
     __setAssistantSoundPipelineForTests(null);
     __resetAssistantSpeechStateForTests();
     resetAssistantSoundStateForTests();
-    g.window = originalWindow;
+    assignGlobal("window", originalWindow);
     g.SpeechSynthesisUtterance = originalUtterance;
     delete g.speechSynthesis;
   });

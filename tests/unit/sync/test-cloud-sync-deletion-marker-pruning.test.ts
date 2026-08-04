@@ -17,10 +17,12 @@ import {
   resetPersistWritesForTests,
   settleAllPersistWrites,
 } from "../../../src/utils/persistWriteQueue";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 
 let engine: CloudSyncEngine | null = null;
 
 beforeEach(() => {
+  resetFakeIndexedDB();
   resetPersistWritesForTests();
   localStorage.clear();
   useCloudSyncStore.setState({
