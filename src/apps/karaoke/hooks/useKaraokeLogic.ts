@@ -94,7 +94,6 @@ export function useKaraokeLogic({
     setLyricsTranslationLanguage,
     toggleLyrics,
     clearLibrary,
-    refreshLyrics,
     setTrackLyricsSource,
     clearTrackLyricsSource,
     addTrackFromVideoId,
@@ -105,7 +104,6 @@ export function useKaraokeLogic({
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
     toggleLyrics: s.toggleLyrics,
     clearLibrary: s.clearLibrary,
-    refreshLyrics: s.refreshLyrics,
     setTrackLyricsSource: s.setTrackLyricsSource,
     clearTrackLyricsSource: s.clearTrackLyricsSource,
     addTrackFromVideoId: s.addTrackFromVideoId,
@@ -1412,23 +1410,31 @@ export function useKaraokeLogic({
   }, [tracks, currentIndex]);
 
   const handleLyricsSearchSelect = useCallback(
-    (result: { hash: string; albumId: string | number; title: string; artist: string; album?: string }) => {
+    (result: {
+      hash: string;
+      albumId: string | number;
+      title: string;
+      artist: string;
+      album?: string;
+      cover?: string;
+    }) => {
       const track = tracks[currentIndex];
       if (track) {
-        setTrackLyricsSource(track.id, result);
-        refreshLyrics();
+        // Updates local cover, clears coverColor, hard-refetches lyrics
+        // (returnMetadata applies the refreshed cover into local/cloud caches).
+        setTrackLyricsSource(track.id, result, { cover: result.cover });
       }
     },
-    [tracks, currentIndex, setTrackLyricsSource, refreshLyrics]
+    [tracks, currentIndex, setTrackLyricsSource]
   );
 
   const handleLyricsSearchReset = useCallback(() => {
     const track = tracks[currentIndex];
     if (track) {
+      // clearTrackLyricsSource already hard-refetches lyrics
       clearTrackLyricsSource(track.id);
-      refreshLyrics();
     }
-  }, [tracks, currentIndex, clearTrackLyricsSource, refreshLyrics]);
+  }, [tracks, currentIndex, clearTrackLyricsSource]);
 
   // Song search/add handlers
   const handleAddSong = useCallback(() => {

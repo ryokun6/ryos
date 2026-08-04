@@ -74,6 +74,7 @@ export const UpdateSongSchema = z.object({
   clearFurigana: z.boolean().optional(),
   clearSoramimi: z.boolean().optional(),
   clearLyrics: z.boolean().optional(),
+  clearCoverColor: z.boolean().optional(),
   // Flag to indicate this is a share action (sets createdBy)
   isShare: z.boolean().optional(),
 });
@@ -134,12 +135,13 @@ export const SoramimiStreamSchema = z.object({
   }))).optional(),
 });
 
-// Schema for clearing cached translations, furigana, and soramimi
+// Schema for clearing cached translations, furigana, soramimi, and cover color
 export const ClearCachedDataSchema = z.object({
   action: z.literal("clear-cached-data"),
   clearTranslations: z.boolean().optional(),
   clearFurigana: z.boolean().optional(),
   clearSoramimi: z.boolean().optional(),
+  clearCoverColor: z.boolean().optional(),
 });
 
 // Schema for unsharing a song (clearing createdBy)

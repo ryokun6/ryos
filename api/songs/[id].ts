@@ -1728,7 +1728,12 @@ export default apiHandler<Record<string, unknown>>(
           return errorResponse("Invalid request body");
         }
 
-        const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana, clearSoramimi: shouldClearSoramimi } = parsed.data;
+        const {
+          clearTranslations: shouldClearTranslations,
+          clearFurigana: shouldClearFurigana,
+          clearSoramimi: shouldClearSoramimi,
+          clearCoverColor: shouldClearCoverColor,
+        } = parsed.data;
 
         // Get song to check what needs clearing
         const song = await getSong(redis, songId, {
@@ -1769,6 +1774,14 @@ export default apiHandler<Record<string, unknown>>(
             await saveSong(redis, { id: songId, soramimi: [], soramimiByLang: {} }, { preserveSoramimi: false });
           }
           cleared.push("soramimi");
+        }
+
+        // Clear cached cover glow color so clients re-extract after cover refresh
+        if (shouldClearCoverColor) {
+          if (song.coverColor) {
+            await saveSong(redis, { id: songId }, { clearCoverColor: true });
+          }
+          cleared.push("coverColor");
         }
 
         logger.info(`Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
@@ -1837,7 +1850,16 @@ export default apiHandler<Record<string, unknown>>(
 
       // Update song
       const isUpdate = !!existingSong;
-      const { lyricsSource, clearTranslations, clearFurigana, clearSoramimi, clearLyrics, isShare, ...restData } = parsed.data;
+      const {
+        lyricsSource,
+        clearTranslations,
+        clearFurigana,
+        clearSoramimi,
+        clearLyrics,
+        clearCoverColor,
+        isShare,
+        ...restData
+      } = parsed.data;
       
       // Determine what to preserve vs clear
       const preserveOptions = {
@@ -1845,6 +1867,7 @@ export default apiHandler<Record<string, unknown>>(
         preserveTranslations: !clearTranslations,
         preserveFurigana: !clearFurigana,
         preserveSoramimi: !clearSoramimi,
+        clearCoverColor: Boolean(clearCoverColor),
       };
 
       // Determine createdBy
