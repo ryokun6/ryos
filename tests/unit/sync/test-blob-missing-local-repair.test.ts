@@ -13,6 +13,7 @@ import {
 } from "../../../src/utils/indexedDB";
 import { serializeStoreItem } from "../../../src/utils/indexedDBBackup";
 import type { SyncOp } from "../../../src/shared/sync2/types";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 
 const t = "01718180000000-0000-test";
 const BOOK_UUID = "a66df7db-ef19-4b22-a23c-587dbd2ac620";
@@ -47,6 +48,9 @@ describe("cloud sync blob missing-local repair", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(async () => {
+    // Fresh factory so prior happy-dom unregister / leaked connections can't
+    // leave deleteDatabase hanging until the suite timeout.
+    resetFakeIndexedDB();
     await deleteRyOsDatabase();
     useCloudSyncStore.setState({
       autoSyncEnabled: true,

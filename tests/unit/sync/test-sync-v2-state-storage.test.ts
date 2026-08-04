@@ -27,6 +27,7 @@ import {
   restorePersistEpoch,
   settleAllPersistWrites,
 } from "../../../src/utils/persistWriteQueue";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 
 const resetDb = () =>
   new Promise<void>((resolve) => {
@@ -56,6 +57,7 @@ beforeEach(async () => {
   await destroyCloudSyncEngine();
   await settleAllPersistWrites();
   resetPersistWritesForTests();
+  resetFakeIndexedDB();
   await resetDb();
   localStorage.clear();
 });

@@ -17,6 +17,7 @@ import {
   settleAllPersistWrites,
 } from "../../../src/utils/persistWriteQueue";
 import { installTestLocalStorage } from "../../setup";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 
 interface TestEntity {
   id: string;
@@ -85,6 +86,7 @@ beforeEach(async () => {
   resetPersistWritesForTests();
   installTestLocalStorage();
   localStorage.clear();
+  resetFakeIndexedDB();
   await resetDb();
 });
 

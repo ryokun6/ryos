@@ -184,7 +184,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@happy-dom/global-registrator": "^20.11.1",
+    "@happy-dom/global-registrator": "20.10.6",
     "@tailwindcss/typography": "^0.5.20",
     "@types/d3-geo": "^3.1.1",
     "@types/formidable": "^3.5.1",
@@ -203,7 +203,7 @@
     "eslint-plugin-react-refresh": "^0.5.3",
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.8.0",
-    "happy-dom": "^20.11.1",
+    "happy-dom": "20.10.6",
     "playwright": "^1.62.1",
     "sharp": "^0.35.3",
     "tailwindcss": "^4.3.3",
