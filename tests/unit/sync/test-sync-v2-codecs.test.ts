@@ -298,12 +298,13 @@ describe("maps codec", () => {
 
 describe("stuff codec", () => {
   beforeEach(() => {
-    useStuffStore.setState({ items: [], tags: [] } as never);
+    useStuffStore.setState({ items: [], tags: [], locations: [] } as never);
     useCloudSyncStore.setState({
       deletionMarkers: {
         ...useCloudSyncStore.getState().deletionMarkers,
         stuffItemIds: {},
         stuffTagIds: {},
+        stuffLocationIds: {},
         stuffCoverKeys: {},
       },
     });
@@ -327,6 +328,7 @@ describe("stuff codec", () => {
         },
       ],
       tags: [{ id: "t1", name: "Kitchen", color: "#c45c26", createdAt: 1 }],
+      locations: [],
     } as never);
 
     const docs = SYNC_CODECS.stuff.collect(ctx) as Map<string, unknown>;
