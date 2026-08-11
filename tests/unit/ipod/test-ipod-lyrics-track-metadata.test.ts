@@ -274,6 +274,148 @@ describe("setTrackCoverColor", () => {
   });
 });
 
+describe("applyTrackCoverMetadata / setTrackLyricsSource / clearLyricsCache", () => {
+  test("applyTrackCoverMetadata updates cover and clears color across libraries", async () => {
+    useIpodStore.setState({
+      tracks: [
+        {
+          id: "dQw4w9WgXcQ",
+          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          title: "Never Gonna Give You Up",
+          cover: "https://example.com/old.png",
+          coverColor: "#111111",
+        },
+      ],
+      appleMusicTracks: [
+        {
+          id: "am:1616228595",
+          url: "applemusic:1616228595",
+          title: "Bohemian Rhapsody",
+          source: "appleMusic",
+          cover: "https://example.com/am-old.png",
+          coverColor: "#222222",
+        },
+      ],
+      appleMusicRecentlyAddedTracks: [],
+      appleMusicFavoriteTracks: [],
+      appleMusicPlaylistTracks: {},
+    });
+
+    useIpodStore.getState().applyTrackCoverMetadata("dQw4w9WgXcQ", {
+      cover: "https://example.com/new.png",
+      coverColor: null,
+    });
+    useIpodStore.getState().applyTrackCoverMetadata("am:1616228595", {
+      cover: "https://example.com/am-new.png",
+    });
+
+    const updated = useIpodStore.getState();
+    expect(updated.tracks[0]?.cover).toBe("https://example.com/new.png");
+    expect(updated.tracks[0]?.coverColor).toBeUndefined();
+    expect(updated.appleMusicTracks[0]?.cover).toBe(
+      "https://example.com/am-new.png"
+    );
+    // Cover URL change without an explicit color clears the stale glow color.
+    expect(updated.appleMusicTracks[0]?.coverColor).toBeUndefined();
+
+    await settlePersistWrites();
+    const persisted = (await readPersistedIpodState()) as {
+      state?: { tracks?: Track[] };
+    };
+    expect(persisted.state?.tracks?.[0]?.cover).toBe(
+      "https://example.com/new.png"
+    );
+    expect(persisted.state?.tracks?.[0]?.coverColor).toBeUndefined();
+  });
+
+  test("setTrackLyricsSource applies cover, clears color, and hard-refetches", () => {
+    useIpodStore.setState({
+      tracks: [
+        {
+          id: "dQw4w9WgXcQ",
+          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          title: "Old Title",
+          artist: "Old Artist",
+          cover: "https://example.com/old.png",
+          coverColor: "#abcdef",
+        },
+      ],
+      appleMusicTracks: [],
+      lyricsRefetchTrigger: 0,
+      lyricsCacheBustTrigger: 0,
+      currentLyrics: { lines: [{ startTimeMs: "0", words: "hi" }] },
+      currentFuriganaMap: { "0": [{ text: "hi" }] },
+    });
+
+    useIpodStore.getState().setTrackLyricsSource(
+      "dQw4w9WgXcQ",
+      {
+        hash: "abc",
+        albumId: "1",
+        title: "New Title",
+        artist: "New Artist",
+        album: "New Album",
+      },
+      { cover: "https://example.com/kugou/{size}.jpg" }
+    );
+
+    const updated = useIpodStore.getState();
+    expect(updated.tracks[0]?.lyricsSource?.hash).toBe("abc");
+    expect(updated.tracks[0]?.title).toBe("New Title");
+    expect(updated.tracks[0]?.artist).toBe("New Artist");
+    expect(updated.tracks[0]?.cover).toBe(
+      "https://example.com/kugou/{size}.jpg"
+    );
+    expect(updated.tracks[0]?.coverColor).toBeUndefined();
+    expect(updated.lyricsRefetchTrigger).toBe(1);
+    expect(updated.lyricsCacheBustTrigger).toBe(1);
+    expect(updated.currentLyrics).toBeNull();
+    expect(updated.currentFuriganaMap).toBeNull();
+  });
+
+  test("clearLyricsCache clears local coverColor and busts lyrics caches", () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ success: true, cleared: ["coverColor"] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch;
+
+    try {
+      useIpodStore.setState({
+        tracks: [
+          {
+            id: "dQw4w9WgXcQ",
+            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            title: "Never Gonna Give You Up",
+            cover: "https://example.com/cover.png",
+            coverColor: "#123456",
+          },
+        ],
+        currentSongId: "dQw4w9WgXcQ",
+        librarySource: "youtube",
+        appleMusicTracks: [],
+        lyricsRefetchTrigger: 3,
+        lyricsCacheBustTrigger: 5,
+        currentLyrics: { lines: [{ startTimeMs: "0", words: "hi" }] },
+        currentFuriganaMap: { "0": [{ text: "hi" }] },
+      });
+
+      useIpodStore.getState().clearLyricsCache();
+
+      const updated = useIpodStore.getState();
+      expect(updated.tracks[0]?.cover).toBe("https://example.com/cover.png");
+      expect(updated.tracks[0]?.coverColor).toBeUndefined();
+      expect(updated.lyricsRefetchTrigger).toBe(4);
+      expect(updated.lyricsCacheBustTrigger).toBe(6);
+      expect(updated.currentLyrics).toBeNull();
+      expect(updated.currentFuriganaMap).toBeNull();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
 describe("resolveLyricsOverrideTargetId", () => {
   test("returns the YouTube track id directly", () => {
     expect(resolveLyricsOverrideTargetId(youtubeTrack, null)).toBe(

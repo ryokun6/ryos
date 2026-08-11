@@ -123,6 +123,202 @@ function updateTrackCoverColorList(
   return { tracks: changed ? updatedTracks : tracks, changed };
 }
 
+/** Patch applied to every local copy of a track (YouTube + Apple Music caches). */
+export interface TrackCoverMetadataUpdate {
+  cover?: string;
+  /** Set a new color, or `null` to clear a cached glow color. */
+  coverColor?: string | null;
+}
+
+function updateTrackCoverMetadataList(
+  tracks: Track[],
+  trackId: string,
+  update: TrackCoverMetadataUpdate
+): { tracks: Track[]; changed: boolean } {
+  let changed = false;
+  const updatedTracks = tracks.map((track) => {
+    if (track.id !== trackId) return track;
+
+    let next: Track = track;
+    if (update.cover !== undefined && track.cover !== update.cover) {
+      next = { ...next, cover: update.cover };
+    }
+    if (update.coverColor !== undefined) {
+      const nextColor =
+        update.coverColor === null ? undefined : update.coverColor;
+      if (track.coverColor !== nextColor) {
+        next = { ...next, coverColor: nextColor };
+      }
+    }
+    // Cover art change always invalidates a stale glow color unless a
+    // replacement color was explicitly provided in the same update.
+    if (
+      update.cover !== undefined &&
+      track.cover !== update.cover &&
+      update.coverColor === undefined &&
+      next.coverColor !== undefined
+    ) {
+      next = { ...next, coverColor: undefined };
+    }
+
+    if (next !== track) changed = true;
+    return next;
+  });
+  return { tracks: changed ? updatedTracks : tracks, changed };
+}
+
+type IpodAppleMusicCollectionState = Pick<
+  IpodState,
+  | "tracks"
+  | "appleMusicTracks"
+  | "appleMusicRecentlyAddedTracks"
+  | "appleMusicFavoriteTracks"
+  | "appleMusicPlaylistTracks"
+  | "appleMusicLibraryLoadedAt"
+  | "appleMusicStorefrontId"
+  | "appleMusicRecentlyAddedLoadedAt"
+  | "appleMusicFavoriteTracksLoadedAt"
+  | "appleMusicPlaylistTracksLoadedAt"
+>;
+
+function applyTrackListUpdateAcrossLibraries(
+  state: IpodAppleMusicCollectionState,
+  trackId: string,
+  updateList: (
+    tracks: Track[],
+    trackId: string
+  ) => { tracks: Track[]; changed: boolean }
+): {
+  nextState: Partial<IpodAppleMusicCollectionState>;
+  changed: boolean;
+  appleMusicTracksToSave: Track[] | null;
+  appleMusicLoadedAt: number;
+  appleMusicStorefrontId: string | null;
+  recentlyAddedTracksToSave: { tracks: Track[]; loadedAt: number } | null;
+  favoriteTracksToSave: { tracks: Track[]; loadedAt: number } | null;
+  playlistTracksToSave: {
+    playlistId: string;
+    tracks: Track[];
+    loadedAt: number;
+  }[];
+} {
+  const youtubeUpdate = updateList(state.tracks, trackId);
+  const appleMusicUpdate = updateList(state.appleMusicTracks, trackId);
+  const recentlyAddedUpdate = updateList(
+    state.appleMusicRecentlyAddedTracks,
+    trackId
+  );
+  const favoritesUpdate = updateList(
+    state.appleMusicFavoriteTracks,
+    trackId
+  );
+
+  let playlistTracksChanged = false;
+  const nextPlaylistTracks: Record<string, Track[]> = {};
+  for (const [playlistId, tracks] of Object.entries(
+    state.appleMusicPlaylistTracks
+  )) {
+    const playlistUpdate = updateList(tracks, trackId);
+    nextPlaylistTracks[playlistId] = playlistUpdate.tracks;
+    playlistTracksChanged ||= playlistUpdate.changed;
+  }
+
+  const changed =
+    youtubeUpdate.changed ||
+    appleMusicUpdate.changed ||
+    recentlyAddedUpdate.changed ||
+    favoritesUpdate.changed ||
+    playlistTracksChanged;
+
+  return {
+    changed,
+    nextState: changed
+      ? {
+          tracks: youtubeUpdate.tracks,
+          appleMusicTracks: appleMusicUpdate.tracks,
+          appleMusicRecentlyAddedTracks: recentlyAddedUpdate.tracks,
+          appleMusicFavoriteTracks: favoritesUpdate.tracks,
+          ...(playlistTracksChanged && {
+            appleMusicPlaylistTracks: nextPlaylistTracks,
+          }),
+        }
+      : {},
+    appleMusicTracksToSave: appleMusicUpdate.changed
+      ? appleMusicUpdate.tracks.filter(
+          (track) => !isAppleMusicCollectionTrack(track)
+        )
+      : null,
+    appleMusicLoadedAt: state.appleMusicLibraryLoadedAt ?? Date.now(),
+    appleMusicStorefrontId: state.appleMusicStorefrontId,
+    recentlyAddedTracksToSave: recentlyAddedUpdate.changed
+      ? {
+          tracks: recentlyAddedUpdate.tracks,
+          loadedAt: state.appleMusicRecentlyAddedLoadedAt ?? Date.now(),
+        }
+      : null,
+    favoriteTracksToSave: favoritesUpdate.changed
+      ? {
+          tracks: favoritesUpdate.tracks,
+          loadedAt: state.appleMusicFavoriteTracksLoadedAt ?? Date.now(),
+        }
+      : null,
+    playlistTracksToSave: playlistTracksChanged
+      ? Object.entries(nextPlaylistTracks).flatMap(([playlistId, tracks]) => {
+          const originalTracks = state.appleMusicPlaylistTracks[playlistId];
+          if (tracks === originalTracks) return [];
+          return [
+            {
+              playlistId,
+              tracks,
+              loadedAt:
+                state.appleMusicPlaylistTracksLoadedAt[playlistId] ??
+                Date.now(),
+            },
+          ];
+        })
+      : [],
+  };
+}
+
+function persistAppleMusicTrackCollectionUpdates(result: {
+  appleMusicTracksToSave: Track[] | null;
+  appleMusicLoadedAt: number;
+  appleMusicStorefrontId: string | null;
+  recentlyAddedTracksToSave: { tracks: Track[]; loadedAt: number } | null;
+  favoriteTracksToSave: { tracks: Track[]; loadedAt: number } | null;
+  playlistTracksToSave: {
+    playlistId: string;
+    tracks: Track[];
+    loadedAt: number;
+  }[];
+}): void {
+  if (result.appleMusicTracksToSave) {
+    void saveAppleMusicLibrary({
+      tracks: result.appleMusicTracksToSave,
+      loadedAt: result.appleMusicLoadedAt,
+      storefrontId: result.appleMusicStorefrontId,
+    });
+  }
+  if (result.recentlyAddedTracksToSave) {
+    void saveAppleMusicTrackCollection(
+      "recently-added",
+      result.recentlyAddedTracksToSave
+    );
+  }
+  if (result.favoriteTracksToSave) {
+    void saveAppleMusicTrackCollection(
+      "favorite-songs",
+      result.favoriteTracksToSave
+    );
+  }
+  for (const playlistTracks of result.playlistTracksToSave) {
+    void saveAppleMusicPlaylistTracks(playlistTracks.playlistId, {
+      tracks: playlistTracks.tracks,
+      loadedAt: playlistTracks.loadedAt,
+    });
+  }
+}
+
 /**
  * Live now-playing row from MusicKit (`mediaItemDidChange`) while a station or
  * catalog playlist queue is active. Drives LCD metadata, title bar rotation,
@@ -450,6 +646,16 @@ export interface IpodState extends IpodData {
   addTrack: (track: Track) => void;
   /** Cache a resolved cover glow color on any local copy of a track. */
   setTrackCoverColor: (trackId: string, coverColor: string) => void;
+  /**
+   * Apply cover URL / glow-color updates to every local copy of a track
+   * (YouTube library + Apple Music caches). Persists into IndexedDB /
+   * Cloud Sync via the songs store. Pass `coverColor: null` to clear a
+   * stale cached color so extraction re-runs.
+   */
+  applyTrackCoverMetadata: (
+    trackId: string,
+    update: TrackCoverMetadataUpdate
+  ) => void;
   /** Remove one track from the library by id (e.g. TV playlist trash). */
   removeTrackById: (trackId: string) => void;
   clearLibrary: () => void;
@@ -504,7 +710,8 @@ export interface IpodState extends IpodData {
   /** Set lyrics source override for a specific track */
   setTrackLyricsSource: (
     trackId: string,
-    lyricsSource: LyricsSource | null
+    lyricsSource: LyricsSource | null,
+    options?: { cover?: string }
   ) => void;
   /** Clear lyrics source override for a specific track */
   clearTrackLyricsSource: (trackId: string) => void;
@@ -1011,7 +1218,8 @@ export async function flushPendingLyricOffsetSave(trackId: string): Promise<void
  */
 async function saveLyricsSourceToServer(
   trackId: string,
-  lyricsSource: LyricsSource | null
+  lyricsSource: LyricsSource | null,
+  options?: { cover?: string }
 ): Promise<void> {
   // Get auth state from chats store
   const { username, isAuthenticated } = useChatsStore.getState();
@@ -1033,15 +1241,17 @@ async function saveLyricsSourceToServer(
           artist: lyricsSource.artist,
           album: lyricsSource.album,
         }),
-        // Clear translations, furigana, and soramimi since lyrics changed
+        ...(options?.cover ? { cover: options.cover } : {}),
+        // Clear translations, furigana, soramimi, and cover color since lyrics/cover changed
         clearTranslations: true,
         clearFurigana: true,
         clearSoramimi: true,
         clearLyrics: true,
+        clearCoverColor: true,
       },
       { username, isAuthenticated }
     );
-    debug(`[iPod Store] Saved lyrics source for ${trackId}, cleared translations/furigana (by ${data.createdBy || username})`);
+    debug(`[iPod Store] Saved lyrics source for ${trackId}, cleared translations/furigana/coverColor (by ${data.createdBy || username})`);
   } catch (error) {
     if (error instanceof ApiRequestError) {
       if (error.status === 401) {
@@ -1422,21 +1632,46 @@ export const useIpodStore = create<IpodState>()(
       clearLyricsCache: () => {
         const state = get();
         const currentTrack = getActiveIpodCurrentTrack(state);
+        const trackId = currentTrack?.id;
         
-        // Clear server-side cache for translations, furigana, and soramimi
-        if (currentTrack?.id) {
-          clearSongCachedData(currentTrack.id).catch((err) => {
+        // Clear server-side cache for translations, furigana, soramimi, and cover color
+        if (trackId) {
+          clearSongCachedData(trackId, { clearCoverColor: true }).catch((err) => {
             console.error("[iPod Store] Failed to clear server cache:", err);
           });
         }
         
-        // Clear local state and trigger refetch
-        set((s) => ({
-          lyricsRefetchTrigger: s.lyricsRefetchTrigger + 1,
-          lyricsCacheBustTrigger: s.lyricsCacheBustTrigger + 1,
-          currentLyrics: null,
-          currentFuriganaMap: null,
-        }));
+        // Clear local cover glow color so extraction re-runs after cover refresh,
+        // then bust lyrics caches and force a refetch (with returnMetadata).
+        set((s) => {
+          const coverClear = trackId
+            ? applyTrackListUpdateAcrossLibraries(s, trackId, (tracks, id) =>
+                updateTrackCoverMetadataList(tracks, id, { coverColor: null })
+              )
+            : null;
+          if (coverClear) {
+            persistAppleMusicTrackCollectionUpdates(coverClear);
+          }
+          return {
+            ...(coverClear?.nextState ?? {}),
+            lyricsRefetchTrigger: s.lyricsRefetchTrigger + 1,
+            lyricsCacheBustTrigger: s.lyricsCacheBustTrigger + 1,
+            currentLyrics: null,
+            currentFuriganaMap: null,
+          };
+        });
+      },
+      applyTrackCoverMetadata: (trackId, update) => {
+        set((state) => {
+          const result = applyTrackListUpdateAcrossLibraries(
+            state,
+            trackId,
+            (tracks, id) => updateTrackCoverMetadataList(tracks, id, update)
+          );
+          if (!result.changed) return {};
+          persistAppleMusicTrackCollectionUpdates(result);
+          return result.nextState;
+        });
       },
       setCurrentFuriganaMap: (map) => set({ currentFuriganaMap: map }),
       adjustLyricOffset: (trackIndex, deltaMs, library = "active") => {
@@ -1960,39 +2195,95 @@ export const useIpodStore = create<IpodState>()(
           throw error;
         }
       },
-      setTrackLyricsSource: (trackId, lyricsSource) => {
+      setTrackLyricsSource: (trackId, lyricsSource, options) => {
         set((state) => {
-          const tracks = state.tracks.map((track) =>
-            track.id === trackId
-              ? {
+          const result = applyTrackListUpdateAcrossLibraries(
+            state,
+            trackId,
+            (tracks, id) => {
+              let changed = false;
+              const updatedTracks = tracks.map((track) => {
+                if (track.id !== id) return track;
+                const nextCover =
+                  options?.cover !== undefined ? options.cover : track.cover;
+                const coverChanged =
+                  options?.cover !== undefined && track.cover !== options.cover;
+                const next: Track = {
                   ...track,
                   lyricsSource: lyricsSource || undefined,
-                  // Update track metadata from lyricsSource (KuGou has more accurate metadata)
                   ...(lyricsSource && {
                     title: lyricsSource.title,
                     artist: lyricsSource.artist,
                     album: lyricsSource.album || track.album,
                   }),
+                  ...(options?.cover !== undefined && { cover: nextCover }),
+                  // Always drop cached glow color on lyrics-source change so
+                  // the new (or same) cover is re-sampled.
+                  coverColor: undefined,
+                };
+                const unchanged =
+                  track.lyricsSource === next.lyricsSource &&
+                  track.title === next.title &&
+                  track.artist === next.artist &&
+                  track.album === next.album &&
+                  track.cover === next.cover &&
+                  track.coverColor === next.coverColor &&
+                  !coverChanged;
+                if (unchanged && track.coverColor === undefined) {
+                  return track;
                 }
-              : track
+                changed = true;
+                return next;
+              });
+              return { tracks: changed ? updatedTracks : tracks, changed };
+            }
           );
-          return { tracks };
+          if (result.changed) {
+            persistAppleMusicTrackCollectionUpdates(result);
+          }
+          return {
+            ...result.nextState,
+            // Hard-refresh lyrics so fetch-lyrics re-pulls cover metadata
+            lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
+            lyricsCacheBustTrigger: state.lyricsCacheBustTrigger + 1,
+            currentLyrics: null,
+            currentFuriganaMap: null,
+          };
         });
         
-        // Save to server and clear translations/furigana
-        saveLyricsSourceToServer(trackId, lyricsSource);
+        // Save to server and clear translations/furigana/coverColor
+        saveLyricsSourceToServer(trackId, lyricsSource, options);
       },
       clearTrackLyricsSource: (trackId) => {
         set((state) => {
-          const tracks = state.tracks.map((track) =>
-            track.id === trackId
-              ? {
+          const result = applyTrackListUpdateAcrossLibraries(
+            state,
+            trackId,
+            (tracks, id) => {
+              let changed = false;
+              const updatedTracks = tracks.map((track) => {
+                if (track.id !== id || track.lyricsSource === undefined) {
+                  return track;
+                }
+                changed = true;
+                return {
                   ...track,
                   lyricsSource: undefined,
-                }
-              : track
+                };
+              });
+              return { tracks: changed ? updatedTracks : tracks, changed };
+            }
           );
-          return { tracks };
+          if (result.changed) {
+            persistAppleMusicTrackCollectionUpdates(result);
+          }
+          return {
+            ...result.nextState,
+            lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
+            lyricsCacheBustTrigger: state.lyricsCacheBustTrigger + 1,
+            currentLyrics: null,
+            currentFuriganaMap: null,
+          };
         });
         
         // Save to server (clearing the source) and clear translations/furigana

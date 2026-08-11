@@ -12,7 +12,11 @@ import {
   saveLyrics,
   saveTranslations,
 } from "../../../api/_utils/_song-service";
-import { FetchLyricsSchema } from "../../../api/songs/_constants";
+import {
+  ClearCachedDataSchema,
+  FetchLyricsSchema,
+  UpdateSongSchema,
+} from "../../../api/songs/_constants";
 import { FakeRedis } from "../../helpers/fake-redis";
 
 const simplifiedKrc =
@@ -119,5 +123,25 @@ describe("Chinese lyric persistence", () => {
     );
     expect(stored?.translations?.["zh-CN"]).toContain("头发里面");
     expect(stored?.translations?.["zh-TW"]).toContain("頭髮裡面");
+  });
+});
+
+describe("clearCoverColor schemas", () => {
+  test("ClearCachedDataSchema accepts clearCoverColor", () => {
+    expect(
+      ClearCachedDataSchema.safeParse({
+        action: "clear-cached-data",
+        clearCoverColor: true,
+      }).success
+    ).toBe(true);
+  });
+
+  test("UpdateSongSchema accepts clearCoverColor with cover updates", () => {
+    expect(
+      UpdateSongSchema.safeParse({
+        cover: "https://example.com/cover.jpg",
+        clearCoverColor: true,
+      }).success
+    ).toBe(true);
   });
 });

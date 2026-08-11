@@ -198,7 +198,6 @@ export function useIpodLogic({
     youtubePreviousTrack,
     appleMusicNextTrack,
     appleMusicPreviousTrack,
-    refreshLyrics,
     setTrackLyricsSource,
     clearTrackLyricsSource,
     setLyricOffset,
@@ -236,7 +235,6 @@ export function useIpodLogic({
     youtubePreviousTrack: s.previousTrack,
     appleMusicNextTrack: s.appleMusicNextTrack,
     appleMusicPreviousTrack: s.appleMusicPreviousTrack,
-    refreshLyrics: s.refreshLyrics,
     setTrackLyricsSource: s.setTrackLyricsSource,
     clearTrackLyricsSource: s.clearTrackLyricsSource,
     setDisplayMode: s.setDisplayMode,
@@ -4788,23 +4786,31 @@ export function useIpodLogic({
   );
 
   const handleLyricsSearchSelect = useCallback(
-    (result: { hash: string; albumId: string | number; title: string; artist: string; album?: string }) => {
+    (result: {
+      hash: string;
+      albumId: string | number;
+      title: string;
+      artist: string;
+      album?: string;
+      cover?: string;
+    }) => {
       const targetId = resolveLyricsOverrideTargetId();
       if (targetId) {
-        setTrackLyricsSource(targetId, result);
-        refreshLyrics();
+        // Updates local+AM cover, clears coverColor, hard-refetches lyrics
+        // (returnMetadata applies the refreshed cover into local/cloud caches).
+        setTrackLyricsSource(targetId, result, { cover: result.cover });
       }
     },
-    [resolveLyricsOverrideTargetId, setTrackLyricsSource, refreshLyrics]
+    [resolveLyricsOverrideTargetId, setTrackLyricsSource]
   );
 
   const handleLyricsSearchReset = useCallback(() => {
     const targetId = resolveLyricsOverrideTargetId();
     if (targetId) {
+      // clearTrackLyricsSource already hard-refetches lyrics
       clearTrackLyricsSource(targetId);
-      refreshLyrics();
     }
-  }, [resolveLyricsOverrideTargetId, clearTrackLyricsSource, refreshLyrics]);
+  }, [resolveLyricsOverrideTargetId, clearTrackLyricsSource]);
 
   const ipodGenerateShareUrl = useCallback(
     (songId: string): string => {
