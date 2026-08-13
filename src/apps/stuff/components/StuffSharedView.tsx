@@ -29,7 +29,7 @@ function SharedItemCover({ item }: { item: StuffSharedItem }) {
 
   if (coverSrc && isCutout) {
     return (
-      <div className="flex h-36 items-end justify-center bg-transparent p-2">
+      <div className="flex h-36 items-end justify-center overflow-hidden bg-transparent p-2">
         <img
           src={coverSrc}
           alt=""
@@ -46,7 +46,7 @@ function SharedItemCover({ item }: { item: StuffSharedItem }) {
 
   return (
     <div
-      className="flex h-36 items-end p-2"
+      className="flex h-36 items-end overflow-hidden p-2"
       style={
         coverSrc
           ? {
@@ -58,7 +58,10 @@ function SharedItemCover({ item }: { item: StuffSharedItem }) {
       }
     >
       {!coverSrc && (
-        <span className="font-apple-garamond text-sm leading-tight">
+        <span
+          className="line-clamp-3 break-words font-apple-garamond text-sm leading-tight"
+          title={item.title}
+        >
           {item.title}
         </span>
       )}
@@ -233,13 +236,22 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-os-window-bg">
-      <div className="flex items-center gap-3 border-b border-black/10 px-3 py-2 dark:border-white/10">
-        <Button type="button" variant="ghost" size="sm" onClick={onBack}>
+    <div className="flex h-full min-w-0 flex-col overflow-hidden bg-os-window-bg">
+      <div className="flex min-w-0 items-center gap-3 border-b border-black/10 px-3 py-2 dark:border-white/10">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="shrink-0"
+          onClick={onBack}
+        >
           {t("apps.stuff.shared.back", { defaultValue: "Back" })}
         </Button>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate font-apple-garamond text-xl">
+          <h2
+            className="truncate font-apple-garamond text-xl"
+            title={share?.title}
+          >
             {share?.title ??
               t("apps.stuff.shared.loadingTitle", {
                 defaultValue: "Shared Stuff",
@@ -256,7 +268,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
         {loading && (
           <p className="text-sm opacity-60">
             {t("apps.stuff.shared.loading", { defaultValue: "Loading…" })}
@@ -264,7 +276,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
         {share && (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(140px,100%),1fr))] gap-4">
             {share.items.map((item) => {
               const bid = highestBid(item.id);
               const reservation = activeReservation(item.id);
@@ -276,15 +288,22 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
                 <button
                   key={item.id}
                   type="button"
-                  className="rounded-md border border-black/10 text-left shadow-sm dark:border-white/10"
+                  className="min-w-0 overflow-hidden rounded-md border border-black/10 text-left shadow-sm dark:border-white/10"
                   onClick={() => setSelectedItem(item)}
                 >
                   <SharedItemCover item={item} />
-                  <div className="space-y-1 p-2">
-                    <div className="truncate text-sm font-medium">{item.title}</div>
-                    {price && <div className="text-xs opacity-70">{price}</div>}
+                  <div className="min-w-0 space-y-1 p-2">
+                    <div
+                      className="truncate text-sm font-medium"
+                      title={item.title}
+                    >
+                      {item.title}
+                    </div>
+                    {price && (
+                      <div className="truncate text-xs opacity-70">{price}</div>
+                    )}
                     {bid && (
-                      <div className="text-[11px] opacity-70">
+                      <div className="truncate text-[11px] opacity-70">
                         {t("apps.stuff.shared.topOffer", {
                           defaultValue: "Top Offer {{amount}}",
                           amount: formatMoney(bid.amount, bid.currency),
@@ -292,7 +311,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
                       </div>
                     )}
                     {reservation && (
-                      <div className="text-[11px] text-amber-700 dark:text-amber-400">
+                      <div className="truncate text-[11px] text-amber-700 dark:text-amber-400">
                         {t("apps.stuff.shared.reservedBy", {
                           defaultValue: "Reserved By {{username}}",
                           username: reservation.username,
@@ -308,27 +327,37 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
       </div>
 
       {selectedItem && (
-        <div className="border-t border-black/10 bg-black/5 p-3 dark:border-white/10 dark:bg-black/20">
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <div>
-              <h3 className="font-apple-garamond text-lg">{selectedItem.title}</h3>
+        <div className="min-w-0 shrink-0 border-t border-black/10 bg-black/5 p-3 dark:border-white/10 dark:bg-black/20">
+          <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h3
+                className="line-clamp-3 break-words font-apple-garamond text-lg leading-tight"
+                title={selectedItem.title}
+              >
+                {selectedItem.title}
+              </h3>
               {selectedItem.brand && (
-                <p className="text-xs opacity-60">{selectedItem.brand}</p>
+                <p className="truncate text-xs opacity-60" title={selectedItem.brand}>
+                  {selectedItem.brand}
+                </p>
               )}
             </div>
             <Button
               type="button"
               variant="ghost"
               size="sm"
+              className="shrink-0"
               onClick={() => setSelectedItem(null)}
             >
               {t("common.dialog.close", { defaultValue: "Close" })}
             </Button>
           </div>
           {selectedItem.notes && (
-            <p className="mb-2 text-sm opacity-80">{selectedItem.notes}</p>
+            <p className="mb-2 line-clamp-4 break-words text-sm opacity-80">
+              {selectedItem.notes}
+            </p>
           )}
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex min-w-0 flex-wrap items-end gap-2">
             <Button
               type="button"
               size="sm"
@@ -338,7 +367,7 @@ export function StuffSharedView({ shareId, onBack }: StuffSharedViewProps) {
               {t("apps.stuff.shared.reserve", { defaultValue: "Reserve" })}
             </Button>
             <Input
-              className="h-8 w-28"
+              className="h-8 w-28 min-w-0"
               type="number"
               step="0.01"
               min="0"
