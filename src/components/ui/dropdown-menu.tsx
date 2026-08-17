@@ -350,23 +350,55 @@ const DropdownMenuRadioItem = (
     ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>>;
   }
 ) => {
-  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const {
+    isWindowsTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isAquaMenuChrome,
+  } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.RadioItem
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        className
+        "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        // Match CheckboxItem / MenubarRadioItem so karaoke/iPod fullscreen
+        // menus (translations, pronunciations Auto/繁體/簡體, etc.) share one
+        // size under `.karaoke-force-font * { font-size: unset !important }`.
+        isSystem7Theme &&
+          "rounded-none focus:bg-black focus:text-white hover:bg-black hover:text-white mx-0",
+        isMacOSTheme &&
+          "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white hover:bg-[rgba(39,101,202,0.88)] hover:text-white",
+        !isSystem7Theme &&
+          !isMacOSTheme &&
+          "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
+        className,
+        "data-[state=checked]:text-foreground"
       )}
       style={{
         fontFamily:
           isWindowsTheme || isMacOSTheme ? "var(--os-font-ui)" : undefined,
-        fontSize: isWindowsTheme ? "var(--os-menu-item-font-size)" : undefined,
+        fontSize:
+          isWindowsTheme || isMacOSTheme
+            ? isMacOSTheme
+              ? "var(--os-menu-item-font-size) !important"
+              : "var(--os-menu-item-font-size)"
+            : undefined,
+        ...(!isAquaMenuChrome && {
+          padding: "2px 12px 2px 32px",
+          margin: "0",
+        }),
+        ...(isMacOSTheme && {
+          borderRadius: "0px",
+          padding: "6px 20px 6px 32px",
+          margin: "1px 0",
+          WebkitFontSmoothing: "antialiased",
+          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
+        }),
       }}
       {...props}
     >
-      <span className="absolute left-2 flex size-3.5 items-center justify-center">
+      <span className="absolute left-3 flex size-3.5 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
           <Circle size={8} weight="fill" />
         </DropdownMenuPrimitive.ItemIndicator>
