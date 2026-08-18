@@ -147,7 +147,7 @@
     "jsbarcode": "^3.12.3",
     "leo-profanity": "^1.9.0",
     "motion": "^12.43.0",
-    "openai": "^6.45.0",
+    "openai": "^7.4.0",
     "opencc-js": "^1.4.1",
     "pako": "^3.0.1",
     "pinyin-pro": "^3.28.2",
