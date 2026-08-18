@@ -957,8 +957,8 @@
           "title": "Importar / Exportar iCal"
         },
         "navigateMonths": {
-          "description": "Usa las flechas para cambiar de mes o pulsa Hoy para volver al momento actual",
-          "title": "Navegar por meses"
+          "description": "Desliza a la izquierda o a la derecha para pasar los días, las semanas y los meses — o usa los botones de flecha. Pulsa Hoy para volver al día de hoy.",
+          "title": "Desliza para navegar"
         },
         "ryoSchedules": {
           "description": "Pídele a Ryo en Chats que añada, edite o resuma tus próximos eventos por ti",
@@ -993,8 +993,13 @@
         "weekView": "Vista Semanal"
       },
       "name": "Calendario",
+      "navigate": {
+        "next": "Siguiente",
+        "previous": "Anterior"
+      },
       "sidebar": {
         "calendars": "Calendarios",
+        "done": "Aceptar",
         "newTodoPlaceholder": "Nueva tarea…",
         "noTodoItems": "No hay tareas pendientes",
         "toDoItems": "Tareas pendientes"
