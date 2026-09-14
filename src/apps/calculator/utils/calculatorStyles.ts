@@ -313,6 +313,13 @@ export const calculatorStyles = `
     height: 1px;
     background: rgba(0, 0, 0, 0.2);
   }
+  /* Dark Aqua LCD is charcoal; the black hairline disappears. Use a
+     matching translucent white so the convert split stays visible. */
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+    .calc-theme-aqua
+    .calc-conversion-divider::after {
+    background: rgba(255, 255, 255, 0.2);
+  }
   .calc-conversion-unit-trigger {
     width: auto;
     min-height: 0 !important;

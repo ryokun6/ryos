@@ -233,6 +233,26 @@ const bootstrap = async () => {
   useLanguageStore.getState().hydrate();
   bootstrapLog.debug("Hydrated language store");
 
+  // Leftover production SWs on localhost will keep serving a cached shell
+  // even though VitePWA is disabled in dev. Drop them before first paint
+  // so hard-refresh is enough to get live modules.
+  if (import.meta.env.DEV && "serviceWorker" in navigator) {
+    void navigator.serviceWorker.getRegistrations().then((registrations) => {
+      if (registrations.length === 0) return;
+      bootstrapLog.debug("Unregistering leftover service workers in dev", {
+        count: registrations.length,
+      });
+      return Promise.all(
+        registrations.map((registration) => registration.unregister())
+      );
+    });
+    if (typeof caches !== "undefined") {
+      void caches.keys().then((names) =>
+        Promise.all(names.map((name) => caches.delete(name)))
+      );
+    }
+  }
+
   renderApp();
 
   // Non-critical network work after first paint so it does not compete with
