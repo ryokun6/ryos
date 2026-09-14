@@ -336,6 +336,26 @@ export const calculatorStyles = `
   .calc-conversion-unit-trigger::after {
     right: 2px !important;
   }
+  /* Aqua Dark paints .macos-select-trigger / .os-select-trigger-macos
+     with a hot layered specular gradient + !important. That rule is more
+     specific than the flatten above, so the 17px LCD unit chips pick up a
+     near-white top highlight on the charcoal display. Re-assert the same
+     transparent LCD treatment (light Aqua is unchanged) with a selector
+     that beats the dark macos-select-trigger rule. */
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+    .calc-theme-aqua
+    .calc-conversion-unit-trigger,
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+    .calc-theme-aqua
+    .calc-conversion-unit-trigger:active,
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+    .calc-theme-aqua
+    .calc-conversion-unit-trigger:focus {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    text-shadow: none !important;
+  }
   .calc-titlebar-mode-trigger {
     height: 100%;
     min-height: 0;
