@@ -5,7 +5,10 @@
  */
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { readIframeProxyError } from "../../../src/apps/internet-explorer/utils/iframeProxyError.ts";
+import {
+  isBlankClientSpaDocument,
+  readIframeProxyError,
+} from "../../../src/apps/internet-explorer/utils/iframeProxyError.ts";
 
 let registered = false;
 
@@ -84,5 +87,43 @@ describe("readIframeProxyError", () => {
 
   test("returns null for null document", () => {
     expect(readIframeProxyError(null)).toBeNull();
+  });
+});
+
+describe("isBlankClientSpaDocument", () => {
+  test("detects an empty CRA #root (proxied ryo.lu homepage)", () => {
+    const doc = makeDoc(
+      `<html><body><div id="root"><div class="peek-container"><button aria-label="Expand to see ryOS"></button></div></div></body></html>`,
+      "text/html"
+    );
+    expect(isBlankClientSpaDocument(doc)).toBe(true);
+  });
+
+  test("detects a completely empty #root shell", () => {
+    const doc = makeDoc(
+      `<html><body><noscript>You need to enable JavaScript</noscript><div id="root"></div></body></html>`,
+      "text/html"
+    );
+    expect(isBlankClientSpaDocument(doc)).toBe(true);
+  });
+
+  test("returns false when the SPA actually rendered a page", () => {
+    const doc = makeDoc(
+      `<html><body><div id="root"><header class="big"><h1>Ryo is moving to Asia.</h1></header></div></body></html>`,
+      "text/html"
+    );
+    expect(isBlankClientSpaDocument(doc)).toBe(false);
+  });
+
+  test("returns false for static HTML without a client root", () => {
+    const doc = makeDoc(
+      `<html><body><h1>Example Domain</h1><p>This domain is for use in documentation.</p></body></html>`,
+      "text/html"
+    );
+    expect(isBlankClientSpaDocument(doc)).toBe(false);
+  });
+
+  test("returns false for null document", () => {
+    expect(isBlankClientSpaDocument(null)).toBe(false);
   });
 });
