@@ -575,7 +575,6 @@ export function useInternetExplorerLogic({
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
-      clearIframeLoadTimeout();
       const iframeSrc = iframeRef.current.src;
       if (
         iframeSrc.includes("/api/iframe-check") &&
@@ -595,6 +594,7 @@ export function useInternetExplorerLogic({
               type: potentialErrorData.type,
               status: potentialErrorData.status || 500,
             });
+            clearIframeLoadTimeout();
             handleNavigationError(potentialErrorData, url);
             return;
           }
@@ -621,6 +621,7 @@ export function useInternetExplorerLogic({
               iframeRef.current.src = directUrl;
               return;
             }
+            clearIframeLoadTimeout();
             track(IE_ANALYTICS.NAVIGATION_ERROR, {
               ...normalizeUrlForAnalytics(directUrl),
               type: "blank_spa",
@@ -647,6 +648,7 @@ export function useInternetExplorerLogic({
         }
       }
 
+      clearIframeLoadTimeout();
       clearErrorDetails();
 
       setTimeout(() => {
