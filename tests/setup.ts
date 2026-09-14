@@ -4,6 +4,8 @@ import {
   flushDebouncedPersistWrites,
   resetDebouncedPersistWritesForTests,
 } from "../src/utils/debouncedPersistStorage";
+import { resetPersistWritesForTests } from "../src/utils/persistWriteQueue";
+import { resetFakeIndexedDB } from "./helpers/reset-fake-indexeddb";
 
 /**
  * Global test setup — preloaded before every bun test run.
@@ -81,10 +83,20 @@ export function ensureTestLocalStorage(): Storage {
 
 installTestLocalStorage();
 
+function resetSharedPersistAndIndexedDB(): void {
+  // Abandon stuck IndexedDB persist writes *before* swapping the factory.
+  // `settleAllPersistWrites()` can hang for the full test timeout when an
+  // earlier suite left `inFlight` chained to happy-dom's broken indexedDB
+  // (open / deleteDatabase never fire after GlobalRegistrator.unregister).
+  resetPersistWritesForTests();
+  resetFakeIndexedDB();
+}
+
 beforeEach(() => {
   ensureTestLocalStorage();
   flushDebouncedPersistWrites();
   resetDebouncedPersistWritesForTests();
+  resetSharedPersistAndIndexedDB();
   ensureTestLocalStorage().clear();
 });
 
@@ -92,5 +104,6 @@ afterEach(() => {
   ensureTestLocalStorage();
   flushDebouncedPersistWrites();
   resetDebouncedPersistWritesForTests();
+  resetSharedPersistAndIndexedDB();
   ensureTestLocalStorage().clear();
 });

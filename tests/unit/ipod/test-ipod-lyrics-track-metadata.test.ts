@@ -1,5 +1,7 @@
 import "fake-indexeddb/auto";
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
+import { resetPersistWritesForTests } from "../../../src/utils/persistWriteQueue";
 
 // Browser globals must be installed before importing the iPod store —
 // the store re-imports `useChatsStore`, which reads `localStorage` at
@@ -208,6 +210,11 @@ describe("resolveLyricsTrackMetadata", () => {
 });
 
 describe("setTrackCoverColor", () => {
+  beforeEach(() => {
+    resetPersistWritesForTests();
+    resetFakeIndexedDB();
+  });
+
   test("updates cached cover color on local YouTube and Apple Music tracks", async () => {
     useIpodStore.setState({
       tracks: [
@@ -275,6 +282,11 @@ describe("setTrackCoverColor", () => {
 });
 
 describe("applyTrackCoverMetadata / setTrackLyricsSource / clearLyricsCache", () => {
+  beforeEach(() => {
+    resetPersistWritesForTests();
+    resetFakeIndexedDB();
+  });
+
   test("applyTrackCoverMetadata updates cover and clears color across libraries", async () => {
     useIpodStore.setState({
       tracks: [
