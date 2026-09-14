@@ -242,13 +242,16 @@ jobs:
 
           echo "Triggering Coolify deploy for commit ${COMMIT_SHA}..."
 
+          # Coolify's /api/v1/deploy is POST-only. GET returns HTTP 405
+          # {"message":"This endpoint has changed to a POST request."}
+          # Query params on COOLIFY_WEBHOOK_URL (uuid, force) still apply.
           # Retry up to 3 times on transient network/5xx errors.
           attempt=1
           max_attempts=3
           while : ; do
             http_code=$(curl --silent --show-error --output /tmp/coolify_response.json \
               --write-out "%{http_code}" \
-              --request GET \
+              --request POST \
               --max-time 60 \
               --header "Authorization: Bearer ${COOLIFY_TOKEN}" \
               --header "Accept: application/json" \
@@ -264,6 +267,13 @@ jobs:
             if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
               echo "Coolify deploy successfully triggered."
               break
+            fi
+
+            # 4xx (except 408/429) will not succeed on retry — fail fast.
+            if [ "${http_code}" -ge 400 ] && [ "${http_code}" -lt 500 ] \
+              && [ "${http_code}" != "408" ] && [ "${http_code}" != "429" ]; then
+              echo "::error::Coolify webhook rejected the request (HTTP ${http_code}). Not retrying."
+              exit 1
             fi
 
             if [ "${attempt}" -ge "${max_attempts}" ]; then
