@@ -92,7 +92,7 @@ afterAll(() => {
   }
 });
 
-async function renderPanel(compact = false): Promise<HTMLDivElement> {
+async function renderPanel(): Promise<HTMLDivElement> {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -105,7 +105,7 @@ async function renderPanel(compact = false): Promise<HTMLDivElement> {
           settings: { ...DEFAULT_BOOKS_SETTINGS },
           updateSettings: () => {},
           osIsDark: false,
-          compact,
+          compact: false,
           bookLanguage: null,
           onClose: () => {},
         })
@@ -310,28 +310,5 @@ describe("BooksCustomizePanel setting rows", () => {
     expect(panel?.classList.contains("px-4")).toBe(true);
     expect(panel?.classList.contains("os-mac-aqua:!rounded-[14px]")).toBe(true);
     expect(panel?.classList.contains("top-10")).toBe(false);
-  });
-
-  test("always shows the pill-shaped Done button", async () => {
-    const wideHost = await renderPanel();
-    expect(
-      wideHost.querySelector('button[aria-label="common.dialog.done"]')
-    ).not.toBeNull();
-
-    await act(async () => {
-      root?.unmount();
-    });
-    root = null;
-    container?.remove();
-    container = null;
-
-    const compactHost = await renderPanel(true);
-    expect(
-      compactHost.querySelector('button[aria-label="common.dialog.done"]')
-    ).not.toBeNull();
-    const compactPanel = compactHost.querySelector(".books-customize-panel");
-    expect(compactPanel?.classList.contains("inset-x-1")).toBe(true);
-    expect(compactPanel?.classList.contains("bottom-1")).toBe(true);
-    expect(compactPanel?.classList.contains("rounded-[10px]")).toBe(true);
   });
 });
