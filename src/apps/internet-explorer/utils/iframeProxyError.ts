@@ -55,3 +55,34 @@ export function readIframeProxyError(
 
   return null;
 }
+
+const CLIENT_SPA_ROOT_IDS = ["root", "app", "__next"];
+const BLANK_SPA_TEXT_LIMIT = 80;
+
+/**
+ * Detect a client-rendered SPA shell that hydrated without matching a route.
+ *
+ * ryo.lu (CRA + BrowserRouter) is the motivating case: under
+ * `/api/iframe-check` the pathname is `/api/iframe-check`, no route matches,
+ * and `#root` keeps only chrome (e.g. PeekUnder's page-curl) — a silent
+ * blank instead of an IE error page.
+ */
+export function isBlankClientSpaDocument(
+  doc: Document | null | undefined
+): boolean {
+  if (!doc?.body) return false;
+
+  let root: Element | null = null;
+  for (const id of CLIENT_SPA_ROOT_IDS) {
+    root = doc.getElementById(id);
+    if (root) break;
+  }
+  if (!root) return false;
+
+  if (root.querySelector("h1, h2, article, main, header.big")) {
+    return false;
+  }
+
+  const text = (root.textContent || "").replace(/\s+/g, " ").trim();
+  return text.length <= BLANK_SPA_TEXT_LIMIT;
+}

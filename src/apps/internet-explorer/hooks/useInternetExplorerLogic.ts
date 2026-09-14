@@ -39,6 +39,7 @@ import {
 } from "../utils/displayNames";
 import {
   IE_IFRAME_NAVIGATION_TIMEOUT_MS,
+  isBlankClientSpaDocument,
   readIframeProxyError,
 } from "../utils/iframeProxyError";
 import {
@@ -290,6 +291,10 @@ export function useInternetExplorerLogic({
   const iframeLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  /** Last iframe-check `allowed` verdict for the in-flight "now" navigation. */
+  const lastEmbedAllowedRef = useRef<boolean | null>(null);
+  /** Nav token we already retried as a direct (non-proxy) load. */
+  const blankSpaFallbackTokenRef = useRef<number | null>(null);
   const clearIframeLoadTimeout = useCallback(() => {
     if (iframeLoadTimeoutRef.current !== null) {
       clearTimeout(iframeLoadTimeoutRef.current);
@@ -570,7 +575,6 @@ export function useInternetExplorerLogic({
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
-      clearIframeLoadTimeout();
       const iframeSrc = iframeRef.current.src;
       if (
         iframeSrc.includes("/api/iframe-check") &&
@@ -590,7 +594,53 @@ export function useInternetExplorerLogic({
               type: potentialErrorData.type,
               status: potentialErrorData.status || 500,
             });
+            clearIframeLoadTimeout();
             handleNavigationError(potentialErrorData, url);
+            return;
+          }
+
+          // BrowserRouter SPAs proxied through /api/iframe-check hydrate
+          // against pathname `/api/iframe-check` and render an empty root
+          // (ryo.lu: PeekUnder chrome, no Home). If the site allows
+          // framing, retry on the real origin; otherwise show an error
+          // instead of a silent blank.
+          if (
+            isBlankClientSpaDocument(iframeRef.current.contentDocument)
+          ) {
+            const alreadyRetried =
+              blankSpaFallbackTokenRef.current === navTokenRef.current;
+            const directUrl = url.startsWith("http")
+              ? url
+              : `https://${url}`;
+            if (!alreadyRetried && lastEmbedAllowedRef.current) {
+              log.debug("Blank SPA under proxy; retrying direct embed", {
+                url: directUrl,
+              });
+              blankSpaFallbackTokenRef.current = navTokenRef.current;
+              setFinalUrl(directUrl);
+              iframeRef.current.src = directUrl;
+              return;
+            }
+            clearIframeLoadTimeout();
+            track(IE_ANALYTICS.NAVIGATION_ERROR, {
+              ...normalizeUrlForAnalytics(directUrl),
+              type: "blank_spa",
+              status: 204,
+            });
+            handleNavigationError(
+              {
+                error: true,
+                type: "connection_error",
+                status: 204,
+                message: t("apps.internet-explorer.cannotAccessWebsite", {
+                  url: directUrl,
+                }),
+                details: t(
+                  "apps.internet-explorer.pageCouldNotBeLoadedInIframe"
+                ),
+              },
+              url
+            );
             return;
           }
         } catch (error) {
@@ -598,6 +648,7 @@ export function useInternetExplorerLogic({
         }
       }
 
+      clearIframeLoadTimeout();
       clearErrorDetails();
 
       setTimeout(() => {
@@ -952,6 +1003,7 @@ export function useInternetExplorerLogic({
             if (isDirectBypass) {
               logDirectPassthrough(normalizedTargetUrl);
               urlToLoad = normalizedTargetUrl;
+              lastEmbedAllowedRef.current = true;
             } else {
               // Proxy current year sites through iframe-check
               urlToLoad = appendIeDebugParams(
@@ -959,6 +1011,7 @@ export function useInternetExplorerLogic({
                   normalizedTargetUrl
                 )}&theme=${encodeURIComponent(currentTheme)}`
               );
+              lastEmbedAllowedRef.current = null;
             }
 
             try {
@@ -975,6 +1028,9 @@ export function useInternetExplorerLogic({
               if (abortController.signal.aborted) return;
 
               const checkData = await checkRes.json();
+              if (typeof checkData.allowed === "boolean") {
+                lastEmbedAllowedRef.current = checkData.allowed;
+              }
               if (checkData.title) {
                 setPrefetchedTitle(checkData.title);
               }
