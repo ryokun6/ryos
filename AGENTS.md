@@ -8,7 +8,7 @@ This project uses **Bun** as the package manager and runtime. Local API testing 
 
 ### Package Manager
 
-- **Bun** is required (version 1.3.5+)
+- **Bun** is required (version 1.4.2+)
 - Use `bun install` to install dependencies
 - Use `bun run <script>` to run package.json scripts
 

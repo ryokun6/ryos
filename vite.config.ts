@@ -273,6 +273,19 @@ export default defineConfig({
     include: [
       "react",
       "react-dom",
+      // TipTap's ESM build imports named exports from these CJS files.
+      // Vite must pre-bundle them or the browser throws
+      // "does not provide an export named 'Fragment' / 'useSyncExternalStore'".
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "use-sync-external-store",
+      "use-sync-external-store/shim",
+      "use-sync-external-store/shim/index.js",
+      "use-sync-external-store/shim/with-selector",
+      "use-sync-external-store/shim/with-selector.js",
+      "@tiptap/react",
+      "@tiptap/core",
+      "@tiptap/starter-kit",
       "zustand",
       "clsx",
       "tailwind-merge",
@@ -298,11 +311,6 @@ export default defineConfig({
       "audio-buffer-utils",
       // 3D rendering - only needed when PC app opens
       "three",
-      // Rich text editor - only needed when TextEdit opens
-      "@tiptap/core",
-      "@tiptap/react",
-      "@tiptap/starter-kit",
-      "@tiptap/pm",
       // Realtime chat - only needed when Chats opens
       "pusher-js",
       // QR codes - only needed for specific features
