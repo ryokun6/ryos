@@ -226,6 +226,7 @@
     "flatted": "3.4.2",
     "form-data": "4.0.6",
     "glob": "10.5.0",
+    "happy-dom": "20.10.6",
     "ip-address": "10.2.0",
     "js-yaml": "4.3.0",
     "linkify-it": "5.0.1",
