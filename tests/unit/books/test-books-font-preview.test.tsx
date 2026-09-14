@@ -38,6 +38,34 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   });
 }
 
+// Motion 13 cancels Web Animations on unmount. happy-dom rejects
+// `animation.finished` with AbortError, which bun:test counts as an
+// unhandled error even when every assertion passed.
+function isCanceledAnimation(reason: unknown): boolean {
+  if (!reason || typeof reason !== "object") return false;
+  const name = "name" in reason ? String(reason.name) : "";
+  const message = "message" in reason ? String(reason.message) : "";
+  return name === "AbortError" && message.includes("animation was canceled");
+}
+
+const elementProto = globalThis.Element?.prototype;
+const originalAnimate = elementProto?.animate;
+if (elementProto && typeof originalAnimate === "function") {
+  elementProto.animate = function patchedAnimate(
+    this: Element,
+    ...args: Parameters<NonNullable<typeof originalAnimate>>
+  ) {
+    const animation = originalAnimate.apply(this, args);
+    const finished = (animation as Animation | undefined)?.finished;
+    if (finished && typeof finished.catch === "function") {
+      void finished.catch((reason: unknown) => {
+        if (!isCanceledAnimation(reason)) throw reason;
+      });
+    }
+    return animation;
+  };
+}
+
 const i18n = i18next.createInstance();
 
 
@@ -83,6 +111,9 @@ afterEach(async () => {
 });
 
 afterAll(() => {
+  if (elementProto && originalAnimate) {
+    elementProto.animate = originalAnimate;
+  }
   Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   // Only tear down the DOM this suite created: unregistering a DOM another
   // suite registered (and still relies on) crashes React work later in the
