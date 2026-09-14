@@ -313,6 +313,15 @@ export const calculatorStyles = `
     height: 1px;
     background: rgba(0, 0, 0, 0.2);
   }
+  /* Light-mode hairline is black@20% for the pale LCD. Aqua Dark's LCD is
+     charcoal, so invert to a white hairline. --os-color-separator is
+     rgba(255,255,255,0.14) on window chrome; the recessed LCD needs a
+     bit more punch (same 0.2–0.35 band as other Aqua Dark hairlines). */
+  :root[data-os-theme="macosx"][data-os-color-scheme="dark"]
+    .calc-theme-aqua
+    .calc-conversion-divider::after {
+    background: rgba(255, 255, 255, 0.22);
+  }
   .calc-conversion-unit-trigger {
     width: auto;
     min-height: 0 !important;

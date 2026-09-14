@@ -27,7 +27,7 @@ function isGlossySelectBackground(value: string): boolean {
   );
 }
 
-function mountTrigger(scheme: "light" | "dark") {
+function mountConversionLcd(scheme: "light" | "dark") {
   document.documentElement.setAttribute("data-os-theme", "macosx");
   if (scheme === "dark") {
     document.documentElement.setAttribute("data-os-color-scheme", "dark");
@@ -47,12 +47,21 @@ function mountTrigger(scheme: "light" | "dark") {
         >
           米 · M
         </button>
+        <div class="calc-conversion-divider"></div>
       </div>
     </div>
   `;
 
-  return document.querySelector(".calc-conversion-unit-trigger") as HTMLButtonElement;
+  return {
+    trigger: document.querySelector(".calc-conversion-unit-trigger") as HTMLButtonElement,
+    divider: document.querySelector(".calc-conversion-divider") as HTMLDivElement,
+  };
 }
+
+function mountTrigger(scheme: "light" | "dark") {
+  return mountConversionLcd(scheme).trigger;
+}
+
 
 beforeAll(() => {
   if (typeof document === "undefined") {
@@ -80,6 +89,21 @@ describe("calculator conversion unit trigger styles", () => {
     expect(isTransparentBackground(styles.backgroundColor)).toBe(true);
     expect(isGlossySelectBackground(styles.backgroundImage)).toBe(false);
     expect(styles.boxShadow === "none" || styles.boxShadow === "").toBe(true);
+  });
+
+  test("keeps the light Aqua conversion divider as a dark hairline", () => {
+    expect(calculatorStyles).toMatch(
+      /\.calc-conversion-divider::after\s*\{[^}]*background:\s*rgba\(\s*0,\s*0,\s*0,\s*0\.2\s*\)/
+    );
+  });
+
+  test("paints the Aqua Dark conversion divider as a light hairline", () => {
+    expect(calculatorStyles).toContain(
+      '[data-os-color-scheme="dark"]'
+    );
+    expect(calculatorStyles).toMatch(
+      /\.calc-theme-aqua\s+\.calc-conversion-divider::after\s*\{[^}]*background:\s*rgba\(\s*255,\s*255,\s*255,\s*0\.(2[0-9]|3[0-5])\s*\)/
+    );
   });
 
   test("beats Aqua Dark macos-select-trigger gloss on the LCD unit chips", () => {
