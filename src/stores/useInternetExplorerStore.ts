@@ -13,9 +13,14 @@ export interface Favorite {
   isDirectory?: boolean; // New: Flag to indicate if it's a folder
 }
 
-// Define a constant for domains that bypass the proxy when in "now" mode
+// Domains that bypass the iframe-check proxy in "now" mode and load in the
+// iframe on their own origin. Use this for sites that already allow framing
+// (no X-Frame-Options / frame-ancestors *) and cannot run correctly when
+// proxied — typically BrowserRouter SPAs, which read window.location.pathname
+// (`/api/iframe-check` under the proxy) and render a blank root.
 export const DIRECT_PASSTHROUGH_DOMAINS = [
   "os.ryo.lu",
+  "ryo.lu",
   "hcsimulator.com",
   "os.rocorgi.wang",
   "iso-city.com",
