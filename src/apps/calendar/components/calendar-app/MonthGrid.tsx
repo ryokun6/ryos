@@ -5,6 +5,7 @@ import {
   getCalendarEventEndDate,
 } from "@/shared/calendarEventDates";
 import type { CalendarDayCell } from "../../hooks/useCalendarLogic";
+import { useCalendarPeriodSwipe } from "../../hooks/useCalendarPeriodSwipe";
 import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import {
   EVENT_COLOR_LIGHT,
@@ -17,12 +18,23 @@ import {
 
 export function MonthGrid({
   calendarGrid, selectedEventId, onDateClick, onDateDoubleClick, onEventClick, onEventDoubleClick, isWindowsTheme, searchQuery, narrowDayNames,
+  onSwipePrev, onSwipeNext,
 }: {
   calendarGrid: CalendarDayCell[][]; selectedEventId: string | null; onDateClick: (date: string) => void; onDateDoubleClick: (date: string) => void;
   onEventClick: (event: CalendarEvent) => void; onEventDoubleClick: (event: CalendarEvent) => void; isWindowsTheme: boolean; searchQuery: string; narrowDayNames: string[];
+  onSwipePrev?: () => void; onSwipeNext?: () => void;
 }) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const lastEventTapRef = useRef<{ id: string; time: number } | null>(null);
   const lastDateTapRef = useRef<{ id: string; time: number } | null>(null);
+
+  const { swipeOffsetX, isSwiping } = useCalendarPeriodSwipe(rootRef, {
+    enabled: Boolean(onSwipePrev || onSwipeNext),
+    onNavigate: (direction) => {
+      if (direction === "prev") onSwipePrev?.();
+      else onSwipeNext?.();
+    },
+  });
 
   const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -50,7 +62,15 @@ export function MonthGrid({
   }, [onDateClick, onDateDoubleClick]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div
+      ref={rootRef}
+      className="flex-1 flex flex-col overflow-hidden touch-pan-y"
+      style={{
+        transform: swipeOffsetX ? `translateX(${swipeOffsetX}px)` : undefined,
+        transition: isSwiping ? "none" : "transform 160ms ease-out",
+        willChange: isSwiping ? "transform" : undefined,
+      }}
+    >
       <div className={`grid grid-cols-7 border-b ${osSeparatorBorderClassName()}`}>
         {WEEKDAY_KEYS.map((dayKey) => {
           const dayLabel = narrowDayNames[WEEKDAY_KEYS.indexOf(dayKey)] ?? "";

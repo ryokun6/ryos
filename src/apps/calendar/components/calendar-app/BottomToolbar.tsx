@@ -9,6 +9,7 @@ export function BottomToolbar({
   showCalendarSidebar, onToggleCalendarSidebar,
   showMiniCalendar, onToggleMiniCalendar,
   showTodoSidebar, onToggleTodoSidebar,
+  showMobileCalendarsPanel, onToggleMobileCalendars,
   searchQuery, onSearchQueryChange, showSearch,
   isNarrow,
   isWindowsTheme, isMacOSTheme, isSystem7Theme, t,
@@ -18,9 +19,11 @@ export function BottomToolbar({
   showCalendarSidebar: boolean; onToggleCalendarSidebar: () => void;
   showMiniCalendar: boolean; onToggleMiniCalendar: () => void;
   showTodoSidebar: boolean; onToggleTodoSidebar: () => void;
+  showMobileCalendarsPanel: boolean; onToggleMobileCalendars: () => void;
   searchQuery: string; onSearchQueryChange: (value: string) => void; showSearch: boolean;
   isNarrow: boolean;
-  isWindowsTheme: boolean; isMacOSTheme: boolean; isSystem7Theme: boolean; t: (key: string) => string;
+  isWindowsTheme: boolean; isMacOSTheme: boolean; isSystem7Theme: boolean;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   const views: { id: "day" | "week" | "month"; label: string }[] = [
     { id: "day", label: t("apps.calendar.views.day") },
@@ -40,10 +43,12 @@ export function BottomToolbar({
     </div>
   ) : null;
 
+  const viewButtonWidth = isNarrow ? "w-[40px]" : "w-[48px]";
+
   return (
     <div
       className={cn(
-        "py-1.5 border-t flex items-center gap-2",
+        "py-1.5 border-t flex items-center gap-1.5 sm:gap-2",
         // macOS: on desktop, match bottom padding to the horizontal padding so
         // the buttons sit evenly inside the 8px metal margin (window-body adds
         // mb-[8px]); keep the roomier py-1.5 bottom on mobile.
@@ -56,7 +61,22 @@ export function BottomToolbar({
     >
       {isMacOSTheme ? (
         <>
-          {!isNarrow && (
+          {isNarrow ? (
+            <div className="shrink-0">
+              <div className="metal-inset-btn-group">
+                <button
+                  type="button"
+                  className="metal-inset-btn metal-inset-icon touch-manipulation min-h-8 min-w-8"
+                  onClick={onToggleMobileCalendars}
+                  data-state={showMobileCalendarsPanel ? "on" : "off"}
+                  title={t("apps.calendar.sidebar.calendars")}
+                  aria-label={t("apps.calendar.sidebar.calendars")}
+                >
+                  <CalendarBlank size={14} />
+                </button>
+              </div>
+            </div>
+          ) : (
             <div className="shrink-0">
               <div className="metal-inset-btn-group">
                 <button
@@ -83,7 +103,10 @@ export function BottomToolbar({
             <div className="metal-inset-btn-group">
               <button
                 type="button"
-                className="metal-inset-btn font-geneva-12 !text-[11px] w-[48px] justify-center px-0"
+                className={cn(
+                  "metal-inset-btn font-geneva-12 !text-[11px] justify-center px-0 touch-manipulation",
+                  isNarrow ? "w-[44px] min-h-8" : "w-[48px]"
+                )}
                 onClick={onGoToToday}
               >
                 {t("apps.calendar.today")}
@@ -92,16 +115,41 @@ export function BottomToolbar({
           </div>
           <div className="shrink-0">
             <div className="metal-inset-btn-group">
-              <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onPrev}>
+              <button
+                type="button"
+                className={cn(
+                  "metal-inset-btn metal-inset-icon touch-manipulation",
+                  isNarrow && "min-h-8 min-w-8"
+                )}
+                onClick={onPrev}
+                aria-label={t("apps.calendar.navigate.previous")}
+              >
                 <span className="inline-block size-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
               </button>
               {views.map((v) => (
-                <button key={v.id} type="button" className="metal-inset-btn font-geneva-12 !text-[11px] w-[48px] justify-center px-0"
-                  data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}>
+                <button
+                  key={v.id}
+                  type="button"
+                  className={cn(
+                    "metal-inset-btn font-geneva-12 !text-[11px] justify-center px-0 touch-manipulation",
+                    viewButtonWidth,
+                    isNarrow && "min-h-8"
+                  )}
+                  data-state={view === v.id ? "on" : "off"}
+                  onClick={() => onSetView(v.id)}
+                >
                   {v.label}
                 </button>
               ))}
-              <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNext}>
+              <button
+                type="button"
+                className={cn(
+                  "metal-inset-btn metal-inset-icon touch-manipulation",
+                  isNarrow && "min-h-8 min-w-8"
+                )}
+                onClick={onNext}
+                aria-label={t("apps.calendar.navigate.next")}
+              >
                 <span className="inline-block size-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
               </button>
             </div>
@@ -115,12 +163,23 @@ export function BottomToolbar({
           )}
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="metal-inset-btn-group">
-              <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNewEvent} title={t("apps.calendar.menu.newEvent")}>
+              <button
+                type="button"
+                className={cn(
+                  "metal-inset-btn metal-inset-icon touch-manipulation",
+                  isNarrow && "min-h-8 min-w-8"
+                )}
+                onClick={onNewEvent}
+                title={t("apps.calendar.menu.newEvent")}
+              >
                 <Plus size={12} weight="bold" />
               </button>
               <button
                 type="button"
-                className="metal-inset-btn metal-inset-icon"
+                className={cn(
+                  "metal-inset-btn metal-inset-icon touch-manipulation",
+                  isNarrow && "min-h-8 min-w-8"
+                )}
                 onClick={onToggleTodoSidebar}
                 data-state={showTodoSidebar ? "on" : "off"}
                 title={t("apps.calendar.sidebar.toDoItems")}
@@ -132,8 +191,19 @@ export function BottomToolbar({
         </>
       ) : (
         <>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {!isNarrow && (
+          <div className="flex items-center gap-1 shrink-0">
+            {isNarrow ? (
+              <Button
+                variant={isSystem7Theme ? "player" : "ghost"}
+                onClick={onToggleMobileCalendars}
+                data-state={showMobileCalendarsPanel ? "on" : "off"}
+                className={cn("size-8 touch-manipulation", isWindowsTheme && "text-black")}
+                title={t("apps.calendar.sidebar.calendars")}
+                aria-label={t("apps.calendar.sidebar.calendars")}
+              >
+                <CalendarBlank size={14} />
+              </Button>
+            ) : (
               <div className="flex items-center gap-0">
                 <Button
                   variant={isSystem7Theme ? "player" : "ghost"}
@@ -154,25 +224,60 @@ export function BottomToolbar({
                 </Button>
               </div>
             )}
-            <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
-              className={cn("h-6 w-[48px] text-[11px] px-0", isSystem7Theme && "font-geneva-12", isWindowsTheme && "text-black")}>
+            <Button
+              variant={isSystem7Theme ? "player" : "ghost"}
+              onClick={onGoToToday}
+              className={cn(
+                "text-[11px] px-0 touch-manipulation",
+                isNarrow ? "h-8 w-[44px]" : "h-6 w-[48px]",
+                isSystem7Theme && "font-geneva-12",
+                isWindowsTheme && "text-black"
+              )}
+            >
               {t("apps.calendar.today")}
             </Button>
             <div className="flex items-center gap-0">
-              <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
-                className={cn("h-[22px] w-6", isWindowsTheme && "text-black")} onClick={onPrev}>
-                <CaretLeft size={12} weight="bold" />
+              <Button
+                variant={isSystem7Theme ? "player" : "default"}
+                size="icon"
+                className={cn(
+                  "touch-manipulation",
+                  isNarrow ? "size-8" : "h-[22px] w-6",
+                  isWindowsTheme && "text-black"
+                )}
+                onClick={onPrev}
+                aria-label={t("apps.calendar.navigate.previous")}
+              >
+                <CaretLeft size={isNarrow ? 14 : 12} weight="bold" />
               </Button>
               {views.map((v) => (
-                <Button key={v.id} variant={isSystem7Theme ? "player" : "default"}
-                  data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}
-                  className={cn("h-[22px] w-[48px] px-0 text-[11px]", isSystem7Theme && "font-geneva-12", isWindowsTheme && "text-black")}>
+                <Button
+                  key={v.id}
+                  variant={isSystem7Theme ? "player" : "default"}
+                  data-state={view === v.id ? "on" : "off"}
+                  onClick={() => onSetView(v.id)}
+                  className={cn(
+                    "px-0 text-[11px] touch-manipulation",
+                    isNarrow ? "h-8 w-[40px]" : "h-[22px] w-[48px]",
+                    isSystem7Theme && "font-geneva-12",
+                    isWindowsTheme && "text-black"
+                  )}
+                >
                   {v.label}
                 </Button>
               ))}
-              <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
-                className={cn("h-[22px] w-6", isWindowsTheme && "text-black")} onClick={onNext}>
-                <CaretRight size={12} weight="bold" />
+              <Button
+                variant={isSystem7Theme ? "player" : "default"}
+                size="icon"
+                className={cn(
+                  "touch-manipulation",
+                  isNarrow ? "size-8" : "h-[22px] w-6",
+                  isWindowsTheme && "text-black"
+                )}
+                onClick={onNext}
+                aria-label={t("apps.calendar.navigate.next")}
+              >
+                <CaretRight size={isNarrow ? 14 : 12} weight="bold" />
               </Button>
             </div>
           </div>
@@ -184,13 +289,29 @@ export function BottomToolbar({
             <div className="flex-1" />
           )}
           <div className="flex items-center gap-0 shrink-0">
-            <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onNewEvent}
-              className={cn("size-6", isWindowsTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
+            <Button
+              variant={isSystem7Theme ? "player" : "ghost"}
+              onClick={onNewEvent}
+              className={cn(
+                "touch-manipulation",
+                isNarrow ? "size-8" : "size-6",
+                isWindowsTheme && "text-black"
+              )}
+              title={t("apps.calendar.menu.newEvent")}
+            >
               <Plus size={12} weight="bold" />
             </Button>
-            <Button variant={isSystem7Theme ? "player" : "ghost"}
-              onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"}
-              className={cn("size-6", isWindowsTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
+            <Button
+              variant={isSystem7Theme ? "player" : "ghost"}
+              onClick={onToggleTodoSidebar}
+              data-state={showTodoSidebar ? "on" : "off"}
+              className={cn(
+                "touch-manipulation",
+                isNarrow ? "size-8" : "size-6",
+                isWindowsTheme && "text-black"
+              )}
+              title={t("apps.calendar.sidebar.toDoItems")}
+            >
               <ListChecks size={12} weight="bold" />
             </Button>
           </div>

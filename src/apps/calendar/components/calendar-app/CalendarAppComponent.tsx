@@ -155,6 +155,8 @@ export function CalendarAppComponent({
   const [containerWidth, setContainerWidth] = useState(700);
   const [showCalendarSidebar, setShowCalendarSidebar] = useState(true);
   const [showMiniCalendar, setShowMiniCalendar] = useState(true);
+  /** Narrow layout: overlay panel for calendars + mini month (sidebar is hidden). */
+  const [showMobileCalendarsPanel, setShowMobileCalendarsPanel] = useState(false);
   const [weekTimeGridHourHeight, setWeekTimeGridHourHeight] = useState(
     DEFAULT_TIME_GRID_HOUR_HEIGHT,
   );
@@ -172,6 +174,10 @@ export function CalendarAppComponent({
   const effectiveView = view;
   const safeSearchQuery = searchQuery ?? "";
   const normalizedSearchQuery = useMemo(() => safeSearchQuery.trim().toLocaleLowerCase(), [safeSearchQuery]);
+
+  useEffect(() => {
+    if (!isNarrow || showTodoFullWidth) setShowMobileCalendarsPanel(false);
+  }, [isNarrow, showTodoFullWidth]);
 
   const handlePrev = useCallback(() => {
     if (effectiveView === "week") navigateWeek(-1);
@@ -192,6 +198,18 @@ export function CalendarAppComponent({
       setSelectedDate(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`);
     }
   }, [effectiveView, navigateWeek, navigateMonth, selectedDate, setSelectedDate]);
+
+  const handleToggleMobileCalendars = useCallback(() => {
+    setShowMobileCalendarsPanel((open) => !open);
+  }, []);
+
+  const handleMobileDateClick = useCallback(
+    (date: string) => {
+      handleDateClick(date);
+      setShowMobileCalendarsPanel(false);
+    },
+    [handleDateClick]
+  );
 
   const headerLabel = showTodoFullWidth
     ? t("apps.calendar.sidebar.toDoItems")
@@ -385,7 +403,7 @@ export function CalendarAppComponent({
             {/* Main view area — hidden when todo is full-width on narrow screens */}
             {!showTodoFullWidth && (
               <div
-                className={cn("flex-1 flex overflow-hidden calendar-grid bg-white os-inset-pane")}
+                className={cn("flex-1 flex overflow-hidden calendar-grid bg-white os-inset-pane relative min-w-0")}
                 style={isMacOSTheme ? {
                   border: "1px solid rgba(0, 0, 0, 0.55)",
                   boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
@@ -398,7 +416,9 @@ export function CalendarAppComponent({
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
                     isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
                     hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight}
-                    onUpdateEvent={handleUpdateEvent} />
+                    onUpdateEvent={handleUpdateEvent}
+                    onSwipePrev={handlePrev} onSwipeNext={handleNext}
+                    compact={isNarrow} />
                 )}
                 {effectiveView === "day" && (
                   <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
@@ -407,14 +427,53 @@ export function CalendarAppComponent({
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
                     isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
                     hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight}
-                    onUpdateEvent={handleUpdateEvent} />
+                    onUpdateEvent={handleUpdateEvent}
+                    onSwipePrev={handlePrev} onSwipeNext={handleNext} />
                 )}
                 {effectiveView === "month" && (
                   <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
                     onDateClick={handleDateClick} onDateDoubleClick={onDateDoubleClick}
                     onEventClick={(ev) => handleSelectEvent(ev.id)}
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
-                    isWindowsTheme={isWindowsTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
+                    isWindowsTheme={isWindowsTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames}
+                    onSwipePrev={handlePrev} onSwipeNext={handleNext} />
+                )}
+
+                {isNarrow && showMobileCalendarsPanel && (
+                  <div className="absolute inset-0 z-20 flex flex-col bg-white/95 backdrop-blur-[2px]">
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                      <CalendarList
+                        calendars={calendars}
+                        onToggle={toggleCalendarVisibility}
+                        isMacOSTheme={isMacOSTheme}
+                        isSystem7Theme={isSystem7Theme}
+                      />
+                      <MiniCalendar
+                        calendarGrid={calendarGrid}
+                        selectedDate={selectedDate}
+                        todayStr={logic.todayStr}
+                        onDateClick={handleMobileDateClick}
+                        isWindowsTheme={isWindowsTheme}
+                        isMacOSTheme={isMacOSTheme}
+                        isSystem7Theme={isSystem7Theme}
+                        monthYearLabel={monthYearLabel}
+                        narrowDayNames={narrowDayNames}
+                        onPrevMonth={() => navigateMonth(-1)}
+                        onNextMonth={() => navigateMonth(1)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className={cn(
+                        "shrink-0 h-10 text-[12px] border-t touch-manipulation",
+                        isMacOSTheme || isSystem7Theme ? "font-geneva-12" : undefined
+                      )}
+                      style={{ borderColor: "rgba(0,0,0,0.1)" }}
+                      onClick={() => setShowMobileCalendarsPanel(false)}
+                    >
+                      {t("apps.calendar.sidebar.done")}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -474,6 +533,8 @@ export function CalendarAppComponent({
             showCalendarSidebar={showCalendarSidebar} onToggleCalendarSidebar={() => setShowCalendarSidebar((current) => !current)}
             showMiniCalendar={showMiniCalendar} onToggleMiniCalendar={() => setShowMiniCalendar((current) => !current)}
             showTodoSidebar={showTodoSidebar} onToggleTodoSidebar={() => setShowTodoSidebar(!showTodoSidebar)}
+            showMobileCalendarsPanel={showMobileCalendarsPanel}
+            onToggleMobileCalendars={handleToggleMobileCalendars}
             searchQuery={safeSearchQuery} onSearchQueryChange={setSearchQuery} showSearch={!isNarrow}
             isNarrow={isNarrow}
             isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} t={t}
