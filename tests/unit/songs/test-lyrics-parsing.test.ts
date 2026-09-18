@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseLrcToLines } from "../../../api/songs/_lyrics";
+import { parseKrcToLines, parseLrcToLines } from "../../../api/songs/_lyrics";
 import { ApiRequestError } from "../../../src/api/core";
 import {
   getLyricsErrorMessage,
@@ -94,6 +94,35 @@ describe("lyrics prefix filtering", () => {
       {
         startTimeMs: "5000",
         words: "这首歌提到著作权只是歌词",
+      },
+    ]);
+  });
+
+  test("skips copyright-permission disclaimer in KRC content", () => {
+    const lines = parseKrcToLines(
+      [
+        "[1000,2000]<0,400,0>【<400,800,0>未经著作权人许可，不得以任何方式使用】",
+        "[3000,2000]<0,500,0>你坐在窗边",
+        "[5000,2000]<0,500,0>这首歌提到<500,500,0>著作权<1000,500,0>只是歌词",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "3000",
+        words: "你坐在窗边",
+        wordTimings: [
+          { text: "你坐在窗边", startTimeMs: 0, durationMs: 500 },
+        ],
+      },
+      {
+        startTimeMs: "5000",
+        words: "这首歌提到著作权只是歌词",
+        wordTimings: [
+          { text: "这首歌提到", startTimeMs: 0, durationMs: 500 },
+          { text: "著作权", startTimeMs: 500, durationMs: 500 },
+          { text: "只是歌词", startTimeMs: 1000, durationMs: 500 },
+        ],
       },
     ]);
   });
