@@ -34,6 +34,7 @@ export const SKIP_PREFIXES = [
   "录音", "混音", "母带", "和声", "合声", "合声编写", "版权", "吉他", "贝斯", "鼓", "键盘",
   "企划", "词：", "詞：", "词曲：", "詞曲：", "曲", "男：", "女：", "合：", "OP", "SP", "TME享有",
   "日文词",
+  "【未经著作权人许可", "【未經著作權人許可",
   "Produced", "Composed", "Arranged", "Mixed", "Lyrics", "Keyboard",
   "Guitar", "Bass", "Drum", "Vocal", "Original Publisher", "Sub-publisher",
   "Electric Piano", "Synth by", "Recorded by", "Mixed by", "Mastered by",
