@@ -74,6 +74,29 @@ describe("lyrics prefix filtering", () => {
       },
     ]);
   });
+
+  test("skips copyright-permission disclaimer but keeps real lyrics", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]【未经著作权人许可，不得以任何方式使用】",
+        "[00:02.00]【未經著作權人許可，不得以任何方式使用】",
+        "[00:03.00]【未经著作权人许可】",
+        "[00:04.00]你坐在窗边",
+        "[00:05.00]这首歌提到著作权只是歌词",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "4000",
+        words: "你坐在窗边",
+      },
+      {
+        startTimeMs: "5000",
+        words: "这首歌提到著作权只是歌词",
+      },
+    ]);
+  });
 });
 
 describe("lyrics error handling", () => {
