@@ -633,9 +633,26 @@ describe("useIpodStore Apple Music slice", () => {
     expect(sanitized.romanization).toMatchObject({
       enabled: false,
       chinese: true,
+      chineseZhuyin: false,
       chineseLyricsLanguage: "auto",
       japaneseFurigana: true,
       soramamiTargetLanguage: "zh-TW",
+    });
+  });
+
+  test("rehydrate sanitizer persists Chinese Zhuyin and clears Pinyin when both are set", () => {
+    const sanitized = sanitizePersistedIpodStateForRehydrate({
+      romanization: {
+        enabled: true,
+        chinese: true,
+        chineseZhuyin: true,
+      },
+    });
+
+    expect(sanitized.romanization).toMatchObject({
+      enabled: true,
+      chinese: false,
+      chineseZhuyin: true,
     });
   });
 

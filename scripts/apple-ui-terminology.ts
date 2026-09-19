@@ -31,6 +31,8 @@ export const ENGLISH_STYLE_EXPECTATIONS = {
   "apps.finder.menu.goUp": "Go Up",
   "apps.ipod.menu.repeatAll": "Repeat All",
   "apps.ipod.menu.repeatOne": "Repeat One",
+  "apps.ipod.menu.chinesePinyin": "Chinese (Pinyin)",
+  "apps.ipod.menu.chineseZhuyin": "Chinese (Zhuyin)",
   "apps.videos.menu.repeatAll": "Repeat All",
   "apps.videos.menu.repeatOne": "Repeat One",
   "apps.karaoke.menu.repeatAll": "Repeat All",

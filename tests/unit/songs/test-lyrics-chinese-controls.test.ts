@@ -46,6 +46,7 @@ describe("Chinese lyrics controls", () => {
       japaneseRomaji: false,
       korean: true,
       chinese: false,
+      chineseZhuyin: false,
       chineseLyricsLanguage: "zh-TW" as const,
       soramimi: false,
       soramamiTargetLanguage: "zh-TW" as const,

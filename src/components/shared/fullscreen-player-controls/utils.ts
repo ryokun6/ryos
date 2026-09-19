@@ -11,6 +11,7 @@ export function getPronunciationGlyph(
   if (romanization.japaneseRomaji) return "Ro";
   if (romanization.korean) return "Ko";
   if (romanization.japaneseFurigana) return "ふ";
+  if (romanization.chineseZhuyin) return "注";
   if (romanization.chinese) return "拼";
   return "漢";
 }

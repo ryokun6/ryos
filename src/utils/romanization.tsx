@@ -6,8 +6,10 @@ import * as hangulRomanization from "hangul-romanization";
 const romanizeKorean = (hangulRomanization as { convert: (text: string) => string }).convert;
 import { pinyin } from "pinyin-pro";
 import { toRomaji } from "wanakana";
+import type { ChinesePhoneticSystem } from "@/types/lyrics";
 import { hasKoreanText, isChineseText } from "./languageDetection";
 import { getDisplayReading } from "./furigana";
+import { hanziToZhuyin, hanziToZhuyinReadings } from "./zhuyin";
 
 // Re-export detection utilities for convenience
 export { hasKoreanText, isChineseText, isJapaneseText, hasKanaText } from "./languageDetection";
@@ -27,6 +29,15 @@ export interface RomanizationOptions {
   koreanRomanization?: boolean;
   japaneseRomaji?: boolean;
   chinesePinyin?: boolean;
+  chineseZhuyin?: boolean;
+}
+
+function resolveChinesePhonetic(
+  options: RomanizationOptions
+): ChinesePhoneticSystem | null {
+  if (options.chineseZhuyin) return "zhuyin";
+  if (options.chinesePinyin) return "pinyin";
+  return null;
 }
 
 // ============================================================================
@@ -117,34 +128,46 @@ export function renderKoreanWithRomanization(text: string, keyPrefix: string = "
 }
 
 /**
- * Render text with Chinese pinyin as ruby annotation
- * Note: pinyin-pro may give less accurate readings for some Traditional Chinese characters
+ * Render text with Chinese pinyin or Zhuyin as ruby annotation.
+ * Note: pinyin-pro may give less accurate readings for some Traditional Chinese characters.
+ * Zhuyin uses `traditional: true` so zh-TW lyrics keep Traditional-friendly 注音.
  */
-export function renderChineseWithPinyin(text: string, keyPrefix: string = "cn"): React.ReactNode {
-  // Get pinyin without tone marks for each character
-  const pinyinResult = pinyin(text, { type: 'array', toneType: 'none' });
-  const chars = [...text]; // Original characters for display
+export function renderChineseWithPhonetics(
+  text: string,
+  keyPrefix: string = "cn",
+  system: ChinesePhoneticSystem = "pinyin"
+): React.ReactNode {
+  const readings =
+    system === "zhuyin"
+      ? hanziToZhuyinReadings(text)
+      : pinyin(text, { type: "array", toneType: "none" });
+  const chars = [...text];
+  const rubyClass =
+    system === "zhuyin" ? "lyrics-zhuyin-ruby" : "lyrics-pinyin-ruby";
+  const rtClass = system === "zhuyin" ? "lyrics-zhuyin-rt" : "lyrics-pinyin-rt";
   const charEntries = chars.map((char, position) => ({
     char,
     position,
-    pinyinText: pinyinResult[position] || "",
+    reading: readings[position] || "",
   }));
-  
+
   if (chars.length === 0) {
     return text;
   }
-  
+
   return (
     <>
-      {charEntries.map(({ char, position, pinyinText }) => {
-        // Check if this character is a Chinese character
+      {charEntries.map(({ char, position, reading }) => {
         CHINESE_REGEX.lastIndex = 0;
         if (CHINESE_REGEX.test(char)) {
           return (
-            <ruby key={`${keyPrefix}-${position}-${char}`} className="lyrics-furigana lyrics-pinyin-ruby">
+            <ruby
+              key={`${keyPrefix}-${position}-${char}`}
+              className={`lyrics-furigana ${rubyClass}`}
+            >
               {char}
               <rp>(</rp>
-              <rt className="lyrics-furigana-rt lyrics-pinyin-rt">{pinyinText}</rt>
+              <rt className={`lyrics-furigana-rt ${rtClass}`}>{reading}</rt>
               <rp>)</rp>
             </ruby>
           );
@@ -153,6 +176,20 @@ export function renderChineseWithPinyin(text: string, keyPrefix: string = "cn"):
       })}
     </>
   );
+}
+
+export function renderChineseWithPinyin(
+  text: string,
+  keyPrefix: string = "cn"
+): React.ReactNode {
+  return renderChineseWithPhonetics(text, keyPrefix, "pinyin");
+}
+
+export function renderChineseWithZhuyin(
+  text: string,
+  keyPrefix: string = "cn"
+): React.ReactNode {
+  return renderChineseWithPhonetics(text, keyPrefix, "zhuyin");
 }
 
 /**
@@ -213,7 +250,8 @@ export function renderFuriganaSegments(
   segments: FuriganaSegment[],
   options: RomanizationOptions = {}
 ): React.ReactNode {
-  const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
+  const { koreanRomanization = false, japaneseRomaji = false } = options;
+  const chinesePhonetic = resolveChinesePhonetic(options);
   
   return (
     <>
@@ -244,9 +282,8 @@ export function renderFuriganaSegments(
           return <span key={`${segmentKey}-kr`}>{renderKoreanWithRomanization(segment.text, segmentKey)}</span>;
         }
         
-        // Check for Chinese text when pinyin is enabled
-        if (chinesePinyin && isChineseText(segment.text)) {
-          return <span key={`${segmentKey}-cn`}>{renderChineseWithPinyin(segment.text, segmentKey)}</span>;
+        if (chinesePhonetic && isChineseText(segment.text)) {
+          return <span key={`${segmentKey}-cn`}>{renderChineseWithPhonetics(segment.text, segmentKey, chinesePhonetic)}</span>;
         }
         
         // Check for standalone kana when romaji is enabled
@@ -270,11 +307,11 @@ export function renderTextWithRomanization(
   options: RomanizationOptions,
   keyPrefix: string = "rom"
 ): React.ReactNode {
-  const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
+  const { koreanRomanization = false, japaneseRomaji = false } = options;
+  const chinesePhonetic = resolveChinesePhonetic(options);
   
-  // Check for Chinese text and render with pinyin if enabled
-  if (chinesePinyin && isChineseText(text)) {
-    return renderChineseWithPinyin(text, keyPrefix);
+  if (chinesePhonetic && isChineseText(text)) {
+    return renderChineseWithPhonetics(text, keyPrefix, chinesePhonetic);
   }
   
   // Check for Korean text and render with romanization if enabled
@@ -319,15 +356,21 @@ export function getKoreanPronunciationOnly(text: string): string {
 }
 
 /**
- * Get pronunciation-only text for Chinese (pinyin)
+ * Get pronunciation-only text for Chinese (pinyin or Zhuyin).
  * No spaces within word - spaces are added at segment level in getFuriganaSegmentsPronunciationOnly
  * Note: pinyin-pro may give less accurate readings for some Traditional Chinese characters
  */
-export function getChinesePronunciationOnly(text: string): string {
-  // Get pinyin without tone marks for each character
-  const pinyinResult = pinyin(text, { type: 'array', toneType: 'none' });
+export function getChinesePronunciationOnly(
+  text: string,
+  system: ChinesePhoneticSystem = "pinyin"
+): string {
+  if (system === "zhuyin") {
+    return hanziToZhuyin(text);
+  }
+
+  const pinyinResult = pinyin(text, { type: "array", toneType: "none" });
   const chars = [...text];
-  
+
   let result = "";
   for (let idx = 0; idx < chars.length; idx++) {
     const char = chars[idx];
@@ -338,7 +381,7 @@ export function getChinesePronunciationOnly(text: string): string {
       result += char;
     }
   }
-  
+
   return result;
 }
 
@@ -374,7 +417,8 @@ export function getFuriganaSegmentsPronunciationOnly(
   segments: FuriganaSegment[],
   options: RomanizationOptions = {}
 ): string {
-  const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
+  const { koreanRomanization = false, japaneseRomaji = false } = options;
+  const chinesePhonetic = resolveChinesePhonetic(options);
   const parts: string[] = [];
   
   for (const segment of segments) {
@@ -393,9 +437,8 @@ export function getFuriganaSegmentsPronunciationOnly(
       continue;
     }
     
-    // Check for Chinese text - only convert to pinyin if setting is on
-    if (chinesePinyin && isChineseText(segment.text)) {
-      const output = getChinesePronunciationOnly(segment.text);
+    if (chinesePhonetic && isChineseText(segment.text)) {
+      const output = getChinesePronunciationOnly(segment.text, chinesePhonetic);
       parts.push(output);
       continue;
     }
@@ -433,11 +476,11 @@ export function getPronunciationOnlyText(
   text: string,
   options: RomanizationOptions
 ): string {
-  const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
+  const { koreanRomanization = false, japaneseRomaji = false } = options;
+  const chinesePhonetic = resolveChinesePhonetic(options);
   
-  // Check for Chinese text and get pinyin
-  if (chinesePinyin && isChineseText(text)) {
-    return getChinesePronunciationOnly(text);
+  if (chinesePhonetic && isChineseText(text)) {
+    return getChinesePronunciationOnly(text, chinesePhonetic);
   }
   
   // Check for Korean text and get romanization

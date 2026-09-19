@@ -544,6 +544,7 @@ const initialIpodData: IpodData = {
     japaneseRomaji: false,
     korean: true,
     chinese: false,
+    chineseZhuyin: false,
     chineseLyricsLanguage: "auto",
     soramimi: false,
     soramamiTargetLanguage: "zh-TW",
@@ -947,7 +948,7 @@ export function navigateActiveIpodTrack(
   }
 }
 
-const CURRENT_IPOD_STORE_VERSION = 42; // Add locale-aware Chinese lyric script preference
+const CURRENT_IPOD_STORE_VERSION = 43; // Add Chinese Zhuyin pronunciation option
 
 type PersistedIpodData = Partial<IpodData> & Record<string, unknown>;
 
@@ -1099,10 +1100,17 @@ export function sanitizeRomanizationSettings(
     persistedRomanization.chineseLyricsLanguage === "zh-CN"
       ? persistedRomanization.chineseLyricsLanguage
       : "auto";
+  const chineseZhuyin = Boolean(persistedRomanization.chineseZhuyin);
+  const chinese =
+    Boolean(
+      persistedRomanization.chinese ?? initialIpodData.romanization.chinese
+    ) && !chineseZhuyin;
   return {
     ...initialIpodData.romanization,
     ...persistedRomanization,
     chineseLyricsLanguage,
+    chinese,
+    chineseZhuyin,
   } as RomanizationSettings;
 }
 
@@ -1755,6 +1763,11 @@ export const useIpodStore = create<IpodState>()(
       },
       setRomanization: (settings) => {
         const nextRomanization = { ...get().romanization, ...settings };
+        if (settings.chineseZhuyin === true) {
+          nextRomanization.chinese = false;
+        } else if (settings.chinese === true) {
+          nextRomanization.chineseZhuyin = false;
+        }
         if (areRomanizationSettingsEqual(get().romanization, nextRomanization)) {
           return;
         }

@@ -98,8 +98,10 @@ export interface RomanizationSettings {
   japaneseRomaji: boolean;
   /** Korean romanization - Latin over hangul (e.g., 한국 → hanguk) */
   korean: boolean;
-  /** Chinese pinyin - Latin with tones over hanzi (e.g., 中国 → zhōngguó) */
+  /** Chinese pinyin - Latin over hanzi (e.g., 中国 → zhongguo) */
   chinese: boolean;
+  /** Chinese Zhuyin (Bopomofo / 注音) over hanzi (e.g., 中國 → ㄓㄨㄥ ㄍㄨㄛˊ) */
+  chineseZhuyin: boolean;
   /** Preferred Han script for KuGou lyrics; auto follows a Chinese ryOS locale. */
   chineseLyricsLanguage: ChineseLyricsLanguagePreference;
   /** Soramimi (空耳) - misheard lyrics that phonetically approximate the original */
@@ -108,6 +110,42 @@ export interface RomanizationSettings {
   soramamiTargetLanguage: "zh-TW" | "en";
   /** Only pronunciation - replace original text with phonetic content (e.g., 日本 → にほん, 한국 → hanguk) */
   pronunciationOnly?: boolean;
+}
+
+export type ChinesePhoneticSystem = "pinyin" | "zhuyin";
+
+/**
+ * Menu order for per-language pronunciation checkboxes.
+ * Chinese (Zhuyin) must sit immediately after Chinese (Pinyin).
+ */
+export const LYRICS_PRONUNCIATION_LANGUAGE_OPTIONS = [
+  { id: "japaneseFurigana", labelKey: "apps.ipod.menu.japaneseFurigana" },
+  { id: "japaneseRomaji", labelKey: "apps.ipod.menu.japaneseRomaji" },
+  { id: "korean", labelKey: "apps.ipod.menu.koreanRomanization" },
+  { id: "chinesePinyin", labelKey: "apps.ipod.menu.chinesePinyin" },
+  { id: "chineseZhuyin", labelKey: "apps.ipod.menu.chineseZhuyin" },
+] as const;
+
+export function getChinesePhoneticSystem(
+  romanization: Pick<RomanizationSettings, "chinese" | "chineseZhuyin">
+): ChinesePhoneticSystem | null {
+  if (romanization.chineseZhuyin) return "zhuyin";
+  if (romanization.chinese) return "pinyin";
+  return null;
+}
+
+export function chinesePhoneticPatch(
+  system: ChinesePhoneticSystem,
+  enabled: boolean
+): Partial<RomanizationSettings> {
+  if (system === "zhuyin") {
+    return enabled
+      ? { chineseZhuyin: true, chinese: false }
+      : { chineseZhuyin: false };
+  }
+  return enabled
+    ? { chinese: true, chineseZhuyin: false }
+    : { chinese: false };
 }
 
 export function areRomanizationSettingsEqual(
@@ -120,6 +158,7 @@ export function areRomanizationSettingsEqual(
     a.japaneseRomaji === b.japaneseRomaji &&
     a.korean === b.korean &&
     a.chinese === b.chinese &&
+    Boolean(a.chineseZhuyin) === Boolean(b.chineseZhuyin) &&
     a.chineseLyricsLanguage === b.chineseLyricsLanguage &&
     a.soramimi === b.soramimi &&
     a.soramamiTargetLanguage === b.soramamiTargetLanguage &&
