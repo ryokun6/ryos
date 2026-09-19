@@ -1,12 +1,13 @@
 import { useCallback, type ReactNode } from "react";
 import { toRomaji } from "wanakana";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
+import { getChinesePhoneticSystem } from "@/types/lyrics";
 import {
   isChineseText,
   hasKanaTextLocal,
   hasKoreanText,
   renderKoreanWithRomanization,
-  renderChineseWithPinyin,
+  renderChineseWithPhonetics,
   renderKanaWithRomaji,
   getFuriganaSegmentsPronunciationOnly,
   getKoreanPronunciationOnly,
@@ -78,16 +79,18 @@ export function useRenderWithFurigana(
         return processedText;
       }
 
+      const chinesePhonetic = getChinesePhoneticSystem(romanization);
+
       if (!romanization.japaneseFurigana) {
-        if (romanization.chinese && isChineseText(processedText)) {
+        if (chinesePhonetic && isChineseText(processedText)) {
           if (pronunciationOnly) {
             return (
               <span key={keyPrefix}>
-                {getChinesePronunciationOnly(processedText)}
+                {getChinesePronunciationOnly(processedText, chinesePhonetic)}
               </span>
             );
           }
-          return renderChineseWithPinyin(processedText, keyPrefix);
+          return renderChineseWithPhonetics(processedText, keyPrefix, chinesePhonetic);
         }
         if (romanization.korean && hasKoreanText(processedText)) {
           if (pronunciationOnly) {
@@ -114,15 +117,15 @@ export function useRenderWithFurigana(
 
       const segments = furiganaMap.get(line.startTimeMs);
       if (!segments || segments.length === 0) {
-        if (romanization.chinese && isChineseText(processedText)) {
+        if (chinesePhonetic && isChineseText(processedText)) {
           if (pronunciationOnly) {
             return (
               <span key={keyPrefix}>
-                {getChinesePronunciationOnly(processedText)}
+                {getChinesePronunciationOnly(processedText, chinesePhonetic)}
               </span>
             );
           }
-          return renderChineseWithPinyin(processedText, keyPrefix);
+          return renderChineseWithPhonetics(processedText, keyPrefix, chinesePhonetic);
         }
         if (romanization.korean && hasKoreanText(processedText)) {
           if (pronunciationOnly) {
@@ -152,6 +155,7 @@ export function useRenderWithFurigana(
           koreanRomanization: romanization.korean,
           japaneseRomaji: romanization.japaneseRomaji,
           chinesePinyin: romanization.chinese,
+          chineseZhuyin: romanization.chineseZhuyin,
         };
         return (
           <span key={keyPrefix}>
@@ -189,10 +193,11 @@ export function useRenderWithFurigana(
                 );
               }
 
-              if (romanization.chinese && isChineseText(segment.text)) {
-                return renderChineseWithPinyin(
+              if (chinesePhonetic && isChineseText(segment.text)) {
+                return renderChineseWithPhonetics(
                   segment.text,
-                  `${segmentKey}-cn`
+                  `${segmentKey}-cn`,
+                  chinesePhonetic
                 );
               }
 

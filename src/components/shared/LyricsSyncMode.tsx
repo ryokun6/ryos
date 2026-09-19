@@ -15,6 +15,7 @@ import {
   CHINESE_REGEX,
   FuriganaSegment,
 } from "@/utils/romanization";
+import { hanziToZhuyin } from "@/utils/zhuyin";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 import { formatMsMmSs } from "@/utils/formatDuration";
 
@@ -165,12 +166,15 @@ function getRomanizedText(
     }
   }
 
-  // Check for Chinese text (pinyin)
-  if (romanization.chinese && isChineseText(text)) {
-    // Get pinyin for the whole text
+  if (romanization.chineseZhuyin && isChineseText(text)) {
     CHINESE_REGEX.lastIndex = 0;
-    return text.replace(CHINESE_REGEX, (match) => 
-      pinyin(match, { type: 'string', toneType: 'none', separator: '' })
+    return text.replace(CHINESE_REGEX, (match) => hanziToZhuyin(match));
+  }
+
+  if (romanization.chinese && isChineseText(text)) {
+    CHINESE_REGEX.lastIndex = 0;
+    return text.replace(CHINESE_REGEX, (match) =>
+      pinyin(match, { type: "string", toneType: "none", separator: "" })
     );
   }
 

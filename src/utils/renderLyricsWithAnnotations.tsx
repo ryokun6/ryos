@@ -1,4 +1,5 @@
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
+import { getChinesePhoneticSystem } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { toRomaji } from "wanakana";
 import {
@@ -6,7 +7,7 @@ import {
   isChineseText,
   hasKanaTextLocal,
   renderKoreanWithRomanization,
-  renderChineseWithPinyin,
+  renderChineseWithPhonetics,
   renderKanaWithRomaji,
   getKoreanPronunciationOnly,
   getChinesePronunciationOnly,
@@ -121,9 +122,13 @@ function renderFuriganaSegments(
           return renderKoreanWithRomanization(segment.text, `${segmentKey}-kr`);
         }
 
-        // Chinese pinyin for mixed content
-        if (romanization.chinese && isChineseText(segment.text)) {
-          return renderChineseWithPinyin(segment.text, `${segmentKey}-cn`);
+        const chinesePhonetic = getChinesePhoneticSystem(romanization);
+        if (chinesePhonetic && isChineseText(segment.text)) {
+          return renderChineseWithPhonetics(
+            segment.text,
+            `${segmentKey}-cn`,
+            chinesePhonetic
+          );
         }
 
         // Standalone kana to romaji
@@ -147,12 +152,16 @@ function renderOtherRomanization(
   romanization: RomanizationSettings,
   pronunciationOnly: boolean
 ): React.ReactNode | null {
-  // Chinese pinyin
-  if (romanization.chinese && isChineseText(text)) {
+  const chinesePhonetic = getChinesePhoneticSystem(romanization);
+  if (chinesePhonetic && isChineseText(text)) {
     if (pronunciationOnly) {
-      return <span key={keyPrefix}>{getChinesePronunciationOnly(text)}</span>;
+      return (
+        <span key={keyPrefix}>
+          {getChinesePronunciationOnly(text, chinesePhonetic)}
+        </span>
+      );
     }
-    return renderChineseWithPinyin(text, keyPrefix);
+    return renderChineseWithPhonetics(text, keyPrefix, chinesePhonetic);
   }
 
   // Korean romanization
@@ -184,7 +193,7 @@ function renderOtherRomanization(
  * Priority order:
  * 1. Soramimi (if enabled and data available)
  * 2. Furigana (if enabled and data available)
- * 3. Other romanization (Chinese pinyin, Korean, Japanese kana to romaji)
+ * 3. Other romanization (Chinese pinyin/Zhuyin, Korean, Japanese kana to romaji)
  *
  * @param line - The lyric line to render
  * @param processedText - The processed text content
@@ -254,6 +263,7 @@ export function renderLyricsWithAnnotations(
       koreanRomanization: romanization.korean,
       japaneseRomaji: romanization.japaneseRomaji,
       chinesePinyin: romanization.chinese,
+      chineseZhuyin: romanization.chineseZhuyin,
     };
     return (
       <span key={keyPrefix}>{getFuriganaSegmentsPronunciationOnly(segments, pronunciationOptions)}</span>

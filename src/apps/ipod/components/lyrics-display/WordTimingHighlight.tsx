@@ -1,4 +1,4 @@
-import type { LyricWord } from "@/types/lyrics";
+import type { ChinesePhoneticSystem, LyricWord } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { toRomaji } from "wanakana";
 import {
@@ -6,7 +6,7 @@ import {
   hasKanaTextLocal,
   KOREAN_REGEX,
   renderKoreanWithRomanization,
-  renderChineseWithPinyin,
+  renderChineseWithPhonetics,
   renderKanaWithRomaji,
   getKoreanPronunciationOnly,
   getChinesePronunciationOnly,
@@ -46,7 +46,7 @@ export function WordTimingHighlight({
   furiganaSegments,
   koreanRomanized = false,
   japaneseRomaji = false,
-  chinesePinyin = false,
+  chinesePhonetic = null,
   pronunciationOnly = false,
   soramimiTargetLanguage,
   onSeekToTime,
@@ -64,7 +64,7 @@ export function WordTimingHighlight({
   furiganaSegments?: FuriganaSegment[];
   koreanRomanized?: boolean;
   japaneseRomaji?: boolean;
-  chinesePinyin?: boolean;
+  chinesePhonetic?: ChinesePhoneticSystem | null;
   /** Show only pronunciation (replace original text with phonetic content) */
   pronunciationOnly?: boolean;
   /** Soramimi target language for spacing ("en" needs spaces between words) */
@@ -115,11 +115,11 @@ export function WordTimingHighlight({
         return renderKoreanWithRomanization(processed);
       }
       // Then check Chinese
-      if (chinesePinyin && isChineseText(processed)) {
+      if (chinesePhonetic && isChineseText(processed)) {
         if (pronunciationOnly) {
-          return getChinesePronunciationOnly(processed);
+          return getChinesePronunciationOnly(processed, chinesePhonetic);
         }
-        return renderChineseWithPinyin(processed, "word");
+        return renderChineseWithPhonetics(processed, "word", chinesePhonetic);
       }
       return processed;
     };
@@ -142,7 +142,7 @@ export function WordTimingHighlight({
         KOREAN_REGEX.lastIndex = 0;
         return true;
       }
-      if (chinesePinyin && isChineseText(processed)) return true;
+      if (chinesePhonetic === "pinyin" && isChineseText(processed)) return true;
       return false;
     };
 
@@ -220,7 +220,7 @@ export function WordTimingHighlight({
         key: `${idx}-${word.text}`,
       };
     });
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly, soramimiTargetLanguage]);
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePhonetic, pronunciationOnly, soramimiTargetLanguage]);
 
   const timingWindows = useMemo(
     () =>

@@ -1,6 +1,10 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useMemo, useReducer, useEffect } from "react";
 import { getInterludeDotsFadeOpacity } from "@/utils/karaokeInterludeDisplay";
+import {
+  getChinesePhoneticSystem,
+  type RomanizationSettings,
+} from "@/types/lyrics";
 import type { LyricsLineRowContentProps } from "./types";
 import {
   BASE_SHADOW,
@@ -11,6 +15,14 @@ import {
 } from "./constants";
 import { StaticWordRendering } from "./StaticWordRendering";
 import { WordTimingHighlight } from "./WordTimingHighlight";
+
+function chinesePhoneticForLine(
+  romanization: RomanizationSettings,
+  blocked: unknown
+) {
+  if (blocked || !romanization.enabled) return null;
+  return getChinesePhoneticSystem(romanization);
+}
 
 export function interludeStackItemsClass(textAlign: string): string {
   if (textAlign === "right" || textAlign === "end") return "items-end";
@@ -201,9 +213,10 @@ export function LyricsLineRowContent({
                               romanization.enabled &&
                               romanization.japaneseRomaji
                             }
-                            chinesePinyin={
-                              !anchorSoramimi && romanization.enabled && romanization.chinese
-                            }
+                            chinesePhonetic={chinesePhoneticForLine(
+                              romanization,
+                              anchorSoramimi
+                            )}
                             pronunciationOnly={
                               romanization.enabled && romanization.pronunciationOnly
                             }
@@ -250,9 +263,10 @@ export function LyricsLineRowContent({
                                 romanization.enabled &&
                                 romanization.japaneseRomaji
                               }
-                              chinesePinyin={
-                                !anchorSoramimi && romanization.enabled && romanization.chinese
-                              }
+                              chinesePhonetic={chinesePhoneticForLine(
+                                romanization,
+                                anchorSoramimi
+                              )}
                               pronunciationOnly={
                                 romanization.enabled && romanization.pronunciationOnly
                               }
@@ -287,7 +301,10 @@ export function LyricsLineRowContent({
                       japaneseRomaji={
                         !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
                       }
-                      chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                      chinesePhonetic={chinesePhoneticForLine(
+                        romanization,
+                        soramimiSegments
+                      )}
                       pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
                       soramimiTargetLanguage={
                         soramimiSegments ? romanization.soramamiTargetLanguage : undefined
@@ -317,7 +334,10 @@ export function LyricsLineRowContent({
                   japaneseRomaji={
                     !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
                   }
-                  chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                  chinesePhonetic={chinesePhoneticForLine(
+                    romanization,
+                    soramimiSegments
+                  )}
                   pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
                   soramimiTargetLanguage={
                     soramimiSegments ? romanization.soramamiTargetLanguage : undefined
@@ -363,9 +383,10 @@ export function LyricsLineRowContent({
                                 romanization.enabled &&
                                 romanization.japaneseRomaji
                               }
-                              chinesePinyin={
-                                !anchorSoramimi && romanization.enabled && romanization.chinese
-                              }
+                              chinesePhonetic={chinesePhoneticForLine(
+                                romanization,
+                                anchorSoramimi
+                              )}
                               pronunciationOnly={
                                 romanization.enabled && romanization.pronunciationOnly
                               }
@@ -398,7 +419,10 @@ export function LyricsLineRowContent({
                       japaneseRomaji={
                         !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
                       }
-                      chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                      chinesePhonetic={chinesePhoneticForLine(
+                        romanization,
+                        soramimiSegments
+                      )}
                       pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
                       soramimiTargetLanguage={
                         soramimiSegments ? romanization.soramamiTargetLanguage : undefined
@@ -419,7 +443,10 @@ export function LyricsLineRowContent({
                   japaneseRomaji={
                     !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
                   }
-                  chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                  chinesePhonetic={chinesePhoneticForLine(
+                    romanization,
+                    soramimiSegments
+                  )}
                   pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
                   soramimiTargetLanguage={
                     soramimiSegments ? romanization.soramamiTargetLanguage : undefined
@@ -482,9 +509,10 @@ export function LyricsLineRowContent({
                         japaneseRomaji={
                           !inlineDotsSoramimi && romanization.enabled && romanization.japaneseRomaji
                         }
-                        chinesePinyin={
-                          !inlineDotsSoramimi && romanization.enabled && romanization.chinese
-                        }
+                        chinesePhonetic={chinesePhoneticForLine(
+                          romanization,
+                          inlineDotsSoramimi
+                        )}
                         pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
                         soramimiTargetLanguage={
                           inlineDotsSoramimi ? romanization.soramamiTargetLanguage : undefined

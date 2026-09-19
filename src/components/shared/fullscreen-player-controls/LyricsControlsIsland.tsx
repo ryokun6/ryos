@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getTranslationBadge } from "@/utils/lyricsTranslation";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
+import { chinesePhoneticPatch } from "@/types/lyrics";
 import { getLyricsFontClassName, LyricsFont } from "@/types/lyrics";
 import {
   ClockClockwise,
@@ -313,13 +314,24 @@ export function LyricsControlsIsland({
               <DropdownMenuCheckboxItem
                 checked={romanization.chinese}
                 onCheckedChange={(checked) => {
-                  onRomanizationChange({ chinese: checked });
+                  onRomanizationChange(chinesePhoneticPatch("pinyin", checked));
                   onInteraction?.();
                 }}
                 disabled={!romanization.enabled}
                 className="text-md h-6 px-3 whitespace-nowrap"
               >
                 {t("apps.ipod.menu.chinesePinyin")}
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={romanization.chineseZhuyin}
+                onCheckedChange={(checked) => {
+                  onRomanizationChange(chinesePhoneticPatch("zhuyin", checked));
+                  onInteraction?.();
+                }}
+                disabled={!romanization.enabled}
+                className="text-md h-6 px-3 whitespace-nowrap"
+              >
+                {t("apps.ipod.menu.chineseZhuyin")}
               </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
               <DropdownMenuRadioGroup

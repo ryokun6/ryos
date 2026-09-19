@@ -7,7 +7,10 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import type { RomanizationSettings } from "@/types/lyrics";
+import {
+  chinesePhoneticPatch,
+  type RomanizationSettings,
+} from "@/types/lyrics";
 import type { ChineseLyricsLanguagePreference } from "@/shared/media/chineseLyrics";
 import { MENUBAR_SEPARATOR_CLASS } from "../menubarStyles";
 
@@ -19,6 +22,7 @@ export type LyricsPronunciationSubmenuProps = {
   japaneseRomajiLabel: string;
   koreanRomanizationLabel: string;
   chinesePinyinLabel: string;
+  chineseZhuyinLabel: string;
   automaticLabel: string;
   chineseTraditionalLabel: string;
   chineseSimplifiedLabel: string;
@@ -36,6 +40,7 @@ export function LyricsPronunciationSubmenu({
   japaneseRomajiLabel,
   koreanRomanizationLabel,
   chinesePinyinLabel,
+  chineseZhuyinLabel,
   automaticLabel,
   chineseTraditionalLabel,
   chineseSimplifiedLabel,
@@ -99,11 +104,23 @@ export function LyricsPronunciationSubmenu({
         </MenubarCheckboxItem>
         <MenubarCheckboxItem
           checked={romanization?.chinese ?? false}
-          onCheckedChange={(checked) => setRomanization({ chinese: checked })}
+          onCheckedChange={(checked) =>
+            setRomanization(chinesePhoneticPatch("pinyin", checked))
+          }
           disabled={!romanization?.enabled}
           className="text-md h-6 px-3"
         >
           {chinesePinyinLabel}
+        </MenubarCheckboxItem>
+        <MenubarCheckboxItem
+          checked={romanization?.chineseZhuyin ?? false}
+          onCheckedChange={(checked) =>
+            setRomanization(chinesePhoneticPatch("zhuyin", checked))
+          }
+          disabled={!romanization?.enabled}
+          className="text-md h-6 px-3"
+        >
+          {chineseZhuyinLabel}
         </MenubarCheckboxItem>
         <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
         <MenubarRadioGroup
