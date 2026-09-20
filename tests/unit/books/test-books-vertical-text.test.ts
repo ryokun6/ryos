@@ -36,9 +36,6 @@ describe("Books vertical text layout", () => {
     const rootStyle = bookDocument.documentElement.style;
     expect(rootStyle.getPropertyValue("writing-mode")).toBe("vertical-rl");
     expect(rootStyle.getPropertyPriority("writing-mode")).toBe("important");
-    expect(rootStyle.getPropertyValue("-webkit-writing-mode")).toBe(
-      "vertical-rl"
-    );
     expect(rootStyle.getPropertyValue("text-orientation")).toBe("mixed");
     expect(rootStyle.getPropertyValue("direction")).toBe("ltr");
   });

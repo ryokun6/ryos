@@ -1,5 +1,7 @@
 import "../../helpers/local-storage-stub";
 import { beforeEach, describe, expect, test } from "bun:test";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
+import { resetPersistWritesForTests } from "../../../src/utils/persistWriteQueue";
 import { SYNC_CODECS } from "../../../src/sync/codecs";
 import { CloudSyncEngine } from "../../../src/sync/engine";
 import {
@@ -1180,6 +1182,11 @@ describe("cloud sync logging summaries", () => {
 });
 
 describe("cloud sync engine resilience", () => {
+  beforeEach(() => {
+    resetPersistWritesForTests();
+    resetFakeIndexedDB();
+  });
+
   test("warm start with a cursor skips the full local reconciliation scan", async () => {
     const username = `sync-warm-${Date.now().toString(36)}`;
     localStorage.setItem(

@@ -5,6 +5,7 @@ import {
   resetPersistWritesForTests,
   settleAllPersistWrites,
 } from "../../../src/utils/persistWriteQueue";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 
 const resetDb = () =>
   new Promise<void>((resolve) => {
@@ -17,8 +18,11 @@ const resetDb = () =>
 beforeEach(async () => {
   // Earlier suites in the same process may have seeded the default library
   // into this store instance and may still have a debounced write in flight.
-  // Settle those writes first: an in-flight transaction blocks deleteDatabase
-  // (resetDb resolves on `blocked`, silently keeping the stale rows).
+  // Reset persist + the IDB factory first: settling a write that's stuck on
+  // happy-dom's broken indexedDB hangs until the 5s test timeout, and
+  // deleteDatabase then no-ops on `blocked` while keeping stale rows.
+  resetPersistWritesForTests();
+  resetFakeIndexedDB();
   const { useFilesStore } = await import("../../../src/stores/useFilesStore");
   useFilesStore.setState({ items: {}, libraryState: "uninitialized" });
   await settleAllPersistWrites();

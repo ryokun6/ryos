@@ -34,6 +34,22 @@ function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+async function writeMeasurementArtifact(
+  filename: string,
+  summary: unknown
+): Promise<void> {
+  const directory =
+    process.env.CURSOR_ARTIFACTS_DIR ?? "/tmp/ryos-test-artifacts";
+  try {
+    await Bun.write(
+      `${directory}/${filename}`,
+      JSON.stringify(summary, null, 2)
+    );
+  } catch {
+    // Measurement dumps are optional; missing CI artifact dirs should not fail the test.
+  }
+}
+
 describe("ChatMessageItem render counts (old vs new props)", () => {
   test("per-row booleans cut commits vs shared copiedMessageId", async () => {
     const oldRenderCounts = new Map<string, number>();
@@ -175,9 +191,9 @@ describe("ChatMessageItem render counts (old vs new props)", () => {
       newTotalRenders: newTotal,
       reductionPct,
     };
-    await Bun.write(
-      "/opt/cursor/artifacts/react_chat_row_render_counts.json",
-      JSON.stringify(summary, null, 2)
+    await writeMeasurementArtifact(
+      "react_chat_row_render_counts.json",
+      summary
     );
 
     console.log(
@@ -336,9 +352,9 @@ describe("ChatMessageItem render counts (old vs new props)", () => {
       newTotalRenders: newTotal,
       reductionPct,
     };
-    await Bun.write(
-      "/opt/cursor/artifacts/react_chat_highlight_render_counts.json",
-      JSON.stringify(summary, null, 2)
+    await writeMeasurementArtifact(
+      "react_chat_highlight_render_counts.json",
+      summary
     );
 
     console.log(
