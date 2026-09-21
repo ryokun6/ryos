@@ -201,10 +201,12 @@ jobs:
       url: ${{ vars.COOLIFY_APP_URL }}
     timeout-minutes: 15
     steps:
-      - name: Verify Coolify secrets are configured
+      - name: Verify Coolify and Tailscale secrets are configured
         env:
           COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
         run: |
           if [ -z "${COOLIFY_WEBHOOK_URL}" ]; then
             echo "::error::Missing required secret COOLIFY_WEBHOOK_URL."
@@ -216,7 +218,40 @@ jobs:
             echo "::error::Missing required secret COOLIFY_TOKEN (Coolify API token)."
             exit 1
           fi
-          echo "Coolify secrets are configured."
+          if [ -z "${TS_OAUTH_CLIENT_ID}" ]; then
+            echo "::error::Missing required secret TS_OAUTH_CLIENT_ID (Tailscale OAuth client ID)."
+            echo "The deploy runner must join Tailscale to resolve Coolify's private hostname."
+            exit 1
+          fi
+          if [ -z "${TS_OAUTH_SECRET}" ]; then
+            echo "::error::Missing required secret TS_OAUTH_SECRET (Tailscale OAuth client secret)."
+            echo "The deploy runner must join Tailscale to resolve Coolify's private hostname."
+            exit 1
+          fi
+          echo "Coolify and Tailscale secrets are configured."
+
+      # Coolify is only reachable via Tailscale split DNS (public Cloudflare
+      # DNS for coolify.ryo.lu was removed). Join the tailnet before POSTing.
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Verify Tailscale can resolve Coolify
+        env:
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          tailscale status
+          host="$(python3 -c 'from urllib.parse import urlparse; import os; print(urlparse(os.environ["COOLIFY_WEBHOOK_URL"]).hostname or "")')"
+          if [ -z "${host}" ]; then
+            echo "::error::Could not parse hostname from COOLIFY_WEBHOOK_URL."
+            exit 1
+          fi
+          echo "Resolving ${host} via Tailscale split DNS..."
+          getent hosts "${host}"
 
       - name: Trigger Coolify deploy webhook
         env:
