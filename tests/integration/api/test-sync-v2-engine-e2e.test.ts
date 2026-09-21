@@ -356,6 +356,17 @@ test("atomic document save replays paired catalog and content through the real A
     expect(snapshot.entries["files/doc:api-atomic-save"]?.t).toBe(pending.op.t);
     expect(snapshot.entries["files/doc:api-atomic-save"]?.v).toMatchObject({ value: { content: "atomic document bytes" } });
     expect((await readFileMutations(USERNAME)).some(m => m.id === pending.id)).toBe(false);
+    const { transitionVfsFiles } = await import("../../../src/services/vfs/FileLifecycleTransaction");
+    const destination = "/api-atomic-renamed.md";
+    await transitionVfsFiles({ kind: "move", path, destination });
+    const renamed = (await readFileMutations(USERNAME)).find(m => m.op.k === `files/item:${destination}`)!;
+    await (engine as unknown as { replayFileMutations(): Promise<void> }).replayFileMutations();
+    const afterRename = await readServerSnapshot();
+    expect(afterRename.entries[`files/item:${path}`]?.del).toBe(true);
+    expect(afterRename.entries[`files/item:${destination}`]?.t).toBe(renamed.op.t);
+    expect(afterRename.entries[`files/item:${path}`]?.t).toBe(renamed.op.t);
+    expect(afterRename.entries["files/doc:api-atomic-save"]?.t).toBe(pending.op.t);
+    expect(afterRename.entries[`files/item:${destination}`]?.v).toMatchObject({ uuid: "api-atomic-save" });
   } finally {
     await engine.stop();
     useChatsStore.setState({ username: priorUsername });

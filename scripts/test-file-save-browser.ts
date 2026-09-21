@@ -91,6 +91,43 @@ try {
   });
   assert.deepEqual(aborted, { rejected: true, row: false, bytes: false });
   console.log("PASS: abort after a successful put rolls back catalog and bytes, and rejects save");
+
+  await second.evaluate(async () => {
+    const { transitionVfsFiles } = await import("/src/services/vfs/FileLifecycleTransaction.ts");
+    const { saveVfsFile } = await import("/src/services/vfs/FileSaveTransaction.ts");
+    const { useFilesStore } = await import("/src/stores/useFilesStore.ts");
+    useFilesStore.getState().addItem({ path: "/Lifecycle", name: "Lifecycle", isDirectory: true });
+    for (const ext of ["md", "png", "epub", "html"]) {
+      await saveVfsFile({ path: `/Lifecycle/file.${ext}`, name: `file.${ext}`, uuid: `lifecycle-${ext}`, isDirectory: false, status: "active" },
+        ["png", "epub"].includes(ext) ? new Blob([`bytes-${ext}`]) : `bytes-${ext}`);
+    }
+    await transitionVfsFiles({ kind: "trash", path: "/Lifecycle" });
+  });
+  const lifecycleSession = await context.newCDPSession(second);
+  const lifecycleCrash = second.waitForEvent("crash");
+  void lifecycleSession.send("Page.crash").catch(() => {});
+  await lifecycleCrash;
+  await second.close();
+  const fourth = await context.newPage();
+  await setup(fourth);
+  const lifecycle = await fourth.evaluate(async () => {
+    const { transitionVfsFiles } = await import("/src/services/vfs/FileLifecycleTransaction.ts");
+    const { dbOperations, STORES } = await import("/src/utils/indexedDB.ts");
+    const { readFileMutations } = await import("/src/sync/fileMutationJournal.ts");
+    const formats = [["md", STORES.DOCUMENTS], ["png", STORES.IMAGES], ["epub", STORES.BOOKS], ["html", STORES.APPLETS]];
+    const queued = (await readFileMutations("browser-sync-canary")).filter(m => m.content?.key.startsWith("trash/item:lifecycle-"));
+    const trashed = await Promise.all(formats.map(async ([ext, store]) => Boolean(await dbOperations.get(STORES.TRASH, `lifecycle-${ext}`)) && !await dbOperations.get(store, `lifecycle-${ext}`)));
+    await transitionVfsFiles({ kind: "restore", path: "/Lifecycle" });
+    const restored = await Promise.all(formats.map(async ([ext, store]) => {
+      const value = await dbOperations.get(store, `lifecycle-${ext}`);
+      const content = value?.content;
+      const text = content instanceof Blob ? await content.text() : content instanceof ArrayBuffer ? new TextDecoder().decode(content) : content;
+      return text === `bytes-${ext}` && !await dbOperations.get(STORES.TRASH, `lifecycle-${ext}`);
+    }));
+    return { queued: queued.length, trashed, restored };
+  });
+  assert.deepEqual(lifecycle, { queued: 4, trashed: [true, true, true, true], restored: [true, true, true, true] });
+  console.log("PASS: folder trash survives a renderer crash and restores all four content formats");
 } finally {
   await context.close();
   await rm(profile, { recursive: true, force: true });

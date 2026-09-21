@@ -1,3 +1,4 @@
+import { transitionVfsFiles } from "@/services/vfs/FileLifecycleTransaction";
 import { saveVfsFile } from "@/services/vfs/FileSaveTransaction";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -324,22 +325,12 @@ export function useFileSystem(
     getItemsInPath,
     updateItemMetadata,
     addItem: addFileItem,
-    moveItem: moveFileItem,
-    renameItem: renameFileItem,
-    removeItem: removeFileItem,
-    restoreItem: restoreFileItem,
-    emptyTrash: emptyTrashMetadata,
     reset: resetFilesStore,
   } = useFilesStoreShallow((state) => ({
     getItem: state.getItem,
     getItemsInPath: state.getItemsInPath,
     updateItemMetadata: state.updateItemMetadata,
     addItem: state.addItem,
-    moveItem: state.moveItem,
-    renameItem: state.renameItem,
-    removeItem: state.removeItem,
-    restoreItem: state.restoreItem,
-    emptyTrash: state.emptyTrash,
     reset: state.reset,
   }));
   const launchApp = useLaunchApp();
@@ -1300,207 +1291,36 @@ export function useFileSystem(
 
   const moveFile = useCallback(
     async (sourceFile: FileSystemItem, targetFolderPath: string) => {
-      if (!sourceFile || sourceFile.isDirectory) {
-        console.error(
-          "[useFileSystem:moveFile] Invalid source file or attempting to move a directory"
-        );
-        setError("Cannot move this item");
-        return false;
-      }
-
-      const targetFolder = getFileItem(targetFolderPath);
-      if (!targetFolder || !targetFolder.isDirectory) {
-        console.error(
-          `[useFileSystem:moveFile] Target is not a valid directory: ${targetFolderPath}`
-        );
-        setError("Invalid target folder");
-        return false;
-      }
-
-      // Determine new path
-      const newPath = `${targetFolderPath}/${sourceFile.name}`;
-
-      // Check if destination already exists
-      if (getFileItem(newPath)) {
-        console.error(
-          `[useFileSystem:moveFile] A file with the same name already exists at destination: ${newPath}`
-        );
-        setError(
-          "A file with the same name already exists in the destination folder"
-        );
-        return false;
-      }
-
+      const newPath = `${targetFolderPath === "/" ? "" : targetFolderPath}/${sourceFile.name}`;
       try {
-        // Determine source and target stores for content
-        const sourcePath = sourceFile.path;
-        const sourceStoreName = getStoreForFile(sourcePath, {
-          name: sourceFile.name,
-          type: sourceFile.type,
-        });
-        const targetStoreName = getStoreForFile(newPath, {
-          name: sourceFile.name,
-          type: sourceFile.type,
-        });
-
-        // If content needs to move between different stores
-        if (
-          sourceStoreName &&
-          targetStoreName &&
-          sourceStoreName !== targetStoreName &&
-          sourceFile.uuid
-        ) {
-          // Get content from source store
-          const content = await dbOperations.get<DocumentContent>(
-            sourceStoreName,
-            sourceFile.uuid // Use UUID
-          );
-          if (content) {
-            // Save to target store
-            await dbOperations.put<DocumentContent>(
-              targetStoreName,
-              content,
-              sourceFile.uuid
-            );
-            // Delete from source store
-            await dbOperations.delete(sourceStoreName, sourceFile.uuid);
-            const sourceDeletionBucket =
-              getCloudSyncDeletionBucketForContentStore(sourceStoreName);
-            if (sourceDeletionBucket) {
-              useCloudSyncStore
-                .getState()
-                .markDeletedKeys(sourceDeletionBucket, [sourceFile.uuid]);
-            }
-            const sourceSyncDomain =
-              getCloudSyncDomainForContentStore(sourceStoreName);
-            const targetSyncDomain =
-              getCloudSyncDomainForContentStore(targetStoreName);
-            if (sourceSyncDomain) {
-              emitCloudSyncContentChange(sourceSyncDomain, sourceFile.uuid);
-            }
-            if (targetSyncDomain) {
-              emitCloudSyncContentChange(targetSyncDomain, sourceFile.uuid);
-            }
-          }
-        }
-
-        // Update metadata in file store
-        moveFileItem(sourcePath, newPath);
-        trackFinderFileOperation(FINDER_ANALYTICS.FILE_MOVE, sourcePath, sourceFile.type, {
+        await transitionVfsFiles({ kind: "move", path: sourceFile.path, destination: newPath });
+        trackFinderFileOperation(FINDER_ANALYTICS.FILE_MOVE, sourceFile.path, sourceFile.type, {
           targetTopLevel: targetFolderPath.split("/").filter(Boolean)[0] || "root",
         });
-        track(FINDER_ANALYTICS.FILE_MOVE, {
-          appId: "finder",
-          fromTopLevel: getFinderAnalyticsPathInfo(sourcePath, sourceFile.type).topLevel,
-          toTopLevel: getFinderAnalyticsPathInfo(newPath, sourceFile.type).topLevel,
-          fileType: getFinderAnalyticsPathInfo(sourcePath, sourceFile.type).fileType,
-        });
-        log.debug("Moved file", { sourcePath, newPath });
+        setError(undefined);
         return true;
-      } catch (err) {
-        console.error(`[useFileSystem:moveFile] Error moving file: ${err}`);
-        setError("Failed to move file");
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to move file");
         return false;
       }
-    },
-    [getFileItem, moveFileItem]
+    }, []
   );
 
   const renameFile = useCallback(
     async (oldPath: string, newName: string) => {
-      const itemToRename = getFileItem(oldPath);
-      if (!itemToRename) {
-        console.error("Error: Item to rename not found in FileStore");
-        setError("Failed to rename file");
-        return;
+      const parent = getParentPath(oldPath);
+      const newPath = `${parent === "/" ? "" : parent}/${newName}`;
+      try {
+        if (!newName || newName.includes("/")) throw new Error("Invalid file name");
+        await transitionVfsFiles({ kind: "move", path: oldPath, destination: newPath });
+        track(FINDER_ANALYTICS.FILE_RENAME, { appId: "finder", ...getFinderAnalyticsPathInfo(newPath) });
+        setError(undefined);
+        return true;
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to rename file");
+        return false;
       }
-
-      const parentPath = getParentPath(oldPath);
-      const newPath = `${parentPath === "/" ? "" : parentPath}/${newName}`;
-
-      if (getFileItem(newPath)) {
-        console.error("Error: New path already exists in FileStore");
-        setError("Failed to rename file");
-        return;
-      }
-
-      // 1. Rename Metadata in FileStore (preserves UUID)
-      renameFileItem(oldPath, newPath, newName);
-      track(FINDER_ANALYTICS.FILE_RENAME, {
-        appId: "finder",
-        ...getFinderAnalyticsPathInfo(newPath, itemToRename.type),
-      });
-
-      // 2. Update content metadata (name field) in IndexedDB if it's a file with content.
-      // If the rename changes the resolved content store (e.g. extension
-      // change in an extension-routed folder), move the content across stores.
-      if (!itemToRename.isDirectory && itemToRename.uuid) {
-        const storeName = getStoreForFile(oldPath, {
-          name: itemToRename.name,
-          type: itemToRename.type,
-        });
-        const newStoreName = getStoreForFile(newPath, {
-          name: newName,
-          type: itemToRename.type,
-        });
-        if (storeName) {
-          const targetStoreName = newStoreName || storeName;
-          try {
-            const content = await dbOperations.get<DocumentContent>(
-              storeName,
-              itemToRename.uuid // Use UUID
-            );
-            if (content) {
-              // Write (with updated name) to the resolved target store
-              await dbOperations.put<DocumentContent>(
-                targetStoreName,
-                {
-                  ...content,
-                  name: newName,
-                },
-                itemToRename.uuid
-              ); // Keep same UUID
-              if (targetStoreName !== storeName) {
-                await dbOperations.delete(storeName, itemToRename.uuid);
-                const sourceDeletionBucket =
-                  getCloudSyncDeletionBucketForContentStore(storeName);
-                if (sourceDeletionBucket) {
-                  useCloudSyncStore
-                    .getState()
-                    .markDeletedKeys(sourceDeletionBucket, [
-                      itemToRename.uuid,
-                    ]);
-                }
-                const sourceSyncDomain =
-                  getCloudSyncDomainForContentStore(storeName);
-                if (sourceSyncDomain) {
-                  emitCloudSyncContentChange(
-                    sourceSyncDomain,
-                    itemToRename.uuid
-                  );
-                }
-              }
-              const syncDomain =
-                getCloudSyncDomainForContentStore(targetStoreName);
-              if (syncDomain) {
-                emitCloudSyncContentChange(syncDomain, itemToRename.uuid);
-              }
-            } else {
-              console.warn(
-                "Warning: Content not found in IndexedDB for renaming"
-              );
-            }
-          } catch (err) {
-            console.error("Error renaming file:", err);
-            setError("Failed to rename file");
-          }
-        }
-      }
-      trackFinderFileOperation(FINDER_ANALYTICS.FILE_RENAME, newPath, itemToRename.type, {
-        fromTopLevel: getFinderAnalyticsPathInfo(oldPath, itemToRename.type).topLevel,
-      });
-    },
-    [getFileItem, renameFileItem]
+    }, []
   );
 
   // --- Create Folder --- //
@@ -1530,191 +1350,42 @@ export function useFileSystem(
     [getFileItem, addFileItem]
   );
 
-  const moveToTrash = useCallback(
-    async (fileMetadata: FileSystemItem) => {
-      if (
-        !fileMetadata ||
-        fileMetadata.path === "/" ||
-        fileMetadata.path === "/Trash" ||
-        fileMetadata.status === "trashed"
-      )
-        return;
+  const moveToTrash = useCallback(async (file: FileSystemItem) => {
+    try {
+      await transitionVfsFiles({ kind: "trash", path: file.path });
+      trackFinderFileOperation(FINDER_ANALYTICS.MOVE_TO_TRASH, file.path, file.type, { isDirectory: file.isDirectory });
+      setError(undefined);
+      return true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to move item to trash");
+      return false;
+    }
+  }, []);
 
-      // 1. Mark item as trashed in FileStore
-      removeFileItem(fileMetadata.path);
-      track(FINDER_ANALYTICS.MOVE_TO_TRASH, {
-        appId: "finder",
-        isDirectory: fileMetadata.isDirectory,
-        ...getFinderAnalyticsPathInfo(fileMetadata.path, fileMetadata.type),
-      });
-
-      // 2. Move Content to TRASH DB store
-      const storeName = getStoreForFile(fileMetadata.path, {
-        name: fileMetadata.name,
-        type: fileMetadata.type,
-      });
-      if (storeName && !fileMetadata.isDirectory && fileMetadata.uuid) {
-        try {
-          const content = await dbOperations.get<DocumentContent>(
-            storeName,
-            fileMetadata.uuid // Use UUID
-          );
-          if (content) {
-            // Store content in TRASH store using UUID as key
-            await dbOperations.put<DocumentContent>(
-              STORES.TRASH,
-              content,
-              fileMetadata.uuid
-            );
-            await dbOperations.delete(storeName, fileMetadata.uuid);
-            const deletionBucket = getCloudSyncDeletionBucketForContentStore(storeName);
-            if (deletionBucket) {
-              useCloudSyncStore
-                .getState()
-                .markDeletedKeys(deletionBucket, [fileMetadata.uuid]);
-            }
-            const sourceSyncDomain =
-              getCloudSyncDomainForContentStore(storeName);
-            if (sourceSyncDomain) {
-              emitCloudSyncContentChange(
-                sourceSyncDomain,
-                fileMetadata.uuid
-              );
-            }
-            emitCloudSyncContentChange("trash", fileMetadata.uuid);
-            log.debug("Moved content to Trash DB", {
-              name: fileMetadata.name,
-              storeName,
-              uuid: fileMetadata.uuid,
-            });
-          } else {
-            console.warn(
-              `[useFileSystem] Content not found for ${fileMetadata.name} (UUID: ${fileMetadata.uuid}) in ${storeName} during move to trash.`
-            );
-          }
-        } catch (err) {
-          console.error("Error moving content to trash:", err);
-          setError("Failed to move content to trash");
-        }
-      }
-      trackFinderFileOperation(FINDER_ANALYTICS.MOVE_TO_TRASH, fileMetadata.path, fileMetadata.type, {
-        isDirectory: Boolean(fileMetadata.isDirectory),
-      });
-    },
-    [removeFileItem]
-  );
-
-  const restoreFromTrash = useCallback(
-    async (itemToRestore: ExtendedDisplayFileItem) => {
-      const fileMetadata = getFileItem(itemToRestore.path);
-      if (
-        !fileMetadata ||
-        fileMetadata.status !== "trashed" ||
-        !fileMetadata.originalPath
-      ) {
-        console.error(
-          "Cannot restore: Item not found in store or not in trash."
-        );
-        setError("Cannot restore item.");
-        return;
-      }
-
-      // 1. Restore metadata in FileStore
-      restoreFileItem(fileMetadata.path);
-      track(FINDER_ANALYTICS.RESTORE_FROM_TRASH, {
-        appId: "finder",
-        isDirectory: fileMetadata.isDirectory,
-        ...getFinderAnalyticsPathInfo(
-          fileMetadata.originalPath,
-          fileMetadata.type
-        ),
-      });
-
-      // 2. Move Content from TRASH DB store back
-      const targetStoreName = getStoreForFile(fileMetadata.originalPath, {
-        name: fileMetadata.name,
-        type: fileMetadata.type,
-      });
-      if (targetStoreName && !fileMetadata.isDirectory && fileMetadata.uuid) {
-        try {
-          const content = await dbOperations.get<DocumentContent>(
-            STORES.TRASH,
-            fileMetadata.uuid // Use UUID
-          );
-          if (content) {
-            await dbOperations.put<DocumentContent>(
-              targetStoreName,
-              content,
-              fileMetadata.uuid
-            );
-            await dbOperations.delete(STORES.TRASH, fileMetadata.uuid); // Delete content from trash store
-            useCloudSyncStore
-              .getState()
-              .markDeletedKeys("fileTrashKeys", [fileMetadata.uuid]);
-            const targetSyncDomain =
-              getCloudSyncDomainForContentStore(targetStoreName);
-            if (targetSyncDomain) {
-              emitCloudSyncContentChange(
-                targetSyncDomain,
-                fileMetadata.uuid
-              );
-            }
-            emitCloudSyncContentChange("trash", fileMetadata.uuid);
-            log.debug("Restored content from Trash DB", {
-              name: fileMetadata.name,
-              targetStoreName,
-              uuid: fileMetadata.uuid,
-            });
-          } else {
-            console.warn(
-              `[useFileSystem] Content not found for ${fileMetadata.name} (UUID: ${fileMetadata.uuid}) in Trash DB during restore.`
-            );
-          }
-        } catch (err) {
-          console.error("Error restoring content from trash:", err);
-          setError("Failed to restore content from trash");
-        }
-      }
-      trackFinderFileOperation(
-        FINDER_ANALYTICS.RESTORE_FROM_TRASH,
-        fileMetadata.originalPath,
-        fileMetadata.type,
-        { isDirectory: Boolean(fileMetadata.isDirectory) }
-      );
-    },
-    [getFileItem, restoreFileItem]
-  );
+  const restoreFromTrash = useCallback(async (file: ExtendedDisplayFileItem) => {
+    try {
+      await transitionVfsFiles({ kind: "restore", path: file.path });
+      trackFinderFileOperation(FINDER_ANALYTICS.RESTORE_FROM_TRASH, file.path, file.type);
+      setError(undefined);
+      return true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to restore item");
+      return false;
+    }
+  }, []);
 
   const emptyTrash = useCallback(async () => {
-    // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
-    const contentUUIDsToDelete = emptyTrashMetadata();
-    track(FINDER_ANALYTICS.EMPTY_TRASH, {
-      appId: "finder",
-      itemCount: contentUUIDsToDelete.length,
-    });
-
-    // 2. Clear corresponding content from TRASH IndexedDB store
     try {
-      // Delete content based on UUIDs collected from fileStore.emptyTrash()
-      for (const uuid of contentUUIDsToDelete) {
-        await dbOperations.delete(STORES.TRASH, uuid);
-      }
-      if (contentUUIDsToDelete.length > 0) {
-        useCloudSyncStore
-          .getState()
-          .markDeletedKeys("fileTrashKeys", contentUUIDsToDelete);
-        emitCloudSyncDomainChange("trash");
-      }
-      log.debug("Cleared trash content from IndexedDB");
-      track(FINDER_ANALYTICS.EMPTY_TRASH, {
-        appId: "finder",
-        deletedCount: contentUUIDsToDelete.length,
-      });
-    } catch (err) {
-      console.error("Error clearing trash content from IndexedDB:", err);
-      setError("Failed to empty trash storage.");
+      const itemCount = useFilesStore.getState().getTrashItems().length;
+      await transitionVfsFiles({ kind: "emptyTrash" });
+      track(FINDER_ANALYTICS.EMPTY_TRASH, { appId: "finder", itemCount });
+      setError(undefined);
+      return true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to empty trash");
+      return false;
     }
-  }, [emptyTrashMetadata]);
+  }, []);
 
   // --- Format File System (Refactored) --- //
   const formatFileSystem = useCallback(async () => {
@@ -1783,7 +1454,7 @@ export function useFileSystem(
     moveToTrash: (file: ExtendedDisplayFileItem) => {
       const itemMeta = getFileItem(file.path);
       if (itemMeta) {
-        moveToTrash(itemMeta);
+        return moveToTrash(itemMeta);
       } else {
         /* ... error ... */
       }

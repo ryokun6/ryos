@@ -5,6 +5,7 @@ import {
   observeFileMutationTimestamp,
   isRemoteFileChange,
   fileMutationKeys,
+  fileMutationOps,
   readFileMutationContent,
   type FileMutation,
 } from "@/sync/fileMutationJournal";
@@ -868,18 +869,18 @@ export class CloudSyncEngine {
       if (options.catalogOnly) {
         for (const mutation of queued) {
           if (!mutation.content) continue;
-          this.markDirty("files", [mutation.op.k]);
+          this.markDirty("files", fileMutationKeys(mutation).filter(key => key.startsWith("files/")));
           const namespace = getSyncKeyNamespace(mutation.content.key);
           if (namespace) this.markDirty(namespace, [mutation.content.key]);
         }
       }
       // Pulls protect these keys through the journal. Upload large local files
       // from the normal flush worker, after the catalog is usable.
-      const pendingCatalogKeys = new Set(queued.filter(m => m.content).map(m => m.op.k));
+      const pendingCatalogKeys = new Set(queued.filter(m => m.content).flatMap(fileMutationKeys));
       const pendingContentIds = new Set(queued.flatMap(m => m.content ? [m.content.key.slice(m.content.key.indexOf(":") + 1)] : []));
       const pending = options.catalogOnly ? queued.filter(m => {
         const uuid = m.op.v && typeof m.op.v === "object" ? (m.op.v as { uuid?: string }).uuid : undefined;
-        return !m.content && !pendingCatalogKeys.has(m.op.k) && !(uuid && pendingContentIds.has(uuid));
+        return !m.content && !fileMutationKeys(m).some(key => pendingCatalogKeys.has(key)) && !(uuid && pendingContentIds.has(uuid));
       }) : queued;
       const contentFailures: unknown[] = [];
       const blockedKeys = new Set<string>();
@@ -894,8 +895,13 @@ export class CloudSyncEngine {
         // A binary snapshot is processed on its own to bound base64/gzip RAM.
         // Catalog-only batches keep the existing throughput.
         let end = offset;
+        let operationCount = 0;
         while (end < pending.length && end - offset < OPS_BATCH_SIZE / 2) {
+          const size = fileMutationOps(pending[end]).length + (pending[end].content ? 1 : 0);
+          if (size > OPS_BATCH_SIZE) throw new Error("File mutation exceeds server batch limit");
+          if (operationCount + size > OPS_BATCH_SIZE) break;
           if (pending[end].content) { if (end === offset) end++; break; }
+          operationCount += size;
           end++;
         }
         const batch = pending.slice(offset, end).filter(mutation => {
@@ -939,7 +945,7 @@ export class CloudSyncEngine {
               contentSnapshots.set(key, { storeName, key, value });
             }
             // Content and its catalog row are sent in the same server batch.
-            ops.set(mutation.op.k, mutation.op);
+            for (const op of fileMutationOps(mutation)) ops.set(op.k, op);
           }
         } catch (error) {
           if (this.stopped || isAbortError(error)) throw error;
@@ -990,7 +996,15 @@ export class CloudSyncEngine {
             const namespace = getSyncKeyNamespace(op.k)!;
             const submitted = ops.get(op.k)!;
             if (isSyncBlobNamespace(namespace)) {
-              if (op.t === submitted.t) {
+              if (op.del) {
+                const codec = SYNC_CODECS[namespace];
+                if (!isBlobCodec(codec)) throw new Error(`Missing blob codec: ${namespace}`);
+                const db = await ensureIndexedDBInitialized();
+                try { await codec.deleteItems([op.k.slice(op.k.indexOf(":") + 1)], { db }); }
+                finally { db.close(); }
+                const download = this.state.getDownload(op.k);
+                if (download && download.t <= op.t) this.state.finishDownload(download);
+              } else if (op.t === submitted.t) {
                 const snapshot = contentSnapshots.get(op.k)!;
                 await dbOperations.put(snapshot.storeName, snapshot.value, op.k.slice(op.k.indexOf(":") + 1));
                 const download = this.state.getDownload(op.k);
