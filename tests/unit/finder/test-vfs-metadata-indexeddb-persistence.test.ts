@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import { beforeEach, describe, expect, test } from "bun:test";
 import { installTestLocalStorage } from "../../setup";
 import {
@@ -15,6 +16,10 @@ const resetDb = () =>
   });
 
 beforeEach(async () => {
+  // A disposed DOM fixture can strand another suite's IDB promises forever.
+  // Reset the adapters before installing an independent factory for this test.
+  resetPersistWritesForTests();
+  resetFakeIndexedDB();
   // Earlier suites in the same process may have seeded the default library
   // into this store instance and may still have a debounced write in flight.
   // Settle those writes first: an in-flight transaction blocks deleteDatabase

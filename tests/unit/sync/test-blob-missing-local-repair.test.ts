@@ -1,5 +1,6 @@
 import "../../helpers/local-storage-stub";
 import "fake-indexeddb/auto";
+import { resetPersistWritesForTests } from "../../../src/utils/persistWriteQueue";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { CloudSyncEngine } from "../../../src/sync/engine";
 import { gzipJson, sha256Json } from "../../../src/sync/blobs";
@@ -50,6 +51,7 @@ describe("cloud sync blob missing-local repair", () => {
   beforeEach(async () => {
     // Fresh factory so prior happy-dom unregister / leaked connections can't
     // leave deleteDatabase hanging until the suite timeout.
+    resetPersistWritesForTests();
     resetFakeIndexedDB();
     await deleteRyOsDatabase();
     useCloudSyncStore.setState({

@@ -1,5 +1,11 @@
 import "fake-indexeddb/auto";
-import { describe, expect, test } from "bun:test";
+import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
+import { resetPersistWritesForTests } from "../../../src/utils/persistWriteQueue";
+beforeEach(() => {
+  resetPersistWritesForTests();
+  resetFakeIndexedDB();
+});
+import { beforeEach, describe, expect, test } from "bun:test";
 
 // Browser globals must be installed before importing the iPod store —
 // the store re-imports `useChatsStore`, which reads `localStorage` at
