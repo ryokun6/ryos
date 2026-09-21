@@ -41,7 +41,24 @@ export interface SplitPersistSnapshot<S> {
   rows: SplitPersistRowsByStore;
 }
 
+export interface SplitAtomicWrite {
+  storeName: string;
+  key: string;
+  value: unknown;
+}
+
+export interface SplitAtomicEffects<S> {
+  stores: readonly string[];
+  /** Capture immutable intent at mutation time, before debounce/async work. */
+  capture(state: S): readonly SplitAtomicWrite[];
+  hydrated?(state: S): void;
+  committed?(): void;
+}
+
 export interface SplitIndexedDBPersistStorageOptions<S> {
+  atomicEffects?: SplitAtomicEffects<S>;
+  /** Apply only this tab's delta when another tab committed since hydration. */
+  mergeConcurrentRows?: boolean;
   /** Dedicated object stores owned exclusively by this persisted slice. */
   stores: readonly string[];
   /** Layout version, independent of Zustand's persisted-state version. */
@@ -232,6 +249,9 @@ export function createSplitIndexedDBPersistStorage<S>(
   let timer: ReturnType<typeof setTimeout> | null = null;
   let pendingName: string | null = null;
   let pendingValue: StorageValue<S> | null = null;
+  let pendingAtomicWrites: SplitAtomicWrite[] = [];
+  let failedAtomicWrites: SplitAtomicWrite[] = [];
+  let writeSequence = 0;
   let inFlight: Promise<void> = Promise.resolve();
   let writeError: unknown = null;
   let lastRows = new Map<string, Map<string, SplitPersistRow>>();
@@ -258,7 +278,8 @@ export function createSplitIndexedDBPersistStorage<S>(
   const writeSnapshot = async (
     name: string,
     value: StorageValue<S>,
-    replaceAll: boolean
+    replaceAll: boolean,
+    atomicWrites: readonly SplitAtomicWrite[] = []
   ): Promise<void> => {
     const split = await options.split(value.state);
     const nextRows = indexRows(storeNames, split.rows);
@@ -290,7 +311,7 @@ export function createSplitIndexedDBPersistStorage<S>(
 
     try {
       await new Promise<void>((resolve, reject) => {
-        const transactionStores = unique([METADATA_STORE, ...storeNames]);
+        const transactionStores = unique([METADATA_STORE, ...storeNames, ...(options.atomicEffects?.stores ?? [])]);
         const tx = db.transaction(transactionStores, "readwrite");
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
@@ -315,8 +336,7 @@ export function createSplitIndexedDBPersistStorage<S>(
                 currentMetadata?.__ryosSplitLayout?.generation ?? null;
               const replaceEntityStores =
                 replaceAll ||
-                !hasBaseline ||
-                currentGeneration !== baselineGeneration;
+                (!options.mergeConcurrentRows && (!hasBaseline || currentGeneration !== baselineGeneration));
 
               const metadata: SplitStorageValue<S> = {
                 state: split.metadata,
@@ -364,6 +384,9 @@ export function createSplitIndexedDBPersistStorage<S>(
                   if (!next.has(key)) entityStore.delete(key);
                 }
               }
+              for (const write of atomicWrites) {
+                tx.objectStore(write.storeName).put(write.value, write.key);
+              }
             } catch (error) {
               tx.abort();
               reject(error);
@@ -389,6 +412,7 @@ export function createSplitIndexedDBPersistStorage<S>(
       lastRows = nextRows;
       hasBaseline = true;
       baselineGeneration = generation;
+      options.atomicEffects?.committed?.();
       await cleanupLegacyStorage(name);
     } finally {
       db.close();
@@ -414,19 +438,32 @@ export function createSplitIndexedDBPersistStorage<S>(
     }
     if (pendingName === null || pendingValue === null) return;
 
+    const sequence = ++writeSequence;
     const name = pendingName;
     const value = pendingValue;
+    let atomicWrites = pendingAtomicWrites;
+    pendingAtomicWrites = [];
     pendingName = null;
     pendingValue = null;
     clearPendingFlush(name);
 
     inFlight = inFlight
-      .then(() => writeSnapshot(name, value, false))
+      .then(() => {
+        atomicWrites = [...failedAtomicWrites, ...atomicWrites];
+        failedAtomicWrites = [];
+        return writeSnapshot(name, value, false, atomicWrites);
+      })
       .then(() => {
         writeError = null;
       })
       .catch((error) => {
         writeError = error;
+        failedAtomicWrites = atomicWrites;
+        if (options.atomicEffects && sequence === writeSequence && pendingName === null) {
+          pendingName = name;
+          pendingValue = value;
+          registerPendingFlush(name, writeNow);
+        }
         console.error(
           `[splitIndexedDBPersistStorage] Failed to write "${name}":`,
           error
@@ -450,6 +487,8 @@ export function createSplitIndexedDBPersistStorage<S>(
     inFlight = Promise.resolve();
     writeError = null;
     lastRows = new Map();
+    pendingAtomicWrites = [];
+    failedAtomicWrites = [];
     hasBaseline = false;
     baselineGeneration = null;
     hydratingNames.clear();
@@ -522,6 +561,7 @@ export function createSplitIndexedDBPersistStorage<S>(
           ) {
             await writeSnapshot(name, merged, true);
           }
+          options.atomicEffects?.hydrated?.(mergedState);
           return merged;
         }
 
@@ -530,6 +570,7 @@ export function createSplitIndexedDBPersistStorage<S>(
           options.persistVersion !== undefined &&
           record.version !== options.persistVersion
         ) {
+          options.atomicEffects?.hydrated?.(record.state);
           return { state: record.state, version: record.version };
         }
 
@@ -538,6 +579,7 @@ export function createSplitIndexedDBPersistStorage<S>(
           version: record.version,
         };
         await writeSnapshot(name, legacyFull, true);
+        options.atomicEffects?.hydrated?.(legacyFull.state);
         return legacyFull;
       } catch (error) {
         console.error(
@@ -554,6 +596,7 @@ export function createSplitIndexedDBPersistStorage<S>(
           }
           pendingName = null;
           pendingValue = null;
+          pendingAtomicWrites = [];
           clearPendingFlush(name);
         }
       }
@@ -568,6 +611,7 @@ export function createSplitIndexedDBPersistStorage<S>(
       }
       if (hydratingNames.has(name)) writesDuringHydration.add(name);
       ensureLifecycleFlush();
+      pendingAtomicWrites.push(...(options.atomicEffects?.capture(value.state) ?? []));
       pendingName = name;
       pendingValue = value;
       registerPendingFlush(name, writeNow);
@@ -580,6 +624,7 @@ export function createSplitIndexedDBPersistStorage<S>(
       if (pendingName === name) {
         pendingName = null;
         pendingValue = null;
+        pendingAtomicWrites = [];
         if (timer !== null) {
           clearTimeout(timer);
           timer = null;

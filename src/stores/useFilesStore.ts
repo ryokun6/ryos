@@ -1,3 +1,5 @@
+import { createFileMutationEffects, broadcastFileCatalogChange } from "@/sync/fileMutationJournal";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { useFileAvailability } from "@/sync/fileAvailability";
 import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
@@ -1859,6 +1861,11 @@ export const useFilesStore = create<FilesStoreState>()(
       version: FILES_STORE_VERSION,
       storage: createSplitIndexedDBPersistStorage<FilesPersistedState>({
         stores: [STORES.VFS_ITEMS],
+        mergeConcurrentRows: true,
+        atomicEffects: createFileMutationEffects<FilesPersistedState>(
+          () => useChatsStore.getState().username,
+          broadcastFileCatalogChange
+        ),
         layoutVersion: 1,
         persistVersion: FILES_STORE_VERSION,
         split: splitFilesState,

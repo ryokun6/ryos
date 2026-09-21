@@ -115,6 +115,8 @@ export class SyncClientState {
     this.schedulePersist();
   }
 
+  get lastTimestamp(): string | null { return this.state.lastHlc; }
+
   /** Generate the next HLC timestamp, monotonic across reloads. */
   nextTimestamp(): string {
     const t = nextHlc(this.state.lastHlc, getSyncClientId());

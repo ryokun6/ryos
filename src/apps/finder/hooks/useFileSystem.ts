@@ -1,3 +1,4 @@
+import { saveVfsFile } from "@/services/vfs/FileSaveTransaction";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES, dbOperations } from "@/utils/indexedDB";
@@ -1253,7 +1254,7 @@ export function useFileSystem(
         isDirectory: isDirectory,
         type: fileType,
         status: "active", // Explicitly set status
-        uuid: uuid, // Preserve existing UUID if updating (unless orphaned)
+        uuid: uuid || uuidv4(), // Allocate before the atomic save
         // Set timestamps
         createdAt: existingItem?.createdAt || now,
         modifiedAt: now,
@@ -1274,106 +1275,27 @@ export function useFileSystem(
           } as FileSystemItem),
       };
 
-      // 2. Add/Update Metadata in FileStore (will generate UUID if new)
       try {
-        log.debug("Updating metadata store", {
-          path,
-          uuid: metadata.uuid ?? null,
-          replacedOrphanUuid,
-        });
-        // Pass the complete metadata object to addItem. When rotating off an
-        // orphan UUID, metadata.uuid differs from the existing id and addItem
-        // keeps the caller's new content id.
-        addFileItem(metadata);
-        track(FINDER_ANALYTICS.FILE_SAVE, {
-          appId: "finder",
-          isUpdate: Boolean(existingItem),
-          sizeBucket: getFinderSizeBucket(fileSize),
-          ...getFinderAnalyticsPathInfo(path, fileType),
-        });
-
-        // Get the item again to get the UUID (in case it was newly generated)
-        const savedItem = getFileItem(path);
-        if (!savedItem?.uuid) {
-          throw new Error("Failed to get UUID for saved item");
-        }
-
-        log.debug("Metadata store updated", {
-          path,
-          uuid: savedItem.uuid,
-          replacedOrphanUuid,
-        });
-
-        // 3. Save Content to IndexedDB using UUID
-        log.debug("Selected content store", { path, storeName });
+        await saveVfsFile(metadata, content);
+        useCloudSyncStore.getState().clearDeletedKeys("fileMetadataPaths", [path]);
         if (storeName) {
-          try {
-            const contentToStore: DocumentContent = {
-              name: name,
-              content:
-                storeName === STORES.BOOKS && content instanceof Blob
-                  ? await content.arrayBuffer()
-                  : content,
-            };
-            log.debug("Saving content to IndexedDB", {
-              storeName,
-              uuid: savedItem.uuid,
-              contentLength:
-                typeof content === "string" ? content.length : undefined,
-              contentType: content instanceof Blob ? "blob" : typeof content,
-              contentSize:
-                contentToStore.content instanceof ArrayBuffer
-                  ? contentToStore.content.byteLength
-                  : content instanceof Blob
-                    ? content.size
-                    : undefined,
-            });
-            await dbOperations.put<DocumentContent>(
-              storeName,
-              contentToStore,
-              savedItem.uuid
-            );
-            const deletionBucket =
-              getCloudSyncDeletionBucketForContentStore(storeName);
-            if (deletionBucket) {
-              useCloudSyncStore
-                .getState()
-                .clearDeletedKeys(deletionBucket, [savedItem.uuid]);
-            }
-            const syncDomain = getCloudSyncDomainForContentStore(storeName);
-            if (syncDomain) {
-              emitCloudSyncContentChange(syncDomain, savedItem.uuid);
-            }
-            log.debug("Content saved to IndexedDB", {
-              storeName,
-              uuid: savedItem.uuid,
-            });
-          } catch (err) {
-            console.error(
-              `[useFileSystem:saveFile] Error saving content to IndexedDB for ${path}:`,
-              err
-            );
-            setError(`Failed to save file content for ${name}`);
-          }
-        } else {
-          console.warn(
-            `[useFileSystem:saveFile] No valid content store for path: ${path}`
-          );
+          const deletionBucket = getCloudSyncDeletionBucketForContentStore(storeName);
+          if (deletionBucket) useCloudSyncStore.getState().clearDeletedKeys(deletionBucket, [metadata.uuid!]);
+          const syncDomain = getCloudSyncDomainForContentStore(storeName);
+          if (syncDomain) emitCloudSyncContentChange(syncDomain, metadata.uuid!);
         }
+        emitCloudSyncDomainChange("files", [`files/item:${path}`]);
         trackFinderFileOperation(FINDER_ANALYTICS.FILE_SAVE, path, fileType, {
           isUpdate: Boolean(existingItem),
           sizeBucket: getFinderSizeBucket(fileSize),
         });
-      } catch (metaError) {
-        console.error(
-          `[useFileSystem:saveFile] Error updating metadata store for ${path}:`,
-          metaError
-        );
-        setError(`Failed to save file metadata for ${name}`);
-        return;
+      } catch (error) {
+        setError(`Failed to save file ${name}`);
+        // Callers must retain their unsaved state when the transaction fails.
+        throw error;
       }
     },
-    [getFileItem, addFileItem]
+    [getFileItem]
   );
 
   const moveFile = useCallback(
