@@ -70,6 +70,9 @@ beforeAll(async () => {
   const syncStore = useCloudSyncStore.getState();
   syncStore.applyServerAutoSyncPreference(true);
   syncStore.setCategoryEnabled("files", false);
+  // Theme/display/language codecs require a browser DOM; this suite exercises
+  // the independent Stickies and Books settings paths below.
+  syncStore.setCategoryEnabled("settings", false);
   syncStore.setCategoryEnabled("songs", true);
   syncStore.setCategoryEnabled("stickies", true);
   syncStore.setCategoryEnabled("books", true);
@@ -198,7 +201,7 @@ describe("sync v2 engine end-to-end", () => {
     expect(after).toBe(before);
   });
 
-  test("realtime inline ops apply without HTTP when contiguous", async () => {
+  test("realtime notifications catch up through the serialized pull path", async () => {
     const cursor = engine.cursor ?? 0;
     const t = formatHlc(Date.now() + 5000, 0, "foreign-client");
     // Simulate the Pusher event the server would broadcast (already

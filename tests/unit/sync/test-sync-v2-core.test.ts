@@ -166,10 +166,24 @@ describe("sync v2 ops + LWW", () => {
     expect(second.seq).toBe(first.seq);
   });
 
-  test("protects active book content from inferred deletion by older clients", async () => {
+  test("concurrent batches retry against the new sequence without losing writes", async () => {
     const r = redis();
-    const fileKey = "files/item:/Books/book.epub";
-    const blobKey = "books/item:book-id";
+    await Promise.all(Array.from({ length: 4 }, (_, index) => applySyncOps(r, "concurrent", [
+      { k: `settings/concurrent-${index}`, v: { value: index }, t: t(index) },
+    ], `client-${index}`)));
+    const snapshot = await readSyncSnapshot(r, "concurrent");
+    expect(snapshot.seq).toBe(4);
+    expect(Object.keys(snapshot.entries)).toHaveLength(4);
+    expect(new Set(Object.values(snapshot.entries).map(entry => entry.seq)).size).toBe(4);
+  });
+
+  test.each([
+    ["/Books/book.epub", "books/item:book-id"],
+    ["/Images/image.png", "images/item:book-id"],
+    ["/Documents/doc.txt", "files/doc:book-id"],
+  ])("protects active content %s from inferred deletion by older clients", async (path, blobKey) => {
+    const r = redis();
+    const fileKey = `files/item:${path}`;
     const blob = { blob: { url: "s3://bucket/book.gz", size: 10 } };
     await applySyncOps(r, "book-user", [
       { k: fileKey, v: { uuid: "book-id", status: "active" }, t: t(0) },
@@ -233,7 +247,7 @@ describe("sync v2 ops + LWW", () => {
     expect(entry?.url).toBe("s3://bucket/sync/user1/blobs/aa.gz");
   });
 
-  test("pipelines journal writes for large accepted batches", async () => {
+  test("publishes journal writes without a non-atomic pipeline", async () => {
     const r = new TrackingRedis();
     const ops = Array.from({ length: 25 }, (_, index) => ({
       k: `settings/bulk-${index}`,
@@ -244,7 +258,7 @@ describe("sync v2 ops + LWW", () => {
     await applySyncOps(r as unknown as Redis, "bulk-user", ops, "client-a");
 
     expect(r.directZaddCount).toBe(0);
-    expect(r.pipelineZaddCount).toBe(ops.length);
+    expect(r.pipelineZaddCount).toBe(0);
     expect(await r.zcard(sync2JournalKey("bulk-user"))).toBe(ops.length);
   });
 });
@@ -363,7 +377,7 @@ describe("sync v2 changes feed", () => {
 });
 
 describe("sync v2 initialization", () => {
-  test("reads refresh sync data TTLs (throttled once per day)", async () => {
+  test("reads remove legacy inactivity expiry from cloud data", async () => {
     const r = redis();
     const fake = r as unknown as FakeRedis;
     await applySyncOps(
@@ -374,15 +388,15 @@ describe("sync v2 initialization", () => {
     );
 
     // Simulate TTLs decaying (e.g. an idle device only ever reads).
-    fake.ttls.delete(sync2KvKey("user1"));
-    fake.ttls.delete(sync2JournalKey("user1"));
+    fake.ttls.set(sync2KvKey("user1"), 60);
+    fake.ttls.set(sync2JournalKey("user1"), 60);
 
     await readSyncChanges(r, "user1", 0);
-    expect(fake.ttls.get(sync2KvKey("user1"))).toBeGreaterThan(0);
-    expect(fake.ttls.get(sync2JournalKey("user1"))).toBeGreaterThan(0);
+    expect(fake.ttls.get(sync2KvKey("user1"))).toBeUndefined();
+    expect(fake.ttls.get(sync2JournalKey("user1"))).toBeUndefined();
 
-    // Throttle marker prevents refreshing again within the same day.
-    fake.ttls.delete(sync2KvKey("user1"));
+    // Repeated reads also heal TTLs from an older server instance.
+    fake.ttls.set(sync2KvKey("user1"), 60);
     await readSyncChanges(r, "user1", 0);
     expect(fake.ttls.get(sync2KvKey("user1"))).toBeUndefined();
   });

@@ -1,3 +1,4 @@
+import { useFileAvailability } from "@/sync/fileAvailability";
 import { create } from "zustand";
 import { createClientLogger } from "@/utils/logger";
 import { useStoreShallow } from "./helpers";
@@ -579,8 +580,16 @@ export async function ensureFileContentLoaded(
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
       
-      const content =
-        storeName === STORES.BOOKS ? await resp.arrayBuffer() : await resp.blob();
+      let content: ArrayBuffer | Blob;
+      if (storeName === STORES.BOOKS) {
+        const { readResponseWithProgress } = await import("@/sync/blobs");
+        content = await readResponseWithProgress(resp, { onProgress: progress => {
+          useFileAvailability.getState().set(`books/item:${uuid}`, {
+            status: "downloading",
+            percentage: progress.totalBytes > 0 ? Math.min(99, progress.percentage) : undefined,
+          });
+        } });
+      } else content = await resp.blob();
       
       // Save to IndexedDB
       await new Promise<void>((resolve, reject) => {
@@ -590,9 +599,11 @@ export async function ensureFileContentLoaded(
           { name: pendingFile.name, content } as StoredContent,
           uuid
         );
-        putReq.onsuccess = () => resolve();
+        tx.oncomplete = () => resolve();
+        tx.onabort = () => reject(tx.error ?? new Error("Content write aborted"));
         putReq.onerror = () => reject(putReq.error);
       });
+      if (storeName === STORES.BOOKS) useFileAvailability.getState().set(`books/item:${uuid}`, { status: "available", percentage: 100 });
 
       // Remove from pending once successfully loaded
       pendingLazyLoadFiles.delete(filePath);

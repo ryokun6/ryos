@@ -45,7 +45,7 @@ export async function writeContentByKey<T extends StoredContent = StoredContent>
 
 export async function readContentForPath<T extends StoredContent = StoredContent>(
   path: string,
-  options: { expectedStore?: VfsContentStoreName } = {}
+  options: { expectedStore?: VfsContentStoreName; localOnly?: boolean } = {}
 ): Promise<T | null> {
   const fileName = path.split("/").pop();
   const storeName = getStoreForFile(path, { name: fileName });
@@ -56,13 +56,23 @@ export async function readContentForPath<T extends StoredContent = StoredContent
     return null;
   }
 
-  const uuid = getFileContentUuid(path);
+  let uuid = getFileContentUuid(path);
   if (!uuid) return null;
+  if (!options.localOnly && (storeName === STORES.BOOKS || storeName === STORES.IMAGES)) {
+    const { getActiveCloudSyncEngine } = await import("@/sync/engine");
+    const engine = getActiveCloudSyncEngine();
+    const namespace = storeName === STORES.BOOKS ? "books" : "images";
+    if (engine?.hasPendingBlob(namespace, uuid)) {
+      const loaded = await engine.ensureBlobItemLocal(namespace, uuid, { path });
+      if (!loaded) return null;
+      uuid = getFileContentUuid(path) ?? uuid;
+    }
+  }
   let existing: T | undefined;
   try {
     existing = await readContentByKey<T>(storeName, uuid);
   } catch (error) {
-    if (storeName !== STORES.BOOKS) {
+    if (storeName !== STORES.BOOKS || options.localOnly) {
       throw error;
     }
     const recovered = await ensureFileContentLoaded(path, uuid, {
@@ -71,14 +81,15 @@ export async function readContentForPath<T extends StoredContent = StoredContent
     if (!recovered) {
       throw error;
     }
-    return (await readContentByKey<T>(storeName, uuid)) ?? null;
+    return (await readContentByKey<T>(storeName, getFileContentUuid(path) ?? uuid)) ?? null;
   }
   if (existing) return existing;
+  if (options.localOnly) return null;
 
   const loaded = await ensureFileContentLoaded(path, uuid);
   if (!loaded) return null;
 
-  return (await readContentByKey<T>(storeName, uuid)) ?? null;
+  return (await readContentByKey<T>(storeName, getFileContentUuid(path) ?? uuid)) ?? null;
 }
 
 export async function readDocumentTextContent(path: string): Promise<string | null> {
@@ -119,9 +130,10 @@ async function isBlobReadable(blob: Blob): Promise<boolean> {
   }
 }
 
-export async function readBookBlobContent(path: string): Promise<Blob | null> {
+export async function readBookBlobContent(path: string, options: { localOnly?: boolean } = {}): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.BOOKS,
+    localOnly: options.localOnly,
   });
   const blob = blobFromBookContent(item?.content);
   if (!blob) {
@@ -131,6 +143,7 @@ export async function readBookBlobContent(path: string): Promise<Blob | null> {
     return blob;
   }
 
+  if (options.localOnly) return null;
   const uuid = getFileContentUuid(path);
   if (!uuid) return null;
 
@@ -143,6 +156,7 @@ export async function readBookBlobContent(path: string): Promise<Blob | null> {
 
   const recoveredItem = await readContentForPath<StoredContent>(path, {
     expectedStore: STORES.BOOKS,
+    localOnly: options.localOnly,
   });
   return blobFromBookContent(recoveredItem?.content);
 }

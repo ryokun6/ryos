@@ -312,7 +312,10 @@ class StandardRedisPipelineAdapter implements RedisPipelineLike {
   async exec(): Promise<unknown[]> {
     const results = await this.pipelineClient.exec();
     if (!results) return [];
-    return results.map((entry) => entry?.[1]);
+    return results.map(([error, value]) => {
+      if (error) throw error;
+      return value;
+    });
   }
 }
 

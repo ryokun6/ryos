@@ -315,6 +315,53 @@ export class FakeRedis {
     keys: string[],
     args: Array<string | number>
   ): Promise<T> {
+    if (script.startsWith("-- ryos:sync-commit-v1")) {
+      const [seqKey, kvKey, journalKey, blobsKey] = keys;
+      if (Number(this.kv.get(seqKey) ?? 0) !== Number(args[0])) return 0 as T;
+      const kv = JSON.parse(String(args[2])) as Record<string, string>;
+      const journal = JSON.parse(String(args[3])) as Array<{ seq: number; member: string }>;
+      const blobs = JSON.parse(String(args[4])) as Record<string, string>;
+      for (const digest of Object.keys(blobs)) {
+        const raw = this.hashes.get(blobsKey)?.get(digest);
+        if (raw && JSON.parse(raw).deleting) throw new Error("Sync content is being collected; retry later");
+      }
+      this.hsetSync(kvKey, kv);
+      for (const op of journal) this.zaddSync(journalKey, { score: op.seq, member: op.member });
+      this.hsetSync(blobsKey, blobs);
+      this.setSync(seqKey, String(args[1]));
+      this.zremrangebyscoreSync(journalKey, "-inf", Number(args[1]) - Number(args[5]));
+      for (const key of keys) this.ttls.delete(key);
+      return 1 as T;
+    }
+    if (script.startsWith("-- ryos:sync-gc-claim-v1") || script.startsWith("-- ryos:sync-gc-mark-v1")) {
+      if (Number(this.kv.get(keys[0]) ?? 0) !== Number(args[0])) return 0 as T;
+      const raw = this.hashes.get(keys[1])?.get(String(args[1]));
+      if (!raw) return 0 as T;
+      const row = JSON.parse(raw);
+      const expected = JSON.parse(String(args[2]));
+      if (["url", "gc", "leaseUntil", "deleting"].some(field => row[field] !== expected[field])) return 0 as T;
+      if (script.startsWith("-- ryos:sync-gc-mark-v1")) {
+        if (row.deleting) return 0 as T;
+        if (Number(args[3]) === 0) delete row.gc;
+        else row.gc = Number(args[3]);
+        this.hsetSync(keys[1], { [String(args[1])]: JSON.stringify(row) });
+        return 1 as T;
+      }
+      if (row.leaseUntil > Number(args[3])) return 0 as T;
+      this.hsetSync(keys[1], { [String(args[1])]: JSON.stringify({ ...row, deleting: true }) });
+      return 1 as T;
+    }
+    if (script.startsWith("-- ryos:sync-blob-lease-v1")) {
+      const digests = JSON.parse(String(args[0])) as string[];
+      const rows = digests.map(digest => this.hashes.get(keys[0])?.get(digest));
+      if (rows.some(raw => raw && JSON.parse(raw).deleting)) throw new Error("Sync content is being collected; retry later");
+      return rows.map((raw, i) => {
+        if (!raw) return null;
+        const row = JSON.stringify({ ...JSON.parse(raw), leaseUntil: Number(args[1]) });
+        this.hsetSync(keys[0], { [digests[i]]: row });
+        return row;
+      }) as T;
+    }
     const normalized = script.replace(/\s+/g, " ");
     if (
       normalized.includes('redis.call("INCR"') &&

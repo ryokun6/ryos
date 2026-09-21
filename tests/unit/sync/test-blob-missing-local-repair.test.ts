@@ -71,7 +71,38 @@ describe("cloud sync blob missing-local repair", () => {
     globalThis.fetch = originalFetch;
   });
 
-  test("partial downloads preserve successful books and retry without advancing the cursor", async () => {
+  test("a 200-book catalog becomes usable without fetching EPUB bodies", async () => {
+    const entries: Record<string, unknown> = {};
+    for (let index = 0; index < 200; index++) {
+      const path = `/Books/catalog-${index}.epub`;
+      entries[`files/item:${path}`] = { t, seq: index + 1, v: {
+        path, name: `catalog-${index}.epub`, uuid: `catalog-${index}`,
+        status: "active", isDirectory: false, type: "epub", createdAt: 1, modifiedAt: 1,
+      } };
+      entries[`books/item:catalog-${index}`] = { t, seq: index + 201, v: { blob: {
+        url: `https://example.test/book-${index}.gz`, size: 50_000_000,
+      } } };
+    }
+    let bodyRequests = 0;
+    globalThis.fetch = (async input => {
+      if (String(input).includes("/snapshot")) return Response.json({ seq: 400, entries });
+      if (String(input).startsWith("https://example.test/")) {
+        bodyRequests++;
+        throw new Error("Catalog must not await a book download");
+      }
+      return Response.json({});
+    }) as typeof fetch;
+    const engine = await CloudSyncEngine.create(`catalog-${crypto.randomUUID()}`);
+    try {
+      await engine.applySnapshot(false);
+      expect(engine.cursor).toBe(400);
+      expect(Object.keys(useFilesStore.getState().items)).toHaveLength(200);
+      expect(bodyRequests).toBe(0);
+      expect((engine as unknown as { state: SyncClientState }).state.pendingDownloads).toHaveLength(200);
+    } finally { await engine.stop(); }
+  });
+
+  test("catalog advances before downloads; broken content stays queued and retries independently", async () => {
     const good = await bookStoreItem();
     const second = { ...good, key: BOOK_UUID_REMOTE };
     const payloads = [await gzipJson(good), await gzipJson(second)];
@@ -94,14 +125,20 @@ describe("cloud sync blob missing-local repair", () => {
     const engine = await CloudSyncEngine.create(`partial-${crypto.randomUUID()}`);
     const state = (engine as unknown as { state: SyncClientState }).state;
     try {
-      await expect(engine.applySnapshot(false)).rejects.toThrow("404");
-      expect(state.cursor).toBeNull();
+      await engine.applySnapshot(false);
+      expect(state.cursor).toBe(2);
+      expect(counts).toEqual([0, 0]);
+      expect(state.pendingDownloads).toHaveLength(2);
+      expect(await engine.ensureBlobItemLocal("books", BOOK_UUID)).toBe(true);
+      expect(await engine.ensureBlobItemLocal("books", BOOK_UUID_REMOTE)).toBe(false);
+      expect(state.pendingDownloads).toHaveLength(1);
       expect(state.getShadow(SYNC_KEY)).not.toBeNull();
       expect(state.getShadow(`books/item:${BOOK_UUID_REMOTE}`)).toBeNull();
       expect(await dbOperations.get(STORES.BOOKS, BOOK_UUID)).toBeDefined();
       fail = false;
-      await engine.applySnapshot(false);
+      expect(await engine.ensureBlobItemLocal("books", BOOK_UUID_REMOTE)).toBe(true);
       expect(state.cursor).toBe(2);
+      expect(state.pendingDownloads).toHaveLength(0);
       expect(counts).toEqual([1, 2]);
       expect(await dbOperations.get(STORES.BOOKS, BOOK_UUID_REMOTE)).toBeDefined();
     } finally { await engine.stop(); }

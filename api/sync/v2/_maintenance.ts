@@ -1,3 +1,5 @@
+import { auditFileSync } from "./_fileAudit.js";
+import type { SyncKvEntry } from "../../../src/shared/sync2/types.js";
 /**
  * Cloud Sync v2 maintenance (cron):
  *
@@ -22,11 +24,14 @@ import {
   parseRedisJson,
   sync2BlobsKey,
   sync2KvKey,
+  sync2SeqKey,
+  sync2JournalKey,
 } from "./_core.js";
+import { CLAIM_SYNC_BLOB, MARK_SYNC_BLOB } from "./_atomic.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 
 /** Unreferenced blobs must stay marked this long before deletion. */
-export const BLOB_GC_GRACE_MS = 24 * 60 * 60 * 1000;
+export const BLOB_GC_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const USER_KV_SCAN_PATTERN = "sync:v2:user:*:kv";
 
@@ -46,6 +51,7 @@ export interface SyncMaintenanceOptions {
 
 export interface SyncMaintenanceStats {
   usersProcessed: number;
+  recoveryProtectedUsers: number;
   /** True when the scan wrapped — the whole user base has been visited. */
   scanComplete: boolean;
   blobsMarked: number;
@@ -60,6 +66,8 @@ interface BlobRegistryEntry {
   size?: number;
   /** Mark timestamp (ms) set when the blob was first seen unreferenced. */
   gc?: number;
+  deleting?: boolean;
+  leaseUntil?: number;
 }
 
 function getUsernameFromKvKey(key: string): string | null {
@@ -144,11 +152,11 @@ async function scanUserBatch(
 async function collectReferencedBlobs(
   redis: Redis,
   username: string
-): Promise<{ hashes: Set<string>; urls: Set<string> }> {
+): Promise<{ hashes: Set<string>; urls: Set<string>; recoveryRequired: boolean }> {
   const hashes = new Set<string>();
   const urls = new Set<string>();
   const raw = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
-  if (!raw) return { hashes, urls };
+  if (!raw) return { hashes, urls, recoveryRequired: false };
 
   for (const value of Object.values(raw)) {
     const entry = parseRedisJson<{ v?: unknown; del?: boolean }>(value);
@@ -159,7 +167,11 @@ async function collectReferencedBlobs(
     if (digest) hashes.add(digest);
     urls.add(ref.url);
   }
-  return { hashes, urls };
+  const entries = Object.fromEntries(Object.entries(raw).flatMap(([key, value]) => {
+    const entry = parseRedisJson<SyncKvEntry>(value);
+    return entry ? [[key, entry]] : [];
+  }));
+  return { hashes, urls, recoveryRequired: auditFileSync(entries).length > 0 };
 }
 
 /**
@@ -192,7 +204,7 @@ interface DeleteBudget {
 async function sweepBlobRegistry(
   redis: Redis,
   username: string,
-  referenced: { hashes: Set<string>; urls: Set<string> },
+  referenced: { hashes: Set<string>; urls: Set<string>; seq: number },
   budget: DeleteBudget,
   stats: SyncMaintenanceStats,
   options: Required<Pick<SyncMaintenanceOptions, "graceMs" | "now" | "deleteObject">>
@@ -211,18 +223,21 @@ async function sweepBlobRegistry(
     if (isReferenced) {
       if (entry.gc) {
         // Re-referenced while marked: clear the mark.
-        const { gc: _gc, ...unmarked } = entry;
-        await redis.hset(registryKey, { [digest]: JSON.stringify(unmarked) });
-        stats.blobsUnmarked += 1;
+        const marked = await redis.eval<number>(MARK_SYNC_BLOB,
+          [sync2SeqKey(username), registryKey],
+          [referenced.seq, digest, JSON.stringify(entry), 0]);
+        stats.blobsUnmarked += marked;
       }
       continue;
     }
 
+    if (entry.leaseUntil && entry.leaseUntil > options.now) continue;
+
     if (!entry.gc) {
-      await redis.hset(registryKey, {
-        [digest]: JSON.stringify({ ...entry, gc: options.now }),
-      });
-      stats.blobsMarked += 1;
+      const marked = await redis.eval<number>(MARK_SYNC_BLOB,
+        [sync2SeqKey(username), registryKey],
+        [referenced.seq, digest, JSON.stringify(entry), options.now]);
+      stats.blobsMarked += marked;
       continue;
     }
 
@@ -230,6 +245,10 @@ async function sweepBlobRegistry(
     if (budget.remaining <= 0) continue;
 
     try {
+      const claimed = await redis.eval<number>(CLAIM_SYNC_BLOB,
+        [sync2SeqKey(username), registryKey],
+        [referenced.seq, digest, typeof value === "string" ? value : JSON.stringify(value), options.now]);
+      if (claimed !== 1) continue;
       budget.remaining -= 1;
       await options.deleteObject(entry.url);
       await redis.hdel(registryKey, digest);
@@ -256,6 +275,7 @@ export async function runSyncMaintenance(
 
   const stats: SyncMaintenanceStats = {
     usersProcessed: 0,
+    recoveryProtectedUsers: 0,
     scanComplete: false,
     blobsMarked: 0,
     blobsUnmarked: 0,
@@ -273,8 +293,16 @@ export async function runSyncMaintenance(
 
   for (const username of usernames) {
     try {
-      const referenced = await collectReferencedBlobs(redis, username);
+      await Promise.all([sync2SeqKey(username), sync2KvKey(username), sync2JournalKey(username), sync2BlobsKey(username)]
+        .map(key => redis.persist(key)));
+      const seq = Number(await redis.get(sync2SeqKey(username)) ?? 0);
+      const referenced = { ...await collectReferencedBlobs(redis, username), seq };
       await healUserRecord(redis, username, stats);
+      if (referenced.recoveryRequired) {
+        stats.recoveryProtectedUsers += 1;
+        stats.usersProcessed += 1;
+        continue;
+      }
       await sweepBlobRegistry(redis, username, referenced, budget, stats, {
         graceMs,
         now,

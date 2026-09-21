@@ -1,3 +1,4 @@
+import type { SyncOp } from "@/shared/sync2/types";
 import {
   SYNC_NAMESPACES,
   type SyncNamespace,
@@ -32,6 +33,9 @@ export interface PersistedSyncState {
   shadow: Record<string, ShadowEntry>;
   dirty: SyncNamespace[];
   localReconcileRequired: boolean;
+  downloads?: Record<string, SyncOp>;
+  tombstones?: Record<string, string>;
+  outbox?: { ops: SyncOp[]; shadows: Record<string, ShadowEntry> };
 }
 
 const validNamespaces = new Set<string>(SYNC_NAMESPACES);
@@ -69,6 +73,21 @@ export function createEmptyPersistedSyncState(): PersistedSyncState {
     dirty: [],
     localReconcileRequired: false,
   };
+}
+
+function normalizeDownloads(value: unknown): Record<string, SyncOp> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([key, op]) =>
+    op && typeof op === "object" && op.k === key && typeof op.t === "string"
+  ));
+}
+
+function normalizeOutbox(value: unknown): PersistedSyncState["outbox"] {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as PersistedSyncState["outbox"];
+  if (!candidate || !Array.isArray(candidate.ops)) return undefined;
+  return { ops: candidate.ops.filter(op => op && typeof op.k === "string" && typeof op.t === "string"),
+    shadows: normalizeShadow(candidate.shadows) };
 }
 
 function normalizeShadow(value: unknown): Record<string, ShadowEntry> {
@@ -117,6 +136,10 @@ export function normalizePersistedSyncState(
         ]
       : [],
     localReconcileRequired: candidate.localReconcileRequired === true,
+    downloads: normalizeDownloads(candidate.downloads),
+    tombstones: Object.fromEntries(Object.entries(candidate.tombstones && typeof candidate.tombstones === "object" ? candidate.tombstones : {})
+      .filter(([, value]) => typeof value === "string")) as Record<string, string>,
+    outbox: normalizeOutbox(candidate.outbox),
   };
 }
 
@@ -131,6 +154,9 @@ function clonePersistedSyncState(
     ),
     dirty: [...state.dirty],
     localReconcileRequired: state.localReconcileRequired,
+    downloads: structuredClone(state.downloads ?? {}),
+    tombstones: { ...state.tombstones },
+    outbox: state.outbox ? structuredClone(state.outbox) : undefined,
   };
 }
 

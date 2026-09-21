@@ -1,3 +1,6 @@
+import { BookLoadingProgress } from "./BookLoadingProgress";
+import { useFileAvailability } from "@/sync/fileAvailability";
+import { useFilesStore } from "@/stores/useFilesStore";
 import {
   forwardRef,
   useCallback,
@@ -558,6 +561,9 @@ export const BooksReaderPane = forwardRef<
   const activeSectionHrefRef = useRef<string | undefined>(undefined);
 
   const { t, i18n } = useTranslation();
+  const contentUuid = useFilesStore(state => state.items[entry.path]?.uuid);
+  const transfer = useFileAvailability(state => state.files[`books/item:${contentUuid}`]);
+  const loadingPercentage = transfer?.status === "downloading" ? transfer.percentage : undefined;
   const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
   const uiLanguageRef = useRef(uiLanguage);
   uiLanguageRef.current = uiLanguage;
@@ -3162,12 +3168,12 @@ export const BooksReaderPane = forwardRef<
       {!isReady && !loadError && (
         <div
           className={cn(
-            "absolute inset-0 z-30 flex items-center justify-center",
+            "absolute inset-0 z-50 flex items-center justify-center",
             palette.isDark ? "text-white/70" : "text-black/50"
           )}
           style={{ backgroundColor: overlayBackground }}
         >
-          <span className="font-os-ui text-sm">…</span>
+          <BookLoadingProgress label={t("common.loading.default")} percentage={loadingPercentage} />
         </div>
       )}
 
