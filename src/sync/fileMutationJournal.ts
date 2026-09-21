@@ -7,6 +7,8 @@ export interface FileMutation {
   id: string;
   account: string;
   op: SyncOp;
+  /** Related catalog/source deletions that must travel with this file. */
+  additionalOps?: SyncOp[];
   /** Immutable local bytes paired with this catalog mutation. */
   content?: { storeName: string; key: string; snapshotId?: string; value?: Record<string, unknown> };
 }
@@ -39,8 +41,12 @@ export function createFileMutation(account: string, op: Omit<SyncOp, "t">): File
   };
 }
 
+export function fileMutationOps(mutation: FileMutation): SyncOp[] {
+  return [mutation.op, ...(mutation.additionalOps ?? [])];
+}
+
 export function fileMutationKeys(mutation: FileMutation): string[] {
-  return [mutation.op.k, ...(mutation.content ? [mutation.content.key] : [])];
+  return [...fileMutationOps(mutation).map(op => op.k), ...(mutation.content ? [mutation.content.key] : [])];
 }
 
 export function createFileMutationEffects<S extends CatalogState>(

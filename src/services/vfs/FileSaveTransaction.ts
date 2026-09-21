@@ -1,3 +1,4 @@
+import { enqueueFileWrite } from "./fileWriteQueue";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { settleAllPersistWrites } from "@/utils/persistWriteQueue";
 import { getStoreForFile, type StoredContent } from "@/utils/indexedDBOperations";
@@ -5,27 +6,20 @@ import { FILES_STORE_PERSIST_KEY, FILES_STORE_VERSION, useFilesStore, type FileS
 import { useChatsStore } from "@/stores/useChatsStore";
 import { broadcastFileCatalogChange, createFileMutation, withRemoteFileChanges } from "@/sync/fileMutationJournal";
 
-const CONTENT_KEYS: Record<string, string> = {
+export const CONTENT_KEYS: Record<string, string> = {
   [STORES.DOCUMENTS]: "files/doc:",
   [STORES.BOOKS]: "books/item:",
   [STORES.IMAGES]: "images/item:",
   [STORES.APPLETS]: "applets/item:",
+  [STORES.TRASH]: "trash/item:",
 };
 
-const savesByPath = new Map<string, Promise<void>>();
-
-/** Preserve invocation order even when one EPUB takes longer to read. */
+/** Preserve invocation order across saves, moves, and trash operations. */
 export function saveVfsFile(item: FileSystemItem, content: StoredContent["content"]): Promise<void> {
   const account = useChatsStore.getState().username;
   const capturedItem = structuredClone(item);
   const capturedContent = content instanceof ArrayBuffer ? content.slice(0) : content;
-  const previous = savesByPath.get(item.path) ?? Promise.resolve();
-  const run = previous.catch(() => {}).then(() => commitVfsFile(capturedItem, capturedContent, account));
-  savesByPath.set(item.path, run);
-  void run.finally(() => {
-    if (savesByPath.get(item.path) === run) savesByPath.delete(item.path);
-  }).catch(() => {});
-  return run;
+  return enqueueFileWrite(() => commitVfsFile(capturedItem, capturedContent, account));
 }
 
 /** A successful save means catalog, bytes and sync intent committed together. */
@@ -52,6 +46,7 @@ async function commitVfsFile(
     snapshotId: mutation.id,
   };
   await settleAllPersistWrites();
+  if (useChatsStore.getState().username !== account) throw new Error("Account changed; try again");
   const db = await ensureIndexedDBInitialized();
   try {
     await new Promise<void>((resolve, reject) => {
@@ -68,26 +63,36 @@ async function commitVfsFile(
           reject(new Error(`Parent directory is unavailable: ${parentPath}`));
           return;
         }
-        try {
-          tx.objectStore(storeName).put(value, item.uuid);
-          tx.objectStore(STORES.VFS_ITEMS).put({ item: metadata }, item.path);
-          if (mutation) {
-            tx.objectStore(STORES.SYNC_FILE_MUTATIONS).put(mutation, mutation.id);
-            tx.objectStore(STORES.SYNC_FILE_CONTENTS).put(value, mutation.id);
+        const identities = tx.objectStore(STORES.VFS_ITEMS).index("uuid").getAll(item.uuid);
+        identities.onsuccess = () => {
+          const rows = identities.result as { item: FileSystemItem }[];
+          if (rows.some(row => row.item.path === item.path && row.item.status === "trashed") ||
+            (rows.length > 0 && !rows.some(row => row.item.path === item.path))) {
+            tx.abort();
+            reject(new Error("File moved or was trashed; reopen it before saving"));
+            return;
           }
-          const persisted = tx.objectStore(STORES.PERSISTED_STATE);
-          const request = persisted.get(FILES_STORE_PERSIST_KEY);
-          request.onsuccess = () => {
-            try {
-              persisted.put({
-                ...request.result,
-                state: { ...request.result?.state, items: {}, libraryState: "loaded" },
-                version: FILES_STORE_VERSION,
-                __ryosSplitLayout: { version: 1, generation: crypto.randomUUID() },
-              }, FILES_STORE_PERSIST_KEY);
-            } catch (error) { tx.abort(); reject(error); }
-          };
-        } catch (error) { tx.abort(); reject(error); }
+          try {
+            tx.objectStore(storeName).put(value, item.uuid);
+            tx.objectStore(STORES.VFS_ITEMS).put({ item: metadata }, item.path);
+            if (mutation) {
+              tx.objectStore(STORES.SYNC_FILE_MUTATIONS).put(mutation, mutation.id);
+              tx.objectStore(STORES.SYNC_FILE_CONTENTS).put(value, mutation.id);
+            }
+            const persisted = tx.objectStore(STORES.PERSISTED_STATE);
+            const request = persisted.get(FILES_STORE_PERSIST_KEY);
+            request.onsuccess = () => {
+              try {
+                persisted.put({
+                  ...request.result,
+                  state: { ...request.result?.state, items: {}, libraryState: "loaded" },
+                  version: FILES_STORE_VERSION,
+                  __ryosSplitLayout: { version: 1, generation: crypto.randomUUID() },
+                }, FILES_STORE_PERSIST_KEY);
+              } catch (error) { tx.abort(); reject(error); }
+            };
+          } catch (error) { tx.abort(); reject(error); }
+        };
       };
     });
   } finally { db.close(); }

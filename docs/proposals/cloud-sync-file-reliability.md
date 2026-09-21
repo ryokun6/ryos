@@ -240,3 +240,33 @@ directory descendants and cross-store moves), failure isolation for legacy
 unjournaled uploads, per-file upload retry scheduling, stable identities and
 verified raw-content uploads. Existing missing content recovery and bundled-book
 deduplication remain separate from these shared reliability improvements.
+
+**Shared file lifecycle — September 22, 2026**
+
+Finder move/rename, trash, restore, and empty-trash now use one shared local
+transaction for affected catalog rows, relocated/deleted content, immutable
+content snapshots, and cloud intent. Folder operations include descendants.
+Same-store renames preserve UUIDs and leave content unchanged, avoiding a new
+content upload. Operations that change stores first obtain the required bytes;
+unavailable content fails the operation before any local transition commits.
+
+Each file's destination mutation carries related source tombstones in the same
+sync request. Upload failures retain that entire unit and later dependent edits.
+Replay counts all related operations against the API batch limit and reconciles
+content tombstones as well as catalog changes. A folder is atomic locally;
+large folder changes still converge through multiple bounded cloud requests,
+not a new server-wide tree transaction.
+
+Local saves and transitions share a queue. Transaction-time catalog checks reject
+collisions, changed descendants/parents, and new shared-content references from
+other tabs. Stale editor saves cannot recreate a moved or trashed file. Existing
+active references retain their bytes. Restore can recover legacy folder-trash
+content left in its original store; this is local recovery, not restoration of
+objects already deleted from cloud storage.
+
+This phase retains the existing path-based content routing and per-key cloud
+conflict semantics. Cross-store transitions currently stage affected content in
+memory and may require downloads; stable content identity and streaming/bounded
+preparation remain follow-up work. Old client versions still use their legacy
+writers until refreshed. No production book records are repaired or deduplicated
+by this change.
