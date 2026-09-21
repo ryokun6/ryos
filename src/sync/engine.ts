@@ -6,6 +6,7 @@ import {
   isRemoteFileChange,
   fileMutationKeys,
   readFileMutationContent,
+  type FileMutation,
 } from "@/sync/fileMutationJournal";
 import { refreshFileCatalog } from "@/sync/fileCatalogRefresh";
 import { settleAllPersistWrites } from "@/utils/persistWriteQueue";
@@ -98,6 +99,21 @@ const SYNC_FLUSH_LOCK = "ryos:cloud-sync-flush";
 // looks like local storage loss, not user intent.
 const SUSPICIOUS_DELETE_COUNT = 10;
 const SUSPICIOUS_DELETE_RATIO = 0.8;
+
+/** Preparation failures are deferred so unrelated files/settings can finish. */
+class FileContentReplayError extends Error {
+  constructor(readonly failures: unknown[]) {
+    super(`${failures.length} file upload(s) remain queued: ${failures[0] instanceof Error ? failures[0].message : String(failures[0])}`);
+    this.name = "FileContentReplayError";
+  }
+}
+
+function mutationContentId(mutation: FileMutation): string | undefined {
+  if (mutation.content) return mutation.content.key.slice(mutation.content.key.indexOf(":") + 1);
+  const value = mutation.op.v;
+  return value && typeof value === "object" && "uuid" in value && typeof value.uuid === "string"
+    ? value.uuid : undefined;
+}
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
@@ -558,7 +574,12 @@ export class CloudSyncEngine {
       releaseCrossTabLease = await this.acquireCrossTabFlushLease();
       if (this.stopped) return;
       await this.replayOutbox();
-      await this.replayFileMutations();
+      let journalError: FileContentReplayError | undefined;
+      try { await this.replayFileMutations(); }
+      catch (error) {
+        if (!(error instanceof FileContentReplayError)) throw error;
+        journalError = error;
+      }
       const namespaces = (
         options.force ? [...SYNC_NAMESPACES] : this.state.dirtyNamespaces
       ).filter((namespace) => this.isNamespaceEnabled(namespace));
@@ -568,6 +589,7 @@ export class CloudSyncEngine {
           dirtyNamespaceCount: this.state.dirtyNamespaces.length,
         });
         await this.pruneObsoleteDeletionMarkers();
+        if (journalError) throw journalError;
         return;
       }
 
@@ -750,9 +772,10 @@ export class CloudSyncEngine {
           cloudSyncLog.debug("Flush produced no upload ops", {
             namespaces: flushedNamespaces,
           });
-          this.resetFlushBackoff();
-          this.clearLocalReconcileIfSettled();
+          if (!journalError) this.resetFlushBackoff();
+          if (!journalError) this.clearLocalReconcileIfSettled();
           await this.pruneObsoleteDeletionMarkers();
+          if (journalError) throw journalError;
           return;
         }
 
@@ -778,10 +801,10 @@ export class CloudSyncEngine {
             categories: Array.from(categories),
             ops: summarizeSyncOps(ops),
           });
-          this.resetFlushBackoff();
-          this.clearLocalReconcileIfSettled();
+          if (!journalError) this.resetFlushBackoff();
+          if (!journalError) this.clearLocalReconcileIfSettled();
           await this.pruneObsoleteDeletionMarkers();
-          this.reportError(null);
+          if (!journalError) this.reportError(null);
         } catch (error) {
           for (const namespace of flushedNamespaces) {
             this.restoreDirtyScope(
@@ -798,6 +821,7 @@ export class CloudSyncEngine {
       } finally {
         db?.close();
       }
+      if (journalError) throw journalError;
     } catch (error) {
       if (!this.stopped && !isAbortError(error)) {
         this.recordFlushFailure();
@@ -857,6 +881,14 @@ export class CloudSyncEngine {
         const uuid = m.op.v && typeof m.op.v === "object" ? (m.op.v as { uuid?: string }).uuid : undefined;
         return !m.content && !pendingCatalogKeys.has(m.op.k) && !(uuid && pendingContentIds.has(uuid));
       }) : queued;
+      const contentFailures: unknown[] = [];
+      const blockedKeys = new Set<string>();
+      const blockedContentIds = new Set<string>();
+      const block = (mutation: FileMutation) => {
+        for (const key of fileMutationKeys(mutation)) blockedKeys.add(key);
+        const uuid = mutationContentId(mutation);
+        if (uuid) blockedContentIds.add(uuid);
+      };
       for (let offset = 0; offset < pending.length;) {
         if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
         // A binary snapshot is processed on its own to bound base64/gzip RAM.
@@ -866,38 +898,56 @@ export class CloudSyncEngine {
           if (pending[end].content) { if (end === offset) end++; break; }
           end++;
         }
-        const batch = pending.slice(offset, end);
+        const batch = pending.slice(offset, end).filter(mutation => {
+          const uuid = mutationContentId(mutation);
+          if (fileMutationKeys(mutation).some(key => blockedKeys.has(key)) || (uuid && blockedContentIds.has(uuid))) {
+            // Carry dependencies across rename chains, including later deletes.
+            block(mutation);
+            return false;
+          }
+          return true;
+        });
         offset = end;
+        if (!batch.length) continue;
         // The API returns one result per key. Preserve all captured IDs until
         // that key's latest operation is confirmed, then acknowledge this batch.
         const ops = new Map<string, SyncOp>();
         const contentHashes = new Map<string, string>();
         const contentSnapshots = new Map<string, { storeName: string; key: string; value: Record<string, unknown> }>();
-        for (const mutation of batch) {
-          if (mutation.content) {
-            const { storeName, key } = mutation.content;
-            const value = await readFileMutationContent(mutation);
-            const localKey = key.slice(key.indexOf(":") + 1);
-            const serialized = await serializeStoreItem(prepareStoreItemForSync(storeName, { key: localKey, value }));
-            const namespace = getSyncKeyNamespace(key)!;
-            let v: unknown = serialized;
-            if (isSyncBlobNamespace(namespace)) {
-              const sha256 = await sha256Json(serialized);
-              const refs = await uploadBlobItems([{ key, sha256, item: serialized }], {
-                signal: this.abortController.signal,
-              });
-              const ref = refs.get(key);
-              if (!ref) throw new Error(`Missing uploaded content reference: ${key}`);
-              v = { blob: ref };
-              contentHashes.set(key, sha256);
-            } else {
-              contentHashes.set(key, hashDoc(serialized));
+        try {
+          for (const mutation of batch) {
+            if (mutation.content) {
+              const { storeName, key } = mutation.content;
+              const value = await readFileMutationContent(mutation);
+              const localKey = key.slice(key.indexOf(":") + 1);
+              const serialized = await serializeStoreItem(prepareStoreItemForSync(storeName, { key: localKey, value }));
+              const namespace = getSyncKeyNamespace(key)!;
+              let v: unknown = serialized;
+              if (isSyncBlobNamespace(namespace)) {
+                const sha256 = await sha256Json(serialized);
+                const refs = await uploadBlobItems([{ key, sha256, item: serialized }], {
+                  signal: this.abortController.signal,
+                });
+                const ref = refs.get(key);
+                if (!ref) throw new Error(`Missing uploaded content reference: ${key}`);
+                v = { blob: ref };
+                contentHashes.set(key, sha256);
+              } else {
+                contentHashes.set(key, hashDoc(serialized));
+              }
+              ops.set(key, { k: key, t: mutation.op.t, v });
+              contentSnapshots.set(key, { storeName, key, value });
             }
-            ops.set(key, { k: key, t: mutation.op.t, v });
-            contentSnapshots.set(key, { storeName, key, value });
+            // Content and its catalog row are sent in the same server batch.
+            ops.set(mutation.op.k, mutation.op);
           }
-          // Content and its catalog row are sent in the same server batch.
-          ops.set(mutation.op.k, mutation.op);
+        } catch (error) {
+          if (this.stopped || isAbortError(error)) throw error;
+          // Only snapshot preparation/upload is independent. A failed commit or
+          // local acknowledgement still stops replay because its outcome is uncertain.
+          contentFailures.push(error);
+          for (const mutation of batch) block(mutation);
+          continue;
         }
         const response = await postSyncOps(getSyncClientId(), [...ops.values()], this.abortController.signal);
         if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
@@ -971,6 +1021,7 @@ export class CloudSyncEngine {
         await this.state.persistNow();
         await acknowledgeFileMutations(batch.map(mutation => mutation.id));
       }
+      if (contentFailures.length) throw new FileContentReplayError(contentFailures);
       // Do not advance the cursor from POST responses: pull every intervening
       // operation, including changes from another tab/device.
     })().finally(() => { this.fileJournalReplay = null; });

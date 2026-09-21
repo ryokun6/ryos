@@ -217,3 +217,26 @@ Keep Redis/Valkey initially because the journal and codecs are useful and both d
 Evaluate object versioning on the actual S3-compatible provider and record costs/lifecycle behavior before enabling it. AWS S3 versioning provides an additional recovery layer, but provider support is unverified and object versions do not restore lost catalog mappings by themselves. Back up metadata and object references together. [S3 versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html)
 
 For the six already broken books, a separate read-only recovery audit should check retained journal entries, blob registry objects, storage versions, and backups before requesting reimport. The journal is bounded to 4,096 ops and GC may have removed candidates, so availability cannot be assumed. Restore found bytes through a new explicit commit and preserve the book's logical identity and progress.
+
+**Shared file rollout — September 21, 2026**
+
+The shared VFS save transaction and durable content journal cover documents,
+images, applets, and EPUBs. Catalog-first downloads and local availability also
+live in shared sync infrastructure. The Books reader uses that infrastructure
+for its loading progress bar.
+
+The next incremental change isolates preparation/upload failures during durable
+file replay. Independent queued files and ordinary settings can finish in the
+same flush; the failed file, its immutable bytes, and subsequent dependent
+catalog edits remain queued. Dependencies follow both catalog paths and content
+UUIDs so a rename cannot publish a reference before its upload succeeds. Retry
+retains the original timestamps across restart. The pass still reports failure
+and uses the existing retry backoff. Commit/acknowledgement failures and aborts
+stop the pass because their outcome cannot safely be treated as an independent
+preparation failure.
+
+Remaining shared work: atomic move/rename/trash/restore transactions (including
+directory descendants and cross-store moves), failure isolation for legacy
+unjournaled uploads, per-file upload retry scheduling, stable identities and
+verified raw-content uploads. Existing missing content recovery and bundled-book
+deduplication remain separate from these shared reliability improvements.
