@@ -5,7 +5,7 @@ Baseline: `c22e3d5fd` and the production Books investigation in this task.
 
 ## Implementation checkpoint — 2026-09-21
 
-The first compatible release is implemented locally in three tested increments. It keeps the existing wire format and storage providers. It has not been pushed or deployed.
+The first compatible release shipped in [PR #1915](https://github.com/ryokun6/ryos/pull/1915), main commit `6b134d0`. Production `/version.json` confirms that commit and `/health` passes. It keeps the existing wire format and storage providers.
 
 | Increment | Implemented | Validation |
 |---|---|---|
@@ -13,7 +13,7 @@ The first compatible release is implemented locally in three tested increments. 
 | Retry and ordering safety | Persist outgoing batches before sending, replay identical operations after lost responses/restart, serialize remote application, route realtime through pull, preserve pending file edits, remember deletion timestamps, prevent cursor regression, drain work when switching accounts | Restart, response-loss, pending-edit, stale-response and account-isolation tests; real local Bun API engine integration |
 | Catalog and book loading | Persist independent download jobs before acknowledging catalog; two background workers with foreground opens joining or starting immediately; failed files remain queued; reload resumes jobs; per-file progress; simple reader progress bar; bundled-book progress; covers read cached/local data without fetching entire cloud books; transient cover failures retry after content arrives; re-read repaired UUIDs | 200-book catalog completes with zero EPUB body requests; missing-file, quota, checksum and retry cases; cover recovery and progress-bar rendering tests |
 
-Validation at this checkpoint: 369 unit/wiring tests, four real-Redis tests, and nine local API engine tests pass. TypeScript passes; targeted ESLint reports only the two pre-existing reader fast-refresh warnings. The Redis tests are opt-in and skipped in the ordinary unit command.
+Validation for the shipped release: all 3,024 unit/wiring tests, four real-Redis tests, and nine local API engine tests pass. TypeScript passes; targeted ESLint reports only the two pre-existing reader fast-refresh warnings. The Redis tests are opt-in and skipped in the ordinary unit command.
 
 Test commands:
 
@@ -30,9 +30,21 @@ bun --env-file=.env.local scripts/audit-sync-files.ts <username>
 
 The reader bar is determinate when transfer length is known, and indeterminate while resolving content or laying out the EPUB. It disappears when the reader is ready. A 404 remains an actionable load error; a progress bar cannot recover a deleted cloud object.
 
+### Next increment: durable file-catalog mutations
+
+Implemented on `codex/cloud-sync-local-journal`, separately from the shipped release:
+
+- IndexedDB v17 adds an account-scoped, append-only file-catalog mutation journal. File rows and immutable operations commit in the same transaction; a transient transaction failure retains the exact operation for retry. Capture occurs synchronously before the existing persistence debounce, so remote applies cannot relabel an earlier local edit.
+- Startup, pull and flush replay saved operations before consuming remote metadata. Acknowledgement removes only captured IDs, preserving edits made during a request. Both accepted operations and server winners reconcile stale catalog rows before acknowledgement; the cursor still pulls intervening changes.
+- File persistence merges each tab's row changes; broadcasts refresh committed rows while preserving edits made during the read. Sync's remote setters do not generate new local operations. Backup restore clears operational journals with the restored data.
+
+Validation: 3,038 unit/wiring tests, four real-Redis atomicity tests and nine local API engine tests pass; TypeScript and targeted ESLint pass. Fourteen new journal tests cover rollback, retry, restart, lost responses, concurrent edits, stale catalog repair, account isolation and startup ordering.
+
+This increment covers **file catalog metadata**. TextEdit document contents, binary imports and their catalog entries still use separate transactions; extending the transaction boundary to those write paths remains part of phase C. The persistence debounce still precedes the disk transaction: an in-memory edit is not guaranteed durable until that transaction completes. Real-browser crash/quota canaries remain a rollout gate. Thumbnails, file identity migration and recovery of existing missing bytes are separate phases.
+
 ### Remaining phases and gates
 
-- **Complete C:** move local file mutations and their operation records into the same IndexedDB transaction. The implemented outgoing-batch outbox protects requests after batch construction; it does **not** make the existing debounced Zustand catalog writer transactional with mutation capture. Cross-tab leadership/merging also needs a dedicated migration. Keep these distinctions explicit.
+- **Complete C:** extend the new catalog journal to document content and binary import transactions, and test tab suspension/crashes in real browsers. Cross-tab catalog merging is implemented; a single elected background-transfer worker remains separate work. The shipped outgoing-batch outbox protects requests after construction; the next increment adds transactional catalog capture.
 - **Complete D:** synchronize thumbnails as their own small content records, and add per-file offline controls. The current change prevents thumbnail-triggered EPUB downloads but does not transfer thumbnails between devices.
 - **E:** versioned stable file identity, content-only hashes/raw byte uploads, server-side upload verification, legacy-reader capability gating, builtin identity reconciliation, and multipart only where provider support and measurements justify it. Existing UUID and path formats remain readable. Do not delete either existing Meditations entry based on its title.
 - **F:** verify production Redis persistence and object backups with a restore rehearsal, test the configured Upstash/Valkey backend as applicable, run an opt-in account canary and representative production benchmarks, then progressively enable schema migration. Local fake IndexedDB and Redis tests do not establish real-browser crash durability or production backup health.

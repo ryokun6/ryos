@@ -4,7 +4,7 @@ import { createClientLogger } from "@/utils/logger";
 
 export const DB_NAME = "ryOS";
 /** Bump when adding/removing object stores or changing upgrade logic. */
-export const DB_VERSION = 16;
+export const DB_VERSION = 17;
 let hasLoggedOpenSuccess = false;
 const log = createClientLogger("IndexedDB");
 
@@ -72,6 +72,7 @@ export const STORES = {
   // Per-user Cloud Sync cursor, shadow, and pending namespace state. This is
   // operational metadata, so manual backups intentionally exclude it.
   SYNC2_STATE: "sync2_state",
+  SYNC_FILE_MUTATIONS: "sync_file_mutations",
   // Normalized entity stores for large/hot Zustand slices. The small scalar
   // metadata for each slice remains in `persisted_state`.
   SOUNDBOARD_AUDIO: "soundboard_audio",

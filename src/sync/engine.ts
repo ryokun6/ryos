@@ -1,3 +1,11 @@
+import {
+  acknowledgeFileMutations,
+  readFileMutations,
+  subscribeFileCatalogChanges,
+  observeFileMutationTimestamp,
+  isRemoteFileChange,
+} from "@/sync/fileMutationJournal";
+import { refreshFileCatalog } from "@/sync/fileCatalogRefresh";
 import { settleAllPersistWrites } from "@/utils/persistWriteQueue";
 import { useFileAvailability } from "@/sync/fileAvailability";
 /**
@@ -137,6 +145,9 @@ export class CloudSyncEngine {
   private initialReconcileRequired = false;
   private stopped = false;
   private started = false;
+  private fileJournalReplay: Promise<void> | null = null;
+  private catalogRefresh: Promise<void> | null = null;
+  private catalogRefreshRequested = false;
   private outboxReplay: Promise<void> | null = null;
   private remoteApplyTail: Promise<void> = Promise.resolve();
   private downloadTimer: ReturnType<typeof setTimeout> | null = null;
@@ -148,6 +159,7 @@ export class CloudSyncEngine {
     callbacks: EngineStatusCallbacks = {}
   ) {
     this.state = state;
+    if (state.lastTimestamp) observeFileMutationTimestamp(state.lastTimestamp);
     this.callbacks = callbacks;
   }
 
@@ -222,11 +234,25 @@ export class CloudSyncEngine {
     for (const namespace of SYNC_NAMESPACES) {
       const codec = SYNC_CODECS[namespace];
       const unsubscribe = codec.subscribe((keys) => {
-        if (this.applyingNamespaces.has(namespace)) return;
+        if (this.applyingNamespaces.has(namespace) || (namespace === "files" && isRemoteFileChange())) return;
         this.markDirty(namespace, keys);
       });
       this.unsubscribers.push(unsubscribe);
     }
+
+    this.unsubscribers.push(subscribeFileCatalogChanges(() => {
+      if (this.stopped) return;
+      this.catalogRefreshRequested = true;
+      if (this.catalogRefresh) return;
+      this.catalogRefresh = (async () => {
+        do {
+          this.catalogRefreshRequested = false;
+          await refreshFileCatalog();
+        } while (this.catalogRefreshRequested && !this.stopped);
+        if (!this.stopped) this.markDirty("files");
+      })().catch(error => this.reportError(error, "refresh file catalog"))
+        .finally(() => { this.catalogRefresh = null; });
+    }));
 
     let initialSyncSucceeded = false;
     try {
@@ -236,6 +262,7 @@ export class CloudSyncEngine {
           this.isNamespaceEnabled(namespace)
         )
       );
+      await this.replayFileMutations();
       if (this.state.cursor === null) {
         await this.bootstrap();
       } else {
@@ -354,7 +381,7 @@ export class CloudSyncEngine {
       window.cancelIdleCallback(this.flushIdleCallbackId);
       this.flushIdleCallbackId = null;
     }
-    await Promise.allSettled([this.remoteApplyTail, ...this.activeDownloads.values(),
+    await Promise.allSettled([this.fileJournalReplay, this.catalogRefresh, this.remoteApplyTail, ...this.activeDownloads.values(),
       ...(this.outboxReplay ? [this.outboxReplay] : []), ...(this.pullInFlight ? [this.pullInFlight] : [])]);
     await this.state.persistNow();
   }
@@ -527,6 +554,7 @@ export class CloudSyncEngine {
       releaseCrossTabLease = await this.acquireCrossTabFlushLease();
       if (this.stopped) return;
       await this.replayOutbox();
+      await this.replayFileMutations();
       const namespaces = (
         options.force ? [...SYNC_NAMESPACES] : this.state.dirtyNamespaces
       ).filter((namespace) => this.isNamespaceEnabled(namespace));
@@ -578,6 +606,14 @@ export class CloudSyncEngine {
             this.restoreDirtyScope(namespace, dirtyScope);
             cloudSyncLog.error("Collect failed", { namespace, error });
             throw error;
+          }
+          if (namespace === "files") await settleAllPersistWrites();
+          const journalKeys = namespace === "files"
+            ? new Set((await readFileMutations(this.state.accountUsername)).map(m => m.op.k))
+            : new Set<string>();
+          if (journalKeys.size) {
+            this.flushQueued = true;
+            this.markDirty("files", journalKeys);
           }
           flushedNamespaces.push(namespace);
           flushedScopes.set(namespace, dirtyScope);
@@ -632,6 +668,7 @@ export class CloudSyncEngine {
             }
           } else {
             for (const [key, doc] of collected) {
+              if (journalKeys.has(key)) continue;
               const h = hashDoc(doc);
               const shadow = this.state.getShadow(key);
               if (!options.force && shadow?.h === h) continue;
@@ -650,7 +687,7 @@ export class CloudSyncEngine {
               : [...dirtyScope].filter(
                   (key) => this.state.getShadow(key) !== null
                 );
-          const missing = shadowKeys.filter((key) => !collectedKeys.has(key));
+          const missing = shadowKeys.filter((key) => !collectedKeys.has(key) && !journalKeys.has(key));
           if (missing.length > 0) {
             const corroborated = missing.filter((key) =>
               Boolean(getDeletionMarkerForKey(key))
@@ -792,6 +829,71 @@ export class CloudSyncEngine {
     this.nextFlushAllowedAt = 0;
   }
 
+  /** Replay immutable, transactionally captured catalog edits before pulling. */
+  private replayFileMutations(): Promise<void> {
+    if (this.fileJournalReplay) return this.fileJournalReplay;
+    if (!this.isNamespaceEnabled("files")) return Promise.resolve();
+    this.fileJournalReplay = (async () => {
+      await refreshFileCatalog();
+      await settleAllPersistWrites();
+      const pending = await readFileMutations(this.state.accountUsername);
+      for (let offset = 0; offset < pending.length; offset += OPS_BATCH_SIZE) {
+        if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
+        const batch = pending.slice(offset, offset + OPS_BATCH_SIZE);
+        // The API returns one result per key. Preserve all captured IDs until
+        // that key's latest operation is confirmed, then acknowledge this batch.
+        const ops = new Map(batch.map(mutation => [mutation.op.k, mutation.op]));
+        const response = await postSyncOps(getSyncClientId(), [...ops.values()], this.abortController.signal);
+        if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
+        const results = new Map(response.results.map(result => [result.k, result]));
+        for (const op of ops.values()) {
+          const result = results.get(op.k);
+          if (!result || (!result.accepted && !result.winner)) {
+            throw new Error(`Unconfirmed file mutation: ${op.k}`);
+          }
+        }
+        const confirmed = [...ops.values()].map(op => {
+          const result = results.get(op.k)!;
+          return !result.accepted && result.winner ? { k: op.k, ...result.winner } : op;
+        });
+        for (const op of confirmed) {
+          this.state.observeTimestamp(op.t);
+          observeFileMutationTimestamp(op.t);
+        }
+        // The catalog may reflect a stale tab's later disk write. Reconcile
+        // confirmed values as well as server winners, but preserve newer edits.
+        const batchIds = new Set(batch.map(m => m.id));
+        const apply = this.remoteApplyTail.then(async () => {
+          const before = useFilesStore.getState().items;
+          await settleAllPersistWrites();
+          const remaining = new Set((await readFileMutations(this.state.accountUsername))
+            .filter(m => !batchIds.has(m.id)).map(m => m.op.k));
+          if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
+          const current = useFilesStore.getState().items;
+          const updates = confirmed.filter(op => {
+            const path = op.k.slice("files/item:".length);
+            return !remaining.has(op.k) && current[path] === before[path] &&
+              (this.state.getLatestTimestamp(op.k) ?? "") <= op.t;
+          });
+          await SYNC_CODECS.files.apply(updates, {});
+          for (const op of confirmed) {
+            if ((this.state.getLatestTimestamp(op.k) ?? "") > op.t) continue;
+            if (op.del) this.state.recordDeletion(op.k, op.t);
+            else this.state.setShadow(op.k, { t: op.t, h: hashDoc(op.v) });
+          }
+        });
+        this.remoteApplyTail = apply.catch(() => {});
+        await apply;
+        await settleAllPersistWrites();
+        await this.state.persistNow();
+        await acknowledgeFileMutations(batch.map(mutation => mutation.id));
+      }
+      // Do not advance the cursor from POST responses: pull every intervening
+      // operation, including changes from another tab/device.
+    })().finally(() => { this.fileJournalReplay = null; });
+    return this.fileJournalReplay;
+  }
+
   private replayOutbox(): Promise<void> {
     if (this.outboxReplay) return this.outboxReplay;
     const pending = this.state.outbox;
@@ -917,6 +1019,7 @@ export class CloudSyncEngine {
       syncStore.setCheckingRemote(true);
       try {
         await this.replayOutbox();
+        await this.replayFileMutations();
         if (this.state.cursor === null) {
           await this.applySnapshot(false);
           if (!this.stopped) this.completePull();
@@ -1249,6 +1352,7 @@ export class CloudSyncEngine {
 
     for (const op of ops) {
       this.state.observeTimestamp(op.t);
+      observeFileMutationTimestamp(op.t);
       const namespace = getSyncKeyNamespace(op.k);
       if (!namespace) continue;
 
@@ -1313,6 +1417,11 @@ export class CloudSyncEngine {
           continue;
         }
         let namespaceOps = byNamespace.get(namespace)!;
+        if (namespace === "files" && !options.force) {
+          await settleAllPersistWrites();
+          const pendingKeys = new Set((await readFileMutations(this.state.accountUsername)).map(m => m.op.k));
+          namespaceOps = namespaceOps.filter(op => !pendingKeys.has(op.k));
+        }
         // Preserve edits that have not reached the server while applying a pull.
         // The observed remote HLC ensures the eventual local write sorts later.
         if ((namespace === "files" || isSyncBlobNamespace(namespace)) && !options.force && this.state.dirtyNamespaces.includes(namespace)) {

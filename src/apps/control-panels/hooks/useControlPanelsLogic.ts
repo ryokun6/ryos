@@ -1133,6 +1133,7 @@ export function useControlPanelsLogic({
                 storeName: STORES.SYNC2_STATE,
                 items: [],
               },
+              { storeName: STORES.SYNC_FILE_MUTATIONS, items: [] },
             ];
             await restoreStoreItemsAtomically(db, restores);
           } finally {

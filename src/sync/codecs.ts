@@ -1,3 +1,4 @@
+import { withRemoteFileChanges } from "@/sync/fileMutationJournal";
 /**
  * Cloud Sync v2 namespace codecs.
  *
@@ -911,7 +912,7 @@ const filesCodec: SyncCodec = {
       itemDeletes.length > 0 ||
       libraryState
     ) {
-      useFilesStore.setState((state) => {
+      withRemoteFileChanges(() => useFilesStore.setState((state) => {
         const items = { ...state.items };
         for (const path of itemDeletes) {
           delete items[path];
@@ -923,7 +924,7 @@ const filesCodec: SyncCodec = {
           items,
           libraryState: libraryState || state.libraryState,
         };
-      });
+      }), ops.map(op => op.t).sort().at(-1));
     }
 
     if (docUpserts.length > 0 || docDeletes.length > 0) {

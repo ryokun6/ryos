@@ -48,6 +48,7 @@ describe("manual IndexedDB backup manifest", () => {
       STORES.APPLE_MUSIC_PLAYLIST_TRACKS
     );
     expect(includedStores).not.toContain(STORES.SYNC2_STATE);
+    expect(includedStores).not.toContain(STORES.SYNC_FILE_MUTATIONS);
   });
 
   test("creates an empty entry for every manifest store", () => {
