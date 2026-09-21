@@ -2,6 +2,7 @@ import type { AppId } from "@/config/appRegistry";
 
 const APPS_THAT_TRIGGER_CLOUD_SYNC_CHECK_ON_LAUNCH = new Set<AppId>([
   "finder",
+  "books",
   "textedit",
   "paint",
   "applet-viewer",

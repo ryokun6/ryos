@@ -166,6 +166,25 @@ describe("sync v2 ops + LWW", () => {
     expect(second.seq).toBe(first.seq);
   });
 
+  test("protects active book content from inferred deletion by older clients", async () => {
+    const r = redis();
+    const fileKey = "files/item:/Books/book.epub";
+    const blobKey = "books/item:book-id";
+    const blob = { blob: { url: "s3://bucket/book.gz", size: 10 } };
+    await applySyncOps(r, "book-user", [
+      { k: fileKey, v: { uuid: "book-id", status: "active" }, t: t(0) },
+      { k: blobKey, v: blob, t: t(0) },
+    ], "client-a");
+    const badDelete = await applySyncOps(r, "book-user", [{ k: blobKey, del: true, t: t(1) }], "client-a");
+    expect(badDelete.results[0].accepted).toBe(false);
+    expect(badDelete.results[0].winner?.v).toEqual(blob);
+    const realDelete = await applySyncOps(r, "book-user", [
+      { k: blobKey, del: true, t: t(2) },
+      { k: fileKey, v: { uuid: "book-id", status: "trashed" }, t: t(2) },
+    ], "client-a");
+    expect(realDelete.results.every(result => result.accepted)).toBe(true);
+  });
+
   test("tombstones win over older values and snapshot keeps them", async () => {
     const r = redis();
     await applySyncOps(
@@ -381,6 +400,25 @@ describe("sync v2 initialization", () => {
     expect(result.seq).toBe(1);
     const kv = await (r as unknown as FakeRedis).hgetall(sync2KvKey("user1"));
     expect(kv).toBeTruthy();
+  });
+
+  test("snapshot cursor cannot skip a write between the hash and sequence reads", async () => {
+    const r = redis();
+    await applySyncOps(r, "snapshot-race", [{ k: "settings/theme", v: "old", t: t(0) }], "client-a");
+    const original = r.hgetall.bind(r);
+    let raced = false;
+    r.hgetall = (async (key: string) => {
+      const result = await original(key);
+      if (key === sync2KvKey("snapshot-race") && !raced) {
+        raced = true;
+        await applySyncOps(r, "snapshot-race", [{ k: "settings/theme", v: "new", t: t(1) }], "client-a");
+      }
+      return result;
+    }) as typeof r.hgetall;
+    const snapshot = await readSyncSnapshot(r, "snapshot-race");
+    expect(snapshot.entries["settings/theme"].v).toBe("old");
+    const changes = await readSyncChanges(r, "snapshot-race", snapshot.seq);
+    expect(changes.ops?.some(op => op.v === "new")).toBe(true);
   });
 
   test("brand-new user initializes with an empty snapshot", async () => {

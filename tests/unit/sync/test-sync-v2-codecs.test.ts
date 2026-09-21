@@ -1305,6 +1305,43 @@ describe("cloud sync engine resilience", () => {
     }
   });
 
+  test("retries a failed bootstrap and blocks uploads until the snapshot succeeds", async () => {
+    useCloudSyncStore.setState({
+      autoSyncEnabled: true,
+      syncFiles: false, syncSettings: false, syncSongs: false, syncVideos: false,
+      syncTv: false, syncStickies: true, syncCalendar: false, syncContacts: false,
+      syncMaps: false, syncBooks: false, syncStuff: false,
+    });
+    const originalFetch = globalThis.fetch;
+    const requests: string[] = [];
+    let retried!: () => void;
+    const retryRequest = new Promise<void>(resolve => { retried = resolve; });
+    globalThis.fetch = (async (input) => {
+      const url = String(input);
+      if (!url.includes("/api/sync/v2/")) return Response.json({});
+      requests.push(url);
+      if (requests.length === 1) return Response.json({ error: "unavailable" }, { status: 503 });
+      retried();
+      return Response.json({ seq: 5, entries: {} });
+    }) as typeof fetch;
+    const engine = await CloudSyncEngine.create(`bootstrap-retry-${crypto.randomUUID()}`);
+    try {
+      await engine.start();
+      engine.markDirty("stickies");
+      await engine.flush();
+      expect(requests).toHaveLength(1);
+      await retryRequest;
+      await engine.pull();
+      const state = (engine as unknown as { state: SyncClientState }).state;
+      expect(state.cursor).toBe(5);
+      expect(state.dirtyNamespaces).toContain("stickies");
+      expect(requests.every(url => url.includes("/snapshot"))).toBe(true);
+    } finally {
+      await engine.stop();
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("treats an unavailable local sync API as a non-throwing result", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async () =>

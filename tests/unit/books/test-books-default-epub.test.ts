@@ -89,6 +89,14 @@ afterAll(() => {
 });
 
 describe("default Books EPUB", () => {
+  test("does not seed another Meditations when the short filename already exists", async () => {
+    const migrate = useFilesStore.persist.getOptions().migrate!;
+    const existing = { path: "/Books/Meditations.epub", name: "Meditations.epub", type: "epub", status: "active", uuid: "original-book" };
+    const migrated = await migrate({ items: { [existing.path]: existing }, libraryState: "loaded" }, 13) as { items: Record<string, unknown> };
+    expect(migrated.items[BOOK_PATH]).toBeUndefined();
+    expect(migrated.items[existing.path]).toEqual(existing);
+  });
+
   test("seeds Meditations and lazy-loads its EPUB bytes through the VFS", async () => {
     await useFilesStore.getState().resetLibrary();
 

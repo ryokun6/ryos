@@ -71,6 +71,78 @@ describe("cloud sync blob missing-local repair", () => {
     globalThis.fetch = originalFetch;
   });
 
+  test("partial downloads preserve successful books and retry without advancing the cursor", async () => {
+    const good = await bookStoreItem();
+    const second = { ...good, key: BOOK_UUID_REMOTE };
+    const payloads = [await gzipJson(good), await gzipJson(second)];
+    const digests = [await sha256Json(good), await sha256Json(second)];
+    let fail = true;
+    const counts = [0, 0];
+    const entries = Object.fromEntries([BOOK_UUID, BOOK_UUID_REMOTE].map((key, i) => [
+      `books/item:${key}`, { t, seq: i + 1, v: { blob: {
+        url: `https://example.test/${i}.gz`, size: payloads[i].length, sha256: digests[i],
+      } } },
+    ]));
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/snapshot")) return Response.json({ seq: 2, entries });
+      const index = url.endsWith("/0.gz") ? 0 : 1;
+      counts[index]++;
+      if (index === 1 && fail) return new Response(null, { status: 404 });
+      return new Response(payloads[index]);
+    }) as typeof fetch;
+    const engine = await CloudSyncEngine.create(`partial-${crypto.randomUUID()}`);
+    const state = (engine as unknown as { state: SyncClientState }).state;
+    try {
+      await expect(engine.applySnapshot(false)).rejects.toThrow("404");
+      expect(state.cursor).toBeNull();
+      expect(state.getShadow(SYNC_KEY)).not.toBeNull();
+      expect(state.getShadow(`books/item:${BOOK_UUID_REMOTE}`)).toBeNull();
+      expect(await dbOperations.get(STORES.BOOKS, BOOK_UUID)).toBeDefined();
+      fail = false;
+      await engine.applySnapshot(false);
+      expect(state.cursor).toBe(2);
+      expect(counts).toEqual([1, 2]);
+      expect(await dbOperations.get(STORES.BOOKS, BOOK_UUID_REMOTE)).toBeDefined();
+    } finally { await engine.stop(); }
+  });
+
+  test("failed database writes do not acknowledge downloaded blobs", async () => {
+    const { SYNC_CODECS, isBlobCodec } = await import("../../../src/sync/codecs");
+    const codec = SYNC_CODECS.books;
+    if (!isBlobCodec(codec)) throw new Error("Expected blob codec");
+    const put = codec.putItems;
+    const item = await bookStoreItem();
+    const compressed = await gzipJson(item);
+    const op = { k: SYNC_KEY, t, v: { blob: {
+      url: "https://example.test/book.gz", size: compressed.length, sha256: await sha256Json(item),
+    } } };
+    globalThis.fetch = (async () => new Response(compressed)) as typeof fetch;
+    const engine = await CloudSyncEngine.create(`write-failure-${crypto.randomUUID()}`);
+    const state = (engine as unknown as { state: SyncClientState }).state;
+    try {
+      codec.putItems = async () => { throw new Error("Quota exceeded"); };
+      await expect(engine.applyRemoteOps([op])).rejects.toThrow("Quota exceeded");
+      expect(state.getShadow(SYNC_KEY)).toBeNull();
+      codec.putItems = put;
+      await engine.applyRemoteOps([op]);
+      expect(await dbOperations.get(STORES.BOOKS, BOOK_UUID)).toBeDefined();
+    } finally { codec.putItems = put; await engine.stop(); }
+  });
+
+  test("rejects a blob belonging to another book", async () => {
+    const item = { ...(await bookStoreItem()), key: BOOK_UUID_REMOTE };
+    const compressed = await gzipJson(item);
+    globalThis.fetch = (async () => new Response(compressed)) as typeof fetch;
+    const engine = await CloudSyncEngine.create(`wrong-book-${crypto.randomUUID()}`);
+    try {
+      await expect(engine.applyRemoteOps([{ k: SYNC_KEY, t, v: { blob: {
+        url: "https://example.test/book.gz", size: compressed.length, sha256: await sha256Json(item),
+      } } }])).rejects.toThrow("Invalid sync blob payload");
+      expect(await dbOperations.get(STORES.BOOKS, BOOK_UUID_REMOTE)).toBeUndefined();
+    } finally { await engine.stop(); }
+  });
+
   test("applyBlobOps re-downloads when shadow hash matches but IndexedDB is empty", async () => {
     const item = await bookStoreItem();
     const digest = await sha256Json(item);

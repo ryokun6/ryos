@@ -63,6 +63,7 @@ import {
   type CodecContext,
 } from "@/sync/codecs";
 import { getPersistedSyncShadowKeys } from "@/sync/stateStorage";
+import { forEachTransfer } from "@/sync/transferQueue";
 import { useFilesStore } from "@/stores/useFilesStore";
 import {
   readStoreItemsByKeys,
@@ -128,6 +129,10 @@ export class CloudSyncEngine {
   private consecutiveFlushFailures = 0;
   private nextFlushAllowedAt = 0;
   private pullInFlight: Promise<void> | null = null;
+  private pullRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private consecutivePullFailures = 0;
+  private initialSyncPending = false;
+  private initialReconcileRequired = false;
   private stopped = false;
   private started = false;
 
@@ -190,9 +195,11 @@ export class CloudSyncEngine {
   async start(): Promise<void> {
     if (this.started) return;
     this.started = true;
+    this.initialSyncPending = true;
     const hadCursor = this.state.cursor !== null;
     const hadPersistedDirty = this.state.dirtyNamespaces.length > 0;
     const needsLocalReconcile = this.state.localReconcileRequired;
+    this.initialReconcileRequired = !hadCursor || needsLocalReconcile;
     cloudSyncLog.debug("Engine start requested", {
       hasCursor: hadCursor,
       cursor: this.state.cursor,
@@ -226,10 +233,12 @@ export class CloudSyncEngine {
     } catch (error) {
       if (!this.stopped && !isAbortError(error)) {
         this.reportError(error, "initial sync");
+        this.schedulePullRetry();
       }
     }
 
     if (!initialSyncSucceeded || this.stopped) return;
+    this.initialSyncPending = false;
     await this.pruneObsoleteDeletionMarkers();
 
     // Fresh bootstraps and recorded inactive periods need a one-time local
@@ -311,6 +320,8 @@ export class CloudSyncEngine {
     }
     this.stopped = true;
     this.abortController.abort();
+    if (this.pullRetryTimer) clearTimeout(this.pullRetryTimer);
+    this.pullRetryTimer = null;
     for (const unsubscribe of this.unsubscribers) {
       unsubscribe();
     }
@@ -482,7 +493,7 @@ export class CloudSyncEngine {
   async flush(
     options: { force?: boolean; throwOnError?: boolean } = {}
   ): Promise<void> {
-    if (this.stopped) return;
+    if (this.stopped || this.initialSyncPending) return;
     if (this.flushInFlight) {
       cloudSyncLog.debug("Flush already in flight; queued follow-up");
       this.flushQueued = true;
@@ -490,6 +501,9 @@ export class CloudSyncEngine {
     }
     this.flushInFlight = true;
     let releaseCrossTabLease: (() => void) | null = null;
+    const uploadingCategories = new Set<
+      ReturnType<typeof getSyncNamespaceCategory>
+    >();
 
     try {
       releaseCrossTabLease = await this.acquireCrossTabFlushLease();
@@ -544,7 +558,7 @@ export class CloudSyncEngine {
           } catch (error) {
             this.restoreDirtyScope(namespace, dirtyScope);
             cloudSyncLog.error("Collect failed", { namespace, error });
-            continue;
+            throw error;
           }
           flushedNamespaces.push(namespace);
           flushedScopes.set(namespace, dirtyScope);
@@ -570,6 +584,7 @@ export class CloudSyncEngine {
             upsertCount += pendingUploads.length;
             if (pendingUploads.length > 0) {
               const category = getSyncNamespaceCategory(namespace);
+              uploadingCategories.add(category);
               syncStore.markCategorySyncing(category, "upload", true);
               syncStore.markCategoryUploadProgress(category, 0);
               let refs: Awaited<ReturnType<typeof uploadBlobItems>>;
@@ -589,7 +604,7 @@ export class CloudSyncEngine {
               }
               for (const upload of pendingUploads) {
                 const ref = refs.get(upload.key);
-                if (!ref) continue;
+                if (!ref) throw new Error(`Missing uploaded blob reference: ${upload.key}`);
                 const t = pendingTimestamps.get(upload.key)!;
                 ops.push({ k: upload.key, v: { blob: ref }, t });
                 shadowUpdates.set(upload.key, { t, h: upload.sha256 });
@@ -724,10 +739,14 @@ export class CloudSyncEngine {
     } catch (error) {
       if (!this.stopped && !isAbortError(error)) {
         this.recordFlushFailure();
+        this.flushQueued = true;
         this.reportError(error, "upload");
         if (options.throwOnError) throw error;
       }
     } finally {
+      for (const category of uploadingCategories) {
+        useCloudSyncStore.getState().markCategorySyncing(category, "upload", false);
+      }
       releaseCrossTabLease?.();
       this.flushInFlight = false;
       if (this.flushQueued) {
@@ -827,6 +846,27 @@ export class CloudSyncEngine {
   // Pull / bootstrap / realtime
   // -------------------------------------------------------------------------
 
+  private schedulePullRetry(): void {
+    if (this.stopped || this.pullRetryTimer) return;
+    const delay = Math.min(60_000, 2000 * 2 ** this.consecutivePullFailures++);
+    this.pullRetryTimer = setTimeout(() => {
+      this.pullRetryTimer = null;
+      void this.pull();
+    }, delay);
+  }
+
+  private completePull(): void {
+    this.consecutivePullFailures = 0;
+    if (this.pullRetryTimer) clearTimeout(this.pullRetryTimer);
+    this.pullRetryTimer = null;
+    if (this.initialSyncPending) {
+      this.initialSyncPending = false;
+      if (this.initialReconcileRequired) this.markAllEnabledNamespacesDirty();
+      this.schedulePendingFlush();
+    }
+    this.reportError(null);
+  }
+
   async pull(options: { throwOnError?: boolean } = {}): Promise<void> {
     if (this.stopped) return;
     if (this.pullInFlight) {
@@ -838,7 +878,12 @@ export class CloudSyncEngine {
       const syncStore = useCloudSyncStore.getState();
       syncStore.setCheckingRemote(true);
       try {
-        const since = this.state.cursor ?? 0;
+        if (this.state.cursor === null) {
+          await this.applySnapshot(false);
+          if (!this.stopped) this.completePull();
+          return;
+        }
+        const since = this.state.cursor;
         cloudSyncLog.debug("Pull started", { since });
         const response = await getSyncChanges(
           since,
@@ -851,6 +896,7 @@ export class CloudSyncEngine {
             seq: response.seq,
           });
           await this.applySnapshot(false);
+          if (!this.stopped) this.completePull();
           return;
         }
         if (response.ops && response.ops.length > 0) {
@@ -864,9 +910,10 @@ export class CloudSyncEngine {
         }
         this.state.setCursor(response.seq);
         cloudSyncLog.debug("Pull complete", { seq: response.seq });
-        this.reportError(null);
+        this.completePull();
       } catch (error) {
         if (this.stopped || isAbortError(error)) return;
+        this.schedulePullRetry();
         if (options.throwOnError) throw error;
         this.reportError(error, "download");
       } finally {
@@ -1193,7 +1240,7 @@ export class CloudSyncEngine {
       const namespace = getSyncKeyNamespace(op.k);
       if (!namespace) continue;
 
-      if (op.c === clientId) {
+      if (!options.force && op.c === clientId) {
         skippedOwnCount += 1;
         continue; // own op; shadow already updated on POST
       }
@@ -1247,6 +1294,7 @@ export class CloudSyncEngine {
     const db = needsDb ? await ensureIndexedDBInitialized() : undefined;
     const ctx: CodecContext = { db };
     const syncStore = useCloudSyncStore.getState();
+    const failures: unknown[] = [];
 
     try {
       for (const namespace of orderedNamespaces) {
@@ -1300,6 +1348,7 @@ export class CloudSyncEngine {
           syncStore.markCategoryApplied(category, new Date().toISOString());
         } catch (error) {
           if (this.stopped || isAbortError(error)) throw error;
+          failures.push(error);
           cloudSyncLog.error("Failed to apply remote namespace", {
             namespace,
             error,
@@ -1312,6 +1361,7 @@ export class CloudSyncEngine {
     } finally {
       db?.close();
     }
+    if (failures.length) throw failures[0];
     await this.pruneObsoleteDeletionMarkers();
   }
 
@@ -1344,11 +1394,10 @@ export class CloudSyncEngine {
       if (!op.k.startsWith(prefix)) continue;
       if (op.del) {
         deletes.push(op.k.slice(prefix.length));
-        this.state.deleteShadow(op.k);
         continue;
       }
       const ref = getSyncBlobRef(op.v);
-      if (!ref) continue;
+      if (!ref) throw new Error(`Invalid sync blob reference: ${op.k}`);
       const contentHash = ref.sha256 || ref.sig || "";
       const shadow = this.state.getShadow(op.k);
       if (contentHash && shadow?.h === contentHash) {
@@ -1401,6 +1450,7 @@ export class CloudSyncEngine {
         deleteCount: deletes.length,
       });
       await codec.deleteItems(deletes, ctx);
+      for (const key of deletes) this.state.deleteShadow(`${prefix}${key}`);
     }
 
     if (downloads.length > 0) {
@@ -1416,12 +1466,12 @@ export class CloudSyncEngine {
         downloads.map((d) => ({ url: d.url, size: d.size })),
         this.abortController.signal
       );
-      const items: StoreItemWithKey[] = [];
+      const loadedByIndex = new Map<number, number>();
       const totalDownloadBytes = downloads.reduce(
         (sum, download) => sum + Math.max(0, download.size || 0),
         0
       );
-      let completedDownloadBytes = 0;
+
       const category = getSyncNamespaceCategory(namespace);
       const emitProgress = (loadedBytes: number) => {
         syncStore.markCategoryDownloadProgress(
@@ -1439,54 +1489,49 @@ export class CloudSyncEngine {
         if (item.uuid && item.name) namesByUuid.set(item.uuid, item.name);
       }
 
-      for (let index = 0; index < downloads.length; index += 1) {
-        const { op, contentHash, size } = downloads[index];
+      await forEachTransfer(downloads, async ({ op, contentHash, size }, index) => {
+        this.abortController.signal.throwIfAborted();
         const storeKey = op.k.slice(prefix.length);
         syncStore.markCategoryDownloadItem(
           category,
           namesByUuid.get(storeKey) ?? null
         );
         const downloadUrl = urls[index];
-        if (!downloadUrl) {
-          cloudSyncLog.warn("Blob download URL missing", { namespace });
-          completedDownloadBytes += Math.max(0, size || 0);
-          emitProgress(completedDownloadBytes);
-          continue;
+        if (!downloadUrl) throw new Error(`Blob download URL missing: ${op.k}`);
+        const item = (await downloadBlobItem(downloadUrl, {
+          expectedBytes: size,
+          signal: this.abortController.signal,
+          onProgress: (progress) => {
+            loadedByIndex.set(
+              index,
+              Math.max(
+                loadedByIndex.get(index) ?? 0,
+                Math.min(size || progress.loadedBytes, progress.loadedBytes)
+              )
+            );
+            emitProgress(
+              [...loadedByIndex.values()].reduce((sum, loaded) => sum + loaded, 0)
+            );
+          },
+        })) as StoreItemWithKey;
+        if (
+          !item ||
+          item.key !== storeKey ||
+          !item.value ||
+          typeof item.value !== "object"
+        ) {
+          throw new Error(`Invalid sync blob payload: ${op.k}`);
         }
-        try {
-          const item = (await downloadBlobItem(downloadUrl, {
-            expectedBytes: size,
-            signal: this.abortController.signal,
-            onProgress: (progress) => {
-              emitProgress(completedDownloadBytes + progress.loadedBytes);
-            },
-          })) as StoreItemWithKey;
-          if (
-            item &&
-            typeof item === "object" &&
-            typeof item.key === "string"
-          ) {
-            items.push(item);
-            this.state.setShadow(op.k, {
-              t: op.t,
-              h: contentHash || (await sha256Json(item)),
-            });
-          }
-        } catch (error) {
-          if (this.stopped || isAbortError(error)) throw error;
-          cloudSyncLog.error("Blob download failed", { namespace, error });
-        } finally {
-          completedDownloadBytes += Math.max(0, size || 0);
-          emitProgress(completedDownloadBytes);
+        const digest = await sha256Json(item);
+        const ref = getSyncBlobRef(op.v)!;
+        if (ref.sha256 && ref.sha256 !== digest) {
+          throw new Error(`Sync blob checksum mismatch: ${op.k}`);
         }
-      }
-      if (items.length > 0) {
-        cloudSyncLog.debug("Writing downloaded blob items", {
-          namespace,
-          itemCount: items.length,
-        });
-        await codec.putItems(items, ctx);
-      }
+        // Commit each item before recording its shadow. A failed/aborted batch
+        // can resume without re-downloading successful items or losing bytes.
+        await codec.putItems([item], ctx);
+        this.state.setShadow(op.k, { t: op.t, h: contentHash || digest });
+      });
     }
 
     if ((deletes.length > 0 || downloads.length > 0) && codec.afterApply) {
@@ -1613,7 +1658,7 @@ export class CloudSyncEngine {
             });
             for (const upload of pendingUploads) {
               const ref = refs.get(upload.key);
-              if (!ref) continue;
+              if (!ref) throw new Error(`Missing uploaded blob reference: ${upload.key}`);
               const t = pendingTimestamps.get(upload.key)!;
               ops.push({ k: upload.key, v: { blob: ref }, t });
               shadowUpdates.set(upload.key, { t, h: upload.sha256 });

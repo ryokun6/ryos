@@ -292,6 +292,33 @@ export async function applySyncOps(
     const journalEntries: Array<{ seq: number; member: string }> = [];
     const blobRegistry: Record<string, string> = {};
     const nowMs = Date.now();
+    // A missing browser cache must never delete the only cloud copy of an
+    // active book. Protect against older clients that inferred blob deletes.
+    // Project accepted metadata writes from this batch so an actual file
+    // deletion / move to Trash can still remove its content normally.
+    const activeBookIds = new Set<string>();
+    if (ops.some((op) => op.del && op.k.startsWith("books/item:"))) {
+      const rawFiles = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
+      const files = new Map<string, SyncKvEntry>();
+      for (const [key, raw] of Object.entries(rawFiles ?? {})) {
+        if (!key.startsWith("files/item:")) continue;
+        const entry = parseRedisJson<SyncKvEntry>(raw);
+        if (entry && isSyncKvEntry(entry)) files.set(key, entry);
+      }
+      for (const [key, op] of opsByKey) {
+        if (!key.startsWith("files/item:")) continue;
+        const t = options.trusted ? op.t : clampHlc(op.t, clientId, nowMs);
+        if (resolveSyncOp(files.get(key) ?? null, { ...op, t }) === "accept") {
+          files.set(key, { ...op, t, seq: 0 });
+        }
+      }
+      for (const entry of files.values()) {
+        const file = entry.v as { uuid?: string; status?: string } | undefined;
+        if (!entry.del && file?.status === "active" && typeof file.uuid === "string") {
+          activeBookIds.add(file.uuid);
+        }
+      }
+    }
 
     for (let index = 0; index < keys.length; index += 1) {
       const key = keys[index];
@@ -300,7 +327,10 @@ export async function applySyncOps(
       const existing = isSyncKvEntry(rawExisting) ? rawExisting : null;
       const t = options.trusted ? op.t : clampHlc(op.t, clientId, nowMs);
 
-      if (resolveSyncOp(existing, { ...op, t }) === "reject") {
+      if (
+        resolveSyncOp(existing, { ...op, t }) === "reject" ||
+        (op.del && key.startsWith("books/item:") && activeBookIds.has(key.slice("books/item:".length)))
+      ) {
         results.push({
           k: key,
           accepted: false,
@@ -471,10 +501,11 @@ export async function readSyncSnapshot(
   await ensureSync2Initialized(redis, username);
   await touchTtlsThrottled(redis, username);
 
-  // Read seq AFTER the KV hash so the cursor can only undercount (clients
-  // re-fetch ops they already have, which LWW makes harmless), never skip.
-  const raw = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
+  // Read the cursor BEFORE the hash. A concurrent write may then appear in
+  // both the snapshot and the next pull, but cannot be skipped by a cursor
+  // newer than the data we actually returned.
   const seq = (await readSeq(redis, username)) ?? 0;
+  const raw = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
 
   const entries: Record<string, SyncKvEntry> = {};
   if (raw) {

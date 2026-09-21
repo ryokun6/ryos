@@ -15,6 +15,7 @@ import {
   postSyncBlobs,
   requestSyncBlobProxyUpload,
 } from "@/sync/transport";
+import { forEachTransfer } from "@/sync/transferQueue";
 import { cloudSyncLog } from "@/sync/logging";
 
 function assertCompressionSupport(): void {
@@ -201,24 +202,35 @@ export async function uploadBlobItems(
   }
 
   const digests = Array.from(byDigest.keys());
-  const response = await postSyncBlobs(
-    {
-      upload: digests.map((sha256) => ({
-        sha256,
-        size: byDigest.get(sha256)!.compressed.length,
-      })),
-    },
-    options.signal
-  );
+  const uploads: NonNullable<Awaited<ReturnType<typeof postSyncBlobs>>["uploads"]> = [];
+  for (let offset = 0; offset < digests.length; offset += 200) {
+    const response = await postSyncBlobs(
+      {
+        upload: digests.slice(offset, offset + 200).map((sha256) => ({
+          sha256,
+          size: byDigest.get(sha256)!.compressed.length,
+        })),
+      },
+      options.signal
+    );
 
-  const uploads = response.uploads || [];
+    uploads.push(...(response.uploads || []));
+  }
+  if (
+    uploads.length !== digests.length ||
+    new Set(uploads.map((item) => item.sha256)).size !== digests.length
+  ) {
+    throw new Error("Incomplete sync blob upload instructions.");
+  }
   const uploadResults = uploads.filter((result) => result.upload);
   const totalUploadBytes = uploadResults.reduce((sum, result) => {
     const entry = byDigest.get(result.sha256);
     return sum + (entry?.compressed.length ?? 0);
   }, 0);
   const totalUploadItems = uploadResults.length;
-  let completedUploadBytes = 0;
+  const loadedByDigest = new Map<string, number>();
+  const loadedBytes = () =>
+    [...loadedByDigest.values()].reduce((sum, bytes) => sum + bytes, 0);
   let completedUploadItems = 0;
   const emitProgress = (loadedBytes: number) => {
     options.onProgress?.({
@@ -234,10 +246,10 @@ export async function uploadBlobItems(
     emitProgress(0);
   }
 
-  for (const result of uploads) {
+  await forEachTransfer(uploads, async (result) => {
     options.signal?.throwIfAborted();
     const entry = byDigest.get(result.sha256);
-    if (!entry) continue;
+    if (!entry) throw new Error("Unexpected sync blob upload instruction.");
     let url: string | undefined;
 
     if (result.exists && result.url) {
@@ -253,14 +265,18 @@ export async function uploadBlobItems(
         sha256: result.sha256,
         instruction: result.upload,
         onProgress: (progress) => {
-          emitProgress(completedUploadBytes + progress.loaded);
+          loadedByDigest.set(
+            result.sha256,
+            Math.min(entry.compressed.length, progress.loaded)
+          );
+          emitProgress(loadedBytes());
         },
         signal: options.signal,
       });
       url = uploadResult.storageUrl;
-      completedUploadBytes += entry.compressed.length;
+      loadedByDigest.set(result.sha256, entry.compressed.length);
       completedUploadItems += 1;
-      emitProgress(completedUploadBytes);
+      emitProgress(loadedBytes());
     }
 
     if (!url) {
@@ -273,7 +289,7 @@ export async function uploadBlobItems(
         sha256: result.sha256,
       });
     }
-  }
+  });
 
   return refs;
 }
@@ -293,15 +309,16 @@ export async function resolveBlobDownloadUrls(
     return null;
   });
 
-  if (needsSigning.length > 0) {
+  for (let offset = 0; offset < needsSigning.length; offset += 500) {
+    const batch = needsSigning.slice(offset, offset + 500);
     const response = await postSyncBlobs(
       {
-        download: needsSigning.map((index) => refs[index].url),
+        download: batch.map((index) => refs[index].url),
       },
       signal
     );
     const signed = response.downloads || [];
-    needsSigning.forEach((refIndex, signedIndex) => {
+    batch.forEach((refIndex, signedIndex) => {
       resolved[refIndex] = signed[signedIndex] || null;
     });
   }
@@ -366,11 +383,41 @@ export async function downloadBlobItem(
   downloadUrl: string,
   options: BlobDownloadOptions = {}
 ): Promise<unknown> {
-  const response = await fetch(downloadUrl, { signal: options.signal });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch sync blob: ${response.status}`);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    options.signal?.throwIfAborted();
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    options.signal?.addEventListener("abort", abort, { once: true });
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 60_000);
+    try {
+      const response = await fetch(downloadUrl, { signal: controller.signal });
+      if (!response.ok) {
+        if (response.status < 500 && response.status !== 429) {
+          throw new BlobDownloadHttpError(response.status);
+        }
+        throw new Error(`Failed to fetch sync blob: ${response.status}`);
+      }
+      return await gunzipJson<unknown>(await readResponseWithProgress(response, options));
+    } catch (error) {
+      if (options.signal?.aborted || error instanceof BlobDownloadHttpError) throw error;
+      if (attempt === 2) {
+        if (timedOut) throw new Error("Sync blob download timed out.");
+        throw error;
+      }
+    } finally {
+      clearTimeout(timer);
+      options.signal?.removeEventListener("abort", abort);
+    }
   }
-  return await gunzipJson<unknown>(
-    await readResponseWithProgress(response, options)
-  );
+  throw new Error("Sync blob download failed.");
+}
+
+class BlobDownloadHttpError extends Error {
+  constructor(status: number) {
+    super(`Failed to fetch sync blob: ${status}`);
+  }
 }

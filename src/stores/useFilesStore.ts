@@ -894,7 +894,13 @@ function migrateV14DefaultMeditationsBook(
   libraryState: LibraryState | undefined,
   now: number
 ): Record<string, FileSystemItem> {
-  if (libraryState === "cleared" || items[DEFAULT_MEDITATIONS_BOOK_PATH]) {
+  if (
+    libraryState === "cleared" ||
+    items[DEFAULT_MEDITATIONS_BOOK_PATH] ||
+    // Existing libraries can already contain the bundled title under its
+    // shorter filename. Do not seed a second copy (or undo a trash action).
+    items["/Books/Meditations.epub"]
+  ) {
     return items;
   }
 
