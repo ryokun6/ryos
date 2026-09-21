@@ -240,7 +240,7 @@ async function upsertStoreItems(
   });
 }
 
-function prepareStoreItemForSync(
+export function prepareStoreItemForSync(
   storeName: string,
   item: StoreItemWithKey
 ): StoreItemWithKey {

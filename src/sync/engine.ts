@@ -4,6 +4,8 @@ import {
   subscribeFileCatalogChanges,
   observeFileMutationTimestamp,
   isRemoteFileChange,
+  fileMutationKeys,
+  readFileMutationContent,
 } from "@/sync/fileMutationJournal";
 import { refreshFileCatalog } from "@/sync/fileCatalogRefresh";
 import { settleAllPersistWrites } from "@/utils/persistWriteQueue";
@@ -24,7 +26,7 @@ import { useFileAvailability } from "@/sync/fileAvailability";
  * deletion intent.
  */
 
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { ensureIndexedDBInitialized, dbOperations } from "@/utils/indexedDB";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   getSyncKeyNamespace,
@@ -66,6 +68,7 @@ import {
   clearDeletionMarkersForKeys,
   getDeletionMarkerForKey,
   isBlobCodec,
+  prepareStoreItemForSync,
   NAMESPACE_APPLY_ORDER,
   pruneDeletionMarkersWithoutShadow,
   SYNC_CODECS,
@@ -76,6 +79,7 @@ import { getPersistedSyncShadowKeys } from "@/sync/stateStorage";
 import { forEachTransfer } from "@/sync/transferQueue";
 import { useFilesStore } from "@/stores/useFilesStore";
 import {
+  serializeStoreItem,
   readStoreItemsByKeys,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
@@ -262,7 +266,7 @@ export class CloudSyncEngine {
           this.isNamespaceEnabled(namespace)
         )
       );
-      await this.replayFileMutations();
+      await this.replayFileMutations({ catalogOnly: true });
       if (this.state.cursor === null) {
         await this.bootstrap();
       } else {
@@ -607,13 +611,13 @@ export class CloudSyncEngine {
             cloudSyncLog.error("Collect failed", { namespace, error });
             throw error;
           }
-          if (namespace === "files") await settleAllPersistWrites();
-          const journalKeys = namespace === "files"
-            ? new Set((await readFileMutations(this.state.accountUsername)).map(m => m.op.k))
+          if (namespace === "files" || isSyncBlobNamespace(namespace)) await settleAllPersistWrites();
+          const journalKeys = namespace === "files" || isSyncBlobNamespace(namespace)
+            ? new Set((await readFileMutations(this.state.accountUsername)).flatMap(fileMutationKeys).filter(key => getSyncKeyNamespace(key) === namespace))
             : new Set<string>();
           if (journalKeys.size) {
             this.flushQueued = true;
-            this.markDirty("files", journalKeys);
+            this.markDirty(namespace, journalKeys);
           }
           flushedNamespaces.push(namespace);
           flushedScopes.set(namespace, dirtyScope);
@@ -625,7 +629,7 @@ export class CloudSyncEngine {
             const pendingTimestamps = new Map<string, string>();
             let itemIndex = 0;
             for (const [key, item] of collected) {
-              if (this.state.getDownload(key)) continue;
+              if (this.state.getDownload(key) || journalKeys.has(key)) continue;
               if (itemIndex > 0 && itemIndex % BLOB_HASH_YIELD_INTERVAL === 0) {
                 await yieldToMainThread();
                 if (this.stopped) return;
@@ -830,19 +834,71 @@ export class CloudSyncEngine {
   }
 
   /** Replay immutable, transactionally captured catalog edits before pulling. */
-  private replayFileMutations(): Promise<void> {
-    if (this.fileJournalReplay) return this.fileJournalReplay;
+  private replayFileMutations(options: { catalogOnly?: boolean } = {}): Promise<void> {
+    if (this.fileJournalReplay) return options.catalogOnly ? Promise.resolve() : this.fileJournalReplay;
     if (!this.isNamespaceEnabled("files")) return Promise.resolve();
     this.fileJournalReplay = (async () => {
       await refreshFileCatalog();
       await settleAllPersistWrites();
-      const pending = await readFileMutations(this.state.accountUsername);
-      for (let offset = 0; offset < pending.length; offset += OPS_BATCH_SIZE) {
+      const queued = await readFileMutations(this.state.accountUsername);
+      if (options.catalogOnly) {
+        for (const mutation of queued) {
+          if (!mutation.content) continue;
+          this.markDirty("files", [mutation.op.k]);
+          const namespace = getSyncKeyNamespace(mutation.content.key);
+          if (namespace) this.markDirty(namespace, [mutation.content.key]);
+        }
+      }
+      // Pulls protect these keys through the journal. Upload large local files
+      // from the normal flush worker, after the catalog is usable.
+      const pendingCatalogKeys = new Set(queued.filter(m => m.content).map(m => m.op.k));
+      const pendingContentIds = new Set(queued.flatMap(m => m.content ? [m.content.key.slice(m.content.key.indexOf(":") + 1)] : []));
+      const pending = options.catalogOnly ? queued.filter(m => {
+        const uuid = m.op.v && typeof m.op.v === "object" ? (m.op.v as { uuid?: string }).uuid : undefined;
+        return !m.content && !pendingCatalogKeys.has(m.op.k) && !(uuid && pendingContentIds.has(uuid));
+      }) : queued;
+      for (let offset = 0; offset < pending.length;) {
         if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
-        const batch = pending.slice(offset, offset + OPS_BATCH_SIZE);
+        // A binary snapshot is processed on its own to bound base64/gzip RAM.
+        // Catalog-only batches keep the existing throughput.
+        let end = offset;
+        while (end < pending.length && end - offset < OPS_BATCH_SIZE / 2) {
+          if (pending[end].content) { if (end === offset) end++; break; }
+          end++;
+        }
+        const batch = pending.slice(offset, end);
+        offset = end;
         // The API returns one result per key. Preserve all captured IDs until
         // that key's latest operation is confirmed, then acknowledge this batch.
-        const ops = new Map(batch.map(mutation => [mutation.op.k, mutation.op]));
+        const ops = new Map<string, SyncOp>();
+        const contentHashes = new Map<string, string>();
+        const contentSnapshots = new Map<string, { storeName: string; key: string; value: Record<string, unknown> }>();
+        for (const mutation of batch) {
+          if (mutation.content) {
+            const { storeName, key } = mutation.content;
+            const value = await readFileMutationContent(mutation);
+            const localKey = key.slice(key.indexOf(":") + 1);
+            const serialized = await serializeStoreItem(prepareStoreItemForSync(storeName, { key: localKey, value }));
+            const namespace = getSyncKeyNamespace(key)!;
+            let v: unknown = serialized;
+            if (isSyncBlobNamespace(namespace)) {
+              const sha256 = await sha256Json(serialized);
+              const refs = await uploadBlobItems([{ key, sha256, item: serialized }], {
+                signal: this.abortController.signal,
+              });
+              const ref = refs.get(key);
+              if (!ref) throw new Error(`Missing uploaded content reference: ${key}`);
+              v = { blob: ref };
+              contentHashes.set(key, sha256);
+            } else {
+              contentHashes.set(key, hashDoc(serialized));
+            }
+            ops.set(key, { k: key, t: mutation.op.t, v });
+            contentSnapshots.set(key, { storeName, key, value });
+          }
+          // Content and its catalog row are sent in the same server batch.
+          ops.set(mutation.op.k, mutation.op);
+        }
         const response = await postSyncOps(getSyncClientId(), [...ops.values()], this.abortController.signal);
         if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
         const results = new Map(response.results.map(result => [result.k, result]));
@@ -867,19 +923,46 @@ export class CloudSyncEngine {
           const before = useFilesStore.getState().items;
           await settleAllPersistWrites();
           const remaining = new Set((await readFileMutations(this.state.accountUsername))
-            .filter(m => !batchIds.has(m.id)).map(m => m.op.k));
+            .filter(m => !batchIds.has(m.id)).flatMap(fileMutationKeys));
           if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
           const current = useFilesStore.getState().items;
-          const updates = confirmed.filter(op => {
+          const eligible = confirmed.filter(op => {
+            if (remaining.has(op.k) || (this.state.getLatestTimestamp(op.k) ?? "") > op.t) return false;
+            if (!op.k.startsWith("files/item:")) return true;
             const path = op.k.slice("files/item:".length);
-            return !remaining.has(op.k) && current[path] === before[path] &&
-              (this.state.getLatestTimestamp(op.k) ?? "") <= op.t;
+            return current[path] === before[path];
           });
-          await SYNC_CODECS.files.apply(updates, {});
+          const catalog = eligible.filter(op => op.k.startsWith("files/item:"));
+          await SYNC_CODECS.files.apply(catalog, {});
+          const documents: SyncOp[] = [];
+          for (const op of eligible) {
+            if (op.k.startsWith("files/item:")) continue;
+            const namespace = getSyncKeyNamespace(op.k)!;
+            const submitted = ops.get(op.k)!;
+            if (isSyncBlobNamespace(namespace)) {
+              if (op.t === submitted.t) {
+                const snapshot = contentSnapshots.get(op.k)!;
+                await dbOperations.put(snapshot.storeName, snapshot.value, op.k.slice(op.k.indexOf(":") + 1));
+                const download = this.state.getDownload(op.k);
+                if (download && download.t <= op.t) this.state.finishDownload(download);
+              } else {
+                this.state.queueDownload(op);
+                useFileAvailability.getState().set(op.k, { status: "queued" });
+              }
+            } else documents.push(op);
+          }
+          if (documents.length) {
+            const db = await ensureIndexedDBInitialized();
+            try { await SYNC_CODECS.files.apply(documents, { db }); }
+            finally { db.close(); }
+          }
           for (const op of confirmed) {
             if ((this.state.getLatestTimestamp(op.k) ?? "") > op.t) continue;
             if (op.del) this.state.recordDeletion(op.k, op.t);
-            else this.state.setShadow(op.k, { t: op.t, h: hashDoc(op.v) });
+            else if (!isSyncBlobNamespace(getSyncKeyNamespace(op.k)!) || op.t === ops.get(op.k)!.t) {
+              this.state.setShadow(op.k, { t: op.t, h: contentHashes.get(op.k) && op.t === ops.get(op.k)!.t
+                ? contentHashes.get(op.k)! : hashDoc(op.v) });
+            }
           }
         });
         this.remoteApplyTail = apply.catch(() => {});
@@ -1019,7 +1102,7 @@ export class CloudSyncEngine {
       syncStore.setCheckingRemote(true);
       try {
         await this.replayOutbox();
-        await this.replayFileMutations();
+        await this.replayFileMutations({ catalogOnly: true });
         if (this.state.cursor === null) {
           await this.applySnapshot(false);
           if (!this.stopped) this.completePull();
@@ -1417,9 +1500,9 @@ export class CloudSyncEngine {
           continue;
         }
         let namespaceOps = byNamespace.get(namespace)!;
-        if (namespace === "files" && !options.force) {
+        if ((namespace === "files" || isSyncBlobNamespace(namespace)) && !options.force) {
           await settleAllPersistWrites();
-          const pendingKeys = new Set((await readFileMutations(this.state.accountUsername)).map(m => m.op.k));
+          const pendingKeys = new Set((await readFileMutations(this.state.accountUsername)).flatMap(fileMutationKeys));
           namespaceOps = namespaceOps.filter(op => !pendingKeys.has(op.k));
         }
         // Preserve edits that have not reached the server while applying a pull.
@@ -1737,6 +1820,8 @@ export class CloudSyncEngine {
         // can resume without re-downloading successful items or losing bytes.
         // A newer catalog version or deletion can arrive while bytes are in flight.
         if (this.state.getDownload(op.k)?.t !== op.t || this.stopped) return;
+        const pendingContent = (await readFileMutations(this.state.accountUsername)).some(m => m.content?.key === op.k);
+        if (pendingContent) return;
         await codec.putItems([item], ctx);
         this.state.setShadow(op.k, { t: op.t, h: contentHash || digest });
       });

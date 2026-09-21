@@ -4,7 +4,7 @@ import { createClientLogger } from "@/utils/logger";
 
 export const DB_NAME = "ryOS";
 /** Bump when adding/removing object stores or changing upgrade logic. */
-export const DB_VERSION = 17;
+export const DB_VERSION = 18;
 let hasLoggedOpenSuccess = false;
 const log = createClientLogger("IndexedDB");
 
@@ -73,6 +73,7 @@ export const STORES = {
   // operational metadata, so manual backups intentionally exclude it.
   SYNC2_STATE: "sync2_state",
   SYNC_FILE_MUTATIONS: "sync_file_mutations",
+  SYNC_FILE_CONTENTS: "sync_file_contents",
   // Normalized entity stores for large/hot Zustand slices. The small scalar
   // metadata for each slice remains in `persisted_state`.
   SOUNDBOARD_AUDIO: "soundboard_audio",
@@ -289,15 +290,14 @@ export const dbOperations = {
       try {
         const transaction = db.transaction(storeName, "readwrite");
         const store = transaction.objectStore(storeName);
-        const request = store.put(item, key);
-
-        request.onsuccess = () => {
+        store.put(item, key);
+        transaction.oncomplete = () => {
           db.close();
           resolve();
         };
-        request.onerror = () => {
+        transaction.onerror = transaction.onabort = () => {
           db.close();
-          reject(request.error);
+          reject(transaction.error ?? new Error(`Transaction aborted: ${storeName}`));
         };
       } catch (error) {
         db.close();

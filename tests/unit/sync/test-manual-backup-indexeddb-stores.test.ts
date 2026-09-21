@@ -49,6 +49,7 @@ describe("manual IndexedDB backup manifest", () => {
     );
     expect(includedStores).not.toContain(STORES.SYNC2_STATE);
     expect(includedStores).not.toContain(STORES.SYNC_FILE_MUTATIONS);
+    expect(includedStores).not.toContain(STORES.SYNC_FILE_CONTENTS);
   });
 
   test("creates an empty entry for every manifest store", () => {

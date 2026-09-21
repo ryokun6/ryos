@@ -335,3 +335,30 @@ describe("sync v2 engine end-to-end", () => {
     ).toBe("restored backup value");
   });
 });
+
+test("atomic document save replays paired catalog and content through the real API", async () => {
+  await engine.stop();
+  const { saveVfsFile } = await import("../../../src/services/vfs/FileSaveTransaction");
+  const { useChatsStore } = await import("../../../src/stores/useChatsStore");
+  const { readFileMutations } = await import("../../../src/sync/fileMutationJournal");
+  const priorUsername = useChatsStore.getState().username;
+  useChatsStore.setState({ username: USERNAME });
+  useCloudSyncStore.getState().setCategoryEnabled("files", true);
+  const path = "/api-atomic-save.md";
+  try {
+    await saveVfsFile({ path, name: "api-atomic-save.md", uuid: "api-atomic-save", isDirectory: false, status: "active", modifiedAt: Date.now() }, "atomic document bytes");
+    const pending = (await readFileMutations(USERNAME)).find(m => m.op.k === `files/item:${path}`)!;
+    expect(pending.content?.key).toBe("files/doc:api-atomic-save");
+    engine = await CloudSyncEngine.create(USERNAME);
+    await (engine as unknown as { replayFileMutations(): Promise<void> }).replayFileMutations();
+    const snapshot = await readServerSnapshot();
+    expect(snapshot.entries[`files/item:${path}`]?.t).toBe(pending.op.t);
+    expect(snapshot.entries["files/doc:api-atomic-save"]?.t).toBe(pending.op.t);
+    expect(snapshot.entries["files/doc:api-atomic-save"]?.v).toMatchObject({ value: { content: "atomic document bytes" } });
+    expect((await readFileMutations(USERNAME)).some(m => m.id === pending.id)).toBe(false);
+  } finally {
+    await engine.stop();
+    useChatsStore.setState({ username: priorUsername });
+    useCloudSyncStore.getState().setCategoryEnabled("files", false);
+  }
+});

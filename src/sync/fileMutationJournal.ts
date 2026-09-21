@@ -7,6 +7,8 @@ export interface FileMutation {
   id: string;
   account: string;
   op: SyncOp;
+  /** Immutable local bytes paired with this catalog mutation. */
+  content?: { storeName: string; key: string; snapshotId?: string; value?: Record<string, unknown> };
 }
 interface CatalogState { items: Record<string, unknown> }
 let remoteDepth = 0;
@@ -24,6 +26,21 @@ export function withRemoteFileChanges<T>(apply: () => T, timestamp?: string): T 
   if (timestamp) observeFileMutationTimestamp(timestamp);
   remoteDepth++;
   try { return apply(); } finally { remoteDepth--; }
+}
+
+export function createFileMutation(account: string, op: Omit<SyncOp, "t">): FileMutation {
+  tabId ??= crypto.randomUUID().replaceAll("-", "").slice(0, 16);
+  lastTimestamp = nextHlc(lastTimestamp, tabId);
+  const normalizedAccount = account.toLowerCase();
+  return {
+    id: `${normalizedAccount}:${crypto.randomUUID()}`,
+    account: normalizedAccount,
+    op: { ...structuredClone(op), t: lastTimestamp },
+  };
+}
+
+export function fileMutationKeys(mutation: FileMutation): string[] {
+  return [mutation.op.k, ...(mutation.content ? [mutation.content.key] : [])];
 }
 
 export function createFileMutationEffects<S extends CatalogState>(
@@ -46,13 +63,11 @@ export function createFileMutationEffects<S extends CatalogState>(
         if (beforeItems[path] === state.items[path]) continue;
         // Hydration can reconstruct equal rows with different references.
         if (JSON.stringify(beforeItems[path]) === JSON.stringify(state.items[path])) continue;
-        tabId ??= crypto.randomUUID().replaceAll("-", "").slice(0, 16);
-        lastTimestamp = nextHlc(lastTimestamp, tabId);
-        const id = `${account}:${crypto.randomUUID()}`;
-        const op: SyncOp = { k: `files/item:${path}`, t: lastTimestamp,
-          ...(state.items[path] === undefined ? { del: true } : { v: structuredClone(state.items[path]) }) };
-        const value: FileMutation = { id, account, op };
-        writes.push({ storeName: STORES.SYNC_FILE_MUTATIONS, key: id, value });
+        const value = createFileMutation(account, {
+          k: `files/item:${path}`,
+          ...(state.items[path] === undefined ? { del: true } : { v: state.items[path] }),
+        });
+        writes.push({ storeName: STORES.SYNC_FILE_MUTATIONS, key: value.id, value });
       }
       return writes;
     },
@@ -78,15 +93,30 @@ export async function readFileMutations(account: string): Promise<FileMutation[]
   } finally { db.close(); }
 }
 
+/** Read one immutable payload; queue scans never load every pending book. */
+export async function readFileMutationContent(mutation: FileMutation): Promise<Record<string, unknown>> {
+  const content = mutation.content;
+  if (content?.value) return content.value; // early draft compatibility
+  if (!content?.snapshotId) throw new Error(`Missing file content snapshot: ${mutation.id}`);
+  const db = await ensureIndexedDBInitialized();
+  try {
+    return await new Promise((resolve, reject) => {
+      const request = db.transaction(STORES.SYNC_FILE_CONTENTS).objectStore(STORES.SYNC_FILE_CONTENTS).get(content.snapshotId!);
+      request.onsuccess = () => request.result ? resolve(request.result) : reject(new Error(`Missing file content snapshot: ${mutation.id}`));
+      request.onerror = () => reject(request.error);
+    });
+  } finally { db.close(); }
+}
+
 /** Delete only the acknowledged IDs; edits appended in another tab survive. */
 export async function acknowledgeFileMutations(ids: readonly string[]): Promise<void> {
   if (!ids.length) return;
   const db = await ensureIndexedDBInitialized();
   try {
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORES.SYNC_FILE_MUTATIONS, "readwrite");
+      const tx = db.transaction([STORES.SYNC_FILE_MUTATIONS, STORES.SYNC_FILE_CONTENTS], "readwrite");
       const store = tx.objectStore(STORES.SYNC_FILE_MUTATIONS);
-      for (const id of ids) store.delete(id);
+      for (const id of ids) { store.delete(id); tx.objectStore(STORES.SYNC_FILE_CONTENTS).delete(id); }
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error ?? new Error("File mutation acknowledgement aborted"));
