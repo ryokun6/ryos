@@ -326,7 +326,7 @@ export async function resolveBlobDownloadUrls(
   return resolved;
 }
 
-async function readResponseWithProgress(
+export async function readResponseWithProgress(
   response: Response,
   options: BlobDownloadOptions
 ): Promise<ArrayBuffer> {

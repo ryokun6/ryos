@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 /**
  * Real React render-count before/after for the chat row ephemeral-state fix.
  *
@@ -176,7 +178,7 @@ describe("ChatMessageItem render counts (old vs new props)", () => {
       reductionPct,
     };
     await Bun.write(
-      "/opt/cursor/artifacts/react_chat_row_render_counts.json",
+      join(tmpdir(), "react_chat_row_render_counts.json"),
       JSON.stringify(summary, null, 2)
     );
 
@@ -337,7 +339,7 @@ describe("ChatMessageItem render counts (old vs new props)", () => {
       reductionPct,
     };
     await Bun.write(
-      "/opt/cursor/artifacts/react_chat_highlight_render_counts.json",
+      join(tmpdir(), "react_chat_highlight_render_counts.json"),
       JSON.stringify(summary, null, 2)
     );
 

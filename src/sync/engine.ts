@@ -1,3 +1,5 @@
+import { settleAllPersistWrites } from "@/utils/persistWriteQueue";
+import { useFileAvailability } from "@/sync/fileAvailability";
 /**
  * Cloud Sync v2 client engine.
  *
@@ -5,13 +7,13 @@
  * - dirty-namespace tracking fed by codec store subscriptions and explicit
  *   change events (markDirty), flushed as batched ops with a short debounce
  * - pulls via cursor (`GET /changes?since=`), snapshot bootstrap, and inline
- *   realtime ops (zero HTTP requests for small remote changes)
+ *   realtime notifications routed through the same pull path
  * - per-key last-writer-wins convergence against the local shadow map
  *
- * Pending uploads are derived as `diff(local state, shadow)`, so they
- * survive reloads without an outbox. Deletions are inferred from shadow
- * keys missing locally, corroborated by the explicit deletion markers in
- * useCloudSyncStore when a wipe looks suspiciously large.
+ * Local diffs become persisted outgoing batches before POST. Catalog pulls
+ * durably enqueue content downloads before acknowledging their cursor. Files
+ * and binary content require explicit deletion markers; absent cache is not
+ * deletion intent.
  */
 
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
@@ -135,6 +137,11 @@ export class CloudSyncEngine {
   private initialReconcileRequired = false;
   private stopped = false;
   private started = false;
+  private outboxReplay: Promise<void> | null = null;
+  private remoteApplyTail: Promise<void> = Promise.resolve();
+  private downloadTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly activeDownloads = new Map<string, Promise<void>>();
+  private readonly downloadFailures = new Map<string, number>();
 
   private constructor(
     state: SyncClientState,
@@ -152,6 +159,10 @@ export class CloudSyncEngine {
       await SyncClientState.open(username),
       callbacks
     );
+  }
+
+  hasPendingBlob(namespace: SyncBlobNamespace, key: string): boolean {
+    return Boolean(this.state.getDownload(`${namespace}/item:${key}`));
   }
 
   get cursor(): number | null {
@@ -219,6 +230,7 @@ export class CloudSyncEngine {
 
     let initialSyncSucceeded = false;
     try {
+      await this.replayOutbox();
       await this.waitForNamespacesReady(
         SYNC_NAMESPACES.filter((namespace) =>
           this.isNamespaceEnabled(namespace)
@@ -239,6 +251,7 @@ export class CloudSyncEngine {
 
     if (!initialSyncSucceeded || this.stopped) return;
     this.initialSyncPending = false;
+    this.scheduleDownloads();
     await this.pruneObsoleteDeletionMarkers();
 
     // Fresh bootstraps and recorded inactive periods need a one-time local
@@ -320,6 +333,9 @@ export class CloudSyncEngine {
     }
     this.stopped = true;
     this.abortController.abort();
+    if (this.downloadTimer) clearTimeout(this.downloadTimer);
+    this.downloadTimer = null;
+    useFileAvailability.getState().clear();
     if (this.pullRetryTimer) clearTimeout(this.pullRetryTimer);
     this.pullRetryTimer = null;
     for (const unsubscribe of this.unsubscribers) {
@@ -338,6 +354,8 @@ export class CloudSyncEngine {
       window.cancelIdleCallback(this.flushIdleCallbackId);
       this.flushIdleCallbackId = null;
     }
+    await Promise.allSettled([this.remoteApplyTail, ...this.activeDownloads.values(),
+      ...(this.outboxReplay ? [this.outboxReplay] : []), ...(this.pullInFlight ? [this.pullInFlight] : [])]);
     await this.state.persistNow();
   }
 
@@ -508,6 +526,7 @@ export class CloudSyncEngine {
     try {
       releaseCrossTabLease = await this.acquireCrossTabFlushLease();
       if (this.stopped) return;
+      await this.replayOutbox();
       const namespaces = (
         options.force ? [...SYNC_NAMESPACES] : this.state.dirtyNamespaces
       ).filter((namespace) => this.isNamespaceEnabled(namespace));
@@ -570,6 +589,7 @@ export class CloudSyncEngine {
             const pendingTimestamps = new Map<string, string>();
             let itemIndex = 0;
             for (const [key, item] of collected) {
+              if (this.state.getDownload(key)) continue;
               if (itemIndex > 0 && itemIndex % BLOB_HASH_YIELD_INTERVAL === 0) {
                 await yieldToMainThread();
                 if (this.stopped) return;
@@ -640,7 +660,7 @@ export class CloudSyncEngine {
             // from a missing local blob permanently destroys the only copy.
             // Require an explicit deletion marker for every blob delete.
             const blobNamespace = isSyncBlobNamespace(namespace);
-            const suspicious = blobNamespace
+            const suspicious = blobNamespace || namespace === "files"
               ? corroborated.length < missing.length
               : missing.length > SUSPICIOUS_DELETE_COUNT &&
                 missing.length >= shadowKeys.length * SUSPICIOUS_DELETE_RATIO &&
@@ -707,7 +727,8 @@ export class CloudSyncEngine {
         });
 
         try {
-          await this.sendOps(ops, shadowUpdates);
+          await this.state.setOutbox({ ops, shadows: Object.fromEntries(shadowUpdates) });
+          await this.replayOutbox();
           const uploadedAt = new Date().toISOString();
           for (const category of categories) {
             syncStore.markCategoryUploaded(category, uploadedAt);
@@ -771,6 +792,17 @@ export class CloudSyncEngine {
     this.nextFlushAllowedAt = 0;
   }
 
+  private replayOutbox(): Promise<void> {
+    if (this.outboxReplay) return this.outboxReplay;
+    const pending = this.state.outbox;
+    if (!pending) return Promise.resolve();
+    this.outboxReplay = (async () => {
+      await this.sendOps(pending.ops, new Map(Object.entries(pending.shadows)));
+      await this.state.setOutbox(undefined);
+    })().finally(() => { this.outboxReplay = null; });
+    return this.outboxReplay;
+  }
+
   private async sendOps(
     ops: SyncOp[],
     shadowUpdates: Map<string, { t: string; h: string }>
@@ -804,11 +836,16 @@ export class CloudSyncEngine {
           const update = shadowUpdates.get(result.k);
           if (update) {
             if (update.h === "__del__") {
-              this.state.deleteShadow(result.k);
+              this.state.recordDeletion(result.k, update.t);
             } else {
               this.state.setShadow(result.k, update);
             }
           }
+        } else if (result.winner && result.winner.t === batch.find(op => op.k === result.k)?.t) {
+          // The server committed an earlier attempt whose response was lost.
+          const update = shadowUpdates.get(result.k);
+          if (update?.h === "__del__") this.state.recordDeletion(result.k, update.t);
+          else if (update) this.state.setShadow(result.k, update);
         } else if (result.winner) {
           // Another writer won this key; converge to the winning entry.
           superseded.push({
@@ -865,6 +902,7 @@ export class CloudSyncEngine {
       this.schedulePendingFlush();
     }
     this.reportError(null);
+    this.scheduleDownloads();
   }
 
   async pull(options: { throwOnError?: boolean } = {}): Promise<void> {
@@ -878,6 +916,7 @@ export class CloudSyncEngine {
       const syncStore = useCloudSyncStore.getState();
       syncStore.setCheckingRemote(true);
       try {
+        await this.replayOutbox();
         if (this.state.cursor === null) {
           await this.applySnapshot(false);
           if (!this.stopped) this.completePull();
@@ -904,11 +943,13 @@ export class CloudSyncEngine {
             seq: response.seq,
             ops: summarizeSyncOps(response.ops),
           });
-          await this.applyRemoteOps(response.ops);
+          await this.applyRemoteOps(response.ops, { deferBlobs: true });
         } else {
           cloudSyncLog.debug("Pull found no remote ops", { seq: response.seq });
         }
+        await settleAllPersistWrites();
         this.state.setCursor(response.seq);
+        await this.state.persistNow();
         cloudSyncLog.debug("Pull complete", { seq: response.seq });
         this.completePull();
       } catch (error) {
@@ -956,7 +997,7 @@ export class CloudSyncEngine {
         entryCount: Object.keys(snapshot.entries).length,
         ops: summarizeSyncOps(ops),
       });
-      await this.applyRemoteOps(ops, { force });
+      await this.applyRemoteOps(ops, { force, deferBlobs: !force });
     } else {
       cloudSyncLog.debug("Snapshot already current", {
         force,
@@ -964,7 +1005,9 @@ export class CloudSyncEngine {
         entryCount: Object.keys(snapshot.entries).length,
       });
     }
+    await settleAllPersistWrites();
     this.state.setCursor(snapshot.seq);
+    await this.state.persistNow();
   }
 
   /**
@@ -1009,6 +1052,10 @@ export class CloudSyncEngine {
     const db = await ensureIndexedDBInitialized();
     const ctx: CodecContext = { db };
     try {
+      const pending = this.state.getDownload(syncKey);
+      if (pending && !options.forceReload) {
+        await this.hydrateDownload(pending);
+      }
       const existing = await readStoreItemsByKeys(db, codec.storeName, [
         storeKey,
       ]);
@@ -1067,9 +1114,10 @@ export class CloudSyncEngine {
         return false;
       }
 
-      await this.applyRemoteOps([this.entryToOp(syncKey, entry)], {
-        force: true,
-      });
+      const op = this.entryToOp(syncKey, entry);
+      this.state.queueDownload(op);
+      await this.state.persistNow();
+      await this.hydrateDownload(op);
 
       const restored = await readStoreItemsByKeys(db, codec.storeName, [
         storeKey,
@@ -1177,62 +1225,26 @@ export class CloudSyncEngine {
       return;
     }
 
-    if (event.c === getSyncClientId()) {
-      // Our own write echoed back. The shadow already reflects it, but only
-      // fast-forward when nothing happened in between.
-      if (event.ops && cursor + event.ops.length === event.seq) {
-        cloudSyncLog.debug("Realtime echo fast-forwarded cursor", {
-          eventSeq: event.seq,
-          cursor,
-          opCount: event.ops.length,
-        });
-        this.state.setCursor(event.seq);
-      } else {
-        cloudSyncLog.debug("Realtime echo has cursor gap; pulling", {
-          eventSeq: event.seq,
-          cursor,
-        });
-        void this.pull();
-      }
-      return;
-    }
-
-    if (event.ops && cursor + event.ops.length === event.seq) {
-      cloudSyncLog.debug("Realtime event applying inline", {
-        eventSeq: event.seq,
-        cursor,
-        ops: summarizeSyncOps(event.ops),
-      });
-      void (async () => {
-        try {
-          await this.applyRemoteOps(event.ops!);
-          this.state.setCursor(event.seq);
-        } catch (error) {
-          this.reportError(error, "realtime apply");
-          void this.pull();
-        }
-      })();
-    } else {
-      cloudSyncLog.debug("Realtime event has cursor gap; pulling", {
-        eventSeq: event.seq,
-        cursor,
-        hasInlineOps: Boolean(event.ops),
-      });
-      void this.pull();
-    }
+    // Notifications are hints. All cursor advancement goes through the pull path.
+    void this.pull();
   }
 
   // -------------------------------------------------------------------------
   // Remote op application
   // -------------------------------------------------------------------------
 
-  async applyRemoteOps(
+  applyRemoteOps(ops: SyncOp[], options: { force?: boolean; deferBlobs?: boolean } = {}): Promise<void> {
+    const run = this.remoteApplyTail.then(() => this.applyRemoteOpsSerial(ops, options));
+    this.remoteApplyTail = run.catch(() => {});
+    return run;
+  }
+
+  private async applyRemoteOpsSerial(
     ops: SyncOp[],
-    options: { force?: boolean } = {}
+    options: { force?: boolean; deferBlobs?: boolean } = {}
   ): Promise<void> {
-    const clientId = getSyncClientId();
+    if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
     const byNamespace = new Map<SyncNamespace, AppliedSyncOp[]>();
-    let skippedOwnCount = 0;
     let skippedAlreadyAppliedCount = 0;
 
     for (const op of ops) {
@@ -1240,16 +1252,12 @@ export class CloudSyncEngine {
       const namespace = getSyncKeyNamespace(op.k);
       if (!namespace) continue;
 
-      if (!options.force && op.c === clientId) {
-        skippedOwnCount += 1;
-        continue; // own op; shadow already updated on POST
-      }
-
-      const shadow = this.state.getShadow(op.k);
+      const latestTimestamp = this.state.getLatestTimestamp(op.k);
       // Force downloads must re-enter appliers even when the shadow timestamp
       // already matches — blob namespaces verify IndexedDB presence and may
       // need to re-hydrate missing local bytes.
-      if (!options.force && shadow && shadow.t === op.t) {
+      if (!options.force && latestTimestamp && latestTimestamp >= op.t &&
+          (latestTimestamp > op.t || !this.state.getDownload(op.k) || options.deferBlobs)) {
         skippedAlreadyAppliedCount += 1;
         continue; // already applied
       }
@@ -1268,7 +1276,6 @@ export class CloudSyncEngine {
     if (byNamespace.size === 0) {
       cloudSyncLog.debug("Remote ops skipped", {
         ops: summarizeSyncOps(ops),
-        skippedOwnCount,
         skippedAlreadyAppliedCount,
       });
       return;
@@ -1276,7 +1283,6 @@ export class CloudSyncEngine {
     cloudSyncLog.debug("Applying remote ops", {
       ops: summarizeSyncOps(ops),
       namespaceCount: byNamespace.size,
-      skippedOwnCount,
       skippedAlreadyAppliedCount,
     });
 
@@ -1298,6 +1304,7 @@ export class CloudSyncEngine {
 
     try {
       for (const namespace of orderedNamespaces) {
+        if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
         if (!this.isNamespaceEnabled(namespace)) {
           cloudSyncLog.debug("Remote namespace skipped; category disabled", {
             namespace,
@@ -1305,7 +1312,22 @@ export class CloudSyncEngine {
           });
           continue;
         }
-        const namespaceOps = byNamespace.get(namespace)!;
+        let namespaceOps = byNamespace.get(namespace)!;
+        // Preserve edits that have not reached the server while applying a pull.
+        // The observed remote HLC ensures the eventual local write sorts later.
+        if ((namespace === "files" || isSyncBlobNamespace(namespace)) && !options.force && this.state.dirtyNamespaces.includes(namespace)) {
+          const local = await SYNC_CODECS[namespace].collect(ctx, new Set(namespaceOps.map(op => op.k)));
+          const applicable: AppliedSyncOp[] = [];
+          for (const op of namespaceOps) {
+            const shadow = this.state.getShadow(op.k);
+            const doc = local.get(op.k);
+            const localHash = doc === undefined ? null : isSyncBlobNamespace(namespace) ? await sha256Json(doc) : hashDoc(doc);
+            if (shadow && ((localHash !== null && localHash !== shadow.h) ||
+                (doc === undefined && getDeletionMarkerForKey(op.k)))) continue;
+            applicable.push(op);
+          }
+          namespaceOps = applicable;
+        }
         const category = getSyncNamespaceCategory(namespace);
         cloudSyncLog.debug("Applying remote namespace", {
           namespace,
@@ -1316,7 +1338,16 @@ export class CloudSyncEngine {
         this.applyingNamespaces.add(namespace);
         try {
           if (isSyncBlobNamespace(namespace)) {
-            await this.applyBlobOps(namespace, namespaceOps, ctx);
+            for (const op of namespaceOps) {
+              if (!op.del && !getSyncBlobRef(op.v)) throw new Error(`Invalid sync blob reference: ${op.k}`);
+              this.state.queueDownload(op);
+              useFileAvailability.getState().set(op.k, { status: "queued" });
+            }
+            // Persist jobs before the caller is allowed to acknowledge the cursor.
+            await this.state.persistNow();
+            if (!options.deferBlobs) {
+              await forEachTransfer(namespaceOps, op => this.hydrateDownload(op));
+            }
           } else {
             const result = await SYNC_CODECS[namespace].apply(
               namespaceOps,
@@ -1324,7 +1355,7 @@ export class CloudSyncEngine {
             );
             for (const op of namespaceOps) {
               if (op.del) {
-                this.state.deleteShadow(op.k);
+                this.state.recordDeletion(op.k, op.t);
               } else {
                 this.state.setShadow(op.k, { t: op.t, h: hashDoc(op.v) });
               }
@@ -1363,6 +1394,68 @@ export class CloudSyncEngine {
     }
     if (failures.length) throw failures[0];
     await this.pruneObsoleteDeletionMarkers();
+    this.scheduleDownloads();
+  }
+
+  private scheduleDownloads(delay = 1000): void {
+    if (this.stopped || this.downloadTimer) return;
+    this.downloadTimer = setTimeout(() => {
+      this.downloadTimer = null;
+      const eligible = this.state.pendingDownloads.filter(op => {
+        const namespace = getSyncKeyNamespace(op.k);
+        return namespace && this.isNamespaceEnabled(namespace) &&
+          !this.activeDownloads.has(op.k) && (this.downloadFailures.get(op.k) ?? 0) <= Date.now();
+      });
+      for (const op of eligible.slice(0, Math.max(0, 2 - this.activeDownloads.size))) {
+        void this.hydrateDownload(op).catch(() => {});
+      }
+      if (this.activeDownloads.size === 0) {
+        const retryTimes = this.state.pendingDownloads.flatMap(op => {
+          const namespace = getSyncKeyNamespace(op.k);
+          return namespace && this.isNamespaceEnabled(namespace) ? [this.downloadFailures.get(op.k) ?? Date.now()] : [];
+        });
+        if (retryTimes.length) this.scheduleDownloads(Math.max(1000, Math.min(...retryTimes) - Date.now()));
+      }
+    }, delay);
+  }
+
+  /** Foreground opens join existing work or start immediately ahead of background jobs. */
+  private hydrateDownload(op: SyncOp): Promise<void> {
+    const active = this.activeDownloads.get(op.k);
+    if (active) return active.then(() => {
+      const latest = this.state.getDownload(op.k);
+      return latest ? this.hydrateDownload(latest) : undefined;
+    });
+    const run = (async () => {
+      const namespace = getSyncKeyNamespace(op.k);
+      if (!namespace || this.stopped || !this.isNamespaceEnabled(namespace)) return;
+      const db = await ensureIndexedDBInitialized();
+      try {
+        if (this.state.getDownload(op.k)?.t !== op.t || this.stopped) return;
+        useFileAvailability.getState().set(op.k, { status: "downloading" });
+        await this.applyBlobOps(namespace, [op], { db });
+        if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
+        this.state.finishDownload(op);
+        await this.state.persistNow();
+        this.downloadFailures.delete(op.k);
+        if (!this.state.getDownload(op.k)) useFileAvailability.getState().set(op.k, { status: "available", percentage: 100 });
+      } catch (error) {
+        this.downloadFailures.set(op.k, Date.now() + 60_000);
+        if (!this.stopped) useFileAvailability.getState().set(op.k, {
+          status: "error", error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      } finally {
+        db.close();
+      }
+    })().finally(() => {
+      this.activeDownloads.delete(op.k);
+      if (this.downloadTimer) clearTimeout(this.downloadTimer);
+      this.downloadTimer = null;
+      this.scheduleDownloads(0);
+    });
+    this.activeDownloads.set(op.k, run);
+    return run;
   }
 
   private async applyBlobOps(
@@ -1450,7 +1543,7 @@ export class CloudSyncEngine {
         deleteCount: deletes.length,
       });
       await codec.deleteItems(deletes, ctx);
-      for (const key of deletes) this.state.deleteShadow(`${prefix}${key}`);
+      for (const op of ops) if (op.del) this.state.recordDeletion(op.k, op.t);
     }
 
     if (downloads.length > 0) {
@@ -1502,6 +1595,10 @@ export class CloudSyncEngine {
           expectedBytes: size,
           signal: this.abortController.signal,
           onProgress: (progress) => {
+            if (this.stopped) return;
+            useFileAvailability.getState().set(op.k, {
+              status: "downloading", percentage: progress.totalBytes > 0 ? Math.min(99, progress.percentage) : undefined,
+            });
             loadedByIndex.set(
               index,
               Math.max(
@@ -1529,6 +1626,8 @@ export class CloudSyncEngine {
         }
         // Commit each item before recording its shadow. A failed/aborted batch
         // can resume without re-downloading successful items or losing bytes.
+        // A newer catalog version or deletion can arrive while bytes are in flight.
+        if (this.state.getDownload(op.k)?.t !== op.t || this.stopped) return;
         await codec.putItems([item], ctx);
         this.state.setShadow(op.k, { t: op.t, h: contentHash || digest });
       });

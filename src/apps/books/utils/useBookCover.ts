@@ -1,3 +1,5 @@
+import { useFileAvailability } from "@/sync/fileAvailability";
+import { useFilesStore } from "@/stores/useFilesStore";
 import { useEffect, useState } from "react";
 import ePub from "epubjs";
 import { readBookBlobContent } from "@/services/vfs/FileContentRepository";
@@ -18,7 +20,7 @@ const inflight = new Map<string, Promise<BookCoverInfo>>();
 // Cover extraction reads and parses full EPUB archives; keep this serial so an
 // online sync burst cannot stack multiple book-sized ArrayBuffers at startup.
 const MAX_CONCURRENT_COVER_LOADS = 1;
-const THUMBNAIL_CACHE_VERSION = 1;
+const THUMBNAIL_CACHE_VERSION = 2;
 let activeCoverLoads = 0;
 const pendingCoverLoadSlots: Array<() => void> = [];
 
@@ -69,7 +71,9 @@ function isBlobLike(value: unknown): value is Blob {
 function infoFromStoredThumbnail(
   stored: StoredBookThumbnail | undefined
 ): BookCoverInfo | null {
-  if (!stored || stored.version !== THUMBNAIL_CACHE_VERSION) return null;
+  if (!stored) return null;
+  const populatedLegacy = stored.version === 1 && (stored.title || stored.author || stored.coverBlob);
+  if (stored.version !== THUMBNAIL_CACHE_VERSION && !populatedLegacy) return null;
   return {
     title: stored.title ?? null,
     author: stored.author ?? null,
@@ -136,12 +140,11 @@ async function loadCover(
       };
       let coverBlob: Blob | null = null;
       try {
-        const blob = await readBookBlobContent(path);
+        const blob = await readBookBlobContent(path, { localOnly: true });
+        if (!blob) return result;
         if (blob) {
           const buffer = await blob.arrayBuffer();
           if (!isLikelyEpubBuffer(buffer)) {
-            await writeStoredThumbnail(key, result, coverBlob);
-            coverCache.set(key, result);
             return result;
           }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -171,6 +174,7 @@ async function loadCover(
         }
       } catch (err) {
         console.warn("[Books] Failed to load cover for", path, err);
+        return result;
       }
       await writeStoredThumbnail(key, result, coverBlob);
       coverCache.set(key, result);
@@ -186,6 +190,8 @@ async function loadCover(
 
 export function useBookCover(path: string, modifiedAt?: number) {
   const key = cacheKey(path, modifiedAt);
+  const uuid = useFilesStore(state => state.items[path]?.uuid);
+  const availability = useFileAvailability(state => state.files[`books/item:${uuid}`]?.status);
   const [info, setInfo] = useState<BookCoverInfo | null>(
     coverCache.get(key) ?? null
   );
@@ -214,7 +220,7 @@ export function useBookCover(path: string, modifiedAt?: number) {
     return () => {
       cancelled = true;
     };
-  }, [key, path, modifiedAt]);
+  }, [key, path, modifiedAt, availability]);
 
   return { info, loading };
 }

@@ -1,11 +1,12 @@
+import type { SyncOp } from "@/shared/sync2/types";
 /**
  * Cloud Sync v2 client-side persisted state: stable client id, per-user
  * cursor, HLC clock state, shadow map, and dirty namespaces.
  *
  * The shadow map records, per synced key, the HLC timestamp and content
- * hash of the last value exchanged with the server. Pending uploads are
- * always recomputable as `diff(local state, shadow)`, so no separate outbox
- * is needed and unsynced changes survive reloads for free.
+ * hash of the last value exchanged with the server. Local diffs generate
+ * outgoing batches whose payloads and timestamps are persisted for retries.
+ * Pending content downloads are independent of the catalog cursor.
  */
 
 import { nextHlc } from "@/shared/sync2/hlc";
@@ -79,12 +80,37 @@ export class SyncClientState {
     return persistSyncStateNow(this.username, this.state);
   }
 
+  get pendingDownloads(): SyncOp[] { return Object.values(this.state.downloads ?? {}); }
+
+  getDownload(key: string): SyncOp | undefined { return this.state.downloads?.[key]; }
+
+  queueDownload(op: SyncOp): void {
+    this.state.downloads ??= {};
+    const current = this.state.downloads[op.k];
+    if (current && current.t > op.t) return;
+    this.state.downloads[op.k] = op;
+    this.schedulePersist();
+  }
+
+  finishDownload(op: SyncOp): void {
+    if (this.state.downloads?.[op.k]?.t !== op.t) return;
+    delete this.state.downloads[op.k];
+    this.schedulePersist();
+  }
+
+  get outbox(): PersistedSyncState["outbox"] { return this.state.outbox; }
+
+  async setOutbox(outbox: PersistedSyncState["outbox"]): Promise<void> {
+    this.state.outbox = outbox;
+    await this.persistNow();
+  }
+
   get cursor(): number | null {
     return this.state.cursor;
   }
 
   setCursor(cursor: number): void {
-    if (this.state.cursor === cursor) return;
+    if (this.state.cursor !== null && this.state.cursor >= cursor) return;
     this.state.cursor = cursor;
     this.schedulePersist();
   }
@@ -109,7 +135,20 @@ export class SyncClientState {
     return this.state.shadow[key] || null;
   }
 
+  getLatestTimestamp(key: string): string | undefined {
+    return [this.state.shadow[key]?.t, this.state.tombstones?.[key], this.state.downloads?.[key]?.t]
+      .filter((value): value is string => Boolean(value)).sort().at(-1);
+  }
+
+  recordDeletion(key: string, timestamp: string): void {
+    this.deleteShadow(key);
+    this.state.tombstones ??= {};
+    this.state.tombstones[key] = timestamp;
+    this.schedulePersist();
+  }
+
   setShadow(key: string, entry: ShadowEntry): void {
+    if (this.state.tombstones?.[key] && this.state.tombstones[key] <= entry.t) delete this.state.tombstones[key];
     this.state.shadow[key] = entry;
     this.schedulePersist();
   }

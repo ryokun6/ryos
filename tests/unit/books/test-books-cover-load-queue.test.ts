@@ -249,4 +249,28 @@ describe("Books cover loading queue", () => {
       author: null,
     });
   });
+  test("a cloud-only cover stays local-only and retries after content arrives", async () => {
+    const { useFileAvailability } = await import("../../../src/sync/fileAvailability");
+    const path = "/Books/cloud-only-cover.epub";
+    await seedBookContent(path);
+    await dbOperations.delete(STORES.BOOKS, `uuid:${path}`);
+    const originalFetch = globalThis.fetch;
+    let requests = 0;
+    globalThis.fetch = (async () => { requests++; throw new Error("Unexpected full-book fetch"); }) as typeof fetch;
+    try {
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      root = createRoot(host);
+      let latest: ReturnType<typeof useBookCover> | null = null;
+      root.render(React.createElement(CoverProbe, { path, onSnapshot: snapshot => { latest = snapshot; } }));
+      await waitFor(() => latest?.loading === false);
+      expect(requests).toBe(0);
+      expect(await dbOperations.get(STORES.BOOK_THUMBNAILS, `${path}::1`)).toBeUndefined();
+      await seedBookContent(path);
+      useFileAvailability.getState().set(`books/item:uuid:${path}`, { status: "available", percentage: 100 });
+      await waitFor(() => latest?.info?.title === "T");
+      expect(epubCreates).toBe(1);
+    } finally { globalThis.fetch = originalFetch; }
+  });
+
 });

@@ -6,7 +6,6 @@
  * - `sync:v2:user:{user}:kv`     HASH    key → JSON SyncKvEntry (latest doc per key)
  * - `sync:v2:user:{user}:jrnl`   ZSET    score = seq, member = JSON op (ascending), bounded
  * - `sync:v2:user:{user}:blobs`  HASH    sha256 → JSON { url, size } dedupe registry
- * - `sync:v2:user:{user}:lock`   STRING  short-TTL write lock
  *
  * The journal is a sorted set keyed by `seq` so catch-up reads an exact
  * range by rank and trimming drops the lowest scores — no list-tail
@@ -20,7 +19,7 @@
  */
 
 import type { Redis } from "../../_utils/redis.js";
-import { USER_TTL_SECONDS } from "../../_utils/auth/index.js";
+import { COMMIT_SYNC_BATCH, LEASE_SYNC_BLOBS } from "./_atomic.js";
 import { triggerRealtimeEvent } from "../../_utils/realtime.js";
 import { getSyncChannelName } from "../../../src/shared/constants/realtime.js";
 import {
@@ -43,8 +42,7 @@ import { redisKeys } from "../../../src/shared/redisKeys.js";
 export const MAX_OPS_PER_REQUEST = 1000;
 export const MAX_OP_VALUE_BYTES = 512 * 1024;
 const JOURNAL_MAX_LENGTH = 4096;
-const LOCK_TTL_SECONDS = 10;
-const LOCK_RETRY_DELAYS_MS = [150, 300, 600, 1200, 2400];
+const COMMIT_MAX_ATTEMPTS = 8;
 /** Inline ops in the realtime event only below this JSON size. */
 const REALTIME_INLINE_LIMIT_BYTES = 8 * 1024;
 
@@ -62,10 +60,6 @@ export function sync2JournalKey(username: string): string {
 
 export function sync2BlobsKey(username: string): string {
   return redisKeys.sync.v2Blobs(username);
-}
-
-function sync2LockKey(username: string): string {
-  return redisKeys.sync.v2Lock(username);
 }
 
 export function parseRedisJson<T>(value: unknown): T | null {
@@ -103,36 +97,6 @@ async function hmgetValues<T>(
   return fields.map(() => null);
 }
 
-async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function acquireUserLock(redis: Redis, username: string): Promise<boolean> {
-  const key = sync2LockKey(username);
-  const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  for (let attempt = 0; attempt <= LOCK_RETRY_DELAYS_MS.length; attempt += 1) {
-    const result = await redis.set(key, token, {
-      nx: true,
-      ex: LOCK_TTL_SECONDS,
-    });
-    if (result === "OK" || result === 1) {
-      return true;
-    }
-    if (attempt < LOCK_RETRY_DELAYS_MS.length) {
-      await sleep(LOCK_RETRY_DELAYS_MS[attempt]);
-    }
-  }
-  return false;
-}
-
-async function releaseUserLock(redis: Redis, username: string): Promise<void> {
-  try {
-    await redis.del(sync2LockKey(username));
-  } catch (error) {
-    console.warn("[sync2] Failed to release user lock:", error);
-  }
-}
-
 async function readSeq(redis: Redis, username: string): Promise<number | null> {
   const raw = await redis.get<string | number>(sync2SeqKey(username));
   if (raw === null || raw === undefined) return null;
@@ -140,66 +104,17 @@ async function readSeq(redis: Redis, username: string): Promise<number | null> {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function touchTtls(redis: Redis, username: string): Promise<void> {
-  const pipeline = redis.pipeline();
-  pipeline.expire(sync2SeqKey(username), USER_TTL_SECONDS);
-  pipeline.expire(sync2KvKey(username), USER_TTL_SECONDS);
-  pipeline.expire(sync2JournalKey(username), USER_TTL_SECONDS);
-  pipeline.expire(sync2BlobsKey(username), USER_TTL_SECONDS);
-  await pipeline.exec();
+/** Upgrade old expiring records on access; authoritative cloud data does not expire. */
+async function persistSyncRecords(redis: Redis, username: string): Promise<void> {
+  await Promise.all([
+    sync2SeqKey(username), sync2KvKey(username),
+    sync2JournalKey(username), sync2BlobsKey(username),
+  ].map((key) => redis.persist(key)));
 }
 
-const TTL_TOUCH_THROTTLE_SECONDS = 24 * 60 * 60;
-
-/**
- * Refresh sync data TTLs on reads too (throttled to once per day per user
- * via an NX marker), so any device that merely checks for changes keeps the
- * user's cloud data alive — writes are not required for retention.
- */
-async function touchTtlsThrottled(redis: Redis, username: string): Promise<void> {
-  try {
-    const marker = await redis.set(
-      redisKeys.sync.v2TtlTouched(username),
-      "1",
-      { nx: true, ex: TTL_TOUCH_THROTTLE_SECONDS }
-    );
-    if (marker === "OK" || marker === 1) {
-      await touchTtls(redis, username);
-    }
-  } catch (error) {
-    console.warn("[sync2] Failed to refresh TTLs on read:", error);
-  }
-}
-
-/**
- * Initialize the user's v2 state on first access. The seq key marks an
- * initialized user.
- */
-export async function ensureSync2Initialized(
-  redis: Redis,
-  username: string
-): Promise<void> {
-  if ((await readSeq(redis, username)) !== null) {
-    return;
-  }
-
-  const locked = await acquireUserLock(redis, username);
-  try {
-    if ((await readSeq(redis, username)) !== null) {
-      return;
-    }
-    if (!locked) {
-      throw new Error("Could not acquire sync lock for initialization");
-    }
-
-    await redis.set(sync2SeqKey(username), "0", { ex: USER_TTL_SECONDS });
-    await touchTtls(redis, username);
-    console.log(`[sync2] Initialized ${username}`);
-  } finally {
-    if (locked) {
-      await releaseUserLock(redis, username);
-    }
-  }
+export async function ensureSync2Initialized(redis: Redis, username: string): Promise<void> {
+  await redis.set(sync2SeqKey(username), "0", { nx: true });
+  await persistSyncRecords(redis, username);
 }
 
 export interface ApplySyncOpsResult {
@@ -262,12 +177,10 @@ export async function applySyncOps(
 ): Promise<ApplySyncOpsResult> {
   await ensureSync2Initialized(redis, username);
 
-  const locked = await acquireUserLock(redis, username);
-  if (!locked) {
-    throw new Error("Sync is busy, please retry");
-  }
-
-  try {
+  for (let attempt = 0; attempt < COMMIT_MAX_ATTEMPTS; attempt += 1) {
+    // Read the revision first. Any intervening writer invalidates this entire
+    // candidate batch, including metadata-based deletion protection.
+    const currentSeq = (await readSeq(redis, username)) ?? 0;
     // Deduplicate by key within the batch (last op per key wins the batch).
     const opsByKey = new Map<string, SyncOp>();
     for (const op of ops) {
@@ -278,13 +191,8 @@ export async function applySyncOps(
     }
 
     const keys = Array.from(opsByKey.keys());
-    const existingEntries = await hmgetValues<SyncKvEntry>(
-      redis,
-      sync2KvKey(username),
-      keys
-    );
+    const existingEntries = await hmgetValues<SyncKvEntry>(redis, sync2KvKey(username), keys);
 
-    const currentSeq = (await readSeq(redis, username)) ?? 0;
     let nextSeq = currentSeq;
     const results: SyncOpResult[] = [];
     const accepted: SyncOp[] = [];
@@ -293,11 +201,11 @@ export async function applySyncOps(
     const blobRegistry: Record<string, string> = {};
     const nowMs = Date.now();
     // A missing browser cache must never delete the only cloud copy of an
-    // active book. Protect against older clients that inferred blob deletes.
+    // active file. Protect against older clients that inferred content deletes.
     // Project accepted metadata writes from this batch so an actual file
     // deletion / move to Trash can still remove its content normally.
-    const activeBookIds = new Set<string>();
-    if (ops.some((op) => op.del && op.k.startsWith("books/item:"))) {
+    const activeFileIds = new Set<string>();
+    if (ops.some((op) => op.del && /^(books|images|applets)\/item:|^files\/doc:/.test(op.k))) {
       const rawFiles = await redis.hgetall<Record<string, unknown>>(sync2KvKey(username));
       const files = new Map<string, SyncKvEntry>();
       for (const [key, raw] of Object.entries(rawFiles ?? {})) {
@@ -315,7 +223,7 @@ export async function applySyncOps(
       for (const entry of files.values()) {
         const file = entry.v as { uuid?: string; status?: string } | undefined;
         if (!entry.del && file?.status === "active" && typeof file.uuid === "string") {
-          activeBookIds.add(file.uuid);
+          activeFileIds.add(file.uuid);
         }
       }
     }
@@ -329,7 +237,7 @@ export async function applySyncOps(
 
       if (
         resolveSyncOp(existing, { ...op, t }) === "reject" ||
-        (op.del && key.startsWith("books/item:") && activeBookIds.has(key.slice("books/item:".length)))
+        (op.del && /^(books|images|applets)\/item:|^files\/doc:/.test(key) && activeFileIds.has(key.slice(key.indexOf(":") + 1)))
       ) {
         results.push({
           k: key,
@@ -367,36 +275,14 @@ export async function applySyncOps(
       }
     }
 
-    if (accepted.length > 0) {
-      const journalKey = sync2JournalKey(username);
-      const pipeline = redis.pipeline();
-      pipeline.hset(sync2KvKey(username), kvWrites);
-      for (const { seq, member } of journalEntries) {
-        pipeline.zadd(journalKey, { score: seq, member });
-      }
-      pipeline.set(sync2SeqKey(username), String(nextSeq), {
-        ex: USER_TTL_SECONDS,
-      });
-      // Trim to the last JOURNAL_MAX_LENGTH ops by dropping the lowest seqs.
-      pipeline.zremrangebyscore(
-        journalKey,
-        "-inf",
-        nextSeq - JOURNAL_MAX_LENGTH
-      );
-      if (Object.keys(blobRegistry).length > 0) {
-        pipeline.hset(sync2BlobsKey(username), blobRegistry);
-      }
-      pipeline.expire(sync2SeqKey(username), USER_TTL_SECONDS);
-      pipeline.expire(sync2KvKey(username), USER_TTL_SECONDS);
-      pipeline.expire(journalKey, USER_TTL_SECONDS);
-      pipeline.expire(sync2BlobsKey(username), USER_TTL_SECONDS);
-      await pipeline.exec();
-    }
-
-    return { seq: nextSeq, results, accepted };
-  } finally {
-    await releaseUserLock(redis, username);
+    const committed = await redis.eval<number>(COMMIT_SYNC_BATCH, [
+      sync2SeqKey(username), sync2KvKey(username),
+      sync2JournalKey(username), sync2BlobsKey(username),
+    ], [currentSeq, nextSeq, JSON.stringify(kvWrites), JSON.stringify(journalEntries),
+      JSON.stringify(blobRegistry), JOURNAL_MAX_LENGTH]);
+    if (committed === 1) return { seq: nextSeq, results, accepted };
   }
+  throw new Error("Sync changed concurrently; please retry");
 }
 
 /** Broadcast accepted ops; inline them when the payload is small. */
@@ -450,7 +336,6 @@ export async function readSyncChanges(
   since: number
 ): Promise<SyncChangesResult> {
   await ensureSync2Initialized(redis, username);
-  await touchTtlsThrottled(redis, username);
 
   const seq = (await readSeq(redis, username)) ?? 0;
   if (since >= seq) {
@@ -480,7 +365,8 @@ export async function readSyncChanges(
   ops.sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
 
   // Verify contiguity: the journal must contain since+1 onwards.
-  if (ops.length === 0 || (ops[0].seq ?? 0) > since + 1) {
+  if (ops.length === 0 || ops.some((op, index) => op.seq !== since + index + 1) ||
+      (ops[ops.length - 1].seq ?? 0) < seq) {
     return { seq, snapshotRequired: true };
   }
 
@@ -499,7 +385,6 @@ export async function readSyncSnapshot(
   prefix?: string
 ): Promise<SyncSnapshotResult> {
   await ensureSync2Initialized(redis, username);
-  await touchTtlsThrottled(redis, username);
 
   // Read the cursor BEFORE the hash. A concurrent write may then appear in
   // both the snapshot and the next pull, but cannot be skipped by a cursor
@@ -569,11 +454,9 @@ export async function lookupSyncBlobs(
   digests: string[]
 ): Promise<(SyncBlobRegistryEntry | null)[]> {
   if (digests.length === 0) return [];
-  const values = await hmgetValues<SyncBlobRegistryEntry>(
-    redis,
-    sync2BlobsKey(username),
-    digests
-  );
+  const leased = await redis.eval<Array<string | null>>(LEASE_SYNC_BLOBS,
+    [sync2BlobsKey(username)], [JSON.stringify(digests), Date.now() + 15 * 60_000]);
+  const values = leased.map((value) => parseRedisJson<SyncBlobRegistryEntry>(value));
   return values.map((value) =>
     value && typeof value.url === "string" && typeof value.size === "number"
       ? value
