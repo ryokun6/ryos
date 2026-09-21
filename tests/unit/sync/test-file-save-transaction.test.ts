@@ -226,3 +226,98 @@ describe("paired content replay", () => {
     } finally { await engine.stop(); }
   });
 });
+
+describe("independent file uploads", () => {
+  for (const extension of ["epub", "png", "html"]) {
+    test(`a failed ${extension} upload preserves dependent edits while other formats sync`, async () => {
+      const failed = { ...item(extension), uuid: "failed" };
+      await saveVfsFile(failed, new Blob(["failed bytes"]));
+      // A later rename must not escape the failed upload through its new path.
+      useFilesStore.getState().renameItem(failed.path, `/renamed.${extension}`, `renamed.${extension}`);
+      useFilesStore.getState().updateItemMetadata(`/renamed.${extension}`, { modifiedAt: 3 });
+      await settleAllPersistWrites();
+      for (const ext of ["md", "epub", "png", "html"]) {
+        await saveVfsFile({ ...item(ext), path: `/healthy.${ext}`, name: `healthy.${ext}`, uuid: `healthy-${ext}` }, "healthy bytes");
+      }
+      const initial = await readFileMutations(account);
+      const posted: SyncOp[] = [];
+      let unavailable = true;
+      let attempts = 0;
+      globalThis.fetch = (async (input, init) => {
+        if (!init?.body) return response({ authenticated: true, username: account, directories: [], files: [] });
+        const body = JSON.parse(String(init.body));
+        if (String(input).endsWith("/blobs")) {
+          attempts++;
+          if (unavailable && attempts === 1) return response({ error: "storage unavailable" }, 400);
+          return response({ ok: true, uploads: body.upload.map((entry: { sha256: string }) => ({ ...entry, exists: true, url: `https://storage.example/${entry.sha256}` })) });
+        }
+        posted.push(...body.ops);
+        return response({ ok: true, seq: 1, results: body.ops.map((op: SyncOp) => ({ k: op.k, accepted: true })) });
+      }) as typeof fetch;
+      let engine = await CloudSyncEngine.create(account);
+      try {
+        await expect(replay(engine)).rejects.toThrow("storage unavailable");
+        expect(posted.filter(op => op.k.startsWith("files/item:/healthy.")).map(op => op.k).sort()).toEqual(
+          ["md", "epub", "png", "html"].map(ext => `files/item:/healthy.${ext}`).sort()
+        );
+        const remaining = await readFileMutations(account);
+        expect(remaining).toEqual(initial.filter(m => m.op.k === `files/item:${failed.path}` || m.op.k === `files/item:/renamed.${extension}`));
+        expect(posted.some(op => op.k.includes("renamed.") || op.k.includes("saved."))).toBe(false);
+        expect((await readFileMutationContent(remaining[0])).content).toBeDefined();
+        // Restart retries the exact durable timestamps, not newly minted writes.
+        await engine.stop();
+        unavailable = false;
+        engine = await CloudSyncEngine.create(account);
+        posted.length = 0;
+        await replay(engine);
+        expect(await readFileMutations(account)).toEqual([]);
+        for (const mutation of remaining) {
+          // Multiple metadata updates to one key coalesce to its latest value.
+          const latest = remaining.filter(m => m.op.k === mutation.op.k).at(-1)!;
+          expect(posted.some(op => op.k === latest.op.k && op.t === latest.op.t)).toBe(true);
+        }
+      } finally { await engine.stop(); }
+    }, 20000);
+  }
+
+  test("missing document snapshot does not block an unrelated document", async () => {
+    await saveVfsFile(item(), "lost snapshot");
+    const [broken] = await readFileMutations(account);
+    await dbOperations.delete(STORES.SYNC_FILE_CONTENTS, broken.id);
+    await saveVfsFile({ ...item(), path: "/healthy.md", uuid: "healthy" }, "safe");
+    const posted: SyncOp[] = [];
+    globalThis.fetch = (async (_input, init) => {
+      const { ops } = JSON.parse(String(init?.body));
+      posted.push(...ops);
+      return response({ ok: true, seq: 1, results: ops.map((op: SyncOp) => ({ k: op.k, accepted: true })) });
+    }) as typeof fetch;
+    const engine = await CloudSyncEngine.create(account);
+    try {
+      await expect(replay(engine)).rejects.toThrow("Missing file content snapshot");
+      expect(posted.map(op => op.k)).toEqual(["files/doc:healthy", "files/item:/healthy.md"]);
+      expect(await readFileMutations(account)).toEqual([broken]);
+    } finally { await engine.stop(); }
+  });
+
+  test("settings finish in the same flush while a file stays queued and reports an error", async () => {
+    await saveVfsFile(item("png"), new Blob(["image"]));
+    useCloudSyncStore.setState({ syncSettings: true });
+    const collected = spyOn(SYNC_CODECS.settings, "collect").mockResolvedValue(new Map([["settings/test/value", "changed"]]));
+    const ready = SYNC_CODECS.settings.isReady ? spyOn(SYNC_CODECS.settings, "isReady").mockReturnValue(true) : undefined;
+    const posted: SyncOp[] = [];
+    globalThis.fetch = (async (input, init) => {
+      if (String(input).endsWith("/blobs")) return response({ error: "storage unavailable" }, 400);
+      const { ops } = JSON.parse(String(init?.body));
+      posted.push(...ops);
+      return response({ ok: true, seq: 1, results: ops.map((op: SyncOp) => ({ k: op.k, accepted: true })) });
+    }) as typeof fetch;
+    const engine = await CloudSyncEngine.create(account);
+    try {
+      engine.markDirty("settings");
+      await expect(engine.flush({ throwOnError: true })).rejects.toThrow("storage unavailable");
+      expect(posted).toContainEqual(expect.objectContaining({ k: "settings/test/value", v: "changed" }));
+      expect(posted.some(op => op.k === "files/item:/saved.png")).toBe(false);
+      expect(await readFileMutations(account)).toHaveLength(1);
+    } finally { await engine.stop(); collected.mockRestore(); ready?.mockRestore(); }
+  });
+});
