@@ -1,3 +1,4 @@
+import { getFileContentSyncKey } from "@/utils/indexedDBOperations";
 import { BookLoadingProgress } from "./BookLoadingProgress";
 import { useFileAvailability } from "@/sync/fileAvailability";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -561,8 +562,8 @@ export const BooksReaderPane = forwardRef<
   const activeSectionHrefRef = useRef<string | undefined>(undefined);
 
   const { t, i18n } = useTranslation();
-  const contentUuid = useFilesStore(state => state.items[entry.path]?.uuid);
-  const transfer = useFileAvailability(state => state.files[`books/item:${contentUuid}`]);
+  const contentKey = useFilesStore(state => getFileContentSyncKey(entry.path, state.items[entry.path]));
+  const transfer = useFileAvailability(state => state.files[contentKey ?? ""]);
   const loadingPercentage = transfer?.status === "downloading" ? transfer.percentage : undefined;
   const uiLanguage = i18n.resolvedLanguage ?? i18n.language ?? "en";
   const uiLanguageRef = useRef(uiLanguage);

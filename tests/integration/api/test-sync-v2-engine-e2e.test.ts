@@ -367,6 +367,12 @@ test("atomic document save replays paired catalog and content through the real A
     expect(afterRename.entries[`files/item:${path}`]?.t).toBe(renamed.op.t);
     expect(afterRename.entries["files/doc:api-atomic-save"]?.t).toBe(pending.op.t);
     expect(afterRename.entries[`files/item:${destination}`]?.v).toMatchObject({ uuid: "api-atomic-save" });
+    const { dbOperations, STORES } = await import("../../../src/utils/indexedDB");
+    const cursorBeforeRecovery = engine.cursor;
+    await dbOperations.delete(STORES.DOCUMENTS, "api-atomic-save");
+    expect(await engine.ensureDocumentItemLocal("api-atomic-save", { path: destination })).toBe(true);
+    expect((await dbOperations.get<{ content: string }>(STORES.DOCUMENTS, "api-atomic-save"))?.content).toBe("atomic document bytes");
+    expect(engine.cursor).toBe(cursorBeforeRecovery);
   } finally {
     await engine.stop();
     useChatsStore.setState({ username: priorUsername });

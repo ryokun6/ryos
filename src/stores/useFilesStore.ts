@@ -1,3 +1,4 @@
+import { getStoreForFile, getBlobNamespaceForContentStore, type FileContentStore } from "@/utils/indexedDBOperations";
 import { createFileMutationEffects, broadcastFileCatalogChange } from "@/sync/fileMutationJournal";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useFileAvailability } from "@/sync/fileAvailability";
@@ -27,6 +28,8 @@ export interface FileSystemItem {
   icon?: string; // Optional: Specific icon override
   type?: string; // File type (e.g., 'text', 'png', 'folder') - derived if not folder
   appId?: string; // For launching applications or associated apps
+  /** Optional stable storage address; writers remain on the legacy format during reader rollout. */
+  contentStore?: FileContentStore;
   uuid?: string; // Unique identifier for content storage (only for files, not directories)
     // File properties
     size?: number; // File size in bytes (only for files, not directories)
@@ -407,7 +410,7 @@ function scheduleDefaultBookWarmup(): void {
  * images, applets, etc.). Uses a dynamic import so this module does not form
  * a static cycle with the sync engine (which imports useFilesStore).
  */
-async function ensureCloudBlobContentLoaded(
+async function ensureCloudFileContentLoaded(
   storeName: string,
   uuid: string,
   options: { forceReload?: boolean; path?: string } = {}
@@ -419,26 +422,12 @@ async function ensureCloudBlobContentLoaded(
     return false;
   }
   try {
-    const [{ getActiveCloudSyncEngine }, { getCloudSyncDomainForContentStore }, { isSyncBlobNamespace }] =
-      await Promise.all([
-        import("@/sync/engine"),
-        import("@/apps/finder/utils/fileSystemHelpers"),
-        import("@/shared/sync2/namespaces"),
-      ]);
-    const namespace = getCloudSyncDomainForContentStore(storeName);
-    if (!namespace || !isSyncBlobNamespace(namespace)) {
-      debug(
-        `[FilesStore] No blob namespace for store ${storeName} (${options.path ?? uuid})`
-      );
-      return false;
-    }
+    const { getActiveCloudSyncEngine } = await import("@/sync/engine");
     const engine = getActiveCloudSyncEngine();
-    if (!engine) {
-      debug(
-        `[FilesStore] No active cloud sync engine for hydrate (${options.path ?? uuid})`
-      );
-      return false;
-    }
+    if (!engine) return false;
+    if (storeName === STORES.DOCUMENTS) return engine.ensureDocumentItemLocal(uuid, { path: options.path, forceReload: options.forceReload });
+    const namespace = getBlobNamespaceForContentStore(storeName);
+    if (!namespace) return false;
     debug(`[FilesStore] Hydrating cloud blob`, {
       storeName,
       namespace,
@@ -469,23 +458,17 @@ export async function ensureFileContentLoaded(
   uuid: string,
   options: { forceReload?: boolean } = {}
 ): Promise<boolean> {
-  const storeName = filePath.startsWith("/Documents/")
-    ? STORES.DOCUMENTS
-    : filePath.startsWith("/Images/")
-    ? STORES.IMAGES
-    : filePath.startsWith("/Books/")
-    ? STORES.BOOKS
-    : filePath.startsWith("/Applets/")
-    ? STORES.APPLETS
-    : null;
+  const metadata = useFilesStore.getState().items[filePath];
+  const storeName = getStoreForFile(filePath, metadata ?? {});
   if (!storeName) return false;
+  const loadingKey = `${useChatsStore.getState().username ?? "guest"}:${storeName}:${uuid}`;
 
   // Prevent duplicate concurrent loads
-  if (loadingAssets.has(uuid) && !options.forceReload) {
+  if (loadingAssets.has(loadingKey) && !options.forceReload) {
     // Wait for existing load to complete
     await new Promise((resolve) => {
       const checkComplete = () => {
-        if (!loadingAssets.has(uuid)) {
+        if (!loadingAssets.has(loadingKey)) {
           resolve(true);
         } else {
           setTimeout(checkComplete, 50);
@@ -552,14 +535,14 @@ export async function ensureFileContentLoaded(
       // VFS metadata still points at a UUID whose IndexedDB payload is gone
       // (or forceReload needs to replace an unreadable Blob), ask cloud sync
       // to re-hydrate that single blob.
-      loadingAssets.add(uuid);
+      loadingAssets.add(loadingKey);
       try {
-        return await ensureCloudBlobContentLoaded(storeName, uuid, {
+        return await ensureCloudFileContentLoaded(storeName, uuid, {
           forceReload: options.forceReload,
           path: filePath,
         });
       } finally {
-        loadingAssets.delete(uuid);
+        loadingAssets.delete(loadingKey);
       }
     }
 
@@ -573,7 +556,7 @@ export async function ensureFileContentLoaded(
     }
 
     // Mark as loading
-    loadingAssets.add(uuid);
+    loadingAssets.add(loadingKey);
 
     try {
       // Fetch the asset
@@ -612,11 +595,11 @@ export async function ensureFileContentLoaded(
       
       return true;
     } finally {
-      loadingAssets.delete(uuid);
+      loadingAssets.delete(loadingKey);
     }
   } catch (err) {
     console.error(`[FilesStore] Error loading content for ${filePath}:`, err);
-    loadingAssets.delete(uuid);
+    loadingAssets.delete(loadingKey);
     return false;
   } finally {
     // Bug fix: Ensure db is always closed, even on errors

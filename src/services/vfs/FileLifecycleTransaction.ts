@@ -17,8 +17,7 @@ type Operation = { kind: "move"; path: string; destination: string }
 interface Change { before: FileSystemItem; after?: FileSystemItem }
 const parentPath = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-const contentStore = (item: FileSystemItem) => item.status === "trashed"
-  ? STORES.TRASH : getStoreForFile(item.path, item);
+const contentStore = (item: FileSystemItem) => getStoreForFile(item.path, item);
 
 function plan(items: Record<string, FileSystemItem>, operation: Operation): Change[] {
   if (operation.kind === "emptyTrash") {
@@ -99,7 +98,7 @@ export function transitionVfsFiles(operation: Operation): Promise<void> {
         value = await dbOperations.get<StoredContent>(source, item.uuid);
         // Older folder-trash code moved only metadata. Recover its retained bytes.
         if (!value && item.status === "trashed") {
-          const legacyStore = getStoreForFile(item.path, item);
+          const legacyStore = getStoreForFile(item.path, { ...item, status: "active", contentStore: undefined });
           if (legacyStore) value = await dbOperations.get<StoredContent>(legacyStore, item.uuid);
         }
       }
@@ -128,7 +127,7 @@ export function transitionVfsFiles(operation: Operation): Promise<void> {
       const { before: item, after } = change;
       if (item.isDirectory || !item.uuid) continue;
       const source = contentStore(item);
-      const candidates = new Set([source, ...(!after && item.status === "trashed" ? [getStoreForFile(item.path, item)] : [])]);
+      const candidates = new Set([source, ...(!after && item.status === "trashed" ? [getStoreForFile(item.path, { ...item, status: "active", contentStore: undefined })] : [])]);
       deletions.set(change, [...candidates].filter((store): store is string => Boolean(store && CONTENT_KEYS[store] &&
         !Object.values(next).some(other => !other.isDirectory && other.uuid === item.uuid && contentStore(other) === store))));
     }

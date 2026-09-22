@@ -204,10 +204,7 @@ async function openFile(
     
     if (fileMetadata?.uuid) {
       try {
-        const storeName = getStoreForFile(path, {
-          name,
-          type: fileMetadata.type,
-        });
+        const storeName = getStoreForFile(path, fileMetadata);
         if (!storeName) throw new Error(`No content store for ${path}`);
         const contentData = await dbOperations.get<DocumentContent>(
           storeName,

@@ -1,9 +1,10 @@
 import { STORES, dbOperations } from "@/utils/indexedDB";
 import {
   getStoreForFile,
+  getBlobNamespaceForContentStore,
   type StoredContent,
 } from "@/utils/indexedDBOperations";
-import { getFileContentUuid } from "@/services/vfs/FileMetadataService";
+import { getFileContentUuid, getFileMetadata } from "@/services/vfs/FileMetadataService";
 import { ensureFileContentLoaded } from "@/stores/useFilesStore";
 
 export type VfsContentStoreName =
@@ -47,66 +48,57 @@ export async function readContentForPath<T extends StoredContent = StoredContent
   path: string,
   options: { expectedStore?: VfsContentStoreName; localOnly?: boolean } = {}
 ): Promise<T | null> {
-  const fileName = path.split("/").pop();
-  const storeName = getStoreForFile(path, { name: fileName });
-  if (!storeName) {
-    return null;
-  }
-  if (options.expectedStore && storeName !== options.expectedStore) {
-    return null;
-  }
-
-  let uuid = getFileContentUuid(path);
-  if (!uuid) return null;
-  if (!options.localOnly && (storeName === STORES.BOOKS || storeName === STORES.IMAGES)) {
-    const { getActiveCloudSyncEngine } = await import("@/sync/engine");
-    const engine = getActiveCloudSyncEngine();
-    const namespace = storeName === STORES.BOOKS ? "books" : "images";
-    if (engine?.hasPendingBlob(namespace, uuid)) {
-      const loaded = await engine.ensureBlobItemLocal(namespace, uuid, { path });
-      if (!loaded) return null;
-      uuid = getFileContentUuid(path) ?? uuid;
+  // A recovery can rotate a UUID or change its address. Resolve again after
+  // I/O, rather than accidentally reading that UUID from the previous store.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const metadata = getFileMetadata(path);
+    const storeName = getStoreForFile(path, metadata ?? {});
+    const uuid = metadata?.uuid;
+    if (!storeName || !uuid || (options.expectedStore && storeName !== options.expectedStore)) return null;
+    const stillCurrent = () => {
+      const current = getFileMetadata(path);
+      return current?.uuid === uuid && getStoreForFile(path, current) === storeName;
+    };
+    const namespace = getBlobNamespaceForContentStore(storeName);
+    if (!options.localOnly && namespace) {
+      const { getActiveCloudSyncEngine } = await import("@/sync/engine");
+      const engine = getActiveCloudSyncEngine();
+      if (engine?.hasPendingBlob(namespace, uuid)) {
+        if (!(await engine.ensureBlobItemLocal(namespace, uuid, { path }))) return null;
+        if (!stillCurrent()) continue;
+      }
     }
-  }
-  let existing: T | undefined;
-  try {
-    existing = await readContentByKey<T>(storeName, uuid);
-  } catch (error) {
-    if (storeName !== STORES.BOOKS || options.localOnly) {
-      throw error;
+    let existing: T | undefined;
+    try { existing = await readContentByKey<T>(storeName, uuid); }
+    catch (error) {
+      if (options.localOnly) throw error;
+      if (!(await ensureFileContentLoaded(path, uuid, { forceReload: true }))) throw error;
+      continue;
     }
-    const recovered = await ensureFileContentLoaded(path, uuid, {
-      forceReload: true,
-    });
-    if (!recovered) {
-      throw error;
-    }
-    return (await readContentByKey<T>(storeName, getFileContentUuid(path) ?? uuid)) ?? null;
+    if (!stillCurrent()) continue;
+    if (existing) return existing;
+    if (options.localOnly || !(await ensureFileContentLoaded(path, uuid))) return null;
   }
-  if (existing) return existing;
-  if (options.localOnly) return null;
-
-  const loaded = await ensureFileContentLoaded(path, uuid);
-  if (!loaded) return null;
-
-  return (await readContentByKey<T>(storeName, getFileContentUuid(path) ?? uuid)) ?? null;
+  return null;
 }
 
 export async function readDocumentTextContent(path: string): Promise<string | null> {
-  const item = await readContentForPath<StoredContent>(path, {
-    expectedStore: STORES.DOCUMENTS,
-  });
+  const item = await readContentForPath<StoredContent>(path);
   const content = item?.content;
   if (content instanceof Blob) {
     return content.text();
   }
+  if (content instanceof ArrayBuffer) return new TextDecoder().decode(content);
   return typeof content === "string" ? content : null;
 }
 
 export async function readImageBlobContent(path: string): Promise<Blob | null> {
-  const item = await readContentForPath<StoredContent>(path, {
-    expectedStore: STORES.IMAGES,
-  });
+  const item = await readContentForPath<StoredContent>(path);
+  if (item?.content instanceof ArrayBuffer) {
+    const extension = (item.name || path).split(".").pop()?.toLowerCase() ?? "";
+    const mimeTypes: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml", bmp: "image/bmp" };
+    return new Blob([item.content], { type: mimeTypes[extension] ?? "application/octet-stream" });
+  }
   return isBlobLike(item?.content) ? item.content : null;
 }
 
@@ -132,7 +124,6 @@ async function isBlobReadable(blob: Blob): Promise<boolean> {
 
 export async function readBookBlobContent(path: string, options: { localOnly?: boolean } = {}): Promise<Blob | null> {
   const item = await readContentForPath<StoredContent>(path, {
-    expectedStore: STORES.BOOKS,
     localOnly: options.localOnly,
   });
   const blob = blobFromBookContent(item?.content);
@@ -155,19 +146,17 @@ export async function readBookBlobContent(path: string, options: { localOnly?: b
   if (!recovered) return null;
 
   const recoveredItem = await readContentForPath<StoredContent>(path, {
-    expectedStore: STORES.BOOKS,
     localOnly: options.localOnly,
   });
   return blobFromBookContent(recoveredItem?.content);
 }
 
 export async function readAppletTextContent(path: string): Promise<string | null> {
-  const item = await readContentForPath<StoredContent>(path, {
-    expectedStore: STORES.APPLETS,
-  });
+  const item = await readContentForPath<StoredContent>(path);
   const content = item?.content;
   if (content instanceof Blob) {
     return content.text();
   }
+  if (content instanceof ArrayBuffer) return new TextDecoder().decode(content);
   return typeof content === "string" ? content : null;
 }

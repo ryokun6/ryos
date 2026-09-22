@@ -28,7 +28,7 @@ import { useFileAvailability } from "@/sync/fileAvailability";
  * deletion intent.
  */
 
-import { ensureIndexedDBInitialized, dbOperations } from "@/utils/indexedDB";
+import { ensureIndexedDBInitialized, dbOperations, STORES } from "@/utils/indexedDB";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   getSyncKeyNamespace,
@@ -79,7 +79,8 @@ import {
 } from "@/sync/codecs";
 import { getPersistedSyncShadowKeys } from "@/sync/stateStorage";
 import { forEachTransfer } from "@/sync/transferQueue";
-import { useFilesStore } from "@/stores/useFilesStore";
+import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
+import { getStoreForFile, getBlobNamespaceForContentStore } from "@/utils/indexedDBOperations";
 import {
   serializeStoreItem,
   readStoreItemsByKeys,
@@ -1261,6 +1262,30 @@ export class CloudSyncEngine {
     await this.state.persistNow();
   }
 
+  /** Restore a missing inline document without advancing the global cursor. */
+  async ensureDocumentItemLocal(storeKey: string, options: { path?: string; forceReload?: boolean; _retriedPath?: boolean } = {}): Promise<boolean> {
+    if (!storeKey || this.stopped || !this.isNamespaceEnabled("files")) return false;
+    const key = `files/doc:${storeKey}`;
+    try {
+      if (!options.forceReload && await dbOperations.get(STORES.DOCUMENTS, storeKey)) return true;
+      const snapshot = await getSyncSnapshot({ prefix: key, signal: this.abortController.signal });
+      const entry = snapshot.entries[key];
+      if (this.stopped) return false;
+      if (!entry || entry.del) {
+        if (options.path && !options._retriedPath) return await this.repairFileViaRemoteMetadata("files", options.path, storeKey);
+        return false;
+      }
+      // Matching shadows do not prove the local payload survived eviction.
+      // Rehydration still protects pending writes and newer remote revisions.
+      await this.applyRemoteOps([this.entryToOp(key, entry)], { rehydrate: true });
+      await this.state.persistNow();
+      return Boolean(await dbOperations.get(STORES.DOCUMENTS, storeKey));
+    } catch (error) {
+      if (!this.stopped && !isAbortError(error)) cloudSyncLog.error("Document hydrate failed", { key, error });
+      return false;
+    }
+  }
+
   /**
    * Ensure a single blob-namespace item is present in IndexedDB, re-fetching
    * from cloud when the VFS metadata/shadow says it should exist but the
@@ -1355,7 +1380,7 @@ export class CloudSyncEngine {
         });
 
         if (options.path && !options._retriedPath) {
-          const repaired = await this.repairBlobViaRemoteFileMetadata(
+          const repaired = await this.repairFileViaRemoteMetadata(
             namespace,
             options.path,
             storeKey
@@ -1398,8 +1423,8 @@ export class CloudSyncEngine {
    * If remote files metadata for `path` points at a different content UUID
    * than the orphan local id, adopt that metadata and hydrate the new blob.
    */
-  private async repairBlobViaRemoteFileMetadata(
-    namespace: SyncBlobNamespace,
+  private async repairFileViaRemoteMetadata(
+    namespace: SyncBlobNamespace | "files",
     path: string,
     localUuid: string
   ): Promise<boolean> {
@@ -1438,22 +1463,21 @@ export class CloudSyncEngine {
       remoteDeleted: Boolean(entry?.del),
     });
 
-    if (!entry || !remoteUuid || remoteUuid === localUuid) {
-      return false;
-    }
+    const remoteStore = remoteValue && getStoreForFile(path, remoteValue as unknown as FileSystemItem);
+    const remoteNamespace = remoteStore === STORES.DOCUMENTS ? "files" : remoteStore && getBlobNamespaceForContentStore(remoteStore);
+    if (!entry || !remoteUuid || !remoteNamespace || (remoteUuid === localUuid && remoteNamespace === namespace)) return false;
 
     cloudSyncLog.warn("Adopting remote file content UUID for orphan blob", {
       path,
       localUuid,
       remoteUuid,
     });
-    await this.applyRemoteOps([this.entryToOp(filesKey, entry)], {
-      force: true,
-    });
-    return this.ensureBlobItemLocal(namespace, remoteUuid, {
-      path,
-      _retriedPath: true,
-    });
+    await this.applyRemoteOps([this.entryToOp(filesKey, entry)], { rehydrate: true });
+    const current = useFilesStore.getState().items[path];
+    if (current?.uuid !== remoteUuid || getStoreForFile(path, current) !== remoteStore) return false;
+    return remoteNamespace === "files"
+      ? this.ensureDocumentItemLocal(remoteUuid, { path, _retriedPath: true })
+      : this.ensureBlobItemLocal(remoteNamespace, remoteUuid, { path, _retriedPath: true });
   }
 
   private entryToOp(key: string, entry: SyncKvEntry): SyncOp {
@@ -1484,7 +1508,7 @@ export class CloudSyncEngine {
   // Remote op application
   // -------------------------------------------------------------------------
 
-  applyRemoteOps(ops: SyncOp[], options: { force?: boolean; deferBlobs?: boolean } = {}): Promise<void> {
+  applyRemoteOps(ops: SyncOp[], options: { force?: boolean; deferBlobs?: boolean; rehydrate?: boolean } = {}): Promise<void> {
     const run = this.remoteApplyTail.then(() => this.applyRemoteOpsSerial(ops, options));
     this.remoteApplyTail = run.catch(() => {});
     return run;
@@ -1492,7 +1516,7 @@ export class CloudSyncEngine {
 
   private async applyRemoteOpsSerial(
     ops: SyncOp[],
-    options: { force?: boolean; deferBlobs?: boolean } = {}
+    options: { force?: boolean; deferBlobs?: boolean; rehydrate?: boolean } = {}
   ): Promise<void> {
     if (this.stopped) throw new DOMException("Cloud sync stopped", "AbortError");
     const byNamespace = new Map<SyncNamespace, AppliedSyncOp[]>();
@@ -1509,7 +1533,7 @@ export class CloudSyncEngine {
       // already matches — blob namespaces verify IndexedDB presence and may
       // need to re-hydrate missing local bytes.
       if (!options.force && latestTimestamp && latestTimestamp >= op.t &&
-          (latestTimestamp > op.t || !this.state.getDownload(op.k) || options.deferBlobs)) {
+          (latestTimestamp > op.t || (!options.rehydrate && (!this.state.getDownload(op.k) || options.deferBlobs)))) {
         skippedAlreadyAppliedCount += 1;
         continue; // already applied
       }

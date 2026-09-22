@@ -1,3 +1,4 @@
+import { getFileContentSyncKey } from "@/utils/indexedDBOperations";
 import { useFileAvailability } from "@/sync/fileAvailability";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useEffect, useState } from "react";
@@ -190,8 +191,8 @@ async function loadCover(
 
 export function useBookCover(path: string, modifiedAt?: number) {
   const key = cacheKey(path, modifiedAt);
-  const uuid = useFilesStore(state => state.items[path]?.uuid);
-  const availability = useFileAvailability(state => state.files[`books/item:${uuid}`]?.status);
+  const contentKey = useFilesStore(state => getFileContentSyncKey(path, state.items[path]));
+  const availability = useFileAvailability(state => state.files[contentKey ?? ""]?.status);
   const [info, setInfo] = useState<BookCoverInfo | null>(
     coverCache.get(key) ?? null
   );
