@@ -65,10 +65,7 @@ export async function openDesktopAlias(
     let contentToUse: string | Blob | undefined = undefined;
     let contentAsString: string | undefined = undefined;
 
-    const storeName = getStoreForFile(targetFile.path, {
-      name: targetFile.name,
-      type: targetFile.type,
-    });
+    const storeName = getStoreForFile(targetFile.path, targetFile);
     if (storeName) {
       if (targetFile.uuid) {
         const contentData = await dbOperations.get<{

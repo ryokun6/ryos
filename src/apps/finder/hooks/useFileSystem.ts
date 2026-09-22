@@ -600,10 +600,7 @@ export function useFileSystem(
         // --- START EDIT: Fetch content URLs for image files (any writable path) ---
         const resolvesToImagesStore = (item: FileSystemItem) =>
           !item.isDirectory &&
-          getStoreForFile(item.path, {
-            name: item.name,
-            type: item.type,
-          }) === STORES.IMAGES;
+          getStoreForFile(item.path, item) === STORES.IMAGES;
         if (itemsMetadata.some(resolvesToImagesStore)) {
           displayFiles = await Promise.all(
             itemsMetadata.map(async (item) => {
@@ -803,10 +800,7 @@ export function useFileSystem(
 
       try {
         // Fetch content from IndexedDB (Documents, Images, or Applets)
-        const storeName = getStoreForFile(file.path, {
-          name: file.name,
-          type: file.type,
-        });
+        const storeName = getStoreForFile(file.path, getFileItem(file.path) ?? file);
         track(FINDER_ANALYTICS.FILE_OPEN, {
           appId: "finder",
           isDirectory: false,
@@ -1198,7 +1192,7 @@ export function useFileSystem(
       // fresh content id so the new bytes sync as a new key.
       const existingItem = getFileItem(path);
       let uuid = existingItem?.uuid;
-      const storeName = getStoreForFile(path, { name, type: fileType });
+      const storeName = getStoreForFile(path, { ...existingItem, name, type: fileType });
       let replacedOrphanUuid: string | null = null;
       if (uuid && storeName) {
         try {

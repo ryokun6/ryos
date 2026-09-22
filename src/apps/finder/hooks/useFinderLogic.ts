@@ -1039,10 +1039,7 @@ export function useFinderLogic({
       // Fetch content for the selected file using UUID
       let contentToCopy: string | Blob | undefined;
       // Determine store based on selectedFile.path, not currentPath
-      const storeName = getStoreForFile(selectedFile.path, {
-        name: selectedFile.name,
-        type: selectedFile.type,
-      });
+      const storeName = getStoreForFile(selectedFile.path, fileMetadata);
       if (storeName) {
         const contentData = await dbOperations.get<DocumentContent>(
           storeName,
@@ -1535,10 +1532,7 @@ export function useFinderLogic({
 
       let content: string = "";
       if (fileMetadata.uuid) {
-        const storeName = getStoreForFile(filePath, {
-          name: fileMetadata.name,
-          type: fileMetadata.type,
-        });
+        const storeName = getStoreForFile(filePath, fileMetadata);
         if (storeName) {
           const doc = await dbOperations.get<DocumentContent>(
             storeName,

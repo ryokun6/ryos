@@ -128,6 +128,21 @@ try {
   });
   assert.deepEqual(lifecycle, { queued: 4, trashed: [true, true, true, true], restored: [true, true, true, true] });
   console.log("PASS: folder trash survives a renderer crash and restores all four content formats");
+  const readable = await fourth.evaluate(async () => {
+    const { transitionVfsFiles } = await import("/src/services/vfs/FileLifecycleTransaction.ts");
+    const { useFilesStore } = await import("/src/stores/useFilesStore.ts");
+    const { readDocumentTextContent, readImageBlobContent, readBookBlobContent, readAppletTextContent } = await import("/src/services/vfs/FileContentRepository.ts");
+    if (!useFilesStore.getState().items["/Documents"]) useFilesStore.getState().addItem({ path: "/Documents", name: "Documents", isDirectory: true });
+    await transitionVfsFiles({ kind: "move", path: "/Lifecycle", destination: "/Documents/Lifecycle" });
+    return Promise.all([
+      readDocumentTextContent("/Documents/Lifecycle/file.md"),
+      readImageBlobContent("/Documents/Lifecycle/file.png").then(blob => blob?.text()),
+      readBookBlobContent("/Documents/Lifecycle/file.epub").then(blob => blob?.text()),
+      readAppletTextContent("/Documents/Lifecycle/file.html"),
+    ]);
+  });
+  assert.deepEqual(readable, ["bytes-md", "bytes-png", "bytes-epub", "bytes-html"]);
+  console.log("PASS: all four typed readers open files after a cross-store folder move");
 } finally {
   await context.close();
   await rm(profile, { recursive: true, force: true });

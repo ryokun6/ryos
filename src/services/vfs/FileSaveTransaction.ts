@@ -28,12 +28,12 @@ async function commitVfsFile(
   content: StoredContent["content"],
   account: string | null
 ): Promise<void> {
-  const storeName = getStoreForFile(item.path, item);
+  const before = useFilesStore.getState().items[item.path];
+  const metadata = structuredClone({ ...before, ...item });
+  const storeName = getStoreForFile(item.path, metadata);
   if (!item.uuid || !storeName || !CONTENT_KEYS[storeName]) {
     throw new Error(`Cannot save content at ${item.path}`);
   }
-  const before = useFilesStore.getState().items[item.path];
-  const metadata = structuredClone({ ...before, ...item });
   // Capture time and account before asynchronous conversion or storage work.
   const mutation = account ? createFileMutation(account, { k: `files/item:${item.path}`, v: metadata }) : undefined;
   const value = {

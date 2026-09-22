@@ -270,3 +270,33 @@ memory and may require downloads; stable content identity and streaming/bounded
 preparation remain follow-up work. Old client versions still use their legacy
 writers until refreshed. No production book records are repaired or deduplicated
 by this change.
+
+**Reader compatibility and recovery — September 22, 2026**
+
+Before enabling metadata-only moves, shared readers now resolve storage from
+file metadata, with the existing path/type/status rules as the legacy fallback.
+They understand a validated optional `contentStore` address; this release does
+not create that field on legacy files or migrate accounts. Invalid addresses
+fail closed, and addresses cannot expose virtual trees or non-file stores.
+Finder, desktop aliases, terminal opening, Books progress/cover availability,
+and shared typed readers use the same resolution rules.
+
+Lazy loading works in custom folders and at the root, and applet opens wait for
+pending revisions instead of returning old cached content. Typed readers
+interpret Blob/ArrayBuffer/text content independently of its physical store, so
+legacy cross-store moves do not make a file unreadable merely because it moved
+under a different top-level folder. Readers re-resolve an address changed during
+I/O, and lazy-load coordination is scoped by account, store, and UUID.
+
+Missing inline documents now recover through a per-key snapshot. Rehydration
+can repair an evicted local payload with a matching shadow while retaining
+pending local edits, rejecting older known revisions, and preserving the global
+sync cursor. Forced document recovery keeps existing bytes until the replacement
+arrives. Orphan metadata recovery follows a changed storage address as well as a
+changed UUID, and no longer bypasses pending-edit protection.
+
+Next: deploy and test a legacy-writer compatibility gate before enabling stable
+addresses on existing accounts, then change lifecycle writers to preserve those
+addresses. Folder operations still use the prior transactional relocation path
+until that migration is enabled. This is an expand-first reader rollout, not the
+completed zero-copy migration.
